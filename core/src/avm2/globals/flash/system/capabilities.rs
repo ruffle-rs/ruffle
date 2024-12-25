@@ -67,7 +67,7 @@ pub fn get_player_type<'gc>(
         }
     };
 
-    Ok(AvmString::new_utf8(activation.context.gc_context, player_type).into())
+    Ok(AvmString::new_utf8(activation.context.gc(), player_type).into())
 }
 
 /// Implements `flash.system.Capabilities.screenResolutionX`

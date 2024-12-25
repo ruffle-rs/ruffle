@@ -88,7 +88,7 @@ pub fn load<'gc>(
     // This is a dummy MovieClip, which will get overwritten in `Loader`
     let content = MovieClip::new(
         Arc::new(SwfMovie::empty(activation.context.swf.version())),
-        activation.context.gc_context,
+        activation.context.gc(),
     );
 
     // Update the LoaderStream - we still have a fake SwfMovie, but we now have the real target clip.
@@ -98,7 +98,7 @@ pub fn load<'gc>(
             Some(content.into()),
             false,
         ),
-        activation.context.gc_context,
+        activation.context.gc(),
     );
 
     let request = request_from_url_request(activation, url_request)?;
@@ -247,7 +247,7 @@ pub fn load_bytes<'gc>(
     // This is a dummy MovieClip, which will get overwritten in `Loader`
     let content = MovieClip::new(
         Arc::new(SwfMovie::empty(activation.context.swf.version())),
-        activation.context.gc_context,
+        activation.context.gc(),
     );
 
     let default_domain = activation

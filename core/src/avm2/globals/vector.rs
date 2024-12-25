@@ -39,7 +39,7 @@ pub fn instance_init<'gc>(
 
     activation.super_init(this, &[])?;
 
-    if let Some(mut vector) = this.as_vector_storage_mut(activation.context.gc_context) {
+    if let Some(mut vector) = this.as_vector_storage_mut(activation.context.gc()) {
         let length = args
             .get(0)
             .cloned()
@@ -155,7 +155,7 @@ fn class_init<'gc>(
             *pubname,
             FunctionObject::from_method(
                 activation,
-                Method::from_builtin(*func, pubname, activation.context.gc_context),
+                Method::from_builtin(*func, pubname, activation.context.gc()),
                 scope,
                 None,
                 None,
@@ -164,11 +164,7 @@ fn class_init<'gc>(
             .into(),
             activation,
         )?;
-        proto.set_local_property_is_enumerable(
-            activation.context.gc_context,
-            (*pubname).into(),
-            false,
-        );
+        proto.set_local_property_is_enumerable(activation.context.gc(), (*pubname).into(), false);
     }
 
     Ok(Value::Undefined)
@@ -197,7 +193,7 @@ pub fn set_length<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
-    if let Some(mut vector) = this.as_vector_storage_mut(activation.context.gc_context) {
+    if let Some(mut vector) = this.as_vector_storage_mut(activation.context.gc()) {
         let new_length = args
             .get(0)
             .cloned()
@@ -233,7 +229,7 @@ pub fn set_fixed<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
-    if let Some(mut vector) = this.as_vector_storage_mut(activation.context.gc_context) {
+    if let Some(mut vector) = this.as_vector_storage_mut(activation.context.gc()) {
         let new_fixed = args
             .get(0)
             .cloned()
@@ -277,13 +273,13 @@ pub fn concat<'gc>(
         if !arg.is_of_type(activation, my_base_vector_class) {
             let base_vector_name = my_base_vector_class
                 .name()
-                .to_qualified_name_err_message(activation.context.gc_context);
+                .to_qualified_name_err_message(activation.context.gc());
 
             return Err(Error::AvmError(type_error(
                 activation,
                 &format!(
                     "Error #1034: Type Coercion failed: cannot convert {}@00000000000 to {}.",
-                    arg_obj.instance_of_class_name(activation.context.gc_context),
+                    arg_obj.instance_of_class_name(activation.context.gc()),
                     base_vector_name,
                 ),
                 1034,
@@ -341,7 +337,7 @@ where
         }
 
         return Ok(AvmString::new(
-            activation.context.gc_context,
+            activation.context.gc(),
             crate::string::join(&accum, &string_separator),
         )
         .into());
@@ -608,7 +604,7 @@ pub fn pop<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
-    if let Some(mut vs) = this.as_vector_storage_mut(activation.context.gc_context) {
+    if let Some(mut vs) = this.as_vector_storage_mut(activation.context.gc()) {
         return vs.pop(activation);
     }
 
@@ -623,7 +619,7 @@ pub fn push<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
-    if let Some(mut vs) = this.as_vector_storage_mut(activation.context.gc_context) {
+    if let Some(mut vs) = this.as_vector_storage_mut(activation.context.gc()) {
         let value_type = vs.value_type_for_coercion(activation);
 
         // Pushing nothing will still throw if the Vector is fixed.
@@ -649,7 +645,7 @@ pub fn shift<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
-    if let Some(mut vs) = this.as_vector_storage_mut(activation.context.gc_context) {
+    if let Some(mut vs) = this.as_vector_storage_mut(activation.context.gc()) {
         return vs.shift(activation);
     }
 
@@ -664,7 +660,7 @@ pub fn unshift<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
-    if let Some(mut vs) = this.as_vector_storage_mut(activation.context.gc_context) {
+    if let Some(mut vs) = this.as_vector_storage_mut(activation.context.gc()) {
         let value_type = vs.value_type_for_coercion(activation);
 
         for arg in args.iter().rev() {
@@ -687,7 +683,7 @@ pub fn insert_at<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
-    if let Some(mut vs) = this.as_vector_storage_mut(activation.context.gc_context) {
+    if let Some(mut vs) = this.as_vector_storage_mut(activation.context.gc()) {
         let index = args
             .get(0)
             .cloned()
@@ -716,7 +712,7 @@ pub fn remove_at<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
-    if let Some(mut vs) = this.as_vector_storage_mut(activation.context.gc_context) {
+    if let Some(mut vs) = this.as_vector_storage_mut(activation.context.gc()) {
         let index = args
             .get(0)
             .cloned()
@@ -737,7 +733,7 @@ pub fn reverse<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
-    if let Some(mut vs) = this.as_vector_storage_mut(activation.context.gc_context) {
+    if let Some(mut vs) = this.as_vector_storage_mut(activation.context.gc()) {
         vs.reverse();
 
         return Ok(this.into());
@@ -754,7 +750,7 @@ pub fn slice<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
-    if let Some(vs) = this.as_vector_storage_mut(activation.context.gc_context) {
+    if let Some(vs) = this.as_vector_storage_mut(activation.context.gc()) {
         let from = args
             .get(0)
             .cloned()
@@ -796,7 +792,7 @@ pub fn sort<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
-    if let Some(vs) = this.as_vector_storage_mut(activation.context.gc_context) {
+    if let Some(vs) = this.as_vector_storage_mut(activation.context.gc()) {
         let fn_or_options = args.get(0).cloned().unwrap_or(Value::Undefined);
 
         let (compare_fnc, options) = if let Some(callable) = fn_or_options
@@ -857,9 +853,7 @@ pub fn sort<'gc>(
         }
 
         if !options.contains(SortOptions::UNIQUE_SORT) || unique_sort_satisfied {
-            let mut vs = this
-                .as_vector_storage_mut(activation.context.gc_context)
-                .unwrap();
+            let mut vs = this.as_vector_storage_mut(activation.context.gc()).unwrap();
             vs.replace_storage(values.into_iter().collect());
         }
 
@@ -877,7 +871,7 @@ pub fn splice<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
-    if let Some(mut vs) = this.as_vector_storage_mut(activation.context.gc_context) {
+    if let Some(mut vs) = this.as_vector_storage_mut(activation.context.gc()) {
         let start_len = args
             .get(0)
             .cloned()
@@ -921,7 +915,7 @@ pub fn splice<'gc>(
 
 /// Construct `Vector`'s class.
 pub fn create_generic_class<'gc>(activation: &mut Activation<'_, 'gc>) -> Class<'gc> {
-    let mc = activation.context.gc_context;
+    let mc = activation.context.gc();
     let class = Class::new(
         QName::new(activation.avm2().namespaces.vector_public, "Vector"),
         Some(activation.avm2().class_defs().object),
@@ -934,14 +928,14 @@ pub fn create_generic_class<'gc>(activation: &mut Activation<'_, 'gc>) -> Class<
     class.set_attributes(mc, ClassAttributes::GENERIC | ClassAttributes::FINAL);
     class.set_instance_allocator(mc, generic_vector_allocator);
 
-    class.mark_traits_loaded(activation.context.gc_context);
+    class.mark_traits_loaded(activation.context.gc());
     class
         .init_vtable(activation.context)
         .expect("Native class's vtable should initialize");
 
     let c_class = class.c_class().expect("Class::new returns an i_class");
 
-    c_class.mark_traits_loaded(activation.context.gc_context);
+    c_class.mark_traits_loaded(activation.context.gc());
     c_class
         .init_vtable(activation.context)
         .expect("Native class's vtable should initialize");
@@ -1026,14 +1020,14 @@ pub fn create_builtin_class<'gc>(
     ];
     class.define_builtin_instance_methods(mc, namespaces.as3, AS3_INSTANCE_METHODS);
 
-    class.mark_traits_loaded(activation.context.gc_context);
+    class.mark_traits_loaded(activation.context.gc());
     class
         .init_vtable(activation.context)
         .expect("Native class's vtable should initialize");
 
     let c_class = class.c_class().expect("Class::new returns an i_class");
 
-    c_class.mark_traits_loaded(activation.context.gc_context);
+    c_class.mark_traits_loaded(activation.context.gc());
     c_class
         .init_vtable(activation.context)
         .expect("Native class's vtable should initialize");

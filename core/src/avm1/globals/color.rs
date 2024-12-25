@@ -29,7 +29,7 @@ pub fn constructor<'gc>(
     let target = args.get(0).cloned().unwrap_or(Value::Undefined);
     // Set undocumented `target` property
     this.define_value(
-        activation.context.gc_context,
+        activation.context.gc(),
         "target",
         target,
         Attribute::DONT_DELETE | Attribute::READ_ONLY | Attribute::DONT_ENUM,
@@ -42,7 +42,7 @@ pub fn create_proto<'gc>(
     proto: Object<'gc>,
     fn_proto: Object<'gc>,
 ) -> Object<'gc> {
-    let object = ScriptObject::new(context.gc_context, Some(proto));
+    let object = ScriptObject::new(context.gc(), Some(proto));
     define_properties_on(PROTO_DECLS, context, object, fn_proto);
     object.into()
 }
@@ -91,7 +91,7 @@ fn get_transform<'gc>(
         let base = target.base();
         let color_transform = base.color_transform();
         let out = ScriptObject::new(
-            activation.context.gc_context,
+            activation.context.gc(),
             Some(activation.context.avm1.prototypes().object),
         );
         out.set(
@@ -130,9 +130,9 @@ fn set_rgb<'gc>(
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(target) = target(activation, this)? {
-        target.set_transformed_by_script(activation.context.gc_context, true);
+        target.set_transformed_by_script(activation.context.gc(), true);
         if let Some(parent) = target.parent() {
-            parent.invalidate_cached_bitmap(activation.context.gc_context);
+            parent.invalidate_cached_bitmap(activation.context.gc());
         }
 
         let rgb = args
@@ -141,7 +141,7 @@ fn set_rgb<'gc>(
             .coerce_to_i32(activation)?;
         let [b, g, r, _] = rgb.to_le_bytes();
 
-        let mut base = target.base_mut(activation.context.gc_context);
+        let mut base = target.base_mut(activation.context.gc());
         let color_transform = base.color_transform_mut();
         color_transform.r_multiply = Fixed8::ZERO;
         color_transform.g_multiply = Fixed8::ZERO;
@@ -192,12 +192,12 @@ fn set_transform<'gc>(
     }
 
     if let Some(target) = target(activation, this)? {
-        target.set_transformed_by_script(activation.context.gc_context, true);
+        target.set_transformed_by_script(activation.context.gc(), true);
         if let Some(parent) = target.parent() {
-            parent.invalidate_cached_bitmap(activation.context.gc_context);
+            parent.invalidate_cached_bitmap(activation.context.gc());
         }
 
-        let mut base = target.base_mut(activation.context.gc_context);
+        let mut base = target.base_mut(activation.context.gc());
         let color_transform = base.color_transform_mut();
         let transform = args
             .get(0)

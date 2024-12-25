@@ -26,7 +26,7 @@ pub fn get_page_domain<'gc>(
 
         let mut domain = url.origin().ascii_serialization();
         domain.push('/'); // Add trailing slash that is used by Flash, but isn't part of a standard origin.
-        Ok(AvmString::new_utf8(activation.context.gc_context, domain).into())
+        Ok(AvmString::new_utf8(activation.context.gc(), domain).into())
     } else {
         tracing::warn!("flash.system.Security.pageDomain: No page-url available");
         Ok(Value::Null)
@@ -48,7 +48,7 @@ pub fn get_sandbox_type<'gc>(
         SandboxType::LocalTrusted => "localTrusted",
         SandboxType::Application => "application",
     };
-    Ok(AvmString::new_utf8(activation.context.gc_context, sandbox_type).into())
+    Ok(AvmString::new_utf8(activation.context.gc(), sandbox_type).into())
 }
 
 pub fn allow_domain<'gc>(

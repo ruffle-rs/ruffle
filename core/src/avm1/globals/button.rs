@@ -55,7 +55,7 @@ pub fn create_proto<'gc>(
     proto: Object<'gc>,
     fn_proto: Object<'gc>,
 ) -> Object<'gc> {
-    let object = ScriptObject::new(context.gc_context, Some(proto));
+    let object = ScriptObject::new(context.gc(), Some(proto));
     define_properties_on(PROTO_DECLS, context, object, fn_proto);
     object.into()
 }
@@ -73,7 +73,7 @@ fn blend_mode<'gc>(
     this: Avm1Button<'gc>,
     activation: &mut Activation<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let mode = AvmString::new_utf8(activation.context.gc_context, this.blend_mode().to_string());
+    let mode = AvmString::new_utf8(activation.context.gc(), this.blend_mode().to_string());
     Ok(mode.into())
 }
 
@@ -84,7 +84,7 @@ fn set_blend_mode<'gc>(
 ) -> Result<(), Error<'gc>> {
     // No-op if value is not a valid blend mode.
     if let Some(mode) = value.as_blend_mode() {
-        this.set_blend_mode(activation.context.gc_context, mode.into());
+        this.set_blend_mode(activation.context.gc(), mode.into());
     } else {
         tracing::error!("Unknown blend mode {value:?}");
     }
@@ -96,7 +96,7 @@ fn filters<'gc>(
     activation: &mut Activation<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     Ok(ArrayObject::new(
-        activation.context.gc_context,
+        activation.context.gc(),
         activation.context.avm1.prototypes().array,
         this.filters()
             .into_iter()
@@ -119,7 +119,7 @@ fn set_filters<'gc>(
             }
         }
     }
-    this.set_filters(activation.context.gc_context, filters);
+    this.set_filters(activation.context.gc(), filters);
     Ok(())
 }
 
@@ -138,7 +138,7 @@ fn set_cache_as_bitmap<'gc>(
 ) -> Result<(), Error<'gc>> {
     // Note that the *getter* returns actual, and *setter* is preference
     this.set_bitmap_cached_preference(
-        activation.context.gc_context,
+        activation.context.gc(),
         value.as_bool(activation.swf_version()),
     );
     Ok(())
@@ -165,10 +165,10 @@ fn set_scale_9_grid<'gc>(
     avm1_stub!(activation, "Button", "scale9Grid");
     if let Value::Object(object) = value {
         if let Some(rectangle) = object_to_rectangle(activation, object)? {
-            this.set_scaling_grid(activation.context.gc_context, rectangle);
+            this.set_scaling_grid(activation.context.gc(), rectangle);
         }
     } else {
-        this.set_scaling_grid(activation.context.gc_context, Default::default());
+        this.set_scaling_grid(activation.context.gc(), Default::default());
     };
     Ok(())
 }

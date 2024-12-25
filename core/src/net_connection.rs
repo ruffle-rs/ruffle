@@ -543,10 +543,8 @@ impl FlashRemoting {
                             match connection.object {
                                 NetConnectionObject::Avm2(object) => {
                                     let mut activation = Avm2Activation::from_nothing(uc);
-                                    let url = AvmString::new_utf8(
-                                        activation.context.gc_context,
-                                        response.url,
-                                    );
+                                    let url =
+                                        AvmString::new_utf8(activation.context.gc(), response.url);
                                     let event = Avm2EventObject::net_status_event(
                                         &mut activation,
                                         "netStatus",

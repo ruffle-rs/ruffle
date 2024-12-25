@@ -267,7 +267,7 @@ pub fn get_font<'gc>(
 
     if let Some(text_format) = this.as_text_format() {
         return Ok(text_format.font.as_ref().map_or(Value::Null, |font| {
-            AvmString::new(activation.context.gc_context, font.as_wstr()).into()
+            AvmString::new(activation.context.gc(), font.as_wstr()).into()
         }));
     }
 
@@ -631,7 +631,7 @@ pub fn get_target<'gc>(
 
     if let Some(text_format) = this.as_text_format() {
         return Ok(text_format.target.as_ref().map_or(Value::Null, |target| {
-            AvmString::new(activation.context.gc_context, target.as_wstr()).into()
+            AvmString::new(activation.context.gc(), target.as_wstr()).into()
         }));
     }
 
@@ -700,7 +700,7 @@ pub fn get_url<'gc>(
 
     if let Some(text_format) = this.as_text_format() {
         return Ok(text_format.url.as_ref().map_or(Value::Null, |url| {
-            AvmString::new(activation.context.gc_context, url.as_wstr()).into()
+            AvmString::new(activation.context.gc(), url.as_wstr()).into()
         }));
     }
 

@@ -24,13 +24,12 @@ pub fn make_shader_parameter<'gc>(
                 .classes()
                 .shaderparameter
                 .construct(activation, &[])?;
-            let type_name =
-                AvmString::new_utf8(activation.context.gc_context, param_type.to_string());
+            let type_name = AvmString::new_utf8(activation.context.gc(), param_type.to_string());
 
             obj.set_slot(parameter_slots::_INDEX, index.into(), activation)?;
             obj.set_slot(parameter_slots::_TYPE, type_name.into(), activation)?;
             for meta in metadata {
-                let name = AvmString::new_utf8(activation.context.gc_context, &meta.key);
+                let name = AvmString::new_utf8(activation.context.gc(), &meta.key);
                 let value = meta.value.clone().as_avm2_value(activation, false)?;
                 obj.set_public_property(name, value, activation)?;
 
@@ -40,7 +39,7 @@ pub fn make_shader_parameter<'gc>(
             }
             obj.set_string_property_local(
                 "name",
-                AvmString::new_utf8(activation.context.gc_context, name).into(),
+                AvmString::new_utf8(activation.context.gc(), name).into(),
                 activation,
             )?;
             Ok(obj.into())
@@ -55,7 +54,7 @@ pub fn make_shader_parameter<'gc>(
             obj.set_slot(input_slots::_INDEX, index.into(), activation)?;
             obj.set_string_property_local(
                 "name",
-                AvmString::new_utf8(activation.context.gc_context, name).into(),
+                AvmString::new_utf8(activation.context.gc(), name).into(),
                 activation,
             )?;
             Ok(obj.into())

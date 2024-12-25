@@ -17,7 +17,7 @@ fn avm2_object_from_flv_variables<'gc>(
 
         info_object
             .set_string_property_local(
-                AvmString::new_utf8_bytes(activation.context.gc_context, property_name),
+                AvmString::new_utf8_bytes(activation.context.gc(), property_name),
                 value.data.to_avm2_value(activation),
                 activation,
             )
@@ -65,7 +65,7 @@ impl<'gc> FlvValueAvm2Ext<'gc> for FlvValue<'_> {
             }
             FlvValue::StrictArray(values) => avm2_array_from_flv_values(activation, values),
             FlvValue::String(string_data) | FlvValue::LongString(string_data) => {
-                AvmString::new_utf8_bytes(activation.context.gc_context, string_data).into()
+                AvmString::new_utf8_bytes(activation.context.gc(), string_data).into()
             }
             FlvValue::Date {
                 unix_time,

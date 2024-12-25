@@ -370,7 +370,7 @@ impl<'gc> LoadManager<'gc> {
                             player.lock().unwrap().mutate_with_update_context(|uc| {
                                 let clip = MovieClip::new_import_assets(uc, movie, importer_movie);
 
-                                clip.set_cur_preload_frame(uc.gc_context, 0);
+                                clip.set_cur_preload_frame(uc.gc(), 0);
                                 let mut execution_limit = ExecutionLimit::none();
 
                                 tracing::debug!("Preloading swf to run exports {:?}", url);
@@ -1336,8 +1336,8 @@ impl<'gc> Loader<'gc> {
                 };
 
                 for (k, v) in form_urlencoded::parse(utf8_body) {
-                    let k = AvmString::new_utf8(activation.context.gc_context, k);
-                    let v = AvmString::new_utf8(activation.context.gc_context, v);
+                    let k = AvmString::new_utf8(activation.context.gc(), k);
+                    let v = AvmString::new_utf8(activation.context.gc(), v);
                     that.set(k, v.into(), &mut activation)?;
                 }
 
@@ -1417,11 +1417,8 @@ impl<'gc> Loader<'gc> {
                         let value_data = if length == 0 {
                             Value::Undefined
                         } else {
-                            AvmString::new_utf8(
-                                activation.context.gc_context,
-                                UTF_8.decode(&body).0,
-                            )
-                            .into()
+                            AvmString::new_utf8(activation.context.gc(), UTF_8.decode(&body).0)
+                                .into()
                         };
                         let _ = that.call_method(
                             "onData".into(),
@@ -1498,10 +1495,8 @@ impl<'gc> Loader<'gc> {
                 match response {
                     Ok((body, _, _, _)) => {
                         // Fire the parse & onLoad methods with the loaded string.
-                        let css = AvmString::new_utf8(
-                            activation.context.gc_context,
-                            UTF_8.decode(&body).0,
-                        );
+                        let css =
+                            AvmString::new_utf8(activation.context.gc(), UTF_8.decode(&body).0);
                         let success = that
                             .call_method(
                                 "parse".into(),
@@ -2114,7 +2109,7 @@ impl<'gc> Loader<'gc> {
             // to their real values)
             loader_info.set_loader_stream(
                 LoaderStream::NotYetLoaded(fake_movie, Some(clip), false),
-                activation.context.gc_context,
+                activation.context.gc(),
             );
 
             // Flash always fires an initial 'progress' event with
@@ -2127,7 +2122,7 @@ impl<'gc> Loader<'gc> {
             // (`LoaderInfo.parameters` is always empty during the first 'progress' event)
             loader_info.set_loader_stream(
                 LoaderStream::NotYetLoaded(movie.clone(), Some(clip), false),
-                activation.context.gc_context,
+                activation.context.gc(),
             );
         }
 
@@ -2163,7 +2158,7 @@ impl<'gc> Loader<'gc> {
                         // When an AVM2 movie loads an AVM1 movie, we need to call `post_instantiation` here.
                         mc.post_instantiation(uc, None, Instantiator::Movie, false);
 
-                        mc.set_depth(uc.gc_context, LOADER_INSERTED_AVM1_DEPTH);
+                        mc.set_depth(uc.gc(), LOADER_INSERTED_AVM1_DEPTH);
                     }
 
                     if from_bytes {
@@ -2220,7 +2215,7 @@ impl<'gc> Loader<'gc> {
                     bitmap.as_colors().map(Color::from).collect(),
                 );
                 let bitmapdata_wrapper =
-                    BitmapDataWrapper::new(GcCell::new(activation.context.gc_context, bitmap_data));
+                    BitmapDataWrapper::new(GcCell::new(activation.context.gc(), bitmap_data));
                 let bitmapdata_class = activation.context.avm2.classes().bitmapdata;
                 let bitmapdata_avm2 = BitmapDataObject::from_bitmap_data_internal(
                     &mut activation,
@@ -2245,7 +2240,7 @@ impl<'gc> Loader<'gc> {
 
                     loader_info.set_loader_stream(
                         LoaderStream::NotYetLoaded(fake_movie, Some(bitmap_dobj), false),
-                        activation.context.gc_context,
+                        activation.context.gc(),
                     );
                 }
 
@@ -2259,7 +2254,7 @@ impl<'gc> Loader<'gc> {
 
                     loader_info.set_loader_stream(
                         LoaderStream::NotYetLoaded(fake_movie, Some(bitmap_dobj), false),
-                        activation.context.gc_context,
+                        activation.context.gc(),
                     );
                 }
 
@@ -2322,7 +2317,7 @@ impl<'gc> Loader<'gc> {
 
                         loader_info.set_loader_stream(
                             LoaderStream::NotYetLoaded(fake_movie, None, false),
-                            activation.context.gc_context,
+                            activation.context.gc(),
                         );
 
                         Loader::movie_loader_progress(handle, activation.context, length, length)?;
@@ -2334,7 +2329,7 @@ impl<'gc> Loader<'gc> {
                         Loader::movie_loader_error(
                             handle,
                             uc,
-                            AvmString::new_utf8(uc.gc_context, error),
+                            AvmString::new_utf8(uc.gc(), error),
                             status,
                             redirected,
                             url,
@@ -2450,7 +2445,7 @@ impl<'gc> Loader<'gc> {
             // frame yet.
             loader_info.set_loader_stream(
                 LoaderStream::NotYetLoaded(movie.clone().unwrap(), Some(dobj.unwrap()), false),
-                uc.gc_context,
+                uc.gc(),
             );
         }
 
@@ -2465,7 +2460,7 @@ impl<'gc> Loader<'gc> {
                 // and consequently are observed to have their currentFrame lag one
                 // frame behind objects placed by the timeline (even if they were
                 // both placed in the same frame to begin with).
-                dobj.base_mut(uc.gc_context).set_skip_next_enter_frame(true);
+                dobj.base_mut(uc.gc()).set_skip_next_enter_frame(true);
 
                 let flashvars = movie.clone().unwrap().parameters().to_owned();
                 if !flashvars.is_empty() {
@@ -2474,9 +2469,9 @@ impl<'gc> Loader<'gc> {
                     let object = dobj.object().coerce_to_object(&mut activation);
                     for (key, value) in flashvars.iter() {
                         object.define_value(
-                            activation.context.gc_context,
-                            AvmString::new_utf8(activation.context.gc_context, key),
-                            AvmString::new_utf8(activation.context.gc_context, value).into(),
+                            activation.context.gc(),
+                            AvmString::new_utf8(activation.context.gc(), key),
+                            AvmString::new_utf8(activation.context.gc(), value).into(),
                             Attribute::empty(),
                         );
                     }
@@ -2525,8 +2520,8 @@ impl<'gc> Loader<'gc> {
                 mc.replace_at_depth(uc, dobj, 1);
 
                 // This sets the MovieClip image state correctly.
-                mc.set_current_frame(uc.gc_context, 1);
-                mc.set_cur_preload_frame(uc.gc_context, 2);
+                mc.set_current_frame(uc.gc(), 1);
+                mc.set_cur_preload_frame(uc.gc(), 2);
             }
         }
 
@@ -2547,10 +2542,8 @@ impl<'gc> Loader<'gc> {
             // in `MovieClip.on_exit_frame`
             MovieLoaderVMData::Avm2 { loader_info, .. } => {
                 let current_movie = { loader_info.as_loader_stream().unwrap().movie().clone() };
-                loader_info.set_loader_stream(
-                    LoaderStream::Swf(current_movie, dobj.unwrap()),
-                    uc.gc_context,
-                );
+                loader_info
+                    .set_loader_stream(LoaderStream::Swf(current_movie, dobj.unwrap()), uc.gc());
 
                 if let Some(dobj) = dobj {
                     if dobj.as_movie_clip().is_none() {
@@ -2728,7 +2721,7 @@ impl<'gc> Loader<'gc> {
         let error_movie = SwfMovie::error_movie(swf_url);
         // This also sets total_frames correctly
         mc.replace_with_movie(uc, Some(Arc::new(error_movie)), true, None);
-        mc.set_cur_preload_frame(uc.gc_context, 0);
+        mc.set_cur_preload_frame(uc.gc(), 0);
     }
 
     /// Event handler morally equivalent to `onLoad` on a movie clip.

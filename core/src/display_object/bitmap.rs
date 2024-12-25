@@ -243,11 +243,11 @@ impl<'gc> Bitmap<'gc> {
         bitmap_data: BitmapDataWrapper<'gc>,
     ) {
         let weak_self = DisplayObjectWeak::Bitmap(self.downgrade());
-        let mut write = self.0.write(context.gc_context);
+        let mut write = self.0.write(context.gc());
 
         write
             .bitmap_data
-            .remove_display_object(context.gc_context, weak_self);
+            .remove_display_object(context.gc(), weak_self);
 
         // Refresh our cached values, even if we're writing the same BitmapData
         // that we currently have stored. This will update them to '0' if the
@@ -256,7 +256,7 @@ impl<'gc> Bitmap<'gc> {
         write.height = bitmap_data.height();
         write.bitmap_data = bitmap_data;
 
-        bitmap_data.add_display_object(context.gc_context, weak_self);
+        bitmap_data.add_display_object(context.gc(), weak_self);
     }
 
     pub fn avm2_bitmapdata_class(self) -> Option<Avm2ClassObject<'gc>> {
@@ -337,7 +337,7 @@ impl<'gc> TDisplayObject<'gc> for Bitmap<'gc> {
                     .avm2_bitmapdata_class()
                     .unwrap_or_else(|| activation.context.avm2.classes().bitmapdata);
 
-                let mc = activation.context.gc_context;
+                let mc = activation.context.gc();
 
                 let bitmap = Avm2StageObject::for_display_object_childless(
                     &mut activation,
@@ -365,9 +365,7 @@ impl<'gc> TDisplayObject<'gc> for Bitmap<'gc> {
 
             self.on_construction_complete(context);
         } else {
-            context
-                .avm1
-                .add_to_exec_list(context.gc_context, (*self).into());
+            context.avm1.add_to_exec_list(context.gc(), (*self).into());
 
             if run_frame {
                 self.run_frame_avm1(context);
@@ -396,7 +394,7 @@ impl<'gc> TDisplayObject<'gc> for Bitmap<'gc> {
     }
 
     fn set_object2(&self, context: &mut UpdateContext<'gc>, to: Avm2Object<'gc>) {
-        self.0.write(context.gc_context).avm2_object = Some(to);
+        self.0.write(context.gc()).avm2_object = Some(to);
     }
 
     fn as_bitmap(self) -> Option<Bitmap<'gc>> {

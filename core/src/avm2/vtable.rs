@@ -164,7 +164,7 @@ impl<'gc> VTable<'gc> {
         // Calling coerce modified `PropertyClass` to cache the class lookup,
         // so store the new value back in the vtable.
         if changed {
-            self.0.write(activation.context.gc_context).slot_classes[slot_id as usize] = slot_class;
+            self.0.write(activation.context.gc()).slot_classes[slot_id as usize] = slot_class;
         }
         Ok(value)
     }

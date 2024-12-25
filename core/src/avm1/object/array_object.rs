@@ -20,7 +20,7 @@ impl fmt::Debug for ArrayObject<'_> {
 impl<'gc> ArrayObject<'gc> {
     pub fn empty(activation: &Activation<'_, 'gc>) -> Self {
         Self::new(
-            activation.context.gc_context,
+            activation.context.gc(),
             activation.context.avm1.prototypes().array,
             [],
         )
@@ -103,7 +103,7 @@ impl<'gc> TObject<'gc> for ArrayObject<'gc> {
         activation: &mut Activation<'_, 'gc>,
         this: Object<'gc>,
     ) -> Result<Object<'gc>, Error<'gc>> {
-        Ok(Self::empty_with_proto(activation.context.gc_context, this).into())
+        Ok(Self::empty_with_proto(activation.context.gc(), this).into())
     }
 
     fn as_array_object(&self) -> Option<ArrayObject<'gc>> {

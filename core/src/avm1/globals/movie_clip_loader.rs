@@ -25,12 +25,12 @@ pub fn constructor<'gc>(
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     let listeners = ArrayObject::new(
-        activation.context.gc_context,
+        activation.context.gc(),
         activation.context.avm1.prototypes().array,
         [this.into()],
     );
     this.define_value(
-        activation.context.gc_context,
+        activation.context.gc(),
         "_listeners",
         Value::Object(listeners.into()),
         Attribute::DONT_ENUM,
@@ -141,16 +141,16 @@ fn get_progress<'gc>(
             Value::MovieClip(_) => target.coerce_to_object(activation).as_display_object(),
             _ => return Ok(Value::Undefined),
         };
-        let result = ScriptObject::new(activation.context.gc_context, None);
+        let result = ScriptObject::new(activation.context.gc(), None);
         if let Some(target) = target {
             result.define_value(
-                activation.context.gc_context,
+                activation.context.gc(),
                 "bytesLoaded",
                 target.movie().compressed_len().into(),
                 Attribute::empty(),
             );
             result.define_value(
-                activation.context.gc_context,
+                activation.context.gc(),
                 "bytesTotal",
                 target.movie().compressed_len().into(),
                 Attribute::empty(),
@@ -169,8 +169,8 @@ pub fn create_proto<'gc>(
     array_proto: Object<'gc>,
     broadcaster_functions: BroadcasterFunctions<'gc>,
 ) -> Object<'gc> {
-    let mcl_proto = ScriptObject::new(context.gc_context, Some(proto));
-    broadcaster_functions.initialize(context.gc_context, mcl_proto.into(), array_proto);
+    let mcl_proto = ScriptObject::new(context.gc(), Some(proto));
+    broadcaster_functions.initialize(context.gc(), mcl_proto.into(), array_proto);
     define_properties_on(PROTO_DECLS, context, mcl_proto, fn_proto);
     mcl_proto.into()
 }

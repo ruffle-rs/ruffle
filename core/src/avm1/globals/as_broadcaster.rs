@@ -22,7 +22,7 @@ pub fn create<'gc>(
     proto: Object<'gc>,
     fn_proto: Object<'gc>,
 ) -> (BroadcasterFunctions<'gc>, Object<'gc>) {
-    let gc_context = context.gc_context;
+    let gc_context = context.gc();
     let as_broadcaster_proto = ScriptObject::new(gc_context, Some(proto));
     let as_broadcaster = FunctionObject::constructor(
         gc_context,
@@ -187,7 +187,7 @@ fn initialize<'gc>(
     if let Some(val) = args.get(0) {
         let broadcaster = val.coerce_to_object(activation);
         initialize_internal(
-            activation.context.gc_context,
+            activation.context.gc(),
             broadcaster,
             activation.context.avm1.broadcaster_functions(),
             activation.context.avm1.prototypes().array,

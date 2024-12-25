@@ -44,11 +44,11 @@ impl<'gc> Text<'gc> {
         tag: &swf::Text,
     ) -> Self {
         Text(GcCell::new(
-            context.gc_context,
+            context.gc(),
             TextData {
                 base: Default::default(),
                 static_data: gc_arena::Gc::new(
-                    context.gc_context,
+                    context.gc(),
                     TextStatic {
                         swf,
                         id: tag.id,
@@ -127,11 +127,11 @@ impl<'gc> TDisplayObject<'gc> for Text<'gc> {
             .library_for_movie_mut(self.movie())
             .get_text(id)
         {
-            self.0.write(context.gc_context).static_data = new_text.0.read().static_data;
+            self.0.write(context.gc()).static_data = new_text.0.read().static_data;
         } else {
             tracing::warn!("PlaceObject: expected text at character ID {}", id);
         }
-        self.invalidate_cached_bitmap(context.gc_context);
+        self.invalidate_cached_bitmap(context.gc());
     }
 
     fn run_frame_avm1(&self, _context: &mut UpdateContext) {
@@ -285,7 +285,7 @@ impl<'gc> TDisplayObject<'gc> for Text<'gc> {
                 statictext,
             ) {
                 Ok(object) => {
-                    self.0.write(activation.context.gc_context).avm2_object = Some(object.into())
+                    self.0.write(activation.context.gc()).avm2_object = Some(object.into())
                 }
                 Err(e) => tracing::error!("Got error when creating AVM2 side of Text: {}", e),
             }
@@ -303,7 +303,7 @@ impl<'gc> TDisplayObject<'gc> for Text<'gc> {
     }
 
     fn set_object2(&self, context: &mut UpdateContext<'gc>, to: Avm2Object<'gc>) {
-        self.0.write(context.gc_context).avm2_object = Some(to);
+        self.0.write(context.gc()).avm2_object = Some(to);
     }
 }
 

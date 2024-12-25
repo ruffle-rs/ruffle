@@ -125,7 +125,7 @@ pub fn connect<'gc>(
                     if url.scheme() == "file" {
                         "localhost".into()
                     } else if let Some(domain) = url.domain() {
-                        AvmString::new_utf8(activation.context.gc_context, domain).into()
+                        AvmString::new_utf8(activation.context.gc(), domain).into()
                     } else {
                         // no domain?
                         "localhost".into()
@@ -251,7 +251,7 @@ pub fn create_proto<'gc>(
     proto: Object<'gc>,
     fn_proto: Object<'gc>,
 ) -> Object<'gc> {
-    let xml_socket_proto = ScriptObject::new(context.gc_context, Some(proto));
+    let xml_socket_proto = ScriptObject::new(context.gc(), Some(proto));
     define_properties_on(PROTO_DECLS, context, xml_socket_proto, fn_proto);
     xml_socket_proto.into()
 }
@@ -262,7 +262,7 @@ pub fn create_class<'gc>(
     fn_proto: Object<'gc>,
 ) -> Object<'gc> {
     FunctionObject::constructor(
-        context.gc_context,
+        context.gc(),
         Executable::Native(constructor),
         constructor_to_fn!(constructor),
         fn_proto,

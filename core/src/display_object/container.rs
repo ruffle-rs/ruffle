@@ -194,12 +194,12 @@ pub trait TDisplayObjectContainer<'gc>:
         depth: Depth,
     ) -> Option<DisplayObject<'gc>> {
         let removed_child = self
-            .raw_container_mut(context.gc_context)
+            .raw_container_mut(context.gc())
             .replace_at_depth(child, depth);
 
         child.set_parent(context, Some(self.into()));
-        child.set_place_frame(context.gc_context, 0);
-        child.set_depth(context.gc_context, depth);
+        child.set_place_frame(context.gc(), 0);
+        child.set_depth(context.gc(), depth);
 
         if let Some(removed_child) = removed_child {
             if !self.raw_container().movie().is_action_script_3() {
@@ -209,7 +209,7 @@ pub trait TDisplayObjectContainer<'gc>:
         }
 
         let this: DisplayObject<'_> = self.into();
-        this.invalidate_cached_bitmap(context.gc_context);
+        this.invalidate_cached_bitmap(context.gc());
 
         removed_child
     }
@@ -233,10 +233,10 @@ pub trait TDisplayObjectContainer<'gc>:
         // are allowed to be used in ways that would trip this assert).
         debug_assert!(DisplayObject::ptr_eq(child.parent().unwrap(), this));
 
-        self.raw_container_mut(context.gc_context)
+        self.raw_container_mut(context.gc())
             .swap_at_depth(context, this, child, depth);
 
-        this.invalidate_cached_bitmap(context.gc_context);
+        this.invalidate_cached_bitmap(context.gc());
     }
 
     /// Insert a child display object into the container at a specific position
@@ -268,30 +268,30 @@ pub trait TDisplayObjectContainer<'gc>:
 
         let child_was_on_stage = child.is_on_stage(context);
 
-        child.set_place_frame(context.gc_context, 0);
+        child.set_place_frame(context.gc(), 0);
         child.set_parent(context, Some(this));
         if !self.raw_container().movie().is_action_script_3() {
-            child.set_avm1_removed(context.gc_context, false);
+            child.set_avm1_removed(context.gc(), false);
         }
 
-        self.raw_container_mut(context.gc_context)
+        self.raw_container_mut(context.gc())
             .insert_at_id(child, index);
 
         if parent_changed {
             dispatch_added_event(this, child, child_was_on_stage, context);
         }
 
-        this.invalidate_cached_bitmap(context.gc_context);
+        this.invalidate_cached_bitmap(context.gc());
     }
 
     /// Swap two children in the render list.
     ///
     /// No changes to the depth or render lists are made by this function.
     fn swap_at_index(&mut self, context: &mut UpdateContext<'gc>, index1: usize, index2: usize) {
-        self.raw_container_mut(context.gc_context)
+        self.raw_container_mut(context.gc())
             .swap_at_id(index1, index2);
         let this: DisplayObject<'_> = (*self).into();
-        this.invalidate_cached_bitmap(context.gc_context);
+        this.invalidate_cached_bitmap(context.gc());
     }
 
     /// Remove (and unloads) a child display object from this container's render and depth lists.
@@ -319,7 +319,7 @@ pub trait TDisplayObjectContainer<'gc>:
             };
 
             if should_delay_removal {
-                let mut raw_container = self.raw_container_mut(context.gc_context);
+                let mut raw_container = self.raw_container_mut(context.gc());
 
                 // Remove the child from the depth list, before moving it to a negative depth
                 raw_container.remove_child_from_depth_list(child);
@@ -334,7 +334,7 @@ pub trait TDisplayObjectContainer<'gc>:
                 raw_container.insert_child_into_depth_list(child.depth(), child);
 
                 drop(raw_container);
-                this.invalidate_cached_bitmap(context.gc_context);
+                this.invalidate_cached_bitmap(context.gc());
 
                 return;
             }
@@ -347,7 +347,7 @@ pub trait TDisplayObjectContainer<'gc>:
     fn remove_child_directly(&self, context: &mut UpdateContext<'gc>, child: DisplayObject<'gc>) {
         dispatch_removed_event(child, context);
         let this: DisplayObjectContainer<'gc> = (*self).into();
-        let mut write = self.raw_container_mut(context.gc_context);
+        let mut write = self.raw_container_mut(context.gc());
         write.remove_child_from_depth_list(child);
         drop(write);
 
@@ -365,7 +365,7 @@ pub trait TDisplayObjectContainer<'gc>:
             }
 
             let this: DisplayObject<'_> = (*self).into();
-            this.invalidate_cached_bitmap(context.gc_context);
+            this.invalidate_cached_bitmap(context.gc());
         }
     }
 
@@ -378,12 +378,12 @@ pub trait TDisplayObjectContainer<'gc>:
     ) {
         let this: DisplayObject<'_> = (*self).into();
 
-        child.set_depth(context.gc_context, depth);
+        child.set_depth(context.gc(), depth);
         child.set_parent(context, Some(this));
-        self.raw_container_mut(context.gc_context)
+        self.raw_container_mut(context.gc())
             .insert_child_into_depth_list(depth, child);
 
-        this.invalidate_cached_bitmap(context.gc_context);
+        this.invalidate_cached_bitmap(context.gc());
     }
 
     /// Removes (without unloading) a child display object from this container's depth list.
@@ -397,11 +397,11 @@ pub trait TDisplayObjectContainer<'gc>:
             (*self).into()
         ));
 
-        self.raw_container_mut(context.gc_context)
+        self.raw_container_mut(context.gc())
             .remove_child_from_depth_list(child);
 
         let this: DisplayObject<'_> = (*self).into();
-        this.invalidate_cached_bitmap(context.gc_context);
+        this.invalidate_cached_bitmap(context.gc());
     }
 
     /// Remove a set of children identified by their render list indices from
@@ -422,12 +422,12 @@ pub trait TDisplayObjectContainer<'gc>:
             dispatch_removed_event(*removed, context);
         }
 
-        let mut write = self.raw_container_mut(context.gc_context);
+        let mut write = self.raw_container_mut(context.gc());
 
         for removed in removed_list {
             // The `remove_range` method is only ever called as a result of an ActionScript
             // call
-            removed.set_placed_by_script(context.gc_context, true);
+            removed.set_placed_by_script(context.gc(), true);
             write.remove_child_from_depth_list(removed);
             drop(write);
 
@@ -440,12 +440,12 @@ pub trait TDisplayObjectContainer<'gc>:
                 removed.set_parent(context, None);
             }
 
-            write = self.raw_container_mut(context.gc_context);
+            write = self.raw_container_mut(context.gc());
         }
 
         drop(write);
         let this: DisplayObject<'_> = (*self).into();
-        this.invalidate_cached_bitmap(context.gc_context);
+        this.invalidate_cached_bitmap(context.gc());
     }
 
     /// Determine if the container is empty.
@@ -701,7 +701,7 @@ impl<'gc> ChildContainer<'gc> {
         child: DisplayObject<'gc>,
         context: &mut UpdateContext<'gc>,
     ) -> bool {
-        let mut this = container.raw_container_mut(context.gc_context);
+        let mut this = container.raw_container_mut(context.gc());
 
         let render_list_position = this
             .render_list
@@ -983,14 +983,14 @@ impl<'gc> ChildContainer<'gc> {
         depth: Depth,
     ) {
         let prev_depth = child.depth();
-        child.set_depth(context.gc_context, depth);
+        child.set_depth(context.gc(), depth);
         child.set_parent(context, Some(parent));
 
         if let Some(prev_child) = self.depth_list.insert(depth, child) {
-            child.set_clip_depth(context.gc_context, 0);
-            prev_child.set_depth(context.gc_context, prev_depth);
-            prev_child.set_clip_depth(context.gc_context, 0);
-            prev_child.set_transformed_by_script(context.gc_context, true);
+            child.set_clip_depth(context.gc(), 0);
+            prev_child.set_depth(context.gc(), prev_depth);
+            prev_child.set_clip_depth(context.gc(), 0);
+            prev_child.set_transformed_by_script(context.gc(), true);
             self.depth_list.insert(prev_depth, prev_child);
 
             let prev_position = self
@@ -1088,8 +1088,8 @@ impl<'gc> ChildContainer<'gc> {
 
         let cur_depth = child.depth();
         // Note that the depth returned by AS will be offset by the `AVM_DEPTH_BIAS`, so this is really `-(cur_depth+1+AVM_DEPTH_BIAS)`
-        child.set_depth(context.gc_context, -cur_depth - 1);
-        child.set_avm1_pending_removal(context.gc_context, true);
+        child.set_depth(context.gc(), -cur_depth - 1);
+        child.set_avm1_pending_removal(context.gc(), true);
 
         if let Some(mc) = child.as_movie_clip() {
             // Clip events should still fire

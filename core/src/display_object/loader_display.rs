@@ -43,7 +43,7 @@ pub struct LoaderDisplayData<'gc> {
 impl<'gc> LoaderDisplay<'gc> {
     pub fn empty(activation: &mut Activation<'_, 'gc>, movie: Arc<SwfMovie>) -> Self {
         let obj = LoaderDisplay(GcCell::new(
-            activation.context.gc_context,
+            activation.context.gc(),
             LoaderDisplayData {
                 base: Default::default(),
                 container: ChildContainer::new(movie.clone()),
@@ -52,7 +52,7 @@ impl<'gc> LoaderDisplay<'gc> {
             },
         ));
 
-        obj.set_placed_by_script(activation.context.gc_context, true);
+        obj.set_placed_by_script(activation.context.gc(), true);
         activation.context.avm2.add_orphan_obj(obj.into());
         obj
     }
@@ -100,7 +100,7 @@ impl<'gc> TDisplayObject<'gc> for LoaderDisplay<'gc> {
     }
 
     fn set_object2(&self, context: &mut UpdateContext<'gc>, to: Avm2Object<'gc>) {
-        self.0.write(context.gc_context).avm2_object = Some(to);
+        self.0.write(context.gc()).avm2_object = Some(to);
     }
 
     fn as_container(self) -> Option<DisplayObjectContainer<'gc>> {
@@ -116,14 +116,11 @@ impl<'gc> TDisplayObject<'gc> for LoaderDisplay<'gc> {
         for child in self.iter_render_list() {
             // See MovieClip::enter_frame for an explanation of this.
             if skip_frame {
-                child
-                    .base_mut(context.gc_context)
-                    .set_skip_next_enter_frame(true);
+                child.base_mut(context.gc()).set_skip_next_enter_frame(true);
             }
             child.enter_frame(context);
         }
-        self.base_mut(context.gc_context)
-            .set_skip_next_enter_frame(false);
+        self.base_mut(context.gc()).set_skip_next_enter_frame(false);
     }
 
     fn construct_frame(&self, context: &mut UpdateContext<'gc>) {

@@ -121,7 +121,7 @@ pub fn creator<'gc>(
             .creator
             .as_ref()
             .map_or(Value::Undefined, |x| {
-                AvmString::new_utf8(activation.context.gc_context, x).into()
+                AvmString::new_utf8(activation.context.gc(), x).into()
             }));
     }
 
@@ -156,7 +156,7 @@ pub fn name<'gc>(
             .name
             .as_ref()
             .map_or(Value::Undefined, |x| {
-                AvmString::new_utf8(activation.context.gc_context, x).into()
+                AvmString::new_utf8(activation.context.gc(), x).into()
             }));
     }
 
@@ -170,7 +170,7 @@ pub fn post_data<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let NativeObject::FileReference(file_ref) = this.native() {
         return Ok(AvmString::new_utf8(
-            activation.context.gc_context,
+            activation.context.gc(),
             file_ref.0.read().post_data.clone(),
         )
         .into());
@@ -190,7 +190,7 @@ pub fn set_post_data<'gc>(
         .coerce_to_string(activation)?;
 
     if let NativeObject::FileReference(file_ref) = this.native() {
-        file_ref.0.write(activation.context.gc_context).post_data = post_data.to_string();
+        file_ref.0.write(activation.context.gc()).post_data = post_data.to_string();
     }
 
     Ok(Value::Undefined)
@@ -224,7 +224,7 @@ pub fn file_type<'gc>(
             .file_type
             .as_ref()
             .map_or(Value::Undefined, |x| {
-                AvmString::new_utf8(activation.context.gc_context, x).into()
+                AvmString::new_utf8(activation.context.gc(), x).into()
             }));
     }
 
@@ -426,9 +426,9 @@ fn constructor<'gc>(
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     this.set_native(
-        activation.context.gc_context,
+        activation.context.gc(),
         NativeObject::FileReference(FileReferenceObject(GcCell::new(
-            activation.context.gc_context,
+            activation.context.gc(),
             Default::default(),
         ))),
     );
@@ -442,11 +442,11 @@ pub fn create_constructor<'gc>(
     array_proto: Object<'gc>,
     broadcaster_functions: BroadcasterFunctions<'gc>,
 ) -> Object<'gc> {
-    let file_reference_proto = ScriptObject::new(context.gc_context, Some(proto));
+    let file_reference_proto = ScriptObject::new(context.gc(), Some(proto));
     define_properties_on(PROTO_DECLS, context, file_reference_proto, fn_proto);
-    broadcaster_functions.initialize(context.gc_context, file_reference_proto.into(), array_proto);
+    broadcaster_functions.initialize(context.gc(), file_reference_proto.into(), array_proto);
     let constructor = FunctionObject::constructor(
-        context.gc_context,
+        context.gc(),
         Executable::Native(constructor),
         constructor_to_fn!(constructor),
         fn_proto,

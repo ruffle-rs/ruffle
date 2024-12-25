@@ -306,7 +306,7 @@ impl Definition {
             let name = match key {
                 DynamicKey::String(name) => *name,
                 DynamicKey::Uint(key) => {
-                    AvmString::new_utf8(activation.context.gc_context, key.to_string())
+                    AvmString::new_utf8(activation.context.gc(), key.to_string())
                 }
                 DynamicKey::Object(object) => {
                     Value::Object(*object).coerce_to_string(activation).unwrap()
@@ -492,7 +492,7 @@ pub fn capture_specification(context: &mut UpdateContext, output: &Path) {
                 let class_name = class
                     .inner_class_definition()
                     .name()
-                    .to_qualified_name_err_message(activation.context.gc_context)
+                    .to_qualified_name_err_message(activation.context.gc())
                     .to_string();
                 let class_stubs = ClassStubs::for_class(&class_name, &stubs);
                 definitions.insert(

@@ -283,7 +283,7 @@ fn get_transform<'gc>(
             .unwrap_or_else(|| activation.context.global_sound_transform().clone());
 
         let obj = ScriptObject::new(
-            activation.context.gc_context,
+            activation.context.gc(),
             Some(activation.context.avm1.prototypes().object),
         );
         // Surprisingly `lr` means "right-to-left" and `rl` means "left-to-right".

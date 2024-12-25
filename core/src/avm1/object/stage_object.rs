@@ -88,12 +88,7 @@ impl<'gc> StageObject<'gc> {
     /// Clears all text field bindings from this stage object, and places the textfields on the unbound list.
     /// This is called when the object is removed from the stage.
     pub fn unregister_text_field_bindings(self, context: &mut UpdateContext<'gc>) {
-        for binding in self
-            .0
-            .write(context.gc_context)
-            .text_field_bindings
-            .drain(..)
-        {
+        for binding in self.0.write(context.gc()).text_field_bindings.drain(..) {
             binding.text_field.clear_bound_stage_object(context);
             context.unbound_text_fields.push(binding.text_field);
         }
@@ -496,7 +491,7 @@ fn set_x<'gc>(
     val: Value<'gc>,
 ) -> Result<(), Error<'gc>> {
     if let Some(x) = property_coerce_to_number(activation, val)? {
-        this.set_x(activation.context.gc_context, Twips::from_pixels(x));
+        this.set_x(activation.context.gc(), Twips::from_pixels(x));
     }
     Ok(())
 }
@@ -511,13 +506,13 @@ fn set_y<'gc>(
     val: Value<'gc>,
 ) -> Result<(), Error<'gc>> {
     if let Some(y) = property_coerce_to_number(activation, val)? {
-        this.set_y(activation.context.gc_context, Twips::from_pixels(y));
+        this.set_y(activation.context.gc(), Twips::from_pixels(y));
     }
     Ok(())
 }
 
 fn x_scale<'gc>(activation: &mut Activation<'_, 'gc>, this: DisplayObject<'gc>) -> Value<'gc> {
-    this.scale_x(activation.context.gc_context).percent().into()
+    this.scale_x(activation.context.gc()).percent().into()
 }
 
 fn set_x_scale<'gc>(
@@ -526,13 +521,13 @@ fn set_x_scale<'gc>(
     val: Value<'gc>,
 ) -> Result<(), Error<'gc>> {
     if let Some(val) = property_coerce_to_number(activation, val)? {
-        this.set_scale_x(activation.context.gc_context, Percent::from(val));
+        this.set_scale_x(activation.context.gc(), Percent::from(val));
     }
     Ok(())
 }
 
 fn y_scale<'gc>(activation: &mut Activation<'_, 'gc>, this: DisplayObject<'gc>) -> Value<'gc> {
-    this.scale_y(activation.context.gc_context).percent().into()
+    this.scale_y(activation.context.gc()).percent().into()
 }
 
 fn set_y_scale<'gc>(
@@ -541,7 +536,7 @@ fn set_y_scale<'gc>(
     val: Value<'gc>,
 ) -> Result<(), Error<'gc>> {
     if let Some(val) = property_coerce_to_number(activation, val)? {
-        this.set_scale_y(activation.context.gc_context, Percent::from(val));
+        this.set_scale_y(activation.context.gc(), Percent::from(val));
     }
     Ok(())
 }
@@ -574,7 +569,7 @@ fn set_alpha<'gc>(
     val: Value<'gc>,
 ) -> Result<(), Error<'gc>> {
     if let Some(val) = property_coerce_to_number(activation, val)? {
-        this.set_alpha(activation.context.gc_context, val / 100.0);
+        this.set_alpha(activation.context.gc(), val / 100.0);
     }
     Ok(())
 }
@@ -627,7 +622,7 @@ fn set_height<'gc>(
 }
 
 fn rotation<'gc>(activation: &mut Activation<'_, 'gc>, this: DisplayObject<'gc>) -> Value<'gc> {
-    let degrees: f64 = this.rotation(activation.context.gc_context).into();
+    let degrees: f64 = this.rotation(activation.context.gc()).into();
     degrees.into()
 }
 
@@ -644,13 +639,13 @@ fn set_rotation<'gc>(
         } else if degrees > 180.0 {
             degrees -= 360.0
         }
-        this.set_rotation(activation.context.gc_context, degrees.into());
+        this.set_rotation(activation.context.gc(), degrees.into());
     }
     Ok(())
 }
 
 fn target<'gc>(activation: &mut Activation<'_, 'gc>, this: DisplayObject<'gc>) -> Value<'gc> {
-    AvmString::new(activation.context.gc_context, this.slash_path()).into()
+    AvmString::new(activation.context.gc(), this.slash_path()).into()
 }
 
 fn frames_loaded<'gc>(
@@ -672,7 +667,7 @@ fn set_name<'gc>(
     val: Value<'gc>,
 ) -> Result<(), Error<'gc>> {
     let name = val.coerce_to_string(activation)?;
-    this.set_name(activation.context.gc_context, name);
+    this.set_name(activation.context.gc(), name);
     Ok(())
 }
 

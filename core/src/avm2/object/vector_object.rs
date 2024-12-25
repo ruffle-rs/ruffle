@@ -25,7 +25,7 @@ pub fn vector_allocator<'gc>(
         .ok_or("Cannot convert to unparametrized Vector")?;
 
     Ok(VectorObject(Gc::new(
-        activation.context.gc_context,
+        activation.context.gc(),
         VectorObjectData {
             base,
             vector: RefLock::new(VectorStorage::new(0, false, param_type, activation)),
@@ -78,7 +78,7 @@ impl<'gc> VectorObject<'gc> {
         let applied_class = vector_class.parametrize(activation, value_type)?;
 
         let object: Object<'gc> = VectorObject(Gc::new(
-            activation.context.gc_context,
+            activation.context.gc(),
             VectorObjectData {
                 base: ScriptObjectData::new(applied_class),
                 vector: RefLock::new(vector),
@@ -129,7 +129,7 @@ impl<'gc> TObject<'gc> for VectorObject<'gc> {
         value: Value<'gc>,
         activation: &mut Activation<'_, 'gc>,
     ) -> Result<(), Error<'gc>> {
-        let mc = activation.context.gc_context;
+        let mc = activation.context.gc();
 
         if name.contains_public_namespace() {
             if let Some(name) = name.local_name() {
@@ -159,7 +159,7 @@ impl<'gc> TObject<'gc> for VectorObject<'gc> {
         value: Value<'gc>,
         activation: &mut Activation<'_, 'gc>,
     ) -> Result<(), Error<'gc>> {
-        let mc = activation.context.gc_context;
+        let mc = activation.context.gc();
 
         if name.contains_public_namespace() {
             if let Some(name) = name.local_name() {
@@ -188,7 +188,7 @@ impl<'gc> TObject<'gc> for VectorObject<'gc> {
         activation: &mut Activation<'_, 'gc>,
         name: &Multiname<'gc>,
     ) -> Result<bool, Error<'gc>> {
-        let mc = activation.context.gc_context;
+        let mc = activation.context.gc();
 
         if name.contains_public_namespace()
             && name.local_name().is_some()

@@ -373,7 +373,7 @@ pub fn get_url<'gc>(
             let root = match &*loader_stream {
                 LoaderStream::NotYetLoaded(root, _, _) | LoaderStream::Swf(root, _) => root,
             };
-            return Ok(AvmString::new_utf8(activation.context.gc_context, root.url()).into());
+            return Ok(AvmString::new_utf8(activation.context.gc(), root.url()).into());
         }
     }
 
@@ -519,7 +519,7 @@ pub fn get_loader_url<'gc>(
         };
 
         let loader_url = root.loader_url().unwrap_or_else(|| root.url());
-        return Ok(AvmString::new_utf8(activation.context.gc_context, loader_url).into());
+        return Ok(AvmString::new_utf8(activation.context.gc(), loader_url).into());
     }
 
     Ok(Value::Undefined)
@@ -546,8 +546,8 @@ pub fn get_parameters<'gc>(
         let parameters = root.parameters();
 
         for (k, v) in parameters.iter() {
-            let avm_k = AvmString::new_utf8(activation.context.gc_context, k);
-            let avm_v = AvmString::new_utf8(activation.context.gc_context, v);
+            let avm_k = AvmString::new_utf8(activation.context.gc(), k);
+            let avm_v = AvmString::new_utf8(activation.context.gc(), v);
             params_obj.set_string_property_local(avm_k, avm_v.into(), activation)?;
         }
 

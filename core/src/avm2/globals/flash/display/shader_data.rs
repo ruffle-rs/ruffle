@@ -24,7 +24,7 @@ pub fn init<'gc>(
     let shader = parse_shader(bytecode.bytes()).expect("Failed to parse PixelBender");
 
     for meta in &shader.metadata {
-        let name = AvmString::new_utf8(activation.context.gc_context, &meta.key);
+        let name = AvmString::new_utf8(activation.context.gc(), &meta.key);
         // Top-level metadata appears to turn `TInt` into a plain integer value,
         // rather than a single-element array.
         let value = meta.value.as_avm2_value(activation, true)?;
@@ -32,7 +32,7 @@ pub fn init<'gc>(
     }
     this.set_string_property_local(
         "name",
-        AvmString::new_utf8(activation.context.gc_context, &shader.name).into(),
+        AvmString::new_utf8(activation.context.gc(), &shader.name).into(),
         activation,
     )?;
 
@@ -60,7 +60,7 @@ pub fn init<'gc>(
             }
         };
 
-        let name = AvmString::new_utf8(activation.context.gc_context, name);
+        let name = AvmString::new_utf8(activation.context.gc(), name);
         let param_obj = make_shader_parameter(activation, param, index)?;
         this.set_string_property_local(name, param_obj, activation)?;
     }

@@ -51,10 +51,7 @@ pub struct ColorMatrixFilter<'gc>(GcCell<'gc, ColorMatrixFilterData>);
 
 impl<'gc> ColorMatrixFilter<'gc> {
     fn new(activation: &mut Activation<'_, 'gc>, args: &[Value<'gc>]) -> Result<Self, Error<'gc>> {
-        let color_matrix_filter = Self(GcCell::new(
-            activation.context.gc_context,
-            Default::default(),
-        ));
+        let color_matrix_filter = Self(GcCell::new(activation.context.gc(), Default::default()));
         color_matrix_filter.set_matrix(activation, args.get(0))?;
         Ok(color_matrix_filter)
     }
@@ -69,7 +66,7 @@ impl<'gc> ColorMatrixFilter<'gc> {
 
     fn matrix(&self, activation: &mut Activation<'_, 'gc>) -> Value<'gc> {
         ArrayObject::new(
-            activation.context.gc_context,
+            activation.context.gc(),
             activation.context.avm1.prototypes().array,
             self.0.read().matrix.iter().map(|&v| v.into()),
         )
@@ -104,7 +101,7 @@ impl<'gc> ColorMatrixFilter<'gc> {
             _ => (),
         }
 
-        self.0.write(activation.context.gc_context).matrix = matrix;
+        self.0.write(activation.context.gc()).matrix = matrix;
         Ok(())
     }
 
@@ -136,7 +133,7 @@ fn method<'gc>(
     if index == CONSTRUCTOR {
         let color_matrix_filter = ColorMatrixFilter::new(activation, args)?;
         this.set_native(
-            activation.context.gc_context,
+            activation.context.gc(),
             NativeObject::ColorMatrixFilter(color_matrix_filter),
         );
         return Ok(this.into());
@@ -162,7 +159,7 @@ pub fn create_proto<'gc>(
     proto: Object<'gc>,
     fn_proto: Object<'gc>,
 ) -> Object<'gc> {
-    let color_matrix_filter_proto = ScriptObject::new(context.gc_context, Some(proto));
+    let color_matrix_filter_proto = ScriptObject::new(context.gc(), Some(proto));
     define_properties_on(PROTO_DECLS, context, color_matrix_filter_proto, fn_proto);
     color_matrix_filter_proto.into()
 }
@@ -173,7 +170,7 @@ pub fn create_constructor<'gc>(
     fn_proto: Object<'gc>,
 ) -> Object<'gc> {
     FunctionObject::constructor(
-        context.gc_context,
+        context.gc(),
         Executable::Native(color_matrix_filter_method!(0)),
         constructor_to_fn!(color_matrix_filter_method!(0)),
         fn_proto,

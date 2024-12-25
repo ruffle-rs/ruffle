@@ -89,7 +89,7 @@ pub fn set_selection<'gc>(
             .unwrap_or(i32::MAX)
             .max(0);
         let selection = TextSelection::for_range(start as usize, end as usize);
-        edit_box.set_selection(Some(selection), activation.context.gc_context);
+        edit_box.set_selection(Some(selection), activation.context.gc());
     }
     Ok(Value::Undefined)
 }
@@ -144,13 +144,13 @@ pub fn create_selection_object<'gc>(
     broadcaster_functions: BroadcasterFunctions<'gc>,
     array_proto: Object<'gc>,
 ) -> Object<'gc> {
-    let object = ScriptObject::new(context.gc_context, Some(proto));
-    broadcaster_functions.initialize(context.gc_context, object.into(), array_proto);
+    let object = ScriptObject::new(context.gc(), Some(proto));
+    broadcaster_functions.initialize(context.gc(), object.into(), array_proto);
     define_properties_on(OBJECT_DECLS, context, object, fn_proto);
     object.into()
 }
 
 pub fn create_proto<'gc>(context: &mut StringContext<'gc>, proto: Object<'gc>) -> Object<'gc> {
     // It's a custom prototype but it's empty.
-    ScriptObject::new(context.gc_context, Some(proto)).into()
+    ScriptObject::new(context.gc(), Some(proto)).into()
 }

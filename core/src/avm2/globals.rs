@@ -422,7 +422,7 @@ fn dynamic_class<'gc>(
         .init_property(&name.into(), class_object.into(), activation)
         .expect("Should set property");
 
-    domain.export_definition(name, script, activation.context.gc_context)
+    domain.export_definition(name, script, activation.context.gc())
 }
 
 /// Add a class builtin to the global scope.
@@ -434,7 +434,7 @@ fn class<'gc>(
     script: Script<'gc>,
     activation: &mut Activation<'_, 'gc>,
 ) -> Result<ClassObject<'gc>, Error<'gc>> {
-    let mc = activation.context.gc_context;
+    let mc = activation.context.gc();
     let (_, global, mut domain) = script.init();
 
     let super_class = if let Some(super_class) = class_def.super_class() {
@@ -467,7 +467,7 @@ fn vector_class<'gc>(
     script: Script<'gc>,
     activation: &mut Activation<'_, 'gc>,
 ) -> Result<ClassObject<'gc>, Error<'gc>> {
-    let mc = activation.context.gc_context;
+    let mc = activation.context.gc();
     let namespaces = activation.avm2().namespaces;
     let (_, global, mut domain) = script.init();
 
@@ -512,7 +512,7 @@ pub fn load_player_globals<'gc>(
     activation: &mut Activation<'_, 'gc>,
     domain: Domain<'gc>,
 ) -> Result<(), Error<'gc>> {
-    let mc = activation.context.gc_context;
+    let mc = activation.context.gc();
 
     // Set the outer scope of this activation to the global scope.
 

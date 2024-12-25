@@ -127,7 +127,7 @@ impl<'gc> TranslationUnit<'gc> {
             // and how it's exported again when it is encountered in a trait (see `Script::load_traits`).
             // We currently don't handle them and just export it in the domain in both cases.
             self.domain()
-                .export_class(class.name(), class, activation.context.gc_context);
+                .export_class(class.name(), class, activation.context.gc());
         }
 
         Ok(())
@@ -200,14 +200,14 @@ impl<'gc> TranslationUnit<'gc> {
                         bc_method.signature,
                         bc_method.return_type,
                         variadic,
-                        activation.context.gc_context,
+                        activation.context.gc(),
                     );
                 }
             }
-            Gc::new(activation.context.gc_context, bc_method).into()
+            Gc::new(activation.context.gc(), bc_method).into()
         })();
 
-        self.0.write(activation.context.gc_context).methods[method_index.0 as usize] = Some(method);
+        self.0.write(activation.context.gc()).methods[method_index.0 as usize] = Some(method);
 
         Ok(method)
     }
@@ -226,7 +226,7 @@ impl<'gc> TranslationUnit<'gc> {
         drop(read);
 
         let class = Class::from_abc_index(self, class_index, activation)?;
-        self.0.write(activation.context.gc_context).classes[class_index as usize] = Some(class);
+        self.0.write(activation.context.gc()).classes[class_index as usize] = Some(class);
 
         class.load_traits(activation, self, class_index)?;
 
@@ -255,7 +255,7 @@ impl<'gc> TranslationUnit<'gc> {
         drop(read);
 
         let script = Script::from_abc_index(self, script_index, domain, activation)?;
-        self.0.write(activation.context.gc_context).scripts[script_index as usize] = Some(script);
+        self.0.write(activation.context.gc()).scripts[script_index as usize] = Some(script);
 
         script.load_traits(self, script_index, activation)?;
 
@@ -296,7 +296,7 @@ impl<'gc> TranslationUnit<'gc> {
         string_index: u32,
         context: &mut StringContext<'gc>,
     ) -> Result<AvmAtom<'gc>, Error<'gc>> {
-        let mut write = self.0.write(context.gc_context);
+        let mut write = self.0.write(context.gc());
         if let Some(Some(atom)) = write.strings.get(string_index as usize) {
             return Ok(*atom);
         }
@@ -482,7 +482,7 @@ impl<'gc> Script<'gc> {
         let init = unit.load_method(script.init_method, false, activation)?;
 
         Ok(Self(GcCell::new(
-            activation.context.gc_context,
+            activation.context.gc(),
             ScriptData {
                 globals: None,
                 domain,
@@ -601,7 +601,7 @@ impl<'gc> Script<'gc> {
     /// If the script has not yet been initialized, this will initialize it on
     /// the same stack.
     pub fn globals(self, context: &mut UpdateContext<'gc>) -> Result<Object<'gc>, Error<'gc>> {
-        let mut write = self.0.write(context.gc_context);
+        let mut write = self.0.write(context.gc());
 
         let globals = write.globals.expect("Global object should be initialized");
 

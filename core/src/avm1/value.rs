@@ -418,7 +418,7 @@ impl<'gc> Value<'gc> {
                     .filter(|_| !matches!(object, Object::SuperObject(_)))
                 {
                     // StageObjects are special-cased to return their path.
-                    AvmString::new(activation.context.gc_context, object.path())
+                    AvmString::new(activation.context.gc(), object.path())
                 } else {
                     match object.call_method(
                         "toString".into(),
@@ -444,7 +444,7 @@ impl<'gc> Value<'gc> {
             Value::Bool(false) => "false".into(),
             Value::Number(v) => match f64_to_string(*v) {
                 Cow::Borrowed(s) => s.into(),
-                Cow::Owned(s) => AvmString::new_utf8(activation.context.gc_context, s),
+                Cow::Owned(s) => AvmString::new_utf8(activation.context.gc(), s),
             },
             Value::String(v) => v.to_owned(),
         })
@@ -951,15 +951,15 @@ mod test {
             }
 
             let valueof = FunctionObject::function(
-                activation.context.gc_context,
+                activation.context.gc(),
                 Executable::Native(value_of_impl),
                 protos.function,
                 protos.function,
             );
 
-            let o = ScriptObject::new(activation.context.gc_context, Some(protos.object));
+            let o = ScriptObject::new(activation.context.gc(), Some(protos.object));
             o.define_value(
-                activation.context.gc_context,
+                activation.context.gc(),
                 "valueOf",
                 valueof.into(),
                 Attribute::empty(),
@@ -988,7 +988,7 @@ mod test {
             assert_eq!(f.coerce_to_f64(activation).unwrap(), 0.0);
             assert!(n.coerce_to_f64(activation).unwrap().is_nan());
 
-            let o = ScriptObject::new(activation.context.gc_context, None);
+            let o = ScriptObject::new(activation.context.gc(), None);
 
             assert!(Value::from(o).coerce_to_f64(activation).unwrap().is_nan());
 
@@ -1010,7 +1010,7 @@ mod test {
             assert_eq!(f.coerce_to_f64(activation).unwrap(), 0.0);
             assert_eq!(n.coerce_to_f64(activation).unwrap(), 0.0);
 
-            let o = ScriptObject::new(activation.context.gc_context, None);
+            let o = ScriptObject::new(activation.context.gc(), None);
 
             assert_eq!(Value::from(o).coerce_to_f64(activation).unwrap(), 0.0);
 
@@ -1075,8 +1075,8 @@ mod test {
     #[test]
     fn abstract_lt_str() {
         with_avm(8, |activation, _this| -> Result<(), Error> {
-            let a = Value::String(AvmString::new_utf8(activation.context.gc_context, "a"));
-            let b = Value::String(AvmString::new_utf8(activation.context.gc_context, "b"));
+            let a = Value::String(AvmString::new_utf8(activation.context.gc(), "a"));
+            let b = Value::String(AvmString::new_utf8(activation.context.gc(), "b"));
 
             assert_eq!(a.abstract_lt(b, activation).unwrap(), Value::Bool(true));
 
@@ -1087,8 +1087,8 @@ mod test {
     #[test]
     fn abstract_gt_str() {
         with_avm(8, |activation, _this| -> Result<(), Error> {
-            let a = Value::String(AvmString::new_utf8(activation.context.gc_context, "a"));
-            let b = Value::String(AvmString::new_utf8(activation.context.gc_context, "b"));
+            let a = Value::String(AvmString::new_utf8(activation.context.gc(), "a"));
+            let b = Value::String(AvmString::new_utf8(activation.context.gc(), "b"));
 
             assert_eq!(b.abstract_lt(a, activation).unwrap(), Value::Bool(false));
 

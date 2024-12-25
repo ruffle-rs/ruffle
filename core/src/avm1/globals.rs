@@ -404,7 +404,7 @@ pub fn escape<'gc>(
             }
         };
     }
-    Ok(AvmString::new(activation.context.gc_context, WString::from_buf(buffer)).into())
+    Ok(AvmString::new(activation.context.gc(), WString::from_buf(buffer)).into())
 }
 
 pub fn unescape<'gc>(
@@ -458,11 +458,7 @@ pub fn unescape<'gc>(
             }
         }
     }
-    Ok(AvmString::new_utf8(
-        activation.context.gc_context,
-        String::from_utf8_lossy(&out_bytes),
-    )
-    .into())
+    Ok(AvmString::new_utf8(activation.context.gc(), String::from_utf8_lossy(&out_bytes)).into())
 }
 
 /// This structure represents all system builtins that are used regardless of
@@ -523,7 +519,7 @@ pub fn create_globals<'gc>(
     Object<'gc>,
     as_broadcaster::BroadcasterFunctions<'gc>,
 ) {
-    let gc_context = context.gc_context;
+    let gc_context = context.gc();
 
     let object_proto = ScriptObject::new(gc_context, None).into();
     let function_proto = function::create_proto(context, object_proto);
@@ -854,7 +850,7 @@ pub fn create_globals<'gc>(
         Attribute::empty(),
     );
 
-    let bitmap_data_proto = ScriptObject::new(context.gc_context, Some(object_proto));
+    let bitmap_data_proto = ScriptObject::new(context.gc(), Some(object_proto));
     let bitmap_data = bitmap_data::create_constructor(context, bitmap_data_proto, function_proto);
 
     display.define_value(

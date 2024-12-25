@@ -16,7 +16,7 @@ pub fn init<'gc>(
     let status = args.try_get_object(activation, 1);
 
     responder.set_callbacks(
-        activation.context.gc_context,
+        activation.context.gc(),
         result.as_function_object(),
         status.and_then(|o| o.as_function_object()),
     );

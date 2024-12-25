@@ -68,7 +68,7 @@ pub fn get_shader_args<'gc>(
                     }
                     let shader_param = shader_data
                         .get_string_property_local(
-                            AvmString::new_utf8(activation.context.gc_context, name),
+                            AvmString::new_utf8(activation.context.gc(), name),
                             activation,
                         )
                         .expect("Missing normal property");
@@ -104,7 +104,7 @@ pub fn get_shader_args<'gc>(
                 } => {
                     let shader_input = shader_data
                         .get_string_property_local(
-                            AvmString::new_utf8(activation.context.gc_context, name),
+                            AvmString::new_utf8(activation.context.gc(), name),
                             activation,
                         )
                         .expect("Missing property")
@@ -135,7 +135,7 @@ pub fn get_shader_args<'gc>(
                     let texture = if let Some(input) = input.as_object() {
                         let input_texture = if let Some(bitmap) = input.as_bitmap_data() {
                             ImageInputTexture::Bitmap(bitmap.bitmap_handle(
-                                activation.context.gc_context,
+                                activation.context.gc(),
                                 activation.context.renderer,
                             ))
                         } else if let Some(byte_array) = input.as_bytearray() {
@@ -220,7 +220,7 @@ pub fn start<'gc>(
         let target_bitmap = bitmap.sync(activation.context.renderer);
         // Perform both a GPU->CPU and CPU->GPU sync before writing to it.
         // FIXME - are both necessary?
-        let mut target_bitmap_data = target_bitmap.write(activation.context.gc_context);
+        let mut target_bitmap_data = target_bitmap.write(activation.context.gc());
         target_bitmap_data.update_dirty_texture(activation.context.renderer);
 
         PixelBenderTarget::Bitmap(
@@ -247,11 +247,11 @@ pub fn start<'gc>(
                 .as_bitmap_data()
                 .unwrap()
                 .sync(activation.context.renderer);
-            let mut target_bitmap_data = target_bitmap.write(activation.context.gc_context);
+            let mut target_bitmap_data = target_bitmap.write(activation.context.gc());
             let width = target_bitmap_data.width();
             let height = target_bitmap_data.height();
             target_bitmap_data.set_gpu_dirty(
-                activation.context.gc_context,
+                activation.context.gc(),
                 sync_handle,
                 PixelRegion::for_whole_size(width, height),
             );
@@ -259,9 +259,7 @@ pub fn start<'gc>(
         PixelBenderOutput::Bytes(pixels) => {
             if let Some(mut bytearray) = target.as_bytearray_mut() {
                 bytearray.write_at(&pixels, 0).unwrap();
-            } else if let Some(mut vector) =
-                target.as_vector_storage_mut(activation.context.gc_context)
-            {
+            } else if let Some(mut vector) = target.as_vector_storage_mut(activation.context.gc()) {
                 let new_storage: Vec<_> = bytemuck::cast_slice::<u8, f32>(&pixels)
                     .iter()
                     .map(|p| Value::from(*p as f64))

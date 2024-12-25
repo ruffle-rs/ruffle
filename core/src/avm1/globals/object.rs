@@ -46,7 +46,7 @@ pub fn object_function<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let obj = match args.get(0).unwrap_or(&Value::Undefined) {
         Value::Undefined | Value::Null => {
-            Object::from(ScriptObject::new(activation.context.gc_context, None))
+            Object::from(ScriptObject::new(activation.context.gc(), None))
         }
         val => val.coerce_to_object(activation),
     };
@@ -282,7 +282,7 @@ pub fn as_set_prop_flags<'gc>(
 
     match args.get(1) {
         Some(&Value::Null) => object.set_attributes(
-            activation.context.gc_context,
+            activation.context.gc(),
             None,
             set_attributes,
             clear_attributes,
@@ -292,15 +292,15 @@ pub fn as_set_prop_flags<'gc>(
             if props.contains(b',') {
                 for prop_name in props.split(b',') {
                     object.set_attributes(
-                        activation.context.gc_context,
-                        Some(AvmString::new(activation.context.gc_context, prop_name)),
+                        activation.context.gc(),
+                        Some(AvmString::new(activation.context.gc(), prop_name)),
                         set_attributes,
                         clear_attributes,
                     )
                 }
             } else {
                 object.set_attributes(
-                    activation.context.gc_context,
+                    activation.context.gc(),
                     Some(props),
                     set_attributes,
                     clear_attributes,
@@ -321,7 +321,7 @@ pub fn create_object_object<'gc>(
     fn_proto: Object<'gc>,
 ) -> Object<'gc> {
     let object_function = FunctionObject::constructor(
-        context.gc_context,
+        context.gc(),
         Executable::Native(constructor),
         Executable::Native(object_function),
         fn_proto,

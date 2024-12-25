@@ -91,7 +91,7 @@ pub struct Avm1<'gc> {
 
 impl<'gc> Avm1<'gc> {
     pub fn new(context: &mut StringContext<'gc>, player_version: u8) -> Self {
-        let gc_context = context.gc_context;
+        let gc_context = context.gc();
         let (prototypes, globals, broadcaster_functions) = create_globals(context);
 
         Self {
@@ -145,7 +145,7 @@ impl<'gc> Avm1<'gc> {
             .object()
             .coerce_to_object(&mut parent_activation);
         let child_scope = Gc::new(
-            parent_activation.context.gc_context,
+            parent_activation.context.gc(),
             Scope::new(
                 parent_activation.scope(),
                 scope::ScopeClass::Target,
@@ -185,7 +185,7 @@ impl<'gc> Avm1<'gc> {
             _ => panic!("No script object for display object"),
         };
         let child_scope = Gc::new(
-            action_context.gc_context,
+            action_context.gc(),
             Scope::new(
                 action_context.avm1.global_scope,
                 scope::ScopeClass::Target,
@@ -229,7 +229,7 @@ impl<'gc> Avm1<'gc> {
             .object()
             .coerce_to_object(&mut parent_activation);
         let child_scope = Gc::new(
-            parent_activation.context.gc_context,
+            parent_activation.context.gc(),
             Scope::new(
                 parent_activation.scope(),
                 scope::ScopeClass::Target,
@@ -454,7 +454,7 @@ impl<'gc> Avm1<'gc> {
 
             // Update pending removal state
             parent_container
-                .raw_container_mut(context.gc_context)
+                .raw_container_mut(context.gc())
                 .update_pending_removals();
         }
     }
@@ -478,11 +478,11 @@ impl<'gc> Avm1<'gc> {
             if clip.avm1_removed() {
                 // Clean up removed clips from this frame or a previous frame.
                 if let Some(prev) = prev {
-                    prev.set_next_avm1_clip(context.gc_context, next);
+                    prev.set_next_avm1_clip(context.gc(), next);
                 } else {
                     context.avm1.clip_exec_list = next;
                 }
-                clip.set_next_avm1_clip(context.gc_context, None);
+                clip.set_next_avm1_clip(context.gc(), None);
             } else {
                 clip.run_frame_avm1(context);
                 prev = Some(clip);

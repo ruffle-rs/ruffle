@@ -66,7 +66,7 @@ pub fn create_number_object<'gc>(
     fn_proto: Object<'gc>,
 ) -> Object<'gc> {
     let number = FunctionObject::constructor(
-        context.gc_context,
+        context.gc(),
         Executable::Native(number),
         Executable::Native(number_function),
         fn_proto,
@@ -156,7 +156,7 @@ fn to_string<'gc>(
             i -= 1;
             digits[i] = b'-';
         }
-        Ok(AvmString::new_utf8_bytes(activation.context.gc_context, &digits[i..]).into())
+        Ok(AvmString::new_utf8_bytes(activation.context.gc(), &digits[i..]).into())
     }
 }
 

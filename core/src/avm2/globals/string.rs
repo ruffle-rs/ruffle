@@ -46,7 +46,7 @@ pub fn instance_init<'gc>(
 
     activation.super_init(this, &[])?;
 
-    if let Some(mut value) = this.as_primitive_mut(activation.context.gc_context) {
+    if let Some(mut value) = this.as_primitive_mut(activation.context.gc()) {
         if !matches!(*value, Value::String(_)) {
             *value = match args.get(0) {
                 Some(arg) => arg.coerce_to_string(activation)?.into(),
@@ -67,7 +67,7 @@ pub fn class_init<'gc>(
     let this = this.as_object().unwrap();
 
     let scope = activation.create_scopechain();
-    let gc_context = activation.context.gc_context;
+    let gc_context = activation.context.gc();
     let this_class = this.as_class_object().unwrap();
     let proto = this_class.prototype();
 
@@ -182,7 +182,7 @@ fn concat<'gc>(
 
     for arg in args {
         let s = arg.coerce_to_string(activation)?;
-        ret = AvmString::concat(activation.context.gc_context, ret, s);
+        ret = AvmString::concat(activation.context.gc(), ret, s);
     }
 
     Ok(ret.into())
@@ -199,7 +199,7 @@ fn from_char_code<'gc>(
         let i = arg.coerce_to_u32(activation)? as u16;
         out.push(i);
     }
-    Ok(AvmString::new(activation.context.gc_context, out).into())
+    Ok(AvmString::new(activation.context.gc(), out).into())
 }
 
 /// Implements `String.indexOf`
@@ -306,7 +306,7 @@ fn match_s<'gc>(
             .expect("Regexp objects must be Value::Object")
     };
 
-    if let Some(mut regexp) = pattern.as_regexp_mut(activation.context.gc_context) {
+    if let Some(mut regexp) = pattern.as_regexp_mut(activation.context.gc()) {
         let mut storage = ArrayStorage::new(0);
         if regexp.flags().contains(RegExpFlags::GLOBAL) {
             let mut last = regexp.last_index();
@@ -316,9 +316,7 @@ fn match_s<'gc>(
                 if regexp.last_index() == last {
                     break;
                 }
-                storage.push(
-                    AvmString::new(activation.context.gc_context, &this[result.range()]).into(),
-                );
+                storage.push(AvmString::new(activation.context.gc(), &this[result.range()]).into());
                 last = regexp.last_index();
             }
             regexp.set_last_index(0);
@@ -335,7 +333,7 @@ fn match_s<'gc>(
 
                 let mut storage = ArrayStorage::new(0);
                 for substring in substrings {
-                    storage.push(AvmString::new(activation.context.gc_context, substring).into());
+                    storage.push(AvmString::new(activation.context.gc(), substring).into());
                 }
                 regexp.set_last_index(old);
 
@@ -391,7 +389,7 @@ fn replace<'gc>(
         }
         ret.push_str(&this[position + pattern.len()..]);
 
-        Ok(AvmString::new(activation.context.gc_context, ret).into())
+        Ok(AvmString::new(activation.context.gc(), ret).into())
     } else {
         Ok(this.into())
     }
@@ -417,7 +415,7 @@ fn search<'gc>(
             .expect("Regexp objects must be Value::Object")
     };
 
-    if let Some(mut regexp) = pattern.as_regexp_mut(activation.context.gc_context) {
+    if let Some(mut regexp) = pattern.as_regexp_mut(activation.context.gc()) {
         let old = regexp.last_index();
         regexp.set_last_index(0);
         if let Some(result) = regexp.exec(this) {
@@ -487,7 +485,7 @@ fn split<'gc>(
     if let Some(mut regexp) = delimiter
         .as_object()
         .as_ref()
-        .and_then(|o| o.as_regexp_mut(activation.context.gc_context))
+        .and_then(|o| o.as_regexp_mut(activation.context.gc()))
     {
         return Ok(regexp.split(activation, this, limit)?.into());
     }
@@ -505,7 +503,7 @@ fn split<'gc>(
     } else {
         this.split(&delimiter)
             .take(limit)
-            .map(|c| Value::from(AvmString::new(activation.context.gc_context, c)))
+            .map(|c| Value::from(AvmString::new(activation.context.gc(), c)))
             .collect()
     };
 
@@ -611,7 +609,7 @@ fn to_lower_case<'gc>(
     let this = this.coerce_to_string(activation)?;
 
     Ok(AvmString::new(
-        activation.context.gc_context,
+        activation.context.gc(),
         this.iter()
             .map(crate::string::utils::swf_to_lowercase)
             .collect::<WString>(),
@@ -661,7 +659,7 @@ fn to_upper_case<'gc>(
     let this = this.coerce_to_string(activation)?;
 
     Ok(AvmString::new(
-        activation.context.gc_context,
+        activation.context.gc(),
         this.iter()
             .map(crate::string::utils::swf_to_uppercase)
             .collect::<WString>(),
@@ -732,14 +730,14 @@ pub fn create_class<'gc>(activation: &mut Activation<'_, 'gc>) -> Class<'gc> {
     class.define_builtin_class_methods(mc, namespaces.as3, AS3_CLASS_METHODS);
     class.define_builtin_class_methods(mc, namespaces.public_all(), PUBLIC_CLASS_METHODS);
 
-    class.mark_traits_loaded(activation.context.gc_context);
+    class.mark_traits_loaded(activation.context.gc());
     class
         .init_vtable(activation.context)
         .expect("Native class's vtable should initialize");
 
     let c_class = class.c_class().expect("Class::new returns an i_class");
 
-    c_class.mark_traits_loaded(activation.context.gc_context);
+    c_class.mark_traits_loaded(activation.context.gc());
     c_class
         .init_vtable(activation.context)
         .expect("Native class's vtable should initialize");

@@ -29,7 +29,7 @@ pub fn _escape_xml<'gc>(
             .replace(gt.as_ref(), from_utf8("&gt;").as_ref())
             .replace(quote.as_ref(), from_utf8("&quot;").as_ref())
             .replace(apos.as_ref(), from_utf8("&apos;").as_ref());
-        Ok(AvmString::new(activation.context.gc_context, result).into())
+        Ok(AvmString::new(activation.context.gc(), result).into())
     } else {
         // Save the allocation, just return input
         Ok(input.into())

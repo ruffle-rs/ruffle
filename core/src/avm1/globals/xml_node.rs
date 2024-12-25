@@ -63,7 +63,7 @@ fn append_child<'gc>(
     ) {
         if !xmlnode.has_child(child_xmlnode) {
             let position = xmlnode.children_len();
-            xmlnode.insert_child(activation.context.gc_context, position, child_xmlnode);
+            xmlnode.insert_child(activation.context.gc(), position, child_xmlnode);
             xmlnode.refresh_cached_child_nodes(activation)?;
         }
     }
@@ -85,7 +85,7 @@ fn insert_before<'gc>(
     ) {
         if !xmlnode.has_child(child_xmlnode) {
             if let Some(position) = xmlnode.child_position(insertpoint_xmlnode) {
-                xmlnode.insert_child(activation.context.gc_context, position, child_xmlnode);
+                xmlnode.insert_child(activation.context.gc(), position, child_xmlnode);
                 xmlnode.refresh_cached_child_nodes(activation)?;
             }
         }
@@ -105,7 +105,7 @@ fn clone_node<'gc>(
             .map(|v| v.as_bool(activation.swf_version()))
             .unwrap_or(false),
     ) {
-        let mut clone_node = xmlnode.duplicate(activation.context.gc_context, deep);
+        let mut clone_node = xmlnode.duplicate(activation.context.gc(), deep);
         return Ok(clone_node.script_object(activation).into());
     }
 
@@ -144,7 +144,7 @@ fn get_prefix_for_namespace<'gc>(
                 if value == uri {
                     if let Some(prefix) = key.strip_prefix(WStr::from_units(b"xmlns")) {
                         if let Some(prefix) = prefix.strip_prefix(b':') {
-                            return Ok(AvmString::new(activation.context.gc_context, prefix).into());
+                            return Ok(AvmString::new(activation.context.gc(), prefix).into());
                         } else {
                             return Ok(activation.strings().empty().into());
                         }
@@ -176,7 +176,7 @@ fn remove_node<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(mut node) = this.as_xml_node() {
         let old_parent = node.parent();
-        node.remove_node(activation.context.gc_context);
+        node.remove_node(activation.context.gc());
         if let Some(old_parent) = old_parent {
             old_parent.refresh_cached_child_nodes(activation)?;
         }
@@ -192,7 +192,7 @@ fn to_string<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(node) = this.as_xml_node() {
         let string = node.into_string(activation)?;
-        return Ok(AvmString::new(activation.context.gc_context, string).into());
+        return Ok(AvmString::new(activation.context.gc(), string).into());
     }
 
     Ok(activation.strings().empty().into())
@@ -205,7 +205,7 @@ fn local_name<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     Ok(this
         .as_xml_node()
-        .and_then(|n| n.local_name(activation.context.gc_context))
+        .and_then(|n| n.local_name(activation.context.gc()))
         .map_or(Value::Null, Value::from))
 }
 
@@ -232,10 +232,7 @@ fn set_node_value<'gc>(
         }
 
         if let Some(node) = this.as_xml_node() {
-            node.set_node_value(
-                activation.context.gc_context,
-                name.coerce_to_string(activation)?,
-            );
+            node.set_node_value(activation.context.gc(), name.coerce_to_string(activation)?);
         }
     }
     Ok(Value::Undefined)
@@ -400,7 +397,7 @@ pub fn create_proto<'gc>(
     proto: Object<'gc>,
     fn_proto: Object<'gc>,
 ) -> Object<'gc> {
-    let xml_node_proto = ScriptObject::new(context.gc_context, Some(proto));
+    let xml_node_proto = ScriptObject::new(context.gc(), Some(proto));
     define_properties_on(PROTO_DECLS, context, xml_node_proto, fn_proto);
     xml_node_proto.into()
 }

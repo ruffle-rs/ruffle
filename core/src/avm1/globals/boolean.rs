@@ -50,7 +50,7 @@ pub fn create_boolean_object<'gc>(
     fn_proto: Object<'gc>,
 ) -> Object<'gc> {
     FunctionObject::constructor(
-        context.gc_context,
+        context.gc(),
         Executable::Native(constructor),
         Executable::Native(boolean_function),
         fn_proto,
@@ -78,7 +78,7 @@ pub fn to_string<'gc>(
         // Must be a bool.
         // Boolean.prototype.toString.call(x) returns undefined for non-bools.
         if let Value::Bool(b) = *vbox {
-            return Ok(AvmString::new_utf8(activation.context.gc_context, b.to_string()).into());
+            return Ok(AvmString::new_utf8(activation.context.gc(), b.to_string()).into());
         }
     }
 

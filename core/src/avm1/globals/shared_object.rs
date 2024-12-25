@@ -154,7 +154,7 @@ pub fn deserialize_value<'gc>(
         AmfValue::Null => Value::Null,
         AmfValue::Undefined => Value::Undefined,
         AmfValue::Number(f) => (*f).into(),
-        AmfValue::String(s) => Value::String(AvmString::new_utf8(activation.context.gc_context, s)),
+        AmfValue::String(s) => Value::String(AvmString::new_utf8(activation.context.gc(), s)),
         AmfValue::Bool(b) => (*b).into(),
         AmfValue::ECMAArray(_, _, associative, len) => {
             let array_constructor = activation.context.avm1.prototypes().array_constructor;
@@ -175,8 +175,8 @@ pub fn deserialize_value<'gc>(
                         obj.set_element(activation, i, value).unwrap();
                     } else {
                         obj.define_value(
-                            activation.context.gc_context,
-                            AvmString::new_utf8(activation.context.gc_context, &entry.name),
+                            activation.context.gc(),
+                            AvmString::new_utf8(activation.context.gc(), &entry.name),
                             value,
                             Attribute::empty(),
                         );
@@ -191,7 +191,7 @@ pub fn deserialize_value<'gc>(
         AmfValue::Object(_, elements, _) => {
             // Deserialize Object
             let obj = ScriptObject::new(
-                activation.context.gc_context,
+                activation.context.gc(),
                 Some(activation.context.avm1.prototypes().object),
             );
 
@@ -204,13 +204,8 @@ pub fn deserialize_value<'gc>(
 
             for entry in elements {
                 let value = deserialize_value(activation, entry.value(), lso, reference_cache);
-                let name = AvmString::new_utf8(activation.context.gc_context, &entry.name);
-                obj.define_value(
-                    activation.context.gc_context,
-                    name,
-                    value,
-                    Attribute::empty(),
-                );
+                let name = AvmString::new_utf8(activation.context.gc(), &entry.name);
+                obj.define_value(activation.context.gc(), name, value, Attribute::empty());
             }
 
             v
@@ -230,7 +225,7 @@ pub fn deserialize_value<'gc>(
             if let Ok(Value::Object(obj)) = xml_proto.construct(
                 activation,
                 &[Value::String(AvmString::new_utf8(
-                    activation.context.gc_context,
+                    activation.context.gc(),
                     content,
                 ))],
             ) {
@@ -256,7 +251,7 @@ fn deserialize_lso<'gc>(
     decoder: &AMF0Decoder,
 ) -> Result<Object<'gc>, Error<'gc>> {
     let obj = ScriptObject::new(
-        activation.context.gc_context,
+        activation.context.gc(),
         Some(activation.context.avm1.prototypes().object),
     );
 
@@ -264,8 +259,8 @@ fn deserialize_lso<'gc>(
 
     for child in &lso.body {
         obj.define_value(
-            activation.context.gc_context,
-            AvmString::new_utf8(activation.context.gc_context, &child.name),
+            activation.context.gc(),
+            AvmString::new_utf8(activation.context.gc(), &child.name),
             deserialize_value(activation, child.value(), decoder, &mut reference_cache),
             Attribute::empty(),
         );
@@ -418,7 +413,7 @@ fn get_local<'gc>(
     // Set the internal name
     if let NativeObject::SharedObject(shared_object) = this.native() {
         shared_object
-            .write(activation.context.gc_context)
+            .write(activation.context.gc())
             .set_name(full_name.clone());
     }
 
@@ -435,14 +430,14 @@ fn get_local<'gc>(
     if data == Value::Undefined {
         // No data; create a fresh data object.
         data = ScriptObject::new(
-            activation.context.gc_context,
+            activation.context.gc(),
             Some(activation.context.avm1.prototypes().object),
         )
         .into();
     }
 
     this.define_value(
-        activation.context.gc_context,
+        activation.context.gc(),
         "data",
         data,
         Attribute::DONT_DELETE,
@@ -585,11 +580,8 @@ fn constructor<'gc>(
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     this.set_native(
-        activation.context.gc_context,
-        NativeObject::SharedObject(GcCell::new(
-            activation.context.gc_context,
-            Default::default(),
-        )),
+        activation.context.gc(),
+        NativeObject::SharedObject(GcCell::new(activation.context.gc(), Default::default())),
     );
     Ok(this.into())
 }
@@ -599,10 +591,10 @@ pub fn create_constructor<'gc>(
     proto: Object<'gc>,
     fn_proto: Object<'gc>,
 ) -> Object<'gc> {
-    let shared_object_proto = ScriptObject::new(context.gc_context, Some(proto));
+    let shared_object_proto = ScriptObject::new(context.gc(), Some(proto));
     define_properties_on(PROTO_DECLS, context, shared_object_proto, fn_proto);
     let constructor = FunctionObject::constructor(
-        context.gc_context,
+        context.gc(),
         Executable::Native(constructor),
         constructor_to_fn!(constructor),
         fn_proto,

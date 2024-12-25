@@ -482,7 +482,7 @@ impl<'gc> Multiname<'gc> {
         if self.is_any_name() {
             context.ascii_char(b'*')
         } else {
-            self.to_qualified_name(context.gc_context)
+            self.to_qualified_name(context.gc())
         }
     }
 

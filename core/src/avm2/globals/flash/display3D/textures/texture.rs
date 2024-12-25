@@ -52,7 +52,7 @@ pub fn do_copy<'gc>(
                 .collect();
 
             let bitmap_data = BitmapData::new_with_pixels(width, height, true, colors);
-            BitmapDataWrapper::new(GcCell::new(activation.context.gc_context, bitmap_data))
+            BitmapDataWrapper::new(GcCell::new(activation.context.gc(), bitmap_data))
         }
         _ => {
             tracing::warn!(
