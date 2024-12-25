@@ -376,7 +376,7 @@ pub fn tag_tests() -> Vec<TagTestData> {
                         align: TextAlign::Justify,
                         left_margin: Twips::from_pixels(3.0),
                         right_margin: Twips::from_pixels(4.0),
-                        indent: Twips::from_pixels(1.0),
+                        indent: Twips::ONE_PX,
                         leading: Twips::from_pixels(2.0),
                     }))
                     .with_variable_name(

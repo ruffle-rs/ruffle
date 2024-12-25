@@ -2650,10 +2650,10 @@ mod tests {
     #[test]
     fn write_rectangle_signed() {
         let rectangle = Rectangle {
-            x_min: Twips::from_pixels(-1.0),
-            x_max: Twips::from_pixels(1.0),
-            y_min: Twips::from_pixels(-1.0),
-            y_max: Twips::from_pixels(1.0),
+            x_min: -Twips::ONE_PX,
+            x_max: Twips::ONE_PX,
+            y_min: -Twips::ONE_PX,
+            y_max: Twips::ONE_PX,
         };
         let mut buf = Vec::new();
         {
