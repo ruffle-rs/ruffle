@@ -114,7 +114,7 @@ impl<'gc> PropertyClass<'gc> {
 
     pub fn get_name(&self, context: &mut StringContext<'gc>) -> AvmString<'gc> {
         match self {
-            PropertyClass::Class(class) => class.name().to_qualified_name(context.gc_context),
+            PropertyClass::Class(class) => class.name().to_qualified_name(context.gc()),
             PropertyClass::Name(name, _) => name.to_qualified_name_or_star(context),
             PropertyClass::Any => context.ascii_char(b'*'),
         }

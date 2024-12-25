@@ -103,7 +103,7 @@ pub fn get_player_type<'gc>(
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     Ok(AvmString::new_utf8(
-        activation.context.gc_context,
+        activation.context.gc(),
         activation.context.system.player_type.to_string(),
     )
     .into())
@@ -115,7 +115,7 @@ pub fn get_screen_color<'gc>(
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     Ok(AvmString::new_utf8(
-        activation.context.gc_context,
+        activation.context.gc(),
         activation.context.system.screen_color.to_string(),
     )
     .into())
@@ -127,7 +127,7 @@ pub fn get_language<'gc>(
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     Ok(AvmString::new_utf8(
-        activation.context.gc_context,
+        activation.context.gc(),
         activation
             .context
             .system
@@ -181,7 +181,7 @@ pub fn get_manufacturer<'gc>(
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     Ok(AvmString::new_utf8(
-        activation.context.gc_context,
+        activation.context.gc(),
         activation
             .context
             .system
@@ -197,7 +197,7 @@ pub fn get_os_name<'gc>(
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     Ok(AvmString::new_utf8(
-        activation.context.gc_context,
+        activation.context.gc(),
         activation.context.system.os.to_string(),
     )
     .into())
@@ -209,7 +209,7 @@ pub fn get_version<'gc>(
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     Ok(AvmString::new_utf8(
-        activation.context.gc_context,
+        activation.context.gc(),
         activation
             .context
             .system
@@ -227,7 +227,7 @@ pub fn get_server_string<'gc>(
         .context
         .system
         .get_server_string(activation.context);
-    Ok(AvmString::new_utf8(activation.context.gc_context, server_string).into())
+    Ok(AvmString::new_utf8(activation.context.gc(), server_string).into())
 }
 
 pub fn get_cpu_architecture<'gc>(
@@ -236,7 +236,7 @@ pub fn get_cpu_architecture<'gc>(
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     Ok(AvmString::new_utf8(
-        activation.context.gc_context,
+        activation.context.gc(),
         activation.context.system.cpu_architecture.to_string(),
     )
     .into())
@@ -248,7 +248,7 @@ pub fn get_max_idc_level<'gc>(
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     Ok(AvmString::new_utf8(
-        activation.context.gc_context,
+        activation.context.gc(),
         &activation.context.system.idc_level,
     )
     .into())
@@ -259,7 +259,7 @@ pub fn create<'gc>(
     proto: Object<'gc>,
     fn_proto: Object<'gc>,
 ) -> Object<'gc> {
-    let capabilities = ScriptObject::new(context.gc_context, Some(proto));
+    let capabilities = ScriptObject::new(context.gc(), Some(proto));
     define_properties_on(OBJECT_DECLS, context, capabilities, fn_proto);
     capabilities.into()
 }

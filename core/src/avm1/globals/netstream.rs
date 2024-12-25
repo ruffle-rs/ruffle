@@ -11,11 +11,8 @@ pub fn constructor<'gc>(
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let netstream = NetStream::new(activation.context.gc_context, Some(this.into()));
-    this.set_native(
-        activation.context.gc_context,
-        NativeObject::NetStream(netstream),
-    );
+    let netstream = NetStream::new(activation.context.gc(), Some(this.into()));
+    this.set_native(activation.context.gc(), NativeObject::NetStream(netstream));
 
     Ok(this.into())
 }
@@ -153,7 +150,7 @@ fn set_buffer_time<'gc>(
             .unwrap_or(Value::Undefined)
             .coerce_to_f64(activation)?;
 
-        ns.set_buffer_time(activation.context.gc_context, buffer_time);
+        ns.set_buffer_time(activation.context.gc(), buffer_time);
     }
 
     Ok(Value::Undefined)
@@ -176,7 +173,7 @@ pub fn create_proto<'gc>(
     proto: Object<'gc>,
     fn_proto: Object<'gc>,
 ) -> Object<'gc> {
-    let object = ScriptObject::new(context.gc_context, Some(proto));
+    let object = ScriptObject::new(context.gc(), Some(proto));
     define_properties_on(PROTO_DECLS, context, object, fn_proto);
     object.into()
 }
@@ -187,7 +184,7 @@ pub fn create_class<'gc>(
     fn_proto: Object<'gc>,
 ) -> Object<'gc> {
     FunctionObject::constructor(
-        context.gc_context,
+        context.gc(),
         Executable::Native(constructor),
         constructor_to_fn!(constructor),
         fn_proto,

@@ -34,8 +34,8 @@ pub fn describe_type_json<'gc>(
     }
 
     let qualified_name = used_class_def
-        .dollar_removed_name(activation.context.gc_context)
-        .to_qualified_name(activation.context.gc_context);
+        .dollar_removed_name(activation.context.gc())
+        .to_qualified_name(activation.context.gc());
 
     object.set_string_property_local("name", qualified_name.into(), activation)?;
 
@@ -435,7 +435,7 @@ fn write_params<'gc>(
 ) -> Result<Object<'gc>, Error<'gc>> {
     let params = ArrayObject::empty(activation);
     let mut params_array = params
-        .as_array_storage_mut(activation.context.gc_context)
+        .as_array_storage_mut(activation.context.gc())
         .unwrap();
     for param in method.signature() {
         let param_type_name = display_name(activation.strings(), param.param_type_name);
@@ -454,7 +454,7 @@ fn write_metadata<'gc>(
     activation: &mut Activation<'_, 'gc>,
 ) -> Result<(), Error<'gc>> {
     let mut metadata_array = metadata_object
-        .as_array_storage_mut(activation.context.gc_context)
+        .as_array_storage_mut(activation.context.gc())
         .unwrap();
 
     for single_trait in trait_metadata.iter() {

@@ -126,7 +126,7 @@ impl<'gc> FunctionObject<'gc> {
         let es3_proto = ScriptObject::new_object(activation);
 
         FunctionObject(Gc::new(
-            activation.context.gc_context,
+            activation.context.gc(),
             FunctionObjectData {
                 base: ScriptObjectData::new(fn_class),
                 exec: RefLock::new(exec),
@@ -163,7 +163,7 @@ impl<'gc> FunctionObject<'gc> {
         };
 
         let instance = ScriptObject::custom_object(
-            activation.context.gc_context,
+            activation.context.gc(),
             object_class.inner_class_definition(),
             Some(prototype),
             object_class.instance_vtable(),

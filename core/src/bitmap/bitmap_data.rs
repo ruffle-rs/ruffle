@@ -492,7 +492,7 @@ mod wrapper {
             context: &mut RenderContext<'_, 'gc>,
             pixel_snapping: PixelSnapping,
         ) {
-            let mut inner_bitmap_data = self.0.write(context.gc_context);
+            let mut inner_bitmap_data = self.0.write(context.gc());
             if inner_bitmap_data.disposed() {
                 return;
             }

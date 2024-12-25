@@ -64,7 +64,7 @@ pub fn make_null_or_undefined_error<'gc>(
         if let Some(name) = name {
             msg.push_str(&format!(
                 " (accessing field: {})",
-                name.to_qualified_name(activation.context.gc_context)
+                name.to_qualified_name(activation.context.gc())
             ));
         }
         match error_constructor(activation, class, &msg, 1009) {
@@ -94,7 +94,7 @@ pub fn make_reference_error<'gc>(
     let qualified_name = multiname.as_uri(activation.strings());
     let class_name = object_class
         .name()
-        .to_qualified_name_err_message(activation.context.gc_context);
+        .to_qualified_name_err_message(activation.context.gc());
 
     let msg = match code {
         ReferenceErrorCode::AssignToMethod => format!(
@@ -183,7 +183,7 @@ pub fn make_error_1010<'gc>(
     if let Some(name) = name {
         msg.push_str(&format!(
             " (accessing field: {})",
-            name.to_qualified_name(activation.context.gc_context)
+            name.to_qualified_name(activation.context.gc())
         ));
     }
     let error = type_error(activation, &msg, 1010);
@@ -834,7 +834,7 @@ fn error_constructor<'gc>(
     message: &str,
     code: u32,
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let message = AvmString::new_utf8(activation.context.gc_context, message);
+    let message = AvmString::new_utf8(activation.context.gc(), message);
     Ok(class
         .construct(activation, &[message.into(), code.into()])?
         .into())

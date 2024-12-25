@@ -31,7 +31,7 @@ pub fn sound_allocator<'gc>(
     let base = ScriptObjectData::new(class);
 
     Ok(SoundObject(Gc::new(
-        activation.context.gc_context,
+        activation.context.gc(),
         SoundObjectData {
             base,
             sound_data: RefLock::new(SoundData::NotLoaded {
@@ -116,7 +116,7 @@ impl<'gc> SoundObject<'gc> {
         activation: &mut Activation<'_, 'gc>,
     ) -> Result<bool, Error<'gc>> {
         let mut sound_data = unlock!(
-            Gc::write(activation.context.gc_context, self.0),
+            Gc::write(activation.context.gc(), self.0),
             SoundObjectData,
             sound_data
         )
@@ -142,12 +142,8 @@ impl<'gc> SoundObject<'gc> {
         context: &mut UpdateContext<'gc>,
         sound: SoundHandle,
     ) -> Result<(), Error<'gc>> {
-        let mut sound_data = unlock!(
-            Gc::write(context.gc_context, self.0),
-            SoundObjectData,
-            sound_data
-        )
-        .borrow_mut();
+        let mut sound_data =
+            unlock!(Gc::write(context.gc(), self.0), SoundObjectData, sound_data).borrow_mut();
         let mut activation = Activation::from_nothing(context);
         match &mut *sound_data {
             SoundData::NotLoaded { queued_plays } => {
@@ -237,7 +233,7 @@ impl<'gc> SoundObject<'gc> {
                 .expect("slot is typed String");
             }
         }
-        self.set_id3(activation.context.gc_context, Some(id3));
+        self.set_id3(activation.context.gc(), Some(id3));
         if tag.is_ok() {
             let id3_evt = EventObject::bare_default_event(activation.context, "id3");
             Avm2::dispatch_event(activation.context, id3_evt, self.into());

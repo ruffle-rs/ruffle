@@ -48,7 +48,7 @@ impl Avm2ObjectWindow {
         let mut keep_open = true;
         let domain = context.avm2.stage_domain();
         let mut activation = Activation::from_domain(context, domain);
-        Window::new(object_name(activation.context.gc_context, object))
+        Window::new(object_name(activation.context.gc(), object))
             .id(Id::new(object.as_ptr()))
             .open(&mut keep_open)
             .scroll([true, true])
@@ -270,7 +270,7 @@ impl Avm2ObjectWindow {
                         ui.text_edit_singleline(
                             &mut interface
                                 .name()
-                                .to_qualified_name_err_message(activation.context.gc_context)
+                                .to_qualified_name_err_message(activation.context.gc())
                                 .to_string()
                                 .as_str(),
                         );
@@ -424,7 +424,7 @@ impl ValueWidget {
             Value::String(value) => ValueWidget::String(value.to_string()),
             Value::Object(value) => ValueWidget::Object(
                 AVM2ObjectHandle::new(context, value),
-                object_name(context.gc_context, value),
+                object_name(context.gc(), value),
             ),
         }
     }

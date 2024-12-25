@@ -213,7 +213,7 @@ fn to_string<'gc>(
     let y = this.get("y", activation)?;
 
     Ok(AvmString::new_utf8(
-        activation.context.gc_context,
+        activation.context.gc(),
         format!(
             "(x={}, y={})",
             x.coerce_to_string(activation)?,
@@ -288,7 +288,7 @@ pub fn create_point_object<'gc>(
     fn_proto: Object<'gc>,
 ) -> Object<'gc> {
     let point = FunctionObject::constructor(
-        context.gc_context,
+        context.gc(),
         Executable::Native(constructor),
         constructor_to_fn!(constructor),
         fn_proto,
@@ -304,7 +304,7 @@ pub fn create_proto<'gc>(
     proto: Object<'gc>,
     fn_proto: Object<'gc>,
 ) -> Object<'gc> {
-    let object = ScriptObject::new(context.gc_context, Some(proto));
+    let object = ScriptObject::new(context.gc(), Some(proto));
     define_properties_on(PROTO_DECLS, context, object, fn_proto);
     object.into()
 }

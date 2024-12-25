@@ -26,7 +26,7 @@ pub fn init<'gc>(
             .expect("Invalid parent domain")
     };
     let fresh_domain = Domain::movie_domain(activation, parent_domain);
-    this.init_application_domain(activation.context.gc_context, fresh_domain);
+    this.init_application_domain(activation.context.gc(), fresh_domain);
 
     Ok(Value::Undefined)
 }
@@ -128,7 +128,7 @@ pub fn get_qualified_definition_names<'gc>(
                 .get_defined_names()
                 .iter()
                 .filter(|name| !name.namespace().is_private())
-                .map(|name| Value::String(name.to_qualified_name(activation.context.gc_context)))
+                .map(|name| Value::String(name.to_qualified_name(activation.context.gc())))
                 .collect(),
             false,
             Some(activation.avm2().class_defs().string),

@@ -122,7 +122,7 @@ pub fn escape<'gc>(
         }
     }
 
-    Ok(AvmString::new(activation.context.gc_context, output).into())
+    Ok(AvmString::new(activation.context.gc(), output).into())
 }
 
 pub fn unescape<'gc>(
@@ -165,7 +165,7 @@ pub fn unescape<'gc>(
             index = prev_index;
         }
     }
-    Ok(AvmString::new(activation.context.gc_context, output).into())
+    Ok(AvmString::new(activation.context.gc(), output).into())
 }
 
 pub fn encode_uri<'gc>(
@@ -224,7 +224,7 @@ fn encode_utf8_with_exclusions<'gc>(
         }
     }
 
-    Ok(AvmString::new_utf8(activation.context.gc_context, output).into())
+    Ok(AvmString::new_utf8(activation.context.gc(), output).into())
 }
 
 pub fn decode_uri<'gc>(
@@ -351,5 +351,5 @@ fn decode<'gc>(
         }
     }
 
-    Ok(AvmString::new(activation.context.gc_context, output).into())
+    Ok(AvmString::new(activation.context.gc(), output).into())
 }

@@ -170,21 +170,21 @@ impl Value {
                 } else {
                     &value
                 };
-                Avm1Value::String(AvmString::new_utf8(activation.context.gc_context, value))
+                Avm1Value::String(AvmString::new_utf8(activation.context.gc(), value))
             }
             Value::Object(values) => {
                 let object = Avm1ScriptObject::new(
-                    activation.context.gc_context,
+                    activation.context.gc(),
                     Some(activation.context.avm1.prototypes().object),
                 );
                 for (key, value) in values {
-                    let key = AvmString::new_utf8(activation.context.gc_context, key);
+                    let key = AvmString::new_utf8(activation.context.gc(), key);
                     let _ = object.set(key, value.into_avm1(activation), activation);
                 }
                 object.into()
             }
             Value::List(values) => Avm1ArrayObject::new(
-                activation.context.gc_context,
+                activation.context.gc(),
                 activation.context.avm1.prototypes().array,
                 values
                     .iter()
@@ -247,13 +247,13 @@ impl Value {
             Value::Bool(value) => Avm2Value::Bool(value),
             Value::Number(value) => Avm2Value::Number(value),
             Value::String(value) => {
-                Avm2Value::String(AvmString::new_utf8(activation.context.gc_context, value))
+                Avm2Value::String(AvmString::new_utf8(activation.context.gc(), value))
             }
             Value::Object(values) => {
                 let obj = Avm2ScriptObject::new_object(activation);
 
                 for (key, value) in values.into_iter() {
-                    let key = AvmString::new_utf8(activation.context.gc_context, key);
+                    let key = AvmString::new_utf8(activation.context.gc(), key);
                     let value = value.into_avm2(activation);
                     obj.set_string_property_local(key, value, activation)
                         .unwrap();
@@ -304,7 +304,7 @@ impl<'gc> Callback<'gc> {
                         .into_iter()
                         .map(|v| v.into_avm1(&mut activation))
                         .collect();
-                    let name = AvmString::new_utf8(activation.context.gc_context, name);
+                    let name = AvmString::new_utf8(activation.context.gc(), name);
                     if let Ok(result) = method
                         .call(name, &mut activation, this.into(), &args)
                         .and_then(|value| Value::from_avm1(&mut activation, value))

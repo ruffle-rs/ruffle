@@ -26,9 +26,9 @@ pub fn bitmap_allocator<'gc>(
     let orig_class = class;
     while let Some(class) = class_def {
         if class == bitmap_cls {
-            let bitmap_data = BitmapDataWrapper::dummy(activation.context.gc_context);
+            let bitmap_data = BitmapDataWrapper::dummy(activation.context.gc());
             let display_object = Bitmap::new_with_bitmap_data(
-                activation.context.gc_context,
+                activation.context.gc(),
                 0,
                 bitmap_data,
                 false,
@@ -65,7 +65,7 @@ pub fn bitmap_allocator<'gc>(
                 new_bitmap_data.init_object2(activation.gc(), bitmap_data_obj);
 
                 let child = Bitmap::new_with_bitmap_data(
-                    activation.context.gc_context,
+                    activation.context.gc(),
                     0,
                     new_bitmap_data,
                     false,
@@ -100,8 +100,8 @@ pub fn init<'gc>(
         if let Some(bitmap_data) = bitmap_data {
             bitmap.set_bitmap_data(activation.context, bitmap_data);
         }
-        bitmap.set_smoothing(activation.context.gc_context, smoothing);
-        bitmap.set_pixel_snapping(activation.context.gc_context, pixel_snapping);
+        bitmap.set_smoothing(activation.context.gc(), smoothing);
+        bitmap.set_pixel_snapping(activation.context.gc(), pixel_snapping);
     } else {
         unreachable!();
     }
@@ -181,7 +181,7 @@ pub fn set_pixel_snapping<'gc>(
         let Some(value) = PixelSnapping::from_wstr(&args.get_string(activation, 0)?) else {
             return Err(make_error_2008(activation, "pixelSnapping"));
         };
-        bitmap.set_pixel_snapping(activation.context.gc_context, value);
+        bitmap.set_pixel_snapping(activation.context.gc(), value);
     }
     Ok(Value::Undefined)
 }
@@ -211,7 +211,7 @@ pub fn set_smoothing<'gc>(
 
     if let Some(bitmap) = this.as_display_object().and_then(|dobj| dobj.as_bitmap()) {
         let smoothing = args.get_bool(0);
-        bitmap.set_smoothing(activation.context.gc_context, smoothing);
+        bitmap.set_smoothing(activation.context.gc(), smoothing);
     }
 
     Ok(Value::Undefined)

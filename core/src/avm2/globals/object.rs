@@ -44,7 +44,7 @@ pub fn class_init<'gc>(
     let this = this.as_object().unwrap();
 
     let scope = activation.create_scopechain();
-    let gc_context = activation.context.gc_context;
+    let gc_context = activation.context.gc();
     let this_class = this.as_class_object().unwrap();
     let object_proto = this_class.prototype();
 
@@ -256,7 +256,7 @@ pub fn set_property_is_enumerable<'gc>(
     let name = name?.coerce_to_string(activation)?;
 
     if let Some(Value::Bool(is_enum)) = args.get(1) {
-        this.set_local_property_is_enumerable(activation.context.gc_context, name, *is_enum);
+        this.set_local_property_is_enumerable(activation.context.gc(), name, *is_enum);
     }
 
     Ok(Value::Undefined)
@@ -316,7 +316,7 @@ pub fn create_i_class<'gc>(activation: &mut Activation<'_, 'gc>) -> Class<'gc> {
         as3_instance_methods,
     );
 
-    object_i_class.mark_traits_loaded(activation.context.gc_context);
+    object_i_class.mark_traits_loaded(activation.context.gc());
     object_i_class
         .init_vtable(activation.context)
         .expect("Native class's vtable should initialize");
@@ -356,7 +356,7 @@ pub fn create_c_class<'gc>(
         INTERNAL_INIT_METHOD,
     );
 
-    object_c_class.mark_traits_loaded(activation.context.gc_context);
+    object_c_class.mark_traits_loaded(activation.context.gc());
     object_c_class
         .init_vtable(activation.context)
         .expect("Native class's vtable should initialize");

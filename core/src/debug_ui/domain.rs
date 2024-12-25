@@ -57,7 +57,7 @@ impl DomainListWindow {
                 classes.sort_by_key(|(name, _, _)| *name);
 
                 for (_, _, class) in classes {
-                    let class_name = class.name().to_qualified_name(context.gc_context);
+                    let class_name = class.name().to_qualified_name(context.gc());
                     if !class_name.to_string().to_ascii_lowercase().contains(search) {
                         continue;
                     }
@@ -78,7 +78,7 @@ impl DomainListWindow {
                 }
                 drop(class_props);
 
-                for child_domain in domain.children(context.gc_context) {
+                for child_domain in domain.children(context.gc()) {
                     self.show_domain(ui, context, child_domain, messages, search);
                 }
             });

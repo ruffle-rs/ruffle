@@ -71,10 +71,7 @@ fn method<'gc>(
         let Some(transform) = TransformObject::new(activation, args) else {
             return Ok(Value::Undefined);
         };
-        this.set_native(
-            activation.context.gc_context,
-            NativeObject::Transform(transform),
-        );
+        this.set_native(activation.context.gc(), NativeObject::Transform(transform));
         return Ok(this.into());
     }
 
@@ -96,12 +93,12 @@ fn method<'gc>(
                     .all(|p| object.has_own_property(activation, (*p).into()));
                 if is_matrix {
                     let matrix = object_to_matrix(object, activation)?;
-                    clip.set_matrix(activation.context.gc_context, matrix);
-                    clip.set_transformed_by_script(activation.context.gc_context, true);
+                    clip.set_matrix(activation.context.gc(), matrix);
+                    clip.set_transformed_by_script(activation.context.gc(), true);
                     if let Some(parent) = clip.parent() {
                         // Self-transform changes are automatically handled,
                         // we only want to inform ancestors to avoid unnecessary invalidations for tx/ty
-                        parent.invalidate_cached_bitmap(activation.context.gc_context);
+                        parent.invalidate_cached_bitmap(activation.context.gc());
                     }
                 }
             }
@@ -123,11 +120,11 @@ fn method<'gc>(
                 // Set only occurs for an object with actual ColorTransform data.
                 if let Some(color_transform) = ColorTransformObject::cast(*value) {
                     clip.set_color_transform(
-                        activation.context.gc_context,
+                        activation.context.gc(),
                         color_transform.read().clone().into(),
                     );
-                    clip.invalidate_cached_bitmap(activation.context.gc_context);
-                    clip.set_transformed_by_script(activation.context.gc_context, true);
+                    clip.invalidate_cached_bitmap(activation.context.gc());
+                    clip.set_transformed_by_script(activation.context.gc(), true);
                 }
             }
             Value::Undefined
@@ -179,10 +176,10 @@ pub fn create_constructor<'gc>(
     proto: Object<'gc>,
     fn_proto: Object<'gc>,
 ) -> Object<'gc> {
-    let transform_proto = ScriptObject::new(context.gc_context, Some(proto));
+    let transform_proto = ScriptObject::new(context.gc(), Some(proto));
     define_properties_on(PROTO_DECLS, context, transform_proto, fn_proto);
     FunctionObject::constructor(
-        context.gc_context,
+        context.gc(),
         Executable::Native(transform_method!(0)),
         constructor_to_fn!(transform_method!(0)),
         fn_proto,

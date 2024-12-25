@@ -75,7 +75,7 @@ pub fn fill_bitmap_data_from_symbol<'gc>(
 ) -> BitmapDataWrapper<'gc> {
     let bitmap = bd.decode().expect("Failed to decode BitmapData");
     let new_bitmap_data = GcCell::new(
-        activation.context.gc_context,
+        activation.context.gc(),
         BitmapData::new_with_pixels(
             bitmap.width(),
             bitmap.height(),
@@ -146,11 +146,11 @@ pub fn init<'gc>(
         }
 
         let new_bitmap_data = BitmapData::new(width, height, transparency, fill_color);
-        BitmapDataWrapper::new(GcCell::new(activation.context.gc_context, new_bitmap_data))
+        BitmapDataWrapper::new(GcCell::new(activation.context.gc(), new_bitmap_data))
     };
 
-    new_bitmap_data.init_object2(activation.context.gc_context, this);
-    this.init_bitmap_data(activation.context.gc_context, new_bitmap_data);
+    new_bitmap_data.init_object2(activation.context.gc(), this);
+    this.init_bitmap_data(activation.context.gc(), new_bitmap_data);
 
     Ok(Value::Undefined)
 }
@@ -217,7 +217,7 @@ pub fn scroll<'gc>(
         let y = args.get_i32(activation, 1)?;
 
         operations::scroll(
-            activation.context.gc_context,
+            activation.context.gc(),
             activation.context.renderer,
             bitmap_data,
             x,
@@ -452,7 +452,7 @@ pub fn set_pixel<'gc>(
         let y = args.get_u32(activation, 1)?;
         let color = args.get_u32(activation, 2)?;
         operations::set_pixel(
-            activation.context.gc_context,
+            activation.context.gc(),
             activation.context.renderer,
             bitmap_data,
             x,
@@ -480,7 +480,7 @@ pub fn set_pixel32<'gc>(
         let color = args.get_u32(activation, 2)?;
 
         operations::set_pixel32(
-            activation.context.gc_context,
+            activation.context.gc(),
             activation.context.renderer,
             bitmap_data,
             x,
@@ -511,7 +511,7 @@ pub fn set_pixels<'gc>(
             .expect("Parameter must be a bytearray");
 
         operations::set_pixels_from_byte_array(
-            activation.context.gc_context,
+            activation.context.gc(),
             activation.context.renderer,
             bitmap_data,
             x,
@@ -615,7 +615,7 @@ pub fn copy_channel<'gc>(
                 get_rectangle_x_y_width_height(activation, source_rect)?;
 
             operations::copy_channel(
-                activation.context.gc_context,
+                activation.context.gc(),
                 activation.context.renderer,
                 bitmap_data,
                 (dest_x, dest_y),
@@ -643,7 +643,7 @@ pub fn flood_fill<'gc>(
             let color = args.get_u32(activation, 2)?;
 
             operations::flood_fill(
-                activation.context.gc_context,
+                activation.context.gc(),
                 activation.context.renderer,
                 bitmap_data,
                 x,
@@ -675,7 +675,7 @@ pub fn noise<'gc>(
         bitmap_data.check_valid(activation)?;
         let random_seed = args.get_i32(activation, 0)?;
         operations::noise(
-            activation.context.gc_context,
+            activation.context.gc(),
             bitmap_data,
             random_seed,
             low,
@@ -713,7 +713,7 @@ pub fn color_transform<'gc>(
                 )?;
 
             operations::color_transform(
-                activation.context.gc_context,
+                activation.context.gc(),
                 activation.context.renderer,
                 bitmap_data,
                 x_min,
@@ -1106,7 +1106,7 @@ pub fn fill_rect<'gc>(
         let (x, y, width, height) = get_rectangle_x_y_width_height(activation, rectangle)?;
 
         operations::fill_rect(
-            activation.context.gc_context,
+            activation.context.gc(),
             activation.context.renderer,
             bitmap_data,
             x,
@@ -1130,7 +1130,7 @@ pub fn dispose<'gc>(
     if let Some(bitmap_data) = this.as_bitmap_data() {
         // Don't check if we've already disposed this BitmapData - 'BitmapData.dispose()' can be called
         // multiple times
-        bitmap_data.dispose(activation.context.gc_context);
+        bitmap_data.dispose(activation.context.gc());
     }
     Ok(Value::Undefined)
 }
@@ -1256,7 +1256,7 @@ pub fn clone<'gc>(
             let class = activation.avm2().classes().bitmapdata;
             let new_bitmap_data_object = BitmapDataObject::from_bitmap_data_internal(
                 activation,
-                BitmapDataWrapper::new(GcCell::new(activation.context.gc_context, new_bitmap_data)),
+                BitmapDataWrapper::new(GcCell::new(activation.context.gc(), new_bitmap_data)),
                 class,
             )?;
 
@@ -1323,7 +1323,7 @@ pub fn palette_map<'gc>(
         let alpha_array = get_channel(6, 24)?;
 
         operations::palette_map(
-            activation.context.gc_context,
+            activation.context.gc(),
             activation.context.renderer,
             bitmap_data,
             source_bitmap,
@@ -1390,7 +1390,7 @@ pub fn perlin_noise<'gc>(
             let octave_offsets = octave_offsets?;
 
             operations::perlin_noise(
-                activation.context.gc_context,
+                activation.context.gc(),
                 bitmap_data,
                 (base_x, base_y),
                 num_octaves,
@@ -1456,7 +1456,7 @@ pub fn threshold<'gc>(
                 src_bitmap.check_valid(activation)?;
 
                 return Ok(operations::threshold(
-                    activation.context.gc_context,
+                    activation.context.gc(),
                     activation.context.renderer,
                     bitmap_data,
                     src_bitmap,
@@ -1539,7 +1539,7 @@ pub fn compare<'gc>(
             let class = activation.avm2().classes().bitmapdata;
             Ok(BitmapDataObject::from_bitmap_data_internal(
                 activation,
-                BitmapDataWrapper::new(GcCell::new(activation.context.gc_context, bitmap_data)),
+                BitmapDataWrapper::new(GcCell::new(activation.context.gc(), bitmap_data)),
                 class,
             )?
             .into())
@@ -1594,7 +1594,7 @@ pub fn pixel_dissolve<'gc>(
             src_bitmap_data.check_valid(activation)?;
 
             return Ok(operations::pixel_dissolve(
-                activation.context.gc_context,
+                activation.context.gc(),
                 activation.context.renderer,
                 bitmap_data,
                 src_bitmap_data,
@@ -1650,7 +1650,7 @@ pub fn merge<'gc>(
             if let Some(src_bitmap) = src_bitmap.as_bitmap_data() {
                 if !src_bitmap.disposed() {
                     operations::merge(
-                        activation.context.gc_context,
+                        activation.context.gc(),
                         activation.context.renderer,
                         bitmap_data,
                         src_bitmap,

@@ -182,12 +182,12 @@ fn set_scroll_rect<'gc>(
     value: Value<'gc>,
 ) -> Result<(), Error<'gc>> {
     if let Value::Object(object) = value {
-        this.set_has_scroll_rect(activation.context.gc_context, true);
+        this.set_has_scroll_rect(activation.context.gc(), true);
         if let Some(rectangle) = object_to_rectangle(activation, object)? {
-            this.set_next_scroll_rect(activation.context.gc_context, rectangle);
+            this.set_next_scroll_rect(activation.context.gc(), rectangle);
         }
     } else {
-        this.set_has_scroll_rect(activation.context.gc_context, false);
+        this.set_has_scroll_rect(activation.context.gc(), false);
     };
     Ok(())
 }
@@ -213,10 +213,10 @@ fn set_scale_9_grid<'gc>(
     avm1_stub!(activation, "MovieClip", "scale9Grid");
     if let Value::Object(object) = value {
         if let Some(rectangle) = object_to_rectangle(activation, object)? {
-            this.set_scaling_grid(activation.context.gc_context, rectangle);
+            this.set_scaling_grid(activation.context.gc(), rectangle);
         }
     } else {
-        this.set_scaling_grid(activation.context.gc_context, Rectangle::default());
+        this.set_scaling_grid(activation.context.gc(), Rectangle::default());
     };
     Ok(())
 }
@@ -265,7 +265,7 @@ pub fn create_proto<'gc>(
     proto: Object<'gc>,
     fn_proto: Object<'gc>,
 ) -> Object<'gc> {
-    let object = ScriptObject::new(context.gc_context, Some(proto));
+    let object = ScriptObject::new(context.gc(), Some(proto));
     define_properties_on(PROTO_DECLS, context, object, fn_proto);
     object.into()
 }
@@ -295,7 +295,7 @@ fn attach_bitmap<'gc>(
 
                 //TODO: do attached BitmapDatas have character ids?
                 let display_object = Bitmap::new_with_bitmap_data(
-                    activation.context.gc_context,
+                    activation.context.gc(),
                     0,
                     bitmap_data,
                     smoothing,
@@ -593,8 +593,8 @@ fn begin_bitmap_fill<'gc>(
     let fill_style = if let [Value::Object(bitmap_data), ..] = args {
         if let NativeObject::BitmapData(bitmap_data) = bitmap_data.native() {
             // Register the bitmap data with the drawing.
-            let handle = bitmap_data
-                .bitmap_handle(activation.context.gc_context, activation.context.renderer);
+            let handle =
+                bitmap_data.bitmap_handle(activation.context.gc(), activation.context.renderer);
             let bitmap = ruffle_render::bitmap::BitmapInfo {
                 handle,
                 width: bitmap_data.width() as u16,
@@ -815,10 +815,10 @@ fn attach_movie<'gc>(
         .library
         .library_for_movie(movie_clip.movie())
         .ok_or("Movie is missing!".into())
-        .and_then(|l| l.instantiate_by_export_name(export_name, activation.context.gc_context))
+        .and_then(|l| l.instantiate_by_export_name(export_name, activation.context.gc()))
     {
         // Set name and attach to parent.
-        new_clip.set_name(activation.context.gc_context, new_instance_name);
+        new_clip.set_name(activation.context.gc(), new_instance_name);
         movie_clip.replace_at_depth(activation.context, new_clip, depth);
         let init_object = if let Some(Value::Object(init_object)) = init_object {
             Some(init_object.to_owned())
@@ -857,10 +857,10 @@ fn create_empty_movie_clip<'gc>(
 
     // Create empty movie clip.
     let swf_movie = movie_clip.movie();
-    let new_clip = MovieClip::new(swf_movie, activation.context.gc_context);
+    let new_clip = MovieClip::new(swf_movie, activation.context.gc());
 
     // Set name and attach to parent.
-    new_clip.set_name(activation.context.gc_context, new_instance_name);
+    new_clip.set_name(activation.context.gc(), new_instance_name);
     movie_clip.replace_at_depth(activation.context, new_clip.into(), depth);
     new_clip.post_instantiation(activation.context, None, Instantiator::Avm1, true);
 
@@ -905,7 +905,7 @@ fn create_text_field<'gc>(
     let text_field: DisplayObject<'gc> =
         EditText::new(activation.context, movie, x, y, width, height).into();
     text_field.set_name(
-        activation.context.gc_context,
+        activation.context.gc(),
         instance_name.coerce_to_string(activation)?,
     );
     movie_clip.replace_at_depth(
@@ -982,24 +982,24 @@ pub fn clone_sprite<'gc>(
         // Clip from SWF; instantiate a new copy.
         let library = context.library.library_for_movie(movie).unwrap();
         library
-            .instantiate_by_id(movie_clip.id(), context.gc_context)
+            .instantiate_by_id(movie_clip.id(), context.gc())
             .unwrap()
             .as_movie_clip()
             .unwrap()
     } else {
         // Dynamically created clip; create a new empty movie clip.
-        MovieClip::new(movie, context.gc_context)
+        MovieClip::new(movie, context.gc())
     };
 
     // Set name and attach to parent.
-    new_clip.set_name(context.gc_context, target);
+    new_clip.set_name(context.gc(), target);
     parent.replace_at_depth(context, new_clip.into(), depth);
 
     // Copy display properties from previous clip to new clip.
-    new_clip.set_matrix(context.gc_context, *movie_clip.base().matrix());
-    new_clip.set_color_transform(context.gc_context, *movie_clip.base().color_transform());
+    new_clip.set_matrix(context.gc(), *movie_clip.base().matrix());
+    new_clip.set_color_transform(context.gc(), *movie_clip.base().color_transform());
 
-    new_clip.set_clip_event_handlers(context.gc_context, movie_clip.clip_actions().to_vec());
+    new_clip.set_clip_event_handlers(context.gc(), movie_clip.clip_actions().to_vec());
 
     if let Some(drawing) = movie_clip.drawing().as_deref().cloned() {
         *new_clip.drawing_mut(context.gc()) = drawing;
@@ -1382,7 +1382,7 @@ fn swap_depths<'gc>(
 
         if depth != movie_clip.depth() {
             parent.swap_at_depth(activation.context, movie_clip.into(), depth);
-            movie_clip.set_transformed_by_script(activation.context.gc_context, true);
+            movie_clip.set_transformed_by_script(activation.context.gc(), true);
         }
     }
 
@@ -1481,7 +1481,7 @@ fn get_bounds<'gc>(
         };
 
         let out = ScriptObject::new(
-            activation.context.gc_context,
+            activation.context.gc(),
             Some(activation.context.avm1.prototypes().object),
         );
         out.set("xMin", out_bounds.x_min.to_pixels().into(), activation)?;
@@ -1663,18 +1663,18 @@ fn set_transform<'gc>(
         if let NativeObject::Transform(transform) = object.native() {
             if let Some(clip) = transform.clip(activation) {
                 let matrix = *clip.base().matrix();
-                this.set_matrix(activation.context.gc_context, matrix);
+                this.set_matrix(activation.context.gc(), matrix);
 
                 let color_transform = *clip.base().color_transform();
-                this.set_color_transform(activation.context.gc_context, color_transform);
+                this.set_color_transform(activation.context.gc(), color_transform);
 
                 if let Some(parent) = this.parent() {
                     // Self-transform changes are automatically handled,
                     // we only want to inform ancestors to avoid unnecessary invalidations for tx/ty
-                    parent.invalidate_cached_bitmap(activation.context.gc_context);
+                    parent.invalidate_cached_bitmap(activation.context.gc());
                 }
 
-                this.set_transformed_by_script(activation.context.gc_context, true);
+                this.set_transformed_by_script(activation.context.gc(), true);
             }
         }
     }
@@ -1695,7 +1695,7 @@ fn set_lock_root<'gc>(
     value: Value<'gc>,
 ) -> Result<(), Error<'gc>> {
     let lock_root = value.as_bool(activation.swf_version());
-    this.set_lock_root(activation.context.gc_context, lock_root);
+    this.set_lock_root(activation.context.gc(), lock_root);
     Ok(())
 }
 
@@ -1703,7 +1703,7 @@ fn blend_mode<'gc>(
     this: MovieClip<'gc>,
     activation: &mut Activation<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let mode = AvmString::new_utf8(activation.context.gc_context, this.blend_mode().to_string());
+    let mode = AvmString::new_utf8(activation.context.gc(), this.blend_mode().to_string());
     Ok(mode.into())
 }
 
@@ -1714,7 +1714,7 @@ fn set_blend_mode<'gc>(
 ) -> Result<(), Error<'gc>> {
     // No-op if value is not a valid blend mode.
     if let Some(mode) = value.as_blend_mode() {
-        this.set_blend_mode(activation.context.gc_context, mode.into());
+        this.set_blend_mode(activation.context.gc(), mode.into());
     } else {
         tracing::error!("Unknown blend mode {value:?}");
     }
@@ -1736,7 +1736,7 @@ fn set_cache_as_bitmap<'gc>(
 ) -> Result<(), Error<'gc>> {
     // Note that the *getter* returns actual, and *setter* is preference
     this.set_bitmap_cached_preference(
-        activation.context.gc_context,
+        activation.context.gc(),
         value.as_bool(activation.swf_version()),
     );
     Ok(())
@@ -1759,10 +1759,10 @@ fn set_opaque_background<'gc>(
     value: Value<'gc>,
 ) -> Result<(), Error<'gc>> {
     if matches!(value, Value::Undefined | Value::Null) {
-        this.set_opaque_background(activation.context.gc_context, None);
+        this.set_opaque_background(activation.context.gc(), None);
     } else {
         this.set_opaque_background(
-            activation.context.gc_context,
+            activation.context.gc(),
             Some(Color::from_rgb(value.coerce_to_u32(activation)?, 255)),
         );
     }
@@ -1774,7 +1774,7 @@ fn filters<'gc>(
     activation: &mut Activation<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     Ok(ArrayObject::new(
-        activation.context.gc_context,
+        activation.context.gc(),
         activation.context.avm1.prototypes().array,
         this.filters()
             .into_iter()
@@ -1797,7 +1797,7 @@ fn set_filters<'gc>(
             }
         }
     }
-    this.set_filters(activation.context.gc_context, filters);
+    this.set_filters(activation.context.gc(), filters);
     Ok(())
 }
 

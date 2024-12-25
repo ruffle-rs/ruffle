@@ -20,7 +20,7 @@ pub fn reg_exp_allocator<'gc>(
     let base = ScriptObjectData::new(class);
 
     Ok(RegExpObject(Gc::new(
-        activation.context.gc_context,
+        activation.context.gc(),
         RegExpObjectData {
             base,
             regexp: RefLock::new(RegExp::new(activation.strings().empty())),
@@ -68,7 +68,7 @@ impl<'gc> RegExpObject<'gc> {
         let base = ScriptObjectData::new(class);
 
         let this: Object<'gc> = RegExpObject(Gc::new(
-            activation.context.gc_context,
+            activation.context.gc(),
             RegExpObjectData {
                 base,
                 regexp: RefLock::new(regexp),

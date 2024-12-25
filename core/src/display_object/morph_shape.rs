@@ -95,11 +95,11 @@ impl<'gc> TDisplayObject<'gc> for MorphShape<'gc> {
             .library_for_movie_mut(self.movie())
             .get_morph_shape(id)
         {
-            self.0.write(context.gc_context).static_data = new_morph_shape.0.read().static_data;
+            self.0.write(context.gc()).static_data = new_morph_shape.0.read().static_data;
         } else {
             tracing::warn!("PlaceObject: expected morph shape at character ID {}", id);
         }
-        self.invalidate_cached_bitmap(context.gc_context);
+        self.invalidate_cached_bitmap(context.gc());
     }
 
     fn run_frame_avm1(&self, _context: &mut UpdateContext) {
@@ -115,7 +115,7 @@ impl<'gc> TDisplayObject<'gc> for MorphShape<'gc> {
     }
 
     fn set_object2(&self, context: &mut UpdateContext<'gc>, to: Avm2Object<'gc>) {
-        self.0.write(context.gc_context).object = Some(to);
+        self.0.write(context.gc()).object = Some(to);
     }
 
     /// Construct objects placed on this frame.
@@ -128,7 +128,7 @@ impl<'gc> TDisplayObject<'gc> for MorphShape<'gc> {
                 (*self).into(),
                 class,
             ) {
-                Ok(object) => self.0.write(context.gc_context).object = Some(object.into()),
+                Ok(object) => self.0.write(context.gc()).object = Some(object.into()),
                 Err(e) => tracing::error!("Got {} when constructing AVM2 side of MorphShape", e),
             };
             self.on_construction_complete(context);

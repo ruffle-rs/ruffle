@@ -230,7 +230,7 @@ impl<'gc> Namespace<'gc> {
     ) -> Self {
         let atom = context.intern(package_name.into());
         Self(Some(Gc::new(
-            context.gc_context,
+            context.gc(),
             NamespaceData::Namespace(atom, api_version),
         )))
     }
@@ -242,7 +242,7 @@ impl<'gc> Namespace<'gc> {
     ) -> Self {
         let atom = context.intern(package_name.into());
         Self(Some(Gc::new(
-            context.gc_context,
+            context.gc(),
             NamespaceData::PackageInternal(atom),
         )))
     }

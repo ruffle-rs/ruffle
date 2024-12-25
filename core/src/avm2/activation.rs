@@ -142,7 +142,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     /// `self.context.gc_context` can be sometimes necessary to satisfy the borrow checker.
     #[inline(always)]
     pub fn gc(&self) -> &'gc gc_arena::Mutation<'gc> {
-        self.context.gc_context
+        self.context.gc()
     }
 
     #[inline(always)]
@@ -232,7 +232,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
                 .body()
                 .ok_or("Cannot execute non-native method (for script) without body")?;
 
-            BytecodeMethod::get_or_init_activation_class(method, context.gc_context, || {
+            BytecodeMethod::get_or_init_activation_class(method, context.gc(), || {
                 let translation_unit = method.translation_unit();
                 let abc_method = method.method();
                 let mut dummy_activation = Activation::from_domain(context, domain);
@@ -409,7 +409,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         *local_registers.get_unchecked_mut(0) = this.into();
 
         let activation_class =
-            BytecodeMethod::get_or_init_activation_class(method, self.context.gc_context, || {
+            BytecodeMethod::get_or_init_activation_class(method, self.context.gc(), || {
                 let translation_unit = method.translation_unit();
                 let abc_method = method.method();
                 let mut dummy_activation = Activation::from_domain(self.context, outer.domain());
@@ -496,7 +496,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             {
                 args_object.set_string_property_local("callee", callee.into(), self)?;
                 args_object.set_local_property_is_enumerable(
-                    self.context.gc_context,
+                    self.context.gc(),
                     "callee".into(),
                     false,
                 );
@@ -580,8 +580,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     /// Creates a new ScopeChain by chaining the current state of this
     /// activation's scope stack with the outer scope.
     pub fn create_scopechain(&self) -> ScopeChain<'gc> {
-        self.outer
-            .chain(self.context.gc_context, self.scope_frame())
+        self.outer.chain(self.context.gc(), self.scope_frame())
     }
 
     /// Returns the domain of the original AS3 caller. This will be `None`
@@ -689,7 +688,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         self.bound_superclass_object.unwrap_or_else(|| {
             panic!(
                 "Cannot call supermethod {} without a superclass",
-                name.to_qualified_name(self.context.gc_context),
+                name.to_qualified_name(self.context.gc()),
             )
         })
     }
@@ -1377,9 +1376,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             if let Value::Object(object) = object_value {
                 match name_value {
                     Value::Integer(name_int) if name_int >= 0 => {
-                        if let Some(mut array) =
-                            object.as_array_storage_mut(self.context.gc_context)
-                        {
+                        if let Some(mut array) = object.as_array_storage_mut(self.context.gc()) {
                             let _ = self.pop_stack();
                             let _ = self.pop_stack();
                             array.set(name_int as usize, value);
@@ -1394,7 +1391,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
                             dictionary.set_property_by_object(
                                 name_object,
                                 value,
-                                self.context.gc_context,
+                                self.context.gc(),
                             );
 
                             return Ok(FrameControl::Continue);
@@ -1457,7 +1454,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
                 if let Some(dictionary) = object.as_dictionary_object() {
                     let _ = self.pop_stack();
                     let _ = self.pop_stack();
-                    dictionary.delete_property_by_object(name_object, self.context.gc_context);
+                    dictionary.delete_property_by_object(name_object, self.context.gc());
 
                     self.push_raw(true);
                     return Ok(FrameControl::Continue);
@@ -1689,7 +1686,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             let class_name = object
                 .instance_class()
                 .name()
-                .to_qualified_name_err_message(self.context.gc_context);
+                .to_qualified_name_err_message(self.context.gc());
             return Err(Error::AvmError(type_error(
                 self,
                 &format!(
@@ -1737,7 +1734,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             .as_object()
             .expect("Cannot set_slot on primitive");
 
-        object.set_slot_no_coerce(index, value, self.context.gc_context);
+        object.set_slot_no_coerce(index, value, self.context.gc());
 
         Ok(FrameControl::Continue)
     }
@@ -2019,12 +2016,12 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             (Value::Integer(n1), Value::Integer(n2)) => (n1 + n2).into(),
             (Value::Number(n1), Value::Number(n2)) => (n1 + n2).into(),
             (Value::String(s), value2) => Value::String(AvmString::concat(
-                self.context.gc_context,
+                self.context.gc(),
                 s,
                 value2.coerce_to_string(self)?,
             )),
             (value1, Value::String(s)) => Value::String(AvmString::concat(
-                self.context.gc_context,
+                self.context.gc(),
                 value1.coerce_to_string(self)?,
                 s,
             )),
@@ -2045,12 +2042,12 @@ impl<'a, 'gc> Activation<'a, 'gc> {
 
                 match (prim_value1, prim_value2) {
                     (Value::String(s), value2) => Value::String(AvmString::concat(
-                        self.context.gc_context,
+                        self.context.gc(),
                         s,
                         value2.coerce_to_string(self)?,
                     )),
                     (value1, Value::String(s)) => Value::String(AvmString::concat(
-                        self.context.gc_context,
+                        self.context.gc(),
                         value1.coerce_to_string(self)?,
                         s,
                     )),
@@ -2804,7 +2801,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
 
         // Implementation of `EscapeAttributeValue` from ECMA-357(10.2.1.2)
         let r = escape_attribute_value(s);
-        self.push_raw(AvmString::new(self.context.gc_context, r));
+        self.push_raw(AvmString::new(self.context.gc(), r));
 
         Ok(FrameControl::Continue)
     }

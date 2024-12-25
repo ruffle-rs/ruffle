@@ -199,7 +199,7 @@ pub fn exec<'gc>(
             activation
                 .context
                 .avm2
-                .push_call(activation.context.gc_context, method, bound_class);
+                .push_call(activation.context.gc(), method, bound_class);
             (bm.method)(&mut activation, Value::Object(receiver), &arguments)
         }
         Method::Bytecode(bm) => {
@@ -242,14 +242,11 @@ pub fn exec<'gc>(
             activation
                 .context
                 .avm2
-                .push_call(activation.context.gc_context, method, bound_class);
+                .push_call(activation.context.gc(), method, bound_class);
             activation.run_actions(bm)
         }
     };
-    activation
-        .context
-        .avm2
-        .pop_call(activation.context.gc_context);
+    activation.context.avm2.pop_call(activation.context.gc());
     ret
 }
 

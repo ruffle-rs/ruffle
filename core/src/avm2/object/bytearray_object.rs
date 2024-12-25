@@ -41,7 +41,7 @@ pub fn byte_array_allocator<'gc>(
     let base = ScriptObjectData::new(class);
 
     Ok(ByteArrayObject(Gc::new(
-        activation.context.gc_context,
+        activation.context.gc(),
         ByteArrayObjectData {
             base,
             storage: RefCell::new(storage),
@@ -90,7 +90,7 @@ impl<'gc> ByteArrayObject<'gc> {
         let base = ScriptObjectData::new(class);
 
         let instance: Object<'gc> = ByteArrayObject(Gc::new(
-            activation.context.gc_context,
+            activation.context.gc(),
             ByteArrayObjectData {
                 base,
                 storage: RefCell::new(bytes),

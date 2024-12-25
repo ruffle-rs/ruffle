@@ -61,7 +61,7 @@ fn get_sandbox_type<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let movie = activation.base_clip().movie();
     Ok(AvmString::new_utf8(
-        activation.context.gc_context,
+        activation.context.gc(),
         match movie.sandbox_type() {
             SandboxType::Remote => "remote",
             SandboxType::LocalWithFile => "localWithFile",
@@ -95,7 +95,7 @@ pub fn create<'gc>(
     proto: Object<'gc>,
     fn_proto: Object<'gc>,
 ) -> Object<'gc> {
-    let security = ScriptObject::new(context.gc_context, Some(proto));
+    let security = ScriptObject::new(context.gc(), Some(proto));
     define_properties_on(OBJECT_DECLS, context, security, fn_proto);
     security.into()
 }

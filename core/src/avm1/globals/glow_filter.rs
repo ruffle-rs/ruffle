@@ -85,10 +85,7 @@ pub struct GlowFilter<'gc>(GcCell<'gc, GlowFilterData>);
 
 impl<'gc> GlowFilter<'gc> {
     fn new(activation: &mut Activation<'_, 'gc>, args: &[Value<'gc>]) -> Result<Self, Error<'gc>> {
-        let glow_filter = Self(GcCell::new(
-            activation.context.gc_context,
-            Default::default(),
-        ));
+        let glow_filter = Self(GcCell::new(activation.context.gc(), Default::default()));
         glow_filter.set_color(activation, args.get(0))?;
         glow_filter.set_alpha(activation, args.get(1))?;
         glow_filter.set_blur_x(activation, args.get(2))?;
@@ -119,7 +116,7 @@ impl<'gc> GlowFilter<'gc> {
     ) -> Result<(), Error<'gc>> {
         if let Some(value) = value {
             let value = value.coerce_to_u32(activation)?;
-            let mut write = self.0.write(activation.context.gc_context);
+            let mut write = self.0.write(activation.context.gc());
             write.color = Color::from_rgb(value, write.color.a);
         }
         Ok(())
@@ -136,7 +133,7 @@ impl<'gc> GlowFilter<'gc> {
     ) -> Result<(), Error<'gc>> {
         if let Some(value) = value {
             let alpha = (value.coerce_to_f64(activation)? * 255.0) as u8;
-            self.0.write(activation.context.gc_context).color.a = alpha;
+            self.0.write(activation.context.gc()).color.a = alpha;
         }
         Ok(())
     }
@@ -152,7 +149,7 @@ impl<'gc> GlowFilter<'gc> {
     ) -> Result<(), Error<'gc>> {
         if let Some(value) = value {
             let quality = value.coerce_to_i32(activation)?.clamp(0, 15);
-            self.0.write(activation.context.gc_context).quality = quality;
+            self.0.write(activation.context.gc()).quality = quality;
         }
         Ok(())
     }
@@ -168,7 +165,7 @@ impl<'gc> GlowFilter<'gc> {
     ) -> Result<(), Error<'gc>> {
         if let Some(value) = value {
             let inner = value.as_bool(activation.swf_version());
-            self.0.write(activation.context.gc_context).inner = inner;
+            self.0.write(activation.context.gc()).inner = inner;
         }
         Ok(())
     }
@@ -184,7 +181,7 @@ impl<'gc> GlowFilter<'gc> {
     ) -> Result<(), Error<'gc>> {
         if let Some(value) = value {
             let knockout = value.as_bool(activation.swf_version());
-            self.0.write(activation.context.gc_context).knockout = knockout;
+            self.0.write(activation.context.gc()).knockout = knockout;
         }
         Ok(())
     }
@@ -200,7 +197,7 @@ impl<'gc> GlowFilter<'gc> {
     ) -> Result<(), Error<'gc>> {
         if let Some(value) = value {
             let blur_x = value.coerce_to_f64(activation)?.clamp(0.0, 255.0);
-            self.0.write(activation.context.gc_context).blur_x = blur_x;
+            self.0.write(activation.context.gc()).blur_x = blur_x;
         }
         Ok(())
     }
@@ -216,7 +213,7 @@ impl<'gc> GlowFilter<'gc> {
     ) -> Result<(), Error<'gc>> {
         if let Some(value) = value {
             let blur_y = value.coerce_to_f64(activation)?.clamp(0.0, 255.0);
-            self.0.write(activation.context.gc_context).blur_y = blur_y;
+            self.0.write(activation.context.gc()).blur_y = blur_y;
         }
         Ok(())
     }
@@ -232,7 +229,7 @@ impl<'gc> GlowFilter<'gc> {
     ) -> Result<(), Error<'gc>> {
         if let Some(value) = value {
             self.0
-                .write(activation.context.gc_context)
+                .write(activation.context.gc())
                 .set_strength(value.coerce_to_f64(activation)?);
         }
         Ok(())
@@ -287,7 +284,7 @@ fn method<'gc>(
     if index == CONSTRUCTOR {
         let glow_filter = GlowFilter::new(activation, args)?;
         this.set_native(
-            activation.context.gc_context,
+            activation.context.gc(),
             NativeObject::GlowFilter(glow_filter),
         );
         return Ok(this.into());
@@ -348,7 +345,7 @@ pub fn create_proto<'gc>(
     proto: Object<'gc>,
     fn_proto: Object<'gc>,
 ) -> Object<'gc> {
-    let glow_filter_proto = ScriptObject::new(context.gc_context, Some(proto));
+    let glow_filter_proto = ScriptObject::new(context.gc(), Some(proto));
     define_properties_on(PROTO_DECLS, context, glow_filter_proto, fn_proto);
     glow_filter_proto.into()
 }
@@ -359,7 +356,7 @@ pub fn create_constructor<'gc>(
     fn_proto: Object<'gc>,
 ) -> Object<'gc> {
     FunctionObject::constructor(
-        context.gc_context,
+        context.gc(),
         Executable::Native(glow_filter_method!(0)),
         constructor_to_fn!(glow_filter_method!(0)),
         fn_proto,

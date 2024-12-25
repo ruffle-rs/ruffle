@@ -26,8 +26,8 @@ pub fn create_stage_object<'gc>(
     fn_proto: Object<'gc>,
     broadcaster_functions: BroadcasterFunctions<'gc>,
 ) -> Object<'gc> {
-    let stage = ScriptObject::new(context.gc_context, Some(proto));
-    broadcaster_functions.initialize(context.gc_context, stage.into(), array_proto);
+    let stage = ScriptObject::new(context.gc(), Some(proto));
+    broadcaster_functions.initialize(context.gc(), stage.into(), array_proto);
     define_properties_on(OBJECT_DECLS, context, stage, fn_proto);
     stage.into()
 }
@@ -56,7 +56,7 @@ fn align<'gc>(
     if align.contains(StageAlign::BOTTOM) {
         s.push_byte(b'B');
     }
-    let align = AvmString::new(activation.context.gc_context, s);
+    let align = AvmString::new(activation.context.gc(), s);
     Ok(align.into())
 }
 
@@ -92,7 +92,7 @@ fn scale_mode<'gc>(
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     let scale_mode = AvmString::new_utf8(
-        activation.context.gc_context,
+        activation.context.gc(),
         activation.context.stage.scale_mode().to_string(),
     );
     Ok(scale_mode.into())

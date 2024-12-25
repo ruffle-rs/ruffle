@@ -330,7 +330,7 @@ impl<'gc> Class<'gc> {
         this: Class<'gc>,
         param: Option<Class<'gc>>,
     ) -> Class<'gc> {
-        let mc = context.gc_context;
+        let mc = context.gc();
         let this_read = this.0.read();
 
         if let Some(application) = this_read.applications.get(&param) {
@@ -372,14 +372,14 @@ impl<'gc> Class<'gc> {
         new_class.set_param(mc, Some(Some(param)));
         new_class.0.write(mc).call_handler = object_vector_i_class.call_handler();
 
-        new_class.mark_traits_loaded(context.gc_context);
+        new_class.mark_traits_loaded(context.gc());
         new_class
             .init_vtable(context)
             .expect("Vector class doesn't have any interfaces, so `init_vtable` cannot error");
 
         let c_class = new_class.c_class().expect("Class::new returns an i_class");
 
-        c_class.mark_traits_loaded(context.gc_context);
+        c_class.mark_traits_loaded(context.gc());
         c_class
             .init_vtable(context)
             .expect("Vector$ class doesn't have any interfaces, so `init_vtable` cannot error");
@@ -511,7 +511,7 @@ impl<'gc> Class<'gc> {
                     vec![],
                     None,
                     true,
-                    activation.context.gc_context,
+                    activation.context.gc(),
                 );
                 call_handler = Some(method);
             }
@@ -529,7 +529,7 @@ impl<'gc> Class<'gc> {
             .unwrap_or(Allocator(scriptobject_allocator));
 
         let i_class = Class(GcCell::new(
-            activation.context.gc_context,
+            activation.context.gc(),
             ClassData {
                 name,
                 param: None,
@@ -541,7 +541,7 @@ impl<'gc> Class<'gc> {
                 instance_allocator,
                 instance_init,
                 traits: Vec::new(),
-                vtable: VTable::empty(activation.context.gc_context),
+                vtable: VTable::empty(activation.context.gc()),
                 call_handler,
                 custom_constructor: custom_constructor.map(CustomConstructor),
                 traits_loaded: false,
@@ -558,11 +558,11 @@ impl<'gc> Class<'gc> {
 
         let c_name = QName::new(
             name_namespace,
-            AvmString::new(activation.context.gc_context, local_name_buf),
+            AvmString::new(activation.context.gc(), local_name_buf),
         );
 
         let c_class = Class(GcCell::new(
-            activation.context.gc_context,
+            activation.context.gc(),
             ClassData {
                 name: c_name,
                 param: None,
@@ -574,7 +574,7 @@ impl<'gc> Class<'gc> {
                 instance_allocator: Allocator(scriptobject_allocator),
                 instance_init: class_init,
                 traits: Vec::new(),
-                vtable: VTable::empty(activation.context.gc_context),
+                vtable: VTable::empty(activation.context.gc()),
                 call_handler: None,
                 custom_constructor: None,
                 traits_loaded: false,
@@ -585,7 +585,7 @@ impl<'gc> Class<'gc> {
             },
         ));
 
-        i_class.set_c_class(activation.context.gc_context, c_class);
+        i_class.set_c_class(activation.context.gc(), c_class);
 
         Ok(i_class)
     }
@@ -613,9 +613,9 @@ impl<'gc> Class<'gc> {
         let c_class = self
             .c_class()
             .expect("Just checked that this class was an i_class");
-        let mut c_class_write = c_class.0.write(activation.context.gc_context);
+        let mut c_class_write = c_class.0.write(activation.context.gc());
 
-        let mut i_class_write = self.0.write(activation.context.gc_context);
+        let mut i_class_write = self.0.write(activation.context.gc());
 
         i_class_write.traits_loaded = true;
         c_class_write.traits_loaded = true;
@@ -735,7 +735,7 @@ impl<'gc> Class<'gc> {
             None,
             None,
             read.super_class.map(|c| c.vtable()),
-            context.gc_context,
+            context.gc(),
         );
         drop(read);
 
@@ -780,7 +780,7 @@ impl<'gc> Class<'gc> {
                 if !interface_trait.name().namespace().is_public() {
                     let public_name = QName::new(ns, interface_trait.name().local_name());
                     self.0.read().vtable.copy_property_for_interface(
-                        context.gc_context,
+                        context.gc(),
                         public_name,
                         interface_trait.name(),
                     );
@@ -788,7 +788,7 @@ impl<'gc> Class<'gc> {
             }
         }
 
-        self.0.write(context.gc_context).all_interfaces = interfaces;
+        self.0.write(context.gc()).all_interfaces = interfaces;
 
         Ok(())
     }
@@ -813,7 +813,7 @@ impl<'gc> Class<'gc> {
         let name = QName::new(activation.avm2().namespaces.public_all(), name);
 
         let i_class = Class(GcCell::new(
-            activation.context.gc_context,
+            activation.context.gc(),
             ClassData {
                 name,
                 param: None,
@@ -826,10 +826,10 @@ impl<'gc> Class<'gc> {
                 instance_init: Method::from_builtin(
                     |_, _, _| Ok(Value::Undefined),
                     "<Activation object constructor>",
-                    activation.context.gc_context,
+                    activation.context.gc(),
                 ),
                 traits,
-                vtable: VTable::empty(activation.context.gc_context),
+                vtable: VTable::empty(activation.context.gc()),
                 call_handler: None,
                 custom_constructor: None,
                 traits_loaded: true,
@@ -846,11 +846,11 @@ impl<'gc> Class<'gc> {
 
         let c_name = QName::new(
             name_namespace,
-            AvmString::new(activation.context.gc_context, local_name_buf),
+            AvmString::new(activation.context.gc(), local_name_buf),
         );
 
         let c_class = Class(GcCell::new(
-            activation.context.gc_context,
+            activation.context.gc(),
             ClassData {
                 name: c_name,
                 param: None,
@@ -863,10 +863,10 @@ impl<'gc> Class<'gc> {
                 instance_init: Method::from_builtin(
                     |_, _, _| Ok(Value::Undefined),
                     "<Activation object class constructor>",
-                    activation.context.gc_context,
+                    activation.context.gc(),
                 ),
                 traits: Vec::new(),
-                vtable: VTable::empty(activation.context.gc_context),
+                vtable: VTable::empty(activation.context.gc()),
                 call_handler: None,
                 custom_constructor: None,
                 traits_loaded: true,
@@ -877,7 +877,7 @@ impl<'gc> Class<'gc> {
             },
         ));
 
-        i_class.set_c_class(activation.context.gc_context, c_class);
+        i_class.set_c_class(activation.context.gc(), c_class);
 
         i_class.init_vtable(activation.context)?;
         c_class.init_vtable(activation.context)?;
@@ -994,7 +994,7 @@ impl<'gc> Class<'gc> {
         class_object: ClassObject<'gc>,
     ) {
         self.define_instance_trait(
-            activation.context.gc_context,
+            activation.context.gc(),
             Trait::from_class(name, class_object.inner_class_definition()),
         );
     }
@@ -1063,7 +1063,7 @@ impl<'gc> Class<'gc> {
     ) {
         for &(name, value) in items {
             self.define_class_trait(
-                activation.context.gc_context,
+                activation.context.gc(),
                 Trait::from_const(
                     QName::new(namespace, name),
                     Some(activation.avm2().multinames.int),
@@ -1175,7 +1175,7 @@ impl<'gc> Class<'gc> {
     ) {
         for &(name, value) in items {
             self.define_instance_trait(
-                activation.context.gc_context,
+                activation.context.gc(),
                 Trait::from_const(
                     QName::new(namespace, name),
                     Some(activation.avm2().multinames.int),

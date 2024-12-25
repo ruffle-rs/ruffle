@@ -54,10 +54,7 @@ pub struct BlurFilter<'gc>(GcCell<'gc, BlurFilterData>);
 
 impl<'gc> BlurFilter<'gc> {
     fn new(activation: &mut Activation<'_, 'gc>, args: &[Value<'gc>]) -> Result<Self, Error<'gc>> {
-        let blur_filter = Self(GcCell::new(
-            activation.context.gc_context,
-            Default::default(),
-        ));
+        let blur_filter = Self(GcCell::new(activation.context.gc(), Default::default()));
         blur_filter.set_blur_x(activation, args.get(0))?;
         blur_filter.set_blur_y(activation, args.get(1))?;
         blur_filter.set_quality(activation, args.get(2))?;
@@ -83,7 +80,7 @@ impl<'gc> BlurFilter<'gc> {
     ) -> Result<(), Error<'gc>> {
         if let Some(value) = value {
             let blur_x = value.coerce_to_f64(activation)?.clamp(0.0, 255.0);
-            self.0.write(activation.context.gc_context).blur_x = blur_x;
+            self.0.write(activation.context.gc()).blur_x = blur_x;
         }
         Ok(())
     }
@@ -99,7 +96,7 @@ impl<'gc> BlurFilter<'gc> {
     ) -> Result<(), Error<'gc>> {
         if let Some(value) = value {
             let blur_y = value.coerce_to_f64(activation)?.clamp(0.0, 255.0);
-            self.0.write(activation.context.gc_context).blur_y = blur_y;
+            self.0.write(activation.context.gc()).blur_y = blur_y;
         }
         Ok(())
     }
@@ -115,7 +112,7 @@ impl<'gc> BlurFilter<'gc> {
     ) -> Result<(), Error<'gc>> {
         if let Some(value) = value {
             let quality = value.coerce_to_i32(activation)?.clamp(0, 15);
-            self.0.write(activation.context.gc_context).quality = quality;
+            self.0.write(activation.context.gc()).quality = quality;
         }
         Ok(())
     }
@@ -154,7 +151,7 @@ fn method<'gc>(
     if index == CONSTRUCTOR {
         let blur_filter = BlurFilter::new(activation, args)?;
         this.set_native(
-            activation.context.gc_context,
+            activation.context.gc(),
             NativeObject::BlurFilter(blur_filter),
         );
         return Ok(this.into());
@@ -190,7 +187,7 @@ pub fn create_proto<'gc>(
     proto: Object<'gc>,
     fn_proto: Object<'gc>,
 ) -> Object<'gc> {
-    let blur_filter_proto = ScriptObject::new(context.gc_context, Some(proto));
+    let blur_filter_proto = ScriptObject::new(context.gc(), Some(proto));
     define_properties_on(PROTO_DECLS, context, blur_filter_proto, fn_proto);
     blur_filter_proto.into()
 }
@@ -201,7 +198,7 @@ pub fn create_constructor<'gc>(
     fn_proto: Object<'gc>,
 ) -> Object<'gc> {
     FunctionObject::constructor(
-        context.gc_context,
+        context.gc(),
         Executable::Native(blur_filter_method!(0)),
         constructor_to_fn!(blur_filter_method!(0)),
         fn_proto,

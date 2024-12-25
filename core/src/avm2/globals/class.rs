@@ -84,7 +84,7 @@ pub fn create_i_class<'gc>(
         PUBLIC_INSTANCE_PROPERTIES,
     );
 
-    class_i_class.mark_traits_loaded(activation.context.gc_context);
+    class_i_class.mark_traits_loaded(activation.context.gc());
     class_i_class
         .init_vtable(activation.context)
         .expect("Native class's vtable should initialize");
@@ -117,7 +117,7 @@ pub fn create_c_class<'gc>(
         activation,
     );
 
-    class_c_class.mark_traits_loaded(activation.context.gc_context);
+    class_c_class.mark_traits_loaded(activation.context.gc());
     class_c_class
         .init_vtable(activation.context)
         .expect("Native class's vtable should initialize");

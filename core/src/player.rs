@@ -905,9 +905,7 @@ impl Player {
 
     pub fn set_background_color(&mut self, color: Option<Color>) {
         self.mutate_with_update_context(|context| {
-            context
-                .stage
-                .set_background_color(context.gc_context, color)
+            context.stage.set_background_color(context.gc(), color)
         })
     }
 
@@ -917,7 +915,7 @@ impl Player {
 
     pub fn set_letterbox(&mut self, letterbox: Letterbox) {
         self.mutate_with_update_context(|context| {
-            context.stage.set_letterbox(context.gc_context, letterbox)
+            context.stage.set_letterbox(context.gc(), letterbox)
         })
     }
 
@@ -1154,7 +1152,7 @@ impl Player {
 
                 let keyboardevent_class = activation.avm2().classes().keyboardevent;
                 let event_name_val: Avm2Value<'_> =
-                    AvmString::new_utf8(activation.context.gc_context, event_name).into();
+                    AvmString::new_utf8(activation.context.gc(), event_name).into();
 
                 // TODO: keyLocation should not be a dummy value.
                 // ctrlKey and controlKey can be different from each other on Mac.
@@ -1460,8 +1458,8 @@ impl Player {
             };
 
             // TODO: Introduce `DisplayObject::set_position()`?
-            display_object.set_x(context.gc_context, new_position.x);
-            display_object.set_y(context.gc_context, new_position.y);
+            display_object.set_x(context.gc(), new_position.x);
+            display_object.set_y(context.gc(), new_position.y);
 
             // Update `_droptarget` property of dragged object.
             if let Some(movie_clip) = display_object.as_movie_clip() {
@@ -1472,7 +1470,7 @@ impl Player {
                 // Set `_droptarget` to the object the mouse is hovering over.
                 let drop_target_object = run_mouse_pick(context, false);
                 movie_clip.set_drop_target(
-                    context.gc_context,
+                    context.gc(),
                     drop_target_object.map(|d| d.as_displayobject()),
                 );
                 display_object.set_visible(context, was_visible);
@@ -2092,7 +2090,7 @@ impl Player {
                     if let Ok(prototype) = constructor.get("prototype", &mut activation) {
                         if let Value::Object(object) = action.clip.object() {
                             object.define_value(
-                                activation.context.gc_context,
+                                activation.context.gc(),
                                 "__proto__",
                                 prototype,
                                 Attribute::DONT_ENUM | Attribute::DONT_DELETE,
@@ -2425,7 +2423,7 @@ impl Player {
         self.mutate_with_update_context(|context| {
             context
                 .library
-                .register_device_font(context.gc_context, context.renderer, definition);
+                .register_device_font(context.gc(), context.renderer, definition);
         });
     }
 

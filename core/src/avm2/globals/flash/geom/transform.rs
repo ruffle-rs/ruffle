@@ -40,9 +40,9 @@ pub fn set_color_transform<'gc>(
         activation,
     )?;
     let dobj = get_display_object(this);
-    dobj.set_color_transform(activation.context.gc_context, ct);
+    dobj.set_color_transform(activation.context.gc(), ct);
     if let Some(parent) = dobj.parent() {
-        parent.invalidate_cached_bitmap(activation.context.gc_context);
+        parent.invalidate_cached_bitmap(activation.context.gc());
     }
     Ok(Value::Undefined)
 }
@@ -70,11 +70,11 @@ pub fn set_matrix<'gc>(
     // remain its previous non-null value.
     let matrix = object_to_matrix(args.get_object(activation, 0, "value")?, activation)?;
     let dobj = get_display_object(this);
-    dobj.set_matrix(activation.context.gc_context, matrix);
+    dobj.set_matrix(activation.context.gc(), matrix);
     if let Some(parent) = dobj.parent() {
         // Self-transform changes are automatically handled,
         // we only want to inform ancestors to avoid unnecessary invalidations for tx/ty
-        parent.invalidate_cached_bitmap(activation.context.gc_context);
+        parent.invalidate_cached_bitmap(activation.context.gc());
     }
     Ok(Value::Undefined)
 }

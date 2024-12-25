@@ -310,24 +310,24 @@ impl<'gc> Avm2<'gc> {
                 init_activation
                     .context
                     .avm2
-                    .push_global_init(init_activation.context.gc_context, script);
+                    .push_global_init(init_activation.context.gc(), script);
                 let r = (method.method)(&mut init_activation, Value::Object(scope), &[]);
                 init_activation
                     .context
                     .avm2
-                    .pop_call(init_activation.context.gc_context);
+                    .pop_call(init_activation.context.gc());
                 r?;
             }
             Method::Bytecode(method) => {
                 init_activation
                     .context
                     .avm2
-                    .push_global_init(init_activation.context.gc_context, script);
+                    .push_global_init(init_activation.context.gc(), script);
                 let r = init_activation.run_actions(method);
                 init_activation
                     .context
                     .avm2
-                    .pop_call(init_activation.context.gc_context);
+                    .pop_call(init_activation.context.gc());
                 r?;
             }
         };
@@ -367,7 +367,7 @@ impl<'gc> Avm2<'gc> {
         let orphan_objs: Rc<_> = context.avm2.orphan_objects.clone();
 
         for orphan in orphan_objs.iter() {
-            if let Some(dobj) = valid_orphan(*orphan, context.gc_context) {
+            if let Some(dobj) = valid_orphan(*orphan, context.gc()) {
                 f(dobj, context);
             }
         }
@@ -540,7 +540,7 @@ impl<'gc> Avm2<'gc> {
                 .get(i)
                 .copied();
 
-            if let Some(object) = object.and_then(|obj| obj.upgrade(context.gc_context)) {
+            if let Some(object) = object.and_then(|obj| obj.upgrade(context.gc())) {
                 let mut activation = Activation::from_nothing(context);
 
                 if object.is_of_type(on_type.inner_class_definition()) {

@@ -26,7 +26,7 @@ pub fn xml_list_allocator<'gc>(
     let base = ScriptObjectData::new(class);
 
     Ok(XmlListObject(Gc::new(
-        activation.context.gc_context,
+        activation.context.gc(),
         XmlListObjectData {
             base,
             children: RefLock::new(Vec::new()),
@@ -73,7 +73,7 @@ impl<'gc> XmlListObject<'gc> {
     ) -> XmlListObject<'gc> {
         let base = ScriptObjectData::new(activation.context.avm2.classes().xml_list);
         XmlListObject(Gc::new(
-            activation.context.gc_context,
+            activation.context.gc(),
             XmlListObjectData {
                 base,
                 children: RefLock::new(children),
@@ -135,7 +135,7 @@ impl<'gc> XmlListObject<'gc> {
         let children = self
             .children()
             .iter()
-            .map(|child| E4XOrXml::E4X(child.node().deep_copy(activation.context.gc_context)))
+            .map(|child| E4XOrXml::E4X(child.node().deep_copy(activation.context.gc())))
             .collect();
         XmlListObject::new_with_children(
             activation,
@@ -1097,10 +1097,9 @@ impl<'gc> TObject<'gc> for XmlListObject<'gc> {
                         let removed_node = removed.node();
                         if let Some(parent) = removed_node.parent() {
                             if removed_node.is_attribute() {
-                                parent
-                                    .remove_attribute(activation.context.gc_context, &removed_node);
+                                parent.remove_attribute(activation.context.gc(), &removed_node);
                             } else {
-                                parent.remove_child(activation.context.gc_context, &removed_node);
+                                parent.remove_child(activation.context.gc(), &removed_node);
                             }
                         }
                     }

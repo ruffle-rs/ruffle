@@ -22,7 +22,7 @@ fn deserialize_json_inner<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     Ok(match json {
         JsonValue::Null => Value::Null,
-        JsonValue::String(s) => AvmString::new_utf8(activation.context.gc_context, s).into(),
+        JsonValue::String(s) => AvmString::new_utf8(activation.context.gc(), s).into(),
         JsonValue::Bool(b) => b.into(),
         JsonValue::Number(number) => {
             let number = number.as_f64().unwrap();
@@ -35,7 +35,7 @@ fn deserialize_json_inner<'gc>(
         JsonValue::Object(js_obj) => {
             let obj = ScriptObject::new_object(activation);
             for entry in js_obj.iter() {
-                let key = AvmString::new_utf8(activation.context.gc_context, entry.0);
+                let key = AvmString::new_utf8(activation.context.gc(), entry.0);
                 let val = deserialize_json_inner(activation, entry.1.clone(), reviver)?;
                 let mapped_val = match reviver {
                     None => val,
@@ -204,7 +204,7 @@ impl<'gc> AvmSerializer<'gc> {
         let mut iter = ArrayIter::new(activation, iterable)?;
         while let Some(r) = iter.next(activation) {
             let (i, item) = r?;
-            let mc = activation.context.gc_context;
+            let mc = activation.context.gc();
             let mapped =
                 self.map_value(activation, || AvmString::new_utf8(mc, i.to_string()), item)?;
             js_arr.push(self.serialize_value(activation, mapped)?);
@@ -357,5 +357,5 @@ pub fn stringify<'gc>(
         }
         None => serde_json::to_vec(&json).expect("JSON serialization cannot fail"),
     };
-    Ok(AvmString::new_utf8_bytes(activation.context.gc_context, &result).into())
+    Ok(AvmString::new_utf8_bytes(activation.context.gc(), &result).into())
 }

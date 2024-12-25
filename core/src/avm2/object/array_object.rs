@@ -21,7 +21,7 @@ pub fn array_allocator<'gc>(
     let base = ScriptObjectData::new(class);
 
     Ok(ArrayObject(Gc::new(
-        activation.context.gc_context,
+        activation.context.gc(),
         ArrayObjectData {
             base,
             array: RefLock::new(ArrayStorage::new(0)),
@@ -79,7 +79,7 @@ impl<'gc> ArrayObject<'gc> {
         let base = ScriptObjectData::new(class);
 
         ArrayObject(Gc::new(
-            activation.context.gc_context,
+            activation.context.gc(),
             ArrayObjectData {
                 base,
                 array: RefLock::new(array),
@@ -130,7 +130,7 @@ impl<'gc> TObject<'gc> for ArrayObject<'gc> {
         value: Value<'gc>,
         activation: &mut Activation<'_, 'gc>,
     ) -> Result<(), Error<'gc>> {
-        let mc = activation.context.gc_context;
+        let mc = activation.context.gc();
 
         if name.contains_public_namespace() {
             if let Some(name) = name.local_name() {
@@ -153,7 +153,7 @@ impl<'gc> TObject<'gc> for ArrayObject<'gc> {
         value: Value<'gc>,
         activation: &mut Activation<'_, 'gc>,
     ) -> Result<(), Error<'gc>> {
-        let mc = activation.context.gc_context;
+        let mc = activation.context.gc();
 
         if name.contains_public_namespace() {
             if let Some(name) = name.local_name() {
@@ -175,7 +175,7 @@ impl<'gc> TObject<'gc> for ArrayObject<'gc> {
         activation: &mut Activation<'_, 'gc>,
         name: &Multiname<'gc>,
     ) -> Result<bool, Error<'gc>> {
-        let mc = activation.context.gc_context;
+        let mc = activation.context.gc();
 
         if name.contains_public_namespace() {
             if let Some(name) = name.local_name() {

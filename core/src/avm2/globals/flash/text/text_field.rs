@@ -143,7 +143,7 @@ pub fn set_background<'gc>(
         .and_then(|this| this.as_edit_text())
     {
         let has_background = args.get_bool(0);
-        this.set_has_background(activation.context.gc_context, has_background);
+        this.set_has_background(activation.context.gc(), has_background);
     }
 
     Ok(Value::Undefined)
@@ -179,7 +179,7 @@ pub fn set_background_color<'gc>(
     {
         let rgb = args.get_u32(activation, 0)?;
         let color = Color::from_rgb(rgb, 255);
-        this.set_background_color(activation.context.gc_context, color);
+        this.set_background_color(activation.context.gc(), color);
     }
 
     Ok(Value::Undefined)
@@ -214,7 +214,7 @@ pub fn set_border<'gc>(
         .and_then(|this| this.as_edit_text())
     {
         let border = args.get_bool(0);
-        this.set_has_border(activation.context.gc_context, border);
+        this.set_has_border(activation.context.gc(), border);
     }
 
     Ok(Value::Undefined)
@@ -250,7 +250,7 @@ pub fn set_border_color<'gc>(
     {
         let rgb = args.get_u32(activation, 0)?;
         let color = Color::from_rgb(rgb, 255);
-        this.set_border_color(activation.context.gc_context, color);
+        this.set_border_color(activation.context.gc(), color);
     }
 
     Ok(Value::Undefined)
@@ -414,7 +414,7 @@ pub fn get_html_text<'gc>(
         .as_display_object()
         .and_then(|this| this.as_edit_text())
     {
-        return Ok(AvmString::new(activation.context.gc_context, this.html_text()).into());
+        return Ok(AvmString::new(activation.context.gc(), this.html_text()).into());
     }
 
     Ok(Value::Undefined)
@@ -540,7 +540,7 @@ pub fn get_text<'gc>(
         .as_display_object()
         .and_then(|this| this.as_edit_text())
     {
-        return Ok(AvmString::new(activation.context.gc_context, this.text()).into());
+        return Ok(AvmString::new(activation.context.gc(), this.text()).into());
     }
 
     Ok(Value::Undefined)
@@ -949,7 +949,7 @@ pub fn set_selection<'gc>(
                 begin_index as usize,
                 end_index as usize,
             )),
-            activation.context.gc_context,
+            activation.context.gc(),
         );
     }
 
@@ -1045,12 +1045,12 @@ pub fn set_anti_alias_type<'gc>(
 
         if &new_type == b"advanced" {
             this.set_render_settings(
-                activation.context.gc_context,
+                activation.context.gc(),
                 old_settings.with_advanced_rendering(),
             );
         } else if &new_type == b"normal" {
             this.set_render_settings(
-                activation.context.gc_context,
+                activation.context.gc(),
                 old_settings.with_normal_rendering(),
             );
         }
@@ -1095,18 +1095,18 @@ pub fn set_grid_fit_type<'gc>(
 
         if &new_type == b"pixel" {
             this.set_render_settings(
-                activation.context.gc_context,
+                activation.context.gc(),
                 old_settings.with_grid_fit(swf::TextGridFit::Pixel),
             );
         } else if &new_type == b"subpixel" {
             this.set_render_settings(
-                activation.context.gc_context,
+                activation.context.gc(),
                 old_settings.with_grid_fit(swf::TextGridFit::SubPixel),
             );
         } else {
             //NOTE: In AS3 invalid values are treated as None.
             this.set_render_settings(
-                activation.context.gc_context,
+                activation.context.gc(),
                 old_settings.with_grid_fit(swf::TextGridFit::None),
             );
         }
@@ -1153,7 +1153,7 @@ pub fn set_thickness<'gc>(
         new_thickness = new_thickness.clamp(-200.0, 200.0);
 
         this.set_render_settings(
-            activation.context.gc_context,
+            activation.context.gc(),
             old_settings.with_thickness(new_thickness as f32),
         );
     }
@@ -1200,7 +1200,7 @@ pub fn set_sharpness<'gc>(
         new_sharpness = new_sharpness.clamp(-400.0, 400.0);
 
         this.set_render_settings(
-            activation.context.gc_context,
+            activation.context.gc(),
             old_settings.with_sharpness(new_sharpness as f32),
         );
     }
@@ -1542,7 +1542,7 @@ pub fn get_restrict<'gc>(
         .and_then(|this| this.as_edit_text())
     {
         return match this.restrict() {
-            Some(value) => Ok(AvmString::new(activation.context.gc_context, value).into()),
+            Some(value) => Ok(AvmString::new(activation.context.gc(), value).into()),
             None => Ok(Value::Null),
         };
     }

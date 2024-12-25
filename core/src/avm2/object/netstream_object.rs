@@ -14,16 +14,16 @@ pub fn netstream_allocator<'gc>(
 ) -> Result<Object<'gc>, Error<'gc>> {
     let base = ScriptObjectData::new(class);
 
-    let ns = NetStream::new(activation.context.gc_context, None);
+    let ns = NetStream::new(activation.context.gc(), None);
     let this: Object<'gc> = NetStreamObject(Gc::new(
-        activation.context.gc_context,
+        activation.context.gc(),
         NetStreamObjectData { base, ns },
     ))
     .into();
 
-    ns.set_avm_object(activation.context.gc_context, this.into());
+    ns.set_avm_object(activation.context.gc(), this.into());
 
-    ns.set_client(activation.context.gc_context, this);
+    ns.set_client(activation.context.gc(), this);
 
     Ok(this)
 }

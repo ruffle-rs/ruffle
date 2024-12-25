@@ -56,7 +56,7 @@ impl<'gc> NamespaceObject<'gc> {
         let base = ScriptObjectData::new(class);
 
         NamespaceObject(Gc::new(
-            activation.context.gc_context,
+            activation.context.gc(),
             NamespaceObjectData {
                 base,
                 namespace,
@@ -71,7 +71,7 @@ impl<'gc> NamespaceObject<'gc> {
         let base = ScriptObjectData::new(class);
 
         NamespaceObject(Gc::new(
-            activation.context.gc_context,
+            activation.context.gc(),
             NamespaceObjectData {
                 base,
                 namespace,

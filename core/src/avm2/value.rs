@@ -651,7 +651,7 @@ impl<'gc> Value<'gc> {
                     activation,
                     &format!(
                         "Error #1050: Cannot convert {} to primitive.",
-                        o.instance_of_class_name(activation.context.gc_context)
+                        o.instance_of_class_name(activation.context.gc())
                     ),
                     1050,
                 )?))
@@ -673,7 +673,7 @@ impl<'gc> Value<'gc> {
                     activation,
                     &format!(
                         "Error #1050: Cannot convert {} to primitive.",
-                        o.instance_of_class_name(activation.context.gc_context)
+                        o.instance_of_class_name(activation.context.gc())
                     ),
                     1050,
                 )?))
@@ -790,7 +790,7 @@ impl<'gc> Value<'gc> {
             Value::Number(n) if n.is_nan() => "NaN".into(),
             Value::Number(n) if *n == 0.0 => "0".into(),
             Value::Number(n) if *n < 0.0 => AvmString::new_utf8(
-                activation.context.gc_context,
+                activation.context.gc(),
                 format!("-{}", Value::Number(-n).coerce_to_string(activation)?),
             ),
             Value::Number(n) if n.is_infinite() => "Infinity".into(),
@@ -804,7 +804,7 @@ impl<'gc> Value<'gc> {
 
                 if digits < Self::MIN_DIGITS || digits >= Self::MAX_DIGITS {
                     AvmString::new_utf8(
-                        activation.context.gc_context,
+                        activation.context.gc(),
                         format!(
                             "{}e{}{}",
                             precision / 10.0_f64.powf(digits),
@@ -813,14 +813,14 @@ impl<'gc> Value<'gc> {
                         ),
                     )
                 } else {
-                    AvmString::new_utf8(activation.context.gc_context, n.to_string())
+                    AvmString::new_utf8(activation.context.gc(), n.to_string())
                 }
             }
             Value::Integer(i) => {
                 if *i >= 0 && *i < 10 {
                     activation.strings().make_char('0' as u16 + *i as u16)
                 } else {
-                    AvmString::new_utf8(activation.context.gc_context, i.to_string())
+                    AvmString::new_utf8(activation.context.gc(), i.to_string())
                 }
             }
             Value::String(s) => *s,
@@ -841,9 +841,7 @@ impl<'gc> Value<'gc> {
         activation: &mut Activation<'_, 'gc>,
     ) -> Result<AvmString<'gc>, Error<'gc>> {
         Ok(match self {
-            Value::String(s) => {
-                AvmString::new_utf8(activation.context.gc_context, format!("\"{s}\""))
-            }
+            Value::String(s) => AvmString::new_utf8(activation.context.gc(), format!("\"{s}\"")),
             Value::Object(_) => self
                 .coerce_to_primitive(Some(Hint::String), activation)?
                 .coerce_to_debug_string(activation)?,
@@ -1006,7 +1004,7 @@ impl<'gc> Value<'gc> {
 
         let name = class
             .name()
-            .to_qualified_name_err_message(activation.context.gc_context);
+            .to_qualified_name_err_message(activation.context.gc());
 
         let debug_str = match self {
             Value::Object(obj) if obj.as_primitive().is_none() => {
@@ -1016,7 +1014,7 @@ impl<'gc> Value<'gc> {
                 // application is trying to parse the error message.
                 format!(
                     "{}@00000000000",
-                    obj.instance_of_class_name(activation.context.gc_context)
+                    obj.instance_of_class_name(activation.context.gc())
                 )
             }
             _ => self.coerce_to_debug_string(activation)?.to_string(),

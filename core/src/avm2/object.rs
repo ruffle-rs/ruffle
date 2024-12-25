@@ -281,7 +281,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
                     .make_bound_method(activation, self.into(), disp_id)
                     .ok_or_else(|| format!("Method not found with id {disp_id}"))?;
 
-                self.install_bound_method(activation.context.gc_context, disp_id, bound_method);
+                self.install_bound_method(activation.context.gc(), disp_id, bound_method);
 
                 Ok(bound_method.into())
             }
@@ -368,7 +368,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
                     .coerce_trait_value(slot_id, value, activation)?;
 
                 self.base()
-                    .set_slot(slot_id, value, activation.context.gc_context);
+                    .set_slot(slot_id, value, activation.context.gc());
 
                 Ok(())
             }
@@ -451,7 +451,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
                     .coerce_trait_value(slot_id, value, activation)?;
 
                 self.base()
-                    .set_slot(slot_id, value, activation.context.gc_context);
+                    .set_slot(slot_id, value, activation.context.gc());
 
                 Ok(())
             }
@@ -619,7 +619,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
 
         let bound_method = VTable::bind_method(activation, self.into(), full_method);
 
-        self.install_bound_method(activation.context.gc_context, id, bound_method);
+        self.install_bound_method(activation.context.gc(), id, bound_method);
 
         bound_method.call(activation, Value::from(self.into()), arguments)
     }
@@ -937,11 +937,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     ) -> Result<Value<'gc>, Error<'gc>> {
         let class_name = self.instance_class().name().local_name();
 
-        Ok(AvmString::new_utf8(
-            activation.context.gc_context,
-            format!("[object {class_name}]"),
-        )
-        .into())
+        Ok(AvmString::new_utf8(activation.context.gc(), format!("[object {class_name}]")).into())
     }
 
     /// Implement the result of calling `Object.prototype.valueOf` on this

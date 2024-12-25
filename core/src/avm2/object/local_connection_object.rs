@@ -21,7 +21,7 @@ pub fn local_connection_allocator<'gc>(
     let base = ScriptObjectData::new(class);
 
     let object = LocalConnectionObject(Gc::new(
-        activation.context.gc_context,
+        activation.context.gc(),
         LocalConnectionObjectData {
             base,
             connection_handle: RefCell::new(None),

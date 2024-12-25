@@ -205,7 +205,7 @@ impl DisplayObjectWindow {
                     let mut enabled = object.mouse_enabled();
                     Checkbox::new(&mut enabled, "Enabled").ui(ui);
                     if enabled != object.mouse_enabled() {
-                        object.set_mouse_enabled(context.gc_context, enabled);
+                        object.set_mouse_enabled(context.gc(), enabled);
                     }
                 });
                 ui.end_row();
@@ -215,7 +215,7 @@ impl DisplayObjectWindow {
                     let mut enabled = object.double_click_enabled();
                     Checkbox::new(&mut enabled, "Enabled").ui(ui);
                     if enabled != object.double_click_enabled() {
-                        object.set_double_click_enabled(context.gc_context, enabled);
+                        object.set_double_click_enabled(context.gc(), enabled);
                     }
                 });
                 ui.end_row();
@@ -986,13 +986,13 @@ impl DisplayObjectWindow {
                         let mut enabled = object.is_bitmap_cached_preference();
                         Checkbox::new(&mut enabled, "Enabled").ui(ui);
                         if enabled != object.is_bitmap_cached_preference() {
-                            object.set_bitmap_cached_preference(context.gc_context, enabled);
+                            object.set_bitmap_cached_preference(context.gc(), enabled);
                         }
                     } else {
                         ui.label("Forced due to filters");
                     }
                     if ui.button("Invalidate").clicked() {
-                        object.invalidate_cached_bitmap(context.gc_context);
+                        object.invalidate_cached_bitmap(context.gc());
                     }
                 });
                 ui.end_row();
@@ -1025,7 +1025,7 @@ impl DisplayObjectWindow {
                     });
                 ui.end_row();
                 if new_blend != old_blend {
-                    object.set_blend_mode(context.gc_context, new_blend);
+                    object.set_blend_mode(context.gc(), new_blend);
                 }
 
                 let color_transform = *object.base().color_transform();
@@ -1039,7 +1039,7 @@ impl DisplayObjectWindow {
                         let mut enabled = obj.raw_container().mouse_children();
                         Checkbox::new(&mut enabled, "Enabled").ui(ui);
                         if enabled != obj.raw_container().mouse_children() {
-                            obj.raw_container_mut(context.gc_context)
+                            obj.raw_container_mut(context.gc())
                                 .set_mouse_children(enabled);
                         }
                     });

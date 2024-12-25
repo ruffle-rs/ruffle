@@ -185,9 +185,9 @@ impl<'gc> Video<'gc> {
     ///
     /// Existing video state related to the old video stream will be dropped.
     pub fn attach_netstream(self, context: &mut UpdateContext<'gc>, stream: NetStream<'gc>) {
-        let mut video = self.0.write(context.gc_context);
+        let mut video = self.0.write(context.gc());
 
-        video.source = GcCell::new(context.gc_context, VideoSource::NetStream { stream });
+        video.source = GcCell::new(context.gc(), VideoSource::NetStream { stream });
         video.stream = VideoStream::Uninstantiated(0);
         video.keyframes = BTreeSet::new();
     }
@@ -199,13 +199,7 @@ impl<'gc> Video<'gc> {
     pub fn preload_swf_frame(&mut self, tag: VideoFrame, context: &mut UpdateContext<'gc>) {
         let movie = self.0.read().movie.clone();
 
-        match (*self
-            .0
-            .write(context.gc_context)
-            .source
-            .write(context.gc_context))
-        .borrow_mut()
-        {
+        match (*self.0.write(context.gc()).source.write(context.gc())).borrow_mut() {
             VideoSource::Swf { frames, .. } => {
                 let subslice = SwfSlice::from(movie).to_unbounded_subslice(tag.data);
 
@@ -235,7 +229,7 @@ impl<'gc> Video<'gc> {
         if let VideoStream::Uninstantiated(_) = &read.stream {
             drop(read);
 
-            let mut write = self.0.write(context.gc_context);
+            let mut write = self.0.write(context.gc());
             write.stream = VideoStream::Uninstantiated(frame_id);
 
             return;
@@ -339,8 +333,8 @@ impl<'gc> Video<'gc> {
 
         match res {
             Ok(bitmap) => {
-                self.0.write(context.gc_context).decoded_frame = Some((frame_id, bitmap));
-                self.invalidate_cached_bitmap(context.gc_context);
+                self.0.write(context.gc()).decoded_frame = Some((frame_id, bitmap));
+                self.invalidate_cached_bitmap(context.gc());
                 *context.needs_render = true;
             }
             Err(e) => tracing::error!("Got error when seeking to video frame {}: {}", frame_id, e),
@@ -377,12 +371,10 @@ impl<'gc> TDisplayObject<'gc> for Video<'gc> {
         run_frame: bool,
     ) {
         if !self.movie().is_action_script_3() {
-            context
-                .avm1
-                .add_to_exec_list(context.gc_context, (*self).into());
+            context.avm1.add_to_exec_list(context.gc(), (*self).into());
         }
 
-        let mut write = self.0.write(context.gc_context);
+        let mut write = self.0.write(context.gc());
         let movie = write.movie.clone();
 
         let (stream, keyframes) = match &*write.source.read() {
@@ -453,7 +445,7 @@ impl<'gc> TDisplayObject<'gc> for Video<'gc> {
 
         if write.object.is_none() && !movie.is_action_script_3() {
             let object: Avm1Object<'_> = Avm1StageObject::for_display_object(
-                context.gc_context,
+                context.gc(),
                 (*self).into(),
                 context.avm1.prototypes().video,
             )
@@ -483,7 +475,7 @@ impl<'gc> TDisplayObject<'gc> for Video<'gc> {
             ) {
                 Ok(object) => {
                     let object: Avm2Object<'gc> = object.into();
-                    self.0.write(context.gc_context).object = Some(object.into())
+                    self.0.write(context.gc()).object = Some(object.into())
                 }
                 Err(e) => tracing::error!("Got {} when constructing AVM2 side of video player", e),
             }
@@ -574,7 +566,7 @@ impl<'gc> TDisplayObject<'gc> for Video<'gc> {
     }
 
     fn set_object2(&self, context: &mut UpdateContext<'gc>, to: Avm2Object<'gc>) {
-        self.0.write(context.gc_context).object = Some(to.into());
+        self.0.write(context.gc()).object = Some(to.into());
     }
 
     fn movie(&self) -> Arc<SwfMovie> {

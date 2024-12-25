@@ -67,7 +67,7 @@ impl Declaration {
         this: ScriptObject<'gc>,
         fn_proto: Object<'gc>,
     ) -> Value<'gc> {
-        let mc = context.gc_context;
+        let mc = context.gc();
 
         let mut intern_utf8 = |s: &'static str| -> AvmAtom<'gc> {
             match ruffle_wstr::from_utf8(s) {

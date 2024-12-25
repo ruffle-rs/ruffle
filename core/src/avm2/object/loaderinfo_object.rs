@@ -122,7 +122,7 @@ impl<'gc> LoaderInfoObject<'gc> {
         let loaded_stream = LoaderStream::Swf(movie, root);
 
         let this: Object<'gc> = LoaderInfoObject(Gc::new(
-            activation.context.gc_context,
+            activation.context.gc(),
             LoaderInfoObjectData {
                 base,
                 loaded_stream: RefLock::new(loaded_stream),
@@ -169,7 +169,7 @@ impl<'gc> LoaderInfoObject<'gc> {
         let base = ScriptObjectData::new(class);
 
         let this: Object<'gc> = LoaderInfoObject(Gc::new(
-            activation.context.gc_context,
+            activation.context.gc(),
             LoaderInfoObjectData {
                 base,
                 loaded_stream: RefLock::new(LoaderStream::NotYetLoaded(movie, root_clip, is_stage)),
@@ -347,7 +347,7 @@ impl<'gc> LoaderInfoObject<'gc> {
                 .expect("Native init should succeed");
 
             unlock!(
-                Gc::write(activation.context.gc_context, self.0),
+                Gc::write(activation.context.gc(), self.0),
                 LoaderInfoObjectData,
                 cached_avm1movie
             )
@@ -361,7 +361,7 @@ impl<'gc> LoaderInfoObject<'gc> {
         // Reset properties
         let empty_swf = Arc::new(SwfMovie::empty(activation.context.swf.version()));
         let loader_stream = LoaderStream::NotYetLoaded(empty_swf, None, false);
-        self.set_loader_stream(loader_stream, activation.context.gc_context);
+        self.set_loader_stream(loader_stream, activation.context.gc());
         self.set_errored(false);
         self.reset_init_and_complete_events();
 

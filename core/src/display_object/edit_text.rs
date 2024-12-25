@@ -295,12 +295,12 @@ impl<'gc> EditText<'gc> {
         };
 
         let et = EditText(GcCell::new(
-            context.gc_context,
+            context.gc(),
             EditTextData {
                 base: InteractiveObjectBase::default(),
                 text_spans,
                 static_data: Gc::new(
-                    context.gc_context,
+                    context.gc(),
                     EditTextStatic {
                         swf: swf_movie,
                         id: swf_tag.id(),
@@ -366,7 +366,7 @@ impl<'gc> EditText<'gc> {
 
         // Set position.
         {
-            let mut base = text_field.base_mut(context.gc_context);
+            let mut base = text_field.base_mut(context.gc());
             let matrix = base.matrix_mut();
             matrix.tx = Twips::from_pixels(x);
             matrix.ty = Twips::from_pixels(y);
@@ -385,7 +385,7 @@ impl<'gc> EditText<'gc> {
         height: f64,
     ) -> Self {
         let text = Self::new(context, swf_movie, x, y, width, height);
-        text.set_is_tlf(context.gc_context, true);
+        text.set_is_tlf(context.gc(), true);
         text.set_selectable(false, context);
 
         text
@@ -396,7 +396,7 @@ impl<'gc> EditText<'gc> {
     }
 
     pub fn set_text(self, text: &WStr, context: &mut UpdateContext<'gc>) {
-        let mut edit_text = self.0.write(context.gc_context);
+        let mut edit_text = self.0.write(context.gc());
         let default_format = edit_text.text_spans.default_format().clone();
         edit_text.text_spans = FormatSpans::from_text(text.into(), default_format);
         drop(edit_text);
@@ -415,7 +415,7 @@ impl<'gc> EditText<'gc> {
 
     pub fn set_html_text(self, text: &WStr, context: &mut UpdateContext<'gc>) {
         if self.is_html() {
-            let mut write = self.0.write(context.gc_context);
+            let mut write = self.0.write(context.gc());
             let default_format = write.text_spans.default_format().clone();
             write.text_spans = FormatSpans::from_html(
                 text,
@@ -441,10 +441,7 @@ impl<'gc> EditText<'gc> {
     }
 
     pub fn set_new_text_format(self, tf: TextFormat, context: &mut UpdateContext<'gc>) {
-        self.0
-            .write(context.gc_context)
-            .text_spans
-            .set_default_format(tf);
+        self.0.write(context.gc()).text_spans.set_default_format(tf);
     }
 
     pub fn text_format(self, from: usize, to: usize) -> TextFormat {
@@ -461,7 +458,7 @@ impl<'gc> EditText<'gc> {
     ) {
         // TODO: Convert to byte indices
         self.0
-            .write(context.gc_context)
+            .write(context.gc())
             .text_spans
             .set_text_format(from, to, &tf);
         self.relayout(context);
@@ -477,7 +474,7 @@ impl<'gc> EditText<'gc> {
 
     pub fn set_editable(self, is_editable: bool, context: &mut UpdateContext<'gc>) {
         self.0
-            .write(context.gc_context)
+            .write(context.gc())
             .flags
             .set(EditTextFlag::READ_ONLY, !is_editable);
     }
@@ -487,7 +484,7 @@ impl<'gc> EditText<'gc> {
     }
 
     pub fn set_mouse_wheel_enabled(self, is_enabled: bool, context: &mut UpdateContext<'gc>) {
-        self.0.write(context.gc_context).mouse_wheel_enabled = is_enabled;
+        self.0.write(context.gc()).mouse_wheel_enabled = is_enabled;
     }
 
     pub fn is_multiline(self) -> bool {
@@ -500,7 +497,7 @@ impl<'gc> EditText<'gc> {
 
     pub fn set_password(self, is_password: bool, context: &mut UpdateContext<'gc>) {
         self.0
-            .write(context.gc_context)
+            .write(context.gc())
             .flags
             .set(EditTextFlag::PASSWORD, is_password);
         self.relayout(context);
@@ -511,12 +508,12 @@ impl<'gc> EditText<'gc> {
     }
 
     pub fn set_restrict(self, text: Option<&WStr>, context: &mut UpdateContext<'gc>) {
-        self.0.write(context.gc_context).restrict = EditTextRestrict::from(text);
+        self.0.write(context.gc()).restrict = EditTextRestrict::from(text);
     }
 
     pub fn set_multiline(self, is_multiline: bool, context: &mut UpdateContext<'gc>) {
         self.0
-            .write(context.gc_context)
+            .write(context.gc())
             .flags
             .set(EditTextFlag::MULTILINE, is_multiline);
         self.relayout(context);
@@ -528,7 +525,7 @@ impl<'gc> EditText<'gc> {
 
     pub fn set_selectable(self, is_selectable: bool, context: &mut UpdateContext<'gc>) {
         self.0
-            .write(context.gc_context)
+            .write(context.gc())
             .flags
             .set(EditTextFlag::NO_SELECT, !is_selectable);
     }
@@ -539,7 +536,7 @@ impl<'gc> EditText<'gc> {
 
     pub fn set_word_wrap(self, is_word_wrap: bool, context: &mut UpdateContext<'gc>) {
         self.0
-            .write(context.gc_context)
+            .write(context.gc())
             .flags
             .set(EditTextFlag::WORD_WRAP, is_word_wrap);
         self.relayout(context);
@@ -550,7 +547,7 @@ impl<'gc> EditText<'gc> {
     }
 
     pub fn set_autosize(self, asm: AutoSizeMode, context: &mut UpdateContext<'gc>) {
-        self.0.write(context.gc_context).autosize = asm;
+        self.0.write(context.gc()).autosize = asm;
         self.relayout(context);
     }
 
@@ -627,7 +624,7 @@ impl<'gc> EditText<'gc> {
 
     pub fn set_is_device_font(self, context: &mut UpdateContext<'gc>, is_device_font: bool) {
         self.0
-            .write(context.gc_context)
+            .write(context.gc())
             .flags
             .set(EditTextFlag::USE_OUTLINES, !is_device_font);
         self.relayout(context);
@@ -643,7 +640,7 @@ impl<'gc> EditText<'gc> {
 
     pub fn set_is_html(self, context: &mut UpdateContext<'gc>, is_html: bool) {
         self.0
-            .write(context.gc_context)
+            .write(context.gc())
             .flags
             .set(EditTextFlag::HTML, is_html);
     }
@@ -702,7 +699,7 @@ impl<'gc> EditText<'gc> {
         context: &mut UpdateContext<'gc>,
     ) {
         self.0
-            .write(context.gc_context)
+            .write(context.gc())
             .text_spans
             .replace_text(from, to, text);
         self.relayout(context);
@@ -740,11 +737,11 @@ impl<'gc> EditText<'gc> {
         // Clear previous binding.
         if let Some(stage_object) = self
             .0
-            .write(activation.context.gc_context)
+            .write(activation.context.gc())
             .bound_stage_object
             .take()
         {
-            stage_object.clear_text_field_binding(activation.context.gc_context, self);
+            stage_object.clear_text_field_binding(activation.context.gc(), self);
         } else {
             activation
                 .context
@@ -762,7 +759,7 @@ impl<'gc> EditText<'gc> {
             .unwrap_or_default();
         self.set_text(&text, activation.context);
 
-        self.0.write(activation.context.gc_context).variable = variable;
+        self.0.write(activation.context.gc()).variable = variable;
         self.try_bind_text_field_variable(activation, true);
     }
 
@@ -773,7 +770,7 @@ impl<'gc> EditText<'gc> {
     /// have already been calculated and applied to HTML trees lowered into the
     /// text-span representation.
     pub fn relayout(self, context: &mut UpdateContext<'gc>) {
-        let mut edit_text = self.0.write(context.gc_context);
+        let mut edit_text = self.0.write(context.gc());
         let autosize = edit_text.autosize;
         let is_word_wrap = edit_text.flags.contains(EditTextFlag::WORD_WRAP);
         let movie = edit_text.static_data.swf.clone();
@@ -848,7 +845,7 @@ impl<'gc> EditText<'gc> {
             edit_text.bounds.set_height(height);
         }
         drop(edit_text);
-        self.invalidate_cached_bitmap(context.gc_context);
+        self.invalidate_cached_bitmap(context.gc());
     }
 
     /// Measure the width and height of the `EditText`'s current text load.
@@ -1252,7 +1249,7 @@ impl<'gc> EditText<'gc> {
                     if let Ok(Some((object, property))) =
                         activation.resolve_variable_path(parent, &variable_path)
                     {
-                        let property = AvmString::new(activation.context.gc_context, property);
+                        let property = AvmString::new(activation.context.gc(), property);
 
                         // If this text field was just created, we immediately propagate the text to the variable (or vice versa).
                         if set_initial_value {
@@ -1270,8 +1267,7 @@ impl<'gc> EditText<'gc> {
                                 if !text.is_empty() {
                                     let _ = object.set(
                                         property,
-                                        AvmString::new(activation.context.gc_context, self.text())
-                                            .into(),
+                                        AvmString::new(activation.context.gc(), self.text()).into(),
                                         activation,
                                     );
                                 }
@@ -1279,11 +1275,10 @@ impl<'gc> EditText<'gc> {
                         }
 
                         if let Some(stage_object) = object.as_stage_object() {
-                            self.0
-                                .write(activation.context.gc_context)
-                                .bound_stage_object = Some(stage_object);
+                            self.0.write(activation.context.gc()).bound_stage_object =
+                                Some(stage_object);
                             stage_object.register_text_field_binding(
-                                activation.context.gc_context,
+                                activation.context.gc(),
                                 self,
                                 property,
                             );
@@ -1303,7 +1298,7 @@ impl<'gc> EditText<'gc> {
     /// Does not change the unbound text field list.
     /// Caller is responsible for adding this text field to the unbound list, if necessary.
     pub fn clear_bound_stage_object(self, context: &mut UpdateContext<'gc>) {
-        self.0.write(context.gc_context).bound_stage_object = None;
+        self.0.write(context.gc()).bound_stage_object = None;
     }
 
     /// Propagates a text change to the bound display object.
@@ -1315,8 +1310,7 @@ impl<'gc> EditText<'gc> {
             .flags
             .contains(EditTextFlag::FIRING_VARIABLE_BINDING)
         {
-            self.0.write(activation.context.gc_context).flags |=
-                EditTextFlag::FIRING_VARIABLE_BINDING;
+            self.0.write(activation.context.gc()).flags |= EditTextFlag::FIRING_VARIABLE_BINDING;
             if let Some(variable) = self.variable() {
                 // Avoid double-borrows by copying the string.
                 // TODO: Can we avoid this somehow? Maybe when we have a better string type.
@@ -1333,19 +1327,17 @@ impl<'gc> EditText<'gc> {
                         self.avm1_parent().unwrap(),
                         self.movie().version(),
                         |activation| {
-                            let property = AvmString::new(activation.context.gc_context, property);
+                            let property = AvmString::new(activation.context.gc(), property);
                             let _ = object.set(
                                 property,
-                                AvmString::new(activation.context.gc_context, self.html_text())
-                                    .into(),
+                                AvmString::new(activation.context.gc(), self.html_text()).into(),
                                 activation,
                             );
                         },
                     );
                 }
             }
-            self.0.write(activation.context.gc_context).flags -=
-                EditTextFlag::FIRING_VARIABLE_BINDING;
+            self.0.write(activation.context.gc()).flags -= EditTextFlag::FIRING_VARIABLE_BINDING;
         }
     }
 
@@ -1410,7 +1402,7 @@ impl<'gc> EditText<'gc> {
     }
 
     pub fn set_hscroll(self, hscroll: f64, context: &mut UpdateContext<'gc>) {
-        self.0.write(context.gc_context).hscroll = hscroll;
+        self.0.write(context.gc()).hscroll = hscroll;
         self.invalidate_cached_bitmap(context.gc());
     }
 
@@ -1437,7 +1429,7 @@ impl<'gc> EditText<'gc> {
     }
 
     pub fn set_max_chars(self, value: i32, context: &mut UpdateContext<'gc>) {
-        self.0.write(context.gc_context).max_chars = value;
+        self.0.write(context.gc()).max_chars = value;
     }
 
     pub fn screen_position_to_index(self, position: Point<Twips>) -> Option<usize> {
@@ -1579,10 +1571,7 @@ impl<'gc> EditText<'gc> {
                 } else {
                     selection.start()
                 };
-                self.set_selection(
-                    Some(TextSelection::for_position(new_pos)),
-                    context.gc_context,
-                );
+                self.set_selection(Some(TextSelection::for_position(new_pos)), context.gc());
             }
             TextControlCode::MoveRight
             | TextControlCode::MoveRightWord
@@ -1593,10 +1582,7 @@ impl<'gc> EditText<'gc> {
                 } else {
                     selection.end()
                 };
-                self.set_selection(
-                    Some(TextSelection::for_position(new_pos)),
-                    context.gc_context,
-                );
+                self.set_selection(Some(TextSelection::for_position(new_pos)), context.gc());
             }
             TextControlCode::SelectLeft
             | TextControlCode::SelectLeftWord
@@ -1606,7 +1592,7 @@ impl<'gc> EditText<'gc> {
                     let new_pos = self.find_new_position(control_code, selection.to);
                     self.set_selection(
                         Some(TextSelection::for_range(selection.from, new_pos)),
-                        context.gc_context,
+                        context.gc(),
                     );
                 }
             }
@@ -1618,14 +1604,14 @@ impl<'gc> EditText<'gc> {
                     let new_pos = self.find_new_position(control_code, selection.to);
                     self.set_selection(
                         Some(TextSelection::for_range(selection.from, new_pos)),
-                        context.gc_context,
+                        context.gc(),
                     )
                 }
             }
             TextControlCode::SelectAll => {
                 self.set_selection(
                     Some(TextSelection::for_range(0, self.text().len())),
-                    context.gc_context,
+                    context.gc(),
                 );
             }
             TextControlCode::Copy => {
@@ -1656,12 +1642,12 @@ impl<'gc> EditText<'gc> {
                     if is_selectable {
                         self.set_selection(
                             Some(TextSelection::for_position(new_pos)),
-                            context.gc_context,
+                            context.gc(),
                         );
                     } else {
                         self.set_selection(
                             Some(TextSelection::for_position(self.text().len())),
-                            context.gc_context,
+                            context.gc(),
                         );
                     }
                     changed = true;
@@ -1675,12 +1661,12 @@ impl<'gc> EditText<'gc> {
                 if is_selectable {
                     self.set_selection(
                         Some(TextSelection::for_position(selection.start())),
-                        context.gc_context,
+                        context.gc(),
                     );
                 } else {
                     self.set_selection(
                         Some(TextSelection::for_position(self.text().len())),
-                        context.gc_context,
+                        context.gc(),
                     );
                 }
                 changed = true;
@@ -1695,7 +1681,7 @@ impl<'gc> EditText<'gc> {
                 self.replace_text(selection.start(), selection.end(), WStr::empty(), context);
                 self.set_selection(
                     Some(TextSelection::for_position(selection.start())),
-                    context.gc_context,
+                    context.gc(),
                 );
                 changed = true;
             }
@@ -1705,10 +1691,7 @@ impl<'gc> EditText<'gc> {
                     // Delete previous character(s)
                     let start = self.find_new_position(control_code, selection.start());
                     self.replace_text(start, selection.start(), WStr::empty(), context);
-                    self.set_selection(
-                        Some(TextSelection::for_position(start)),
-                        context.gc_context,
-                    );
+                    self.set_selection(Some(TextSelection::for_position(start)), context.gc());
                     changed = true;
                 }
             }
@@ -1719,7 +1702,7 @@ impl<'gc> EditText<'gc> {
                     let end = self.find_new_position(control_code, selection.start());
                     self.replace_text(selection.start(), end, WStr::empty(), context);
                     // No need to change selection, reset it to prevent caret from blinking
-                    self.reset_selection_blinking(context.gc_context);
+                    self.reset_selection_blinking(context.gc());
                     changed = true;
                 }
             }
@@ -1866,7 +1849,7 @@ impl<'gc> EditText<'gc> {
         };
 
         if let Avm2Value::Object(target) = self.object2() {
-            let character_string = AvmString::new_utf8(context.gc_context, character.to_string());
+            let character_string = AvmString::new_utf8(context.gc(), character.to_string());
 
             let mut activation = Avm2Activation::from_nothing(context);
             let text_evt = Avm2EventObject::text_event(
@@ -1890,10 +1873,7 @@ impl<'gc> EditText<'gc> {
             context,
         );
         let new_pos = selection.start() + character.len_utf8();
-        self.set_selection(
-            Some(TextSelection::for_position(new_pos)),
-            context.gc_context,
-        );
+        self.set_selection(Some(TextSelection::for_position(new_pos)), context.gc());
 
         let mut activation = Avm1Activation::from_nothing(
             context,
@@ -1907,7 +1887,7 @@ impl<'gc> EditText<'gc> {
     fn initialize_as_broadcaster(&self, activation: &mut Avm1Activation<'_, 'gc>) {
         if let Avm1Value::Object(object) = self.object() {
             activation.context.avm1.broadcaster_functions().initialize(
-                activation.context.gc_context,
+                activation.context.gc(),
                 object,
                 activation.context.avm1.prototypes().array,
             );
@@ -1958,10 +1938,10 @@ impl<'gc> EditText<'gc> {
 
     /// Construct the text field's AVM1 representation.
     fn construct_as_avm1_object(&self, context: &mut UpdateContext<'gc>, run_frame: bool) {
-        let mut text = self.0.write(context.gc_context);
+        let mut text = self.0.write(context.gc());
         if text.object.is_none() {
             let object: Avm1Object<'gc> = Avm1StageObject::for_display_object(
-                context.gc_context,
+                context.gc(),
                 (*self).into(),
                 context.avm1.prototypes().text_field,
             )
@@ -2190,12 +2170,12 @@ impl<'gc> EditText<'gc> {
         let this = parent.object().coerce_to_object(&mut activation);
 
         if let Some((name, args)) = address.split_once(b',') {
-            let name = AvmString::new(activation.context.gc_context, name);
-            let args = AvmString::new(activation.context.gc_context, args);
+            let name = AvmString::new(activation.context.gc(), name);
+            let args = AvmString::new(activation.context.gc(), args);
             let function = activation.get_variable(name)?;
             function.call_with_default_this(this, name, &mut activation, &[args.into()])?;
         } else {
-            let name = AvmString::new(activation.context.gc_context, address);
+            let name = AvmString::new(activation.context.gc(), address);
             let function = activation.get_variable(name)?;
             function.call_with_default_this(this, name, &mut activation, &[])?;
         }
@@ -2210,7 +2190,7 @@ impl<'gc> EditText<'gc> {
         } else if let Some(address) = url.strip_prefix(WStr::from_units(b"event:")) {
             if let Avm2Value::Object(object) = self.object2() {
                 let mut activation = Avm2Activation::from_nothing(context);
-                let text = AvmString::new(activation.context.gc_context, address);
+                let text = AvmString::new(activation.context.gc(), address);
                 let event = Avm2EventObject::text_event(&mut activation, "link", text, true, false);
 
                 Avm2::dispatch_event(activation.context, event, object);
@@ -2339,9 +2319,7 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
         self.set_default_instance_name(context);
 
         if !self.movie().is_action_script_3() {
-            context
-                .avm1
-                .add_to_exec_list(context.gc_context, (*self).into());
+            context.avm1.add_to_exec_list(context.gc(), (*self).into());
             self.construct_as_avm1_object(context, run_frame);
         }
     }
@@ -2365,7 +2343,7 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
     }
 
     fn set_object2(&self, context: &mut UpdateContext<'gc>, to: Avm2Object<'gc>) {
-        self.0.write(context.gc_context).object = Some(to.into());
+        self.0.write(context.gc()).object = Some(to.into());
     }
 
     fn self_bounds(&self) -> Rectangle<Twips> {
@@ -2409,7 +2387,7 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
     }
 
     fn set_width(&self, context: &mut UpdateContext<'gc>, value: f64) {
-        let mut edit_text = self.0.write(context.gc_context);
+        let mut edit_text = self.0.write(context.gc());
         edit_text.requested_width = Twips::from_pixels(value);
         edit_text.base.base.set_transformed_by_script(true);
         drop(edit_text);
@@ -2424,7 +2402,7 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
     }
 
     fn set_height(&self, context: &mut UpdateContext<'gc>, value: f64) {
-        let mut edit_text = self.0.write(context.gc_context);
+        let mut edit_text = self.0.write(context.gc());
         edit_text.requested_height = Twips::from_pixels(value);
         edit_text.base.base.set_transformed_by_script(true);
         drop(edit_text);
@@ -2520,14 +2498,14 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
         self.drop_focus(context);
 
         if let Some(node) = self.maskee() {
-            node.set_masker(context.gc_context, None, true);
+            node.set_masker(context.gc(), None, true);
         } else if let Some(node) = self.masker() {
-            node.set_maskee(context.gc_context, None, true);
+            node.set_maskee(context.gc(), None, true);
         }
 
         // Unbind any display objects bound to this text.
-        if let Some(stage_object) = self.0.write(context.gc_context).bound_stage_object.take() {
-            stage_object.clear_text_field_binding(context.gc_context, *self);
+        if let Some(stage_object) = self.0.write(context.gc()).bound_stage_object.take() {
+            stage_object.clear_text_field_binding(context.gc(), *self);
         }
 
         // Unregister any text fields that may be bound to *this* text field.
@@ -2542,7 +2520,7 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
                 .retain(|&text_field| !DisplayObject::ptr_eq(text_field.into(), (*self).into()));
         }
 
-        self.set_avm1_removed(context.gc_context, true);
+        self.set_avm1_removed(context.gc(), true);
     }
 }
 
@@ -2842,7 +2820,7 @@ impl<'gc> TInteractiveObject<'gc> for EditText<'gc> {
     ) {
         let is_avm1 = !self.movie().is_action_script_3();
         if !focused && is_avm1 {
-            self.set_selection(None, context.gc_context);
+            self.set_selection(None, context.gc());
         }
     }
 

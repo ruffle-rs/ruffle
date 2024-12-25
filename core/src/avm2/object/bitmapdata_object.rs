@@ -17,7 +17,7 @@ pub fn bitmap_data_allocator<'gc>(
     let base = ScriptObjectData::new(class);
 
     Ok(BitmapDataObject(Gc::new(
-        activation.context.gc_context,
+        activation.context.gc(),
         BitmapDataObjectData {
             base,
             // This always starts out as a dummy (invalid) BitmapDataWrapper, so
@@ -76,7 +76,7 @@ impl<'gc> BitmapDataObject<'gc> {
         class: ClassObject<'gc>,
     ) -> Result<Object<'gc>, Error<'gc>> {
         let instance: Object<'gc> = Self(Gc::new(
-            activation.context.gc_context,
+            activation.context.gc(),
             BitmapDataObjectData {
                 base: ScriptObjectData::new(class),
                 bitmap_data: Lock::new(bitmap_data),
@@ -84,7 +84,7 @@ impl<'gc> BitmapDataObject<'gc> {
         ))
         .into();
 
-        bitmap_data.init_object2(activation.context.gc_context, instance);
+        bitmap_data.init_object2(activation.context.gc(), instance);
 
         // We call the custom BitmapData class with width and height...
         // but, it always seems to be 1 in Flash Player when constructed from timeline?

@@ -13,7 +13,7 @@ pub fn video_allocator<'gc>(
     while let Some(target) = target_class {
         if target == video_class {
             let movie = activation.caller_movie_or_root();
-            let new_do = Video::new(activation.context.gc_context, movie, 0, 0, None);
+            let new_do = Video::new(activation.context.gc(), movie, 0, 0, None);
             return initialize_for_allocator(activation, new_do.into(), class);
         }
 
@@ -50,7 +50,7 @@ pub fn init<'gc>(
         let width = args.get_i32(activation, 0)?;
         let height = args.get_i32(activation, 1)?;
 
-        video.set_size(activation.context.gc_context, width, height);
+        video.set_size(activation.context.gc(), width, height);
     }
 
     Ok(Value::Undefined)

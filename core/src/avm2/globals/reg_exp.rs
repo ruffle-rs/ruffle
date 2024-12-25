@@ -18,7 +18,7 @@ pub fn init<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
-    if let Some(mut regexp) = this.as_regexp_mut(activation.context.gc_context) {
+    if let Some(mut regexp) = this.as_regexp_mut(activation.context.gc()) {
         let source: AvmString<'gc> = match args.get(0) {
             Some(Value::Undefined) => activation.strings().empty(),
             Some(Value::Object(Object::RegExpObject(o))) => {
@@ -177,7 +177,7 @@ pub fn set_last_index<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
-    if let Some(mut re) = this.as_regexp_mut(activation.context.gc_context) {
+    if let Some(mut re) = this.as_regexp_mut(activation.context.gc()) {
         let i = args
             .get(0)
             .unwrap_or(&Value::Undefined)
@@ -211,7 +211,7 @@ pub fn exec<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
-    if let Some(mut re) = this.as_regexp_mut(activation.context.gc_context) {
+    if let Some(mut re) = this.as_regexp_mut(activation.context.gc()) {
         let text = args
             .get(0)
             .unwrap_or(&Value::Undefined)
@@ -225,7 +225,7 @@ pub fn exec<'gc>(
 
                 let storage = ArrayStorage::from_iter(substrings.map(|s| match s {
                     None => Value::Undefined,
-                    Some(s) => AvmString::new(activation.context.gc_context, s).into(),
+                    Some(s) => AvmString::new(activation.context.gc(), s).into(),
                 }));
 
                 (storage, matched.start())
@@ -253,7 +253,7 @@ pub fn test<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
-    if let Some(mut re) = this.as_regexp_mut(activation.context.gc_context) {
+    if let Some(mut re) = this.as_regexp_mut(activation.context.gc()) {
         let text = args
             .get(0)
             .unwrap_or(&Value::Undefined)

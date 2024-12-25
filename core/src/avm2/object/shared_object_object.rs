@@ -60,7 +60,7 @@ impl<'gc> SharedObjectObject<'gc> {
         let base = ScriptObjectData::new(class);
 
         SharedObjectObject(Gc::new(
-            activation.context.gc_context,
+            activation.context.gc(),
             SharedObjectObjectData {
                 base,
                 data: Lock::new(data),

@@ -17,7 +17,7 @@ fn instance_init<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
-    if let Some(mut prim) = this.as_primitive_mut(activation.context.gc_context) {
+    if let Some(mut prim) = this.as_primitive_mut(activation.context.gc()) {
         if matches!(*prim, Value::Undefined | Value::Null) {
             *prim = args
                 .get(0)
@@ -40,7 +40,7 @@ fn class_init<'gc>(
     let this = this.as_object().unwrap();
 
     let scope = activation.create_scopechain();
-    let gc_context = activation.context.gc_context;
+    let gc_context = activation.context.gc();
     let this_class = this.as_class_object().unwrap();
     let number_proto = this_class.prototype();
 
@@ -166,7 +166,7 @@ pub fn to_exponential<'gc>(
     let digits = digits as usize;
 
     Ok(AvmString::new_utf8(
-        activation.context.gc_context,
+        activation.context.gc(),
         format!("{number:.digits$e}")
             .replace('e', "e+")
             .replace("e+-", "e-")
@@ -194,7 +194,7 @@ pub fn to_fixed<'gc>(
     }
 
     Ok(AvmString::new_utf8(
-        activation.context.gc_context,
+        activation.context.gc(),
         format!("{0:.1$}", number, digits as usize),
     )
     .into())
@@ -215,7 +215,7 @@ pub fn print_with_precision<'gc>(
 
     if (wanted_digits as f64) <= available_digits {
         Ok(AvmString::new_utf8(
-            activation.context.gc_context,
+            activation.context.gc(),
             format!(
                 "{}e{}{}",
                 precision / 10.0_f64.powf(available_digits),
@@ -225,7 +225,7 @@ pub fn print_with_precision<'gc>(
         ))
     } else {
         Ok(AvmString::new_utf8(
-            activation.context.gc_context,
+            activation.context.gc(),
             format!("{precision}"),
         ))
     }
@@ -302,10 +302,7 @@ pub fn print_with_radix<'gc>(
 
     let formatted: String = digits.into_iter().rev().collect();
 
-    Ok(AvmString::new_utf8(
-        activation.context.gc_context,
-        formatted,
-    ))
+    Ok(AvmString::new_utf8(activation.context.gc(), formatted))
 }
 
 /// Implements `Number.prototype.toString`
@@ -428,14 +425,14 @@ pub fn create_class<'gc>(activation: &mut Activation<'_, 'gc>) -> Class<'gc> {
     ];
     class.define_builtin_instance_methods(mc, namespaces.as3, AS3_INSTANCE_METHODS);
 
-    class.mark_traits_loaded(activation.context.gc_context);
+    class.mark_traits_loaded(activation.context.gc());
     class
         .init_vtable(activation.context)
         .expect("Native class's vtable should initialize");
 
     let c_class = class.c_class().expect("Class::new returns an i_class");
 
-    c_class.mark_traits_loaded(activation.context.gc_context);
+    c_class.mark_traits_loaded(activation.context.gc());
     c_class
         .init_vtable(activation.context)
         .expect("Native class's vtable should initialize");

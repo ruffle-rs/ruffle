@@ -277,9 +277,7 @@ impl<'gc> TDisplayObject<'gc> for Avm1Button<'gc> {
         self.set_default_instance_name(context);
 
         if !self.movie().is_action_script_3() {
-            context
-                .avm1
-                .add_to_exec_list(context.gc_context, (*self).into());
+            context.avm1.add_to_exec_list(context.gc(), (*self).into());
         }
 
         if self.0.object.get().is_none() {

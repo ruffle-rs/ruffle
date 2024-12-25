@@ -169,10 +169,7 @@ pub struct BevelFilter<'gc>(GcCell<'gc, BevelFilterData>);
 
 impl<'gc> BevelFilter<'gc> {
     fn new(activation: &mut Activation<'_, 'gc>, args: &[Value<'gc>]) -> Result<Self, Error<'gc>> {
-        let bevel_filter = Self(GcCell::new(
-            activation.context.gc_context,
-            Default::default(),
-        ));
+        let bevel_filter = Self(GcCell::new(activation.context.gc(), Default::default()));
         bevel_filter.set_distance(activation, args.get(0))?;
         bevel_filter.set_angle(activation, args.get(1))?;
         bevel_filter.set_highlight_color(activation, args.get(2))?;
@@ -207,7 +204,7 @@ impl<'gc> BevelFilter<'gc> {
     ) -> Result<(), Error<'gc>> {
         if let Some(value) = value {
             let distance = value.coerce_to_f64(activation)?;
-            self.0.write(activation.context.gc_context).distance = distance;
+            self.0.write(activation.context.gc()).distance = distance;
         }
         Ok(())
     }
@@ -223,7 +220,7 @@ impl<'gc> BevelFilter<'gc> {
     ) -> Result<(), Error<'gc>> {
         if let Some(value) = value {
             let angle = (value.coerce_to_f64(activation)? % 360.0).to_radians();
-            self.0.write(activation.context.gc_context).angle = angle;
+            self.0.write(activation.context.gc()).angle = angle;
         }
         Ok(())
     }
@@ -239,7 +236,7 @@ impl<'gc> BevelFilter<'gc> {
     ) -> Result<(), Error<'gc>> {
         if let Some(value) = value {
             let value = value.coerce_to_u32(activation)?;
-            let mut write = self.0.write(activation.context.gc_context);
+            let mut write = self.0.write(activation.context.gc());
             write.highlight = Color::from_rgb(value, write.highlight.a);
         }
         Ok(())
@@ -256,7 +253,7 @@ impl<'gc> BevelFilter<'gc> {
     ) -> Result<(), Error<'gc>> {
         if let Some(value) = value {
             let alpha = (value.coerce_to_f64(activation)? * 255.0) as u8;
-            self.0.write(activation.context.gc_context).highlight.a = alpha;
+            self.0.write(activation.context.gc()).highlight.a = alpha;
         }
         Ok(())
     }
@@ -272,7 +269,7 @@ impl<'gc> BevelFilter<'gc> {
     ) -> Result<(), Error<'gc>> {
         if let Some(value) = value {
             let value = value.coerce_to_u32(activation)?;
-            let mut write = self.0.write(activation.context.gc_context);
+            let mut write = self.0.write(activation.context.gc());
             write.shadow = Color::from_rgb(value, write.shadow.a);
         }
         Ok(())
@@ -289,7 +286,7 @@ impl<'gc> BevelFilter<'gc> {
     ) -> Result<(), Error<'gc>> {
         if let Some(value) = value {
             let alpha = (value.coerce_to_f64(activation)? * 255.0) as u8;
-            self.0.write(activation.context.gc_context).shadow.a = alpha;
+            self.0.write(activation.context.gc()).shadow.a = alpha;
         }
         Ok(())
     }
@@ -305,7 +302,7 @@ impl<'gc> BevelFilter<'gc> {
     ) -> Result<(), Error<'gc>> {
         if let Some(value) = value {
             let quality = value.coerce_to_i32(activation)?.clamp(0, 15);
-            self.0.write(activation.context.gc_context).quality = quality;
+            self.0.write(activation.context.gc()).quality = quality;
         }
         Ok(())
     }
@@ -321,7 +318,7 @@ impl<'gc> BevelFilter<'gc> {
     ) -> Result<(), Error<'gc>> {
         if let Some(value) = value {
             self.0
-                .write(activation.context.gc_context)
+                .write(activation.context.gc())
                 .set_strength(value.coerce_to_f64(activation)?);
         }
         Ok(())
@@ -338,7 +335,7 @@ impl<'gc> BevelFilter<'gc> {
     ) -> Result<(), Error<'gc>> {
         if let Some(value) = value {
             let knockout = value.as_bool(activation.swf_version());
-            self.0.write(activation.context.gc_context).knockout = knockout;
+            self.0.write(activation.context.gc()).knockout = knockout;
         }
         Ok(())
     }
@@ -354,7 +351,7 @@ impl<'gc> BevelFilter<'gc> {
     ) -> Result<(), Error<'gc>> {
         if let Some(value) = value {
             let blur_x = value.coerce_to_f64(activation)?.clamp(0.0, 255.0);
-            self.0.write(activation.context.gc_context).blur_x = blur_x;
+            self.0.write(activation.context.gc()).blur_x = blur_x;
         }
         Ok(())
     }
@@ -370,7 +367,7 @@ impl<'gc> BevelFilter<'gc> {
     ) -> Result<(), Error<'gc>> {
         if let Some(value) = value {
             let blur_y = value.coerce_to_f64(activation)?.clamp(0.0, 255.0);
-            self.0.write(activation.context.gc_context).blur_y = blur_y;
+            self.0.write(activation.context.gc()).blur_y = blur_y;
         }
         Ok(())
     }
@@ -386,7 +383,7 @@ impl<'gc> BevelFilter<'gc> {
     ) -> Result<(), Error<'gc>> {
         if let Some(value) = value {
             let type_ = value.coerce_to_string(activation)?.as_wstr().into();
-            self.0.write(activation.context.gc_context).type_ = type_;
+            self.0.write(activation.context.gc()).type_ = type_;
         }
         Ok(())
     }
@@ -452,7 +449,7 @@ fn method<'gc>(
     if index == CONSTRUCTOR {
         let bevel_filter = BevelFilter::new(activation, args)?;
         this.set_native(
-            activation.context.gc_context,
+            activation.context.gc(),
             NativeObject::BevelFilter(bevel_filter),
         );
         return Ok(this.into());
@@ -536,7 +533,7 @@ pub fn create_proto<'gc>(
     proto: Object<'gc>,
     fn_proto: Object<'gc>,
 ) -> Object<'gc> {
-    let bevel_filter_proto = ScriptObject::new(context.gc_context, Some(proto));
+    let bevel_filter_proto = ScriptObject::new(context.gc(), Some(proto));
     define_properties_on(PROTO_DECLS, context, bevel_filter_proto, fn_proto);
     bevel_filter_proto.into()
 }
@@ -547,7 +544,7 @@ pub fn create_constructor<'gc>(
     fn_proto: Object<'gc>,
 ) -> Object<'gc> {
     FunctionObject::constructor(
-        context.gc_context,
+        context.gc(),
         Executable::Native(bevel_filter_method!(0)),
         constructor_to_fn!(bevel_filter_method!(0)),
         fn_proto,

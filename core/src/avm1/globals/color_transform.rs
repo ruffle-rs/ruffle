@@ -127,8 +127,8 @@ pub fn constructor<'gc>(
         _ => ColorTransformObject::IDENTITY,
     };
     this.set_native(
-        activation.context.gc_context,
-        NativeObject::ColorTransform(GcCell::new(activation.context.gc_context, color_transform)),
+        activation.context.gc(),
+        NativeObject::ColorTransform(GcCell::new(activation.context.gc(), color_transform)),
     );
     Ok(this.into())
 }
@@ -158,7 +158,7 @@ fn set_rgb<'gc>(
         if let [rgb, ..] = args {
             let rgb = rgb.coerce_to_u32(activation)?;
             let [b, g, r, _] = rgb.to_le_bytes();
-            let mut color_transform = color_transform.write(activation.context.gc_context);
+            let mut color_transform = color_transform.write(activation.context.gc());
             color_transform.red_multiplier = 0.0;
             color_transform.green_multiplier = 0.0;
             color_transform.blue_multiplier = 0.0;
@@ -194,7 +194,7 @@ macro_rules! color_transform_value_accessor {
                 if let Some(color_transform) = ColorTransformObject::cast(this.into()) {
                     if let [value, ..] = args {
                         let value = value.coerce_to_f64(activation)?;
-                        color_transform.write(activation.context.gc_context).$field = value;
+                        color_transform.write(activation.context.gc()).$field = value;
                     }
                 }
                 Ok(Value::Undefined.into())
@@ -230,7 +230,7 @@ fn to_string<'gc>(
             this.get("alphaOffset", activation)?.coerce_to_string(activation)?
     );
 
-    Ok(AvmString::new_utf8(activation.context.gc_context, formatted).into())
+    Ok(AvmString::new_utf8(activation.context.gc(), formatted).into())
 }
 
 fn concat<'gc>(
@@ -247,7 +247,7 @@ fn concat<'gc>(
             _ => return Ok(Value::Undefined),
         };
 
-        let mut this = this.write(activation.context.gc_context);
+        let mut this = this.write(activation.context.gc());
         *this = ColorTransformObject {
             red_multiplier: other.red_multiplier * this.red_multiplier,
             green_multiplier: other.green_multiplier * this.green_multiplier,
@@ -268,7 +268,7 @@ pub fn create_proto<'gc>(
     proto: Object<'gc>,
     fn_proto: Object<'gc>,
 ) -> Object<'gc> {
-    let object = ScriptObject::new(context.gc_context, Some(proto));
+    let object = ScriptObject::new(context.gc(), Some(proto));
     define_properties_on(PROTO_DECLS, context, object, fn_proto);
     object.into()
 }

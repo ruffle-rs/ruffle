@@ -18,7 +18,7 @@ pub fn dictionary_allocator<'gc>(
     let base = ScriptObjectData::new(class);
 
     Ok(DictionaryObject(Gc::new(
-        activation.context.gc_context,
+        activation.context.gc(),
         DictionaryObjectData { base },
     ))
     .into())

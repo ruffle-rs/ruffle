@@ -17,7 +17,7 @@ fn instance_init<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
-    if let Some(mut prim) = this.as_primitive_mut(activation.context.gc_context) {
+    if let Some(mut prim) = this.as_primitive_mut(activation.context.gc()) {
         if matches!(*prim, Value::Undefined | Value::Null) {
             *prim = args
                 .get(0)
@@ -40,7 +40,7 @@ fn class_init<'gc>(
     let this = this.as_object().unwrap();
 
     let scope = activation.create_scopechain();
-    let gc_context = activation.context.gc_context;
+    let gc_context = activation.context.gc();
     let this_class = this.as_class_object().unwrap();
     let boolean_proto = this_class.prototype();
 
@@ -156,14 +156,14 @@ pub fn create_class<'gc>(activation: &mut Activation<'_, 'gc>) -> Class<'gc> {
     const CONSTANTS_INT: &[(&str, i32)] = &[("length", 1)];
     class.define_constant_int_class_traits(namespaces.public_all(), CONSTANTS_INT, activation);
 
-    class.mark_traits_loaded(activation.context.gc_context);
+    class.mark_traits_loaded(activation.context.gc());
     class
         .init_vtable(activation.context)
         .expect("Native class's vtable should initialize");
 
     let c_class = class.c_class().expect("Class::new returns an i_class");
 
-    c_class.mark_traits_loaded(activation.context.gc_context);
+    c_class.mark_traits_loaded(activation.context.gc());
     c_class
         .init_vtable(activation.context)
         .expect("Native class's vtable should initialize");
