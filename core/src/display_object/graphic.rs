@@ -161,9 +161,7 @@ impl<'gc> TDisplayObject<'gc> for Graphic<'gc> {
                 (*self).into(),
                 class_object,
             ) {
-                Ok(object) => {
-                    self.0.write(activation.context.gc()).avm2_object = Some(object.into())
-                }
+                Ok(object) => self.0.write(activation.gc()).avm2_object = Some(object.into()),
                 Err(e) => {
                     tracing::error!("Got error when constructing AVM2 side of shape: {}", e)
                 }

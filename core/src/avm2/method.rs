@@ -231,7 +231,7 @@ impl<'gc> BytecodeMethod<'gc> {
         // TODO: avmplus seems to eaglerly verify some methods
 
         *unlock!(
-            Gc::write(activation.context.gc(), this),
+            Gc::write(activation.gc(), this),
             BytecodeMethod,
             verified_info
         )
@@ -349,7 +349,7 @@ impl<'gc> NativeMethod<'gc> {
         &self,
         activation: &mut Activation<'_, 'gc>,
     ) -> Result<(), Error<'gc>> {
-        *self.resolved_signature.write(activation.context.gc()) =
+        *self.resolved_signature.write(activation.gc()) =
             Some(resolve_param_config(activation, &self.signature)?);
 
         Ok(())

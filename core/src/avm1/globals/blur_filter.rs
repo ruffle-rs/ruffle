@@ -54,7 +54,7 @@ pub struct BlurFilter<'gc>(GcCell<'gc, BlurFilterData>);
 
 impl<'gc> BlurFilter<'gc> {
     fn new(activation: &mut Activation<'_, 'gc>, args: &[Value<'gc>]) -> Result<Self, Error<'gc>> {
-        let blur_filter = Self(GcCell::new(activation.context.gc(), Default::default()));
+        let blur_filter = Self(GcCell::new(activation.gc(), Default::default()));
         blur_filter.set_blur_x(activation, args.get(0))?;
         blur_filter.set_blur_y(activation, args.get(1))?;
         blur_filter.set_quality(activation, args.get(2))?;
@@ -80,7 +80,7 @@ impl<'gc> BlurFilter<'gc> {
     ) -> Result<(), Error<'gc>> {
         if let Some(value) = value {
             let blur_x = value.coerce_to_f64(activation)?.clamp(0.0, 255.0);
-            self.0.write(activation.context.gc()).blur_x = blur_x;
+            self.0.write(activation.gc()).blur_x = blur_x;
         }
         Ok(())
     }
@@ -96,7 +96,7 @@ impl<'gc> BlurFilter<'gc> {
     ) -> Result<(), Error<'gc>> {
         if let Some(value) = value {
             let blur_y = value.coerce_to_f64(activation)?.clamp(0.0, 255.0);
-            self.0.write(activation.context.gc()).blur_y = blur_y;
+            self.0.write(activation.gc()).blur_y = blur_y;
         }
         Ok(())
     }
@@ -112,7 +112,7 @@ impl<'gc> BlurFilter<'gc> {
     ) -> Result<(), Error<'gc>> {
         if let Some(value) = value {
             let quality = value.coerce_to_i32(activation)?.clamp(0, 15);
-            self.0.write(activation.context.gc()).quality = quality;
+            self.0.write(activation.gc()).quality = quality;
         }
         Ok(())
     }
@@ -150,10 +150,7 @@ fn method<'gc>(
 
     if index == CONSTRUCTOR {
         let blur_filter = BlurFilter::new(activation, args)?;
-        this.set_native(
-            activation.context.gc(),
-            NativeObject::BlurFilter(blur_filter),
-        );
+        this.set_native(activation.gc(), NativeObject::BlurFilter(blur_filter));
         return Ok(this.into());
     }
 

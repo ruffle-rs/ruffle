@@ -1659,10 +1659,10 @@ pub fn set_vector<'gc>(
     let region = PixelRegion::for_region(x_min, y_min, width as u32, height as u32);
 
     let bitmap_data = target.sync(activation.context.renderer);
-    let mut bitmap_data = bitmap_data.write(activation.context.gc());
+    let mut bitmap_data = bitmap_data.write(activation.gc());
     let transparency = bitmap_data.transparency();
     let mut iter = vector.iter();
-    bitmap_data.set_cpu_dirty(activation.context.gc(), region);
+    bitmap_data.set_cpu_dirty(activation.gc(), region);
     for y in region.y_min..region.y_max {
         for x in region.x_min..region.x_max {
             let color = iter

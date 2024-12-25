@@ -66,19 +66,16 @@ pub fn q_name_constructor<'gc>(
         };
 
         if let Value::Object(Object::QNameObject(qname)) = local_arg {
-            this.set_local_name(activation.context.gc(), qname.local_name());
+            this.set_local_name(activation.gc(), qname.local_name());
         } else {
-            this.set_local_name(
-                activation.context.gc(),
-                local_arg.coerce_to_string(activation)?,
-            );
+            this.set_local_name(activation.gc(), local_arg.coerce_to_string(activation)?);
         }
 
         namespace
     } else {
         let qname_arg = args.get(0).copied().unwrap_or(Value::Undefined);
         if let Value::Object(Object::QNameObject(qname_obj)) = qname_arg {
-            this.init_name(activation.context.gc(), qname_obj.name().clone());
+            this.init_name(activation.gc(), qname_obj.name().clone());
             return Ok(this.into());
         }
 
@@ -89,7 +86,7 @@ pub fn q_name_constructor<'gc>(
         };
 
         if &*local != b"*" {
-            this.set_local_name(activation.context.gc(), local);
+            this.set_local_name(activation.gc(), local);
             Some(activation.avm2().find_public_namespace())
         } else {
             None
@@ -97,8 +94,8 @@ pub fn q_name_constructor<'gc>(
     };
 
     if let Some(namespace) = namespace {
-        this.set_namespace(activation.context.gc(), namespace);
-        this.set_is_qname(activation.context.gc(), true);
+        this.set_namespace(activation.gc(), namespace);
+        this.set_is_qname(activation.gc(), true);
     }
 
     Ok(this.into())

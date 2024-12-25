@@ -409,7 +409,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         *local_registers.get_unchecked_mut(0) = this.into();
 
         let activation_class =
-            BytecodeMethod::get_or_init_activation_class(method, self.context.gc(), || {
+            BytecodeMethod::get_or_init_activation_class(method, self.gc(), || {
                 let translation_unit = method.translation_unit();
                 let abc_method = method.method();
                 let mut dummy_activation = Activation::from_domain(self.context, outer.domain());
@@ -495,11 +495,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
                 .contains(AbcMethodFlags::NEED_ARGUMENTS)
             {
                 args_object.set_string_property_local("callee", callee.into(), self)?;
-                args_object.set_local_property_is_enumerable(
-                    self.context.gc(),
-                    "callee".into(),
-                    false,
-                );
+                args_object.set_local_property_is_enumerable(self.gc(), "callee".into(), false);
             }
 
             *self
@@ -580,7 +576,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     /// Creates a new ScopeChain by chaining the current state of this
     /// activation's scope stack with the outer scope.
     pub fn create_scopechain(&self) -> ScopeChain<'gc> {
-        self.outer.chain(self.context.gc(), self.scope_frame())
+        self.outer.chain(self.gc(), self.scope_frame())
     }
 
     /// Returns the domain of the original AS3 caller. This will be `None`
@@ -688,7 +684,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         self.bound_superclass_object.unwrap_or_else(|| {
             panic!(
                 "Cannot call supermethod {} without a superclass",
-                name.to_qualified_name(self.context.gc()),
+                name.to_qualified_name(self.gc()),
             )
         })
     }
@@ -1376,7 +1372,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             if let Value::Object(object) = object_value {
                 match name_value {
                     Value::Integer(name_int) if name_int >= 0 => {
-                        if let Some(mut array) = object.as_array_storage_mut(self.context.gc()) {
+                        if let Some(mut array) = object.as_array_storage_mut(self.gc()) {
                             let _ = self.pop_stack();
                             let _ = self.pop_stack();
                             array.set(name_int as usize, value);
@@ -1388,11 +1384,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
                         if let Some(dictionary) = object.as_dictionary_object() {
                             let _ = self.pop_stack();
                             let _ = self.pop_stack();
-                            dictionary.set_property_by_object(
-                                name_object,
-                                value,
-                                self.context.gc(),
-                            );
+                            dictionary.set_property_by_object(name_object, value, self.gc());
 
                             return Ok(FrameControl::Continue);
                         }
@@ -1454,7 +1446,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
                 if let Some(dictionary) = object.as_dictionary_object() {
                     let _ = self.pop_stack();
                     let _ = self.pop_stack();
-                    dictionary.delete_property_by_object(name_object, self.context.gc());
+                    dictionary.delete_property_by_object(name_object, self.gc());
 
                     self.push_raw(true);
                     return Ok(FrameControl::Continue);
@@ -1686,7 +1678,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             let class_name = object
                 .instance_class()
                 .name()
-                .to_qualified_name_err_message(self.context.gc());
+                .to_qualified_name_err_message(self.gc());
             return Err(Error::AvmError(type_error(
                 self,
                 &format!(
@@ -1734,7 +1726,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             .as_object()
             .expect("Cannot set_slot on primitive");
 
-        object.set_slot_no_coerce(index, value, self.context.gc());
+        object.set_slot_no_coerce(index, value, self.gc());
 
         Ok(FrameControl::Continue)
     }
@@ -2016,12 +2008,12 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             (Value::Integer(n1), Value::Integer(n2)) => (n1 + n2).into(),
             (Value::Number(n1), Value::Number(n2)) => (n1 + n2).into(),
             (Value::String(s), value2) => Value::String(AvmString::concat(
-                self.context.gc(),
+                self.gc(),
                 s,
                 value2.coerce_to_string(self)?,
             )),
             (value1, Value::String(s)) => Value::String(AvmString::concat(
-                self.context.gc(),
+                self.gc(),
                 value1.coerce_to_string(self)?,
                 s,
             )),
@@ -2042,12 +2034,12 @@ impl<'a, 'gc> Activation<'a, 'gc> {
 
                 match (prim_value1, prim_value2) {
                     (Value::String(s), value2) => Value::String(AvmString::concat(
-                        self.context.gc(),
+                        self.gc(),
                         s,
                         value2.coerce_to_string(self)?,
                     )),
                     (value1, Value::String(s)) => Value::String(AvmString::concat(
-                        self.context.gc(),
+                        self.gc(),
                         value1.coerce_to_string(self)?,
                         s,
                     )),
@@ -2801,7 +2793,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
 
         // Implementation of `EscapeAttributeValue` from ECMA-357(10.2.1.2)
         let r = escape_attribute_value(s);
-        self.push_raw(AvmString::new(self.context.gc(), r));
+        self.push_raw(AvmString::new(self.gc(), r));
 
         Ok(FrameControl::Continue)
     }

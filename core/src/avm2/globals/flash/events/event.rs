@@ -15,7 +15,7 @@ pub fn init<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
-    let mut evt = this.as_event_mut(activation.context.gc()).unwrap();
+    let mut evt = this.as_event_mut(activation.gc()).unwrap();
     evt.set_event_type(args.get_string(activation, 0)?);
     evt.set_bubbles(args.get_bool(1));
     evt.set_cancelable(args.get_bool(2));
@@ -139,7 +139,7 @@ pub fn prevent_default<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
-    if let Some(mut evt) = this.as_event_mut(activation.context.gc()) {
+    if let Some(mut evt) = this.as_event_mut(activation.gc()) {
         evt.cancel();
     }
 
@@ -154,7 +154,7 @@ pub fn stop_propagation<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
-    if let Some(mut evt) = this.as_event_mut(activation.context.gc()) {
+    if let Some(mut evt) = this.as_event_mut(activation.gc()) {
         evt.stop_propagation();
     }
 
@@ -169,7 +169,7 @@ pub fn stop_immediate_propagation<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
-    if let Some(mut evt) = this.as_event_mut(activation.context.gc()) {
+    if let Some(mut evt) = this.as_event_mut(activation.gc()) {
         evt.stop_immediate_propagation();
     }
 

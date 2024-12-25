@@ -78,7 +78,7 @@ pub fn to_string<'gc>(
         // Must be a bool.
         // Boolean.prototype.toString.call(x) returns undefined for non-bools.
         if let Value::Bool(b) = *vbox {
-            return Ok(AvmString::new_utf8(activation.context.gc(), b.to_string()).into());
+            return Ok(AvmString::new_utf8(activation.gc(), b.to_string()).into());
         }
     }
 

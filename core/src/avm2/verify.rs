@@ -443,7 +443,7 @@ pub fn verify_method<'gc>(
                     make_error_1014(
                         activation,
                         Error1014Type::VerifyError,
-                        pooled_type_name.to_qualified_name(activation.context.gc()),
+                        pooled_type_name.to_qualified_name(activation.gc()),
                     )
                 })?;
 

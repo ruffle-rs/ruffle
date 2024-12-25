@@ -45,9 +45,7 @@ pub fn object_function<'gc>(
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     let obj = match args.get(0).unwrap_or(&Value::Undefined) {
-        Value::Undefined | Value::Null => {
-            Object::from(ScriptObject::new(activation.context.gc(), None))
-        }
+        Value::Undefined | Value::Null => Object::from(ScriptObject::new(activation.gc(), None)),
         val => val.coerce_to_object(activation),
     };
     Ok(obj.into())
@@ -281,26 +279,23 @@ pub fn as_set_prop_flags<'gc>(
     }
 
     match args.get(1) {
-        Some(&Value::Null) => object.set_attributes(
-            activation.context.gc(),
-            None,
-            set_attributes,
-            clear_attributes,
-        ),
+        Some(&Value::Null) => {
+            object.set_attributes(activation.gc(), None, set_attributes, clear_attributes)
+        }
         Some(v) => {
             let props = v.coerce_to_string(activation)?;
             if props.contains(b',') {
                 for prop_name in props.split(b',') {
                     object.set_attributes(
-                        activation.context.gc(),
-                        Some(AvmString::new(activation.context.gc(), prop_name)),
+                        activation.gc(),
+                        Some(AvmString::new(activation.gc(), prop_name)),
                         set_attributes,
                         clear_attributes,
                     )
                 }
             } else {
                 object.set_attributes(
-                    activation.context.gc(),
+                    activation.gc(),
                     Some(props),
                     set_attributes,
                     clear_attributes,

@@ -20,7 +20,7 @@ pub fn primitive_allocator<'gc>(
     let base = ScriptObjectData::new(class);
 
     Ok(PrimitiveObject(Gc::new(
-        activation.context.gc(),
+        activation.gc(),
         PrimitiveObjectData {
             base,
             primitive: RefLock::new(Value::Undefined),
@@ -94,7 +94,7 @@ impl<'gc> PrimitiveObject<'gc> {
 
         let base = ScriptObjectData::new(class);
         let this: Object<'gc> = PrimitiveObject(Gc::new(
-            activation.context.gc(),
+            activation.gc(),
             PrimitiveObjectData {
                 base,
                 primitive: RefLock::new(primitive),
@@ -133,10 +133,7 @@ impl<'gc> TObject<'gc> for PrimitiveObject<'gc> {
             _ => {
                 let class_name = self.instance_class().name().local_name();
 
-                Ok(
-                    AvmString::new_utf8(activation.context.gc(), format!("[object {class_name}]"))
-                        .into(),
-                )
+                Ok(AvmString::new_utf8(activation.gc(), format!("[object {class_name}]")).into())
             }
         }
     }

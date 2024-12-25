@@ -187,20 +187,20 @@ impl<'gc> Avm1Function<'gc> {
         }
 
         let arguments = ArrayObject::new(
-            frame.context.gc(),
+            frame.gc(),
             frame.context.avm1.prototypes().array,
             args.iter().cloned(),
         );
 
         arguments.define_value(
-            frame.context.gc(),
+            frame.gc(),
             "callee",
             frame.callee.unwrap().into(),
             Attribute::DONT_ENUM,
         );
 
         arguments.define_value(
-            frame.context.gc(),
+            frame.gc(),
             "caller",
             caller.map(Value::from).unwrap_or(Value::Null),
             Attribute::DONT_ENUM,
@@ -382,7 +382,7 @@ impl<'gc> Executable<'gc> {
             };
             // TODO: It would be nice to avoid these extra Scope allocs.
             let scope = Gc::new(
-                activation.context.gc(),
+                activation.gc(),
                 Scope::new(
                     activation.context.avm1.global_scope(),
                     super::scope::ScopeClass::Target,
@@ -393,8 +393,8 @@ impl<'gc> Executable<'gc> {
         };
 
         let child_scope = Gc::new(
-            activation.context.gc(),
-            Scope::new_local_scope(parent_scope, activation.context.gc()),
+            activation.gc(),
+            Scope::new_local_scope(parent_scope, activation.gc()),
         );
 
         // The caller is the previous callee.
@@ -427,7 +427,7 @@ impl<'gc> Executable<'gc> {
             Some(callee),
         );
 
-        frame.allocate_local_registers(af.register_count(), frame.context.gc());
+        frame.allocate_local_registers(af.register_count(), frame.gc());
 
         let mut preload_r = 1;
         af.load_this(&mut frame, this, &mut preload_r);
@@ -605,14 +605,14 @@ impl<'gc> TObject<'gc> for FunctionObject<'gc> {
         args: &[Value<'gc>],
     ) -> Result<(), Error<'gc>> {
         this.define_value(
-            activation.context.gc(),
+            activation.gc(),
             "__constructor__",
             (*self).into(),
             Attribute::DONT_ENUM,
         );
         if activation.swf_version() < 7 {
             this.define_value(
-                activation.context.gc(),
+                activation.gc(),
                 "constructor",
                 (*self).into(),
                 Attribute::DONT_ENUM,
@@ -654,14 +654,14 @@ impl<'gc> TObject<'gc> for FunctionObject<'gc> {
         let this = prototype.create_bare_object(activation, prototype)?;
 
         this.define_value(
-            activation.context.gc(),
+            activation.gc(),
             "__constructor__",
             (*self).into(),
             Attribute::DONT_ENUM,
         );
         if activation.swf_version() < 7 {
             this.define_value(
-                activation.context.gc(),
+                activation.gc(),
                 "constructor",
                 (*self).into(),
                 Attribute::DONT_ENUM,
@@ -703,9 +703,9 @@ impl<'gc> TObject<'gc> for FunctionObject<'gc> {
         prototype: Object<'gc>,
     ) -> Result<Object<'gc>, Error<'gc>> {
         Ok(FunctionObject(GcCell::new(
-            activation.context.gc(),
+            activation.gc(),
             FunctionObjectData {
-                base: ScriptObject::new(activation.context.gc(), Some(prototype)),
+                base: ScriptObject::new(activation.gc(), Some(prototype)),
                 function: None,
                 constructor: None,
             },

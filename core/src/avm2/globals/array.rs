@@ -73,7 +73,7 @@ pub fn instance_init<'gc>(
 
     activation.super_init(this, &[])?;
 
-    if let Some(mut array) = this.as_array_storage_mut(activation.context.gc()) {
+    if let Some(mut array) = this.as_array_storage_mut(activation.gc()) {
         if args.len() == 1 {
             if let Some(expected_len) = args.get(0).filter(|v| v.is_number()).map(|v| v.as_f64()) {
                 if expected_len < 0.0 || expected_len.is_nan() || expected_len.fract() != 0.0 {
@@ -122,7 +122,7 @@ pub fn class_init<'gc>(
     let this = this.as_object().unwrap();
 
     let scope = activation.create_scopechain();
-    let gc_context = activation.context.gc();
+    let gc_context = activation.gc();
     let this_class = this.as_class_object().unwrap();
     let array_proto = this_class.prototype();
 
@@ -169,7 +169,7 @@ pub fn set_length<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
-    if let Some(mut array) = this.as_array_storage_mut(activation.context.gc()) {
+    if let Some(mut array) = this.as_array_storage_mut(activation.gc()) {
         let size = args
             .get(0)
             .unwrap_or(&Value::Undefined)
@@ -230,7 +230,7 @@ pub fn resolve_array_hole<'gc>(
 
     if let Some(proto) = this.proto() {
         proto.get_public_property(
-            AvmString::new_utf8(activation.context.gc(), i.to_string()),
+            AvmString::new_utf8(activation.gc(), i.to_string()),
             activation,
         )
     } else {
@@ -267,7 +267,7 @@ where
         }
 
         return Ok(AvmString::new(
-            activation.context.gc(),
+            activation.gc(),
             crate::string::join(&accum, &string_separator),
         )
         .into());
@@ -382,7 +382,7 @@ impl<'gc> ArrayIter<'gc> {
             Some(
                 self.array_object
                     .get_public_property(
-                        AvmString::new_utf8(activation.context.gc(), i.to_string()),
+                        AvmString::new_utf8(activation.gc(), i.to_string()),
                         activation,
                     )
                     .map(|val| (i, val)),
@@ -408,7 +408,7 @@ impl<'gc> ArrayIter<'gc> {
             Some(
                 self.array_object
                     .get_public_property(
-                        AvmString::new_utf8(activation.context.gc(), i.to_string()),
+                        AvmString::new_utf8(activation.gc(), i.to_string()),
                         activation,
                     )
                     .map(|val| (i, val)),
@@ -610,7 +610,7 @@ pub fn pop<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
-    if let Some(mut array) = this.as_array_storage_mut(activation.context.gc()) {
+    if let Some(mut array) = this.as_array_storage_mut(activation.gc()) {
         return Ok(array.pop());
     }
 
@@ -625,7 +625,7 @@ pub fn push<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
-    if let Some(mut array) = this.as_array_storage_mut(activation.context.gc()) {
+    if let Some(mut array) = this.as_array_storage_mut(activation.gc()) {
         for arg in args {
             array.push(*arg)
         }
@@ -642,7 +642,7 @@ pub fn reverse<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
-    if let Some(mut array) = this.as_array_storage_mut(activation.context.gc()) {
+    if let Some(mut array) = this.as_array_storage_mut(activation.gc()) {
         let mut last_non_hole_index = None;
         for (i, val) in array.iter().enumerate() {
             if val.is_some() {
@@ -679,7 +679,7 @@ pub fn shift<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
-    if let Some(mut array) = this.as_array_storage_mut(activation.context.gc()) {
+    if let Some(mut array) = this.as_array_storage_mut(activation.gc()) {
         return Ok(array.shift());
     }
 
@@ -694,7 +694,7 @@ pub fn unshift<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
-    if let Some(mut array) = this.as_array_storage_mut(activation.context.gc()) {
+    if let Some(mut array) = this.as_array_storage_mut(activation.gc()) {
         for arg in args.iter().rev() {
             array.unshift(*arg)
         }
@@ -804,7 +804,7 @@ pub fn splice<'gc>(
 
             let mut resolved_array = ArrayStorage::from_args(&resolved[..]);
 
-            if let Some(mut array) = this.as_array_storage_mut(activation.context.gc()) {
+            if let Some(mut array) = this.as_array_storage_mut(activation.gc()) {
                 swap(&mut *array, &mut resolved_array)
             }
 
@@ -1068,7 +1068,7 @@ fn sort_postprocess<'gc>(
                 ),
             ));
         } else {
-            if let Some(mut old_array) = this.as_array_storage_mut(activation.context.gc()) {
+            if let Some(mut old_array) = this.as_array_storage_mut(activation.gc()) {
                 let new_vec = values
                     .iter()
                     .map(|(src, v)| {
@@ -1343,7 +1343,7 @@ pub fn remove_at<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
-    if let Some(mut array) = this.as_array_storage_mut(activation.context.gc()) {
+    if let Some(mut array) = this.as_array_storage_mut(activation.gc()) {
         let index = args
             .get(0)
             .cloned()
@@ -1358,7 +1358,7 @@ pub fn remove_at<'gc>(
 
 /// Construct `Array`'s class.
 pub fn create_class<'gc>(activation: &mut Activation<'_, 'gc>) -> Class<'gc> {
-    let mc = activation.context.gc();
+    let mc = activation.gc();
     let class = Class::new(
         QName::new(activation.avm2().namespaces.public_all(), "Array"),
         Some(activation.avm2().class_defs().object),
@@ -1417,14 +1417,14 @@ pub fn create_class<'gc>(activation: &mut Activation<'_, 'gc>) -> Class<'gc> {
         activation,
     );
 
-    class.mark_traits_loaded(activation.context.gc());
+    class.mark_traits_loaded(activation.gc());
     class
         .init_vtable(activation.context)
         .expect("Native class's vtable should initialize");
 
     let c_class = class.c_class().expect("Class::new returns an i_class");
 
-    c_class.mark_traits_loaded(activation.context.gc());
+    c_class.mark_traits_loaded(activation.gc());
     c_class
         .init_vtable(activation.context)
         .expect("Native class's vtable should initialize");

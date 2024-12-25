@@ -213,7 +213,7 @@ fn to_string<'gc>(
     let y = this.get("y", activation)?;
 
     Ok(AvmString::new_utf8(
-        activation.context.gc(),
+        activation.gc(),
         format!(
             "(x={}, y={})",
             x.coerce_to_string(activation)?,

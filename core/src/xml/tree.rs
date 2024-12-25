@@ -82,30 +82,25 @@ impl<'gc> XmlNode<'gc> {
         id_map: ScriptObject<'gc>,
         decoder: quick_xml::Decoder,
     ) -> Result<Self, quick_xml::Error> {
-        let name = AvmString::new_utf8_bytes(activation.context.gc(), bs.name().into_inner());
-        let mut node = Self::new(activation.context.gc(), ELEMENT_NODE, Some(name));
+        let name = AvmString::new_utf8_bytes(activation.gc(), bs.name().into_inner());
+        let mut node = Self::new(activation.gc(), ELEMENT_NODE, Some(name));
 
         // Reverse attributes so they appear in the `PropertyMap` in their definition order.
         let attributes: Result<Vec<_>, _> = bs.attributes().collect();
         let attributes = attributes?;
         for attribute in attributes.iter().rev() {
-            let key =
-                AvmString::new_utf8_bytes(activation.context.gc(), attribute.key.into_inner());
+            let key = AvmString::new_utf8_bytes(activation.gc(), attribute.key.into_inner());
             let value_str = custom_unescape(&attribute.value, decoder)?;
-            let value = AvmString::new_utf8_bytes(activation.context.gc(), value_str.as_bytes());
+            let value = AvmString::new_utf8_bytes(activation.gc(), value_str.as_bytes());
 
             // Insert an attribute.
-            node.attributes().define_value(
-                activation.context.gc(),
-                key,
-                value.into(),
-                Attribute::empty(),
-            );
+            node.attributes()
+                .define_value(activation.gc(), key, value.into(), Attribute::empty());
 
             // Update the ID map.
             if attribute.key.into_inner() == b"id" {
                 id_map.define_value(
-                    activation.context.gc(),
+                    activation.gc(),
                     value,
                     node.script_object(activation).into(),
                     Attribute::empty(),
@@ -362,9 +357,9 @@ impl<'gc> XmlNode<'gc> {
                     .get("prototype", activation)
                     .map(|p| p.coerce_to_object(activation))
                     .ok();
-                let object = ScriptObject::new(activation.context.gc(), prototype);
-                self.introduce_script_object(activation.context.gc(), object.into());
-                object.set_native(activation.context.gc(), NativeObject::XmlNode(*self));
+                let object = ScriptObject::new(activation.gc(), prototype);
+                self.introduce_script_object(activation.gc(), object.into());
+                object.set_native(activation.gc(), NativeObject::XmlNode(*self));
                 object.into()
             }
         }
@@ -385,7 +380,7 @@ impl<'gc> XmlNode<'gc> {
             Ok(array)
         } else {
             let array = ArrayObject::empty(activation);
-            self.0.write(activation.context.gc()).cached_child_nodes = Some(array);
+            self.0.write(activation.gc()).cached_child_nodes = Some(array);
             self.refresh_cached_child_nodes(activation)?;
             Ok(array)
         }

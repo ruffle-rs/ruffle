@@ -71,7 +71,7 @@ impl<'gc> DispatchObject<'gc> {
         let base = ScriptObjectData::new(activation.avm2().classes().object);
 
         DispatchObject(Gc::new(
-            activation.context.gc(),
+            activation.gc(),
             DispatchObjectData {
                 base,
                 dispatch: RefLock::new(DispatchList::new()),

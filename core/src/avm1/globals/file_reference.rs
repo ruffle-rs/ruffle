@@ -121,7 +121,7 @@ pub fn creator<'gc>(
             .creator
             .as_ref()
             .map_or(Value::Undefined, |x| {
-                AvmString::new_utf8(activation.context.gc(), x).into()
+                AvmString::new_utf8(activation.gc(), x).into()
             }));
     }
 
@@ -156,7 +156,7 @@ pub fn name<'gc>(
             .name
             .as_ref()
             .map_or(Value::Undefined, |x| {
-                AvmString::new_utf8(activation.context.gc(), x).into()
+                AvmString::new_utf8(activation.gc(), x).into()
             }));
     }
 
@@ -169,11 +169,9 @@ pub fn post_data<'gc>(
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let NativeObject::FileReference(file_ref) = this.native() {
-        return Ok(AvmString::new_utf8(
-            activation.context.gc(),
-            file_ref.0.read().post_data.clone(),
-        )
-        .into());
+        return Ok(
+            AvmString::new_utf8(activation.gc(), file_ref.0.read().post_data.clone()).into(),
+        );
     }
 
     Ok(Value::Undefined)
@@ -190,7 +188,7 @@ pub fn set_post_data<'gc>(
         .coerce_to_string(activation)?;
 
     if let NativeObject::FileReference(file_ref) = this.native() {
-        file_ref.0.write(activation.context.gc()).post_data = post_data.to_string();
+        file_ref.0.write(activation.gc()).post_data = post_data.to_string();
     }
 
     Ok(Value::Undefined)
@@ -224,7 +222,7 @@ pub fn file_type<'gc>(
             .file_type
             .as_ref()
             .map_or(Value::Undefined, |x| {
-                AvmString::new_utf8(activation.context.gc(), x).into()
+                AvmString::new_utf8(activation.gc(), x).into()
             }));
     }
 
@@ -426,9 +424,9 @@ fn constructor<'gc>(
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     this.set_native(
-        activation.context.gc(),
+        activation.gc(),
         NativeObject::FileReference(FileReferenceObject(GcCell::new(
-            activation.context.gc(),
+            activation.gc(),
             Default::default(),
         ))),
     );

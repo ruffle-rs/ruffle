@@ -46,7 +46,7 @@ pub fn init<'gc>(
             // `this[0] === xmlObjArg` true.
             // This logic does *not* go in `E4XNode::parse`, as it does not apply
             // to the `XML` constructor: `new XML(xmlObj) === xmlObj` is false.
-            this.set_children(activation.context.gc(), vec![E4XOrXml::Xml(xml)]);
+            this.set_children(activation.gc(), vec![E4XOrXml::Xml(xml)]);
             return Ok(Value::Undefined);
         }
     }
@@ -60,7 +60,7 @@ pub fn init<'gc>(
     ) {
         Ok(nodes) => {
             this.set_children(
-                activation.context.gc(),
+                activation.gc(),
                 nodes.into_iter().map(E4XOrXml::E4X).collect(),
             );
         }
@@ -590,7 +590,7 @@ macro_rules! define_xml_proxy {
                 let namespaces = activation.avm2().namespaces;
                 let list = this.as_xml_list_object().unwrap();
 
-                let mut children = list.children_mut(activation.context.gc());
+                let mut children = list.children_mut(activation.gc());
                 match &mut children[..] {
                     [child] => {
                         child
@@ -635,7 +635,7 @@ pub fn namespace_internal_impl<'gc>(
 
     let list = this.as_xml_list_object().unwrap();
     let namespaces = activation.avm2().namespaces;
-    let mut children = list.children_mut(activation.context.gc());
+    let mut children = list.children_mut(activation.gc());
 
     let args = if args[0] == Value::Bool(true) {
         &args[1..]

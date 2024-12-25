@@ -93,7 +93,7 @@ pub fn constructor<'gc>(
         Ok(array.into())
     } else {
         Ok(ArrayObject::new(
-            activation.context.gc(),
+            activation.gc(),
             activation.context.avm1.prototypes().array,
             args.iter().cloned(),
         )
@@ -267,7 +267,7 @@ pub fn join<'gc>(
         .collect::<Result<Vec<_>, _>>()?;
 
     let joined = crate::string::join(&parts, &separator);
-    Ok(AvmString::new(activation.context.gc(), joined).into())
+    Ok(AvmString::new(activation.gc(), joined).into())
 }
 
 /// Handles an index parameter that may be positive (starting from beginning) or negaitve (starting from end).
@@ -302,7 +302,7 @@ pub fn slice<'gc>(
     };
 
     Ok(ArrayObject::new(
-        activation.context.gc(),
+        activation.gc(),
         activation.context.avm1.prototypes().array,
         (start..end).map(|i| this.get_element(activation, i)),
     )
@@ -367,7 +367,7 @@ pub fn splice<'gc>(
     this.set_length(activation, length - delete_count + items.len() as i32)?;
 
     Ok(ArrayObject::new(
-        activation.context.gc(),
+        activation.gc(),
         activation.context.avm1.prototypes().array,
         result_elements,
     )
@@ -402,7 +402,7 @@ pub fn concat<'gc>(
         }
     }
     Ok(ArrayObject::new(
-        activation.context.gc(),
+        activation.gc(),
         activation.context.avm1.prototypes().array,
         elements,
     )
@@ -647,7 +647,7 @@ fn sort_internal<'gc>(
         // Array.RETURNINDEXEDARRAY returns an array containing the sorted indices, and does not modify
         // the original array.
         Ok(ArrayObject::new(
-            activation.context.gc(),
+            activation.gc(),
             activation.context.avm1.prototypes().array,
             elements.into_iter().map(|(index, _)| index.into()),
         )

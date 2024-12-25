@@ -23,7 +23,7 @@ pub fn sprite_allocator<'gc>(
     while let Some(class) = class_def {
         if class == sprite_cls {
             let movie = activation.caller_movie_or_root();
-            let display_object = MovieClip::new(movie, activation.context.gc()).into();
+            let display_object = MovieClip::new(movie, activation.gc()).into();
             return initialize_for_allocator(activation, display_object, orig_class);
         }
 

@@ -837,7 +837,7 @@ fn avm2_to_shader_filter<'gc>(
     let dyn_root = activation
         .context
         .dynamic_root
-        .stash(activation.context.gc(), shader_obj);
+        .stash(activation.gc(), shader_obj);
 
     let (shader_handle, shader_args) = get_shader_args(shader_obj, activation)?;
 

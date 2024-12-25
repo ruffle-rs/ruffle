@@ -24,7 +24,7 @@ pub fn error_allocator<'gc>(
         .unwrap_or_default();
 
     Ok(ErrorObject(Gc::new(
-        activation.context.gc(),
+        activation.gc(),
         ErrorObjectData { base, call_stack },
     ))
     .into())

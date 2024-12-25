@@ -80,7 +80,7 @@ fn to_string<'gc>(
     let height = this.get("height", activation)?;
 
     Ok(AvmString::new_utf8(
-        activation.context.gc(),
+        activation.gc(),
         format!(
             "(x={}, y={}, w={}, h={})",
             x.coerce_to_string(activation)?,

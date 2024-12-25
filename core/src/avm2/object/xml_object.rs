@@ -27,10 +27,10 @@ pub fn xml_allocator<'gc>(
     let base = ScriptObjectData::new(class);
 
     Ok(XmlObject(Gc::new(
-        activation.context.gc(),
+        activation.gc(),
         XmlObjectData {
             base,
-            node: Lock::new(E4XNode::dummy(activation.context.gc())),
+            node: Lock::new(E4XNode::dummy(activation.gc())),
         },
     ))
     .into())
@@ -69,7 +69,7 @@ const _: () =
 impl<'gc> XmlObject<'gc> {
     pub fn new(node: E4XNode<'gc>, activation: &mut Activation<'_, 'gc>) -> Self {
         XmlObject(Gc::new(
-            activation.context.gc(),
+            activation.gc(),
             XmlObjectData {
                 base: ScriptObjectData::new(activation.context.avm2.classes().xml),
                 node: Lock::new(node),
@@ -500,7 +500,7 @@ impl<'gc> TObject<'gc> for XmlObject<'gc> {
                 value.coerce_to_string(activation)?
             };
 
-            let mc = activation.context.gc();
+            let mc = activation.gc();
             self.delete_property_local(activation, &name)?;
             let Some(local_name) = name.local_name() else {
                 return Err(format!("Cannot set attribute {:?} without a local name", name).into());

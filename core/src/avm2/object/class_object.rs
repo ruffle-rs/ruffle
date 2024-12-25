@@ -98,7 +98,7 @@ impl<'gc> ClassObject<'gc> {
 
         if let Some(superclass_object) = superclass_object {
             let base_proto = superclass_object.prototype();
-            proto.set_proto(activation.context.gc(), base_proto);
+            proto.set_proto(activation.gc(), base_proto);
         }
         Ok(proto)
     }
@@ -123,7 +123,7 @@ impl<'gc> ClassObject<'gc> {
         class_object.link_prototype(activation, class_proto)?;
 
         let class_class_proto = activation.avm2().classes().class.prototype();
-        class_object.link_type(activation.context.gc(), class_class_proto);
+        class_object.link_type(activation.gc(), class_class_proto);
 
         class_object.into_finished_class(activation)
     }
@@ -168,10 +168,10 @@ impl<'gc> ClassObject<'gc> {
             }
         }
 
-        let mc = activation.context.gc();
+        let mc = activation.gc();
 
         let class_object = ClassObject(Gc::new(
-            activation.context.gc(),
+            activation.gc(),
             ClassObjectData {
                 // We pass `custom_new` the temporary vtable of the class object
                 // because we don't have the full vtable created yet. We'll
@@ -198,7 +198,7 @@ impl<'gc> ClassObject<'gc> {
         .set(instance_scope);
         class_object.init_instance_vtable(activation)?;
 
-        class.add_class_object(activation.context.gc(), class_object);
+        class.add_class_object(activation.gc(), class_object);
 
         Ok(class_object)
     }
@@ -213,7 +213,7 @@ impl<'gc> ClassObject<'gc> {
             self.superclass_object(),
             Some(self.instance_scope()),
             self.superclass_object().map(|cls| cls.instance_vtable()),
-            activation.context.gc(),
+            activation.gc(),
         );
 
         self.link_interfaces(activation)?;
@@ -249,16 +249,16 @@ impl<'gc> ClassObject<'gc> {
         let class_classobject = activation.avm2().classes().class;
 
         // class vtable == class traits + Class instance traits
-        let class_vtable = VTable::empty(activation.context.gc());
+        let class_vtable = VTable::empty(activation.gc());
         class_vtable.init_vtable(
             c_class,
             Some(class_classobject),
             Some(self.class_scope()),
             Some(class_classobject.instance_vtable()),
-            activation.context.gc(),
+            activation.gc(),
         );
 
-        self.set_vtable(activation.context.gc(), class_vtable);
+        self.set_vtable(activation.gc(), class_vtable);
 
         self.run_class_initializer(activation)?;
 
@@ -271,7 +271,7 @@ impl<'gc> ClassObject<'gc> {
         activation: &mut Activation<'_, 'gc>,
         class_proto: Object<'gc>,
     ) -> Result<(), Error<'gc>> {
-        let mc = activation.context.gc();
+        let mc = activation.gc();
 
         unlock!(Gc::write(mc, self.0), ClassObjectData, prototype).set(Some(class_proto));
         class_proto.set_string_property_local("constructor", self.into(), activation)?;
@@ -298,7 +298,7 @@ impl<'gc> ClassObject<'gc> {
                 if !interface_trait.name().namespace().is_public() {
                     let public_name = QName::new(internal_ns, interface_trait.name().local_name());
                     self.instance_vtable().copy_property_for_interface(
-                        activation.context.gc(),
+                        activation.gc(),
                         public_name,
                         interface_trait.name(),
                     );
@@ -405,7 +405,7 @@ impl<'gc> ClassObject<'gc> {
             let qualified_class_name = self
                 .inner_class_definition()
                 .name()
-                .to_qualified_name_err_message(activation.context.gc());
+                .to_qualified_name_err_message(activation.gc());
 
             return Err(Error::AvmError(reference_error(
                 activation,
@@ -624,7 +624,7 @@ impl<'gc> ClassObject<'gc> {
             Self::from_class(activation, parameterized_class, Some(vector_star_cls))?;
 
         unlock!(
-            Gc::write(activation.context.gc(), self.0),
+            Gc::write(activation.gc(), self.0),
             ClassObjectData,
             applications
         )
@@ -765,7 +765,7 @@ impl<'gc> TObject<'gc> for ClassObject<'gc> {
 
     fn to_string(&self, activation: &mut Activation<'_, 'gc>) -> Result<Value<'gc>, Error<'gc>> {
         Ok(AvmString::new_utf8(
-            activation.context.gc(),
+            activation.gc(),
             format!("[class {}]", self.0.class.name().local_name()),
         )
         .into())
@@ -797,7 +797,7 @@ impl<'gc> TObject<'gc> for ClassObject<'gc> {
             let class_name = self
                 .inner_class_definition()
                 .name()
-                .to_qualified_name(activation.context.gc());
+                .to_qualified_name(activation.gc());
 
             return Err(Error::AvmError(type_error(
                 activation,

@@ -511,7 +511,7 @@ impl<'gc> Class<'gc> {
                     vec![],
                     None,
                     true,
-                    activation.context.gc(),
+                    activation.gc(),
                 );
                 call_handler = Some(method);
             }
@@ -529,7 +529,7 @@ impl<'gc> Class<'gc> {
             .unwrap_or(Allocator(scriptobject_allocator));
 
         let i_class = Class(GcCell::new(
-            activation.context.gc(),
+            activation.gc(),
             ClassData {
                 name,
                 param: None,
@@ -541,7 +541,7 @@ impl<'gc> Class<'gc> {
                 instance_allocator,
                 instance_init,
                 traits: Vec::new(),
-                vtable: VTable::empty(activation.context.gc()),
+                vtable: VTable::empty(activation.gc()),
                 call_handler,
                 custom_constructor: custom_constructor.map(CustomConstructor),
                 traits_loaded: false,
@@ -558,11 +558,11 @@ impl<'gc> Class<'gc> {
 
         let c_name = QName::new(
             name_namespace,
-            AvmString::new(activation.context.gc(), local_name_buf),
+            AvmString::new(activation.gc(), local_name_buf),
         );
 
         let c_class = Class(GcCell::new(
-            activation.context.gc(),
+            activation.gc(),
             ClassData {
                 name: c_name,
                 param: None,
@@ -574,7 +574,7 @@ impl<'gc> Class<'gc> {
                 instance_allocator: Allocator(scriptobject_allocator),
                 instance_init: class_init,
                 traits: Vec::new(),
-                vtable: VTable::empty(activation.context.gc()),
+                vtable: VTable::empty(activation.gc()),
                 call_handler: None,
                 custom_constructor: None,
                 traits_loaded: false,
@@ -585,7 +585,7 @@ impl<'gc> Class<'gc> {
             },
         ));
 
-        i_class.set_c_class(activation.context.gc(), c_class);
+        i_class.set_c_class(activation.gc(), c_class);
 
         Ok(i_class)
     }
@@ -613,9 +613,9 @@ impl<'gc> Class<'gc> {
         let c_class = self
             .c_class()
             .expect("Just checked that this class was an i_class");
-        let mut c_class_write = c_class.0.write(activation.context.gc());
+        let mut c_class_write = c_class.0.write(activation.gc());
 
-        let mut i_class_write = self.0.write(activation.context.gc());
+        let mut i_class_write = self.0.write(activation.gc());
 
         i_class_write.traits_loaded = true;
         c_class_write.traits_loaded = true;
@@ -813,7 +813,7 @@ impl<'gc> Class<'gc> {
         let name = QName::new(activation.avm2().namespaces.public_all(), name);
 
         let i_class = Class(GcCell::new(
-            activation.context.gc(),
+            activation.gc(),
             ClassData {
                 name,
                 param: None,
@@ -826,10 +826,10 @@ impl<'gc> Class<'gc> {
                 instance_init: Method::from_builtin(
                     |_, _, _| Ok(Value::Undefined),
                     "<Activation object constructor>",
-                    activation.context.gc(),
+                    activation.gc(),
                 ),
                 traits,
-                vtable: VTable::empty(activation.context.gc()),
+                vtable: VTable::empty(activation.gc()),
                 call_handler: None,
                 custom_constructor: None,
                 traits_loaded: true,
@@ -846,11 +846,11 @@ impl<'gc> Class<'gc> {
 
         let c_name = QName::new(
             name_namespace,
-            AvmString::new(activation.context.gc(), local_name_buf),
+            AvmString::new(activation.gc(), local_name_buf),
         );
 
         let c_class = Class(GcCell::new(
-            activation.context.gc(),
+            activation.gc(),
             ClassData {
                 name: c_name,
                 param: None,
@@ -863,10 +863,10 @@ impl<'gc> Class<'gc> {
                 instance_init: Method::from_builtin(
                     |_, _, _| Ok(Value::Undefined),
                     "<Activation object class constructor>",
-                    activation.context.gc(),
+                    activation.gc(),
                 ),
                 traits: Vec::new(),
-                vtable: VTable::empty(activation.context.gc()),
+                vtable: VTable::empty(activation.gc()),
                 call_handler: None,
                 custom_constructor: None,
                 traits_loaded: true,
@@ -877,7 +877,7 @@ impl<'gc> Class<'gc> {
             },
         ));
 
-        i_class.set_c_class(activation.context.gc(), c_class);
+        i_class.set_c_class(activation.gc(), c_class);
 
         i_class.init_vtable(activation.context)?;
         c_class.init_vtable(activation.context)?;
@@ -994,7 +994,7 @@ impl<'gc> Class<'gc> {
         class_object: ClassObject<'gc>,
     ) {
         self.define_instance_trait(
-            activation.context.gc(),
+            activation.gc(),
             Trait::from_class(name, class_object.inner_class_definition()),
         );
     }
@@ -1063,7 +1063,7 @@ impl<'gc> Class<'gc> {
     ) {
         for &(name, value) in items {
             self.define_class_trait(
-                activation.context.gc(),
+                activation.gc(),
                 Trait::from_const(
                     QName::new(namespace, name),
                     Some(activation.avm2().multinames.int),
@@ -1175,7 +1175,7 @@ impl<'gc> Class<'gc> {
     ) {
         for &(name, value) in items {
             self.define_instance_trait(
-                activation.context.gc(),
+                activation.gc(),
                 Trait::from_const(
                     QName::new(namespace, name),
                     Some(activation.avm2().multinames.int),

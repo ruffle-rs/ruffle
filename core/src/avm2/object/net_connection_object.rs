@@ -16,7 +16,7 @@ pub fn net_connection_allocator<'gc>(
 ) -> Result<Object<'gc>, Error<'gc>> {
     let base = ScriptObjectData::new(class);
     let this: Object<'gc> = NetConnectionObject(Gc::new(
-        activation.context.gc(),
+        activation.gc(),
         NetConnectionObjectData {
             base,
             handle: Cell::new(None),

@@ -17,7 +17,7 @@ pub fn proxy_allocator<'gc>(
 ) -> Result<Object<'gc>, Error<'gc>> {
     let base = ScriptObjectData::new(class);
 
-    Ok(ProxyObject(Gc::new(activation.context.gc(), ProxyObjectData { base })).into())
+    Ok(ProxyObject(Gc::new(activation.gc(), ProxyObjectData { base })).into())
 }
 
 #[derive(Clone, Collect, Copy)]

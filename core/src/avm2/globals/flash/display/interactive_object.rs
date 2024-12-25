@@ -39,7 +39,7 @@ pub fn set_mouse_enabled<'gc>(
         .and_then(|dobj| dobj.as_interactive())
     {
         let value = args.get_bool(0);
-        int.set_mouse_enabled(activation.context.gc(), value);
+        int.set_mouse_enabled(activation.gc(), value);
     }
 
     Ok(Value::Undefined)
@@ -76,7 +76,7 @@ pub fn set_double_click_enabled<'gc>(
         .and_then(|dobj| dobj.as_interactive())
     {
         let value = args.get_bool(0);
-        int.set_double_click_enabled(activation.context.gc(), value);
+        int.set_double_click_enabled(activation.gc(), value);
     }
 
     Ok(Value::Undefined)
@@ -113,7 +113,7 @@ pub fn set_context_menu<'gc>(
         .and_then(|dobj| dobj.as_interactive())
     {
         let value = args.get_value(0);
-        int.set_context_menu(activation.context.gc(), value);
+        int.set_context_menu(activation.gc(), value);
     }
 
     Ok(Value::Undefined)
@@ -219,7 +219,7 @@ pub fn set_focus_rect<'gc>(
             // everything else sets focusRect to false
             _ => Some(false),
         };
-        obj.set_focus_rect(activation.context.gc(), value);
+        obj.set_focus_rect(activation.gc(), value);
     }
 
     Ok(Value::Null)

@@ -1281,11 +1281,7 @@ pub fn optimize<'gc>(
                             }
 
                             drop(slot_classes);
-                            vtable.set_slot_class(
-                                activation.context.gc(),
-                                *slot_id as usize,
-                                value_class,
-                            );
+                            vtable.set_slot_class(activation.gc(), *slot_id as usize, value_class);
                         }
                     }
 
@@ -1322,7 +1318,7 @@ pub fn optimize<'gc>(
                                     }
 
                                     vtable.set_slot_class(
-                                        activation.context.gc(),
+                                        activation.gc(),
                                         slot_id as usize,
                                         value_class,
                                     );
@@ -1731,7 +1727,7 @@ pub fn optimize<'gc>(
                         }
 
                         class.vtable().set_slot_class(
-                            activation.context.gc(),
+                            activation.gc(),
                             *slot_id as usize,
                             value_class,
                         );

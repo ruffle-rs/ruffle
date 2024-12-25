@@ -14,7 +14,7 @@ pub fn sound_transform_allocator<'gc>(
     let base = ScriptObjectData::new(class);
 
     Ok(SoundTransformObject(Gc::new(
-        activation.context.gc(),
+        activation.gc(),
         SoundTransformObjectData {
             base,
             left_to_left: Cell::new(0.0),

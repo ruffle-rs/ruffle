@@ -337,7 +337,7 @@ impl<'gc> TDisplayObject<'gc> for Bitmap<'gc> {
                     .avm2_bitmapdata_class()
                     .unwrap_or_else(|| activation.context.avm2.classes().bitmapdata);
 
-                let mc = activation.context.gc();
+                let mc = activation.gc();
 
                 let bitmap = Avm2StageObject::for_display_object_childless(
                     &mut activation,

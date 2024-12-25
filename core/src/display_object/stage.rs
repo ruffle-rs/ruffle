@@ -793,7 +793,7 @@ impl<'gc> TDisplayObject<'gc> for Stage<'gc> {
 
         match avm2_stage {
             Ok(avm2_stage) => {
-                let mut write = self.0.write(activation.context.gc());
+                let mut write = self.0.write(activation.gc());
                 write.avm2_object = Some(avm2_stage.into());
                 write.stage3ds = vec![stage3d];
             }

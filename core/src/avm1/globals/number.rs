@@ -156,7 +156,7 @@ fn to_string<'gc>(
             i -= 1;
             digits[i] = b'-';
         }
-        Ok(AvmString::new_utf8_bytes(activation.context.gc(), &digits[i..]).into())
+        Ok(AvmString::new_utf8_bytes(activation.gc(), &digits[i..]).into())
     }
 }
 

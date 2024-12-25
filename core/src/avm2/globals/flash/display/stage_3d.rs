@@ -60,7 +60,7 @@ pub fn request_context3d_internal<'gc>(
     if this_stage3d.context3d().is_none() {
         let context = activation.context.renderer.create_context3d(profile)?;
         let context3d_obj = Context3DObject::from_context(activation, context, this_stage3d)?;
-        this_stage3d.set_context3d(Some(context3d_obj), activation.context.gc());
+        this_stage3d.set_context3d(Some(context3d_obj), activation.gc());
 
         let event = activation
             .avm2()

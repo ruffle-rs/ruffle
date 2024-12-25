@@ -54,7 +54,7 @@ pub fn init<'gc>(
 
     let node = match nodes.as_slice() {
         // XML defaults to an empty text node when nothing was parsed
-        [] => E4XNode::text(activation.context.gc(), AvmString::default(), None),
+        [] => E4XNode::text(activation.gc(), AvmString::default(), None),
         [node] => *node,
         nodes => {
             let mut single_element_node = None;
@@ -97,7 +97,7 @@ pub fn init<'gc>(
             }
         }
     };
-    this.set_node(activation.context.gc(), node);
+    this.set_node(activation.gc(), node);
 
     Ok(Value::Undefined)
 }
@@ -733,7 +733,7 @@ pub fn call_handler<'gc>(
             // This re-uses the XML object stored in the list
             if let Some(xml_list) = obj.as_xml_list_object() {
                 if xml_list.length() == 1 {
-                    return Ok(xml_list.children_mut(activation.context.gc())[0]
+                    return Ok(xml_list.children_mut(activation.gc())[0]
                         .get_or_create_xml(activation)
                         .into());
                 }
@@ -794,7 +794,7 @@ pub fn append_child<'gc>(
     let length = xml_list.length();
     let name = Multiname::new(
         namespaces.public_all(),
-        AvmString::new_utf8(activation.context.gc(), length.to_string()),
+        AvmString::new_utf8(activation.gc(), length.to_string()),
     );
     xml_list.set_property_local(&name, child, activation)?;
 
@@ -1229,10 +1229,7 @@ pub fn set_notification<'gc>(
     let xml = this.as_xml_object().unwrap();
     let node = xml.node();
     let fun = args.try_get_object(activation, 0);
-    node.set_notification(
-        fun.and_then(|f| f.as_function_object()),
-        activation.context.gc(),
-    );
+    node.set_notification(fun.and_then(|f| f.as_function_object()), activation.gc());
     Ok(Value::Undefined)
 }
 

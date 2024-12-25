@@ -71,7 +71,7 @@ fn method<'gc>(
         let Some(transform) = TransformObject::new(activation, args) else {
             return Ok(Value::Undefined);
         };
-        this.set_native(activation.context.gc(), NativeObject::Transform(transform));
+        this.set_native(activation.gc(), NativeObject::Transform(transform));
         return Ok(this.into());
     }
 
@@ -93,12 +93,12 @@ fn method<'gc>(
                     .all(|p| object.has_own_property(activation, (*p).into()));
                 if is_matrix {
                     let matrix = object_to_matrix(object, activation)?;
-                    clip.set_matrix(activation.context.gc(), matrix);
-                    clip.set_transformed_by_script(activation.context.gc(), true);
+                    clip.set_matrix(activation.gc(), matrix);
+                    clip.set_transformed_by_script(activation.gc(), true);
                     if let Some(parent) = clip.parent() {
                         // Self-transform changes are automatically handled,
                         // we only want to inform ancestors to avoid unnecessary invalidations for tx/ty
-                        parent.invalidate_cached_bitmap(activation.context.gc());
+                        parent.invalidate_cached_bitmap(activation.gc());
                     }
                 }
             }
@@ -120,11 +120,11 @@ fn method<'gc>(
                 // Set only occurs for an object with actual ColorTransform data.
                 if let Some(color_transform) = ColorTransformObject::cast(*value) {
                     clip.set_color_transform(
-                        activation.context.gc(),
+                        activation.gc(),
                         color_transform.read().clone().into(),
                     );
-                    clip.invalidate_cached_bitmap(activation.context.gc());
-                    clip.set_transformed_by_script(activation.context.gc(), true);
+                    clip.invalidate_cached_bitmap(activation.gc());
+                    clip.set_transformed_by_script(activation.gc(), true);
                 }
             }
             Value::Undefined

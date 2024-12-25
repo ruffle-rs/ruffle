@@ -169,7 +169,7 @@ pub fn read_utf<'gc>(
 
     if let Some(bytearray) = this.as_bytearray() {
         return Ok(AvmString::new_utf8_bytes(
-            activation.context.gc(),
+            activation.gc(),
             bytearray.read_utf().map_err(|e| e.to_avm(activation))?,
         )
         .into());
@@ -188,17 +188,17 @@ pub fn strip_bom<'gc>(activation: &mut Activation<'_, 'gc>, mut bytes: &[u8]) ->
             .chunks_exact(2)
             .map(|pair| u16::from_le_bytes([pair[0], pair[1]]))
             .collect();
-        return AvmString::new(activation.context.gc(), WString::from_buf(utf16_bytes));
+        return AvmString::new(activation.gc(), WString::from_buf(utf16_bytes));
     // Big-endian UTF-16 BOM
     } else if let Some(without_bom) = bytes.strip_prefix(&[0xFE, 0xFF]) {
         let utf16_bytes: Vec<_> = without_bom
             .chunks_exact(2)
             .map(|pair| u16::from_be_bytes([pair[0], pair[1]]))
             .collect();
-        return AvmString::new(activation.context.gc(), WString::from_buf(utf16_bytes));
+        return AvmString::new(activation.gc(), WString::from_buf(utf16_bytes));
     }
 
-    AvmString::new_utf8_bytes(activation.context.gc(), bytes)
+    AvmString::new_utf8_bytes(activation.gc(), bytes)
 }
 
 pub fn to_string<'gc>(
@@ -498,7 +498,7 @@ pub fn read_utf_bytes<'gc>(
             .unwrap_or(&Value::Undefined)
             .coerce_to_u32(activation)?;
         return Ok(AvmString::new_utf8(
-            activation.context.gc(),
+            activation.gc(),
             String::from_utf8_lossy(
                 bytearray
                     .read_utf_bytes(len as usize)
@@ -700,7 +700,7 @@ pub fn read_multi_byte<'gc>(
         let encoder =
             Encoding::for_label(charset_label.to_utf8_lossy().as_bytes()).unwrap_or(UTF_8);
         let (decoded_str, _, _) = encoder.decode(bytes);
-        return Ok(AvmString::new_utf8(activation.context.gc(), decoded_str).into());
+        return Ok(AvmString::new_utf8(activation.gc(), decoded_str).into());
     }
 
     Ok(Value::Undefined)

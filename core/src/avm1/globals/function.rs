@@ -31,7 +31,7 @@ pub fn function<'gc>(
         Ok(arg.to_owned())
     } else {
         // Calling `Function()` seems to give a prototypeless bare object.
-        Ok(ScriptObject::new(activation.context.gc(), None).into())
+        Ok(ScriptObject::new(activation.gc(), None).into())
     }
 }
 
@@ -87,10 +87,7 @@ pub fn apply<'gc>(
         let args = args_object.coerce_to_object(activation);
         // TODO: why don't this use args_object.array_element?
         let next_arg = format!("{}", child_args.len());
-        let next_arg = args.get(
-            AvmString::new_utf8(activation.context.gc(), next_arg),
-            activation,
-        )?;
+        let next_arg = args.get(AvmString::new_utf8(activation.gc(), next_arg), activation)?;
 
         child_args.push(next_arg);
     }

@@ -310,24 +310,18 @@ impl<'gc> Avm2<'gc> {
                 init_activation
                     .context
                     .avm2
-                    .push_global_init(init_activation.context.gc(), script);
+                    .push_global_init(init_activation.gc(), script);
                 let r = (method.method)(&mut init_activation, Value::Object(scope), &[]);
-                init_activation
-                    .context
-                    .avm2
-                    .pop_call(init_activation.context.gc());
+                init_activation.context.avm2.pop_call(init_activation.gc());
                 r?;
             }
             Method::Bytecode(method) => {
                 init_activation
                     .context
                     .avm2
-                    .push_global_init(init_activation.context.gc(), script);
+                    .push_global_init(init_activation.gc(), script);
                 let r = init_activation.run_actions(method);
-                init_activation
-                    .context
-                    .avm2
-                    .pop_call(init_activation.context.gc());
+                init_activation.context.avm2.pop_call(init_activation.gc());
                 r?;
             }
         };

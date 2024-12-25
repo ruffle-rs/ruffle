@@ -89,7 +89,7 @@ pub fn get_name<'gc>(
         FileReference::None => return Err(make_error_2037(activation)),
         FileReference::FileDialogResult(ref dialog_result) => {
             let name = dialog_result.file_name().unwrap_or_default();
-            AvmString::new_utf8(activation.context.gc(), name).into()
+            AvmString::new_utf8(activation.gc(), name).into()
         }
     };
 
@@ -126,7 +126,7 @@ pub fn get_type<'gc>(
         FileReference::None => return Err(make_error_2037(activation)),
         FileReference::FileDialogResult(ref dialog_result) => {
             let type_ = dialog_result.file_type().unwrap_or_default();
-            AvmString::new_utf8(activation.context.gc(), type_).into()
+            AvmString::new_utf8(activation.gc(), type_).into()
         }
     };
 

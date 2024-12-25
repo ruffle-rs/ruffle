@@ -348,7 +348,7 @@ pub fn remove_child_at<'gc>(
             }
 
             let child = ctr.child_by_index(target_child as usize).unwrap();
-            child.set_placed_by_script(activation.context.gc(), true);
+            child.set_placed_by_script(activation.gc(), true);
 
             ctr.remove_child(activation.context, child);
 
@@ -485,8 +485,8 @@ pub fn swap_children_at<'gc>(
             let child0 = ctr.child_by_index(index0 as usize).unwrap();
             let child1 = ctr.child_by_index(index1 as usize).unwrap();
 
-            child0.set_placed_by_script(activation.context.gc(), true);
-            child1.set_placed_by_script(activation.context.gc(), true);
+            child0.set_placed_by_script(activation.gc(), true);
+            child1.set_placed_by_script(activation.gc(), true);
 
             ctr.swap_at_index(activation.context, index0 as usize, index1 as usize);
         }
@@ -523,8 +523,8 @@ pub fn swap_children<'gc>(
                 .position(|a| DisplayObject::ptr_eq(a, child1))
                 .ok_or(make_error_2025(activation))?;
 
-            child0.set_placed_by_script(activation.context.gc(), true);
-            child1.set_placed_by_script(activation.context.gc(), true);
+            child0.set_placed_by_script(activation.gc(), true);
+            child1.set_placed_by_script(activation.gc(), true);
 
             ctr.swap_at_index(activation.context, index0, index1);
         }
@@ -649,7 +649,7 @@ pub fn set_mouse_children<'gc>(
     {
         let mouse_children = args.get_bool(0);
 
-        dobj.raw_container_mut(activation.context.gc())
+        dobj.raw_container_mut(activation.gc())
             .set_mouse_children(mouse_children);
     }
     Ok(Value::Undefined)

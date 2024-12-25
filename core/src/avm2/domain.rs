@@ -118,7 +118,7 @@ impl<'gc> Domain<'gc> {
     /// fully allocated.
     pub fn movie_domain(activation: &mut Activation<'_, 'gc>, parent: Domain<'gc>) -> Domain<'gc> {
         let this = Self(GcCell::new(
-            activation.context.gc(),
+            activation.gc(),
             DomainData {
                 defs: PropertyMap::new(),
                 classes: PropertyMap::new(),
@@ -133,7 +133,7 @@ impl<'gc> Domain<'gc> {
 
         parent
             .0
-            .write(activation.context.gc())
+            .write(activation.gc())
             .children
             .push(DomainWeak(GcCell::downgrade(this.0)));
 
@@ -286,7 +286,7 @@ impl<'gc> Domain<'gc> {
             let start = name.find(WStr::from_units(b".<")).unwrap();
 
             type_name = Some(AvmString::new(
-                activation.context.gc(),
+                activation.gc(),
                 &name[(start + 2)..(name.len() - 1)],
             ));
             name = "__AS3__.vec::Vector".into();
@@ -364,7 +364,7 @@ impl<'gc> Domain<'gc> {
         activation: &mut Activation<'_, 'gc>,
         domain_memory: Option<ByteArrayObject<'gc>>,
     ) -> Result<(), Error<'gc>> {
-        let mut write = self.0.write(activation.context.gc());
+        let mut write = self.0.write(activation.gc());
         let memory = if let Some(domain_memory) = domain_memory {
             if domain_memory.storage().len() < MIN_DOMAIN_MEMORY_LENGTH {
                 return Err(Error::AvmError(error(
@@ -401,7 +401,7 @@ impl<'gc> Domain<'gc> {
             .unwrap()
             .set_length(MIN_DOMAIN_MEMORY_LENGTH);
 
-        let mut write = self.0.write(activation.context.gc());
+        let mut write = self.0.write(activation.gc());
 
         assert!(
             write.domain_memory.is_none(),

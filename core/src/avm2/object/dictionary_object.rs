@@ -17,11 +17,7 @@ pub fn dictionary_allocator<'gc>(
 ) -> Result<Object<'gc>, Error<'gc>> {
     let base = ScriptObjectData::new(class);
 
-    Ok(DictionaryObject(Gc::new(
-        activation.context.gc(),
-        DictionaryObjectData { base },
-    ))
-    .into())
+    Ok(DictionaryObject(Gc::new(activation.gc(), DictionaryObjectData { base })).into())
 }
 
 /// An object that allows associations between objects and values.

@@ -145,10 +145,7 @@ pub fn domain<'gc>(
     let movie = activation.base_clip().movie();
     let domain = LocalConnections::get_domain(movie.url());
 
-    Ok(Value::String(AvmString::new_utf8(
-        activation.context.gc(),
-        domain,
-    )))
+    Ok(Value::String(AvmString::new_utf8(activation.gc(), domain)))
 }
 
 pub fn connect<'gc>(

@@ -16,7 +16,7 @@ pub fn socket_allocator<'gc>(
     let base = ScriptObjectData::new(class);
 
     Ok(SocketObject(Gc::new(
-        activation.context.gc(),
+        activation.gc(),
         SocketObjectData {
             base,
             // Default endianness is Big.
