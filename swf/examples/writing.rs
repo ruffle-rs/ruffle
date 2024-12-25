@@ -5,9 +5,9 @@ fn main() {
         compression: Compression::Zlib,
         version: 6,
         stage_size: Rectangle {
-            x_min: Twips::from_pixels(0.0),
+            x_min: Twips::ZERO,
             x_max: Twips::from_pixels(400.0),
-            y_min: Twips::from_pixels(0.0),
+            y_min: Twips::ZERO,
             y_max: Twips::from_pixels(400.0),
         },
         frame_rate: Fixed8::from_f32(60.0),
