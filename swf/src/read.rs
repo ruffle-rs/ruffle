@@ -2833,8 +2833,8 @@ pub mod tests {
             assert_eq!(
                 matrix,
                 Matrix {
-                    tx: Twips::from_pixels(0.0),
-                    ty: Twips::from_pixels(0.0),
+                    tx: Twips::ZERO,
+                    ty: Twips::ZERO,
                     a: Fixed16::ONE,
                     b: Fixed16::ZERO,
                     c: Fixed16::ZERO,
@@ -2953,7 +2953,7 @@ pub mod tests {
     fn read_line_style() {
         // DefineShape1 and 2 read RGB colors.
         let line_style = LineStyle::new()
-            .with_width(Twips::from_pixels(0.0))
+            .with_width(Twips::ZERO)
             .with_color(Color::from_rgba(0xffff0000));
         assert_eq!(
             reader(&[0, 0, 255, 0, 0]).read_line_style(2).unwrap(),
@@ -3064,8 +3064,8 @@ pub mod tests {
                 b: Fixed16::ZERO,
                 c: Fixed16::ZERO,
                 d: Fixed16::ONE,
-                tx: Twips::from_pixels(0.0),
-                ty: Twips::from_pixels(0.0),
+                tx: Twips::ZERO,
+                ty: Twips::ZERO,
             }),
             color_transform: None,
             ratio: None,
