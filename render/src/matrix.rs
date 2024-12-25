@@ -437,7 +437,7 @@ mod tests {
             Matrix {
                 a: 1.5,
                 c: 1.2,
-                tx: Twips::from_pixels(1.0),
+                tx: Twips::ONE_PX,
                 b: -2.7,
                 d: 3.4,
                 ty: Twips::from_pixels(-2.4),
