@@ -687,6 +687,7 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
             depth_or_array_layers: 1,
         };
 
+        self.active_frame.submit_direct(&self.descriptors);
         self.descriptors.queue.write_texture(
             wgpu::ImageCopyTexture {
                 texture: &texture.texture,
