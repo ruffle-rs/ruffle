@@ -284,9 +284,7 @@ impl<'gc> TDisplayObject<'gc> for Text<'gc> {
                 (*self).into(),
                 statictext,
             ) {
-                Ok(object) => {
-                    self.0.write(activation.context.gc()).avm2_object = Some(object.into())
-                }
+                Ok(object) => self.0.write(activation.gc()).avm2_object = Some(object.into()),
                 Err(e) => tracing::error!("Got error when creating AVM2 side of Text: {}", e),
             }
 

@@ -42,10 +42,7 @@ pub struct SuperObjectData<'gc> {
 impl<'gc> SuperObject<'gc> {
     /// Construct a `super` for an incoming stack frame.
     pub fn new(activation: &mut Activation<'_, 'gc>, this: Object<'gc>, depth: u8) -> Self {
-        Self(Gc::new(
-            activation.context.gc(),
-            SuperObjectData { this, depth },
-        ))
+        Self(Gc::new(activation.gc(), SuperObjectData { this, depth }))
     }
 
     pub fn this(&self) -> Object<'gc> {

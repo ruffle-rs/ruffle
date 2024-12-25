@@ -120,7 +120,7 @@ pub fn set_client<'gc>(
 
     if let Some(client) = client {
         if let Some(ns) = this.as_netstream() {
-            ns.set_client(activation.context.gc(), client);
+            ns.set_client(activation.gc(), client);
         }
     } else {
         return Err(make_error_2004(activation, Error2004Type::TypeError));

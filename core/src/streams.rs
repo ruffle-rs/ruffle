@@ -1293,8 +1293,7 @@ impl<'gc> NetStream<'gc> {
                     Avm1ActivationIdentifier::root("[NetStream Status Event]"),
                     root,
                 );
-                let info_object =
-                    Avm1ScriptObject::new(activation.context.gc(), Some(object_proto));
+                let info_object = Avm1ScriptObject::new(activation.gc(), Some(object_proto));
 
                 for (key, value) in values {
                     info_object
@@ -1367,7 +1366,7 @@ impl<'gc> NetStream<'gc> {
                 let data_object = variable_data.to_avm2_value(&mut activation);
 
                 client_object.call_public_property(
-                    AvmString::new_utf8_bytes(activation.context.gc(), variable_name),
+                    AvmString::new_utf8_bytes(activation.gc(), variable_name),
                     &[data_object],
                     &mut activation,
                 )?;

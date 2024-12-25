@@ -392,12 +392,12 @@ fn dispatch_event_to_target<'gc>(
 
     let dispatch_list = dispatch_list.unwrap();
 
-    let mut evtmut = event.as_event_mut(activation.context.gc()).unwrap();
+    let mut evtmut = event.as_event_mut(activation.gc()).unwrap();
     let name = evtmut.event_type();
     let use_capture = evtmut.phase() == EventPhase::Capturing;
 
     let handlers: Vec<Object<'gc>> = dispatch_list
-        .as_dispatch_mut(activation.context.gc())
+        .as_dispatch_mut(activation.gc())
         .expect("Internal dispatch list is missing during dispatch!")
         .iter_event_handlers(name, use_capture)
         .collect();
@@ -470,7 +470,7 @@ pub fn dispatch_event<'gc>(
         event
     };
 
-    let mut evtmut = event.as_event_mut(activation.context.gc()).unwrap();
+    let mut evtmut = event.as_event_mut(activation.gc()).unwrap();
 
     evtmut.set_phase(EventPhase::Capturing);
     evtmut.set_target(target);
@@ -486,7 +486,7 @@ pub fn dispatch_event<'gc>(
     }
 
     event
-        .as_event_mut(activation.context.gc())
+        .as_event_mut(activation.gc())
         .unwrap()
         .set_phase(EventPhase::AtTarget);
 
@@ -495,7 +495,7 @@ pub fn dispatch_event<'gc>(
     }
 
     event
-        .as_event_mut(activation.context.gc())
+        .as_event_mut(activation.gc())
         .unwrap()
         .set_phase(EventPhase::Bubbling);
 

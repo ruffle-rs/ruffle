@@ -127,7 +127,7 @@ impl<'gc> TranslationUnit<'gc> {
             // and how it's exported again when it is encountered in a trait (see `Script::load_traits`).
             // We currently don't handle them and just export it in the domain in both cases.
             self.domain()
-                .export_class(class.name(), class, activation.context.gc());
+                .export_class(class.name(), class, activation.gc());
         }
 
         Ok(())
@@ -200,14 +200,14 @@ impl<'gc> TranslationUnit<'gc> {
                         bc_method.signature,
                         bc_method.return_type,
                         variadic,
-                        activation.context.gc(),
+                        activation.gc(),
                     );
                 }
             }
-            Gc::new(activation.context.gc(), bc_method).into()
+            Gc::new(activation.gc(), bc_method).into()
         })();
 
-        self.0.write(activation.context.gc()).methods[method_index.0 as usize] = Some(method);
+        self.0.write(activation.gc()).methods[method_index.0 as usize] = Some(method);
 
         Ok(method)
     }
@@ -226,7 +226,7 @@ impl<'gc> TranslationUnit<'gc> {
         drop(read);
 
         let class = Class::from_abc_index(self, class_index, activation)?;
-        self.0.write(activation.context.gc()).classes[class_index as usize] = Some(class);
+        self.0.write(activation.gc()).classes[class_index as usize] = Some(class);
 
         class.load_traits(activation, self, class_index)?;
 
@@ -255,7 +255,7 @@ impl<'gc> TranslationUnit<'gc> {
         drop(read);
 
         let script = Script::from_abc_index(self, script_index, domain, activation)?;
-        self.0.write(activation.context.gc()).scripts[script_index as usize] = Some(script);
+        self.0.write(activation.gc()).scripts[script_index as usize] = Some(script);
 
         script.load_traits(self, script_index, activation)?;
 
@@ -482,7 +482,7 @@ impl<'gc> Script<'gc> {
         let init = unit.load_method(script.init_method, false, activation)?;
 
         Ok(Self(GcCell::new(
-            activation.context.gc(),
+            activation.gc(),
             ScriptData {
                 globals: None,
                 domain,

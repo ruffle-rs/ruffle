@@ -77,7 +77,7 @@ pub fn copy<'gc>(
     let copy = constructor.construct(
         activation,
         &[
-            AvmString::new_utf8(activation.context.gc(), caption).into(),
+            AvmString::new_utf8(activation.gc(), caption).into(),
             callback.into(),
             separator_before.into(),
             enabled.into(),

@@ -33,7 +33,7 @@ pub fn initialize_for_allocator<'gc>(
     class: ClassObject<'gc>,
 ) -> Result<Object<'gc>, Error<'gc>> {
     let obj: StageObject = StageObject::for_display_object(activation, dobj, class)?;
-    dobj.set_placed_by_script(activation.context.gc(), true);
+    dobj.set_placed_by_script(activation.gc(), true);
     dobj.set_object2(activation.context, obj.into());
 
     // [NA] Should these run for everything?
@@ -45,7 +45,7 @@ pub fn initialize_for_allocator<'gc>(
     // and consequently are observed to have their currentFrame lag one
     // frame behind objects placed by the timeline (even if they were
     // both placed in the same frame to begin with).
-    dobj.base_mut(activation.context.gc())
+    dobj.base_mut(activation.gc())
         .set_skip_next_enter_frame(true);
     dobj.on_construction_complete(activation.context);
 
@@ -64,7 +64,7 @@ pub fn display_object_initializer<'gc>(
 
     if let Some(dobj) = this.as_display_object() {
         if let Some(clip) = dobj.as_movie_clip() {
-            clip.set_constructing_frame(true, activation.context.gc());
+            clip.set_constructing_frame(true, activation.gc());
         }
 
         if let Some(container) = dobj.as_container() {
@@ -74,7 +74,7 @@ pub fn display_object_initializer<'gc>(
         }
 
         if let Some(clip) = dobj.as_movie_clip() {
-            clip.set_constructing_frame(false, activation.context.gc());
+            clip.set_constructing_frame(false, activation.gc());
         }
     }
 
@@ -106,7 +106,7 @@ pub fn set_alpha<'gc>(
 
     if let Some(dobj) = this.as_display_object() {
         let new_alpha = args.get_f64(activation, 0)?;
-        dobj.set_alpha(activation.context.gc(), new_alpha);
+        dobj.set_alpha(activation.gc(), new_alpha);
     }
 
     Ok(Value::Undefined)
@@ -181,7 +181,7 @@ pub fn set_scale9grid<'gc>(
             None => Rectangle::default(),
             Some(rect) => object_to_rectangle(activation, rect)?,
         };
-        dobj.set_scaling_grid(activation.context.gc(), rect);
+        dobj.set_scaling_grid(activation.gc(), rect);
     }
 
     Ok(Value::Undefined)
@@ -196,7 +196,7 @@ pub fn get_scale_y<'gc>(
     let this = this.as_object().unwrap();
 
     if let Some(dobj) = this.as_display_object() {
-        return Ok(dobj.scale_y(activation.context.gc()).unit().into());
+        return Ok(dobj.scale_y(activation.gc()).unit().into());
     }
 
     Ok(Value::Undefined)
@@ -212,7 +212,7 @@ pub fn set_scale_y<'gc>(
 
     if let Some(dobj) = this.as_display_object() {
         let new_scale = args.get_f64(activation, 0)?;
-        dobj.set_scale_y(activation.context.gc(), Percent::from_unit(new_scale));
+        dobj.set_scale_y(activation.gc(), Percent::from_unit(new_scale));
     }
 
     Ok(Value::Undefined)
@@ -260,7 +260,7 @@ pub fn get_scale_x<'gc>(
     let this = this.as_object().unwrap();
 
     if let Some(dobj) = this.as_display_object() {
-        return Ok(dobj.scale_x(activation.context.gc()).unit().into());
+        return Ok(dobj.scale_x(activation.gc()).unit().into());
     }
 
     Ok(Value::Undefined)
@@ -276,7 +276,7 @@ pub fn set_scale_x<'gc>(
 
     if let Some(dobj) = this.as_display_object() {
         let new_scale = args.get_f64(activation, 0)?;
-        dobj.set_scale_x(activation.context.gc(), Percent::from_unit(new_scale));
+        dobj.set_scale_x(activation.gc(), Percent::from_unit(new_scale));
     }
 
     Ok(Value::Undefined)
@@ -338,11 +338,11 @@ pub fn set_filters<'gc>(
                         filter_vec.push(Filter::from_avm2_object(activation, filter_object)?);
                     }
 
-                    dobj.set_filters(activation.context.gc(), filter_vec);
+                    dobj.set_filters(activation.gc(), filter_vec);
                 }
             }
         } else {
-            dobj.set_filters(activation.context.gc(), vec![]);
+            dobj.set_filters(activation.gc(), vec![]);
         }
     }
 
@@ -374,7 +374,7 @@ pub fn set_x<'gc>(
 
     if let Some(dobj) = this.as_display_object() {
         let x = args.get_f64(activation, 0)?;
-        dobj.set_x(activation.context.gc(), Twips::from_pixels(x));
+        dobj.set_x(activation.gc(), Twips::from_pixels(x));
     }
 
     Ok(Value::Undefined)
@@ -405,7 +405,7 @@ pub fn set_y<'gc>(
 
     if let Some(dobj) = this.as_display_object() {
         let y = args.get_f64(activation, 0)?;
-        dobj.set_y(activation.context.gc(), Twips::from_pixels(y));
+        dobj.set_y(activation.gc(), Twips::from_pixels(y));
     }
 
     Ok(Value::Undefined)
@@ -510,7 +510,7 @@ pub fn get_rotation<'gc>(
     let this = this.as_object().unwrap();
 
     if let Some(dobj) = this.as_display_object() {
-        let rot: f64 = dobj.rotation(activation.context.gc()).into();
+        let rot: f64 = dobj.rotation(activation.gc()).into();
         let rem = rot % 360.0;
 
         if rem <= 180.0 {
@@ -534,7 +534,7 @@ pub fn set_rotation<'gc>(
     if let Some(dobj) = this.as_display_object() {
         let new_rotation = args.get_f64(activation, 0)?;
 
-        dobj.set_rotation(activation.context.gc(), Degrees::from(new_rotation));
+        dobj.set_rotation(activation.gc(), Degrees::from(new_rotation));
     }
 
     Ok(Value::Undefined)
@@ -574,7 +574,7 @@ pub fn set_name<'gc>(
             )?));
         }
 
-        dobj.set_name(activation.context.gc(), new_name);
+        dobj.set_name(activation.gc(), new_name);
     }
 
     Ok(Value::Undefined)
@@ -835,14 +835,14 @@ pub fn set_transform<'gc>(
     let color_transform = color_transform_from_transform_object(transform);
 
     let dobj = this.as_display_object().unwrap();
-    let mut write = dobj.base_mut(activation.context.gc());
+    let mut write = dobj.base_mut(activation.gc());
     write.set_matrix(matrix);
     write.set_color_transform(color_transform);
     drop(write);
     if let Some(parent) = dobj.parent() {
         // Self-transform changes are automatically handled,
         // we only want to inform ancestors to avoid unnecessary invalidations for tx/ty
-        parent.invalidate_cached_bitmap(activation.context.gc());
+        parent.invalidate_cached_bitmap(activation.gc());
     }
 
     Ok(Value::Undefined)
@@ -857,7 +857,7 @@ pub fn get_blend_mode<'gc>(
     let this = this.as_object().unwrap();
 
     if let Some(dobj) = this.as_display_object() {
-        let mode = AvmString::new_utf8(activation.context.gc(), dobj.blend_mode().to_string());
+        let mode = AvmString::new_utf8(activation.gc(), dobj.blend_mode().to_string());
         return Ok(mode.into());
     }
     Ok(Value::Undefined)
@@ -875,7 +875,7 @@ pub fn set_blend_mode<'gc>(
         let mode = args.get_string(activation, 0)?;
 
         if let Ok(mode) = ExtendedBlendMode::from_str(&mode.to_string()) {
-            dobj.set_blend_mode(activation.context.gc(), mode);
+            dobj.set_blend_mode(activation.gc(), mode);
         } else {
             tracing::error!("Unknown blend mode {}", mode);
             return Err(make_error_2008(activation, "blendMode"));
@@ -959,14 +959,11 @@ pub fn set_scroll_rect<'gc>(
             // operate on a `next_scroll_rect` field. Just before we render a DisplayObject, we copy
             // its `next_scroll_rect` to the `scroll_rect` field used for both rendering and
             // `localToGlobal`.
-            dobj.set_next_scroll_rect(
-                activation.context.gc(),
-                object_to_rectangle(activation, rectangle)?,
-            );
+            dobj.set_next_scroll_rect(activation.gc(), object_to_rectangle(activation, rectangle)?);
 
-            dobj.set_has_scroll_rect(activation.context.gc(), true);
+            dobj.set_has_scroll_rect(activation.gc(), true);
         } else {
-            dobj.set_has_scroll_rect(activation.context.gc(), false);
+            dobj.set_has_scroll_rect(activation.gc(), false);
         }
     }
     Ok(Value::Undefined)
@@ -1108,10 +1105,10 @@ pub fn set_mask<'gc>(
                 format!("Mask is not a DisplayObject: {mask:?}").into()
             })?;
 
-            this.set_masker(activation.context.gc(), Some(mask), true);
-            mask.set_maskee(activation.context.gc(), Some(this), true);
+            this.set_masker(activation.gc(), Some(mask), true);
+            mask.set_maskee(activation.gc(), Some(this), true);
         } else {
-            this.set_masker(activation.context.gc(), None, true);
+            this.set_masker(activation.gc(), None, true);
         }
     }
     Ok(Value::Undefined)
@@ -1139,7 +1136,7 @@ pub fn set_cache_as_bitmap<'gc>(
 
     if let Some(this) = this.as_display_object() {
         let cache = args.get(0).unwrap_or(&Value::Undefined).coerce_to_boolean();
-        this.set_bitmap_cached_preference(activation.context.gc(), cache);
+        this.set_bitmap_cached_preference(activation.gc(), cache);
     }
     Ok(Value::Undefined)
 }
@@ -1176,7 +1173,7 @@ pub fn set_opaque_background<'gc>(
             Value::Null | Value::Undefined => None,
             value => Some(Color::from_rgb(value.coerce_to_u32(activation)?, 255)),
         };
-        dobj.set_opaque_background(activation.context.gc(), color);
+        dobj.set_opaque_background(activation.gc(), color);
     }
 
     Ok(Value::Undefined)
@@ -1204,7 +1201,7 @@ pub fn set_blend_shader<'gc>(
             .pixel_bender_shader()
             .expect("Missing compiled PixelBender shader");
 
-        dobj.set_blend_shader(activation.context.gc(), Some(shader_handle));
+        dobj.set_blend_shader(activation.gc(), Some(shader_handle));
     }
     Ok(Value::Undefined)
 }

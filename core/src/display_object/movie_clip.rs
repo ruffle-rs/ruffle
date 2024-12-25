@@ -399,17 +399,17 @@ impl<'gc> MovieClip<'gc> {
         };
 
         let mc = MovieClip(GcCell::new(
-            activation.context.gc(),
+            activation.gc(),
             MovieClipData {
                 base: Default::default(),
                 static_data: Gc::new(
-                    activation.context.gc(),
+                    activation.gc(),
                     MovieClipStatic::with_data(
                         0,
                         movie.clone().into(),
                         num_frames,
                         loader_info,
-                        activation.context.gc(),
+                        activation.gc(),
                     ),
                 ),
                 tag_stream_pos: 0,
@@ -448,10 +448,9 @@ impl<'gc> MovieClip<'gc> {
                 .unwrap()
                 .as_loader_info_object()
                 .unwrap();
-            loader_info
-                .set_loader_stream(LoaderStream::Swf(movie, mc.into()), activation.context.gc());
+            loader_info.set_loader_stream(LoaderStream::Swf(movie, mc.into()), activation.gc());
         }
-        mc.set_is_root(activation.context.gc(), true);
+        mc.set_is_root(activation.gc(), true);
         mc
     }
 
@@ -2019,13 +2018,10 @@ impl<'gc> MovieClip<'gc> {
                     .get("prototype", &mut activation)
                     .map(|v| v.coerce_to_object(&mut activation))
                 {
-                    let object: Avm1Object<'gc> = StageObject::for_display_object(
-                        activation.context.gc(),
-                        self.into(),
-                        prototype,
-                    )
-                    .into();
-                    self.0.write(activation.context.gc()).object = Some(object.into());
+                    let object: Avm1Object<'gc> =
+                        StageObject::for_display_object(activation.gc(), self.into(), prototype)
+                            .into();
+                    self.0.write(activation.gc()).object = Some(object.into());
 
                     if run_frame {
                         self.run_frame_avm1(activation.context);
@@ -4505,16 +4501,16 @@ impl<'gc, 'a> MovieClip<'gc> {
 
                         match library.character_by_id(id) {
                             Some(Character::EditText(edit_text)) => {
-                                edit_text.set_avm2_class(activation.context.gc(), class_object)
+                                edit_text.set_avm2_class(activation.gc(), class_object)
                             }
                             Some(Character::Graphic(graphic)) => {
-                                graphic.set_avm2_class(activation.context.gc(), class_object)
+                                graphic.set_avm2_class(activation.gc(), class_object)
                             }
                             Some(Character::MovieClip(mc)) => {
-                                mc.set_avm2_class(activation.context.gc(), Some(class_object))
+                                mc.set_avm2_class(activation.gc(), Some(class_object))
                             }
                             Some(Character::Avm2Button(btn)) => {
-                                btn.set_avm2_class(activation.context.gc(), class_object)
+                                btn.set_avm2_class(activation.gc(), class_object)
                             }
                             Some(Character::BinaryData(_)) => {}
                             Some(Character::Font(_)) => {}
@@ -4545,10 +4541,7 @@ impl<'gc, 'a> MovieClip<'gc> {
                             None => {
                                 // Most SWFs use id 0 here, but some obfuscated SWFs can use other invalid IDs.
                                 if self.avm2_class().is_none() {
-                                    self.set_avm2_class(
-                                        activation.context.gc(),
-                                        Some(class_object),
-                                    );
+                                    self.set_avm2_class(activation.gc(), Some(class_object));
                                 }
                             }
                             _ => {

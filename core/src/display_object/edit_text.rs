@@ -735,13 +735,8 @@ impl<'gc> EditText<'gc> {
 
     pub fn set_variable(self, variable: Option<String>, activation: &mut Avm1Activation<'_, 'gc>) {
         // Clear previous binding.
-        if let Some(stage_object) = self
-            .0
-            .write(activation.context.gc())
-            .bound_stage_object
-            .take()
-        {
-            stage_object.clear_text_field_binding(activation.context.gc(), self);
+        if let Some(stage_object) = self.0.write(activation.gc()).bound_stage_object.take() {
+            stage_object.clear_text_field_binding(activation.gc(), self);
         } else {
             activation
                 .context
@@ -759,7 +754,7 @@ impl<'gc> EditText<'gc> {
             .unwrap_or_default();
         self.set_text(&text, activation.context);
 
-        self.0.write(activation.context.gc()).variable = variable;
+        self.0.write(activation.gc()).variable = variable;
         self.try_bind_text_field_variable(activation, true);
     }
 
@@ -1249,7 +1244,7 @@ impl<'gc> EditText<'gc> {
                     if let Ok(Some((object, property))) =
                         activation.resolve_variable_path(parent, &variable_path)
                     {
-                        let property = AvmString::new(activation.context.gc(), property);
+                        let property = AvmString::new(activation.gc(), property);
 
                         // If this text field was just created, we immediately propagate the text to the variable (or vice versa).
                         if set_initial_value {
@@ -1267,7 +1262,7 @@ impl<'gc> EditText<'gc> {
                                 if !text.is_empty() {
                                     let _ = object.set(
                                         property,
-                                        AvmString::new(activation.context.gc(), self.text()).into(),
+                                        AvmString::new(activation.gc(), self.text()).into(),
                                         activation,
                                     );
                                 }
@@ -1275,10 +1270,9 @@ impl<'gc> EditText<'gc> {
                         }
 
                         if let Some(stage_object) = object.as_stage_object() {
-                            self.0.write(activation.context.gc()).bound_stage_object =
-                                Some(stage_object);
+                            self.0.write(activation.gc()).bound_stage_object = Some(stage_object);
                             stage_object.register_text_field_binding(
-                                activation.context.gc(),
+                                activation.gc(),
                                 self,
                                 property,
                             );
@@ -1310,7 +1304,7 @@ impl<'gc> EditText<'gc> {
             .flags
             .contains(EditTextFlag::FIRING_VARIABLE_BINDING)
         {
-            self.0.write(activation.context.gc()).flags |= EditTextFlag::FIRING_VARIABLE_BINDING;
+            self.0.write(activation.gc()).flags |= EditTextFlag::FIRING_VARIABLE_BINDING;
             if let Some(variable) = self.variable() {
                 // Avoid double-borrows by copying the string.
                 // TODO: Can we avoid this somehow? Maybe when we have a better string type.
@@ -1327,17 +1321,17 @@ impl<'gc> EditText<'gc> {
                         self.avm1_parent().unwrap(),
                         self.movie().version(),
                         |activation| {
-                            let property = AvmString::new(activation.context.gc(), property);
+                            let property = AvmString::new(activation.gc(), property);
                             let _ = object.set(
                                 property,
-                                AvmString::new(activation.context.gc(), self.html_text()).into(),
+                                AvmString::new(activation.gc(), self.html_text()).into(),
                                 activation,
                             );
                         },
                     );
                 }
             }
-            self.0.write(activation.context.gc()).flags -= EditTextFlag::FIRING_VARIABLE_BINDING;
+            self.0.write(activation.gc()).flags -= EditTextFlag::FIRING_VARIABLE_BINDING;
         }
     }
 
@@ -1887,7 +1881,7 @@ impl<'gc> EditText<'gc> {
     fn initialize_as_broadcaster(&self, activation: &mut Avm1Activation<'_, 'gc>) {
         if let Avm1Value::Object(object) = self.object() {
             activation.context.avm1.broadcaster_functions().initialize(
-                activation.context.gc(),
+                activation.gc(),
                 object,
                 activation.context.avm1.prototypes().array,
             );
@@ -2170,12 +2164,12 @@ impl<'gc> EditText<'gc> {
         let this = parent.object().coerce_to_object(&mut activation);
 
         if let Some((name, args)) = address.split_once(b',') {
-            let name = AvmString::new(activation.context.gc(), name);
-            let args = AvmString::new(activation.context.gc(), args);
+            let name = AvmString::new(activation.gc(), name);
+            let args = AvmString::new(activation.gc(), args);
             let function = activation.get_variable(name)?;
             function.call_with_default_this(this, name, &mut activation, &[args.into()])?;
         } else {
-            let name = AvmString::new(activation.context.gc(), address);
+            let name = AvmString::new(activation.gc(), address);
             let function = activation.get_variable(name)?;
             function.call_with_default_this(this, name, &mut activation, &[])?;
         }
@@ -2190,7 +2184,7 @@ impl<'gc> EditText<'gc> {
         } else if let Some(address) = url.strip_prefix(WStr::from_units(b"event:")) {
             if let Avm2Value::Object(object) = self.object2() {
                 let mut activation = Avm2Activation::from_nothing(context);
-                let text = AvmString::new(activation.context.gc(), address);
+                let text = AvmString::new(activation.gc(), address);
                 let event = Avm2EventObject::text_event(&mut activation, "link", text, true, false);
 
                 Avm2::dispatch_event(activation.context, event, object);

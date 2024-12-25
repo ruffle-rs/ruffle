@@ -233,7 +233,7 @@ pub fn get_uri<'gc>(
         .handle()
         .and_then(|handle| activation.context.net_connections.get_uri(handle))
     {
-        return Ok(AvmString::new_utf8(activation.context.gc(), result).into());
+        return Ok(AvmString::new_utf8(activation.gc(), result).into());
     }
 
     Ok(Value::Null)

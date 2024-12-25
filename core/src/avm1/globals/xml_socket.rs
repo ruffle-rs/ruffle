@@ -125,7 +125,7 @@ pub fn connect<'gc>(
                     if url.scheme() == "file" {
                         "localhost".into()
                     } else if let Some(domain) = url.domain() {
-                        AvmString::new_utf8(activation.context.gc(), domain).into()
+                        AvmString::new_utf8(activation.gc(), domain).into()
                     } else {
                         // no domain?
                         "localhost".into()

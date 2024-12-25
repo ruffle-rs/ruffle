@@ -135,7 +135,7 @@ pub fn escape_multi_byte<'gc>(
             let _ = write!(&mut result, "%{byte:02X}");
         }
     }
-    Ok(AvmString::new(activation.context.gc(), result).into())
+    Ok(AvmString::new(activation.gc(), result).into())
 }
 
 fn handle_percent<I>(chars: &mut I) -> Option<u8>
@@ -182,7 +182,7 @@ pub fn unescape_multi_byte<'gc>(
 
         buf.push_char(c);
     }
-    let v = AvmString::new(activation.context.gc(), buf);
+    let v = AvmString::new(activation.gc(), buf);
     Ok(v.into())
 }
 
@@ -213,10 +213,7 @@ pub fn get_qualified_superclass_name<'gc>(
     };
 
     if let Some(super_class) = class.super_class() {
-        Ok(super_class
-            .name()
-            .to_qualified_name(activation.context.gc())
-            .into())
+        Ok(super_class.name().to_qualified_name(activation.gc()).into())
     } else {
         Ok(Value::Null)
     }

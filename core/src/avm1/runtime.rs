@@ -145,7 +145,7 @@ impl<'gc> Avm1<'gc> {
             .object()
             .coerce_to_object(&mut parent_activation);
         let child_scope = Gc::new(
-            parent_activation.context.gc(),
+            parent_activation.gc(),
             Scope::new(
                 parent_activation.scope(),
                 scope::ScopeClass::Target,
@@ -229,7 +229,7 @@ impl<'gc> Avm1<'gc> {
             .object()
             .coerce_to_object(&mut parent_activation);
         let child_scope = Gc::new(
-            parent_activation.context.gc(),
+            parent_activation.gc(),
             Scope::new(
                 parent_activation.scope(),
                 scope::ScopeClass::Target,

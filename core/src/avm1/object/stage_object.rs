@@ -491,7 +491,7 @@ fn set_x<'gc>(
     val: Value<'gc>,
 ) -> Result<(), Error<'gc>> {
     if let Some(x) = property_coerce_to_number(activation, val)? {
-        this.set_x(activation.context.gc(), Twips::from_pixels(x));
+        this.set_x(activation.gc(), Twips::from_pixels(x));
     }
     Ok(())
 }
@@ -506,13 +506,13 @@ fn set_y<'gc>(
     val: Value<'gc>,
 ) -> Result<(), Error<'gc>> {
     if let Some(y) = property_coerce_to_number(activation, val)? {
-        this.set_y(activation.context.gc(), Twips::from_pixels(y));
+        this.set_y(activation.gc(), Twips::from_pixels(y));
     }
     Ok(())
 }
 
 fn x_scale<'gc>(activation: &mut Activation<'_, 'gc>, this: DisplayObject<'gc>) -> Value<'gc> {
-    this.scale_x(activation.context.gc()).percent().into()
+    this.scale_x(activation.gc()).percent().into()
 }
 
 fn set_x_scale<'gc>(
@@ -521,13 +521,13 @@ fn set_x_scale<'gc>(
     val: Value<'gc>,
 ) -> Result<(), Error<'gc>> {
     if let Some(val) = property_coerce_to_number(activation, val)? {
-        this.set_scale_x(activation.context.gc(), Percent::from(val));
+        this.set_scale_x(activation.gc(), Percent::from(val));
     }
     Ok(())
 }
 
 fn y_scale<'gc>(activation: &mut Activation<'_, 'gc>, this: DisplayObject<'gc>) -> Value<'gc> {
-    this.scale_y(activation.context.gc()).percent().into()
+    this.scale_y(activation.gc()).percent().into()
 }
 
 fn set_y_scale<'gc>(
@@ -536,7 +536,7 @@ fn set_y_scale<'gc>(
     val: Value<'gc>,
 ) -> Result<(), Error<'gc>> {
     if let Some(val) = property_coerce_to_number(activation, val)? {
-        this.set_scale_y(activation.context.gc(), Percent::from(val));
+        this.set_scale_y(activation.gc(), Percent::from(val));
     }
     Ok(())
 }
@@ -569,7 +569,7 @@ fn set_alpha<'gc>(
     val: Value<'gc>,
 ) -> Result<(), Error<'gc>> {
     if let Some(val) = property_coerce_to_number(activation, val)? {
-        this.set_alpha(activation.context.gc(), val / 100.0);
+        this.set_alpha(activation.gc(), val / 100.0);
     }
     Ok(())
 }
@@ -622,7 +622,7 @@ fn set_height<'gc>(
 }
 
 fn rotation<'gc>(activation: &mut Activation<'_, 'gc>, this: DisplayObject<'gc>) -> Value<'gc> {
-    let degrees: f64 = this.rotation(activation.context.gc()).into();
+    let degrees: f64 = this.rotation(activation.gc()).into();
     degrees.into()
 }
 
@@ -639,13 +639,13 @@ fn set_rotation<'gc>(
         } else if degrees > 180.0 {
             degrees -= 360.0
         }
-        this.set_rotation(activation.context.gc(), degrees.into());
+        this.set_rotation(activation.gc(), degrees.into());
     }
     Ok(())
 }
 
 fn target<'gc>(activation: &mut Activation<'_, 'gc>, this: DisplayObject<'gc>) -> Value<'gc> {
-    AvmString::new(activation.context.gc(), this.slash_path()).into()
+    AvmString::new(activation.gc(), this.slash_path()).into()
 }
 
 fn frames_loaded<'gc>(
@@ -667,7 +667,7 @@ fn set_name<'gc>(
     val: Value<'gc>,
 ) -> Result<(), Error<'gc>> {
     let name = val.coerce_to_string(activation)?;
-    this.set_name(activation.context.gc(), name);
+    this.set_name(activation.gc(), name);
     Ok(())
 }
 
@@ -765,13 +765,13 @@ fn set_focus_rect<'gc>(
         activation
             .context
             .stage
-            .set_stage_focus_rect(activation.context.gc(), val);
+            .set_stage_focus_rect(activation.gc(), val);
     } else if let Some(obj) = this.as_interactive() {
         let val = match val {
             Value::Undefined | Value::Null => None,
             _ => Some(val.as_bool(activation.swf_version())),
         };
-        obj.set_focus_rect(activation.context.gc(), val);
+        obj.set_focus_rect(activation.gc(), val);
     }
     Ok(())
 }

@@ -25,12 +25,12 @@ pub fn constructor<'gc>(
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     let listeners = ArrayObject::new(
-        activation.context.gc(),
+        activation.gc(),
         activation.context.avm1.prototypes().array,
         [this.into()],
     );
     this.define_value(
-        activation.context.gc(),
+        activation.gc(),
         "_listeners",
         Value::Object(listeners.into()),
         Attribute::DONT_ENUM,
@@ -141,16 +141,16 @@ fn get_progress<'gc>(
             Value::MovieClip(_) => target.coerce_to_object(activation).as_display_object(),
             _ => return Ok(Value::Undefined),
         };
-        let result = ScriptObject::new(activation.context.gc(), None);
+        let result = ScriptObject::new(activation.gc(), None);
         if let Some(target) = target {
             result.define_value(
-                activation.context.gc(),
+                activation.gc(),
                 "bytesLoaded",
                 target.movie().compressed_len().into(),
                 Attribute::empty(),
             );
             result.define_value(
-                activation.context.gc(),
+                activation.gc(),
                 "bytesTotal",
                 target.movie().compressed_len().into(),
                 Attribute::empty(),

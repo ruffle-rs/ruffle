@@ -102,7 +102,7 @@ pub struct ConvolutionFilter<'gc>(GcCell<'gc, ConvolutionFilterData>);
 
 impl<'gc> ConvolutionFilter<'gc> {
     fn new(activation: &mut Activation<'_, 'gc>, args: &[Value<'gc>]) -> Result<Self, Error<'gc>> {
-        let convolution_filter = Self(GcCell::new(activation.context.gc(), Default::default()));
+        let convolution_filter = Self(GcCell::new(activation.gc(), Default::default()));
         convolution_filter.set_matrix_x(activation, args.get(0))?;
         convolution_filter.set_matrix_y(activation, args.get(1))?;
         convolution_filter.set_matrix(activation, args.get(2))?;
@@ -110,7 +110,7 @@ impl<'gc> ConvolutionFilter<'gc> {
             convolution_filter.set_divisor(activation, Some(value))?;
         } else if !args.is_empty() {
             let divisor = convolution_filter.0.read().matrix.iter().sum();
-            convolution_filter.0.write(activation.context.gc()).divisor = divisor;
+            convolution_filter.0.write(activation.gc()).divisor = divisor;
         }
         convolution_filter.set_bias(activation, args.get(4))?;
         convolution_filter.set_preserve_alpha(activation, args.get(5))?;
@@ -121,7 +121,7 @@ impl<'gc> ConvolutionFilter<'gc> {
             // If a substitute color is specified in the constructor in AVM1,
             // the substitute alpha is set to 1, despite the documentation claiming otherwise.
             // This does not happen in AVM2.
-            convolution_filter.0.write(activation.context.gc()).color.a = 255;
+            convolution_filter.0.write(activation.gc()).color.a = 255;
         }
         convolution_filter.set_alpha(activation, args.get(8))?;
         Ok(convolution_filter)
@@ -146,7 +146,7 @@ impl<'gc> ConvolutionFilter<'gc> {
     ) -> Result<(), Error<'gc>> {
         if let Some(value) = value {
             let matrix_x = value.coerce_to_i32(activation)?.clamp(0, 15) as u8;
-            self.0.write(activation.context.gc()).set_matrix_x(matrix_x);
+            self.0.write(activation.gc()).set_matrix_x(matrix_x);
         }
         Ok(())
     }
@@ -162,7 +162,7 @@ impl<'gc> ConvolutionFilter<'gc> {
     ) -> Result<(), Error<'gc>> {
         if let Some(value) = value {
             let matrix_y = value.coerce_to_i32(activation)?.clamp(0, 15) as u8;
-            self.0.write(activation.context.gc()).set_matrix_y(matrix_y);
+            self.0.write(activation.gc()).set_matrix_y(matrix_y);
         }
         Ok(())
     }
@@ -210,7 +210,7 @@ impl<'gc> ConvolutionFilter<'gc> {
     ) -> Result<(), Error<'gc>> {
         if let Some(value) = value {
             let divisor = value.coerce_to_f64(activation)? as f32;
-            self.0.write(activation.context.gc()).divisor = divisor;
+            self.0.write(activation.gc()).divisor = divisor;
         }
         Ok(())
     }
@@ -226,7 +226,7 @@ impl<'gc> ConvolutionFilter<'gc> {
     ) -> Result<(), Error<'gc>> {
         if let Some(value) = value {
             let bias = value.coerce_to_f64(activation)? as f32;
-            self.0.write(activation.context.gc()).bias = bias;
+            self.0.write(activation.gc()).bias = bias;
         }
         Ok(())
     }
@@ -242,7 +242,7 @@ impl<'gc> ConvolutionFilter<'gc> {
     ) -> Result<(), Error<'gc>> {
         if let Some(value) = value {
             let preserve_alpha = value.as_bool(activation.swf_version());
-            self.0.write(activation.context.gc()).preserve_alpha = preserve_alpha;
+            self.0.write(activation.gc()).preserve_alpha = preserve_alpha;
         }
         Ok(())
     }
@@ -258,7 +258,7 @@ impl<'gc> ConvolutionFilter<'gc> {
     ) -> Result<(), Error<'gc>> {
         if let Some(value) = value {
             let clamp = value.as_bool(activation.swf_version());
-            self.0.write(activation.context.gc()).clamp = clamp;
+            self.0.write(activation.gc()).clamp = clamp;
         }
         Ok(())
     }
@@ -274,7 +274,7 @@ impl<'gc> ConvolutionFilter<'gc> {
     ) -> Result<(), Error<'gc>> {
         if let Some(value) = value {
             let value = value.coerce_to_u32(activation)?;
-            let mut write = self.0.write(activation.context.gc());
+            let mut write = self.0.write(activation.gc());
             write.color = Color::from_rgb(value, write.color.a);
         }
         Ok(())
@@ -287,7 +287,7 @@ impl<'gc> ConvolutionFilter<'gc> {
     ) -> Result<(), Error<'gc>> {
         if let Some(value) = value {
             let alpha = value.coerce_to_f64(activation)?.clamp_also_nan(0.0, 1.0);
-            self.0.write(activation.context.gc()).color.a = (alpha * 255.0) as u8;
+            self.0.write(activation.gc()).color.a = (alpha * 255.0) as u8;
         }
         Ok(())
     }
@@ -344,7 +344,7 @@ fn method<'gc>(
     if index == CONSTRUCTOR {
         let convolution_filter = ConvolutionFilter::new(activation, args)?;
         this.set_native(
-            activation.context.gc(),
+            activation.gc(),
             NativeObject::ConvolutionFilter(convolution_filter),
         );
         return Ok(this.into());

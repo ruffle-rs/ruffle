@@ -380,7 +380,7 @@ impl<'gc> UpdateContext<'gc> {
         activation
             .context
             .stage
-            .set_loader_info(activation.context.gc(), stage_loader_info);
+            .set_loader_info(activation.gc(), stage_loader_info);
 
         drop(activation);
 
@@ -413,9 +413,9 @@ impl<'gc> UpdateContext<'gc> {
             .system
             .get_version_string(activation.context.avm1);
         object.define_value(
-            activation.context.gc(),
+            activation.gc(),
             "$version",
-            AvmString::new_utf8(activation.context.gc(), version_string).into(),
+            AvmString::new_utf8(activation.gc(), version_string).into(),
             Attribute::empty(),
         );
 

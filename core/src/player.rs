@@ -1152,7 +1152,7 @@ impl Player {
 
                 let keyboardevent_class = activation.avm2().classes().keyboardevent;
                 let event_name_val: Avm2Value<'_> =
-                    AvmString::new_utf8(activation.context.gc(), event_name).into();
+                    AvmString::new_utf8(activation.gc(), event_name).into();
 
                 // TODO: keyLocation should not be a dummy value.
                 // ctrlKey and controlKey can be different from each other on Mac.
@@ -2090,7 +2090,7 @@ impl Player {
                     if let Ok(prototype) = constructor.get("prototype", &mut activation) {
                         if let Value::Object(object) = action.clip.object() {
                             object.define_value(
-                                activation.context.gc(),
+                                activation.gc(),
                                 "__proto__",
                                 prototype,
                                 Attribute::DONT_ENUM | Attribute::DONT_DELETE,

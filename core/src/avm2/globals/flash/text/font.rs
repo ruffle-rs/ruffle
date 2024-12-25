@@ -22,7 +22,7 @@ pub fn get_font_name<'gc>(
     let this = this.as_object().unwrap();
 
     if let Some(font) = this.as_font() {
-        return Ok(AvmString::new_utf8(activation.context.gc(), font.descriptor().name()).into());
+        return Ok(AvmString::new_utf8(activation.gc(), font.descriptor().name()).into());
     }
 
     Ok(Value::Null)
@@ -104,7 +104,7 @@ pub fn enumerate_fonts<'gc>(
     }
 
     for font in activation.context.library.global_fonts() {
-        storage.push(FontObject::for_font(activation.context.gc(), font_class, font).into());
+        storage.push(FontObject::for_font(activation.gc(), font_class, font).into());
     }
 
     if let Some(library) = activation
@@ -116,8 +116,7 @@ pub fn enumerate_fonts<'gc>(
             // TODO: EmbeddedCFF isn't supposed to show until it's been used (some kind of internal initialization method?)
             // Device is only supposed to show when arg0 is true - but that's supposed to be "all known" device fonts, not just loaded ones
             if font.font_type() == FontType::Embedded {
-                storage
-                    .push(FontObject::for_font(activation.context.gc(), font_class, font).into());
+                storage.push(FontObject::for_font(activation.gc(), font_class, font).into());
             }
         }
     }

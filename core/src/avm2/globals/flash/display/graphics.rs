@@ -46,7 +46,7 @@ pub fn begin_fill<'gc>(
         let color = args.get_u32(activation, 0)?;
         let alpha = args.get_f64(activation, 1)?;
 
-        if let Some(mut draw) = this.as_drawing(activation.context.gc()) {
+        if let Some(mut draw) = this.as_drawing(activation.gc()) {
             draw.set_fill_style(Some(FillStyle::Color(color_from_args(color, alpha))));
         }
     }
@@ -136,7 +136,7 @@ pub fn begin_gradient_fill<'gc>(
         let interpolation = parse_interpolation_method(interpolation?);
         let focal_point = args.get_f64(activation, 7)?;
 
-        if let Some(mut draw) = this.as_drawing(activation.context.gc()) {
+        if let Some(mut draw) = this.as_drawing(activation.gc()) {
             match gradient_type {
                 GradientType::Linear => {
                     draw.set_fill_style(Some(FillStyle::LinearGradient(Gradient {
@@ -261,7 +261,7 @@ pub fn clear<'gc>(
     let this = this.as_object().unwrap();
 
     if let Some(this) = this.as_display_object() {
-        if let Some(mut draw) = this.as_drawing(activation.context.gc()) {
+        if let Some(mut draw) = this.as_drawing(activation.gc()) {
             draw.clear()
         }
     }
@@ -283,7 +283,7 @@ pub fn curve_to<'gc>(
         let anchor_x = args.get_f64(activation, 2)?;
         let anchor_y = args.get_f64(activation, 3)?;
 
-        if let Some(mut draw) = this.as_drawing(activation.context.gc()) {
+        if let Some(mut draw) = this.as_drawing(activation.gc()) {
             draw.draw_command(DrawCommand::QuadraticCurveTo {
                 control: Point::from_pixels(control_x, control_y),
                 anchor: Point::from_pixels(anchor_x, anchor_y),
@@ -303,7 +303,7 @@ pub fn end_fill<'gc>(
     let this = this.as_object().unwrap();
 
     if let Some(this) = this.as_display_object() {
-        if let Some(mut draw) = this.as_drawing(activation.context.gc()) {
+        if let Some(mut draw) = this.as_drawing(activation.gc()) {
             draw.set_fill_style(None);
         }
     }
@@ -363,7 +363,7 @@ pub fn line_style<'gc>(
         let thickness = args.get_f64(activation, 0)?;
 
         if thickness.is_nan() {
-            if let Some(mut draw) = this.as_drawing(activation.context.gc()) {
+            if let Some(mut draw) = this.as_drawing(activation.gc()) {
                 draw.set_line_style(None);
             }
         } else {
@@ -391,7 +391,7 @@ pub fn line_style<'gc>(
                 .with_is_pixel_hinted(is_pixel_hinted)
                 .with_allow_close(false);
 
-            if let Some(mut draw) = this.as_drawing(activation.context.gc()) {
+            if let Some(mut draw) = this.as_drawing(activation.gc()) {
                 draw.set_line_style(Some(line_style));
             }
         }
@@ -412,7 +412,7 @@ pub fn line_to<'gc>(
         let x = Twips::from_pixels(args.get_f64(activation, 0)?);
         let y = Twips::from_pixels(args.get_f64(activation, 1)?);
 
-        if let Some(mut draw) = this.as_drawing(activation.context.gc()) {
+        if let Some(mut draw) = this.as_drawing(activation.gc()) {
             draw.draw_command(DrawCommand::LineTo(Point::new(x, y)));
         }
     }
@@ -432,7 +432,7 @@ pub fn move_to<'gc>(
         let x = Twips::from_pixels(args.get_f64(activation, 0)?);
         let y = Twips::from_pixels(args.get_f64(activation, 1)?);
 
-        if let Some(mut draw) = this.as_drawing(activation.context.gc()) {
+        if let Some(mut draw) = this.as_drawing(activation.gc()) {
             draw.draw_command(DrawCommand::MoveTo(Point::new(x, y)));
         }
     }
@@ -454,7 +454,7 @@ pub fn draw_rect<'gc>(
         let width = Twips::from_pixels(args.get_f64(activation, 2)?);
         let height = Twips::from_pixels(args.get_f64(activation, 3)?);
 
-        if let Some(mut draw) = this.as_drawing(activation.context.gc()) {
+        if let Some(mut draw) = this.as_drawing(activation.gc()) {
             draw.draw_command(DrawCommand::MoveTo(Point::new(x, y)));
             draw.draw_command(DrawCommand::LineTo(Point::new(x + width, y)));
             draw.draw_command(DrawCommand::LineTo(Point::new(x + width, y + height)));
@@ -748,7 +748,7 @@ pub fn draw_round_rect<'gc>(
             ellipse_height = ellipse_width;
         }
 
-        if let Some(mut draw) = this.as_drawing(activation.context.gc()) {
+        if let Some(mut draw) = this.as_drawing(activation.gc()) {
             draw_round_rect_internal(
                 &mut draw,
                 x,
@@ -788,7 +788,7 @@ pub fn draw_round_rect_complex<'gc>(
         let bottom_left = args.get_f64(activation, 6)?;
         let bottom_right = args.get_f64(activation, 7)?;
 
-        if let Some(mut draw) = this.as_drawing(activation.context.gc()) {
+        if let Some(mut draw) = this.as_drawing(activation.gc()) {
             draw_round_rect_internal(
                 &mut draw,
                 x,
@@ -823,7 +823,7 @@ pub fn draw_circle<'gc>(
         let y = args.get_f64(activation, 1)?;
         let radius = args.get_f64(activation, 2)?;
 
-        if let Some(mut draw) = this.as_drawing(activation.context.gc()) {
+        if let Some(mut draw) = this.as_drawing(activation.gc()) {
             draw_round_rect_internal(
                 &mut draw,
                 x - radius,
@@ -859,7 +859,7 @@ pub fn draw_ellipse<'gc>(
         let width = args.get_f64(activation, 2)?;
         let height = args.get_f64(activation, 3)?;
 
-        if let Some(mut draw) = this.as_drawing(activation.context.gc()) {
+        if let Some(mut draw) = this.as_drawing(activation.gc()) {
             draw_round_rect_internal(
                 &mut draw,
                 x,
@@ -914,7 +914,7 @@ pub fn line_gradient_style<'gc>(
         let interpolation = parse_interpolation_method(interpolation?);
         let focal_point = args.get_f64(activation, 7)?;
 
-        if let Some(mut draw) = this.as_drawing(activation.context.gc()) {
+        if let Some(mut draw) = this.as_drawing(activation.gc()) {
             match gradient_type {
                 GradientType::Linear => {
                     draw.set_line_fill_style(FillStyle::LinearGradient(Gradient {
@@ -963,7 +963,7 @@ pub fn cubic_curve_to<'gc>(
         let anchor_x = args.get_f64(activation, 4)?;
         let anchor_y = args.get_f64(activation, 5)?;
 
-        if let Some(mut draw) = this.as_drawing(activation.context.gc()) {
+        if let Some(mut draw) = this.as_drawing(activation.gc()) {
             draw.draw_command(DrawCommand::CubicCurveTo {
                 control_a: Point::from_pixels(control_a_x, control_a_y),
                 control_b: Point::from_pixels(control_b_x, control_b_y),
@@ -990,11 +990,11 @@ pub fn copy_from<'gc>(
             .expect("Bad sourceGraphics");
 
         let source = source
-            .as_drawing(activation.context.gc())
+            .as_drawing(activation.gc())
             .expect("Missing drawing for sourceGraphics");
 
         let mut target_drawing = this
-            .as_drawing(activation.context.gc())
+            .as_drawing(activation.gc())
             .expect("Missing drawing for target");
 
         target_drawing.copy_from(&source);
@@ -1011,7 +1011,7 @@ pub fn draw_path<'gc>(
     let this = this.as_object().unwrap();
 
     let this = this.as_display_object().unwrap();
-    let mut drawing = this.as_drawing(activation.context.gc()).unwrap();
+    let mut drawing = this.as_drawing(activation.gc()).unwrap();
     let commands = args.get_object(activation, 0, "commands")?;
     let data = args.get_object(activation, 1, "data")?;
     let winding = args.get_string(activation, 2)?;
@@ -1052,7 +1052,7 @@ pub fn draw_triangles<'gc>(
     let this = this.as_object().unwrap();
 
     if let Some(this) = this.as_display_object() {
-        if let Some(mut drawing) = this.as_drawing(activation.context.gc()) {
+        if let Some(mut drawing) = this.as_drawing(activation.gc()) {
             let vertices = args.get_object(activation, 0, "vertices")?;
 
             let indices = args.try_get_object(activation, 1);
@@ -1286,7 +1286,7 @@ pub fn draw_graphics_data<'gc>(
     {
         let this = this.as_display_object().expect("Bad this");
 
-        if let Some(mut drawing) = this.as_drawing(activation.context.gc()) {
+        if let Some(mut drawing) = this.as_drawing(activation.gc()) {
             for elem in vector.iter() {
                 if let Some(obj) = elem.as_object() {
                     handle_igraphics_data(activation, &mut drawing, &obj)?;
@@ -1320,7 +1320,7 @@ pub fn line_bitmap_style<'gc>(
         let is_repeating = args.get_bool(2);
         let is_smoothed = args.get_bool(3);
 
-        let handle = bitmap.bitmap_handle(activation.context.gc(), activation.context.renderer);
+        let handle = bitmap.bitmap_handle(activation.gc(), activation.context.renderer);
 
         let bitmap = ruffle_render::bitmap::BitmapInfo {
             handle,
@@ -1332,7 +1332,7 @@ pub fn line_bitmap_style<'gc>(
             Fixed16::from_f64(bitmap.height as f64),
         );
 
-        if let Some(mut draw) = this.as_drawing(activation.context.gc()) {
+        if let Some(mut draw) = this.as_drawing(activation.gc()) {
             let id = draw.add_bitmap(bitmap);
             draw.set_line_fill_style(FillStyle::Bitmap {
                 id,
@@ -1787,7 +1787,7 @@ fn handle_bitmap_fill<'gc>(
         .get_slot(graphics_bitmap_fill_slots::SMOOTH)
         .coerce_to_boolean();
 
-    let handle = bitmap_data.bitmap_handle(activation.context.gc(), activation.context.renderer);
+    let handle = bitmap_data.bitmap_handle(activation.gc(), activation.context.renderer);
 
     let bitmap = ruffle_render::bitmap::BitmapInfo {
         handle,

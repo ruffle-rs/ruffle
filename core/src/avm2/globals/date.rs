@@ -928,7 +928,7 @@ pub fn to_string<'gc>(
         .map(|date| date.with_timezone(&get_timezone()))
     {
         Ok(AvmString::new_utf8(
-            activation.context.gc(),
+            activation.gc(),
             date.format("%a %b %-d %T GMT%z %-Y").to_string(),
         )
         .into())
@@ -949,7 +949,7 @@ pub fn to_utc_string<'gc>(
 
     if let Some(date) = this.date_time() {
         Ok(AvmString::new_utf8(
-            activation.context.gc(),
+            activation.gc(),
             date.format("%a %b %-d %T %-Y UTC").to_string(),
         )
         .into())
@@ -973,7 +973,7 @@ pub fn to_locale_string<'gc>(
         .map(|date| date.with_timezone(&get_timezone()))
     {
         Ok(AvmString::new_utf8(
-            activation.context.gc(),
+            activation.gc(),
             date.format("%a %b %-d %-Y %T %p").to_string(),
         )
         .into())
@@ -996,10 +996,7 @@ pub fn to_time_string<'gc>(
         .date_time()
         .map(|date| date.with_timezone(&get_timezone()))
     {
-        Ok(
-            AvmString::new_utf8(activation.context.gc(), date.format("%T GMT%z").to_string())
-                .into(),
-        )
+        Ok(AvmString::new_utf8(activation.gc(), date.format("%T GMT%z").to_string()).into())
     } else {
         Ok("Invalid Date".into())
     }
@@ -1019,7 +1016,7 @@ pub fn to_locale_time_string<'gc>(
         .date_time()
         .map(|date| date.with_timezone(&get_timezone()))
     {
-        Ok(AvmString::new_utf8(activation.context.gc(), date.format("%T %p").to_string()).into())
+        Ok(AvmString::new_utf8(activation.gc(), date.format("%T %p").to_string()).into())
     } else {
         Ok("Invalid Date".into())
     }
@@ -1039,11 +1036,7 @@ pub fn to_date_string<'gc>(
         .date_time()
         .map(|date| date.with_timezone(&get_timezone()))
     {
-        Ok(AvmString::new_utf8(
-            activation.context.gc(),
-            date.format("%a %b %-d %-Y").to_string(),
-        )
-        .into())
+        Ok(AvmString::new_utf8(activation.gc(), date.format("%a %b %-d %-Y").to_string()).into())
     } else {
         Ok("Invalid Date".into())
     }

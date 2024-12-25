@@ -18,10 +18,7 @@ pub fn get_domain<'gc>(
     let movie = &activation.context.swf;
     let domain = LocalConnections::get_domain(movie.url());
 
-    Ok(Value::String(AvmString::new_utf8(
-        activation.context.gc(),
-        domain,
-    )))
+    Ok(Value::String(AvmString::new_utf8(activation.gc(), domain)))
 }
 
 /// Implements `LocalConnection.send`

@@ -81,7 +81,7 @@ pub fn get_current_frame_label<'gc>(
                 if start_frame < mc.current_frame() {
                     None
                 } else {
-                    Some(AvmString::new(activation.context.gc(), label).into())
+                    Some(AvmString::new(activation.gc(), label).into())
                 }
             })
             .unwrap_or(Value::Null));
@@ -104,7 +104,7 @@ pub fn get_current_label<'gc>(
     {
         return Ok(mc
             .current_label()
-            .map(|(label, _start_frame)| AvmString::new(activation.context.gc(), label).into())
+            .map(|(label, _start_frame)| AvmString::new(activation.gc(), label).into())
             .unwrap_or(Value::Null));
     }
 
@@ -130,7 +130,7 @@ fn labels_for_scene<'gc>(
     let mut frame_labels = Vec::with_capacity(labels.len());
 
     for (name, frame) in labels {
-        let name: Value<'gc> = AvmString::new(activation.context.gc(), name).into();
+        let name: Value<'gc> = AvmString::new(activation.gc(), name).into();
         let local_frame = frame - scene_start + 1;
         let args = [name, local_frame.into()];
         let frame_label = frame_label_class.construct(activation, &args)?;
@@ -188,7 +188,7 @@ pub fn get_current_scene<'gc>(
         let (scene_name, scene_length, scene_labels) = labels_for_scene(activation, mc, &scene)?;
         let scene_class = activation.context.avm2.classes().scene;
         let args = [
-            AvmString::new_utf8(activation.context.gc(), scene_name).into(),
+            AvmString::new_utf8(activation.gc(), scene_name).into(),
             scene_labels.into(),
             scene_length.into(),
         ];
@@ -264,7 +264,7 @@ pub fn get_scenes<'gc>(
                 labels_for_scene(activation, mc, &scene)?;
             let scene_class = activation.context.avm2.classes().scene;
             let args = [
-                AvmString::new_utf8(activation.context.gc(), scene_name).into(),
+                AvmString::new_utf8(activation.gc(), scene_name).into(),
                 scene_labels.into(),
                 scene_length.into(),
             ];
@@ -350,7 +350,7 @@ pub fn goto_and_play<'gc>(
         .as_display_object()
         .and_then(|dobj| dobj.as_movie_clip())
     {
-        mc.set_programmatically_played(activation.context.gc());
+        mc.set_programmatically_played(activation.gc());
         goto_frame(activation, mc, args, false)?;
     }
 
@@ -470,7 +470,7 @@ pub fn play<'gc>(
         .as_display_object()
         .and_then(|dobj| dobj.as_movie_clip())
     {
-        mc.set_programmatically_played(activation.context.gc());
+        mc.set_programmatically_played(activation.gc());
         mc.play(activation.context);
     }
 

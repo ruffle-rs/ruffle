@@ -11,8 +11,8 @@ pub fn constructor<'gc>(
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let netstream = NetStream::new(activation.context.gc(), Some(this.into()));
-    this.set_native(activation.context.gc(), NativeObject::NetStream(netstream));
+    let netstream = NetStream::new(activation.gc(), Some(this.into()));
+    this.set_native(activation.gc(), NativeObject::NetStream(netstream));
 
     Ok(this.into())
 }
@@ -150,7 +150,7 @@ fn set_buffer_time<'gc>(
             .unwrap_or(Value::Undefined)
             .coerce_to_f64(activation)?;
 
-        ns.set_buffer_time(activation.context.gc(), buffer_time);
+        ns.set_buffer_time(activation.gc(), buffer_time);
     }
 
     Ok(Value::Undefined)

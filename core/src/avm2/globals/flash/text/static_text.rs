@@ -26,7 +26,7 @@ pub fn get_text<'gc>(
         .and_then(|this| this.as_text())
     {
         let text = this.text(activation.context);
-        return Ok(AvmString::new(activation.context.gc(), text).into());
+        return Ok(AvmString::new(activation.gc(), text).into());
     }
 
     Ok(Value::Undefined)

@@ -14,7 +14,7 @@ pub fn file_reference_allocator<'gc>(
     let base = ScriptObjectData::new(class);
 
     Ok(FileReferenceObject(Gc::new(
-        activation.context.gc(),
+        activation.gc(),
         FileReferenceObjectData {
             base,
             reference: RefCell::new(FileReference::None),

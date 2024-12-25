@@ -89,7 +89,7 @@ pub fn set_selection<'gc>(
             .unwrap_or(i32::MAX)
             .max(0);
         let selection = TextSelection::for_range(start as usize, end as usize);
-        edit_box.set_selection(Some(selection), activation.context.gc());
+        edit_box.set_selection(Some(selection), activation.gc());
     }
     Ok(Value::Undefined)
 }

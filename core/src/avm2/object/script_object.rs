@@ -25,7 +25,7 @@ pub fn scriptobject_allocator<'gc>(
 ) -> Result<Object<'gc>, Error<'gc>> {
     let base = ScriptObjectData::new(class);
 
-    Ok(ScriptObject(Gc::new(activation.context.gc(), base)).into())
+    Ok(ScriptObject(Gc::new(activation.gc(), base)).into())
 }
 
 /// Default implementation of `avm2::Object`.
@@ -126,7 +126,7 @@ impl<'gc> ScriptObject<'gc> {
     /// A special case for `newcatch` implementation. Basically a variable (q)name
     /// which maps to slot 1.
     pub fn catch_scope(activation: &mut Activation<'_, 'gc>, qname: &QName<'gc>) -> Object<'gc> {
-        let mc = activation.context.gc();
+        let mc = activation.gc();
 
         let vt = VTable::newcatch(mc, qname);
 

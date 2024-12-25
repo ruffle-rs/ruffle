@@ -40,7 +40,7 @@ pub fn add_event_listener<'gc>(
 
     //TODO: If we ever get weak GC references, we should respect `useWeakReference`.
     dispatch_list
-        .as_dispatch_mut(activation.context.gc())
+        .as_dispatch_mut(activation.gc())
         .expect("Internal properties should have what I put in them")
         .add_event_listener(event_type, priority, listener, use_capture);
 
@@ -63,7 +63,7 @@ pub fn remove_event_listener<'gc>(
     let use_capture = args.get_bool(2);
 
     dispatch_list
-        .as_dispatch_mut(activation.context.gc())
+        .as_dispatch_mut(activation.gc())
         .expect("Internal properties should have what I put in them")
         .remove_event_listener(event_type, listener, use_capture);
 
@@ -82,7 +82,7 @@ pub fn has_event_listener<'gc>(
     let event_type = args.get_string(activation, 0)?;
 
     let does_have = dispatch_list
-        .as_dispatch_mut(activation.context.gc())
+        .as_dispatch_mut(activation.gc())
         .expect("Internal properties should have what I put in them")
         .has_event_listener(event_type)
         .into();
@@ -102,7 +102,7 @@ pub fn will_trigger<'gc>(
     let event_type = args.get_string(activation, 0)?;
 
     if dispatch_list
-        .as_dispatch_mut(activation.context.gc())
+        .as_dispatch_mut(activation.gc())
         .expect("Internal properties should have what I put in them")
         .has_event_listener(event_type)
     {

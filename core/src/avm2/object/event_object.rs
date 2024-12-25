@@ -24,7 +24,7 @@ pub fn event_allocator<'gc>(
     let base = ScriptObjectData::new(class);
 
     Ok(EventObject(Gc::new(
-        activation.context.gc(),
+        activation.gc(),
         EventObjectData {
             base,
             event: RefLock::new(Event::new(activation.strings().empty())),

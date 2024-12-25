@@ -16,7 +16,7 @@ pub fn responder_allocator<'gc>(
     let base = ScriptObjectData::new(class);
 
     Ok(ResponderObject(Gc::new(
-        activation.context.gc(),
+        activation.gc(),
         ResponderObjectData {
             base,
             result: Lock::new(None),

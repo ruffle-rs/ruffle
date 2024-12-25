@@ -27,7 +27,7 @@ fn shallow_copy<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Value::Object(object) = value {
         let object_proto = activation.context.avm1.prototypes().object;
-        let result = ScriptObject::new(activation.context.gc(), Some(object_proto));
+        let result = ScriptObject::new(activation.gc(), Some(object_proto));
 
         for key in object.get_keys(activation, false) {
             result.set(key, object.get_stored(key, activation)?, activation)?;
@@ -102,7 +102,7 @@ fn get_style_names<'gc>(
         .get_stored("_css".into(), activation)?
         .coerce_to_object(activation);
     Ok(ArrayObject::new(
-        activation.context.gc(),
+        activation.gc(),
         activation.context.avm1.prototypes().array,
         css.get_keys(activation, false)
             .into_iter()
@@ -143,10 +143,10 @@ fn transform<'gc>(
     let text_format = TextFormat::default();
 
     let proto = activation.context.avm1.prototypes().text_format;
-    let object = ScriptObject::new(activation.context.gc(), Some(proto));
+    let object = ScriptObject::new(activation.gc(), Some(proto));
     object.set_native(
-        activation.context.gc(),
-        NativeObject::TextFormat(Gc::new(activation.context.gc(), text_format.into())),
+        activation.gc(),
+        NativeObject::TextFormat(Gc::new(activation.gc(), text_format.into())),
     );
     Ok(object.into())
 }
@@ -165,7 +165,7 @@ fn parse_css<'gc>(
         for (selector, properties) in css.into_iter() {
             if !selector.is_empty() {
                 let proto = activation.context.avm1.prototypes().object;
-                let object = ScriptObject::new(activation.context.gc(), Some(proto));
+                let object = ScriptObject::new(activation.gc(), Some(proto));
 
                 for (key, value) in properties.into_iter() {
                     object.set(

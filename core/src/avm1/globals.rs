@@ -404,7 +404,7 @@ pub fn escape<'gc>(
             }
         };
     }
-    Ok(AvmString::new(activation.context.gc(), WString::from_buf(buffer)).into())
+    Ok(AvmString::new(activation.gc(), WString::from_buf(buffer)).into())
 }
 
 pub fn unescape<'gc>(
@@ -458,7 +458,7 @@ pub fn unescape<'gc>(
             }
         }
     }
-    Ok(AvmString::new_utf8(activation.context.gc(), String::from_utf8_lossy(&out_bytes)).into())
+    Ok(AvmString::new_utf8(activation.gc(), String::from_utf8_lossy(&out_bytes)).into())
 }
 
 /// This structure represents all system builtins that are used regardless of

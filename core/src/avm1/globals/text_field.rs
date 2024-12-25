@@ -138,10 +138,10 @@ fn new_text_format<'gc>(
     text_format: TextFormat,
 ) -> ScriptObject<'gc> {
     let proto = activation.context.avm1.prototypes().text_format;
-    let object = ScriptObject::new(activation.context.gc(), Some(proto));
+    let object = ScriptObject::new(activation.gc(), Some(proto));
     object.set_native(
-        activation.context.gc(),
-        NativeObject::TextFormat(Gc::new(activation.context.gc(), text_format.into())),
+        activation.gc(),
+        NativeObject::TextFormat(Gc::new(activation.gc(), text_format.into())),
     );
     object
 }
@@ -258,7 +258,7 @@ fn replace_sel<'gc>(
     );
     text_field.set_selection(
         Some(TextSelection::for_position(selection.start() + text.len())),
-        activation.context.gc(),
+        activation.gc(),
     );
 
     text_field.propagate_text_binding(activation);
@@ -305,7 +305,7 @@ pub fn text<'gc>(
     this: EditText<'gc>,
     activation: &mut Activation<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
-    Ok(AvmString::new(activation.context.gc(), this.text()).into())
+    Ok(AvmString::new(activation.gc(), this.text()).into())
 }
 
 pub fn set_text<'gc>(
@@ -370,7 +370,7 @@ pub fn html_text<'gc>(
     this: EditText<'gc>,
     activation: &mut Activation<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
-    Ok(AvmString::new(activation.context.gc(), this.html_text()).into())
+    Ok(AvmString::new(activation.gc(), this.html_text()).into())
 }
 
 pub fn set_html_text<'gc>(
@@ -397,7 +397,7 @@ pub fn set_background<'gc>(
     value: Value<'gc>,
 ) -> Result<(), Error<'gc>> {
     let has_background = value.as_bool(activation.swf_version());
-    this.set_has_background(activation.context.gc(), has_background);
+    this.set_has_background(activation.gc(), has_background);
     Ok(())
 }
 
@@ -415,7 +415,7 @@ pub fn set_background_color<'gc>(
 ) -> Result<(), Error<'gc>> {
     let rgb = value.coerce_to_u32(activation)?;
     let color = Color::from_rgb(rgb, 255);
-    this.set_background_color(activation.context.gc(), color);
+    this.set_background_color(activation.gc(), color);
     Ok(())
 }
 
@@ -432,7 +432,7 @@ pub fn set_border<'gc>(
     value: Value<'gc>,
 ) -> Result<(), Error<'gc>> {
     let has_border = value.as_bool(activation.swf_version());
-    this.set_has_border(activation.context.gc(), has_border);
+    this.set_has_border(activation.gc(), has_border);
     Ok(())
 }
 
@@ -450,7 +450,7 @@ pub fn set_border_color<'gc>(
 ) -> Result<(), Error<'gc>> {
     let rgb = value.coerce_to_u32(activation)?;
     let color = Color::from_rgb(rgb, 255);
-    this.set_border_color(activation.context.gc(), color);
+    this.set_border_color(activation.gc(), color);
     Ok(())
 }
 
@@ -550,7 +550,7 @@ fn variable<'gc>(
     activation: &mut Activation<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(variable) = this.variable() {
-        return Ok(AvmString::new_utf8(activation.context.gc(), &variable[..]).into());
+        return Ok(AvmString::new_utf8(activation.gc(), &variable[..]).into());
     }
 
     // Unset `variable` returns null, not undefined
@@ -744,15 +744,9 @@ pub fn set_anti_alias_type<'gc>(
     let new_type = value.coerce_to_string(activation)?;
 
     if &new_type == b"advanced" {
-        this.set_render_settings(
-            activation.context.gc(),
-            old_settings.with_advanced_rendering(),
-        );
+        this.set_render_settings(activation.gc(), old_settings.with_advanced_rendering());
     } else if &new_type == b"normal" {
-        this.set_render_settings(
-            activation.context.gc(),
-            old_settings.with_normal_rendering(),
-        );
+        this.set_render_settings(activation.gc(), old_settings.with_normal_rendering());
     }
 
     Ok(())
@@ -779,17 +773,17 @@ pub fn set_grid_fit_type<'gc>(
 
     if &new_type == b"pixel" {
         this.set_render_settings(
-            activation.context.gc(),
+            activation.gc(),
             old_settings.with_grid_fit(swf::TextGridFit::Pixel),
         );
     } else if &new_type == b"subpixel" {
         this.set_render_settings(
-            activation.context.gc(),
+            activation.gc(),
             old_settings.with_grid_fit(swf::TextGridFit::SubPixel),
         );
     } else if &new_type == b"none" {
         this.set_render_settings(
-            activation.context.gc(),
+            activation.gc(),
             old_settings.with_grid_fit(swf::TextGridFit::None),
         );
     } // NOTE: In AS2 invalid values do nothing.
@@ -813,7 +807,7 @@ pub fn set_thickness<'gc>(
     let new_thickness = value.coerce_to_f64(activation)?;
 
     this.set_render_settings(
-        activation.context.gc(),
+        activation.gc(),
         old_settings.with_thickness(new_thickness as f32),
     );
 
@@ -836,7 +830,7 @@ pub fn set_sharpness<'gc>(
     let new_sharpness = value.coerce_to_f64(activation)?;
 
     this.set_render_settings(
-        activation.context.gc(),
+        activation.gc(),
         old_settings.with_sharpness(new_sharpness as f32),
     );
 
@@ -848,7 +842,7 @@ fn filters<'gc>(
     activation: &mut Activation<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     Ok(ArrayObject::new(
-        activation.context.gc(),
+        activation.gc(),
         activation.context.avm1.prototypes().array,
         this.filters()
             .into_iter()
@@ -871,7 +865,7 @@ fn set_filters<'gc>(
             }
         }
     }
-    this.set_filters(activation.context.gc(), filters);
+    this.set_filters(activation.gc(), filters);
     Ok(())
 }
 
@@ -880,7 +874,7 @@ fn restrict<'gc>(
     activation: &mut Activation<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     match this.restrict() {
-        Some(value) => Ok(AvmString::new(activation.context.gc(), value).into()),
+        Some(value) => Ok(AvmString::new(activation.gc(), value).into()),
         None => Ok(Value::Null),
     }
 }

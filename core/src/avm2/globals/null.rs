@@ -14,7 +14,7 @@ fn null_init<'gc>(
 }
 
 pub fn create_class<'gc>(activation: &mut Activation<'_, 'gc>) -> Class<'gc> {
-    let mc = activation.context.gc();
+    let mc = activation.gc();
     let class = Class::custom_new(
         QName::new(activation.avm2().namespaces.public_all(), "null"),
         None,
@@ -23,7 +23,7 @@ pub fn create_class<'gc>(activation: &mut Activation<'_, 'gc>) -> Class<'gc> {
     );
     class.set_attributes(mc, ClassAttributes::FINAL | ClassAttributes::SEALED);
 
-    class.mark_traits_loaded(activation.context.gc());
+    class.mark_traits_loaded(activation.gc());
 
     class
 }

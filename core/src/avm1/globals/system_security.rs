@@ -61,7 +61,7 @@ fn get_sandbox_type<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let movie = activation.base_clip().movie();
     Ok(AvmString::new_utf8(
-        activation.context.gc(),
+        activation.gc(),
         match movie.sandbox_type() {
             SandboxType::Remote => "remote",
             SandboxType::LocalWithFile => "localWithFile",

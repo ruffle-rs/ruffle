@@ -439,7 +439,7 @@ fn to_string<'gc>(
     let ty = this.get("ty", activation)?;
 
     Ok(AvmString::new_utf8(
-        activation.context.gc(),
+        activation.gc(),
         format!(
             "(a={}, b={}, c={}, d={}, tx={}, ty={})",
             a.coerce_to_string(activation)?,

@@ -48,7 +48,7 @@ impl<'gc> DateObject<'gc> {
         let base = ScriptObjectData::new(class);
 
         let instance: Object<'gc> = DateObject(Gc::new(
-            activation.context.gc(),
+            activation.gc(),
             DateObjectData {
                 base,
                 date_time: Cell::new(Some(date_time)),

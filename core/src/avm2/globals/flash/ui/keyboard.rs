@@ -39,7 +39,7 @@ pub fn get_physical_keyboard_type<'gc>(
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     avm2_stub_getter!(activation, "flash.ui.Keyboard", "physicalKeyboardType");
-    Ok(AvmString::new_utf8(activation.context.gc(), "alphanumeric").into())
+    Ok(AvmString::new_utf8(activation.gc(), "alphanumeric").into())
 }
 
 pub fn is_accessible<'gc>(

@@ -187,7 +187,7 @@ fn initialize<'gc>(
     if let Some(val) = args.get(0) {
         let broadcaster = val.coerce_to_object(activation);
         initialize_internal(
-            activation.context.gc(),
+            activation.gc(),
             broadcaster,
             activation.context.avm1.broadcaster_functions(),
             activation.context.avm1.prototypes().array,

@@ -32,11 +32,7 @@ pub fn font_allocator<'gc>(
         None
     };
 
-    Ok(FontObject(Gc::new(
-        activation.context.gc(),
-        FontObjectData { base, font },
-    ))
-    .into())
+    Ok(FontObject(Gc::new(activation.gc(), FontObjectData { base, font })).into())
 }
 
 #[derive(Clone, Collect, Copy)]

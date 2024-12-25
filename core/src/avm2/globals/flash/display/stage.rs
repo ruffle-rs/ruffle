@@ -39,7 +39,7 @@ pub fn get_align<'gc>(
     if align.contains(StageAlign::RIGHT) {
         s.push_byte(b'R');
     }
-    let align = AvmString::new(activation.context.gc(), s);
+    let align = AvmString::new(activation.gc(), s);
     Ok(align.into())
 }
 
@@ -107,7 +107,7 @@ pub fn set_color<'gc>(
 
     if let Some(dobj) = this.as_display_object().and_then(|this| this.as_stage()) {
         let color = Color::from_rgb(args.get_u32(activation, 0)?, 255);
-        dobj.set_background_color(activation.context.gc(), Some(color));
+        dobj.set_background_color(activation.gc(), Some(color));
     }
 
     Ok(Value::Undefined)
@@ -144,7 +144,7 @@ pub fn get_display_state<'gc>(
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     let display_state = AvmString::new_utf8(
-        activation.context.gc(),
+        activation.gc(),
         activation.context.stage.display_state().to_string(),
     );
     Ok(display_state.into())
@@ -265,7 +265,7 @@ pub fn get_scale_mode<'gc>(
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     let scale_mode = AvmString::new_utf8(
-        activation.context.gc(),
+        activation.gc(),
         activation.context.stage.scale_mode().to_string(),
     );
     Ok(scale_mode.into())
@@ -313,7 +313,7 @@ pub fn set_stage_focus_rect<'gc>(
 
     if let Some(dobj) = this.as_display_object().and_then(|this| this.as_stage()) {
         let rf = args.get_bool(0);
-        dobj.set_stage_focus_rect(activation.context.gc(), rf);
+        dobj.set_stage_focus_rect(activation.gc(), rf);
     }
 
     Ok(Value::Undefined)
@@ -452,7 +452,7 @@ pub fn invalidate<'gc>(
     let this = this.as_object().unwrap();
 
     if let Some(stage) = this.as_display_object().and_then(|this| this.as_stage()) {
-        stage.set_invalidated(activation.context.gc(), true);
+        stage.set_invalidated(activation.gc(), true);
     }
     Ok(Value::Undefined)
 }

@@ -26,7 +26,7 @@ pub fn constructor<'gc>(
     this.set("onSelect", callback.into(), activation)?;
 
     let built_in_items = ScriptObject::new(
-        activation.context.gc(),
+        activation.gc(),
         Some(activation.context.avm1.prototypes().object),
     );
 

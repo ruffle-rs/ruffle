@@ -43,7 +43,7 @@ pub struct LoaderDisplayData<'gc> {
 impl<'gc> LoaderDisplay<'gc> {
     pub fn empty(activation: &mut Activation<'_, 'gc>, movie: Arc<SwfMovie>) -> Self {
         let obj = LoaderDisplay(GcCell::new(
-            activation.context.gc(),
+            activation.gc(),
             LoaderDisplayData {
                 base: Default::default(),
                 container: ChildContainer::new(movie.clone()),
@@ -52,7 +52,7 @@ impl<'gc> LoaderDisplay<'gc> {
             },
         ));
 
-        obj.set_placed_by_script(activation.context.gc(), true);
+        obj.set_placed_by_script(activation.gc(), true);
         activation.context.avm2.add_orphan_obj(obj.into());
         obj
     }

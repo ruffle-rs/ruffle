@@ -1336,8 +1336,8 @@ impl<'gc> Loader<'gc> {
                 };
 
                 for (k, v) in form_urlencoded::parse(utf8_body) {
-                    let k = AvmString::new_utf8(activation.context.gc(), k);
-                    let v = AvmString::new_utf8(activation.context.gc(), v);
+                    let k = AvmString::new_utf8(activation.gc(), k);
+                    let v = AvmString::new_utf8(activation.gc(), v);
                     that.set(k, v.into(), &mut activation)?;
                 }
 
@@ -1417,8 +1417,7 @@ impl<'gc> Loader<'gc> {
                         let value_data = if length == 0 {
                             Value::Undefined
                         } else {
-                            AvmString::new_utf8(activation.context.gc(), UTF_8.decode(&body).0)
-                                .into()
+                            AvmString::new_utf8(activation.gc(), UTF_8.decode(&body).0).into()
                         };
                         let _ = that.call_method(
                             "onData".into(),
@@ -1495,8 +1494,7 @@ impl<'gc> Loader<'gc> {
                 match response {
                     Ok((body, _, _, _)) => {
                         // Fire the parse & onLoad methods with the loaded string.
-                        let css =
-                            AvmString::new_utf8(activation.context.gc(), UTF_8.decode(&body).0);
+                        let css = AvmString::new_utf8(activation.gc(), UTF_8.decode(&body).0);
                         let success = that
                             .call_method(
                                 "parse".into(),
@@ -2109,7 +2107,7 @@ impl<'gc> Loader<'gc> {
             // to their real values)
             loader_info.set_loader_stream(
                 LoaderStream::NotYetLoaded(fake_movie, Some(clip), false),
-                activation.context.gc(),
+                activation.gc(),
             );
 
             // Flash always fires an initial 'progress' event with
@@ -2122,7 +2120,7 @@ impl<'gc> Loader<'gc> {
             // (`LoaderInfo.parameters` is always empty during the first 'progress' event)
             loader_info.set_loader_stream(
                 LoaderStream::NotYetLoaded(movie.clone(), Some(clip), false),
-                activation.context.gc(),
+                activation.gc(),
             );
         }
 
@@ -2215,7 +2213,7 @@ impl<'gc> Loader<'gc> {
                     bitmap.as_colors().map(Color::from).collect(),
                 );
                 let bitmapdata_wrapper =
-                    BitmapDataWrapper::new(GcCell::new(activation.context.gc(), bitmap_data));
+                    BitmapDataWrapper::new(GcCell::new(activation.gc(), bitmap_data));
                 let bitmapdata_class = activation.context.avm2.classes().bitmapdata;
                 let bitmapdata_avm2 = BitmapDataObject::from_bitmap_data_internal(
                     &mut activation,
@@ -2240,7 +2238,7 @@ impl<'gc> Loader<'gc> {
 
                     loader_info.set_loader_stream(
                         LoaderStream::NotYetLoaded(fake_movie, Some(bitmap_dobj), false),
-                        activation.context.gc(),
+                        activation.gc(),
                     );
                 }
 
@@ -2254,7 +2252,7 @@ impl<'gc> Loader<'gc> {
 
                     loader_info.set_loader_stream(
                         LoaderStream::NotYetLoaded(fake_movie, Some(bitmap_dobj), false),
-                        activation.context.gc(),
+                        activation.gc(),
                     );
                 }
 
@@ -2317,7 +2315,7 @@ impl<'gc> Loader<'gc> {
 
                         loader_info.set_loader_stream(
                             LoaderStream::NotYetLoaded(fake_movie, None, false),
-                            activation.context.gc(),
+                            activation.gc(),
                         );
 
                         Loader::movie_loader_progress(handle, activation.context, length, length)?;
@@ -2469,9 +2467,9 @@ impl<'gc> Loader<'gc> {
                     let object = dobj.object().coerce_to_object(&mut activation);
                     for (key, value) in flashvars.iter() {
                         object.define_value(
-                            activation.context.gc(),
-                            AvmString::new_utf8(activation.context.gc(), key),
-                            AvmString::new_utf8(activation.context.gc(), value).into(),
+                            activation.gc(),
+                            AvmString::new_utf8(activation.gc(), key),
+                            AvmString::new_utf8(activation.gc(), value).into(),
                             Attribute::empty(),
                         );
                     }

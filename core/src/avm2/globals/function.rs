@@ -60,7 +60,7 @@ pub fn class_init<'gc>(
         "call",
         FunctionObject::from_method(
             activation,
-            Method::from_builtin(call, "call", activation.context.gc()),
+            Method::from_builtin(call, "call", activation.gc()),
             scope,
             None,
             None,
@@ -73,7 +73,7 @@ pub fn class_init<'gc>(
         "apply",
         FunctionObject::from_method(
             activation,
-            Method::from_builtin(apply, "apply", activation.context.gc()),
+            Method::from_builtin(apply, "apply", activation.gc()),
             scope,
             None,
             None,
@@ -86,7 +86,7 @@ pub fn class_init<'gc>(
         "toString",
         FunctionObject::from_method(
             activation,
-            Method::from_builtin(to_string, "toString", activation.context.gc()),
+            Method::from_builtin(to_string, "toString", activation.gc()),
             scope,
             None,
             None,
@@ -99,7 +99,7 @@ pub fn class_init<'gc>(
         "toLocaleString",
         FunctionObject::from_method(
             activation,
-            Method::from_builtin(to_string, "toLocaleString", activation.context.gc()),
+            Method::from_builtin(to_string, "toLocaleString", activation.gc()),
             scope,
             None,
             None,
@@ -108,15 +108,11 @@ pub fn class_init<'gc>(
         .into(),
         activation,
     )?;
-    function_proto.set_local_property_is_enumerable(activation.context.gc(), "call".into(), false);
-    function_proto.set_local_property_is_enumerable(activation.context.gc(), "apply".into(), false);
+    function_proto.set_local_property_is_enumerable(activation.gc(), "call".into(), false);
+    function_proto.set_local_property_is_enumerable(activation.gc(), "apply".into(), false);
+    function_proto.set_local_property_is_enumerable(activation.gc(), "toString".into(), false);
     function_proto.set_local_property_is_enumerable(
-        activation.context.gc(),
-        "toString".into(),
-        false,
-    );
-    function_proto.set_local_property_is_enumerable(
-        activation.context.gc(),
+        activation.gc(),
         "toLocaleString".into(),
         false,
     );
@@ -223,7 +219,7 @@ fn set_prototype<'gc>(
 
     if let Some(function) = this.as_function_object() {
         let new_proto = args.get(0).unwrap_or(&Value::Undefined).as_object();
-        function.set_prototype(new_proto, activation.context.gc());
+        function.set_prototype(new_proto, activation.gc());
     }
 
     Ok(Value::Undefined)
@@ -291,12 +287,12 @@ pub fn create_class<'gc>(
         Method::from_builtin(class_call, "<Function call handler>", gc_context),
     );
 
-    function_i_class.mark_traits_loaded(activation.context.gc());
+    function_i_class.mark_traits_loaded(activation.gc());
     function_i_class
         .init_vtable(activation.context)
         .expect("Native class's vtable should initialize");
 
-    function_c_class.mark_traits_loaded(activation.context.gc());
+    function_c_class.mark_traits_loaded(activation.gc());
     function_c_class
         .init_vtable(activation.context)
         .expect("Native class's vtable should initialize");
