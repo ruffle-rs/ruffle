@@ -2816,10 +2816,10 @@ pub mod tests {
         assert_eq!(
             rectangle,
             Rectangle {
-                x_min: Twips::from_pixels(-1.0),
-                y_min: Twips::from_pixels(-1.0),
-                x_max: Twips::from_pixels(1.0),
-                y_max: Twips::from_pixels(1.0),
+                x_min: -Twips::ONE,
+                y_min: -Twips::ONE,
+                x_max: Twips::ONE,
+                y_max: Twips::ONE,
             }
         );
     }
@@ -2936,7 +2936,7 @@ pub mod tests {
         );
 
         let mut matrix = Matrix::IDENTITY;
-        matrix.tx = Twips::from_pixels(1.0);
+        matrix.tx = Twips::ONE;
         let fill_style = FillStyle::Bitmap {
             id: 33,
             matrix,
