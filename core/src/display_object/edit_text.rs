@@ -169,7 +169,13 @@ pub struct EditTextData<'gc> {
     layout_debug_boxes_flags: LayoutDebugBoxesFlag,
 
     /// Whether this EditText represents an AVM2 TextLine.
-    is_tlf: bool,
+    ///
+    /// FTE (Flash Text Engine) is a low-level API for sophisticated text control.
+    ///
+    /// See <https://docs.ruffle.rs/en_US/FlashPlatform/reference/actionscript/3/flash/text/engine/TextLine.html>
+    /// See <https://docs.ruffle.rs/en_US/FlashPlatform/reference/actionscript/3/flash/text/engine/package-detail.html>
+    /// See <https://docs.ruffle.rs/en_US/as3/dev/WS9dd7ed846a005b294b857bfa122bd808ea6-8000.html>
+    is_fte: bool,
 
     /// Restrict what characters the user may input.
     #[collect(require_static)]
@@ -198,7 +204,7 @@ impl EditTextData<'_> {
     fn font_type(&self) -> FontType {
         if !self.flags.contains(EditTextFlag::USE_OUTLINES) {
             FontType::Device
-        } else if self.is_tlf {
+        } else if self.is_fte {
             FontType::EmbeddedCFF
         } else {
             FontType::Embedded
@@ -327,7 +333,7 @@ impl<'gc> EditText<'gc> {
                 scroll: 1,
                 max_chars: swf_tag.max_length().unwrap_or_default() as i32,
                 mouse_wheel_enabled: true,
-                is_tlf: false,
+                is_fte: false,
                 restrict: EditTextRestrict::allow_all(),
                 last_click: None,
                 layout_debug_boxes_flags: LayoutDebugBoxesFlag::empty(),
@@ -376,7 +382,7 @@ impl<'gc> EditText<'gc> {
     }
 
     /// Create a new, dynamic `EditText` representing an AVM2 TextLine.
-    pub fn new_tlf(
+    pub fn new_fte(
         context: &mut UpdateContext<'gc>,
         swf_movie: Arc<SwfMovie>,
         x: f64,
@@ -385,7 +391,7 @@ impl<'gc> EditText<'gc> {
         height: f64,
     ) -> Self {
         let text = Self::new(context, swf_movie, x, y, width, height);
-        text.set_is_tlf(context.gc(), true);
+        text.set_is_fte(context.gc(), true);
         text.set_selectable(false, context);
 
         text
@@ -645,12 +651,12 @@ impl<'gc> EditText<'gc> {
             .set(EditTextFlag::HTML, is_html);
     }
 
-    pub fn is_tlf(self) -> bool {
-        self.0.read().is_tlf
+    pub fn is_fte(self) -> bool {
+        self.0.read().is_fte
     }
 
-    pub fn set_is_tlf(self, gc_context: &Mutation<'gc>, is_tlf: bool) {
-        self.0.write(gc_context).is_tlf = is_tlf;
+    pub fn set_is_fte(self, gc_context: &Mutation<'gc>, is_fte: bool) {
+        self.0.write(gc_context).is_fte = is_fte;
     }
 
     pub fn layout_debug_boxes_flag(self, flag: LayoutDebugBoxesFlag) -> bool {

@@ -68,7 +68,7 @@ pub fn create_text_line<'gc>(
 
     // FIXME: TextLine should be its own DisplayObject
     let display_object: EditText =
-        EditText::new_tlf(activation.context, movie, 0.0, 0.0, width, 15.0);
+        EditText::new_fte(activation.context, movie, 0.0, 0.0, width, 15.0);
 
     display_object.set_text(text.as_wstr(), activation.context);
 
