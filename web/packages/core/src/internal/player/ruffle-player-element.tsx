@@ -84,7 +84,7 @@ export class RufflePlayerElement extends HTMLElement implements PlayerElement {
         _oldValue: string | undefined,
         _newValue: string | undefined,
     ): void {
-        if (name === "width" || name === "height" || name === "align") {
+        if (RufflePlayerElement.observedAttributes.includes(name)) {
             this.#inner.updateStyles();
         }
     }
