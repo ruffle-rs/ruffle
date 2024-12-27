@@ -1230,7 +1230,7 @@ impl<'gc> E4XNode<'gc> {
         };
 
         // 2.a. If N.prefix == "" and x.[[Name]].uri == "", return
-        if prefix.is_empty() && self.namespace().is_none_or(|ns| ns.uri.is_empty()) {
+        if prefix.is_empty() && self.namespace().map_or(true, |ns| ns.uri.is_empty()) {
             return;
         }
 
