@@ -492,6 +492,43 @@ export class InnerPlayer {
                 }
             }
 
+            const alignAttr = this.element.attributes.getNamedItem("align");
+            if (alignAttr !== undefined && alignAttr !== null) {
+                const alignValue = alignAttr.value.toLowerCase();
+
+                const alignCSS = (() => {
+                    switch (alignValue) {
+                        case "right":
+                            return "vertical-align: top; float: right;";
+                        case "left":
+                            return "vertical-align: top; float: left;";
+                        case "bottom":
+                            return "vertical-align: baseline;";
+                        case "top":
+                            return "vertical-align: top;";
+                        case "center":
+                            return "vertical-align: middle; vertical-align: -moz-middle-with-baseline;";
+                        case "middle":
+                            return "vertical-align: middle; vertical-align: -webkit-baseline-middle; vertical-align: -moz-middle-with-baseline;";
+                        case "absbottom":
+                            return "vertical-align: bottom;";
+                        case "absmiddle":
+                        case "abscenter":
+                            return "vertical-align: middle;";
+                        case "texttop":
+                            return "vertical-align: text-top;";
+                        default:
+                            return "";
+                    }
+                })();
+
+                if (alignCSS) {
+                    this.dynamicStyles.sheet.insertRule(
+                        `:host { ${alignCSS} }`
+                    );
+                }
+            }
+
             const widthAttr = this.element.attributes.getNamedItem("width");
             if (widthAttr !== undefined && widthAttr !== null) {
                 const width = InnerPlayer.htmlDimensionToCssDimension(
