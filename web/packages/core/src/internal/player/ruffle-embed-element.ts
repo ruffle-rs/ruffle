@@ -76,7 +76,7 @@ export class RuffleEmbedElement extends RufflePlayerElement {
      * @internal
      */
     static override get observedAttributes(): string[] {
-        return ["src", "width", "height"];
+        return ["src", "width", "height", "align"];
     }
 
     /**
