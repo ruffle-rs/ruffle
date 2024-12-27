@@ -76,7 +76,7 @@ export class RufflePlayerElement extends HTMLElement implements PlayerElement {
     }
 
     static get observedAttributes(): string[] {
-        return ["width", "height"];
+        return ["width", "height", "align"];
     }
 
     attributeChangedCallback(
@@ -84,7 +84,7 @@ export class RufflePlayerElement extends HTMLElement implements PlayerElement {
         _oldValue: string | undefined,
         _newValue: string | undefined,
     ): void {
-        if (name === "width" || name === "height") {
+        if (RufflePlayerElement.observedAttributes.includes(name)) {
             this.#inner.updateStyles();
         }
     }
