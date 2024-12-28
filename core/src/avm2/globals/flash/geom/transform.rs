@@ -358,15 +358,18 @@ pub fn set_matrix_3d<'gc>(
     avm2_stub_setter!(activation, "flash.geom.Transform", "matrix3D");
 
     let display_object = get_display_object(this);
-    let Some(obj) = args.try_get_object(activation, 0) else {
-        display_object
-            .base_mut(activation.gc())
-            .set_has_matrix3d_stub(false);
-        return Ok(Value::Undefined);
+
+    let (matrix, has_matrix3d) = {
+        match args.try_get_object(activation, 0) {
+            Some(obj) => {
+                let matrix3d = object_to_matrix3d(obj, activation)?;
+                let matrix = Matrix::from(matrix3d);
+                (matrix, true)
+            }
+            None => (Matrix::IDENTITY, false),
+        }
     };
 
-    let matrix3d = object_to_matrix3d(obj, activation)?;
-    let matrix = Matrix::from(matrix3d);
     display_object.set_matrix(activation.gc(), matrix);
     if let Some(parent) = display_object.parent() {
         // Self-transform changes are automatically handled,
@@ -375,7 +378,8 @@ pub fn set_matrix_3d<'gc>(
     }
     display_object
         .base_mut(activation.gc())
-        .set_has_matrix3d_stub(true);
+        .set_has_matrix3d_stub(has_matrix3d);
+
     Ok(Value::Undefined)
 }
 
