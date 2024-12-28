@@ -55,6 +55,11 @@ declare global {
     interface AudioSession {
         type?: string;
     }
+    // See https://github.com/microsoft/TypeScript-DOM-lib-generator/issues/1615
+    type OrientationLockType = "any" | "landscape" | "landscape-primary" | "landscape-secondary" | "natural" | "portrait" | "portrait-primary" | "portrait-secondary";
+    interface ScreenOrientation extends EventTarget {
+        lock(orientation: OrientationLockType): Promise<void>;
+    }
 }
 
 /**
@@ -1067,6 +1072,17 @@ export class InnerPlayer {
      * Called when entering / leaving fullscreen.
      */
     private fullScreenChange(): void {
+        // If fullScreenAspectRatio is specified, lock orientation in fullscreen mode if supported
+        if (this.isFullscreen && screen.orientation && typeof screen.orientation.lock === "function") {
+            const fullScreenAspectRatio = this.loadedConfig?.fullScreenAspectRatio?.toLowerCase() ?? "";
+            if (fullScreenAspectRatio === "portrait" || fullScreenAspectRatio === "landscape") {
+                screen.orientation.lock(fullScreenAspectRatio).catch(() => {});
+            }
+        } else {
+            try {
+                screen.orientation.unlock();
+            } catch { }
+        }
         this.instance?.set_fullscreen(this.isFullscreen);
     }
 
@@ -2158,6 +2174,10 @@ export function getPolyfillOptions(
     const wmode = getOptionString("wmode");
     if (wmode !== null) {
         options.wmode = wmode as WindowMode;
+    }
+    const fullScreenAspectRatio = getOptionString("fullScreenAspectRatio");
+    if (fullScreenAspectRatio !== null) {
+        options.fullScreenAspectRatio = fullScreenAspectRatio;
     }
 
     return options;
