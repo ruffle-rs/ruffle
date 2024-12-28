@@ -38,6 +38,18 @@ package {
             trace("sprite2D.transform.matrix3D", sprite2D.transform.matrix3D);
             trace("mat2D", mat2D);
 
+            trace("// sprite2D: update mat2D");
+            mat2D.setTo(2,3,4,5,6,7);
+            trace("sprite2D.transform.matrix", sprite2D.transform.matrix);
+            trace("sprite2D.transform.matrix3D", sprite2D.transform.matrix3D);
+            trace("mat2D", mat2D);
+
+            trace("// sprite2D: .matrix = mat2D");
+            sprite2D.transform.matrix = mat2D;
+            trace("sprite2D.transform.matrix", sprite2D.transform.matrix);
+            trace("sprite2D.transform.matrix3D", sprite2D.transform.matrix3D);
+            trace("mat2D", mat2D);
+
             trace("// sprite2D: .matrix = null");
             sprite2D.transform.matrix = null;
             trace("sprite2D.transform.matrix", sprite2D.transform.matrix);
@@ -71,6 +83,21 @@ package {
             trace("sprite3D.transform.matrix3D.rawData", sprite3D.transform.matrix3D.rawData);
             trace("mat3D.rawData", mat3D.rawData);
 
+            trace("// sprite3D: update mat3D");
+            mat3D.copyFrom(new Matrix3D(new <Number>[2,3,0,0,4,5,0,0,0,0,1,0,6,7,0,1])); // FIXME: z values shouldn't be zero (0) for test coverage. Unsupported now.
+            trace("sprite3D.transform.matrix", sprite3D.transform.matrix);
+            trace("sprite3D.transform.matrix3D", sprite3D.transform.matrix3D);
+            //// FIXME: mat3D update should be applied to transform.matrix3D immediately
+            // trace("sprite3D.transform.matrix3D.rawData", sprite3D.transform.matrix3D.rawData);
+            trace("mat3D.rawData", mat3D.rawData);
+
+            trace("// sprite3D: .matrix3D = mat3D");
+            sprite3D.transform.matrix3D = mat3D;
+            trace("sprite3D.transform.matrix", sprite3D.transform.matrix);
+            trace("sprite3D.transform.matrix3D", sprite3D.transform.matrix3D);
+            trace("sprite3D.transform.matrix3D.rawData", sprite3D.transform.matrix3D.rawData);
+            trace("mat3D.rawData", mat3D.rawData);
+
             trace("// sprite3D: .matrix = null");
             sprite3D.transform.matrix = null;
             trace("sprite3D.transform.matrix", sprite3D.transform.matrix);
@@ -78,20 +105,21 @@ package {
             trace("sprite3D.transform.matrix3D.rawData", sprite3D.transform.matrix3D.rawData);
             trace("mat3D.rawData", mat3D.rawData);
 
-            //// FIXME: matrix3D.rawData should be updated by x/y update.
-            // trace("// sprite3D: set x = 30, y = 50");
-            // sprite3D.x = 30;
-            // sprite3D.y = 50;
-            // trace("sprite3D.transform.matrix", sprite3D.transform.matrix);
-            // trace("sprite3D.transform.matrix3D", sprite3D.transform.matrix3D);
-            // trace("sprite3D.transform.matrix3D.rawData", sprite3D.transform.matrix3D.rawData);
-            // trace("mat3D", mat3D);
+            trace("// sprite3D: set x = 30, y = 50");
+            sprite3D.x = 30;
+            sprite3D.y = 50;
+            trace("sprite3D.transform.matrix", sprite3D.transform.matrix);
+            trace("sprite3D.transform.matrix3D", sprite3D.transform.matrix3D);
+            trace("sprite3D.transform.matrix3D.rawData", sprite3D.transform.matrix3D.rawData);
+            //// FIXME: mat3D.rawData should be updated by sprite3D x/y update.
+            // trace("mat3D.rawData", mat3D.rawData);
 
             trace("// sprite3D: .matrix3D = null");
             sprite3D.transform.matrix3D = null;
             trace("sprite3D.transform.matrix", sprite3D.transform.matrix);
             trace("sprite3D.transform.matrix3D", sprite3D.transform.matrix3D);
-            trace("mat3D.rawData", mat3D.rawData);
+            //// FIXME: mat3D.rawData should be updated by sprite3D x/y update.
+            // trace("mat3D.rawData", mat3D.rawData);
         }
 
         private function testCopy2D() : void {
