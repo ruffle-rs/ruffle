@@ -783,19 +783,22 @@ impl<'gc> TDisplayObject<'gc> for Stage<'gc> {
             stage_constr,
         );
 
-        // Just create a single Stage3D for now
-        let stage3d = activation
-            .avm2()
-            .classes()
-            .stage3d
-            .construct(&mut activation, &[])
-            .expect("Failed to construct Stage3D");
-
         match avm2_stage {
             Ok(avm2_stage) => {
+                // Always create 4 Stage3D instances for now, which matches the flash projector behavior
+                let stage3ds: Vec<_> = (0..4)
+                    .map(|_| {
+                        activation
+                            .avm2()
+                            .classes()
+                            .stage3d
+                            .construct(&mut activation, &[])
+                            .expect("Failed to construct Stage3D")
+                    })
+                    .collect();
                 let mut write = self.0.write(activation.gc());
                 write.avm2_object = Some(avm2_stage.into());
-                write.stage3ds = vec![stage3d];
+                write.stage3ds = stage3ds;
             }
             Err(e) => tracing::error!("Unable to construct AVM2 Stage: {}", e),
         }
