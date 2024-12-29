@@ -57,7 +57,7 @@ package flash.geom {
             this._focalLength = 0;
             this.fieldOfView = 55; // we store in degree * flash default also calcs the _focalLength
             this._matrix3D = new Matrix3D(); // per default set to an identity matrix...
-            this._projectionCenter = new Point(stage.stageWidth / 2, stage.stageHeight / 2);
+            this._projectionCenter = new Point(Stage.stageWidth / 2, Stage.stageHeight / 2);
 
         }
 
@@ -86,15 +86,15 @@ package flash.geom {
             }
 
             this._fieldOfView = value;
-            //this._focalLength = stage.stageWidth * (1.0 / Math.tan(this._fieldOfView * TO_RADIAN * 0.5));
+            //this._focalLength = Stage.stageWidth * (1.0 / Math.tan(this._fieldOfView * TO_RADIAN * 0.5));
 
-            // influenced by both the field of view and the aspect ratio of the stage. 
+            // influenced by both the field of view and the aspect ratio of the Stage. 
             // the aspect ratio is the ratio of width to height (i.e., stageWidth / stageHeight)
             //var effectiveHeight:Number = 2 * this._znear * Math.tan(this._fieldOfView * TO_RADIAN * 0.5);
-            //var effectiveWidth:Number = effectiveHeight * (stage.stageWidth / stage.stageHeight);
+            //var effectiveWidth:Number = effectiveHeight * (Stage.stageWidth / Stage.stageHeight);
             //this._focalLength = effectiveWidth;
 
-            this._focalLength = 2 * this._znear * Math.tan(this._fieldOfView * TO_RADIAN * 0.5) * (stage.stageWidth / stage.stageHeight);
+            this._focalLength = 2 * this._znear * Math.tan(this._fieldOfView * TO_RADIAN * 0.5) * (Stage.stageWidth / Stage.stageHeight);
 
             return this._fieldOfView; // return degree
         }
@@ -164,7 +164,7 @@ package flash.geom {
          */
         public function toMatrix3D():Matrix3D {
 
-            var aspectRatio:Number = stage.stageWidth / stage.stageHeight;
+            var aspectRatio:Number = Stage.stageWidth / Stage.stageHeight;
             var f:Number = 1.0 / Math.tan(this._fieldOfView * TO_RADIAN * 0.5); // focal length calculated from fieldOfView
 
             var mr = this._matrix3D.rawData;
@@ -175,8 +175,8 @@ package flash.geom {
             mr[11] = -1;             // Perspective transformation for the Z coordinate
 
             // also see https://github.com/openfl/openfl/pull/2712
-            mr[12] = ((projectionCenter.x * 2) / stage.stageWidth) - 1; // Shift in X
-            mr[13] = ((projectionCenter.y * 2) / stage.stageHeight) - 1; // Shift in Y
+            mr[12] = ((projectionCenter.x * 2) / Stage.stageWidth) - 1; // Shift in X
+            mr[13] = ((projectionCenter.y * 2) / Stage.stageHeight) - 1; // Shift in Y
 
             mr[14] = (2 * this._zfar * this._znear) / (this._znear - this._zfar); // Offset for the Z coordinate
             mr[15] = 0;              // Last element set to 0 to ensure homogeneity
