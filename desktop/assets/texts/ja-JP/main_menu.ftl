@@ -20,6 +20,7 @@ file-menu-exit = 終了
 controls-menu = 操作
 controls-menu-suspend = 一時停止
 controls-menu-resume = 再開
+controls-menu-step-once = 1ステップ進める
 controls-menu-volume = 音量
 help-menu = ヘルプ
 help-menu-join-discord = Discordに参加
