@@ -222,6 +222,8 @@ pub fn load<'gc>(
         FileReference::FileDialogResult(ref dialog_result) => dialog_result.size().unwrap_or(0),
     };
 
+    let size = size as usize;
+
     let open_evt = EventObject::bare_default_event(activation.context, "open");
     Avm2::dispatch_event(activation.context, open_evt, this.into());
 

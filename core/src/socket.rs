@@ -1,13 +1,13 @@
-use crate::{
-    avm1::{
-        globals::xml_socket::XmlSocket, Activation as Avm1Activation, ActivationIdentifier,
-        ExecutionReason, Object as Avm1Object, TObject as Avm1TObject,
-    },
-    avm2::{object::SocketObject, Activation as Avm2Activation, Avm2, EventObject},
-    backend::navigator::NavigatorBackend,
-    context::UpdateContext,
-    string::AvmString,
+use crate::avm1::{
+    globals::xml_socket::XmlSocket, Activation as Avm1Activation, ActivationIdentifier,
+    ExecutionReason, Object as Avm1Object, TObject as Avm1TObject,
 };
+use crate::avm2::object::{EventObject, SocketObject};
+use crate::avm2::{Activation as Avm2Activation, Avm2};
+use crate::backend::navigator::NavigatorBackend;
+use crate::context::UpdateContext;
+use crate::string::AvmString;
+
 use async_channel::{unbounded, Receiver, Sender as AsyncSender, Sender};
 use gc_arena::Collect;
 use slotmap::{new_key_type, SlotMap};
@@ -306,22 +306,14 @@ impl<'gc> Sockets<'gc> {
                             let bytes_loaded = data.len();
                             target.read_buffer().extend(data);
 
-                            let progress_evt = activation
-                                .avm2()
-                                .classes()
-                                .progressevent
-                                .construct(
-                                    &mut activation,
-                                    &[
-                                        "socketData".into(),
-                                        false.into(),
-                                        false.into(),
-                                        bytes_loaded.into(),
-                                        //NOTE: bytesTotal is not used by socketData event.
-                                        0.into(),
-                                    ],
-                                )
-                                .expect("ProgressEvent should be constructed");
+                            let progress_evt = EventObject::progress_event(
+                                &mut activation,
+                                "socketData",
+                                bytes_loaded,
+                                0, // NOTE: bytesTotal is not used by socketData event.
+                                false,
+                                false,
+                            );
 
                             Avm2::dispatch_event(activation.context, progress_evt, target.into());
                         }

@@ -279,8 +279,8 @@ impl<'gc> EventObject<'gc> {
     pub fn progress_event<S>(
         activation: &mut Activation<'_, 'gc>,
         event_type: S,
-        bytes_loaded: u64,
-        bytes_total: u64,
+        bytes_loaded: usize,
+        bytes_total: usize,
         bubbles: bool,
         cancelable: bool,
     ) -> Value<'gc>

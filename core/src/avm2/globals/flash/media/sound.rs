@@ -2,7 +2,7 @@
 
 use crate::avm2::activation::Activation;
 use crate::avm2::globals::slots::flash_net_url_request as url_request_slots;
-use crate::avm2::object::{QueuedPlay, SoundChannelObject, TObject};
+use crate::avm2::object::{EventObject, QueuedPlay, SoundChannelObject, TObject};
 use crate::avm2::parameters::ParametersExt;
 use crate::avm2::value::Value;
 use crate::avm2::Avm2;
@@ -10,7 +10,6 @@ use crate::avm2::Error;
 use crate::backend::navigator::Request;
 use crate::character::Character;
 use crate::display_object::SoundTransform;
-use crate::string::AvmString;
 use crate::{avm2_stub_getter, avm2_stub_method};
 use swf::{SoundEvent, SoundInfo};
 
@@ -284,21 +283,14 @@ pub fn load_compressed_data_from_byte_array<'gc>(
         Error::RustError(format!("Failed to register sound from bytearray: {e:?}").into())
     })?;
 
-    let progress_evt = activation
-        .avm2()
-        .classes()
-        .progressevent
-        .construct(
-            activation,
-            &[
-                "progress".into(),
-                false.into(),
-                false.into(),
-                bytes.len().into(),
-                bytes.len().into(),
-            ],
-        )
-        .map_err(|e| Error::AvmError(AvmString::new_utf8(activation.gc(), e.to_string()).into()))?;
+    let progress_evt = EventObject::progress_event(
+        activation,
+        "progress",
+        bytes.len(),
+        bytes.len(),
+        false,
+        false,
+    );
 
     Avm2::dispatch_event(activation.context, progress_evt, this);
 
