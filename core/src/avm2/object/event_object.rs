@@ -357,6 +357,26 @@ impl<'gc> EventObject<'gc> {
             )
             .unwrap()
     }
+
+    pub fn http_status_event(
+        activation: &mut Activation<'_, 'gc>,
+        status: u16,
+        redirected: bool,
+    ) -> Value<'gc> {
+        let class = activation.avm2().classes().httpstatusevent;
+        class
+            .construct(
+                activation,
+                &[
+                    "httpStatus".into(),
+                    false.into(),
+                    false.into(),
+                    status.into(),
+                    redirected.into(),
+                ],
+            )
+            .unwrap()
+    }
 }
 
 impl<'gc> TObject<'gc> for EventObject<'gc> {
