@@ -1,7 +1,7 @@
 use crate::avm2::activation::Activation;
 use crate::avm2::amf::deserialize_value;
 use crate::avm2::object::script_object::ScriptObjectData;
-use crate::avm2::object::{ClassObject, Object, ObjectPtr, TObject};
+use crate::avm2::object::{ClassObject, EventObject, Object, ObjectPtr, TObject};
 use crate::avm2::value::Value;
 use crate::avm2::{Avm2, Domain, Error};
 use crate::context::UpdateContext;
@@ -105,21 +105,19 @@ impl<'gc> LocalConnectionObject<'gc> {
 
     pub fn send_status(&self, context: &mut UpdateContext<'gc>, status: &'static str) {
         let mut activation = Activation::from_nothing(context);
-        let event = activation
-            .avm2()
-            .classes()
-            .statusevent
-            .construct(
-                &mut activation,
-                &[
-                    "status".into(),
-                    false.into(),
-                    false.into(),
-                    Value::Null,
-                    status.into(),
-                ],
-            )
-            .unwrap();
+
+        let status_event_cls = activation.avm2().classes().statusevent;
+        let event = EventObject::from_class_and_args(
+            &mut activation,
+            status_event_cls,
+            &[
+                "status".into(),
+                false.into(),
+                false.into(),
+                Value::Null,
+                status.into(),
+            ],
+        );
 
         Avm2::dispatch_event(activation.context, event, (*self).into());
     }
@@ -143,21 +141,18 @@ impl<'gc> LocalConnectionObject<'gc> {
         if let Err(e) = client.call_public_property(method_name, &arguments, &mut activation) {
             match e {
                 Error::AvmError(error) => {
-                    let event = activation
-                        .avm2()
-                        .classes()
-                        .asyncerrorevent
-                        .construct(
-                            &mut activation,
-                            &[
-                                "asyncError".into(),
-                                false.into(),
-                                false.into(),
-                                error,
-                                error,
-                            ],
-                        )
-                        .unwrap();
+                    let async_error_event_cls = activation.avm2().classes().asyncerrorevent;
+                    let event = EventObject::from_class_and_args(
+                        &mut activation,
+                        async_error_event_cls,
+                        &[
+                            "asyncError".into(),
+                            false.into(),
+                            false.into(),
+                            error,
+                            error,
+                        ],
+                    );
 
                     Avm2::dispatch_event(activation.context, event, (*self).into());
                 }
