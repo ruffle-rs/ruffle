@@ -281,8 +281,6 @@ impl<'gc> EventObject<'gc> {
         event_type: S,
         bytes_loaded: usize,
         bytes_total: usize,
-        bubbles: bool,
-        cancelable: bool,
     ) -> Value<'gc>
     where
         S: Into<AvmString<'gc>>,
@@ -296,9 +294,9 @@ impl<'gc> EventObject<'gc> {
                 &[
                     event_type.into(),
                     // bubbles
-                    bubbles.into(),
+                    false.into(),
                     // cancelable
-                    cancelable.into(),
+                    false.into(),
                     // bytesLoaded
                     (bytes_loaded as f64).into(),
                     // bytesToal
