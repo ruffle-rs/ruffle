@@ -1632,21 +1632,8 @@ impl<'gc> Loader<'gc> {
 
                         Avm2::dispatch_event(activation.context, progress_evt, target);
 
-                        let http_status_evt = activation
-                            .avm2()
-                            .classes()
-                            .httpstatusevent
-                            .construct(
-                                &mut activation,
-                                &[
-                                    "httpStatus".into(),
-                                    false.into(),
-                                    false.into(),
-                                    status.into(),
-                                    redirected.into(),
-                                ],
-                            )
-                            .unwrap();
+                        let http_status_evt =
+                            Avm2EventObject::http_status_event(&mut activation, status, redirected);
 
                         Avm2::dispatch_event(activation.context, http_status_evt, target);
 
@@ -1673,21 +1660,11 @@ impl<'gc> Loader<'gc> {
                             } else {
                                 (0, false)
                             };
-                        let http_status_evt = activation
-                            .avm2()
-                            .classes()
-                            .httpstatusevent
-                            .construct(
-                                &mut activation,
-                                &[
-                                    "httpStatus".into(),
-                                    false.into(),
-                                    false.into(),
-                                    status_code.into(),
-                                    redirected.into(),
-                                ],
-                            )
-                            .unwrap();
+                        let http_status_evt = Avm2EventObject::http_status_event(
+                            &mut activation,
+                            status_code,
+                            redirected,
+                        );
 
                         Avm2::dispatch_event(activation.context, http_status_evt, target);
 
@@ -2569,21 +2546,8 @@ impl<'gc> Loader<'gc> {
             MovieLoaderVMData::Avm2 { loader_info, .. } => {
                 let mut activation = Avm2Activation::from_nothing(uc);
 
-                let http_status_evt = activation
-                    .avm2()
-                    .classes()
-                    .httpstatusevent
-                    .construct(
-                        &mut activation,
-                        &[
-                            "httpStatus".into(),
-                            false.into(),
-                            false.into(),
-                            status.into(),
-                            redirected.into(),
-                        ],
-                    )
-                    .unwrap();
+                let http_status_evt =
+                    Avm2EventObject::http_status_event(&mut activation, status, redirected);
 
                 Avm2::dispatch_event(activation.context, http_status_evt, loader_info.into());
 
