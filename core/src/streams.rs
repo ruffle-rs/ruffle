@@ -1315,8 +1315,7 @@ impl<'gc> NetStream<'gc> {
             Some(AvmObject::Avm2(object)) => {
                 let domain = context.avm2.stage_domain();
                 let mut activation = Avm2Activation::from_domain(context, domain);
-                let net_status_event =
-                    Avm2EventObject::net_status_event(&mut activation, "netStatus", values);
+                let net_status_event = Avm2EventObject::net_status_event(&mut activation, values);
                 Avm2::dispatch_event(activation.context, net_status_event, object);
             }
             None => {}

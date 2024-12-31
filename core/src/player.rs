@@ -656,21 +656,18 @@ impl Player {
 
                 if let Some(menu_object) = menu_object {
                     // TODO: contextMenuOwner and mouseTarget might not be the same
-                    let menu_evt = activation
-                        .avm2()
-                        .classes()
-                        .contextmenuevent
-                        .construct(
-                            &mut activation,
-                            &[
-                                "menuSelect".into(),
-                                false.into(),
-                                false.into(),
-                                hit_obj.into(),
-                                hit_obj.into(),
-                            ],
-                        )
-                        .expect("Context menu event should be constructed!");
+                    let context_menu_event_cls = activation.avm2().classes().contextmenuevent;
+                    let menu_evt = Avm2EventObject::from_class_and_args(
+                        &mut activation,
+                        context_menu_event_cls,
+                        &[
+                            "menuSelect".into(),
+                            false.into(),
+                            false.into(),
+                            hit_obj.into(),
+                            hit_obj.into(),
+                        ],
+                    );
 
                     Avm2::dispatch_event(activation.context, menu_evt, menu_object);
                 }
@@ -720,21 +717,19 @@ impl Player {
 
                             if menu_obj.is_some() {
                                 // TODO: contextMenuOwner and mouseTarget might not be the same (see above comment)
-                                let menu_evt = activation
-                                    .avm2()
-                                    .classes()
-                                    .contextmenuevent
-                                    .construct(
-                                        &mut activation,
-                                        &[
-                                            "menuItemSelect".into(),
-                                            false.into(),
-                                            false.into(),
-                                            display_obj.object2(),
-                                            display_obj.object2(),
-                                        ],
-                                    )
-                                    .expect("Context menu event should be constructed!");
+                                let context_menu_event_cls =
+                                    activation.avm2().classes().contextmenuevent;
+                                let menu_evt = Avm2EventObject::from_class_and_args(
+                                    &mut activation,
+                                    context_menu_event_cls,
+                                    &[
+                                        "menuItemSelect".into(),
+                                        false.into(),
+                                        false.into(),
+                                        display_obj.object2(),
+                                        display_obj.object2(),
+                                    ],
+                                );
 
                                 Avm2::dispatch_event(context, menu_evt, menu_item);
                             }
@@ -1158,23 +1153,22 @@ impl Player {
                 // TODO: keyLocation should not be a dummy value.
                 // ctrlKey and controlKey can be different from each other on Mac.
                 // commandKey should be supported.
-                let keyboard_event = keyboardevent_class
-                    .construct(
-                        &mut activation,
-                        &[
-                            event_name_val,                          /* type */
-                            true.into(),                             /* bubbles */
-                            false.into(),                            /* cancelable */
-                            key_char.map_or(0, |c| c as u32).into(), /* charCode */
-                            key_code.value().into(),                 /* keyCode */
-                            0.into(),                                /* keyLocation */
-                            ctrl_key.into(),                         /* ctrlKey */
-                            alt_key.into(),                          /* altKey */
-                            shift_key.into(),                        /* shiftKey */
-                            ctrl_key.into(),                         /* controlKey */
-                        ],
-                    )
-                    .expect("Failed to construct KeyboardEvent");
+                let keyboard_event = Avm2EventObject::from_class_and_args(
+                    &mut activation,
+                    keyboardevent_class,
+                    &[
+                        event_name_val,                          /* type */
+                        true.into(),                             /* bubbles */
+                        false.into(),                            /* cancelable */
+                        key_char.map_or(0, |c| c as u32).into(), /* charCode */
+                        key_code.value().into(),                 /* keyCode */
+                        0.into(),                                /* keyLocation */
+                        ctrl_key.into(),                         /* ctrlKey */
+                        alt_key.into(),                          /* altKey */
+                        shift_key.into(),                        /* shiftKey */
+                        ctrl_key.into(),                         /* controlKey */
+                    ],
+                );
 
                 let target_object = activation
                     .context

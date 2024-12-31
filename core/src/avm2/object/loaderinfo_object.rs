@@ -284,21 +284,8 @@ impl<'gc> LoaderInfoObject<'gc> {
             if should_complete {
                 let mut activation = Activation::from_nothing(context);
                 if from_url {
-                    let http_status_evt = activation
-                        .avm2()
-                        .classes()
-                        .httpstatusevent
-                        .construct(
-                            &mut activation,
-                            &[
-                                "httpStatus".into(),
-                                false.into(),
-                                false.into(),
-                                status.into(),
-                                redirected.into(),
-                            ],
-                        )
-                        .unwrap();
+                    let http_status_evt =
+                        EventObject::http_status_event(&mut activation, status, redirected);
 
                     Avm2::dispatch_event(context, http_status_evt, (*self).into());
                 }
