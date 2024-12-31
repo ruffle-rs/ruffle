@@ -61,7 +61,10 @@ impl<'gc> EventObject<'gc> {
     /// It's just slightly faster and doesn't require an Activation.
     /// This is equivalent to
     /// classes.event.construct(activation, &[event_type, false, false])
-    pub fn bare_default_event<S>(context: &mut UpdateContext<'gc>, event_type: S) -> Value<'gc>
+    pub fn bare_default_event<S>(
+        context: &mut UpdateContext<'gc>,
+        event_type: S,
+    ) -> EventObject<'gc>
     where
         S: Into<AvmString<'gc>>,
     {
@@ -76,7 +79,7 @@ impl<'gc> EventObject<'gc> {
         event_type: S,
         bubbles: bool,
         cancelable: bool,
-    ) -> Value<'gc>
+    ) -> EventObject<'gc>
     where
         S: Into<AvmString<'gc>>,
     {
@@ -87,24 +90,30 @@ impl<'gc> EventObject<'gc> {
         event.set_bubbles(bubbles);
         event.set_cancelable(cancelable);
 
-        let event_object = EventObject(Gc::new(
+        EventObject(Gc::new(
             context.gc(),
             EventObjectData {
                 base,
                 event: RefLock::new(event),
             },
-        ));
-
-        event_object.into()
+        ))
     }
 
+    #[inline]
     pub fn from_class_and_args(
         activation: &mut Activation<'_, 'gc>,
         class: ClassObject<'gc>,
         args: &[Value<'gc>],
-    ) -> Value<'gc> {
-        // We don't expect Event classes to error in their constructors
-        class.construct(activation, args).unwrap()
+    ) -> EventObject<'gc> {
+        // We don't expect Event classes to error in their constructors or to
+        // return anything other than an EventObject
+        class
+            .construct(activation, args)
+            .unwrap()
+            .as_object()
+            .unwrap()
+            .as_event_object()
+            .unwrap()
     }
 
     pub fn mouse_event<S>(
@@ -115,7 +124,7 @@ impl<'gc> EventObject<'gc> {
         delta: i32,
         bubbles: bool,
         button: MouseButton,
-    ) -> Value<'gc>
+    ) -> EventObject<'gc>
     where
         S: Into<AvmString<'gc>>,
     {
@@ -163,7 +172,7 @@ impl<'gc> EventObject<'gc> {
         activation: &mut Activation<'_, 'gc>,
         target: DisplayObject<'gc>,
         button: MouseButton,
-    ) -> Value<'gc> {
+    ) -> EventObject<'gc> {
         Self::mouse_event(
             activation,
             match button {
@@ -184,7 +193,7 @@ impl<'gc> EventObject<'gc> {
         activation: &mut Activation<'_, 'gc>,
         target: DisplayObject<'gc>,
         button: MouseButton,
-    ) -> Value<'gc> {
+    ) -> EventObject<'gc> {
         Self::mouse_event(
             activation,
             match button {
@@ -205,7 +214,7 @@ impl<'gc> EventObject<'gc> {
         activation: &mut Activation<'_, 'gc>,
         target: DisplayObject<'gc>,
         button: MouseButton,
-    ) -> Value<'gc> {
+    ) -> EventObject<'gc> {
         Self::mouse_event(
             activation,
             match button {
@@ -228,7 +237,7 @@ impl<'gc> EventObject<'gc> {
         text: AvmString<'gc>,
         bubbles: bool,
         cancelable: bool,
-    ) -> Value<'gc>
+    ) -> EventObject<'gc>
     where
         S: Into<AvmString<'gc>>,
     {
@@ -253,7 +262,7 @@ impl<'gc> EventObject<'gc> {
     pub fn net_status_event(
         activation: &mut Activation<'_, 'gc>,
         info: Vec<(impl Into<AvmString<'gc>>, impl Into<AvmString<'gc>>)>,
-    ) -> Value<'gc> {
+    ) -> EventObject<'gc> {
         let info_object = ScriptObject::new_object(activation);
         for (key, value) in info {
             info_object
@@ -281,7 +290,7 @@ impl<'gc> EventObject<'gc> {
         event_type: S,
         bytes_loaded: usize,
         bytes_total: usize,
-    ) -> Value<'gc>
+    ) -> EventObject<'gc>
     where
         S: Into<AvmString<'gc>>,
     {
@@ -311,7 +320,7 @@ impl<'gc> EventObject<'gc> {
         cancelable: bool,
         related_object: Option<InteractiveObject<'gc>>,
         key_code: u32,
-    ) -> Value<'gc>
+    ) -> EventObject<'gc>
     where
         S: Into<AvmString<'gc>>,
     {
@@ -340,7 +349,7 @@ impl<'gc> EventObject<'gc> {
         activation: &mut Activation<'_, 'gc>,
         error_msg: AvmString<'gc>,
         error_code: u32,
-    ) -> Value<'gc> {
+    ) -> EventObject<'gc> {
         let io_error_event_cls = activation.avm2().classes().ioerrorevent;
         Self::from_class_and_args(
             activation,
@@ -359,7 +368,7 @@ impl<'gc> EventObject<'gc> {
         activation: &mut Activation<'_, 'gc>,
         status: u16,
         redirected: bool,
-    ) -> Value<'gc> {
+    ) -> EventObject<'gc> {
         let http_status_event_cls = activation.avm2().classes().httpstatusevent;
         Self::from_class_and_args(
             activation,
@@ -372,6 +381,14 @@ impl<'gc> EventObject<'gc> {
                 redirected.into(),
             ],
         )
+    }
+
+    pub fn event(&self) -> Ref<Event<'gc>> {
+        self.0.event.borrow()
+    }
+
+    pub fn event_mut(&self, mc: &Mutation<'gc>) -> RefMut<Event<'gc>> {
+        unlock!(Gc::write(mc, self.0), EventObjectData, event).borrow_mut()
     }
 }
 
@@ -386,6 +403,10 @@ impl<'gc> TObject<'gc> for EventObject<'gc> {
 
     fn as_ptr(&self) -> *const ObjectPtr {
         Gc::as_ptr(self.0) as *const ObjectPtr
+    }
+
+    fn as_event_object(self) -> Option<EventObject<'gc>> {
+        Some(self)
     }
 
     fn as_event(&self) -> Option<Ref<Event<'gc>>> {
