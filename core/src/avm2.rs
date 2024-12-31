@@ -444,12 +444,7 @@ impl<'gc> Avm2<'gc> {
         simulate_dispatch: bool,
     ) -> bool {
         let mut activation = Activation::from_nothing(context);
-        match events::dispatch_event(
-            &mut activation,
-            target,
-            Value::from(event),
-            simulate_dispatch,
-        ) {
+        match events::dispatch_event(&mut activation, target, event, simulate_dispatch) {
             Err(err) => {
                 let event_name = event.event().event_type();
 
@@ -544,8 +539,7 @@ impl<'gc> Avm2<'gc> {
                 let mut activation = Activation::from_nothing(context);
 
                 if object.is_of_type(on_type.inner_class_definition()) {
-                    if let Err(err) =
-                        events::dispatch_event(&mut activation, object, Value::from(event), false)
+                    if let Err(err) = events::dispatch_event(&mut activation, object, event, false)
                     {
                         tracing::error!(
                             "Encountered AVM2 error when broadcasting `{}` event: {:?}",
