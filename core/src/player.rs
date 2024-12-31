@@ -1887,8 +1887,6 @@ impl Player {
                         "progress",
                         root.compressed_loaded_bytes() as usize,
                         root.compressed_total_bytes() as usize,
-                        false,
-                        false,
                     );
 
                     Avm2::dispatch_event(context, progress_evt, loader_info);

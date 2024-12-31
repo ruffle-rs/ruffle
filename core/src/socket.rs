@@ -311,8 +311,6 @@ impl<'gc> Sockets<'gc> {
                                 "socketData",
                                 bytes_loaded,
                                 0, // NOTE: bytesTotal is not used by socketData event.
-                                false,
-                                false,
                             );
 
                             Avm2::dispatch_event(activation.context, progress_evt, target.into());

@@ -283,14 +283,8 @@ pub fn load_compressed_data_from_byte_array<'gc>(
         Error::RustError(format!("Failed to register sound from bytearray: {e:?}").into())
     })?;
 
-    let progress_evt = EventObject::progress_event(
-        activation,
-        "progress",
-        bytes.len(),
-        bytes.len(),
-        false,
-        false,
-    );
+    let progress_evt =
+        EventObject::progress_event(activation, "progress", bytes.len(), bytes.len());
 
     Avm2::dispatch_event(activation.context, progress_evt, this);
 

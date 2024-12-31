@@ -1628,8 +1628,6 @@ impl<'gc> Loader<'gc> {
                             "progress",
                             total_len,
                             total_len,
-                            false,
-                            false,
                         );
 
                         Avm2::dispatch_event(activation.context, progress_evt, target);
@@ -1841,8 +1839,6 @@ impl<'gc> Loader<'gc> {
                             "progress",
                             total_len,
                             total_len,
-                            false,
-                            false,
                         );
 
                         Avm2::dispatch_event(activation.context, progress_evt, sound_object);
@@ -2379,8 +2375,6 @@ impl<'gc> Loader<'gc> {
                     "progress",
                     cur_len,
                     total_len,
-                    false,
-                    false,
                 );
 
                 Avm2::dispatch_event(uc, progress_evt, loader_info.into());
@@ -2918,8 +2912,6 @@ impl<'gc> Loader<'gc> {
                                 "progress",
                                 data.len(),
                                 data.len(),
-                                false,
-                                false,
                             );
                             Avm2::dispatch_event(
                                 activation.context,
