@@ -3,7 +3,7 @@
 use crate::avm2::activation::Activation;
 use crate::avm2::error::make_error_2007;
 use crate::avm2::globals::slots::flash_events_event_dispatcher as slots;
-use crate::avm2::object::{Object, TObject};
+use crate::avm2::object::{EventObject, Object, TObject};
 use crate::avm2::value::Value;
 use crate::avm2::Error;
 use crate::display_object::TDisplayObject;
@@ -374,13 +374,13 @@ fn dispatch_event_to_target<'gc>(
     activation: &mut Activation<'_, 'gc>,
     dispatcher: Object<'gc>,
     target: Object<'gc>,
-    event: Object<'gc>,
+    event: EventObject<'gc>,
     simulate_dispatch: bool,
 ) -> Result<(), Error<'gc>> {
     avm_debug!(
         activation.context.avm2,
         "Event dispatch: {} to {target:?}",
-        event.as_event().unwrap().event_type(),
+        event.event().event_type(),
     );
 
     let dispatch_list = dispatcher.get_slot(slots::DISPATCH_LIST).as_object();
@@ -392,7 +392,7 @@ fn dispatch_event_to_target<'gc>(
 
     let dispatch_list = dispatch_list.unwrap();
 
-    let mut evtmut = event.as_event_mut(activation.gc()).unwrap();
+    let mut evtmut = event.event_mut(activation.gc());
     let name = evtmut.event_type();
     let use_capture = evtmut.phase() == EventPhase::Capturing;
 
@@ -415,11 +415,7 @@ fn dispatch_event_to_target<'gc>(
     }
 
     for handler in handlers.iter() {
-        if event
-            .as_event()
-            .unwrap()
-            .is_propagation_stopped_immediately()
-        {
+        if event.event().is_propagation_stopped_immediately() {
             break;
         }
 
@@ -441,7 +437,7 @@ fn dispatch_event_to_target<'gc>(
 pub fn dispatch_event<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Object<'gc>,
-    event: Value<'gc>,
+    event_object: EventObject<'gc>,
     simulate_dispatch: bool,
 ) -> Result<bool, Error<'gc>> {
     let target = this.get_slot(slots::TARGET).as_object().unwrap_or(this);
@@ -459,20 +455,20 @@ pub fn dispatch_event<'gc>(
         parent = parent_dobj.parent();
     }
 
-    let event_object = event.as_object().unwrap();
-
-    let dispatched = event_object.as_event().unwrap().dispatched;
+    let dispatched = event_object.event().dispatched;
 
     let event = if dispatched {
-        event
+        Value::from(event_object)
             .call_public_property("clone", &[], activation)?
             .as_object()
             .ok_or_else(|| make_error_2007(activation, "event"))?
+            .as_event_object()
+            .expect("Event.clone should return an Event")
     } else {
         event_object
     };
 
-    let mut evtmut = event.as_event_mut(activation.gc()).unwrap();
+    let mut evtmut = event.event_mut(activation.gc());
 
     evtmut.set_phase(EventPhase::Capturing);
     evtmut.set_target(target);
@@ -480,7 +476,7 @@ pub fn dispatch_event<'gc>(
     drop(evtmut);
 
     for ancestor in ancestor_list.iter().rev() {
-        if event.as_event().unwrap().is_propagation_stopped() {
+        if event.event().is_propagation_stopped() {
             break;
         }
 
@@ -488,22 +484,20 @@ pub fn dispatch_event<'gc>(
     }
 
     event
-        .as_event_mut(activation.gc())
-        .unwrap()
+        .event_mut(activation.gc())
         .set_phase(EventPhase::AtTarget);
 
-    if !event.as_event().unwrap().is_propagation_stopped() {
+    if !event.event().is_propagation_stopped() {
         dispatch_event_to_target(activation, this, target, event, simulate_dispatch)?;
     }
 
     event
-        .as_event_mut(activation.gc())
-        .unwrap()
+        .event_mut(activation.context.gc_context)
         .set_phase(EventPhase::Bubbling);
 
-    if event.as_event().unwrap().is_bubbling() {
+    if event.event().is_bubbling() {
         for ancestor in ancestor_list.iter() {
-            if event.as_event().unwrap().is_propagation_stopped() {
+            if event.event().is_propagation_stopped() {
                 break;
             }
 
@@ -511,6 +505,6 @@ pub fn dispatch_event<'gc>(
         }
     }
 
-    let handled = event.as_event().unwrap().dispatched;
+    let handled = event.event().dispatched;
     Ok(handled)
 }
