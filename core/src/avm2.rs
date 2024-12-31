@@ -3,9 +3,11 @@
 use std::rc::Rc;
 
 use crate::avm2::class::{AllocatorFn, CustomConstructorFn};
+use crate::avm2::e4x::XmlSettings;
 use crate::avm2::error::{make_error_1014, make_error_1107, type_error, Error1014Type};
 use crate::avm2::globals::{
-    init_builtin_system_classes, init_native_system_classes, SystemClassDefs, SystemClasses,
+    init_builtin_system_class_defs, init_builtin_system_classes, init_native_system_classes,
+    SystemClassDefs, SystemClasses,
 };
 use crate::avm2::method::{Method, NativeMethodImpl};
 use crate::avm2::scope::ScopeChain;
@@ -175,6 +177,9 @@ pub struct Avm2<'gc> {
     alias_to_class_map: FnvHashMap<AvmString<'gc>, ClassObject<'gc>>,
     class_to_alias_map: FnvHashMap<Class<'gc>, AvmString<'gc>>,
 
+    #[collect(require_static)]
+    pub xml_settings: XmlSettings,
+
     /// The api version of our root movie clip. Note - this is used as the
     /// api version for swfs loaded via `Loader`, overriding the api version
     /// specified in the loaded SWF. This is only used for API versioning (hiding
@@ -229,6 +234,8 @@ impl<'gc> Avm2<'gc> {
 
             alias_to_class_map: Default::default(),
             class_to_alias_map: Default::default(),
+
+            xml_settings: XmlSettings::new_default(),
 
             // Set the lowest version for now - this will be overridden when we set our movie
             root_api_version: ApiVersion::AllVersions,
@@ -700,6 +707,10 @@ impl<'gc> Avm2<'gc> {
         tunit
             .load_classes(&mut activation)
             .expect("Classes should load");
+
+        // These Classes are absolutely critical to the runtime, so make sure
+        // we've registered them before anything else.
+        init_builtin_system_class_defs(&mut activation);
 
         // The second script (script #1) is Toplevel.as, and includes important
         // builtin classes such as Namespace, QName, and XML.

@@ -32,6 +32,8 @@ package {
 
 include "Error.as"
 
+include "Boolean.as"
+
 include "ArgumentError.as"
 include "DefinitionError.as"
 include "EvalError.as"

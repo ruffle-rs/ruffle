@@ -1,5 +1,4 @@
 use crate::avm2::error::{make_error_1010, make_error_1085, make_error_1118, type_error};
-use crate::avm2::globals::slots::xml as xml_class_slots;
 use crate::avm2::object::{E4XOrXml, FunctionObject, NamespaceObject};
 use crate::avm2::{Activation, Error, Multiname, TObject, Value};
 use crate::string::{AvmString, WStr, WString};
@@ -1652,21 +1651,10 @@ pub fn to_xml_string<'gc>(
     xml: E4XOrXml<'gc>,
     activation: &mut Activation<'_, 'gc>,
 ) -> AvmString<'gc> {
-    let pretty_printing = activation
-        .avm2()
-        .classes()
-        .xml
-        .get_slot(xml_class_slots::PRETTY_PRINTING)
-        .coerce_to_boolean();
+    let pretty_printing = activation.avm2().xml_settings.pretty_printing;
 
     let pretty = if pretty_printing {
-        let pretty_indent = activation
-            .avm2()
-            .classes()
-            .xml
-            .get_slot(xml_class_slots::PRETTY_INDENT)
-            .coerce_to_i32(activation)
-            .expect("shouldn't error");
+        let pretty_indent = activation.avm2().xml_settings.pretty_indent;
 
         // NOTE: Negative values are invalid and are ignored.
         if pretty_indent < 0 {
@@ -1777,4 +1765,24 @@ pub fn maybe_escape_child<'gc>(
     }
 
     Ok(child)
+}
+
+pub struct XmlSettings {
+    pub ignore_comments: bool,
+    pub ignore_processing_instructions: bool,
+    pub ignore_whitespace: bool,
+    pub pretty_printing: bool,
+    pub pretty_indent: i32,
+}
+
+impl XmlSettings {
+    pub fn new_default() -> Self {
+        XmlSettings {
+            ignore_comments: true,
+            ignore_processing_instructions: true,
+            ignore_whitespace: true,
+            pretty_printing: true,
+            pretty_indent: 2,
+        }
+    }
 }

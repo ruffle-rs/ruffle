@@ -103,15 +103,20 @@ package {
         AS3 native function notification():Function;
         AS3 native function setNotification(f:Function):*;
 
-        public static var ignoreComments:Boolean = true;
-        public static var ignoreProcessingInstructions:Boolean = true;
-        public static var ignoreWhitespace:Boolean = true;
+        public static native function get ignoreComments():Boolean;
+        public static native function set ignoreComments(value:Boolean):void;
 
-        [Ruffle(InternalSlot)]
-        public static var prettyPrinting:Boolean = true;
+        public static native function get ignoreProcessingInstructions():Boolean;
+        public static native function set ignoreProcessingInstructions(value:Boolean):void;
 
-        [Ruffle(InternalSlot)]
-        public static var prettyIndent:int = 2;
+        public static native function get ignoreWhitespace():Boolean;
+        public static native function set ignoreWhitespace(value:Boolean):void;
+
+        public static native function get prettyPrinting():Boolean;
+        public static native function set prettyPrinting(value:Boolean):void;
+
+        public static native function get prettyIndent():int;
+        public static native function set prettyIndent(value:int):void;
 
         prototype.hasComplexContent = function():Boolean {
             var self:XML = this;
