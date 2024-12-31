@@ -5,7 +5,8 @@ use crate::avm1::SystemProperties;
 use crate::avm1::VariableDumper;
 use crate::avm1::{Activation, ActivationIdentifier};
 use crate::avm1::{TObject, Value};
-use crate::avm2::{Activation as Avm2Activation, Avm2, CallStack, Object as Avm2Object};
+use crate::avm2::object::{EventObject as Avm2EventObject, Object as Avm2Object};
+use crate::avm2::{Activation as Avm2Activation, Avm2, CallStack};
 use crate::backend::ui::FontDefinition;
 use crate::backend::{
     audio::{AudioBackend, AudioManager},
@@ -1881,21 +1882,14 @@ impl Player {
                 if let Some(loader_info) = root.loader_info().filter(|_| !was_root_movie_loaded) {
                     let mut activation = Avm2Activation::from_nothing(context);
 
-                    let progress_evt = activation
-                        .avm2()
-                        .classes()
-                        .progressevent
-                        .construct(
-                            &mut activation,
-                            &[
-                                "progress".into(),
-                                false.into(),
-                                false.into(),
-                                root.compressed_loaded_bytes().into(),
-                                root.compressed_total_bytes().into(),
-                            ],
-                        )
-                        .unwrap();
+                    let progress_evt = Avm2EventObject::progress_event(
+                        &mut activation,
+                        "progress",
+                        root.compressed_loaded_bytes() as usize,
+                        root.compressed_total_bytes() as usize,
+                        false,
+                        false,
+                    );
 
                     Avm2::dispatch_event(context, progress_evt, loader_info);
                 }

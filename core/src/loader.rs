@@ -1623,21 +1623,14 @@ impl<'gc> Loader<'gc> {
 
                         // FIXME - we should fire "progress" events as we receive data, not
                         // just at the end
-                        let progress_evt = activation
-                            .avm2()
-                            .classes()
-                            .progressevent
-                            .construct(
-                                &mut activation,
-                                &[
-                                    "progress".into(),
-                                    false.into(),
-                                    false.into(),
-                                    total_len.into(),
-                                    total_len.into(),
-                                ],
-                            )
-                            .unwrap();
+                        let progress_evt = Avm2EventObject::progress_event(
+                            &mut activation,
+                            "progress",
+                            total_len,
+                            total_len,
+                            false,
+                            false,
+                        );
 
                         Avm2::dispatch_event(activation.context, progress_evt, target);
 
@@ -1843,21 +1836,14 @@ impl<'gc> Loader<'gc> {
 
                         // FIXME - As in load_url_loader, we should fire "progress" events as we receive data,
                         // not just at the end
-                        let progress_evt = activation
-                            .avm2()
-                            .classes()
-                            .progressevent
-                            .construct(
-                                &mut activation,
-                                &[
-                                    "progress".into(),
-                                    false.into(),
-                                    false.into(),
-                                    total_len.into(),
-                                    total_len.into(),
-                                ],
-                            )
-                            .unwrap();
+                        let progress_evt = Avm2EventObject::progress_event(
+                            &mut activation,
+                            "progress",
+                            total_len,
+                            total_len,
+                            false,
+                            false,
+                        );
 
                         Avm2::dispatch_event(activation.context, progress_evt, sound_object);
 
@@ -2388,21 +2374,14 @@ impl<'gc> Loader<'gc> {
             MovieLoaderVMData::Avm2 { loader_info, .. } => {
                 let mut activation = Avm2Activation::from_nothing(uc);
 
-                let progress_evt = activation
-                    .avm2()
-                    .classes()
-                    .progressevent
-                    .construct(
-                        &mut activation,
-                        &[
-                            "progress".into(),
-                            false.into(),
-                            false.into(),
-                            cur_len.into(),
-                            total_len.into(),
-                        ],
-                    )
-                    .unwrap();
+                let progress_evt = Avm2EventObject::progress_event(
+                    &mut activation,
+                    "progress",
+                    cur_len,
+                    total_len,
+                    false,
+                    false,
+                );
 
                 Avm2::dispatch_event(uc, progress_evt, loader_info.into());
             }
@@ -2934,12 +2913,11 @@ impl<'gc> Loader<'gc> {
                                 target_object.into(),
                             );
 
-                            let size = data.len() as u64;
                             let progress_evt = Avm2EventObject::progress_event(
                                 &mut activation,
                                 "progress",
-                                size,
-                                size,
+                                data.len(),
+                                data.len(),
                                 false,
                                 false,
                             );
