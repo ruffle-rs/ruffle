@@ -40,6 +40,8 @@ package flash.geom {
      */
     public class PerspectiveProjection {
 
+        private var stage:Object; // tbd: we need access to current stage
+
         private var _focalLength:Number;
         private var _fieldOfView:Number;
         private var _matrix3D:Matrix3D;
@@ -52,6 +54,11 @@ package flash.geom {
         private var TO_RADIAN:Number = 0.01745329251994329577; // (Math.PI / 180)
 
         public function PerspectiveProjection() {
+
+            this.stage = {
+                stageWidth: 800, // tbd: fix me
+                stageHeight: 600 // tbd: fix me
+            };
 
             // we set here our basic values for the private variables...
             this._focalLength = 0;
