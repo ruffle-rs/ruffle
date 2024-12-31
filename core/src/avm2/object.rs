@@ -748,6 +748,11 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     }
 
     /// Unwrap this object as an event.
+    fn as_event_object(self) -> Option<EventObject<'gc>> {
+        None
+    }
+
+    /// Unwrap this object as an event.
     fn as_event(&self) -> Option<Ref<Event<'gc>>> {
         None
     }

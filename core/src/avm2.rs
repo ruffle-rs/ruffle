@@ -417,7 +417,7 @@ impl<'gc> Avm2<'gc> {
     /// Returns `true` if the event has been handled.
     pub fn dispatch_event(
         context: &mut UpdateContext<'gc>,
-        event: Value<'gc>,
+        event: EventObject<'gc>,
         target: Object<'gc>,
     ) -> bool {
         Self::dispatch_event_internal(context, event, target, false)
@@ -431,7 +431,7 @@ impl<'gc> Avm2<'gc> {
     /// Returns `true` when the event would have been handled if not simulated.
     pub fn simulate_event_dispatch(
         context: &mut UpdateContext<'gc>,
-        event: Value<'gc>,
+        event: EventObject<'gc>,
         target: Object<'gc>,
     ) -> bool {
         Self::dispatch_event_internal(context, event, target, true)
@@ -439,20 +439,20 @@ impl<'gc> Avm2<'gc> {
 
     fn dispatch_event_internal(
         context: &mut UpdateContext<'gc>,
-        event: Value<'gc>,
+        event: EventObject<'gc>,
         target: Object<'gc>,
         simulate_dispatch: bool,
     ) -> bool {
-        let event_name = event
-            .as_object()
-            .unwrap()
-            .as_event()
-            .map(|e| e.event_type())
-            .expect("Cannot dispatch non-event object");
-
         let mut activation = Activation::from_nothing(context);
-        match events::dispatch_event(&mut activation, target, event, simulate_dispatch) {
+        match events::dispatch_event(
+            &mut activation,
+            target,
+            Value::from(event),
+            simulate_dispatch,
+        ) {
             Err(err) => {
+                let event_name = event.event().event_type();
+
                 tracing::error!(
                     "Encountered AVM2 error when dispatching `{}` event: {:?}",
                     event_name,
@@ -512,15 +512,10 @@ impl<'gc> Avm2<'gc> {
     /// Attempts to broadcast a non-event object will panic.
     pub fn broadcast_event(
         context: &mut UpdateContext<'gc>,
-        event: Value<'gc>,
+        event: EventObject<'gc>,
         on_type: ClassObject<'gc>,
     ) {
-        let event_name = event
-            .as_object()
-            .unwrap()
-            .as_event()
-            .map(|e| e.event_type())
-            .expect("Cannot broadcast non-event object");
+        let event_name = event.event().event_type();
 
         if !BROADCAST_WHITELIST
             .iter()
@@ -549,7 +544,8 @@ impl<'gc> Avm2<'gc> {
                 let mut activation = Activation::from_nothing(context);
 
                 if object.is_of_type(on_type.inner_class_definition()) {
-                    if let Err(err) = events::dispatch_event(&mut activation, object, event, false)
+                    if let Err(err) =
+                        events::dispatch_event(&mut activation, object, Value::from(event), false)
                     {
                         tracing::error!(
                             "Encountered AVM2 error when broadcasting `{}` event: {:?}",
