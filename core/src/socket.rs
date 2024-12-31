@@ -258,21 +258,11 @@ impl<'gc> Sockets<'gc> {
                         SocketKind::Avm2(target) => {
                             let mut activation = Avm2Activation::from_nothing(context);
 
-                            let io_error_evt = activation
-                                .avm2()
-                                .classes()
-                                .ioerrorevent
-                                .construct(
-                                    &mut activation,
-                                    &[
-                                        "ioError".into(),
-                                        false.into(),
-                                        false.into(),
-                                        "Error #2031: Socket Error.".into(),
-                                        2031.into(),
-                                    ],
-                                )
-                                .expect("IOErrorEvent should be constructed");
+                            let io_error_evt = EventObject::io_error_event(
+                                &mut activation,
+                                "Error #2031: Socket Error.".into(),
+                                2031,
+                            );
 
                             Avm2::dispatch_event(activation.context, io_error_evt, target.into());
                         }

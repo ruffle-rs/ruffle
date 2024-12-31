@@ -337,6 +337,26 @@ impl<'gc> EventObject<'gc> {
             )
             .unwrap()
     }
+
+    pub fn io_error_event(
+        activation: &mut Activation<'_, 'gc>,
+        error_msg: AvmString<'gc>,
+        error_code: u32,
+    ) -> Value<'gc> {
+        let class = activation.avm2().classes().ioerrorevent;
+        class
+            .construct(
+                activation,
+                &[
+                    "ioError".into(),
+                    false.into(),
+                    false.into(),
+                    error_msg.into(),
+                    error_code.into(),
+                ],
+            )
+            .unwrap()
+    }
 }
 
 impl<'gc> TObject<'gc> for EventObject<'gc> {
