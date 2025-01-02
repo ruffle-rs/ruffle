@@ -1298,9 +1298,12 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         }
 
         // (fast) side path for dictionary/array-likes
-        // NOTE: FP behaves differently here when the public namespace isn't
+        // Note that this path doesn't activate when the public namespace isn't
         // included in the multiname's namespace set
-        if multiname.has_lazy_name() && !multiname.has_lazy_ns() {
+        if multiname.has_lazy_name()
+            && !multiname.has_lazy_ns()
+            && multiname.contains_public_namespace()
+        {
             // `MultinameL` is the only form of multiname that allows fast-path
             // or alternate-path lookups based on the local name *value*,
             // rather than it's string representation.
@@ -1359,9 +1362,12 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         }
 
         // side path for dictionary/arrays (TODO)
-        // NOTE: FP behaves differently here when the public namespace isn't
+        // Note that this path doesn't activate when the public namespace isn't
         // included in the multiname's namespace set
-        if multiname.has_lazy_name() && !multiname.has_lazy_ns() {
+        if multiname.has_lazy_name()
+            && !multiname.has_lazy_ns()
+            && multiname.contains_public_namespace()
+        {
             // `MultinameL` is the only form of multiname that allows fast-path
             // or alternate-path lookups based on the local name *value*,
             // rather than it's string representation.
