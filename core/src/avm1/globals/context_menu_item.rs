@@ -19,7 +19,7 @@ pub fn constructor<'gc>(
         .get(0)
         .unwrap_or(&Value::Undefined)
         .coerce_to_string(activation)?;
-    let callback = args.get(1).map(|v| v.coerce_to_object(activation));
+    let callback = *args.get(1).unwrap_or(&Value::Undefined);
     let separator_before = args
         .get(2)
         .unwrap_or(&false.into())
@@ -34,11 +34,7 @@ pub fn constructor<'gc>(
         .as_bool(activation.swf_version());
 
     this.set("caption", caption.into(), activation)?;
-
-    if let Some(callback) = callback {
-        this.set("onSelect", callback.into(), activation)?;
-    }
-
+    this.set("onSelect", callback, activation)?;
     this.set("separatorBefore", separator_before.into(), activation)?;
     this.set("enabled", enabled.into(), activation)?;
     this.set("visible", visible.into(), activation)?;
