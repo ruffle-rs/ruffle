@@ -75,6 +75,7 @@ pub struct Event<'gc> {
     event_type: AvmString<'gc>,
 
     /// Whether is event has been dispatched before.
+    // TODO: this field may be redundant now?
     dispatched: bool,
 }
 
@@ -459,9 +460,11 @@ pub fn dispatch_event<'gc>(
         parent = parent_dobj.parent();
     }
 
-    let dispatched = event.as_event().unwrap().dispatched;
+    let has_target = event
+        .get_public_property("target", activation)?
+        .coerce_to_boolean();
 
-    let event = if dispatched {
+    let event = if has_target {
         event
             .call_public_property("clone", &[], activation)?
             .as_object()
