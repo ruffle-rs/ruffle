@@ -592,6 +592,9 @@ impl<'gc> Font<'gc> {
     /// of transforms and glyphs which will be consumed by the `glyph_func`
     /// closure. This corresponds to the series of drawing operations necessary
     /// to render the text on a single horizontal line.
+    ///
+    /// It's guaranteed that this function will iterate over all characters
+    /// from the text, irrespectively of whether they have a glyph or not.
     pub fn evaluate<FGlyph>(
         &self,
         text: &WStr, // TODO: take an `IntoIterator<Item=char>`, to not depend on string representation?
@@ -606,6 +609,9 @@ impl<'gc> Font<'gc> {
 
         transform.matrix.a = scale;
         transform.matrix.d = scale;
+
+        // TODO [KJ] I'm not sure whether we should iterate over characters here or over code units.
+        //   I suspect Flash Player does not support full UTF-16 when displaying and laying out text.
         let mut char_indices = text.char_indices().peekable();
         let has_kerning_info = self.has_kerning_info();
         let mut x = Twips::ZERO;
@@ -637,6 +643,10 @@ impl<'gc> Font<'gc> {
                 // Step horizontally.
                 transform.matrix.tx += twips_advance;
                 x += twips_advance;
+            } else {
+                // No glyph, zero advance.  This makes it possible to use this method for purposes
+                // other than rendering the font, e.g. measurement, iterating over characters.
+                glyph_func(pos, &transform, &Glyph::empty(c), Twips::ZERO, x);
             }
         }
     }
@@ -818,6 +828,16 @@ pub struct Glyph {
 }
 
 impl Glyph {
+    /// Returns an empty glyph with zero advance.
+    pub fn empty(character: char) -> Self {
+        Self {
+            shape_handle: Default::default(),
+            shape: GlyphShape::None,
+            advance: Twips::ZERO,
+            character,
+        }
+    }
+
     pub fn shape_handle(&self, renderer: &mut dyn RenderBackend) -> Option<ShapeHandle> {
         self.shape_handle
             .borrow_mut()
