@@ -246,6 +246,19 @@ function createPanicError(error: Error | null): {
             };
         }
 
+        if (error.cause.name === "CompileError" && message.includes("bad type")) {
+            // Self hosted: User has a browser without support for necessary WebAssembly extensions
+            return {
+                body: textAsParagraphs("error-wasm-unsupported-browser"),
+                actions: [
+                    CommonActions.openWiki(
+                        "#web",
+                    ),
+                    CommonActions.ShowDetails,
+                ],
+            };
+        }
+
         if (error.cause.name === "CompileError") {
             // Self hosted: Cannot load `.wasm` file - incorrect configuration or missing files
             return {
@@ -302,19 +315,6 @@ function createPanicError(error: Error | null): {
                     CommonActions.openWiki(
                         "Frequently-Asked-Questions-For-Users#edge-webassembly-error",
                         text("more-info"),
-                    ),
-                    CommonActions.ShowDetails,
-                ],
-            };
-        }
-
-        if (message === "necessary webassembly extensions unsupported") {
-            // Self hosted: User has a browser without support for necessary WebAssembly extensions
-            return {
-                body: textAsParagraphs("error-wasm-unsupported-browser"),
-                actions: [
-                    CommonActions.openWiki(
-                        "#web",
                     ),
                     CommonActions.ShowDetails,
                 ],
