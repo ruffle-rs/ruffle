@@ -835,9 +835,8 @@ fn error_constructor<'gc>(
     code: u32,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let message = AvmString::new_utf8(activation.gc(), message);
-    Ok(class
-        .construct(activation, &[message.into(), code.into()])?
-        .into())
+
+    class.construct(activation, &[message.into(), code.into()])
 }
 
 impl std::fmt::Display for Error<'_> {

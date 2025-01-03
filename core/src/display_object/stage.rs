@@ -717,20 +717,20 @@ impl<'gc> Stage<'gc> {
                 );
             }
         } else if let Avm2Value::Object(stage) = self.object2() {
-            let full_screen_event_cls = context.avm2.classes().fullscreenevent;
             let mut activation = Avm2Activation::from_nothing(context);
-            let full_screen_event = full_screen_event_cls
-                .construct(
-                    &mut activation,
-                    &[
-                        "fullScreen".into(),
-                        false.into(),
-                        false.into(),
-                        self.is_fullscreen().into(),
-                        true.into(),
-                    ],
-                )
-                .unwrap(); // we don't expect to break here
+
+            let full_screen_event_cls = activation.avm2().classes().fullscreenevent;
+            let full_screen_event = Avm2EventObject::from_class_and_args(
+                &mut activation,
+                full_screen_event_cls,
+                &[
+                    "fullScreen".into(),
+                    false.into(),
+                    false.into(),
+                    self.is_fullscreen().into(),
+                    true.into(),
+                ],
+            );
 
             Avm2::dispatch_event(context, full_screen_event, stage);
         }
@@ -794,6 +794,8 @@ impl<'gc> TDisplayObject<'gc> for Stage<'gc> {
                             .stage3d
                             .construct(&mut activation, &[])
                             .expect("Failed to construct Stage3D")
+                            .as_object()
+                            .expect("Stage3D is an Object")
                     })
                     .collect();
                 let mut write = self.0.write(activation.gc());

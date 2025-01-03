@@ -3,11 +3,12 @@
 use crate::avm2::activation::Activation;
 use crate::avm2::error;
 use crate::avm2::error::type_error;
-use crate::avm2::object::{NamespaceObject, Object, PrimitiveObject, TObject};
+use crate::avm2::function::exec;
+use crate::avm2::object::{NamespaceObject, Object, TObject};
+use crate::avm2::property::Property;
 use crate::avm2::script::TranslationUnit;
-use crate::avm2::Error;
-use crate::avm2::Multiname;
-use crate::avm2::Namespace;
+use crate::avm2::vtable::{ClassBoundMethod, VTable};
+use crate::avm2::{Error, Multiname, Namespace};
 use crate::ecma_conversions::{f64_to_wrapping_i32, f64_to_wrapping_u32};
 use crate::string::{AvmAtom, AvmString, WStr};
 use gc_arena::Collect;
@@ -600,13 +601,7 @@ impl<'gc> Value<'gc> {
             Value::Number(f) => !f.is_nan() && *f != 0.0,
             Value::Integer(i) => *i != 0,
             Value::String(s) => !s.is_empty(),
-            Value::Object(o) => {
-                if let Some(prim) = o.as_primitive() {
-                    prim.coerce_to_boolean()
-                } else {
-                    true
-                }
-            }
+            Value::Object(_) => true,
         }
     }
 
@@ -633,9 +628,8 @@ impl<'gc> Value<'gc> {
         });
 
         match self {
-            Value::Object(Object::PrimitiveObject(o)) => o.value_of(activation.strings()),
             Value::Object(o) if hint == Hint::String => {
-                let object = *o;
+                let object = Value::from(*o);
 
                 let prim = object.call_public_property("toString", &[], activation)?;
                 if prim.is_primitive() {
@@ -657,7 +651,7 @@ impl<'gc> Value<'gc> {
                 )?))
             }
             Value::Object(o) if hint == Hint::Number => {
-                let object = *o;
+                let object = Value::from(*o);
 
                 let prim = object.call_public_property("valueOf", &[], activation)?;
                 if prim.is_primitive() {
@@ -849,38 +843,6 @@ impl<'gc> Value<'gc> {
         })
     }
 
-    /// Coerce the value to an Object.
-    ///
-    /// TODO: Once `PrimitiveObject` is removed, this method will be able
-    /// to be removed too, since all that this will do then is a null/undefined check.
-    pub fn coerce_to_object(
-        &self,
-        activation: &mut Activation<'_, 'gc>,
-    ) -> Result<Object<'gc>, Error<'gc>> {
-        match self {
-            Value::Undefined => return Err("TypeError: undefined is not an Object".into()),
-            Value::Null => return Err("TypeError: null is not an Object".into()),
-            Value::Object(o) => return Ok(*o),
-            _ => {}
-        };
-
-        PrimitiveObject::from_primitive(*self, activation)
-    }
-
-    /// Coerce the value to an object, and throw a TypeError relating to object
-    /// receivers being null or undefined otherwise.
-    /// Note: The error may contain a non-spec info about the way in which it was to be used.
-    pub fn coerce_to_object_or_typeerror(
-        &self,
-        activation: &mut Activation<'_, 'gc>,
-        name: Option<&Multiname<'gc>>,
-    ) -> Result<Object<'gc>, Error<'gc>> {
-        if matches!(self, Value::Null | Value::Undefined) {
-            return Err(error::make_null_or_undefined_error(activation, *self, name));
-        }
-        self.coerce_to_object(activation)
-    }
-
     #[inline(always)]
     pub fn null_check(
         &self,
@@ -898,6 +860,526 @@ impl<'gc> Value<'gc> {
         match self {
             Value::Object(o) => Some(*o),
             _ => None,
+        }
+    }
+
+    /// Retrieve a property by Multiname lookup.
+    ///
+    /// This corresponds directly to the AVM2 operation `getproperty`, with the
+    /// exception that it does not special-case object lookups on dictionary
+    /// structured objects.
+    ///
+    /// This method will panic if called on null or undefined.
+    pub fn get_property(
+        &self,
+        multiname: &Multiname<'gc>,
+        activation: &mut Activation<'_, 'gc>,
+    ) -> Result<Value<'gc>, Error<'gc>> {
+        let vtable = self.vtable(activation);
+
+        match vtable.get_trait(multiname) {
+            Some(Property::Slot { slot_id }) | Some(Property::ConstSlot { slot_id }) => {
+                // Only objects can have slots
+                let object = self.as_object().unwrap();
+
+                Ok(object.get_slot(slot_id))
+            }
+            Some(Property::Method { disp_id }) => {
+                if let Some(object) = self.as_object() {
+                    // avmplus has a special case for XML and XMLList objects, so we need one as well
+                    // https://github.com/adobe/avmplus/blob/858d034a3bd3a54d9b70909386435cf4aec81d21/core/Toplevel.cpp#L629-L634
+                    if (object.as_xml_object().is_some() || object.as_xml_list_object().is_some())
+                        && multiname.contains_public_namespace()
+                    {
+                        return object.get_property_local(multiname, activation);
+                    }
+
+                    if let Some(bound_method) = object.get_bound_method(disp_id) {
+                        return Ok(bound_method.into());
+                    }
+
+                    let bound_method = vtable
+                        .make_bound_method(activation, *self, disp_id)
+                        .expect("Method should exist");
+
+                    // TODO: Bound methods should be cached on the Method in a
+                    // WeakKeyHashMap<Value, FunctionObject>, not on the Object
+                    object.install_bound_method(activation.gc(), disp_id, bound_method);
+
+                    Ok(bound_method.into())
+                } else {
+                    let bound_method = vtable
+                        .make_bound_method(activation, *self, disp_id)
+                        .expect("Method should exist");
+
+                    // TODO: Bound methods should be cached on the Method in a
+                    // WeakKeyHashMap<Value, FunctionObject>, not on the Object
+
+                    Ok(bound_method.into())
+                }
+            }
+            Some(Property::Virtual { get: Some(get), .. }) => {
+                self.call_method(get, &[], activation)
+            }
+            Some(Property::Virtual { get: None, .. }) => {
+                let instance_class = self.instance_class(activation);
+
+                Err(error::make_reference_error(
+                    activation,
+                    error::ReferenceErrorCode::ReadFromWriteOnly,
+                    multiname,
+                    instance_class,
+                ))
+            }
+            None => {
+                if let Some(object) = self.as_object() {
+                    object.get_property_local(multiname, activation)
+                } else {
+                    let instance_class = self.instance_class(activation);
+
+                    if !multiname.contains_public_namespace() {
+                        return Err(error::make_reference_error(
+                            activation,
+                            error::ReferenceErrorCode::InvalidRead,
+                            multiname,
+                            instance_class,
+                        ));
+                    }
+
+                    let Some(local_name) = multiname.local_name() else {
+                        // when can this happen?
+                        return Err(error::make_reference_error(
+                            activation,
+                            error::ReferenceErrorCode::InvalidRead,
+                            multiname,
+                            instance_class,
+                        ));
+                    };
+
+                    let key = crate::avm2::object::maybe_int_property(local_name);
+
+                    // `get_property` also checks prototype chain
+                    let mut proto = self.proto(activation);
+
+                    while let Some(obj) = proto {
+                        let obj = obj.base();
+                        let values = obj.values();
+                        let value = values.as_hashmap().get(&key);
+                        if let Some(value) = value {
+                            return Ok(value.value);
+                        }
+                        proto = obj.proto();
+                    }
+
+                    // Primitive classes are sealed
+                    Err(error::make_reference_error(
+                        activation,
+                        error::ReferenceErrorCode::InvalidRead,
+                        multiname,
+                        instance_class,
+                    ))
+                }
+            }
+        }
+    }
+
+    /// Same as get_property, but constructs a public Multiname for you.
+    pub fn get_public_property(
+        &self,
+        name: impl Into<AvmString<'gc>>,
+        activation: &mut Activation<'_, 'gc>,
+    ) -> Result<Value<'gc>, Error<'gc>> {
+        self.get_property(
+            &Multiname::new(activation.avm2().find_public_namespace(), name),
+            activation,
+        )
+    }
+
+    /// Set a property by Multiname lookup.
+    ///
+    /// This corresponds directly with the AVM2 operation `setproperty`, with
+    /// the exception that it does not special-case object lookups on
+    /// dictionary structured objects.
+    ///
+    /// This method will panic if called on null or undefined.
+    pub fn set_property(
+        &self,
+        multiname: &Multiname<'gc>,
+        value: Value<'gc>,
+        activation: &mut Activation<'_, 'gc>,
+    ) -> Result<(), Error<'gc>> {
+        let vtable = self.vtable(activation);
+
+        match vtable.get_trait(multiname) {
+            Some(Property::Slot { slot_id }) => {
+                // Only objects can have slots
+                let object = self.as_object().unwrap();
+
+                object.set_slot(slot_id, value, activation)
+            }
+            Some(Property::Method { .. }) => {
+                if let Some(object) = self.as_object() {
+                    // Similar to the get_property special case for XML/XMLList.
+                    if (object.as_xml_object().is_some() || object.as_xml_list_object().is_some())
+                        && multiname.contains_public_namespace()
+                    {
+                        return object.set_property_local(multiname, value, activation);
+                    }
+                }
+
+                let instance_class = self.instance_class(activation);
+
+                Err(error::make_reference_error(
+                    activation,
+                    error::ReferenceErrorCode::AssignToMethod,
+                    multiname,
+                    instance_class,
+                ))
+            }
+            Some(Property::Virtual { set: Some(set), .. }) => {
+                self.call_method(set, &[value], activation).map(|_| ())
+            }
+            Some(Property::ConstSlot { .. }) | Some(Property::Virtual { set: None, .. }) => {
+                let instance_class = self.instance_class(activation);
+
+                Err(error::make_reference_error(
+                    activation,
+                    error::ReferenceErrorCode::WriteToReadOnly,
+                    multiname,
+                    instance_class,
+                ))
+            }
+            None => {
+                if let Some(object) = self.as_object() {
+                    object.set_property_local(multiname, value, activation)
+                } else {
+                    let instance_class = self.instance_class(activation);
+
+                    // Primitive classes are sealed
+                    Err(error::make_reference_error(
+                        activation,
+                        error::ReferenceErrorCode::InvalidWrite,
+                        multiname,
+                        instance_class,
+                    ))
+                }
+            }
+        }
+    }
+
+    /// Same as set_property, but constructs a public Multiname for you.
+    pub fn set_public_property(
+        &self,
+        name: impl Into<AvmString<'gc>>,
+        value: Value<'gc>,
+        activation: &mut Activation<'_, 'gc>,
+    ) -> Result<(), Error<'gc>> {
+        let name = Multiname::new(activation.avm2().namespaces.public_vm_internal(), name);
+        self.set_property(&name, value, activation)
+    }
+
+    /// Initialize a property by Multiname lookup.
+    ///
+    /// This corresponds directly with the AVM2 operation `initproperty`.
+    ///
+    /// This method will panic if called on null or undefined.
+    pub fn init_property(
+        &self,
+        multiname: &Multiname<'gc>,
+        value: Value<'gc>,
+        activation: &mut Activation<'_, 'gc>,
+    ) -> Result<(), Error<'gc>> {
+        let vtable = self.vtable(activation);
+
+        match vtable.get_trait(multiname) {
+            Some(Property::Slot { slot_id }) | Some(Property::ConstSlot { slot_id }) => {
+                // Only objects can have slots
+                let object = self.as_object().unwrap();
+
+                object.set_slot(slot_id, value, activation)
+            }
+            Some(Property::Method { .. }) => {
+                let instance_class = self.instance_class(activation);
+
+                Err(error::make_reference_error(
+                    activation,
+                    error::ReferenceErrorCode::AssignToMethod,
+                    multiname,
+                    instance_class,
+                ))
+            }
+            Some(Property::Virtual { set: Some(set), .. }) => {
+                self.call_method(set, &[value], activation).map(|_| ())
+            }
+            Some(Property::Virtual { set: None, .. }) => {
+                let instance_class = self.instance_class(activation);
+
+                Err(error::make_reference_error(
+                    activation,
+                    error::ReferenceErrorCode::WriteToReadOnly,
+                    multiname,
+                    instance_class,
+                ))
+            }
+            None => {
+                if let Some(object) = self.as_object() {
+                    object.init_property_local(multiname, value, activation)
+                } else {
+                    let instance_class = self.instance_class(activation);
+
+                    // Primitive classes are sealed
+                    Err(error::make_reference_error(
+                        activation,
+                        error::ReferenceErrorCode::InvalidWrite,
+                        multiname,
+                        instance_class,
+                    ))
+                }
+            }
+        }
+    }
+
+    /// Call a named property on the object.
+    ///
+    /// This corresponds directly to the `callproperty` operation in AVM2.
+    ///
+    /// This method will panic if called on null or undefined.
+    pub fn call_property(
+        &self,
+        multiname: &Multiname<'gc>,
+        arguments: &[Value<'gc>],
+        activation: &mut Activation<'_, 'gc>,
+    ) -> Result<Value<'gc>, Error<'gc>> {
+        let vtable = self.vtable(activation);
+
+        match vtable.get_trait(multiname) {
+            Some(Property::Slot { slot_id }) | Some(Property::ConstSlot { slot_id }) => {
+                // Only objects can have slots
+                let object = self.as_object().unwrap();
+
+                let func = object.get_slot(slot_id);
+                func.call(activation, *self, arguments)
+            }
+            Some(Property::Method { disp_id }) => self.call_method(disp_id, arguments, activation),
+            Some(Property::Virtual { get: Some(get), .. }) => {
+                let obj = self.call_method(get, &[], activation)?;
+
+                obj.call(activation, *self, arguments)
+            }
+            Some(Property::Virtual { get: None, .. }) => {
+                let instance_class = self.instance_class(activation);
+
+                Err(error::make_reference_error(
+                    activation,
+                    error::ReferenceErrorCode::ReadFromWriteOnly,
+                    multiname,
+                    instance_class,
+                ))
+            }
+            None => {
+                if let Some(object) = self.as_object() {
+                    object.call_property_local(multiname, arguments, activation)
+                } else {
+                    let instance_class = self.instance_class(activation);
+
+                    if !multiname.contains_public_namespace() {
+                        return Err(error::make_reference_error(
+                            activation,
+                            error::ReferenceErrorCode::InvalidRead,
+                            multiname,
+                            instance_class,
+                        ));
+                    }
+
+                    let Some(local_name) = multiname.local_name() else {
+                        // when can this happen?
+                        return Err(error::make_reference_error(
+                            activation,
+                            error::ReferenceErrorCode::InvalidRead,
+                            multiname,
+                            instance_class,
+                        ));
+                    };
+
+                    let key = crate::avm2::object::maybe_int_property(local_name);
+
+                    // Check prototype chain
+                    let mut proto = self.proto(activation);
+
+                    while let Some(obj) = proto {
+                        let obj = obj.base();
+                        let values = obj.values();
+                        let value = values.as_hashmap().get(&key);
+                        if let Some(value) = value {
+                            return value.value.call(activation, *self, arguments);
+                        }
+                        proto = obj.proto();
+                    }
+
+                    Err(Error::AvmError(type_error(
+                        activation,
+                        "Error #1006: value is not a function.",
+                        1006,
+                    )?))
+                }
+            }
+        }
+    }
+
+    /// Same as call_property, but constructs a public Multiname for you.
+    pub fn call_public_property(
+        &self,
+        name: impl Into<AvmString<'gc>>,
+        arguments: &[Value<'gc>],
+        activation: &mut Activation<'_, 'gc>,
+    ) -> Result<Value<'gc>, Error<'gc>> {
+        self.call_property(
+            &Multiname::new(activation.avm2().find_public_namespace(), name),
+            arguments,
+            activation,
+        )
+    }
+
+    /// Call a method by its index.
+    ///
+    /// This directly corresponds with the AVM2 operation `callmethod`.
+    ///
+    /// This method will panic if called on null or undefined.
+    pub fn call_method(
+        &self,
+        id: u32,
+        arguments: &[Value<'gc>],
+        activation: &mut Activation<'_, 'gc>,
+    ) -> Result<Value<'gc>, Error<'gc>> {
+        // TODO: Bound methods should be cached on the Method in a
+        // WeakKeyHashMap<Value, FunctionObject>, not on the Object
+        if let Some(object) = self.as_object() {
+            if let Some(bound_method) = object.get_bound_method(id) {
+                return bound_method.call(activation, *self, arguments);
+            }
+        }
+
+        let vtable = self.vtable(activation);
+
+        let full_method = vtable.get_full_method(id).expect("Method should exist");
+
+        // Execute immediately if this method doesn't require binding
+        if !full_method.method.needs_arguments_object() {
+            let ClassBoundMethod {
+                class,
+                super_class_obj,
+                scope,
+                method,
+            } = full_method;
+
+            return exec(
+                method,
+                scope.expect("Scope should exist here"),
+                *self,
+                super_class_obj,
+                Some(class),
+                arguments,
+                activation,
+                *self, // Callee deliberately invalid.
+            );
+        }
+
+        let bound_method = VTable::bind_method(activation, *self, full_method);
+
+        // TODO: Bound methods should be cached on the Method in a
+        // WeakKeyHashMap<Value, FunctionObject>, not on the Object
+        if let Some(object) = self.as_object() {
+            object.install_bound_method(activation.gc(), id, bound_method);
+        }
+
+        bound_method.call(activation, *self, arguments)
+    }
+
+    /// Delete a named property from the value.
+    ///
+    /// Returns false if the property cannot be deleted.
+    ///
+    /// This method will return unexpected results if called on null or undefined!
+    /// The value should be `null_check`ed before calling this method on it!
+    pub fn delete_property(
+        &self,
+        activation: &mut Activation<'_, 'gc>,
+        multiname: &Multiname<'gc>,
+    ) -> Result<bool, Error<'gc>> {
+        match self {
+            Value::Object(object) => {
+                match object.vtable().get_trait(multiname) {
+                    None => {
+                        if object.instance_class().is_sealed() {
+                            Ok(false)
+                        } else {
+                            object.delete_property_local(activation, multiname)
+                        }
+                    }
+                    _ => {
+                        // Similar to the get_property special case for XML/XMLList.
+                        if (object.as_xml_object().is_some()
+                            || object.as_xml_list_object().is_some())
+                            && multiname.contains_public_namespace()
+                        {
+                            return object.delete_property_local(activation, multiname);
+                        }
+
+                        Ok(false)
+                    }
+                }
+            }
+            _ => {
+                let instance_class = self.instance_class(activation);
+
+                Err(error::make_reference_error(
+                    activation,
+                    error::ReferenceErrorCode::InvalidDelete,
+                    multiname,
+                    instance_class,
+                ))
+            }
+        }
+    }
+
+    /// Returns true if the value has one or more traits of a given name.
+    ///
+    /// This method will panic if called on null or undefined.
+    pub fn has_trait(&self, activation: &mut Activation<'_, 'gc>, name: &Multiname<'gc>) -> bool {
+        self.vtable(activation).has_trait(name)
+    }
+
+    /// Returns true if the value has one or more traits of a given name.
+    ///
+    /// This method will panic if called on null or undefined.
+    pub fn has_own_property(
+        &self,
+        activation: &mut Activation<'_, 'gc>,
+        name: &Multiname<'gc>,
+    ) -> bool {
+        match self {
+            Value::Object(object) => object.has_own_property(name),
+            _ => self.vtable(activation).has_trait(name),
+        }
+    }
+
+    pub fn has_public_property(
+        self,
+        name: impl Into<AvmString<'gc>>,
+        activation: &mut Activation<'_, 'gc>,
+    ) -> bool {
+        let name = Multiname::new(activation.avm2().find_public_namespace(), name);
+
+        if let Some(object) = self.as_object() {
+            if object.has_own_property(&name) {
+                return true;
+            }
+        }
+
+        if let Some(proto) = self.proto(activation) {
+            proto.has_property(&name)
+        } else {
+            false
         }
     }
 
@@ -930,11 +1412,11 @@ impl<'gc> Value<'gc> {
         &self,
         activation: &mut Activation<'_, 'gc>,
         args: &[Value<'gc>],
-    ) -> Result<Object<'gc>, Error<'gc>> {
+    ) -> Result<Value<'gc>, Error<'gc>> {
         match self.as_object() {
             Some(Object::ClassObject(class_object)) => class_object.construct(activation, args),
             Some(Object::FunctionObject(function_object)) => {
-                function_object.construct(activation, args)
+                function_object.construct(activation, args).map(Into::into)
             }
             _ => {
                 let error = if activation.context.swf.version() < 11 {
@@ -1005,7 +1487,7 @@ impl<'gc> Value<'gc> {
         let name = class.name().to_qualified_name_err_message(activation.gc());
 
         let debug_str = match self {
-            Value::Object(obj) if obj.as_primitive().is_none() => {
+            Value::Object(obj) => {
                 // Flash prints the class name (ignoring the toString() impl on the object),
                 // followed by something that looks like an address (it varies between executions).
                 // For now, we just set the "address" to all zeroes, on the off chance that some
@@ -1027,12 +1509,7 @@ impl<'gc> Value<'gc> {
 
     /// Determine if this value is any kind of number.
     pub fn is_number(&self) -> bool {
-        match self {
-            Value::Number(_) => true,
-            Value::Integer(_) => true,
-            Value::Object(o) => o.as_primitive().is_some_and(|p| p.is_number()),
-            _ => false,
-        }
+        matches!(self, Value::Number(_) | Value::Integer(_))
     }
 
     /// Determine if this value is a number representable as a u32 without loss
@@ -1042,7 +1519,6 @@ impl<'gc> Value<'gc> {
         match self {
             Value::Number(n) => *n == (*n as u32 as f64),
             Value::Integer(i) => *i >= 0,
-            Value::Object(o) => o.as_primitive().is_some_and(|p| p.is_u32()),
             _ => false,
         }
     }
@@ -1054,7 +1530,6 @@ impl<'gc> Value<'gc> {
         match self {
             Value::Number(n) => *n == (*n as i32 as f64),
             Value::Integer(_) => true,
-            Value::Object(o) => o.as_primitive().is_some_and(|p| p.is_i32()),
             _ => false,
         }
     }
@@ -1096,6 +1571,24 @@ impl<'gc> Value<'gc> {
             o.is_of_type(type_class)
         } else {
             false
+        }
+    }
+
+    /// Get the vtable associated with this value.
+    ///
+    /// This function will panic if called on null or undefined.
+    pub fn vtable(&self, activation: &mut Activation<'_, 'gc>) -> VTable<'gc> {
+        let classes = activation.avm2().classes();
+
+        match self {
+            Value::Bool(_) => classes.boolean.instance_vtable(),
+            Value::Number(_) | Value::Integer(_) => classes.number.instance_vtable(),
+            Value::String(_) => classes.string.instance_vtable(),
+            Value::Object(obj) => obj.vtable(),
+
+            Value::Undefined | Value::Null => {
+                unreachable!("Should not have Undefined or Null in `vtable`")
+            }
         }
     }
 

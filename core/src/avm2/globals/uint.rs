@@ -5,30 +5,32 @@ use crate::avm2::class::{Class, ClassAttributes};
 use crate::avm2::error::{make_error_1003, make_error_1004};
 use crate::avm2::globals::number::print_with_radix;
 use crate::avm2::method::{Method, NativeMethodImpl, ParamConfig};
-use crate::avm2::object::{primitive_allocator, FunctionObject, Object, TObject};
+use crate::avm2::object::{FunctionObject, Object, TObject};
 use crate::avm2::value::Value;
 use crate::avm2::{AvmString, Error, QName};
 
 /// Implements `uint`'s instance initializer.
+///
+/// Because of the presence of a custom constructor, this method is unreachable.
 fn instance_init<'gc>(
+    _activation: &mut Activation<'_, 'gc>,
+    _this: Value<'gc>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    unreachable!()
+}
+
+fn uint_constructor<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let this = this.as_object().unwrap();
+    let uint_value = args
+        .get(0)
+        .copied()
+        .unwrap_or(Value::Integer(0))
+        .coerce_to_u32(activation)?;
 
-    if let Some(mut prim) = this.as_primitive_mut(activation.gc()) {
-        if matches!(*prim, Value::Undefined | Value::Null) {
-            *prim = args
-                .get(0)
-                .cloned()
-                .unwrap_or(Value::Undefined)
-                .coerce_to_u32(activation)?
-                .into();
-        }
-    }
-
-    Ok(Value::Undefined)
+    Ok(uint_value.into())
 }
 
 /// Implements `uint`'s class initializer.
@@ -161,21 +163,17 @@ fn to_string<'gc>(
     this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let this = this.as_object().unwrap();
-
-    let uint_proto = activation.avm2().classes().uint.prototype();
-    if Object::ptr_eq(uint_proto, this) {
-        return Ok("0".into());
+    if let Some(this) = this.as_object() {
+        let uint_proto = activation.avm2().classes().uint.prototype();
+        if Object::ptr_eq(uint_proto, this) {
+            return Ok("0".into());
+        }
     }
 
-    let number = if let Some(this) = this.as_primitive() {
-        match *this {
-            Value::Integer(o) => o as f64,
-            Value::Number(o) => o,
-            _ => return Err(make_error_1004(activation, "uint.prototype.toString")),
-        }
-    } else {
-        return Err(make_error_1004(activation, "uint.prototype.toString"));
+    let number = match this {
+        Value::Integer(o) => o as f64,
+        Value::Number(o) => o,
+        _ => return Err(make_error_1004(activation, "uint.prototype.toString")),
     };
 
     let radix = args
@@ -197,22 +195,16 @@ fn value_of<'gc>(
     this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let this = this.as_object().unwrap();
-
-    let uint_proto = activation.avm2().classes().uint.prototype();
-    if Object::ptr_eq(uint_proto, this) {
-        return Ok(0.into());
+    if let Some(this) = this.as_object() {
+        let uint_proto = activation.avm2().classes().uint.prototype();
+        if Object::ptr_eq(uint_proto, this) {
+            return Ok(0.into());
+        }
     }
 
-    let primitive = this.as_primitive();
-
-    if let Some(this) = primitive {
-        match *this {
-            Value::Integer(_) => Ok(*this),
-            _ => Err(make_error_1004(activation, "uint.prototype.valueOf")),
-        }
-    } else {
-        Err(make_error_1004(activation, "uint.prototype.valueOf"))
+    match this {
+        Value::Integer(_) => Ok(this),
+        _ => Err(make_error_1004(activation, "uint.prototype.valueOf")),
     }
 }
 
@@ -242,7 +234,7 @@ pub fn create_class<'gc>(activation: &mut Activation<'_, 'gc>) -> Class<'gc> {
     );
 
     class.set_attributes(mc, ClassAttributes::FINAL | ClassAttributes::SEALED);
-    class.set_instance_allocator(mc, primitive_allocator);
+    class.set_custom_constructor(mc, uint_constructor);
     class.set_call_handler(
         mc,
         Method::from_builtin(call_handler, "<uint call handler>", mc),

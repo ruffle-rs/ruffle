@@ -2049,7 +2049,9 @@ pub trait TDisplayObject<'gc>:
                     let mut activation = Avm2Activation::from_domain(context, domain);
                     let name =
                         Avm2Multiname::new(activation.avm2().find_public_namespace(), self.name());
-                    if let Err(e) = p.init_property(&name, c.into(), &mut activation) {
+                    if let Err(e) =
+                        Avm2Value::from(p).init_property(&name, c.into(), &mut activation)
+                    {
                         tracing::error!(
                             "Got error when setting AVM2 child named \"{}\": {}",
                             &self.name(),
@@ -2743,6 +2745,8 @@ impl SoundTransform {
             .classes()
             .soundtransform
             .construct(activation, &[])?
+            .as_object()
+            .unwrap()
             .as_sound_transform()
             .unwrap();
 

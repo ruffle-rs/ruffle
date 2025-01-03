@@ -7,11 +7,12 @@ use crate::avm1::{
     Object as Avm1Object, StageObject as Avm1StageObject, TObject as Avm1TObject,
     Value as Avm1Value,
 };
-use crate::avm2::Avm2;
-use crate::avm2::{
-    Activation as Avm2Activation, ClassObject as Avm2ClassObject, EventObject as Avm2EventObject,
-    Object as Avm2Object, StageObject as Avm2StageObject, TObject as _,
+use crate::avm2::object::{
+    ClassObject as Avm2ClassObject, EventObject as Avm2EventObject, Object as Avm2Object,
+    StageObject as Avm2StageObject,
 };
+use crate::avm2::Activation as Avm2Activation;
+use crate::avm2::Avm2;
 use crate::backend::ui::MouseCursor;
 use crate::context::{RenderContext, UpdateContext};
 use crate::display_object::interactive::{
@@ -1861,7 +1862,7 @@ impl<'gc> EditText<'gc> {
             );
             Avm2::dispatch_event(activation.context, text_evt, target);
 
-            if text_evt.as_event().unwrap().is_cancelled() {
+            if text_evt.event().is_cancelled() {
                 return;
             }
         }

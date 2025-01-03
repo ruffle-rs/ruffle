@@ -1245,19 +1245,17 @@ pub fn get_line_metrics<'gc>(
     };
 
     let metrics_class = activation.avm2().classes().textlinemetrics;
-    Ok(metrics_class
-        .construct(
-            activation,
-            &[
-                metrics.x.to_pixels().into(),
-                metrics.width.to_pixels().into(),
-                metrics.height.to_pixels().into(),
-                metrics.ascent.to_pixels().into(),
-                metrics.descent.to_pixels().into(),
-                metrics.leading.to_pixels().into(),
-            ],
-        )?
-        .into())
+    metrics_class.construct(
+        activation,
+        &[
+            metrics.x.to_pixels().into(),
+            metrics.width.to_pixels().into(),
+            metrics.height.to_pixels().into(),
+            metrics.ascent.to_pixels().into(),
+            metrics.descent.to_pixels().into(),
+            metrics.leading.to_pixels().into(),
+        ],
+    )
 }
 
 pub fn get_line_length<'gc>(
@@ -1784,19 +1782,15 @@ pub fn get_char_boundaries<'gc>(
         return Ok(Value::Null);
     };
 
-    let rect = activation
-        .avm2()
-        .classes()
-        .rectangle
-        .construct(
-            activation,
-            &[
-                bounds.x_min.to_pixels().into(),
-                bounds.y_min.to_pixels().into(),
-                bounds.width().to_pixels().into(),
-                bounds.height().to_pixels().into(),
-            ],
-        )?
-        .into();
+    let rect = activation.avm2().classes().rectangle.construct(
+        activation,
+        &[
+            bounds.x_min.to_pixels().into(),
+            bounds.y_min.to_pixels().into(),
+            bounds.width().to_pixels().into(),
+            bounds.height().to_pixels().into(),
+        ],
+    )?;
+
     Ok(rect)
 }

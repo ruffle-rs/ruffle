@@ -266,7 +266,7 @@ impl<'gc> Domain<'gc> {
         let (name, script) = self.find_defining_script(activation, &name.into())?;
         let globals = script.globals(activation.context)?;
 
-        globals.get_property(&name.into(), activation)
+        Value::from(globals).get_property(&name.into(), activation)
     }
 
     /// Retrieve a value from this domain, with special handling for 'Vector.<SomeType>'.
@@ -395,7 +395,10 @@ impl<'gc> Domain<'gc> {
     ) -> Result<(), Error<'gc>> {
         let bytearray_class = activation.avm2().classes().bytearray;
 
-        let domain_memory = bytearray_class.construct(activation, &[])?;
+        let domain_memory = bytearray_class
+            .construct(activation, &[])?
+            .as_object()
+            .unwrap();
         domain_memory
             .as_bytearray_mut()
             .unwrap()

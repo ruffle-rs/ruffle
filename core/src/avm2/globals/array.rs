@@ -71,8 +71,6 @@ pub fn instance_init<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
-    activation.super_init(this, &[])?;
-
     if let Some(mut array) = this.as_array_storage_mut(activation.gc()) {
         if args.len() == 1 {
             if let Some(expected_len) = args.get(0).filter(|v| v.is_number()).map(|v| v.as_f64()) {
@@ -105,12 +103,11 @@ pub fn class_call<'gc>(
     _this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    Ok(activation
+    activation
         .avm2()
         .classes()
         .array
-        .construct(activation, args)?
-        .into())
+        .construct(activation, args)
 }
 
 /// Implements `Array`'s class initializer.
@@ -229,6 +226,8 @@ pub fn resolve_array_hole<'gc>(
     }
 
     if let Some(proto) = this.proto() {
+        let proto = Value::from(proto);
+
         proto.get_public_property(
             AvmString::new_utf8(activation.gc(), i.to_string()),
             activation,
@@ -307,10 +306,10 @@ pub fn to_locale_string<'gc>(
     let this = this.as_object().unwrap();
 
     join_inner(act, this, &[",".into()], |v, activation| {
-        if let Ok(o) = v.coerce_to_object(activation) {
-            o.call_public_property("toLocaleString", &[], activation)
-        } else {
+        if matches!(v, Value::Null | Value::Undefined) {
             Ok(v)
+        } else {
+            v.call_public_property("toLocaleString", &[], activation)
         }
     })
 }
@@ -334,7 +333,7 @@ pub fn to_locale_string<'gc>(
 /// array while this happens would cause a panic; this code exists to prevent
 /// that.
 pub struct ArrayIter<'gc> {
-    array_object: Object<'gc>,
+    array_object: Value<'gc>,
     pub index: u32,
     pub rev_index: u32,
 }
@@ -355,12 +354,12 @@ impl<'gc> ArrayIter<'gc> {
         start_index: u32,
         end_index: u32,
     ) -> Result<Self, Error<'gc>> {
-        let length = array_object
+        let length = Value::from(array_object)
             .get_public_property("length", activation)?
             .coerce_to_u32(activation)?;
 
         Ok(Self {
-            array_object,
+            array_object: Value::from(array_object),
             index: start_index.min(length),
             rev_index: end_index.saturating_add(1).min(length),
         })
@@ -1300,10 +1299,10 @@ pub fn sort_on<'gc>(
                     // if the object is null/undefined or does not have the field,
                     // it's treated as if the field's value was undefined.
                     // TODO: verify this and fix it
-                    let a_object = a.coerce_to_object(activation)?;
+                    let a_object = a.null_check(activation, None)?;
                     let a_field = a_object.get_public_property(*field_name, activation)?;
 
-                    let b_object = b.coerce_to_object(activation)?;
+                    let b_object = b.null_check(activation, None)?;
                     let b_field = b_object.get_public_property(*field_name, activation)?;
 
                     let ord = if options.contains(SortOptions::NUMERIC) {

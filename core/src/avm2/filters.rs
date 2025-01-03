@@ -34,7 +34,7 @@ pub trait FilterAvm2Ext {
     fn as_avm2_object<'gc>(
         &self,
         activation: &mut Activation<'_, 'gc>,
-    ) -> Result<Object<'gc>, Error<'gc>>;
+    ) -> Result<Value<'gc>, Error<'gc>>;
 }
 
 #[derive(Clone, Collect)]
@@ -178,7 +178,7 @@ impl FilterAvm2Ext for Filter {
     fn as_avm2_object<'gc>(
         &self,
         activation: &mut Activation<'_, 'gc>,
-    ) -> Result<Object<'gc>, Error<'gc>> {
+    ) -> Result<Value<'gc>, Error<'gc>> {
         match self {
             Filter::BevelFilter(filter) => bevel_filter_to_avm2(activation, filter),
             Filter::BlurFilter(filter) => blur_filter_to_avm2(activation, filter),
@@ -265,7 +265,7 @@ fn avm2_to_bevel_filter<'gc>(
 fn bevel_filter_to_avm2<'gc>(
     activation: &mut Activation<'_, 'gc>,
     filter: &BevelFilter,
-) -> Result<Object<'gc>, Error<'gc>> {
+) -> Result<Value<'gc>, Error<'gc>> {
     activation.avm2().classes().bevelfilter.construct(
         activation,
         &[
@@ -315,7 +315,7 @@ fn avm2_to_blur_filter<'gc>(
 fn blur_filter_to_avm2<'gc>(
     activation: &mut Activation<'_, 'gc>,
     filter: &BlurFilter,
-) -> Result<Object<'gc>, Error<'gc>> {
+) -> Result<Value<'gc>, Error<'gc>> {
     activation.avm2().classes().blurfilter.construct(
         activation,
         &[
@@ -350,7 +350,7 @@ fn avm2_to_color_matrix_filter<'gc>(
 fn color_matrix_filter_to_avm2<'gc>(
     activation: &mut Activation<'_, 'gc>,
     filter: &ColorMatrixFilter,
-) -> Result<Object<'gc>, Error<'gc>> {
+) -> Result<Value<'gc>, Error<'gc>> {
     let matrix = ArrayObject::from_storage(
         activation,
         filter.matrix.iter().map(|v| Value::from(*v)).collect(),
@@ -425,7 +425,7 @@ fn avm2_to_convolution_filter<'gc>(
 fn convolution_filter_to_avm2<'gc>(
     activation: &mut Activation<'_, 'gc>,
     filter: &ConvolutionFilter,
-) -> Result<Object<'gc>, Error<'gc>> {
+) -> Result<Value<'gc>, Error<'gc>> {
     let matrix = ArrayObject::from_storage(
         activation,
         filter
@@ -530,7 +530,7 @@ fn avm2_to_displacement_map_filter<'gc>(
 fn displacement_map_filter_to_avm2<'gc>(
     activation: &mut Activation<'_, 'gc>,
     filter: &DisplacementMapFilter,
-) -> Result<Object<'gc>, Error<'gc>> {
+) -> Result<Value<'gc>, Error<'gc>> {
     let point = activation.avm2().classes().point;
     let map_point = point.construct(
         activation,
@@ -546,7 +546,7 @@ fn displacement_map_filter_to_avm2<'gc>(
         activation,
         &[
             Value::Null, // TODO: This should be a BitmapData...
-            map_point.into(),
+            map_point,
             filter.component_x.into(),
             filter.component_y.into(),
             filter.scale_x.into(),
@@ -616,7 +616,7 @@ fn avm2_to_drop_shadow_filter<'gc>(
 fn drop_shadow_filter_to_avm2<'gc>(
     activation: &mut Activation<'_, 'gc>,
     filter: &DropShadowFilter,
-) -> Result<Object<'gc>, Error<'gc>> {
+) -> Result<Value<'gc>, Error<'gc>> {
     activation.avm2().classes().dropshadowfilter.construct(
         activation,
         &[
@@ -679,7 +679,7 @@ fn avm2_to_glow_filter<'gc>(
 fn glow_filter_to_avm2<'gc>(
     activation: &mut Activation<'_, 'gc>,
     filter: &GlowFilter,
-) -> Result<Object<'gc>, Error<'gc>> {
+) -> Result<Value<'gc>, Error<'gc>> {
     activation.avm2().classes().glowfilter.construct(
         activation,
         &[
@@ -763,7 +763,7 @@ fn gradient_filter_to_avm2<'gc>(
     activation: &mut Activation<'_, 'gc>,
     filter: &GradientFilter,
     class: ClassObject<'gc>,
-) -> Result<Object<'gc>, Error<'gc>> {
+) -> Result<Value<'gc>, Error<'gc>> {
     let colors = ArrayObject::from_storage(
         activation,
         filter
@@ -855,7 +855,7 @@ fn avm2_to_shader_filter<'gc>(
 fn shader_filter_to_avm2<'gc>(
     activation: &mut Activation<'_, 'gc>,
     filter: &ShaderFilter<'static>,
-) -> Result<Object<'gc>, Error<'gc>> {
+) -> Result<Value<'gc>, Error<'gc>> {
     let object_wrapper: &ObjectWrapper = filter
         .shader_object
         .downcast_ref::<ObjectWrapper>()

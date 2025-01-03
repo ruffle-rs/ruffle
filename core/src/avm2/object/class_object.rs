@@ -7,7 +7,7 @@ use crate::avm2::function::exec;
 use crate::avm2::method::Method;
 use crate::avm2::object::function_object::FunctionObject;
 use crate::avm2::object::script_object::ScriptObjectData;
-use crate::avm2::object::{Object, ObjectPtr, TObject};
+use crate::avm2::object::{Object, ObjectPtr, ScriptObject, TObject};
 use crate::avm2::property::Property;
 use crate::avm2::scope::{Scope, ScopeChain};
 use crate::avm2::value::Value;
@@ -90,11 +90,7 @@ impl<'gc> ClassObject<'gc> {
         activation: &mut Activation<'_, 'gc>,
         superclass_object: Option<ClassObject<'gc>>,
     ) -> Result<Object<'gc>, Error<'gc>> {
-        let proto = activation
-            .avm2()
-            .classes()
-            .object
-            .construct(activation, &[])?;
+        let proto = ScriptObject::new_object(activation);
 
         if let Some(superclass_object) = superclass_object {
             let base_proto = superclass_object.prototype();
@@ -323,7 +319,7 @@ impl<'gc> ClassObject<'gc> {
         self,
         activation: &mut Activation<'_, 'gc>,
     ) -> Result<(), Error<'gc>> {
-        let object: Object<'gc> = self.into();
+        let self_value: Value<'gc> = self.into();
         let class_classobject = activation.avm2().classes().class;
 
         let scope = self.0.class_scope;
@@ -337,17 +333,19 @@ impl<'gc> ClassObject<'gc> {
             activation,
             class_initializer,
             scope,
-            Some(object),
+            Some(self_value),
             Some(class_classobject),
             Some(c_class),
         );
 
-        class_init_fn.call(activation, object.into(), &[])?;
+        class_init_fn.call(activation, self_value, &[])?;
 
         Ok(())
     }
 
     /// Call the instance initializer.
+    ///
+    /// This method may panic if called with a Null or Undefined receiver.
     pub fn call_init(
         self,
         receiver: Value<'gc>,
@@ -359,7 +357,7 @@ impl<'gc> ClassObject<'gc> {
         exec(
             method,
             scope,
-            receiver.coerce_to_object(activation)?,
+            receiver,
             self.superclass_object(),
             Some(self.inner_class_definition()),
             arguments,
@@ -429,14 +427,14 @@ impl<'gc> ClassObject<'gc> {
                 activation,
                 method,
                 scope.expect("Scope should exist here"),
-                Some(receiver),
+                Some(receiver.into()),
                 super_class_obj,
                 Some(class),
             );
 
             callee.call(activation, receiver.into(), arguments)
         } else {
-            receiver.call_property(multiname, arguments, activation)
+            Value::from(receiver).call_property(multiname, arguments, activation)
         }
     }
 
@@ -490,7 +488,7 @@ impl<'gc> ClassObject<'gc> {
                     activation,
                     method,
                     scope.expect("Scope should exist here"),
-                    Some(receiver),
+                    Some(receiver.into()),
                     super_class_obj,
                     Some(class),
                 );
@@ -508,7 +506,7 @@ impl<'gc> ClassObject<'gc> {
             )
             .into()),
             Some(Property::Slot { .. } | Property::ConstSlot { .. }) => {
-                receiver.get_property(multiname, activation)
+                Value::from(receiver).get_property(multiname, activation)
             }
             None => Err(format!(
                 "Attempted to supercall method {:?}, which does not exist",
@@ -571,13 +569,13 @@ impl<'gc> ClassObject<'gc> {
                     method,
                 } = self.instance_vtable().get_full_method(disp_id).unwrap();
                 let callee =
-                    FunctionObject::from_method(activation, method, scope.expect("Scope should exist here"), Some(receiver), super_class_obj, Some(class));
+                    FunctionObject::from_method(activation, method, scope.expect("Scope should exist here"), Some(receiver.into()), super_class_obj, Some(class));
 
                 callee.call(activation, receiver.into(), &[value])?;
                 Ok(())
             }
             Some(Property::Slot { .. }) => {
-                receiver.set_property(multiname, value, activation)?;
+                Value::from(receiver).set_property(multiname, value, activation)?;
                 Ok(())
             }
             _ => {
@@ -669,7 +667,7 @@ impl<'gc> ClassObject<'gc> {
         self,
         activation: &mut Activation<'_, 'gc>,
         arguments: &[Value<'gc>],
-    ) -> Result<Object<'gc>, Error<'gc>> {
+    ) -> Result<Value<'gc>, Error<'gc>> {
         if let Some(custom_constructor) = self.custom_constructor() {
             custom_constructor(activation, arguments)
         } else {
@@ -679,7 +677,7 @@ impl<'gc> ClassObject<'gc> {
 
             self.call_init(instance.into(), arguments, activation)?;
 
-            Ok(instance)
+            Ok(instance.into())
         }
     }
 
@@ -769,13 +767,6 @@ impl<'gc> TObject<'gc> for ClassObject<'gc> {
             format!("[class {}]", self.0.class.name().local_name()),
         )
         .into())
-    }
-
-    fn to_locale_string(
-        &self,
-        activation: &mut Activation<'_, 'gc>,
-    ) -> Result<Value<'gc>, Error<'gc>> {
-        self.to_string(activation)
     }
 
     fn as_class_object(&self) -> Option<ClassObject<'gc>> {
