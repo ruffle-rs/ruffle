@@ -146,10 +146,10 @@ fn method<'gc>(
             // If the bounds are invalid, the pixelBounds rectangle consists only of zeroes.
             let bounds = if world_bounds == Rectangle::default() {
                 Rectangle {
-                    x_min: Twips::new(0),
-                    x_max: Twips::new(0),
-                    y_min: Twips::new(0),
-                    y_max: Twips::new(0),
+                    x_min: Twips::ZERO,
+                    x_max: Twips::ZERO,
+                    y_min: Twips::ZERO,
+                    y_max: Twips::ZERO,
                 }
             } else {
                 world_bounds
