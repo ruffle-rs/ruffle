@@ -781,8 +781,8 @@ impl CommandHandler for WgpuCommandHandler<'_> {
             emulate_line(&mut cl, color, matrix);
             cl.execute(self);
         } else {
-            matrix.tx += Twips::HALF;
-            matrix.ty += Twips::HALF;
+            matrix.tx += Twips::HALF_PX;
+            matrix.ty += Twips::HALF_PX;
             self.add_to_current(
                 matrix,
                 ColorTransform::multiply_from(color),
@@ -797,8 +797,8 @@ impl CommandHandler for WgpuCommandHandler<'_> {
             emulate_line_rect(&mut cl, color, matrix);
             cl.execute(self);
         } else {
-            matrix.tx += Twips::HALF;
-            matrix.ty += Twips::HALF;
+            matrix.tx += Twips::HALF_PX;
+            matrix.ty += Twips::HALF_PX;
             self.add_to_current(
                 matrix,
                 ColorTransform::multiply_from(color),

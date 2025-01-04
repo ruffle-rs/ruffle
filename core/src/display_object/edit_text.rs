@@ -2572,12 +2572,12 @@ impl<'gc> EditText<'gc> {
             // Top
             context.commands.draw_line(
                 border_color,
-                Matrix::create_box(width, 1.0, bounds.x_min - Twips::HALF, bounds.y_min),
+                Matrix::create_box(width, 1.0, bounds.x_min - Twips::HALF_PX, bounds.y_min),
             );
             // Bottom
             context.commands.draw_line(
                 border_color,
-                Matrix::create_box(width, 1.0, bounds.x_min - Twips::HALF, bounds.y_max),
+                Matrix::create_box(width, 1.0, bounds.x_min - Twips::HALF_PX, bounds.y_max),
             );
             // Left
             context.commands.draw_line(
@@ -2587,7 +2587,7 @@ impl<'gc> EditText<'gc> {
                     height,
                     std::f32::consts::FRAC_PI_2,
                     bounds.x_min,
-                    bounds.y_min - Twips::HALF,
+                    bounds.y_min - Twips::HALF_PX,
                 ),
             );
             // Right
@@ -2598,7 +2598,7 @@ impl<'gc> EditText<'gc> {
                     height,
                     std::f32::consts::FRAC_PI_2,
                     bounds.x_max,
-                    bounds.y_min - Twips::HALF,
+                    bounds.y_min - Twips::HALF_PX,
                 ),
             );
         }
