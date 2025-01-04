@@ -41,10 +41,10 @@ fn emulate_line_as_rect(
     let angle = dy.atan2(dx) as f32;
 
     let rotation = Matrix::rotate(angle);
-    let translation = Matrix::translate(a.x + Twips::HALF, a.y + Twips::HALF);
+    let translation = Matrix::translate(a.x + Twips::HALF_PX, a.y + Twips::HALF_PX);
 
     // Step 1: Create a 1px thick line with the proper length.
-    let line = Matrix::create_box(len, 1.0, Twips::ZERO, -Twips::HALF);
+    let line = Matrix::create_box(len, 1.0, Twips::ZERO, -Twips::HALF_PX);
     // Step 2: Rotate it, so it still starts at `(0,0)` but points to `b-a`.
     let line = rotation * line;
     // Step 3: Translate it to `a`, so that it points to `b`.
