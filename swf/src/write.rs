@@ -2776,11 +2776,11 @@ mod tests {
             glyphs: vec![Glyph {
                 shape_records: vec![
                     ShapeRecord::StraightEdge {
-                        delta: PointDelta::new(Twips::ONE, -Twips::ONE),
+                        delta: PointDelta::new(Twips::ONE_PX, -Twips::ONE_PX),
                     },
                     ShapeRecord::CurvedEdge {
-                        control_delta: PointDelta::new(Twips::ONE, Twips::ONE),
-                        anchor_delta: PointDelta::new(Twips::ONE, -Twips::ONE),
+                        control_delta: PointDelta::new(Twips::ONE_PX, Twips::ONE_PX),
+                        anchor_delta: PointDelta::new(Twips::ONE_PX, -Twips::ONE_PX),
                     },
                     ShapeRecord::StraightEdge {
                         delta: PointDelta::new(Twips::ZERO, Twips::ZERO),

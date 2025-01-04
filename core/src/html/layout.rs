@@ -27,7 +27,7 @@ fn draw_underline(
     width: Twips,
     color: swf::Color,
 ) {
-    if width < Twips::ONE {
+    if width < Twips::ONE_PX {
         return;
     }
 

@@ -964,22 +964,22 @@ impl<'gc> EditText<'gc> {
         if flags.contains(LayoutDebugBoxesFlag::CHAR) {
             for i in 0..self.text().len() {
                 if let Some(bounds) = layout.char_bounds(i) {
-                    context.draw_rect_outline(Color::MAGENTA, bounds, Twips::ONE);
+                    context.draw_rect_outline(Color::MAGENTA, bounds, Twips::ONE_PX);
                 }
             }
         }
         if flags.contains(LayoutDebugBoxesFlag::BOX) {
             for lbox in layout.boxes_iter() {
-                context.draw_rect_outline(Color::RED, lbox.bounds().into(), Twips::ONE);
+                context.draw_rect_outline(Color::RED, lbox.bounds().into(), Twips::ONE_PX);
             }
         }
         if flags.contains(LayoutDebugBoxesFlag::LINE) {
             for line in layout.lines() {
-                context.draw_rect_outline(Color::BLUE, line.bounds().into(), Twips::ONE);
+                context.draw_rect_outline(Color::BLUE, line.bounds().into(), Twips::ONE_PX);
             }
         }
         if flags.contains(LayoutDebugBoxesFlag::TEXT) {
-            context.draw_rect_outline(Color::GREEN, layout.bounds().into(), Twips::ONE);
+            context.draw_rect_outline(Color::GREEN, layout.bounds().into(), Twips::ONE_PX);
         }
     }
 
