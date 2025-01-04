@@ -44,7 +44,7 @@ chrono = { workspace = true }
 fluent-templates = "0.12.0"
 toml_edit = { version = "0.22.22", features = ["parse"] }
 gilrs = "0.11"
-tokio = { workspace = true, features = ["rt-multi-thread", "macros"]}
+tokio = { workspace = true, features = ["rt-multi-thread", "macros", "fs"] }
 
 tracing-tracy = { version = "0.11.3", optional = true, features = ["demangle"] }
 rand = "0.8.5"

@@ -14,8 +14,10 @@ use ruffle_core::backend::ui::{
     DialogLoaderError, DialogResultFuture, FileDialogResult, FileFilter, FontDefinition,
     FullscreenError, LanguageIdentifier, MouseCursor, UiBackend,
 };
+use std::path::Path;
 use std::rc::Rc;
 use std::sync::Arc;
+use tokio::io::AsyncReadExt;
 use tracing::error;
 use url::Url;
 use winit::event_loop::EventLoopProxy;
@@ -30,15 +32,40 @@ pub struct DesktopFileDialogResult {
 
 impl DesktopFileDialogResult {
     /// Create a new [`DesktopFileDialogResult`] from a given file handle
-    pub fn new(handle: Option<FileHandle>) -> Self {
-        let md = handle
-            .as_ref()
-            .and_then(|x| std::fs::metadata(x.path()).ok());
+    pub async fn new(handle: Option<FileHandle>) -> Self {
+        async fn read_file(path: &Path) -> (Option<std::fs::Metadata>, Vec<u8>) {
+            let file = match tokio::fs::File::open(path).await {
+                Ok(file) => file,
+                Err(err) => {
+                    let path = path.to_string_lossy();
+                    tracing::error!("Error opening file {path}: {err}");
+                    return (None, Vec::new());
+                }
+            };
+            let metadata = match file.metadata().await {
+                Ok(metadata) => Some(metadata),
+                Err(err) => {
+                    let path = path.to_string_lossy();
+                    tracing::error!("Error reading metadata of file {path}: {err}");
+                    None
+                }
+            };
 
-        let contents = handle
-            .as_ref()
-            .and_then(|handle| std::fs::read(handle.path()).ok())
-            .unwrap_or_default();
+            let mut contents = Vec::new();
+            let mut file = file;
+            if let Err(err) = file.read_to_end(&mut contents).await {
+                contents.clear();
+                let path = path.to_string_lossy();
+                tracing::error!("Error reading file {path}: {err}");
+            }
+            (metadata, contents)
+        }
+
+        let (md, contents) = if let Some(ref handle) = handle {
+            read_file(handle.path()).await
+        } else {
+            (None, Vec::new())
+        };
 
         Self {
             handle,
@@ -348,7 +375,7 @@ impl UiBackend for DesktopUiBackend {
 
         Some(Box::pin(async move {
             let result: Result<Box<dyn FileDialogResult>, DialogLoaderError> =
-                Ok(Box::new(DesktopFileDialogResult::new(result.await)));
+                Ok(Box::new(DesktopFileDialogResult::new(result.await).await));
             result
         }))
     }
@@ -367,7 +394,7 @@ impl UiBackend for DesktopUiBackend {
 
         Some(Box::pin(async move {
             let result: Result<Box<dyn FileDialogResult>, DialogLoaderError> =
-                Ok(Box::new(DesktopFileDialogResult::new(result.await)));
+                Ok(Box::new(DesktopFileDialogResult::new(result.await).await));
             result
         }))
     }
