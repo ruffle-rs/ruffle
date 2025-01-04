@@ -36,9 +36,9 @@ impl Twips {
     /// # Examples
     ///
     /// ```rust
-    /// assert_eq!(swf::Twips::ONE.to_pixels(), 1.0);
+    /// assert_eq!(swf::Twips::ONE_PX.to_pixels(), 1.0);
     /// ```
-    pub const ONE: Self = Self(Self::TWIPS_PER_PIXEL);
+    pub const ONE_PX: Self = Self(Self::TWIPS_PER_PIXEL);
 
     /// The `Twips` object with a value of `0.5` pixels.
     ///
