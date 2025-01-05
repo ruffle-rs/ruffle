@@ -62,6 +62,7 @@ mod soundchannel_object;
 mod soundtransform_object;
 mod stage3d_object;
 mod stage_object;
+mod stylesheet_object;
 mod textformat_object;
 mod texture_object;
 mod vector_object;
@@ -144,6 +145,9 @@ pub use crate::avm2::object::stage3d_object::{
     stage_3d_allocator, Stage3DObject, Stage3DObjectWeak,
 };
 pub use crate::avm2::object::stage_object::{StageObject, StageObjectWeak};
+pub use crate::avm2::object::stylesheet_object::{
+    style_sheet_allocator, StyleSheetObject, StyleSheetObjectWeak,
+};
 pub use crate::avm2::object::textformat_object::{
     textformat_allocator, TextFormatObject, TextFormatObjectWeak,
 };
@@ -206,6 +210,7 @@ use crate::font::Font;
         LocalConnectionObject(LocalConnectionObject<'gc>),
         SharedObjectObject(SharedObjectObject<'gc>),
         SoundTransformObject(SoundTransformObject<'gc>),
+        StyleSheetObject(StyleSheetObject<'gc>),
     }
 )]
 pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy {
@@ -1286,6 +1291,10 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     fn as_sound_transform(&self) -> Option<SoundTransformObject<'gc>> {
         None
     }
+
+    fn as_style_sheet(&self) -> Option<StyleSheetObject<'gc>> {
+        None
+    }
 }
 
 pub enum ObjectPtr {}
@@ -1339,6 +1348,7 @@ impl<'gc> Object<'gc> {
             Self::LocalConnectionObject(o) => WeakObject::LocalConnectionObject(LocalConnectionObjectWeak(Gc::downgrade(o.0))),
             Self::SharedObjectObject(o) => WeakObject::SharedObjectObject(SharedObjectObjectWeak(Gc::downgrade(o.0))),
             Self::SoundTransformObject(o) => WeakObject::SoundTransformObject(SoundTransformObjectWeak(Gc::downgrade(o.0))),
+            Self::StyleSheetObject(o) => WeakObject::StyleSheetObject(StyleSheetObjectWeak(Gc::downgrade(o.0))),
         }
     }
 }
@@ -1402,6 +1412,7 @@ pub enum WeakObject<'gc> {
     LocalConnectionObject(LocalConnectionObjectWeak<'gc>),
     SharedObjectObject(SharedObjectObjectWeak<'gc>),
     SoundTransformObject(SoundTransformObjectWeak<'gc>),
+    StyleSheetObject(StyleSheetObjectWeak<'gc>),
 }
 
 impl<'gc> WeakObject<'gc> {
@@ -1448,6 +1459,7 @@ impl<'gc> WeakObject<'gc> {
             Self::LocalConnectionObject(o) => GcWeak::as_ptr(o.0) as *const ObjectPtr,
             Self::SharedObjectObject(o) => GcWeak::as_ptr(o.0) as *const ObjectPtr,
             Self::SoundTransformObject(o) => GcWeak::as_ptr(o.0) as *const ObjectPtr,
+            Self::StyleSheetObject(o) => GcWeak::as_ptr(o.0) as *const ObjectPtr,
         }
     }
 
@@ -1494,6 +1506,7 @@ impl<'gc> WeakObject<'gc> {
             Self::LocalConnectionObject(o) => LocalConnectionObject(o.0.upgrade(mc)?).into(),
             Self::SharedObjectObject(o) => SharedObjectObject(o.0.upgrade(mc)?).into(),
             Self::SoundTransformObject(o) => SoundTransformObject(o.0.upgrade(mc)?).into(),
+            Self::StyleSheetObject(o) => StyleSheetObject(o.0.upgrade(mc)?).into(),
         })
     }
 }
