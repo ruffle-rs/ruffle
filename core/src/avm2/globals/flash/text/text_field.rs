@@ -1804,3 +1804,46 @@ pub fn get_char_boundaries<'gc>(
         .into();
     Ok(rect)
 }
+
+pub fn get_style_sheet<'gc>(
+    _activation: &mut Activation<'_, 'gc>,
+    this: Value<'gc>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
+    let Some(this) = this
+        .as_display_object()
+        .and_then(|this| this.as_edit_text())
+    else {
+        return Ok(Value::Undefined);
+    };
+
+    Ok(match this.style_sheet() {
+        Some(style_sheet) => Value::Object(Object::StyleSheetObject(style_sheet)),
+        None => Value::Null,
+    })
+}
+
+pub fn set_style_sheet<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    this: Value<'gc>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
+    let Some(this) = this
+        .as_display_object()
+        .and_then(|this| this.as_edit_text())
+    else {
+        return Ok(Value::Undefined);
+    };
+
+    let style_sheet = args
+        .try_get_object(activation, 0)
+        .and_then(|o| o.as_style_sheet());
+
+    this.set_style_sheet(activation.context, style_sheet);
+
+    Ok(Value::Undefined)
+}
