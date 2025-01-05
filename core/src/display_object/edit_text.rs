@@ -7,6 +7,7 @@ use crate::avm1::{
     Object as Avm1Object, StageObject as Avm1StageObject, TObject as Avm1TObject,
     Value as Avm1Value,
 };
+use crate::avm2::object::StyleSheetObject;
 use crate::avm2::Avm2;
 use crate::avm2::{
     Activation as Avm2Activation, ClassObject as Avm2ClassObject, EventObject as Avm2EventObject,
@@ -184,6 +185,18 @@ pub struct EditTextData<'gc> {
     /// Information related to the last click event inside this text field.
     #[collect(require_static)]
     last_click: Option<ClickEventData>,
+
+    /// Style sheet used when parsing HTML.
+    ///
+    /// TODO Add support for AVM1.
+    style_sheet: Option<StyleSheetObject<'gc>>,
+
+    /// Original HTML text before parsing.
+    ///
+    /// It is used only when a style sheet is available
+    /// in order to preserve styles.
+    #[collect(require_static)]
+    original_html_text: Option<WString>,
 }
 
 impl EditTextData<'_> {
@@ -209,6 +222,23 @@ impl EditTextData<'_> {
         } else {
             FontType::Embedded
         }
+    }
+
+    fn parse_html(&mut self, text: &WStr) {
+        let default_format = self.text_spans.default_format().clone();
+        self.text_spans = FormatSpans::from_html(
+            text,
+            default_format,
+            self.style_sheet,
+            self.flags.contains(EditTextFlag::MULTILINE),
+            self.flags.contains(EditTextFlag::CONDENSE_WHITE),
+            self.static_data.swf.version(),
+        );
+        self.original_html_text = if self.style_sheet.is_some() {
+            Some(text.to_owned())
+        } else {
+            None
+        };
     }
 }
 
@@ -237,6 +267,7 @@ impl<'gc> EditText<'gc> {
             FormatSpans::from_html(
                 &text,
                 default_format,
+                None,
                 swf_tag.is_multiline(),
                 false,
                 swf_movie.version(),
@@ -337,6 +368,8 @@ impl<'gc> EditText<'gc> {
                 restrict: EditTextRestrict::allow_all(),
                 last_click: None,
                 layout_debug_boxes_flags: LayoutDebugBoxesFlag::empty(),
+                style_sheet: None,
+                original_html_text: None,
             },
         ));
 
@@ -410,8 +443,13 @@ impl<'gc> EditText<'gc> {
         }
 
         let mut edit_text = self.0.write(context.gc());
-        let default_format = edit_text.text_spans.default_format().clone();
-        edit_text.text_spans = FormatSpans::from_text(text.into(), default_format);
+        if edit_text.style_sheet.is_some() {
+            // When CSS is set, text will always be treated as HTML.
+            edit_text.parse_html(text);
+        } else {
+            let default_format = edit_text.text_spans.default_format().clone();
+            edit_text.text_spans = FormatSpans::from_text(text.into(), default_format);
+        }
         drop(edit_text);
 
         self.relayout(context);
@@ -419,7 +457,13 @@ impl<'gc> EditText<'gc> {
 
     pub fn html_text(self) -> WString {
         if self.is_html() {
-            self.0.read().text_spans.to_html()
+            let text = self.0.read();
+
+            if let Some(ref html) = text.original_html_text {
+                return html.clone();
+            }
+
+            text.text_spans.to_html()
         } else {
             // Non-HTML text fields always return plain text.
             self.text()
@@ -438,17 +482,7 @@ impl<'gc> EditText<'gc> {
         }
 
         if self.is_html() {
-            let mut write = self.0.write(context.gc());
-            let default_format = write.text_spans.default_format().clone();
-            write.text_spans = FormatSpans::from_html(
-                text,
-                default_format,
-                write.flags.contains(EditTextFlag::MULTILINE),
-                write.flags.contains(EditTextFlag::CONDENSE_WHITE),
-                write.static_data.swf.version(),
-            );
-            drop(write);
-
+            self.0.write(context.gc()).parse_html(text);
             self.relayout(context);
         } else {
             self.set_text(text, context);
@@ -666,6 +700,29 @@ impl<'gc> EditText<'gc> {
             .write(context.gc())
             .flags
             .set(EditTextFlag::HTML, is_html);
+    }
+
+    pub fn style_sheet(self) -> Option<StyleSheetObject<'gc>> {
+        self.0.read().style_sheet
+    }
+
+    pub fn set_style_sheet(
+        self,
+        context: &mut UpdateContext<'gc>,
+        style_sheet: Option<StyleSheetObject<'gc>>,
+    ) {
+        self.set_is_html(context, true);
+
+        let mut text = self.0.write(context.gc());
+        text.style_sheet = style_sheet;
+
+        if text.style_sheet.is_none() {
+            text.original_html_text = None;
+        }
+
+        if let Some(html) = text.original_html_text.clone() {
+            text.parse_html(&html);
+        }
     }
 
     pub fn is_fte(self) -> bool {

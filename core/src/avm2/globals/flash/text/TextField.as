@@ -73,13 +73,8 @@ package flash.text {
         public native function get selectable():Boolean;
         public native function set selectable(value:Boolean):void;
 
-        public function get styleSheet():StyleSheet {
-            return this._styleSheet;
-        }
-        public function set styleSheet(value:StyleSheet):void {
-            this._styleSheet = value;
-            stub_setter("flash.text.TextField", "styleSheet");
-        }
+        public native function get styleSheet():StyleSheet;
+        public native function set styleSheet(value:StyleSheet):void;
 
         public native function get text():String;
         public native function set text(value:String):void;
