@@ -9,9 +9,9 @@ pub use dimensions::Position;
 pub use layout::{
     lower_from_text_spans, Layout, LayoutBox, LayoutContent, LayoutLine, LayoutMetrics,
 };
-pub use stylesheet::{transform_dashes_to_camel_case, CssStream};
+pub use style_sheet::{transform_dashes_to_camel_case, CssStream};
 pub use text_format::{FormatSpans, TextDisplay, TextFormat, TextSpan};
 
-mod stylesheet;
+mod style_sheet;
 #[cfg(test)]
 mod test;
