@@ -91,4 +91,8 @@ impl StyleSheetObject<'_> {
     pub fn clear(self) {
         self.0.styles.borrow_mut().clear();
     }
+
+    pub fn selectors(self) -> Vec<WString> {
+        self.0.styles.borrow().keys().cloned().collect()
+    }
 }
