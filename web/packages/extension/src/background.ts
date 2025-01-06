@@ -227,7 +227,11 @@ async function disable() {
     await disableSWFTakeover();
 }
 
-async function onAdded(permissions: chrome.permissions.Permissions) {
+async function onAdded(
+    permissions:
+        | browser.permissions.Permissions
+        | chrome.permissions.Permissions,
+) {
     if (
         permissions.origins &&
         permissions.origins.length >= 1 &&
