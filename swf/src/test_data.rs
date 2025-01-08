@@ -376,7 +376,7 @@ pub fn tag_tests() -> Vec<TagTestData> {
                         align: TextAlign::Justify,
                         left_margin: Twips::from_pixels(3.0),
                         right_margin: Twips::from_pixels(4.0),
-                        indent: Twips::from_pixels(1.0),
+                        indent: Twips::ONE_PX,
                         leading: Twips::from_pixels(2.0),
                     }))
                     .with_variable_name(
@@ -1076,15 +1076,15 @@ pub fn tag_tests() -> Vec<TagTestData> {
                 flags: DefineMorphShapeFlag::HAS_SCALING_STROKES,
                 start: MorphShape {
                     shape_bounds: Rectangle {
-                        x_min: Twips::from_pixels(0.0),
+                        x_min: Twips::ZERO,
                         x_max: Twips::from_pixels(200.0),
-                        y_min: Twips::from_pixels(0.0),
+                        y_min: Twips::ZERO,
                         y_max: Twips::from_pixels(200.0),
                     },
                     edge_bounds: Rectangle {
-                        x_min: Twips::from_pixels(0.0),
+                        x_min: Twips::ZERO,
                         x_max: Twips::from_pixels(200.0),
-                        y_min: Twips::from_pixels(0.0),
+                        y_min: Twips::ZERO,
                         y_max: Twips::from_pixels(200.0),
                     },
                     fill_styles: vec![FillStyle::RadialGradient(Gradient {
@@ -1146,15 +1146,15 @@ pub fn tag_tests() -> Vec<TagTestData> {
                 },
                 end: MorphShape {
                     shape_bounds: Rectangle {
-                        x_min: Twips::from_pixels(0.0),
+                        x_min: Twips::ZERO,
                         x_max: Twips::from_pixels(200.0),
-                        y_min: Twips::from_pixels(0.0),
+                        y_min: Twips::ZERO,
                         y_max: Twips::from_pixels(200.0),
                     },
                     edge_bounds: Rectangle {
-                        x_min: Twips::from_pixels(0.0),
+                        x_min: Twips::ZERO,
                         x_max: Twips::from_pixels(200.0),
-                        y_min: Twips::from_pixels(0.0),
+                        y_min: Twips::ZERO,
                         y_max: Twips::from_pixels(200.0),
                     },
                     fill_styles: vec![FillStyle::RadialGradient(Gradient {
@@ -1276,15 +1276,15 @@ pub fn tag_tests() -> Vec<TagTestData> {
                 version: 1,
                 id: 1,
                 shape_bounds: Rectangle {
-                    x_min: Twips::from_pixels(0.0),
+                    x_min: Twips::ZERO,
                     x_max: Twips::from_pixels(20.0),
-                    y_min: Twips::from_pixels(0.0),
+                    y_min: Twips::ZERO,
                     y_max: Twips::from_pixels(20.0),
                 },
                 edge_bounds: Rectangle {
-                    x_min: Twips::from_pixels(0.0),
+                    x_min: Twips::ZERO,
                     x_max: Twips::from_pixels(20.0),
-                    y_min: Twips::from_pixels(0.0),
+                    y_min: Twips::ZERO,
                     y_max: Twips::from_pixels(20.0),
                 },
                 flags: ShapeFlag::HAS_NON_SCALING_STROKES,
@@ -1327,15 +1327,15 @@ pub fn tag_tests() -> Vec<TagTestData> {
                 version: 3,
                 id: 1,
                 shape_bounds: Rectangle {
-                    x_min: Twips::from_pixels(0.0),
+                    x_min: Twips::ZERO,
                     x_max: Twips::from_pixels(50.0),
-                    y_min: Twips::from_pixels(0.0),
+                    y_min: Twips::ZERO,
                     y_max: Twips::from_pixels(50.0),
                 },
                 edge_bounds: Rectangle {
-                    x_min: Twips::from_pixels(0.0),
+                    x_min: Twips::ZERO,
                     x_max: Twips::from_pixels(50.0),
-                    y_min: Twips::from_pixels(0.0),
+                    y_min: Twips::ZERO,
                     y_max: Twips::from_pixels(50.0),
                 },
                 flags: ShapeFlag::HAS_NON_SCALING_STROKES,
@@ -1430,9 +1430,9 @@ pub fn tag_tests() -> Vec<TagTestData> {
                     y_max: Twips::from_pixels(110.0),
                 },
                 edge_bounds: Rectangle {
-                    x_min: Twips::from_pixels(0.0),
+                    x_min: Twips::ZERO,
                     x_max: Twips::from_pixels(250.0),
-                    y_min: Twips::from_pixels(0.0),
+                    y_min: Twips::ZERO,
                     y_max: Twips::from_pixels(100.0),
                 },
                 flags: ShapeFlag::HAS_NON_SCALING_STROKES,
@@ -1947,8 +1947,8 @@ pub fn tag_tests() -> Vec<TagTestData> {
                 action: PlaceObjectAction::Place(1),
                 depth: 1,
                 matrix: Some(Matrix {
-                    tx: Twips::from_pixels(0.0),
-                    ty: Twips::from_pixels(0.0),
+                    tx: Twips::ZERO,
+                    ty: Twips::ZERO,
                     a: Fixed16::ONE,
                     b: Fixed16::ZERO,
                     c: Fixed16::ZERO,
@@ -2360,10 +2360,10 @@ pub fn tag_tests() -> Vec<TagTestData> {
                     y_max: Twips::from_pixels(20.0),
                 },
                 edge_bounds: Rectangle {
-                    x_min: Twips::from_pixels(0.0),
+                    x_min: Twips::ZERO,
                     x_max: Twips::from_pixels(200.0),
-                    y_min: Twips::from_pixels(0.0),
-                    y_max: Twips::from_pixels(0.0),
+                    y_min: Twips::ZERO,
+                    y_max: Twips::ZERO,
                 },
                 flags: ShapeFlag::HAS_SCALING_STROKES,
                 styles: ShapeStyles {

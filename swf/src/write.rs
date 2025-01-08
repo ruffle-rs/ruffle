@@ -17,7 +17,12 @@ use std::io::{self, Write};
 /// let header = Header {
 ///     compression: Compression::Zlib,
 ///     version: 6,
-///     stage_size: Rectangle { x_min: Twips::from_pixels(0.0), x_max: Twips::from_pixels(400.0), y_min: Twips::from_pixels(0.0), y_max: Twips::from_pixels(400.0) },
+///     stage_size: Rectangle {
+///         x_min: Twips::ZERO,
+///         x_max: Twips::from_pixels(400.0),
+///         y_min: Twips::ZERO,
+///         y_max: Twips::from_pixels(400.0),
+///     },
 ///     frame_rate: Fixed8::from_f32(60.0),
 ///     num_frames: 1,
 /// };
@@ -2436,9 +2441,9 @@ mod tests {
                 compression,
                 version: 13,
                 stage_size: Rectangle {
-                    x_min: Twips::from_pixels(0.0),
+                    x_min: Twips::ZERO,
                     x_max: Twips::from_pixels(640.0),
-                    y_min: Twips::from_pixels(0.0),
+                    y_min: Twips::ZERO,
                     y_max: Twips::from_pixels(480.0),
                 },
                 frame_rate: Fixed8::from_f32(60.0),
@@ -2645,10 +2650,10 @@ mod tests {
     #[test]
     fn write_rectangle_signed() {
         let rectangle = Rectangle {
-            x_min: Twips::from_pixels(-1.0),
-            x_max: Twips::from_pixels(1.0),
-            y_min: Twips::from_pixels(-1.0),
-            y_max: Twips::from_pixels(1.0),
+            x_min: -Twips::ONE_PX,
+            x_max: Twips::ONE_PX,
+            y_min: -Twips::ONE_PX,
+            y_max: Twips::ONE_PX,
         };
         let mut buf = Vec::new();
         {
@@ -2771,11 +2776,11 @@ mod tests {
             glyphs: vec![Glyph {
                 shape_records: vec![
                     ShapeRecord::StraightEdge {
-                        delta: PointDelta::new(Twips::ONE, -Twips::ONE),
+                        delta: PointDelta::new(Twips::ONE_PX, -Twips::ONE_PX),
                     },
                     ShapeRecord::CurvedEdge {
-                        control_delta: PointDelta::new(Twips::ONE, Twips::ONE),
-                        anchor_delta: PointDelta::new(Twips::ONE, -Twips::ONE),
+                        control_delta: PointDelta::new(Twips::ONE_PX, Twips::ONE_PX),
+                        anchor_delta: PointDelta::new(Twips::ONE_PX, -Twips::ONE_PX),
                     },
                     ShapeRecord::StraightEdge {
                         delta: PointDelta::new(Twips::ZERO, Twips::ZERO),

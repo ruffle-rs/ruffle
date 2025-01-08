@@ -402,6 +402,13 @@ impl<'gc> EditText<'gc> {
     }
 
     pub fn set_text(self, text: &WStr, context: &mut UpdateContext<'gc>) {
+        if self.text() == text {
+            // Note: this check not only prevents text relayout,
+            // but it also has observable effects, because text
+            // format is not being reset to the default format.
+            return;
+        }
+
         let mut edit_text = self.0.write(context.gc());
         let default_format = edit_text.text_spans.default_format().clone();
         edit_text.text_spans = FormatSpans::from_text(text.into(), default_format);
@@ -420,6 +427,16 @@ impl<'gc> EditText<'gc> {
     }
 
     pub fn set_html_text(self, text: &WStr, context: &mut UpdateContext<'gc>) {
+        if self.html_text() == text {
+            // Note: this check not only prevents text relayout,
+            // but it also has observable effects, because not
+            // every set of spans is representable as HTML.
+            //
+            // For instance, a paragraph may not end with a newline,
+            // but its HTML representation will always infer one.
+            return;
+        }
+
         if self.is_html() {
             let mut write = self.0.write(context.gc());
             let default_format = write.text_spans.default_format().clone();
@@ -964,22 +981,22 @@ impl<'gc> EditText<'gc> {
         if flags.contains(LayoutDebugBoxesFlag::CHAR) {
             for i in 0..self.text().len() {
                 if let Some(bounds) = layout.char_bounds(i) {
-                    context.draw_rect_outline(Color::MAGENTA, bounds, Twips::ONE);
+                    context.draw_rect_outline(Color::MAGENTA, bounds, Twips::ONE_PX);
                 }
             }
         }
         if flags.contains(LayoutDebugBoxesFlag::BOX) {
             for lbox in layout.boxes_iter() {
-                context.draw_rect_outline(Color::RED, lbox.bounds().into(), Twips::ONE);
+                context.draw_rect_outline(Color::RED, lbox.bounds().into(), Twips::ONE_PX);
             }
         }
         if flags.contains(LayoutDebugBoxesFlag::LINE) {
             for line in layout.lines() {
-                context.draw_rect_outline(Color::BLUE, line.bounds().into(), Twips::ONE);
+                context.draw_rect_outline(Color::BLUE, line.bounds().into(), Twips::ONE_PX);
             }
         }
         if flags.contains(LayoutDebugBoxesFlag::TEXT) {
-            context.draw_rect_outline(Color::GREEN, layout.bounds().into(), Twips::ONE);
+            context.draw_rect_outline(Color::GREEN, layout.bounds().into(), Twips::ONE_PX);
         }
     }
 
@@ -2572,12 +2589,12 @@ impl<'gc> EditText<'gc> {
             // Top
             context.commands.draw_line(
                 border_color,
-                Matrix::create_box(width, 1.0, bounds.x_min - Twips::HALF, bounds.y_min),
+                Matrix::create_box(width, 1.0, bounds.x_min - Twips::HALF_PX, bounds.y_min),
             );
             // Bottom
             context.commands.draw_line(
                 border_color,
-                Matrix::create_box(width, 1.0, bounds.x_min - Twips::HALF, bounds.y_max),
+                Matrix::create_box(width, 1.0, bounds.x_min - Twips::HALF_PX, bounds.y_max),
             );
             // Left
             context.commands.draw_line(
@@ -2587,7 +2604,7 @@ impl<'gc> EditText<'gc> {
                     height,
                     std::f32::consts::FRAC_PI_2,
                     bounds.x_min,
-                    bounds.y_min - Twips::HALF,
+                    bounds.y_min - Twips::HALF_PX,
                 ),
             );
             // Right
@@ -2598,7 +2615,7 @@ impl<'gc> EditText<'gc> {
                     height,
                     std::f32::consts::FRAC_PI_2,
                     bounds.x_max,
-                    bounds.y_min - Twips::HALF,
+                    bounds.y_min - Twips::HALF_PX,
                 ),
             );
         }

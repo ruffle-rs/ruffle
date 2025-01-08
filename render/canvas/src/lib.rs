@@ -459,8 +459,8 @@ impl WebCanvasRenderBackend {
     }
 
     fn draw_lines(&mut self, color: Color, mut matrix: Matrix, rect: bool) {
-        matrix.tx += Twips::HALF;
-        matrix.ty += Twips::HALF;
+        matrix.tx += Twips::HALF_PX;
+        matrix.ty += Twips::HALF_PX;
         let dom_matrix = matrix.to_dom_matrix();
         let stroke = if rect { &self.line_rect } else { &self.line };
         match &self.mask_state {

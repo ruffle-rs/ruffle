@@ -1505,14 +1505,14 @@ impl CommandHandler for WebGlRenderBackend {
     }
 
     fn draw_line(&mut self, color: Color, mut matrix: Matrix) {
-        matrix.tx += Twips::HALF;
-        matrix.ty += Twips::HALF;
+        matrix.tx += Twips::HALF_PX;
+        matrix.ty += Twips::HALF_PX;
         self.draw_quad::<{ Gl::LINE_STRIP }, 2>(color, matrix)
     }
 
     fn draw_line_rect(&mut self, color: Color, mut matrix: Matrix) {
-        matrix.tx += Twips::HALF;
-        matrix.ty += Twips::HALF;
+        matrix.tx += Twips::HALF_PX;
+        matrix.ty += Twips::HALF_PX;
         self.draw_quad::<{ Gl::LINE_LOOP }, -1>(color, matrix)
     }
 

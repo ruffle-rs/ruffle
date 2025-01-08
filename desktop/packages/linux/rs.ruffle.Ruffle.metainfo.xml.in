@@ -43,7 +43,6 @@
         <keyword>swf</keyword>
         <keyword>player</keyword>
         <keyword>emulator</keyword>
-        <keyword>rust</keyword>
     </keywords>
     <url type="homepage">https://ruffle.rs</url>
     <url type="bugtracker">https://github.com/ruffle-rs/ruffle/issues</url>

@@ -355,10 +355,7 @@ impl PixelRegion {
         let (min, max) = ((a.0.min(b.0), a.1.min(b.1)), (a.0.max(b.0), a.1.max(b.1)));
 
         // Increase max by one pixel as we've calculated the *encompassed* max
-        let max = (
-            max.0 + Twips::from_pixels_i32(1),
-            max.1 + Twips::from_pixels_i32(1),
-        );
+        let max = (max.0 + Twips::ONE_PX, max.1 + Twips::ONE_PX);
 
         // Make sure we're never going below 0
         Self {

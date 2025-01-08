@@ -3,6 +3,7 @@ player-settings = Spieler-Einstellungen
 movie-parameters = Filmparameter
 custom-base-url = Benutzerdefinierte Base-URL
 spoof-swf-url = Gefälschte SWF-URL
+referer-url = Referenz URL
 cookie = Cookie
 proxy = Proxy
 upgrade-http = HTTP auf HTTPS upgraden
@@ -45,7 +46,28 @@ align-top-right = Oben-Rechts
 align-bottom-right = Unten-Rechts
 align-force = Erzwingen
 scale-mode = Skalierungsmodus
+scale-mode-noscale = Unskaliert (100%)
+scale-mode-noscale-tooltip =
+    Zeigt den Film in der Originalgröße an, ohne Zoom.
+    
+    Entspricht StageScaleMode.NO_SCALE
+scale-mode-showall = Passend vergrößern
+scale-mode-showall-tooltip =
+    Vergrößert das Bild auf die maximale Bildschirmgröße, ohne teile des Bild wegzuschneiden oder es zu Verzerren.
+    
+    Entspricht StageScaleMode.SHOW_ALL
+scale-mode-exactfit = Passend dehnen
+scale-mode-exactfit-tooltip =
+    Versichert, dass der Film das gesamte Fenster füllt, vernachlässigt aber das Verhältnis.
+    
+    Entspricht StageScaleMode.EXACT_FIT
+scale-mode-noborder = Passend zuschneiden
+scale-mode-noborder-tooltip =
+    Füllt das gesamte Fenster, ohne das Bild zu verzerren, indem das Bild möglicherweise auf die Bildschirmgröße zugeschnitten wird.
+    
+    Entspricht StageScaleMode.NO_BORDER
 scale-mode-force = Erzwingen
+scale-mode-force-tooltip = Hält den Film davon ab den Skalierungsmodus zu ändern und behält die jetzige Auswahl.
 player-version = Spieler Version
 player-runtime = Spieler-Laufzeitumgebung
 player-runtime-flash = Flash Player
