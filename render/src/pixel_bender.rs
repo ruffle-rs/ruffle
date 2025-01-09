@@ -377,7 +377,7 @@ fn read_src_reg(val: u32, size: u8) -> Result<PixelBenderReg, Box<dyn std::error
     let swizzle = val >> 16;
     let mut channels = Vec::new();
     for i in 0..size {
-        channels.push(CHANNELS[(swizzle >> (6 - i * 2) & 3) as usize])
+        channels.push(CHANNELS[((swizzle >> (6 - i * 2)) & 3) as usize])
     }
 
     let kind = if val & 0x8000 != 0 {

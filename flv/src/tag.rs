@@ -59,7 +59,7 @@ impl<'a> Tag<'a> {
             let timestamp_extended = reader.read_u8()?;
             let stream_id = reader.read_u24()?;
 
-            let timestamp = ((timestamp_extended as u32) << 24 | timestamp) as i32;
+            let timestamp = (((timestamp_extended as u32) << 24) | timestamp) as i32;
             let data_position = reader.stream_position()?;
             let new_position = data_position + data_size as u64;
 
