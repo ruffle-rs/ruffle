@@ -155,7 +155,7 @@ function detectWasmOpt() {
         return false;
     }
 }
-const buildExtensions = !!process.env["ENABLE_WASM_EXTENSIONS"];
+const buildWasmMvp = !!process.env["BUILD_WASM_MVP"];
 const wasmSource = process.env["WASM_SOURCE"] || "cargo";
 const hasWasmOpt = detectWasmOpt();
 if (!hasWasmOpt) {
@@ -167,15 +167,15 @@ if (wasmSource === "cargo_and_store") {
     rmSync("../../dist", { recursive: true, force: true });
     mkdirSync("../../dist");
 }
-buildWasm("web-vanilla-wasm", "ruffle_web", hasWasmOpt, false, wasmSource);
-if (buildExtensions) {
-    buildWasm(
-        "web-wasm-extensions",
-        "ruffle_web-wasm_extensions",
-        hasWasmOpt,
-        true,
-        wasmSource,
-    );
+buildWasm(
+    "web-wasm-extensions",
+    "ruffle_web-wasm_extensions",
+    hasWasmOpt,
+    true,
+    wasmSource,
+);
+if (buildWasmMvp) {
+    buildWasm("web-vanilla-wasm", "ruffle_web", hasWasmOpt, false, wasmSource);
 } else {
-    copyStandIn("ruffle_web", "ruffle_web-wasm_extensions");
+    copyStandIn("ruffle_web-wasm_extensions", "ruffle_web");
 }
