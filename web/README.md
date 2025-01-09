@@ -45,7 +45,6 @@ to update to the latest stable version of rust. You may run `rustup update` to d
 rust using the above instructions).
 
 For the compiler to be able to output WebAssembly, an additional target has to be added to it: `rustup target add wasm32-unknown-unknown`
-Because we use `RUSTC_BOOTSTRAP` in order to use certain Nightly flags with stable Rust you will also need to run `rustup component add rust-src`.
 
 #### Java
 
@@ -104,8 +103,8 @@ In this project, you may run the following commands to build all packages:
     -   This will build the wasm binary and every node package (notably selfhosted and extension).
     -   Output will be available in the `dist/` folder of each package (for example, `./packages/selfhosted/dist`).
     -   You may also use `npm run build:debug` to disable Webpack optimizations and activate the (extremely verbose) ActionScript debugging output.
-    -   There is `npm run build:dual-wasm` as well, to build a second WebAssembly module that makes use of some WebAssembly extensions,
-        potentially resulting in better performance in browsers that support them, at the expense of longer build time.
+    -   There is `npm run build:dual-wasm` as well, to build a second WebAssembly module that disables all supported WebAssembly extensions,
+        potentially resulting in support for more browsers, at the expense of longer build time.
     -   `npm run build:repro` enables reproducible builds. Note that this also requires a `version_seal.json`, which is not provided in the normal Git repository - only specially-marked reproducible source archives. Running this without a version seal will generate one based on the current state of your environment.
     -   You will also need to run `rustup component add rust-src` with either of the previous two commands since we rebuild std for the vanilla WASM module.
 

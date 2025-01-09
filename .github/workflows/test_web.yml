@@ -52,7 +52,6 @@ jobs:
         uses: dtolnay/rust-toolchain@stable
         with:
           targets: wasm32-unknown-unknown
-          components: rust-src
 
       - name: Cache Cargo output
         uses: Swatinem/rust-cache@v2
@@ -118,7 +117,6 @@ jobs:
         uses: dtolnay/rust-toolchain@stable
         with:
           targets: wasm32-unknown-unknown
-          components: rust-src
 
       - name: Cache Cargo output
         uses: Swatinem/rust-cache@v2
