@@ -1982,7 +1982,7 @@ impl<W: Write> Writer<W> {
     }
 
     fn write_sound_info(&mut self, sound_info: &SoundInfo) -> Result<()> {
-        let flags = (sound_info.event as u8) << 4
+        let flags = ((sound_info.event as u8) << 4)
             | if sound_info.in_sample.is_some() {
                 0b1
             } else {
