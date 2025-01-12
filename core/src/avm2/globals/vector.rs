@@ -99,8 +99,7 @@ fn class_call<'gc>(
 
     let mut iter = ArrayIter::new(activation, arg)?;
 
-    while let Some(r) = iter.next(activation) {
-        let (_, item) = r?;
+    while let Some((_, item)) = iter.next(activation)? {
         let coerced_item = item.coerce_to_type(activation, value_type_for_coercion)?;
         new_storage.push(coerced_item, activation)?;
     }
@@ -398,9 +397,7 @@ pub fn every<'gc>(
     let receiver = args.get(1).cloned().unwrap_or(Value::Null);
     let mut iter = ArrayIter::new(activation, this)?;
 
-    while let Some(r) = iter.next(activation) {
-        let (i, item) = r?;
-
+    while let Some((i, item)) = iter.next(activation)? {
         let result = callback
             .call(activation, receiver, &[item, i.into(), this.into()])?
             .coerce_to_boolean();
@@ -425,9 +422,7 @@ pub fn some<'gc>(
     let receiver = args.get(1).cloned().unwrap_or(Value::Null);
     let mut iter = ArrayIter::new(activation, this)?;
 
-    while let Some(r) = iter.next(activation) {
-        let (i, item) = r?;
-
+    while let Some((i, item)) = iter.next(activation)? {
         let result = callback
             .call(activation, receiver, &[item, i.into(), this.into()])?
             .coerce_to_boolean();
@@ -458,9 +453,7 @@ pub fn filter<'gc>(
     let mut new_storage = VectorStorage::new(0, false, value_type, activation);
     let mut iter = ArrayIter::new(activation, this)?;
 
-    while let Some(r) = iter.next(activation) {
-        let (i, item) = r?;
-
+    while let Some((i, item)) = iter.next(activation)? {
         let result = callback
             .call(activation, receiver, &[item, i.into(), this.into()])?
             .coerce_to_boolean();
@@ -485,9 +478,7 @@ pub fn for_each<'gc>(
     let receiver = args.get(1).cloned().unwrap_or(Value::Null);
     let mut iter = ArrayIter::new(activation, this)?;
 
-    while let Some(r) = iter.next(activation) {
-        let (i, item) = r?;
-
+    while let Some((i, item)) = iter.next(activation)? {
         callback.call(activation, receiver, &[item, i.into(), this.into()])?;
     }
 
@@ -519,9 +510,7 @@ pub fn index_of<'gc>(
 
     let mut iter = ArrayIter::with_bounds(activation, this, from_index, u32::MAX)?;
 
-    while let Some(r) = iter.next(activation) {
-        let (i, item) = r?;
-
+    while let Some((i, item)) = iter.next(activation)? {
         if item == search_for {
             return Ok(i.into());
         }
@@ -555,9 +544,7 @@ pub fn last_index_of<'gc>(
 
     let mut iter = ArrayIter::with_bounds(activation, this, 0, from_index)?;
 
-    while let Some(r) = iter.next_back(activation) {
-        let (i, item) = r?;
-
+    while let Some((i, item)) = iter.next_back(activation)? {
         if item == search_for {
             return Ok(i.into());
         }
@@ -585,9 +572,7 @@ pub fn map<'gc>(
     let value_type_for_coercion = new_storage.value_type_for_coercion(activation);
     let mut iter = ArrayIter::new(activation, this)?;
 
-    while let Some(r) = iter.next(activation) {
-        let (i, item) = r?;
-
+    while let Some((i, item)) = iter.next(activation)? {
         let new_item = callback.call(activation, receiver, &[item, i.into(), this.into()])?;
         let coerced_item = new_item.coerce_to_type(activation, value_type_for_coercion)?;
 

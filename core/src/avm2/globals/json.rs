@@ -151,8 +151,7 @@ impl<'gc> AvmSerializer<'gc> {
         // If the user supplied a PropList, we use that to find properties on the object.
         if let Some(Replacer::PropList(props)) = self.replacer {
             let mut iter = ArrayIter::new(activation, props.into())?;
-            while let Some(r) = iter.next(activation) {
-                let item = r?.1;
+            while let Some((_, item)) = iter.next(activation)? {
                 let key = item.coerce_to_string(activation)?;
                 let value = Value::from(obj).get_public_property(key, activation)?;
                 let mapped = self.map_value(activation, || key, value)?;
@@ -202,8 +201,7 @@ impl<'gc> AvmSerializer<'gc> {
     ) -> Result<JsonValue, Error<'gc>> {
         let mut js_arr = Vec::new();
         let mut iter = ArrayIter::new(activation, iterable)?;
-        while let Some(r) = iter.next(activation) {
-            let (i, item) = r?;
+        while let Some((i, item)) = iter.next(activation)? {
             let mc = activation.gc();
             let mapped =
                 self.map_value(activation, || AvmString::new_utf8(mc, i.to_string()), item)?;
