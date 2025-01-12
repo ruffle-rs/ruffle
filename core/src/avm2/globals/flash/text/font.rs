@@ -115,7 +115,7 @@ pub fn enumerate_fonts<'gc>(
         for font in library.embedded_fonts() {
             // TODO: EmbeddedCFF isn't supposed to show until it's been used (some kind of internal initialization method?)
             // Device is only supposed to show when arg0 is true - but that's supposed to be "all known" device fonts, not just loaded ones
-            if font.font_type() == FontType::Embedded {
+            if font.has_layout() && font.font_type() == FontType::Embedded {
                 storage.push(FontObject::for_font(activation.gc(), font_class, font).into());
             }
         }
