@@ -1,4 +1,4 @@
-import type { RuffleInstanceBuilder } from "../../dist/ruffle_web";
+import type { RuffleInstanceBuilder } from "../../dist/ruffle_web-wasm_extensions";
 import { BaseLoadOptions, Duration, SecsDuration } from "../public/config";
 
 /**
