@@ -1,6 +1,6 @@
 {
     "settings_ruffle_enable": {
-        "message": "Ejecutar Flash con Ruffle"
+        "message": "Ejecutar contenido Flash con Ruffle"
     },
     "settings_ignore_optout": {
         "message": "Ejecutar contenido Flash incluso en sitios que no permiten Ruffle"
@@ -9,10 +9,10 @@
         "message": "Mostrar descarga de SWF en el menú contextual"
     },
     "settings_autostart": {
-        "message": "Reproduzca contenido automáticamente (y haga clic para restaurar el sonido)"
+        "message": "Reproduzca contenido Flash automáticamente (y haga clic para desmutear)"
     },
     "settings_swf_takeover": {
-        "message": "Reproduce archivos SWF en el navegador en vez de descargar"
+        "message": "Reproduce archivos SWF en el navegador en lugar descargar"
     },
     "settings_log_level": {
         "message": "Nivel de log"
@@ -27,7 +27,7 @@
         "message": "Info"
     },
     "settings_max_execution_duration": {
-        "message": "Duración máxima de ejecución de ActionScript (en segundos)"
+        "message": "Duración máxima de ejecución de ActionScript permitida (en segundos)"
     },
     "settings_player_version": {
         "message": "Versión de Flash Player a emular (rango 1-32)"
@@ -42,7 +42,7 @@
         "message": "Opciones Avanzadas"
     },
     "settings_reset": {
-        "message": "Resetear Configuración"
+        "message": "Reiniciar Configuración"
     },
     "settings_reset_confirm": {
         "message": "¿Está seguro de que desea restaurar la configuración de Ruffle a sus valores predeterminados originales?"
@@ -51,22 +51,22 @@
         "message": "Leyendo la pestaña actual…"
     },
     "status_no_tabs": {
-        "message": "No hay pestaña activada."
+        "message": "No hay pestaña activa."
     },
     "status_tabs_error": {
-        "message": "Occurió un error buscando la pestaña actual."
+        "message": "Ocurrió un error buscando la pestaña actual."
     },
     "status_message_init": {
         "message": "Comprobando el estado de Ruffle en la pestaña actual…"
     },
     "status_result_running": {
-        "message": "Ruffle está cargado y listo para ejecutar contenido Flash en la pestaña actual."
+        "message": "Ruffle está listo para ejecutar contenido Flash en la pestaña actual."
     },
     "status_result_running_protected": {
         "message": "Ruffle está listo para ejecutar el contenido de Flash que usted pide."
     },
     "status_result_optout": {
-        "message": "Ruffle no se carga porque la página actual se ha marcado como incompatible."
+        "message": "Ruffle no se puede cargar porque la página actual se ha marcado a sí misma como incompatible."
     },
     "status_result_disabled": {
         "message": "Ruffle está deshabilitado."
