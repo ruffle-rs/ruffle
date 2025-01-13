@@ -68,6 +68,10 @@ error-wasm-disabled-on-edge =
     要解決這個問題，請嘗試打開瀏覽器的設定，按一下「隱私、搜尋和服務」，向下捲動，然後關閉「加強您在網路上的安全性」。
     這將允許您的瀏覽器載入所需的「.wasm 」檔案。
     如果問題仍然存在，您可能必須使用其他瀏覽器。
+error-wasm-unsupported-browser =
+    您使用的瀏覽器不支援 Ruffle 執行所需的 WebAssembly 擴充套件。
+    請切換到支援的瀏覽器。
+    您可以在 Wiki 上找到支援的瀏覽器清單。
 error-javascript-conflict =
     Ruffle 在嘗試初始化時遇到重大問題。
     這個頁面似乎使用了與 Ruffle 相衝突的 JavaScript 程式碼。
