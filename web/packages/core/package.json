@@ -29,13 +29,13 @@
         "cssnano": "^7.0.6",
         "cssnano-preset-advanced": "^7.0.6",
         "mocha": "^11.0.1",
-        "postcss": "^8.4.49",
+        "postcss": "^8.5.0",
         "postcss-nesting": "^13.0.1",
         "replace-in-file": "^8.3.0",
         "tsx": "^4.19.2",
         "tsx-dom": "^3.0.1",
         "typedoc": "^0.27.6",
-        "typescript": "^5.7.2"
+        "typescript": "^5.7.3"
     },
     "sideEffects": false
 }
