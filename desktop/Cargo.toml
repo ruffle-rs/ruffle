@@ -31,7 +31,7 @@ tracing-appender = "0.2.3"
 winit = "0.30.8"
 webbrowser = "1.0.3"
 url = { workspace = true }
-dirs = "5.0"
+dirs = "6.0"
 rfd = { workspace = true }
 anyhow = { workspace = true }
 bytemuck = { workspace = true }
