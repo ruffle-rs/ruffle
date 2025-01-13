@@ -140,13 +140,6 @@ function buildWasm(
         });
     }
 }
-function copyStandIn(from: string, to: string) {
-    const suffixes = [`_bg.wasm`, `_bg.wasm.d.ts`, `.js`, `.d.ts`];
-    console.log(`Copying ${from} as a stand-in for ${to}...`);
-    for (const suffix of suffixes) {
-        copyFileSync(`dist/${from}${suffix}`, `dist/${to}${suffix}`);
-    }
-}
 function detectWasmOpt() {
     try {
         execFileSync("wasm-opt", ["--version"]);
@@ -176,6 +169,4 @@ buildWasm(
 );
 if (buildWasmMvp) {
     buildWasm("web-vanilla-wasm", "ruffle_web", hasWasmOpt, false, wasmSource);
-} else {
-    copyStandIn("ruffle_web-wasm_extensions", "ruffle_web");
 }
