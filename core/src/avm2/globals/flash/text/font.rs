@@ -11,7 +11,7 @@ use crate::string::AvmString;
 
 pub use crate::avm2::object::font_allocator;
 use crate::character::Character;
-use crate::font::FontType;
+use crate::font::{Font, FontType};
 
 /// Implements `Font.fontName`
 pub fn get_font_name<'gc>(
@@ -90,8 +90,7 @@ pub fn enumerate_fonts<'gc>(
     _this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let mut storage = ArrayStorage::new(0);
-    let font_class = activation.avm2().classes().font;
+    let mut fonts: Vec<Font<'gc>> = Vec::new();
 
     if args.get_bool(0) {
         // We could include the ones we know about, but what to do for the ones that weren't eagerly loaded?
@@ -103,9 +102,7 @@ pub fn enumerate_fonts<'gc>(
         );
     }
 
-    for font in activation.context.library.global_fonts() {
-        storage.push(FontObject::for_font(activation.gc(), font_class, font).into());
-    }
+    fonts.append(&mut activation.context.library.global_fonts());
 
     if let Some(library) = activation
         .context
@@ -116,11 +113,25 @@ pub fn enumerate_fonts<'gc>(
             // TODO: EmbeddedCFF isn't supposed to show until it's been used (some kind of internal initialization method?)
             // Device is only supposed to show when arg0 is true - but that's supposed to be "all known" device fonts, not just loaded ones
             if font.has_layout() && font.font_type() == FontType::Embedded {
-                storage.push(FontObject::for_font(activation.gc(), font_class, font).into());
+                fonts.push(font);
             }
         }
     }
 
+    // The output from Flash is sorted by font name (case insensitive).
+    // If two fonts have the same name (e.g. bold/italic variants),
+    // the order is nondeterministic.
+    fonts.sort_unstable_by(|a, b| {
+        a.descriptor()
+            .lowercase_name()
+            .cmp(b.descriptor().lowercase_name())
+    });
+
+    let font_class = activation.avm2().classes().font;
+    let mut storage = ArrayStorage::new(fonts.len());
+    for font in fonts {
+        storage.push(FontObject::for_font(activation.gc(), font_class, font).into());
+    }
     Ok(ArrayObject::from_storage(activation, storage).into())
 }
 
