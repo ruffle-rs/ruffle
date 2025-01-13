@@ -25,7 +25,7 @@ ruffle_render = { path = "../render", default-features = false }
 async-channel = { workspace = true }
 slotmap = { workspace = true }
 async-io = "2.4.0"
-futures-lite = "2.5.0"
+futures-lite = "2.6.0"
 reqwest = { version = "0.12.12", default-features = false, features = [
     "rustls-tls",
     "cookies",
