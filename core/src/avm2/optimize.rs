@@ -951,7 +951,7 @@ pub fn optimize<'gc>(
                 Op::URShift => {
                     stack.pop(activation)?;
                     stack.pop(activation)?;
-                    stack.push_class(activation, types.int)?;
+                    stack.push_class(activation, types.uint)?;
                 }
                 Op::PushDouble { .. } => {
                     stack.push_class(activation, types.number)?;
@@ -1252,14 +1252,20 @@ pub fn optimize<'gc>(
                 Op::HasNext => {
                     stack.pop(activation)?;
                     stack.pop(activation)?;
-                    stack.push_any(activation)?;
+
+                    // FIXME this should push `int` instead of `number`, but we have
+                    // to fix TObject::get_next_enumerant to return i32 for that
+                    stack.push_class(activation, types.number)?;
                 }
                 Op::HasNext2 {
                     index_register,
                     object_register,
                 } => {
                     stack.push_class(activation, types.boolean)?;
-                    local_types.set_any(*index_register as usize);
+
+                    // FIXME this should set the local to `int` instead of `number`, but
+                    // we have to fix TObject::get_next_enumerant to return i32 for that
+                    local_types.set(*index_register as usize, OptValue::of_type(types.number));
                     local_types.set_any(*object_register as usize);
                 }
                 Op::GetSlot { index: slot_id } => {

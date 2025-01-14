@@ -153,6 +153,7 @@ impl<'gc> TObject<'gc> for ProxyObject<'gc> {
             .coerce_to_boolean())
     }
 
+    // FIXME: The AS-side Proxy.nextNameIndex returns an int, so this should return an i32
     fn get_next_enumerant(
         self,
         last_index: u32,

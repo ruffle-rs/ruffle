@@ -2531,7 +2531,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         let cur_index = self.pop_stack().coerce_to_i32(self)?;
 
         if cur_index < 0 {
-            self.push_stack(false);
+            self.push_stack(0);
 
             return Ok(FrameControl::Continue);
         }
@@ -2619,17 +2619,14 @@ impl<'a, 'gc> Activation<'a, 'gc> {
 
         let value = self.pop_stack();
         let object = match value.null_check(self, None)? {
-            Value::Object(obj) => Some(obj),
-            value => value.proto(self),
+            Value::Object(obj) => obj,
+            value => value
+                .proto(self)
+                .expect("Primitives always have a prototype"),
         };
 
-        if let Some(object) = object {
-            let name = object.get_enumerant_name(cur_index as u32, self)?;
-
-            self.push_stack(name);
-        } else {
-            self.push_stack(Value::Undefined);
-        }
+        let name = object.get_enumerant_name(cur_index as u32, self)?;
+        self.push_stack(name);
 
         Ok(FrameControl::Continue)
     }
@@ -2645,17 +2642,14 @@ impl<'a, 'gc> Activation<'a, 'gc> {
 
         let value = self.pop_stack();
         let object = match value.null_check(self, None)? {
-            Value::Object(obj) => Some(obj),
-            value => value.proto(self),
+            Value::Object(obj) => obj,
+            value => value
+                .proto(self)
+                .expect("Primitives always have a prototype"),
         };
 
-        if let Some(object) = object {
-            let value = object.get_enumerant_value(cur_index as u32, self)?;
-
-            self.push_stack(value);
-        } else {
-            self.push_stack(Value::Undefined);
-        }
+        let value = object.get_enumerant_value(cur_index as u32, self)?;
+        self.push_stack(value);
 
         Ok(FrameControl::Continue)
     }
