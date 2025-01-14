@@ -141,7 +141,7 @@ async function enableSWFTakeover() {
                     },
                 },
             ];
-            await utils.declarativeNetRequest.updateDynamicRules({
+            await chrome.declarativeNetRequest.updateDynamicRules({
                 removeRuleIds: [1, 2, 3],
                 addRules: rules,
             });
