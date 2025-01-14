@@ -117,11 +117,11 @@ opt-level = 3
 [profile.dev.package.nihav_duck]
 opt-level = 3
 
-# TODO: Set rustflags here instead of in web/core/package.json, when that
+# TODO: Set rustflags here instead of in tools/build_wasm.ts, when that
 # feature becomes stable. See: https://github.com/rust-lang/cargo/issues/10271
 # Until then, these custom profiles let cargo keep the build cache alive
 # across "dual-wasm" builds, separating it for the two .wasm modules.
-[profile.web-vanilla-wasm]
+[profile.web-wasm-mvp]
 inherits = "release"
 
 [profile.web-wasm-extensions]
