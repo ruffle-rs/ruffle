@@ -160,13 +160,13 @@ if (wasmSource === "cargo_and_store") {
     rmSync("../../dist", { recursive: true, force: true });
     mkdirSync("../../dist");
 }
-buildWasm(
-    "web-wasm-extensions",
-    "ruffle_web-wasm_extensions",
-    hasWasmOpt,
-    true,
-    wasmSource,
-);
+buildWasm("web-wasm-extensions", "ruffle_web", hasWasmOpt, true, wasmSource);
 if (buildWasmMvp) {
-    buildWasm("web-vanilla-wasm", "ruffle_web", hasWasmOpt, false, wasmSource);
+    buildWasm(
+        "web-wasm-mvp",
+        "ruffle_web-wasm_mvp",
+        hasWasmOpt,
+        false,
+        wasmSource,
+    );
 }

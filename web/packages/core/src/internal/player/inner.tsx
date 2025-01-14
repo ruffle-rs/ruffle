@@ -1,4 +1,4 @@
-import type { RuffleHandle, ZipWriter } from "../../../dist/ruffle_web-wasm_extensions";
+import type { RuffleHandle, ZipWriter } from "../../../dist/ruffle_web";
 import {
     AutoPlay,
     ContextMenu,

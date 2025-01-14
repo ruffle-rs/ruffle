@@ -66,8 +66,8 @@ if (process.env["ENABLE_VERSION_SEAL"] === "true") {
 
 const fallbackWasmName =
     process.env["BUILD_WASM_MVP"] === "true"
-        ? "ruffle_web"
-        : "ruffle_web-wasm_extensions";
+        ? "ruffle_web-wasm_mvp"
+        : "ruffle_web";
 
 const options = {
     files: "dist/**",
