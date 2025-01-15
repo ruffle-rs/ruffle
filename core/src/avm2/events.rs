@@ -1,7 +1,6 @@
 //! Core event structure
 
 use crate::avm2::activation::Activation;
-use crate::avm2::error::make_error_2007;
 use crate::avm2::globals::slots::flash_events_event_dispatcher as slots;
 use crate::avm2::object::{EventObject, Object, TObject};
 use crate::avm2::value::Value;
@@ -73,9 +72,6 @@ pub struct Event<'gc> {
 
     /// The name of the event being triggered.
     event_type: AvmString<'gc>,
-
-    /// Whether is event has been dispatched before.
-    dispatched: bool,
 }
 
 impl<'gc> Event<'gc> {
@@ -93,7 +89,6 @@ impl<'gc> Event<'gc> {
             event_phase: EventPhase::AtTarget,
             target: None,
             event_type: event_type.into(),
-            dispatched: false,
         }
     }
 
@@ -373,13 +368,14 @@ pub fn parent_of(target: Object<'_>) -> Option<Object<'_>> {
 fn dispatch_event_to_target<'gc>(
     activation: &mut Activation<'_, 'gc>,
     dispatcher: Object<'gc>,
-    target: Object<'gc>,
+    real_target: Object<'gc>,
+    current_target: Object<'gc>,
     event: EventObject<'gc>,
     simulate_dispatch: bool,
 ) -> Result<(), Error<'gc>> {
     avm_debug!(
         activation.context.avm2,
-        "Event dispatch: {} to {target:?}",
+        "Event dispatch: {} to {current_target:?}",
         event.event().event_type(),
     );
 
@@ -402,10 +398,9 @@ fn dispatch_event_to_target<'gc>(
         .iter_event_handlers(name, use_capture)
         .collect();
 
-    evtmut.set_current_target(target);
-
     if !handlers.is_empty() {
-        evtmut.dispatched = true;
+        evtmut.set_target(real_target);
+        evtmut.set_current_target(current_target);
     }
 
     drop(evtmut);
@@ -437,7 +432,7 @@ fn dispatch_event_to_target<'gc>(
 pub fn dispatch_event<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Object<'gc>,
-    event_object: EventObject<'gc>,
+    event: EventObject<'gc>,
     simulate_dispatch: bool,
 ) -> Result<bool, Error<'gc>> {
     let target = this.get_slot(slots::TARGET).as_object().unwrap_or(this);
@@ -455,23 +450,9 @@ pub fn dispatch_event<'gc>(
         parent = parent_dobj.parent();
     }
 
-    let dispatched = event_object.event().dispatched;
-
-    let event = if dispatched {
-        Value::from(event_object)
-            .call_public_property("clone", &[], activation)?
-            .as_object()
-            .ok_or_else(|| make_error_2007(activation, "event"))?
-            .as_event_object()
-            .expect("Event.clone should return an Event")
-    } else {
-        event_object
-    };
-
     let mut evtmut = event.event_mut(activation.gc());
 
     evtmut.set_phase(EventPhase::Capturing);
-    evtmut.set_target(target);
 
     drop(evtmut);
 
@@ -480,7 +461,14 @@ pub fn dispatch_event<'gc>(
             break;
         }
 
-        dispatch_event_to_target(activation, *ancestor, *ancestor, event, simulate_dispatch)?;
+        dispatch_event_to_target(
+            activation,
+            *ancestor,
+            target,
+            *ancestor,
+            event,
+            simulate_dispatch,
+        )?;
     }
 
     event
@@ -488,7 +476,7 @@ pub fn dispatch_event<'gc>(
         .set_phase(EventPhase::AtTarget);
 
     if !event.event().is_propagation_stopped() {
-        dispatch_event_to_target(activation, this, target, event, simulate_dispatch)?;
+        dispatch_event_to_target(activation, this, target, target, event, simulate_dispatch)?;
     }
 
     event
@@ -501,10 +489,17 @@ pub fn dispatch_event<'gc>(
                 break;
             }
 
-            dispatch_event_to_target(activation, *ancestor, *ancestor, event, simulate_dispatch)?;
+            dispatch_event_to_target(
+                activation,
+                *ancestor,
+                target,
+                *ancestor,
+                event,
+                simulate_dispatch,
+            )?;
         }
     }
 
-    let handled = event.event().dispatched;
+    let handled = event.event().target.is_some();
     Ok(handled)
 }
