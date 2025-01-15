@@ -1,7 +1,7 @@
 //! `flash.events.EventDispatcher` builtin/prototype
 
 use crate::avm2::activation::Activation;
-use crate::avm2::events::{dispatch_event as dispatch_event_internal, parent_of};
+use crate::avm2::events;
 use crate::avm2::globals::slots::flash_events_event_dispatcher as slots;
 use crate::avm2::object::{DispatchObject, Object, TObject};
 use crate::avm2::parameters::ParametersExt;
@@ -111,7 +111,7 @@ pub fn will_trigger<'gc>(
 
     let target = this.get_slot(slots::TARGET).as_object().unwrap_or(this);
 
-    if let Some(parent) = parent_of(target) {
+    if let Some(parent) = events::parent_of(target) {
         return will_trigger(activation, Value::Object(parent), args);
     }
 
@@ -119,7 +119,7 @@ pub fn will_trigger<'gc>(
 }
 
 /// Implements `EventDispatcher.dispatchEvent`.
-pub fn dispatch_event<'gc>(
+pub fn dispatch_event_internal<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
     args: &[Value<'gc>],
@@ -131,7 +131,7 @@ pub fn dispatch_event<'gc>(
     // AS3-side typing guarantees that the event is actually an Event
     let event = event.as_event_object().unwrap();
 
-    dispatch_event_internal(activation, this, event, false)?;
+    events::dispatch_event(activation, this, event, false)?;
 
     let not_canceled = !event.event().is_cancelled();
     Ok(not_canceled.into())
