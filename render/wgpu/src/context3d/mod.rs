@@ -1060,16 +1060,16 @@ impl Context3D for WgpuContext3D {
                 texture_buffer.unmap();
 
                 self.buffer_command_encoder.copy_buffer_to_texture(
-                    wgpu::ImageCopyBuffer {
+                    wgpu::TexelCopyBufferInfo {
                         buffer: &texture_buffer,
                         // The copy source uses the padded image data, with larger rows
-                        layout: wgpu::ImageDataLayout {
+                        layout: wgpu::TexelCopyBufferLayout {
                             offset: 0,
                             bytes_per_row: Some(bytes_per_row),
                             rows_per_image: Some(rows_per_image),
                         },
                     },
-                    wgpu::ImageCopyTexture {
+                    wgpu::TexelCopyTextureInfo {
                         texture: &dest.texture,
                         mip_level: 0,
                         origin: wgpu::Origin3d {
