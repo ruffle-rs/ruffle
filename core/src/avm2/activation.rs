@@ -24,7 +24,6 @@ use crate::context::UpdateContext;
 use crate::string::{AvmAtom, AvmString, StringContext};
 use crate::tag_utils::SwfMovie;
 use gc_arena::Gc;
-use smallvec::SmallVec;
 use std::cmp::{min, Ordering};
 use std::sync::Arc;
 use swf::avm2::types::{
@@ -32,37 +31,6 @@ use swf::avm2::types::{
 };
 
 use super::error::make_mismatch_error;
-
-/// Represents a particular register set.
-///
-/// This type exists primarily because SmallVec isn't garbage-collectable.
-pub struct RegisterSet<'gc>(SmallVec<[Value<'gc>; 8]>);
-
-unsafe impl gc_arena::Collect for RegisterSet<'_> {
-    #[inline]
-    fn trace(&self, cc: &gc_arena::Collection) {
-        for register in &self.0 {
-            register.trace(cc);
-        }
-    }
-}
-
-impl<'gc> RegisterSet<'gc> {
-    /// Create a new register set with a given number of specified registers.
-    ///
-    /// The given registers will be set to `undefined`.
-    pub fn new(num: u32) -> Self {
-        Self(smallvec![Value::Undefined; num as usize])
-    }
-
-    pub fn get_unchecked(&self, num: u32) -> Value<'gc> {
-        self.0[num as usize]
-    }
-
-    pub fn get_unchecked_mut(&mut self, num: u32) -> &mut Value<'gc> {
-        self.0.get_mut(num as usize).unwrap()
-    }
-}
 
 #[derive(Clone)]
 enum FrameControl<'gc> {
@@ -76,13 +44,10 @@ pub struct Activation<'a, 'gc: 'a> {
     ip: i32,
 
     /// Amount of actions performed since the last timeout check
-    actions_since_timeout_check: u16,
+    actions_since_timeout_check: u32,
 
-    /// Local registers.
-    ///
-    /// All activations have local registers, but it is possible for multiple
-    /// activations (such as a rescope) to execute from the same register set.
-    local_registers: RegisterSet<'gc>,
+    /// The number of locals this method uses.
+    num_locals: usize,
 
     /// This represents the outer scope of the method that is executing.
     ///
@@ -159,12 +124,10 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     /// It is a logic error to attempt to run AVM2 code in a nothing
     /// `Activation`.
     pub fn from_nothing(context: &'a mut UpdateContext<'gc>) -> Self {
-        let local_registers = RegisterSet::new(0);
-
         Self {
             ip: 0,
             actions_since_timeout_check: 0,
-            local_registers,
+            num_locals: 0,
             outer: ScopeChain::new(context.avm2.stage_domain),
             caller_domain: None,
             caller_movie: None,
@@ -187,12 +150,10 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     /// action you're performing. When running frame scripts, this is the
     /// `SwfMovie` associated with the `MovieClip` being processed.
     pub fn from_domain(context: &'a mut UpdateContext<'gc>, domain: Domain<'gc>) -> Self {
-        let local_registers = RegisterSet::new(0);
-
         Self {
             ip: 0,
             actions_since_timeout_check: 0,
-            local_registers,
+            num_locals: 0,
             outer: ScopeChain::new(context.avm2.stage_domain),
             caller_domain: Some(domain),
             caller_movie: None,
@@ -214,23 +175,20 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         let (method, global_object, domain) = script.init();
 
         let num_locals = match method {
-            Method::Native { .. } => 0,
+            Method::Native { .. } => 1,
             Method::Bytecode(bytecode) => {
                 let body = bytecode
                     .body()
-                    .ok_or("Cannot execute non-native method (for script) without body")?;
+                    .expect("Cannot execute non-native method (for script) without body");
 
-                body.num_locals
+                body.num_locals as usize
             }
         };
-        let mut local_registers = RegisterSet::new(num_locals + 1);
-
-        *local_registers.get_unchecked_mut(0) = global_object.into();
 
         let activation_class = if let Method::Bytecode(method) = method {
             let body = method
                 .body()
-                .ok_or("Cannot execute non-native method (for script) without body")?;
+                .expect("Cannot execute non-native method (for script) without body");
 
             BytecodeMethod::get_or_init_activation_class(method, context.gc(), || {
                 let translation_unit = method.translation_unit();
@@ -253,7 +211,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         let mut created_activation = Self {
             ip: 0,
             actions_since_timeout_check: 0,
-            local_registers,
+            num_locals,
             outer: ScopeChain::new(domain),
             caller_domain: Some(domain),
             caller_movie: script.translation_unit().map(|t| t.movie()),
@@ -270,6 +228,12 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             if method.verified_info.borrow().is_none() {
                 BytecodeMethod::verify(method, &mut created_activation)?;
             }
+        }
+
+        // Create locals- script init methods are run with no parameters passed
+        created_activation.push_stack(global_object);
+        for _ in 0..num_locals - 1 {
+            created_activation.push_stack(Value::Undefined);
         }
 
         Ok(created_activation)
@@ -401,15 +365,12 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         bound_class: Option<Class<'gc>>,
         callee: Value<'gc>,
     ) -> Result<(), Error<'gc>> {
-        let body: Result<_, Error<'gc>> = method
+        let body = method
             .body()
-            .ok_or_else(|| "Cannot execute non-native method without body".into());
-        let body = body?;
-        let num_locals = body.num_locals;
-        let has_rest_or_args = method.is_variadic();
+            .expect("Cannot execute non-native method without body");
 
-        let mut local_registers = RegisterSet::new(num_locals + 1);
-        *local_registers.get_unchecked_mut(0) = this;
+        let num_locals = body.num_locals as usize;
+        let has_rest_or_args = method.is_variadic();
 
         let activation_class =
             BytecodeMethod::get_or_init_activation_class(method, self.gc(), || {
@@ -426,9 +387,13 @@ impl<'a, 'gc> Activation<'a, 'gc> {
                 ClassObject::from_class(&mut dummy_activation, activation_class, None)
             })?;
 
+        if let Some(bound_class) = bound_class {
+            assert!(this.is_of_type(self, bound_class));
+        }
+
         self.ip = 0;
         self.actions_since_timeout_check = 0;
-        self.local_registers = local_registers;
+        self.num_locals = num_locals;
         self.outer = outer;
         self.caller_domain = Some(outer.domain());
         self.caller_movie = Some(method.owner_movie());
@@ -463,13 +428,13 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             bound_class,
         )?;
 
-        {
-            for (i, arg) in arguments_list[0..min(signature.len(), arguments_list.len())]
-                .iter()
-                .enumerate()
-            {
-                *self.local_registers.get_unchecked_mut(1 + i as u32) = *arg;
-            }
+        // Create locals
+        self.push_stack(this);
+
+        let num_args = min(signature.len(), arguments_list.len());
+
+        for arg in &arguments_list[0..num_args] {
+            self.push_stack(*arg);
         }
 
         if has_rest_or_args {
@@ -501,9 +466,17 @@ impl<'a, 'gc> Activation<'a, 'gc> {
                 args_object.set_local_property_is_enumerable(self.gc(), "callee".into(), false);
             }
 
-            *self
-                .local_registers
-                .get_unchecked_mut(1 + signature.len() as u32) = args_object.into();
+            self.push_stack(args_object);
+        }
+
+        // Locals not including the `this` value or arguments.
+        let mut extra_locals = num_locals - num_args - 1;
+        if has_rest_or_args {
+            extra_locals -= 1;
+        }
+
+        for _ in 0..extra_locals {
+            self.push_stack(Value::Undefined);
         }
 
         Ok(())
@@ -523,12 +496,10 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         caller_domain: Option<Domain<'gc>>,
         caller_movie: Option<Arc<SwfMovie>>,
     ) -> Self {
-        let local_registers = RegisterSet::new(0);
-
         Self {
             ip: 0,
             actions_since_timeout_check: 0,
-            local_registers,
+            num_locals: 0,
             outer,
             caller_domain,
             caller_movie,
@@ -557,15 +528,20 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     }
 
     /// Retrieve a local register.
-    pub fn local_register(&self, id: u32) -> Value<'gc> {
-        // Verification guarantees that this is valid
-        self.local_registers.get_unchecked(id)
+    pub fn local_register(&mut self, id: u32) -> Value<'gc> {
+        let stack_depth = self.stack_depth;
+
+        // Verification guarantees that this points to a local register
+        self.avm2().stack_at(stack_depth + id as usize)
     }
 
     /// Set a local register.
     pub fn set_local_register(&mut self, id: u32, value: impl Into<Value<'gc>>) {
+        let stack_depth = self.stack_depth;
+
         // Verification guarantees that this is valid
-        *self.local_registers.get_unchecked_mut(id) = value.into();
+        self.avm2()
+            .set_stack_at(stack_depth + id as usize, value.into());
     }
 
     /// Retrieve the outer scope of this activation
@@ -658,16 +634,35 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         self.avm2().pop_scope();
     }
 
+    /// Cleans up after this Activation. This removes stack and local entries,
+    /// and clears the scope stack. This method must be called after an Activation
+    /// created with `Activation::init_from_activation` or `Activation::from_script`
+    /// is done executing; otherwise, old values may accumulate on the stack
+    /// (and not get GC-ed).
+    #[inline]
+    pub fn cleanup(&mut self) {
+        self.clear_stack_and_locals();
+        self.clear_scope();
+    }
+
     /// Clears the operand stack used by this activation.
     #[inline]
-    pub fn clear_stack(&mut self) {
+    fn clear_stack(&mut self) {
+        let stack_depth = self.stack_depth;
+        let num_locals = self.num_locals;
+        self.avm2().truncate_stack(stack_depth + num_locals);
+    }
+
+    /// Clears the operand stack and locals used by this activation.
+    #[inline]
+    fn clear_stack_and_locals(&mut self) {
         let stack_depth = self.stack_depth;
         self.avm2().truncate_stack(stack_depth);
     }
 
     /// Clears the scope stack used by this activation.
     #[inline]
-    pub fn clear_scope(&mut self) {
+    fn clear_scope(&mut self) {
         let scope_depth = self.scope_depth;
         self.avm2().scope_stack.truncate(scope_depth);
     }
@@ -734,8 +729,6 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             }
         };
 
-        self.clear_stack();
-        self.clear_scope();
         val
     }
 
@@ -1093,7 +1086,9 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     }
 
     fn op_get_local(&mut self, register_index: u32) -> Result<FrameControl<'gc>, Error<'gc>> {
-        self.push_stack(self.local_register(register_index));
+        let value = self.local_register(register_index);
+        self.push_stack(value);
+
         Ok(FrameControl::Continue)
     }
 
@@ -3108,7 +3103,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         register: u8,
     ) -> Result<FrameControl<'gc>, Error<'gc>> {
         if is_local_register {
-            if (register as usize) < self.local_registers.0.len() {
+            if (register as usize) < self.num_locals {
                 let value = self.local_register(register as u32);
 
                 avm_debug!(self.avm2(), "Debug: {register_name} = {value:?}");
