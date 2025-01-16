@@ -16,8 +16,8 @@ use ruffle_render::{
 use wgpu::util::{DeviceExt, StagingBelt};
 use wgpu::{
     BindGroupEntry, BindingResource, BlendComponent, BufferDescriptor, BufferUsages,
-    ColorTargetState, ColorWrites, CommandEncoder, ImageCopyTexture, PipelineLayout,
-    RenderPipeline, RenderPipelineDescriptor, SamplerBindingType, ShaderModuleDescriptor,
+    ColorTargetState, ColorWrites, CommandEncoder, PipelineLayout, RenderPipeline,
+    RenderPipelineDescriptor, SamplerBindingType, ShaderModuleDescriptor, TexelCopyTextureInfo,
     TextureDescriptor, TextureFormat, TextureView, VertexState,
 };
 
@@ -345,14 +345,14 @@ fn image_input_as_texture<'a>(
                 view_formats: &[texture_format],
             });
             descriptors.queue.write_texture(
-                wgpu::ImageCopyTexture {
+                wgpu::TexelCopyTextureInfo {
                     texture: &fresh_texture,
                     mip_level: 0,
                     origin: wgpu::Origin3d::ZERO,
                     aspect: wgpu::TextureAspect::All,
                 },
                 &padded_bytes,
-                wgpu::ImageDataLayout {
+                wgpu::TexelCopyBufferLayout {
                     offset: 0,
                     bytes_per_row: Some(padded_bytes.len() as u32 / height),
                     rows_per_image: None,
@@ -498,13 +498,13 @@ pub(super) fn run_pixelbender_shader_impl(
                             view_formats: &[wgpu::TextureFormat::Rgba8Unorm],
                         });
                         render_command_encoder.copy_texture_to_texture(
-                            ImageCopyTexture {
+                            TexelCopyTextureInfo {
                                 texture: target,
                                 mip_level: 0,
                                 origin: Default::default(),
                                 aspect: Default::default(),
                             },
-                            ImageCopyTexture {
+                            TexelCopyTextureInfo {
                                 texture: &fresh_texture,
                                 mip_level: 0,
                                 origin: Default::default(),

@@ -666,7 +666,7 @@ fn find_available_graphics_backends() -> wgpu::Backends {
 
     // We have to make a new instance here, as the one created for the entire application may not have
     // all backends enabled
-    let instance = wgpu::Instance::new(wgpu::InstanceDescriptor {
+    let instance = wgpu::Instance::new(&wgpu::InstanceDescriptor {
         backends: wgpu::Backends::all(),
         flags: wgpu::InstanceFlags::default().with_env(),
         ..Default::default()

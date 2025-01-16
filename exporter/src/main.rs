@@ -383,7 +383,7 @@ fn trace_path(_opt: &Opt) -> Option<&Path> {
 
 fn main() -> Result<()> {
     let opt: Opt = Opt::parse();
-    let instance = wgpu::Instance::new(wgpu::InstanceDescriptor {
+    let instance = wgpu::Instance::new(&wgpu::InstanceDescriptor {
         backends: opt.graphics.into(),
         ..Default::default()
     });
