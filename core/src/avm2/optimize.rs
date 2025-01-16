@@ -502,19 +502,7 @@ pub fn optimize<'gc>(
         .body()
         .expect("Cannot verify non-native method without body!");
 
-    // This can probably be done better by recording the receiver in `Activation`,
-    // but this works since it's guaranteed to be set in `Activation::from_method`.
-    let this_value = activation.local_register(0);
-
-    let this_class = if let Some(this_class) = activation.bound_class() {
-        if this_value.is_of_type(activation, this_class) {
-            Some(this_class)
-        } else {
-            None
-        }
-    } else {
-        None
-    };
+    let this_class = activation.bound_class();
 
     let this_value = OptValue {
         class: this_class,

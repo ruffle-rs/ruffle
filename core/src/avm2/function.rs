@@ -248,7 +248,12 @@ pub fn exec<'gc>(
                 .context
                 .avm2
                 .push_call(activation.gc(), method, bound_class);
-            activation.run_actions(bm)
+
+            let result = activation.run_actions(bm);
+
+            activation.cleanup();
+
+            result
         }
     };
     activation.context.avm2.pop_call(activation.gc());

@@ -296,44 +296,53 @@ impl<'gc> Avm2<'gc> {
     ) -> Result<(), Error<'gc>> {
         let mut init_activation = Activation::from_script(context, script)?;
 
-        let (method, scope, _domain) = script.init();
-        match method {
-            Method::Native(method) => {
-                if method.resolved_signature.read().is_none() {
-                    method.resolve_signature(&mut init_activation)?;
+        // Execute everything in a closure so we can run `cleanup` more easily.
+        let mut closure = || -> Result<(), Error<'gc>> {
+            let (method, scope, _domain) = script.init();
+            match method {
+                Method::Native(method) => {
+                    if method.resolved_signature.read().is_none() {
+                        method.resolve_signature(&mut init_activation)?;
+                    }
+
+                    let resolved_signature = method.resolved_signature.read();
+                    let resolved_signature = resolved_signature.as_ref().unwrap();
+
+                    // This exists purely to check if the builtin is OK with being called with
+                    // no parameters.
+                    init_activation.resolve_parameters(
+                        Method::Native(method),
+                        &[],
+                        resolved_signature,
+                        None,
+                    )?;
+                    init_activation
+                        .context
+                        .avm2
+                        .push_global_init(init_activation.gc(), script);
+                    let r = (method.method)(&mut init_activation, Value::Object(scope), &[]);
+                    init_activation.context.avm2.pop_call(init_activation.gc());
+                    r?;
                 }
+                Method::Bytecode(method) => {
+                    init_activation
+                        .context
+                        .avm2
+                        .push_global_init(init_activation.gc(), script);
+                    let r = init_activation.run_actions(method);
+                    init_activation.context.avm2.pop_call(init_activation.gc());
+                    r?;
+                }
+            };
 
-                let resolved_signature = method.resolved_signature.read();
-                let resolved_signature = resolved_signature.as_ref().unwrap();
-
-                // This exists purely to check if the builtin is OK with being called with
-                // no parameters.
-                init_activation.resolve_parameters(
-                    Method::Native(method),
-                    &[],
-                    resolved_signature,
-                    None,
-                )?;
-                init_activation
-                    .context
-                    .avm2
-                    .push_global_init(init_activation.gc(), script);
-                let r = (method.method)(&mut init_activation, Value::Object(scope), &[]);
-                init_activation.context.avm2.pop_call(init_activation.gc());
-                r?;
-            }
-            Method::Bytecode(method) => {
-                init_activation
-                    .context
-                    .avm2
-                    .push_global_init(init_activation.gc(), script);
-                let r = init_activation.run_actions(method);
-                init_activation.context.avm2.pop_call(init_activation.gc());
-                r?;
-            }
+            Ok(())
         };
 
-        Ok(())
+        let result = closure();
+
+        init_activation.cleanup();
+
+        result
     }
 
     fn orphan_objects_mut(&mut self) -> &mut Vec<DisplayObjectWeak<'gc>> {
@@ -776,12 +785,28 @@ impl<'gc> Avm2<'gc> {
 
     /// Peek the n-th value from the end of the operand stack.
     #[inline(always)]
-    fn peek(&mut self, index: usize) -> Value<'gc> {
+    fn peek(&self, index: usize) -> Value<'gc> {
         let value = self.stack[self.stack.len() - index - 1];
 
         avm_debug!(self, "Stack peek {}: {value:?}", self.stack.len());
 
         value
+    }
+
+    #[inline(always)]
+    fn stack_at(&self, index: usize) -> Value<'gc> {
+        let value = self.stack[index];
+
+        avm_debug!(self, "Stack peek {}: {value:?}", index);
+
+        value
+    }
+
+    #[inline(always)]
+    fn set_stack_at(&mut self, index: usize, value: Value<'gc>) {
+        avm_debug!(self, "Stack poke {}: {value:?}", index);
+
+        self.stack[index] = value;
     }
 
     fn pop_args(&mut self, arg_count: u32) -> Vec<Value<'gc>> {
