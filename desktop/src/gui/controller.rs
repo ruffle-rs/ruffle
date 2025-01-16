@@ -282,6 +282,10 @@ impl GuiController {
                 // Cannot help with that :(
                 panic!("wgpu: Out of memory: no more memory left to allocate a new frame");
             }
+            Err(SurfaceError::Other) => {
+                // Generic error, not much we can do.
+                panic!("wgpu: Acquiring a texture failed with a generic error");
+            }
         };
 
         let raw_input = self.egui_winit.take_egui_input(&self.window);
@@ -457,7 +461,7 @@ fn create_wgpu_instance(
 }
 
 fn try_wgpu_backend(backend: wgpu::Backends) -> Option<wgpu::Instance> {
-    let instance = wgpu::Instance::new(wgpu::InstanceDescriptor {
+    let instance = wgpu::Instance::new(&wgpu::InstanceDescriptor {
         backends: backend,
         flags: wgpu::InstanceFlags::default().with_env(),
         ..Default::default()

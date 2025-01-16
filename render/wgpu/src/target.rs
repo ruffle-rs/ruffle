@@ -287,7 +287,7 @@ impl RenderTarget for TextureTarget {
             });
             let (buffer, dimensions) = buffer.inner();
             encoder.copy_texture_to_buffer(
-                wgpu::ImageCopyTexture {
+                wgpu::TexelCopyTextureInfo {
                     texture: &self.texture,
                     mip_level: 0,
                     origin: wgpu::Origin3d {
@@ -297,9 +297,9 @@ impl RenderTarget for TextureTarget {
                     },
                     aspect: wgpu::TextureAspect::All,
                 },
-                wgpu::ImageCopyBuffer {
+                wgpu::TexelCopyBufferInfo {
                     buffer,
-                    layout: wgpu::ImageDataLayout {
+                    layout: wgpu::TexelCopyBufferLayout {
                         offset: 0,
                         bytes_per_row: Some(dimensions.padded_bytes_per_row),
                         rows_per_image: None,
