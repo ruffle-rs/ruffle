@@ -515,7 +515,7 @@ fn method<'gc>(
         }
         GET_TYPE => {
             let type_: &WStr = this.type_().into();
-            AvmString::from(type_).into()
+            AvmString::from_static_wstr(activation.gc(), type_).into()
         }
         SET_TYPE => {
             this.set_type(activation, args.get(0))?;
