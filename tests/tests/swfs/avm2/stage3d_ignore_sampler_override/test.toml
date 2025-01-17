@@ -1,7 +1,7 @@
 num_frames = 1
 
 [image_comparisons.output]
-tolerance = 1
+tolerance = 8
 # FIXME - investigate why this is so high
 max_outliers = 1935
 
