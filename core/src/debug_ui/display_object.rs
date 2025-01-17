@@ -1128,7 +1128,9 @@ impl DisplayObjectWindow {
                 ui.label("Name");
                 // &mut of a temporary thing because we don't want to actually be able to change this
                 // If we disable it, the user can't highlight or interact with it, so this makes it readonly but enabled
-                ui.text_edit_singleline(&mut object.name().to_string());
+                ui.text_edit_singleline(
+                    &mut object.name().map(|s| s.to_string()).unwrap_or_default(),
+                );
                 ui.end_row();
 
                 if let crate::avm1::Value::Object(object) = object.object() {
@@ -1315,7 +1317,10 @@ impl DisplayObjectWindow {
 }
 
 fn matches_search(object: DisplayObject, search: &WStr) -> bool {
-    if object.name().to_ascii_lowercase().contains(search) {
+    if object
+        .name()
+        .is_some_and(|n| n.to_ascii_lowercase().contains(search))
+    {
         return true;
     }
 
@@ -1392,10 +1397,14 @@ fn summary_name(object: DisplayObject) -> Cow<'static, str> {
     let do_type = display_object_type(object);
     let name = object.name();
 
-    if name.is_empty() {
-        Cow::Borrowed(do_type)
+    if let Some(name) = name {
+        if name.is_empty() {
+            Cow::Borrowed(do_type)
+        } else {
+            Cow::Owned(format!("{do_type} \"{name}\""))
+        }
     } else {
-        Cow::Owned(format!("{do_type} \"{name}\""))
+        Cow::Borrowed("")
     }
 }
 

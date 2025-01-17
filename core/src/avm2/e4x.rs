@@ -755,7 +755,7 @@ impl<'gc> E4XNode<'gc> {
     ) -> Result<Vec<Self>, Error<'gc>> {
         let string = match &value {
             // The docs claim that this throws a TypeError, but it actually doesn't
-            Value::Null | Value::Undefined => AvmString::default(),
+            Value::Null | Value::Undefined => activation.strings().empty(),
             // The docs claim that only String, Number or Boolean are accepted, but that's also a lie
             val => {
                 if let Some(obj) = val.as_object() {
@@ -962,7 +962,7 @@ impl<'gc> E4XNode<'gc> {
                     } else {
                         (
                             AvmString::new_utf8_bytes(activation.gc(), text.as_bytes()),
-                            AvmString::default(),
+                            activation.strings().empty(),
                         )
                     };
                     let node = E4XNode(GcCell::new(
@@ -1312,16 +1312,22 @@ impl<'gc> E4XNode<'gc> {
             return true;
         }
 
-        let self_ns = self.namespace().map(|ns| ns.uri).unwrap_or_default();
+        let self_ns = self.namespace().map(|ns| ns.uri);
         // FIXME: For cases where we don't have *any* explicit namespace
         // we just give up and assume we should match the default public namespace.
         if !name.namespace_set().iter().any(|ns| ns.is_namespace()) {
-            return self_ns.is_empty();
+            return self_ns.is_none_or(|n| n.is_empty());
         }
 
-        name.namespace_set()
-            .iter()
-            .any(|ns| ns.as_uri_opt().expect("NS set cannot contain Any") == self_ns)
+        name.namespace_set().iter().any(|ns| {
+            let uri = ns.as_uri_opt().expect("NS set cannot contain Any");
+
+            if let Some(self_ns) = self_ns {
+                uri == self_ns
+            } else {
+                uri.is_empty()
+            }
+        })
     }
 
     pub fn descendants(&self, name: &Multiname<'gc>, out: &mut Vec<E4XOrXml<'gc>>) {
@@ -1412,7 +1418,7 @@ pub fn simple_content_to_string<'gc>(
     children: impl Iterator<Item = E4XOrXml<'gc>>,
     activation: &mut Activation<'_, 'gc>,
 ) -> AvmString<'gc> {
-    let mut out = AvmString::default();
+    let mut out = activation.strings().empty();
     for child in children {
         if matches!(
             &*child.node().kind(),

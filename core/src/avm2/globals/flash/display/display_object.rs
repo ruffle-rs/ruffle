@@ -542,14 +542,17 @@ pub fn set_rotation<'gc>(
 
 /// Implements `name`'s getter.
 pub fn get_name<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
     if let Some(dobj) = this.as_display_object() {
-        return Ok(dobj.name().into());
+        return Ok(dobj
+            .name()
+            .unwrap_or_else(|| activation.strings().empty())
+            .into());
     }
 
     Ok(Value::Undefined)

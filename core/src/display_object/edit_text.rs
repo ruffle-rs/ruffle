@@ -1354,7 +1354,9 @@ impl<'gc> EditText<'gc> {
                             if object.has_property(activation, property) {
                                 let value = object.get(property, activation).unwrap();
                                 self.set_html_text(
-                                    &value.coerce_to_string(activation).unwrap_or_default(),
+                                    &value
+                                        .coerce_to_string(activation)
+                                        .unwrap_or_else(|_| activation.strings().empty()),
                                     activation.context,
                                 );
                             } else {
