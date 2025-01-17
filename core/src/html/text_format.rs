@@ -867,8 +867,8 @@ impl FormatSpans {
                         tag @ b"li" => {
                             format = apply_style(style_sheet, format, WStr::from_units(tag));
 
-                            let is_last_nl = text.iter().last() == Some(HTML_NEWLINE);
-                            if is_multiline && !is_last_nl && text.len() > 0 {
+                            let is_last_nl = text.iter().next_back() == Some(HTML_NEWLINE);
+                            if is_multiline && !is_last_nl && !text.is_empty() {
                                 // If the last paragraph was not closed and
                                 // there was some text since then,
                                 // we need to close it here.

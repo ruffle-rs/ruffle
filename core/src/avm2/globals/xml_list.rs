@@ -548,7 +548,7 @@ pub fn normalize<'gc>(
                     )?;
                 }
 
-                text.len() == 0
+                text.is_empty()
             };
 
             // ii. If list[i].[[Value]].length == 0

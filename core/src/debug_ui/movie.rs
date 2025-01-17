@@ -277,7 +277,7 @@ pub fn open_character_button(ui: &mut Ui, character: &Character) {
 fn save_swf(movie: &Arc<SwfMovie>, messages: &mut Vec<Message>) {
     let suggested_name = if let Ok(url) = Url::parse(movie.url()) {
         url.path_segments()
-            .and_then(|segments| segments.last())
+            .and_then(|mut segments| segments.next_back())
             .map(|str| str.to_string())
     } else {
         None

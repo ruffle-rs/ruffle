@@ -272,7 +272,7 @@ fn new_lso<'gc>(activation: &mut Activation<'_, 'gc>, name: &str, data: Object<'
     w.commit_lso(
         &name
             .split('/')
-            .last()
+            .next_back()
             .map(|e| e.to_string())
             .unwrap_or_else(|| "<unknown>".to_string()),
     )
