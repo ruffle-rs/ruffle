@@ -71,6 +71,9 @@ jobs:
           - build_name: linux-x86_64
             os: ubuntu-24.04
 
+          - build_name: linux-aarch64
+            os: ubuntu-24.04-arm
+
           # Mac does two Rust builds to make a universal binary
           - build_name: macos-x86_64
             os: macos-14
