@@ -405,19 +405,24 @@ fn default_value_for_type<'gc>(type_name: Option<Gc<'gc, Multiname<'gc>>>) -> Va
         // like `Activation::resolve_type` to get an actual `Class` object, and then check something like `Class::built_in_type`.
         // The Multiname is guaranteed to be static by `pool.pool_multiname_static` earlier.
         if type_name.contains_public_namespace() {
-            let name = type_name.local_name().unwrap_or_default();
-            if &name == b"Boolean" {
-                false.into()
-            } else if &name == b"Number" {
-                f64::NAN.into()
-            } else if &name == b"int" {
-                0.into()
-            } else if &name == b"String" {
-                Value::Null
-            } else if &name == b"uint" {
-                0.into()
+            let name = type_name.local_name();
+            if let Some(name) = name {
+                if &name == b"Boolean" {
+                    false.into()
+                } else if &name == b"Number" {
+                    f64::NAN.into()
+                } else if &name == b"int" {
+                    0.into()
+                } else if &name == b"String" {
+                    Value::Null
+                } else if &name == b"uint" {
+                    0.into()
+                } else {
+                    Value::Null // Object type
+                }
             } else {
-                Value::Null // Object type
+                // No local name?
+                Value::Null
             }
         } else {
             // Object type

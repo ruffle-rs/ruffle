@@ -54,7 +54,7 @@ pub fn init<'gc>(
 
     let node = match nodes.as_slice() {
         // XML defaults to an empty text node when nothing was parsed
-        [] => E4XNode::text(activation.gc(), AvmString::default(), None),
+        [] => E4XNode::text(activation.gc(), activation.strings().empty(), None),
         [node] => *node,
         nodes => {
             let mut single_element_node = None;

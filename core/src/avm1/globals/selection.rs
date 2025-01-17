@@ -105,7 +105,7 @@ pub fn get_focus<'gc>(
             .as_displayobject()
             .object()
             .coerce_to_string(activation)
-            .unwrap_or_default()
+            .unwrap_or_else(|_| activation.strings().empty())
             .into(),
         None => Value::Null,
     })

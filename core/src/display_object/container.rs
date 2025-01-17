@@ -718,29 +718,29 @@ impl<'gc> ChildContainer<'gc> {
                     "Parent must be removed *after* calling `remove_child_from_render_list`",
                 );
                 if child.has_explicit_name() {
-                    if let Avm2Value::Object(parent_obj) = parent.object2() {
-                        let parent_obj = Avm2Value::from(parent_obj);
+                    if let Some(name) = child.name() {
+                        if let Avm2Value::Object(parent_obj) = parent.object2() {
+                            let parent_obj = Avm2Value::from(parent_obj);
 
-                        let mut activation = Avm2Activation::from_nothing(context);
-                        let name = Avm2Multiname::new(
-                            activation.avm2().find_public_namespace(),
-                            child.name(),
-                        );
-                        let current_val = parent_obj.get_property(&name, &mut activation);
-                        match current_val {
-                            Ok(Avm2Value::Null) | Ok(Avm2Value::Undefined) => {}
-                            Ok(_other) => {
-                                let res = parent_obj.set_property(
-                                    &name,
-                                    Avm2Value::Null,
-                                    &mut activation,
-                                );
-                                if let Err(e) = res {
-                                    tracing::error!("Failed to set child {} ({:?}) to null on parent obj {:?}: {:?}", child.name(), child, parent_obj, e);
+                            let mut activation = Avm2Activation::from_nothing(context);
+                            let multiname =
+                                Avm2Multiname::new(activation.avm2().find_public_namespace(), name);
+                            let current_val = parent_obj.get_property(&multiname, &mut activation);
+                            match current_val {
+                                Ok(Avm2Value::Null) | Ok(Avm2Value::Undefined) => {}
+                                Ok(_other) => {
+                                    let res = parent_obj.set_property(
+                                        &multiname,
+                                        Avm2Value::Null,
+                                        &mut activation,
+                                    );
+                                    if let Err(e) = res {
+                                        tracing::error!("Failed to set child {} ({:?}) to null on parent obj {:?}: {:?}", name, child, parent_obj, e);
+                                    }
                                 }
-                            }
-                            Err(e) => {
-                                tracing::error!("Failed to get current value of child {} ({:?}) on parent obj {:?}: {:?}", child.name(), child, parent_obj, e);
+                                Err(e) => {
+                                    tracing::error!("Failed to get current value of child {} ({:?}) on parent obj {:?}: {:?}", name, child, parent_obj, e);
+                                }
                             }
                         }
                     }
@@ -844,16 +844,12 @@ impl<'gc> ChildContainer<'gc> {
             let mut matching_render_children = if case_sensitive {
                 self.depth_list
                     .iter()
-                    .filter(|(_, child)| child.name_optional().is_some_and(|n| n == name))
+                    .filter(|(_, child)| child.name().is_some_and(|n| n == name))
                     .collect::<Vec<_>>()
             } else {
                 self.depth_list
                     .iter()
-                    .filter(|(_, child)| {
-                        child
-                            .name_optional()
-                            .is_some_and(|n| n.eq_ignore_case(name))
-                    })
+                    .filter(|(_, child)| child.name().is_some_and(|n| n.eq_ignore_case(name)))
                     .collect::<Vec<_>>()
             };
 
@@ -872,13 +868,12 @@ impl<'gc> ChildContainer<'gc> {
                 self.render_list
                     .iter()
                     .copied()
-                    .find(|child| child.name_optional().is_some_and(|n| n == name))
+                    .find(|child| child.name().is_some_and(|n| n == name))
             } else {
-                self.render_list.iter().copied().find(|child| {
-                    child
-                        .name_optional()
-                        .is_some_and(|n| n.eq_ignore_case(name))
-                })
+                self.render_list
+                    .iter()
+                    .copied()
+                    .find(|child| child.name().is_some_and(|n| n.eq_ignore_case(name)))
             }
         }
     }

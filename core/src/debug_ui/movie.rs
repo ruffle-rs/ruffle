@@ -132,8 +132,8 @@ impl MovieWindow {
                     let name = export_characters
                         .iter()
                         .find_map(|(k, v)| if *v == id { Some(k) } else { None })
-                        .unwrap_or_default()
-                        .to_string();
+                        .map(|s| s.to_string())
+                        .unwrap_or_default();
 
                     let search = self.character_search.to_ascii_lowercase();
                     if !id.to_string().to_ascii_lowercase().contains(&search)

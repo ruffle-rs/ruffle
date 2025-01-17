@@ -165,14 +165,6 @@ impl<'gc> From<Gc<'gc, AvmStringRepr<'gc>>> for AvmString<'gc> {
     }
 }
 
-impl Default for AvmString<'_> {
-    fn default() -> Self {
-        Self {
-            source: Source::Static(WStr::empty()),
-        }
-    }
-}
-
 impl From<&'static str> for AvmString<'_> {
     #[inline]
     fn from(str: &'static str) -> Self {
