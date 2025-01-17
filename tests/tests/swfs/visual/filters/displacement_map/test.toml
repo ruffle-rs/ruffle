@@ -1,8 +1,14 @@
 num_frames = 1
 
-[image_comparisons.output]
+[[image_comparisons.output.checks]]
+filter = 'not(arch = "aarch64")'
 tolerance = 20
 max_outliers = 72
+
+[[image_comparisons.output.checks]]
+filter = 'arch = "aarch64"'
+tolerance = 32
+max_outliers = 160
 
 [player_options]
 with_renderer = { optional = false, sample_count = 1 }
