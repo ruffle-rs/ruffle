@@ -16,7 +16,7 @@ pub static INVALID_URL: &str = "invalid:///";
 pub fn url_to_readable_name(url: &Url) -> Cow<'_, str> {
     let name = url
         .path_segments()
-        .and_then(|segments| segments.last())
+        .and_then(|mut segments| segments.next_back())
         .unwrap_or_else(|| url.as_str());
 
     urlencoding::decode(name).unwrap_or(Cow::Borrowed(name))

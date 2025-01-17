@@ -333,7 +333,7 @@ pub fn download<'gc>(
             Some(file_name) => file_name.coerce_to_string(activation)?.to_string(),
             None => {
                 // Try to get the end of the path as a file name, if we can't bail and return false
-                match url.path().split('/').last() {
+                match url.path().split('/').next_back() {
                     Some(path_end) => path_end.to_string(),
                     None => return Ok(false.into()),
                 }

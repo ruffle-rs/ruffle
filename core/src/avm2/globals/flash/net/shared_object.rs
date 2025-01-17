@@ -25,7 +25,7 @@ fn new_lso<'gc>(
     Ok(Lso::new(
         elements,
         name.split('/')
-            .last()
+            .next_back()
             .map(|e| e.to_string())
             .unwrap_or_else(|| "<unknown>".to_string()),
         AMFVersion::AMF3,
