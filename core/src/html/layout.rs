@@ -646,7 +646,7 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
 
         // Note that the SWF can still contain a DefineFont tag with no glyphs/layout info in this case (see #451).
         // In an ideal world, device fonts would search for a matching font on the system and render it in some way.
-        if self.font_type != FontType::Device {
+        if self.font_type.is_embedded() {
             if let Some(font) = context
                 .library
                 .get_embedded_font_by_name(
