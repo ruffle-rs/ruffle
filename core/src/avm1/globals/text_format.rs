@@ -80,7 +80,10 @@ fn set_font<'gc>(
 ) -> Result<(), Error<'gc>> {
     text_format.font = match value {
         Value::Undefined | Value::Null => None,
-        value => Some(value.coerce_to_string(activation)?.as_wstr().into()),
+        value => {
+            let font = value.coerce_to_string(activation)?;
+            Some(font.slice(0..64).unwrap_or(&font).to_owned())
+        }
     };
     Ok(())
 }
