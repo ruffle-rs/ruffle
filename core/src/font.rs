@@ -333,6 +333,12 @@ pub enum FontType {
     Device,
 }
 
+impl FontType {
+    pub fn is_embedded(self) -> bool {
+        self != Self::Device
+    }
+}
+
 #[derive(Debug, Clone, Collect, Copy)]
 #[collect(no_drop)]
 pub struct Font<'gc>(Gc<'gc, FontData>);
