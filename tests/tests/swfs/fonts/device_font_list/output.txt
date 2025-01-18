@@ -1,0 +1,64 @@
+Testing CSS font list fallback:
+  Embedded? = false
+  Font list? = Totally Unknown, TestFontA , TestFontB
+  Char 0 is TestFontA
+  Char 2 is TestFontA
+Testing TextFormat font list fallback:
+  Embedded? = false
+  Font list? = Totally Unknown, TestFontA , TestFontB
+  Char 0 is TestFontA
+  Char 2 is TestFontA
+Testing CSS font list fallback:
+  Embedded? = false
+  Font list? =  testFOntB  , TestFontA , TestFontB
+  Char 1 is TestFontB
+  Char 2 is TestFontB
+Testing TextFormat font list fallback:
+  Embedded? = false
+  Font list? =  testFOntB  , TestFontA , TestFontB
+  Char 1 is TestFontB
+  Char 2 is TestFontB
+Testing CSS font list fallback:
+  Embedded? = true
+  Font list? = Totally Unknown, EmbeddedTestFontA, EmbeddedTestFontB
+Testing TextFormat font list fallback:
+  Embedded? = true
+  Font list? = Totally Unknown, EmbeddedTestFontA, EmbeddedTestFontB
+Testing CSS font list fallback:
+  Embedded? = true
+  Font list? = EmbeddedTestFontA
+  Char 0 is TestFontA
+  Char 2 is TestFontA
+Testing TextFormat font list fallback:
+  Embedded? = true
+  Font list? = EmbeddedTestFontA
+  Char 0 is TestFontA
+  Char 2 is TestFontA
+Testing CSS font list fallback:
+  Embedded? = true
+  Font list? =   EmbeddedTestFontA
+  Char 0 is TestFontA
+  Char 2 is TestFontA
+Testing TextFormat font list fallback:
+  Embedded? = true
+  Font list? =   EmbeddedTestFontA
+Testing CSS font list fallback:
+  Embedded? = true
+  Font list? = EmbeddedTestFontA  
+Testing TextFormat font list fallback:
+  Embedded? = true
+  Font list? = EmbeddedTestFontA  
+Testing CSS font list fallback:
+  Embedded? = true
+  Font list? =   EmbeddedTestFontA  
+Testing TextFormat font list fallback:
+  Embedded? = true
+  Font list? =   EmbeddedTestFontA  
+Testing CSS font list fallback:
+  Embedded? = true
+  Font list? =   embeddedTESTFonta
+  Char 0 is TestFontA
+  Char 2 is TestFontA
+Testing TextFormat font list fallback:
+  Embedded? = true
+  Font list? =   embeddedTESTFonta
