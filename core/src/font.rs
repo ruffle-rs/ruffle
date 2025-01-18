@@ -35,6 +35,20 @@ pub enum DefaultFont {
     JapaneseMincho,
 }
 
+impl DefaultFont {
+    pub fn from_name(name: &str) -> Option<Self> {
+        Some(match name {
+            "_serif" => DefaultFont::Serif,
+            "_sans" => DefaultFont::Sans,
+            "_typewriter" => DefaultFont::Typewriter,
+            "_ゴシック" => DefaultFont::JapaneseGothic,
+            "_等幅" => DefaultFont::JapaneseGothicMono,
+            "_明朝" => DefaultFont::JapaneseMincho,
+            _ => return None,
+        })
+    }
+}
+
 fn round_to_pixel(t: Twips) -> Twips {
     Twips::from_pixels(t.to_pixels().round())
 }
