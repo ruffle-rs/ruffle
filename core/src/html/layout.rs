@@ -13,7 +13,7 @@ use ruffle_render::shape_utils::DrawCommand;
 use std::cmp::{max, min, Ordering};
 use std::fmt::{Debug, Formatter};
 use std::mem;
-use std::ops::{Deref, Range};
+use std::ops::Range;
 use std::slice::Iter;
 use std::sync::Arc;
 use swf::{Point, Rectangle, Twips};
@@ -666,48 +666,59 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
             // return new_empty_font(context, span, self.font_type);
         }
 
-        // Check if the font name is one of the known default fonts.
-        if let Some(default_font) = match font_name.deref() {
-            "_serif" => Some(DefaultFont::Serif),
-            "_sans" => Some(DefaultFont::Sans),
-            "_typewriter" => Some(DefaultFont::Typewriter),
-            "_ゴシック" => Some(DefaultFont::JapaneseGothic),
-            "_等幅" => Some(DefaultFont::JapaneseGothicMono),
-            "_明朝" => Some(DefaultFont::JapaneseMincho),
-            _ => None,
-        } {
-            if let Some(&font) = context
-                .library
-                .default_font(
-                    default_font,
-                    span.style.bold,
-                    span.style.italic,
-                    context.ui,
-                    context.renderer,
-                    context.gc_context,
-                )
-                .first()
-            {
+        // Specifying multiple font names is supported only for device fonts.
+        let font_names: Vec<&str> = font_name.split(",").collect();
+        for font_name in &font_names {
+            let font_name = font_name.trim();
+
+            // Check if the font name is one of the known default fonts.
+            if let Some(default_font) = match font_name {
+                "_serif" => Some(DefaultFont::Serif),
+                "_sans" => Some(DefaultFont::Sans),
+                "_typewriter" => Some(DefaultFont::Typewriter),
+                "_ゴシック" => Some(DefaultFont::JapaneseGothic),
+                "_等幅" => Some(DefaultFont::JapaneseGothicMono),
+                "_明朝" => Some(DefaultFont::JapaneseMincho),
+                _ => None,
+            } {
+                if let Some(&font) = context
+                    .library
+                    .default_font(
+                        default_font,
+                        span.style.bold,
+                        span.style.italic,
+                        context.ui,
+                        context.renderer,
+                        context.gc_context,
+                    )
+                    .first()
+                {
+                    return font;
+                } else {
+                    let font_desc = describe_font(span);
+                    tracing::error!(
+                        "Known default device font not found: {font_desc}, text will be missing"
+                    );
+                    return new_empty_font(context, span, self.font_type);
+                }
+            }
+
+            if let Some(font) = context.library.get_or_load_device_font(
+                font_name,
+                span.style.bold,
+                span.style.italic,
+                context.ui,
+                context.renderer,
+                context.gc_context,
+            ) {
                 return font;
-            } else {
-                let font_desc = describe_font(span);
-                tracing::error!(
-                    "Known default device font not found: {font_desc}, text will be missing"
-                );
-                return new_empty_font(context, span, self.font_type);
             }
         }
 
-        if let Some(font) = context.library.get_or_load_device_font(
-            &font_name,
-            span.style.bold,
-            span.style.italic,
-            context.ui,
-            context.renderer,
-            context.gc_context,
-        ) {
-            return font;
-        }
+        // TODO We fall back to the default font based on the first font in the list.
+        //   This is mainly to preserve old behavior, that might change when we
+        //   implement a proper fallback.
+        let font_name = font_names.first().copied().unwrap_or("");
 
         // TODO: handle multiple fonts for a definition, each covering different sets of glyphs
 
@@ -716,7 +727,7 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
         // well-known aliases for the default fonts for better compatibility
         // with devices that don't have those fonts installed. As a last resort
         // we fall back to using sans (like Flash).
-        let default_font = match font_name.deref() {
+        let default_font = match font_name {
             "Times New Roman" => DefaultFont::Serif,
             "Arial" => DefaultFont::Sans,
             "Consolas" => DefaultFont::Typewriter,
