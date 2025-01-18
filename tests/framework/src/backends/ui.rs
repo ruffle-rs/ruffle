@@ -133,7 +133,10 @@ impl UiBackend for TestUiBackend {
         register: &mut dyn FnMut(FontDefinition),
     ) {
         for font in &self.fonts {
-            if font.family != name || font.bold != is_bold || font.italic != is_italic {
+            if !font.family.eq_ignore_ascii_case(name)
+                || font.bold != is_bold
+                || font.italic != is_italic
+            {
                 continue;
             }
 
