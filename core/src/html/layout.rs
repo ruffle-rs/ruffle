@@ -672,15 +672,7 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
             let font_name = font_name.trim();
 
             // Check if the font name is one of the known default fonts.
-            if let Some(default_font) = match font_name {
-                "_serif" => Some(DefaultFont::Serif),
-                "_sans" => Some(DefaultFont::Sans),
-                "_typewriter" => Some(DefaultFont::Typewriter),
-                "_ゴシック" => Some(DefaultFont::JapaneseGothic),
-                "_等幅" => Some(DefaultFont::JapaneseGothicMono),
-                "_明朝" => Some(DefaultFont::JapaneseMincho),
-                _ => None,
-            } {
+            if let Some(default_font) = DefaultFont::from_name(font_name) {
                 if let Some(&font) = context
                     .library
                     .default_font(
