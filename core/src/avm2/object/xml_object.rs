@@ -400,10 +400,10 @@ impl<'gc> TObject<'gc> for XmlObject<'gc> {
 
     fn has_own_property_string(
         self,
-        name: impl Into<AvmString<'gc>>,
+        name: AvmString<'gc>,
         activation: &mut Activation<'_, 'gc>,
     ) -> Result<bool, Error<'gc>> {
-        let multiname = string_to_multiname(activation, name.into());
+        let multiname = string_to_multiname(activation, name);
         Ok(self.has_own_property(&multiname))
     }
 
