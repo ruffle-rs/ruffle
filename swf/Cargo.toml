@@ -1,6 +1,6 @@
 [package]
 name = "swf"
-version = "0.2.1"
+version = "0.2.2"
 description = "Read and write the Adobe Flash SWF file format."
 authors.workspace = true
 edition.workspace = true

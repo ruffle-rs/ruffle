@@ -4971,7 +4971,7 @@ checksum = "13c2bddecc57b384dee18652358fb23172facb8a2c51ccc10d74c157bdea3292"
 
 [[package]]
 name = "swf"
-version = "0.2.1"
+version = "0.2.2"
 dependencies = [
  "bitflags 2.7.0",
  "bitstream-io",
