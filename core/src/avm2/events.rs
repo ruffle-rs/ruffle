@@ -93,11 +93,8 @@ impl<'gc> Event<'gc> {
         self.event_type
     }
 
-    pub fn set_event_type<S>(&mut self, event_type: S)
-    where
-        S: Into<AvmString<'gc>>,
-    {
-        self.event_type = event_type.into();
+    pub fn set_event_type(&mut self, event_type: AvmString<'gc>) {
+        self.event_type = event_type;
     }
 
     pub fn is_bubbling(&self) -> bool {
@@ -182,11 +179,8 @@ impl<'gc> DispatchList<'gc> {
 
     /// Get all of the event handlers for a given event type, if such a type
     /// exists.
-    fn get_event(
-        &self,
-        event: impl Into<AvmString<'gc>>,
-    ) -> Option<&BTreeMap<i32, Vec<EventHandler<'gc>>>> {
-        self.0.get(&event.into())
+    fn get_event(&self, event: AvmString<'gc>) -> Option<&BTreeMap<i32, Vec<EventHandler<'gc>>>> {
+        self.0.get(&event)
     }
 
     /// Get all of the event handlers for a given event type, for mutation.
@@ -195,20 +189,20 @@ impl<'gc> DispatchList<'gc> {
     /// list.
     fn get_event_mut(
         &mut self,
-        event: impl Into<AvmString<'gc>>,
+        event: AvmString<'gc>,
     ) -> &mut BTreeMap<i32, Vec<EventHandler<'gc>>> {
-        self.0.entry(event.into()).or_default()
+        self.0.entry(event).or_default()
     }
 
     /// Get a single priority level of event handlers for a given event type,
     /// for mutation.
     fn get_event_priority_mut(
         &mut self,
-        event: impl Into<AvmString<'gc>>,
+        event: AvmString<'gc>,
         priority: i32,
     ) -> &mut Vec<EventHandler<'gc>> {
         self.0
-            .entry(event.into())
+            .entry(event)
             .or_default()
             .entry(priority)
             .or_default()
@@ -222,14 +216,14 @@ impl<'gc> DispatchList<'gc> {
     /// be added again, and this function will silently fail.
     pub fn add_event_listener(
         &mut self,
-        event: impl Into<AvmString<'gc>> + Clone,
+        event: AvmString<'gc>,
         priority: i32,
         handler: Object<'gc>,
         use_capture: bool,
     ) {
         let new_handler = EventHandler::new(handler, use_capture);
 
-        if let Some(event_sheaf) = self.get_event(event.clone()) {
+        if let Some(event_sheaf) = self.get_event(event) {
             for (_other_prio, other_set) in event_sheaf.iter() {
                 if other_set.contains(&new_handler) {
                     return;
@@ -247,7 +241,7 @@ impl<'gc> DispatchList<'gc> {
     /// removed from any priority in the list.
     pub fn remove_event_listener(
         &mut self,
-        event: impl Into<AvmString<'gc>>,
+        event: AvmString<'gc>,
         handler: Object<'gc>,
         use_capture: bool,
     ) {
@@ -261,7 +255,7 @@ impl<'gc> DispatchList<'gc> {
     }
 
     /// Determine if there are any event listeners in this dispatch list.
-    pub fn has_event_listener(&self, event: impl Into<AvmString<'gc>>) -> bool {
+    pub fn has_event_listener(&self, event: AvmString<'gc>) -> bool {
         if let Some(event_sheaf) = self.get_event(event) {
             for (_prio, set) in event_sheaf.iter() {
                 if !set.is_empty() {
@@ -283,7 +277,7 @@ impl<'gc> DispatchList<'gc> {
     /// phases.
     pub fn iter_event_handlers<'a>(
         &'a mut self,
-        event: impl Into<AvmString<'gc>>,
+        event: AvmString<'gc>,
         use_capture: bool,
     ) -> impl 'a + Iterator<Item = Object<'gc>> {
         self.get_event_mut(event)

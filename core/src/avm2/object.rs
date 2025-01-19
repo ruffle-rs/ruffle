@@ -239,7 +239,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     #[no_dynamic]
     fn get_string_property_local(
         self,
-        name: impl Into<AvmString<'gc>>,
+        name: AvmString<'gc>,
         activation: &mut Activation<'_, 'gc>,
     ) -> Result<Value<'gc>, Error<'gc>> {
         let name = Multiname::new(activation.avm2().namespaces.public_vm_internal(), name);
