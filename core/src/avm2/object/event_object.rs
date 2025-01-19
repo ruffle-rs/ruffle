@@ -61,30 +61,26 @@ impl<'gc> EventObject<'gc> {
     /// It's just slightly faster and doesn't require an Activation.
     /// This is equivalent to
     /// classes.event.construct(activation, &[event_type, false, false])
-    pub fn bare_default_event<S>(
+    pub fn bare_default_event(
         context: &mut UpdateContext<'gc>,
-        event_type: S,
-    ) -> EventObject<'gc>
-    where
-        S: Into<AvmString<'gc>>,
-    {
+        event_type: &str,
+    ) -> EventObject<'gc> {
         Self::bare_event(context, event_type, false, false)
     }
 
     /// Create a bare Event instance while skipping the usual `construct()` pipeline.
     /// It's just slightly faster and doesn't require an Activation.
     /// Note that if you need an Event subclass, you need to construct it via .construct().
-    pub fn bare_event<S>(
+    pub fn bare_event(
         context: &mut UpdateContext<'gc>,
-        event_type: S,
+        event_type: &str,
         bubbles: bool,
         cancelable: bool,
-    ) -> EventObject<'gc>
-    where
-        S: Into<AvmString<'gc>>,
-    {
+    ) -> EventObject<'gc> {
         let class = context.avm2.classes().event;
         let base = ScriptObjectData::new(class);
+
+        let event_type = AvmString::new_utf8(context.gc(), event_type);
 
         let mut event = Event::new(event_type);
         event.set_bubbles(bubbles);
@@ -116,21 +112,18 @@ impl<'gc> EventObject<'gc> {
             .unwrap()
     }
 
-    pub fn mouse_event<S>(
+    pub fn mouse_event(
         activation: &mut Activation<'_, 'gc>,
-        event_type: S,
+        event_type: &str,
         target: DisplayObject<'gc>,
         related_object: Option<InteractiveObject<'gc>>,
         delta: i32,
         bubbles: bool,
         button: MouseButton,
-    ) -> EventObject<'gc>
-    where
-        S: Into<AvmString<'gc>>,
-    {
+    ) -> EventObject<'gc> {
         let local = target.local_mouse_position(activation.context);
 
-        let event_type: AvmString<'gc> = event_type.into();
+        let event_type = AvmString::new_utf8(activation.gc(), event_type);
 
         let mouse_event_cls = activation.avm2().classes().mouseevent;
         Self::from_class_and_args(
@@ -231,17 +224,14 @@ impl<'gc> EventObject<'gc> {
         )
     }
 
-    pub fn text_event<S>(
+    pub fn text_event(
         activation: &mut Activation<'_, 'gc>,
-        event_type: S,
+        event_type: &str,
         text: AvmString<'gc>,
         bubbles: bool,
         cancelable: bool,
-    ) -> EventObject<'gc>
-    where
-        S: Into<AvmString<'gc>>,
-    {
-        let event_type: AvmString<'gc> = event_type.into();
+    ) -> EventObject<'gc> {
+        let event_type = AvmString::new_utf8(activation.gc(), event_type);
 
         let text_event_cls = activation.avm2().classes().textevent;
         Self::from_class_and_args(
@@ -261,12 +251,17 @@ impl<'gc> EventObject<'gc> {
 
     pub fn net_status_event(
         activation: &mut Activation<'_, 'gc>,
-        info: Vec<(impl Into<AvmString<'gc>>, impl Into<AvmString<'gc>>)>,
+        info: Vec<(&str, &str)>,
     ) -> EventObject<'gc> {
+        let event_type = AvmString::new_utf8(activation.gc(), "netStatus");
+
         let info_object = ScriptObject::new_object(activation);
         for (key, value) in info {
+            let key = AvmString::new_utf8(activation.gc(), key);
+            let value = AvmString::new_utf8(activation.gc(), value);
+
             info_object
-                .set_string_property_local(key.into(), Value::String(value.into()), activation)
+                .set_string_property_local(key, Value::String(value), activation)
                 .unwrap();
         }
 
@@ -275,7 +270,7 @@ impl<'gc> EventObject<'gc> {
             activation,
             net_status_cls,
             &[
-                "netStatus".into(),
+                event_type.into(),
                 //bubbles
                 false.into(),
                 //cancelable
@@ -285,16 +280,13 @@ impl<'gc> EventObject<'gc> {
         )
     }
 
-    pub fn progress_event<S>(
+    pub fn progress_event(
         activation: &mut Activation<'_, 'gc>,
-        event_type: S,
+        event_type: &str,
         bytes_loaded: usize,
         bytes_total: usize,
-    ) -> EventObject<'gc>
-    where
-        S: Into<AvmString<'gc>>,
-    {
-        let event_type: AvmString<'gc> = event_type.into();
+    ) -> EventObject<'gc> {
+        let event_type = AvmString::new_utf8(activation.gc(), event_type);
 
         let progress_event_cls = activation.avm2().classes().progressevent;
         Self::from_class_and_args(
@@ -314,17 +306,14 @@ impl<'gc> EventObject<'gc> {
         )
     }
 
-    pub fn focus_event<S>(
+    pub fn focus_event(
         activation: &mut Activation<'_, 'gc>,
-        event_type: S,
+        event_type: &str,
         cancelable: bool,
         related_object: Option<InteractiveObject<'gc>>,
         key_code: u32,
-    ) -> EventObject<'gc>
-    where
-        S: Into<AvmString<'gc>>,
-    {
-        let event_type: AvmString<'gc> = event_type.into();
+    ) -> EventObject<'gc> {
+        let event_type = AvmString::new_utf8(activation.gc(), event_type);
         let shift_key = activation.context.input.is_key_down(KeyCode::SHIFT);
 
         let focus_event_cls = activation.avm2().classes().focusevent;
@@ -350,12 +339,14 @@ impl<'gc> EventObject<'gc> {
         error_msg: AvmString<'gc>,
         error_code: u32,
     ) -> EventObject<'gc> {
+        let event_type = AvmString::new_utf8(activation.gc(), "ioError");
+
         let io_error_event_cls = activation.avm2().classes().ioerrorevent;
         Self::from_class_and_args(
             activation,
             io_error_event_cls,
             &[
-                "ioError".into(),
+                event_type.into(),
                 false.into(),
                 false.into(),
                 error_msg.into(),
@@ -369,12 +360,14 @@ impl<'gc> EventObject<'gc> {
         status: u16,
         redirected: bool,
     ) -> EventObject<'gc> {
+        let event_type = AvmString::new_utf8(activation.gc(), "httpStatus");
+
         let http_status_event_cls = activation.avm2().classes().httpstatusevent;
         Self::from_class_and_args(
             activation,
             http_status_event_cls,
             &[
-                "httpStatus".into(),
+                event_type.into(),
                 false.into(),
                 false.into(),
                 status.into(),

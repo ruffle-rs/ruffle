@@ -76,10 +76,7 @@ pub struct Event<'gc> {
 
 impl<'gc> Event<'gc> {
     /// Construct a new event of a given type.
-    pub fn new<S>(event_type: S) -> Self
-    where
-        S: Into<AvmString<'gc>>,
-    {
+    pub fn new(event_type: AvmString<'gc>) -> Self {
         Event {
             bubbles: false,
             cancelable: false,
@@ -88,7 +85,7 @@ impl<'gc> Event<'gc> {
             current_target: None,
             event_phase: EventPhase::AtTarget,
             target: None,
-            event_type: event_type.into(),
+            event_type,
         }
     }
 
