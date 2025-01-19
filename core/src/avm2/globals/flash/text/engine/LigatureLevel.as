@@ -5,25 +5,22 @@
 
 package flash.text.engine
 {
-    
-    
+    [API("662")]
     public final class LigatureLevel
     {
         // Used to specify common ligatures.
         public static const COMMON:String = "common";
-        
+
         // Used to specify exotic ligatures.
         public static const EXOTIC:String = "exotic";
-        
+
         // Used to specify minimum ligatures.
         public static const MINIMUM:String = "minimum";
-        
+
         // Used to specify no ligatures.
         public static const NONE:String = "none";
-        
+
         // Used to specify uncommon ligatures.
         public static const UNCOMMON:String = "uncommon";
-        
-        
     }
 }

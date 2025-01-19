@@ -1,4 +1,5 @@
 package flash.text.engine {
+    [API("662")]
     public final class SpaceJustifier extends TextJustifier {
         private var _letterSpacing:Boolean;
         private var _minimumSpacing:Number = 0.5;

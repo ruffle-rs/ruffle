@@ -5,16 +5,13 @@
 
 package flash.text.engine
 {
-    
-    
+    [API("662")]
     public final class RenderingMode
     {
         // Sets rendering mode to CFF (Compact Font Format).
         public static const CFF:String = "cff";
-        
+
         // Sets rendering mode to the rendering mode that is used in Flash Player 7 and earlier.
         public static const NORMAL:String = "normal";
-        
-        
     }
 }

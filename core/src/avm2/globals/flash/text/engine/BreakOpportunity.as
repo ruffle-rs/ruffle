@@ -5,22 +5,19 @@
 
 package flash.text.engine
 {
-    
-    
+    [API("662")]
     public final class BreakOpportunity
     {
         // Treats all characters in the ContentElement object as line break opportunities, meaning that a line break will occur after each character.
         public static const ALL:String = "all";
-        
+
         // Treats any character in the ContentElement object as a line break opportunity.
         public static const ANY:String = "any";
-        
+
         // Bases line break opportunities on Unicode character properties.
         public static const AUTO:String = "auto";
-        
+
         // Treats no characters in the ContentElement object as line break opportunities.
         public static const NONE:String = "none";
-        
-        
     }
 }

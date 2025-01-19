@@ -1,6 +1,7 @@
 package flash.text.engine {
     import __ruffle__.stub_method;
 
+    [API("662")]
     public final class FontDescription {
         [Ruffle(InternalSlot)]
         private var _fontName:String;
