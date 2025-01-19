@@ -141,12 +141,11 @@ impl<'gc> TObject<'gc> for ProxyObject<'gc> {
 
     fn has_own_property_string(
         self,
-        name: impl Into<AvmString<'gc>>,
+        name: AvmString<'gc>,
         activation: &mut Activation<'_, 'gc>,
     ) -> Result<bool, Error<'gc>> {
         let self_val = Value::from(self);
 
-        let name = name.into();
         let prop = Multiname::new(activation.avm2().namespaces.proxy, "hasProperty");
         Ok(self_val
             .call_property(&prop, &[name.into()], activation)?
