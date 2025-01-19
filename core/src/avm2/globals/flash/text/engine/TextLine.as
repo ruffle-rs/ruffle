@@ -13,6 +13,7 @@ package flash.text.engine {
     // however, it's unlikely that SWFs will actually attempt to add children
     // to a TextLine.
     [Ruffle(Abstract)]
+    [API("662")]
     public final class TextLine extends DisplayObjectContainer {
         [Ruffle(InternalSlot)]
         private var _specifiedWidth:Number = 0.0;

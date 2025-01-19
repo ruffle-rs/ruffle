@@ -1,4 +1,5 @@
 package flash.text.engine {
+    [API("662")]
     public final class ElementFormat {
         private var _alignmentBaseline:String;
 

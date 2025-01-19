@@ -1,6 +1,7 @@
 package flash.text.engine {
     import flash.utils.getQualifiedClassName;
 
+    [API("662")]
     public class TextJustifier {
         private var _lineJustification:String = null;
         public function TextJustifier(locale:String, lineJustification:String) {
