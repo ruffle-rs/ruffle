@@ -92,17 +92,6 @@ impl<'gc> ParamConfig<'gc> {
         })
     }
 
-    pub fn of_type(
-        name: impl Into<AvmString<'gc>>,
-        param_type_name: Option<Gc<'gc, Multiname<'gc>>>,
-    ) -> Self {
-        Self {
-            param_name: name.into(),
-            param_type_name,
-            default_value: None,
-        }
-    }
-
     pub fn optional(
         name: impl Into<AvmString<'gc>>,
         param_type_name: Option<Gc<'gc, Multiname<'gc>>>,

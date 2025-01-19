@@ -362,10 +362,10 @@ impl<'gc> Multiname<'gc> {
     }
 
     /// Creates a new Multiname with the `MultinameFlags::ATTRIBUTE` flag.
-    pub fn attribute(ns: Namespace<'gc>, name: impl Into<AvmString<'gc>>) -> Self {
+    pub fn attribute(ns: Namespace<'gc>, name: AvmString<'gc>) -> Self {
         Self {
             ns: NamespaceSet::single(ns),
-            name: Some(name.into()),
+            name: Some(name),
             param: None,
             flags: MultinameFlags::ATTRIBUTE,
         }
