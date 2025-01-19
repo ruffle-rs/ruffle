@@ -398,14 +398,13 @@ impl<'gc> NetStream<'gc> {
         StreamManager::activate(context, self);
 
         if notify {
-            let trigger =
-                AvmString::new_utf8(context.gc(), format!("Start Seeking {}", offset as u64));
+            let trigger = format!("Start Seeking {}", offset as u64);
             self.trigger_status_event(
                 context,
                 vec![
-                    ("description", trigger),
-                    ("level", "status".into()),
-                    ("code", "NetStream.SeekStart.Notify".into()),
+                    ("description", &trigger),
+                    ("level", "status"),
+                    ("code", "NetStream.SeekStart.Notify"),
                 ],
             );
         }
@@ -1277,11 +1276,7 @@ impl<'gc> NetStream<'gc> {
     }
 
     /// Trigger a status event on the stream.
-    pub fn trigger_status_event(
-        self,
-        context: &mut UpdateContext<'gc>,
-        values: Vec<(impl Into<AvmString<'gc>>, impl Into<AvmString<'gc>>)>,
-    ) {
+    pub fn trigger_status_event(self, context: &mut UpdateContext<'gc>, values: Vec<(&str, &str)>) {
         let object = self.0.read().avm_object;
         match object {
             Some(AvmObject::Avm1(object)) => {
@@ -1295,8 +1290,11 @@ impl<'gc> NetStream<'gc> {
                 let info_object = Avm1ScriptObject::new(activation.gc(), Some(object_proto));
 
                 for (key, value) in values {
+                    let key = AvmString::new_utf8(activation.gc(), key);
+                    let value = AvmString::new_utf8(activation.gc(), value);
+
                     info_object
-                        .set(key.into(), Avm1Value::String(value.into()), &mut activation)
+                        .set(key, Avm1Value::String(value), &mut activation)
                         .expect("valid set");
                 }
 

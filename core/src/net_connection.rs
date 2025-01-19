@@ -7,7 +7,6 @@ use crate::avm2::{Activation as Avm2Activation, Avm2, EventObject as Avm2EventOb
 use crate::backend::navigator::{ErrorResponse, NavigatorBackend, OwnedFuture, Request};
 use crate::context::UpdateContext;
 use crate::loader::Error;
-use crate::string::AvmString;
 use crate::Player;
 use flash_lso::packet::{Header, Message, Packet};
 use flash_lso::types::{AMFVersion, Value as AmfValue};
@@ -540,14 +539,13 @@ impl FlashRemoting {
                             match connection.object {
                                 NetConnectionObject::Avm2(object) => {
                                     let mut activation = Avm2Activation::from_nothing(uc);
-                                    let url = AvmString::new_utf8(activation.gc(), response.url);
                                     let event = Avm2EventObject::net_status_event(
                                         &mut activation,
                                         vec![
-                                            ("code", "NetConnection.Call.Failed".into()),
-                                            ("level", "error".into()),
-                                            ("details", url),
-                                            ("description", "HTTP: Failed".into()),
+                                            ("code", "NetConnection.Call.Failed"),
+                                            ("level", "error"),
+                                            ("details", &response.url),
+                                            ("description", "HTTP: Failed"),
                                         ],
                                     );
                                     Avm2::dispatch_event(activation.context, event, object.into());
