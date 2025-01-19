@@ -9,6 +9,7 @@ use crate::avm2::traits::Trait;
 use crate::avm2::value::Value;
 use crate::avm2::vtable::VTable;
 use crate::avm2::{Avm2, Error, Multiname, Namespace, QName};
+use crate::string::WStr;
 use crate::tag_utils::{self, ControlFlow, SwfMovie, SwfSlice, SwfStream};
 use gc_arena::Collect;
 use std::sync::Arc;
@@ -812,9 +813,16 @@ macro_rules! avm2_system_classes_playerglobal {
     ($activation:expr, [$(($package:expr, $class_name:expr, $field:ident)),* $(,)?]) => {
         let activation = $activation;
         $(
+            // Package and class names are ASCII
+            let package = WStr::from_units($package.as_bytes());
+            let class_name = WStr::from_units($class_name.as_bytes());
+
+            let package = activation.strings().intern_static(package);
+            let class_name = activation.strings().intern_static(class_name);
+
             // Lookup with the highest version, so we we see all defined classes here
-            let ns = Namespace::package($package, ApiVersion::VM_INTERNAL, activation.strings());
-            let name = QName::new(ns, $class_name);
+            let ns = Namespace::package(package, ApiVersion::VM_INTERNAL, activation.strings());
+            let name = QName::new(ns, class_name);
             let class_object = activation.domain().get_defined_value(activation, name).unwrap_or_else(|e| panic!("Failed to lookup {name:?}: {e:?}"));
             let class_object = class_object.as_object().unwrap().as_class_object().unwrap();
             let sc = activation.avm2().system_classes.as_mut().unwrap();
@@ -827,11 +835,18 @@ macro_rules! avm2_system_class_defs_playerglobal {
     ($activation:expr, [$(($package:expr, $class_name:expr, $field:ident)),* $(,)?]) => {
         let activation = $activation;
         $(
+            // Package and class names are ASCII
+            let package = WStr::from_units($package.as_bytes());
+            let class_name = WStr::from_units($class_name.as_bytes());
+
+            let package = activation.strings().intern_static(package);
+            let class_name = activation.strings().intern_static(class_name);
+
             let domain = activation.domain();
 
             // Lookup with the highest version, so we we see all defined classes here
-            let ns = Namespace::package($package, ApiVersion::VM_INTERNAL, activation.strings());
-            let name = Multiname::new(ns, $class_name);
+            let ns = Namespace::package(package, ApiVersion::VM_INTERNAL, activation.strings());
+            let name = Multiname::new(ns, class_name);
             let class_def = domain.get_class(activation.context, &name).unwrap_or_else(|| panic!("Failed to lookup {name:?}"));
             let sc = activation.avm2().system_class_defs.as_mut().unwrap();
             sc.$field = class_def;
