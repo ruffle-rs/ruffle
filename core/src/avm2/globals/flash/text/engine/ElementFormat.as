@@ -1,4 +1,8 @@
 package flash.text.engine {
+    import __ruffle__.stub_method;
+
+    import flash.geom.Rectangle;
+
     [API("662")]
     public final class ElementFormat {
         private var _alignmentBaseline:String;
@@ -199,6 +203,14 @@ package flash.text.engine {
 
         public function set typographicCase(value:String):void {
             this._typographicCase = value;
+        }
+
+        public function getFontMetrics():FontMetrics {
+            stub_method("flash.text.engine.ElementFormat", "getFontMetrics");
+            var emBox:Rectangle = new Rectangle(0, _fontSize * -0.8, _fontSize, _fontSize);
+            return new FontMetrics(
+                emBox, -5, 1.2, 1.8, 1.2, 0.075, 0.6, -0.35, 0.6, 0.0
+            );
         }
     }
 }
