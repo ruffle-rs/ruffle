@@ -3,6 +3,7 @@ package flash.text.engine {
     import __ruffle__.stub_setter;
     import __ruffle__.stub_method;
 
+    import flash.display.DisplayObject;
     import flash.display.DisplayObjectContainer;
     import flash.errors.IllegalOperationError;
     import flash.geom.Rectangle;
@@ -113,9 +114,44 @@ package flash.text.engine {
             return -1;
         }
 
+        public function getAtomBidiLevel(index:int):int {
+            stub_method("flash.text.engine.TextLine", "getAtomBidiLevel");
+            return 0;
+        }
+
         public function getAtomBounds(index:int):Rectangle {
             stub_method("flash.text.engine.TextLine", "getAtomBounds");
             return new Rectangle(0, 0, 0, 0);
+        }
+
+        public function getAtomCenter(index:int):Number {
+            stub_method("flash.text.engine.TextLine", "getAtomCenter");
+            return 1.0;
+        }
+
+        public function getAtomGraphic(index:int):DisplayObject {
+            stub_method("flash.text.engine.TextLine", "getAtomGraphic");
+            return null;
+        }
+
+        public function getAtomTextBlockBeginIndex(index:int):int {
+            stub_method("flash.text.engine.TextLine", "getAtomTextBlockBeginIndex");
+            return 0;
+        }
+
+        public function getAtomTextBlockEndIndex(index:int):int {
+            stub_method("flash.text.engine.TextLine", "getAtomTextBlockEndIndex");
+            return 0;
+        }
+
+        public function getAtomTextRotation(index:int):String {
+            stub_method("flash.text.engine.TextLine", "getAtomTextRotation");
+            return TextRotation.ROTATE_0;
+        }
+
+        public function getAtomWordBoundaryOnLeft(index:int):Boolean {
+            stub_method("flash.text.engine.TextLine", "getAtomWordBoundaryOnLeft");
+            return false;
         }
 
         // This function does nothing in Flash Player 32
