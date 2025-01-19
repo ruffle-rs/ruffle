@@ -444,18 +444,20 @@ impl<'gc> Avm1<'gc> {
             Self::find_display_objects_pending_removal(root_clip, &mut out);
         }
 
-        for child in out {
+        for &child in &out {
             // Get the parent of this object
-            let parent = child.parent().unwrap();
-            let parent_container = parent.as_container().unwrap();
+            if let Some(parent_container) = child.parent().and_then(|p| p.as_container()) {
+                // Remove it
+                parent_container.remove_child_directly(context, child);
 
-            // Remove it
-            parent_container.remove_child_directly(context, child);
-
-            // Update pending removal state
-            parent_container
-                .raw_container_mut(context.gc())
-                .update_pending_removals();
+                // Update pending removal state
+                parent_container
+                    .raw_container_mut(context.gc())
+                    .update_pending_removals();
+            } else {
+                // TODO Investigate it. This situation seems impossible, yet it happens.
+                tracing::warn!("AVM1 object pending removal doesn't have a parent, object={:?}, pending removal={:?}", child, out);
+            }
         }
     }
 
