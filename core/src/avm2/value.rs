@@ -776,7 +776,7 @@ impl<'gc> Value<'gc> {
             Value::Bool(true) => "true".into(),
             Value::Bool(false) => "false".into(),
             Value::Number(n) if n.is_nan() => "NaN".into(),
-            Value::Number(n) if *n == 0.0 => "0".into(),
+            Value::Number(n) if *n == 0.0 => activation.strings().ascii_char(b'0'),
             Value::Number(n) if *n < 0.0 => AvmString::new_utf8(
                 activation.gc(),
                 format!("-{}", Value::Number(-n).coerce_to_string(activation)?),
@@ -806,7 +806,7 @@ impl<'gc> Value<'gc> {
             }
             Value::Integer(i) => {
                 if *i >= 0 && *i < 10 {
-                    activation.strings().make_char('0' as u16 + *i as u16)
+                    activation.strings().ascii_char(b'0' + *i as u8)
                 } else {
                     AvmString::new_utf8(activation.gc(), i.to_string())
                 }
@@ -1706,7 +1706,8 @@ impl<'gc> Value<'gc> {
                 if let Value::Object(Object::QNameObject(other_qname)) = other {
                     return Ok(self_qname.uri(activation.strings())
                         == other_qname.uri(activation.strings())
-                        && self_qname.local_name() == other_qname.local_name());
+                        && self_qname.local_name(activation.strings())
+                            == other_qname.local_name(activation.strings()));
                 }
             }
 

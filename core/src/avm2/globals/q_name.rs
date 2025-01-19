@@ -65,7 +65,7 @@ pub fn q_name_constructor<'gc>(
         };
 
         if let Value::Object(Object::QNameObject(qname)) = local_arg {
-            this.set_local_name(activation.gc(), qname.local_name());
+            this.set_local_name(activation.gc(), qname.local_name(activation.strings()));
         } else {
             this.set_local_name(activation.gc(), local_arg.coerce_to_string(activation)?);
         }
@@ -102,14 +102,14 @@ pub fn q_name_constructor<'gc>(
 
 /// Implements `QName.localName`'s getter
 pub fn get_local_name<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
     if let Some(this) = this.as_qname_object() {
-        return Ok(this.local_name().into());
+        return Ok(this.local_name(activation.strings()).into());
     }
 
     Ok(Value::Undefined)

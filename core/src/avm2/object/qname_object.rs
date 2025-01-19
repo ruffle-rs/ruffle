@@ -89,10 +89,10 @@ impl<'gc> QNameObject<'gc> {
         write_name.set_local_name(local);
     }
 
-    pub fn local_name(&self) -> AvmString<'gc> {
+    pub fn local_name(&self, context: &mut StringContext<'gc>) -> AvmString<'gc> {
         let name = self.name();
 
-        name.local_name().unwrap_or("*".into())
+        name.local_name().unwrap_or(context.ascii_char(b'*'))
     }
 
     pub fn set_is_qname(&self, mc: &Mutation<'gc>, is_qname: bool) {
@@ -159,7 +159,7 @@ impl<'gc> TObject<'gc> for QNameObject<'gc> {
     ) -> Result<Value<'gc>, Error<'gc>> {
         // NOTE: Weird avmplus behavior, get_enumerant_name returns uri first, but get_enumerant_value returns localName first.
         Ok(match index {
-            1 => self.local_name().into(),
+            1 => self.local_name(activation.strings()).into(),
             2 => self
                 .uri(activation.strings())
                 .unwrap_or_else(|| activation.strings().empty())
