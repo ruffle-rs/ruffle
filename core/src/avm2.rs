@@ -97,7 +97,8 @@ use self::api_version::ApiVersion;
 use self::object::WeakObject;
 use self::scope::Scope;
 
-const BROADCAST_WHITELIST: [&str; 4] = ["enterFrame", "exitFrame", "frameConstructed", "render"];
+const BROADCAST_WHITELIST: [&[u8]; 4] =
+    [b"enterFrame", b"exitFrame", b"frameConstructed", b"render"];
 
 const PREALLOCATED_STACK_SIZE: usize = 120000;
 
@@ -483,10 +484,7 @@ impl<'gc> Avm2<'gc> {
         object: Object<'gc>,
         event_name: AvmString<'gc>,
     ) {
-        if !BROADCAST_WHITELIST
-            .iter()
-            .any(|x| AvmString::from(*x) == event_name)
-        {
+        if !BROADCAST_WHITELIST.iter().any(|x| *x == &event_name) {
             return;
         }
 
@@ -521,10 +519,7 @@ impl<'gc> Avm2<'gc> {
     ) {
         let event_name = event.event().event_type();
 
-        if !BROADCAST_WHITELIST
-            .iter()
-            .any(|x| AvmString::from(*x) == event_name)
-        {
+        if !BROADCAST_WHITELIST.iter().any(|x| *x == &event_name) {
             return;
         }
 
