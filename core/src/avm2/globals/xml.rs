@@ -253,7 +253,7 @@ pub fn set_name<'gc>(
         // 2. If (Type(name) is Object) and (name.[[Class]] == "QName") and (name.uri == null)
         Value::Object(Object::QNameObject(qname)) if qname.is_any_namespace() => {
             // a. Let name = name.localName
-            qname.local_name().into()
+            qname.local_name(activation.strings()).into()
         }
         value => value,
     };
@@ -269,9 +269,11 @@ pub fn set_name<'gc>(
         .as_qname_object()
         .unwrap();
 
+    let new_local_name = new_name.local_name(activation.strings());
+
     // NOTE: avmplus addition
-    if !crate::avm2::e4x::is_xml_name(new_name.local_name()) {
-        return Err(make_error_1117(activation, new_name.local_name()));
+    if !crate::avm2::e4x::is_xml_name(new_local_name) {
+        return Err(make_error_1117(activation, new_local_name));
     }
 
     // 4. If x.[[Class]] == "processing-instruction", let n.uri be the empty string
@@ -288,7 +290,7 @@ pub fn set_name<'gc>(
 
     // 5. Let x.[[Name]] = n
     node.set_namespace(ns, activation.gc());
-    node.set_local_name(new_name.local_name(), activation.gc());
+    node.set_local_name(new_local_name, activation.gc());
 
     // NOTE: avmplus addition
     if let Some(ns) = ns {
@@ -1303,7 +1305,7 @@ pub fn set_local_name<'gc>(
     // 2. If (Type(name) is Object) and (name.[[Class]] == "QName")
     let name = if let Some(qname) = name.as_object().and_then(|x| x.as_qname_object()) {
         // 2.a. Let name = name.localName
-        qname.local_name()
+        qname.local_name(activation.strings())
     // 3. Else
     } else {
         // 3.a. Let name = ToString(name)

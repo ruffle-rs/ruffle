@@ -132,8 +132,8 @@ impl<'gc> TObject<'gc> for ProxyObject<'gc> {
                 &prop,
                 &[name
                     .local_name()
-                    .map(Value::from)
-                    .unwrap_or_else(|| "*".into())],
+                    .unwrap_or_else(|| activation.strings().ascii_char(b'*'))
+                    .into()],
                 activation,
             )?
             .coerce_to_boolean())
