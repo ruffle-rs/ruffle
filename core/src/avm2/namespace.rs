@@ -331,7 +331,7 @@ impl<'gc> Namespace<'gc> {
     }
 }
 
-/// List of common namespaces used in the rest of the AVM2.
+/// Common namespaces used in the AVM.
 #[derive(Collect)]
 #[collect(no_drop)]
 pub struct CommonNamespaces<'gc> {
@@ -341,7 +341,6 @@ pub struct CommonNamespaces<'gc> {
     pub(super) as3: Namespace<'gc>,
     pub(super) vector_public: Namespace<'gc>,
     pub(super) vector_internal: Namespace<'gc>,
-    pub(super) proxy: Namespace<'gc>,
 
     pub(super) __ruffle__: Namespace<'gc>,
 }
@@ -362,11 +361,6 @@ impl<'gc> CommonNamespaces<'gc> {
             ),
             vector_public: Namespace::package("__AS3__.vec", ApiVersion::AllVersions, context),
             vector_internal: Namespace::internal("__AS3__.vec", context),
-            proxy: Namespace::package(
-                "http://www.adobe.com/2006/actionscript/flash/proxy",
-                ApiVersion::AllVersions,
-                context,
-            ),
 
             __ruffle__: Namespace::package("__ruffle__", ApiVersion::AllVersions, context),
         }
