@@ -439,11 +439,17 @@ impl ApplicationHandler<RuffleEvent> for App {
             let preferred_height = self.preferences.cli.height;
             let start_fullscreen = self.preferences.cli.fullscreen;
 
-            let window_attributes = WindowAttributes::default()
+            let mut window_attributes = WindowAttributes::default()
                 .with_visible(false)
                 .with_title("Ruffle")
                 .with_window_icon(Some(icon))
                 .with_min_inner_size(min_window_size);
+
+            #[cfg(target_os = "linux")]
+            {
+                use winit::platform::wayland::WindowAttributesExtWayland;
+                window_attributes = window_attributes.with_name("rs.ruffle.Ruffle", "main");
+            }
 
             let event_loop_proxy = self.event_loop_proxy.clone();
             let preferences = self.preferences.clone();
