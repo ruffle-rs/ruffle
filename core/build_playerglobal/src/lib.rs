@@ -488,7 +488,13 @@ fn write_native_table(data: &[u8], out_dir: &Path) -> Result<Vec<u8>, Box<dyn st
 
                         let (trait_name, const_name) =
                             rust_path_and_trait_name(&abc, trait_, parent);
-                        let const_name = quote::format_ident!("{}", const_name);
+
+                        // Make getters prefixed with GET_ and setters prefixed with SET_
+                        let const_name = match trait_.kind {
+                            TraitKind::Getter { .. } => quote::format_ident!("GET_{}", const_name),
+                            TraitKind::Setter { .. } => quote::format_ident!("SET_{}", const_name),
+                            _ => quote::format_ident!("{}", const_name),
+                        };
 
                         // Declare a const with the method name set to the disp id.
                         rust_accessible_methods
