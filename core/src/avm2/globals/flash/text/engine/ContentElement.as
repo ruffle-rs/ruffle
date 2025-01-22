@@ -16,6 +16,7 @@ package flash.text.engine {
             this._elementFormat = elementFormat;
         }
 
+        [Ruffle(NativeCallable)]
         public function get text():String {
             return this._text;
         }

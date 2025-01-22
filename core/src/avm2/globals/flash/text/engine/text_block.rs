@@ -1,6 +1,7 @@
 use crate::avm2::activation::Activation;
 use crate::avm2::error::Error;
 use crate::avm2::globals::flash::display::display_object::initialize_for_allocator;
+use crate::avm2::globals::methods::flash_text_engine_content_element as element_methods;
 use crate::avm2::globals::slots::flash_text_engine_content_element as element_slots;
 use crate::avm2::globals::slots::flash_text_engine_element_format as format_slots;
 use crate::avm2::globals::slots::flash_text_engine_font_description as font_desc_slots;
@@ -45,11 +46,11 @@ pub fn create_text_line<'gc>(
             )?;
             return Ok(Value::Null);
         }
-        // Get the content element's text property.
+        // Get the content element's text property (it's a getter).
         // TODO: GraphicElement?
         None => {
             let txt = content
-                .get_public_property("text", activation)
+                .call_method(element_methods::GET_TEXT, &[], activation)
                 .unwrap_or_else(|_| activation.strings().empty().into());
 
             if matches!(txt, Value::Null) {
