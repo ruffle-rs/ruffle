@@ -1,27 +1,27 @@
 package flash.geom {
     public class ColorTransform {
-        [Ruffle(InternalSlot)]
+        [Ruffle(NativeAccessible)]
         public var redMultiplier: Number;
 
-        [Ruffle(InternalSlot)]
+        [Ruffle(NativeAccessible)]
         public var greenMultiplier: Number;
 
-        [Ruffle(InternalSlot)]
+        [Ruffle(NativeAccessible)]
         public var blueMultiplier: Number;
 
-        [Ruffle(InternalSlot)]
+        [Ruffle(NativeAccessible)]
         public var alphaMultiplier: Number;
 
-        [Ruffle(InternalSlot)]
+        [Ruffle(NativeAccessible)]
         public var redOffset: Number;
 
-        [Ruffle(InternalSlot)]
+        [Ruffle(NativeAccessible)]
         public var greenOffset: Number;
 
-        [Ruffle(InternalSlot)]
+        [Ruffle(NativeAccessible)]
         public var blueOffset: Number;
 
-        [Ruffle(InternalSlot)]
+        [Ruffle(NativeAccessible)]
         public var alphaOffset: Number;
 
         public function ColorTransform(redMultiplier: Number = 1, 

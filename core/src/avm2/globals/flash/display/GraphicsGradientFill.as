@@ -3,28 +3,28 @@ package flash.display {
 import flash.geom.Matrix;
 
     public final class GraphicsGradientFill implements IGraphicsFill, IGraphicsData {
-        [Ruffle(InternalSlot)]
+        [Ruffle(NativeAccessible)]
         public var alphas : Array;
 
-        [Ruffle(InternalSlot)]
+        [Ruffle(NativeAccessible)]
         public var colors : Array;
 
-        [Ruffle(InternalSlot)]
+        [Ruffle(NativeAccessible)]
         public var focalPointRatio : Number;
 
-        [Ruffle(InternalSlot)]
+        [Ruffle(NativeAccessible)]
         public var interpolationMethod : String;
 
-        [Ruffle(InternalSlot)]
+        [Ruffle(NativeAccessible)]
         public var matrix : Matrix;
 
-        [Ruffle(InternalSlot)]
+        [Ruffle(NativeAccessible)]
         public var ratios : Array;
 
-        [Ruffle(InternalSlot)]
+        [Ruffle(NativeAccessible)]
         public var spreadMethod : String;
 
-        [Ruffle(InternalSlot)]
+        [Ruffle(NativeAccessible)]
         public var type : String;
 
         public function GraphicsGradientFill(

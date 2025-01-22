@@ -4,10 +4,10 @@ package flash.net {
     import __ruffle__.stub_method;
 
     public class URLLoader extends EventDispatcher {
-        [Ruffle(InternalSlot)]
+        [Ruffle(NativeAccessible)]
         public var data: *;
 
-        [Ruffle(InternalSlot)]
+        [Ruffle(NativeAccessible)]
         public var dataFormat: String = "text";
 
         public function URLLoader(request:URLRequest = null) {

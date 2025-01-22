@@ -16,13 +16,13 @@ package flash.text.engine {
     [Ruffle(Abstract)]
     [API("662")]
     public final class TextLine extends DisplayObjectContainer {
-        [Ruffle(InternalSlot)]
+        [Ruffle(NativeAccessible)]
         private var _specifiedWidth:Number = 0.0;
 
-        [Ruffle(InternalSlot)]
+        [Ruffle(NativeAccessible)]
         internal var _textBlock:TextBlock = null;
 
-        [Ruffle(InternalSlot)]
+        [Ruffle(NativeAccessible)]
         private var _rawTextLength:int = 0;
 
         internal var _validity:String = "valid";

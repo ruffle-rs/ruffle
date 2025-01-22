@@ -6,7 +6,7 @@ package flash.display {
     // but airglobal.swc disagrees with that:
     [API("667")]
     public class NativeMenuItem extends EventDispatcher {
-        [Ruffle(InternalSlot)]
+        [Ruffle(NativeAccessible)]
         public var enabled: Boolean = false;
 
         public var checked: Boolean = false;

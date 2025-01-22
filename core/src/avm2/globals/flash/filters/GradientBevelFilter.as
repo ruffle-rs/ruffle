@@ -4,37 +4,37 @@
         // GradientGlowFilter; filter code assumes the slot layouts are identical
 
         // FIXME these should all be getters/setters to match Flash
-        [Ruffle(InternalSlot)]
+        [Ruffle(NativeAccessible)]
         public var alphas : Array;
 
-        [Ruffle(InternalSlot)]
+        [Ruffle(NativeAccessible)]
         public var angle : Number;
 
-        [Ruffle(InternalSlot)]
+        [Ruffle(NativeAccessible)]
         public var blurX : Number;
 
-        [Ruffle(InternalSlot)]
+        [Ruffle(NativeAccessible)]
         public var blurY : Number;
 
-        [Ruffle(InternalSlot)]
+        [Ruffle(NativeAccessible)]
         public var colors : Array;
 
-        [Ruffle(InternalSlot)]
+        [Ruffle(NativeAccessible)]
         public var distance : Number;
 
-        [Ruffle(InternalSlot)]
+        [Ruffle(NativeAccessible)]
         public var knockout : Boolean;
 
-        [Ruffle(InternalSlot)]
+        [Ruffle(NativeAccessible)]
         public var quality : int;
 
-        [Ruffle(InternalSlot)]
+        [Ruffle(NativeAccessible)]
         public var ratios : Array;
 
-        [Ruffle(InternalSlot)]
+        [Ruffle(NativeAccessible)]
         public var strength : Number;
 
-        [Ruffle(InternalSlot)]
+        [Ruffle(NativeAccessible)]
         public var type : String;
 
         public function GradientBevelFilter(

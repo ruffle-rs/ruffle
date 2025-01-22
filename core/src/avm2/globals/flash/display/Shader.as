@@ -4,7 +4,7 @@ package flash.display {
     import flash.utils.ByteArray;
 
     public class Shader {
-        [Ruffle(InternalSlot)]
+        [Ruffle(NativeAccessible)]
         private var _data:ShaderData;
 
         private var _precisionHint:String = ShaderPrecision.FULL;

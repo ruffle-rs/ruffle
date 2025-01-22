@@ -8,7 +8,7 @@ package flash.text.engine {
 
         internal var _text:String = null;
 
-        [Ruffle(InternalSlot)]
+        [Ruffle(NativeAccessible)]
         private var _elementFormat:ElementFormat;
 
         public function ContentElement(elementFormat:ElementFormat = null, eventMirror:EventDispatcher = null, textRotation:String = "rotate0") {

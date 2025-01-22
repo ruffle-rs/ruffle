@@ -1,18 +1,18 @@
 package flash.display {
     public final dynamic class ShaderInput {
-        [Ruffle(InternalSlot)]
+        [Ruffle(NativeAccessible)]
         private var _channels: int;
 
-        [Ruffle(InternalSlot)]
+        [Ruffle(NativeAccessible)]
         private var _height: int;
 
-        [Ruffle(InternalSlot)]
+        [Ruffle(NativeAccessible)]
         private var _index: int;
 
-        [Ruffle(InternalSlot)]
+        [Ruffle(NativeAccessible)]
         private var _input: Object;
 
-        [Ruffle(InternalSlot)]
+        [Ruffle(NativeAccessible)]
         private var _width: int;
 
         public function get channels():int {

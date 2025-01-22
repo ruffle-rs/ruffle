@@ -33,10 +33,10 @@ package flash.events
 
         public var relatedObject: InteractiveObject;
 
-        [Ruffle(InternalSlot)]
+        [Ruffle(NativeAccessible)]
         public var localX: Number;
 
-        [Ruffle(InternalSlot)]
+        [Ruffle(NativeAccessible)]
         public var localY: Number;
 
         public var ctrlKey: Boolean;

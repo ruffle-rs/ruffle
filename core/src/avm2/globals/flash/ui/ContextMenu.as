@@ -3,12 +3,12 @@ package flash.ui {
     import __ruffle__.stub_getter;
 
     public final class ContextMenu extends NativeMenu {
-        [Ruffle(InternalSlot)]
+        [Ruffle(NativeAccessible)]
         private var _customItems:Array;
 
         private var _clipboardMenu:Boolean;
 
-        [Ruffle(InternalSlot)]
+        [Ruffle(NativeAccessible)]
         private var _builtInItems: ContextMenuBuiltInItems = new ContextMenuBuiltInItems();
 
         private var _clipboardItems: ContextMenuClipboardItems = new ContextMenuClipboardItems();

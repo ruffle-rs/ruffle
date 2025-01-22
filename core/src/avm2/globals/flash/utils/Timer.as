@@ -5,14 +5,14 @@ package flash.utils {
         private var _currentCount: int;
         private var _repeatCount: int;
 
-        [Ruffle(InternalSlot)]
+        [Ruffle(NativeAccessible)]
         private var _delay: Number;
 
-        [Ruffle(InternalSlot)]
+        [Ruffle(NativeAccessible)]
         private var _timerId: int = -1;
 
         // Returns 'true' if we should cancel the underlying Ruffle native timer
-        [Ruffle(InternalSlot)]
+        [Ruffle(NativeAccessible)]
         private var _onUpdateClosure:Function;
 
         private function checkDelay(delay:Number): void {

@@ -1,9 +1,9 @@
 package flash.events {
     public class EventDispatcher implements IEventDispatcher {
-        [Ruffle(InternalSlot)]
+        [Ruffle(NativeAccessible)]
         private var target:IEventDispatcher;
 
-        [Ruffle(InternalSlot)]
+        [Ruffle(NativeAccessible)]
         private var dispatchList:Object;
 
         public function EventDispatcher(target:IEventDispatcher = null) {

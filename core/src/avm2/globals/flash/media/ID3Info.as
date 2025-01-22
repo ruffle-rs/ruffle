@@ -1,24 +1,24 @@
 package flash.media {
     public final dynamic class ID3Info {
-        [Ruffle(InternalSlot)]
+        [Ruffle(NativeAccessible)]
         public var album:String;
 
-        [Ruffle(InternalSlot)]
+        [Ruffle(NativeAccessible)]
         public var artist:String;
 
-        [Ruffle(InternalSlot)]
+        [Ruffle(NativeAccessible)]
         public var comment:String;
 
-        [Ruffle(InternalSlot)]
+        [Ruffle(NativeAccessible)]
         public var genre:String;
 
-        [Ruffle(InternalSlot)]
+        [Ruffle(NativeAccessible)]
         public var songName:String;
 
-        [Ruffle(InternalSlot)]
+        [Ruffle(NativeAccessible)]
         public var track:String;
 
-        [Ruffle(InternalSlot)]
+        [Ruffle(NativeAccessible)]
         public var year:String;
     }
 }
