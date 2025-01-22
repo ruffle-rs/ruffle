@@ -806,6 +806,11 @@ pub mod slots {
     pub use super::native::slots::*;
 }
 
+// Do the same for methods
+pub mod methods {
+    pub use super::native::methods::*;
+}
+
 // This acts the same way as 'avm2_system_class', but for classes
 // declared in 'playerglobal'. Classes are declared as ("package", "class", field_name),
 // and are stored in 'avm2().system_classes'

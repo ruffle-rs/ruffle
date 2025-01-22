@@ -41,7 +41,9 @@ const METADATA_CUSTOM_CONSTRUCTOR: &str = "CustomConstructor";
 const METADATA_ABSTRACT: &str = "Abstract";
 /// A slot defined by an AS3 `const` or `var` but that should have its slot ID
 /// recorded so that it can be directly accessed by native code.
-const METADATA_INTERNAL_SLOT: &str = "InternalSlot";
+const METADATA_NATIVE_ACCESSIBLE: &str = "NativeAccessible";
+/// Like `METADATA_NATIVE_ACCESSIBLE`, but for methods instead of slots.
+const METADATA_NATIVE_CALLABLE: &str = "NativeCallable";
 // The name for metadata for namespace versioning- the Flex SDK doesn't
 // strip versioning metadata, so we have to allow this metadata name
 const API_METADATA_NAME: &str = "API";
@@ -292,7 +294,7 @@ fn rust_method_name_and_path(
     quote! { Some((#flash_method_path, #path_tokens)) }
 }
 
-fn rust_trait_and_slot_name(
+fn rust_path_and_trait_name(
     abc: &AbcFile,
     trait_: &Trait,
     parent: Option<Index<Multiname>>,
@@ -316,14 +318,7 @@ fn rust_trait_and_slot_name(
 
         path += &flash_to_rust_string(&name, false, "_");
     } else {
-        // This is a freestanding Slot or Const. Append its namespace (the package).
-        let name = resolve_multiname_ns(abc, trait_name);
-
-        let ns = &flash_to_rust_string(&name, false, "_");
-        path += ns;
-        if path.is_empty() {
-            path += "__";
-        }
+        panic!("Freestanding traits not supported");
     }
 
     let name = resolve_multiname_name(abc, trait_name);
@@ -454,19 +449,20 @@ fn write_native_table(data: &[u8], out_dir: &Path) -> Result<Vec<u8>, Box<dyn st
     let mut rust_custom_constructors = vec![none_tokens; abc.classes.len()];
 
     let mut rust_accessible_slots: HashMap<String, Vec<_>> = HashMap::new();
+    let mut rust_accessible_methods: HashMap<String, Vec<_>> = HashMap::new();
 
     let mut check_trait = |trait_: &Trait, parent: Option<Index<Multiname>>| {
         match trait_.kind {
             TraitKind::Slot { slot_id, .. } | TraitKind::Const { slot_id, .. } => {
-                if trait_has_metadata(&abc, trait_, METADATA_INTERNAL_SLOT) {
+                if trait_has_metadata(&abc, trait_, METADATA_NATIVE_ACCESSIBLE) {
                     if slot_id == 0 {
-                        panic!("ASC should calculate slot ids for all slots; cannot apply InternalSlot to a slot without a compiler-calculated slot id")
+                        panic!("ASC should calculate slot ids for all slots; cannot apply NativeAccessible without a compiler-calculated slot id")
                     } else {
                         // Slots are 1-indexed!
                         let slot_id = slot_id - 1;
 
                         let (trait_name, const_name) =
-                            rust_trait_and_slot_name(&abc, trait_, parent);
+                            rust_path_and_trait_name(&abc, trait_, parent);
                         let const_name = quote::format_ident!("{}", const_name);
 
                         // Declare a const with the slot name set to the slot id.
@@ -479,9 +475,31 @@ fn write_native_table(data: &[u8], out_dir: &Path) -> Result<Vec<u8>, Box<dyn st
                     }
                 }
             }
-            TraitKind::Method { method, .. }
-            | TraitKind::Getter { method, .. }
-            | TraitKind::Setter { method, .. } => {
+            TraitKind::Method { disp_id, method }
+            | TraitKind::Getter { disp_id, method }
+            | TraitKind::Setter { disp_id, method } => {
+                if trait_has_metadata(&abc, trait_, METADATA_NATIVE_CALLABLE) {
+                    if disp_id == 0 {
+                        panic!("ASC should calculate disp ids for all methods; cannot apply NativeCallable without a compiler-calculated disp id")
+                    } else {
+                        // Disp-ids are 1-indexed, but ASC generates them two disp-ids
+                        // off. Instead of subtracting 1 from it the disp-id, add 1.
+                        let disp_id = disp_id + 1;
+
+                        let (trait_name, const_name) =
+                            rust_path_and_trait_name(&abc, trait_, parent);
+                        let const_name = quote::format_ident!("{}", const_name);
+
+                        // Declare a const with the method name set to the disp id.
+                        rust_accessible_methods
+                            .entry(trait_name)
+                            .or_default()
+                            .push(quote! {
+                                pub const #const_name: u32 = #disp_id;
+                            });
+                    }
+                }
+
                 let method_id = method.0;
 
                 let abc_method = &abc.methods[method_id as usize];
@@ -656,6 +674,18 @@ fn write_native_table(data: &[u8], out_dir: &Path) -> Result<Vec<u8>, Box<dyn st
             }
         }
     });
+
+    let rust_accessible_methods = rust_accessible_methods
+        .into_iter()
+        .map(|(mod_name, consts)| {
+            let mod_name = quote::format_ident!("{}", mod_name);
+            quote! {
+                pub mod #mod_name {
+                    #(#consts)*
+                }
+            }
+        });
+
     let make_native_table = quote! {
         // This is a Rust array -
         // the entry at index `i` is the method name and Rust function pointer for the native
@@ -700,6 +730,10 @@ fn write_native_table(data: &[u8], out_dir: &Path) -> Result<Vec<u8>, Box<dyn st
 
         pub mod slots {
             #(#rust_accessible_slots)*
+        }
+
+        pub mod methods {
+            #(#rust_accessible_methods)*
         }
     }
     .to_string();
