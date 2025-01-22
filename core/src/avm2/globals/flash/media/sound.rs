@@ -1,6 +1,7 @@
 //! `flash.media.Sound` builtin/prototype
 
 use crate::avm2::activation::Activation;
+use crate::avm2::globals::methods::flash_media_sound as sound_methods;
 use crate::avm2::globals::slots::flash_net_url_request as url_request_slots;
 use crate::avm2::object::{EventObject, QueuedPlay, SoundChannelObject, TObject};
 use crate::avm2::parameters::ParametersExt;
@@ -45,7 +46,7 @@ pub fn init<'gc>(
     }
 
     if args.try_get_object(activation, 0).is_some() {
-        this.call_public_property("load", args, activation)?;
+        this.call_method(sound_methods::LOAD, args, activation)?;
     }
 
     Ok(Value::Undefined)
