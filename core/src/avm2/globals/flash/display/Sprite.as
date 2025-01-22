@@ -7,7 +7,7 @@ package flash.display {
     [Ruffle(InstanceAllocator)]
     public class Sprite extends DisplayObjectContainer {
 
-        [Ruffle(InternalSlot)]
+        [Ruffle(NativeAccessible)]
         private var _graphics:Graphics;
 
         public native function get graphics():Graphics;

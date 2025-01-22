@@ -2,19 +2,19 @@ package flash.filters {
     import flash.display.Shader;
 
     public class ShaderFilter extends BitmapFilter {
-        [Ruffle(InternalSlot)]
+        [Ruffle(NativeAccessible)]
         private var _bottomExtension:int = 0;
 
-        [Ruffle(InternalSlot)]
+        [Ruffle(NativeAccessible)]
         private var _leftExtension:int = 0;
 
-        [Ruffle(InternalSlot)]
+        [Ruffle(NativeAccessible)]
         private var _rightExtension:int = 0;
 
-        [Ruffle(InternalSlot)]
+        [Ruffle(NativeAccessible)]
         private var _topExtension:int = 0;
 
-        [Ruffle(InternalSlot)]
+        [Ruffle(NativeAccessible)]
         private var _shader;
 
         public function ShaderFilter(shader:Shader = null) {

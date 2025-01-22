@@ -2,40 +2,40 @@
     public final class BevelFilter extends BitmapFilter {
         // FIXME these should all be getters/setters to match Flash
 
-        [Ruffle(InternalSlot)]
+        [Ruffle(NativeAccessible)]
         public var angle : Number;
 
-        [Ruffle(InternalSlot)]
+        [Ruffle(NativeAccessible)]
         public var blurX : Number;
 
-        [Ruffle(InternalSlot)]
+        [Ruffle(NativeAccessible)]
         public var blurY : Number;
 
-        [Ruffle(InternalSlot)]
+        [Ruffle(NativeAccessible)]
         public var distance : Number;
 
-        [Ruffle(InternalSlot)]
+        [Ruffle(NativeAccessible)]
         public var highlightAlpha : Number;
 
-        [Ruffle(InternalSlot)]
+        [Ruffle(NativeAccessible)]
         public var highlightColor : uint;
 
-        [Ruffle(InternalSlot)]
+        [Ruffle(NativeAccessible)]
         public var knockout : Boolean;
 
-        [Ruffle(InternalSlot)]
+        [Ruffle(NativeAccessible)]
         public var quality : int;
 
-        [Ruffle(InternalSlot)]
+        [Ruffle(NativeAccessible)]
         public var shadowAlpha : Number;
 
-        [Ruffle(InternalSlot)]
+        [Ruffle(NativeAccessible)]
         public var shadowColor : uint;
 
-        [Ruffle(InternalSlot)]
+        [Ruffle(NativeAccessible)]
         public var strength : Number;
 
-        [Ruffle(InternalSlot)]
+        [Ruffle(NativeAccessible)]
         public var type : String;
 
         public function BevelFilter(

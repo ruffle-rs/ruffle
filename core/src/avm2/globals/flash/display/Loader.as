@@ -11,7 +11,7 @@ package flash.display {
     [Ruffle(InstanceAllocator)]
     public class Loader extends DisplayObjectContainer {
 
-        [Ruffle(InternalSlot)]
+        [Ruffle(NativeAccessible)]
         private var _contentLoaderInfo: LoaderInfo;
 
         public function get contentLoaderInfo():LoaderInfo {

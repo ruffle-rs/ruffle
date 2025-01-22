@@ -13,7 +13,7 @@ package flash.text.engine {
 
         private var _breakOpportunity:String;
 
-        [Ruffle(InternalSlot)]
+        [Ruffle(NativeAccessible)]
         private var _color:uint;
 
         private var _digitCase:String;
@@ -22,10 +22,10 @@ package flash.text.engine {
 
         private var _dominantBaseline:String;
 
-        [Ruffle(InternalSlot)]
+        [Ruffle(NativeAccessible)]
         private var _fontDescription:FontDescription;
 
-        [Ruffle(InternalSlot)]
+        [Ruffle(NativeAccessible)]
         private var _fontSize:Number;
 
         private var _kerning:String;

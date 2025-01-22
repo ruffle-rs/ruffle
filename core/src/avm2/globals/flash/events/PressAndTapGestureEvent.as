@@ -5,10 +5,10 @@ package flash.events
     {
         public static const GESTURE_PRESS_AND_TAP : String = "gesturePressAndTap";
 
-        [Ruffle(InternalSlot)]
+        [Ruffle(NativeAccessible)]
         private var _tapLocalX: Number;
 
-        [Ruffle(InternalSlot)]
+        [Ruffle(NativeAccessible)]
         private var _tapLocalY: Number;
 
         public function PressAndTapGestureEvent(type:String, bubbles:Boolean = true, cancelable:Boolean = false, phase:String = null,

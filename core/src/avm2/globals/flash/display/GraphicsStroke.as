@@ -1,25 +1,25 @@
 package flash.display {
 
     public final class GraphicsStroke implements IGraphicsStroke, IGraphicsData {
-        [Ruffle(InternalSlot)]
+        [Ruffle(NativeAccessible)]
         public var caps : String;
 
-        [Ruffle(InternalSlot)]
+        [Ruffle(NativeAccessible)]
         public var fill : IGraphicsFill;
 
-        [Ruffle(InternalSlot)]
+        [Ruffle(NativeAccessible)]
         public var joints : String;
 
-        [Ruffle(InternalSlot)]
+        [Ruffle(NativeAccessible)]
         public var miterLimit : Number;
 
-        [Ruffle(InternalSlot)]
+        [Ruffle(NativeAccessible)]
         public var pixelHinting : Boolean;
 
-        [Ruffle(InternalSlot)]
+        [Ruffle(NativeAccessible)]
         public var scaleMode : String;
 
-        [Ruffle(InternalSlot)]
+        [Ruffle(NativeAccessible)]
         public var thickness : Number;
 
         public function GraphicsStroke(

@@ -1,6 +1,6 @@
 ﻿package flash.filters {
     public final class ColorMatrixFilter extends BitmapFilter {
-        [Ruffle(InternalSlot)]
+        [Ruffle(NativeAccessible)]
         private var _matrix: Array;
 
         public function ColorMatrixFilter(matrix: Array = null) {

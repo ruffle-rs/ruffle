@@ -6,21 +6,21 @@ package flash.net {
         // NOTE - when implementing properties (e.g. `contentType`, `data`, etc.)
         // be sure to also check for them in `URLLoader`
 
-        [Ruffle(InternalSlot)]
+        [Ruffle(NativeAccessible)]
         private var _url:String;
 
-        [Ruffle(InternalSlot)]
+        [Ruffle(NativeAccessible)]
         private var _contentType: String = "application/x-www-form-urlencoded"; // ignored
 
-        [Ruffle(InternalSlot)]
+        [Ruffle(NativeAccessible)]
         private var _requestHeaders: Array = [];
 
         private var _digest:String;
 
-        [Ruffle(InternalSlot)]
+        [Ruffle(NativeAccessible)]
         private var _method:String = URLRequestMethod.GET;
 
-        [Ruffle(InternalSlot)]
+        [Ruffle(NativeAccessible)]
         private var _data:Object;
 
         public function URLRequest(url:String = null) {

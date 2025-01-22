@@ -22,13 +22,13 @@ package flash.ui
             return new ContextMenuItem(this.caption, this.separatorBefore, this.enabled, this.visible);
         }
 
-        [Ruffle(InternalSlot)]
+        [Ruffle(NativeAccessible)]
         public var caption: String;
 
-        [Ruffle(InternalSlot)]
+        [Ruffle(NativeAccessible)]
         public var separatorBefore: Boolean;
 
-        [Ruffle(InternalSlot)]
+        [Ruffle(NativeAccessible)]
         public var visible: Boolean;
     }
 }

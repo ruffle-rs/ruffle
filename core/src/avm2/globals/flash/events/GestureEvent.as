@@ -13,11 +13,11 @@ package flash.events
         public var phase: String;
 
         // The horizontal coordinate at which the event occurred relative to the containing sprite.
-        [Ruffle(InternalSlot)]
+        [Ruffle(NativeAccessible)]
         public var localX: Number;
 
         // The vertical coordinate at which the event occurred relative to the containing sprite.
-        [Ruffle(InternalSlot)]
+        [Ruffle(NativeAccessible)]
         public var localY: Number;
 
         // On Windows or Linux, indicates whether the Ctrl key is active (true) or inactive (false).

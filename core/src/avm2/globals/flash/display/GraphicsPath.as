@@ -1,13 +1,13 @@
 package flash.display {
 
     public final class GraphicsPath implements IGraphicsPath, IGraphicsData {
-        [Ruffle(InternalSlot)]
+        [Ruffle(NativeAccessible)]
         public var commands : Vector.<int>;
 
-        [Ruffle(InternalSlot)]
+        [Ruffle(NativeAccessible)]
         public var data : Vector.<Number>;
 
-        [Ruffle(InternalSlot)]
+        [Ruffle(NativeAccessible)]
         private var _winding : String;
 
         public function GraphicsPath(commands:Vector.<int> = null, data:Vector.<Number> = null, winding:String = "evenOdd") {

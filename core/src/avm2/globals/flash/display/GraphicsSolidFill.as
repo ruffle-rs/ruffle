@@ -1,10 +1,10 @@
 package flash.display {
 
     public final class GraphicsSolidFill implements IGraphicsFill, IGraphicsData {
-        [Ruffle(InternalSlot)]
+        [Ruffle(NativeAccessible)]
         public var alpha : Number = 1.0;
 
-        [Ruffle(InternalSlot)]
+        [Ruffle(NativeAccessible)]
         public var color : uint = 0;
 
         public function GraphicsSolidFill(color:uint = 0, alpha:Number = 1.0) {

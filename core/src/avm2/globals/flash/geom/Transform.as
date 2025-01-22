@@ -7,7 +7,7 @@ package flash.geom {
     import __ruffle__.stub_setter;
 
     public class Transform {
-        [Ruffle(InternalSlot)]
+        [Ruffle(NativeAccessible)]
         private var displayObject:DisplayObject;
 
         function Transform(object:DisplayObject) {
