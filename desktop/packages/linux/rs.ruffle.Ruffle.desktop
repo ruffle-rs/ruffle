@@ -73,3 +73,4 @@ Keywords[uk]=flash;swf;програвач;емулятор
 Keywords[zh_CN]=flash;swf;播放器;模拟器
 Keywords[zh_TW]=flash;swf;播放器;模擬器
 Keywords=flash;swf;player;emulator
+StartupNotify=false
