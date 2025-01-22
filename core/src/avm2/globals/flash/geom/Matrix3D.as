@@ -221,6 +221,7 @@ package flash.geom {
             }
         }
 
+        [Ruffle(NativeCallable)]
         public function transpose():void {
             // Make a copy
             var oRawData = this._rawData.AS3::concat();
@@ -237,6 +238,7 @@ package flash.geom {
             this._rawData[13] = oRawData[7];
             this._rawData[14] = oRawData[11];
         }
+
         public function append(lhs:Matrix3D):void {
             var m111:Number = this._rawData[0],
                 m121:Number = this._rawData[4],
@@ -403,6 +405,7 @@ package flash.geom {
             }
         }
 
+        [Ruffle(NativeCallable)]
         public function clone():Matrix3D {
             return new Matrix3D(this.rawData);
         }
