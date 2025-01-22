@@ -2,8 +2,6 @@ package {
     [Ruffle(InstanceAllocator)]
     [Ruffle(CallHandler)]
     public final dynamic class XML {
-        AS3 native function normalize(): XML;
-
         AS3 static function setSettings(settings:Object = null): void {
             if (settings == null) {
                 settings = XML.AS3::defaultSettings();
@@ -51,45 +49,28 @@ package {
 
         private native function init(value:*, ignoreComments:Boolean, ignoreProcessingInstructions:Boolean, ignoreWhitespace:Boolean):void;
 
+        // XML functions
+
         AS3 native function hasComplexContent():Boolean;
         AS3 native function hasSimpleContent():Boolean;
-        AS3 native function name():Object;
-        AS3 native function setName(name:*):void;
-        private native function namespace_internal_impl(hasPrefix:Boolean, prefix:String = null):*;
-        AS3 function namespace(prefix:* = null):* {
-            return namespace_internal_impl(arguments.length > 0, prefix);
-        }
-        AS3 native function addNamespace(ns:*):XML;
-        AS3 native function setNamespace(ns:*):void;
-        AS3 native function removeNamespace(ns:*):XML;
-        AS3 native function inScopeNamespaces():Array;
-        AS3 native function namespaceDeclarations():Array;
-        AS3 native function localName():Object;
-        AS3 native function toXMLString():String;
+
+        AS3 native function attribute(name:*):XMLList;
         AS3 native function child(name:*):XMLList;
-        AS3 native function childIndex():int;
         AS3 native function children():XMLList;
         AS3 native function contains(value:*):Boolean;
         AS3 native function copy():XML;
-        AS3 native function parent():*;
-        AS3 native function elements(name:* = "*"):XMLList;
-        AS3 native function attributes():XMLList;
-        AS3 native function attribute(name:*):XMLList;
-        AS3 native function nodeKind():String;
-        AS3 native function appendChild(child:*):XML;
-        AS3 native function prependChild(child:*):XML;
         AS3 native function descendants(name:Object = "*"):XMLList;
+        AS3 native function length():int;
+        AS3 native function normalize(): XML;
+        AS3 native function parent():*;
         AS3 native function text():XMLList;
         AS3 native function toString():String;
-        AS3 native function length():int;
+        AS3 native function toXMLString():String;
+
+        AS3 native function attributes():XMLList;
         AS3 native function comments():XMLList;
+        AS3 native function elements(name:* = "*"):XMLList;
         AS3 native function processingInstructions(name:* = "*"):XMLList;
-        AS3 native function insertChildAfter(child1:*, child2:*):*;
-        AS3 native function insertChildBefore(child1:*, child2:*):*;
-        // NOTE: Docs lie, value can be anything not just XML.
-        AS3 native function replace(propertyName:*, value:*):XML;
-        AS3 native function setChildren(value:*):XML;
-        AS3 native function setLocalName(name:*):void;
 
         AS3 function valueOf():XML {
             return this;
@@ -102,6 +83,8 @@ package {
         // undocumented functions
         AS3 native function notification():Function;
         AS3 native function setNotification(f:Function):*;
+
+        // XML settings functions
 
         public static native function get ignoreComments():Boolean;
         public static native function set ignoreComments(value:Boolean):void;
@@ -117,6 +100,70 @@ package {
 
         public static native function get prettyIndent():int;
         public static native function set prettyIndent(value:int):void;
+
+        // These are also XML functions, but are all marked NativeCallable so that
+        // XMLList code can call them. See xml_list.rs for a more detailed explanation.
+
+        private native function namespace_internal_impl(hasPrefix:Boolean, prefix:String = null):*;
+
+        [Ruffle(NativeCallable)]
+        AS3 function namespace(prefix:* = null):* {
+            return namespace_internal_impl(arguments.length > 0, prefix);
+        }
+
+        [Ruffle(NativeCallable)]
+        AS3 native function addNamespace(ns:*):XML;
+
+        [Ruffle(NativeCallable)]
+        AS3 native function appendChild(child:*):XML;
+
+        [Ruffle(NativeCallable)]
+        AS3 native function childIndex():int;
+
+        [Ruffle(NativeCallable)]
+        AS3 native function inScopeNamespaces():Array;
+
+        [Ruffle(NativeCallable)]
+        AS3 native function insertChildAfter(child1:*, child2:*):*;
+
+        [Ruffle(NativeCallable)]
+        AS3 native function insertChildBefore(child1:*, child2:*):*;
+
+        [Ruffle(NativeCallable)]
+        AS3 native function localName():Object;
+
+        [Ruffle(NativeCallable)]
+        AS3 native function name():Object;
+
+        [Ruffle(NativeCallable)]
+        AS3 native function namespaceDeclarations():Array;
+
+        [Ruffle(NativeCallable)]
+        AS3 native function nodeKind():String;
+
+        [Ruffle(NativeCallable)]
+        AS3 native function prependChild(child:*):XML;
+
+        [Ruffle(NativeCallable)]
+        AS3 native function removeNamespace(ns:*):XML;
+
+        // NOTE: Docs lie, value can be anything not just XML.
+        [Ruffle(NativeCallable)]
+        AS3 native function replace(propertyName:*, value:*):XML;
+
+        [Ruffle(NativeCallable)]
+        AS3 native function setChildren(value:*):XML;
+
+        [Ruffle(NativeCallable)]
+        AS3 native function setLocalName(name:*):void;
+
+        [Ruffle(NativeCallable)]
+        AS3 native function setName(name:*):void;
+
+        [Ruffle(NativeCallable)]
+        AS3 native function setNamespace(ns:*):void;
+
+        // Prototype methods
 
         prototype.hasComplexContent = function():Boolean {
             var self:XML = this;
