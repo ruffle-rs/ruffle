@@ -4,6 +4,7 @@ pub use crate::avm2::object::xml_list_allocator;
 use crate::avm2::{
     e4x::{name_to_multiname, simple_content_to_string, E4XNode, E4XNodeKind},
     error::make_error_1086,
+    globals::methods::xml as xml_methods,
     multiname::Multiname,
     object::{E4XOrXml, XmlListObject, XmlObject},
     parameters::ParametersExt,
@@ -577,7 +578,7 @@ pub fn normalize<'gc>(
 }
 
 macro_rules! define_xml_proxy {
-    ( $( ($rust_name:ident, $as_name:expr) ),*, ) => {
+    ( $( ($rust_name:ident, $method_id:ident, $as_name:expr) ),*, ) => {
         $(
             pub fn $rust_name<'gc>(
                 activation: &mut Activation<'_, 'gc>,
@@ -586,7 +587,6 @@ macro_rules! define_xml_proxy {
             ) -> Result<Value<'gc>, Error<'gc>> {
                 let this = this.as_object().unwrap();
 
-                let namespaces = activation.avm2().namespaces;
                 let list = this.as_xml_list_object().unwrap();
 
                 let mut children = list.children_mut(activation.gc());
@@ -594,7 +594,7 @@ macro_rules! define_xml_proxy {
                     [child] => {
                         let child = child.get_or_create_xml(activation);
 
-                        Value::from(child).call_property(&Multiname::new(namespaces.as3, $as_name), args, activation)
+                        Value::from(child).call_method(xml_methods::$method_id, args, activation)
                     }
                     _ => Err(make_error_1086(activation, $as_name)),
                 }
@@ -604,23 +604,35 @@ macro_rules! define_xml_proxy {
 }
 
 define_xml_proxy!(
-    (add_namespace, "addNamespace"),
-    (append_child, "appendChild"),
-    (child_index, "childIndex"),
-    (in_scope_namespaces, "inScopeNamespaces"),
-    (insert_child_after, "insertChildAfter"),
-    (insert_child_before, "insertChildBefore"),
-    (local_name, "localName"),
-    (name, "name"),
-    (namespace_declarations, "namespaceDeclarations"),
-    (node_kind, "nodeKind"),
-    (prepend_child, "prependChild"),
-    (remove_namespace, "removeNamespace"),
-    (replace, "replace"),
-    (set_children, "setChildren"),
-    (set_local_name, "setLocalName"),
-    (set_name, "setName"),
-    (set_namespace, "setNamespace"),
+    (add_namespace, ADD_NAMESPACE, "addNamespace"),
+    (append_child, APPEND_CHILD, "appendChild"),
+    (child_index, CHILD_INDEX, "childIndex"),
+    (
+        in_scope_namespaces,
+        IN_SCOPE_NAMESPACES,
+        "inScopeNamespaces"
+    ),
+    (insert_child_after, INSERT_CHILD_AFTER, "insertChildAfter"),
+    (
+        insert_child_before,
+        INSERT_CHILD_BEFORE,
+        "insertChildBefore"
+    ),
+    (local_name, LOCAL_NAME, "localName"),
+    (name, NAME, "name"),
+    (
+        namespace_declarations,
+        NAMESPACE_DECLARATIONS,
+        "namespaceDeclarations"
+    ),
+    (node_kind, NODE_KIND, "nodeKind"),
+    (prepend_child, PREPEND_CHILD, "prependChild"),
+    (remove_namespace, REMOVE_NAMESPACE, "removeNamespace"),
+    (replace, REPLACE, "replace"),
+    (set_children, SET_CHILDREN, "setChildren"),
+    (set_local_name, SET_LOCAL_NAME, "setLocalName"),
+    (set_name, SET_NAME, "setName"),
+    (set_namespace, SET_NAMESPACE, "setNamespace"),
 );
 
 // Special case since the XMLObject's method has to know if prefix was passed or not.
@@ -633,7 +645,6 @@ pub fn namespace_internal_impl<'gc>(
     let this = this.as_object().unwrap();
 
     let list = this.as_xml_list_object().unwrap();
-    let namespaces = activation.avm2().namespaces;
     let mut children = list.children_mut(activation.gc());
 
     let args = if args[0] == Value::Bool(true) {
@@ -643,8 +654,8 @@ pub fn namespace_internal_impl<'gc>(
     };
 
     match &mut children[..] {
-        [child] => Value::from(child.get_or_create_xml(activation)).call_property(
-            &Multiname::new(namespaces.as3, "namespace"),
+        [child] => Value::from(child.get_or_create_xml(activation)).call_method(
+            xml_methods::NAMESPACE,
             args,
             activation,
         ),
