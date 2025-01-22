@@ -21,7 +21,10 @@ package flash.media {
         public native function play(startTime:Number = 0, loops:int = 0, sndTransform:SoundTransform = null):SoundChannel;
         public native function extract(target:ByteArray, length:Number, startPosition:Number = -1):Number;
         public native function close():void;
+
+        [Ruffle(NativeCallable)]
         public native function load(stream:URLRequest, context:SoundLoaderContext = null):void;
+
         [API("674")]
         public native function loadCompressedDataFromByteArray(bytes:ByteArray, bytesLength:uint):void;
         [API("674")]
