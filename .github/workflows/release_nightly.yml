@@ -312,7 +312,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   build-web:
-    name: Build web${{ matrix.demo && ' demo' || '' }}
+    name: Build web${{ matrix.demo && ' demo and selfhosted' || ' extensions' }}
     needs: create-nightly-release
     if: needs.create-nightly-release.outputs.is_active == 'true'
     runs-on: ubuntu-24.04
@@ -381,9 +381,10 @@ jobs:
           CARGO_FEATURES: jpegxr${{ matrix.demo && ',webgpu' || '' }}
           FIREFOX_EXTENSION_ID: ${{ secrets.FIREFOX_EXTENSION_ID }} # Needed to inject into manifest.json
           WASM_SOURCE: cargo_and_store
+          BUILD_COMMAND: ${{ matrix.demo && 'npm run build:dual-wasm-repro' || 'npm run build:repro' }}
         working-directory: web
         shell: bash -l {0}
-        run: npm run build:repro
+        run: $BUILD_COMMAND
 
       - name: Produce reproducible source archive
         if: ${{ !matrix.demo }}
@@ -407,7 +408,7 @@ jobs:
         run: npm run docs
 
       - name: Publish npm package
-        if: ${{ !matrix.demo }}
+        if: matrix.demo
         # npm scoped packages are private by default, explicitly make public
         run: npm publish --access public --provenance
         continue-on-error: true
@@ -416,12 +417,12 @@ jobs:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
       - name: Package selfhosted
-        if: ${{ !matrix.demo }}
+        if: matrix.demo
         run: zip -r "${{ needs.create-nightly-release.outputs.package_prefix }}-web-selfhosted.zip" .
         working-directory: web/packages/selfhosted/dist
 
       - name: Upload selfhosted
-        if: ${{ !matrix.demo }}
+        if: matrix.demo
         run: |
           tag_name="${{ needs.create-nightly-release.outputs.tag_name }}"
           package_file="${{ needs.create-nightly-release.outputs.package_prefix }}-web-selfhosted.zip"
