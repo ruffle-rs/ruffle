@@ -1,5 +1,5 @@
 [target.'cfg(all())']
-# NOTE that the web build overrides this setting in package.json via the RUSTFLAGS environment variable
+# NOTE that the web build overrides this setting in tools/build_wasm.ts via the RUSTFLAGS environment variable
 rustflags = [
     # We need to specify this flag for all targets because Clippy checks all of our code against all targets
     # and our web code does not compile without this flag

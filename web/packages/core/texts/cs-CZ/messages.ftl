@@ -68,6 +68,10 @@ error-wasm-disabled-on-edge =
     Chcete-li tento problém vyřešit, zkuste otevřít nastavení prohlížeče, klikněte na položku „Ochrana osobních údajů, vyhledávání a služby“, přejděte dolů a vypněte možnost „Zvyšte svou bezpečnost na webu“.
     Vašemu prohlížeči to umožní načíst požadované soubory „.wasm“.
     Pokud problém přetrvává, budete možná muset použít jiný prohlížeč.
+error-wasm-unsupported-browser =
+    Prohlížeč, který používáte, nepodporuje rozšíření WebAssembly, které Ruffle vyžaduje ke spuštění.
+    Přejděte na podporovaný prohlížeč.
+    Seznam podporovaných prohlížečů naleznete na Wiki.
 error-javascript-conflict =
     Ruffle narazil na problém při pokusu o inicializaci.
     Zdá se, že tato stránka používá kód JavaScript, který je v konfliktu s Ruffle.

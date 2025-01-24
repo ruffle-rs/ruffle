@@ -74,7 +74,7 @@ pub struct Allocator(pub AllocatorFn);
 /// This function should be passed an Activation, and the arguments passed to the
 /// constructor, and will return an Object.
 pub type CustomConstructorFn =
-    for<'gc> fn(&mut Activation<'_, 'gc>, &[Value<'gc>]) -> Result<Object<'gc>, Error<'gc>>;
+    for<'gc> fn(&mut Activation<'_, 'gc>, &[Value<'gc>]) -> Result<Value<'gc>, Error<'gc>>;
 
 #[derive(Clone, Copy)]
 pub struct CustomConstructor(pub CustomConstructorFn);

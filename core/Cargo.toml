@@ -18,7 +18,7 @@ flate2 = { workspace = true }
 fnv = "1.0.7"
 gc-arena = { package = "ruffle_gc_arena", path = "../ruffle_gc_arena" }
 slotmap = { workspace = true }
-indexmap = "2.7.0"
+indexmap = "2.7.1"
 tracing = { workspace = true }
 ruffle_render = { path = "../render", features = ["tessellator"] }
 ruffle_video = { path = "../video" }
@@ -30,7 +30,7 @@ smallvec = { version = "1.13.2", features = ["union"] }
 num-traits = { workspace = true }
 num-derive = { workspace = true }
 quick-xml = "0.36.2"
-downcast-rs = "1.2.1"
+downcast-rs = "2.0.1"
 url = { workspace = true }
 weak-table = "0.3.2"
 percent-encoding = "2.3.1"
@@ -53,7 +53,7 @@ clap = { workspace = true, optional=true }
 realfft = "3.4.0"
 hashbrown = { version = "0.14.5", features = ["raw"] }
 scopeguard = "1.2.0"
-fluent-templates = "0.12.0"
+fluent-templates = "0.13.0"
 egui = { workspace = true, optional = true }
 egui_extras = { version = "0.30.0", default-features = false, optional = true }
 png = { version = "0.17.16", optional = true }
@@ -74,7 +74,7 @@ tracy-client = { version = "0.17.6", optional = true, default-features = false }
 workspace = true
 
 [target.'cfg(target_family = "wasm")'.dependencies.wasm-bindgen-futures]
-version = "0.4.49"
+version = "0.4.50"
 
 [features]
 default = []

@@ -1727,7 +1727,7 @@ impl<'gc> MovieClip<'gc> {
         if cfg!(feature = "timeline_debug") {
             tracing::debug!(
                 "[{}]: {} from frame {} to frame {}",
-                self.name(),
+                self.name().map(|s| s.to_string()).unwrap_or_default(),
                 if is_implicit { "looping" } else { "goto" },
                 self.current_frame(),
                 frame

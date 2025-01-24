@@ -30,7 +30,7 @@ fn object_to_index_map<'gc>(
             .get_enumerant_name(last_index, activation)?
             .coerce_to_string(activation)?;
         let value = obj
-            .get_public_property(name, activation)?
+            .get_enumerant_value(last_index, activation)?
             .coerce_to_string(activation)?
             .to_utf8_lossy()
             .to_string();

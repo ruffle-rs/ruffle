@@ -1,6 +1,6 @@
 use crate::avm1::Avm1;
 use crate::avm1::Value;
-use crate::avm2::{Activation, Avm2, EventObject, TObject};
+use crate::avm2::{Activation, Avm2, EventObject};
 use crate::context::{RenderContext, UpdateContext};
 pub use crate::display_object::{
     DisplayObject, TDisplayObject, TDisplayObjectContainer, TextSelection,
@@ -156,6 +156,12 @@ impl<'gc> FocusTracker<'gc> {
             Player::run_actions(context);
         }
 
+        if let Some(obj) = new {
+            // Flash has to access the object's bounds somewhere around here,
+            // because TextField's lazy autosize bounds are flushed when it's focused.
+            obj.as_displayobject().world_bounds();
+        }
+
         let old = self.0.focus.get();
 
         // Check if the focused element changed.
@@ -253,7 +259,7 @@ impl<'gc> FocusTracker<'gc> {
             EventObject::focus_event(&mut activation, event_type, true, related_object, key_code);
         Avm2::dispatch_event(activation.context, event, target);
 
-        let canceled = event.as_event().unwrap().is_cancelled();
+        let canceled = event.event().is_cancelled();
         canceled
     }
 

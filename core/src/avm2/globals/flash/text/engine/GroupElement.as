@@ -3,6 +3,7 @@ package flash.text.engine {
 
     import flash.events.EventDispatcher;
 
+    [API("662")]
     public final class GroupElement extends ContentElement {
         internal var _elements = null;
 
@@ -82,4 +83,3 @@ package flash.text.engine {
         }
     }
 }
-

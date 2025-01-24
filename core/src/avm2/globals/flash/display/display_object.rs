@@ -4,6 +4,7 @@ use crate::avm2::activation::Activation;
 use crate::avm2::error::{illegal_operation_error, make_error_2007, make_error_2008};
 use crate::avm2::filters::FilterAvm2Ext;
 use crate::avm2::globals::flash::geom::transform::color_transform_from_transform_object;
+use crate::avm2::globals::flash::geom::transform::has_matrix3d_from_transform_object;
 use crate::avm2::globals::flash::geom::transform::matrix_from_transform_object;
 use crate::avm2::globals::slots::flash_display_shader as shader_slots;
 use crate::avm2::globals::slots::flash_geom_point as point_slots;
@@ -58,9 +59,9 @@ pub fn display_object_initializer<'gc>(
     this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let this = this.as_object().unwrap();
-
     activation.super_init(this, &[])?;
+
+    let this = this.as_object().unwrap();
 
     if let Some(dobj) = this.as_display_object() {
         if let Some(clip) = dobj.as_movie_clip() {
@@ -157,8 +158,7 @@ pub fn get_scale9grid<'gc>(
     if let Some(dobj) = this.as_display_object() {
         let rect = dobj.scaling_grid();
         return if rect.is_valid() {
-            let rect = new_rectangle(activation, rect)?;
-            Ok(rect.into())
+            new_rectangle(activation, rect)
         } else {
             Ok(Value::Null)
         };
@@ -542,14 +542,17 @@ pub fn set_rotation<'gc>(
 
 /// Implements `name`'s getter.
 pub fn get_name<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
     if let Some(dobj) = this.as_display_object() {
-        return Ok(dobj.name().into());
+        return Ok(dobj
+            .name()
+            .unwrap_or_else(|| activation.strings().empty())
+            .into());
     }
 
     Ok(Value::Undefined)
@@ -812,12 +815,11 @@ pub fn get_transform<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
-    Ok(activation
+    activation
         .avm2()
         .classes()
         .transform
-        .construct(activation, &[this.into()])?
-        .into())
+        .construct(activation, &[this.into()])
 }
 
 pub fn set_transform<'gc>(
@@ -829,14 +831,15 @@ pub fn set_transform<'gc>(
 
     let transform = args.get_object(activation, 0, "transform")?;
 
-    // FIXME - consider 3D matrix and pixel bounds
+    // FIXME - consider pixel bounds
     let matrix = matrix_from_transform_object(transform);
-
+    let has_matrix3d = has_matrix3d_from_transform_object(transform);
     let color_transform = color_transform_from_transform_object(transform);
 
     let dobj = this.as_display_object().unwrap();
     let mut write = dobj.base_mut(activation.gc());
     write.set_matrix(matrix);
+    write.set_has_matrix3d_stub(has_matrix3d);
     write.set_color_transform(color_transform);
     drop(write);
     if let Some(parent) = dobj.parent() {
@@ -887,7 +890,7 @@ pub fn set_blend_mode<'gc>(
 fn new_rectangle<'gc>(
     activation: &mut Activation<'_, 'gc>,
     rectangle: Rectangle<Twips>,
-) -> Result<Object<'gc>, Error<'gc>> {
+) -> Result<Value<'gc>, Error<'gc>> {
     let x = rectangle.x_min.to_pixels();
     let y = rectangle.y_min.to_pixels();
     let width = rectangle.width().to_pixels();
@@ -909,7 +912,7 @@ pub fn get_scroll_rect<'gc>(
 
     if let Some(dobj) = this.as_display_object() {
         if dobj.has_scroll_rect() {
-            return Ok(new_rectangle(activation, dobj.next_scroll_rect())?.into());
+            return new_rectangle(activation, dobj.next_scroll_rect());
         } else {
             return Ok(Value::Null);
         }
@@ -987,15 +990,10 @@ pub fn local_to_global<'gc>(
 
         let local = Point::from_pixels(x, y);
         let global = dobj.local_to_global(local);
-        return Ok(activation
-            .avm2()
-            .classes()
-            .point
-            .construct(
-                activation,
-                &[global.x.to_pixels().into(), global.y.to_pixels().into()],
-            )?
-            .into());
+        return activation.avm2().classes().point.construct(
+            activation,
+            &[global.x.to_pixels().into(), global.y.to_pixels().into()],
+        );
     }
 
     Ok(Value::Undefined)
@@ -1019,15 +1017,10 @@ pub fn global_to_local<'gc>(
 
         let global = Point::from_pixels(x, y);
         let local = dobj.global_to_local(global).unwrap_or(global);
-        return Ok(activation
-            .avm2()
-            .classes()
-            .point
-            .construct(
-                activation,
-                &[local.x.to_pixels().into(), local.y.to_pixels().into()],
-            )?
-            .into());
+        return activation.avm2().classes().point.construct(
+            activation,
+            &[local.x.to_pixels().into(), local.y.to_pixels().into()],
+        );
     }
 
     Ok(Value::Undefined)
@@ -1062,7 +1055,7 @@ pub fn get_bounds<'gc>(
             out_bounds = Rectangle::ZERO;
         }
 
-        return Ok(new_rectangle(activation, out_bounds)?.into());
+        return new_rectangle(activation, out_bounds);
     }
     Ok(Value::Undefined)
 }

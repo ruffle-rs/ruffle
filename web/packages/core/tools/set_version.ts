@@ -64,6 +64,11 @@ if (process.env["ENABLE_VERSION_SEAL"] === "true") {
     }
 }
 
+const fallbackWasmName =
+    process.env["BUILD_WASM_MVP"] === "true"
+        ? "ruffle_web-wasm_mvp"
+        : "ruffle_web";
+
 const options = {
     files: "dist/**",
     from: [
@@ -72,8 +77,16 @@ const options = {
         /%VERSION_CHANNEL%/g,
         /%BUILD_DATE%/g,
         /%COMMIT_HASH%/g,
+        /%FALLBACK_WASM%/g,
     ],
-    to: [versionNumber, versionName, versionChannel, buildDate, commitHash],
+    to: [
+        versionNumber,
+        versionName,
+        versionChannel,
+        buildDate,
+        commitHash,
+        fallbackWasmName,
+    ],
 };
 
 replaceInFileSync(options);

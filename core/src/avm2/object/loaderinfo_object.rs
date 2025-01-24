@@ -134,13 +134,17 @@ impl<'gc> LoaderInfoObject<'gc> {
                     .avm2
                     .classes()
                     .eventdispatcher
-                    .construct(activation, &[])?,
+                    .construct(activation, &[])?
+                    .as_object()
+                    .unwrap(),
                 uncaught_error_events: activation
                     .context
                     .avm2
                     .classes()
                     .uncaughterrorevents
-                    .construct(activation, &[])?,
+                    .construct(activation, &[])?
+                    .as_object()
+                    .unwrap(),
                 cached_avm1movie: Lock::new(None),
                 content_type: Cell::new(ContentType::Swf),
                 expose_content: Cell::new(false),
@@ -181,13 +185,17 @@ impl<'gc> LoaderInfoObject<'gc> {
                     .avm2
                     .classes()
                     .eventdispatcher
-                    .construct(activation, &[])?,
+                    .construct(activation, &[])?
+                    .as_object()
+                    .unwrap(),
                 uncaught_error_events: activation
                     .context
                     .avm2
                     .classes()
                     .uncaughterrorevents
-                    .construct(activation, &[])?,
+                    .construct(activation, &[])?
+                    .as_object()
+                    .unwrap(),
                 cached_avm1movie: Lock::new(None),
                 content_type: Cell::new(ContentType::Unknown),
                 expose_content: Cell::new(false),
@@ -276,21 +284,8 @@ impl<'gc> LoaderInfoObject<'gc> {
             if should_complete {
                 let mut activation = Activation::from_nothing(context);
                 if from_url {
-                    let http_status_evt = activation
-                        .avm2()
-                        .classes()
-                        .httpstatusevent
-                        .construct(
-                            &mut activation,
-                            &[
-                                "httpStatus".into(),
-                                false.into(),
-                                false.into(),
-                                status.into(),
-                                redirected.into(),
-                            ],
-                        )
-                        .unwrap();
+                    let http_status_evt =
+                        EventObject::http_status_event(&mut activation, status, redirected);
 
                     Avm2::dispatch_event(context, http_status_evt, (*self).into());
                 }

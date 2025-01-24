@@ -23,6 +23,7 @@ use egui::{
 };
 use ruffle_wstr::{WStr, WString};
 use std::borrow::Cow;
+use std::ops::RangeInclusive;
 use swf::{Color, ColorTransform, Fixed8, Rectangle, Twips};
 
 const DEFAULT_DEBUG_COLORS: [[f32; 3]; 10] = [
@@ -172,7 +173,7 @@ impl DisplayObjectWindow {
                         if let DisplayObject::MovieClip(object) = object {
                             self.show_movieclip(ui, context, object)
                         } else if let DisplayObject::EditText(object) = object {
-                            self.show_edit_text(ui, context, object)
+                            self.show_edit_text(ui, context, object, messages)
                         } else if let DisplayObject::Bitmap(object) = object {
                             self.show_bitmap(ui, context, object)
                         } else if let DisplayObject::Stage(object) = object {
@@ -306,6 +307,7 @@ impl DisplayObjectWindow {
         ui: &mut Ui,
         context: &mut UpdateContext<'gc>,
         object: EditText<'gc>,
+        messages: &mut Vec<Message>,
     ) {
         Grid::new(ui.id().with("edittext"))
             .num_columns(2)
@@ -424,6 +426,37 @@ impl DisplayObjectWindow {
                 });
                 ui.end_row();
 
+                ui.label("H Scroll");
+                ui.horizontal(|ui| {
+                    let max = object.maxhscroll();
+                    let mut hscroll = object.hscroll();
+                    DragValue::new(&mut hscroll)
+                        .suffix("px")
+                        .range(RangeInclusive::new(0.0, max))
+                        .ui(ui);
+                    ui.weak(format!("(max {}px)", max));
+
+                    if hscroll != object.hscroll() {
+                        object.set_hscroll(hscroll, context);
+                    }
+                });
+                ui.end_row();
+
+                ui.label("V Scroll");
+                ui.horizontal(|ui| {
+                    let max = object.maxscroll();
+                    let mut scroll = object.scroll();
+                    DragValue::new(&mut scroll)
+                        .range(RangeInclusive::new(1, max))
+                        .ui(ui);
+                    ui.weak(format!("(max {})", max));
+
+                    if scroll != object.scroll() {
+                        object.set_scroll(scroll as f64, context);
+                    }
+                });
+                ui.end_row();
+
                 ui.label("Autosize");
                 ui.horizontal(|ui| {
                     let mut autosize = object.autosize();
@@ -498,8 +531,21 @@ impl DisplayObjectWindow {
 
                 ui.label("Default Text Format");
                 ui.horizontal(|ui| {
-                    show_text_format(ui, object.spans().default_format());
+                    show_text_format_hover(ui, object.spans().default_format());
                 });
+                ui.end_row();
+
+                ui.label("Style Sheet");
+                if let Some(style_sheet) = object.style_sheet() {
+                    if ui.button(format!("{:p}", style_sheet.as_ptr())).clicked() {
+                        messages.push(Message::TrackAVM2Object(AVM2ObjectHandle::new(
+                            context,
+                            crate::avm2::Object::StyleSheetObject(style_sheet),
+                        )));
+                    }
+                } else {
+                    ui.weak("None");
+                }
                 ui.end_row();
 
                 ui.label("Text Width");
@@ -553,7 +599,7 @@ impl DisplayObjectWindow {
                             ui.label(format!("{}–{} ({})", start, end, format.span_length));
 
                             ui.horizontal(|ui| {
-                                show_text_format(ui, &format.get_text_format());
+                                show_text_format_hover(ui, &format.get_text_format());
                             });
 
                             ui.label(text.to_string());
@@ -1082,7 +1128,9 @@ impl DisplayObjectWindow {
                 ui.label("Name");
                 // &mut of a temporary thing because we don't want to actually be able to change this
                 // If we disable it, the user can't highlight or interact with it, so this makes it readonly but enabled
-                ui.text_edit_singleline(&mut object.name().to_string());
+                ui.text_edit_singleline(
+                    &mut object.name().map(|s| s.to_string()).unwrap_or_default(),
+                );
                 ui.end_row();
 
                 if let crate::avm1::Value::Object(object) = object.object() {
@@ -1269,7 +1317,10 @@ impl DisplayObjectWindow {
 }
 
 fn matches_search(object: DisplayObject, search: &WStr) -> bool {
-    if object.name().to_ascii_lowercase().contains(search) {
+    if object
+        .name()
+        .is_some_and(|n| n.to_ascii_lowercase().contains(search))
+    {
         return true;
     }
 
@@ -1346,10 +1397,14 @@ fn summary_name(object: DisplayObject) -> Cow<'static, str> {
     let do_type = display_object_type(object);
     let name = object.name();
 
-    if name.is_empty() {
-        Cow::Borrowed(do_type)
+    if let Some(name) = name {
+        if name.is_empty() {
+            Cow::Borrowed(do_type)
+        } else {
+            Cow::Owned(format!("{do_type} \"{name}\""))
+        }
     } else {
-        Cow::Owned(format!("{do_type} \"{name}\""))
+        Cow::Borrowed("")
     }
 }
 
@@ -1426,48 +1481,56 @@ fn bounds_label(ui: &mut Ui, bounds: Rectangle<Twips>, hover: &mut Option<Rectan
     }
 }
 
-fn show_text_format(ui: &mut Ui, tf: &TextFormat) {
+fn show_text_format_hover(ui: &mut Ui, tf: &TextFormat) {
     ui.weak("(hover)").on_hover_ui(|ui| {
         ui.style_mut().interaction.selectable_labels = true;
-        Grid::new(ui.id().with("text_format_table"))
-            .num_columns(2)
-            .striped(true)
-            .show(ui, |ui| {
-                for (key, value) in [
-                    ("Font Face", tf.font.as_ref().map(|v| v.to_string())),
-                    ("Font Size", tf.size.map(|v| v.to_string())),
-                    ("Color", tf.color.map(|v| format!("{v:?}"))),
-                    ("Align", tf.align.map(|v| format!("{v:?}"))),
-                    ("Bold?", tf.bold.map(|v| v.to_string())),
-                    ("Italic?", tf.italic.map(|v| v.to_string())),
-                    ("Underline?", tf.underline.map(|v| v.to_string())),
-                    ("Left Margin", tf.left_margin.map(|v| v.to_string())),
-                    ("Right Margin", tf.right_margin.map(|v| v.to_string())),
-                    ("Indent", tf.indent.map(|v| v.to_string())),
-                    ("Block Indent", tf.block_indent.map(|v| v.to_string())),
-                    ("Kerning?", tf.kerning.map(|v| v.to_string())),
-                    ("Leading", tf.leading.map(|v| v.to_string())),
-                    ("Letter Spacing", tf.letter_spacing.map(|v| v.to_string())),
-                    ("Tab Stops", tf.tab_stops.as_ref().map(|v| format!("{v:?}"))),
-                    ("Bullet?", tf.bullet.map(|v| v.to_string())),
-                    ("URL", tf.url.as_ref().map(|v| v.to_string())),
-                    ("Target", tf.target.as_ref().map(|v| v.to_string())),
-                    ("Display", tf.display.map(|v| format!("{v:?}"))),
-                ] {
-                    ui.label(key);
-                    if let Some(value) = value {
-                        if !value.is_empty() {
-                            ui.label(value);
-                        } else {
-                            ui.weak("Empty");
-                        }
-                    } else {
-                        ui.weak("None");
-                    }
-                    ui.end_row();
-                }
-            });
+        show_text_format(ui, tf, false);
     });
+}
+
+pub fn show_text_format(ui: &mut Ui, tf: &TextFormat, skip_none: bool) {
+    Grid::new(ui.id().with("text_format_table"))
+        .num_columns(2)
+        .striped(true)
+        .show(ui, |ui| {
+            for (key, value) in [
+                ("Font Face", tf.font.as_ref().map(|v| v.to_string())),
+                ("Font Size", tf.size.map(|v| v.to_string())),
+                ("Color", tf.color.map(|v| format!("{v:?}"))),
+                ("Align", tf.align.map(|v| format!("{v:?}"))),
+                ("Bold?", tf.bold.map(|v| v.to_string())),
+                ("Italic?", tf.italic.map(|v| v.to_string())),
+                ("Underline?", tf.underline.map(|v| v.to_string())),
+                ("Left Margin", tf.left_margin.map(|v| v.to_string())),
+                ("Right Margin", tf.right_margin.map(|v| v.to_string())),
+                ("Indent", tf.indent.map(|v| v.to_string())),
+                ("Block Indent", tf.block_indent.map(|v| v.to_string())),
+                ("Kerning?", tf.kerning.map(|v| v.to_string())),
+                ("Leading", tf.leading.map(|v| v.to_string())),
+                ("Letter Spacing", tf.letter_spacing.map(|v| v.to_string())),
+                ("Tab Stops", tf.tab_stops.as_ref().map(|v| format!("{v:?}"))),
+                ("Bullet?", tf.bullet.map(|v| v.to_string())),
+                ("URL", tf.url.as_ref().map(|v| v.to_string())),
+                ("Target", tf.target.as_ref().map(|v| v.to_string())),
+                ("Display", tf.display.map(|v| format!("{v:?}"))),
+            ] {
+                if skip_none && value.is_none() {
+                    continue;
+                }
+
+                ui.label(key);
+                if let Some(value) = value {
+                    if !value.is_empty() {
+                        ui.label(value);
+                    } else {
+                        ui.weak("Empty");
+                    }
+                } else {
+                    ui.weak("None");
+                }
+                ui.end_row();
+            }
+        });
 }
 
 pub fn open_display_object_button<'gc>(

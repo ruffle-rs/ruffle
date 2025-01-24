@@ -3,7 +3,7 @@
 use crate::avm2::activation::Activation;
 use crate::avm2::array::ArrayStorage;
 use crate::avm2::class::Class;
-use crate::avm2::error::range_error;
+use crate::avm2::error::{make_error_1125, range_error};
 use crate::avm2::method::{Method, NativeMethodImpl};
 use crate::avm2::object::{array_allocator, ArrayObject, FunctionObject, Object, TObject};
 use crate::avm2::value::Value;
@@ -71,8 +71,6 @@ pub fn instance_init<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
-    activation.super_init(this, &[])?;
-
     if let Some(mut array) = this.as_array_storage_mut(activation.gc()) {
         if args.len() == 1 {
             if let Some(expected_len) = args.get(0).filter(|v| v.is_number()).map(|v| v.as_f64()) {
@@ -105,12 +103,11 @@ pub fn class_call<'gc>(
     _this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    Ok(activation
+    activation
         .avm2()
         .classes()
         .array
-        .construct(activation, args)?
-        .into())
+        .construct(activation, args)
 }
 
 /// Implements `Array`'s class initializer.
@@ -229,6 +226,8 @@ pub fn resolve_array_hole<'gc>(
     }
 
     if let Some(proto) = this.proto() {
+        let proto = Value::from(proto);
+
         proto.get_public_property(
             AvmString::new_utf8(activation.gc(), i.to_string()),
             activation,
@@ -307,10 +306,10 @@ pub fn to_locale_string<'gc>(
     let this = this.as_object().unwrap();
 
     join_inner(act, this, &[",".into()], |v, activation| {
-        if let Ok(o) = v.coerce_to_object(activation) {
-            o.call_public_property("toLocaleString", &[], activation)
-        } else {
+        if matches!(v, Value::Null | Value::Undefined) {
             Ok(v)
+        } else {
+            v.call_public_property("toLocaleString", &[], activation)
         }
     })
 }
@@ -355,7 +354,7 @@ impl<'gc> ArrayIter<'gc> {
         start_index: u32,
         end_index: u32,
     ) -> Result<Self, Error<'gc>> {
-        let length = array_object
+        let length = Value::from(array_object)
             .get_public_property("length", activation)?
             .coerce_to_u32(activation)?;
 
@@ -373,22 +372,25 @@ impl<'gc> ArrayIter<'gc> {
     pub fn next(
         &mut self,
         activation: &mut Activation<'_, 'gc>,
-    ) -> Option<Result<(u32, Value<'gc>), Error<'gc>>> {
+    ) -> Result<Option<(u32, Value<'gc>)>, Error<'gc>> {
         if self.index < self.rev_index {
             let i = self.index;
 
             self.index += 1;
 
-            Some(
-                self.array_object
-                    .get_public_property(
-                        AvmString::new_utf8(activation.gc(), i.to_string()),
-                        activation,
-                    )
-                    .map(|val| (i, val)),
-            )
+            let val = self.array_object.get_index_property(i as usize);
+
+            let val = if let Some(storage) = self.array_object.as_vector_storage() {
+                // Special case for Vector- it throws an error if trying to access
+                // an element that was removed
+                val.ok_or_else(|| make_error_1125(activation, i as usize, storage.length()))?
+            } else {
+                val.unwrap_or(Value::Undefined)
+            };
+
+            Ok(Some((i, val)))
         } else {
-            None
+            Ok(None)
         }
     }
 
@@ -399,22 +401,25 @@ impl<'gc> ArrayIter<'gc> {
     pub fn next_back(
         &mut self,
         activation: &mut Activation<'_, 'gc>,
-    ) -> Option<Result<(u32, Value<'gc>), Error<'gc>>> {
+    ) -> Result<Option<(u32, Value<'gc>)>, Error<'gc>> {
         if self.index < self.rev_index {
             self.rev_index -= 1;
 
             let i = self.rev_index;
 
-            Some(
-                self.array_object
-                    .get_public_property(
-                        AvmString::new_utf8(activation.gc(), i.to_string()),
-                        activation,
-                    )
-                    .map(|val| (i, val)),
-            )
+            let val = self.array_object.get_index_property(i as usize);
+
+            let val = if let Some(storage) = self.array_object.as_vector_storage() {
+                // Special case for Vector- it throws an error if trying to access
+                // an element that was removed
+                val.ok_or_else(|| make_error_1125(activation, i as usize, storage.length()))?
+            } else {
+                val.unwrap_or(Value::Undefined)
+            };
+
+            Ok(Some((i, val)))
         } else {
-            None
+            Ok(None)
         }
     }
 }
@@ -431,9 +436,7 @@ pub fn for_each<'gc>(
     let receiver = args.get(1).cloned().unwrap_or(Value::Null);
     let mut iter = ArrayIter::new(activation, this)?;
 
-    while let Some(r) = iter.next(activation) {
-        let (i, item) = r?;
-
+    while let Some((i, item)) = iter.next(activation)? {
         callback.call(activation, receiver, &[item, i.into(), this.into()])?;
     }
 
@@ -453,8 +456,7 @@ pub fn map<'gc>(
     let mut new_array = ArrayStorage::new(0);
     let mut iter = ArrayIter::new(activation, this)?;
 
-    while let Some(r) = iter.next(activation) {
-        let (i, item) = r?;
+    while let Some((i, item)) = iter.next(activation)? {
         let new_item = callback.call(activation, receiver, &[item, i.into(), this.into()])?;
 
         new_array.push(new_item);
@@ -476,8 +478,7 @@ pub fn filter<'gc>(
     let mut new_array = ArrayStorage::new(0);
     let mut iter = ArrayIter::new(activation, this)?;
 
-    while let Some(r) = iter.next(activation) {
-        let (i, item) = r?;
+    while let Some((i, item)) = iter.next(activation)? {
         let is_allowed = callback
             .call(activation, receiver, &[item, i.into(), this.into()])?
             .coerce_to_boolean();
@@ -502,9 +503,7 @@ pub fn every<'gc>(
     let receiver = args.get(1).cloned().unwrap_or(Value::Null);
     let mut iter = ArrayIter::new(activation, this)?;
 
-    while let Some(r) = iter.next(activation) {
-        let (i, item) = r?;
-
+    while let Some((i, item)) = iter.next(activation)? {
         let result = callback
             .call(activation, receiver, &[item, i.into(), this.into()])?
             .coerce_to_boolean();
@@ -529,9 +528,7 @@ pub fn some<'gc>(
     let receiver = args.get(1).cloned().unwrap_or(Value::Null);
     let mut iter = ArrayIter::new(activation, this)?;
 
-    while let Some(r) = iter.next(activation) {
-        let (i, item) = r?;
-
+    while let Some((i, item)) = iter.next(activation)? {
         let result = callback
             .call(activation, receiver, &[item, i.into(), this.into()])?
             .coerce_to_boolean();
@@ -1300,10 +1297,10 @@ pub fn sort_on<'gc>(
                     // if the object is null/undefined or does not have the field,
                     // it's treated as if the field's value was undefined.
                     // TODO: verify this and fix it
-                    let a_object = a.coerce_to_object(activation)?;
+                    let a_object = a.null_check(activation, None)?;
                     let a_field = a_object.get_public_property(*field_name, activation)?;
 
-                    let b_object = b.coerce_to_object(activation)?;
+                    let b_object = b.null_check(activation, None)?;
                     let b_field = b_object.get_public_property(*field_name, activation)?;
 
                     let ord = if options.contains(SortOptions::NUMERIC) {

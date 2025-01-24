@@ -54,7 +54,7 @@ pub fn init<'gc>(
 
     let node = match nodes.as_slice() {
         // XML defaults to an empty text node when nothing was parsed
-        [] => E4XNode::text(activation.gc(), AvmString::default(), None),
+        [] => E4XNode::text(activation.gc(), activation.strings().empty(), None),
         [node] => *node,
         nodes => {
             let mut single_element_node = None;
@@ -98,6 +98,106 @@ pub fn init<'gc>(
         }
     };
     this.set_node(activation.gc(), node);
+
+    Ok(Value::Undefined)
+}
+
+pub fn get_ignore_comments<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    _this: Value<'gc>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    Ok(Value::Bool(activation.avm2().xml_settings.ignore_comments))
+}
+
+pub fn set_ignore_comments<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    _this: Value<'gc>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    activation.avm2().xml_settings.ignore_comments = args.get_bool(0);
+
+    Ok(Value::Undefined)
+}
+
+pub fn get_ignore_processing_instructions<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    _this: Value<'gc>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    Ok(Value::Bool(
+        activation
+            .avm2()
+            .xml_settings
+            .ignore_processing_instructions,
+    ))
+}
+
+pub fn set_ignore_processing_instructions<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    _this: Value<'gc>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    activation
+        .avm2()
+        .xml_settings
+        .ignore_processing_instructions = args.get_bool(0);
+
+    Ok(Value::Undefined)
+}
+
+pub fn get_ignore_whitespace<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    _this: Value<'gc>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    Ok(Value::Bool(
+        activation.avm2().xml_settings.ignore_whitespace,
+    ))
+}
+
+pub fn set_ignore_whitespace<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    _this: Value<'gc>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    activation.avm2().xml_settings.ignore_whitespace = args.get_bool(0);
+
+    Ok(Value::Undefined)
+}
+
+pub fn get_pretty_printing<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    _this: Value<'gc>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    Ok(Value::Bool(activation.avm2().xml_settings.pretty_printing))
+}
+
+pub fn set_pretty_printing<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    _this: Value<'gc>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    activation.avm2().xml_settings.pretty_printing = args.get_bool(0);
+
+    Ok(Value::Undefined)
+}
+
+pub fn get_pretty_indent<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    _this: Value<'gc>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    Ok(Value::Integer(activation.avm2().xml_settings.pretty_indent))
+}
+
+pub fn set_pretty_indent<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    _this: Value<'gc>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    activation.avm2().xml_settings.pretty_indent = args.get_i32(activation, 0)?;
 
     Ok(Value::Undefined)
 }
@@ -153,7 +253,7 @@ pub fn set_name<'gc>(
         // 2. If (Type(name) is Object) and (name.[[Class]] == "QName") and (name.uri == null)
         Value::Object(Object::QNameObject(qname)) if qname.is_any_namespace() => {
             // a. Let name = name.localName
-            qname.local_name().into()
+            qname.local_name(activation.strings()).into()
         }
         value => value,
     };
@@ -164,12 +264,16 @@ pub fn set_name<'gc>(
         .classes()
         .qname
         .construct(activation, &[name])?
+        .as_object()
+        .unwrap()
         .as_qname_object()
         .unwrap();
 
+    let new_local_name = new_name.local_name(activation.strings());
+
     // NOTE: avmplus addition
-    if !crate::avm2::e4x::is_xml_name(new_name.local_name()) {
-        return Err(make_error_1117(activation, new_name.local_name()));
+    if !crate::avm2::e4x::is_xml_name(new_local_name) {
+        return Err(make_error_1117(activation, new_local_name));
     }
 
     // 4. If x.[[Class]] == "processing-instruction", let n.uri be the empty string
@@ -186,7 +290,7 @@ pub fn set_name<'gc>(
 
     // 5. Let x.[[Name]] = n
     node.set_namespace(ns, activation.gc());
-    node.set_local_name(new_name.local_name(), activation.gc());
+    node.set_local_name(new_local_name, activation.gc());
 
     // NOTE: avmplus addition
     if let Some(ns) = ns {
@@ -276,6 +380,8 @@ pub fn add_namespace<'gc>(
         .classes()
         .namespace
         .construct(activation, &[value])?
+        .as_object()
+        .unwrap()
         .as_namespace_object()
         .unwrap();
 
@@ -321,8 +427,11 @@ pub fn set_namespace<'gc>(
         .classes()
         .namespace
         .construct(activation, &[value])?
+        .as_object()
+        .unwrap()
         .as_namespace_object()
         .unwrap();
+
     let ns = E4XNamespace {
         prefix: ns.prefix(),
         uri: ns.namespace().as_uri(activation.strings()),
@@ -372,6 +481,8 @@ pub fn remove_namespace<'gc>(
         .classes()
         .namespace
         .construct(activation, &[value])?
+        .as_object()
+        .unwrap()
         .as_namespace_object()
         .unwrap();
     let ns = E4XNamespace {
@@ -725,7 +836,7 @@ pub fn call_handler<'gc>(
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if args.len() == 1 {
-        if let Some(obj) = args.try_get_object(activation, 0) {
+        if let Some(obj) = args.get_value(0).as_object() {
             // We do *not* create a new object when AS does 'XML(someXML)'
             if let Some(xml) = obj.as_xml_object() {
                 return Ok(xml.into());
@@ -742,12 +853,7 @@ pub fn call_handler<'gc>(
         }
     }
 
-    Ok(activation
-        .avm2()
-        .classes()
-        .xml
-        .construct(activation, args)?
-        .into())
+    activation.avm2().classes().xml.construct(activation, args)
 }
 
 pub fn node_kind<'gc>(
@@ -1124,7 +1230,6 @@ pub fn replace<'gc>(
                 .classes()
                 .xml
                 .construct(activation, &[value])?
-                .into()
         } else {
             value
         }
@@ -1200,7 +1305,7 @@ pub fn set_local_name<'gc>(
     // 2. If (Type(name) is Object) and (name.[[Class]] == "QName")
     let name = if let Some(qname) = name.as_object().and_then(|x| x.as_qname_object()) {
         // 2.a. Let name = name.localName
-        qname.local_name()
+        qname.local_name(activation.strings())
     // 3. Else
     } else {
         // 3.a. Let name = ToString(name)

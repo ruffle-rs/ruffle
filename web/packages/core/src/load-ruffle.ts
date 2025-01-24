@@ -45,7 +45,10 @@ async function fetchRuffle(
         ])
     ).every(Boolean);
 
-    if (!extensionsSupported) {
+    // @ts-expect-error TS2367 %FALLBACK_WASM% gets replaced in set_version.ts.
+    // %FALLBACK_WASM% is "ruffle_web-wasm_mvp" if this is a dual-wasm build.
+    // We don't say we're falling back if we have only an extension build.
+    if (!extensionsSupported && "%FALLBACK_WASM%" === "ruffle_web-wasm_mvp") {
         console.log(
             "Some WebAssembly extensions are NOT available, falling back to the vanilla WebAssembly module",
         );
@@ -62,12 +65,13 @@ async function fetchRuffle(
         RuffleInstanceBuilder,
         ZipWriter,
     } = await (extensionsSupported
-        ? import("../dist/ruffle_web-wasm_extensions")
-        : import("../dist/ruffle_web"));
+        ? import("../dist/ruffle_web")
+        : // @ts-expect-error TS2307 TypeScript compiler is trying to do the import.
+          import("../dist/%FALLBACK_WASM%"));
     let response;
     const wasmUrl = extensionsSupported
-        ? new URL("../dist/ruffle_web-wasm_extensions_bg.wasm", import.meta.url)
-        : new URL("../dist/ruffle_web_bg.wasm", import.meta.url);
+        ? new URL("../dist/ruffle_web_bg.wasm", import.meta.url)
+        : new URL("../dist/%FALLBACK_WASM%_bg.wasm", import.meta.url);
     const wasmResponse = await fetch(wasmUrl);
     // The Pale Moon browser lacks full support for ReadableStream.
     // However, ReadableStream itself is defined.

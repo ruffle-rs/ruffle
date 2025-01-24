@@ -280,7 +280,7 @@ fn parse_gamepad_button(mapping: &str) -> Result<(GamepadButton, KeyCode), Error
         aliases.join(", ")
     }
 
-    let button = GamepadButton::from_str(&mapping[..pos], true).map_err(|err| {
+    let button = <GamepadButton as ValueEnum>::from_str(&mapping[..pos], true).map_err(|err| {
         anyhow!(
             "Could not parse <gamepad button>: {err}\n  The possible values are: {}",
             to_aliases(GamepadButton::value_variants())

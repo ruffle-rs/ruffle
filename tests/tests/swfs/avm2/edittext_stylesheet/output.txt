@@ -1,0 +1,536 @@
+Getter & setter:
+  Style before (1): 
+  Style before (2): 
+  Style after (1):  .classred
+  Style after (2):  .classred
+Setting style after HTML:
+  HTML before:      <P ALIGN="LEFT"><FONT FACE="FontName" SIZE="10" COLOR="#000000" LETTERSPACING="0" KERNING="0">a</FONT></P>
+  HTML after style: <P ALIGN="LEFT"><FONT FACE="FontName" SIZE="10" COLOR="#000000" LETTERSPACING="0" KERNING="0">a</FONT></P>
+  HTML after set:   <span class="classRed">a</span>
+  HTML no style:    <P ALIGN="LEFT"><FONT FACE="FontName" SIZE="10" COLOR="#FF0000" LETTERSPACING="0" KERNING="0">a</FONT></P>
+Setting text after stylized HTML:
+  HTML after style: <span class="classRed">a</span>
+  Text after style: a
+  HTML after set:   b
+  Text after set:   b
+  HTML after reset: <P ALIGN="LEFT"><FONT FACE="FontName" SIZE="10" COLOR="#000000" LETTERSPACING="0" KERNING="0">b</FONT></P>
+  Text after reset: b
+  HTML after set:   <P ALIGN="LEFT"><FONT FACE="FontName" SIZE="10" COLOR="#000000" LETTERSPACING="0" KERNING="0">c</FONT></P>
+  Text after set:   c
+Setting HTML in text:
+  HTML after style: <span class="classRed">a</span>
+  Text after style: a
+  HTML after reset: <P ALIGN="LEFT"><FONT FACE="FontName" SIZE="10" COLOR="#FF0000" LETTERSPACING="0" KERNING="0">a</FONT></P>
+  Text after reset: a
+Modifying CSS after parsing HTML:
+  Style (original): 
+  Text runs (1):
+    from 0 to 1: size=10, blockIndent=0, font=FontName, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=0, bold=false, italic=false, bullet=false, underline=false
+  Style (after modifying CSS): .classred
+  Text runs (1):
+    from 0 to 1: size=10, blockIndent=0, font=FontName, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=0, bold=false, italic=false, bullet=false, underline=false
+  Style (after updating HTML to the same value): .classred
+  Text runs (1):
+    from 0 to 1: size=10, blockIndent=0, font=FontName, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=0, bold=false, italic=false, bullet=false, underline=false
+  Style (after updating HTML): .classred
+  Text runs (1):
+    from 0 to 1: size=10, blockIndent=0, font=FontName, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=16711680, bold=false, italic=false, bullet=false, underline=false
+  Style (after updating CSS): .classred
+  Text runs (1):
+    from 0 to 1: size=10, blockIndent=0, font=FontName, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=16711680, bold=false, italic=false, bullet=false, underline=false
+  Style (after updating HTML): .classred
+  Text runs (1):
+    from 0 to 1: size=10, blockIndent=0, font=FontName, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=16711680, bold=false, italic=false, bullet=false, underline=false
+  Style (after updating CSS without HTML): .classred
+  Text runs (1):
+    from 0 to 1: size=10, blockIndent=0, font=FontName, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=65280, bold=false, italic=false, bullet=false, underline=false
+Modifying text after removing CSS:
+  Text after: <b>2</b>
+  HTML after: <P ALIGN="LEFT"><FONT FACE="FontName" SIZE="10" COLOR="#000000" LETTERSPACING="0" KERNING="0">&lt;b&gt;2&lt;/b&gt;</FONT></P>
+Modifying text after removing CSS with HTML:
+  Text after: <b>2</b>
+  HTML after: <P ALIGN="LEFT"><FONT FACE="FontName" SIZE="10" COLOR="#000000" LETTERSPACING="0" KERNING="0">&lt;b&gt;2&lt;/b&gt;</FONT></P>
+Updating CSS and resetting it:
+  Text runs (1):
+    from 0 to 1: size=10, blockIndent=0, font=FontName, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=0, bold=false, italic=false, bullet=false, underline=false
+  Text runs (1):
+    from 0 to 1: size=10, blockIndent=0, font=FontName, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=16711680, bold=false, italic=false, bullet=false, underline=false
+======================================
+  Setting HTML: <span class="unknownClass">a</span>
+  HTML get:     <span class="unknownClass">a</span>
+  Text get:     a
+  Text runs (1):
+    from 0 to 1: size=10, blockIndent=0, font=FontName, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=0, bold=false, italic=false, bullet=false, underline=false
+  Style reset:  <P ALIGN="LEFT"><FONT FACE="FontName" SIZE="10" COLOR="#000000" LETTERSPACING="0" KERNING="0">a</FONT></P>
+  Text runs (1):
+    from 0 to 1: size=10, blockIndent=0, font=FontName, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=0, bold=false, italic=false, bullet=false, underline=false
+======================================
+  Setting HTML: <span class="unknownClass">a</span><span class="unknownClass">b</span>
+  HTML get:     <span class="unknownClass">a</span><span class="unknownClass">b</span>
+  Text get:     ab
+  Text runs (1):
+    from 0 to 2: size=10, blockIndent=0, font=FontName, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=0, bold=false, italic=false, bullet=false, underline=false
+  Style reset:  <P ALIGN="LEFT"><FONT FACE="FontName" SIZE="10" COLOR="#000000" LETTERSPACING="0" KERNING="0">ab</FONT></P>
+  Text runs (1):
+    from 0 to 2: size=10, blockIndent=0, font=FontName, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=0, bold=false, italic=false, bullet=false, underline=false
+======================================
+  Setting HTML: <span class="classBold">a</span>
+  HTML get:     <span class="classBold">a</span>
+  Text get:     a
+  Text runs (1):
+    from 0 to 1: size=10, blockIndent=0, font=FontName, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=0, bold=true, italic=false, bullet=false, underline=false
+  Style reset:  <P ALIGN="LEFT"><FONT FACE="FontName" SIZE="10" COLOR="#000000" LETTERSPACING="0" KERNING="0"><B>a</B></FONT></P>
+  Text runs (1):
+    from 0 to 1: size=10, blockIndent=0, font=FontName, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=0, bold=true, italic=false, bullet=false, underline=false
+======================================
+  Setting HTML: <span class="classRed">a</span>
+  HTML get:     <span class="classRed">a</span>
+  Text get:     a
+  Text runs (1):
+    from 0 to 1: size=10, blockIndent=0, font=FontName, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=16711680, bold=false, italic=false, bullet=false, underline=false
+  Style reset:  <P ALIGN="LEFT"><FONT FACE="FontName" SIZE="10" COLOR="#FF0000" LETTERSPACING="0" KERNING="0">a</FONT></P>
+  Text runs (1):
+    from 0 to 1: size=10, blockIndent=0, font=FontName, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=16711680, bold=false, italic=false, bullet=false, underline=false
+======================================
+  Setting HTML: <span class="classGreen">a</span>
+  HTML get:     <span class="classGreen">a</span>
+  Text get:     a
+  Text runs (1):
+    from 0 to 1: size=10, blockIndent=0, font=FontName, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=65280, bold=false, italic=false, bullet=false, underline=false
+  Style reset:  <P ALIGN="LEFT"><FONT FACE="FontName" SIZE="10" COLOR="#00FF00" LETTERSPACING="0" KERNING="0">a</FONT></P>
+  Text runs (1):
+    from 0 to 1: size=10, blockIndent=0, font=FontName, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=65280, bold=false, italic=false, bullet=false, underline=false
+======================================
+  Setting HTML: <span class="classRedBold">a</span>
+  HTML get:     <span class="classRedBold">a</span>
+  Text get:     a
+  Text runs (1):
+    from 0 to 1: size=10, blockIndent=0, font=FontName, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=16711680, bold=true, italic=false, bullet=false, underline=false
+  Style reset:  <P ALIGN="LEFT"><FONT FACE="FontName" SIZE="10" COLOR="#FF0000" LETTERSPACING="0" KERNING="0"><B>a</B></FONT></P>
+  Text runs (1):
+    from 0 to 1: size=10, blockIndent=0, font=FontName, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=16711680, bold=true, italic=false, bullet=false, underline=false
+======================================
+  Setting HTML: <span class="classRed">a<span class="classGreen">b</span></span>
+  HTML get:     <span class="classRed">a<span class="classGreen">b</span></span>
+  Text get:     ab
+  Text runs (2):
+    from 0 to 1: size=10, blockIndent=0, font=FontName, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=16711680, bold=false, italic=false, bullet=false, underline=false
+    from 1 to 2: size=10, blockIndent=0, font=FontName, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=65280, bold=false, italic=false, bullet=false, underline=false
+  Style reset:  <P ALIGN="LEFT"><FONT FACE="FontName" SIZE="10" COLOR="#FF0000" LETTERSPACING="0" KERNING="0">a<FONT COLOR="#00FF00">b</FONT></FONT></P>
+  Text runs (2):
+    from 0 to 1: size=10, blockIndent=0, font=FontName, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=16711680, bold=false, italic=false, bullet=false, underline=false
+    from 1 to 2: size=10, blockIndent=0, font=FontName, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=65280, bold=false, italic=false, bullet=false, underline=false
+======================================
+  Setting HTML: <span class="classRed">a<span class="classRed">b</span></span>
+  HTML get:     <span class="classRed">a<span class="classRed">b</span></span>
+  Text get:     ab
+  Text runs (1):
+    from 0 to 2: size=10, blockIndent=0, font=FontName, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=16711680, bold=false, italic=false, bullet=false, underline=false
+  Style reset:  <P ALIGN="LEFT"><FONT FACE="FontName" SIZE="10" COLOR="#FF0000" LETTERSPACING="0" KERNING="0">ab</FONT></P>
+  Text runs (1):
+    from 0 to 2: size=10, blockIndent=0, font=FontName, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=16711680, bold=false, italic=false, bullet=false, underline=false
+======================================
+  Setting HTML: <span class="classRed">a<span class="classBold">b</span></span><span class="classRedBold">c</span>
+  HTML get:     <span class="classRed">a<span class="classBold">b</span></span><span class="classRedBold">c</span>
+  Text get:     abc
+  Text runs (2):
+    from 0 to 1: size=10, blockIndent=0, font=FontName, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=16711680, bold=false, italic=false, bullet=false, underline=false
+    from 1 to 3: size=10, blockIndent=0, font=FontName, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=16711680, bold=true, italic=false, bullet=false, underline=false
+  Style reset:  <P ALIGN="LEFT"><FONT FACE="FontName" SIZE="10" COLOR="#FF0000" LETTERSPACING="0" KERNING="0">a<B>bc</B></FONT></P>
+  Text runs (2):
+    from 0 to 1: size=10, blockIndent=0, font=FontName, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=16711680, bold=false, italic=false, bullet=false, underline=false
+    from 1 to 3: size=10, blockIndent=0, font=FontName, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=16711680, bold=true, italic=false, bullet=false, underline=false
+======================================
+  Setting HTML: <span class="classRed classBold">a</span><span class="classRedBold">b</span>
+  HTML get:     <span class="classRed classBold">a</span><span class="classRedBold">b</span>
+  Text get:     ab
+  Text runs (2):
+    from 0 to 1: size=10, blockIndent=0, font=FontName, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=0, bold=false, italic=false, bullet=false, underline=false
+    from 1 to 2: size=10, blockIndent=0, font=FontName, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=16711680, bold=true, italic=false, bullet=false, underline=false
+  Style reset:  <P ALIGN="LEFT"><FONT FACE="FontName" SIZE="10" COLOR="#000000" LETTERSPACING="0" KERNING="0">a<FONT COLOR="#FF0000"><B>b</B></FONT></FONT></P>
+  Text runs (2):
+    from 0 to 1: size=10, blockIndent=0, font=FontName, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=0, bold=false, italic=false, bullet=false, underline=false
+    from 1 to 2: size=10, blockIndent=0, font=FontName, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=16711680, bold=true, italic=false, bullet=false, underline=false
+======================================
+  Setting HTML: <span class="  classRed">a</span>
+  HTML get:     <span class="  classRed">a</span>
+  Text get:     a
+  Text runs (1):
+    from 0 to 1: size=10, blockIndent=0, font=FontName, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=0, bold=false, italic=false, bullet=false, underline=false
+  Style reset:  <P ALIGN="LEFT"><FONT FACE="FontName" SIZE="10" COLOR="#000000" LETTERSPACING="0" KERNING="0">a</FONT></P>
+  Text runs (1):
+    from 0 to 1: size=10, blockIndent=0, font=FontName, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=0, bold=false, italic=false, bullet=false, underline=false
+======================================
+  Setting HTML: <span class="classRed  ">a</span>
+  HTML get:     <span class="classRed  ">a</span>
+  Text get:     a
+  Text runs (1):
+    from 0 to 1: size=10, blockIndent=0, font=FontName, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=0, bold=false, italic=false, bullet=false, underline=false
+  Style reset:  <P ALIGN="LEFT"><FONT FACE="FontName" SIZE="10" COLOR="#000000" LETTERSPACING="0" KERNING="0">a</FONT></P>
+  Text runs (1):
+    from 0 to 1: size=10, blockIndent=0, font=FontName, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=0, bold=false, italic=false, bullet=false, underline=false
+======================================
+  Setting HTML: <span class="   classRed  ">a</span>
+  HTML get:     <span class="   classRed  ">a</span>
+  Text get:     a
+  Text runs (1):
+    from 0 to 1: size=10, blockIndent=0, font=FontName, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=0, bold=false, italic=false, bullet=false, underline=false
+  Style reset:  <P ALIGN="LEFT"><FONT FACE="FontName" SIZE="10" COLOR="#000000" LETTERSPACING="0" KERNING="0">a</FONT></P>
+  Text runs (1):
+    from 0 to 1: size=10, blockIndent=0, font=FontName, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=0, bold=false, italic=false, bullet=false, underline=false
+======================================
+  Setting HTML: <span class="class-magenta">a</span><span class="classmagenta">b</span><span class="class magenta">c</span>
+  HTML get:     <span class="class-magenta">a</span><span class="classmagenta">b</span><span class="class magenta">c</span>
+  Text get:     abc
+  Text runs (2):
+    from 0 to 1: size=10, blockIndent=0, font=FontName, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=16711935, bold=false, italic=false, bullet=false, underline=false
+    from 1 to 3: size=10, blockIndent=0, font=FontName, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=0, bold=false, italic=false, bullet=false, underline=false
+  Style reset:  <P ALIGN="LEFT"><FONT FACE="FontName" SIZE="10" COLOR="#FF00FF" LETTERSPACING="0" KERNING="0">a<FONT COLOR="#000000">bc</FONT></FONT></P>
+  Text runs (2):
+    from 0 to 1: size=10, blockIndent=0, font=FontName, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=16711935, bold=false, italic=false, bullet=false, underline=false
+    from 1 to 3: size=10, blockIndent=0, font=FontName, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=0, bold=false, italic=false, bullet=false, underline=false
+======================================
+  Setting HTML: <span class="classred">a</span>
+  HTML get:     <span class="classred">a</span>
+  Text get:     a
+  Text runs (1):
+    from 0 to 1: size=10, blockIndent=0, font=FontName, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=16711680, bold=false, italic=false, bullet=false, underline=false
+  Style reset:  <P ALIGN="LEFT"><FONT FACE="FontName" SIZE="10" COLOR="#FF0000" LETTERSPACING="0" KERNING="0">a</FONT></P>
+  Text runs (1):
+    from 0 to 1: size=10, blockIndent=0, font=FontName, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=16711680, bold=false, italic=false, bullet=false, underline=false
+======================================
+  Setting HTML: <span class="CLASSRED">a</span>
+  HTML get:     <span class="CLASSRED">a</span>
+  Text get:     a
+  Text runs (1):
+    from 0 to 1: size=10, blockIndent=0, font=FontName, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=16711680, bold=false, italic=false, bullet=false, underline=false
+  Style reset:  <P ALIGN="LEFT"><FONT FACE="FontName" SIZE="10" COLOR="#FF0000" LETTERSPACING="0" KERNING="0">a</FONT></P>
+  Text runs (1):
+    from 0 to 1: size=10, blockIndent=0, font=FontName, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=16711680, bold=false, italic=false, bullet=false, underline=false
+======================================
+  Setting HTML: <span class="ClassRed">a</span>
+  HTML get:     <span class="ClassRed">a</span>
+  Text get:     a
+  Text runs (1):
+    from 0 to 1: size=10, blockIndent=0, font=FontName, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=16711680, bold=false, italic=false, bullet=false, underline=false
+  Style reset:  <P ALIGN="LEFT"><FONT FACE="FontName" SIZE="10" COLOR="#FF0000" LETTERSPACING="0" KERNING="0">a</FONT></P>
+  Text runs (1):
+    from 0 to 1: size=10, blockIndent=0, font=FontName, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=16711680, bold=false, italic=false, bullet=false, underline=false
+======================================
+  Setting HTML: <font color="#00FF00">a<span class="classRed">b</span></font>
+  HTML get:     <font color="#00FF00">a<span class="classRed">b</span></font>
+  Text get:     ab
+  Text runs (2):
+    from 0 to 1: size=10, blockIndent=0, font=FontName, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=65280, bold=false, italic=false, bullet=false, underline=false
+    from 1 to 2: size=10, blockIndent=0, font=FontName, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=16711680, bold=false, italic=false, bullet=false, underline=false
+  Style reset:  <P ALIGN="LEFT"><FONT FACE="FontName" SIZE="10" COLOR="#00FF00" LETTERSPACING="0" KERNING="0">a<FONT COLOR="#FF0000">b</FONT></FONT></P>
+  Text runs (2):
+    from 0 to 1: size=10, blockIndent=0, font=FontName, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=65280, bold=false, italic=false, bullet=false, underline=false
+    from 1 to 2: size=10, blockIndent=0, font=FontName, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=16711680, bold=false, italic=false, bullet=false, underline=false
+======================================
+  Setting HTML: <span class="classRed">a<font color="#00FF00">b</span></font>
+  HTML get:     <span class="classRed">a<font color="#00FF00">b</span></font>
+  Text get:     ab
+  Text runs (2):
+    from 0 to 1: size=10, blockIndent=0, font=FontName, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=16711680, bold=false, italic=false, bullet=false, underline=false
+    from 1 to 2: size=10, blockIndent=0, font=FontName, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=65280, bold=false, italic=false, bullet=false, underline=false
+  Style reset:  <P ALIGN="LEFT"><FONT FACE="FontName" SIZE="10" COLOR="#FF0000" LETTERSPACING="0" KERNING="0">a<FONT COLOR="#00FF00">b</FONT></FONT></P>
+  Text runs (2):
+    from 0 to 1: size=10, blockIndent=0, font=FontName, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=16711680, bold=false, italic=false, bullet=false, underline=false
+    from 1 to 2: size=10, blockIndent=0, font=FontName, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=65280, bold=false, italic=false, bullet=false, underline=false
+======================================
+  Setting HTML: <p class="classRed">a</p><p class="classBold">b</p>
+  HTML get:     <p class="classRed">a</p><p class="classBold">b</p>
+  Text get:     ab
+  Text runs (2):
+    from 0 to 1: size=10, blockIndent=0, font=FontName, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=16711680, bold=false, italic=false, bullet=false, underline=false
+    from 1 to 2: size=10, blockIndent=0, font=FontName, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=0, bold=true, italic=false, bullet=false, underline=false
+  Style reset:  <P ALIGN="LEFT"><FONT FACE="FontName" SIZE="10" COLOR="#FF0000" LETTERSPACING="0" KERNING="0">a<FONT COLOR="#000000"><B>b</B></FONT></FONT></P>
+  Text runs (2):
+    from 0 to 1: size=10, blockIndent=0, font=FontName, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=16711680, bold=false, italic=false, bullet=false, underline=false
+    from 1 to 2: size=10, blockIndent=0, font=FontName, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=0, bold=true, italic=false, bullet=false, underline=false
+======================================
+  Setting HTML: <p>a</p><p class="classBold">b</p>
+  HTML get:     <p>a</p><p class="classBold">b</p>
+  Text get:     ab
+  Text runs (2):
+    from 0 to 1: size=10, blockIndent=0, font=FontName, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=0, bold=false, italic=false, bullet=false, underline=false
+    from 1 to 2: size=10, blockIndent=0, font=FontName, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=0, bold=true, italic=false, bullet=false, underline=false
+  Style reset:  <P ALIGN="LEFT"><FONT FACE="FontName" SIZE="10" COLOR="#000000" LETTERSPACING="0" KERNING="0">a<B>b</B></FONT></P>
+  Text runs (2):
+    from 0 to 1: size=10, blockIndent=0, font=FontName, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=0, bold=false, italic=false, bullet=false, underline=false
+    from 1 to 2: size=10, blockIndent=0, font=FontName, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=0, bold=true, italic=false, bullet=false, underline=false
+======================================
+  Setting HTML: <p class="classRed">a</p><p>b</p>
+  HTML get:     <p class="classRed">a</p><p>b</p>
+  Text get:     ab
+  Text runs (2):
+    from 0 to 1: size=10, blockIndent=0, font=FontName, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=16711680, bold=false, italic=false, bullet=false, underline=false
+    from 1 to 2: size=10, blockIndent=0, font=FontName, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=0, bold=false, italic=false, bullet=false, underline=false
+  Style reset:  <P ALIGN="LEFT"><FONT FACE="FontName" SIZE="10" COLOR="#FF0000" LETTERSPACING="0" KERNING="0">a<FONT COLOR="#000000">b</FONT></FONT></P>
+  Text runs (2):
+    from 0 to 1: size=10, blockIndent=0, font=FontName, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=16711680, bold=false, italic=false, bullet=false, underline=false
+    from 1 to 2: size=10, blockIndent=0, font=FontName, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=0, bold=false, italic=false, bullet=false, underline=false
+======================================
+  Setting HTML: <p>a</p><p>b</p>
+  HTML get:     <p>a</p><p>b</p>
+  Text get:     ab
+  Text runs (1):
+    from 0 to 2: size=10, blockIndent=0, font=FontName, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=0, bold=false, italic=false, bullet=false, underline=false
+  Style reset:  <P ALIGN="LEFT"><FONT FACE="FontName" SIZE="10" COLOR="#000000" LETTERSPACING="0" KERNING="0">ab</FONT></P>
+  Text runs (1):
+    from 0 to 2: size=10, blockIndent=0, font=FontName, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=0, bold=false, italic=false, bullet=false, underline=false
+======================================
+  Setting HTML:  <a>a</a> 
+  HTML get:      <a>a</a> 
+  Text get:      a 
+  Text runs (3):
+    from 0 to 1: size=10, blockIndent=0, font=FontName, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=0, bold=false, italic=false, bullet=false, underline=false
+    from 1 to 2: size=10, blockIndent=0, font=FontName, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=255, bold=false, italic=false, bullet=false, underline=false
+    from 2 to 3: size=10, blockIndent=0, font=FontName, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=0, bold=false, italic=false, bullet=false, underline=false
+  Style reset:  <P ALIGN="LEFT"><FONT FACE="FontName" SIZE="10" COLOR="#000000" LETTERSPACING="0" KERNING="0"> <FONT COLOR="#0000FF">a</FONT> </FONT></P>
+  Text runs (3):
+    from 0 to 1: size=10, blockIndent=0, font=FontName, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=0, bold=false, italic=false, bullet=false, underline=false
+    from 1 to 2: size=10, blockIndent=0, font=FontName, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=255, bold=false, italic=false, bullet=false, underline=false
+    from 2 to 3: size=10, blockIndent=0, font=FontName, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=0, bold=false, italic=false, bullet=false, underline=false
+======================================
+  Setting HTML:  <b>b</b> 
+  HTML get:      <b>b</b> 
+  Text get:      b 
+  Text runs (3):
+    from 0 to 1: size=10, blockIndent=0, font=FontName, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=0, bold=false, italic=false, bullet=false, underline=false
+    from 1 to 2: size=10, blockIndent=0, font=FontName, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=0, bold=true, italic=false, bullet=false, underline=false
+    from 2 to 3: size=10, blockIndent=0, font=FontName, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=0, bold=false, italic=false, bullet=false, underline=false
+  Style reset:  <P ALIGN="LEFT"><FONT FACE="FontName" SIZE="10" COLOR="#000000" LETTERSPACING="0" KERNING="0"> <B>b</B> </FONT></P>
+  Text runs (3):
+    from 0 to 1: size=10, blockIndent=0, font=FontName, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=0, bold=false, italic=false, bullet=false, underline=false
+    from 1 to 2: size=10, blockIndent=0, font=FontName, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=0, bold=true, italic=false, bullet=false, underline=false
+    from 2 to 3: size=10, blockIndent=0, font=FontName, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=0, bold=false, italic=false, bullet=false, underline=false
+======================================
+  Setting HTML:  <u>u</u> 
+  HTML get:      <u>u</u> 
+  Text get:      u 
+  Text runs (3):
+    from 0 to 1: size=10, blockIndent=0, font=FontName, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=0, bold=false, italic=false, bullet=false, underline=false
+    from 1 to 2: size=10, blockIndent=0, font=FontName, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=0, bold=false, italic=false, bullet=false, underline=true
+    from 2 to 3: size=10, blockIndent=0, font=FontName, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=0, bold=false, italic=false, bullet=false, underline=false
+  Style reset:  <P ALIGN="LEFT"><FONT FACE="FontName" SIZE="10" COLOR="#000000" LETTERSPACING="0" KERNING="0"> <U>u</U> </FONT></P>
+  Text runs (3):
+    from 0 to 1: size=10, blockIndent=0, font=FontName, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=0, bold=false, italic=false, bullet=false, underline=false
+    from 1 to 2: size=10, blockIndent=0, font=FontName, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=0, bold=false, italic=false, bullet=false, underline=true
+    from 2 to 3: size=10, blockIndent=0, font=FontName, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=0, bold=false, italic=false, bullet=false, underline=false
+======================================
+  Setting HTML:  <textformat>textformat</textformat> 
+  HTML get:      <textformat>textformat</textformat> 
+  Text get:      textformat 
+  Text runs (1):
+    from 0 to 12: size=10, blockIndent=0, font=FontName, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=0, bold=false, italic=false, bullet=false, underline=false
+  Style reset:  <P ALIGN="LEFT"><FONT FACE="FontName" SIZE="10" COLOR="#000000" LETTERSPACING="0" KERNING="0"> textformat </FONT></P>
+  Text runs (1):
+    from 0 to 12: size=10, blockIndent=0, font=FontName, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=0, bold=false, italic=false, bullet=false, underline=false
+======================================
+  Setting HTML:  <font>font</font> 
+  HTML get:      <font>font</font> 
+  Text get:      font 
+  Text runs (1):
+    from 0 to 6: size=10, blockIndent=0, font=FontName, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=0, bold=false, italic=false, bullet=false, underline=false
+  Style reset:  <P ALIGN="LEFT"><FONT FACE="FontName" SIZE="10" COLOR="#000000" LETTERSPACING="0" KERNING="0"> font </FONT></P>
+  Text runs (1):
+    from 0 to 6: size=10, blockIndent=0, font=FontName, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=0, bold=false, italic=false, bullet=false, underline=false
+======================================
+  Setting HTML:  <p>p</p> 
+  HTML get:      <p>p</p> 
+  Text get:      p 
+  Text runs (3):
+    from 0 to 1: size=10, blockIndent=0, font=FontName, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=0, bold=false, italic=false, bullet=false, underline=false
+    from 1 to 2: size=10, blockIndent=0, font=FontName, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=255, bold=false, italic=false, bullet=false, underline=false
+    from 2 to 3: size=10, blockIndent=0, font=FontName, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=0, bold=false, italic=false, bullet=false, underline=false
+  Style reset:  <P ALIGN="LEFT"><FONT FACE="FontName" SIZE="10" COLOR="#000000" LETTERSPACING="0" KERNING="0"> <FONT COLOR="#0000FF">p</FONT> </FONT></P>
+  Text runs (3):
+    from 0 to 1: size=10, blockIndent=0, font=FontName, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=0, bold=false, italic=false, bullet=false, underline=false
+    from 1 to 2: size=10, blockIndent=0, font=FontName, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=255, bold=false, italic=false, bullet=false, underline=false
+    from 2 to 3: size=10, blockIndent=0, font=FontName, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=0, bold=false, italic=false, bullet=false, underline=false
+======================================
+  Setting HTML:  <span>span</span> 
+  HTML get:      <span>span</span> 
+  Text get:      span 
+  Text runs (1):
+    from 0 to 6: size=10, blockIndent=0, font=FontName, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=0, bold=false, italic=false, bullet=false, underline=false
+  Style reset:  <P ALIGN="LEFT"><FONT FACE="FontName" SIZE="10" COLOR="#000000" LETTERSPACING="0" KERNING="0"> span </FONT></P>
+  Text runs (1):
+    from 0 to 6: size=10, blockIndent=0, font=FontName, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=0, bold=false, italic=false, bullet=false, underline=false
+======================================
+  Setting HTML:  <i>i</i> 
+  HTML get:      <i>i</i> 
+  Text get:      i 
+  Text runs (3):
+    from 0 to 1: size=10, blockIndent=0, font=FontName, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=0, bold=false, italic=false, bullet=false, underline=false
+    from 1 to 2: size=10, blockIndent=0, font=FontName, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=0, bold=false, italic=true, bullet=false, underline=false
+    from 2 to 3: size=10, blockIndent=0, font=FontName, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=0, bold=false, italic=false, bullet=false, underline=false
+  Style reset:  <P ALIGN="LEFT"><FONT FACE="FontName" SIZE="10" COLOR="#000000" LETTERSPACING="0" KERNING="0"> <I>i</I> </FONT></P>
+  Text runs (3):
+    from 0 to 1: size=10, blockIndent=0, font=FontName, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=0, bold=false, italic=false, bullet=false, underline=false
+    from 1 to 2: size=10, blockIndent=0, font=FontName, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=0, bold=false, italic=true, bullet=false, underline=false
+    from 2 to 3: size=10, blockIndent=0, font=FontName, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=0, bold=false, italic=false, bullet=false, underline=false
+======================================
+  Setting HTML:  <li>li</li> 
+  HTML get:      <li>li</li> 
+  Text get:      li 
+  Text runs (3):
+    from 0 to 1: size=10, blockIndent=0, font=FontName, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=0, bold=false, italic=false, bullet=false, underline=false
+    from 1 to 3: size=10, blockIndent=0, font=FontName, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=255, bold=false, italic=false, bullet=true, underline=false
+    from 3 to 4: size=10, blockIndent=0, font=FontName, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=0, bold=false, italic=false, bullet=false, underline=false
+  Style reset:  <P ALIGN="LEFT"><FONT FACE="FontName" SIZE="10" COLOR="#000000" LETTERSPACING="0" KERNING="0"> <FONT COLOR="#0000FF">li</FONT> </FONT></P>
+  Text runs (3):
+    from 0 to 1: size=10, blockIndent=0, font=FontName, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=0, bold=false, italic=false, bullet=false, underline=false
+    from 1 to 3: size=10, blockIndent=0, font=FontName, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=255, bold=false, italic=false, bullet=true, underline=false
+    from 3 to 4: size=10, blockIndent=0, font=FontName, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=0, bold=false, italic=false, bullet=false, underline=false
+======================================
+  Setting HTML:  <a class="classRed">a</a> 
+  HTML get:      <a class="classRed">a</a> 
+  Text get:      a 
+  Text runs (3):
+    from 0 to 1: size=10, blockIndent=0, font=FontName, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=0, bold=false, italic=false, bullet=false, underline=false
+    from 1 to 2: size=10, blockIndent=0, font=FontName, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=16711680, bold=false, italic=false, bullet=false, underline=false
+    from 2 to 3: size=10, blockIndent=0, font=FontName, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=0, bold=false, italic=false, bullet=false, underline=false
+  Style reset:  <P ALIGN="LEFT"><FONT FACE="FontName" SIZE="10" COLOR="#000000" LETTERSPACING="0" KERNING="0"> <FONT COLOR="#FF0000">a</FONT> </FONT></P>
+  Text runs (3):
+    from 0 to 1: size=10, blockIndent=0, font=FontName, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=0, bold=false, italic=false, bullet=false, underline=false
+    from 1 to 2: size=10, blockIndent=0, font=FontName, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=16711680, bold=false, italic=false, bullet=false, underline=false
+    from 2 to 3: size=10, blockIndent=0, font=FontName, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=0, bold=false, italic=false, bullet=false, underline=false
+======================================
+  Setting HTML:  <font>a</font> 
+  HTML get:      <font>a</font> 
+  Text get:      a 
+  Text runs (1):
+    from 0 to 3: size=10, blockIndent=0, font=FontName, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=0, bold=false, italic=false, bullet=false, underline=false
+  Style reset:  <P ALIGN="LEFT"><FONT FACE="FontName" SIZE="10" COLOR="#000000" LETTERSPACING="0" KERNING="0"> a </FONT></P>
+  Text runs (1):
+    from 0 to 3: size=10, blockIndent=0, font=FontName, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=0, bold=false, italic=false, bullet=false, underline=false
+======================================
+  Setting HTML:  <font color="#00FF00">a</font> 
+  HTML get:      <font color="#00FF00">a</font> 
+  Text get:      a 
+  Text runs (3):
+    from 0 to 1: size=10, blockIndent=0, font=FontName, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=0, bold=false, italic=false, bullet=false, underline=false
+    from 1 to 2: size=10, blockIndent=0, font=FontName, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=65280, bold=false, italic=false, bullet=false, underline=false
+    from 2 to 3: size=10, blockIndent=0, font=FontName, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=0, bold=false, italic=false, bullet=false, underline=false
+  Style reset:  <P ALIGN="LEFT"><FONT FACE="FontName" SIZE="10" COLOR="#000000" LETTERSPACING="0" KERNING="0"> <FONT COLOR="#00FF00">a</FONT> </FONT></P>
+  Text runs (3):
+    from 0 to 1: size=10, blockIndent=0, font=FontName, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=0, bold=false, italic=false, bullet=false, underline=false
+    from 1 to 2: size=10, blockIndent=0, font=FontName, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=65280, bold=false, italic=false, bullet=false, underline=false
+    from 2 to 3: size=10, blockIndent=0, font=FontName, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=0, bold=false, italic=false, bullet=false, underline=false
+======================================
+  Setting HTML:  <p>a</p> 
+  HTML get:      <p>a</p> 
+  Text get:      a 
+  Text runs (3):
+    from 0 to 1: size=10, blockIndent=0, font=FontName, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=0, bold=false, italic=false, bullet=false, underline=false
+    from 1 to 2: size=10, blockIndent=0, font=FontName, align=center, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=0, bold=false, italic=false, bullet=false, underline=false
+    from 2 to 3: size=10, blockIndent=0, font=FontName, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=0, bold=false, italic=false, bullet=false, underline=false
+  Style reset:  <P ALIGN="LEFT"><FONT FACE="FontName" SIZE="10" COLOR="#000000" LETTERSPACING="0" KERNING="0"> a </FONT></P>
+  Text runs (3):
+    from 0 to 1: size=10, blockIndent=0, font=FontName, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=0, bold=false, italic=false, bullet=false, underline=false
+    from 1 to 2: size=10, blockIndent=0, font=FontName, align=center, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=0, bold=false, italic=false, bullet=false, underline=false
+    from 2 to 3: size=10, blockIndent=0, font=FontName, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=0, bold=false, italic=false, bullet=false, underline=false
+======================================
+  Setting HTML:  <p class="classp">a</p> 
+  HTML get:      <p class="classp">a</p> 
+  Text get:      a 
+  Text runs (3):
+    from 0 to 1: size=10, blockIndent=0, font=FontName, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=0, bold=false, italic=false, bullet=false, underline=false
+    from 1 to 2: size=10, blockIndent=0, font=FontName, align=center, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=0, bold=false, italic=false, bullet=false, underline=false
+    from 2 to 3: size=10, blockIndent=0, font=FontName, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=0, bold=false, italic=false, bullet=false, underline=false
+  Style reset:  <P ALIGN="LEFT"><FONT FACE="FontName" SIZE="10" COLOR="#000000" LETTERSPACING="0" KERNING="0"> a </FONT></P>
+  Text runs (3):
+    from 0 to 1: size=10, blockIndent=0, font=FontName, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=0, bold=false, italic=false, bullet=false, underline=false
+    from 1 to 2: size=10, blockIndent=0, font=FontName, align=center, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=0, bold=false, italic=false, bullet=false, underline=false
+    from 2 to 3: size=10, blockIndent=0, font=FontName, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=0, bold=false, italic=false, bullet=false, underline=false
+======================================
+  Setting HTML:  <p align="justify">a</p> 
+  HTML get:      <p align="justify">a</p> 
+  Text get:      a 
+  Text runs (3):
+    from 0 to 1: size=10, blockIndent=0, font=FontName, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=0, bold=false, italic=false, bullet=false, underline=false
+    from 1 to 2: size=10, blockIndent=0, font=FontName, align=justify, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=0, bold=false, italic=false, bullet=false, underline=false
+    from 2 to 3: size=10, blockIndent=0, font=FontName, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=0, bold=false, italic=false, bullet=false, underline=false
+  Style reset:  <P ALIGN="LEFT"><FONT FACE="FontName" SIZE="10" COLOR="#000000" LETTERSPACING="0" KERNING="0"> a </FONT></P>
+  Text runs (3):
+    from 0 to 1: size=10, blockIndent=0, font=FontName, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=0, bold=false, italic=false, bullet=false, underline=false
+    from 1 to 2: size=10, blockIndent=0, font=FontName, align=justify, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=0, bold=false, italic=false, bullet=false, underline=false
+    from 2 to 3: size=10, blockIndent=0, font=FontName, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=0, bold=false, italic=false, bullet=false, underline=false
+======================================
+  Setting HTML:  <p class="classp" align="justify">a</p> 
+  HTML get:      <p class="classp" align="justify">a</p> 
+  Text get:      a 
+  Text runs (3):
+    from 0 to 1: size=10, blockIndent=0, font=FontName, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=0, bold=false, italic=false, bullet=false, underline=false
+    from 1 to 2: size=10, blockIndent=0, font=FontName, align=justify, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=0, bold=false, italic=false, bullet=false, underline=false
+    from 2 to 3: size=10, blockIndent=0, font=FontName, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=0, bold=false, italic=false, bullet=false, underline=false
+  Style reset:  <P ALIGN="LEFT"><FONT FACE="FontName" SIZE="10" COLOR="#000000" LETTERSPACING="0" KERNING="0"> a </FONT></P>
+  Text runs (3):
+    from 0 to 1: size=10, blockIndent=0, font=FontName, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=0, bold=false, italic=false, bullet=false, underline=false
+    from 1 to 2: size=10, blockIndent=0, font=FontName, align=justify, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=0, bold=false, italic=false, bullet=false, underline=false
+    from 2 to 3: size=10, blockIndent=0, font=FontName, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=0, bold=false, italic=false, bullet=false, underline=false
+======================================
+  Setting HTML:  <p align="justify" class="classp">a</p> 
+  HTML get:      <p align="justify" class="classp">a</p> 
+  Text get:      a 
+  Text runs (3):
+    from 0 to 1: size=10, blockIndent=0, font=FontName, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=0, bold=false, italic=false, bullet=false, underline=false
+    from 1 to 2: size=10, blockIndent=0, font=FontName, align=justify, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=0, bold=false, italic=false, bullet=false, underline=false
+    from 2 to 3: size=10, blockIndent=0, font=FontName, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=0, bold=false, italic=false, bullet=false, underline=false
+  Style reset:  <P ALIGN="LEFT"><FONT FACE="FontName" SIZE="10" COLOR="#000000" LETTERSPACING="0" KERNING="0"> a </FONT></P>
+  Text runs (3):
+    from 0 to 1: size=10, blockIndent=0, font=FontName, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=0, bold=false, italic=false, bullet=false, underline=false
+    from 1 to 2: size=10, blockIndent=0, font=FontName, align=justify, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=0, bold=false, italic=false, bullet=false, underline=false
+    from 2 to 3: size=10, blockIndent=0, font=FontName, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=0, bold=false, italic=false, bullet=false, underline=false
+======================================
+  Setting HTML:  <span>a</span> 
+  HTML get:      <span>a</span> 
+  Text get:      a 
+  Text runs (1):
+    from 0 to 3: size=10, blockIndent=0, font=FontName, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=0, bold=false, italic=false, bullet=false, underline=false
+  Style reset:  <P ALIGN="LEFT"><FONT FACE="FontName" SIZE="10" COLOR="#000000" LETTERSPACING="0" KERNING="0"> a </FONT></P>
+  Text runs (1):
+    from 0 to 3: size=10, blockIndent=0, font=FontName, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=0, bold=false, italic=false, bullet=false, underline=false
+======================================
+  Setting HTML:  <span class="colorRed">a</span> 
+  HTML get:      <span class="colorRed">a</span> 
+  Text get:      a 
+  Text runs (1):
+    from 0 to 3: size=10, blockIndent=0, font=FontName, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=0, bold=false, italic=false, bullet=false, underline=false
+  Style reset:  <P ALIGN="LEFT"><FONT FACE="FontName" SIZE="10" COLOR="#000000" LETTERSPACING="0" KERNING="0"> a </FONT></P>
+  Text runs (1):
+    from 0 to 3: size=10, blockIndent=0, font=FontName, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=0, bold=false, italic=false, bullet=false, underline=false
+======================================
+  Setting HTML:  <span>a</span> 
+  HTML get:      <span>a</span> 
+  Text get:      a 
+  Text runs (1):
+    from 0 to 3: size=10, blockIndent=0, font=FontName, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=0, bold=false, italic=false, bullet=false, underline=false
+  Style reset:  <P ALIGN="LEFT"><FONT FACE="FontName" SIZE="10" COLOR="#000000" LETTERSPACING="0" KERNING="0"> a </FONT></P>
+  Text runs (1):
+    from 0 to 3: size=10, blockIndent=0, font=FontName, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=0, bold=false, italic=false, bullet=false, underline=false
+======================================
+  Setting HTML:  hello <b>b</b> 
+  HTML get:      hello <b>b</b> 
+  Text get:      hello b 
+  Text runs (3):
+    from 0 to 7: size=10, blockIndent=0, font=FontName, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=0, bold=false, italic=false, bullet=false, underline=false
+    from 7 to 8: size=10, blockIndent=0, font=FontName, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=0, bold=true, italic=false, bullet=false, underline=false
+    from 8 to 9: size=10, blockIndent=0, font=FontName, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=0, bold=false, italic=false, bullet=false, underline=false
+  Style reset:  <P ALIGN="LEFT"><FONT FACE="FontName" SIZE="10" COLOR="#000000" LETTERSPACING="0" KERNING="0"> hello <B>b</B> </FONT></P>
+  Text runs (3):
+    from 0 to 7: size=10, blockIndent=0, font=FontName, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=0, bold=false, italic=false, bullet=false, underline=false
+    from 7 to 8: size=10, blockIndent=0, font=FontName, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=0, bold=true, italic=false, bullet=false, underline=false
+    from 8 to 9: size=10, blockIndent=0, font=FontName, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=0, bold=false, italic=false, bullet=false, underline=false
+======================================
+  Setting HTML:  <p class="classspec">a</p> <span class="classspec">b</span> 
+  HTML get:      <p class="classspec">a</p> <span class="classspec">b</span> 
+  Text get:      a b 
+  Text runs (1):
+    from 0 to 5: size=10, blockIndent=0, font=FontName, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=0, bold=false, italic=false, bullet=false, underline=false
+  Style reset:  <P ALIGN="LEFT"><FONT FACE="FontName" SIZE="10" COLOR="#000000" LETTERSPACING="0" KERNING="0"> a b </FONT></P>
+  Text runs (1):
+    from 0 to 5: size=10, blockIndent=0, font=FontName, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=0, bold=false, italic=false, bullet=false, underline=false

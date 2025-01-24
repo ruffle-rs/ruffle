@@ -18,7 +18,7 @@ use input::{web_key_to_codepoint, web_to_ruffle_key_code, web_to_ruffle_text_con
 use js_sys::{Error as JsError, Uint8Array};
 use ruffle_core::context::UpdateContext;
 use ruffle_core::context_menu::ContextMenuCallback;
-use ruffle_core::events::{MouseButton, MouseWheelDelta, TextControlCode};
+use ruffle_core::events::{GamepadButton, MouseButton, MouseWheelDelta, TextControlCode};
 use ruffle_core::tag_utils::SwfMovie;
 use ruffle_core::{Player, PlayerEvent, StaticCallstack, ViewportDimensions};
 use ruffle_web_common::JsResult;
@@ -38,8 +38,8 @@ use wasm_bindgen::convert::FromWasmAbi;
 use wasm_bindgen::prelude::*;
 use web_sys::{
     AddEventListenerOptions, ClipboardEvent, Element, Event, EventTarget, FocusEvent,
-    HtmlCanvasElement, HtmlElement, KeyboardEvent, Node, PointerEvent, ShadowRoot, WheelEvent,
-    Window,
+    Gamepad as WebGamepad, GamepadButton as WebGamepadButton, HtmlCanvasElement, HtmlElement,
+    KeyboardEvent, Node, PointerEvent, ShadowRoot, WheelEvent, Window,
 };
 
 static RUFFLE_GLOBAL_PANIC: Once = Once::new();
@@ -140,6 +140,7 @@ struct RuffleInstance {
     has_focus: bool,
     trace_observer: Rc<RefCell<JsValue>>,
     log_subscriber: Arc<Layered<WASMLayer, Registry>>,
+    pressed_buttons: Vec<GamepadButton>,
 }
 
 #[wasm_bindgen(raw_module = "./internal/player/inner")]
@@ -508,6 +509,7 @@ impl RuffleHandle {
             has_focus: false,
             trace_observer: player.trace_observer,
             log_subscriber,
+            pressed_buttons: vec![],
         };
 
         // Prevent touch-scrolling on canvas.
@@ -1015,6 +1017,7 @@ impl RuffleHandle {
     fn tick(&mut self, timestamp: f64) {
         let mut dt = 0.0;
         let mut new_dimensions = None;
+        let mut gamepad_button_events = Vec::new();
         let _ = self.with_instance_mut(|instance| {
             // Check for canvas resize.
             let canvas_width = instance.canvas.client_width();
@@ -1043,6 +1046,60 @@ impl RuffleHandle {
                 ));
             }
 
+            if let Ok(gamepads) = instance.window.navigator().get_gamepads() {
+                if let Some(gamepad) = gamepads
+                    .into_iter()
+                    .next()
+                    .and_then(|gamepad| gamepad.dyn_into::<WebGamepad>().ok())
+                {
+                    let mut pressed_buttons = Vec::new();
+
+                    let buttons = gamepad.buttons();
+                    for (index, button) in buttons.into_iter().enumerate() {
+                        let Ok(button) = button.dyn_into::<WebGamepadButton>() else {
+                            continue;
+                        };
+
+                        if !button.pressed() {
+                            continue;
+                        }
+
+                        // See https://w3c.github.io/gamepad/#remapping
+                        let gamepad_button = match index {
+                            0 => GamepadButton::South,
+                            1 => GamepadButton::East,
+                            2 => GamepadButton::West,
+                            3 => GamepadButton::North,
+                            12 => GamepadButton::DPadUp,
+                            13 => GamepadButton::DPadDown,
+                            14 => GamepadButton::DPadLeft,
+                            15 => GamepadButton::DPadRight,
+                            _ => continue,
+                        };
+
+                        pressed_buttons.push(gamepad_button);
+                    }
+
+                    if pressed_buttons != instance.pressed_buttons {
+                        for button in pressed_buttons.iter() {
+                            if !instance.pressed_buttons.contains(button) {
+                                gamepad_button_events
+                                    .push(PlayerEvent::GamepadButtonDown { button: *button });
+                            }
+                        }
+
+                        for button in instance.pressed_buttons.iter() {
+                            if !pressed_buttons.contains(button) {
+                                gamepad_button_events
+                                    .push(PlayerEvent::GamepadButtonUp { button: *button });
+                            }
+                        }
+
+                        instance.pressed_buttons = pressed_buttons;
+                    }
+                }
+            }
+
             // Request next animation frame.
             if let Some(handler) = &instance.animation_handler {
                 let id = instance
@@ -1065,6 +1122,10 @@ impl RuffleHandle {
 
         // Tick the Ruffle core.
         let _ = self.with_core_mut(|core| {
+            for event in gamepad_button_events {
+                core.handle_event(event);
+            }
+
             if let Some((ref canvas, viewport_width, viewport_height, device_pixel_ratio)) =
                 new_dimensions
             {

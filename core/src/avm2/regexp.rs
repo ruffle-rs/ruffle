@@ -52,12 +52,9 @@ bitflags! {
 }
 
 impl<'gc> RegExp<'gc> {
-    pub fn new<S>(source: S) -> Self
-    where
-        S: Into<AvmString<'gc>>,
-    {
+    pub fn new(source: AvmString<'gc>) -> Self {
         Self {
-            source: source.into(),
+            source,
             flags: RegExpFlags::empty(),
             last_index: 0,
             cached_regex: None,
@@ -69,12 +66,9 @@ impl<'gc> RegExp<'gc> {
         self.source
     }
 
-    pub fn set_source<S>(&mut self, source: S)
-    where
-        S: Into<AvmString<'gc>>,
-    {
+    pub fn set_source(&mut self, source: AvmString<'gc>) {
         self.cached_regex = None;
-        self.source = source.into();
+        self.source = source;
     }
 
     pub fn flags(&self) -> RegExpFlags {

@@ -81,19 +81,18 @@ pub fn call_handler<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     if args.len() == 1 {
         // We do *not* create a new object when AS does 'XMLList(someXMLList)'
-        if let Some(obj) = args.try_get_object(activation, 0) {
+        if let Some(obj) = args.get_value(0).as_object() {
             if let Some(xml_list) = obj.as_xml_list_object() {
                 return Ok(xml_list.into());
             }
         }
     }
 
-    Ok(activation
+    activation
         .avm2()
         .classes()
         .xml_list
-        .construct(activation, args)?
-        .into())
+        .construct(activation, args)
 }
 
 // ECMA-357 13.5.4.11 XMLList.prototype.elements ([name])
@@ -593,9 +592,9 @@ macro_rules! define_xml_proxy {
                 let mut children = list.children_mut(activation.gc());
                 match &mut children[..] {
                     [child] => {
-                        child
-                            .get_or_create_xml(activation)
-                            .call_property(&Multiname::new(namespaces.as3, $as_name), args, activation)
+                        let child = child.get_or_create_xml(activation);
+
+                        Value::from(child).call_property(&Multiname::new(namespaces.as3, $as_name), args, activation)
                     }
                     _ => Err(make_error_1086(activation, $as_name)),
                 }
@@ -644,7 +643,7 @@ pub fn namespace_internal_impl<'gc>(
     };
 
     match &mut children[..] {
-        [child] => child.get_or_create_xml(activation).call_property(
+        [child] => Value::from(child.get_or_create_xml(activation)).call_property(
             &Multiname::new(namespaces.as3, "namespace"),
             args,
             activation,

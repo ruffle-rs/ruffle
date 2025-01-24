@@ -173,7 +173,10 @@ impl<'gc> SoundObject<'gc> {
             .classes()
             .id3info
             .construct(activation, &[])
-            .expect("failed to construct ID3Info object");
+            .expect("failed to construct ID3Info object")
+            .as_object()
+            .unwrap();
+
         let tag = Tag::read_from2(Cursor::new(bytes));
         if let Ok(ref tag) = tag {
             if let Some(v) = tag.album() {

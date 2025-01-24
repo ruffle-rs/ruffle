@@ -418,7 +418,7 @@ fn method<'gc>(
         }
         GET_MODE => {
             let mode: &WStr = this.mode().into();
-            AvmString::from(mode).into()
+            AvmString::from_static_wstr(activation.gc(), mode).into()
         }
         SET_MODE => {
             this.set_mode(activation, args.get(0))?;

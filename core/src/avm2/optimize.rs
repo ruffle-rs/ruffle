@@ -1,7 +1,6 @@
 use crate::avm2::error::verify_error;
 use crate::avm2::method::{BytecodeMethod, ResolvedParamConfig};
 use crate::avm2::multiname::Multiname;
-use crate::avm2::object::TObject;
 use crate::avm2::op::Op;
 use crate::avm2::property::Property;
 use crate::avm2::verify::{Exception, JumpSource};
@@ -503,19 +502,7 @@ pub fn optimize<'gc>(
         .body()
         .expect("Cannot verify non-native method without body!");
 
-    // This can probably be done better by recording the receiver in `Activation`,
-    // but this works since it's guaranteed to be set in `Activation::from_method`.
-    let this_value = activation.local_register(0);
-
-    let this_class = if let Some(this_class) = activation.bound_class() {
-        if this_value.is_of_type(activation, this_class) {
-            Some(this_class)
-        } else {
-            None
-        }
-    } else {
-        None
-    };
+    let this_class = activation.bound_class();
 
     let this_value = OptValue {
         class: this_class,
@@ -952,7 +939,7 @@ pub fn optimize<'gc>(
                 Op::URShift => {
                     stack.pop(activation)?;
                     stack.pop(activation)?;
-                    stack.push_class(activation, types.int)?;
+                    stack.push_class(activation, types.uint)?;
                 }
                 Op::PushDouble { .. } => {
                     stack.push_class(activation, types.number)?;
@@ -1140,7 +1127,7 @@ pub fn optimize<'gc>(
                         .outer()
                         .get_unchecked(*index as usize)
                         .values()
-                        .instance_class();
+                        .instance_class(activation);
                     stack.push_class(activation, class)?;
                 }
                 Op::Pop => {
@@ -1190,7 +1177,9 @@ pub fn optimize<'gc>(
                         }
 
                         if !stack_push_done {
-                            if let Some(info) = outer_scope.get_entry_for_multiname(&multiname) {
+                            if let Some(info) =
+                                outer_scope.get_entry_for_multiname(activation, &multiname)
+                            {
                                 if let Some((class, index)) = info {
                                     *op = Op::GetOuterScope { index };
 
@@ -1251,14 +1240,20 @@ pub fn optimize<'gc>(
                 Op::HasNext => {
                     stack.pop(activation)?;
                     stack.pop(activation)?;
-                    stack.push_any(activation)?;
+
+                    // FIXME this should push `int` instead of `number`, but we have
+                    // to fix TObject::get_next_enumerant to return i32 for that
+                    stack.push_class(activation, types.number)?;
                 }
                 Op::HasNext2 {
                     index_register,
                     object_register,
                 } => {
                     stack.push_class(activation, types.boolean)?;
-                    local_types.set_any(*index_register as usize);
+
+                    // FIXME this should set the local to `int` instead of `number`, but
+                    // we have to fix TObject::get_next_enumerant to return i32 for that
+                    local_types.set(*index_register as usize, OptValue::of_type(types.number));
                     local_types.set_any(*object_register as usize);
                 }
                 Op::GetSlot { index: slot_id } => {
@@ -1682,8 +1677,9 @@ pub fn optimize<'gc>(
                     let outer_scope = activation.outer();
                     if !outer_scope.is_empty() {
                         let global_scope = outer_scope.get_unchecked(0);
+                        let global_class = global_scope.values().instance_class(activation);
 
-                        stack.push_class(activation, global_scope.values().instance_class())?;
+                        stack.push_class(activation, global_class)?;
                     } else if has_simple_scoping {
                         stack.push(activation, this_value)?;
                     } else {
@@ -1713,7 +1709,7 @@ pub fn optimize<'gc>(
                     if !outer_scope.is_empty() {
                         let global_scope = outer_scope.get_unchecked(0);
 
-                        let class = global_scope.values().instance_class();
+                        let class = global_scope.values().instance_class(activation);
                         let mut value_class = class.vtable().slot_classes()[*slot_id as usize];
                         let resolved_value_class = value_class.get_class(activation);
                         if let Ok(class) = resolved_value_class {

@@ -5,6 +5,8 @@ use crate::html::{transform_dashes_to_camel_case, CssStream};
 use crate::string::AvmString;
 use ruffle_wstr::{WStr, WString};
 
+pub use crate::avm2::object::style_sheet_allocator;
+
 pub fn inner_parse_css<'gc>(
     activation: &mut Activation<'_, 'gc>,
     _this: Value<'gc>,
@@ -100,4 +102,47 @@ pub fn inner_parse_font_family<'gc>(
     }
 
     Ok(Value::String(AvmString::new(activation.gc(), result)))
+}
+
+pub fn clear_internal<'gc>(
+    _activation: &mut Activation<'_, 'gc>,
+    this: Value<'gc>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
+    let Some(this) = this.as_style_sheet() else {
+        return Ok(Value::Undefined);
+    };
+
+    this.clear();
+
+    Ok(Value::Undefined)
+}
+
+pub fn set_style_internal<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    this: Value<'gc>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
+    let Some(this) = this.as_style_sheet() else {
+        return Ok(Value::Undefined);
+    };
+
+    let Some(selector) = args.try_get_string(activation, 0)? else {
+        return Ok(Value::Undefined);
+    };
+    let text_format = args
+        .try_get_object(activation, 1)
+        .and_then(|tf| tf.as_text_format().map(|tf| tf.clone()));
+
+    if let Some(text_format) = text_format {
+        this.set_style(selector.as_wstr().to_owned(), text_format);
+    } else {
+        this.remove_style(selector.as_wstr());
+    }
+
+    Ok(Value::Undefined)
 }

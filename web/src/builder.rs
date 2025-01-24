@@ -10,6 +10,7 @@ use ruffle_core::backend::storage::{MemoryStorageBackend, StorageBackend};
 use ruffle_core::backend::ui::FontDefinition;
 use ruffle_core::compatibility_rules::CompatibilityRules;
 use ruffle_core::config::{Letterbox, NetworkingAccessMode};
+use ruffle_core::events::{GamepadButton, KeyCode};
 use ruffle_core::ttf_parser;
 use ruffle_core::{
     swf, Color, DefaultFont, Player, PlayerBuilder, PlayerRuntime, StageAlign, StageScaleMode,
@@ -61,6 +62,7 @@ pub struct RuffleInstanceBuilder {
     pub(crate) volume: f32,
     pub(crate) default_fonts: HashMap<DefaultFont, Vec<String>>,
     pub(crate) custom_fonts: Vec<(String, Vec<u8>)>,
+    pub(crate) gamepad_button_mapping: HashMap<GamepadButton, KeyCode>,
 }
 
 impl Default for RuffleInstanceBuilder {
@@ -97,6 +99,7 @@ impl Default for RuffleInstanceBuilder {
             volume: 1.0,
             default_fonts: HashMap::new(),
             custom_fonts: vec![],
+            gamepad_button_mapping: HashMap::new(),
         }
     }
 }
@@ -315,6 +318,14 @@ impl RuffleInstanceBuilder {
                 .flat_map(|value| value.as_string())
                 .collect(),
         );
+    }
+
+    #[wasm_bindgen(js_name = "addGamepadButtonMapping")]
+    pub fn add_gampepad_button_mapping(&mut self, button: &str, keycode: u32) {
+        if let Ok(button) = GamepadButton::from_str(button) {
+            self.gamepad_button_mapping
+                .insert(button, KeyCode::from_code(keycode));
+        }
     }
 
     // TODO: This should be split into two methods that either load url or load data
@@ -657,6 +668,7 @@ impl RuffleInstanceBuilder {
             .with_scale_mode(self.scale, self.force_scale)
             .with_frame_rate(self.frame_rate)
             .with_page_url(window.location().href().ok())
+            .with_gamepad_button_mapping(self.gamepad_button_mapping.clone())
             .build();
 
         let player_weak = Arc::downgrade(&core);

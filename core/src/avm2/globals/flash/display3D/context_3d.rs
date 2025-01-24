@@ -320,12 +320,12 @@ pub fn set_program_constants_from_matrix<'gc>(
         // in column-major order.
         // See https://github.com/openfl/openfl/blob/971a4c9e43b5472fd84d73920a2b7c1b3d8d9257/src/openfl/display3D/Context3D.hx#L1532-L1550
         if user_transposed_matrix {
-            matrix = matrix
+            matrix = Value::from(matrix)
                 .call_public_property("clone", &[], activation)?
                 .as_object()
                 .expect("Matrix3D.clone returns Object");
 
-            matrix.call_public_property("transpose", &[], activation)?;
+            Value::from(matrix).call_public_property("transpose", &[], activation)?;
         }
 
         let matrix_raw_data = matrix

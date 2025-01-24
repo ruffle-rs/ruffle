@@ -1,5 +1,6 @@
 //! Classes that store formatting options
 
+use crate::avm2::object::StyleSheetObject;
 use crate::context::UpdateContext;
 use crate::html::iterators::TextSpanIter;
 use crate::string::{Integer, SwfStrExt as _, Units, WStr, WString};
@@ -162,7 +163,7 @@ impl TextFormat {
         let align = et.layout().map(|l| l.align);
         let left_margin = et.layout().map(|l| l.left_margin.to_pixels());
         let right_margin = et.layout().map(|l| l.right_margin.to_pixels());
-        let indent = et.layout().map(|l| l.indent.to_pixels());
+        let indent = et.layout().map(|l| l.indent.to_pixels().round_ties_even());
         let leading = et.layout().map(|l| l.leading.to_pixels());
 
         // TODO: Text fields that don't specify a font are assumed to be 12px
@@ -624,6 +625,7 @@ impl FormatSpans {
     pub fn from_html(
         html: &WStr,
         default_format: TextFormat,
+        style_sheet: Option<StyleSheetObject<'_>>,
         is_multiline: bool,
         condense_white: bool,
         swf_version: u8,
@@ -676,6 +678,28 @@ impl FormatSpans {
         reader_config.check_end_names = false;
         reader_config.allow_unmatched_ends = true;
 
+        fn class_name_to_selector(class: &WStr) -> WString {
+            let mut selector = WString::from_utf8(".");
+            selector.push_str(&class.to_ascii_lowercase());
+            selector
+        }
+
+        fn apply_style(
+            style_sheet: Option<StyleSheetObject<'_>>,
+            format: TextFormat,
+            selector: &WStr,
+        ) -> TextFormat {
+            let Some(style_sheet) = style_sheet else {
+                return format;
+            };
+
+            if let Some(style) = style_sheet.get_style(selector) {
+                style.clone().mix_with(format)
+            } else {
+                format
+            }
+        }
+
         loop {
             match reader.read_event() {
                 Ok(Event::Start(ref e)) => {
@@ -717,8 +741,16 @@ impl FormatSpans {
                             // Skip push to `format_stack`.
                             continue;
                         }
-                        b"p" => {
+                        tag @ b"p" => {
                             p_open = true;
+
+                            format = apply_style(style_sheet, format, WStr::from_units(tag));
+
+                            if let Some(class) = attribute(b"class") {
+                                let selector = &class_name_to_selector(&class);
+                                format = apply_style(style_sheet, format, selector);
+                            }
+
                             if let Some(align) = attribute(b"align") {
                                 let align = align.to_ascii_lowercase();
                                 if align == WStr::from_units(b"left") {
@@ -732,13 +764,21 @@ impl FormatSpans {
                                 }
                             }
                         }
-                        b"a" => {
+                        tag @ b"a" => {
                             if let Some(href) = attribute(b"href") {
                                 format.url = Some(href);
                             }
 
                             if let Some(target) = attribute(b"target") {
                                 format.target = Some(target);
+                            }
+
+                            // TODO Docs claim that a:link, a:hover, a:active, should work.
+                            format = apply_style(style_sheet, format, WStr::from_units(tag));
+
+                            if let Some(class) = attribute(b"class") {
+                                let selector = &class_name_to_selector(&class);
+                                format = apply_style(style_sheet, format, selector);
                             }
                         }
                         b"font" => {
@@ -824,7 +864,9 @@ impl FormatSpans {
                         b"u" => {
                             format.underline = Some(true);
                         }
-                        b"li" => {
+                        tag @ b"li" => {
+                            format = apply_style(style_sheet, format, WStr::from_units(tag));
+
                             let is_last_nl = text.iter().last() == Some(HTML_NEWLINE);
                             if is_multiline && !is_last_nl && text.len() > 0 {
                                 // If the last paragraph was not closed and
@@ -870,7 +912,16 @@ impl FormatSpans {
                                 );
                             }
                         }
-                        _ => {}
+                        b"span" => {
+                            if let Some(class) = attribute(b"class") {
+                                let selector = &class_name_to_selector(&class);
+                                format = apply_style(style_sheet, format, selector);
+                            }
+                        }
+                        tag => {
+                            // TODO Add 'display' style support, Flash adds a newline on 'display: block'
+                            format = apply_style(style_sheet, format, WStr::from_units(tag));
+                        }
                     }
                     opened_starts.push(opened_buffer.len());
                     opened_buffer.extend(tag_name);

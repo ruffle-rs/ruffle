@@ -6,7 +6,6 @@ include "Object.as"
 // List is ordered alphabetically, except where superclasses
 // are listed before subclasses
 include "Array.as"
-include "Boolean.as"
 include "Class.as"
 
 include "Function.as"

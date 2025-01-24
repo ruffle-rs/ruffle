@@ -441,13 +441,13 @@ pub fn copy_channel<'gc>(
 
             let result_color: u32 = match dest_channel {
                 // red
-                1 => (original_color & 0xFF00FFFF) | source_part << 16,
+                1 => (original_color & 0xFF00FFFF) | (source_part << 16),
                 // green
-                2 => (original_color & 0xFFFF00FF) | source_part << 8,
+                2 => (original_color & 0xFFFF00FF) | (source_part << 8),
                 // blue
                 4 => (original_color & 0xFFFFFF00) | source_part,
                 // alpha
-                8 => (original_color & 0x00FFFFFF) | source_part << 24,
+                8 => (original_color & 0x00FFFFFF) | (source_part << 24),
                 _ => original_color,
             };
 

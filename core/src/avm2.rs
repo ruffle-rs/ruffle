@@ -3,9 +3,11 @@
 use std::rc::Rc;
 
 use crate::avm2::class::{AllocatorFn, CustomConstructorFn};
+use crate::avm2::e4x::XmlSettings;
 use crate::avm2::error::{make_error_1014, make_error_1107, type_error, Error1014Type};
 use crate::avm2::globals::{
-    init_builtin_system_classes, init_native_system_classes, SystemClassDefs, SystemClasses,
+    init_builtin_system_class_defs, init_builtin_system_classes, init_native_system_classes,
+    SystemClassDefs, SystemClasses,
 };
 use crate::avm2::method::{Method, NativeMethodImpl};
 use crate::avm2::scope::ScopeChain;
@@ -95,7 +97,8 @@ use self::api_version::ApiVersion;
 use self::object::WeakObject;
 use self::scope::Scope;
 
-const BROADCAST_WHITELIST: [&str; 4] = ["enterFrame", "exitFrame", "frameConstructed", "render"];
+const BROADCAST_WHITELIST: [&[u8]; 4] =
+    [b"enterFrame", b"exitFrame", b"frameConstructed", b"render"];
 
 const PREALLOCATED_STACK_SIZE: usize = 120000;
 
@@ -175,6 +178,9 @@ pub struct Avm2<'gc> {
     alias_to_class_map: FnvHashMap<AvmString<'gc>, ClassObject<'gc>>,
     class_to_alias_map: FnvHashMap<Class<'gc>, AvmString<'gc>>,
 
+    #[collect(require_static)]
+    pub xml_settings: XmlSettings,
+
     /// The api version of our root movie clip. Note - this is used as the
     /// api version for swfs loaded via `Loader`, overriding the api version
     /// specified in the loaded SWF. This is only used for API versioning (hiding
@@ -229,6 +235,8 @@ impl<'gc> Avm2<'gc> {
 
             alias_to_class_map: Default::default(),
             class_to_alias_map: Default::default(),
+
+            xml_settings: XmlSettings::new_default(),
 
             // Set the lowest version for now - this will be overridden when we set our movie
             root_api_version: ApiVersion::AllVersions,
@@ -289,44 +297,53 @@ impl<'gc> Avm2<'gc> {
     ) -> Result<(), Error<'gc>> {
         let mut init_activation = Activation::from_script(context, script)?;
 
-        let (method, scope, _domain) = script.init();
-        match method {
-            Method::Native(method) => {
-                if method.resolved_signature.read().is_none() {
-                    method.resolve_signature(&mut init_activation)?;
+        // Execute everything in a closure so we can run `cleanup` more easily.
+        let mut closure = || -> Result<(), Error<'gc>> {
+            let (method, scope, _domain) = script.init();
+            match method {
+                Method::Native(method) => {
+                    if method.resolved_signature.read().is_none() {
+                        method.resolve_signature(&mut init_activation)?;
+                    }
+
+                    let resolved_signature = method.resolved_signature.read();
+                    let resolved_signature = resolved_signature.as_ref().unwrap();
+
+                    // This exists purely to check if the builtin is OK with being called with
+                    // no parameters.
+                    init_activation.resolve_parameters(
+                        Method::Native(method),
+                        &[],
+                        resolved_signature,
+                        None,
+                    )?;
+                    init_activation
+                        .context
+                        .avm2
+                        .push_global_init(init_activation.gc(), script);
+                    let r = (method.method)(&mut init_activation, Value::Object(scope), &[]);
+                    init_activation.context.avm2.pop_call(init_activation.gc());
+                    r?;
                 }
+                Method::Bytecode(method) => {
+                    init_activation
+                        .context
+                        .avm2
+                        .push_global_init(init_activation.gc(), script);
+                    let r = init_activation.run_actions(method);
+                    init_activation.context.avm2.pop_call(init_activation.gc());
+                    r?;
+                }
+            };
 
-                let resolved_signature = method.resolved_signature.read();
-                let resolved_signature = resolved_signature.as_ref().unwrap();
-
-                // This exists purely to check if the builtin is OK with being called with
-                // no parameters.
-                init_activation.resolve_parameters(
-                    Method::Native(method),
-                    &[],
-                    resolved_signature,
-                    None,
-                )?;
-                init_activation
-                    .context
-                    .avm2
-                    .push_global_init(init_activation.gc(), script);
-                let r = (method.method)(&mut init_activation, Value::Object(scope), &[]);
-                init_activation.context.avm2.pop_call(init_activation.gc());
-                r?;
-            }
-            Method::Bytecode(method) => {
-                init_activation
-                    .context
-                    .avm2
-                    .push_global_init(init_activation.gc(), script);
-                let r = init_activation.run_actions(method);
-                init_activation.context.avm2.pop_call(init_activation.gc());
-                r?;
-            }
+            Ok(())
         };
 
-        Ok(())
+        let result = closure();
+
+        init_activation.cleanup();
+
+        result
     }
 
     fn orphan_objects_mut(&mut self) -> &mut Vec<DisplayObjectWeak<'gc>> {
@@ -410,7 +427,7 @@ impl<'gc> Avm2<'gc> {
     /// Returns `true` if the event has been handled.
     pub fn dispatch_event(
         context: &mut UpdateContext<'gc>,
-        event: Object<'gc>,
+        event: EventObject<'gc>,
         target: Object<'gc>,
     ) -> bool {
         Self::dispatch_event_internal(context, event, target, false)
@@ -424,7 +441,7 @@ impl<'gc> Avm2<'gc> {
     /// Returns `true` when the event would have been handled if not simulated.
     pub fn simulate_event_dispatch(
         context: &mut UpdateContext<'gc>,
-        event: Object<'gc>,
+        event: EventObject<'gc>,
         target: Object<'gc>,
     ) -> bool {
         Self::dispatch_event_internal(context, event, target, true)
@@ -432,18 +449,15 @@ impl<'gc> Avm2<'gc> {
 
     fn dispatch_event_internal(
         context: &mut UpdateContext<'gc>,
-        event: Object<'gc>,
+        event: EventObject<'gc>,
         target: Object<'gc>,
         simulate_dispatch: bool,
     ) -> bool {
-        let event_name = event
-            .as_event()
-            .map(|e| e.event_type())
-            .unwrap_or_else(|| panic!("cannot dispatch non-event object: {:?}", event));
-
         let mut activation = Activation::from_nothing(context);
         match events::dispatch_event(&mut activation, target, event, simulate_dispatch) {
             Err(err) => {
+                let event_name = event.event().event_type();
+
                 tracing::error!(
                     "Encountered AVM2 error when dispatching `{}` event: {:?}",
                     event_name,
@@ -470,10 +484,7 @@ impl<'gc> Avm2<'gc> {
         object: Object<'gc>,
         event_name: AvmString<'gc>,
     ) {
-        if !BROADCAST_WHITELIST
-            .iter()
-            .any(|x| AvmString::from(*x) == event_name)
-        {
+        if !BROADCAST_WHITELIST.iter().any(|x| *x == &event_name) {
             return;
         }
 
@@ -503,18 +514,12 @@ impl<'gc> Avm2<'gc> {
     /// Attempts to broadcast a non-event object will panic.
     pub fn broadcast_event(
         context: &mut UpdateContext<'gc>,
-        event: Object<'gc>,
+        event: EventObject<'gc>,
         on_type: ClassObject<'gc>,
     ) {
-        let event_name = event
-            .as_event()
-            .map(|e| e.event_type())
-            .unwrap_or_else(|| panic!("cannot broadcast non-event object: {:?}", event));
+        let event_name = event.event().event_type();
 
-        if !BROADCAST_WHITELIST
-            .iter()
-            .any(|x| AvmString::from(*x) == event_name)
-        {
+        if !BROADCAST_WHITELIST.iter().any(|x| *x == &event_name) {
             return;
         }
 
@@ -697,6 +702,10 @@ impl<'gc> Avm2<'gc> {
             .load_classes(&mut activation)
             .expect("Classes should load");
 
+        // These Classes are absolutely critical to the runtime, so make sure
+        // we've registered them before anything else.
+        init_builtin_system_class_defs(&mut activation);
+
         // The second script (script #1) is Toplevel.as, and includes important
         // builtin classes such as Namespace, QName, and XML.
         tunit
@@ -753,25 +762,7 @@ impl<'gc> Avm2<'gc> {
 
     /// Push a value onto the operand stack.
     #[inline(always)]
-    fn push(&mut self, mut value: Value<'gc>) {
-        if let Value::Object(o) = value {
-            // this is hot, so let's avoid a non-inlined call here
-            if let Object::PrimitiveObject(_) = o {
-                if let Some(prim) = o.as_primitive() {
-                    value = *prim;
-                }
-            }
-        }
-
-        avm_debug!(self, "Stack push {}: {value:?}", self.stack.len());
-
-        self.push_internal(value);
-    }
-
-    /// Push a value onto the operand stack.
-    /// This is like `push`, but does not handle `PrimitiveObject`.
-    #[inline(always)]
-    fn push_raw(&mut self, value: Value<'gc>) {
+    fn push(&mut self, value: Value<'gc>) {
         avm_debug!(self, "Stack push {}: {value:?}", self.stack.len());
 
         self.push_internal(value);
@@ -789,12 +780,28 @@ impl<'gc> Avm2<'gc> {
 
     /// Peek the n-th value from the end of the operand stack.
     #[inline(always)]
-    fn peek(&mut self, index: usize) -> Value<'gc> {
+    fn peek(&self, index: usize) -> Value<'gc> {
         let value = self.stack[self.stack.len() - index - 1];
 
         avm_debug!(self, "Stack peek {}: {value:?}", self.stack.len());
 
         value
+    }
+
+    #[inline(always)]
+    fn stack_at(&self, index: usize) -> Value<'gc> {
+        let value = self.stack[index];
+
+        avm_debug!(self, "Stack peek {}: {value:?}", index);
+
+        value
+    }
+
+    #[inline(always)]
+    fn set_stack_at(&mut self, index: usize, value: Value<'gc>) {
+        avm_debug!(self, "Stack poke {}: {value:?}", index);
+
+        self.stack[index] = value;
     }
 
     fn pop_args(&mut self, arg_count: u32) -> Vec<Value<'gc>> {

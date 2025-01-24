@@ -8,10 +8,8 @@ use crate::avm2::script::Script;
 use crate::avm2::traits::Trait;
 use crate::avm2::value::Value;
 use crate::avm2::vtable::VTable;
-use crate::avm2::Avm2;
-use crate::avm2::Error;
-use crate::avm2::Namespace;
-use crate::avm2::QName;
+use crate::avm2::{Avm2, Error, Multiname, Namespace, QName};
+use crate::string::WStr;
 use crate::tag_utils::{self, ControlFlow, SwfMovie, SwfSlice, SwfStream};
 use gc_arena::Collect;
 use std::sync::Arc;
@@ -400,7 +398,7 @@ fn define_fn_on_global<'gc>(
         .get_defined_value(activation, qname)
         .expect("Function being defined on global should be defined in domain!");
 
-    global
+    Value::from(global)
         .init_property(&qname.into(), func, activation)
         .expect("Should set property");
 }
@@ -418,7 +416,7 @@ fn dynamic_class<'gc>(
     let class = class_object.inner_class_definition();
     let name = class.name();
 
-    global
+    Value::from(global)
         .init_property(&name.into(), class_object.into(), activation)
         .expect("Should set property");
 
@@ -451,7 +449,7 @@ fn class<'gc>(
 
     let class_object = ClassObject::from_class(activation, class_def, super_class)?;
 
-    global
+    Value::from(global)
         .init_property(&class_name.into(), class_object.into(), activation)
         .expect("Should set property");
 
@@ -482,7 +480,7 @@ fn vector_class<'gc>(
 
     let legacy_name = QName::new(namespaces.vector_internal, legacy_name);
 
-    global
+    Value::from(global)
         .init_property(&legacy_name.into(), vector_cls.into(), activation)
         .expect("Should set property");
 
@@ -572,7 +570,6 @@ pub fn load_player_globals<'gc>(
     ));
 
     let string_class = string::create_class(activation);
-    let boolean_class = boolean::create_class(activation);
     let number_class = number::create_class(activation);
     let int_class = int::create_class(activation);
     let uint_class = uint::create_class(activation);
@@ -597,7 +594,6 @@ pub fn load_player_globals<'gc>(
         (public_ns, "Class", class_i_class),
         (public_ns, "Function", fn_classdef),
         (public_ns, "String", string_class),
-        (public_ns, "Boolean", boolean_class),
         (public_ns, "Number", number_class),
         (public_ns, "int", int_class),
         (public_ns, "uint", uint_class),
@@ -653,7 +649,7 @@ pub fn load_player_globals<'gc>(
     let globals = ScriptObject::custom_object(mc, global_classdef, None, global_classdef.vtable());
 
     let scope = ScopeChain::new(domain);
-    let gs = scope.chain(mc, &[Scope::new(globals)]);
+    let gs = scope.chain(mc, &[Scope::new(globals.into())]);
     activation.set_outer(gs);
 
     let object_class = ClassObject::from_class_partial(activation, object_i_class, None)?;
@@ -707,7 +703,7 @@ pub fn load_player_globals<'gc>(
     let fn_class = fn_class.into_finished_class(activation)?;
 
     // Function's prototype is an instance of itself
-    let fn_proto = fn_class.construct(activation, &[])?;
+    let fn_proto = fn_class.construct(activation, &[])?.as_object().unwrap();
     fn_class.link_prototype(activation, fn_proto)?;
 
     // Object prototype is enough
@@ -740,7 +736,6 @@ pub fn load_player_globals<'gc>(
     // Make sure to initialize superclasses *before* their subclasses!
 
     avm2_system_class!(string, activation, string_class, script);
-    avm2_system_class!(boolean, activation, boolean_class, script);
     avm2_system_class!(number, activation, number_class, script);
     avm2_system_class!(int, activation, int_class, script);
     avm2_system_class!(uint, activation, uint_class, script);
@@ -818,9 +813,16 @@ macro_rules! avm2_system_classes_playerglobal {
     ($activation:expr, [$(($package:expr, $class_name:expr, $field:ident)),* $(,)?]) => {
         let activation = $activation;
         $(
+            // Package and class names are ASCII
+            let package = WStr::from_units($package.as_bytes());
+            let class_name = WStr::from_units($class_name.as_bytes());
+
+            let package = activation.strings().intern_static(package);
+            let class_name = activation.strings().intern_static(class_name);
+
             // Lookup with the highest version, so we we see all defined classes here
-            let ns = Namespace::package($package, ApiVersion::VM_INTERNAL, activation.strings());
-            let name = QName::new(ns, $class_name);
+            let ns = Namespace::package(package, ApiVersion::VM_INTERNAL, activation.strings());
+            let name = QName::new(ns, class_name);
             let class_object = activation.domain().get_defined_value(activation, name).unwrap_or_else(|e| panic!("Failed to lookup {name:?}: {e:?}"));
             let class_object = class_object.as_object().unwrap().as_class_object().unwrap();
             let sc = activation.avm2().system_classes.as_mut().unwrap();
@@ -833,11 +835,19 @@ macro_rules! avm2_system_class_defs_playerglobal {
     ($activation:expr, [$(($package:expr, $class_name:expr, $field:ident)),* $(,)?]) => {
         let activation = $activation;
         $(
+            // Package and class names are ASCII
+            let package = WStr::from_units($package.as_bytes());
+            let class_name = WStr::from_units($class_name.as_bytes());
+
+            let package = activation.strings().intern_static(package);
+            let class_name = activation.strings().intern_static(class_name);
+
+            let domain = activation.domain();
+
             // Lookup with the highest version, so we we see all defined classes here
-            let ns = Namespace::package($package, ApiVersion::VM_INTERNAL, activation.strings());
-            let name = QName::new(ns, $class_name);
-            let class_object = activation.domain().get_defined_value(activation, name).unwrap_or_else(|e| panic!("Failed to lookup {name:?}: {e:?}"));
-            let class_def = class_object.as_object().unwrap().as_class_object().unwrap().inner_class_definition();
+            let ns = Namespace::package(package, ApiVersion::VM_INTERNAL, activation.strings());
+            let name = Multiname::new(ns, class_name);
+            let class_def = domain.get_class(activation.context, &name).unwrap_or_else(|| panic!("Failed to lookup {name:?}"));
             let sc = activation.avm2().system_class_defs.as_mut().unwrap();
             sc.$field = class_def;
         )*
@@ -848,11 +858,12 @@ pub fn init_builtin_system_classes(activation: &mut Activation<'_, '_>) {
     avm2_system_classes_playerglobal!(
         &mut *activation,
         [
-            ("", "Error", error),
             ("", "ArgumentError", argumenterror),
-            ("", "QName", qname),
+            ("", "Boolean", boolean),
+            ("", "Error", error),
             ("", "EvalError", evalerror),
             ("", "Namespace", namespace),
+            ("", "QName", qname),
             ("", "RangeError", rangeerror),
             ("", "ReferenceError", referenceerror),
             ("", "SecurityError", securityerror),
@@ -864,10 +875,13 @@ pub fn init_builtin_system_classes(activation: &mut Activation<'_, '_>) {
             ("", "XMLList", xml_list),
         ]
     );
+}
 
+pub fn init_builtin_system_class_defs(activation: &mut Activation<'_, '_>) {
     avm2_system_class_defs_playerglobal!(
         &mut *activation,
         [
+            ("", "Boolean", boolean),
             ("", "Namespace", namespace),
             ("", "XML", xml),
             ("", "XMLList", xml_list),

@@ -1,3 +1,4 @@
+use crate::avm2::object::StyleSheetObject;
 use crate::avm2::property::Property;
 use crate::avm2::{
     Activation, ArrayStorage, ClassObject, Error, Namespace, Object, TObject, Value,
@@ -6,12 +7,13 @@ use crate::context::UpdateContext;
 use crate::debug_ui::display_object::open_display_object_button;
 use crate::debug_ui::handle::{AVM2ObjectHandle, DisplayObjectHandle};
 use crate::debug_ui::{ItemToSave, Message};
-use egui::{Align, Checkbox, Grid, Id, Layout, TextEdit, Ui, Window};
+use egui::{Align, Checkbox, CollapsingHeader, Grid, Id, Layout, TextEdit, Ui, Window};
 use egui_extras::{Column, TableBody, TableBuilder, TableRow};
 use fnv::FnvHashMap;
 use gc_arena::Mutation;
 use std::borrow::Cow;
 
+use super::display_object::show_text_format;
 use super::movie::open_movie_button;
 
 #[derive(Debug, Eq, PartialEq, Hash, Default, Copy, Clone)]
@@ -21,6 +23,7 @@ enum Panel {
     Properties,
     Elements,
     Class,
+    StyleSheet,
 }
 
 #[derive(Debug, Default)]
@@ -62,6 +65,9 @@ impl Avm2ObjectWindow {
                     if object.as_class_object().is_some() {
                         ui.selectable_value(&mut self.open_panel, Panel::Class, "Class Info");
                     }
+                    if object.as_style_sheet().is_some() {
+                        ui.selectable_value(&mut self.open_panel, Panel::StyleSheet, "Style Sheet");
+                    }
                 });
                 ui.separator();
 
@@ -80,6 +86,11 @@ impl Avm2ObjectWindow {
                     Panel::Class => {
                         if let Some(class) = object.as_class_object() {
                             self.show_class(class, messages, &mut activation, ui)
+                        }
+                    }
+                    Panel::StyleSheet => {
+                        if let Some(style_sheet) = object.as_style_sheet() {
+                            self.show_style_sheet(style_sheet, ui)
                         }
                     }
                 }
@@ -280,6 +291,22 @@ impl Avm2ObjectWindow {
             });
     }
 
+    fn show_style_sheet(&mut self, style_sheet: StyleSheetObject<'_>, ui: &mut Ui) {
+        let mut selectors = style_sheet.selectors();
+        selectors.sort();
+        for selector in selectors {
+            CollapsingHeader::new(selector.to_utf8_lossy())
+                .id_salt(ui.id().with(selector.to_utf8_lossy()))
+                .show(ui, |ui| {
+                    if let Some(tf) = style_sheet.get_style(&selector) {
+                        show_text_format(ui, &tf, true);
+                    } else {
+                        ui.weak("No styles");
+                    }
+                });
+        }
+    }
+
     fn show_properties<'gc>(
         &mut self,
         object: Object<'gc>,
@@ -359,6 +386,7 @@ impl Avm2ObjectWindow {
                 });
             });
         };
+
         match prop {
             Property::Slot { slot_id } | Property::ConstSlot { slot_id } => {
                 body.row(18.0, |mut row| {
@@ -379,7 +407,7 @@ impl Avm2ObjectWindow {
                     label_col(&mut row);
                     row.col(|ui| {
                         if self.call_getters {
-                            let value = object.call_method(get, &[], activation);
+                            let value = Value::from(object).call_method(get, &[], activation);
                             ValueResultWidget::new(activation, value).show(ui, messages);
                         } else {
                             let value = self.getter_values.get_mut(&key);
@@ -387,7 +415,8 @@ impl Avm2ObjectWindow {
                                 // Empty entry means we want to refresh it,
                                 // so let's do that now
                                 let widget = value.get_or_insert_with(|| {
-                                    let value = object.call_method(get, &[], activation);
+                                    let value =
+                                        Value::from(object).call_method(get, &[], activation);
                                     ValueResultWidget::new(activation, value)
                                 });
                                 widget.show(ui, messages);

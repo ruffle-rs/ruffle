@@ -363,6 +363,12 @@ struct FontData {
     descriptor: FontDescriptor,
 
     font_type: FontType,
+
+    /// Whether this font has a layout defined.
+    ///
+    /// Fonts without a layout are used only to describe a font,
+    /// not to provide glyphs.
+    has_layout: bool,
 }
 
 impl<'gc> Font<'gc> {
@@ -385,6 +391,7 @@ impl<'gc> Font<'gc> {
                 glyphs: GlyphSource::FontFace(face),
                 descriptor,
                 font_type,
+                has_layout: true,
             },
         )))
     }
@@ -463,6 +470,7 @@ impl<'gc> Font<'gc> {
                 leading,
                 descriptor,
                 font_type,
+                has_layout: tag.layout.is_some(),
             },
         ))
     }
@@ -513,6 +521,7 @@ impl<'gc> Font<'gc> {
                 glyphs: GlyphSource::Empty,
                 descriptor,
                 font_type,
+                has_layout: true,
             },
         ))
     }
@@ -758,6 +767,10 @@ impl<'gc> Font<'gc> {
 
     pub fn font_type(&self) -> FontType {
         self.0.font_type
+    }
+
+    pub fn has_layout(&self) -> bool {
+        self.0.has_layout
     }
 }
 

@@ -5,16 +5,13 @@
 
 package flash.text.engine
 {
-    
-    
+    [API("662")]
     public final class FontLookup
     {
         // Used to indicate device font lookup.
         public static const DEVICE:String = "device";
-        
+
         // Used to indicate embedded CFF (Compact Font Format) font lookup.
         public static const EMBEDDED_CFF:String = "embeddedCFF";
-        
-        
     }
 }

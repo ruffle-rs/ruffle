@@ -332,10 +332,11 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Install Rust toolchain
-        uses: dtolnay/rust-toolchain@master
+        uses: dtolnay/rust-toolchain@stable
         with:
-          toolchain: 1.81.0
+          toolchain: stable
           targets: wasm32-unknown-unknown
+          components: rust-src
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -347,7 +348,7 @@ jobs:
       # Be sure to update in test_web.yml, Cargo.toml, web/docker/Dockerfile,
       # and web/README.md as well.
       - name: Install wasm-bindgen
-        run: cargo install wasm-bindgen-cli --version 0.2.99
+        run: cargo install wasm-bindgen-cli --version 0.2.100
 
       # Keep the version number in sync in all workflows,
       # and in the extension builder Dockerfile!

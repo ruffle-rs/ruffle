@@ -109,6 +109,14 @@ export function configureBuilder(
             builder.addSocketProxy(proxy.host, proxy.port, proxy.proxyUrl);
         }
     }
+
+    if (isExplicit(config.gamepadButtonMapping)) {
+        for (const [button, keyCode] of Object.entries(
+            config.gamepadButtonMapping,
+        )) {
+            builder.addGamepadButtonMapping(button, keyCode);
+        }
+    }
 }
 
 /**

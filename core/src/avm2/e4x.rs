@@ -1,5 +1,4 @@
 use crate::avm2::error::{make_error_1010, make_error_1085, make_error_1118, type_error};
-use crate::avm2::globals::slots::xml as xml_class_slots;
 use crate::avm2::object::{E4XOrXml, FunctionObject, NamespaceObject};
 use crate::avm2::{Activation, Error, Multiname, TObject, Value};
 use crate::string::{AvmString, WStr, WString};
@@ -132,7 +131,10 @@ impl<'gc> E4XNamespace<'gc> {
             .classes()
             .namespace
             .construct(activation, &args)?;
+
         Ok(obj
+            .as_object()
+            .unwrap()
             .as_namespace_object()
             .expect("just constructed a namespace"))
     }
@@ -753,12 +755,12 @@ impl<'gc> E4XNode<'gc> {
     ) -> Result<Vec<Self>, Error<'gc>> {
         let string = match &value {
             // The docs claim that this throws a TypeError, but it actually doesn't
-            Value::Null | Value::Undefined => AvmString::default(),
+            Value::Null | Value::Undefined => activation.strings().empty(),
             // The docs claim that only String, Number or Boolean are accepted, but that's also a lie
             val => {
                 if let Some(obj) = val.as_object() {
                     if obj.as_xml_object().is_some() || obj.as_xml_list_object().is_some() {
-                        value = obj.call_public_property("toXMLString", &[], activation)?;
+                        value = val.call_public_property("toXMLString", &[], activation)?;
                     }
                 }
                 value.coerce_to_string(activation)?
@@ -960,7 +962,7 @@ impl<'gc> E4XNode<'gc> {
                     } else {
                         (
                             AvmString::new_utf8_bytes(activation.gc(), text.as_bytes()),
-                            AvmString::default(),
+                            activation.strings().empty(),
                         )
                     };
                     let node = E4XNode(GcCell::new(
@@ -1230,7 +1232,7 @@ impl<'gc> E4XNode<'gc> {
         };
 
         // 2.a. If N.prefix == "" and x.[[Name]].uri == "", return
-        if prefix.is_empty() && self.namespace().map_or(true, |ns| ns.uri.is_empty()) {
+        if prefix.is_empty() && self.namespace().is_none_or(|ns| ns.uri.is_empty()) {
             return;
         }
 
@@ -1310,16 +1312,22 @@ impl<'gc> E4XNode<'gc> {
             return true;
         }
 
-        let self_ns = self.namespace().map(|ns| ns.uri).unwrap_or_default();
+        let self_ns = self.namespace().map(|ns| ns.uri);
         // FIXME: For cases where we don't have *any* explicit namespace
         // we just give up and assume we should match the default public namespace.
         if !name.namespace_set().iter().any(|ns| ns.is_namespace()) {
-            return self_ns.is_empty();
+            return self_ns.is_none_or(|n| n.is_empty());
         }
 
-        name.namespace_set()
-            .iter()
-            .any(|ns| ns.as_uri_opt().expect("NS set cannot contain Any") == self_ns)
+        name.namespace_set().iter().any(|ns| {
+            let uri = ns.as_uri_opt().expect("NS set cannot contain Any");
+
+            if let Some(self_ns) = self_ns {
+                uri == self_ns
+            } else {
+                uri.is_empty()
+            }
+        })
     }
 
     pub fn descendants(&self, name: &Multiname<'gc>, out: &mut Vec<E4XOrXml<'gc>>) {
@@ -1410,7 +1418,7 @@ pub fn simple_content_to_string<'gc>(
     children: impl Iterator<Item = E4XOrXml<'gc>>,
     activation: &mut Activation<'_, 'gc>,
 ) -> AvmString<'gc> {
-    let mut out = AvmString::default();
+    let mut out = activation.strings().empty();
     for child in children {
         if matches!(
             &*child.node().kind(),
@@ -1649,21 +1657,10 @@ pub fn to_xml_string<'gc>(
     xml: E4XOrXml<'gc>,
     activation: &mut Activation<'_, 'gc>,
 ) -> AvmString<'gc> {
-    let pretty_printing = activation
-        .avm2()
-        .classes()
-        .xml
-        .get_slot(xml_class_slots::PRETTY_PRINTING)
-        .coerce_to_boolean();
+    let pretty_printing = activation.avm2().xml_settings.pretty_printing;
 
     let pretty = if pretty_printing {
-        let pretty_indent = activation
-            .avm2()
-            .classes()
-            .xml
-            .get_slot(xml_class_slots::PRETTY_INDENT)
-            .coerce_to_i32(activation)
-            .expect("shouldn't error");
+        let pretty_indent = activation.avm2().xml_settings.pretty_indent;
 
         // NOTE: Negative values are invalid and are ignored.
         if pretty_indent < 0 {
@@ -1754,7 +1751,7 @@ pub fn maybe_escape_child<'gc>(
                 .classes()
                 .xml
                 .construct(activation, &[string.into()])?;
-            return Ok(xml.into());
+            return Ok(xml);
         }
     }
 
@@ -1774,4 +1771,24 @@ pub fn maybe_escape_child<'gc>(
     }
 
     Ok(child)
+}
+
+pub struct XmlSettings {
+    pub ignore_comments: bool,
+    pub ignore_processing_instructions: bool,
+    pub ignore_whitespace: bool,
+    pub pretty_printing: bool,
+    pub pretty_indent: i32,
+}
+
+impl XmlSettings {
+    pub fn new_default() -> Self {
+        XmlSettings {
+            ignore_comments: true,
+            ignore_processing_instructions: true,
+            ignore_whitespace: true,
+            pretty_printing: true,
+            pretty_indent: 2,
+        }
+    }
 }

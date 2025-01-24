@@ -857,6 +857,7 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
         } else {
             Twips::from_pixels(span.left_margin + span.block_indent)
         }
+        .max(Twips::ZERO)
     }
 
     /// Calculate the left-align offset of a given line of text given the span

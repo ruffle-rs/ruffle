@@ -1,5 +1,7 @@
 package flash.text.engine {
     import flash.events.EventDispatcher;
+
+    [API("662")]
     public class ContentElement {
         public static const GRAPHIC_ELEMENT:uint = 65007;
         public var userData;

@@ -341,7 +341,7 @@ impl<'gc> TObject<'gc> for StageObject<'gc> {
             // Button/MovieClip children are included in key list.
             for child in ctr.iter_render_list().rev() {
                 if child.as_interactive().is_some() {
-                    keys.push(child.name());
+                    keys.push(child.name().expect("Interactive DisplayObjects have names"));
                 }
             }
         }
@@ -657,8 +657,10 @@ fn frames_loaded<'gc>(
         .map_or(Value::Undefined, Value::from)
 }
 
-fn name<'gc>(_activation: &mut Activation<'_, 'gc>, this: DisplayObject<'gc>) -> Value<'gc> {
-    this.name().into()
+fn name<'gc>(activation: &mut Activation<'_, 'gc>, this: DisplayObject<'gc>) -> Value<'gc> {
+    this.name()
+        .unwrap_or_else(|| activation.strings().empty())
+        .into()
 }
 
 fn set_name<'gc>(

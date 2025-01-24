@@ -1166,6 +1166,11 @@ pub trait TDisplayObject<'gc>:
         self.bounds_with_transform(&self.local_to_global_matrix())
     }
 
+    /// The world bounding box of this object, as reported by `Transform.pixelBounds`.
+    fn pixel_bounds(&self) -> Rectangle<Twips> {
+        self.world_bounds()
+    }
+
     /// Bounds used for drawing debug rects and picking objects.
     fn debug_rect_bounds(&self) -> Rectangle<Twips> {
         // Make the rect at least as big as highlight bounds to ensure that anything
@@ -1551,10 +1556,7 @@ pub trait TDisplayObject<'gc>:
         }
     }
 
-    fn name(&self) -> AvmString<'gc> {
-        self.base().name().unwrap_or_default()
-    }
-    fn name_optional(&self) -> Option<AvmString<'gc>> {
+    fn name(&self) -> Option<AvmString<'gc>> {
         self.base().name()
     }
     fn set_name(&self, gc_context: &Mutation<'gc>, name: AvmString<'gc>) {
@@ -1576,7 +1578,9 @@ pub trait TDisplayObject<'gc>:
         if let Some(parent) = self.avm1_parent() {
             let mut path = parent.path();
             path.push_byte(b'.');
-            path.push_str(&self.name());
+            if let Some(name) = self.name() {
+                path.push_str(&name);
+            }
             path
         } else {
             WString::from_utf8_owned(format!("_level{}", self.depth()))
@@ -1590,7 +1594,9 @@ pub trait TDisplayObject<'gc>:
             if let Some(parent) = object.avm1_parent() {
                 let mut path = build_slash_path(parent);
                 path.push_byte(b'/');
-                path.push_str(&object.name());
+                if let Some(name) = object.name() {
+                    path.push_str(&name);
+                }
                 path
             } else {
                 let level = object.depth();
@@ -2039,22 +2045,26 @@ pub trait TDisplayObject<'gc>:
         //TODO: Don't report missing property errors.
         //TODO: Don't attempt to set properties if object was placed without a name.
         if self.has_explicit_name() {
-            if let Some(Avm2Value::Object(p)) = self.parent().map(|p| p.object2()) {
-                if let Avm2Value::Object(c) = self.object2() {
-                    let domain = context
-                        .library
-                        .library_for_movie(self.movie())
-                        .unwrap()
-                        .avm2_domain();
-                    let mut activation = Avm2Activation::from_domain(context, domain);
-                    let name =
-                        Avm2Multiname::new(activation.avm2().find_public_namespace(), self.name());
-                    if let Err(e) = p.init_property(&name, c.into(), &mut activation) {
-                        tracing::error!(
-                            "Got error when setting AVM2 child named \"{}\": {}",
-                            &self.name(),
-                            e
-                        );
+            if let Some(parent @ Avm2Value::Object(_)) = self.parent().map(|p| p.object2()) {
+                if let Avm2Value::Object(child) = self.object2() {
+                    if let Some(name) = self.name() {
+                        let domain = context
+                            .library
+                            .library_for_movie(self.movie())
+                            .unwrap()
+                            .avm2_domain();
+                        let mut activation = Avm2Activation::from_domain(context, domain);
+                        let multiname =
+                            Avm2Multiname::new(activation.avm2().find_public_namespace(), name);
+                        if let Err(e) =
+                            parent.init_property(&multiname, child.into(), &mut activation)
+                        {
+                            tracing::error!(
+                                "Got error when setting AVM2 child named \"{}\": {}",
+                                &name,
+                                e
+                            );
+                        }
                     }
                 }
             }
@@ -2133,7 +2143,7 @@ pub trait TDisplayObject<'gc>:
             bounds.x_min.to_pixels(),
             bounds.y_min.to_pixels(),
             classname,
-            self.name(),
+            self.name().map(|s| s.to_string()).unwrap_or_default(),
             self_str,
             self.id(),
             depth
@@ -2465,7 +2475,7 @@ pub trait TDisplayObject<'gc>:
             let name = AvmString::new_utf8(context.gc(), format!("root{}", self.depth() + 1));
             self.set_name(context.gc(), name);
         } else {
-            self.set_name(context.gc(), Default::default());
+            self.set_name(context.gc(), context.strings.empty());
         }
     }
 
@@ -2743,6 +2753,8 @@ impl SoundTransform {
             .classes()
             .soundtransform
             .construct(activation, &[])?
+            .as_object()
+            .unwrap()
             .as_sound_transform()
             .unwrap();
 

@@ -5,10 +5,9 @@ use crate::avm1::{
     ExecutionReason as Avm1ExecutionReason, FlvValueAvm1Ext, ScriptObject as Avm1ScriptObject,
     TObject as Avm1TObject, Value as Avm1Value,
 };
-use crate::avm2::object::TObject as Avm2TObject;
 use crate::avm2::{
     Activation as Avm2Activation, Avm2, Error as Avm2Error, EventObject as Avm2EventObject,
-    FlvValueAvm2Ext, Object as Avm2Object,
+    FlvValueAvm2Ext, Object as Avm2Object, Value as Avm2Value,
 };
 use crate::backend::audio::{
     DecodeError, SoundInstanceHandle, SoundStreamInfo, SoundStreamWrapping,
@@ -399,14 +398,13 @@ impl<'gc> NetStream<'gc> {
         StreamManager::activate(context, self);
 
         if notify {
-            let trigger =
-                AvmString::new_utf8(context.gc(), format!("Start Seeking {}", offset as u64));
+            let trigger = format!("Start Seeking {}", offset as u64);
             self.trigger_status_event(
                 context,
                 vec![
-                    ("description", trigger),
-                    ("level", "status".into()),
-                    ("code", "NetStream.SeekStart.Notify".into()),
+                    ("description", &trigger),
+                    ("level", "status"),
+                    ("code", "NetStream.SeekStart.Notify"),
                 ],
             );
         }
@@ -1278,11 +1276,7 @@ impl<'gc> NetStream<'gc> {
     }
 
     /// Trigger a status event on the stream.
-    pub fn trigger_status_event(
-        self,
-        context: &mut UpdateContext<'gc>,
-        values: Vec<(impl Into<AvmString<'gc>>, impl Into<AvmString<'gc>>)>,
-    ) {
+    pub fn trigger_status_event(self, context: &mut UpdateContext<'gc>, values: Vec<(&str, &str)>) {
         let object = self.0.read().avm_object;
         match object {
             Some(AvmObject::Avm1(object)) => {
@@ -1296,8 +1290,11 @@ impl<'gc> NetStream<'gc> {
                 let info_object = Avm1ScriptObject::new(activation.gc(), Some(object_proto));
 
                 for (key, value) in values {
+                    let key = AvmString::new_utf8(activation.gc(), key);
+                    let value = AvmString::new_utf8(activation.gc(), value);
+
                     info_object
-                        .set(key.into(), Avm1Value::String(value.into()), &mut activation)
+                        .set(key, Avm1Value::String(value), &mut activation)
                         .expect("valid set");
                 }
 
@@ -1316,8 +1313,7 @@ impl<'gc> NetStream<'gc> {
             Some(AvmObject::Avm2(object)) => {
                 let domain = context.avm2.stage_domain();
                 let mut activation = Avm2Activation::from_domain(context, domain);
-                let net_status_event =
-                    Avm2EventObject::net_status_event(&mut activation, "netStatus", values);
+                let net_status_event = Avm2EventObject::net_status_event(&mut activation, values);
                 Avm2::dispatch_event(activation.context, net_status_event, object);
             }
             None => {}
@@ -1365,7 +1361,7 @@ impl<'gc> NetStream<'gc> {
 
                 let data_object = variable_data.to_avm2_value(&mut activation);
 
-                client_object.call_public_property(
+                Avm2Value::from(client_object).call_public_property(
                     AvmString::new_utf8_bytes(activation.gc(), variable_name),
                     &[data_object],
                     &mut activation,

@@ -1,4 +1,5 @@
 use crate::display_object::InteractiveObject;
+use std::str::FromStr;
 use swf::ClipEventFlag;
 
 #[derive(Debug, Clone, Copy)]
@@ -800,4 +801,30 @@ pub enum GamepadButton {
     DPadDown,
     DPadLeft,
     DPadRight,
+}
+
+pub struct ParseEnumError;
+
+impl FromStr for GamepadButton {
+    type Err = ParseEnumError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        Ok(match s {
+            "south" => Self::South,
+            "east" => Self::East,
+            "north" => Self::North,
+            "west" => Self::West,
+            "left-trigger" => Self::LeftTrigger,
+            "left-trigger-2" => Self::LeftTrigger2,
+            "right-trigger" => Self::RightTrigger,
+            "right-trigger-2" => Self::RightTrigger2,
+            "select" => Self::Select,
+            "start" => Self::Start,
+            "dpad-up" => Self::DPadUp,
+            "dpad-down" => Self::DPadDown,
+            "dpad-left" => Self::DPadLeft,
+            "dpad-right" => Self::DPadRight,
+            _ => return Err(ParseEnumError),
+        })
+    }
 }

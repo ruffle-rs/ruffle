@@ -6,6 +6,7 @@ use crate::avm2::globals::flash::display::display_object::initialize_for_allocat
 use crate::avm2::object::{BitmapDataObject, ClassObject, Object, TObject};
 use crate::avm2::value::Value;
 use crate::avm2::Error;
+use crate::string::AvmString;
 use ruffle_render::bitmap::PixelSnapping;
 use ruffle_wstr::WStr;
 
@@ -156,7 +157,7 @@ pub fn set_bitmap_data<'gc>(
 
 /// Stub `Bitmap.pixelSnapping`'s getter
 pub fn get_pixel_snapping<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -164,7 +165,10 @@ pub fn get_pixel_snapping<'gc>(
 
     if let Some(bitmap) = this.as_display_object().and_then(|dobj| dobj.as_bitmap()) {
         let value: &WStr = bitmap.pixel_snapping().into();
-        return Ok(Value::String(value.into()));
+        return Ok(Value::String(AvmString::from_static_wstr(
+            activation.gc(),
+            value,
+        )));
     }
     Ok(Value::Undefined)
 }

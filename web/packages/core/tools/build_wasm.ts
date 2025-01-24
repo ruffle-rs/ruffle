@@ -42,12 +42,19 @@ function cargoBuild({
     profile,
     features,
     rustFlags,
+    extensions,
 }: {
     profile?: string;
     features?: string[];
     rustFlags?: string[];
+    extensions?: boolean;
 }) {
     let args = ["build", "--locked", "--target", "wasm32-unknown-unknown"];
+    if (!extensions) {
+        args.push("-Z");
+        args.push("build-std=std,panic_abort");
+    }
+
     if (profile) {
         args.push("--profile", profile);
     }
@@ -73,6 +80,7 @@ function cargoBuild({
     execFileSync("cargo", args, {
         env: Object.assign(Object.assign({}, process.env), {
             RUSTFLAGS: totalRustFlags,
+            RUSTC_BOOTSTRAP: extensions ? "0" : "1",
         }),
         stdio: "inherit",
     });
@@ -95,6 +103,8 @@ function buildWasm(
         );
         wasmBindgenFlags.push("--reference-types");
         wasmOptFlags.push("--enable-reference-types");
+    } else {
+        rustFlags.push("-C", "target-cpu=mvp");
     }
     let originalWasmPath;
     if (wasmSource === "cargo" || wasmSource === "cargo_and_store") {
@@ -102,6 +112,7 @@ function buildWasm(
         cargoBuild({
             profile,
             rustFlags,
+            extensions,
         });
         originalWasmPath = `../../../target/wasm32-unknown-unknown/${profile}/ruffle_web.wasm`;
         if (wasmSource === "cargo_and_store") {
@@ -129,13 +140,6 @@ function buildWasm(
         });
     }
 }
-function copyStandIn(from: string, to: string) {
-    const suffixes = [`_bg.wasm`, `_bg.wasm.d.ts`, `.js`, `.d.ts`];
-    console.log(`Copying ${from} as a stand-in for ${to}...`);
-    for (const suffix of suffixes) {
-        copyFileSync(`dist/${from}${suffix}`, `dist/${to}${suffix}`);
-    }
-}
 function detectWasmOpt() {
     try {
         execFileSync("wasm-opt", ["--version"]);
@@ -144,7 +148,7 @@ function detectWasmOpt() {
         return false;
     }
 }
-const buildExtensions = !!process.env["ENABLE_WASM_EXTENSIONS"];
+const buildWasmMvp = !!process.env["BUILD_WASM_MVP"];
 const wasmSource = process.env["WASM_SOURCE"] || "cargo";
 const hasWasmOpt = detectWasmOpt();
 if (!hasWasmOpt) {
@@ -156,15 +160,13 @@ if (wasmSource === "cargo_and_store") {
     rmSync("../../dist", { recursive: true, force: true });
     mkdirSync("../../dist");
 }
-buildWasm("web-vanilla-wasm", "ruffle_web", hasWasmOpt, false, wasmSource);
-if (buildExtensions) {
+buildWasm("web-wasm-extensions", "ruffle_web", hasWasmOpt, true, wasmSource);
+if (buildWasmMvp) {
     buildWasm(
-        "web-wasm-extensions",
-        "ruffle_web-wasm_extensions",
+        "web-wasm-mvp",
+        "ruffle_web-wasm_mvp",
         hasWasmOpt,
-        true,
+        false,
         wasmSource,
     );
-} else {
-    copyStandIn("ruffle_web", "ruffle_web-wasm_extensions");
 }

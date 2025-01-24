@@ -1,0 +1,70 @@
+// sprite2D: new Sprite has null matrix3D and valid matrix
+sprite2D.transform.matrix (a=1, b=0, c=0, d=1, tx=0, ty=0)
+sprite2D.transform.matrix3D null
+// sprite2D: set identity matrix
+sprite2D.transform.matrix (a=1, b=0, c=0, d=1, tx=0, ty=0)
+sprite2D.transform.matrix3D null
+mat2D (a=1, b=0, c=0, d=1, tx=0, ty=0)
+// sprite2D: update mat2D
+sprite2D.transform.matrix (a=1, b=0, c=0, d=1, tx=0, ty=0)
+sprite2D.transform.matrix3D null
+mat2D (a=2, b=3, c=4, d=5, tx=6, ty=7)
+// sprite2D: .matrix = mat2D
+sprite2D.transform.matrix (a=2, b=3, c=4, d=5, tx=6, ty=7)
+sprite2D.transform.matrix3D null
+mat2D (a=2, b=3, c=4, d=5, tx=6, ty=7)
+// sprite2D: .matrix = null
+sprite2D.transform.matrix null
+sprite2D.transform.matrix3D [object Matrix3D]
+sprite2D.transform.matrix3D.rawData 2,3,0,0,4,5,0,0,0,0,1,0,6,7,0,1
+mat2D (a=2, b=3, c=4, d=5, tx=6, ty=7)
+// sprite2D: .matrix3D = null
+sprite2D.transform.matrix (a=1, b=0, c=0, d=1, tx=0, ty=0)
+sprite2D.transform.matrix3D null
+mat2D (a=2, b=3, c=4, d=5, tx=6, ty=7)
+// sprite2D: set x = 30, y = 50
+sprite2D.transform.matrix (a=1, b=0, c=0, d=1, tx=30, ty=50)
+sprite2D.transform.matrix3D null
+mat2D (a=2, b=3, c=4, d=5, tx=6, ty=7)
+
+// sprite3D: set identity matrix3D
+sprite3D.transform.matrix null
+sprite3D.transform.matrix3D [object Matrix3D]
+sprite3D.transform.matrix3D.rawData 1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1
+mat3D.rawData 1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1
+// sprite3D: update mat3D
+sprite3D.transform.matrix null
+sprite3D.transform.matrix3D [object Matrix3D]
+mat3D.rawData 2,3,0,0,4,5,0,0,0,0,1,0,6,7,0,1
+// sprite3D: .matrix3D = mat3D
+sprite3D.transform.matrix null
+sprite3D.transform.matrix3D [object Matrix3D]
+sprite3D.transform.matrix3D.rawData 2,3,0,0,4,5,0,0,0,0,1,0,6,7,0,1
+mat3D.rawData 2,3,0,0,4,5,0,0,0,0,1,0,6,7,0,1
+// sprite3D: .matrix = null
+sprite3D.transform.matrix null
+sprite3D.transform.matrix3D [object Matrix3D]
+sprite3D.transform.matrix3D.rawData 2,3,0,0,4,5,0,0,0,0,1,0,6,7,0,1
+mat3D.rawData 2,3,0,0,4,5,0,0,0,0,1,0,6,7,0,1
+// sprite3D: set x = 30, y = 50
+sprite3D.transform.matrix null
+sprite3D.transform.matrix3D [object Matrix3D]
+sprite3D.transform.matrix3D.rawData 2,3,0,0,4,5,0,0,0,0,1,0,30,50,0,1
+// sprite3D: .matrix3D = null
+sprite3D.transform.matrix (a=1, b=0, c=0, d=1, tx=0, ty=0)
+sprite3D.transform.matrix3D null
+
+// Copy2D
+sprite1.transform.matrix (a=1, b=2, c=3, d=4, tx=5, ty=6)
+sprite1.transform.matrix3D null
+sprite2.transform.matrix (a=1, b=2, c=3, d=4, tx=5, ty=6)
+sprite2.transform.matrix3D null
+
+// Copy3D
+sprite1.transform.matrix null
+sprite1.transform.matrix3D [object Matrix3D]
+sprite1.transform.matrix3D.rawData 1.9996954202651978,0.05235721915960312,0,0,-0.03490481153130531,2.9995431900024414,0,0,0,0,1,0,5,6,0,1
+sprite2.transform.matrix null
+sprite2.transform.matrix3D [object Matrix3D]
+sprite2.transform.matrix3D.rawData 1.9996954202651978,0.05235721915960312,0,0,-0.03490481153130531,2.9995431900024414,0,0,0,0,1,0,5,6,0,1
+
