@@ -910,7 +910,9 @@ fn resolve_op<'gc>(
     op: AbcOp,
 ) -> Result<Op<'gc>, Error<'gc>> {
     Ok(match op {
-        AbcOp::PushByte { value } => Op::PushByte { value: value as i8 },
+        AbcOp::PushByte { value } => Op::PushShort {
+            value: value as i8 as i16,
+        },
         AbcOp::PushDouble { value } => {
             let value = pool_double(activation, translation_unit, value)?;
 
@@ -923,7 +925,7 @@ fn resolve_op<'gc>(
             Op::PushInt { value }
         }
         AbcOp::PushNamespace { value } => Op::PushNamespace { value },
-        AbcOp::PushNaN => Op::PushNaN,
+        AbcOp::PushNaN => Op::PushDouble { value: f64::NAN },
         AbcOp::PushNull => Op::PushNull,
         AbcOp::PushShort { value } => Op::PushShort { value },
         AbcOp::PushString { value } => {
