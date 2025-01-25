@@ -778,17 +778,6 @@ pub fn optimize<'gc>(
                 Op::PushUndefined => {
                     stack.push_class(activation, types.void)?;
                 }
-                Op::PushNaN => {
-                    stack.push_class(activation, types.number)?;
-                }
-                Op::PushByte { value } => {
-                    let mut new_value = OptValue::of_type(types.int);
-                    new_value.contains_valid_integer = true;
-                    if *value >= 0 {
-                        new_value.contains_valid_unsigned = true;
-                    }
-                    stack.push(activation, new_value)?;
-                }
                 Op::PushShort { value } => {
                     let mut new_value = OptValue::of_type(types.int);
                     new_value.contains_valid_integer = true;

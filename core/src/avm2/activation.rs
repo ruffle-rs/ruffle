@@ -800,12 +800,10 @@ impl<'a, 'gc> Activation<'a, 'gc> {
 
         {
             let result = match op {
-                Op::PushByte { value } => self.op_push_byte(*value),
                 Op::PushDouble { value } => self.op_push_double(*value),
                 Op::PushFalse => self.op_push_false(),
                 Op::PushInt { value } => self.op_push_int(*value),
                 Op::PushNamespace { value } => self.op_push_namespace(method, *value),
-                Op::PushNaN => self.op_push_nan(),
                 Op::PushNull => self.op_push_null(),
                 Op::PushShort { value } => self.op_push_short(*value),
                 Op::PushString { string } => self.op_push_string(*string),
@@ -996,11 +994,6 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         }
     }
 
-    fn op_push_byte(&mut self, value: i8) -> Result<FrameControl<'gc>, Error<'gc>> {
-        self.push_stack(value as i32);
-        Ok(FrameControl::Continue)
-    }
-
     fn op_push_double(&mut self, value: f64) -> Result<FrameControl<'gc>, Error<'gc>> {
         self.push_stack(value);
         Ok(FrameControl::Continue)
@@ -1025,11 +1018,6 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         let ns_object = NamespaceObject::from_namespace(self, ns);
 
         self.push_stack(ns_object);
-        Ok(FrameControl::Continue)
-    }
-
-    fn op_push_nan(&mut self) -> Result<FrameControl<'gc>, Error<'gc>> {
-        self.push_stack(f64::NAN);
         Ok(FrameControl::Continue)
     }
 

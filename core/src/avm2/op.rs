@@ -264,9 +264,6 @@ pub enum Op<'gc> {
     Not,
     Pop,
     PopScope,
-    PushByte {
-        value: i8,
-    },
     PushDouble {
         value: f64,
     },
@@ -278,7 +275,6 @@ pub enum Op<'gc> {
         #[collect(require_static)]
         value: Index<Namespace>,
     },
-    PushNaN,
     PushNull,
     PushScope,
     PushShort {
@@ -355,12 +351,10 @@ impl Op<'_> {
             Op::Bkpt
                 | Op::BkptLine { .. }
                 | Op::Timestamp
-                | Op::PushByte { .. }
                 | Op::PushDouble { .. }
                 | Op::PushFalse
                 | Op::PushInt { .. }
                 | Op::PushNamespace { .. }
-                | Op::PushNaN
                 | Op::PushNull
                 | Op::PushShort { .. }
                 | Op::PushString { .. }
