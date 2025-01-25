@@ -842,10 +842,6 @@ impl<'a, 'gc> Activation<'a, 'gc> {
                     multiname,
                     num_args,
                 } => self.op_call_super(*multiname, *num_args),
-                Op::CallSuperVoid {
-                    multiname,
-                    num_args,
-                } => self.op_call_super_void(*multiname, *num_args),
                 Op::ReturnValue => self.op_return_value(method),
                 Op::ReturnValueNoCoerce => self.op_return_value_no_coerce(),
                 Op::ReturnVoid => self.op_return_void(),
@@ -1221,26 +1217,6 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         let value = bound_superclass_object.call_super(&multiname, receiver, &args, self)?;
 
         self.push_stack(value);
-
-        Ok(FrameControl::Continue)
-    }
-
-    fn op_call_super_void(
-        &mut self,
-        multiname: Gc<'gc, Multiname<'gc>>,
-        arg_count: u32,
-    ) -> Result<FrameControl<'gc>, Error<'gc>> {
-        let args = self.pop_stack_args(arg_count);
-        let multiname = multiname.fill_with_runtime_params(self)?;
-        let receiver = self
-            .pop_stack()
-            .null_check(self, Some(&multiname))?
-            .as_object()
-            .expect("Super ops should not appear in primitive functions");
-
-        let bound_superclass_object = self.bound_superclass_object(&multiname);
-
-        bound_superclass_object.call_super(&multiname, receiver, &args, self)?;
 
         Ok(FrameControl::Continue)
     }

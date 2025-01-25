@@ -1661,18 +1661,6 @@ pub fn optimize<'gc>(
                     // Avoid checking return value for now
                     stack.push_any(activation)?;
                 }
-                Op::CallSuperVoid {
-                    multiname,
-                    num_args,
-                } => {
-                    // Arguments
-                    stack.popn(activation, *num_args)?;
-
-                    stack.pop_for_multiname(activation, *multiname)?;
-
-                    // Then receiver.
-                    stack.pop(activation)?;
-                }
                 Op::SetGlobalSlot { .. } => {
                     let outer_scope = activation.outer();
                     if outer_scope.is_empty() && scope_stack.is_empty() {
