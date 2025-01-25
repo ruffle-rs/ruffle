@@ -656,7 +656,13 @@ export interface BaseLoadOptions {
      */
     fontSources?: Array<
         | string
-        | { [key: string]: { name?: string; bold?: boolean; italics?: boolean } }
+        | {
+              [key: string]: {
+                  name?: string;
+                  bold?: boolean;
+                  italics?: boolean;
+              };
+          }
     >;
 
     /**

@@ -619,9 +619,9 @@ export class InnerPlayer {
                         const response = await fetch(key);
                         builder.addFont(
                             key,
-                            fontSource["name"] || null,
-                            fontSource["bold"] ?? null,
-                            fontSource["italics"] ?? null,
+                            typeof fontSource['name'] === "string" ? fontSource['name'] : null,
+                            typeof fontSource['bold'] === "boolean" ? fontSource['bold'] : null,
+                            typeof fontSource['italics'] === "boolean" ? fontSource['italics'] : null,
                             new Uint8Array(await response.arrayBuffer()),
                         );
                     } catch (error) {

@@ -32,7 +32,6 @@ use tracing_wasm::{WASMLayer, WASMLayerConfigBuilder};
 use wasm_bindgen::prelude::*;
 use web_sys::{HtmlCanvasElement, HtmlElement};
 
-#[wasm_bindgen(inspectable)]
 #[derive(Debug, Clone)]
 pub struct FontSource {
     pub name: Option<String>,
@@ -387,7 +386,7 @@ impl RuffleInstanceBuilder {
                 }
             } else {
                 tracing::debug!("Loading font {font_name} as SWF font");
-                if let Ok(swf_stream) = swf::decompress_swf(&bytes[..]) {
+                if let Ok(swf_stream) = swf::decompress_swf(&font_source.data[..]) {
                     if let Ok(swf) = swf::parse_swf(&swf_stream) {
                         let encoding = swf::SwfStr::encoding_for_version(swf.header.version());
                         for tag in swf.tags {
