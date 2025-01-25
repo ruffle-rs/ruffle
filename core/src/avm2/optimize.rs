@@ -1673,66 +1673,6 @@ pub fn optimize<'gc>(
                     // Then receiver.
                     stack.pop(activation)?;
                 }
-                Op::GetGlobalScope => {
-                    let outer_scope = activation.outer();
-                    if !outer_scope.is_empty() {
-                        let global_scope = outer_scope.get_unchecked(0);
-                        let global_class = global_scope.values().instance_class(activation);
-
-                        stack.push_class(activation, global_class)?;
-                    } else if has_simple_scoping {
-                        stack.push(activation, this_value)?;
-                    } else {
-                        if scope_stack.is_empty() {
-                            return Err(Error::AvmError(verify_error(
-                                activation,
-                                "Error #1019: Getscopeobject  is out of bounds.",
-                                1019,
-                            )?));
-                        }
-
-                        stack.push_any(activation)?;
-                    }
-                }
-                Op::GetGlobalSlot { index: slot_id } => {
-                    let outer_scope = activation.outer();
-                    if outer_scope.is_empty() && scope_stack.is_empty() {
-                        return Err(Error::AvmError(verify_error(
-                            activation,
-                            "Error #1019: Getscopeobject  is out of bounds.",
-                            1019,
-                        )?));
-                    }
-
-                    let mut stack_push_done = false;
-
-                    if !outer_scope.is_empty() {
-                        let global_scope = outer_scope.get_unchecked(0);
-
-                        let class = global_scope.values().instance_class(activation);
-                        let mut value_class = class.vtable().slot_classes()[*slot_id as usize];
-                        let resolved_value_class = value_class.get_class(activation);
-                        if let Ok(class) = resolved_value_class {
-                            stack_push_done = true;
-
-                            if let Some(class) = class {
-                                stack.push_class(activation, class)?;
-                            } else {
-                                stack.push_any(activation)?;
-                            }
-                        }
-
-                        class.vtable().set_slot_class(
-                            activation.gc(),
-                            *slot_id as usize,
-                            value_class,
-                        );
-                    }
-
-                    if !stack_push_done {
-                        stack.push_any(activation)?;
-                    }
-                }
                 Op::SetGlobalSlot { .. } => {
                     let outer_scope = activation.outer();
                     if outer_scope.is_empty() && scope_stack.is_empty() {

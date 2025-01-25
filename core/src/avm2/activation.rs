@@ -862,7 +862,6 @@ impl<'a, 'gc> Activation<'a, 'gc> {
                 Op::PopScope => self.op_pop_scope(),
                 Op::GetOuterScope { index } => self.op_get_outer_scope(*index),
                 Op::GetScopeObject { index } => self.op_get_scope_object(*index),
-                Op::GetGlobalScope => self.op_get_global_scope(),
                 Op::FindDef { multiname } => self.op_find_def(*multiname),
                 Op::FindProperty { multiname } => self.op_find_property(*multiname),
                 Op::FindPropStrict { multiname } => self.op_find_prop_strict(*multiname),
@@ -871,7 +870,6 @@ impl<'a, 'gc> Activation<'a, 'gc> {
                 Op::GetSlot { index } => self.op_get_slot(*index),
                 Op::SetSlot { index } => self.op_set_slot(*index),
                 Op::SetSlotNoCoerce { index } => self.op_set_slot_no_coerce(*index),
-                Op::GetGlobalSlot { index } => self.op_get_global_slot(*index),
                 Op::SetGlobalSlot { index } => self.op_set_global_slot(*index),
                 Op::Construct { num_args } => self.op_construct(*num_args),
                 Op::ConstructProp {
@@ -1610,12 +1608,6 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         Ok(FrameControl::Continue)
     }
 
-    fn op_get_global_scope(&mut self) -> Result<FrameControl<'gc>, Error<'gc>> {
-        self.push_stack(self.global_scope().unwrap_or(Value::Null));
-
-        Ok(FrameControl::Continue)
-    }
-
     fn op_find_def(
         &mut self,
         multiname: Gc<'gc, Multiname<'gc>>,
@@ -1739,17 +1731,6 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             .expect("Cannot set_slot on primitive");
 
         object.set_slot_no_coerce(index, value, self.gc());
-
-        Ok(FrameControl::Continue)
-    }
-
-    fn op_get_global_slot(&mut self, index: u32) -> Result<FrameControl<'gc>, Error<'gc>> {
-        let value = self
-            .global_scope()
-            .map(|global| global.as_object().unwrap().get_slot(index))
-            .unwrap_or(Value::Undefined);
-
-        self.push_stack(value);
 
         Ok(FrameControl::Continue)
     }
