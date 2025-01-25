@@ -60,11 +60,6 @@ pub enum Op<'gc> {
 
         num_args: u32,
     },
-    CallSuperVoid {
-        multiname: Gc<'gc, Multiname<'gc>>,
-
-        num_args: u32,
-    },
     CheckFilter,
     Coerce {
         class: Class<'gc>,

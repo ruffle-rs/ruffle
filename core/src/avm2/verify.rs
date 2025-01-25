@@ -326,6 +326,20 @@ pub fn verify_method<'gc>(
                     }
                 }
 
+                AbcOp::CallSuperVoid { index, num_args } => {
+                    // Split this `CallSuperVoid` into a `CallSuper` and a `Pop`;
+                    // this is possible because a `CallSuperVoid` is guaranteed
+                    // to take up at least 2 bytes.
+
+                    // See the comment on GetLex for more information.
+
+                    assert!(bytes_read > 1);
+                    byte_info[previous_position as usize] =
+                        ByteInfo::OpStart(AbcOp::CallSuper { index, num_args });
+                    byte_info[(previous_position + 1) as usize] =
+                        ByteInfo::OpStartNonJumpable(AbcOp::Pop);
+                }
+
                 AbcOp::GetGlobalSlot { index } => {
                     // Split this `GetGlobalSlot` into a `GetGlobalScope` and a `GetSlot`;
                     // this is possible because a `GetGlobalSlot` is guaranteed
@@ -968,13 +982,8 @@ fn resolve_op<'gc>(
                 num_args,
             }
         }
-        AbcOp::CallSuperVoid { index, num_args } => {
-            let multiname = pool_multiname(activation, translation_unit, index)?;
-
-            Op::CallSuperVoid {
-                multiname,
-                num_args,
-            }
+        AbcOp::CallSuperVoid { .. } => {
+            unreachable!("Verifier emits CallSuper and Pop instead of CallSuperVoid")
         }
         AbcOp::ReturnValue => Op::ReturnValue,
         AbcOp::ReturnVoid => Op::ReturnVoid,
