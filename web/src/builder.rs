@@ -310,9 +310,17 @@ impl RuffleInstanceBuilder {
         font_name: Option<String>,
         bold: Option<bool>,
         italic: Option<bool>,
-        data: Vec<u8>
+        data: Vec<u8>,
     ) {
-        self.custom_fonts.push((font_url, FontSource { name: font_name, bold, italic, data }));
+        self.custom_fonts.push((
+            font_url,
+            FontSource {
+                name: font_name,
+                bold,
+                italic,
+                data,
+            },
+        ));
     }
 
     #[wasm_bindgen(js_name = "setDefaultFont")]
@@ -377,7 +385,13 @@ impl RuffleInstanceBuilder {
                 // Register all remaining fonts in the collection if it is a collection
                 for i in 1u32..number_of_fonts {
                     if let Ok(face) = ttf_parser::Face::parse(bytes_slice, i) {
-                        Self::register_ttf_face_by_name(font_name, font_source.clone(), face, i, player);
+                        Self::register_ttf_face_by_name(
+                            font_name,
+                            font_source.clone(),
+                            face,
+                            i,
+                            player,
+                        );
                     } else {
                         tracing::warn!(
                             "Failed to parse font {font_name} at index {i} in font collection"
