@@ -1398,13 +1398,9 @@ fn summary_name(object: DisplayObject) -> Cow<'static, str> {
     let name = object.name();
 
     if let Some(name) = name {
-        if name.is_empty() {
-            Cow::Borrowed(do_type)
-        } else {
-            Cow::Owned(format!("{do_type} \"{name}\""))
-        }
+        Cow::Owned(format!("{do_type} \"{name}\""))
     } else {
-        Cow::Borrowed("")
+        Cow::Borrowed(do_type)
     }
 }
 
