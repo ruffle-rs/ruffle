@@ -421,10 +421,12 @@ pub fn copy_channel<'gc>(
     let target = target.sync(renderer);
     let mut write = target.write(mc);
 
-    for y in 0..dest_region.height() {
-        for x in 0..dest_region.width() {
+    for y in 0..dest_region.height().min(source_region.height()) {
+        for x in 0..dest_region.width().min(source_region.width()) {
             let dst_x = dest_region.x_min + x;
             let dst_y = dest_region.y_min + y;
+            let src_x = source_region.x_min + x;
+            let src_y = source_region.y_min + y;
 
             let original_color: u32 = write
                 .get_pixel32_raw(dst_x, dst_y)
@@ -432,9 +434,15 @@ pub fn copy_channel<'gc>(
                 .into();
 
             let source_color: u32 = if let Some(source) = &source {
-                source.get_pixel32_raw(x, y).to_un_multiplied_alpha().into()
+                source
+                    .get_pixel32_raw(src_x, src_y)
+                    .to_un_multiplied_alpha()
+                    .into()
             } else {
-                write.get_pixel32_raw(x, y).to_un_multiplied_alpha().into()
+                write
+                    .get_pixel32_raw(src_x, src_y)
+                    .to_un_multiplied_alpha()
+                    .into()
             };
 
             let source_part = (source_color >> channel_shift) & 0xFF;
