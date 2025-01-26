@@ -78,6 +78,8 @@ function injectScriptURL(url: string): Promise<void> {
     });
     script.charset = "utf-8";
     script.src = url;
+    // safari 16+ script.src will be masked to "webkit-masked-url://hidden/"
+    script.setAttribute("ruffle-id", String(ID));
     (document.head || document.documentElement).append(script);
     return promise;
 }
