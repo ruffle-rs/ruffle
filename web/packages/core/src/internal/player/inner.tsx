@@ -597,37 +597,55 @@ export class InnerPlayer {
         builder.setVolume(this.volumeSettings.get_volume());
 
         if (this.loadedConfig?.fontSources) {
-            for (const key in this.loadedConfig.fontSources) {
-                const fontSource = this.loadedConfig.fontSources[key];
-                if (typeof fontSource === "string") {
-                    // Handle old format (array of strings)
-                    try {
-                        const response = await fetch(fontSource);
-                        builder.addFont(
-                            fontSource,
-                            null, // No custom name
-                            null, // No bold override
-                            null, // No italic override
-                            new Uint8Array(await response.arrayBuffer()),
-                        );
-                    } catch (error) {
-                        console.warn(`Couldn't download font source from ${fontSource}`, error);
-                    }
-                } else if (typeof fontSource === "object") {
-                    // Handle new format (object with additional properties)
-                    for (const [url, fontInfo] of Object.entries(fontSource)) {
+            const fontSources  = this.loadedConfig.fontSources;
+            if (Array.isArray(fontSources)) {
+                for (const fontSource of fontSources) {
+                    if (typeof fontSource === "string") {
+                        // Handle old format (array of strings)
                         try {
-                            const response = await fetch(url);
+                            const response = await fetch(fontSource);
                             builder.addFont(
-                                url,
-                                fontInfo?.['name'] || null,
-                                fontInfo?.['bold'] ?? null,
-                                fontInfo?.['italics'] ?? null,
+                                fontSource,
+                                null, // No custom name
+                                null, // No bold override
+                                null, // No italic override
                                 new Uint8Array(await response.arrayBuffer()),
                             );
                         } catch (error) {
-                            console.warn(`Couldn't download font source from ${key}`, error);
+                            console.warn(`Couldn't download font source from ${fontSource}`, error);
                         }
+                    } else if (typeof fontSource === "object") {
+                        // Handle new format (object with additional properties)
+                        for (const [url, fontInfo] of Object.entries(fontSource)) {
+                            try {
+                                const response = await fetch(url);
+                                builder.addFont(
+                                    url,
+                                    fontInfo?.['name'] || null,
+                                    fontInfo?.['bold'] ?? null,
+                                    fontInfo?.['italics'] ?? null,
+                                    new Uint8Array(await response.arrayBuffer()),
+                                );
+                            } catch (error) {
+                                console.warn(`Couldn't download font source from ${url}`, error);
+                            }
+                        }
+                    }
+                }
+            } else if (typeof fontSources === "object") {
+                // Handle the case where fontSources is a plain object
+                for (const [url, fontInfo] of Object.entries(fontSources)) {
+                    try {
+                        const response = await fetch(url);
+                        builder.addFont(
+                            url,
+                            fontInfo?.['name'] || null,
+                            fontInfo?.['bold'] ?? null,
+                            fontInfo?.['italics'] ?? null,
+                            new Uint8Array(await response.arrayBuffer()),
+                        );
+                    } catch (error) {
+                        console.warn(`Couldn't download font source from ${url}`, error);
                     }
                 }
             }

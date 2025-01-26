@@ -648,14 +648,13 @@ export interface BaseLoadOptions {
      *
      * These will be fetched by the browser as part of the loading of Flash content, which may slow down load times.
      *
-     * When using an SWF source, and each font embedded within that SWF will be used as device font by Flash content.
+     * When using an SWF source, each font embedded within that SWF will be used as device font by Flash content.
      *
      * If any URL fails to load (either it's an invalid file, or a network error occurs), Ruffle will log an error but continue without it.
      *
      * @default []
      */
-    fontSources?: Array<
-        | string
+    fontSources?:
         | {
               [key: string]: {
                   name?: string;
@@ -663,7 +662,16 @@ export interface BaseLoadOptions {
                   italics?: boolean;
               };
           }
-    >;
+        | Array<
+              | string
+              | {
+                    [key: string]: {
+                        name?: string;
+                        bold?: boolean;
+                        italics?: boolean;
+                    };
+                }
+          >;
 
     /**
      * The font names to use for each "default" Flash device font.
