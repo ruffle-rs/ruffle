@@ -257,7 +257,7 @@ impl MainWindow {
         // do not resize while window is maximized.
         let should_resize = !self.gui.window().is_maximized();
 
-        let viewport_size = if should_resize {
+        let (viewport_size, state) = if should_resize {
             let movie_width = swf_header.stage_size().width().to_pixels();
             let movie_height = swf_header.stage_size().height().to_pixels();
 
@@ -312,16 +312,18 @@ impl MainWindow {
             // On X11 (and possibly other platforms), the window size is not updated immediately.
             // On a successful resize request, wait for the window to be resized to the requested size
             // before we start running the SWF (which can observe the viewport size in "noScale" mode)
-            if !window_resize_denied && window_size != viewport_size.into() {
-                self.loaded = LoadingState::WaitingForResize;
+            let state = if !window_resize_denied && window_size != viewport_size.into() {
+                LoadingState::WaitingForResize
             } else {
-                self.loaded = LoadingState::Loaded;
-            }
+                LoadingState::Loaded
+            };
 
-            viewport_size
+            (viewport_size, state)
         } else {
-            self.gui.window().inner_size()
+            (self.gui.window().inner_size(), LoadingState::Loaded)
         };
+
+        self.loaded = state;
 
         self.gui.window().set_fullscreen(if self.start_fullscreen {
             Some(Fullscreen::Borderless(None))
