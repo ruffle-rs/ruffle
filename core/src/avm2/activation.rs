@@ -462,8 +462,10 @@ impl<'a, 'gc> Activation<'a, 'gc> {
                 .flags
                 .contains(AbcMethodFlags::NEED_ARGUMENTS)
             {
-                args_object.set_string_property_local("callee", callee, self)?;
-                args_object.set_local_property_is_enumerable(self.gc(), "callee".into(), false);
+                let string_callee = self.strings().common.str_callee;
+
+                args_object.set_string_property_local(string_callee, callee, self)?;
+                args_object.set_local_property_is_enumerable(self.gc(), string_callee, false);
             }
 
             self.push_stack(args_object);
@@ -2695,39 +2697,41 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     }
 
     fn op_type_of(&mut self) -> Result<FrameControl<'gc>, Error<'gc>> {
+        let common_strings = self.strings().common;
+
         let value = self.pop_stack();
 
         let type_name = match value {
-            Value::Undefined => "undefined",
-            Value::Null => "object",
-            Value::Bool(_) => "boolean",
-            Value::Number(_) | Value::Integer(_) => "number",
+            Value::Undefined => common_strings.str_undefined,
+            Value::Null => common_strings.str_object,
+            Value::Bool(_) => common_strings.str_boolean,
+            Value::Number(_) | Value::Integer(_) => common_strings.str_number,
             Value::Object(o) => {
                 let classes = self.avm2().class_defs();
 
                 match o {
                     Object::FunctionObject(_) => {
                         if o.instance_class() == classes.function {
-                            "function"
+                            common_strings.str_function
                         } else {
                             // Subclasses always have a typeof = "object"
-                            "object"
+                            common_strings.str_object
                         }
                     }
                     Object::XmlObject(_) | Object::XmlListObject(_) => {
                         if o.instance_class() == classes.xml_list
                             || o.instance_class() == classes.xml
                         {
-                            "xml"
+                            common_strings.str_xml
                         } else {
                             // Subclasses always have a typeof = "object"
-                            "object"
+                            common_strings.str_object
                         }
                     }
-                    _ => "object",
+                    _ => common_strings.str_object,
                 }
             }
-            Value::String(_) => "string",
+            Value::String(_) => common_strings.str_string,
         };
 
         self.push_stack(Value::String(type_name.into()));

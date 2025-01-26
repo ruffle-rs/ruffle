@@ -10,6 +10,7 @@ use crate::avm2::value::Value;
 use crate::avm2::Error;
 use crate::ecma_conversions::f64_to_wrapping_i32;
 use crate::string::{AvmString, Units};
+use ruffle_macros::istr;
 use serde::Serialize;
 use serde_json::{Map as JsonObject, Value as JsonValue};
 use std::borrow::Cow;
@@ -118,11 +119,11 @@ impl<'gc> AvmSerializer<'gc> {
         value: Value<'gc>,
     ) -> Result<Value<'gc>, Error<'gc>> {
         let (eval_key, value) = if value.as_object().is_some() {
-            if value.has_public_property("toJSON", activation) {
+            if value.has_public_property(istr!("toJSON"), activation) {
                 let key = key();
                 (
                     Some(key),
-                    value.call_public_property("toJSON", &[key.into()], activation)?,
+                    value.call_public_property(istr!("toJSON"), &[key.into()], activation)?,
                 )
             } else {
                 (None, value)
