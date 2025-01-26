@@ -14,6 +14,7 @@ use crate::string::{AvmAtom, AvmString, WStr};
 use gc_arena::Collect;
 use num_bigint::BigInt;
 use num_traits::{ToPrimitive, Zero};
+use ruffle_macros::istr;
 use std::mem::size_of;
 use swf::avm2::types::{DefaultValue as AbcDefaultValue, Index};
 
@@ -629,12 +630,12 @@ impl<'gc> Value<'gc> {
 
         match self {
             Value::Object(_) if hint == Hint::String => {
-                let prim = self.call_public_property("toString", &[], activation)?;
+                let prim = self.call_public_property(istr!("toString"), &[], activation)?;
                 if prim.is_primitive() {
                     return Ok(prim);
                 }
 
-                let prim = self.call_public_property("valueOf", &[], activation)?;
+                let prim = self.call_public_property(istr!("valueOf"), &[], activation)?;
                 if prim.is_primitive() {
                     return Ok(prim);
                 }
@@ -648,12 +649,12 @@ impl<'gc> Value<'gc> {
                 )?))
             }
             Value::Object(_) if hint == Hint::Number => {
-                let prim = self.call_public_property("valueOf", &[], activation)?;
+                let prim = self.call_public_property(istr!("valueOf"), &[], activation)?;
                 if prim.is_primitive() {
                     return Ok(prim);
                 }
 
-                let prim = self.call_public_property("toString", &[], activation)?;
+                let prim = self.call_public_property(istr!("toString"), &[], activation)?;
                 if prim.is_primitive() {
                     return Ok(prim);
                 }
@@ -771,17 +772,17 @@ impl<'gc> Value<'gc> {
         activation: &mut Activation<'_, 'gc>,
     ) -> Result<AvmString<'gc>, Error<'gc>> {
         Ok(match self {
-            Value::Undefined => "undefined".into(),
-            Value::Null => "null".into(),
-            Value::Bool(true) => "true".into(),
-            Value::Bool(false) => "false".into(),
-            Value::Number(n) if n.is_nan() => "NaN".into(),
+            Value::Undefined => istr!("undefined"),
+            Value::Null => istr!("null"),
+            Value::Bool(true) => istr!("true"),
+            Value::Bool(false) => istr!("false"),
+            Value::Number(n) if n.is_nan() => istr!("NaN"),
             Value::Number(n) if *n == 0.0 => activation.strings().ascii_char(b'0'),
             Value::Number(n) if *n < 0.0 => AvmString::new_utf8(
                 activation.gc(),
                 format!("-{}", Value::Number(-n).coerce_to_string(activation)?),
             ),
-            Value::Number(n) if n.is_infinite() => "Infinity".into(),
+            Value::Number(n) if n.is_infinite() => istr!("Infinity"),
             Value::Number(n) => {
                 let digits = n.log10().floor();
 
