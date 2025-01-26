@@ -2,12 +2,15 @@ use std::{borrow::Cow, ops::Range};
 
 use gc_arena::{Gc, Mutation};
 
-use super::{AvmAtom, AvmString, AvmStringInterner, AvmStringRepr, WStr, WString};
+use super::{AvmAtom, AvmString, AvmStringInterner, AvmStringRepr, CommonStrings, WStr, WString};
 
 /// Context for managing `AvmString`s: allocating them, interning them, etc...
 pub struct StringContext<'gc> {
     /// The mutation context to allocate and mutate `Gc` pointers.
     pub gc_context: &'gc Mutation<'gc>,
+
+    /// Strings used across both AVMs and in core code.
+    pub common: CommonStrings<'gc>,
 
     /// The global string interner.
     interner: &'gc mut AvmStringInterner<'gc>,
@@ -18,8 +21,11 @@ impl<'gc> StringContext<'gc> {
         gc_context: &'gc Mutation<'gc>,
         interner: &'gc mut AvmStringInterner<'gc>,
     ) -> Self {
+        let common = CommonStrings::new(gc_context, interner);
+
         Self {
             gc_context,
+            common,
             interner,
         }
     }

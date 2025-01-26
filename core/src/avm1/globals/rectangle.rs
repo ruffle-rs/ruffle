@@ -7,6 +7,7 @@ use crate::avm1::globals::point::{construct_new_point, point_to_object, value_to
 use crate::avm1::property_decl::{define_properties_on, Declaration};
 use crate::avm1::{Object, ScriptObject, TObject, Value};
 use crate::string::{AvmString, StringContext};
+use ruffle_macros::istr;
 
 const PROTO_DECLS: &[Declaration] = declare_properties! {
     "toString" => method(to_string);
@@ -39,28 +40,28 @@ fn constructor<'gc>(
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if args.is_empty() {
-        this.set("x", 0.into(), activation)?;
-        this.set("y", 0.into(), activation)?;
-        this.set("width", 0.into(), activation)?;
-        this.set("height", 0.into(), activation)?;
+        this.set(istr!("x"), 0.into(), activation)?;
+        this.set(istr!("y"), 0.into(), activation)?;
+        this.set(istr!("width"), 0.into(), activation)?;
+        this.set(istr!("height"), 0.into(), activation)?;
     } else {
         this.set(
-            "x",
+            istr!("x"),
             args.get(0).unwrap_or(&Value::Undefined).to_owned(),
             activation,
         )?;
         this.set(
-            "y",
+            istr!("y"),
             args.get(1).unwrap_or(&Value::Undefined).to_owned(),
             activation,
         )?;
         this.set(
-            "width",
+            istr!("width"),
             args.get(2).unwrap_or(&Value::Undefined).to_owned(),
             activation,
         )?;
         this.set(
-            "height",
+            istr!("height"),
             args.get(3).unwrap_or(&Value::Undefined).to_owned(),
             activation,
         )?;
@@ -74,10 +75,10 @@ fn to_string<'gc>(
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let x = this.get("x", activation)?;
-    let y = this.get("y", activation)?;
-    let width = this.get("width", activation)?;
-    let height = this.get("height", activation)?;
+    let x = this.get(istr!("x"), activation)?;
+    let y = this.get(istr!("y"), activation)?;
+    let width = this.get(istr!("width"), activation)?;
+    let height = this.get(istr!("height"), activation)?;
 
     Ok(AvmString::new_utf8(
         activation.gc(),
@@ -111,8 +112,12 @@ fn is_empty<'gc>(
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let width = this.get("width", activation)?.coerce_to_f64(activation)?;
-    let height = this.get("height", activation)?.coerce_to_f64(activation)?;
+    let width = this
+        .get(istr!("width"), activation)?
+        .coerce_to_f64(activation)?;
+    let height = this
+        .get(istr!("height"), activation)?
+        .coerce_to_f64(activation)?;
     Ok((width <= 0.0 || height <= 0.0 || width.is_nan() || height.is_nan()).into())
 }
 
@@ -121,10 +126,10 @@ fn set_empty<'gc>(
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    this.set("x", 0.into(), activation)?;
-    this.set("y", 0.into(), activation)?;
-    this.set("width", 0.into(), activation)?;
-    this.set("height", 0.into(), activation)?;
+    this.set(istr!("x"), 0.into(), activation)?;
+    this.set(istr!("y"), 0.into(), activation)?;
+    this.set(istr!("width"), 0.into(), activation)?;
+    this.set(istr!("height"), 0.into(), activation)?;
     Ok(Value::Undefined)
 }
 
@@ -134,10 +139,10 @@ fn clone<'gc>(
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     let args = [
-        this.get("x", activation)?,
-        this.get("y", activation)?,
-        this.get("width", activation)?,
-        this.get("height", activation)?,
+        this.get(istr!("x"), activation)?,
+        this.get(istr!("y"), activation)?,
+        this.get(istr!("width"), activation)?,
+        this.get(istr!("height"), activation)?,
     ];
     let constructor = activation.context.avm1.prototypes().rectangle_constructor;
     let cloned = constructor.construct(activation, &args)?;
@@ -165,10 +170,20 @@ fn contains<'gc>(
         return Ok(Value::Undefined);
     }
 
-    let left = this.get("x", activation)?.coerce_to_f64(activation)?;
-    let right = left + this.get("width", activation)?.coerce_to_f64(activation)?;
-    let top = this.get("y", activation)?.coerce_to_f64(activation)?;
-    let bottom = top + this.get("height", activation)?.coerce_to_f64(activation)?;
+    let left = this
+        .get(istr!("x"), activation)?
+        .coerce_to_f64(activation)?;
+    let right = left
+        + this
+            .get(istr!("width"), activation)?
+            .coerce_to_f64(activation)?;
+    let top = this
+        .get(istr!("y"), activation)?
+        .coerce_to_f64(activation)?;
+    let bottom = top
+        + this
+            .get(istr!("height"), activation)?
+            .coerce_to_f64(activation)?;
 
     Ok((x >= left && x < right && y >= top && y < bottom).into())
 }
@@ -186,10 +201,20 @@ fn contains_point<'gc>(
         return Ok(Value::Undefined);
     }
 
-    let left = this.get("x", activation)?.coerce_to_f64(activation)?;
-    let right = left + this.get("width", activation)?.coerce_to_f64(activation)?;
-    let top = this.get("y", activation)?.coerce_to_f64(activation)?;
-    let bottom = top + this.get("height", activation)?.coerce_to_f64(activation)?;
+    let left = this
+        .get(istr!("x"), activation)?
+        .coerce_to_f64(activation)?;
+    let right = left
+        + this
+            .get(istr!("width"), activation)?
+            .coerce_to_f64(activation)?;
+    let top = this
+        .get(istr!("y"), activation)?
+        .coerce_to_f64(activation)?;
+    let bottom = top
+        + this
+            .get(istr!("height"), activation)?
+            .coerce_to_f64(activation)?;
 
     Ok((x >= left && x < right && y >= top && y < bottom).into())
 }
@@ -205,15 +230,35 @@ fn contains_rectangle<'gc>(
         return Ok(Value::Undefined);
     };
 
-    let this_left = this.get("x", activation)?.coerce_to_f64(activation)?;
-    let this_top = this.get("y", activation)?.coerce_to_f64(activation)?;
-    let this_right = this_left + this.get("width", activation)?.coerce_to_f64(activation)?;
-    let this_bottom = this_top + this.get("height", activation)?.coerce_to_f64(activation)?;
+    let this_left = this
+        .get(istr!("x"), activation)?
+        .coerce_to_f64(activation)?;
+    let this_top = this
+        .get(istr!("y"), activation)?
+        .coerce_to_f64(activation)?;
+    let this_right = this_left
+        + this
+            .get(istr!("width"), activation)?
+            .coerce_to_f64(activation)?;
+    let this_bottom = this_top
+        + this
+            .get(istr!("height"), activation)?
+            .coerce_to_f64(activation)?;
 
-    let other_left = other.get("x", activation)?.coerce_to_f64(activation)?;
-    let other_top = other.get("y", activation)?.coerce_to_f64(activation)?;
-    let other_right = other_left + other.get("width", activation)?.coerce_to_f64(activation)?;
-    let other_bottom = other_top + other.get("height", activation)?.coerce_to_f64(activation)?;
+    let other_left = other
+        .get(istr!("x"), activation)?
+        .coerce_to_f64(activation)?;
+    let other_top = other
+        .get(istr!("y"), activation)?
+        .coerce_to_f64(activation)?;
+    let other_right = other_left
+        + other
+            .get(istr!("width"), activation)?
+            .coerce_to_f64(activation)?;
+    let other_bottom = other_top
+        + other
+            .get(istr!("height"), activation)?
+            .coerce_to_f64(activation)?;
 
     if other_left.is_nan() || other_top.is_nan() || other_right.is_nan() || other_bottom.is_nan() {
         return Ok(Value::Undefined);
@@ -237,15 +282,35 @@ fn intersects<'gc>(
         return Ok(false.into());
     };
 
-    let this_left = this.get("x", activation)?.coerce_to_f64(activation)?;
-    let this_top = this.get("y", activation)?.coerce_to_f64(activation)?;
-    let this_right = this_left + this.get("width", activation)?.coerce_to_f64(activation)?;
-    let this_bottom = this_top + this.get("height", activation)?.coerce_to_f64(activation)?;
+    let this_left = this
+        .get(istr!("x"), activation)?
+        .coerce_to_f64(activation)?;
+    let this_top = this
+        .get(istr!("y"), activation)?
+        .coerce_to_f64(activation)?;
+    let this_right = this_left
+        + this
+            .get(istr!("width"), activation)?
+            .coerce_to_f64(activation)?;
+    let this_bottom = this_top
+        + this
+            .get(istr!("height"), activation)?
+            .coerce_to_f64(activation)?;
 
-    let other_left = other.get("x", activation)?.coerce_to_f64(activation)?;
-    let other_top = other.get("y", activation)?.coerce_to_f64(activation)?;
-    let other_right = other_left + other.get("width", activation)?.coerce_to_f64(activation)?;
-    let other_bottom = other_top + other.get("height", activation)?.coerce_to_f64(activation)?;
+    let other_left = other
+        .get(istr!("x"), activation)?
+        .coerce_to_f64(activation)?;
+    let other_top = other
+        .get(istr!("y"), activation)?
+        .coerce_to_f64(activation)?;
+    let other_right = other_left
+        + other
+            .get(istr!("width"), activation)?
+            .coerce_to_f64(activation)?;
+    let other_bottom = other_top
+        + other
+            .get(istr!("height"), activation)?
+            .coerce_to_f64(activation)?;
 
     Ok((this_left < other_right
         && this_right > other_left
@@ -259,18 +324,36 @@ fn union<'gc>(
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let this_left = this.get("x", activation)?.coerce_to_f64(activation)?;
-    let this_top = this.get("y", activation)?.coerce_to_f64(activation)?;
-    let this_right = this_left + this.get("width", activation)?.coerce_to_f64(activation)?;
-    let this_bottom = this_top + this.get("height", activation)?.coerce_to_f64(activation)?;
+    let this_left = this
+        .get(istr!("x"), activation)?
+        .coerce_to_f64(activation)?;
+    let this_top = this
+        .get(istr!("y"), activation)?
+        .coerce_to_f64(activation)?;
+    let this_right = this_left
+        + this
+            .get(istr!("width"), activation)?
+            .coerce_to_f64(activation)?;
+    let this_bottom = this_top
+        + this
+            .get(istr!("height"), activation)?
+            .coerce_to_f64(activation)?;
 
     let (other_left, other_top, other_width, other_height) =
         if let Some(Value::Object(other)) = args.get(0) {
             (
-                other.get("x", activation)?.coerce_to_f64(activation)?,
-                other.get("y", activation)?.coerce_to_f64(activation)?,
-                other.get("width", activation)?.coerce_to_f64(activation)?,
-                other.get("height", activation)?.coerce_to_f64(activation)?,
+                other
+                    .get(istr!("x"), activation)?
+                    .coerce_to_f64(activation)?,
+                other
+                    .get(istr!("y"), activation)?
+                    .coerce_to_f64(activation)?,
+                other
+                    .get(istr!("width"), activation)?
+                    .coerce_to_f64(activation)?,
+                other
+                    .get(istr!("height"), activation)?
+                    .coerce_to_f64(activation)?,
             )
         } else {
             (f64::NAN, f64::NAN, f64::NAN, f64::NAN)
@@ -320,10 +403,18 @@ fn inflate<'gc>(
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let x = this.get("x", activation)?.coerce_to_f64(activation)?;
-    let y = this.get("y", activation)?.coerce_to_f64(activation)?;
-    let width = this.get("width", activation)?.coerce_to_f64(activation)?;
-    let height = this.get("height", activation)?.coerce_to_f64(activation)?;
+    let x = this
+        .get(istr!("x"), activation)?
+        .coerce_to_f64(activation)?;
+    let y = this
+        .get(istr!("y"), activation)?
+        .coerce_to_f64(activation)?;
+    let width = this
+        .get(istr!("width"), activation)?
+        .coerce_to_f64(activation)?;
+    let height = this
+        .get(istr!("height"), activation)?
+        .coerce_to_f64(activation)?;
     let horizontal = args
         .get(0)
         .unwrap_or(&Value::Undefined)
@@ -335,10 +426,18 @@ fn inflate<'gc>(
         .to_owned()
         .coerce_to_f64(activation)?;
 
-    this.set("x", (x - horizontal).into(), activation)?;
-    this.set("y", (y - vertical).into(), activation)?;
-    this.set("width", (width + horizontal * 2.0).into(), activation)?;
-    this.set("height", (height + vertical * 2.0).into(), activation)?;
+    this.set(istr!("x"), (x - horizontal).into(), activation)?;
+    this.set(istr!("y"), (y - vertical).into(), activation)?;
+    this.set(
+        istr!("width"),
+        (width + horizontal * 2.0).into(),
+        activation,
+    )?;
+    this.set(
+        istr!("height"),
+        (height + vertical * 2.0).into(),
+        activation,
+    )?;
 
     Ok(Value::Undefined)
 }
@@ -348,19 +447,35 @@ fn inflate_point<'gc>(
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let x = this.get("x", activation)?.coerce_to_f64(activation)?;
-    let y = this.get("y", activation)?.coerce_to_f64(activation)?;
-    let width = this.get("width", activation)?.coerce_to_f64(activation)?;
-    let height = this.get("height", activation)?.coerce_to_f64(activation)?;
+    let x = this
+        .get(istr!("x"), activation)?
+        .coerce_to_f64(activation)?;
+    let y = this
+        .get(istr!("y"), activation)?
+        .coerce_to_f64(activation)?;
+    let width = this
+        .get(istr!("width"), activation)?
+        .coerce_to_f64(activation)?;
+    let height = this
+        .get(istr!("height"), activation)?
+        .coerce_to_f64(activation)?;
     let (horizontal, vertical) = value_to_point(
         args.get(0).unwrap_or(&Value::Undefined).to_owned(),
         activation,
     )?;
 
-    this.set("x", (x - horizontal).into(), activation)?;
-    this.set("y", (y - vertical).into(), activation)?;
-    this.set("width", (width + horizontal * 2.0).into(), activation)?;
-    this.set("height", (height + vertical * 2.0).into(), activation)?;
+    this.set(istr!("x"), (x - horizontal).into(), activation)?;
+    this.set(istr!("y"), (y - vertical).into(), activation)?;
+    this.set(
+        istr!("width"),
+        (width + horizontal * 2.0).into(),
+        activation,
+    )?;
+    this.set(
+        istr!("height"),
+        (height + vertical * 2.0).into(),
+        activation,
+    )?;
 
     Ok(Value::Undefined)
 }
@@ -370,8 +485,12 @@ fn offset<'gc>(
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let x = this.get("x", activation)?.coerce_to_f64(activation)?;
-    let y = this.get("y", activation)?.coerce_to_f64(activation)?;
+    let x = this
+        .get(istr!("x"), activation)?
+        .coerce_to_f64(activation)?;
+    let y = this
+        .get(istr!("y"), activation)?
+        .coerce_to_f64(activation)?;
     let horizontal = args
         .get(0)
         .unwrap_or(&Value::Undefined)
@@ -383,8 +502,8 @@ fn offset<'gc>(
         .to_owned()
         .coerce_to_f64(activation)?;
 
-    this.set("x", (x + horizontal).into(), activation)?;
-    this.set("y", (y + vertical).into(), activation)?;
+    this.set(istr!("x"), (x + horizontal).into(), activation)?;
+    this.set(istr!("y"), (y + vertical).into(), activation)?;
 
     Ok(Value::Undefined)
 }
@@ -394,15 +513,19 @@ fn offset_point<'gc>(
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let x = this.get("x", activation)?.coerce_to_f64(activation)?;
-    let y = this.get("y", activation)?.coerce_to_f64(activation)?;
+    let x = this
+        .get(istr!("x"), activation)?
+        .coerce_to_f64(activation)?;
+    let y = this
+        .get(istr!("y"), activation)?
+        .coerce_to_f64(activation)?;
     let (horizontal, vertical) = value_to_point(
         args.get(0).unwrap_or(&Value::Undefined).to_owned(),
         activation,
     )?;
 
-    this.set("x", (x + horizontal).into(), activation)?;
-    this.set("y", (y + vertical).into(), activation)?;
+    this.set(istr!("x"), (x + horizontal).into(), activation)?;
+    this.set(istr!("y"), (y + vertical).into(), activation)?;
 
     Ok(Value::Undefined)
 }
@@ -412,18 +535,36 @@ fn intersection<'gc>(
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let this_left = this.get("x", activation)?.coerce_to_f64(activation)?;
-    let this_top = this.get("y", activation)?.coerce_to_f64(activation)?;
-    let this_right = this_left + this.get("width", activation)?.coerce_to_f64(activation)?;
-    let this_bottom = this_top + this.get("height", activation)?.coerce_to_f64(activation)?;
+    let this_left = this
+        .get(istr!("x"), activation)?
+        .coerce_to_f64(activation)?;
+    let this_top = this
+        .get(istr!("y"), activation)?
+        .coerce_to_f64(activation)?;
+    let this_right = this_left
+        + this
+            .get(istr!("width"), activation)?
+            .coerce_to_f64(activation)?;
+    let this_bottom = this_top
+        + this
+            .get(istr!("height"), activation)?
+            .coerce_to_f64(activation)?;
 
     let (other_left, other_top, other_width, other_height) =
         if let Some(Value::Object(other)) = args.get(0) {
             (
-                other.get("x", activation)?.coerce_to_f64(activation)?,
-                other.get("y", activation)?.coerce_to_f64(activation)?,
-                other.get("width", activation)?.coerce_to_f64(activation)?,
-                other.get("height", activation)?.coerce_to_f64(activation)?,
+                other
+                    .get(istr!("x"), activation)?
+                    .coerce_to_f64(activation)?,
+                other
+                    .get(istr!("y"), activation)?
+                    .coerce_to_f64(activation)?,
+                other
+                    .get(istr!("width"), activation)?
+                    .coerce_to_f64(activation)?,
+                other
+                    .get(istr!("height"), activation)?
+                    .coerce_to_f64(activation)?,
             )
         } else {
             (f64::NAN, f64::NAN, f64::NAN, f64::NAN)
@@ -476,14 +617,14 @@ fn equals<'gc>(
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(Value::Object(other)) = args.get(0) {
-        let this_x = this.get("x", activation)?;
-        let this_y = this.get("y", activation)?;
-        let this_width = this.get("width", activation)?;
-        let this_height = this.get("height", activation)?;
-        let other_x = other.get("x", activation)?;
-        let other_y = other.get("y", activation)?;
-        let other_width = other.get("width", activation)?;
-        let other_height = other.get("height", activation)?;
+        let this_x = this.get(istr!("x"), activation)?;
+        let this_y = this.get(istr!("y"), activation)?;
+        let this_width = this.get(istr!("width"), activation)?;
+        let this_height = this.get(istr!("height"), activation)?;
+        let other_x = other.get(istr!("x"), activation)?;
+        let other_y = other.get(istr!("y"), activation)?;
+        let other_width = other.get(istr!("width"), activation)?;
+        let other_height = other.get(istr!("height"), activation)?;
         let proto = activation.context.avm1.prototypes().rectangle;
         let constructor = activation.context.avm1.prototypes().rectangle_constructor;
         return Ok((this_x == other_x
@@ -502,7 +643,7 @@ fn get_left<'gc>(
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    this.get("x", activation)
+    this.get(istr!("x"), activation)
 }
 
 fn set_left<'gc>(
@@ -511,11 +652,15 @@ fn set_left<'gc>(
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     let new_left = args.get(0).unwrap_or(&Value::Undefined).to_owned();
-    let old_left = this.get("x", activation)?.coerce_to_f64(activation)?;
-    let width = this.get("width", activation)?.coerce_to_f64(activation)?;
-    this.set("x", new_left, activation)?;
+    let old_left = this
+        .get(istr!("x"), activation)?
+        .coerce_to_f64(activation)?;
+    let width = this
+        .get(istr!("width"), activation)?
+        .coerce_to_f64(activation)?;
+    this.set(istr!("x"), new_left, activation)?;
     this.set(
-        "width",
+        istr!("width"),
         (width + (old_left - new_left.coerce_to_f64(activation)?)).into(),
         activation,
     )?;
@@ -527,7 +672,7 @@ fn get_top<'gc>(
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    this.get("y", activation)
+    this.get(istr!("y"), activation)
 }
 
 fn set_top<'gc>(
@@ -536,11 +681,15 @@ fn set_top<'gc>(
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     let new_top = args.get(0).unwrap_or(&Value::Undefined).to_owned();
-    let old_top = this.get("y", activation)?.coerce_to_f64(activation)?;
-    let height = this.get("height", activation)?.coerce_to_f64(activation)?;
-    this.set("y", new_top, activation)?;
+    let old_top = this
+        .get(istr!("y"), activation)?
+        .coerce_to_f64(activation)?;
+    let height = this
+        .get(istr!("height"), activation)?
+        .coerce_to_f64(activation)?;
+    this.set(istr!("y"), new_top, activation)?;
     this.set(
-        "height",
+        istr!("height"),
         (height + (old_top - new_top.coerce_to_f64(activation)?)).into(),
         activation,
     )?;
@@ -552,8 +701,12 @@ fn get_right<'gc>(
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let x = this.get("x", activation)?.coerce_to_f64(activation)?;
-    let width = this.get("width", activation)?.coerce_to_f64(activation)?;
+    let x = this
+        .get(istr!("x"), activation)?
+        .coerce_to_f64(activation)?;
+    let width = this
+        .get(istr!("width"), activation)?
+        .coerce_to_f64(activation)?;
     Ok((x + width).into())
 }
 
@@ -567,9 +720,11 @@ fn set_right<'gc>(
     } else {
         f64::NAN
     };
-    let x = this.get("x", activation)?.coerce_to_f64(activation)?;
+    let x = this
+        .get(istr!("x"), activation)?
+        .coerce_to_f64(activation)?;
 
-    this.set("width", (right - x).into(), activation)?;
+    this.set(istr!("width"), (right - x).into(), activation)?;
 
     Ok(Value::Undefined)
 }
@@ -579,8 +734,12 @@ fn get_bottom<'gc>(
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let y = this.get("y", activation)?.coerce_to_f64(activation)?;
-    let height = this.get("height", activation)?.coerce_to_f64(activation)?;
+    let y = this
+        .get(istr!("y"), activation)?
+        .coerce_to_f64(activation)?;
+    let height = this
+        .get(istr!("height"), activation)?
+        .coerce_to_f64(activation)?;
     Ok((y + height).into())
 }
 
@@ -594,9 +753,11 @@ fn set_bottom<'gc>(
     } else {
         f64::NAN
     };
-    let y = this.get("y", activation)?.coerce_to_f64(activation)?;
+    let y = this
+        .get(istr!("y"), activation)?
+        .coerce_to_f64(activation)?;
 
-    this.set("height", (bottom - y).into(), activation)?;
+    this.set(istr!("height"), (bottom - y).into(), activation)?;
 
     Ok(Value::Undefined)
 }
@@ -606,8 +767,8 @@ fn get_size<'gc>(
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let width = this.get("width", activation)?;
-    let height = this.get("height", activation)?;
+    let width = this.get(istr!("width"), activation)?;
+    let height = this.get(istr!("height"), activation)?;
     let point = construct_new_point(&[width, height], activation)?;
     Ok(point)
 }
@@ -618,13 +779,16 @@ fn set_size<'gc>(
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     let (width, height) = if let Some(Value::Object(object)) = args.get(0) {
-        (object.get("x", activation)?, object.get("y", activation)?)
+        (
+            object.get(istr!("x"), activation)?,
+            object.get(istr!("y"), activation)?,
+        )
     } else {
         (Value::Undefined, Value::Undefined)
     };
 
-    this.set("width", width, activation)?;
-    this.set("height", height, activation)?;
+    this.set(istr!("width"), width, activation)?;
+    this.set(istr!("height"), height, activation)?;
 
     Ok(Value::Undefined)
 }
@@ -634,8 +798,8 @@ fn get_top_left<'gc>(
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let x = this.get("x", activation)?;
-    let y = this.get("y", activation)?;
+    let x = this.get(istr!("x"), activation)?;
+    let y = this.get(istr!("y"), activation)?;
     let point = construct_new_point(&[x, y], activation)?;
     Ok(point)
 }
@@ -646,24 +810,35 @@ fn set_top_left<'gc>(
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     let (new_left, new_top) = if let Some(Value::Object(object)) = args.get(0) {
-        (object.get("x", activation)?, object.get("y", activation)?)
+        (
+            object.get(istr!("x"), activation)?,
+            object.get(istr!("y"), activation)?,
+        )
     } else {
         (Value::Undefined, Value::Undefined)
     };
-    let old_left = this.get("x", activation)?.coerce_to_f64(activation)?;
-    let width = this.get("width", activation)?.coerce_to_f64(activation)?;
-    let old_top = this.get("y", activation)?.coerce_to_f64(activation)?;
-    let height = this.get("height", activation)?.coerce_to_f64(activation)?;
+    let old_left = this
+        .get(istr!("x"), activation)?
+        .coerce_to_f64(activation)?;
+    let width = this
+        .get(istr!("width"), activation)?
+        .coerce_to_f64(activation)?;
+    let old_top = this
+        .get(istr!("y"), activation)?
+        .coerce_to_f64(activation)?;
+    let height = this
+        .get(istr!("height"), activation)?
+        .coerce_to_f64(activation)?;
 
-    this.set("x", new_left, activation)?;
-    this.set("y", new_top, activation)?;
+    this.set(istr!("x"), new_left, activation)?;
+    this.set(istr!("y"), new_top, activation)?;
     this.set(
-        "width",
+        istr!("width"),
         (width + (old_left - new_left.coerce_to_f64(activation)?)).into(),
         activation,
     )?;
     this.set(
-        "height",
+        istr!("height"),
         (height + (old_top - new_top.coerce_to_f64(activation)?)).into(),
         activation,
     )?;
@@ -676,10 +851,18 @@ fn get_bottom_right<'gc>(
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let x = this.get("x", activation)?.coerce_to_f64(activation)?;
-    let y = this.get("y", activation)?.coerce_to_f64(activation)?;
-    let width = this.get("width", activation)?.coerce_to_f64(activation)?;
-    let height = this.get("height", activation)?.coerce_to_f64(activation)?;
+    let x = this
+        .get(istr!("x"), activation)?
+        .coerce_to_f64(activation)?;
+    let y = this
+        .get(istr!("y"), activation)?
+        .coerce_to_f64(activation)?;
+    let width = this
+        .get(istr!("width"), activation)?
+        .coerce_to_f64(activation)?;
+    let height = this
+        .get(istr!("height"), activation)?
+        .coerce_to_f64(activation)?;
     let point = point_to_object((x + width, y + height), activation)?;
     Ok(point)
 }
@@ -693,11 +876,15 @@ fn set_bottom_right<'gc>(
         args.get(0).unwrap_or(&Value::Undefined).to_owned(),
         activation,
     )?;
-    let top = this.get("x", activation)?.coerce_to_f64(activation)?;
-    let left = this.get("y", activation)?.coerce_to_f64(activation)?;
+    let top = this
+        .get(istr!("x"), activation)?
+        .coerce_to_f64(activation)?;
+    let left = this
+        .get(istr!("y"), activation)?
+        .coerce_to_f64(activation)?;
 
-    this.set("width", (bottom - top).into(), activation)?;
-    this.set("height", (right - left).into(), activation)?;
+    this.set(istr!("width"), (bottom - top).into(), activation)?;
+    this.set(istr!("height"), (right - left).into(), activation)?;
 
     Ok(Value::Undefined)
 }

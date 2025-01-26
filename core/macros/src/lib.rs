@@ -1,10 +1,10 @@
 //! Proc macros used by Ruffle to generate various boilerplate.
 extern crate proc_macro;
 use proc_macro::TokenStream;
-use quote::quote;
+use quote::{format_ident, quote};
 use syn::{
-    parse_macro_input, parse_quote, FnArg, ImplItem, ImplItemFn, ItemEnum, ItemTrait, Meta, Pat,
-    TraitItem, Visibility,
+    parse_macro_input, parse_quote, FnArg, ImplItem, ImplItemFn, ItemEnum, ItemTrait, LitStr, Meta,
+    Pat, TraitItem, Visibility,
 };
 
 /// Define an enum whose variants each implement a trait.
@@ -169,6 +169,22 @@ pub fn enum_trait_object(args: TokenStream, item: TokenStream) -> TokenStream {
         }
 
         #(#from_impls)*
+    );
+
+    out.into()
+}
+
+/// Get the string passed to it as an interned string, assumed to be present on
+/// the StringContext of the currently in-scope `activation` variable. For example,
+/// `istr("description")` expands to `activation.strings().common.str_description`.
+#[proc_macro]
+pub fn istr(item: TokenStream) -> TokenStream {
+    let string = parse_macro_input!(item as LitStr).value();
+
+    let string_ident = format_ident!("str_{}", string);
+
+    let out = quote!(
+        activation.strings().common.#string_ident
     );
 
     out.into()
