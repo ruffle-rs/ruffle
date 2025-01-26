@@ -9,9 +9,6 @@ pub struct StringContext<'gc> {
     /// The mutation context to allocate and mutate `Gc` pointers.
     pub gc_context: &'gc Mutation<'gc>,
 
-    /// Strings used across both AVMs and in core code.
-    pub common: CommonStrings<'gc>,
-
     /// The global string interner.
     interner: &'gc mut AvmStringInterner<'gc>,
 }
@@ -21,11 +18,8 @@ impl<'gc> StringContext<'gc> {
         gc_context: &'gc Mutation<'gc>,
         interner: &'gc mut AvmStringInterner<'gc>,
     ) -> Self {
-        let common = CommonStrings::new(gc_context, interner);
-
         Self {
             gc_context,
-            common,
             interner,
         }
     }
@@ -33,6 +27,11 @@ impl<'gc> StringContext<'gc> {
     #[inline(always)]
     pub fn gc(&self) -> &'gc Mutation<'gc> {
         self.gc_context
+    }
+
+    #[inline(always)]
+    pub fn common(&self) -> Gc<'gc, CommonStrings<'gc>> {
+        self.interner.common
     }
 
     #[must_use]

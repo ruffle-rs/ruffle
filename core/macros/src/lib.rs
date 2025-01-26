@@ -184,7 +184,7 @@ pub fn istr(item: TokenStream) -> TokenStream {
     let string_ident = format_ident!("str_{}", string);
 
     let out = quote!(
-        activation.strings().common.#string_ident
+        activation.strings().common().#string_ident
     );
 
     out.into()

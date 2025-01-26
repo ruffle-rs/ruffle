@@ -8,7 +8,7 @@ use std::ops::{Deref, DerefMut};
 use gc_arena::{Collect, Gc, GcWeak, Mutation};
 use hashbrown::HashSet;
 
-use crate::string::{AvmString, AvmStringRepr, WStr};
+use crate::string::{AvmString, AvmStringRepr, CommonStrings, WStr};
 
 // An interned `AvmString`, with fast by-pointer equality and hashing.
 #[derive(Copy, Clone, Collect)]
@@ -52,6 +52,9 @@ impl AvmAtom<'_> {
 pub struct AvmStringInterner<'gc> {
     interned: WeakSet<'gc, AvmStringRepr<'gc>>,
 
+    /// Strings used across both AVMs and in core code.
+    pub common: Gc<'gc, CommonStrings<'gc>>,
+
     pub(super) empty: Gc<'gc, AvmStringRepr<'gc>>,
     pub(super) chars: [Gc<'gc, AvmStringRepr<'gc>>; INTERNED_CHAR_LEN],
 }
@@ -78,8 +81,11 @@ impl<'gc> AvmStringInterner<'gc> {
             interned.insert_fresh_no_hash(mc, Gc::new(mc, repr))
         };
 
+        let common = Gc::new(mc, CommonStrings::new(&mut intern_from_static));
+
         Self {
             empty: intern_from_static(b""),
+            common,
             chars: std::array::from_fn(|i| {
                 let c = &INTERNED_CHARS[i];
                 intern_from_static(std::slice::from_ref(c))

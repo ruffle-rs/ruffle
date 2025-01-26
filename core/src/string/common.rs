@@ -1,67 +1,109 @@
-use super::{AvmString, AvmStringInterner, AvmStringRepr, WStr};
-use gc_arena::{Gc, Mutation};
+use super::{AvmString, AvmStringRepr};
+use gc_arena::{Collect, Gc};
 
 #[allow(non_snake_case)]
+#[derive(Clone, Collect)]
+#[collect(no_drop)]
 pub struct CommonStrings<'gc> {
+    pub str_access: AvmString<'gc>,
+    pub str_accessors: AvmString<'gc>,
+    pub str_bases: AvmString<'gc>,
     pub str_boolean: AvmString<'gc>,
     pub str_callee: AvmString<'gc>,
+    pub str_constructor: AvmString<'gc>,
+    pub str_declaredBy: AvmString<'gc>,
     pub str_false: AvmString<'gc>,
     pub str_function: AvmString<'gc>,
     pub str_height: AvmString<'gc>,
     pub str_Infinity: AvmString<'gc>,
+    pub str_interfaces: AvmString<'gc>,
+    pub str_isDynamic: AvmString<'gc>,
+    pub str_isFinal: AvmString<'gc>,
+    pub str_isStatic: AvmString<'gc>,
+    pub str_key: AvmString<'gc>,
     pub str_localName: AvmString<'gc>,
+    pub str_metadata: AvmString<'gc>,
+    pub str_methods: AvmString<'gc>,
+    pub str_name: AvmString<'gc>,
     pub str_NaN: AvmString<'gc>,
     pub str_null: AvmString<'gc>,
     pub str_number: AvmString<'gc>,
     pub str_object: AvmString<'gc>,
+    pub str_optional: AvmString<'gc>,
+    pub str_parameters: AvmString<'gc>,
     pub str_prefix: AvmString<'gc>,
+    pub str_readonly: AvmString<'gc>,
+    pub str_readwrite: AvmString<'gc>,
+    pub str_returnType: AvmString<'gc>,
     pub str_string: AvmString<'gc>,
     pub str_toJSON: AvmString<'gc>,
     pub str_toString: AvmString<'gc>,
+    pub str_traits: AvmString<'gc>,
     pub str_true: AvmString<'gc>,
-    pub str_uri: AvmString<'gc>,
+    pub str_type: AvmString<'gc>,
     pub str_undefined: AvmString<'gc>,
+    pub str_uri: AvmString<'gc>,
+    pub str_value: AvmString<'gc>,
     pub str_valueOf: AvmString<'gc>,
+    pub str_variables: AvmString<'gc>,
     pub str_width: AvmString<'gc>,
+    pub str_writeonly: AvmString<'gc>,
     pub str_x: AvmString<'gc>,
     pub str_xml: AvmString<'gc>,
     pub str_y: AvmString<'gc>,
 }
 
 impl<'gc> CommonStrings<'gc> {
-    pub fn new(mc: &Mutation<'gc>, interner: &mut AvmStringInterner<'gc>) -> Self {
-        let mut intern_from_static = |s: &'static [u8]| {
-            let wstr = WStr::from_units(s);
-
-            let atom = interner.intern_inner(mc, wstr, |wstr| {
-                let repr = AvmStringRepr::from_raw_static(wstr, true);
-                Gc::new(mc, repr)
-            });
-
-            atom.into()
-        };
+    pub fn new<F>(mut intern_atom_from_static: F) -> Self
+    where
+        F: for<'a> FnMut(&'static [u8]) -> Gc<'gc, AvmStringRepr<'gc>>,
+    {
+        let mut intern_from_static = |s: &'static [u8]| intern_atom_from_static(s).into();
 
         Self {
+            str_access: intern_from_static(b"access"),
+            str_accessors: intern_from_static(b"accessors"),
+            str_bases: intern_from_static(b"bases"),
             str_boolean: intern_from_static(b"boolean"),
             str_callee: intern_from_static(b"callee"),
+            str_constructor: intern_from_static(b"constructor"),
+            str_declaredBy: intern_from_static(b"declaredBy"),
             str_false: intern_from_static(b"false"),
             str_function: intern_from_static(b"function"),
             str_height: intern_from_static(b"height"),
             str_Infinity: intern_from_static(b"Infinity"),
+            str_interfaces: intern_from_static(b"interfaces"),
+            str_isDynamic: intern_from_static(b"isDynamic"),
+            str_isFinal: intern_from_static(b"isFinal"),
+            str_isStatic: intern_from_static(b"isStatic"),
+            str_key: intern_from_static(b"key"),
             str_localName: intern_from_static(b"localName"),
+            str_metadata: intern_from_static(b"metadata"),
+            str_methods: intern_from_static(b"methods"),
+            str_name: intern_from_static(b"name"),
             str_NaN: intern_from_static(b"NaN"),
             str_null: intern_from_static(b"null"),
             str_number: intern_from_static(b"number"),
             str_object: intern_from_static(b"object"),
+            str_optional: intern_from_static(b"optional"),
+            str_parameters: intern_from_static(b"parameters"),
             str_prefix: intern_from_static(b"prefix"),
+            str_readonly: intern_from_static(b"readonly"),
+            str_readwrite: intern_from_static(b"readwrite"),
+            str_returnType: intern_from_static(b"returnType"),
             str_string: intern_from_static(b"string"),
             str_toJSON: intern_from_static(b"toJSON"),
             str_toString: intern_from_static(b"toString"),
+            str_traits: intern_from_static(b"traits"),
             str_true: intern_from_static(b"true"),
-            str_uri: intern_from_static(b"uri"),
+            str_type: intern_from_static(b"type"),
             str_undefined: intern_from_static(b"undefined"),
+            str_uri: intern_from_static(b"uri"),
+            str_value: intern_from_static(b"value"),
             str_valueOf: intern_from_static(b"valueOf"),
+            str_variables: intern_from_static(b"variables"),
             str_width: intern_from_static(b"width"),
+            str_writeonly: intern_from_static(b"writeonly"),
             str_x: intern_from_static(b"x"),
             str_xml: intern_from_static(b"xml"),
             str_y: intern_from_static(b"y"),
