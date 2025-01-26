@@ -19,7 +19,7 @@ use crate::display_object::{
 use crate::events::{ClipEvent, ClipEventResult, MouseButton};
 use bitflags::bitflags;
 use gc_arena::{Collect, Mutation};
-use ruffle_macros::enum_trait_object;
+use ruffle_macros::{enum_trait_object, istr};
 use std::cell::{Ref, RefMut};
 use std::fmt::Debug;
 use swf::{Point, Rectangle, Twips};
@@ -323,9 +323,11 @@ pub trait TInteractiveObject<'gc>:
                     .contains(InteractiveObjectFlags::DOUBLE_CLICK_ENABLED);
 
                 if is_double_click && double_click_enabled {
+                    let string_double_click = istr!("doubleClick");
+
                     let avm2_event = Avm2EventObject::mouse_event(
                         &mut activation,
-                        "doubleClick",
+                        string_double_click,
                         self.as_displayobject(),
                         None,
                         0,
@@ -358,9 +360,11 @@ pub trait TInteractiveObject<'gc>:
                 Avm2::dispatch_event(activation.context, avm2_event, target).into()
             }
             ClipEvent::ReleaseOutside => {
+                let string_release_outside = istr!("releaseOutside");
+
                 let avm2_event = Avm2EventObject::mouse_event(
                     &mut activation,
-                    "releaseOutside",
+                    string_release_outside,
                     self.as_displayobject(),
                     None,
                     0,
@@ -371,9 +375,11 @@ pub trait TInteractiveObject<'gc>:
                 Avm2::dispatch_event(activation.context, avm2_event, target).into()
             }
             ClipEvent::RollOut { to } | ClipEvent::DragOut { to } => {
+                let string_mouse_out = istr!("mouseOut");
+
                 let avm2_event = Avm2EventObject::mouse_event(
                     &mut activation,
-                    "mouseOut",
+                    string_mouse_out,
                     self.as_displayobject(),
                     to,
                     0,
@@ -395,9 +401,11 @@ pub trait TInteractiveObject<'gc>:
                         break;
                     }
 
+                    let string_roll_out = istr!("rollOut");
+
                     let avm2_event = Avm2EventObject::mouse_event(
                         &mut activation,
-                        "rollOut",
+                        string_roll_out,
                         tgt,
                         to,
                         0,
@@ -429,9 +437,11 @@ pub trait TInteractiveObject<'gc>:
                         break;
                     }
 
+                    let string_roll_over = istr!("rollOver");
+
                     let avm2_event = Avm2EventObject::mouse_event(
                         &mut activation,
-                        "rollOver",
+                        string_roll_over,
                         tgt,
                         from,
                         0,
@@ -447,9 +457,11 @@ pub trait TInteractiveObject<'gc>:
                     rollover_target = tgt.parent();
                 }
 
+                let string_mouse_over = istr!("mouseOver");
+
                 let avm2_event = Avm2EventObject::mouse_event(
                     &mut activation,
-                    "mouseOver",
+                    string_mouse_over,
                     self.as_displayobject(),
                     from,
                     0,
@@ -462,9 +474,11 @@ pub trait TInteractiveObject<'gc>:
                 handled.into()
             }
             ClipEvent::MouseWheel { delta } => {
+                let string_mouse_wheel = istr!("mouseWheel");
+
                 let avm2_event = Avm2EventObject::mouse_event(
                     &mut activation,
-                    "mouseWheel",
+                    string_mouse_wheel,
                     self.as_displayobject(),
                     None,
                     delta.lines() as i32,
@@ -475,9 +489,11 @@ pub trait TInteractiveObject<'gc>:
                 Avm2::dispatch_event(activation.context, avm2_event, target).into()
             }
             ClipEvent::MouseMoveInside => {
+                let string_mouse_move = istr!("mouseMove");
+
                 let avm2_event = Avm2EventObject::mouse_event(
                     &mut activation,
-                    "mouseMove",
+                    string_mouse_move,
                     self.as_displayobject(),
                     None,
                     0,

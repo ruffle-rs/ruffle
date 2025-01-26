@@ -11,6 +11,7 @@ use core::fmt;
 use flash_lso::types::Value as AmfValue;
 use gc_arena::barrier::unlock;
 use gc_arena::{lock::Lock, Collect, Gc, GcWeak, Mutation};
+use ruffle_macros::istr;
 use std::cell::RefCell;
 
 /// A class instance allocator that allocates LocalConnection objects.
@@ -107,11 +108,12 @@ impl<'gc> LocalConnectionObject<'gc> {
         let mut activation = Activation::from_nothing(context);
 
         let status_event_cls = activation.avm2().classes().statusevent;
+        let event_name = istr!("status");
         let event = EventObject::from_class_and_args(
             &mut activation,
             status_event_cls,
             &[
-                "status".into(),
+                event_name.into(),
                 false.into(),
                 false.into(),
                 Value::Null,
@@ -141,17 +143,12 @@ impl<'gc> LocalConnectionObject<'gc> {
         if let Err(e) = client.call_public_property(method_name, &arguments, &mut activation) {
             match e {
                 Error::AvmError(error) => {
+                    let event_name = istr!("asyncError");
                     let async_error_event_cls = activation.avm2().classes().asyncerrorevent;
                     let event = EventObject::from_class_and_args(
                         &mut activation,
                         async_error_event_cls,
-                        &[
-                            "asyncError".into(),
-                            false.into(),
-                            false.into(),
-                            error,
-                            error,
-                        ],
+                        &[event_name.into(), false.into(), false.into(), error, error],
                     );
 
                     Avm2::dispatch_event(activation.context, event, (*self).into());

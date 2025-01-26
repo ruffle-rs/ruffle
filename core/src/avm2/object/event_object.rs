@@ -13,6 +13,7 @@ use crate::events::{KeyCode, MouseButton};
 use crate::string::AvmString;
 use gc_arena::barrier::unlock;
 use gc_arena::{lock::RefLock, Collect, Gc, GcWeak, Mutation};
+use ruffle_macros::istr;
 use std::cell::{Ref, RefMut};
 use std::fmt::Debug;
 
@@ -114,7 +115,7 @@ impl<'gc> EventObject<'gc> {
 
     pub fn mouse_event(
         activation: &mut Activation<'_, 'gc>,
-        event_type: &str,
+        event_type: AvmString<'gc>,
         target: DisplayObject<'gc>,
         related_object: Option<InteractiveObject<'gc>>,
         delta: i32,
@@ -122,8 +123,6 @@ impl<'gc> EventObject<'gc> {
         button: MouseButton,
     ) -> EventObject<'gc> {
         let local = target.local_mouse_position(activation.context);
-
-        let event_type = AvmString::new_utf8(activation.gc(), event_type);
 
         let mouse_event_cls = activation.avm2().classes().mouseevent;
         Self::from_class_and_args(
@@ -166,20 +165,14 @@ impl<'gc> EventObject<'gc> {
         target: DisplayObject<'gc>,
         button: MouseButton,
     ) -> EventObject<'gc> {
-        Self::mouse_event(
-            activation,
-            match button {
-                MouseButton::Left => "mouseDown",
-                MouseButton::Right => "rightMouseDown",
-                MouseButton::Middle => "middleMouseDown",
-                MouseButton::Unknown => unreachable!(),
-            },
-            target,
-            None,
-            0,
-            true,
-            button,
-        )
+        let event_name = match button {
+            MouseButton::Left => istr!("mouseDown"),
+            MouseButton::Right => istr!("rightMouseDown"),
+            MouseButton::Middle => istr!("middleMouseDown"),
+            MouseButton::Unknown => unreachable!(),
+        };
+
+        Self::mouse_event(activation, event_name, target, None, 0, true, button)
     }
 
     pub fn mouse_event_up(
@@ -187,20 +180,14 @@ impl<'gc> EventObject<'gc> {
         target: DisplayObject<'gc>,
         button: MouseButton,
     ) -> EventObject<'gc> {
-        Self::mouse_event(
-            activation,
-            match button {
-                MouseButton::Left => "mouseUp",
-                MouseButton::Right => "rightMouseUp",
-                MouseButton::Middle => "middleMouseUp",
-                MouseButton::Unknown => unreachable!(),
-            },
-            target,
-            None,
-            0,
-            true,
-            button,
-        )
+        let event_name = match button {
+            MouseButton::Left => istr!("mouseUp"),
+            MouseButton::Right => istr!("rightMouseUp"),
+            MouseButton::Middle => istr!("middleMouseUp"),
+            MouseButton::Unknown => unreachable!(),
+        };
+
+        Self::mouse_event(activation, event_name, target, None, 0, true, button)
     }
 
     pub fn mouse_event_click(
@@ -208,20 +195,14 @@ impl<'gc> EventObject<'gc> {
         target: DisplayObject<'gc>,
         button: MouseButton,
     ) -> EventObject<'gc> {
-        Self::mouse_event(
-            activation,
-            match button {
-                MouseButton::Left => "click",
-                MouseButton::Right => "rightClick",
-                MouseButton::Middle => "middleClick",
-                MouseButton::Unknown => unreachable!(),
-            },
-            target,
-            None,
-            0,
-            true,
-            button,
-        )
+        let event_name = match button {
+            MouseButton::Left => istr!("click"),
+            MouseButton::Right => istr!("rightClick"),
+            MouseButton::Middle => istr!("middleClick"),
+            MouseButton::Unknown => unreachable!(),
+        };
+
+        Self::mouse_event(activation, event_name, target, None, 0, true, button)
     }
 
     pub fn text_event(
@@ -253,8 +234,6 @@ impl<'gc> EventObject<'gc> {
         activation: &mut Activation<'_, 'gc>,
         info: Vec<(&str, &str)>,
     ) -> EventObject<'gc> {
-        let event_type = AvmString::new_utf8(activation.gc(), "netStatus");
-
         let info_object = ScriptObject::new_object(activation);
         for (key, value) in info {
             let key = AvmString::new_utf8(activation.gc(), key);
@@ -265,12 +244,13 @@ impl<'gc> EventObject<'gc> {
                 .unwrap();
         }
 
+        let event_name = istr!("netStatus");
         let net_status_cls = activation.avm2().classes().netstatusevent;
         Self::from_class_and_args(
             activation,
             net_status_cls,
             &[
-                event_type.into(),
+                event_name.into(),
                 //bubbles
                 false.into(),
                 //cancelable
@@ -316,6 +296,8 @@ impl<'gc> EventObject<'gc> {
         let event_type = AvmString::new_utf8(activation.gc(), event_type);
         let shift_key = activation.context.input.is_key_down(KeyCode::SHIFT);
 
+        let none_string = istr!("none");
+
         let focus_event_cls = activation.avm2().classes().focusevent;
         Self::from_class_and_args(
             activation,
@@ -329,7 +311,7 @@ impl<'gc> EventObject<'gc> {
                     .unwrap_or(Value::Null),
                 shift_key.into(),
                 key_code.into(),
-                "none".into(), // TODO implement direction
+                none_string.into(), // TODO implement direction
             ],
         )
     }
@@ -339,14 +321,13 @@ impl<'gc> EventObject<'gc> {
         error_msg: AvmString<'gc>,
         error_code: u32,
     ) -> EventObject<'gc> {
-        let event_type = AvmString::new_utf8(activation.gc(), "ioError");
-
+        let event_name = istr!("ioError");
         let io_error_event_cls = activation.avm2().classes().ioerrorevent;
         Self::from_class_and_args(
             activation,
             io_error_event_cls,
             &[
-                event_type.into(),
+                event_name.into(),
                 false.into(),
                 false.into(),
                 error_msg.into(),
@@ -360,14 +341,13 @@ impl<'gc> EventObject<'gc> {
         status: u16,
         redirected: bool,
     ) -> EventObject<'gc> {
-        let event_type = AvmString::new_utf8(activation.gc(), "httpStatus");
-
+        let event_name = istr!("httpStatus");
         let http_status_event_cls = activation.avm2().classes().httpstatusevent;
         Self::from_class_and_args(
             activation,
             http_status_event_cls,
             &[
-                event_type.into(),
+                event_name.into(),
                 false.into(),
                 false.into(),
                 status.into(),
