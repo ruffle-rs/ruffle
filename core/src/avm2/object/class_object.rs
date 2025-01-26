@@ -23,6 +23,7 @@ use gc_arena::{
     lock::{Lock, RefLock},
     Collect, Gc, GcWeak, Mutation,
 };
+use ruffle_macros::istr;
 use std::fmt::Debug;
 use std::hash::{Hash, Hasher};
 
@@ -270,8 +271,8 @@ impl<'gc> ClassObject<'gc> {
         let mc = activation.gc();
 
         unlock!(Gc::write(mc, self.0), ClassObjectData, prototype).set(Some(class_proto));
-        class_proto.set_string_property_local("constructor", self.into(), activation)?;
-        class_proto.set_local_property_is_enumerable(mc, "constructor".into(), false);
+        class_proto.set_string_property_local(istr!("constructor"), self.into(), activation)?;
+        class_proto.set_local_property_is_enumerable(mc, istr!("constructor"), false);
 
         Ok(())
     }
