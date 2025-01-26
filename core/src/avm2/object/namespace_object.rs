@@ -9,6 +9,7 @@ use crate::avm2::Namespace;
 use crate::string::AvmString;
 use core::fmt;
 use gc_arena::{Collect, Gc, GcWeak};
+use ruffle_macros::istr;
 
 /// An Object which represents a boxed namespace name.
 #[derive(Collect, Clone, Copy)]
@@ -141,11 +142,11 @@ impl<'gc> TObject<'gc> for NamespaceObject<'gc> {
     fn get_enumerant_name(
         self,
         index: u32,
-        _activation: &mut Activation<'_, 'gc>,
+        activation: &mut Activation<'_, 'gc>,
     ) -> Result<Value<'gc>, Error<'gc>> {
         Ok(match index {
-            1 => "uri".into(),
-            2 => "prefix".into(),
+            1 => istr!("uri").into(),
+            2 => istr!("prefix").into(),
             _ => Value::Null,
         })
     }

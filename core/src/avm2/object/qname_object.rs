@@ -12,6 +12,7 @@ use crate::string::StringContext;
 use core::fmt;
 use gc_arena::barrier::unlock;
 use gc_arena::{lock::RefLock, Collect, Gc, GcWeak, Mutation};
+use ruffle_macros::istr;
 use std::cell::Ref;
 
 /// An Object which represents a boxed QName.
@@ -171,12 +172,12 @@ impl<'gc> TObject<'gc> for QNameObject<'gc> {
     fn get_enumerant_name(
         self,
         index: u32,
-        _activation: &mut Activation<'_, 'gc>,
+        activation: &mut Activation<'_, 'gc>,
     ) -> Result<Value<'gc>, Error<'gc>> {
         // NOTE: Weird avmplus behavior, get_enumerant_name returns uri first, but get_enumerant_value returns localName first.
         Ok(match index {
-            1 => "uri".into(),
-            2 => "localName".into(),
+            1 => istr!("uri").into(),
+            2 => istr!("localName").into(),
             _ => Value::Null,
         })
     }
