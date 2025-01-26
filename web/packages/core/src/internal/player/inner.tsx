@@ -615,17 +615,19 @@ export class InnerPlayer {
                     }
                 } else if (typeof fontSource === "object") {
                     // Handle new format (object with additional properties)
-                    try {
-                        const response = await fetch(key);
-                        builder.addFont(
-                            key,
-                            typeof fontSource['name'] === "string" ? fontSource['name'] : null,
-                            typeof fontSource['bold'] === "boolean" ? fontSource['bold'] : null,
-                            typeof fontSource['italics'] === "boolean" ? fontSource['italics'] : null,
-                            new Uint8Array(await response.arrayBuffer()),
-                        );
-                    } catch (error) {
-                        console.warn(`Couldn't download font source from ${key}`, error);
+                    for (const [url, fontInfo] of Object.entries(fontSource)) {
+                        try {
+                            const response = await fetch(url);
+                            builder.addFont(
+                                url,
+                                fontInfo?.['name'] || null,
+                                fontInfo?.['bold'] ?? null,
+                                fontInfo?.['italics'] ?? null,
+                                new Uint8Array(await response.arrayBuffer()),
+                            );
+                        } catch (error) {
+                            console.warn(`Couldn't download font source from ${key}`, error);
+                        }
                     }
                 }
             }
