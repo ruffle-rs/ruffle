@@ -5,6 +5,7 @@ use crate::avm2::{Activation, Error, Value};
 use crate::string::AvmString;
 
 use gc_arena::Collect;
+use ruffle_macros::istr;
 use swf::avm2::types::{Index as AbcIndex, Metadata as AbcMetadata};
 
 // Represents a single key-value pair for a trait metadata.
@@ -78,22 +79,30 @@ impl<'gc> Metadata<'gc> {
         activation: &mut Activation<'_, 'gc>,
     ) -> Result<Object<'gc>, Error<'gc>> {
         let object = ScriptObject::new_object(activation);
-        object.set_string_property_local("name", self.name.into(), activation)?;
+        object.set_string_property_local(istr!("name"), self.name.into(), activation)?;
 
         let values = self
             .items
             .iter()
             .map(|item| {
                 let value_object = ScriptObject::new_object(activation);
-                value_object.set_string_property_local("key", item.key.into(), activation)?;
-                value_object.set_string_property_local("value", item.value.into(), activation)?;
+                value_object.set_string_property_local(
+                    istr!("key"),
+                    item.key.into(),
+                    activation,
+                )?;
+                value_object.set_string_property_local(
+                    istr!("value"),
+                    item.value.into(),
+                    activation,
+                )?;
                 Ok(Some(value_object.into()))
             })
             .collect::<Result<Vec<Option<Value<'gc>>>, Error<'gc>>>()?;
 
         let values_array =
             ArrayObject::from_storage(activation, ArrayStorage::from_storage(values));
-        object.set_string_property_local("value", values_array.into(), activation)?;
+        object.set_string_property_local(istr!("value"), values_array.into(), activation)?;
         Ok(object)
     }
 }

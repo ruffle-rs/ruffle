@@ -462,7 +462,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
                 .flags
                 .contains(AbcMethodFlags::NEED_ARGUMENTS)
             {
-                let string_callee = self.strings().common.str_callee;
+                let string_callee = self.strings().common().str_callee;
 
                 args_object.set_string_property_local(string_callee, callee, self)?;
                 args_object.set_local_property_is_enumerable(self.gc(), string_callee, false);
@@ -2697,7 +2697,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     }
 
     fn op_type_of(&mut self) -> Result<FrameControl<'gc>, Error<'gc>> {
-        let common_strings = self.strings().common;
+        let common_strings = self.strings().common();
 
         let value = self.pop_stack();
 
