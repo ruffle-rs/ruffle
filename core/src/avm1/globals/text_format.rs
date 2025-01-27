@@ -9,6 +9,7 @@ use crate::ecma_conversions::round_to_even;
 use crate::html::TextFormat;
 use crate::string::{AvmString, StringContext, WStr};
 use gc_arena::Gc;
+use ruffle_macros::istr;
 
 macro_rules! getter {
     ($name:ident) => {
@@ -217,15 +218,15 @@ fn set_underline<'gc>(
     Ok(())
 }
 
-fn align<'gc>(_activation: &mut Activation<'_, 'gc>, text_format: &TextFormat) -> Value<'gc> {
+fn align<'gc>(activation: &mut Activation<'_, 'gc>, text_format: &TextFormat) -> Value<'gc> {
     text_format
         .align
         .as_ref()
         .map_or(Value::Null, |align| match align {
-            swf::TextAlign::Left => "left".into(),
-            swf::TextAlign::Center => "center".into(),
-            swf::TextAlign::Right => "right".into(),
-            swf::TextAlign::Justify => "justify".into(),
+            swf::TextAlign::Left => istr!("left").into(),
+            swf::TextAlign::Center => istr!("center").into(),
+            swf::TextAlign::Right => istr!("right").into(),
+            swf::TextAlign::Justify => istr!("justify").into(),
         })
 }
 
@@ -516,28 +517,28 @@ fn get_text_extent<'gc>(
         .expect("All text boxes should have at least one line at all times");
 
     result.set_data(
-        "ascent".into(),
+        istr!("ascent"),
         metrics.ascent.to_pixels().into(),
         activation,
     )?;
     result.set_data(
-        "descent".into(),
+        istr!("descent"),
         metrics.descent.to_pixels().into(),
         activation,
     )?;
-    result.set_data("width".into(), metrics.width.to_pixels().into(), activation)?;
+    result.set_data(istr!("width"), metrics.width.to_pixels().into(), activation)?;
     result.set_data(
-        "height".into(),
+        istr!("height"),
         metrics.height.to_pixels().into(),
         activation,
     )?;
     result.set_data(
-        "textFieldHeight".into(),
+        istr!("textFieldHeight"),
         temp_edittext.height().into(),
         activation,
     )?;
     result.set_data(
-        "textFieldWidth".into(),
+        istr!("textFieldWidth"),
         temp_edittext.width().into(),
         activation,
     )?;
