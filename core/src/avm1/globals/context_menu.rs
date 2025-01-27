@@ -7,6 +7,7 @@ use crate::avm1::{ScriptObject, Value};
 use crate::context_menu;
 use crate::display_object::DisplayObject;
 use crate::string::StringContext;
+use ruffle_macros::istr;
 
 const PROTO_DECLS: &[Declaration] = declare_properties! {
     "copy" => method(copy; DONT_ENUM | DONT_DELETE);
@@ -23,28 +24,28 @@ pub fn constructor<'gc>(
         .unwrap_or(&Value::Undefined)
         .coerce_to_object(activation);
 
-    this.set("onSelect", callback.into(), activation)?;
+    this.set(istr!("onSelect"), callback.into(), activation)?;
 
     let built_in_items = ScriptObject::new(
         activation.gc(),
         Some(activation.context.avm1.prototypes().object),
     );
 
-    built_in_items.set("print", true.into(), activation)?;
-    built_in_items.set("forward_back", true.into(), activation)?;
-    built_in_items.set("rewind", true.into(), activation)?;
-    built_in_items.set("loop", true.into(), activation)?;
-    built_in_items.set("play", true.into(), activation)?;
-    built_in_items.set("quality", true.into(), activation)?;
-    built_in_items.set("zoom", true.into(), activation)?;
-    built_in_items.set("save", true.into(), activation)?;
+    built_in_items.set(istr!("print"), true.into(), activation)?;
+    built_in_items.set(istr!("forward_back"), true.into(), activation)?;
+    built_in_items.set(istr!("rewind"), true.into(), activation)?;
+    built_in_items.set(istr!("loop"), true.into(), activation)?;
+    built_in_items.set(istr!("play"), true.into(), activation)?;
+    built_in_items.set(istr!("quality"), true.into(), activation)?;
+    built_in_items.set(istr!("zoom"), true.into(), activation)?;
+    built_in_items.set(istr!("save"), true.into(), activation)?;
 
-    this.set("builtInItems", built_in_items.into(), activation)?;
+    this.set(istr!("builtInItems"), built_in_items.into(), activation)?;
 
     let constructor = activation.context.avm1.prototypes().array_constructor;
     let custom_items = constructor.construct(activation, &[])?;
 
-    this.set("customItems", custom_items, activation)?;
+    this.set(istr!("customItems"), custom_items, activation)?;
 
     Ok(this.into())
 }
@@ -55,7 +56,7 @@ pub fn copy<'gc>(
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     let callback = this
-        .get("onSelect", activation)?
+        .get(istr!("onSelect"), activation)?
         .coerce_to_object(activation);
 
     let constructor = activation
@@ -68,51 +69,51 @@ pub fn copy<'gc>(
         .coerce_to_object(activation);
 
     let built_in = this
-        .get("builtInItems", activation)?
+        .get(istr!("builtInItems"), activation)?
         .coerce_to_object(activation);
     let copy_built_in = copy
-        .get("builtInItems", activation)?
+        .get(istr!("builtInItems"), activation)?
         .coerce_to_object(activation);
 
     let save = built_in
-        .get("save", activation)?
+        .get(istr!("save"), activation)?
         .as_bool(activation.swf_version());
     let zoom = built_in
-        .get("zoom", activation)?
+        .get(istr!("zoom"), activation)?
         .as_bool(activation.swf_version());
     let quality = built_in
-        .get("quality", activation)?
+        .get(istr!("quality"), activation)?
         .as_bool(activation.swf_version());
     let play = built_in
-        .get("play", activation)?
+        .get(istr!("play"), activation)?
         .as_bool(activation.swf_version());
     let loop_ = built_in
-        .get("loop", activation)?
+        .get(istr!("loop"), activation)?
         .as_bool(activation.swf_version());
     let rewind = built_in
-        .get("rewind", activation)?
+        .get(istr!("rewind"), activation)?
         .as_bool(activation.swf_version());
     let forward_back = built_in
-        .get("forward_back", activation)?
+        .get(istr!("forward_back"), activation)?
         .as_bool(activation.swf_version());
     let print = built_in
-        .get("print", activation)?
+        .get(istr!("print"), activation)?
         .as_bool(activation.swf_version());
 
-    copy_built_in.set("save", save.into(), activation)?;
-    copy_built_in.set("zoom", zoom.into(), activation)?;
-    copy_built_in.set("quality", quality.into(), activation)?;
-    copy_built_in.set("play", play.into(), activation)?;
-    copy_built_in.set("loop", loop_.into(), activation)?;
-    copy_built_in.set("rewind", rewind.into(), activation)?;
-    copy_built_in.set("forward_back", forward_back.into(), activation)?;
-    copy_built_in.set("print", print.into(), activation)?;
+    copy_built_in.set(istr!("save"), save.into(), activation)?;
+    copy_built_in.set(istr!("zoom"), zoom.into(), activation)?;
+    copy_built_in.set(istr!("quality"), quality.into(), activation)?;
+    copy_built_in.set(istr!("play"), play.into(), activation)?;
+    copy_built_in.set(istr!("loop"), loop_.into(), activation)?;
+    copy_built_in.set(istr!("rewind"), rewind.into(), activation)?;
+    copy_built_in.set(istr!("forward_back"), forward_back.into(), activation)?;
+    copy_built_in.set(istr!("print"), print.into(), activation)?;
 
     let custom_items = this
-        .get("customItems", activation)?
+        .get(istr!("customItems"), activation)?
         .coerce_to_object(activation);
     let custom_items_copy = copy
-        .get("customItems", activation)?
+        .get(istr!("customItems"), activation)?
         .coerce_to_object(activation);
 
     for i in 0..custom_items.length(activation)? {
@@ -129,15 +130,15 @@ pub fn hide_builtin_items<'gc>(
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     let built_in_items = this
-        .get("builtInItems", activation)?
+        .get(istr!("builtInItems"), activation)?
         .coerce_to_object(activation);
-    built_in_items.set("zoom", false.into(), activation)?;
-    built_in_items.set("quality", false.into(), activation)?;
-    built_in_items.set("play", false.into(), activation)?;
-    built_in_items.set("loop", false.into(), activation)?;
-    built_in_items.set("rewind", false.into(), activation)?;
-    built_in_items.set("forward_back", false.into(), activation)?;
-    built_in_items.set("print", false.into(), activation)?;
+    built_in_items.set(istr!("zoom"), false.into(), activation)?;
+    built_in_items.set(istr!("quality"), false.into(), activation)?;
+    built_in_items.set(istr!("play"), false.into(), activation)?;
+    built_in_items.set(istr!("loop"), false.into(), activation)?;
+    built_in_items.set(istr!("rewind"), false.into(), activation)?;
+    built_in_items.set(istr!("forward_back"), false.into(), activation)?;
+    built_in_items.set(istr!("print"), false.into(), activation)?;
     Ok(Value::Undefined)
 }
 
@@ -162,29 +163,47 @@ pub fn make_context_menu_state<'gc>(
 
     let mut builtin_items = context_menu::BuiltInItemFlags::for_stage(activation.context.stage);
     if let Some(menu) = menu {
-        if let Ok(Value::Object(builtins)) = menu.get("builtInItems", activation) {
-            if matches!(builtins.get("zoom", activation), Ok(Value::Bool(false))) {
+        if let Ok(Value::Object(builtins)) = menu.get(istr!("builtInItems"), activation) {
+            if matches!(
+                builtins.get(istr!("zoom"), activation),
+                Ok(Value::Bool(false))
+            ) {
                 builtin_items.zoom = false;
             }
-            if matches!(builtins.get("quality", activation), Ok(Value::Bool(false))) {
+            if matches!(
+                builtins.get(istr!("quality"), activation),
+                Ok(Value::Bool(false))
+            ) {
                 builtin_items.quality = false;
             }
-            if matches!(builtins.get("play", activation), Ok(Value::Bool(false))) {
+            if matches!(
+                builtins.get(istr!("play"), activation),
+                Ok(Value::Bool(false))
+            ) {
                 builtin_items.play = false;
             }
-            if matches!(builtins.get("loop", activation), Ok(Value::Bool(false))) {
+            if matches!(
+                builtins.get(istr!("loop"), activation),
+                Ok(Value::Bool(false))
+            ) {
                 builtin_items.loop_ = false;
             }
-            if matches!(builtins.get("rewind", activation), Ok(Value::Bool(false))) {
+            if matches!(
+                builtins.get(istr!("rewind"), activation),
+                Ok(Value::Bool(false))
+            ) {
                 builtin_items.rewind = false;
             }
             if matches!(
-                builtins.get("forward_back", activation),
+                builtins.get(istr!("forward_back"), activation),
                 Ok(Value::Bool(false))
             ) {
                 builtin_items.forward_and_back = false;
             }
-            if matches!(builtins.get("print", activation), Ok(Value::Bool(false))) {
+            if matches!(
+                builtins.get(istr!("print"), activation),
+                Ok(Value::Bool(false))
+            ) {
                 builtin_items.print = false;
             }
         }
@@ -193,32 +212,37 @@ pub fn make_context_menu_state<'gc>(
     result.build_builtin_items(builtin_items, activation.context);
 
     if let Some(menu) = menu {
-        if let Ok(Value::Object(custom_items)) = menu.get("customItems", activation) {
+        if let Ok(Value::Object(custom_items)) = menu.get(istr!("customItems"), activation) {
             if let Ok(length) = custom_items.length(activation) {
                 for i in 0..length {
                     let item = custom_items.get_element(activation, i);
                     if let Value::Object(item) = item {
-                        let caption =
-                            if let Ok(Value::String(caption)) = item.get("caption", activation) {
-                                caption
-                            } else {
-                                continue;
-                            };
+                        let caption = if let Ok(Value::String(caption)) =
+                            item.get(istr!("caption"), activation)
+                        {
+                            caption
+                        } else {
+                            continue;
+                        };
                         let on_select = if let Ok(Value::Object(on_select)) =
-                            item.get("onSelect", activation)
+                            item.get(istr!("onSelect"), activation)
                         {
                             on_select
                         } else {
                             continue;
                         };
                         // false if `false`, everything else is true
-                        let visible =
-                            !matches!(item.get("visible", activation), Ok(Value::Bool(false)));
+                        let visible = !matches!(
+                            item.get(istr!("visible"), activation),
+                            Ok(Value::Bool(false))
+                        );
                         // true if `true`, everything else is false
-                        let enabled =
-                            matches!(item.get("enabled", activation), Ok(Value::Bool(true)));
+                        let enabled = matches!(
+                            item.get(istr!("enabled"), activation),
+                            Ok(Value::Bool(true))
+                        );
                         let separator_before = matches!(
-                            item.get("separatorBefore", activation),
+                            item.get(istr!("separatorBefore"), activation),
                             Ok(Value::Bool(true))
                         );
 
