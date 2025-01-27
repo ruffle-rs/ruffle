@@ -2290,8 +2290,8 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     }
 
     fn action_type_of(&mut self) -> Result<FrameControl<'gc>, Error<'gc>> {
-        let type_of = self.context.avm1.pop().type_of();
-        self.context.avm1.push(AvmString::from(type_of).into());
+        let type_of = self.context.avm1.pop().type_of(self);
+        self.context.avm1.push(type_of.into());
         Ok(FrameControl::Continue)
     }
 
