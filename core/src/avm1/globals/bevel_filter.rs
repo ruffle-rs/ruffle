@@ -4,8 +4,9 @@ use crate::avm1::function::{Executable, FunctionObject};
 use crate::avm1::object::NativeObject;
 use crate::avm1::property_decl::{define_properties_on, Declaration};
 use crate::avm1::{Activation, Error, Object, ScriptObject, TObject, Value};
-use crate::string::{AvmString, StringContext, WStr};
+use crate::string::StringContext;
 use gc_arena::{Collect, GcCell, Mutation};
+use ruffle_macros::istr;
 use std::ops::Deref;
 use swf::{BevelFilterFlags, Color, Fixed16, Fixed8, GradientFilterFlags};
 
@@ -15,28 +16,6 @@ pub enum BevelFilterType {
     Inner,
     Outer,
     Full,
-}
-
-impl From<&WStr> for BevelFilterType {
-    fn from(value: &WStr) -> Self {
-        if value == b"inner" {
-            Self::Inner
-        } else if value == b"outer" {
-            Self::Outer
-        } else {
-            Self::Full
-        }
-    }
-}
-
-impl From<BevelFilterType> for &'static WStr {
-    fn from(type_: BevelFilterType) -> &'static WStr {
-        match type_ {
-            BevelFilterType::Inner => WStr::from_units(b"inner"),
-            BevelFilterType::Outer => WStr::from_units(b"outer"),
-            BevelFilterType::Full => WStr::from_units(b"full"),
-        }
-    }
 }
 
 impl BevelFilterType {
@@ -382,8 +361,17 @@ impl<'gc> BevelFilter<'gc> {
         value: Option<&Value<'gc>>,
     ) -> Result<(), Error<'gc>> {
         if let Some(value) = value {
-            let type_ = value.coerce_to_string(activation)?.as_wstr().into();
-            self.0.write(activation.gc()).type_ = type_;
+            let type_ = value.coerce_to_string(activation)?;
+
+            let type_ = if &type_ == b"inner" {
+                BevelFilterType::Inner
+            } else if &type_ == b"outer" {
+                BevelFilterType::Outer
+            } else {
+                BevelFilterType::Full
+            };
+
+            self.0.write(activation.gc()).type_ = type_.into();
         }
         Ok(())
     }
@@ -514,8 +502,13 @@ fn method<'gc>(
             Value::Undefined
         }
         GET_TYPE => {
-            let type_: &WStr = this.type_().into();
-            AvmString::from_static_wstr(activation.gc(), type_).into()
+            let type_ = match this.type_() {
+                BevelFilterType::Inner => istr!("inner"),
+                BevelFilterType::Outer => istr!("outer"),
+                BevelFilterType::Full => istr!("full"),
+            };
+
+            type_.into()
         }
         SET_TYPE => {
             this.set_type(activation, args.get(0))?;
