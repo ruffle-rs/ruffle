@@ -8,6 +8,7 @@ use crate::avm1::{Object, ObjectPtr, TObject, Value};
 use crate::string::AvmString;
 use core::fmt;
 use gc_arena::{Collect, GcCell, Mutation};
+use ruffle_macros::istr;
 
 #[derive(Clone, Collect)]
 #[collect(no_drop)]
@@ -399,7 +400,7 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
     }
 
     fn proto(&self, activation: &mut Activation<'_, 'gc>) -> Value<'gc> {
-        self.get_data("__proto__".into(), activation)
+        self.get_data(istr!("__proto__"), activation)
     }
 
     /// Checks if the object has a given named property.
@@ -505,7 +506,7 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
     }
 
     fn length(&self, activation: &mut Activation<'_, 'gc>) -> Result<i32, Error<'gc>> {
-        self.get_data("length".into(), activation)
+        self.get_data(istr!("length"), activation)
             .coerce_to_i32(activation)
     }
 
@@ -514,7 +515,7 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
         activation: &mut Activation<'_, 'gc>,
         new_length: i32,
     ) -> Result<(), Error<'gc>> {
-        self.set_data("length".into(), new_length.into(), activation)
+        self.set_data(istr!("length"), new_length.into(), activation)
     }
 
     fn has_element(&self, activation: &mut Activation<'_, 'gc>, index: i32) -> bool {

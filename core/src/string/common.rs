@@ -55,6 +55,7 @@ pub struct CommonStrings<'gc> {
     pub str_justify: AvmString<'gc>,
     pub str_key: AvmString<'gc>,
     pub str_left: AvmString<'gc>,
+    pub str_length: AvmString<'gc>,
     pub str_localName: AvmString<'gc>,
     pub str_matrixType: AvmString<'gc>,
     pub str_metadata: AvmString<'gc>,
@@ -127,11 +128,23 @@ pub struct CommonStrings<'gc> {
 }
 
 impl<'gc> CommonStrings<'gc> {
-    pub fn new<F>(mut intern_atom_from_static: F) -> Self
+    pub fn new<F>(
+        mut intern_atom_from_static: F,
+        single_chars: &[Gc<'gc, AvmStringRepr<'gc>>],
+    ) -> Self
     where
         F: for<'a> FnMut(&'static [u8]) -> Gc<'gc, AvmStringRepr<'gc>>,
     {
-        let mut intern_from_static = |s: &'static [u8]| intern_atom_from_static(s).into();
+        let mut intern_from_static = |s: &'static [u8]| {
+            if s.len() == 1 {
+                // Don't insert a fresh entry for single-character strings-
+                // they were already interned! Retrieve it from the passed
+                // array instead.
+                single_chars[s[0] as usize].into()
+            } else {
+                intern_atom_from_static(s).into()
+            }
+        };
 
         Self {
             str___proto__: intern_from_static(b"__proto__"),
@@ -184,6 +197,7 @@ impl<'gc> CommonStrings<'gc> {
             str_justify: intern_from_static(b"justify"),
             str_key: intern_from_static(b"key"),
             str_left: intern_from_static(b"left"),
+            str_length: intern_from_static(b"length"),
             str_localName: intern_from_static(b"localName"),
             str_matrixType: intern_from_static(b"matrixType"),
             str_metadata: intern_from_static(b"metadata"),
