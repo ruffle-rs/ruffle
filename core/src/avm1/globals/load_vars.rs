@@ -117,7 +117,7 @@ fn on_data<'gc>(
         Value::Undefined | Value::Null => false,
         val => {
             this.call_method(
-                "decode".into(),
+                istr!("decode"),
                 &[*val],
                 activation,
                 ExecutionReason::FunctionCall,
