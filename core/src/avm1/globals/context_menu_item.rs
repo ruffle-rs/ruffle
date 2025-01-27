@@ -5,6 +5,7 @@ use crate::avm1::property_decl::{define_properties_on, Declaration};
 use crate::avm1::Object;
 use crate::avm1::{ScriptObject, Value};
 use crate::string::{AvmString, StringContext};
+use ruffle_macros::istr;
 
 const PROTO_DECLS: &[Declaration] = declare_properties! {
     "copy" => method(copy; DONT_ENUM | DONT_DELETE);
@@ -33,15 +34,19 @@ pub fn constructor<'gc>(
         .unwrap_or(&true.into())
         .as_bool(activation.swf_version());
 
-    this.set("caption", caption.into(), activation)?;
+    this.set(istr!("caption"), caption.into(), activation)?;
 
     if let Some(callback) = callback {
-        this.set("onSelect", callback.into(), activation)?;
+        this.set(istr!("onSelect"), callback.into(), activation)?;
     }
 
-    this.set("separatorBefore", separator_before.into(), activation)?;
-    this.set("enabled", enabled.into(), activation)?;
-    this.set("visible", visible.into(), activation)?;
+    this.set(
+        istr!("separatorBefore"),
+        separator_before.into(),
+        activation,
+    )?;
+    this.set(istr!("enabled"), enabled.into(), activation)?;
+    this.set(istr!("visible"), visible.into(), activation)?;
 
     Ok(this.into())
 }
@@ -52,21 +57,21 @@ pub fn copy<'gc>(
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     let caption = this
-        .get("caption", activation)?
+        .get(istr!("caption"), activation)?
         .coerce_to_string(activation)?
         .to_string();
     let callback = this
-        .get("onSelect", activation)?
+        .get(istr!("onSelect"), activation)?
         .coerce_to_object(activation);
 
     let enabled = this
-        .get("enabled", activation)?
+        .get(istr!("enabled"), activation)?
         .as_bool(activation.swf_version());
     let separator_before = this
-        .get("separator_before", activation)?
+        .get(istr!("separatorBefore"), activation)?
         .as_bool(activation.swf_version());
     let visible = this
-        .get("visible", activation)?
+        .get(istr!("visible"), activation)?
         .as_bool(activation.swf_version());
 
     let constructor = activation
