@@ -15,6 +15,7 @@ use crate::prelude::*;
 use crate::string::{AvmString, StringContext};
 use crate::vminterface::Instantiator;
 use crate::{avm1_stub, avm_error, avm_warn};
+use ruffle_macros::istr;
 use ruffle_render::shape_utils::{DrawCommand, GradientType};
 use swf::{
     FillStyle, Fixed8, Gradient, GradientInterpolation, GradientRecord, GradientSpread,
@@ -148,9 +149,10 @@ pub fn object_to_rectangle<'gc>(
     activation: &mut Activation<'_, 'gc>,
     object: Object<'gc>,
 ) -> Result<Option<Rectangle<Twips>>, Error<'gc>> {
-    const NAMES: &[&str] = &["x", "y", "width", "height"];
+    let names = &[istr!("x"), istr!("y"), istr!("width"), istr!("height")];
     let mut values = [0; 4];
-    for (&name, value) in NAMES.iter().zip(&mut values) {
+
+    for (&name, value) in names.iter().zip(&mut values) {
         *value = match object.get_local_stored(name, activation, false) {
             Some(value) => value.coerce_to_i32(activation)?,
             None => return Ok(None),
@@ -1395,16 +1397,16 @@ fn local_to_global<'gc>(
         // It does not search the prototype chain and ignores virtual properties.
         if let (Value::Number(x), Value::Number(y)) = (
             point
-                .get_local_stored("x", activation, false)
+                .get_local_stored(istr!("x"), activation, false)
                 .unwrap_or(Value::Undefined),
             point
-                .get_local_stored("y", activation, false)
+                .get_local_stored(istr!("y"), activation, false)
                 .unwrap_or(Value::Undefined),
         ) {
             let local = Point::from_pixels(x, y);
             let global = movie_clip.local_to_global(local);
-            point.set("x", global.x.to_pixels().into(), activation)?;
-            point.set("y", global.y.to_pixels().into(), activation)?;
+            point.set(istr!("x"), global.x.to_pixels().into(), activation)?;
+            point.set(istr!("y"), global.y.to_pixels().into(), activation)?;
         } else {
             avm_warn!(
                 activation,
@@ -1480,10 +1482,26 @@ fn get_bounds<'gc>(
             activation.gc(),
             Some(activation.context.avm1.prototypes().object),
         );
-        out.set("xMin", out_bounds.x_min.to_pixels().into(), activation)?;
-        out.set("xMax", out_bounds.x_max.to_pixels().into(), activation)?;
-        out.set("yMin", out_bounds.y_min.to_pixels().into(), activation)?;
-        out.set("yMax", out_bounds.y_max.to_pixels().into(), activation)?;
+        out.set(
+            istr!("xMin"),
+            out_bounds.x_min.to_pixels().into(),
+            activation,
+        )?;
+        out.set(
+            istr!("xMax"),
+            out_bounds.x_max.to_pixels().into(),
+            activation,
+        )?;
+        out.set(
+            istr!("yMin"),
+            out_bounds.y_min.to_pixels().into(),
+            activation,
+        )?;
+        out.set(
+            istr!("yMax"),
+            out_bounds.y_max.to_pixels().into(),
+            activation,
+        )?;
         Ok(out.into())
     } else {
         Ok(Value::Undefined)
@@ -1561,16 +1579,16 @@ fn global_to_local<'gc>(
         // It does not search the prototype chain and ignores virtual properties.
         if let (Value::Number(x), Value::Number(y)) = (
             point
-                .get_local_stored("x", activation, false)
+                .get_local_stored(istr!("x"), activation, false)
                 .unwrap_or(Value::Undefined),
             point
-                .get_local_stored("y", activation, false)
+                .get_local_stored(istr!("y"), activation, false)
                 .unwrap_or(Value::Undefined),
         ) {
             let global = Point::from_pixels(x, y);
             let local = movie_clip.global_to_local(global).unwrap_or(global);
-            point.set("x", local.x.to_pixels().into(), activation)?;
-            point.set("y", local.y.to_pixels().into(), activation)?;
+            point.set(istr!("x"), local.x.to_pixels().into(), activation)?;
+            point.set(istr!("y"), local.y.to_pixels().into(), activation)?;
         } else {
             avm_warn!(
                 activation,
