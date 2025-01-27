@@ -13,6 +13,7 @@ use gc_arena::{Collect, GcCell, Mutation};
 use quick_xml::errors::IllFormedError;
 use quick_xml::events::attributes::AttrError;
 use quick_xml::{events::Event, Reader};
+use ruffle_macros::istr;
 
 #[derive(Clone, Copy, Collect)]
 #[collect(no_drop)]
@@ -280,7 +281,7 @@ fn constructor<'gc>(
         let text = text.coerce_to_string(activation)?;
 
         let ignore_whitespace = this
-            .get("ignoreWhite", activation)?
+            .get(istr!("ignoreWhite"), activation)?
             .as_bool(activation.swf_version());
 
         if let Err(e) = xml.parse(activation, &text, ignore_whitespace) {
@@ -325,7 +326,7 @@ fn get_bytes_loaded<'gc>(
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     // Forwards to undocumented property on the object.
-    this.get("_bytesLoaded", activation)
+    this.get(istr!("_bytesLoaded"), activation)
 }
 
 fn get_bytes_total<'gc>(
@@ -334,7 +335,7 @@ fn get_bytes_total<'gc>(
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     // Forwards to undocumented property on the object.
-    this.get("_bytesTotal", activation)
+    this.get(istr!("_bytesTotal"), activation)
 }
 
 fn parse_xml<'gc>(
@@ -351,7 +352,7 @@ fn parse_xml<'gc>(
             let text = text.coerce_to_string(activation)?;
 
             let ignore_whitespace = this
-                .get("ignoreWhite", activation)?
+                .get(istr!("ignoreWhite"), activation)?
                 .as_bool(activation.swf_version());
 
             let result = xml.parse(activation, &text, ignore_whitespace);
@@ -521,37 +522,43 @@ fn spawn_xml_fetch<'gc>(
     };
 
     // Create hidden properties on object.
-    if !this.has_property(activation, "_bytesLoaded".into()) {
+    let bytes_loaded_string = istr!("_bytesLoaded");
+
+    if !this.has_property(activation, bytes_loaded_string) {
         this.define_value(
             activation.gc(),
-            "_bytesLoaded",
+            bytes_loaded_string,
             0.into(),
             Attribute::DONT_DELETE | Attribute::DONT_ENUM,
         );
     } else {
-        this.set("_bytesLoaded", 0.into(), activation)?;
+        this.set(bytes_loaded_string, 0.into(), activation)?;
     }
 
-    if !this.has_property(activation, "_bytesTotal".into()) {
+    let bytes_total_string = istr!("_bytesTotal");
+
+    if !this.has_property(activation, bytes_total_string) {
         this.define_value(
             activation.gc(),
-            "_bytesTotal",
+            bytes_total_string,
             Value::Undefined,
             Attribute::DONT_DELETE | Attribute::DONT_ENUM,
         );
     } else {
-        this.set("_bytesTotal", Value::Undefined, activation)?;
+        this.set(bytes_total_string, Value::Undefined, activation)?;
     }
 
-    if !this.has_property(activation, "loaded".into()) {
+    let loaded_string = istr!("loaded");
+
+    if !this.has_property(activation, loaded_string) {
         this.define_value(
             activation.gc(),
-            "loaded",
+            loaded_string,
             false.into(),
             Attribute::DONT_DELETE | Attribute::DONT_ENUM,
         );
     } else {
-        this.set("loaded", false.into(), activation)?;
+        this.set(loaded_string, false.into(), activation)?;
     }
 
     let future = activation.context.load_manager.load_form_into_load_vars(

@@ -9,6 +9,7 @@ use gc_arena::{Collect, GcCell, Mutation};
 use quick_xml::escape::escape;
 use quick_xml::events::BytesStart;
 use regress::Regex;
+use ruffle_macros::istr;
 use std::fmt;
 use std::sync::OnceLock;
 
@@ -354,7 +355,7 @@ impl<'gc> XmlNode<'gc> {
             None => {
                 let xml_node = activation.context.avm1.prototypes().xml_node_constructor;
                 let prototype = xml_node
-                    .get("prototype", activation)
+                    .get(istr!("prototype"), activation)
                     .map(|p| p.coerce_to_object(activation))
                     .ok();
                 let object = ScriptObject::new(activation.gc(), prototype);
