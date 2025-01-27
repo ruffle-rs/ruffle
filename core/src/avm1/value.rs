@@ -10,6 +10,7 @@ use crate::ecma_conversions::{
 };
 use crate::string::{AvmAtom, AvmString, Integer, WStr};
 use gc_arena::{Collect, Gc};
+use ruffle_macros::istr;
 use std::{borrow::Cow, io::Write, mem::size_of, num::Wrapping};
 
 use super::object_reference::MovieClipReference;
@@ -206,7 +207,7 @@ impl<'gc> Value<'gc> {
     ) -> Result<Value<'gc>, Error<'gc>> {
         Ok(match self {
             Value::Object(object) if object.as_display_object().is_none() => {
-                object.call_method("valueOf".into(), &[], activation, ExecutionReason::Special)?
+                object.call_method(istr!("valueOf"), &[], activation, ExecutionReason::Special)?
             }
             val => val.to_owned(),
         })
@@ -233,7 +234,7 @@ impl<'gc> Value<'gc> {
                 let val = if activation.swf_version() > 5 && is_date {
                     // In SWFv6 and higher, Date objects call `toString`.
                     object.call_method(
-                        "toString".into(),
+                        istr!("toString"),
                         &[],
                         activation,
                         ExecutionReason::Special,
@@ -241,7 +242,7 @@ impl<'gc> Value<'gc> {
                 } else {
                     // Other objects call `valueOf`.
                     object.call_method(
-                        "valueOf".into(),
+                        istr!("valueOf"),
                         &[],
                         activation,
                         ExecutionReason::Special,
@@ -259,7 +260,7 @@ impl<'gc> Value<'gc> {
                 let object = self.coerce_to_object(activation);
                 // Other objects call `valueOf`.
                 let res = object.call_method(
-                    "valueOf".into(),
+                    istr!("valueOf"),
                     &[],
                     activation,
                     ExecutionReason::Special,
@@ -410,8 +411,12 @@ impl<'gc> Value<'gc> {
     ) -> Result<AvmString<'gc>, Error<'gc>> {
         Ok(match self {
             Value::Undefined if activation.swf_version() < 7 => activation.strings().empty(),
-            Value::Bool(true) if activation.swf_version() < 5 => "1".into(),
-            Value::Bool(false) if activation.swf_version() < 5 => "0".into(),
+            Value::Bool(true) if activation.swf_version() < 5 => {
+                activation.strings().ascii_char(b'1')
+            }
+            Value::Bool(false) if activation.swf_version() < 5 => {
+                activation.strings().ascii_char(b'0')
+            }
             Value::Object(object) => {
                 if let Some(object) = object
                     .as_display_object()
@@ -421,7 +426,7 @@ impl<'gc> Value<'gc> {
                     AvmString::new(activation.gc(), object.path())
                 } else {
                     match object.call_method(
-                        "toString".into(),
+                        istr!("toString"),
                         &[],
                         activation,
                         ExecutionReason::Special,
@@ -438,10 +443,10 @@ impl<'gc> Value<'gc> {
                 }
             }
             Value::MovieClip(mcr) => mcr.coerce_to_string(activation),
-            Value::Undefined => "undefined".into(),
-            Value::Null => "null".into(),
-            Value::Bool(true) => "true".into(),
-            Value::Bool(false) => "false".into(),
+            Value::Undefined => istr!("undefined"),
+            Value::Null => istr!("null"),
+            Value::Bool(true) => istr!("true"),
+            Value::Bool(false) => istr!("false"),
             Value::Number(v) => match f64_to_string(*v) {
                 Cow::Borrowed(s) => s.into(),
                 Cow::Owned(s) => AvmString::new_utf8(activation.gc(), s),
@@ -467,16 +472,16 @@ impl<'gc> Value<'gc> {
         }
     }
 
-    pub fn type_of(&self) -> &'static str {
+    pub fn type_of(&self, activation: &mut Activation<'_, 'gc>) -> AvmString<'gc> {
         match self {
-            Value::Undefined => "undefined",
-            Value::Null => "null",
-            Value::Number(_) => "number",
-            Value::Bool(_) => "boolean",
-            Value::String(_) => "string",
-            Value::Object(object) if object.as_executable().is_some() => "function",
-            Value::MovieClip(_) => "movieclip",
-            Value::Object(_) => "object",
+            Value::Undefined => istr!("undefined"),
+            Value::Null => istr!("null"),
+            Value::Number(_) => istr!("number"),
+            Value::Bool(_) => istr!("boolean"),
+            Value::String(_) => istr!("string"),
+            Value::Object(object) if object.as_executable().is_some() => istr!("function"),
+            Value::MovieClip(_) => istr!("movieclip"),
+            Value::Object(_) => istr!("object"),
         }
     }
 
@@ -960,7 +965,7 @@ mod test {
             let o = ScriptObject::new(activation.gc(), Some(protos.object));
             o.define_value(
                 activation.gc(),
-                "valueOf",
+                istr!("valueOf"),
                 valueof.into(),
                 Attribute::empty(),
             );
