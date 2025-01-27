@@ -81,15 +81,17 @@ impl<'gc> AvmStringInterner<'gc> {
             interned.insert_fresh_no_hash(mc, Gc::new(mc, repr))
         };
 
-        let common = Gc::new(mc, CommonStrings::new(&mut intern_from_static));
+        let chars = std::array::from_fn(|i| {
+            let c = &INTERNED_CHARS[i];
+            intern_from_static(std::slice::from_ref(c))
+        });
+
+        let common = Gc::new(mc, CommonStrings::new(&mut intern_from_static, &chars));
 
         Self {
             empty: intern_from_static(b""),
             common,
-            chars: std::array::from_fn(|i| {
-                let c = &INTERNED_CHARS[i];
-                intern_from_static(std::slice::from_ref(c))
-            }),
+            chars,
             interned,
         }
     }
