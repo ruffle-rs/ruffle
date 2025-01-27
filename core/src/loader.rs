@@ -35,6 +35,7 @@ use chardetng::EncodingDetector;
 use encoding_rs::{UTF_8, WINDOWS_1252};
 use gc_arena::{Collect, GcCell};
 use indexmap::IndexMap;
+use ruffle_macros::istr;
 use ruffle_render::utils::{determine_jpeg_tag_format, JpegTagFormat};
 use slotmap::{new_key_type, SlotMap};
 use std::borrow::Borrow;
@@ -1400,9 +1401,9 @@ impl<'gc> Loader<'gc> {
                         let length = body.len();
 
                         // Set the properties used by the getBytesTotal and getBytesLoaded methods.
-                        that.set("_bytesTotal", length.into(), &mut activation)?;
+                        that.set(istr!("_bytesTotal"), length.into(), &mut activation)?;
                         if length > 0 {
-                            that.set("_bytesLoaded", length.into(), &mut activation)?;
+                            that.set(istr!("_bytesLoaded"), length.into(), &mut activation)?;
                         }
 
                         let _ = that.call_method(

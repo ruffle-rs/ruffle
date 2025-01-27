@@ -10,6 +10,7 @@ use crate::avm1::{Object, ScriptObject, TObject, Value};
 use crate::avm1_stub;
 use crate::backend::navigator::{NavigationMethod, Request};
 use crate::string::{AvmString, StringContext};
+use ruffle_macros::istr;
 
 const PROTO_DECLS: &[Declaration] = declare_properties! {
     "load" => method(load; DONT_ENUM | DONT_DELETE);
@@ -79,7 +80,7 @@ fn get_bytes_loaded<'gc>(
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     // Forwards to undocumented property on the object.
-    this.get("_bytesLoaded", activation)
+    this.get(istr!("_bytesLoaded"), activation)
 }
 
 fn get_bytes_total<'gc>(
@@ -88,7 +89,7 @@ fn get_bytes_total<'gc>(
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     // Forwards to undocumented property on the object.
-    this.get("_bytesTotal", activation)
+    this.get(istr!("_bytesTotal"), activation)
 }
 
 fn load<'gc>(
@@ -121,7 +122,7 @@ fn on_data<'gc>(
                 activation,
                 ExecutionReason::FunctionCall,
             )?;
-            this.set("loaded", true.into(), activation)?;
+            this.set(istr!("loaded"), true.into(), activation)?;
             true
         }
     };
@@ -180,7 +181,7 @@ fn send<'gc>(
             v.ok()
                 .unwrap_or(Value::Undefined)
                 .coerce_to_string(activation)
-                .unwrap_or_else(|_| "undefined".into())
+                .unwrap_or_else(|_| istr!("undefined"))
                 .to_string(),
         );
     }
@@ -236,7 +237,7 @@ fn to_string<'gc>(
             v.ok()
                 .unwrap_or(Value::Undefined)
                 .coerce_to_string(activation)
-                .unwrap_or_else(|_| "undefined".into())
+                .unwrap_or_else(|_| istr!("undefined"))
                 .to_string(),
         );
     }
@@ -270,37 +271,43 @@ fn spawn_load_var_fetch<'gc>(
     activation.context.navigator.spawn_future(future);
 
     // Create hidden properties on object.
-    if !loader_object.has_property(activation, "_bytesLoaded".into()) {
+    let bytes_loaded_string = istr!("_bytesLoaded");
+
+    if !loader_object.has_property(activation, bytes_loaded_string) {
         loader_object.define_value(
             activation.gc(),
-            "_bytesLoaded",
+            bytes_loaded_string,
             0.into(),
             Attribute::DONT_DELETE | Attribute::DONT_ENUM,
         );
     } else {
-        loader_object.set("_bytesLoaded", 0.into(), activation)?;
+        loader_object.set(bytes_loaded_string, 0.into(), activation)?;
     }
 
-    if !loader_object.has_property(activation, "_bytesTotal".into()) {
+    let bytes_total_string = istr!("_bytesTotal");
+
+    if !loader_object.has_property(activation, bytes_total_string) {
         loader_object.define_value(
             activation.gc(),
-            "_bytesTotal",
+            bytes_total_string,
             Value::Undefined,
             Attribute::DONT_DELETE | Attribute::DONT_ENUM,
         );
     } else {
-        loader_object.set("_bytesTotal", Value::Undefined, activation)?;
+        loader_object.set(bytes_total_string, Value::Undefined, activation)?;
     }
 
-    if !loader_object.has_property(activation, "loaded".into()) {
+    let loaded_string = istr!("loaded");
+
+    if !loader_object.has_property(activation, loaded_string) {
         loader_object.define_value(
             activation.gc(),
-            "loaded",
+            loaded_string,
             false.into(),
             Attribute::DONT_DELETE | Attribute::DONT_ENUM,
         );
     } else {
-        loader_object.set("loaded", false.into(), activation)?;
+        loader_object.set(loaded_string, false.into(), activation)?;
     }
 
     Ok(true.into())
