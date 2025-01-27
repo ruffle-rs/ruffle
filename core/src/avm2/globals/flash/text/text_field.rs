@@ -11,6 +11,7 @@ use crate::display_object::{AutoSizeMode, EditText, TDisplayObject, TextSelectio
 use crate::html::TextFormat;
 use crate::string::AvmString;
 use crate::{avm2_stub_getter, avm2_stub_setter};
+use ruffle_macros::istr;
 use swf::{Color, Point};
 
 pub fn text_field_allocator<'gc>(
@@ -62,7 +63,7 @@ pub fn set_always_show_selection<'gc>(
 }
 
 pub fn get_auto_size<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -72,12 +73,14 @@ pub fn get_auto_size<'gc>(
         .as_display_object()
         .and_then(|this| this.as_edit_text())
     {
-        return Ok(match this.autosize() {
-            AutoSizeMode::None => "none".into(),
-            AutoSizeMode::Left => "left".into(),
-            AutoSizeMode::Center => "center".into(),
-            AutoSizeMode::Right => "right".into(),
-        });
+        let autosize = match this.autosize() {
+            AutoSizeMode::None => istr!("none"),
+            AutoSizeMode::Left => istr!("left"),
+            AutoSizeMode::Center => istr!("center"),
+            AutoSizeMode::Right => istr!("right"),
+        };
+
+        return Ok(autosize.into());
     }
 
     Ok(Value::Undefined)
@@ -656,7 +659,7 @@ pub fn get_text_width<'gc>(
 }
 
 pub fn get_type<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -666,10 +669,12 @@ pub fn get_type<'gc>(
         .as_display_object()
         .and_then(|this| this.as_edit_text())
     {
-        match this.is_editable() {
-            true => return Ok("input".into()),
-            false => return Ok("dynamic".into()),
-        }
+        let type_ = match this.is_editable() {
+            true => istr!("input"),
+            false => istr!("dynamic"),
+        };
+
+        return Ok(type_.into());
     }
 
     Ok(Value::Undefined)
@@ -1009,7 +1014,7 @@ pub fn set_text_format<'gc>(
 }
 
 pub fn get_anti_alias_type<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -1019,11 +1024,13 @@ pub fn get_anti_alias_type<'gc>(
         .as_display_object()
         .and_then(|this| this.as_edit_text())
     {
-        return if this.render_settings().is_advanced() {
-            Ok("advanced".into())
+        let anti_alias_type = if this.render_settings().is_advanced() {
+            istr!("advanced")
         } else {
-            Ok("normal".into())
+            istr!("normal")
         };
+
+        return Ok(anti_alias_type.into());
     }
 
     Ok(Value::Undefined)
@@ -1053,7 +1060,7 @@ pub fn set_anti_alias_type<'gc>(
 }
 
 pub fn get_grid_fit_type<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -1063,11 +1070,13 @@ pub fn get_grid_fit_type<'gc>(
         .as_display_object()
         .and_then(|this| this.as_edit_text())
     {
-        return match this.render_settings().grid_fit() {
-            swf::TextGridFit::None => Ok("none".into()),
-            swf::TextGridFit::Pixel => Ok("pixel".into()),
-            swf::TextGridFit::SubPixel => Ok("subpixel".into()),
+        let grid_fit_type = match this.render_settings().grid_fit() {
+            swf::TextGridFit::None => istr!("none"),
+            swf::TextGridFit::Pixel => istr!("pixel"),
+            swf::TextGridFit::SubPixel => istr!("subpixel"),
         };
+
+        return Ok(grid_fit_type.into());
     }
 
     Ok(Value::Undefined)

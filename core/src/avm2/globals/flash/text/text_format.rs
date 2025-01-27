@@ -10,8 +10,10 @@ use crate::string::{AvmString, WStr};
 
 pub use crate::avm2::object::textformat_allocator as text_format_allocator;
 
+use ruffle_macros::istr;
+
 pub fn get_align<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -22,10 +24,10 @@ pub fn get_align<'gc>(
             .align
             .as_ref()
             .map_or(Value::Null, |align| match align {
-                swf::TextAlign::Left => "left".into(),
-                swf::TextAlign::Center => "center".into(),
-                swf::TextAlign::Right => "right".into(),
-                swf::TextAlign::Justify => "justify".into(),
+                swf::TextAlign::Left => istr!("left").into(),
+                swf::TextAlign::Center => istr!("center").into(),
+                swf::TextAlign::Right => istr!("right").into(),
+                swf::TextAlign::Justify => istr!("justify").into(),
             }));
     }
 
@@ -206,7 +208,7 @@ pub fn set_color<'gc>(
 }
 
 pub fn get_display<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -217,9 +219,9 @@ pub fn get_display<'gc>(
             .display
             .as_ref()
             .map_or(Value::Null, |display| match display {
-                TextDisplay::Block => "block".into(),
-                TextDisplay::Inline => "inline".into(),
-                TextDisplay::None => "none".into(),
+                TextDisplay::Block => istr!("block").into(),
+                TextDisplay::Inline => istr!("inline").into(),
+                TextDisplay::None => istr!("none").into(),
             }));
     }
 

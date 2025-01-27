@@ -13,6 +13,8 @@ pub use crate::avm2::object::font_allocator;
 use crate::character::Character;
 use crate::font::{Font, FontType};
 
+use ruffle_macros::istr;
+
 /// Implements `Font.fontName`
 pub fn get_font_name<'gc>(
     activation: &mut Activation<'_, 'gc>,
@@ -30,19 +32,21 @@ pub fn get_font_name<'gc>(
 
 /// Implements `Font.fontStyle`
 pub fn get_font_style<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
     if let Some(font) = this.as_font() {
-        return match (font.descriptor().bold(), font.descriptor().italic()) {
-            (false, false) => Ok("regular".into()),
-            (false, true) => Ok("italic".into()),
-            (true, false) => Ok("bold".into()),
-            (true, true) => Ok("boldItalic".into()),
+        let font_style = match (font.descriptor().bold(), font.descriptor().italic()) {
+            (false, false) => istr!("regular"),
+            (false, true) => istr!("italic"),
+            (true, false) => istr!("bold"),
+            (true, true) => istr!("boldItalic"),
         };
+
+        return Ok(font_style.into());
     }
 
     Ok(Value::Null)
@@ -50,19 +54,20 @@ pub fn get_font_style<'gc>(
 
 /// Implements `Font.fontType`
 pub fn get_font_type<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
     if let Some(font) = this.as_font() {
-        return Ok(match font.font_type() {
-            FontType::Embedded => "embedded",
-            FontType::EmbeddedCFF => "embeddedCFF",
-            FontType::Device => "device",
-        }
-        .into());
+        let font_type = match font.font_type() {
+            FontType::Embedded => istr!("embedded"),
+            FontType::EmbeddedCFF => istr!("embeddedCFF"),
+            FontType::Device => istr!("device"),
+        };
+
+        return Ok(font_type.into());
     }
 
     Ok(Value::Null)
