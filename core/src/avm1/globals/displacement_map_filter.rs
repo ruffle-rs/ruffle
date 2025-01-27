@@ -7,10 +7,10 @@ use crate::avm1::property_decl::{define_properties_on, Declaration};
 use crate::avm1::{Activation, Error, Object, ScriptObject, TObject, Value};
 use crate::bitmap::bitmap_data::BitmapDataWrapper;
 use crate::context::UpdateContext;
-use crate::string::{AvmString, FromWStr, StringContext, WStr};
+use crate::string::StringContext;
 use gc_arena::{Collect, GcCell, Mutation};
+use ruffle_macros::istr;
 use ruffle_render::filters::DisplacementMapFilterMode;
-use std::convert::Infallible;
 use std::fmt::Debug;
 use swf::{Color, Point};
 
@@ -22,33 +22,6 @@ enum Mode {
     Clamp,
     Ignore,
     Color,
-}
-
-impl From<Mode> for &'static WStr {
-    fn from(mode: Mode) -> &'static WStr {
-        match mode {
-            Mode::Wrap => WStr::from_units(b"wrap"),
-            Mode::Clamp => WStr::from_units(b"clamp"),
-            Mode::Ignore => WStr::from_units(b"ignore"),
-            Mode::Color => WStr::from_units(b"color"),
-        }
-    }
-}
-
-impl FromWStr for Mode {
-    type Err = Infallible;
-
-    fn from_wstr(s: &WStr) -> Result<Self, Self::Err> {
-        if s == WStr::from_units(b"clamp") {
-            Ok(Self::Clamp)
-        } else if s == WStr::from_units(b"ignore") {
-            Ok(Self::Ignore)
-        } else if s == WStr::from_units(b"color") {
-            Ok(Self::Color)
-        } else {
-            Ok(Self::Wrap)
-        }
-    }
 }
 
 // TODO: Merge these types together
@@ -268,7 +241,18 @@ impl<'gc> DisplacementMapFilter<'gc> {
         value: Option<&Value<'gc>>,
     ) -> Result<(), Error<'gc>> {
         if let Some(value) = value {
-            let mode = value.coerce_to_string(activation)?.parse().unwrap();
+            let mode = value.coerce_to_string(activation)?;
+
+            let mode = if &mode == b"clamp" {
+                Mode::Clamp
+            } else if &mode == b"ignore" {
+                Mode::Ignore
+            } else if &mode == b"color" {
+                Mode::Color
+            } else {
+                Mode::Wrap
+            };
+
             self.0.write(activation.gc()).mode = mode;
         }
         Ok(())
@@ -417,8 +401,14 @@ fn method<'gc>(
             Value::Undefined
         }
         GET_MODE => {
-            let mode: &WStr = this.mode().into();
-            AvmString::from_static_wstr(activation.gc(), mode).into()
+            let mode = match this.mode() {
+                Mode::Wrap => istr!("wrap"),
+                Mode::Clamp => istr!("clamp"),
+                Mode::Ignore => istr!("ignore"),
+                Mode::Color => istr!("color"),
+            };
+
+            mode.into()
         }
         SET_MODE => {
             this.set_mode(activation, args.get(0))?;
