@@ -138,15 +138,16 @@ pub enum DisplacementMapFilterComponent {
     Red,
 }
 
-#[derive(Debug, Clone, Copy, Eq, PartialEq)]
+#[derive(Debug, Clone, Copy, Default, Eq, PartialEq)]
 pub enum DisplacementMapFilterMode {
     Clamp,
     Color,
     Ignore,
+    #[default]
     Wrap,
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Clone, Debug, Default, PartialEq)]
 pub struct DisplacementMapFilter {
     pub color: Color,
     pub component_x: u8,
@@ -182,22 +183,5 @@ impl DisplacementMapFilter {
         // } else {
         //     source_rect
         // }
-    }
-}
-
-impl Default for DisplacementMapFilter {
-    fn default() -> Self {
-        Self {
-            color: Color::from_rgba(0),
-            component_x: 0,
-            component_y: 0,
-            map_bitmap: None,
-            map_point: (0, 0),
-            mode: DisplacementMapFilterMode::Wrap,
-            scale_x: 0.0,
-            scale_y: 0.0,
-            viewscale_x: 1.0,
-            viewscale_y: 1.0,
-        }
     }
 }

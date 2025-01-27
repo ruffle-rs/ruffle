@@ -14,39 +14,6 @@ use ruffle_render::filters::DisplacementMapFilterMode;
 use std::fmt::Debug;
 use swf::{Color, Point};
 
-#[derive(Copy, Clone, Collect, Debug, Default)]
-#[collect(require_static)]
-enum Mode {
-    #[default]
-    Wrap,
-    Clamp,
-    Ignore,
-    Color,
-}
-
-// TODO: Merge these types together
-impl From<DisplacementMapFilterMode> for Mode {
-    fn from(value: DisplacementMapFilterMode) -> Self {
-        match value {
-            DisplacementMapFilterMode::Clamp => Mode::Clamp,
-            DisplacementMapFilterMode::Color => Mode::Color,
-            DisplacementMapFilterMode::Ignore => Mode::Ignore,
-            DisplacementMapFilterMode::Wrap => Mode::Wrap,
-        }
-    }
-}
-
-impl From<Mode> for DisplacementMapFilterMode {
-    fn from(value: Mode) -> Self {
-        match value {
-            Mode::Wrap => DisplacementMapFilterMode::Wrap,
-            Mode::Clamp => DisplacementMapFilterMode::Clamp,
-            Mode::Ignore => DisplacementMapFilterMode::Ignore,
-            Mode::Color => DisplacementMapFilterMode::Color,
-        }
-    }
-}
-
 #[derive(Clone, Collect, Debug, Default)]
 #[collect(no_drop)]
 struct DisplacementMapFilterData<'gc> {
@@ -57,7 +24,10 @@ struct DisplacementMapFilterData<'gc> {
     component_y: i32,
     scale_x: f32,
     scale_y: f32,
-    mode: Mode,
+
+    #[collect(require_static)]
+    mode: DisplacementMapFilterMode,
+
     #[collect(require_static)]
     color: Color,
 }
@@ -73,7 +43,7 @@ impl<'gc> From<ruffle_render::filters::DisplacementMapFilter> for DisplacementMa
             component_y: filter.component_y as i32,
             scale_x: filter.scale_x,
             scale_y: filter.scale_y,
-            mode: filter.mode.into(),
+            mode: filter.mode,
             color: filter.color,
         }
     }
@@ -231,7 +201,7 @@ impl<'gc> DisplacementMapFilter<'gc> {
         Ok(())
     }
 
-    fn mode(&self) -> Mode {
+    fn mode(&self) -> DisplacementMapFilterMode {
         self.0.read().mode
     }
 
@@ -244,13 +214,13 @@ impl<'gc> DisplacementMapFilter<'gc> {
             let mode = value.coerce_to_string(activation)?;
 
             let mode = if &mode == b"clamp" {
-                Mode::Clamp
+                DisplacementMapFilterMode::Clamp
             } else if &mode == b"ignore" {
-                Mode::Ignore
+                DisplacementMapFilterMode::Ignore
             } else if &mode == b"color" {
-                Mode::Color
+                DisplacementMapFilterMode::Color
             } else {
-                Mode::Wrap
+                DisplacementMapFilterMode::Wrap
             };
 
             self.0.write(activation.gc()).mode = mode;
@@ -402,10 +372,10 @@ fn method<'gc>(
         }
         GET_MODE => {
             let mode = match this.mode() {
-                Mode::Wrap => istr!("wrap"),
-                Mode::Clamp => istr!("clamp"),
-                Mode::Ignore => istr!("ignore"),
-                Mode::Color => istr!("color"),
+                DisplacementMapFilterMode::Wrap => istr!("wrap"),
+                DisplacementMapFilterMode::Clamp => istr!("clamp"),
+                DisplacementMapFilterMode::Ignore => istr!("ignore"),
+                DisplacementMapFilterMode::Color => istr!("color"),
             };
 
             mode.into()
