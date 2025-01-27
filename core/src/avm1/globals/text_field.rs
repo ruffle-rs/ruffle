@@ -10,6 +10,7 @@ use crate::display_object::{
 use crate::html::TextFormat;
 use crate::string::{AvmString, StringContext, WStr};
 use gc_arena::Gc;
+use ruffle_macros::istr;
 use swf::Color;
 
 macro_rules! tf_method {
@@ -589,14 +590,16 @@ pub fn set_word_wrap<'gc>(
 
 pub fn auto_size<'gc>(
     this: EditText<'gc>,
-    _activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
-    Ok(match this.autosize() {
-        AutoSizeMode::None => "none".into(),
-        AutoSizeMode::Left => "left".into(),
-        AutoSizeMode::Center => "center".into(),
-        AutoSizeMode::Right => "right".into(),
-    })
+    let autosize = match this.autosize() {
+        AutoSizeMode::None => istr!("none"),
+        AutoSizeMode::Left => istr!("left"),
+        AutoSizeMode::Center => istr!("center"),
+        AutoSizeMode::Right => istr!("right"),
+    };
+
+    Ok(autosize.into())
 }
 
 pub fn set_auto_size<'gc>(
@@ -618,11 +621,11 @@ pub fn set_auto_size<'gc>(
 
 pub fn get_type<'gc>(
     this: EditText<'gc>,
-    _activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let tf_type = match this.is_editable() {
-        true => "input",
-        false => "dynamic",
+        true => istr!("input"),
+        false => istr!("dynamic"),
     };
     Ok(tf_type.into())
 }
@@ -726,12 +729,12 @@ pub fn bottom_scroll<'gc>(
 
 pub fn anti_alias_type<'gc>(
     this: EditText<'gc>,
-    _activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     if this.render_settings().is_advanced() {
-        Ok("advanced".into())
+        Ok(istr!("advanced").into())
     } else {
-        Ok("normal".into())
+        Ok(istr!("normal").into())
     }
 }
 
@@ -754,13 +757,15 @@ pub fn set_anti_alias_type<'gc>(
 
 pub fn grid_fit_type<'gc>(
     this: EditText<'gc>,
-    _activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
-    match this.render_settings().grid_fit() {
-        swf::TextGridFit::None => Ok("none".into()),
-        swf::TextGridFit::Pixel => Ok("pixel".into()),
-        swf::TextGridFit::SubPixel => Ok("subpixel".into()),
-    }
+    let grid_fit_type = match this.render_settings().grid_fit() {
+        swf::TextGridFit::None => istr!("none"),
+        swf::TextGridFit::Pixel => istr!("pixel"),
+        swf::TextGridFit::SubPixel => istr!("subpixel"),
+    };
+
+    Ok(grid_fit_type.into())
 }
 
 pub fn set_grid_fit_type<'gc>(

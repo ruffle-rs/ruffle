@@ -17,6 +17,7 @@ use crate::string::StringContext;
 use crate::swf::BlendMode;
 use crate::{avm1_stub, avm_error};
 use gc_arena::{GcCell, Mutation};
+use ruffle_macros::istr;
 use ruffle_render::transform::Transform;
 
 const PROTO_DECLS: &[Declaration] = declare_properties! {
@@ -318,20 +319,24 @@ fn copy_channel<'gc>(
         if !bitmap_data.disposed() {
             if let NativeObject::BitmapData(source_bitmap) = source_bitmap.native() {
                 //TODO: what if source is disposed
-                let min_x = dest_point.get("x", activation)?.coerce_to_i32(activation)?;
-                let min_y = dest_point.get("y", activation)?.coerce_to_i32(activation)?;
+                let min_x = dest_point
+                    .get(istr!("x"), activation)?
+                    .coerce_to_i32(activation)?;
+                let min_y = dest_point
+                    .get(istr!("y"), activation)?
+                    .coerce_to_i32(activation)?;
 
                 let src_min_x = source_rect
-                    .get("x", activation)?
+                    .get(istr!("x"), activation)?
                     .coerce_to_i32(activation)?;
                 let src_min_y = source_rect
-                    .get("y", activation)?
+                    .get(istr!("y"), activation)?
                     .coerce_to_i32(activation)?;
                 let src_width = source_rect
-                    .get("width", activation)?
+                    .get(istr!("width"), activation)?
                     .coerce_to_i32(activation)?;
                 let src_height = source_rect
-                    .get("height", activation)?
+                    .get(istr!("height"), activation)?
                     .coerce_to_i32(activation)?;
 
                 operations::copy_channel(
@@ -368,13 +373,17 @@ fn fill_rect<'gc>(
             if let Some(color_val) = args.get(1) {
                 let color = color_val.coerce_to_u32(activation)?;
 
-                let x = rectangle.get("x", activation)?.coerce_to_i32(activation)?;
-                let y = rectangle.get("y", activation)?.coerce_to_i32(activation)?;
+                let x = rectangle
+                    .get(istr!("x"), activation)?
+                    .coerce_to_i32(activation)?;
+                let y = rectangle
+                    .get(istr!("y"), activation)?
+                    .coerce_to_i32(activation)?;
                 let width = rectangle
-                    .get("width", activation)?
+                    .get(istr!("width"), activation)?
                     .coerce_to_i32(activation)?;
                 let height = rectangle
-                    .get("height", activation)?
+                    .get(istr!("height"), activation)?
                     .coerce_to_i32(activation)?;
 
                 operations::fill_rect(
@@ -404,7 +413,7 @@ fn clone<'gc>(
         if !bitmap_data.disposed() {
             return Ok(new_bitmap_data(
                 activation.gc(),
-                this.get_local_stored("__proto__", activation, false),
+                this.get_local_stored(istr!("__proto__"), activation, false),
                 bitmap_data.clone_data(activation.context.renderer),
             )
             .into());
@@ -616,16 +625,16 @@ fn apply_filter<'gc>(
                 .coerce_to_object(activation);
 
             let src_min_x = source_rect
-                .get("x", activation)?
+                .get(istr!("x"), activation)?
                 .coerce_to_f64(activation)? as u32;
             let src_min_y = source_rect
-                .get("y", activation)?
+                .get(istr!("y"), activation)?
                 .coerce_to_f64(activation)? as u32;
             let src_width = source_rect
-                .get("width", activation)?
+                .get(istr!("width"), activation)?
                 .coerce_to_f64(activation)? as u32;
             let src_height = source_rect
-                .get("height", activation)?
+                .get(istr!("height"), activation)?
                 .coerce_to_f64(activation)? as u32;
 
             let dest_point = args
@@ -633,8 +642,12 @@ fn apply_filter<'gc>(
                 .unwrap_or(&Value::Undefined)
                 .coerce_to_object(activation);
 
-            let dest_x = dest_point.get("x", activation)?.coerce_to_f64(activation)? as u32;
-            let dest_y = dest_point.get("y", activation)?.coerce_to_f64(activation)? as u32;
+            let dest_x = dest_point
+                .get(istr!("x"), activation)?
+                .coerce_to_f64(activation)? as u32;
+            let dest_y = dest_point
+                .get(istr!("y"), activation)?
+                .coerce_to_f64(activation)? as u32;
 
             let filter_object = args
                 .get(3)
@@ -685,13 +698,17 @@ fn color_transform<'gc>(
             if let [rectangle, color_transform, ..] = args {
                 // TODO: Re-use `object_to_rectangle` in `movie_clip.rs`.
                 let rectangle = rectangle.coerce_to_object(activation);
-                let x = rectangle.get("x", activation)?.coerce_to_f64(activation)? as i32;
-                let y = rectangle.get("y", activation)?.coerce_to_f64(activation)? as i32;
+                let x = rectangle
+                    .get(istr!("x"), activation)?
+                    .coerce_to_f64(activation)? as i32;
+                let y = rectangle
+                    .get(istr!("y"), activation)?
+                    .coerce_to_f64(activation)? as i32;
                 let width = rectangle
-                    .get("width", activation)?
+                    .get(istr!("width"), activation)?
                     .coerce_to_f64(activation)? as i32;
                 let height = rectangle
-                    .get("height", activation)?
+                    .get(istr!("height"), activation)?
                     .coerce_to_f64(activation)? as i32;
 
                 let x_min = x.max(0) as u32;
@@ -804,8 +821,8 @@ fn perlin_noise<'gc>(
             let octave_offsets: Result<Vec<_>, Error<'gc>> = (0..num_octaves)
                 .map(|i| {
                     if let Value::Object(e) = offsets.get_element(activation, i as i32) {
-                        let x = e.get("x", activation)?.coerce_to_f64(activation)?;
-                        let y = e.get("y", activation)?.coerce_to_f64(activation)?;
+                        let x = e.get(istr!("x"), activation)?.coerce_to_f64(activation)?;
+                        let y = e.get(istr!("y"), activation)?.coerce_to_f64(activation)?;
                         Ok((x, y))
                     } else {
                         Ok((0.0, 0.0))
@@ -844,8 +861,8 @@ fn hit_test<'gc>(
                 .unwrap_or(&Value::Undefined)
                 .coerce_to_object(activation);
             let top_left = if let (Some(x), Some(y)) = (
-                first_point.get_local_stored("x", activation, false),
-                first_point.get_local_stored("y", activation, false),
+                first_point.get_local_stored(istr!("x"), activation, false),
+                first_point.get_local_stored(istr!("y"), activation, false),
             ) {
                 (x.coerce_to_i32(activation)?, y.coerce_to_i32(activation)?)
             } else {
@@ -875,8 +892,8 @@ fn hit_test<'gc>(
                     .unwrap_or(&Value::Undefined)
                     .coerce_to_object(activation);
                 let second_point = if let (Some(x), Some(y)) = (
-                    second_point.get_local_stored("x", activation, false),
-                    second_point.get_local_stored("y", activation, false),
+                    second_point.get_local_stored(istr!("x"), activation, false),
+                    second_point.get_local_stored(istr!("y"), activation, false),
                 ) {
                     (x.coerce_to_i32(activation)?, y.coerce_to_i32(activation)?)
                 } else {
@@ -903,10 +920,10 @@ fn hit_test<'gc>(
                 // Determine what kind of Object we have, point or rectangle.
                 // Duck-typed dumb objects are allowed.
                 let compare_fields = (
-                    compare_object.get_local_stored("x", activation, false),
-                    compare_object.get_local_stored("y", activation, false),
-                    compare_object.get_local_stored("width", activation, false),
-                    compare_object.get_local_stored("height", activation, false),
+                    compare_object.get_local_stored(istr!("x"), activation, false),
+                    compare_object.get_local_stored(istr!("y"), activation, false),
+                    compare_object.get_local_stored(istr!("width"), activation, false),
+                    compare_object.get_local_stored(istr!("height"), activation, false),
                 );
                 match compare_fields {
                     // BitmapData vs. point
@@ -973,16 +990,16 @@ fn copy_pixels<'gc>(
                 .coerce_to_object(activation);
 
             let src_min_x = source_rect
-                .get("x", activation)?
+                .get(istr!("x"), activation)?
                 .coerce_to_f64(activation)? as i32;
             let src_min_y = source_rect
-                .get("y", activation)?
+                .get(istr!("y"), activation)?
                 .coerce_to_f64(activation)? as i32;
             let src_width = source_rect
-                .get("width", activation)?
+                .get(istr!("width"), activation)?
                 .coerce_to_f64(activation)? as i32;
             let src_height = source_rect
-                .get("height", activation)?
+                .get(istr!("height"), activation)?
                 .coerce_to_f64(activation)? as i32;
 
             let dest_point = args
@@ -990,8 +1007,12 @@ fn copy_pixels<'gc>(
                 .unwrap_or(&Value::Undefined)
                 .coerce_to_object(activation);
 
-            let dest_x = dest_point.get("x", activation)?.coerce_to_f64(activation)? as i32;
-            let dest_y = dest_point.get("y", activation)?.coerce_to_f64(activation)? as i32;
+            let dest_x = dest_point
+                .get(istr!("x"), activation)?
+                .coerce_to_f64(activation)? as i32;
+            let dest_y = dest_point
+                .get(istr!("y"), activation)?
+                .coerce_to_f64(activation)? as i32;
 
             if let NativeObject::BitmapData(src_bitmap) = source_bitmap.native() {
                 if !src_bitmap.disposed() {
@@ -1018,12 +1039,12 @@ fn copy_pixels<'gc>(
                                 .coerce_to_object(activation);
 
                             let alpha_x = alpha_point
-                                .get("x", activation)?
+                                .get(istr!("x"), activation)?
                                 .coerce_to_f64(activation)?
                                 as i32;
 
                             let alpha_y = alpha_point
-                                .get("y", activation)?
+                                .get(istr!("y"), activation)?
                                 .coerce_to_f64(activation)?
                                 as i32;
 
@@ -1078,16 +1099,16 @@ fn merge<'gc>(
                 .coerce_to_object(activation);
 
             let src_min_x = source_rect
-                .get("x", activation)?
+                .get(istr!("x"), activation)?
                 .coerce_to_f64(activation)? as i32;
             let src_min_y = source_rect
-                .get("y", activation)?
+                .get(istr!("y"), activation)?
                 .coerce_to_f64(activation)? as i32;
             let src_width = source_rect
-                .get("width", activation)?
+                .get(istr!("width"), activation)?
                 .coerce_to_f64(activation)? as i32;
             let src_height = source_rect
-                .get("height", activation)?
+                .get(istr!("height"), activation)?
                 .coerce_to_f64(activation)? as i32;
 
             let dest_point = args
@@ -1095,8 +1116,12 @@ fn merge<'gc>(
                 .unwrap_or(&Value::Undefined)
                 .coerce_to_object(activation);
 
-            let dest_x = dest_point.get("x", activation)?.coerce_to_f64(activation)? as i32;
-            let dest_y = dest_point.get("y", activation)?.coerce_to_f64(activation)? as i32;
+            let dest_x = dest_point
+                .get(istr!("x"), activation)?
+                .coerce_to_f64(activation)? as i32;
+            let dest_y = dest_point
+                .get(istr!("y"), activation)?
+                .coerce_to_f64(activation)? as i32;
 
             let red_mult = args
                 .get(3)
@@ -1157,16 +1182,16 @@ fn palette_map<'gc>(
                 .coerce_to_object(activation);
 
             let src_min_x = source_rect
-                .get("x", activation)?
+                .get(istr!("x"), activation)?
                 .coerce_to_f64(activation)? as i32;
             let src_min_y = source_rect
-                .get("y", activation)?
+                .get(istr!("y"), activation)?
                 .coerce_to_f64(activation)? as i32;
             let src_width = source_rect
-                .get("width", activation)?
+                .get(istr!("width"), activation)?
                 .coerce_to_f64(activation)? as i32;
             let src_height = source_rect
-                .get("height", activation)?
+                .get(istr!("height"), activation)?
                 .coerce_to_f64(activation)? as i32;
 
             let dest_point = args
@@ -1174,8 +1199,12 @@ fn palette_map<'gc>(
                 .unwrap_or(&Value::Undefined)
                 .coerce_to_object(activation);
 
-            let dest_x = dest_point.get("x", activation)?.coerce_to_f64(activation)? as i32;
-            let dest_y = dest_point.get("y", activation)?.coerce_to_f64(activation)? as i32;
+            let dest_x = dest_point
+                .get(istr!("x"), activation)?
+                .coerce_to_f64(activation)? as i32;
+            let dest_y = dest_point
+                .get(istr!("y"), activation)?
+                .coerce_to_f64(activation)? as i32;
 
             let mut get_channel = |index: usize, shift: usize| -> Result<[u32; 256], Error<'gc>> {
                 let arg = args.get(index).unwrap_or(&Value::Null);
@@ -1237,10 +1266,10 @@ fn pixel_dissolve<'gc>(
                 .coerce_to_object(activation);
             let (src_min_x, src_min_y, src_width, src_height) =
                 if let (Some(x), Some(y), Some(width), Some(height)) = (
-                    source_rect.get_local_stored("x", activation, false),
-                    source_rect.get_local_stored("y", activation, false),
-                    source_rect.get_local_stored("width", activation, false),
-                    source_rect.get_local_stored("height", activation, false),
+                    source_rect.get_local_stored(istr!("x"), activation, false),
+                    source_rect.get_local_stored(istr!("y"), activation, false),
+                    source_rect.get_local_stored(istr!("width"), activation, false),
+                    source_rect.get_local_stored(istr!("height"), activation, false),
                 ) {
                     (
                         x.coerce_to_f64(activation)? as i32,
@@ -1259,8 +1288,12 @@ fn pixel_dissolve<'gc>(
                         .get(2)
                         .unwrap_or(&Value::Undefined)
                         .coerce_to_object(activation);
-                    let dest_x = dest_point.get("x", activation)?.coerce_to_f64(activation)? as i32;
-                    let dest_y = dest_point.get("y", activation)?.coerce_to_f64(activation)? as i32;
+                    let dest_x = dest_point
+                        .get(istr!("x"), activation)?
+                        .coerce_to_f64(activation)? as i32;
+                    let dest_y = dest_point
+                        .get(istr!("y"), activation)?
+                        .coerce_to_f64(activation)? as i32;
                     let dest_point = (dest_x, dest_y);
 
                     let random_seed = match args.get(3) {
@@ -1347,16 +1380,16 @@ fn threshold<'gc>(
                 .coerce_to_object(activation);
 
             let src_min_x = source_rect
-                .get("x", activation)?
+                .get(istr!("x"), activation)?
                 .coerce_to_f64(activation)? as i32;
             let src_min_y = source_rect
-                .get("y", activation)?
+                .get(istr!("y"), activation)?
                 .coerce_to_f64(activation)? as i32;
             let src_width = source_rect
-                .get("width", activation)?
+                .get(istr!("width"), activation)?
                 .coerce_to_f64(activation)? as i32;
             let src_height = source_rect
-                .get("height", activation)?
+                .get(istr!("height"), activation)?
                 .coerce_to_f64(activation)? as i32;
 
             let dest_point = args
@@ -1364,8 +1397,12 @@ fn threshold<'gc>(
                 .unwrap_or(&Value::Undefined)
                 .coerce_to_object(activation);
 
-            let dest_x = dest_point.get("x", activation)?.coerce_to_f64(activation)? as i32;
-            let dest_y = dest_point.get("y", activation)?.coerce_to_f64(activation)? as i32;
+            let dest_x = dest_point
+                .get(istr!("x"), activation)?
+                .coerce_to_f64(activation)? as i32;
+            let dest_y = dest_point
+                .get(istr!("y"), activation)?
+                .coerce_to_f64(activation)? as i32;
 
             let operation = args.get(3);
             let operation = match ThresholdOperation::from_wstr(
@@ -1470,7 +1507,7 @@ fn compare<'gc>(
     ) {
         Some(bitmap_data) => Ok(new_bitmap_data(
             activation.gc(),
-            this.get_local_stored("__proto__", activation, false),
+            this.get_local_stored(istr!("__proto__"), activation, false),
             bitmap_data,
         )
         .into()),
@@ -1515,7 +1552,7 @@ fn load_bitmap<'gc>(
     );
     Ok(new_bitmap_data(
         activation.gc(),
-        this.get_local_stored("prototype", activation, false),
+        this.get_local_stored(istr!("prototype"), activation, false),
         bitmap_data,
     )
     .into())

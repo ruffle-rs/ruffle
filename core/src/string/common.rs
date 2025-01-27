@@ -5,6 +5,7 @@ use gc_arena::{Collect, Gc};
 #[derive(Clone, Collect)]
 #[collect(no_drop)]
 pub struct CommonStrings<'gc> {
+    pub str___proto__: AvmString<'gc>,
     pub str_access: AvmString<'gc>,
     pub str_accessors: AvmString<'gc>,
     pub str_advanced: AvmString<'gc>,
@@ -73,6 +74,7 @@ pub struct CommonStrings<'gc> {
     pub str_parameters: AvmString<'gc>,
     pub str_pixel: AvmString<'gc>,
     pub str_prefix: AvmString<'gc>,
+    pub str_prototype: AvmString<'gc>,
     pub str_readonly: AvmString<'gc>,
     pub str_readwrite: AvmString<'gc>,
     pub str_regular: AvmString<'gc>,
@@ -113,6 +115,7 @@ impl<'gc> CommonStrings<'gc> {
         let mut intern_from_static = |s: &'static [u8]| intern_atom_from_static(s).into();
 
         Self {
+            str___proto__: intern_from_static(b"__proto__"),
             str_access: intern_from_static(b"access"),
             str_accessors: intern_from_static(b"accessors"),
             str_advanced: intern_from_static(b"advanced"),
@@ -181,6 +184,7 @@ impl<'gc> CommonStrings<'gc> {
             str_parameters: intern_from_static(b"parameters"),
             str_pixel: intern_from_static(b"pixel"),
             str_prefix: intern_from_static(b"prefix"),
+            str_prototype: intern_from_static(b"prototype"),
             str_readonly: intern_from_static(b"readonly"),
             str_readwrite: intern_from_static(b"readwrite"),
             str_regular: intern_from_static(b"regular"),
