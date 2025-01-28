@@ -42,8 +42,7 @@ use crate::net_connection::NetConnections;
 use crate::prelude::*;
 use crate::socket::Sockets;
 use crate::streams::StreamManager;
-use crate::string::StringContext;
-use crate::string::{AvmString, AvmStringInterner};
+use crate::string::{AvmStringInterner, StringContext};
 use crate::stub::StubCollection;
 use crate::tag_utils::SwfMovie;
 use crate::timer::Timers;
@@ -52,6 +51,7 @@ use crate::DefaultFont;
 use gc_arena::lock::GcRefLock;
 use gc_arena::{Collect, DynamicRootSet, Mutation, Rootable};
 use rand::{rngs::SmallRng, SeedableRng};
+use ruffle_macros::istr;
 use ruffle_render::backend::{null::NullRenderer, RenderBackend, ViewportDimensions};
 use ruffle_render::commands::CommandList;
 use ruffle_render::quality::StageQuality;
@@ -634,9 +634,12 @@ impl Player {
             let menu = if let Some(Value::Object(obj)) = display_obj.map(|obj| obj.object()) {
                 let mut activation =
                     Activation::from_stub(context, ActivationIdentifier::root("[ContextMenu]"));
-                let menu_object = if let Ok(Value::Object(menu)) = obj.get("menu", &mut activation)
+                let menu_object = if let Ok(Value::Object(menu)) =
+                    obj.get(istr!("menu"), &mut activation)
                 {
-                    if let Ok(Value::Object(on_select)) = menu.get("onSelect", &mut activation) {
+                    if let Ok(Value::Object(on_select)) =
+                        menu.get(istr!("onSelect"), &mut activation)
+                    {
                         Self::run_context_menu_custom_callback(menu, on_select, activation.context);
                     }
                     Some(menu)
@@ -791,7 +794,7 @@ impl Player {
                 let mut activation =
                     Activation::from_stub(context, ActivationIdentifier::root("[ContextMenu]"));
 
-                if let Ok(Value::Object(_)) = obj.get("menu", &mut activation) {
+                if let Ok(Value::Object(_)) = obj.get(istr!("menu"), &mut activation) {
                     return Some(display_obj);
                 }
             }
@@ -1141,14 +1144,12 @@ impl Player {
                 let mut activation = Avm2Activation::from_nothing(context);
 
                 let event_name = match event {
-                    PlayerEvent::KeyDown { .. } => "keyDown",
-                    PlayerEvent::KeyUp { .. } => "keyUp",
+                    PlayerEvent::KeyDown { .. } => istr!("keyDown"),
+                    PlayerEvent::KeyUp { .. } => istr!("keyUp"),
                     _ => unreachable!(),
                 };
 
                 let keyboardevent_class = activation.avm2().classes().keyboardevent;
-                let event_name_val: Avm2Value<'_> =
-                    AvmString::new_utf8(activation.gc(), event_name).into();
 
                 // TODO: keyLocation should not be a dummy value.
                 // ctrlKey and controlKey can be different from each other on Mac.
@@ -1157,7 +1158,7 @@ impl Player {
                     &mut activation,
                     keyboardevent_class,
                     &[
-                        event_name_val,                          /* type */
+                        event_name.into(),                       /* type */
                         true.into(),                             /* bubbles */
                         false.into(),                            /* cancelable */
                         key_char.map_or(0, |c| c as u32).into(), /* charCode */
@@ -2071,11 +2072,11 @@ impl Player {
                         ActivationIdentifier::root("[Construct]"),
                         action.clip,
                     );
-                    if let Ok(prototype) = constructor.get("prototype", &mut activation) {
+                    if let Ok(prototype) = constructor.get(istr!("prototype"), &mut activation) {
                         if let Value::Object(object) = action.clip.object() {
                             object.define_value(
                                 activation.gc(),
-                                "__proto__",
+                                istr!("__proto__"),
                                 prototype,
                                 Attribute::DONT_ENUM | Attribute::DONT_DELETE,
                             );
