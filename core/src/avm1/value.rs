@@ -11,7 +11,7 @@ use crate::ecma_conversions::{
 use crate::string::{AvmAtom, AvmString, Integer, WStr};
 use gc_arena::{Collect, Gc};
 use ruffle_macros::istr;
-use std::{borrow::Cow, io::Write, mem::size_of, num::Wrapping};
+use std::{io::Write, mem::size_of, num::Wrapping};
 
 use super::object_reference::MovieClipReference;
 
@@ -447,10 +447,7 @@ impl<'gc> Value<'gc> {
             Value::Null => istr!("null"),
             Value::Bool(true) => istr!("true"),
             Value::Bool(false) => istr!("false"),
-            Value::Number(v) => match f64_to_string(*v) {
-                Cow::Borrowed(s) => s.into(),
-                Cow::Owned(s) => AvmString::new_utf8(activation.gc(), s),
-            },
+            Value::Number(v) => f64_to_string(activation, *v),
             Value::String(v) => v.to_owned(),
         })
     }
@@ -559,24 +556,31 @@ fn decimal_shift(mut value: f64, mut exp: i32) -> f64 {
     value
 }
 
-/// Converts an `f64` to a String with (hopefully) the same output as Flash AVM1.
+/// Converts an `f64` to an AvmString with (hopefully) the same output as Flash AVM1.
 /// 15 digits are displayed (not including leading 0s in a decimal <1).
 /// Exponential notation is used for numbers <= 1e-5 and >= 1e15.
 /// Rounding done with ties rounded away from zero.
 /// NAN returns `"NaN"`, and infinity returns `"Infinity"`.
 #[allow(clippy::approx_constant)]
-fn f64_to_string(mut n: f64) -> Cow<'static, str> {
+fn f64_to_string<'gc>(activation: &mut Activation<'_, 'gc>, mut n: f64) -> AvmString<'gc> {
     if n.is_nan() {
-        Cow::Borrowed("NaN")
+        istr!("NaN")
     } else if n == f64::INFINITY {
-        Cow::Borrowed("Infinity")
+        istr!("Infinity")
     } else if n == f64::NEG_INFINITY {
-        Cow::Borrowed("-Infinity")
+        // FIXME is there an easy way to use istr! here?
+        AvmString::new_utf8_bytes(activation.gc(), b"-Infinity")
     } else if n == 0.0 {
-        Cow::Borrowed("0")
+        activation.strings().ascii_char(b'0')
     } else if n >= -2147483648.0 && n <= 2147483647.0 && n.fract() == 0.0 {
         // Fast path for integers.
-        (n as i32).to_string().into()
+        let n = n as i32;
+
+        if n >= 0 && n < 10 {
+            activation.strings().ascii_char(b'0' + n as u8)
+        } else {
+            AvmString::new_utf8(activation.gc(), n.to_string())
+        }
     } else {
         // AVM1 f64 -> String (also trying to reproduce bugs).
         // Flash Player's AVM1 does this in a straightforward way, shifting the float into the
@@ -739,9 +743,7 @@ fn f64_to_string(mut n: f64) -> Cow<'static, str> {
             start = 1;
         }
 
-        // SAFETY: Buffer is guaranteed to only contain ASCII digits.
-        let s = unsafe { std::str::from_utf8_unchecked(&buf[start..]) };
-        s.to_string().into()
+        AvmString::new_utf8_bytes(activation.gc(), &buf[start..])
     }
 }
 
@@ -925,6 +927,7 @@ mod test {
     use crate::avm1::test_utils::with_avm;
     use crate::avm1::Value;
     use crate::string::AvmString;
+    use ruffle_macros::istr;
 
     #[test]
     fn to_primitive_num() {
@@ -1166,43 +1169,51 @@ mod test {
     }
 
     #[test]
-    fn f64_to_string() {
-        use super::f64_to_string;
-        assert_eq!(f64_to_string(0.0), "0");
-        assert_eq!(f64_to_string(-0.0), "0");
-        assert_eq!(f64_to_string(1.0), "1");
-        assert_eq!(f64_to_string(1.4), "1.4");
-        assert_eq!(f64_to_string(-990.123), "-990.123");
-        assert_eq!(f64_to_string(f64::NAN), "NaN");
-        assert_eq!(f64_to_string(f64::INFINITY), "Infinity");
-        assert_eq!(f64_to_string(f64::NEG_INFINITY), "-Infinity");
-        assert_eq!(f64_to_string(9.9999e14), "999990000000000");
-        assert_eq!(f64_to_string(-9.9999e14), "-999990000000000");
-        assert_eq!(f64_to_string(1e15), "1e+15");
-        assert_eq!(f64_to_string(-1e15), "-1e+15");
-        assert_eq!(f64_to_string(1e-5), "0.00001");
-        assert_eq!(f64_to_string(-1e-5), "-0.00001");
-        assert_eq!(f64_to_string(0.999e-5), "9.99e-6");
-        assert_eq!(f64_to_string(-0.999e-5), "-9.99e-6");
-        assert_eq!(f64_to_string(0.19999999999999996), "0.2");
-        assert_eq!(f64_to_string(-0.19999999999999996), "-0.2");
-        assert_eq!(f64_to_string(100000.12345678912), "100000.123456789");
-        assert_eq!(f64_to_string(-100000.12345678912), "-100000.123456789");
-        assert_eq!(f64_to_string(0.8000000000000005), "0.800000000000001");
-        assert_eq!(f64_to_string(-0.8000000000000005), "-0.800000000000001");
-        assert_eq!(f64_to_string(0.8300000000000005), "0.83");
-        assert_eq!(f64_to_string(1e-320), "9.99988867182684e-321");
-        assert_eq!(f64_to_string(f64::MIN), "-1.79769313486231e+308");
-        assert_eq!(f64_to_string(f64::MIN_POSITIVE), "2.2250738585072e-308");
-        assert_eq!(f64_to_string(f64::MAX), "1.79769313486231e+308");
-        assert_eq!(f64_to_string(5e-324), "4.94065645841247e-324");
-        assert_eq!(f64_to_string(9.999999999999999), "10");
-        assert_eq!(f64_to_string(-9.999999999999999), "-10");
-        assert_eq!(f64_to_string(9999999999999996.0), "1e+16");
-        assert_eq!(f64_to_string(-9999999999999996.0), "-e+16"); // wat
-        assert_eq!(f64_to_string(0.000009999999999999996), "1e-5");
-        assert_eq!(f64_to_string(-0.000009999999999999996), "-10e-6");
-        assert_eq!(f64_to_string(0.00009999999999999996), "0.0001");
-        assert_eq!(f64_to_string(-0.00009999999999999996), "-0.0001");
+    fn f64_to_string<'gc>() {
+        use super::f64_to_string as f64_to_avm_string;
+
+        with_avm(8, |activation, _this| -> Result<(), Error> {
+            let mut f64_to_string = |value: f64| f64_to_avm_string(activation, value).to_string();
+
+            assert_eq!(f64_to_string(0.0), "0");
+            assert_eq!(f64_to_string(-0.0), "0");
+            assert_eq!(f64_to_string(1.0), "1");
+            assert_eq!(f64_to_string(5.0), "5");
+            assert_eq!(f64_to_string(1.4), "1.4");
+            assert_eq!(f64_to_string(-990.123), "-990.123");
+            assert_eq!(f64_to_string(f64::NAN), "NaN");
+            assert_eq!(f64_to_string(f64::INFINITY), "Infinity");
+            assert_eq!(f64_to_string(f64::NEG_INFINITY), "-Infinity");
+            assert_eq!(f64_to_string(9.9999e14), "999990000000000");
+            assert_eq!(f64_to_string(-9.9999e14), "-999990000000000");
+            assert_eq!(f64_to_string(1e15), "1e+15");
+            assert_eq!(f64_to_string(-1e15), "-1e+15");
+            assert_eq!(f64_to_string(1e-5), "0.00001");
+            assert_eq!(f64_to_string(-1e-5), "-0.00001");
+            assert_eq!(f64_to_string(0.999e-5), "9.99e-6");
+            assert_eq!(f64_to_string(-0.999e-5), "-9.99e-6");
+            assert_eq!(f64_to_string(0.19999999999999996), "0.2");
+            assert_eq!(f64_to_string(-0.19999999999999996), "-0.2");
+            assert_eq!(f64_to_string(100000.12345678912), "100000.123456789");
+            assert_eq!(f64_to_string(-100000.12345678912), "-100000.123456789");
+            assert_eq!(f64_to_string(0.8000000000000005), "0.800000000000001");
+            assert_eq!(f64_to_string(-0.8000000000000005), "-0.800000000000001");
+            assert_eq!(f64_to_string(0.8300000000000005), "0.83");
+            assert_eq!(f64_to_string(1e-320), "9.99988867182684e-321");
+            assert_eq!(f64_to_string(f64::MIN), "-1.79769313486231e+308");
+            assert_eq!(f64_to_string(f64::MIN_POSITIVE), "2.2250738585072e-308");
+            assert_eq!(f64_to_string(f64::MAX), "1.79769313486231e+308");
+            assert_eq!(f64_to_string(5e-324), "4.94065645841247e-324");
+            assert_eq!(f64_to_string(9.999999999999999), "10");
+            assert_eq!(f64_to_string(-9.999999999999999), "-10");
+            assert_eq!(f64_to_string(9999999999999996.0), "1e+16");
+            assert_eq!(f64_to_string(-9999999999999996.0), "-e+16"); // wat
+            assert_eq!(f64_to_string(0.000009999999999999996), "1e-5");
+            assert_eq!(f64_to_string(-0.000009999999999999996), "-10e-6");
+            assert_eq!(f64_to_string(0.00009999999999999996), "0.0001");
+            assert_eq!(f64_to_string(-0.00009999999999999996), "-0.0001");
+
+            Ok(())
+        });
     }
 }
