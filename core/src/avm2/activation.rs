@@ -969,6 +969,8 @@ impl<'a, 'gc> Activation<'a, 'gc> {
                 Op::BkptLine { line_num } => self.op_bkpt_line(*line_num),
                 Op::Timestamp => self.op_timestamp(),
                 Op::TypeOf => self.op_type_of(),
+                Op::Dxns { .. } => self.op_dxns(),
+                Op::DxnsLate => self.op_dxns_late(),
                 Op::EscXAttr => self.op_esc_xattr(),
                 Op::EscXElem => self.op_esc_elem(),
                 Op::LookupSwitch(ref lookup_switch) => {
@@ -991,11 +993,6 @@ impl<'a, 'gc> Activation<'a, 'gc> {
                 Op::Sxi8 => self.op_sxi8(),
                 Op::Sxi16 => self.op_sxi16(),
                 Op::Throw => self.op_throw(),
-                _ => {
-                    tracing::info!("Encountered unimplemented AVM2 opcode {:?}", op);
-
-                    return Err("Unknown op".into());
-                }
             };
 
             if let Err(error) = result {
@@ -2791,6 +2788,17 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         self.push_stack(Value::String(type_name.into()));
 
         Ok(FrameControl::Continue)
+    }
+
+    /// Implements `Op::Dxns`
+    fn op_dxns(&mut self) -> Result<FrameControl<'gc>, Error<'gc>> {
+        Err("Unimplemented opcode Dxns.".into())
+    }
+
+    /// Implements `Op::DxnsLate`
+    fn op_dxns_late(&mut self) -> Result<FrameControl<'gc>, Error<'gc>> {
+        let _ = self.pop_stack();
+        Err("Unimplemented opcode DxnsLate.".into())
     }
 
     /// Implements `Op::EscXAttr`
