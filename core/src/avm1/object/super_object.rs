@@ -90,7 +90,7 @@ impl<'gc> TObject<'gc> for SuperObject<'gc> {
 
     fn call(
         &self,
-        name: AvmString<'gc>,
+        name: impl Into<ExecutionName<'gc>>,
         activation: &mut Activation<'_, 'gc>,
         _this: Value<'gc>,
         args: &[Value<'gc>],
@@ -101,7 +101,7 @@ impl<'gc> TObject<'gc> for SuperObject<'gc> {
             .coerce_to_object(activation);
         match constructor.as_executable() {
             Some(exec) => exec.exec(
-                ExecutionName::Dynamic(name),
+                name.into(),
                 activation,
                 self.0.this.into(),
                 self.0.depth + 1,

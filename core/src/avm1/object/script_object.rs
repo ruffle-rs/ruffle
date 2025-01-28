@@ -217,7 +217,7 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
     /// overrides that may need to interact with the underlying object.
     fn call(
         &self,
-        _name: AvmString<'gc>,
+        _name: impl Into<ExecutionName<'gc>>,
         _activation: &mut Activation<'_, 'gc>,
         _this: Value<'gc>,
         _args: &[Value<'gc>],

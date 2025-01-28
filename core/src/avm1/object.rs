@@ -234,7 +234,7 @@ pub trait TObject<'gc>: 'gc + Collect + Into<Object<'gc>> + Clone + Copy {
     /// it can be changed by `Function.apply`/`Function.call`.
     fn call(
         &self,
-        name: AvmString<'gc>,
+        name: impl Into<ExecutionName<'gc>>,
         activation: &mut Activation<'_, 'gc>,
         this: Value<'gc>,
         args: &[Value<'gc>],
@@ -728,7 +728,7 @@ pub fn search_prototype<'gc>(
     }
 
     if let Some(resolve) = find_resolve_method(orig_proto, activation)? {
-        let result = resolve.call("__resolve".into(), activation, this.into(), &[name.into()])?;
+        let result = resolve.call("__resolve", activation, this.into(), &[name.into()])?;
         return Ok(Some((result, 0)));
     }
 

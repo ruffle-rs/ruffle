@@ -569,7 +569,7 @@ fn sort_compare_custom<'a, 'gc>(compare_fn: &'a Object<'gc>) -> CompareFn<'a, 'g
     Box::new(move |activation, a, b, _options| {
         let this = Value::Undefined;
         let args = [*a, *b];
-        let result = compare_fn.call("[Compare]".into(), activation, this, &args)?;
+        let result = compare_fn.call("[Compare]", activation, this, &args)?;
         let result = result.coerce_to_f64(activation)?;
         Ok(result.partial_cmp(&0.0).unwrap_or(DEFAULT_ORDERING))
     })

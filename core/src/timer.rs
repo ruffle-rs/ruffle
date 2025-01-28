@@ -75,7 +75,7 @@ impl<'gc> Timers<'gc> {
                             level0,
                         );
                         let result = func.call(
-                            "[Timer Callback]".into(),
+                            "[Timer Callback]",
                             &mut avm1_activation,
                             Avm1Value::Undefined,
                             &params,

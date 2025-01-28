@@ -328,6 +328,18 @@ pub enum ExecutionName<'gc> {
     Dynamic(AvmString<'gc>),
 }
 
+impl<'gc> From<&'static str> for ExecutionName<'gc> {
+    fn from(string: &'static str) -> Self {
+        ExecutionName::Static(string)
+    }
+}
+
+impl<'gc> From<AvmString<'gc>> for ExecutionName<'gc> {
+    fn from(string: AvmString<'gc>) -> Self {
+        ExecutionName::Dynamic(string)
+    }
+}
+
 impl<'gc> Executable<'gc> {
     /// Execute the given code.
     ///
@@ -586,14 +598,14 @@ impl<'gc> TObject<'gc> for FunctionObject<'gc> {
 
     fn call(
         &self,
-        name: AvmString<'gc>,
+        name: impl Into<ExecutionName<'gc>>,
         activation: &mut Activation<'_, 'gc>,
         this: Value<'gc>,
         args: &[Value<'gc>],
     ) -> Result<Value<'gc>, Error<'gc>> {
         match self.as_executable() {
             Some(exec) => exec.exec(
-                ExecutionName::Dynamic(name),
+                name.into(),
                 activation,
                 this,
                 0,
