@@ -21,6 +21,7 @@ allow = [
     "CC0-1.0",
     "OFL-1.1",
     "LicenseRef-UFL-1.0",
+    "Ubuntu-font-1.0",
     "OpenSSL"
 ]
 
