@@ -831,7 +831,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
 
         let result = if method_name.is_empty() {
             // Undefined/empty method name; call `this` as a function.
-            object.call("[Anonymous]".into(), self, Value::Undefined, &args)?
+            object.call("[Anonymous]", self, Value::Undefined, &args)?
         } else {
             // Call `this[method_name]`.
             object.call_method(method_name, &args, self, ExecutionReason::FunctionCall)?

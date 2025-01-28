@@ -770,7 +770,7 @@ impl Player {
                 let params = vec![display_object.object(), Value::Object(item)];
 
                 let _ = callback.call(
-                    "[Context Menu Callback]".into(),
+                    "[Context Menu Callback]",
                     &mut activation,
                     Value::Undefined,
                     &params,
