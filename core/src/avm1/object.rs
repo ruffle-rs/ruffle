@@ -30,7 +30,7 @@ use crate::streams::NetStream;
 use crate::string::AvmString;
 use crate::xml::XmlNode;
 use gc_arena::{Collect, Gc, GcCell, Mutation};
-use ruffle_macros::enum_trait_object;
+use ruffle_macros::{enum_trait_object, istr};
 use std::cell::{Cell, RefCell};
 use std::fmt::Debug;
 
@@ -560,7 +560,7 @@ pub trait TObject<'gc>: 'gc + Collect + Into<Object<'gc>> + Clone + Copy {
                         return Ok(true);
                     }
 
-                    if let Value::Object(o) = interface.get("prototype", activation)? {
+                    if let Value::Object(o) = interface.get(istr!("prototype"), activation)? {
                         proto_stack.push(o);
                     }
                 }
@@ -728,7 +728,7 @@ pub fn search_prototype<'gc>(
     }
 
     if let Some(resolve) = find_resolve_method(orig_proto, activation)? {
-        let result = resolve.call("__resolve", activation, this.into(), &[name.into()])?;
+        let result = resolve.call(istr!("__resolve"), activation, this.into(), &[name.into()])?;
         return Ok(Some((result, 0)));
     }
 
@@ -747,7 +747,7 @@ pub fn find_resolve_method<'gc>(
             return Err(Error::PrototypeRecursionLimit);
         }
 
-        if let Some(value) = p.get_local_stored("__resolve", activation, false) {
+        if let Some(value) = p.get_local_stored(istr!("__resolve"), activation, false) {
             return Ok(Some(value.coerce_to_object(activation)));
         }
 
