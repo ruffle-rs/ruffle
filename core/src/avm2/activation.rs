@@ -2697,41 +2697,39 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     }
 
     fn op_type_of(&mut self) -> Result<FrameControl<'gc>, Error<'gc>> {
-        let common_strings = self.strings().common();
-
         let value = self.pop_stack();
 
         let type_name = match value {
-            Value::Undefined => common_strings.str_undefined,
-            Value::Null => common_strings.str_object,
-            Value::Bool(_) => common_strings.str_boolean,
-            Value::Number(_) | Value::Integer(_) => common_strings.str_number,
+            Value::Undefined => self.strings().common().str_undefined,
+            Value::Null => self.strings().common().str_object,
+            Value::Bool(_) => self.strings().common().str_boolean,
+            Value::Number(_) | Value::Integer(_) => self.strings().common().str_number,
             Value::Object(o) => {
                 let classes = self.avm2().class_defs();
 
                 match o {
                     Object::FunctionObject(_) => {
                         if o.instance_class() == classes.function {
-                            common_strings.str_function
+                            self.strings().common().str_function
                         } else {
                             // Subclasses always have a typeof = "object"
-                            common_strings.str_object
+                            self.strings().common().str_object
                         }
                     }
                     Object::XmlObject(_) | Object::XmlListObject(_) => {
                         if o.instance_class() == classes.xml_list
                             || o.instance_class() == classes.xml
                         {
-                            common_strings.str_xml
+                            self.strings().common().str_xml
                         } else {
                             // Subclasses always have a typeof = "object"
-                            common_strings.str_object
+                            self.strings().common().str_object
                         }
                     }
-                    _ => common_strings.str_object,
+                    _ => self.strings().common().str_object,
                 }
             }
-            Value::String(_) => common_strings.str_string,
+            Value::String(_) => self.strings().common().str_string,
         };
 
         self.push_stack(Value::String(type_name.into()));
