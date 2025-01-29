@@ -5,6 +5,7 @@ use crate::avm1::property_decl::{define_properties_on, Declaration};
 use crate::avm1::{Activation, Error, Object, ScriptObject, TObject, Value};
 use crate::string::{AvmString, StringContext};
 use gc_arena::{Collect, GcCell};
+use ruffle_macros::istr;
 use swf::{ColorTransform, Fixed8};
 
 #[derive(Clone, Debug, Collect)]
@@ -220,14 +221,14 @@ fn to_string<'gc>(
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     let formatted = format!("(redMultiplier={}, greenMultiplier={}, blueMultiplier={}, alphaMultiplier={}, redOffset={}, greenOffset={}, blueOffset={}, alphaOffset={})",
-            this.get("redMultiplier", activation)?.coerce_to_string(activation)?,
-            this.get("greenMultiplier", activation)?.coerce_to_string(activation)?,
-            this.get("blueMultiplier", activation)?.coerce_to_string(activation)?,
-            this.get("alphaMultiplier", activation)?.coerce_to_string(activation)?,
-            this.get("redOffset", activation)?.coerce_to_string(activation)?,
-            this.get("greenOffset", activation)?.coerce_to_string(activation)?,
-            this.get("blueOffset", activation)?.coerce_to_string(activation)?,
-            this.get("alphaOffset", activation)?.coerce_to_string(activation)?
+            this.get(istr!("redMultiplier"), activation)?.coerce_to_string(activation)?,
+            this.get(istr!("greenMultiplier"), activation)?.coerce_to_string(activation)?,
+            this.get(istr!("blueMultiplier"), activation)?.coerce_to_string(activation)?,
+            this.get(istr!("alphaMultiplier"), activation)?.coerce_to_string(activation)?,
+            this.get(istr!("redOffset"), activation)?.coerce_to_string(activation)?,
+            this.get(istr!("greenOffset"), activation)?.coerce_to_string(activation)?,
+            this.get(istr!("blueOffset"), activation)?.coerce_to_string(activation)?,
+            this.get(istr!("alphaOffset"), activation)?.coerce_to_string(activation)?
     );
 
     Ok(AvmString::new_utf8(activation.gc(), formatted).into())
