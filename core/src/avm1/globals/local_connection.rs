@@ -14,6 +14,7 @@ use crate::local_connection::{LocalConnectionHandle, LocalConnections};
 use crate::string::{AvmString, StringContext};
 use flash_lso::types::Value as AmfValue;
 use gc_arena::{Collect, Gc};
+use ruffle_macros::istr;
 use std::cell::RefCell;
 
 #[derive(Debug, Collect)]
@@ -86,7 +87,7 @@ impl<'gc> LocalConnection<'gc> {
             .coerce_to_object(&mut activation);
         event.set("level", status.into(), &mut activation)?;
         this.call_method(
-            "onStatus".into(),
+            istr!("onStatus"),
             &[event.into()],
             &mut activation,
             ExecutionReason::Special,
