@@ -329,7 +329,7 @@ pub enum ExecutionName<'gc> {
     Dynamic(AvmString<'gc>),
 }
 
-impl<'gc> From<&'static str> for ExecutionName<'gc> {
+impl From<&'static str> for ExecutionName<'_> {
     fn from(string: &'static str) -> Self {
         ExecutionName::Static(string)
     }

@@ -1169,7 +1169,7 @@ mod test {
     }
 
     #[test]
-    fn f64_to_string<'gc>() {
+    fn f64_to_string() {
         use super::f64_to_string as f64_to_avm_string;
 
         with_avm(8, |activation, _this| -> Result<(), Error> {
