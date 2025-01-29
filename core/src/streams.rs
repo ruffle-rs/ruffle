@@ -27,6 +27,7 @@ use flv_rs::{
     VideoData as FlvVideoData, VideoPacket as FlvVideoPacket,
 };
 use gc_arena::{Collect, GcCell, Mutation};
+use ruffle_macros::istr;
 use ruffle_render::bitmap::BitmapInfo;
 use ruffle_video::frame::EncodedFrame;
 use ruffle_video::VideoStreamHandle;
@@ -1299,7 +1300,7 @@ impl<'gc> NetStream<'gc> {
                 }
 
                 if let Err(e) = object.call_method(
-                    "onStatus".into(),
+                    istr!("onStatus"),
                     &[info_object.into()],
                     &mut activation,
                     Avm1ExecutionReason::Special,
