@@ -11,6 +11,7 @@ use crate::display_object::{DisplayObject, TDisplayObject};
 use crate::string::{AvmString, SwfStrExt as _};
 use crate::tag_utils::SwfSlice;
 use gc_arena::{Collect, Gc, GcCell, Mutation};
+use ruffle_macros::istr;
 use std::{borrow::Cow, fmt, num::NonZeroU8};
 use swf::{avm1::types::FunctionFlags, SwfStr};
 
@@ -625,14 +626,14 @@ impl<'gc> TObject<'gc> for FunctionObject<'gc> {
     ) -> Result<(), Error<'gc>> {
         this.define_value(
             activation.gc(),
-            "__constructor__",
+            istr!("__constructor__"),
             (*self).into(),
             Attribute::DONT_ENUM,
         );
         if activation.swf_version() < 7 {
             this.define_value(
                 activation.gc(),
-                "constructor",
+                istr!("constructor"),
                 (*self).into(),
                 Attribute::DONT_ENUM,
             );
@@ -668,20 +669,20 @@ impl<'gc> TObject<'gc> for FunctionObject<'gc> {
         args: &[Value<'gc>],
     ) -> Result<Value<'gc>, Error<'gc>> {
         let prototype = self
-            .get("prototype", activation)?
+            .get(istr!("prototype"), activation)?
             .coerce_to_object(activation);
         let this = prototype.create_bare_object(activation, prototype)?;
 
         this.define_value(
             activation.gc(),
-            "__constructor__",
+            istr!("__constructor__"),
             (*self).into(),
             Attribute::DONT_ENUM,
         );
         if activation.swf_version() < 7 {
             this.define_value(
                 activation.gc(),
-                "constructor",
+                istr!("constructor"),
                 (*self).into(),
                 Attribute::DONT_ENUM,
             );

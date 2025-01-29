@@ -5,7 +5,9 @@ use gc_arena::{Collect, Gc};
 #[derive(Clone, Collect)]
 #[collect(no_drop)]
 pub struct CommonStrings<'gc> {
+    pub str___constructor__: AvmString<'gc>,
     pub str___proto__: AvmString<'gc>,
+    pub str___resolve: AvmString<'gc>,
     pub str__bytesLoaded: AvmString<'gc>,
     pub str__bytesTotal: AvmString<'gc>,
     pub str_a: AvmString<'gc>,
@@ -191,7 +193,9 @@ impl<'gc> CommonStrings<'gc> {
         };
 
         Self {
+            str___constructor__: intern_from_static(b"__constructor__"),
             str___proto__: intern_from_static(b"__proto__"),
+            str___resolve: intern_from_static(b"__resolve"),
             str__bytesLoaded: intern_from_static(b"_bytesLoaded"),
             str__bytesTotal: intern_from_static(b"_bytesTotal"),
             str_a: intern_from_static(b"a"),
