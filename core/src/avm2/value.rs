@@ -1073,7 +1073,7 @@ impl<'gc> Value<'gc> {
     /// Same as set_property, but constructs a public Multiname for you.
     pub fn set_public_property(
         &self,
-        name: impl Into<AvmString<'gc>>,
+        name: AvmString<'gc>,
         value: Value<'gc>,
         activation: &mut Activation<'_, 'gc>,
     ) -> Result<(), Error<'gc>> {
@@ -1368,7 +1368,7 @@ impl<'gc> Value<'gc> {
 
     pub fn has_public_property(
         self,
-        name: impl Into<AvmString<'gc>>,
+        name: AvmString<'gc>,
         activation: &mut Activation<'_, 'gc>,
     ) -> bool {
         let name = Multiname::new(activation.avm2().find_public_namespace(), name);
