@@ -505,70 +505,73 @@ impl Player {
     }
 
     pub fn tick(&mut self, dt: f64) {
-        if self.is_playing() {
-            self.frame_accumulator += dt;
-            let frame_time = self.frame_time(1000.0);
-
-            let max_frames_per_tick = self.max_frames_per_tick();
-            let mut frame = 0;
-
-            while frame < max_frames_per_tick && self.frame_accumulator >= frame_time {
-                let timer = Instant::now();
-                self.run_frame();
-                let elapsed = timer.elapsed().as_millis() as f64;
-
-                self.add_frame_timing(elapsed);
-
-                self.frame_accumulator -= frame_time;
-                frame += 1;
-                // The script probably tried implementing an FPS limiter with a busy loop.
-                // We fooled the busy loop by pretending that more time has passed that actually did.
-                // Then we need to actually pass this time, by decreasing frame_accumulator
-                // to delay the future frame.
-                if self.time_offset > 0 {
-                    self.frame_accumulator -= self.time_offset as f64;
-                }
-
-                // If we are stepping a single frame, immediately suspend ourselves.
-                if self.run_state == RunState::Stepping {
-                    self.set_run_state(RunState::Suspended);
-                    break;
-                }
-            }
-
-            // Now that we're done running code,
-            // we can stop pretending that more time passed than actually did.
-            // Note: update_timers(dt) doesn't need to see this either.
-            // Timers will run at correct times and see correct time.
-            // Also note that in Flash, a blocking busy loop would delay setTimeout
-            // and cancel some setInterval callbacks, but here busy loops don't block
-            // so timer callbacks won't get cancelled/delayed.
-            self.time_offset = 0;
-
-            // Sanity: If we had too many frames to tick, just reset the accumulator
-            // to prevent running at turbo speed.
-            if self.frame_accumulator >= frame_time {
-                self.frame_accumulator = 0.0;
-            }
-
-            // Adjust playback speed for next frame to stay in sync with timeline audio tracks ("stream" sounds).
-            let cur_frame_offset = self.frame_accumulator;
-            self.frame_accumulator += self.mutate_with_update_context(|context| {
-                context
-                    .audio_manager
-                    .audio_skew_time(context.audio, cur_frame_offset)
-                    * 1000.0
-            });
-
-            self.update_sockets();
-            self.update_net_connections();
-            self.update_timers(dt);
-            self.update(|context| {
-                StreamManager::tick(context, dt);
-            });
-            self.audio.tick();
+        if !self.is_playing() {
+            return;
         }
+
+        self.frame_accumulator += dt;
+        let frame_time = self.frame_time(1000.0);
+
+        let max_frames_per_tick = self.max_frames_per_tick();
+        let mut frame = 0;
+
+        while frame < max_frames_per_tick && self.frame_accumulator >= frame_time {
+            let timer = Instant::now();
+            self.run_frame();
+            let elapsed = timer.elapsed().as_millis() as f64;
+
+            self.add_frame_timing(elapsed);
+
+            self.frame_accumulator -= frame_time;
+            frame += 1;
+            // The script probably tried implementing an FPS limiter with a busy loop.
+            // We fooled the busy loop by pretending that more time has passed that actually did.
+            // Then we need to actually pass this time, by decreasing frame_accumulator
+            // to delay the future frame.
+            if self.time_offset > 0 {
+                self.frame_accumulator -= self.time_offset as f64;
+            }
+
+            // If we are stepping a single frame, immediately suspend ourselves.
+            if self.run_state == RunState::Stepping {
+                self.set_run_state(RunState::Suspended);
+                break;
+            }
+        }
+
+        // Now that we're done running code,
+        // we can stop pretending that more time passed than actually did.
+        // Note: update_timers(dt) doesn't need to see this either.
+        // Timers will run at correct times and see correct time.
+        // Also note that in Flash, a blocking busy loop would delay setTimeout
+        // and cancel some setInterval callbacks, but here busy loops don't block
+        // so timer callbacks won't get cancelled/delayed.
+        self.time_offset = 0;
+
+        // Sanity: If we had too many frames to tick, just reset the accumulator
+        // to prevent running at turbo speed.
+        if self.frame_accumulator >= frame_time {
+            self.frame_accumulator = 0.0;
+        }
+
+        // Adjust playback speed for next frame to stay in sync with timeline audio tracks ("stream" sounds).
+        let cur_frame_offset = self.frame_accumulator;
+        self.frame_accumulator += self.mutate_with_update_context(|context| {
+            context
+                .audio_manager
+                .audio_skew_time(context.audio, cur_frame_offset)
+                * 1000.0
+        });
+
+        self.update_sockets();
+        self.update_net_connections();
+        self.update_timers(dt);
+        self.update(|context| {
+            StreamManager::tick(context, dt);
+        });
+        self.audio.tick();
     }
+
     pub fn time_til_next_timer(&self) -> Option<f64> {
         self.time_til_next_timer
     }

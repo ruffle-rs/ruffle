@@ -368,11 +368,11 @@ impl MainWindow {
         // We should look at changing our tick to happen somewhere else if we see any behavioural problems.
         if matches!(self.loaded, LoadingState::Loaded) {
             let new_time = Instant::now();
-            let dt = new_time.duration_since(self.time).as_micros();
+            let dt = new_time.duration_since(self.time).as_nanos();
             if dt > 0 {
                 self.time = new_time;
                 if let Some(mut player) = self.player.get() {
-                    player.tick(dt as f64 / 1000.0);
+                    player.tick(dt as f64 / 1_000_000.0);
                     self.next_frame_time = Some(new_time + player.time_til_next_frame());
                 } else {
                     self.next_frame_time = None;
