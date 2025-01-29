@@ -270,7 +270,7 @@ impl<'gc> DisplacementMapFilter<'gc> {
                 .map_bitmap
                 .map(|b| b.bitmap_handle(context.gc(), context.renderer)),
             map_point: (filter.map_point.x, filter.map_point.y),
-            mode: filter.mode.into(),
+            mode: filter.mode,
             scale_x: filter.scale_x,
             scale_y: filter.scale_y,
             viewscale_x: 1.0,

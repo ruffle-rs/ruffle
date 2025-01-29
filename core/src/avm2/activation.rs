@@ -2732,7 +2732,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             Value::String(_) => self.strings().common().str_string,
         };
 
-        self.push_stack(Value::String(type_name.into()));
+        self.push_stack(Value::String(type_name));
 
         Ok(FrameControl::Continue)
     }

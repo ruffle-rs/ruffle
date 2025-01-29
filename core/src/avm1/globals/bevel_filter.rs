@@ -371,7 +371,7 @@ impl<'gc> BevelFilter<'gc> {
                 BevelFilterType::Full
             };
 
-            self.0.write(activation.gc()).type_ = type_.into();
+            self.0.write(activation.gc()).type_ = type_;
         }
         Ok(())
     }
