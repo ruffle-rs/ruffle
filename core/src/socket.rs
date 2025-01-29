@@ -10,6 +10,7 @@ use crate::string::AvmString;
 
 use async_channel::{unbounded, Receiver, Sender as AsyncSender, Sender};
 use gc_arena::Collect;
+use ruffle_macros::istr;
 use slotmap::{new_key_type, SlotMap};
 use std::{
     cell::{Cell, RefCell},
@@ -236,7 +237,7 @@ impl<'gc> Sockets<'gc> {
                             );
 
                             let _ = target.call_method(
-                                "onConnect".into(),
+                                istr!("onConnect"),
                                 &[true.into()],
                                 &mut activation,
                                 ExecutionReason::Special,
@@ -274,7 +275,7 @@ impl<'gc> Sockets<'gc> {
                             );
 
                             let _ = target.call_method(
-                                "onConnect".into(),
+                                istr!("onConnect"),
                                 &[false.into()],
                                 &mut activation,
                                 ExecutionReason::Special,
@@ -336,7 +337,7 @@ impl<'gc> Sockets<'gc> {
 
                                     // Call the event handler.
                                     let _ = target.call_method(
-                                        "onData".into(),
+                                        istr!("onData"),
                                         &[message.into()],
                                         &mut activation,
                                         ExecutionReason::Special,
@@ -400,7 +401,7 @@ impl<'gc> Sockets<'gc> {
                             socket.read_buffer().clear();
 
                             let _ = target.call_method(
-                                "onClose".into(),
+                                istr!("onClose"),
                                 &[],
                                 &mut activation,
                                 ExecutionReason::Special,

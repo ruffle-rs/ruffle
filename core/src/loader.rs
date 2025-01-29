@@ -1407,7 +1407,7 @@ impl<'gc> Loader<'gc> {
                         }
 
                         let _ = that.call_method(
-                            "onHTTPStatus".into(),
+                            istr!("onHTTPStatus"),
                             &[status.into()],
                             &mut activation,
                             ExecutionReason::Special,
@@ -1421,7 +1421,7 @@ impl<'gc> Loader<'gc> {
                             AvmString::new_utf8(activation.gc(), UTF_8.decode(&body).0).into()
                         };
                         let _ = that.call_method(
-                            "onData".into(),
+                            istr!("onData"),
                             &[value_data],
                             &mut activation,
                             ExecutionReason::Special,
@@ -1438,7 +1438,7 @@ impl<'gc> Loader<'gc> {
                             };
 
                         let _ = that.call_method(
-                            "onHTTPStatus".into(),
+                            istr!("onHTTPStatus"),
                             &[status_code.into()],
                             &mut activation,
                             ExecutionReason::Special,
@@ -1446,7 +1446,7 @@ impl<'gc> Loader<'gc> {
 
                         // Fire the onData method with no data to indicate an unsuccessful load.
                         let _ = that.call_method(
-                            "onData".into(),
+                            istr!("onData"),
                             &[Value::Undefined],
                             &mut activation,
                             ExecutionReason::Special,
@@ -1505,7 +1505,7 @@ impl<'gc> Loader<'gc> {
                             )
                             .unwrap_or(Value::Bool(false));
                         let _ = that.call_method(
-                            "onLoad".into(),
+                            istr!("onLoad"),
                             &[success],
                             &mut activation,
                             ExecutionReason::Special,
@@ -1515,7 +1515,7 @@ impl<'gc> Loader<'gc> {
                         // TODO: Log "Error opening URL" trace similar to the Flash Player?
 
                         let _ = that.call_method(
-                            "onLoad".into(),
+                            istr!("onLoad"),
                             &[Value::Bool(false)],
                             &mut activation,
                             ExecutionReason::Special,
@@ -1737,7 +1737,7 @@ impl<'gc> Loader<'gc> {
                 let mut activation =
                     Activation::from_stub(uc, ActivationIdentifier::root("[Loader]"));
                 let _ = sound_object.call_method(
-                    "onLoad".into(),
+                    istr!("onLoad"),
                     &[success.into()],
                     &mut activation,
                     ExecutionReason::Special,
@@ -2723,17 +2723,17 @@ impl<'gc> Loader<'gc> {
                                         dialog_result.borrow(),
                                     );
                                     as_broadcaster::broadcast_internal(
-                                        &mut activation,
                                         target_object,
                                         &[target_object.into()],
-                                        "onSelect".into(),
+                                        istr!("onSelect"),
+                                        &mut activation,
                                     )?;
                                 } else {
                                     as_broadcaster::broadcast_internal(
-                                        &mut activation,
                                         target_object,
                                         &[target_object.into()],
-                                        "onCancel".into(),
+                                        istr!("onCancel"),
+                                        &mut activation,
                                     )?;
                                 }
                             }
@@ -2942,19 +2942,19 @@ impl<'gc> Loader<'gc> {
                                 .init_from_dialog_result(&mut activation, dialog_result.borrow());
 
                             as_broadcaster::broadcast_internal(
-                                &mut activation,
                                 target_object,
                                 &[target_object.into()],
-                                "onSelect".into(),
+                                istr!("onSelect"),
+                                &mut activation,
                             )?;
 
                             match download_res {
                                 Ok((body, _, _, _)) => {
                                     as_broadcaster::broadcast_internal(
-                                        &mut activation,
                                         target_object,
                                         &[target_object.into()],
-                                        "onOpen".into(),
+                                        istr!("onOpen"),
+                                        &mut activation,
                                     )?;
 
                                     // onProgress and onComplete expect to receive the current state
@@ -2971,21 +2971,21 @@ impl<'gc> Loader<'gc> {
                                     let total_bytes = body.len();
 
                                     as_broadcaster::broadcast_internal(
-                                        &mut activation,
                                         target_object,
                                         &[
                                             target_object.into(),
                                             total_bytes.into(),
                                             total_bytes.into(),
                                         ],
-                                        "onProgress".into(),
+                                        istr!("onProgress"),
+                                        &mut activation,
                                     )?;
 
                                     as_broadcaster::broadcast_internal(
-                                        &mut activation,
                                         target_object,
                                         &[target_object.into()],
-                                        "onComplete".into(),
+                                        istr!("onComplete"),
+                                        &mut activation,
                                     )?;
                                 }
                                 Err(err) => {
@@ -2996,20 +2996,20 @@ impl<'gc> Loader<'gc> {
                                                 .avm_trace(&format!("Error opening URL '{}'", url));
 
                                             as_broadcaster::broadcast_internal(
-                                                &mut activation,
                                                 target_object,
                                                 &[target_object.into()],
-                                                "onIOError".into(),
+                                                istr!("onIOError"),
+                                                &mut activation,
                                             )?;
                                         }
                                         Error::HttpNotOk(_, _, _, body_len) => {
                                             // If the error happens before the connection is
                                             // established, then don't invoke onOpen
                                             as_broadcaster::broadcast_internal(
-                                                &mut activation,
                                                 target_object,
                                                 &[target_object.into()],
-                                                "onOpen".into(),
+                                                istr!("onOpen"),
+                                                &mut activation,
                                             )?;
 
                                             activation
@@ -3017,33 +3017,33 @@ impl<'gc> Loader<'gc> {
                                                 .avm_trace(&format!("Error opening URL '{}'", url));
 
                                             as_broadcaster::broadcast_internal(
-                                                &mut activation,
                                                 target_object,
                                                 &[target_object.into()],
-                                                "onIOError".into(),
+                                                istr!("onIOError"),
+                                                &mut activation,
                                             )?;
 
                                             // Flash still executes the onProgress callback, even after an error
                                             // However it should only be called if the error occurred after the connection was established
                                             as_broadcaster::broadcast_internal(
-                                                &mut activation,
                                                 target_object,
                                                 &[
                                                     target_object.into(),
                                                     body_len.into(),
                                                     body_len.into(),
                                                 ],
-                                                "onProgress".into(),
+                                                istr!("onProgress"),
+                                                &mut activation,
                                             )?;
                                         }
                                         Error::FetchError(_) => {
                                             // If the error happens before the connection is
                                             // established, then don't invoke onOpen
                                             as_broadcaster::broadcast_internal(
-                                                &mut activation,
                                                 target_object,
                                                 &[target_object.into()],
-                                                "onOpen".into(),
+                                                istr!("onOpen"),
+                                                &mut activation,
                                             )?;
 
                                             activation
@@ -3051,10 +3051,10 @@ impl<'gc> Loader<'gc> {
                                                 .avm_trace(&format!("Error opening URL '{}'", url));
 
                                             as_broadcaster::broadcast_internal(
-                                                &mut activation,
                                                 target_object,
                                                 &[target_object.into()],
-                                                "onIOError".into(),
+                                                istr!("onIOError"),
+                                                &mut activation,
                                             )?;
                                         }
                                         _ => {
@@ -3068,10 +3068,10 @@ impl<'gc> Loader<'gc> {
                             }
                         } else {
                             as_broadcaster::broadcast_internal(
-                                &mut activation,
                                 target_object,
                                 &[target_object.into()],
-                                "onCancel".into(),
+                                istr!("onCancel"),
+                                &mut activation,
                             )?;
                         }
                     }
@@ -3166,30 +3166,30 @@ impl<'gc> Loader<'gc> {
 
                 use crate::avm1::globals::as_broadcaster;
                 as_broadcaster::broadcast_internal(
-                    &mut activation,
                     target_object,
                     &[target_object.into()],
-                    "onOpen".into(),
+                    istr!("onOpen"),
+                    &mut activation,
                 )?;
 
                 match result {
                     Ok(_) => {
                         as_broadcaster::broadcast_internal(
-                            &mut activation,
                             target_object,
                             &[
                                 target_object.into(),
                                 total_size_bytes.into(),
                                 total_size_bytes.into(),
                             ],
-                            "onProgress".into(),
+                            istr!("onProgress"),
+                            &mut activation,
                         )?;
 
                         as_broadcaster::broadcast_internal(
-                            &mut activation,
                             target_object,
                             &[target_object.into()],
-                            "onComplete".into(),
+                            istr!("onComplete"),
+                            &mut activation,
                         )?;
                     }
                     Err(err) => {
@@ -3202,39 +3202,39 @@ impl<'gc> Loader<'gc> {
                         match err.error {
                             Error::InvalidDomain(_) => {
                                 as_broadcaster::broadcast_internal(
-                                    &mut activation,
                                     target_object,
                                     &[target_object.into()],
-                                    "onIOError".into(),
+                                    istr!("onIOError"),
+                                    &mut activation,
                                 )?;
                             }
                             Error::HttpNotOk(_, _, _, _) => {
                                 as_broadcaster::broadcast_internal(
-                                    &mut activation,
                                     target_object,
                                     &[
                                         target_object.into(),
                                         total_size_bytes.into(),
                                         total_size_bytes.into(),
                                     ],
-                                    "onProgress".into(),
+                                    istr!("onProgress"),
+                                    &mut activation,
                                 )?;
 
                                 as_broadcaster::broadcast_internal(
-                                    &mut activation,
                                     target_object,
                                     &[target_object.into()],
-                                    "onHTTPError".into(),
+                                    istr!("onHTTPError"),
+                                    &mut activation,
                                 )?;
                             }
                             Error::FetchError(msg) => {
                                 tracing::warn!("Unhandled fetch error: {:?}", msg);
                                 // For now we will just handle this like a dns error
                                 as_broadcaster::broadcast_internal(
-                                    &mut activation,
                                     target_object,
                                     &[target_object.into()],
-                                    "onIOError".into(),
+                                    istr!("onIOError"),
+                                    &mut activation,
                                 )?;
                             }
                             _ => {

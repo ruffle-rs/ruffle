@@ -301,7 +301,7 @@ impl<'gc> Avm1<'gc> {
             .coerce_to_object(&mut activation);
 
         let has_listener =
-            as_broadcaster::broadcast_internal(&mut activation, broadcaster, args, method)
+            as_broadcaster::broadcast_internal(broadcaster, args, method, &mut activation)
                 .unwrap_or(false);
         drop(activation);
 

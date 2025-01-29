@@ -129,17 +129,17 @@ fn broadcast_message<'gc>(
         let event_name = event_name_value.coerce_to_string(activation)?;
         let call_args = &args[1..];
 
-        broadcast_internal(activation, this, call_args, event_name)?;
+        broadcast_internal(this, call_args, event_name, activation)?;
     }
 
     Ok(Value::Undefined)
 }
 
 pub fn broadcast_internal<'gc>(
-    activation: &mut Activation<'_, 'gc>,
     this: Object<'gc>,
     call_args: &[Value<'gc>],
     method_name: AvmString<'gc>,
+    activation: &mut Activation<'_, 'gc>,
 ) -> Result<bool, Error<'gc>> {
     let listeners = this.get("_listeners", activation)?;
 
