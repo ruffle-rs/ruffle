@@ -53,7 +53,7 @@ pub struct AvmStringInterner<'gc> {
     interned: WeakSet<'gc, AvmStringRepr<'gc>>,
 
     /// Strings used across both AVMs and in core code.
-    pub common: Gc<'gc, CommonStrings<'gc>>,
+    pub common: CommonStrings<'gc>,
 
     pub(super) empty: Gc<'gc, AvmStringRepr<'gc>>,
     pub(super) chars: [Gc<'gc, AvmStringRepr<'gc>>; INTERNED_CHAR_LEN],
@@ -86,7 +86,7 @@ impl<'gc> AvmStringInterner<'gc> {
             intern_from_static(std::slice::from_ref(c))
         });
 
-        let common = Gc::new(mc, CommonStrings::new(&mut intern_from_static, &chars));
+        let common = CommonStrings::new(&mut intern_from_static, &chars);
 
         Self {
             empty: intern_from_static(b""),

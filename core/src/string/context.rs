@@ -30,8 +30,8 @@ impl<'gc> StringContext<'gc> {
     }
 
     #[inline(always)]
-    pub fn common(&self) -> Gc<'gc, CommonStrings<'gc>> {
-        self.interner.common
+    pub fn common(&self) -> &CommonStrings<'gc> {
+        &self.interner.common
     }
 
     #[must_use]
