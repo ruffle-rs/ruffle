@@ -104,8 +104,8 @@ pub struct RuffleGui {
     context_menu: Option<ContextMenu>,
     dialogs: Dialogs,
     menu_bar: MenuBar,
-
     was_suspended_before_debug: bool,
+    taking_screenshot: bool,
     preferences: GlobalPreferences,
 }
 
@@ -119,6 +119,7 @@ impl RuffleGui {
     ) -> Self {
         Self {
             was_suspended_before_debug: false,
+            taking_screenshot: false,
 
             context_menu: None,
             dialogs: Dialogs::new(
@@ -232,6 +233,313 @@ impl RuffleGui {
         self.menu_bar.currently_opened = Some((movie_url.clone(), opt.clone()));
 
         // Update dialog state to reflect the newly-opened movie's options.
+        self.is_open_dialog_visible = false;
+        self.open_dialog = OpenDialog::new(
+            opt,
+            Some(movie_url),
+            self.event_loop.clone(),
+            self.locale.clone(),
+        );
+
+        player.set_volume(self.volume_controls.get_volume());
+    }
+
+    pub fn set_taking_screenshot(&mut self, state: bool) {
+        self.taking_screenshot = state;
+    }
+
+    pub fn get_taking_screenshot(&mut self) -> bool {
+        self.taking_screenshot
+    }
+
+    /// Renders the main menu bar at the top of the window.
+    fn main_menu_bar(&mut self, egui_ctx: &egui::Context, mut player: Option<&mut Player>) {
+        egui::TopBottomPanel::top("menu_bar").show(egui_ctx, |ui| {
+            // TODO(mike): Make some MenuItem struct with shortcut info to handle this more cleanly.
+            if ui.ctx().input_mut(|input| {
+                input.consume_shortcut(&KeyboardShortcut::new(Modifiers::COMMAND, Key::O))
+            }) {
+                self.open_file(ui);
+            }
+            if ui.ctx().input_mut(|input| {
+                input.consume_shortcut(&KeyboardShortcut::new(Modifiers::COMMAND | Modifiers::SHIFT, Key::O))
+            }) {
+                self.open_file_advanced();
+            }
+            if ui.ctx().input_mut(|input| {
+                input.consume_shortcut(&KeyboardShortcut::new(Modifiers::COMMAND, Key::Q))
+            }) {
+                self.request_exit(ui);
+            }
+            if ui.ctx().input_mut(|input| {
+                input.consume_shortcut(&KeyboardShortcut::new(Modifiers::COMMAND, Key::P))
+            }) {
+                if let Some(player) = &mut player {
+                    player.set_is_playing(!player.is_playing());
+                }
+            }
+
+            menu::bar(ui, |ui| {
+                menu::menu_button(ui, text(&self.locale, "file-menu"), |ui| {
+                    let mut shortcut;
+
+                    shortcut = KeyboardShortcut::new(Modifiers::COMMAND, Key::O);
+                    if Button::new(text(&self.locale, "file-menu-open-quick"))
+                        .shortcut_text(ui.ctx().format_shortcut(&shortcut))
+                        .ui(ui)
+                        .clicked()
+                    {
+                        self.open_file(ui);
+                    }
+
+                    shortcut = KeyboardShortcut::new(Modifiers::COMMAND | Modifiers::SHIFT, Key::O);
+                    if Button::new(text(&self.locale, "file-menu-open-advanced"))
+                        .shortcut_text(ui.ctx().format_shortcut(&shortcut))
+                        .ui(ui).clicked() {
+                        ui.close_menu();
+                        self.open_file_advanced();
+                    }
+
+                    if ui.add_enabled(player.is_some(), Button::new(text(&self.locale, "file-menu-reload"))).clicked() {
+                        self.reload_movie(ui);
+                    }
+
+                    if ui.add_enabled(player.is_some(), Button::new(text(&self.locale, "file-menu-close"))).clicked() {
+                        self.close_movie(ui);
+                    }
+
+                    ui.separator();
+
+                    shortcut = KeyboardShortcut::new(Modifiers::COMMAND, Key::Q);
+                    if Button::new(text(&self.locale, "file-menu-exit"))
+                        .shortcut_text(ui.ctx().format_shortcut(&shortcut))
+                        .ui(ui)
+                        .clicked()
+                    {
+                        self.request_exit(ui);
+                    }
+                });
+                menu::menu_button(ui, text(&self.locale, "controls-menu"), |ui| {
+                    ui.add_enabled_ui(player.is_some(), |ui| {
+                        let playing = player.as_ref().map(|p| p.is_playing()).unwrap_or_default();
+                        let pause_shortcut = KeyboardShortcut::new(Modifiers::COMMAND, Key::P);
+                        if Button::new(text(&self.locale, if playing { "controls-menu-suspend" } else { "controls-menu-resume" })).shortcut_text(ui.ctx().format_shortcut(&pause_shortcut)).ui(ui).clicked() {
+                            ui.close_menu();
+                            if let Some(player) = &mut player {
+                                player.set_is_playing(!player.is_playing());
+                            }
+                        }
+                    });
+                    if Button::new(text(&self.locale, "controls-menu-volume")).ui(ui).clicked() {
+                        self.show_volume_screen(ui);
+                    }
+                });
+                menu::menu_button(ui, text(&self.locale, "debug-menu"), |ui| {
+                    ui.add_enabled_ui(player.is_some(), |ui| {
+                        if Button::new(text(&self.locale, "debug-menu-open-stage")).ui(ui).clicked() {
+                            ui.close_menu();
+                            if let Some(player) = &mut player {
+                                player.debug_ui().queue_message(DebugMessage::TrackStage);
+                            }
+                        }
+                        if Button::new(text(&self.locale, "debug-menu-open-movie")).ui(ui).clicked() {
+                            ui.close_menu();
+                            if let Some(player) = &mut player {
+                                player.debug_ui().queue_message(DebugMessage::TrackTopLevelMovie);
+                            }
+                        }
+                        if Button::new(text(&self.locale, "debug-menu-open-movie-list")).ui(ui).clicked() {
+                            ui.close_menu();
+                            if let Some(player) = &mut player {
+                                player.debug_ui().queue_message(DebugMessage::ShowKnownMovies);
+                            }
+                        }
+                        if Button::new(text(&self.locale, "debug-menu-search-display-objects")).ui(ui).clicked() {
+                            ui.close_menu();
+                            if let Some(player) = &mut player {
+                                player.debug_ui().queue_message(DebugMessage::SearchForDisplayObject);
+                            }
+                        }
+                        if Button::new(text(&self.locale, "debug-menu-take-screenshot")).ui(ui).clicked() {
+                            ui.close_menu();
+                            self.set_taking_screenshot(true)
+                        }
+                    });
+                });
+                menu::menu_button(ui, text(&self.locale, "help-menu"), |ui| {
+                    if ui.button(text(&self.locale, "help-menu-join-discord")).clicked() {
+                        self.launch_website(ui, "https://discord.gg/ruffle");
+                    }
+                    if ui.button(text(&self.locale, "help-menu-report-a-bug")).clicked() {
+                        self.launch_website(ui, "https://github.com/ruffle-rs/ruffle/issues/new?assignees=&labels=bug&projects=&template=bug_report.yml");
+                    }
+                    if ui.button(text(&self.locale, "help-menu-sponsor-development")).clicked() {
+                        self.launch_website(ui, "https://opencollective.com/ruffle/");
+                    }
+                    if ui.button(text(&self.locale, "help-menu-translate-ruffle")).clicked() {
+                        self.launch_website(ui, "https://crowdin.com/project/ruffle");
+                    }
+                    ui.separator();
+                    if ui.button(text(&self.locale, "help-menu-about")).clicked() {
+                        self.show_about_screen(ui);
+                    }
+                });
+            });
+        });
+    }
+
+    /// Renders the About Ruffle window.
+    fn about_window(&mut self, egui_ctx: &egui::Context) {
+        egui::Window::new(text(&self.locale, "about-ruffle"))
+            .collapsible(false)
+            .resizable(false)
+            .anchor(Align2::CENTER_CENTER, egui::Vec2::ZERO)
+            .open(&mut self.is_about_visible)
+            .show(egui_ctx, |ui| {
+                ui.vertical_centered(|ui| {
+                    ui.label(
+                        RichText::new("Ruffle")
+                            .color(Color32::from_rgb(0xFF, 0xAD, 0x33))
+                            .size(32.0),
+                    );
+                    Grid::new("about_ruffle_version_info")
+                        .striped(true)
+                        .show(ui, |ui| {
+                            ui.label(text(&self.locale, "about-ruffle-version"));
+                            ui.label(env!("CARGO_PKG_VERSION"));
+                            ui.end_row();
+
+                            ui.label(text(&self.locale, "about-ruffle-channel"));
+                            ui.label(env!("CFG_RELEASE_CHANNEL"));
+                            ui.end_row();
+
+                            let build_time = env!("VERGEN_BUILD_TIMESTAMP");
+                            if build_time != VERGEN_UNKNOWN {
+                                ui.label(text(&self.locale, "about-ruffle-build-time"));
+                                ui.label(
+                                    DateTime::parse_from_rfc3339(build_time)
+                                        .map(|t| t.format("%c").to_string())
+                                        .unwrap_or_else(|_| build_time.to_string()),
+                                );
+                                ui.end_row();
+                            }
+
+                            let sha = env!("VERGEN_GIT_SHA");
+                            if sha != VERGEN_UNKNOWN {
+                                ui.label(text(&self.locale, "about-ruffle-commit-ref"));
+                                ui.hyperlink_to(
+                                    sha,
+                                    format!("https://github.com/ruffle-rs/ruffle/commit/{}", sha),
+                                );
+                                ui.end_row();
+                            }
+
+                            let commit_time = env!("VERGEN_GIT_COMMIT_TIMESTAMP");
+                            if sha != VERGEN_UNKNOWN {
+                                ui.label(text(&self.locale, "about-ruffle-commit-time"));
+                                ui.label(
+                                    DateTime::parse_from_rfc3339(commit_time)
+                                        .map(|t| t.format("%c").to_string())
+                                        .unwrap_or_else(|_| commit_time.to_string()),
+                                );
+                                ui.end_row();
+                            }
+
+                            ui.label(text(&self.locale, "about-ruffle-build-features"));
+                            ui.horizontal_wrapped(|ui| {
+                                ui.label(env!("VERGEN_CARGO_FEATURES").replace(',', ", "));
+                            });
+                            ui.end_row();
+                        });
+
+                    ui.horizontal(|ui| {
+                        ui.hyperlink_to(
+                            text(&self.locale, "about-ruffle-visit-website"),
+                            "https://ruffle.rs",
+                        );
+                        ui.hyperlink_to(
+                            text(&self.locale, "about-ruffle-visit-github"),
+                            "https://github.com/ruffle-rs/ruffle/",
+                        );
+                        ui.hyperlink_to(
+                            text(&self.locale, "about-ruffle-visit-discord"),
+                            "https://discord.gg/ruffle",
+                        );
+                        ui.hyperlink_to(
+                            text(&self.locale, "about-ruffle-visit-sponsor"),
+                            "https://opencollective.com/ruffle/",
+                        );
+                        ui.shrink_width_to_current();
+                    });
+                })
+            });
+    }
+
+    /// Renders the volume controls window.
+    fn volume_window(&mut self, egui_ctx: &egui::Context, player: Option<&mut Player>) {
+        egui::Window::new(text(&self.locale, "volume-controls"))
+            .collapsible(false)
+            .resizable(false)
+            .anchor(Align2::CENTER_CENTER, egui::Vec2::ZERO)
+            .open(&mut self.is_volume_visible)
+            .show(egui_ctx, |ui| {
+                let mut changed_slider = false;
+
+                let changed_checkbox = ui
+                    .checkbox(
+                        &mut self.volume_controls.is_muted,
+                        text(&self.locale, "volume-controls-mute"),
+                    )
+                    .changed();
+
+                ui.add_enabled_ui(!self.volume_controls.is_muted, |ui| {
+                    ui.horizontal(|ui| {
+                        ui.label(text(&self.locale, "volume-controls-volume"));
+                        changed_slider = ui
+                            .add(Slider::new(&mut self.volume_controls.volume, 0.0..=100.0))
+                            .changed();
+                    });
+                });
+
+                if changed_checkbox || changed_slider {
+                    if let Some(player) = player {
+                        player.set_volume(self.volume_controls.get_volume());
+                    }
+                }
+            });
+    }
+
+    /// Renders the right-click context menu.
+    fn context_menu(&mut self, egui_ctx: &egui::Context) {
+        let mut item_clicked = false;
+        let mut menu_visible = false;
+        // TODO: What is the proper way in egui to spawn a random context menu?
+        egui::CentralPanel::default()
+            .frame(Frame::none())
+            .show(egui_ctx, |_| {})
+            .response
+            .context_menu(|ui| {
+                menu_visible = true;
+                for (i, item) in self.context_menu.iter().enumerate() {
+                    if i != 0 && item.separator_before {
+                        ui.separator();
+                    }
+                    let clicked = if item.checked {
+                        Checkbox::new(&mut true, &item.caption).ui(ui).clicked()
+                    } else {
+                        let button = Button::new(&item.caption).wrap(false);
+
+                        ui.add_enabled(item.enabled, button).clicked()
+                    };
+                    if clicked {
+                        let _ = self
+                            .event_loop
+                            .send_event(RuffleEvent::ContextMenuItemClicked(i));
+                        item_clicked = true;
+                    }
+                }
+            });
+      
         self.dialogs
             .recreate_open_dialog(opt, Some(movie_url), self.event_loop.clone());
 
