@@ -144,3 +144,15 @@ pub fn log_warn<'gc>(
 
     Ok(Value::Undefined)
 }
+
+pub fn is_dependent<'gc>(
+    _activation: &mut Activation<'_, 'gc>,
+    _this: Value<'gc>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    if let Value::String(s) = args[0] {
+        return Ok(s.is_dependent().into());
+    }
+
+    panic!();
+}
