@@ -1,53 +1,14 @@
 //! `String` impl
 
 use crate::avm2::activation::Activation;
-use crate::avm2::class::{Class, ClassAttributes};
-use crate::avm2::error::make_error_1004;
-use crate::avm2::method::{Method, NativeMethodImpl};
-use crate::avm2::object::{FunctionObject, Object, TObject};
+use crate::avm2::object::TObject;
 use crate::avm2::regexp::{RegExp, RegExpFlags};
 use crate::avm2::value::Value;
 use crate::avm2::Error;
-use crate::avm2::QName;
 use crate::avm2::{ArrayObject, ArrayStorage};
 use crate::string::{AvmString, WString};
 
-// All of these methods will be defined as both
-// AS3 instance methods and methods on the `String` class prototype.
-const PUBLIC_INSTANCE_AND_PROTO_METHODS: &[(&str, NativeMethodImpl)] = &[
-    ("toUpperCase", to_upper_case),
-    ("charCodeAt", char_code_at),
-    ("search", search),
-    ("concat", concat),
-    ("slice", slice),
-    ("match", match_s),
-    ("valueOf", value_of),
-    ("charAt", char_at),
-    ("substr", substr),
-    ("toString", to_string),
-    ("toLocaleLowerCase", to_lower_case),
-    ("indexOf", index_of),
-    ("replace", replace),
-    ("split", split),
-    ("substring", substring),
-    ("lastIndexOf", last_index_of),
-    ("toLocaleUpperCase", to_upper_case),
-    ("localeCompare", locale_compare),
-    ("toLowerCase", to_lower_case),
-];
-
-/// Implements `String`'s instance initializer.
-///
-/// Because of the presence of a custom constructor, this method is unreachable.
-fn instance_init<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
-    _this: Value<'gc>,
-    _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error<'gc>> {
-    unreachable!()
-}
-
-fn string_constructor<'gc>(
+pub fn string_constructor<'gc>(
     activation: &mut Activation<'_, 'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -57,38 +18,6 @@ fn string_constructor<'gc>(
     };
 
     Ok(string_value.into())
-}
-
-/// Implements `String`'s class initializer.
-pub fn class_init<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    this: Value<'gc>,
-    _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error<'gc>> {
-    let this = this.as_object().unwrap();
-
-    let scope = activation.create_scopechain();
-    let gc_context = activation.gc();
-    let this_class = this.as_class_object().unwrap();
-    let proto = this_class.prototype();
-
-    for (name, method) in PUBLIC_INSTANCE_AND_PROTO_METHODS {
-        proto.set_string_property_local(
-            *name,
-            FunctionObject::from_method(
-                activation,
-                Method::from_builtin(*method, name, gc_context),
-                scope,
-                None,
-                None,
-                None,
-            )
-            .into(),
-            activation,
-        )?;
-        proto.set_local_property_is_enumerable(gc_context, (*name).into(), false);
-    }
-    Ok(Value::Undefined)
 }
 
 pub fn call_handler<'gc>(
@@ -103,7 +32,7 @@ pub fn call_handler<'gc>(
 }
 
 /// Implements `length` property's getter
-fn length<'gc>(
+pub fn get_length<'gc>(
     _activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
     _args: &[Value<'gc>],
@@ -116,7 +45,7 @@ fn length<'gc>(
 }
 
 /// Implements `String.charAt`
-fn char_at<'gc>(
+pub fn char_at<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
     args: &[Value<'gc>],
@@ -144,7 +73,7 @@ fn char_at<'gc>(
 }
 
 /// Implements `String.charCodeAt`
-fn char_code_at<'gc>(
+pub fn char_code_at<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
     args: &[Value<'gc>],
@@ -168,7 +97,7 @@ fn char_code_at<'gc>(
 }
 
 /// Implements `String.concat`
-fn concat<'gc>(
+pub fn concat<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
     args: &[Value<'gc>],
@@ -184,7 +113,7 @@ fn concat<'gc>(
 }
 
 /// Implements `String.fromCharCode`
-fn from_char_code<'gc>(
+pub fn from_char_code<'gc>(
     activation: &mut Activation<'_, 'gc>,
     _this: Value<'gc>,
     args: &[Value<'gc>],
@@ -198,7 +127,7 @@ fn from_char_code<'gc>(
 }
 
 /// Implements `String.indexOf`
-fn index_of<'gc>(
+pub fn index_of<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
     args: &[Value<'gc>],
@@ -222,7 +151,7 @@ fn index_of<'gc>(
 }
 
 /// Implements `String.lastIndexOf`
-fn last_index_of<'gc>(
+pub fn last_index_of<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
     args: &[Value<'gc>],
@@ -251,7 +180,7 @@ fn last_index_of<'gc>(
 
 /// Implements String.localeCompare
 /// NOTE: Despite the declaration of this function in the documentation, FP does not support multiple strings in comparison
-fn locale_compare<'gc>(
+pub fn locale_compare<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
     args: &[Value<'gc>],
@@ -281,8 +210,8 @@ fn locale_compare<'gc>(
     Ok(Value::Integer(0))
 }
 
-/// Implements `String.match`
-fn match_s<'gc>(
+/// Implements `String.match`. This function can't be named `match` because it's a Rust keyword.
+pub fn match_internal<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
     args: &[Value<'gc>],
@@ -345,7 +274,7 @@ fn match_s<'gc>(
 }
 
 /// Implements `String.replace`
-fn replace<'gc>(
+pub fn replace<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
     args: &[Value<'gc>],
@@ -390,7 +319,7 @@ fn replace<'gc>(
 }
 
 /// Implements `String.search`
-fn search<'gc>(
+pub fn search<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
     args: &[Value<'gc>],
@@ -428,7 +357,7 @@ fn search<'gc>(
 }
 
 /// Implements `String.slice`
-fn slice<'gc>(
+pub fn slice<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
     args: &[Value<'gc>],
@@ -461,7 +390,7 @@ fn slice<'gc>(
 }
 
 /// Implements `String.split`
-fn split<'gc>(
+pub fn split<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
     args: &[Value<'gc>],
@@ -504,7 +433,7 @@ fn split<'gc>(
 }
 
 /// Implements `String.substr`
-fn substr<'gc>(
+pub fn substr<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
     args: &[Value<'gc>],
@@ -558,7 +487,7 @@ fn substr<'gc>(
 }
 
 /// Implements `String.substring`
-fn substring<'gc>(
+pub fn substring<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
     args: &[Value<'gc>],
@@ -594,7 +523,7 @@ fn substring<'gc>(
 }
 
 /// Implements `String.toLowerCase`
-fn to_lower_case<'gc>(
+pub fn to_lower_case<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
     _args: &[Value<'gc>],
@@ -610,37 +539,8 @@ fn to_lower_case<'gc>(
     .into())
 }
 
-/// Implements `String.prototype.toString`
-fn to_string<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    this: Value<'gc>,
-    _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error<'gc>> {
-    if let Value::String(v) = this {
-        return Ok(v.into());
-    }
-
-    if let Some(this) = this.as_object() {
-        let string_proto = activation.avm2().classes().string.prototype();
-        if Object::ptr_eq(string_proto, this) {
-            return Ok(activation.strings().empty().into());
-        }
-    }
-
-    Err(make_error_1004(activation, "String.prototype.toString"))
-}
-
-/// Implements `String.valueOf`
-fn value_of<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
-    this: Value<'gc>,
-    _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error<'gc>> {
-    Ok(this)
-}
-
 /// Implements `String.toUpperCase`
-fn to_upper_case<'gc>(
+pub fn to_upper_case<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
     _args: &[Value<'gc>],
@@ -654,81 +554,6 @@ fn to_upper_case<'gc>(
             .collect::<WString>(),
     )
     .into())
-}
-
-#[cfg(feature = "test_only_as3")]
-fn is_dependent<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
-    this: Value<'gc>,
-    _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error<'gc>> {
-    if let Value::String(s) = this {
-        return Ok(s.is_dependent().into());
-    }
-
-    panic!();
-}
-
-/// Construct `String`'s class.
-pub fn create_class<'gc>(activation: &mut Activation<'_, 'gc>) -> Class<'gc> {
-    let mc = activation.gc();
-    let namespaces = activation.avm2().namespaces;
-
-    let class = Class::new(
-        QName::new(namespaces.public_all(), "String"),
-        Some(activation.avm2().class_defs().object),
-        Method::from_builtin(instance_init, "<String instance initializer>", mc),
-        Method::from_builtin(class_init, "<String class initializer>", mc),
-        activation.avm2().class_defs().class,
-        mc,
-    );
-
-    class.set_attributes(mc, ClassAttributes::FINAL | ClassAttributes::SEALED);
-    class.set_custom_constructor(mc, string_constructor);
-    class.set_call_handler(
-        mc,
-        Method::from_builtin(call_handler, "<String call handler>", mc),
-    );
-
-    const PUBLIC_INSTANCE_PROPERTIES: &[(
-        &str,
-        Option<NativeMethodImpl>,
-        Option<NativeMethodImpl>,
-    )] = &[("length", Some(length), None)];
-    class.define_builtin_instance_properties(
-        mc,
-        namespaces.public_all(),
-        PUBLIC_INSTANCE_PROPERTIES,
-    );
-    class.define_builtin_instance_methods(mc, namespaces.as3, PUBLIC_INSTANCE_AND_PROTO_METHODS);
-
-    #[cfg(feature = "test_only_as3")]
-    {
-        const TEST_METHODS: &[(&str, NativeMethodImpl)] = &[("isDependent", is_dependent)];
-        class.define_builtin_instance_methods(mc, namespaces.__ruffle__, TEST_METHODS);
-    }
-
-    const CONSTANTS_INT: &[(&str, i32)] = &[("length", 1)];
-    class.define_constant_int_class_traits(namespaces.public_all(), CONSTANTS_INT, activation);
-
-    const AS3_CLASS_METHODS: &[(&str, NativeMethodImpl)] = &[("fromCharCode", from_char_code)];
-    const PUBLIC_CLASS_METHODS: &[(&str, NativeMethodImpl)] = &[("fromCharCode", from_char_code)];
-    class.define_builtin_class_methods(mc, namespaces.as3, AS3_CLASS_METHODS);
-    class.define_builtin_class_methods(mc, namespaces.public_all(), PUBLIC_CLASS_METHODS);
-
-    class.mark_traits_loaded(activation.gc());
-    class
-        .init_vtable(activation.context)
-        .expect("Native class's vtable should initialize");
-
-    let c_class = class.c_class().expect("Class::new returns an i_class");
-
-    c_class.mark_traits_loaded(activation.gc());
-    c_class
-        .init_vtable(activation.context)
-        .expect("Native class's vtable should initialize");
-
-    class
 }
 
 /// Normalizes an  index parameter used in `String` functions such as `substring`.

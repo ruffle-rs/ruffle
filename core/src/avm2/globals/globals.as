@@ -1,6 +1,7 @@
 // List is ordered alphabetically, except where superclasses/interfaces
 // need to come before subclasses and implementations.
 
+include "__ruffle__/dependent.as"
 include "__ruffle__/stubs.as"
 
 include "Date.as"
