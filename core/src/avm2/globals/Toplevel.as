@@ -32,6 +32,7 @@ package {
 
 include "Error.as"
 
+include "Array.as"
 include "Boolean.as"
 include "String.as"
 
