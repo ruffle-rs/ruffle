@@ -2,6 +2,7 @@
 
 use crate::avm2::activation::Activation;
 use crate::avm2::object::TObject;
+use crate::avm2::parameters::ParametersExt;
 use crate::avm2::regexp::{RegExp, RegExpFlags};
 use crate::avm2::value::Value;
 use crate::avm2::Error;
@@ -51,11 +52,9 @@ pub fn char_at<'gc>(
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Value::String(s) = this {
-        // This function takes Number, so if we use coerce_to_i32 instead of coerce_to_number, the value may overflow.
-        let n = args
-            .get(0)
-            .unwrap_or(&Value::Number(0.0))
-            .coerce_to_number(activation)?;
+        // This function takes Number, so if we use get_i32 instead of get_f64, the value may overflow.
+        let n = args.get_f64(activation, 0)?;
+
         if n < 0.0 {
             return Ok(activation.strings().empty().into());
         }
@@ -80,10 +79,8 @@ pub fn char_code_at<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Value::String(s) = this {
         // This function takes Number, so if we use coerce_to_i32 instead of coerce_to_number, the value may overflow.
-        let n = args
-            .get(0)
-            .unwrap_or(&Value::Number(0.0))
-            .coerce_to_number(activation)?;
+        let n = args.get_f64(activation, 0)?;
+
         if n < 0.0 {
             return Ok(f64::NAN.into());
         }
@@ -134,15 +131,9 @@ pub fn index_of<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.coerce_to_string(activation)?;
 
-    let pattern = match args.get(0) {
-        None => return Ok(Value::Integer(-1)),
-        Some(s) => s.clone().coerce_to_string(activation)?,
-    };
+    let pattern = args.get_string(activation, 0)?;
 
-    let start_index = match args.get(1) {
-        None | Some(Value::Undefined) => 0,
-        Some(n) => n.coerce_to_i32(activation)?.max(0) as usize,
-    };
+    let start_index = args.get_i32(activation, 1)?.max(0) as usize;
 
     this.slice(start_index..)
         .and_then(|s| s.find(&pattern))
@@ -158,17 +149,13 @@ pub fn last_index_of<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.coerce_to_string(activation)?;
 
-    let pattern = match args.get(0) {
-        None => return Ok(Value::Undefined),
-        Some(s) => s.clone().coerce_to_string(activation)?,
-    };
+    let pattern = args.get_string(activation, 0)?;
 
-    let start_index = match args.get(1) {
-        None | Some(Value::Undefined) => this.len(),
-        Some(n) => match usize::try_from(n.coerce_to_i32(activation)?) {
-            Ok(n) => n + pattern.len(),
-            Err(_) => return Ok((-1).into()), // Bail out on negative indices.
-        },
+    let start_index = args.get_i32(activation, 1)?;
+
+    let start_index = match usize::try_from(start_index) {
+        Ok(n) => n + pattern.len(),
+        Err(_) => return Ok((-1).into()), // Bail out on negative indices.
     };
 
     this.slice(..start_index)
@@ -187,10 +174,7 @@ pub fn locale_compare<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.coerce_to_string(activation)?;
 
-    let other = match args.get(0) {
-        None => Value::Undefined.coerce_to_string(activation)?,
-        Some(s) => s.clone().coerce_to_string(activation)?,
-    };
+    let other = args.get_string(activation, 0)?;
 
     for (tc, oc) in this.iter().zip(other.iter()) {
         let res = (tc as i32) - (oc as i32);
@@ -218,11 +202,11 @@ pub fn match_internal<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.coerce_to_string(activation)?;
 
-    let pattern = args.get(0).unwrap_or(&Value::Undefined);
+    let pattern = args.get_value(0);
 
     let regexp_class = activation.avm2().classes().regexp;
     let pattern = if pattern.is_of_type(activation, regexp_class.inner_class_definition()) {
-        *pattern
+        pattern
     } else {
         let string = pattern.coerce_to_string(activation)?;
         regexp_class.construct(activation, &[Value::String(string)])?
@@ -280,8 +264,8 @@ pub fn replace<'gc>(
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.coerce_to_string(activation)?;
-    let pattern = args.get(0).unwrap_or(&Value::Undefined);
-    let replacement = args.get(1).unwrap_or(&Value::Undefined);
+    let pattern = args.get_value(0);
+    let replacement = args.get_value(1);
 
     if let Some(regexp) = pattern
         .as_object()
@@ -326,11 +310,11 @@ pub fn search<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.coerce_to_string(activation)?;
 
-    let pattern = args.get(0).unwrap_or(&Value::Undefined);
+    let pattern = args.get_value(0);
 
     let regexp_class = activation.avm2().classes().regexp;
     let pattern = if pattern.is_of_type(activation, regexp_class.inner_class_definition()) {
-        *pattern
+        pattern
     } else {
         let string = pattern.coerce_to_string(activation)?;
         regexp_class.construct(activation, &[Value::String(string)])?
@@ -364,20 +348,11 @@ pub fn slice<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.coerce_to_string(activation)?;
 
-    let start_index = match args.get(0) {
-        None => 0,
-        Some(n) => {
-            let n = n.coerce_to_number(activation)?;
-            string_wrapping_index(n, this.len())
-        }
-    };
-    let end_index = match args.get(1) {
-        None => this.len(),
-        Some(n) => {
-            let n = n.coerce_to_number(activation)?;
-            string_wrapping_index(n, this.len())
-        }
-    };
+    let start_index = args.get_f64(activation, 0)?;
+    let start_index = string_wrapping_index(start_index, this.len());
+
+    let end_index = args.get_f64(activation, 1)?;
+    let end_index = string_wrapping_index(end_index, this.len());
 
     if start_index < end_index {
         Ok(activation
@@ -397,9 +372,9 @@ pub fn split<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.coerce_to_string(activation)?;
 
-    let delimiter = args.get(0).unwrap_or(&Value::Undefined);
+    let delimiter = args.get_value(0);
 
-    let limit = match args.get(1).unwrap_or(&Value::Undefined) {
+    let limit = match args.get_value(1) {
         Value::Undefined => usize::MAX,
         limit => limit.coerce_to_i32(activation)?.max(0) as usize,
     };
@@ -440,21 +415,10 @@ pub fn substr<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.coerce_to_string(activation)?;
 
-    if args.is_empty() {
-        return Ok(Value::from(this));
-    }
+    let start_index = args.get_f64(activation, 0)?;
+    let start_index = string_wrapping_index(start_index, this.len());
 
-    let start_index = string_wrapping_index(
-        args.get(0)
-            .unwrap_or(&Value::Number(0.))
-            .coerce_to_number(activation)?,
-        this.len(),
-    );
-
-    let len = args
-        .get(1)
-        .unwrap_or(&Value::Number(0x7fffffff as f64))
-        .coerce_to_number(activation)?;
+    let len = args.get_f64(activation, 1)?;
 
     let len = if len.is_nan() {
         0.0
@@ -494,23 +458,11 @@ pub fn substring<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.coerce_to_string(activation)?;
 
-    if args.is_empty() {
-        return Ok(this.into());
-    }
+    let start_index = args.get_f64(activation, 0)?;
+    let mut start_index = string_index(start_index, this.len());
 
-    let mut start_index = string_index(
-        args.get(0)
-            .unwrap_or(&Value::Number(0.))
-            .coerce_to_number(activation)?,
-        this.len(),
-    );
-
-    let mut end_index = string_index(
-        args.get(1)
-            .unwrap_or(&Value::Number(0x7fffffff as f64))
-            .coerce_to_number(activation)?,
-        this.len(),
-    );
+    let end_index = args.get_f64(activation, 1)?;
+    let mut end_index = string_index(end_index, this.len());
 
     if end_index < start_index {
         std::mem::swap(&mut end_index, &mut start_index);
