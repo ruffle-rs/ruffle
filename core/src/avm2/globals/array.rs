@@ -2,69 +2,19 @@
 
 use crate::avm2::activation::Activation;
 use crate::avm2::array::ArrayStorage;
-use crate::avm2::class::Class;
 use crate::avm2::error::{make_error_1125, range_error};
-use crate::avm2::method::{Method, NativeMethodImpl};
-use crate::avm2::object::{array_allocator, ArrayObject, FunctionObject, Object, TObject};
+use crate::avm2::object::{ArrayObject, Object, TObject};
 use crate::avm2::value::Value;
 use crate::avm2::Error;
-use crate::avm2::QName;
 use crate::string::AvmString;
 use bitflags::bitflags;
 use std::cmp::{min, Ordering};
 use std::mem::swap;
 
-// All of these methods will be defined as AS3-namespaced methods.
-const PUBLIC_AS3_INSTANCE_METHODS: &[(&str, NativeMethodImpl)] = &[
-    ("concat", concat),
-    ("join", join),
-    ("forEach", for_each),
-    ("map", map),
-    ("filter", filter),
-    ("every", every),
-    ("some", some),
-    ("indexOf", index_of),
-    ("lastIndexOf", last_index_of),
-    ("pop", pop),
-    ("push", push),
-    ("insertAt", insert_at),
-    ("removeAt", remove_at),
-    ("reverse", reverse),
-    ("shift", shift),
-    ("unshift", unshift),
-    ("slice", slice),
-    ("splice", splice),
-    ("sort", sort),
-    ("sortOn", sort_on),
-];
-
-// All of these methods will be defined on the `Array` class prototype.
-const PUBLIC_PROTO_METHODS: &[(&str, NativeMethodImpl)] = &[
-    ("concat", concat),
-    ("join", join),
-    ("forEach", for_each),
-    ("map", map),
-    ("filter", filter),
-    ("every", every),
-    ("some", some),
-    ("indexOf", index_of),
-    ("lastIndexOf", last_index_of),
-    ("pop", pop),
-    ("push", push),
-    ("removeAt", remove_at),
-    ("reverse", reverse),
-    ("shift", shift),
-    ("toLocaleString", to_locale_string),
-    ("toString", to_string),
-    ("unshift", unshift),
-    ("slice", slice),
-    ("splice", splice),
-    ("sort", sort),
-    ("sortOn", sort_on),
-];
+pub use crate::avm2::object::array_allocator;
 
 /// Implements `Array`'s instance initializer.
-pub fn instance_init<'gc>(
+pub fn array_initializer<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
     args: &[Value<'gc>],
@@ -98,7 +48,7 @@ pub fn instance_init<'gc>(
     Ok(Value::Undefined)
 }
 
-pub fn class_call<'gc>(
+pub fn call_handler<'gc>(
     activation: &mut Activation<'_, 'gc>,
     _this: Value<'gc>,
     args: &[Value<'gc>],
@@ -110,41 +60,8 @@ pub fn class_call<'gc>(
         .construct(activation, args)
 }
 
-/// Implements `Array`'s class initializer.
-pub fn class_init<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    this: Value<'gc>,
-    _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error<'gc>> {
-    let this = this.as_object().unwrap();
-
-    let scope = activation.create_scopechain();
-    let gc_context = activation.gc();
-    let this_class = this.as_class_object().unwrap();
-    let array_proto = this_class.prototype();
-
-    for (name, method) in PUBLIC_PROTO_METHODS {
-        array_proto.set_string_property_local(
-            *name,
-            FunctionObject::from_method(
-                activation,
-                Method::from_builtin(*method, name, gc_context),
-                scope,
-                None,
-                None,
-                None,
-            )
-            .into(),
-            activation,
-        )?;
-        array_proto.set_local_property_is_enumerable(gc_context, (*name).into(), false);
-    }
-
-    Ok(Value::Undefined)
-}
-
 /// Implements `Array.length`'s getter
-pub fn length<'gc>(
+pub fn get_length<'gc>(
     _activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
     _args: &[Value<'gc>],
@@ -284,34 +201,6 @@ pub fn join<'gc>(
     let this = this.as_object().unwrap();
 
     join_inner(activation, this, args, |v, _act| Ok(v))
-}
-
-/// Implements `Array.toString`
-pub fn to_string<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    this: Value<'gc>,
-    _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error<'gc>> {
-    let this = this.as_object().unwrap();
-
-    join_inner(activation, this, &[",".into()], |v, _act| Ok(v))
-}
-
-/// Implements `Array.toLocaleString`
-pub fn to_locale_string<'gc>(
-    act: &mut Activation<'_, 'gc>,
-    this: Value<'gc>,
-    _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error<'gc>> {
-    let this = this.as_object().unwrap();
-
-    join_inner(act, this, &[",".into()], |v, activation| {
-        if matches!(v, Value::Null | Value::Undefined) {
-            Ok(v)
-        } else {
-            v.call_public_property("toLocaleString", &[], activation)
-        }
-    })
 }
 
 /// An iterator that allows iterating over the contents of an array whilst also
@@ -707,9 +596,9 @@ pub fn resolve_index<'gc>(
     index: Value<'gc>,
     length: usize,
 ) -> Result<usize, Error<'gc>> {
-    let index = index.coerce_to_i32(activation)?;
+    let index = index.coerce_to_number(activation)?;
 
-    Ok(if index < 0 {
+    Ok(if index < 0.0 {
         let offset = index as isize;
         length.saturating_sub((-offset) as usize)
     } else {
@@ -1351,80 +1240,4 @@ pub fn remove_at<'gc>(
     }
 
     Ok(Value::Undefined)
-}
-
-/// Construct `Array`'s class.
-pub fn create_class<'gc>(activation: &mut Activation<'_, 'gc>) -> Class<'gc> {
-    let mc = activation.gc();
-    let class = Class::new(
-        QName::new(activation.avm2().namespaces.public_all(), "Array"),
-        Some(activation.avm2().class_defs().object),
-        Method::from_builtin(instance_init, "<Array instance initializer>", mc),
-        Method::from_builtin(class_init, "<Array class initializer>", mc),
-        activation.avm2().class_defs().class,
-        mc,
-    );
-
-    class.set_instance_allocator(mc, array_allocator);
-    class.set_call_handler(
-        mc,
-        Method::from_builtin(class_call, "<Array call handler>", mc),
-    );
-
-    const PUBLIC_INSTANCE_PROPERTIES: &[(
-        &str,
-        Option<NativeMethodImpl>,
-        Option<NativeMethodImpl>,
-    )] = &[("length", Some(length), Some(set_length))];
-    class.define_builtin_instance_properties(
-        mc,
-        activation.avm2().namespaces.public_all(),
-        PUBLIC_INSTANCE_PROPERTIES,
-    );
-
-    class.define_builtin_instance_methods(
-        mc,
-        activation.avm2().namespaces.as3,
-        PUBLIC_AS3_INSTANCE_METHODS,
-    );
-
-    const CONSTANTS_UINT: &[(&str, u32)] = &[
-        (
-            "CASEINSENSITIVE",
-            SortOptions::CASE_INSENSITIVE.bits() as u32,
-        ),
-        ("DESCENDING", SortOptions::DESCENDING.bits() as u32),
-        ("NUMERIC", SortOptions::NUMERIC.bits() as u32),
-        (
-            "RETURNINDEXEDARRAY",
-            SortOptions::RETURN_INDEXED_ARRAY.bits() as u32,
-        ),
-        ("UNIQUESORT", SortOptions::UNIQUE_SORT.bits() as u32),
-    ];
-    class.define_constant_uint_class_traits(
-        activation.avm2().namespaces.public_all(),
-        CONSTANTS_UINT,
-        activation,
-    );
-
-    const CONSTANTS_INT: &[(&str, i32)] = &[("length", 1)];
-    class.define_constant_int_class_traits(
-        activation.avm2().namespaces.public_all(),
-        CONSTANTS_INT,
-        activation,
-    );
-
-    class.mark_traits_loaded(activation.gc());
-    class
-        .init_vtable(activation.context)
-        .expect("Native class's vtable should initialize");
-
-    let c_class = class.c_class().expect("Class::new returns an i_class");
-
-    c_class.mark_traits_loaded(activation.gc());
-    c_class
-        .init_vtable(activation.context)
-        .expect("Native class's vtable should initialize");
-
-    class
 }

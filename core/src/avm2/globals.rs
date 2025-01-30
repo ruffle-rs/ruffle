@@ -572,7 +572,6 @@ pub fn load_player_globals<'gc>(
     let number_class = number::create_class(activation);
     let int_class = int::create_class(activation);
     let uint_class = uint::create_class(activation);
-    let array_class = array::create_class(activation);
     let vector_generic_class = vector::create_generic_class(activation);
 
     let vector_int_class = vector::create_builtin_class(activation, Some(int_class));
@@ -595,7 +594,6 @@ pub fn load_player_globals<'gc>(
         (public_ns, "Number", number_class),
         (public_ns, "int", int_class),
         (public_ns, "uint", uint_class),
-        (public_ns, "Array", array_class),
         (vector_public_ns, "Vector", vector_generic_class),
         (vector_internal_ns, "Vector$int", vector_int_class),
         (vector_internal_ns, "Vector$uint", vector_uint_class),
@@ -736,7 +734,6 @@ pub fn load_player_globals<'gc>(
     avm2_system_class!(number, activation, number_class, script);
     avm2_system_class!(int, activation, int_class, script);
     avm2_system_class!(uint, activation, uint_class, script);
-    avm2_system_class!(array, activation, array_class, script);
 
     avm2_system_class!(generic_vector, activation, vector_generic_class, script);
 
@@ -861,6 +858,7 @@ pub fn init_builtin_system_classes(activation: &mut Activation<'_, '_>) {
         &mut *activation,
         [
             ("", "ArgumentError", argumenterror),
+            ("", "Array", array),
             ("", "Boolean", boolean),
             ("", "Error", error),
             ("", "EvalError", evalerror),
@@ -884,6 +882,7 @@ pub fn init_builtin_system_class_defs(activation: &mut Activation<'_, '_>) {
     avm2_system_class_defs_playerglobal!(
         &mut *activation,
         [
+            ("", "Array", array),
             ("", "Boolean", boolean),
             ("", "Namespace", namespace),
             ("", "String", string),

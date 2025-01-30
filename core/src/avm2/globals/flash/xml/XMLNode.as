@@ -70,7 +70,10 @@ package flash.xml
                 }
                 var index = parentNode.childNodes.indexOf(this);
                 if (index > -1) {
-                    parentNode.childNodes.removeAt(index);
+                    // For some reason ASC doesn't add the AS3 namespace here;
+                    // we need to add it manually since removeAt is only defined
+                    // in the AS3 namespace
+                    parentNode.childNodes.AS3::removeAt(index);
                 }
             }
 
