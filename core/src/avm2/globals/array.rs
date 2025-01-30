@@ -4,6 +4,7 @@ use crate::avm2::activation::Activation;
 use crate::avm2::array::ArrayStorage;
 use crate::avm2::error::{make_error_1125, range_error};
 use crate::avm2::object::{ArrayObject, Object, TObject};
+use crate::avm2::parameters::ParametersExt;
 use crate::avm2::value::Value;
 use crate::avm2::Error;
 use crate::string::AvmString;
@@ -84,10 +85,7 @@ pub fn set_length<'gc>(
     let this = this.as_object().unwrap();
 
     if let Some(mut array) = this.as_array_storage_mut(activation.gc()) {
-        let size = args
-            .get(0)
-            .unwrap_or(&Value::Undefined)
-            .coerce_to_u32(activation)?;
+        let size = args.get_u32(activation, 0)?;
         array.set_length(size as usize);
     }
 
@@ -154,22 +152,23 @@ pub fn resolve_array_hole<'gc>(
     }
 }
 
-pub fn join_inner<'gc, 'a, 'ctxt, C>(
-    activation: &mut Activation<'a, 'gc>,
-    this: Object<'gc>,
+/// Implements `Array.join`
+pub fn join<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    this: Value<'gc>,
     args: &[Value<'gc>],
-    mut conv: C,
-) -> Result<Value<'gc>, Error<'gc>>
-where
-    C: for<'b> FnMut(Value<'gc>, &'b mut Activation<'a, 'gc>) -> Result<Value<'gc>, Error<'gc>>,
-{
-    let mut separator = args.get(0).cloned().unwrap_or(Value::Undefined);
-    if separator == Value::Undefined {
-        separator = ",".into();
-    }
+) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
+    let separator = args.get_value(0);
 
     if let Some(array) = this.as_array_storage() {
-        let string_separator = separator.coerce_to_string(activation)?;
+        let string_separator = if matches!(separator, Value::Undefined) {
+            activation.strings().ascii_char(b',')
+        } else {
+            separator.coerce_to_string(activation)?
+        };
+
         let mut accum = Vec::with_capacity(array.length());
 
         for (i, item) in array.iter().enumerate() {
@@ -178,7 +177,7 @@ where
             if matches!(item, Value::Undefined) || matches!(item, Value::Null) {
                 accum.push(activation.strings().empty());
             } else {
-                accum.push(conv(item, activation)?.coerce_to_string(activation)?);
+                accum.push(item.coerce_to_string(activation)?);
             }
         }
 
@@ -190,17 +189,6 @@ where
     }
 
     Ok(Value::Undefined)
-}
-
-/// Implements `Array.join`
-pub fn join<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    this: Value<'gc>,
-    args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error<'gc>> {
-    let this = this.as_object().unwrap();
-
-    join_inner(activation, this, args, |v, _act| Ok(v))
 }
 
 /// An iterator that allows iterating over the contents of an array whilst also
@@ -321,8 +309,8 @@ pub fn for_each<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
-    let callback = args.get(0).cloned().unwrap_or(Value::Undefined);
-    let receiver = args.get(1).cloned().unwrap_or(Value::Null);
+    let callback = args.get_value(0);
+    let receiver = args.get_value(1);
     let mut iter = ArrayIter::new(activation, this)?;
 
     while let Some((i, item)) = iter.next(activation)? {
@@ -340,8 +328,8 @@ pub fn map<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
-    let callback = args.get(0).cloned().unwrap_or(Value::Undefined);
-    let receiver = args.get(1).cloned().unwrap_or(Value::Null);
+    let callback = args.get_value(0);
+    let receiver = args.get_value(1);
     let mut new_array = ArrayStorage::new(0);
     let mut iter = ArrayIter::new(activation, this)?;
 
@@ -362,8 +350,8 @@ pub fn filter<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
-    let callback = args.get(0).cloned().unwrap_or(Value::Undefined);
-    let receiver = args.get(1).cloned().unwrap_or(Value::Null);
+    let callback = args.get_value(0);
+    let receiver = args.get_value(1);
     let mut new_array = ArrayStorage::new(0);
     let mut iter = ArrayIter::new(activation, this)?;
 
@@ -388,8 +376,8 @@ pub fn every<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
-    let callback = args.get(0).cloned().unwrap_or(Value::Undefined);
-    let receiver = args.get(1).cloned().unwrap_or(Value::Null);
+    let callback = args.get_value(0);
+    let receiver = args.get_value(1);
     let mut iter = ArrayIter::new(activation, this)?;
 
     while let Some((i, item)) = iter.next(activation)? {
@@ -413,8 +401,8 @@ pub fn some<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
-    let callback = args.get(0).cloned().unwrap_or(Value::Undefined);
-    let receiver = args.get(1).cloned().unwrap_or(Value::Null);
+    let callback = args.get_value(0);
+    let receiver = args.get_value(1);
     let mut iter = ArrayIter::new(activation, this)?;
 
     while let Some((i, item)) = iter.next(activation)? {
@@ -439,12 +427,8 @@ pub fn index_of<'gc>(
     let this = this.as_object().unwrap();
 
     if let Some(array) = this.as_array_storage() {
-        let search_val = args.get(0).cloned().unwrap_or(Value::Undefined);
-        let from = args
-            .get(1)
-            .cloned()
-            .unwrap_or_else(|| 0.into())
-            .coerce_to_u32(activation)?;
+        let search_val = args.get_value(0);
+        let from = args.get_i32(activation, 1)?;
 
         for (i, val) in array.iter().enumerate() {
             let val = resolve_array_hole(activation, this, i, val)?;
@@ -468,12 +452,8 @@ pub fn last_index_of<'gc>(
     let this = this.as_object().unwrap();
 
     if let Some(array) = this.as_array_storage() {
-        let search_val = args.get(0).cloned().unwrap_or(Value::Undefined);
-        let from = args
-            .get(1)
-            .cloned()
-            .unwrap_or_else(|| i32::MAX.into())
-            .coerce_to_u32(activation)?;
+        let search_val = args.get_value(0);
+        let from = args.get_i32(activation, 1)?;
 
         for (i, val) in array.iter().enumerate().rev() {
             let val = resolve_array_hole(activation, this, i, val)?;
@@ -617,16 +597,8 @@ pub fn slice<'gc>(
     let array_length = this.as_array_storage().map(|a| a.length());
 
     if let Some(array_length) = array_length {
-        let actual_start = resolve_index(
-            activation,
-            args.get(0).cloned().unwrap_or_else(|| 0.into()),
-            array_length,
-        )?;
-        let actual_end = resolve_index(
-            activation,
-            args.get(1).cloned().unwrap_or_else(|| 0xFFFFFF.into()),
-            array_length,
-        )?;
+        let actual_start = resolve_index(activation, args.get_value(0), array_length)?;
+        let actual_end = resolve_index(activation, args.get_value(1), array_length)?;
         let mut new_array = ArrayStorage::new(0);
         for i in actual_start..actual_end {
             if i >= array_length {
@@ -658,11 +630,11 @@ pub fn splice<'gc>(
     let array_length = this.as_array_storage().map(|a| a.length());
 
     if let Some(array_length) = array_length {
-        if let Some(start) = args.get(0).cloned() {
+        if let Some(start) = args.get(0).copied() {
             let actual_start = resolve_index(activation, start, array_length)?;
             let delete_count = args
                 .get(1)
-                .cloned()
+                .copied()
                 .unwrap_or_else(|| array_length.into())
                 .coerce_to_i32(activation)?;
 
@@ -710,11 +682,7 @@ pub fn insert_at<'gc>(
     splice(
         activation,
         this,
-        &[
-            args.get(0).cloned().unwrap_or(0.into()),
-            0.into(),
-            args.get(1).cloned().unwrap_or(Value::Undefined),
-        ],
+        &[args.get_value(0), 0.into(), args.get_value(1)],
     )
 }
 
@@ -1014,18 +982,15 @@ pub fn sort<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
+    // FIXME avmplus does some manual argument count/type checking here,
+    // should we try to match that?
     let (compare_fnc, options) = if args.len() > 1 {
         (
-            Some(args.get(0).cloned().unwrap_or(Value::Undefined)),
-            SortOptions::from_bits_truncate(
-                args.get(1)
-                    .cloned()
-                    .unwrap_or_else(|| 0.into())
-                    .coerce_to_u32(activation)? as u8,
-            ),
+            Some(args.get_value(0)),
+            SortOptions::from_bits_truncate(args.get_u32(activation, 1)? as u8),
         )
     } else {
-        let arg = args.get(0).cloned().unwrap_or(Value::Undefined);
+        let arg = args.get(0).copied().unwrap_or(Value::Undefined);
         if let Some(callable) = arg
             .as_object()
             .filter(|o| o.as_class_object().is_some() || o.as_function_object().is_some())
@@ -1150,75 +1115,69 @@ pub fn sort_on<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
-    if let Some(field_names_value) = args.get(0).cloned() {
-        let field_names = extract_field_names(activation, field_names_value)?;
-        let mut options = extract_maybe_array_sort_options(
-            activation,
-            args.get(1).cloned().unwrap_or_else(|| 0.into()),
-        )?;
+    let field_names_value = args.get_value(0);
+    let field_names = extract_field_names(activation, field_names_value)?;
+    let mut options = extract_maybe_array_sort_options(activation, args.get_value(1))?;
 
-        let first_option = options.get(0).cloned().unwrap_or_else(SortOptions::empty)
-            & (SortOptions::UNIQUE_SORT | SortOptions::RETURN_INDEXED_ARRAY);
-        let mut values = if let Some(values) = extract_array_values(activation, this.into())? {
-            values
-                .iter()
-                .enumerate()
-                .map(|(i, v)| (i, *v))
-                .collect::<Vec<(usize, Value<'gc>)>>()
-        } else {
-            return Ok(0.into());
-        };
+    let first_option = options.get(0).copied().unwrap_or_else(SortOptions::empty)
+        & (SortOptions::UNIQUE_SORT | SortOptions::RETURN_INDEXED_ARRAY);
+    let mut values = if let Some(values) = extract_array_values(activation, this.into())? {
+        values
+            .iter()
+            .enumerate()
+            .map(|(i, v)| (i, *v))
+            .collect::<Vec<(usize, Value<'gc>)>>()
+    } else {
+        return Ok(0.into());
+    };
 
-        if options.len() < field_names.len() {
-            options.resize(
-                field_names.len(),
-                options.last().cloned().unwrap_or_else(SortOptions::empty),
-            );
-        }
-
-        let unique_satisfied = sort_inner(
-            activation,
-            &mut values,
-            first_option,
-            constrain(|activation, a, b| {
-                for (field_name, options) in field_names.iter().zip(options.iter()) {
-                    // note: these are incorrect: pretty sure
-                    // if the object is null/undefined or does not have the field,
-                    // it's treated as if the field's value was undefined.
-                    // TODO: verify this and fix it
-                    let a_object = a.null_check(activation, None)?;
-                    let a_field = a_object.get_public_property(*field_name, activation)?;
-
-                    let b_object = b.null_check(activation, None)?;
-                    let b_field = b_object.get_public_property(*field_name, activation)?;
-
-                    let ord = if options.contains(SortOptions::NUMERIC) {
-                        compare_numeric(activation, a_field, b_field)?
-                    } else if options.contains(SortOptions::CASE_INSENSITIVE) {
-                        compare_string_case_insensitive(activation, a_field, b_field)?
-                    } else {
-                        compare_string_case_sensitive(activation, a_field, b_field)?
-                    };
-
-                    if matches!(ord, Ordering::Equal) {
-                        continue;
-                    }
-
-                    if options.contains(SortOptions::DESCENDING) {
-                        return Ok(ord.reverse());
-                    } else {
-                        return Ok(ord);
-                    }
-                }
-
-                Ok(Ordering::Equal)
-            }),
-        )?;
-
-        return sort_postprocess(activation, this, first_option, unique_satisfied, values);
+    if options.len() < field_names.len() {
+        options.resize(
+            field_names.len(),
+            options.last().cloned().unwrap_or_else(SortOptions::empty),
+        );
     }
 
-    Ok(0.into())
+    let unique_satisfied = sort_inner(
+        activation,
+        &mut values,
+        first_option,
+        constrain(|activation, a, b| {
+            for (field_name, options) in field_names.iter().zip(options.iter()) {
+                // note: these are incorrect: pretty sure
+                // if the object is null/undefined or does not have the field,
+                // it's treated as if the field's value was undefined.
+                // TODO: verify this and fix it
+                let a_object = a.null_check(activation, None)?;
+                let a_field = a_object.get_public_property(*field_name, activation)?;
+
+                let b_object = b.null_check(activation, None)?;
+                let b_field = b_object.get_public_property(*field_name, activation)?;
+
+                let ord = if options.contains(SortOptions::NUMERIC) {
+                    compare_numeric(activation, a_field, b_field)?
+                } else if options.contains(SortOptions::CASE_INSENSITIVE) {
+                    compare_string_case_insensitive(activation, a_field, b_field)?
+                } else {
+                    compare_string_case_sensitive(activation, a_field, b_field)?
+                };
+
+                if matches!(ord, Ordering::Equal) {
+                    continue;
+                }
+
+                if options.contains(SortOptions::DESCENDING) {
+                    return Ok(ord.reverse());
+                } else {
+                    return Ok(ord);
+                }
+            }
+
+            Ok(Ordering::Equal)
+        }),
+    )?;
+
+    sort_postprocess(activation, this, first_option, unique_satisfied, values)
 }
 
 /// Implements `Array.removeAt`
@@ -1230,11 +1189,7 @@ pub fn remove_at<'gc>(
     let this = this.as_object().unwrap();
 
     if let Some(mut array) = this.as_array_storage_mut(activation.gc()) {
-        let index = args
-            .get(0)
-            .cloned()
-            .unwrap_or(Value::Undefined)
-            .coerce_to_i32(activation)?;
+        let index = args.get_i32(activation, 0)?;
 
         return Ok(array.remove(index).unwrap_or(Value::Undefined));
     }
