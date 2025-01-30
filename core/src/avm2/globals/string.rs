@@ -376,7 +376,7 @@ pub fn split<'gc>(
 
     let limit = match args.get_value(1) {
         Value::Undefined => usize::MAX,
-        limit => limit.coerce_to_i32(activation)?.max(0) as usize,
+        limit => limit.coerce_to_u32(activation)? as usize,
     };
 
     if let Some(mut regexp) = delimiter
