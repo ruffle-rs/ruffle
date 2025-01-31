@@ -39,6 +39,7 @@ mod toplevel;
 mod r#uint;
 mod vector;
 mod vector_int;
+mod vector_uint;
 mod void;
 mod xml;
 mod xml_list;
@@ -575,7 +576,6 @@ pub fn load_player_globals<'gc>(
     let uint_class = uint::create_class(activation);
     let vector_generic_class = vector::create_generic_class(activation);
 
-    let vector_uint_class = vector::create_builtin_class(activation, Some(uint_class));
     let vector_number_class = vector::create_builtin_class(activation, Some(number_class));
     let vector_object_class = vector::create_builtin_class(activation, None);
 
@@ -595,7 +595,6 @@ pub fn load_player_globals<'gc>(
         (public_ns, "int", int_class),
         (public_ns, "uint", uint_class),
         (vector_public_ns, "Vector", vector_generic_class),
-        (vector_internal_ns, "Vector$uint", vector_uint_class),
         (vector_internal_ns, "Vector$double", vector_number_class),
         (vector_internal_ns, "Vector$object", vector_object_class),
     ];
@@ -736,13 +735,6 @@ pub fn load_player_globals<'gc>(
 
     avm2_system_class!(generic_vector, activation, vector_generic_class, script);
 
-    vector_class(
-        Some(uint_class),
-        vector_uint_class,
-        "Vector$uint",
-        script,
-        activation,
-    )?;
     vector_class(
         Some(number_class),
         vector_number_class,
@@ -926,10 +918,14 @@ pub fn init_builtin_system_classes<'gc>(activation: &mut Activation<'_, 'gc>) {
 
     // Register Vector$int/uint/Number/Object as being applications of the Vector ClassObject
     let generic_vector = activation.avm2().classes().generic_vector;
-    let int_cls = activation.avm2().class_defs().int;
 
     let int_vector = lookup_vector_class_object(activation, "Vector$int");
+    let int_cls = activation.avm2().class_defs().int;
     generic_vector.add_application(activation.gc(), Some(int_cls), int_vector);
+
+    let uint_vector = lookup_vector_class_object(activation, "Vector$uint");
+    let uint_cls = activation.avm2().class_defs().uint;
+    generic_vector.add_application(activation.gc(), Some(uint_cls), uint_vector);
 }
 
 pub fn init_builtin_system_class_defs<'gc>(activation: &mut Activation<'_, 'gc>) {
@@ -952,6 +948,7 @@ pub fn init_builtin_system_class_defs<'gc>(activation: &mut Activation<'_, 'gc>)
         .generic_vector
         .inner_class_definition();
 
+    // Vector$int
     let int_vector_name = create_vector_name(activation, "int");
     let int_vector_cls = lookup_vector_class(activation, "Vector$int");
     let int_cls = activation.avm2().class_defs().int;
@@ -959,6 +956,15 @@ pub fn init_builtin_system_class_defs<'gc>(activation: &mut Activation<'_, 'gc>)
     int_vector_cls.set_param(activation.gc(), Some(Some(int_cls)));
     int_vector_cls.set_name(activation.gc(), int_vector_name);
     generic_vector_cls.add_application(activation.gc(), Some(int_cls), int_vector_cls);
+
+    // Vector$uint
+    let uint_vector_name = create_vector_name(activation, "uint");
+    let uint_vector_cls = lookup_vector_class(activation, "Vector$uint");
+    let uint_cls = activation.avm2().class_defs().uint;
+
+    uint_vector_cls.set_param(activation.gc(), Some(Some(uint_cls)));
+    uint_vector_cls.set_name(activation.gc(), uint_vector_name);
+    generic_vector_cls.add_application(activation.gc(), Some(uint_cls), uint_vector_cls);
 }
 
 pub fn init_native_system_classes(activation: &mut Activation<'_, '_>) {
