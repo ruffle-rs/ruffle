@@ -9,6 +9,7 @@ use crate::avm2::globals::array::{
 };
 use crate::avm2::method::Method;
 use crate::avm2::object::{ClassObject, Object, TObject, VectorObject};
+use crate::avm2::parameters::ParametersExt;
 use crate::avm2::value::Value;
 use crate::avm2::vector::VectorStorage;
 use crate::avm2::Error;
@@ -38,16 +39,8 @@ pub fn instance_init<'gc>(
     let this = this.as_object().unwrap();
 
     if let Some(mut vector) = this.as_vector_storage_mut(activation.gc()) {
-        let length = args
-            .get(0)
-            .cloned()
-            .unwrap_or(Value::Integer(0))
-            .coerce_to_u32(activation)? as usize;
-        let is_fixed = args
-            .get(1)
-            .cloned()
-            .unwrap_or_else(|| false.into())
-            .coerce_to_boolean();
+        let length = args.get_u32(activation, 0)? as usize;
+        let is_fixed = args.get_bool(1);
 
         vector.resize(length, activation)?;
         vector.set_is_fixed(is_fixed);
@@ -80,7 +73,7 @@ pub fn call_handler<'gc>(
         .param()
         .expect("Cannot convert to unparametrized Vector"); // technically unreachable
 
-    let arg = args.get(0).cloned().unwrap();
+    let arg = args.get_value(0);
 
     if arg.instance_class(activation) == this_class {
         return Ok(arg);
@@ -139,11 +132,7 @@ pub fn set_length<'gc>(
     let this = this.as_object().unwrap();
 
     if let Some(mut vector) = this.as_vector_storage_mut(activation.gc()) {
-        let new_length = args
-            .get(0)
-            .cloned()
-            .unwrap_or(Value::Integer(0))
-            .coerce_to_u32(activation)? as usize;
+        let new_length = args.get_u32(activation, 0)? as usize;
 
         vector.resize(new_length, activation)?;
     }
@@ -175,11 +164,7 @@ pub fn set_fixed<'gc>(
     let this = this.as_object().unwrap();
 
     if let Some(mut vector) = this.as_vector_storage_mut(activation.gc()) {
-        let new_fixed = args
-            .get(0)
-            .cloned()
-            .unwrap_or(Value::Bool(false))
-            .coerce_to_boolean();
+        let new_fixed = args.get_bool(0);
 
         vector.set_is_fixed(new_fixed);
     }
@@ -259,42 +244,6 @@ pub fn concat<'gc>(
     Ok(VectorObject::from_vector(new_vector_storage, activation)?.into())
 }
 
-fn join_inner<'gc, 'a, 'ctxt, C>(
-    activation: &mut Activation<'a, 'gc>,
-    this: Object<'gc>,
-    args: &[Value<'gc>],
-    mut conv: C,
-) -> Result<Value<'gc>, Error<'gc>>
-where
-    C: for<'b> FnMut(Value<'gc>, &'b mut Activation<'a, 'gc>) -> Result<Value<'gc>, Error<'gc>>,
-{
-    let mut separator = args.get(0).cloned().unwrap_or(Value::Undefined);
-    if separator == Value::Undefined {
-        separator = ",".into();
-    }
-
-    if let Some(vector) = this.as_vector_storage() {
-        let string_separator = separator.coerce_to_string(activation)?;
-        let mut accum = Vec::with_capacity(vector.length());
-
-        for item in vector.iter() {
-            if matches!(item, Value::Undefined) || matches!(item, Value::Null) {
-                accum.push("null".into());
-            } else {
-                accum.push(conv(item, activation)?.coerce_to_string(activation)?);
-            }
-        }
-
-        return Ok(AvmString::new(
-            activation.gc(),
-            crate::string::join(&accum, &string_separator),
-        )
-        .into());
-    }
-
-    Ok(Value::Undefined)
-}
-
 /// Implements `Vector.join`
 pub fn join<'gc>(
     activation: &mut Activation<'_, 'gc>,
@@ -303,7 +252,23 @@ pub fn join<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
-    join_inner(activation, this, args, |v, _act| Ok(v))
+    let separator = args.get_string(activation, 0)?;
+
+    if let Some(vector) = this.as_vector_storage() {
+        let mut accum = Vec::with_capacity(vector.length());
+
+        for item in vector.iter() {
+            if matches!(item, Value::Undefined) || matches!(item, Value::Null) {
+                accum.push("null".into());
+            } else {
+                accum.push(item.coerce_to_string(activation)?);
+            }
+        }
+
+        return Ok(AvmString::new(activation.gc(), crate::string::join(&accum, &separator)).into());
+    }
+
+    Ok(Value::Undefined)
 }
 
 /// Implements `Vector.every`
@@ -314,8 +279,8 @@ pub fn every<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
-    let callback = args.get(0).cloned().unwrap_or(Value::Undefined);
-    let receiver = args.get(1).cloned().unwrap_or(Value::Null);
+    let callback = args.get_value(0);
+    let receiver = args.get_value(1);
     let mut iter = ArrayIter::new(activation, this)?;
 
     while let Some((i, item)) = iter.next(activation)? {
@@ -339,8 +304,8 @@ pub fn some<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
-    let callback = args.get(0).cloned().unwrap_or(Value::Undefined);
-    let receiver = args.get(1).cloned().unwrap_or(Value::Null);
+    let callback = args.get_value(0);
+    let receiver = args.get_value(1);
     let mut iter = ArrayIter::new(activation, this)?;
 
     while let Some((i, item)) = iter.next(activation)? {
@@ -364,8 +329,8 @@ pub fn filter<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
-    let callback = args.get(0).cloned().unwrap_or(Value::Undefined);
-    let receiver = args.get(1).cloned().unwrap_or(Value::Null);
+    let callback = args.get_value(0);
+    let receiver = args.get_value(1);
 
     let value_type = this
         .instance_class()
@@ -395,8 +360,8 @@ pub fn for_each<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
-    let callback = args.get(0).cloned().unwrap_or(Value::Undefined);
-    let receiver = args.get(1).cloned().unwrap_or(Value::Null);
+    let callback = args.get_value(0);
+    let receiver = args.get_value(1);
     let mut iter = ArrayIter::new(activation, this)?;
 
     while let Some((i, item)) = iter.next(activation)? {
@@ -414,17 +379,13 @@ pub fn index_of<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
-    let search_for = args.get(0).cloned().unwrap_or(Value::Undefined);
-    let from_index = args
-        .get(1)
-        .cloned()
-        .unwrap_or_else(|| 0.into())
-        .coerce_to_i32(activation)?;
+    let search_for = args.get_value(0);
+    let from_index = args.get_f64(activation, 1)?;
 
-    let from_index = if from_index < 0 {
+    let from_index = if from_index < 0.0 {
         let length = this.as_vector_storage().unwrap().length() as i32;
 
-        max(length + from_index, 0) as u32
+        max(length + from_index as i32, 0) as u32
     } else {
         from_index as u32
     };
@@ -448,17 +409,13 @@ pub fn last_index_of<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
-    let search_for = args.get(0).cloned().unwrap_or(Value::Undefined);
-    let from_index = args
-        .get(1)
-        .cloned()
-        .unwrap_or_else(|| i32::MAX.into())
-        .coerce_to_i32(activation)?;
+    let search_for = args.get_value(0);
+    let from_index = args.get_f64(activation, 1)?;
 
-    let from_index = if from_index < 0 {
+    let from_index = if from_index < 0.0 {
         let length = this.as_vector_storage().unwrap().length() as i32;
 
-        max(length + from_index, 0) as u32
+        max(length + from_index as i32, 0) as u32
     } else {
         from_index as u32
     };
@@ -482,8 +439,8 @@ pub fn map<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
-    let callback = args.get(0).cloned().unwrap_or(Value::Undefined);
-    let receiver = args.get(1).cloned().unwrap_or(Value::Null);
+    let callback = args.get_value(0);
+    let receiver = args.get_value(1);
 
     let value_type = this
         .instance_class()
@@ -591,19 +548,11 @@ pub fn insert_at<'gc>(
     let this = this.as_object().unwrap();
 
     if let Some(mut vs) = this.as_vector_storage_mut(activation.gc()) {
-        let index = args
-            .get(0)
-            .cloned()
-            .unwrap_or(Value::Undefined)
-            .coerce_to_i32(activation)?;
+        let index = args.get_i32(activation, 0)?;
 
         let value_type = vs.value_type_for_coercion(activation);
 
-        let value = args
-            .get(1)
-            .cloned()
-            .unwrap_or(Value::Undefined)
-            .coerce_to_type(activation, value_type)?;
+        let value = args.get_value(1).coerce_to_type(activation, value_type)?;
 
         vs.insert(index, value, activation)?;
     }
@@ -620,11 +569,7 @@ pub fn remove_at<'gc>(
     let this = this.as_object().unwrap();
 
     if let Some(mut vs) = this.as_vector_storage_mut(activation.gc()) {
-        let index = args
-            .get(0)
-            .cloned()
-            .unwrap_or(Value::Undefined)
-            .coerce_to_i32(activation)?;
+        let index = args.get_i32(activation, 0)?;
 
         return vs.remove(index, activation);
     }
@@ -658,16 +603,8 @@ pub fn slice<'gc>(
     let this = this.as_object().unwrap();
 
     if let Some(vs) = this.as_vector_storage_mut(activation.gc()) {
-        let from = args
-            .get(0)
-            .cloned()
-            .unwrap_or_else(|| 0.into())
-            .coerce_to_i32(activation)?;
-        let to = args
-            .get(1)
-            .cloned()
-            .unwrap_or_else(|| 16777215.into())
-            .coerce_to_i32(activation)?;
+        let from = args.get_i32(activation, 0)?;
+        let to = args.get_i32(activation, 1)?;
         let value_type = vs.value_type();
 
         let from = vs.clamp_parameter_index(from);
@@ -700,7 +637,7 @@ pub fn sort<'gc>(
     let this = this.as_object().unwrap();
 
     if let Some(vs) = this.as_vector_storage_mut(activation.gc()) {
-        let fn_or_options = args.get(0).cloned().unwrap_or(Value::Undefined);
+        let fn_or_options = args.get_value(0);
 
         let (compare_fnc, options) = if let Some(callable) = fn_or_options
             .as_object()
@@ -779,16 +716,8 @@ pub fn splice<'gc>(
     let this = this.as_object().unwrap();
 
     if let Some(mut vs) = this.as_vector_storage_mut(activation.gc()) {
-        let start_len = args
-            .get(0)
-            .cloned()
-            .unwrap_or(Value::Undefined)
-            .coerce_to_i32(activation)?;
-        let delete_len = args
-            .get(1)
-            .cloned()
-            .unwrap_or(Value::Undefined)
-            .coerce_to_i32(activation)?;
+        let start_len = args.get_i32(activation, 0)?;
+        let delete_len = args.get_i32(activation, 1)?;
         let value_type = vs.value_type();
         let value_type_for_coercion = vs.value_type_for_coercion(activation);
 
