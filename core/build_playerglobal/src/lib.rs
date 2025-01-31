@@ -186,6 +186,13 @@ fn resolve_multiname_ns<'a>(abc: &'a AbcFile, multiname: &Multiname) -> Cow<'a, 
 }
 
 fn flash_to_rust_string(path: &str, uppercase: bool, separator: &str) -> String {
+    // For the specific case of the package name __AS3__.vec, we pretend that the
+    // namespace was empty. Otherwise, we'd need to define vector classes in the
+    // folder `avm2/globals/__as3__/vec/`.
+    if path == "__AS3__.vec" {
+        return "".to_string();
+    }
+
     let new_case = if uppercase {
         Case::UpperSnake
     } else {
@@ -210,6 +217,10 @@ fn flash_to_rust_string(path: &str, uppercase: bool, separator: &str) -> String 
                 // Do not split on a letter followed by a digit, so e.g. `atan2` won't become `atan_2`.
                 without_boundaries.extend([Boundary::UPPER_DIGIT, Boundary::LOWER_DIGIT]);
             }
+
+            // For cases like `Vector$int`, so we don't have to put the native
+            // methods in a file with a '$' in its name
+            let component = component.replace('$', "_");
 
             component
                 .from_case(Case::Camel)
@@ -247,16 +258,10 @@ fn rust_method_name_and_path(
         if !ns.is_empty() {
             path += &ns;
             path += "::";
-
-            flash_method_path += &ns;
-            flash_method_path += "::";
         }
         let name = resolve_multiname_name(abc, multiname);
         path += &flash_to_rust_string(&name, false, "::");
         path += "::";
-
-        flash_method_path += &*name;
-        flash_method_path += "::";
     } else {
         // This is a freestanding function. Append its namespace (the package).
         // For example, the freestanding function "flash.utils.getDefinitionByName"
@@ -279,6 +284,13 @@ fn rust_method_name_and_path(
     let name = resolve_multiname_name(abc, trait_name).to_string();
 
     path += &flash_to_rust_string(&name, false, "::");
+
+    match &trait_.kind {
+        TraitKind::Getter { .. } => flash_method_path += "get ",
+        TraitKind::Setter { .. } => flash_method_path += "set ",
+        _ => {}
+    }
+
     flash_method_path += &name;
 
     path += suffix;

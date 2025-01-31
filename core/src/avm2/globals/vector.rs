@@ -8,15 +8,15 @@ use crate::avm2::globals::array::{
     SortOptions,
 };
 use crate::avm2::method::{Method, NativeMethodImpl};
-use crate::avm2::object::{
-    vector_allocator, ClassObject, FunctionObject, Object, TObject, VectorObject,
-};
+use crate::avm2::object::{ClassObject, FunctionObject, Object, TObject, VectorObject};
 use crate::avm2::value::Value;
 use crate::avm2::vector::VectorStorage;
 use crate::avm2::Error;
 use crate::avm2::QName;
 use crate::string::AvmString;
 use std::cmp::{max, min, Ordering};
+
+pub use crate::avm2::object::vector_allocator;
 
 pub fn generic_vector_allocator<'gc>(
     _class: ClassObject<'gc>,
@@ -56,7 +56,7 @@ pub fn instance_init<'gc>(
     Ok(Value::Undefined)
 }
 
-fn class_call<'gc>(
+pub fn call_handler<'gc>(
     activation: &mut Activation<'_, 'gc>,
     _this: Value<'gc>,
     args: &[Value<'gc>],
@@ -167,7 +167,7 @@ fn class_init<'gc>(
 }
 
 /// `Vector.length` getter
-pub fn length<'gc>(
+pub fn get_length<'gc>(
     _activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
     _args: &[Value<'gc>],
@@ -203,7 +203,7 @@ pub fn set_length<'gc>(
 }
 
 /// `Vector.fixed` getter
-pub fn fixed<'gc>(
+pub fn get_fixed<'gc>(
     _activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
     _args: &[Value<'gc>],
@@ -964,7 +964,7 @@ pub fn create_builtin_class<'gc>(
     class.set_instance_allocator(mc, vector_allocator);
     class.set_call_handler(
         mc,
-        Method::from_builtin(class_call, "<Vector.<T> call handler>", mc),
+        Method::from_builtin(call_handler, "<Vector.<T> call handler>", mc),
     );
 
     const PUBLIC_INSTANCE_PROPERTIES: &[(
@@ -972,8 +972,8 @@ pub fn create_builtin_class<'gc>(
         Option<NativeMethodImpl>,
         Option<NativeMethodImpl>,
     )] = &[
-        ("length", Some(length), Some(set_length)),
-        ("fixed", Some(fixed), Some(set_fixed)),
+        ("length", Some(get_length), Some(set_length)),
+        ("fixed", Some(get_fixed), Some(set_fixed)),
     ];
     class.define_builtin_instance_properties(
         mc,
