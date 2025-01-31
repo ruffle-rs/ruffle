@@ -129,24 +129,26 @@ pub fn parse_int<'gc>(
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     // ECMA-262 violation: parseInt() == undefined // not NaN
-    if args.is_empty() {
+    let Some(string) = args.get(0) else {
         return Ok(Value::Undefined);
-    }
+    };
 
-    let radix: Option<i32> = args
-        .get(1)
-        .map(|x| x.coerce_to_i32(activation))
-        .transpose()?;
+    parse_int_internal(activation, string, args.get(1))
+}
+
+pub fn parse_int_internal<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    string: &Value<'gc>,
+    radix: Option<&Value<'gc>>,
+) -> Result<Value<'gc>, Error<'gc>> {
+    let radix: Option<i32> = radix.map(|x| x.coerce_to_i32(activation)).transpose()?;
     let radix = match radix {
         Some(r @ 2..=36) => Some(r as u32),
         Some(_) => return Ok(f64::NAN.into()),
         None => None,
     };
 
-    let string = args
-        .get(0)
-        .unwrap_or(&Value::Undefined)
-        .coerce_to_string(activation)?;
+    let string = string.coerce_to_string(activation)?;
     let string = string.as_wstr();
 
     fn parse_sign(string: &WStr) -> Option<f64> {
