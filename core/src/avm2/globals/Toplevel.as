@@ -37,6 +37,7 @@ include "Boolean.as"
 include "String.as"
 
 include "VectorInt.as"
+include "VectorUint.as"
 
 include "ArgumentError.as"
 include "DefinitionError.as"
