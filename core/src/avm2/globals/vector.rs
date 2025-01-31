@@ -7,8 +7,8 @@ use crate::avm2::globals::array::{
     compare_numeric, compare_string_case_insensitive, compare_string_case_sensitive, ArrayIter,
     SortOptions,
 };
-use crate::avm2::method::{Method, NativeMethodImpl};
-use crate::avm2::object::{ClassObject, FunctionObject, Object, TObject, VectorObject};
+use crate::avm2::method::Method;
+use crate::avm2::object::{ClassObject, Object, TObject, VectorObject};
 use crate::avm2::value::Value;
 use crate::avm2::vector::VectorStorage;
 use crate::avm2::Error;
@@ -112,57 +112,6 @@ pub fn generic_init<'gc>(
     _this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    Ok(Value::Undefined)
-}
-
-fn class_init<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    this: Value<'gc>,
-    _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error<'gc>> {
-    let this = this.as_object().unwrap();
-
-    let proto = this.as_class_object().unwrap().prototype();
-    let scope = activation.create_scopechain();
-
-    const PUBLIC_PROTOTYPE_METHODS: &[(&str, NativeMethodImpl)] = &[
-        ("concat", concat),
-        ("join", join),
-        ("toString", to_string),
-        ("toLocaleString", to_locale_string),
-        ("every", every),
-        ("some", some),
-        ("forEach", for_each),
-        ("filter", filter),
-        ("indexOf", index_of),
-        ("lastIndexOf", last_index_of),
-        ("map", map),
-        ("pop", pop),
-        ("push", push),
-        ("shift", shift),
-        ("unshift", unshift),
-        ("reverse", reverse),
-        ("slice", slice),
-        ("sort", sort),
-        ("splice", splice),
-    ];
-    for (pubname, func) in PUBLIC_PROTOTYPE_METHODS {
-        proto.set_string_property_local(
-            *pubname,
-            FunctionObject::from_method(
-                activation,
-                Method::from_builtin(*func, pubname, activation.gc()),
-                scope,
-                None,
-                None,
-                None,
-            )
-            .into(),
-            activation,
-        )?;
-        proto.set_local_property_is_enumerable(activation.gc(), (*pubname).into(), false);
-    }
-
     Ok(Value::Undefined)
 }
 
@@ -355,34 +304,6 @@ pub fn join<'gc>(
     let this = this.as_object().unwrap();
 
     join_inner(activation, this, args, |v, _act| Ok(v))
-}
-
-/// Implements `Vector.toString`
-pub fn to_string<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    this: Value<'gc>,
-    _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error<'gc>> {
-    let this = this.as_object().unwrap();
-
-    join_inner(activation, this, &[",".into()], |v, _act| Ok(v))
-}
-
-/// Implements `Vector.toLocaleString`
-pub fn to_locale_string<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    this: Value<'gc>,
-    _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error<'gc>> {
-    let this = this.as_object().unwrap();
-
-    join_inner(activation, this, &[",".into()], |v, activation| {
-        if matches!(v, Value::Null | Value::Undefined) {
-            Ok(v)
-        } else {
-            v.call_public_property("toLocaleString", &[], activation)
-        }
-    })
 }
 
 /// Implements `Vector.every`
@@ -913,98 +834,6 @@ pub fn create_generic_class<'gc>(activation: &mut Activation<'_, 'gc>) -> Class<
 
     class.set_attributes(mc, ClassAttributes::GENERIC | ClassAttributes::FINAL);
     class.set_instance_allocator(mc, generic_vector_allocator);
-
-    class.mark_traits_loaded(activation.gc());
-    class
-        .init_vtable(activation.context)
-        .expect("Native class's vtable should initialize");
-
-    let c_class = class.c_class().expect("Class::new returns an i_class");
-
-    c_class.mark_traits_loaded(activation.gc());
-    c_class
-        .init_vtable(activation.context)
-        .expect("Native class's vtable should initialize");
-
-    class
-}
-
-/// Construct `Vector.<int/uint/Number/*>`'s class.
-pub fn create_builtin_class<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    param: Option<Class<'gc>>,
-) -> Class<'gc> {
-    let mc = activation.gc();
-    let namespaces = activation.avm2().namespaces;
-
-    // FIXME - we should store a `Multiname` instead of a `QName`, and use the
-    // `params` field. For now, this is good enough to get tests passing
-    let name = if let Some(param) = param {
-        let name = format!("Vector.<{}>", param.name().to_qualified_name(mc));
-        QName::new(namespaces.vector_public, AvmString::new_utf8(mc, name))
-    } else {
-        QName::new(namespaces.vector_public, "Vector.<*>")
-    };
-
-    let class = Class::new(
-        name,
-        Some(activation.avm2().class_defs().object),
-        Method::from_builtin(instance_init, "<Vector.<T> instance initializer>", mc),
-        Method::from_builtin(class_init, "<Vector.<T> class initializer>", mc),
-        activation.avm2().class_defs().class,
-        mc,
-    );
-
-    // TODO: Vector.<*> is also supposed to be final, but currently
-    // that'd make it impossible for us to create derived Vector.<MyType>.
-    if param.is_some() {
-        class.set_attributes(mc, ClassAttributes::FINAL);
-    }
-    class.set_param(mc, Some(param));
-    class.set_instance_allocator(mc, vector_allocator);
-    class.set_call_handler(
-        mc,
-        Method::from_builtin(call_handler, "<Vector.<T> call handler>", mc),
-    );
-
-    const PUBLIC_INSTANCE_PROPERTIES: &[(
-        &str,
-        Option<NativeMethodImpl>,
-        Option<NativeMethodImpl>,
-    )] = &[
-        ("length", Some(get_length), Some(set_length)),
-        ("fixed", Some(get_fixed), Some(set_fixed)),
-    ];
-    class.define_builtin_instance_properties(
-        mc,
-        namespaces.public_all(),
-        PUBLIC_INSTANCE_PROPERTIES,
-    );
-
-    const AS3_INSTANCE_METHODS: &[(&str, NativeMethodImpl)] = &[
-        ("concat", concat),
-        ("join", join),
-        ("toString", to_string),
-        ("toLocaleString", to_locale_string),
-        ("every", every),
-        ("some", some),
-        ("forEach", for_each),
-        ("filter", filter),
-        ("indexOf", index_of),
-        ("lastIndexOf", last_index_of),
-        ("map", map),
-        ("pop", pop),
-        ("push", push),
-        ("shift", shift),
-        ("unshift", unshift),
-        ("insertAt", insert_at),
-        ("removeAt", remove_at),
-        ("reverse", reverse),
-        ("slice", slice),
-        ("sort", sort),
-        ("splice", splice),
-    ];
-    class.define_builtin_instance_methods(mc, namespaces.as3, AS3_INSTANCE_METHODS);
 
     class.mark_traits_loaded(activation.gc());
     class
