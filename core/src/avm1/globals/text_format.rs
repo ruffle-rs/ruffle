@@ -3,7 +3,6 @@
 use crate::avm1::object::NativeObject;
 use crate::avm1::property_decl::{define_properties_on, Declaration};
 use crate::avm1::{Activation, ArrayObject, Error, Object, ScriptObject, TObject, Value};
-use crate::avm1_stub;
 use crate::display_object::{AutoSizeMode, EditText, TDisplayObject};
 use crate::ecma_conversions::round_to_even;
 use crate::html::TextFormat;
@@ -425,17 +424,36 @@ fn set_bullet<'gc>(
     Ok(())
 }
 
-fn display<'gc>(activation: &mut Activation<'_, 'gc>, _text_format: &TextFormat) -> Value<'gc> {
-    avm1_stub!(activation, "TextFormat", "display");
-    Value::Null
+fn display<'gc>(activation: &mut Activation<'_, 'gc>, text_format: &TextFormat) -> Value<'gc> {
+    text_format
+        .display
+        .as_ref()
+        .map_or(Value::Null, |align| match align {
+            crate::html::TextDisplay::Block => istr!("block").into(),
+            crate::html::TextDisplay::Inline => istr!("inline").into(),
+            crate::html::TextDisplay::None => istr!("none").into(),
+        })
 }
 
 fn set_display<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    _text_format: &mut TextFormat,
-    _value: &Value<'gc>,
+    text_format: &mut TextFormat,
+    value: &Value<'gc>,
 ) -> Result<(), Error<'gc>> {
-    avm1_stub!(activation, "TextFormat", "display");
+    if matches!(value, Value::Undefined | Value::Null) {
+        text_format.display = Some(crate::html::TextDisplay::Block);
+        return Ok(());
+    }
+
+    let value = value.coerce_to_string(activation)?;
+    let display = if &value == b"inline" {
+        crate::html::TextDisplay::Inline
+    } else if &value == b"none" {
+        crate::html::TextDisplay::None
+    } else {
+        crate::html::TextDisplay::Block
+    };
+    text_format.display = Some(display);
     Ok(())
 }
 
@@ -608,6 +626,7 @@ pub fn constructor<'gc>(
     text_format.right_margin = get_arg_as_i32(activation, args.get(10))?;
     text_format.indent = get_arg_as_i32(activation, args.get(11))?;
     text_format.leading = get_arg_as_i32(activation, args.get(12))?;
+    text_format.display = Some(crate::html::TextDisplay::Block);
     this.set_native(
         activation.gc(),
         NativeObject::TextFormat(Gc::new(activation.gc(), text_format.into())),
