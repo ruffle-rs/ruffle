@@ -462,36 +462,6 @@ fn class<'gc>(
     Ok(class_object)
 }
 
-fn vector_class<'gc>(
-    param_class: Option<Class<'gc>>,
-    class_def: Class<'gc>,
-    legacy_name: &'static str,
-    script: Script<'gc>,
-    activation: &mut Activation<'_, 'gc>,
-) -> Result<ClassObject<'gc>, Error<'gc>> {
-    let mc = activation.gc();
-    let namespaces = activation.avm2().namespaces;
-    let (_, global, mut domain) = script.init();
-
-    let object_class = activation.avm2().classes().object;
-
-    let vector_cls = ClassObject::from_class(activation, class_def, Some(object_class))?;
-
-    let generic_vector = activation.avm2().classes().generic_vector;
-    generic_vector.add_application(mc, param_class, vector_cls);
-    let generic_cls = generic_vector.inner_class_definition();
-    generic_cls.add_application(mc, param_class, vector_cls.inner_class_definition());
-
-    let legacy_name = QName::new(namespaces.vector_internal, legacy_name);
-
-    Value::from(global)
-        .init_property(&legacy_name.into(), vector_cls.into(), activation)
-        .expect("Should set property");
-
-    domain.export_definition(legacy_name, script, mc);
-    Ok(vector_cls)
-}
-
 macro_rules! avm2_system_class {
     ($field:ident, $activation:ident, $class:expr, $script:expr) => {
         let class_object = class($class, $script, $activation)?;
