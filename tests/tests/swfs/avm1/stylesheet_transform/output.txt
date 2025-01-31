@@ -1,0 +1,750 @@
+Calling transform with no args:
+  null
+Testing empty:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=null, display=block, kerning=false, letterSpacing=null, leftMargin=null, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing number:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=null, display=block, kerning=false, letterSpacing=null, leftMargin=null, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing string:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=null, display=block, kerning=false, letterSpacing=null, leftMargin=null, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing null:
+  tf=null, size=undefined, blockIndent=undefined, font=undefined, align=undefined, leading=undefined, display=undefined, kerning=undefined, letterSpacing=undefined, leftMargin=undefined, rightMargin=undefined, color=undefined, bold=undefined, italic=undefined, bullet=undefined, underline=undefined
+Testing undefined:
+  tf=null, size=undefined, blockIndent=undefined, font=undefined, align=undefined, leading=undefined, display=undefined, kerning=undefined, letterSpacing=undefined, leftMargin=undefined, rightMargin=undefined, color=undefined, bold=undefined, italic=undefined, bullet=undefined, underline=undefined
+Testing movie clip:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=null, display=block, kerning=false, letterSpacing=null, leftMargin=null, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing color number:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=null, display=block, kerning=false, letterSpacing=null, leftMargin=null, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing color hex 1:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=null, display=block, kerning=false, letterSpacing=null, leftMargin=null, rightMargin=null, color=16448250, bold=null, italic=null, bullet=null, underline=null
+Testing color hex 2:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=null, display=block, kerning=false, letterSpacing=null, leftMargin=null, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing color hex 3:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=null, display=block, kerning=false, letterSpacing=null, leftMargin=null, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing color hex 4:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=null, display=block, kerning=false, letterSpacing=null, leftMargin=null, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing color hex 5:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=null, display=block, kerning=false, letterSpacing=null, leftMargin=null, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing color hex 6:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=null, display=block, kerning=false, letterSpacing=null, leftMargin=null, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing display inline 1:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=null, display=inline, kerning=false, letterSpacing=null, leftMargin=null, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing display inline 2:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=null, display=block, kerning=false, letterSpacing=null, leftMargin=null, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing display block:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=null, display=block, kerning=false, letterSpacing=null, leftMargin=null, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing display none:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=null, display=none, kerning=false, letterSpacing=null, leftMargin=null, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing display unknown:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=null, display=block, kerning=false, letterSpacing=null, leftMargin=null, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing fontFamily null:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=null, display=block, kerning=false, letterSpacing=null, leftMargin=null, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing fontFamily undefined:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=null, display=block, kerning=false, letterSpacing=null, leftMargin=null, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing fontFamily true:
+  tf=[object Object], size=null, blockIndent=null, font=true, align=null, leading=null, display=block, kerning=false, letterSpacing=null, leftMargin=null, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing fontFamily false:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=null, display=block, kerning=false, letterSpacing=null, leftMargin=null, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing fontFamily basic:
+  tf=[object Object], size=null, blockIndent=null, font=Font, align=null, leading=null, display=block, kerning=false, letterSpacing=null, leftMargin=null, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing fontFamily number:
+  tf=[object Object], size=null, blockIndent=null, font=5, align=null, leading=null, display=block, kerning=false, letterSpacing=null, leftMargin=null, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing fontFamily number 0:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=null, display=block, kerning=false, letterSpacing=null, leftMargin=null, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing fontFamily object:
+  tf=[object Object], size=null, blockIndent=null, font=[object Object], align=null, leading=null, display=block, kerning=false, letterSpacing=null, leftMargin=null, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing fontFamily bool:
+  tf=[object Object], size=null, blockIndent=null, font=true, align=null, leading=null, display=block, kerning=false, letterSpacing=null, leftMargin=null, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing fontFamily whitespace:
+  tf=[object Object], size=null, blockIndent=null, font=Font  , align=null, leading=null, display=block, kerning=false, letterSpacing=null, leftMargin=null, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing fontFamily comma separated list:
+  tf=[object Object], size=null, blockIndent=null, font=Font1  ,Font2 ,Font3 , align=null, leading=null, display=block, kerning=false, letterSpacing=null, leftMargin=null, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing fontFamily spaces in name:
+  tf=[object Object], size=null, blockIndent=null, font=Font 1  ,Font  2  Fo     nt3 , align=null, leading=null, display=block, kerning=false, letterSpacing=null, leftMargin=null, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing fontSize string px:
+  tf=[object Object], size=42, blockIndent=null, font=null, align=null, leading=null, display=block, kerning=false, letterSpacing=null, leftMargin=null, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing fontSize string pt:
+  tf=[object Object], size=42, blockIndent=null, font=null, align=null, leading=null, display=block, kerning=false, letterSpacing=null, leftMargin=null, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing fontSize null:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=null, display=block, kerning=false, letterSpacing=null, leftMargin=null, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing fontSize undefined:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=null, display=block, kerning=false, letterSpacing=null, leftMargin=null, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing fontSize object:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=null, display=block, kerning=false, letterSpacing=null, leftMargin=null, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing fontSize true:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=null, display=block, kerning=false, letterSpacing=null, leftMargin=null, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing fontSize false:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=null, display=block, kerning=false, letterSpacing=null, leftMargin=null, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing fontSize number:
+  tf=[object Object], size=5, blockIndent=null, font=null, align=null, leading=null, display=block, kerning=false, letterSpacing=null, leftMargin=null, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing fontSize number negative:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=null, display=block, kerning=false, letterSpacing=null, leftMargin=null, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing fontSize number 0:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=null, display=block, kerning=false, letterSpacing=null, leftMargin=null, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing fontSize number 0.5:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=null, display=block, kerning=false, letterSpacing=null, leftMargin=null, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing fontSize number 0.9:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=null, display=block, kerning=false, letterSpacing=null, leftMargin=null, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing fontSize number 1.1:
+  tf=[object Object], size=1, blockIndent=null, font=null, align=null, leading=null, display=block, kerning=false, letterSpacing=null, leftMargin=null, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing fontSize number 1.5:
+  tf=[object Object], size=1, blockIndent=null, font=null, align=null, leading=null, display=block, kerning=false, letterSpacing=null, leftMargin=null, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing fontSize number 1.9:
+  tf=[object Object], size=1, blockIndent=null, font=null, align=null, leading=null, display=block, kerning=false, letterSpacing=null, leftMargin=null, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing fontSize number -0.5:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=null, display=block, kerning=false, letterSpacing=null, leftMargin=null, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing fontSize number -0.9:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=null, display=block, kerning=false, letterSpacing=null, leftMargin=null, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing fontSize number -1.1:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=null, display=block, kerning=false, letterSpacing=null, leftMargin=null, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing fontSize number -1.5:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=null, display=block, kerning=false, letterSpacing=null, leftMargin=null, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing fontSize number -1.9:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=null, display=block, kerning=false, letterSpacing=null, leftMargin=null, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing fontSize number 255:
+  tf=[object Object], size=255, blockIndent=null, font=null, align=null, leading=null, display=block, kerning=false, letterSpacing=null, leftMargin=null, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing fontSize number 256:
+  tf=[object Object], size=256, blockIndent=null, font=null, align=null, leading=null, display=block, kerning=false, letterSpacing=null, leftMargin=null, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing fontSize number -255:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=null, display=block, kerning=false, letterSpacing=null, leftMargin=null, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing fontSize number -256:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=null, display=block, kerning=false, letterSpacing=null, leftMargin=null, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing fontSize number 65535:
+  tf=[object Object], size=65535, blockIndent=null, font=null, align=null, leading=null, display=block, kerning=false, letterSpacing=null, leftMargin=null, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing fontSize number 65536:
+  tf=[object Object], size=65536, blockIndent=null, font=null, align=null, leading=null, display=block, kerning=false, letterSpacing=null, leftMargin=null, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing fontSize number -65535:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=null, display=block, kerning=false, letterSpacing=null, leftMargin=null, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing fontSize number -65536:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=null, display=block, kerning=false, letterSpacing=null, leftMargin=null, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing fontSize string:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=null, display=block, kerning=false, letterSpacing=null, leftMargin=null, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing fontSize string number:
+  tf=[object Object], size=10, blockIndent=null, font=null, align=null, leading=null, display=block, kerning=false, letterSpacing=null, leftMargin=null, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing fontSize string empty:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=null, display=block, kerning=false, letterSpacing=null, leftMargin=null, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing fontSize string space 1:
+  tf=[object Object], size=10, blockIndent=null, font=null, align=null, leading=null, display=block, kerning=false, letterSpacing=null, leftMargin=null, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing fontSize string space 2:
+  tf=[object Object], size=10, blockIndent=null, font=null, align=null, leading=null, display=block, kerning=false, letterSpacing=null, leftMargin=null, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing fontSize string space 3:
+  tf=[object Object], size=10, blockIndent=null, font=null, align=null, leading=null, display=block, kerning=false, letterSpacing=null, leftMargin=null, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing fontSize string space 4:
+  tf=[object Object], size=10, blockIndent=null, font=null, align=null, leading=null, display=block, kerning=false, letterSpacing=null, leftMargin=null, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing fontSize string negative:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=null, display=block, kerning=false, letterSpacing=null, leftMargin=null, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing fontSize string negative space 1:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=null, display=block, kerning=false, letterSpacing=null, leftMargin=null, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing fontSize string negative space 2:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=null, display=block, kerning=false, letterSpacing=null, leftMargin=null, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing fontSize string negative space 3:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=null, display=block, kerning=false, letterSpacing=null, leftMargin=null, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing fontSize string negative space 4:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=null, display=block, kerning=false, letterSpacing=null, leftMargin=null, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing fontSize string prefix 1:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=null, display=block, kerning=false, letterSpacing=null, leftMargin=null, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing fontSize string prefix 2:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=null, display=block, kerning=false, letterSpacing=null, leftMargin=null, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing fontSize string suffix 1:
+  tf=[object Object], size=10, blockIndent=null, font=null, align=null, leading=null, display=block, kerning=false, letterSpacing=null, leftMargin=null, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing fontSize string suffix 2:
+  tf=[object Object], size=10, blockIndent=null, font=null, align=null, leading=null, display=block, kerning=false, letterSpacing=null, leftMargin=null, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing fontStyle normal:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=null, display=block, kerning=false, letterSpacing=null, leftMargin=null, rightMargin=null, color=null, bold=null, italic=false, bullet=null, underline=null
+Testing fontStyle italic:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=null, display=block, kerning=false, letterSpacing=null, leftMargin=null, rightMargin=null, color=null, bold=null, italic=true, bullet=null, underline=null
+Testing fontStyle italic case:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=null, display=block, kerning=false, letterSpacing=null, leftMargin=null, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing fontStyle spaces 1:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=null, display=block, kerning=false, letterSpacing=null, leftMargin=null, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing fontStyle spaces 2:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=null, display=block, kerning=false, letterSpacing=null, leftMargin=null, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing fontStyle spaces 3:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=null, display=block, kerning=false, letterSpacing=null, leftMargin=null, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing fontStyle unknown:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=null, display=block, kerning=false, letterSpacing=null, leftMargin=null, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing fontStyle number:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=null, display=block, kerning=false, letterSpacing=null, leftMargin=null, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing fontWeight normal:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=null, display=block, kerning=false, letterSpacing=null, leftMargin=null, rightMargin=null, color=null, bold=false, italic=null, bullet=null, underline=null
+Testing fontWeight bold:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=null, display=block, kerning=false, letterSpacing=null, leftMargin=null, rightMargin=null, color=null, bold=true, italic=null, bullet=null, underline=null
+Testing fontWeight bold case:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=null, display=block, kerning=false, letterSpacing=null, leftMargin=null, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing fontWeight spaces 1:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=null, display=block, kerning=false, letterSpacing=null, leftMargin=null, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing fontWeight spaces 2:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=null, display=block, kerning=false, letterSpacing=null, leftMargin=null, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing fontWeight spaces 3:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=null, display=block, kerning=false, letterSpacing=null, leftMargin=null, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing fontWeight unknown:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=null, display=block, kerning=false, letterSpacing=null, leftMargin=null, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing fontWeight number:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=null, display=block, kerning=false, letterSpacing=null, leftMargin=null, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing kerning true:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=null, display=block, kerning=false, letterSpacing=null, leftMargin=null, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing kerning false:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=null, display=block, kerning=false, letterSpacing=null, leftMargin=null, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing kerning string false:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=null, display=block, kerning=false, letterSpacing=null, leftMargin=null, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing kerning string true:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=null, display=block, kerning=true, letterSpacing=null, leftMargin=null, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing kerning string unknown:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=null, display=block, kerning=false, letterSpacing=null, leftMargin=null, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing kerning string empty:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=null, display=block, kerning=false, letterSpacing=null, leftMargin=null, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing kerning number 0:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=null, display=block, kerning=false, letterSpacing=null, leftMargin=null, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing kerning number 0.5:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=null, display=block, kerning=false, letterSpacing=null, leftMargin=null, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing kerning number 1:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=null, display=block, kerning=true, letterSpacing=null, leftMargin=null, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing kerning number 2:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=null, display=block, kerning=true, letterSpacing=null, leftMargin=null, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing kerning number -1:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=null, display=block, kerning=true, letterSpacing=null, leftMargin=null, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing kerning object:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=null, display=block, kerning=false, letterSpacing=null, leftMargin=null, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing kerning null:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=null, display=block, kerning=false, letterSpacing=null, leftMargin=null, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing kerning undefined:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=null, display=block, kerning=false, letterSpacing=null, leftMargin=null, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing kerning object:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=null, display=block, kerning=false, letterSpacing=null, leftMargin=null, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing kerning true:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=null, display=block, kerning=false, letterSpacing=null, leftMargin=null, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing kerning false:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=null, display=block, kerning=false, letterSpacing=null, leftMargin=null, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing kerning number:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=null, display=block, kerning=true, letterSpacing=null, leftMargin=null, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing kerning number negative:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=null, display=block, kerning=true, letterSpacing=null, leftMargin=null, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing kerning number 0:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=null, display=block, kerning=false, letterSpacing=null, leftMargin=null, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing kerning number 0.5:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=null, display=block, kerning=false, letterSpacing=null, leftMargin=null, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing kerning number 0.9:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=null, display=block, kerning=false, letterSpacing=null, leftMargin=null, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing kerning number 1.1:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=null, display=block, kerning=true, letterSpacing=null, leftMargin=null, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing kerning number 1.5:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=null, display=block, kerning=true, letterSpacing=null, leftMargin=null, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing kerning number 1.9:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=null, display=block, kerning=true, letterSpacing=null, leftMargin=null, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing kerning number -0.5:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=null, display=block, kerning=false, letterSpacing=null, leftMargin=null, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing kerning number -0.9:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=null, display=block, kerning=false, letterSpacing=null, leftMargin=null, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing kerning number -1.1:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=null, display=block, kerning=true, letterSpacing=null, leftMargin=null, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing kerning number -1.5:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=null, display=block, kerning=true, letterSpacing=null, leftMargin=null, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing kerning number -1.9:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=null, display=block, kerning=true, letterSpacing=null, leftMargin=null, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing kerning number 255:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=null, display=block, kerning=true, letterSpacing=null, leftMargin=null, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing kerning number 256:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=null, display=block, kerning=true, letterSpacing=null, leftMargin=null, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing kerning number -255:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=null, display=block, kerning=true, letterSpacing=null, leftMargin=null, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing kerning number -256:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=null, display=block, kerning=true, letterSpacing=null, leftMargin=null, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing kerning number 65535:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=null, display=block, kerning=true, letterSpacing=null, leftMargin=null, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing kerning number 65536:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=null, display=block, kerning=true, letterSpacing=null, leftMargin=null, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing kerning number -65535:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=null, display=block, kerning=true, letterSpacing=null, leftMargin=null, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing kerning number -65536:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=null, display=block, kerning=true, letterSpacing=null, leftMargin=null, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing kerning string:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=null, display=block, kerning=false, letterSpacing=null, leftMargin=null, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing kerning string number:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=null, display=block, kerning=true, letterSpacing=null, leftMargin=null, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing kerning string empty:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=null, display=block, kerning=false, letterSpacing=null, leftMargin=null, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing kerning string space 1:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=null, display=block, kerning=true, letterSpacing=null, leftMargin=null, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing kerning string space 2:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=null, display=block, kerning=true, letterSpacing=null, leftMargin=null, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing kerning string space 3:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=null, display=block, kerning=true, letterSpacing=null, leftMargin=null, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing kerning string space 4:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=null, display=block, kerning=true, letterSpacing=null, leftMargin=null, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing kerning string negative:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=null, display=block, kerning=true, letterSpacing=null, leftMargin=null, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing kerning string negative space 1:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=null, display=block, kerning=true, letterSpacing=null, leftMargin=null, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing kerning string negative space 2:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=null, display=block, kerning=true, letterSpacing=null, leftMargin=null, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing kerning string negative space 3:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=null, display=block, kerning=true, letterSpacing=null, leftMargin=null, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing kerning string negative space 4:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=null, display=block, kerning=false, letterSpacing=null, leftMargin=null, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing kerning string prefix 1:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=null, display=block, kerning=false, letterSpacing=null, leftMargin=null, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing kerning string prefix 2:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=null, display=block, kerning=false, letterSpacing=null, leftMargin=null, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing kerning string suffix 1:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=null, display=block, kerning=true, letterSpacing=null, leftMargin=null, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing kerning string suffix 2:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=null, display=block, kerning=true, letterSpacing=null, leftMargin=null, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing leading null:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=null, display=block, kerning=false, letterSpacing=null, leftMargin=null, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing leading undefined:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=null, display=block, kerning=false, letterSpacing=null, leftMargin=null, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing leading object:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=0, display=block, kerning=false, letterSpacing=null, leftMargin=null, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing leading true:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=0, display=block, kerning=false, letterSpacing=null, leftMargin=null, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing leading false:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=null, display=block, kerning=false, letterSpacing=null, leftMargin=null, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing leading number:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=5, display=block, kerning=false, letterSpacing=null, leftMargin=null, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing leading number negative:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=-5, display=block, kerning=false, letterSpacing=null, leftMargin=null, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing leading number 0:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=null, display=block, kerning=false, letterSpacing=null, leftMargin=null, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing leading number 0.5:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=0, display=block, kerning=false, letterSpacing=null, leftMargin=null, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing leading number 0.9:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=0, display=block, kerning=false, letterSpacing=null, leftMargin=null, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing leading number 1.1:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=1, display=block, kerning=false, letterSpacing=null, leftMargin=null, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing leading number 1.5:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=1, display=block, kerning=false, letterSpacing=null, leftMargin=null, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing leading number 1.9:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=1, display=block, kerning=false, letterSpacing=null, leftMargin=null, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing leading number -0.5:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=0, display=block, kerning=false, letterSpacing=null, leftMargin=null, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing leading number -0.9:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=0, display=block, kerning=false, letterSpacing=null, leftMargin=null, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing leading number -1.1:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=-1, display=block, kerning=false, letterSpacing=null, leftMargin=null, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing leading number -1.5:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=-1, display=block, kerning=false, letterSpacing=null, leftMargin=null, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing leading number -1.9:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=-1, display=block, kerning=false, letterSpacing=null, leftMargin=null, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing leading number 255:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=255, display=block, kerning=false, letterSpacing=null, leftMargin=null, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing leading number 256:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=256, display=block, kerning=false, letterSpacing=null, leftMargin=null, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing leading number -255:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=-255, display=block, kerning=false, letterSpacing=null, leftMargin=null, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing leading number -256:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=-256, display=block, kerning=false, letterSpacing=null, leftMargin=null, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing leading number 65535:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=65535, display=block, kerning=false, letterSpacing=null, leftMargin=null, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing leading number 65536:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=65536, display=block, kerning=false, letterSpacing=null, leftMargin=null, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing leading number -65535:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=-65535, display=block, kerning=false, letterSpacing=null, leftMargin=null, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing leading number -65536:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=-65536, display=block, kerning=false, letterSpacing=null, leftMargin=null, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing leading string:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=0, display=block, kerning=false, letterSpacing=null, leftMargin=null, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing leading string number:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=10, display=block, kerning=false, letterSpacing=null, leftMargin=null, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing leading string empty:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=null, display=block, kerning=false, letterSpacing=null, leftMargin=null, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing leading string space 1:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=10, display=block, kerning=false, letterSpacing=null, leftMargin=null, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing leading string space 2:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=10, display=block, kerning=false, letterSpacing=null, leftMargin=null, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing leading string space 3:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=10, display=block, kerning=false, letterSpacing=null, leftMargin=null, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing leading string space 4:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=10, display=block, kerning=false, letterSpacing=null, leftMargin=null, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing leading string negative:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=-10, display=block, kerning=false, letterSpacing=null, leftMargin=null, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing leading string negative space 1:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=-10, display=block, kerning=false, letterSpacing=null, leftMargin=null, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing leading string negative space 2:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=-10, display=block, kerning=false, letterSpacing=null, leftMargin=null, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing leading string negative space 3:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=-10, display=block, kerning=false, letterSpacing=null, leftMargin=null, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing leading string negative space 4:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=0, display=block, kerning=false, letterSpacing=null, leftMargin=null, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing leading string prefix 1:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=0, display=block, kerning=false, letterSpacing=null, leftMargin=null, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing leading string prefix 2:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=0, display=block, kerning=false, letterSpacing=null, leftMargin=null, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing leading string suffix 1:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=10, display=block, kerning=false, letterSpacing=null, leftMargin=null, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing leading string suffix 2:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=10, display=block, kerning=false, letterSpacing=null, leftMargin=null, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing letterSpacing null:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=null, display=block, kerning=false, letterSpacing=null, leftMargin=null, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing letterSpacing undefined:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=null, display=block, kerning=false, letterSpacing=null, leftMargin=null, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing letterSpacing object:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=null, display=block, kerning=false, letterSpacing=NaN, leftMargin=null, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing letterSpacing true:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=null, display=block, kerning=false, letterSpacing=NaN, leftMargin=null, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing letterSpacing false:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=null, display=block, kerning=false, letterSpacing=null, leftMargin=null, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing letterSpacing number:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=null, display=block, kerning=false, letterSpacing=5, leftMargin=null, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing letterSpacing number negative:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=null, display=block, kerning=false, letterSpacing=-5, leftMargin=null, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing letterSpacing number 0:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=null, display=block, kerning=false, letterSpacing=null, leftMargin=null, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing letterSpacing number 0.5:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=null, display=block, kerning=false, letterSpacing=0, leftMargin=null, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing letterSpacing number 0.9:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=null, display=block, kerning=false, letterSpacing=0, leftMargin=null, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing letterSpacing number 1.1:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=null, display=block, kerning=false, letterSpacing=1, leftMargin=null, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing letterSpacing number 1.5:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=null, display=block, kerning=false, letterSpacing=1, leftMargin=null, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing letterSpacing number 1.9:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=null, display=block, kerning=false, letterSpacing=1, leftMargin=null, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing letterSpacing number -0.5:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=null, display=block, kerning=false, letterSpacing=0, leftMargin=null, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing letterSpacing number -0.9:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=null, display=block, kerning=false, letterSpacing=0, leftMargin=null, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing letterSpacing number -1.1:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=null, display=block, kerning=false, letterSpacing=-1, leftMargin=null, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing letterSpacing number -1.5:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=null, display=block, kerning=false, letterSpacing=-1, leftMargin=null, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing letterSpacing number -1.9:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=null, display=block, kerning=false, letterSpacing=-1, leftMargin=null, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing letterSpacing number 255:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=null, display=block, kerning=false, letterSpacing=255, leftMargin=null, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing letterSpacing number 256:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=null, display=block, kerning=false, letterSpacing=256, leftMargin=null, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing letterSpacing number -255:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=null, display=block, kerning=false, letterSpacing=-255, leftMargin=null, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing letterSpacing number -256:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=null, display=block, kerning=false, letterSpacing=-256, leftMargin=null, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing letterSpacing number 65535:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=null, display=block, kerning=false, letterSpacing=65535, leftMargin=null, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing letterSpacing number 65536:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=null, display=block, kerning=false, letterSpacing=65536, leftMargin=null, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing letterSpacing number -65535:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=null, display=block, kerning=false, letterSpacing=-65535, leftMargin=null, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing letterSpacing number -65536:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=null, display=block, kerning=false, letterSpacing=-65536, leftMargin=null, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing letterSpacing string:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=null, display=block, kerning=false, letterSpacing=NaN, leftMargin=null, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing letterSpacing string number:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=null, display=block, kerning=false, letterSpacing=10, leftMargin=null, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing letterSpacing string empty:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=null, display=block, kerning=false, letterSpacing=null, leftMargin=null, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing letterSpacing string space 1:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=null, display=block, kerning=false, letterSpacing=10, leftMargin=null, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing letterSpacing string space 2:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=null, display=block, kerning=false, letterSpacing=10, leftMargin=null, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing letterSpacing string space 3:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=null, display=block, kerning=false, letterSpacing=10, leftMargin=null, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing letterSpacing string space 4:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=null, display=block, kerning=false, letterSpacing=10, leftMargin=null, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing letterSpacing string negative:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=null, display=block, kerning=false, letterSpacing=-10, leftMargin=null, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing letterSpacing string negative space 1:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=null, display=block, kerning=false, letterSpacing=-10, leftMargin=null, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing letterSpacing string negative space 2:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=null, display=block, kerning=false, letterSpacing=-10, leftMargin=null, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing letterSpacing string negative space 3:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=null, display=block, kerning=false, letterSpacing=-10, leftMargin=null, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing letterSpacing string negative space 4:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=null, display=block, kerning=false, letterSpacing=NaN, leftMargin=null, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing letterSpacing string prefix 1:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=null, display=block, kerning=false, letterSpacing=NaN, leftMargin=null, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing letterSpacing string prefix 2:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=null, display=block, kerning=false, letterSpacing=NaN, leftMargin=null, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing letterSpacing string suffix 1:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=null, display=block, kerning=false, letterSpacing=10, leftMargin=null, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing letterSpacing string suffix 2:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=null, display=block, kerning=false, letterSpacing=10, leftMargin=null, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing marginLeft null:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=null, display=block, kerning=false, letterSpacing=null, leftMargin=null, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing marginLeft undefined:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=null, display=block, kerning=false, letterSpacing=null, leftMargin=null, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing marginLeft object:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=null, display=block, kerning=false, letterSpacing=null, leftMargin=0, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing marginLeft true:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=null, display=block, kerning=false, letterSpacing=null, leftMargin=0, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing marginLeft false:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=null, display=block, kerning=false, letterSpacing=null, leftMargin=null, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing marginLeft number:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=null, display=block, kerning=false, letterSpacing=null, leftMargin=5, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing marginLeft number negative:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=null, display=block, kerning=false, letterSpacing=null, leftMargin=0, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing marginLeft number 0:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=null, display=block, kerning=false, letterSpacing=null, leftMargin=null, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing marginLeft number 0.5:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=null, display=block, kerning=false, letterSpacing=null, leftMargin=0, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing marginLeft number 0.9:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=null, display=block, kerning=false, letterSpacing=null, leftMargin=0, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing marginLeft number 1.1:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=null, display=block, kerning=false, letterSpacing=null, leftMargin=1, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing marginLeft number 1.5:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=null, display=block, kerning=false, letterSpacing=null, leftMargin=1, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing marginLeft number 1.9:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=null, display=block, kerning=false, letterSpacing=null, leftMargin=1, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing marginLeft number -0.5:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=null, display=block, kerning=false, letterSpacing=null, leftMargin=0, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing marginLeft number -0.9:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=null, display=block, kerning=false, letterSpacing=null, leftMargin=0, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing marginLeft number -1.1:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=null, display=block, kerning=false, letterSpacing=null, leftMargin=0, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing marginLeft number -1.5:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=null, display=block, kerning=false, letterSpacing=null, leftMargin=0, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing marginLeft number -1.9:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=null, display=block, kerning=false, letterSpacing=null, leftMargin=0, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing marginLeft number 255:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=null, display=block, kerning=false, letterSpacing=null, leftMargin=255, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing marginLeft number 256:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=null, display=block, kerning=false, letterSpacing=null, leftMargin=256, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing marginLeft number -255:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=null, display=block, kerning=false, letterSpacing=null, leftMargin=0, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing marginLeft number -256:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=null, display=block, kerning=false, letterSpacing=null, leftMargin=0, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing marginLeft number 65535:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=null, display=block, kerning=false, letterSpacing=null, leftMargin=65535, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing marginLeft number 65536:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=null, display=block, kerning=false, letterSpacing=null, leftMargin=65536, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing marginLeft number -65535:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=null, display=block, kerning=false, letterSpacing=null, leftMargin=0, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing marginLeft number -65536:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=null, display=block, kerning=false, letterSpacing=null, leftMargin=0, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing marginLeft string:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=null, display=block, kerning=false, letterSpacing=null, leftMargin=0, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing marginLeft string number:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=null, display=block, kerning=false, letterSpacing=null, leftMargin=10, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing marginLeft string empty:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=null, display=block, kerning=false, letterSpacing=null, leftMargin=null, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing marginLeft string space 1:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=null, display=block, kerning=false, letterSpacing=null, leftMargin=10, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing marginLeft string space 2:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=null, display=block, kerning=false, letterSpacing=null, leftMargin=10, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing marginLeft string space 3:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=null, display=block, kerning=false, letterSpacing=null, leftMargin=10, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing marginLeft string space 4:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=null, display=block, kerning=false, letterSpacing=null, leftMargin=10, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing marginLeft string negative:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=null, display=block, kerning=false, letterSpacing=null, leftMargin=0, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing marginLeft string negative space 1:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=null, display=block, kerning=false, letterSpacing=null, leftMargin=0, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing marginLeft string negative space 2:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=null, display=block, kerning=false, letterSpacing=null, leftMargin=0, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing marginLeft string negative space 3:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=null, display=block, kerning=false, letterSpacing=null, leftMargin=0, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing marginLeft string negative space 4:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=null, display=block, kerning=false, letterSpacing=null, leftMargin=0, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing marginLeft string prefix 1:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=null, display=block, kerning=false, letterSpacing=null, leftMargin=0, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing marginLeft string prefix 2:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=null, display=block, kerning=false, letterSpacing=null, leftMargin=0, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing marginLeft string suffix 1:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=null, display=block, kerning=false, letterSpacing=null, leftMargin=10, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing marginLeft string suffix 2:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=null, display=block, kerning=false, letterSpacing=null, leftMargin=10, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing marginRight null:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=null, display=block, kerning=false, letterSpacing=null, leftMargin=null, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing marginRight undefined:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=null, display=block, kerning=false, letterSpacing=null, leftMargin=null, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing marginRight object:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=null, display=block, kerning=false, letterSpacing=null, leftMargin=null, rightMargin=0, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing marginRight true:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=null, display=block, kerning=false, letterSpacing=null, leftMargin=null, rightMargin=0, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing marginRight false:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=null, display=block, kerning=false, letterSpacing=null, leftMargin=null, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing marginRight number:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=null, display=block, kerning=false, letterSpacing=null, leftMargin=null, rightMargin=5, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing marginRight number negative:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=null, display=block, kerning=false, letterSpacing=null, leftMargin=null, rightMargin=0, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing marginRight number 0:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=null, display=block, kerning=false, letterSpacing=null, leftMargin=null, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing marginRight number 0.5:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=null, display=block, kerning=false, letterSpacing=null, leftMargin=null, rightMargin=0, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing marginRight number 0.9:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=null, display=block, kerning=false, letterSpacing=null, leftMargin=null, rightMargin=0, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing marginRight number 1.1:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=null, display=block, kerning=false, letterSpacing=null, leftMargin=null, rightMargin=1, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing marginRight number 1.5:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=null, display=block, kerning=false, letterSpacing=null, leftMargin=null, rightMargin=1, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing marginRight number 1.9:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=null, display=block, kerning=false, letterSpacing=null, leftMargin=null, rightMargin=1, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing marginRight number -0.5:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=null, display=block, kerning=false, letterSpacing=null, leftMargin=null, rightMargin=0, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing marginRight number -0.9:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=null, display=block, kerning=false, letterSpacing=null, leftMargin=null, rightMargin=0, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing marginRight number -1.1:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=null, display=block, kerning=false, letterSpacing=null, leftMargin=null, rightMargin=0, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing marginRight number -1.5:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=null, display=block, kerning=false, letterSpacing=null, leftMargin=null, rightMargin=0, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing marginRight number -1.9:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=null, display=block, kerning=false, letterSpacing=null, leftMargin=null, rightMargin=0, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing marginRight number 255:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=null, display=block, kerning=false, letterSpacing=null, leftMargin=null, rightMargin=255, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing marginRight number 256:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=null, display=block, kerning=false, letterSpacing=null, leftMargin=null, rightMargin=256, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing marginRight number -255:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=null, display=block, kerning=false, letterSpacing=null, leftMargin=null, rightMargin=0, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing marginRight number -256:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=null, display=block, kerning=false, letterSpacing=null, leftMargin=null, rightMargin=0, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing marginRight number 65535:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=null, display=block, kerning=false, letterSpacing=null, leftMargin=null, rightMargin=65535, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing marginRight number 65536:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=null, display=block, kerning=false, letterSpacing=null, leftMargin=null, rightMargin=65536, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing marginRight number -65535:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=null, display=block, kerning=false, letterSpacing=null, leftMargin=null, rightMargin=0, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing marginRight number -65536:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=null, display=block, kerning=false, letterSpacing=null, leftMargin=null, rightMargin=0, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing marginRight string:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=null, display=block, kerning=false, letterSpacing=null, leftMargin=null, rightMargin=0, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing marginRight string number:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=null, display=block, kerning=false, letterSpacing=null, leftMargin=null, rightMargin=10, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing marginRight string empty:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=null, display=block, kerning=false, letterSpacing=null, leftMargin=null, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing marginRight string space 1:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=null, display=block, kerning=false, letterSpacing=null, leftMargin=null, rightMargin=10, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing marginRight string space 2:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=null, display=block, kerning=false, letterSpacing=null, leftMargin=null, rightMargin=10, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing marginRight string space 3:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=null, display=block, kerning=false, letterSpacing=null, leftMargin=null, rightMargin=10, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing marginRight string space 4:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=null, display=block, kerning=false, letterSpacing=null, leftMargin=null, rightMargin=10, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing marginRight string negative:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=null, display=block, kerning=false, letterSpacing=null, leftMargin=null, rightMargin=0, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing marginRight string negative space 1:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=null, display=block, kerning=false, letterSpacing=null, leftMargin=null, rightMargin=0, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing marginRight string negative space 2:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=null, display=block, kerning=false, letterSpacing=null, leftMargin=null, rightMargin=0, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing marginRight string negative space 3:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=null, display=block, kerning=false, letterSpacing=null, leftMargin=null, rightMargin=0, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing marginRight string negative space 4:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=null, display=block, kerning=false, letterSpacing=null, leftMargin=null, rightMargin=0, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing marginRight string prefix 1:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=null, display=block, kerning=false, letterSpacing=null, leftMargin=null, rightMargin=0, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing marginRight string prefix 2:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=null, display=block, kerning=false, letterSpacing=null, leftMargin=null, rightMargin=0, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing marginRight string suffix 1:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=null, display=block, kerning=false, letterSpacing=null, leftMargin=null, rightMargin=10, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing marginRight string suffix 2:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=null, display=block, kerning=false, letterSpacing=null, leftMargin=null, rightMargin=10, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing textAlign left:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=left, leading=null, display=block, kerning=false, letterSpacing=null, leftMargin=null, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing textAlign center:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=center, leading=null, display=block, kerning=false, letterSpacing=null, leftMargin=null, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing textAlign right:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=right, leading=null, display=block, kerning=false, letterSpacing=null, leftMargin=null, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing textAlign justify:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=justify, leading=null, display=block, kerning=false, letterSpacing=null, leftMargin=null, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing textAlign unknown:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=null, display=block, kerning=false, letterSpacing=null, leftMargin=null, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing textAlign center case:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=center, leading=null, display=block, kerning=false, letterSpacing=null, leftMargin=null, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing textAlign center case 2:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=center, leading=null, display=block, kerning=false, letterSpacing=null, leftMargin=null, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing textAlign center case 3:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=center, leading=null, display=block, kerning=false, letterSpacing=null, leftMargin=null, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing textAlign spaces 1:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=null, display=block, kerning=false, letterSpacing=null, leftMargin=null, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing textAlign spaces 2:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=null, display=block, kerning=false, letterSpacing=null, leftMargin=null, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing textAlign spaces 3:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=null, display=block, kerning=false, letterSpacing=null, leftMargin=null, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing textAlign number:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=null, display=block, kerning=false, letterSpacing=null, leftMargin=null, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing textDecoration none:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=null, display=block, kerning=false, letterSpacing=null, leftMargin=null, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=false
+Testing textDecoration underline:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=null, display=block, kerning=false, letterSpacing=null, leftMargin=null, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=true
+Testing textDecoration unknown:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=null, display=block, kerning=false, letterSpacing=null, leftMargin=null, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing textDecoration underline case:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=null, display=block, kerning=false, letterSpacing=null, leftMargin=null, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing textDecoration spaces 1:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=null, display=block, kerning=false, letterSpacing=null, leftMargin=null, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing textDecoration spaces 2:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=null, display=block, kerning=false, letterSpacing=null, leftMargin=null, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing textDecoration spaces 3:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=null, display=block, kerning=false, letterSpacing=null, leftMargin=null, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing textDecoration number:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=null, display=block, kerning=false, letterSpacing=null, leftMargin=null, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing textIndent null:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=null, display=block, kerning=false, letterSpacing=null, leftMargin=null, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing textIndent undefined:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=null, display=block, kerning=false, letterSpacing=null, leftMargin=null, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing textIndent object:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=null, display=block, kerning=false, letterSpacing=null, leftMargin=null, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing textIndent true:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=null, display=block, kerning=false, letterSpacing=null, leftMargin=null, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing textIndent false:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=null, display=block, kerning=false, letterSpacing=null, leftMargin=null, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing textIndent number:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=null, display=block, kerning=false, letterSpacing=null, leftMargin=null, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing textIndent number negative:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=null, display=block, kerning=false, letterSpacing=null, leftMargin=null, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing textIndent number 0:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=null, display=block, kerning=false, letterSpacing=null, leftMargin=null, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing textIndent number 0.5:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=null, display=block, kerning=false, letterSpacing=null, leftMargin=null, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing textIndent number 0.9:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=null, display=block, kerning=false, letterSpacing=null, leftMargin=null, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing textIndent number 1.1:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=null, display=block, kerning=false, letterSpacing=null, leftMargin=null, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing textIndent number 1.5:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=null, display=block, kerning=false, letterSpacing=null, leftMargin=null, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing textIndent number 1.9:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=null, display=block, kerning=false, letterSpacing=null, leftMargin=null, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing textIndent number -0.5:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=null, display=block, kerning=false, letterSpacing=null, leftMargin=null, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing textIndent number -0.9:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=null, display=block, kerning=false, letterSpacing=null, leftMargin=null, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing textIndent number -1.1:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=null, display=block, kerning=false, letterSpacing=null, leftMargin=null, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing textIndent number -1.5:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=null, display=block, kerning=false, letterSpacing=null, leftMargin=null, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing textIndent number -1.9:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=null, display=block, kerning=false, letterSpacing=null, leftMargin=null, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing textIndent number 255:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=null, display=block, kerning=false, letterSpacing=null, leftMargin=null, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing textIndent number 256:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=null, display=block, kerning=false, letterSpacing=null, leftMargin=null, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing textIndent number -255:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=null, display=block, kerning=false, letterSpacing=null, leftMargin=null, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing textIndent number -256:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=null, display=block, kerning=false, letterSpacing=null, leftMargin=null, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing textIndent number 65535:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=null, display=block, kerning=false, letterSpacing=null, leftMargin=null, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing textIndent number 65536:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=null, display=block, kerning=false, letterSpacing=null, leftMargin=null, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing textIndent number -65535:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=null, display=block, kerning=false, letterSpacing=null, leftMargin=null, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing textIndent number -65536:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=null, display=block, kerning=false, letterSpacing=null, leftMargin=null, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing textIndent string:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=null, display=block, kerning=false, letterSpacing=null, leftMargin=null, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing textIndent string number:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=null, display=block, kerning=false, letterSpacing=null, leftMargin=null, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing textIndent string empty:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=null, display=block, kerning=false, letterSpacing=null, leftMargin=null, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing textIndent string space 1:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=null, display=block, kerning=false, letterSpacing=null, leftMargin=null, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing textIndent string space 2:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=null, display=block, kerning=false, letterSpacing=null, leftMargin=null, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing textIndent string space 3:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=null, display=block, kerning=false, letterSpacing=null, leftMargin=null, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing textIndent string space 4:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=null, display=block, kerning=false, letterSpacing=null, leftMargin=null, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing textIndent string negative:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=null, display=block, kerning=false, letterSpacing=null, leftMargin=null, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing textIndent string negative space 1:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=null, display=block, kerning=false, letterSpacing=null, leftMargin=null, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing textIndent string negative space 2:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=null, display=block, kerning=false, letterSpacing=null, leftMargin=null, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing textIndent string negative space 3:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=null, display=block, kerning=false, letterSpacing=null, leftMargin=null, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing textIndent string negative space 4:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=null, display=block, kerning=false, letterSpacing=null, leftMargin=null, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing textIndent string prefix 1:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=null, display=block, kerning=false, letterSpacing=null, leftMargin=null, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing textIndent string prefix 2:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=null, display=block, kerning=false, letterSpacing=null, leftMargin=null, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing textIndent string suffix 1:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=null, display=block, kerning=false, letterSpacing=null, leftMargin=null, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
+Testing textIndent string suffix 2:
+  tf=[object Object], size=null, blockIndent=null, font=null, align=null, leading=null, display=block, kerning=false, letterSpacing=null, leftMargin=null, rightMargin=null, color=null, bold=null, italic=null, bullet=null, underline=null
