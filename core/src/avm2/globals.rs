@@ -40,6 +40,7 @@ mod r#uint;
 mod vector;
 mod vector_double;
 mod vector_int;
+mod vector_object;
 mod vector_uint;
 mod void;
 mod xml;
@@ -577,15 +578,12 @@ pub fn load_player_globals<'gc>(
     let uint_class = uint::create_class(activation);
     let vector_generic_class = vector::create_generic_class(activation);
 
-    let vector_object_class = vector::create_builtin_class(activation, None);
-
     // Unfortunately we need to specify the global traits manually, at least until
     // all the builtin classes are defined in AS.
     let mut global_traits = Vec::new();
 
     let public_ns = activation.avm2().namespaces.public_all();
     let vector_public_ns = activation.avm2().namespaces.vector_public;
-    let vector_internal_ns = activation.avm2().namespaces.vector_internal;
 
     let class_trait_list = &[
         (public_ns, "Object", object_i_class),
@@ -595,7 +593,6 @@ pub fn load_player_globals<'gc>(
         (public_ns, "int", int_class),
         (public_ns, "uint", uint_class),
         (vector_public_ns, "Vector", vector_generic_class),
-        (vector_internal_ns, "Vector$object", vector_object_class),
     ];
 
     // "trace" is the only builtin function not defined on the toplevel global object
@@ -733,20 +730,6 @@ pub fn load_player_globals<'gc>(
     avm2_system_class!(uint, activation, uint_class, script);
 
     avm2_system_class!(generic_vector, activation, vector_generic_class, script);
-
-    let object_vector = vector_class(
-        None,
-        vector_object_class,
-        "Vector$object",
-        script,
-        activation,
-    )?;
-    activation
-        .avm2()
-        .system_classes
-        .as_mut()
-        .unwrap()
-        .object_vector = object_vector;
 
     // Inside this call, the macro `avm2_system_classes_playerglobal`
     // triggers classloading. Therefore, we run `load_playerglobal`
@@ -919,9 +902,21 @@ pub fn init_builtin_system_classes<'gc>(activation: &mut Activation<'_, 'gc>) {
     let int_cls = activation.avm2().class_defs().int;
     generic_vector.add_application(activation.gc(), Some(int_cls), int_vector);
 
+    let object_vector = lookup_vector_class_object(activation, "Vector$object");
+    generic_vector.add_application(activation.gc(), None, object_vector);
+
     let uint_vector = lookup_vector_class_object(activation, "Vector$uint");
     let uint_cls = activation.avm2().class_defs().uint;
     generic_vector.add_application(activation.gc(), Some(uint_cls), uint_vector);
+
+    // Manually set the object vector class since it's in an internal namespace
+    // (`avm2_system_classes_playerglobal` only works for classes in public namespaces)
+    activation
+        .avm2()
+        .system_classes
+        .as_mut()
+        .unwrap()
+        .object_vector = object_vector;
 }
 
 pub fn init_builtin_system_class_defs<'gc>(activation: &mut Activation<'_, 'gc>) {
@@ -961,6 +956,14 @@ pub fn init_builtin_system_class_defs<'gc>(activation: &mut Activation<'_, 'gc>)
     int_vector_cls.set_param(activation.gc(), Some(Some(int_cls)));
     int_vector_cls.set_name(activation.gc(), int_vector_name);
     generic_vector_cls.add_application(activation.gc(), Some(int_cls), int_vector_cls);
+
+    // Vector$object
+    let object_vector_name = create_vector_name(activation, "*");
+    let object_vector_cls = lookup_vector_class(activation, "Vector$object");
+
+    object_vector_cls.set_param(activation.gc(), Some(None));
+    object_vector_cls.set_name(activation.gc(), object_vector_name);
+    generic_vector_cls.add_application(activation.gc(), None, object_vector_cls);
 
     // Vector$uint
     let uint_vector_name = create_vector_name(activation, "uint");

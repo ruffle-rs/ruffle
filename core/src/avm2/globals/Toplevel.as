@@ -38,6 +38,7 @@ include "String.as"
 
 include "VectorDouble.as"
 include "VectorInt.as"
+include "VectorObject.as"
 include "VectorUint.as"
 
 include "ArgumentError.as"
