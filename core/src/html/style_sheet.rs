@@ -281,6 +281,49 @@ pub fn transform_dashes_to_camel_case(input: &WStr) -> Cow<WStr> {
     Cow::Owned(result)
 }
 
+pub fn parse_font_list(input: &WStr) -> WString {
+    let mut result = WString::new();
+
+    let mut pos = 0;
+    while pos < input.len() {
+        // Skip whitespace
+        while input.get(pos) == Some(' ' as u16) {
+            pos += 1;
+        }
+
+        // Find the whole value
+        let start = pos;
+        while input.get(pos) != Some(',' as u16) && pos < input.len() {
+            pos += 1;
+        }
+
+        let mut value = &input[start..pos];
+
+        if pos < input.len() {
+            pos += 1; // move past the comma
+        }
+
+        // Transform some names
+        if value == b"mono" {
+            value = WStr::from_units(b"_typewriter");
+        } else if value == b"sans-serif" {
+            value = WStr::from_units(b"_sans");
+        } else if value == b"serif" {
+            value = WStr::from_units(b"_serif");
+        }
+
+        // Add it to the result (without any extra space)
+        if !value.is_empty() {
+            if !result.is_empty() {
+                result.push_char(',');
+            }
+            result.push_str(value);
+        }
+    }
+
+    result
+}
+
 // More exhaustive tests live inside avm2 stylesheet swf test
 // These are just some useful ones extracted out
 #[cfg(test)]
