@@ -173,6 +173,7 @@ package __AS3__.vec {
         AS3 native function push(... rest):uint;
 
         [API("708")]
+        // For some reason the parameter is a uint for Vector$uint specifically
         AS3 native function removeAt(index:uint):uint;
 
         AS3 native function reverse():Vector$uint;
