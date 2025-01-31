@@ -9,7 +9,7 @@ use crate::avm2::traits::Trait;
 use crate::avm2::value::Value;
 use crate::avm2::vtable::VTable;
 use crate::avm2::{Avm2, Error, Multiname, Namespace, QName};
-use crate::string::WStr;
+use crate::string::{AvmString, WStr};
 use crate::tag_utils::{self, ControlFlow, SwfMovie, SwfSlice, SwfStream};
 use gc_arena::Collect;
 use std::sync::Arc;
@@ -38,6 +38,7 @@ mod string;
 mod toplevel;
 mod r#uint;
 mod vector;
+mod vector_int;
 mod void;
 mod xml;
 mod xml_list;
@@ -574,7 +575,6 @@ pub fn load_player_globals<'gc>(
     let uint_class = uint::create_class(activation);
     let vector_generic_class = vector::create_generic_class(activation);
 
-    let vector_int_class = vector::create_builtin_class(activation, Some(int_class));
     let vector_uint_class = vector::create_builtin_class(activation, Some(uint_class));
     let vector_number_class = vector::create_builtin_class(activation, Some(number_class));
     let vector_object_class = vector::create_builtin_class(activation, None);
@@ -595,7 +595,6 @@ pub fn load_player_globals<'gc>(
         (public_ns, "int", int_class),
         (public_ns, "uint", uint_class),
         (vector_public_ns, "Vector", vector_generic_class),
-        (vector_internal_ns, "Vector$int", vector_int_class),
         (vector_internal_ns, "Vector$uint", vector_uint_class),
         (vector_internal_ns, "Vector$double", vector_number_class),
         (vector_internal_ns, "Vector$object", vector_object_class),
@@ -738,13 +737,6 @@ pub fn load_player_globals<'gc>(
     avm2_system_class!(generic_vector, activation, vector_generic_class, script);
 
     vector_class(
-        Some(int_class),
-        vector_int_class,
-        "Vector$int",
-        script,
-        activation,
-    )?;
-    vector_class(
         Some(uint_class),
         vector_uint_class,
         "Vector$uint",
@@ -853,7 +845,62 @@ macro_rules! avm2_system_class_defs_playerglobal {
     }
 }
 
-pub fn init_builtin_system_classes(activation: &mut Activation<'_, '_>) {
+/// Lookup a vector ClassObject by its `Vector$` name, such as `Vector$int`.
+pub fn lookup_vector_class_object<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    class_name: &'static str,
+) -> ClassObject<'gc> {
+    // `class_name` should be ASCII
+    let class_name = activation
+        .strings()
+        .intern_static(WStr::from_units(class_name.as_bytes()));
+
+    let ns = activation.avm2().namespaces.vector_internal;
+    let name = QName::new(ns, class_name);
+
+    let value = activation
+        .domain()
+        .get_defined_value(activation, name)
+        .expect("Vector class should be defined");
+
+    value.as_object().unwrap().as_class_object().unwrap()
+}
+
+/// Lookup a vector Class by its `Vector$` name, such as `Vector$int`.
+pub fn lookup_vector_class<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    class_name: &'static str,
+) -> Class<'gc> {
+    // `class_name` should be ASCII
+    let class_name = activation
+        .strings()
+        .intern_static(WStr::from_units(class_name.as_bytes()));
+
+    let ns = activation.avm2().namespaces.vector_internal;
+    let class_name = Multiname::new(ns, class_name);
+
+    activation
+        .domain()
+        .get_class(activation.context, &class_name)
+        .expect("Vector class should be defined")
+}
+
+/// Given a string like "int", create a QName for a Vector class name, like
+/// __AS3__.vec::Vector.<int>
+pub fn create_vector_name<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    class_name: &str,
+) -> QName<'gc> {
+    // FIXME is this the right namespace? It doesn't seem observable if it's
+    // the internal one or the public one, only the namespace string matters
+    let namespace = activation.avm2().namespaces.vector_internal;
+
+    let name = format!("Vector.<{}>", class_name);
+
+    QName::new(namespace, AvmString::new_utf8(activation.gc(), name))
+}
+
+pub fn init_builtin_system_classes<'gc>(activation: &mut Activation<'_, 'gc>) {
     avm2_system_classes_playerglobal!(
         &mut *activation,
         [
@@ -876,9 +923,16 @@ pub fn init_builtin_system_classes(activation: &mut Activation<'_, '_>) {
             ("", "XMLList", xml_list),
         ]
     );
+
+    // Register Vector$int/uint/Number/Object as being applications of the Vector ClassObject
+    let generic_vector = activation.avm2().classes().generic_vector;
+    let int_cls = activation.avm2().class_defs().int;
+
+    let int_vector = lookup_vector_class_object(activation, "Vector$int");
+    generic_vector.add_application(activation.gc(), Some(int_cls), int_vector);
 }
 
-pub fn init_builtin_system_class_defs(activation: &mut Activation<'_, '_>) {
+pub fn init_builtin_system_class_defs<'gc>(activation: &mut Activation<'_, 'gc>) {
     avm2_system_class_defs_playerglobal!(
         &mut *activation,
         [
@@ -890,6 +944,21 @@ pub fn init_builtin_system_class_defs(activation: &mut Activation<'_, '_>) {
             ("", "XMLList", xml_list),
         ]
     );
+
+    // Register Vector$int/uint/Number/Object as being applications of the Vector Class
+    let generic_vector_cls = activation
+        .avm2()
+        .classes()
+        .generic_vector
+        .inner_class_definition();
+
+    let int_vector_name = create_vector_name(activation, "int");
+    let int_vector_cls = lookup_vector_class(activation, "Vector$int");
+    let int_cls = activation.avm2().class_defs().int;
+
+    int_vector_cls.set_param(activation.gc(), Some(Some(int_cls)));
+    int_vector_cls.set_name(activation.gc(), int_vector_name);
+    generic_vector_cls.add_application(activation.gc(), Some(int_cls), int_vector_cls);
 }
 
 pub fn init_native_system_classes(activation: &mut Activation<'_, '_>) {

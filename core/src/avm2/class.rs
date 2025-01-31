@@ -942,6 +942,10 @@ impl<'gc> Class<'gc> {
         self.0.read().name
     }
 
+    pub fn set_name(self, mc: &Mutation<'gc>, name: QName<'gc>) {
+        self.0.write(mc).name = name;
+    }
+
     pub fn try_name(self) -> Result<QName<'gc>, std::cell::BorrowError> {
         self.0.try_read().map(|r| r.name)
     }
