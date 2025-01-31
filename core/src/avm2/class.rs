@@ -987,36 +987,6 @@ impl<'gc> Class<'gc> {
     }
 
     #[inline(never)]
-    pub fn define_constant_class_instance_trait(
-        self,
-        activation: &mut Activation<'_, 'gc>,
-        name: QName<'gc>,
-        class_object: ClassObject<'gc>,
-    ) {
-        self.define_instance_trait(
-            activation.gc(),
-            Trait::from_class(name, class_object.inner_class_definition()),
-        );
-    }
-
-    #[inline(never)]
-    pub fn define_constant_function_instance_trait(
-        self,
-        activation: &mut Activation<'_, 'gc>,
-        name: QName<'gc>,
-        value: Value<'gc>,
-    ) {
-        self.define_instance_trait(
-            activation.gc(),
-            Trait::from_const(
-                name,
-                Some(activation.avm2().multinames.function),
-                Some(value),
-            ),
-        );
-    }
-
-    #[inline(never)]
     pub fn define_constant_number_class_traits(
         self,
         namespace: Namespace<'gc>,
@@ -1110,24 +1080,6 @@ impl<'gc> Class<'gc> {
                 Trait::from_method(
                     QName::new(namespace, name),
                     Method::from_builtin_and_params(value, name, params, return_type, false, mc),
-                ),
-            );
-        }
-    }
-
-    #[inline(never)]
-    pub fn define_builtin_class_methods(
-        self,
-        mc: &Mutation<'gc>,
-        namespace: Namespace<'gc>,
-        items: &[(&'static str, NativeMethodImpl)],
-    ) {
-        for &(name, value) in items {
-            self.define_class_trait(
-                mc,
-                Trait::from_method(
-                    QName::new(namespace, name),
-                    Method::from_builtin(value, name, mc),
                 ),
             );
         }
