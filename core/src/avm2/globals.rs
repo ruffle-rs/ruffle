@@ -38,6 +38,7 @@ mod string;
 mod toplevel;
 mod r#uint;
 mod vector;
+mod vector_double;
 mod vector_int;
 mod vector_uint;
 mod void;
@@ -576,7 +577,6 @@ pub fn load_player_globals<'gc>(
     let uint_class = uint::create_class(activation);
     let vector_generic_class = vector::create_generic_class(activation);
 
-    let vector_number_class = vector::create_builtin_class(activation, Some(number_class));
     let vector_object_class = vector::create_builtin_class(activation, None);
 
     // Unfortunately we need to specify the global traits manually, at least until
@@ -595,7 +595,6 @@ pub fn load_player_globals<'gc>(
         (public_ns, "int", int_class),
         (public_ns, "uint", uint_class),
         (vector_public_ns, "Vector", vector_generic_class),
-        (vector_internal_ns, "Vector$double", vector_number_class),
         (vector_internal_ns, "Vector$object", vector_object_class),
     ];
 
@@ -735,13 +734,6 @@ pub fn load_player_globals<'gc>(
 
     avm2_system_class!(generic_vector, activation, vector_generic_class, script);
 
-    vector_class(
-        Some(number_class),
-        vector_number_class,
-        "Vector$double",
-        script,
-        activation,
-    )?;
     let object_vector = vector_class(
         None,
         vector_object_class,
@@ -919,6 +911,10 @@ pub fn init_builtin_system_classes<'gc>(activation: &mut Activation<'_, 'gc>) {
     // Register Vector$int/uint/Number/Object as being applications of the Vector ClassObject
     let generic_vector = activation.avm2().classes().generic_vector;
 
+    let number_vector = lookup_vector_class_object(activation, "Vector$double");
+    let number_cls = activation.avm2().class_defs().number;
+    generic_vector.add_application(activation.gc(), Some(number_cls), number_vector);
+
     let int_vector = lookup_vector_class_object(activation, "Vector$int");
     let int_cls = activation.avm2().class_defs().int;
     generic_vector.add_application(activation.gc(), Some(int_cls), int_vector);
@@ -947,6 +943,15 @@ pub fn init_builtin_system_class_defs<'gc>(activation: &mut Activation<'_, 'gc>)
         .classes()
         .generic_vector
         .inner_class_definition();
+
+    // Vector$double
+    let number_vector_name = create_vector_name(activation, "Number");
+    let number_vector_cls = lookup_vector_class(activation, "Vector$double");
+    let number_cls = activation.avm2().class_defs().number;
+
+    number_vector_cls.set_param(activation.gc(), Some(Some(number_cls)));
+    number_vector_cls.set_name(activation.gc(), number_vector_name);
+    generic_vector_cls.add_application(activation.gc(), Some(number_cls), number_vector_cls);
 
     // Vector$int
     let int_vector_name = create_vector_name(activation, "int");
