@@ -20,6 +20,7 @@ file-menu-exit = إخرج
 controls-menu = عناصر التحكم
 controls-menu-suspend = علِّق
 controls-menu-resume = استأنِف
+controls-menu-step-once = تقدم خطوة واحدة
 controls-menu-volume = التحكم بالصوت
 help-menu = التعليمات
 help-menu-join-discord = إنضم لنا على الدسكورد
