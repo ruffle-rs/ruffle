@@ -339,7 +339,8 @@ pub fn get_matrix_3d<'gc>(
     let display_object = get_display_object(this);
     if display_object.base().has_matrix3d_stub() {
         let matrix = *get_display_object(this).base().matrix();
-        let matrix3d = Matrix3D::from(matrix);
+        let mut matrix3d = Matrix3D::from(matrix);
+        matrix3d.set_tz(display_object.z());
         matrix3d_to_object(matrix3d, activation)
     } else {
         Ok(Value::Null)
@@ -359,19 +360,19 @@ pub fn set_matrix_3d<'gc>(
 
     let display_object = get_display_object(this);
 
-    let (matrix, has_matrix3d) = {
+    let (matrix, has_matrix3d, tz) = {
         match args.try_get_object(activation, 0) {
             Some(obj) => {
                 let matrix3d = object_to_matrix3d(obj, activation)?;
                 let matrix = Matrix::from(matrix3d);
                 let tz = matrix3d.tz();
-                display_object.base_mut(activation.gc()).set_tz(tz);
-                (matrix, true)
+                (matrix, true, tz)
             }
-            None => (Matrix::IDENTITY, false),
+            None => (Matrix::IDENTITY, false, 0.0),
         }
     };
 
+    display_object.base_mut(activation.gc()).set_matrix_tz(tz);
     display_object.set_matrix(activation.gc(), matrix);
     if let Some(parent) = display_object.parent() {
         // Self-transform changes are automatically handled,
