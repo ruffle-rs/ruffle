@@ -364,6 +364,8 @@ pub fn set_matrix_3d<'gc>(
             Some(obj) => {
                 let matrix3d = object_to_matrix3d(obj, activation)?;
                 let matrix = Matrix::from(matrix3d);
+                let tz = matrix3d.tz();
+                display_object.base_mut(activation.gc()).set_tz(tz);
                 (matrix, true)
             }
             None => (Matrix::IDENTITY, false),

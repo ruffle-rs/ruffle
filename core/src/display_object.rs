@@ -336,6 +336,10 @@ impl<'gc> DisplayObjectBase<'gc> {
         &mut self.transform.matrix
     }
 
+    pub fn set_tz(&mut self, tz: f64) {
+        self.transform.tz = tz;
+    }
+
     pub fn set_matrix(&mut self, matrix: Matrix) {
         self.transform.matrix = matrix;
         self.set_scale_rotation_cached(false);
@@ -941,6 +945,7 @@ pub fn render_base<'gc>(this: DisplayObject<'gc>, context: &mut RenderContext<'_
                     ty: -offset_y,
                     ..cache_info.base_transform.matrix
                 },
+                tz: 0.0,
             });
             let mut offscreen_context = RenderContext {
                 renderer: context.renderer,
@@ -973,6 +978,7 @@ pub fn render_base<'gc>(this: DisplayObject<'gc>, context: &mut RenderContext<'_
                         ..Default::default()
                     },
                     color_transform: cache_info.base_transform.color_transform,
+                    tz: context.transform_stack.transform().tz,
                 },
                 true,
                 PixelSnapping::Always, // cacheAsBitmap forces pixel snapping
@@ -1045,6 +1051,7 @@ pub fn apply_standard_mask_and_scroll<'gc, F>(
         context.transform_stack.push(&Transform {
             matrix: Matrix::translate(-rect.x_min, -rect.y_min),
             color_transform: Default::default(),
+            tz: 0.0,
         });
     }
 
