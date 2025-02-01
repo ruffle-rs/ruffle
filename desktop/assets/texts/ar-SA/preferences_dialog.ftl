@@ -23,4 +23,8 @@ theme = المظهر
 theme-system = الإعدادات المبدئية
 theme-light = فاتح
 theme-dark = داكن
+gamemode-tooltip =
+    يطبِّق GameMode مجموعة من التحسينات على جهاز الكمبيوتر و/أو رفل مؤقتًا.
+    يطلب رفل وضع اللعبة فقط عند تشغيل فيلم.
 gamemode-default = المبدئي
+gamemode-default-tooltip = سيمكَّن GameMode فقط عند ضبط تفضيل الطاقة على مرتفع.
