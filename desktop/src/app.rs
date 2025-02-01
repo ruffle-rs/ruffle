@@ -436,7 +436,12 @@ impl ApplicationHandler<RuffleEvent> for App {
                 Icon::from_rgba(icon_bytes.to_vec(), 32, 32).expect("App icon should be correct");
 
             let no_gui = self.preferences.cli.no_gui;
-            let min_window_size = (16, if no_gui { 16 } else { MENU_HEIGHT + 16 }).into();
+            let min_window_size = if no_gui {
+                (16, 16)
+            } else {
+                (350, MENU_HEIGHT + 16)
+            }
+            .into();
             let preferred_width = self.preferences.cli.width;
             let preferred_height = self.preferences.cli.height;
             let start_fullscreen = self.preferences.cli.fullscreen;
