@@ -8,7 +8,6 @@ package flash.text {
 
     [Ruffle(InstanceAllocator)]
     public class TextField extends InteractiveObject {
-        internal var _styleSheet:StyleSheet;
         internal var _useRichTextClipboard:Boolean;
 
         public native function get alwaysShowSelection():Boolean;
