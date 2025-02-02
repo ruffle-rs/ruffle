@@ -92,16 +92,24 @@ fn set_style<'gc>(
     let object = args.get(1).unwrap_or(&Value::Undefined);
 
     css.set(name, shallow_copy(activation, *object)?, activation)?;
-    styles.set(
-        name,
-        this.call_method(
-            "transform".into(),
-            &[shallow_copy(activation, *object)?],
-            activation,
-            ExecutionReason::Special,
-        )?,
+    let text_format = this.call_method(
+        "transform".into(),
+        &[shallow_copy(activation, *object)?],
         activation,
+        ExecutionReason::Special,
     )?;
+    styles.set(name, text_format, activation)?;
+
+    if let NativeObject::StyleSheet(style_sheet) = this.native() {
+        if let Value::Object(text_format) = text_format {
+            if let NativeObject::TextFormat(text_format) = text_format.native() {
+                style_sheet.set_style(
+                    name.as_wstr().to_ascii_lowercase(),
+                    text_format.borrow().clone(),
+                );
+            }
+        }
+    }
 
     Ok(Value::Undefined)
 }
