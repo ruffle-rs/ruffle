@@ -723,12 +723,14 @@ impl<'gc> Font<'gc> {
 
                 let cur_slice = &text[word_start..];
                 let mut char_iter = cur_slice.char_indices();
-                let mut prev_char_index = word_start;
+                let mut char_index = word_start;
+                let mut prev_char_index = char_index;
                 let mut prev_frag_end = 0;
 
                 char_iter.next(); // No need to check cur_slice[0..0]
-                while last_passing_breakpoint < remaining_width {
-                    prev_char_index = word_start + prev_frag_end;
+                while last_passing_breakpoint <= remaining_width {
+                    prev_char_index = char_index;
+                    char_index = word_start + prev_frag_end;
 
                     if let Some((frag_end, _)) = char_iter.next() {
                         last_passing_breakpoint = self.measure(&cur_slice[..frag_end], params);
