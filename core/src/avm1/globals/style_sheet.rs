@@ -1,3 +1,5 @@
+use std::fmt;
+
 use crate::avm1::object::{Object, TObject};
 use crate::avm1::property_decl::define_properties_on;
 use crate::avm1::{
@@ -5,10 +7,37 @@ use crate::avm1::{
 };
 use crate::avm1::{Activation, Error, Value};
 use crate::backend::navigator::Request;
-use crate::html::{transform_dashes_to_camel_case, CssStream, TextFormat};
+use crate::html::{transform_dashes_to_camel_case, CssStream, StyleSheet, TextFormat};
 use crate::string::{AvmString, StringContext};
-use gc_arena::Gc;
-use ruffle_wstr::WStr;
+use gc_arena::{Collect, Gc, Mutation};
+use ruffle_wstr::{WStr, WString};
+
+/// A `StyleSheet` object that is tied to a style sheet.
+#[derive(Clone, Copy, Collect)]
+#[collect(no_drop)]
+pub struct StyleSheetObject<'gc>(StyleSheet<'gc>);
+
+impl fmt::Debug for StyleSheetObject<'_> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        f.debug_struct("StyleSheetObject")
+            .field("style_sheet", &self.0)
+            .finish()
+    }
+}
+
+impl<'gc> StyleSheetObject<'gc> {
+    pub fn new(mc: &Mutation<'gc>) -> Self {
+        Self(StyleSheet::new(mc))
+    }
+
+    pub fn set_style(self, selector: WString, format: TextFormat) {
+        self.0.set_style(selector, format);
+    }
+
+    pub fn style_sheet(self) -> StyleSheet<'gc> {
+        self.0
+    }
+}
 
 const PROTO_DECLS: &[Declaration] = declare_properties! {
     "setStyle" => method(set_style; DONT_ENUM | DONT_DELETE | READ_ONLY | VERSION_7);
@@ -373,10 +402,13 @@ fn clear<'gc>(
 }
 
 pub fn constructor<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let style_sheet = StyleSheetObject::new(activation.gc());
+    this.set_native(activation.gc(), NativeObject::StyleSheet(style_sheet));
+
     Ok(this.into())
 }
 

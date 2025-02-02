@@ -16,6 +16,7 @@ use crate::avm1::globals::local_connection::LocalConnection;
 use crate::avm1::globals::netconnection::NetConnection;
 use crate::avm1::globals::shared_object::SharedObject;
 use crate::avm1::globals::sound::Sound;
+use crate::avm1::globals::style_sheet::StyleSheetObject;
 use crate::avm1::globals::transform::TransformObject;
 use crate::avm1::globals::xml::Xml;
 use crate::avm1::globals::xml_socket::XmlSocket;
@@ -70,6 +71,7 @@ pub enum NativeObject<'gc> {
     NetConnection(NetConnection<'gc>),
     LocalConnection(LocalConnection<'gc>),
     Sound(Sound<'gc>),
+    StyleSheet(StyleSheetObject<'gc>),
 }
 
 /// Represents an object that can be directly interacted with by the AVM
