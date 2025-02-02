@@ -97,6 +97,7 @@ const PROTO_DECLS: &[Declaration] = declare_properties! {
     "thickness" => property(tf_getter!(thickness), tf_setter!(set_thickness));
     // NOTE: `tabEnabled` is not a built-in property of TextField.
     "tabIndex" => property(tf_getter!(tab_index), tf_setter!(set_tab_index); VERSION_6);
+    "styleSheet" => property(tf_getter!(style_sheet), tf_setter!(set_style_sheet); VERSION_7);
 };
 
 /// Implements `TextField`
@@ -953,5 +954,28 @@ pub fn set_condense_white<'gc>(
 ) -> Result<(), Error<'gc>> {
     let condense_white = value.as_bool(activation.swf_version());
     this.set_condense_white(activation.context, condense_white);
+    Ok(())
+}
+
+pub fn style_sheet<'gc>(
+    this: EditText<'gc>,
+    _activation: &mut Activation<'_, 'gc>,
+) -> Result<Value<'gc>, Error<'gc>> {
+    Ok(match this.style_sheet_avm1() {
+        Some(style_sheet) => Value::Object(style_sheet),
+        None => Value::Undefined,
+    })
+}
+
+pub fn set_style_sheet<'gc>(
+    this: EditText<'gc>,
+    activation: &mut Activation<'_, 'gc>,
+    value: Value<'gc>,
+) -> Result<(), Error<'gc>> {
+    let style_sheet = match value {
+        Value::Object(object) => Some(object),
+        _ => None,
+    };
+    this.set_style_sheet_avm1(activation.context, style_sheet);
     Ok(())
 }
