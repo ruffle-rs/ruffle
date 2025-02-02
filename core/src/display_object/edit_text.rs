@@ -2,6 +2,7 @@
 
 use crate::avm1::Avm1;
 use crate::avm1::ExecutionReason;
+use crate::avm1::NativeObject as Avm1NativeObject;
 use crate::avm1::{Activation as Avm1Activation, ActivationIdentifier};
 use crate::avm1::{
     Object as Avm1Object, StageObject as Avm1StageObject, TObject as Avm1TObject,
@@ -710,12 +711,33 @@ impl<'gc> EditText<'gc> {
         self.0.read().style_sheet.style_sheet()
     }
 
+    pub fn style_sheet_avm1(self) -> Option<Avm1Object<'gc>> {
+        if let EditTextStyleSheet::Avm1(object) = self.0.read().style_sheet {
+            Some(object)
+        } else {
+            None
+        }
+    }
+
     pub fn style_sheet_avm2(self) -> Option<Avm2StyleSheetObject<'gc>> {
         if let EditTextStyleSheet::Avm2(style_sheet_object) = self.0.read().style_sheet {
             Some(style_sheet_object)
         } else {
             None
         }
+    }
+
+    pub fn set_style_sheet_avm1(
+        self,
+        context: &mut UpdateContext<'gc>,
+        style_sheet: Option<Avm1Object<'gc>>,
+    ) {
+        self.set_style_sheet(
+            context,
+            style_sheet
+                .map(EditTextStyleSheet::Avm1)
+                .unwrap_or_default(),
+        );
     }
 
     pub fn set_style_sheet_avm2(
@@ -3512,6 +3534,7 @@ impl EditTextPixelSnapping {
 #[collect(no_drop)]
 enum EditTextStyleSheet<'gc> {
     None,
+    Avm1(Avm1Object<'gc>),
     Avm2(Avm2StyleSheetObject<'gc>),
 }
 
@@ -3527,6 +3550,13 @@ impl<'gc> EditTextStyleSheet<'gc> {
     fn style_sheet(&self) -> Option<StyleSheet<'gc>> {
         match self {
             EditTextStyleSheet::None => None,
+            EditTextStyleSheet::Avm1(object) => {
+                if let Avm1NativeObject::StyleSheet(style_sheet_object) = object.native() {
+                    Some(style_sheet_object.style_sheet())
+                } else {
+                    None
+                }
+            }
             EditTextStyleSheet::Avm2(style_sheet_object) => Some(style_sheet_object.style_sheet()),
         }
     }
