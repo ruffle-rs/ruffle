@@ -36,6 +36,8 @@ include "Array.as"
 include "Boolean.as"
 include "String.as"
 
+include "Vector.as"
+
 include "VectorDouble.as"
 include "VectorInt.as"
 include "VectorObject.as"

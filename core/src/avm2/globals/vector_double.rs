@@ -1,7 +1,6 @@
 #[rustfmt::skip]
 pub use crate::avm2::globals::vector::{
     call_handler,
-    vector_allocator as vector_double_allocator,
     instance_init as vector_double_initializer,
 
     get_fixed,
@@ -29,3 +28,5 @@ pub use crate::avm2::globals::vector::{
     splice,
     unshift,
 };
+
+pub use crate::avm2::object::vector_allocator as vector_double_allocator;
