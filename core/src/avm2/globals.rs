@@ -1,6 +1,6 @@
 use crate::avm2::activation::Activation;
 use crate::avm2::api_version::ApiVersion;
-use crate::avm2::class::Class;
+use crate::avm2::class::{Class, ClassAttributes};
 use crate::avm2::domain::Domain;
 use crate::avm2::object::{ClassObject, ScriptObject, TObject};
 use crate::avm2::scope::{Scope, ScopeChain};
@@ -546,14 +546,12 @@ pub fn load_player_globals<'gc>(
     let number_class = number::create_class(activation);
     let int_class = int::create_class(activation);
     let uint_class = uint::create_class(activation);
-    let vector_generic_class = vector::create_generic_class(activation);
 
     // Unfortunately we need to specify the global traits manually, at least until
     // all the builtin classes are defined in AS.
     let mut global_traits = Vec::new();
 
     let public_ns = activation.avm2().namespaces.public_all();
-    let vector_public_ns = activation.avm2().namespaces.vector_public;
 
     let class_trait_list = &[
         (public_ns, "Object", object_i_class),
@@ -562,7 +560,6 @@ pub fn load_player_globals<'gc>(
         (public_ns, "Number", number_class),
         (public_ns, "int", int_class),
         (public_ns, "uint", uint_class),
-        (vector_public_ns, "Vector", vector_generic_class),
     ];
 
     // "trace" is the only builtin function not defined on the toplevel global object
@@ -699,8 +696,6 @@ pub fn load_player_globals<'gc>(
     avm2_system_class!(int, activation, int_class, script);
     avm2_system_class!(uint, activation, uint_class, script);
 
-    avm2_system_class!(generic_vector, activation, vector_generic_class, script);
-
     // Inside this call, the macro `avm2_system_classes_playerglobal`
     // triggers classloading. Therefore, we run `load_playerglobal`
     // relatively late, so that it can access classes defined before
@@ -791,11 +786,7 @@ fn setup_vector_class<'gc>(
     new_name: &'static str,
     param_class: Option<Class<'gc>>,
 ) -> Class<'gc> {
-    let generic_vector_cls = activation
-        .avm2()
-        .classes()
-        .generic_vector
-        .inner_class_definition();
+    let generic_vector_cls = activation.avm2().class_defs().generic_vector;
 
     let vector_ns = activation.avm2().namespaces.vector_internal;
 
@@ -871,6 +862,7 @@ pub fn init_builtin_system_classes<'gc>(activation: &mut Activation<'_, 'gc>) {
             ("", "VerifyError", verifyerror),
             ("", "XML", xml),
             ("", "XMLList", xml_list),
+            ("__AS3__.vec", "Vector", generic_vector),
         ]
     );
 
@@ -906,7 +898,15 @@ pub fn init_builtin_system_class_defs<'gc>(activation: &mut Activation<'_, 'gc>)
             ("", "String", string),
             ("", "XML", xml),
             ("", "XMLList", xml_list),
+            ("__AS3__.vec", "Vector", generic_vector),
         ]
+    );
+
+    // Mark Vector as a generic class
+    let generic_vector = activation.avm2().class_defs().generic_vector;
+    generic_vector.set_attributes(
+        activation.gc(),
+        ClassAttributes::GENERIC | ClassAttributes::FINAL,
     );
 
     // Setup the four builtin vector classes

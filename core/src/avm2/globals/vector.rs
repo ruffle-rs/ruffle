@@ -1,25 +1,21 @@
 //! `Vector` builtin/prototype
 
 use crate::avm2::activation::Activation;
-use crate::avm2::class::{Class, ClassAttributes};
 use crate::avm2::error::{argument_error, type_error};
 use crate::avm2::globals::array::{
     compare_numeric, compare_string_case_insensitive, compare_string_case_sensitive, ArrayIter,
     SortOptions,
 };
-use crate::avm2::method::Method;
 use crate::avm2::object::{ClassObject, Object, TObject, VectorObject};
 use crate::avm2::parameters::ParametersExt;
 use crate::avm2::value::Value;
 use crate::avm2::vector::VectorStorage;
 use crate::avm2::Error;
-use crate::avm2::QName;
 use crate::string::AvmString;
 use std::cmp::{max, min, Ordering};
 
-pub use crate::avm2::object::vector_allocator;
-
-pub fn generic_vector_allocator<'gc>(
+// Allocator for generic Vector, not specialized Vector
+pub fn vector_allocator<'gc>(
     _class: ClassObject<'gc>,
     activation: &mut Activation<'_, 'gc>,
 ) -> Result<Object<'gc>, Error<'gc>> {
@@ -98,14 +94,6 @@ pub fn call_handler<'gc>(
     }
 
     Ok(VectorObject::from_vector(new_storage, activation)?.into())
-}
-
-pub fn generic_init<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
-    _this: Value<'gc>,
-    _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error<'gc>> {
-    Ok(Value::Undefined)
 }
 
 /// `Vector.length` getter
@@ -747,34 +735,4 @@ pub fn splice<'gc>(
     }
 
     Ok(Value::Undefined)
-}
-
-/// Construct `Vector`'s class.
-pub fn create_generic_class<'gc>(activation: &mut Activation<'_, 'gc>) -> Class<'gc> {
-    let mc = activation.gc();
-    let class = Class::new(
-        QName::new(activation.avm2().namespaces.vector_public, "Vector"),
-        Some(activation.avm2().class_defs().object),
-        Method::from_builtin(generic_init, "<Vector instance initializer>", mc),
-        Method::from_builtin(generic_init, "<Vector class initializer>", mc),
-        activation.avm2().class_defs().class,
-        mc,
-    );
-
-    class.set_attributes(mc, ClassAttributes::GENERIC | ClassAttributes::FINAL);
-    class.set_instance_allocator(mc, generic_vector_allocator);
-
-    class.mark_traits_loaded(activation.gc());
-    class
-        .init_vtable(activation.context)
-        .expect("Native class's vtable should initialize");
-
-    let c_class = class.c_class().expect("Class::new returns an i_class");
-
-    c_class.mark_traits_loaded(activation.gc());
-    c_class
-        .init_vtable(activation.context)
-        .expect("Native class's vtable should initialize");
-
-    class
 }
