@@ -1,0 +1,325 @@
+Getter & setter values:
+  undefined
+  undefined
+  undefined
+  undefined
+  undefined
+  undefined
+  [object Object]
+  undefined
+  [object Object]
+  undefined
+HTML flag:
+  Flag before: false
+  Flag after setting CSS to null: false
+  Flag after setting CSS: false
+  Flag after resetting CSS: false
+Setting style outside:
+  Style before (1): 
+  Style before (2): 
+  Style after (1):  .classRed
+  Style after (2):  .classRed
+Setting style after HTML:
+  Text before:      ab<font      face="TestFont"><span class="classRed">a</span></font>
+  HTML before:      ab<font      face="TestFont"><span class="classRed">a</span></font>
+  Text after style: ab<font      face="TestFont"><span class="classRed">a</span></font>
+  HTML after style: <P ALIGN="LEFT"><FONT FACE="TestFont" SIZE="20" COLOR="#000000" LETTERSPACING="0" KERNING="0">ab&lt;font      face=&quot;TestFont&quot;&gt;&lt;span class=&quot;classRed&quot;&gt;a&lt;/span&gt;&lt;/font&gt;</FONT></P>
+  Text after set:   aba
+  HTML after set:   ab<font      face="TestFont"><span class="classRed">a</span></font>
+  Text no style:    aba
+  HTML no style:    aba
+  Text after set:   ab<font      face="TestFont"><span class="classRed">b</span></font>
+  HTML after set:   ab<font      face="TestFont"><span class="classRed">b</span></font>
+Setting text after stylized HTML:
+  HTML after style: <font face="TestFont"><span class="classRed">a</span></font>
+  Text after style: a
+  HTML after set:   b
+  Text after set:   b
+  HTML after reset: b
+  Text after reset: b
+  HTML after set:   c
+  Text after set:   c
+Setting HTML in text:
+  HTML after style: <font face="TestFont"><span class="classRed">a</span></font>
+  Text after style: a
+  HTML after reset: a
+  Text after reset: a
+Modifying CSS after parsing HTML:
+  Style (original): undefined
+  Text: a
+  HTML: <font face="TestFont"><span class="classRed">a</span></font>
+  Style (after modifying CSS): undefined
+  Text: a
+  HTML: <font face="TestFont"><span class="classRed">a</span></font>
+  Style (after updating HTML to the same value): undefined
+  Text: a
+  HTML: <font face="TestFont"><span class="classRed">a</span></font>
+  Style (after updating HTML): undefined
+  Text: b
+  HTML: <font face="TestFont"><span class="classRed">b</span></font>
+  Style (after updating CSS): undefined
+  Text: b
+  HTML: <font face="TestFont"><span class="classRed">b</span></font>
+  Style (after updating HTML): undefined
+  Text: c
+  HTML: <font face="TestFont"><span class="classRed">c</span></font>
+  Style (after updating CSS without HTML): undefined
+  Text: c
+  HTML: <font face="TestFont"><span class="classRed">c</span></font>
+Modifying text after removing CSS:
+  Text after: ab<font     face="TestFont">b</font>
+  HTML after: ab<font     face="TestFont">b</font>
+Modifying text after removing CSS with HTML:
+  Text after: ab<font     face="TestFont">b</font>
+  HTML after: ab<font     face="TestFont">b</font>
+Updating CSS and resetting it:
+  Text: a
+  HTML: <font face="TestFont"><span class="classred">a</span></font>
+  Text: a
+  HTML: a
+======================================
+  Setting HTML: <font face="TestFont" size="20"><span class="unknownClass">a</span></font>
+  HTML get: <font face="TestFont" size="20"><span class="unknownClass">a</span></font>
+  Text get: a
+  Text: a
+  HTML: <font face="TestFont" size="20"><span class="unknownClass">a</span></font>
+======================================
+  Setting HTML: <font face="TestFont" size="20"><span class="classSmol">a</span></font>
+  HTML get: <font face="TestFont" size="20"><span class="classSmol">a</span></font>
+  Text get: a
+  Text: a
+  HTML: <font face="TestFont" size="20"><span class="classSmol">a</span></font>
+======================================
+  Setting HTML: <font face="TestFont" size="20"><span class="classRed">a</span></font>
+  HTML get: <font face="TestFont" size="20"><span class="classRed">a</span></font>
+  Text get: a
+  Text: a
+  HTML: <font face="TestFont" size="20"><span class="classRed">a</span></font>
+======================================
+  Setting HTML: <font face="TestFont" size="20"><span class="classGreen">a</span></font>
+  HTML get: <font face="TestFont" size="20"><span class="classGreen">a</span></font>
+  Text get: a
+  Text: a
+  HTML: <font face="TestFont" size="20"><span class="classGreen">a</span></font>
+======================================
+  Setting HTML: <font face="TestFont" size="20"><span class="classRedSmol">a</span></font>
+  HTML get: <font face="TestFont" size="20"><span class="classRedSmol">a</span></font>
+  Text get: a
+  Text: a
+  HTML: <font face="TestFont" size="20"><span class="classRedSmol">a</span></font>
+======================================
+  Setting HTML: <font face="TestFont" size="20"><span class="classRed">a<span class="classGreen">b</span></span></font>
+  HTML get: <font face="TestFont" size="20"><span class="classRed">a<span class="classGreen">b</span></span></font>
+  Text get: ab
+  Text: ab
+  HTML: <font face="TestFont" size="20"><span class="classRed">a<span class="classGreen">b</span></span></font>
+======================================
+  Setting HTML: <font face="TestFont" size="20"><span class="classRed">a<span class="classRed">b</span></span></font>
+  HTML get: <font face="TestFont" size="20"><span class="classRed">a<span class="classRed">b</span></span></font>
+  Text get: ab
+  Text: ab
+  HTML: <font face="TestFont" size="20"><span class="classRed">a<span class="classRed">b</span></span></font>
+======================================
+  Setting HTML: <font face="TestFont" size="20"><span class="classRed">a<span class="classSmol">b</span></span><span class="classRedSmol">c</span></font>
+  HTML get: <font face="TestFont" size="20"><span class="classRed">a<span class="classSmol">b</span></span><span class="classRedSmol">c</span></font>
+  Text get: abc
+  Text: abc
+  HTML: <font face="TestFont" size="20"><span class="classRed">a<span class="classSmol">b</span></span><span class="classRedSmol">c</span></font>
+======================================
+  Setting HTML: <font face="TestFont" size="20"><span class="classRed classSmol">a</span><span class="classRedSmol">b</span></font>
+  HTML get: <font face="TestFont" size="20"><span class="classRed classSmol">a</span><span class="classRedSmol">b</span></font>
+  Text get: ab
+  Text: ab
+  HTML: <font face="TestFont" size="20"><span class="classRed classSmol">a</span><span class="classRedSmol">b</span></font>
+======================================
+  Setting HTML: <font face="TestFont" size="20"><span class="  classRed">a</span></font>
+  HTML get: <font face="TestFont" size="20"><span class="  classRed">a</span></font>
+  Text get: a
+  Text: a
+  HTML: <font face="TestFont" size="20"><span class="  classRed">a</span></font>
+======================================
+  Setting HTML: <font face="TestFont" size="20"><span class="classRed  ">a</span></font>
+  HTML get: <font face="TestFont" size="20"><span class="classRed  ">a</span></font>
+  Text get: a
+  Text: a
+  HTML: <font face="TestFont" size="20"><span class="classRed  ">a</span></font>
+======================================
+  Setting HTML: <font face="TestFont" size="20"><span class="   classRed  ">a</span></font>
+  HTML get: <font face="TestFont" size="20"><span class="   classRed  ">a</span></font>
+  Text get: a
+  Text: a
+  HTML: <font face="TestFont" size="20"><span class="   classRed  ">a</span></font>
+======================================
+  Setting HTML: <font face="TestFont" size="20"><span class="class-magenta">a</span><span class="classmagenta">b</span><span class="class magenta">c</span></font>
+  HTML get: <font face="TestFont" size="20"><span class="class-magenta">a</span><span class="classmagenta">b</span><span class="class magenta">c</span></font>
+  Text get: abc
+  Text: abc
+  HTML: <font face="TestFont" size="20"><span class="class-magenta">a</span><span class="classmagenta">b</span><span class="class magenta">c</span></font>
+======================================
+  Setting HTML: <font face="TestFont" size="20"><span class="classred">a</span></font>
+  HTML get: <font face="TestFont" size="20"><span class="classred">a</span></font>
+  Text get: a
+  Text: a
+  HTML: <font face="TestFont" size="20"><span class="classred">a</span></font>
+======================================
+  Setting HTML: <font face="TestFont" size="20"><span class="CLASSRED">a</span></font>
+  HTML get: <font face="TestFont" size="20"><span class="CLASSRED">a</span></font>
+  Text get: a
+  Text: a
+  HTML: <font face="TestFont" size="20"><span class="CLASSRED">a</span></font>
+======================================
+  Setting HTML: <font face="TestFont" size="20"><span class="ClassRed">a</span></font>
+  HTML get: <font face="TestFont" size="20"><span class="ClassRed">a</span></font>
+  Text get: a
+  Text: a
+  HTML: <font face="TestFont" size="20"><span class="ClassRed">a</span></font>
+======================================
+  Setting HTML: <font face="TestFont" size="20"><font color="#00FF00">a<span class="classRed">b</span></font></font>
+  HTML get: <font face="TestFont" size="20"><font color="#00FF00">a<span class="classRed">b</span></font></font>
+  Text get: ab
+  Text: ab
+  HTML: <font face="TestFont" size="20"><font color="#00FF00">a<span class="classRed">b</span></font></font>
+======================================
+  Setting HTML: <font face="TestFont" size="20"><span class="classRed">a<font color="#00FF00">b</font></span></font>
+  HTML get: <font face="TestFont" size="20"><span class="classRed">a<font color="#00FF00">b</font></span></font>
+  Text get: ab
+  Text: ab
+  HTML: <font face="TestFont" size="20"><span class="classRed">a<font color="#00FF00">b</font></span></font>
+======================================
+  Setting HTML: <font face="TestFont" size="20"><p class="classRed">a</p><p class="classSmol">b</p></font>
+  HTML get: <font face="TestFont" size="20"><p class="classRed">a</p><p class="classSmol">b</p></font>
+  Text get: ab
+  Text: ab
+  HTML: <font face="TestFont" size="20"><p class="classRed">a</p><p class="classSmol">b</p></font>
+======================================
+  Setting HTML: <font face="TestFont" size="20"><p>a</p><p class="classSmol">b</p></font>
+  HTML get: <font face="TestFont" size="20"><p>a</p><p class="classSmol">b</p></font>
+  Text get: ab
+  Text: ab
+  HTML: <font face="TestFont" size="20"><p>a</p><p class="classSmol">b</p></font>
+======================================
+  Setting HTML: <font face="TestFont" size="20"><p class="classRed">a</p><p>b</p></font>
+  HTML get: <font face="TestFont" size="20"><p class="classRed">a</p><p>b</p></font>
+  Text get: ab
+  Text: ab
+  HTML: <font face="TestFont" size="20"><p class="classRed">a</p><p>b</p></font>
+======================================
+  Setting HTML: <font face="TestFont" size="20"><p>a</p><p>b</p></font>
+  HTML get: <font face="TestFont" size="20"><p>a</p><p>b</p></font>
+  Text get: ab
+  Text: ab
+  HTML: <font face="TestFont" size="20"><p>a</p><p>b</p></font>
+======================================
+  Setting HTML: <font face="TestFont" size="20"><a>a</a></font>
+  HTML get: <font face="TestFont" size="20"><a>a</a></font>
+  Text get: a
+  Text: a
+  HTML: <font face="TestFont" size="20"><a>a</a></font>
+======================================
+  Setting HTML: <font face="TestFont" size="20"><textformat>a</textformat></font>
+  HTML get: <font face="TestFont" size="20"><textformat>a</textformat></font>
+  Text get: a
+  Text: a
+  HTML: <font face="TestFont" size="20"><textformat>a</textformat></font>
+======================================
+  Setting HTML: <font face="TestFont" size="20"><font>a</font></font>
+  HTML get: <font face="TestFont" size="20"><font>a</font></font>
+  Text get: a
+  Text: a
+  HTML: <font face="TestFont" size="20"><font>a</font></font>
+======================================
+  Setting HTML: <font face="TestFont" size="20"><p>a</p></font>
+  HTML get: <font face="TestFont" size="20"><p>a</p></font>
+  Text get: a
+  Text: a
+  HTML: <font face="TestFont" size="20"><p>a</p></font>
+======================================
+  Setting HTML: <font face="TestFont" size="20"><span>a</span></font>
+  HTML get: <font face="TestFont" size="20"><span>a</span></font>
+  Text get: a
+  Text: a
+  HTML: <font face="TestFont" size="20"><span>a</span></font>
+======================================
+  Setting HTML: <font face="TestFont" size="20"><li>a</li></font>
+  HTML get: <font face="TestFont" size="20"><li>a</li></font>
+  Text get: a
+  Text: a
+  HTML: <font face="TestFont" size="20"><li>a</li></font>
+======================================
+  Setting HTML: <font face="TestFont" size="20"><a class="classRed">a</a></font>
+  HTML get: <font face="TestFont" size="20"><a class="classRed">a</a></font>
+  Text get: a
+  Text: a
+  HTML: <font face="TestFont" size="20"><a class="classRed">a</a></font>
+======================================
+  Setting HTML: <font face="TestFont" size="20"><font>a</font></font>
+  HTML get: <font face="TestFont" size="20"><font>a</font></font>
+  Text get: a
+  Text: a
+  HTML: <font face="TestFont" size="20"><font>a</font></font>
+======================================
+  Setting HTML: <font face="TestFont" size="20"><font color="#00FF00">a</font></font>
+  HTML get: <font face="TestFont" size="20"><font color="#00FF00">a</font></font>
+  Text get: a
+  Text: a
+  HTML: <font face="TestFont" size="20"><font color="#00FF00">a</font></font>
+======================================
+  Setting HTML: <font face="TestFont" size="20"><p>a</p></font>
+  HTML get: <font face="TestFont" size="20"><p>a</p></font>
+  Text get: a
+  Text: a
+  HTML: <font face="TestFont" size="20"><p>a</p></font>
+======================================
+  Setting HTML: <font face="TestFont" size="20"><p class="classp">a</p></font>
+  HTML get: <font face="TestFont" size="20"><p class="classp">a</p></font>
+  Text get: a
+  Text: a
+  HTML: <font face="TestFont" size="20"><p class="classp">a</p></font>
+======================================
+  Setting HTML: <font face="TestFont" size="20"><p align="justify">a</p></font>
+  HTML get: <font face="TestFont" size="20"><p align="justify">a</p></font>
+  Text get: a
+  Text: a
+  HTML: <font face="TestFont" size="20"><p align="justify">a</p></font>
+======================================
+  Setting HTML: <font face="TestFont" size="20"><p class="classp" align="justify">a</p></font>
+  HTML get: <font face="TestFont" size="20"><p class="classp" align="justify">a</p></font>
+  Text get: a
+  Text: a
+  HTML: <font face="TestFont" size="20"><p class="classp" align="justify">a</p></font>
+======================================
+  Setting HTML: <font face="TestFont" size="20"><p align="justify" class="classp">a</p></font>
+  HTML get: <font face="TestFont" size="20"><p align="justify" class="classp">a</p></font>
+  Text get: a
+  Text: a
+  HTML: <font face="TestFont" size="20"><p align="justify" class="classp">a</p></font>
+======================================
+  Setting HTML: <font face="TestFont" size="20"><span>a</span></font>
+  HTML get: <font face="TestFont" size="20"><span>a</span></font>
+  Text get: a
+  Text: a
+  HTML: <font face="TestFont" size="20"><span>a</span></font>
+======================================
+  Setting HTML: <font face="TestFont" size="20"><span class="colorRed">a</span></font>
+  HTML get: <font face="TestFont" size="20"><span class="colorRed">a</span></font>
+  Text get: a
+  Text: a
+  HTML: <font face="TestFont" size="20"><span class="colorRed">a</span></font>
+======================================
+  Setting HTML: <font face="TestFont" size="20"><span>a</span></font>
+  HTML get: <font face="TestFont" size="20"><span>a</span></font>
+  Text get: a
+  Text: a
+  HTML: <font face="TestFont" size="20"><span>a</span></font>
+======================================
+  Setting HTML: <font face="TestFont" size="20">a<a>b</a></font>
+  HTML get: <font face="TestFont" size="20">a<a>b</a></font>
+  Text get: ab
+  Text: ab
+  HTML: <font face="TestFont" size="20">a<a>b</a></font>
+======================================
+  Setting HTML: <font face="TestFont" size="20"><p class="classspec">a</p><span class="classspec">b</span></font>
+  HTML get: <font face="TestFont" size="20"><p class="classspec">a</p><span class="classspec">b</span></font>
+  Text get: ab
+  Text: ab
+  HTML: <font face="TestFont" size="20"><p class="classspec">a</p><span class="classspec">b</span></font>
