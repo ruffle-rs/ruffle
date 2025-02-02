@@ -455,7 +455,7 @@ impl<'gc> EditText<'gc> {
     }
 
     pub fn html_text(self) -> WString {
-        if self.is_html() {
+        if self.is_effectively_html() {
             let text = self.0.read();
 
             if let Some(ref html) = text.original_html_text {
@@ -480,7 +480,7 @@ impl<'gc> EditText<'gc> {
             return;
         }
 
-        if self.is_html() {
+        if self.is_effectively_html() {
             self.0.write(context.gc()).parse_html(text);
             self.relayout(context);
         } else {
@@ -692,6 +692,11 @@ impl<'gc> EditText<'gc> {
 
     pub fn is_html(self) -> bool {
         self.0.read().flags.contains(EditTextFlag::HTML)
+    }
+
+    pub fn is_effectively_html(self) -> bool {
+        let text = self.0.read();
+        text.flags.contains(EditTextFlag::HTML) || text.style_sheet.is_some()
     }
 
     pub fn set_is_html(self, context: &mut UpdateContext<'gc>, is_html: bool) {
