@@ -724,6 +724,8 @@ impl<'gc> EditText<'gc> {
         if let Some(html) = text.original_html_text.clone() {
             text.parse_html(&html);
         }
+        drop(text);
+        self.relayout(context);
     }
 
     pub fn is_fte(self) -> bool {
