@@ -1810,7 +1810,7 @@ pub fn get_style_sheet<'gc>(
         return Ok(Value::Undefined);
     };
 
-    Ok(match this.style_sheet() {
+    Ok(match this.style_sheet_avm2() {
         Some(style_sheet) => Value::Object(Object::StyleSheetObject(style_sheet)),
         None => Value::Null,
     })
@@ -1834,7 +1834,7 @@ pub fn set_style_sheet<'gc>(
         .try_get_object(activation, 0)
         .and_then(|o| o.as_style_sheet());
 
-    this.set_style_sheet(activation.context, style_sheet);
+    this.set_style_sheet_avm2(activation.context, style_sheet);
 
     Ok(Value::Undefined)
 }

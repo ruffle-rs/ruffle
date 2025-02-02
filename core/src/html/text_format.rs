@@ -1,6 +1,5 @@
 //! Classes that store formatting options
 
-use crate::avm2::object::StyleSheetObject;
 use crate::context::UpdateContext;
 use crate::html::iterators::TextSpanIter;
 use crate::string::{Integer, SwfStrExt as _, Units, WStr, WString};
@@ -13,6 +12,8 @@ use std::cmp::{min, Ordering};
 use std::collections::VecDeque;
 use std::fmt::Write;
 use std::sync::Arc;
+
+use super::StyleSheet;
 
 const HTML_NEWLINE: u16 = b'\r' as u16;
 const HTML_SPACE: u16 = b' ' as u16;
@@ -625,7 +626,7 @@ impl FormatSpans {
     pub fn from_html(
         html: &WStr,
         default_format: TextFormat,
-        style_sheet: Option<StyleSheetObject<'_>>,
+        style_sheet: Option<StyleSheet<'_>>,
         is_multiline: bool,
         condense_white: bool,
         swf_version: u8,
@@ -685,7 +686,7 @@ impl FormatSpans {
         }
 
         fn apply_style(
-            style_sheet: Option<StyleSheetObject<'_>>,
+            style_sheet: Option<StyleSheet<'_>>,
             format: TextFormat,
             selector: &WStr,
         ) -> TextFormat {
