@@ -1,6 +1,60 @@
 use fnv::FnvHashMap;
+use gc_arena::{Collect, Gc, Mutation};
 use ruffle_wstr::{WStr, WString};
 use std::borrow::Cow;
+use std::cell::RefCell;
+use std::fmt;
+
+use super::TextFormat;
+
+#[derive(Clone, Collect, Copy)]
+#[collect(no_drop)]
+pub struct StyleSheet<'gc>(Gc<'gc, StyleSheetData>);
+
+impl fmt::Debug for StyleSheet<'_> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        f.debug_struct("StyleSheet")
+            .field("ptr", &Gc::as_ptr(self.0))
+            .finish()
+    }
+}
+
+#[derive(Collect)]
+#[collect(no_drop)]
+pub struct StyleSheetData {
+    styles: RefCell<FnvHashMap<WString, TextFormat>>,
+}
+
+impl<'gc> StyleSheet<'gc> {
+    pub fn new(mc: &Mutation<'gc>) -> Self {
+        Self(Gc::new(
+            mc,
+            StyleSheetData {
+                styles: RefCell::new(Default::default()),
+            },
+        ))
+    }
+
+    pub fn get_style(self, selector: &WStr) -> Option<TextFormat> {
+        self.0.styles.borrow().get(selector).cloned()
+    }
+
+    pub fn set_style(self, selector: WString, format: TextFormat) {
+        self.0.styles.borrow_mut().insert(selector, format);
+    }
+
+    pub fn remove_style(self, selector: &WStr) {
+        self.0.styles.borrow_mut().remove(selector);
+    }
+
+    pub fn clear(self) {
+        self.0.styles.borrow_mut().clear();
+    }
+
+    pub fn selectors(self) -> Vec<WString> {
+        self.0.styles.borrow().keys().cloned().collect()
+    }
+}
 
 pub type CssProperties<'a> = FnvHashMap<&'a WStr, &'a WStr>;
 

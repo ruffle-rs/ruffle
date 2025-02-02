@@ -536,7 +536,7 @@ impl DisplayObjectWindow {
                 ui.end_row();
 
                 ui.label("Style Sheet");
-                if let Some(style_sheet) = object.style_sheet() {
+                if let Some(style_sheet) = object.style_sheet_avm2() {
                     if ui.button(format!("{:p}", style_sheet.as_ptr())).clicked() {
                         messages.push(Message::TrackAVM2Object(AVM2ObjectHandle::new(
                             context,

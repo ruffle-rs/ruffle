@@ -2,12 +2,10 @@ use crate::avm2::activation::Activation;
 use crate::avm2::object::script_object::ScriptObjectData;
 use crate::avm2::object::{ClassObject, Object, ObjectPtr, TObject};
 use crate::avm2::Error;
-use crate::html::TextFormat;
+use crate::html::{StyleSheet, TextFormat};
 use core::fmt;
-use fnv::FnvHashMap;
 use gc_arena::{Collect, Gc, GcWeak};
 use ruffle_wstr::{WStr, WString};
-use std::cell::RefCell;
 
 /// A class instance allocator that allocates StyleSheet objects.
 pub fn style_sheet_allocator<'gc>(
@@ -20,7 +18,7 @@ pub fn style_sheet_allocator<'gc>(
         activation.gc(),
         StyleSheetObjectData {
             base,
-            styles: RefCell::new(Default::default()),
+            style_sheet: StyleSheet::new(activation.gc()),
         },
     ))
     .into())
@@ -38,6 +36,7 @@ impl fmt::Debug for StyleSheetObject<'_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct("StyleSheetObject")
             .field("ptr", &Gc::as_ptr(self.0))
+            .field("style_sheet", &self.0.style_sheet)
             .finish()
     }
 }
@@ -49,7 +48,7 @@ pub struct StyleSheetObjectData<'gc> {
     /// Base script object
     base: ScriptObjectData<'gc>,
 
-    styles: RefCell<FnvHashMap<WString, TextFormat>>,
+    style_sheet: StyleSheet<'gc>,
 }
 
 const _: () = assert!(std::mem::offset_of!(StyleSheetObjectData, base) == 0);
@@ -75,24 +74,20 @@ impl<'gc> TObject<'gc> for StyleSheetObject<'gc> {
     }
 }
 
-impl StyleSheetObject<'_> {
-    pub fn get_style(self, selector: &WStr) -> Option<TextFormat> {
-        self.0.styles.borrow().get(selector).cloned()
-    }
-
+impl<'gc> StyleSheetObject<'gc> {
     pub fn set_style(self, selector: WString, format: TextFormat) {
-        self.0.styles.borrow_mut().insert(selector, format);
+        self.0.style_sheet.set_style(selector, format);
     }
 
     pub fn remove_style(self, selector: &WStr) {
-        self.0.styles.borrow_mut().remove(selector);
+        self.0.style_sheet.remove_style(selector);
     }
 
     pub fn clear(self) {
-        self.0.styles.borrow_mut().clear();
+        self.0.style_sheet.clear();
     }
 
-    pub fn selectors(self) -> Vec<WString> {
-        self.0.styles.borrow().keys().cloned().collect()
+    pub fn style_sheet(self) -> StyleSheet<'gc> {
+        self.0.style_sheet
     }
 }
