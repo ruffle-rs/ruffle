@@ -38,7 +38,7 @@ thiserror = { workspace = true }
 chrono = { workspace = true, features = ["clock"] }
 web-time = "1.1.0"
 encoding_rs = "0.8.35"
-rand = { version = "0.8.5", features = ["std", "small_rng"], default-features = false }
+rand = { version = "0.9.0", features = ["std", "small_rng"], default-features = false }
 serde = { workspace = true }
 serde_json = { version = "1.0", features = ["preserve_order"] }
 nellymoser-rs = { git = "https://github.com/ruffle-rs/nellymoser", rev = "754b1184037aa9952a907107284fb73897e26adc", optional = true }
