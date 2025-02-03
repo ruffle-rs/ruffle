@@ -6,5 +6,5 @@ Comment=Play Flash games & movies
 Icon=rs.ruffle.Ruffle
 Exec=ruffle %u
 MimeType=application/x-shockwave-flash;application/vnd.adobe.flash.movie
-Categories=AudioVideo;Player;Graphics;Viewer;VectorGraphics;Game
+Categories=AudioVideo;Player;Graphics;Viewer;VectorGraphics;Emulator;Game
 Keywords=flash;swf;player;emulator
