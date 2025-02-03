@@ -7,7 +7,6 @@ use crate::avm2::class::Class;
 use crate::avm2::domain::Domain;
 use crate::avm2::error;
 use crate::avm2::events::{DispatchList, Event};
-use crate::avm2::function::BoundMethod;
 use crate::avm2::property::Property;
 use crate::avm2::regexp::RegExp;
 use crate::avm2::value::{Hint, Value};
@@ -670,11 +669,6 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     }
 
     fn as_function_object(&self) -> Option<FunctionObject<'gc>> {
-        None
-    }
-
-    /// Get this object's `BoundMethod`, if it has one.
-    fn as_executable(&self) -> Option<Ref<BoundMethod<'gc>>> {
         None
     }
 

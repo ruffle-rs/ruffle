@@ -343,10 +343,12 @@ impl Definition {
         activation: &mut Activation<'_, 'gc>,
     ) {
         if let Some(object) = value.as_object() {
-            if let Some(executable) = object.as_executable() {
+            if let Some(function_object) = object.as_function_object() {
+                let executable = function_object.executable();
+
                 output.get_or_insert_with(Default::default).function.insert(
                     name.to_string(),
-                    FunctionInfo::from_bound_method(&executable, false),
+                    FunctionInfo::from_bound_method(executable, false),
                 );
             }
         } else {
@@ -497,14 +499,16 @@ pub fn capture_specification(context: &mut UpdateContext, output: &Path) {
                     class_name,
                     Definition::from_class(class, &mut activation, &class_stubs),
                 );
-            } else if let Some(executable) = object.as_executable() {
+            } else if let Some(function_object) = object.as_function_object() {
+                let executable = function_object.executable();
+
                 let namespace_stubs = ClassStubs::for_class(&namespace_uri, &stubs);
                 let definition = definitions.entry(namespace_uri.into()).or_default();
                 let instance_traits = definition
                     .instance_traits
                     .get_or_insert_with(Default::default);
                 let fn_info =
-                    FunctionInfo::from_bound_method(&executable, namespace_stubs.has_method(&name));
+                    FunctionInfo::from_bound_method(executable, namespace_stubs.has_method(&name));
                 instance_traits.function.insert(name.into(), fn_info);
             }
         } else {
