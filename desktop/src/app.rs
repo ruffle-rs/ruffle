@@ -605,21 +605,13 @@ impl ApplicationHandler<RuffleEvent> for App {
         if let Some(main_window) = &mut self.main_window {
             main_window.about_to_wait(self.gilrs.as_mut());
 
-            // The event loop is finished; let's find out how long we need to wait for
-            // (but don't change something that's already requesting a sooner update, or we'll delay it)
+            // The event loop is finished; let's find out how long we need to wait for.
+            // We don't need to worry about earlier update requests, as it's the
+            // only place where we're setting control flow, and events cancel wait.
+            // Note: the control flow might be set to `ControlFlow::WaitUntil` with a
+            // timestamp in the past! Take that into consideration when changing this code.
             if let Some(next_frame_time) = main_window.next_frame_time {
-                match event_loop.control_flow() {
-                    // A "Wait" has no time limit, set ours
-                    ControlFlow::Wait => {
-                        event_loop.set_control_flow(ControlFlow::WaitUntil(next_frame_time))
-                    }
-                    // If the existing "WaitUntil" is later than ours, update it
-                    ControlFlow::WaitUntil(next) if next > next_frame_time => {
-                        event_loop.set_control_flow(ControlFlow::WaitUntil(next_frame_time));
-                    }
-                    // It's sooner than ours, don't delay it
-                    _ => {}
-                }
+                event_loop.set_control_flow(ControlFlow::WaitUntil(next_frame_time));
             }
         }
     }
