@@ -11,11 +11,7 @@ use crate::avm2::value::Value;
 use crate::avm2::Error;
 use core::fmt;
 use gc_arena::barrier::unlock;
-use gc_arena::{
-    lock::{Lock, RefLock},
-    Collect, Gc, GcCell, GcWeak, Mutation,
-};
-use std::cell::Ref;
+use gc_arena::{lock::Lock, Collect, Gc, GcCell, GcWeak, Mutation};
 
 /// A class instance allocator that allocates Function objects.
 /// This is only used when ActionScript manually calls 'new Function()',
@@ -48,13 +44,13 @@ pub fn function_allocator<'gc>(
         mc,
         FunctionObjectData {
             base,
-            exec: RefLock::new(BoundMethod::from_method(
+            exec: BoundMethod::from_method(
                 Method::Native(dummy),
                 activation.create_scopechain(),
                 None,
                 None,
                 None,
-            )),
+            ),
             prototype: Lock::new(None),
         },
     ))
@@ -74,10 +70,7 @@ impl fmt::Debug for FunctionObject<'_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct("FunctionObject")
             .field("ptr", &Gc::as_ptr(self.0))
-            .field(
-                "name",
-                &self.0.exec.try_borrow().map(|e| e.debug_full_name()),
-            )
+            .field("name", &self.0.exec.debug_full_name())
             .finish()
     }
 }
@@ -90,7 +83,7 @@ pub struct FunctionObjectData<'gc> {
     base: ScriptObjectData<'gc>,
 
     /// Executable code
-    exec: RefLock<BoundMethod<'gc>>,
+    exec: BoundMethod<'gc>,
 
     /// Attached prototype (note: not the same thing as base object's proto)
     prototype: Lock<Option<Object<'gc>>>,
@@ -132,7 +125,7 @@ impl<'gc> FunctionObject<'gc> {
             activation.gc(),
             FunctionObjectData {
                 base: ScriptObjectData::new(fn_class),
-                exec: RefLock::new(exec),
+                exec,
                 prototype: Lock::new(Some(es3_proto)),
             },
         ))
@@ -144,8 +137,7 @@ impl<'gc> FunctionObject<'gc> {
         receiver: Value<'gc>,
         arguments: &[Value<'gc>],
     ) -> Result<Value<'gc>, Error<'gc>> {
-        // NOTE: Cloning an executable does not allocate new memory
-        let exec = self.0.exec.borrow().clone();
+        let exec = &self.0.exec;
 
         exec.exec(receiver, arguments, activation, self.into())
     }
@@ -185,8 +177,8 @@ impl<'gc> FunctionObject<'gc> {
         unlock!(Gc::write(mc, self.0), FunctionObjectData, prototype).set(proto);
     }
 
-    pub fn num_parameters(&self) -> usize {
-        self.0.exec.borrow().num_parameters()
+    pub fn executable(&self) -> &BoundMethod<'gc> {
+        &self.0.exec
     }
 }
 
@@ -201,10 +193,6 @@ impl<'gc> TObject<'gc> for FunctionObject<'gc> {
 
     fn as_ptr(&self) -> *const ObjectPtr {
         Gc::as_ptr(self.0) as *const ObjectPtr
-    }
-
-    fn as_executable(&self) -> Option<Ref<BoundMethod<'gc>>> {
-        Some(self.0.exec.borrow())
     }
 
     fn as_function_object(&self) -> Option<FunctionObject<'gc>> {
