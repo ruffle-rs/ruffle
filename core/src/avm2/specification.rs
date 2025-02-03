@@ -343,10 +343,12 @@ impl Definition {
         activation: &mut Activation<'_, 'gc>,
     ) {
         if let Some(object) = value.as_object() {
-            if let Some(executable) = object.as_executable() {
+            if let Some(function_object) = object.as_function_object() {
+                let executable = function_object.executable();
+
                 output.get_or_insert_with(Default::default).function.insert(
                     name.to_string(),
-                    FunctionInfo::from_bound_method(&executable, false),
+                    FunctionInfo::from_bound_method(executable, false),
                 );
             }
         } else {

@@ -181,7 +181,7 @@ fn length<'gc>(
     let this = this.as_object().unwrap();
 
     if let Some(this) = this.as_function_object() {
-        return Ok(this.num_parameters().into());
+        return Ok(this.executable().num_parameters().into());
     }
 
     Ok(Value::Undefined)

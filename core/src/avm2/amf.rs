@@ -46,7 +46,7 @@ pub fn serialize_value<'gc>(
         Value::Object(o) => {
             // TODO: Find a more general rule for which object types should be skipped,
             // and which turn into undefined.
-            if o.as_executable().is_some() {
+            if o.as_function_object().is_some() {
                 None
             } else if o.as_display_object().is_some() {
                 Some(AmfValue::Undefined)
