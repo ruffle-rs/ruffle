@@ -213,7 +213,12 @@ pub trait TInteractiveObject<'gc>:
     ) -> ClipEventResult {
         if event.propagates() {
             if let Some(container) = self.as_displayobject().as_container() {
-                for child in container.iter_render_list() {
+                let children = if event.is_button_event() {
+                    container.iter_render_list().collect::<Vec<_>>()
+                } else {
+                    container.iter_render_list().rev().collect::<Vec<_>>()
+                };
+                for child in children {
                     if let Some(interactive) = child.as_interactive() {
                         if interactive.handle_clip_event(context, event) == ClipEventResult::Handled
                         {
