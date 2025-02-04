@@ -1,4 +1,5 @@
 use crate::backend::navigator::OwnedFuture;
+use crate::flags::CompatibilityFlag;
 pub use crate::loader::Error as DialogLoaderError;
 use chrono::{DateTime, Utc};
 use downcast_rs::Downcast;
@@ -128,6 +129,10 @@ pub trait UiBackend: Downcast {
 
     /// Mark that any previously open dialog has been closed
     fn close_file_dialog(&mut self);
+
+    fn flag_enabled(&self, flag: CompatibilityFlag) -> bool {
+        flag.definition().default_value
+    }
 }
 impl_downcast!(UiBackend);
 
