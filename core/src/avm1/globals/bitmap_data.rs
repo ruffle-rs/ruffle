@@ -577,6 +577,7 @@ fn draw<'gc>(
                 Transform {
                     matrix,
                     color_transform,
+                    tz: 0.0,
                 },
                 smoothing,
                 blend_mode,
