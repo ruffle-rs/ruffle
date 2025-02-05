@@ -1,12 +1,22 @@
-use crate::avm1::{Activation, ActivationIdentifier, Error, Object, TObject, Value};
+use crate::avm1::globals::style_sheet::StyleSheetObject;
+use crate::avm1::{Activation, ActivationIdentifier, Error, NativeObject, Object, TObject, Value};
 use crate::context::UpdateContext;
 use crate::debug_ui::display_object::open_display_object_button;
 use crate::debug_ui::handle::{AVM1ObjectHandle, DisplayObjectHandle};
 use crate::debug_ui::Message;
 use crate::string::AvmString;
-use egui::{Grid, Id, TextBuffer, TextEdit, Ui, Window};
+use egui::{CollapsingHeader, Grid, Id, TextBuffer, TextEdit, Ui, Window};
 use gc_arena::Mutation;
 use ruffle_wstr::{WStr, WString};
+
+use super::display_object::show_text_format;
+
+#[derive(Debug, Eq, PartialEq, Hash, Default, Copy, Clone)]
+enum Panel {
+    #[default]
+    Object,
+    NativeObject,
+}
 
 #[derive(Debug, Default)]
 pub struct Avm1ObjectWindow {
@@ -16,6 +26,7 @@ pub struct Avm1ObjectWindow {
     value_edit_buf: String,
     /// True if the active text edit should be focused (after clicking 'edit', etc.)
     focus_text_edit: bool,
+    open_panel: Panel,
 }
 
 impl Avm1ObjectWindow {
@@ -39,45 +50,72 @@ impl Avm1ObjectWindow {
             .open(&mut keep_open)
             .scroll([true, true])
             .show(egui_ctx, |ui| {
-                Grid::new(ui.id().with("properties"))
-                    .num_columns(2)
-                    .show(ui, |ui| {
-                        let mut keys = object.get_keys(&mut activation, true);
-                        keys.sort();
-                        ui.add(
-                            egui::TextEdit::singleline(&mut self.key_filter_string)
-                                .hint_text("🔍 Filter"),
+                ui.horizontal(|ui| {
+                    ui.selectable_value(&mut self.open_panel, Panel::Object, "Object");
+                    if let NativeObject::StyleSheet(_) = object.native() {
+                        ui.selectable_value(
+                            &mut self.open_panel,
+                            Panel::NativeObject,
+                            "Style Sheet",
                         );
-                        ui.end_row();
-                        keys.retain(|key| {
-                            self.key_filter_string.is_empty()
-                                || key
-                                    .to_string()
-                                    .to_ascii_lowercase()
-                                    .contains(&self.key_filter_string.to_ascii_lowercase())
-                        });
+                    }
+                });
+                ui.separator();
 
-                        for key in keys {
-                            let value = object.get(key, &mut activation);
-
-                            ui.label(key.to_string());
-                            if let Some(new) =
-                                self.show_avm1_value(ui, &mut activation, &key, value, messages)
-                            {
-                                if let Err(e) = object.set(key, new, &mut activation) {
-                                    tracing::error!("Failed to set key {key}: {e}");
-                                }
-                            }
-                            ui.end_row();
+                match self.open_panel {
+                    Panel::Object => self.show_object_panel(ui, object, &mut activation, messages),
+                    Panel::NativeObject => {
+                        if let NativeObject::StyleSheet(style_sheet) = object.native() {
+                            self.show_style_sheet_panel(ui, style_sheet);
                         }
-                    });
+                    }
+                }
             });
         keep_open
     }
+
+    fn show_object_panel<'gc>(
+        &mut self,
+        ui: &mut Ui,
+        object: Object<'gc>,
+        activation: &mut Activation<'_, 'gc>,
+        messages: &mut Vec<Message>,
+    ) {
+        Grid::new(ui.id().with("properties"))
+            .num_columns(2)
+            .show(ui, |ui| {
+                let mut keys = object.get_keys(activation, true);
+                keys.sort();
+                ui.add(
+                    egui::TextEdit::singleline(&mut self.key_filter_string).hint_text("🔍 Filter"),
+                );
+                ui.end_row();
+                keys.retain(|key| {
+                    self.key_filter_string.is_empty()
+                        || key
+                            .to_string()
+                            .to_ascii_lowercase()
+                            .contains(&self.key_filter_string.to_ascii_lowercase())
+                });
+
+                for key in keys {
+                    let value = object.get(key, activation);
+
+                    ui.label(key.to_string());
+                    if let Some(new) = self.show_avm1_value(ui, activation, &key, value, messages) {
+                        if let Err(e) = object.set(key, new, activation) {
+                            tracing::error!("Failed to set key {key}: {e}");
+                        }
+                    }
+                    ui.end_row();
+                }
+            });
+    }
+
     /// Shows an egui widget to inspect and (for certain value types) edit an AVM1 value.
     ///
     /// Optionally returns the updated value, if the user edited it.
-    pub fn show_avm1_value<'gc>(
+    fn show_avm1_value<'gc>(
         &mut self,
         ui: &mut Ui,
         activation: &mut Activation<'_, 'gc>,
@@ -141,6 +179,7 @@ impl Avm1ObjectWindow {
         }
         None
     }
+
     fn num_edit_ui(&mut self, ui: &mut Ui, key: &AvmString, num: f64) -> Option<f64> {
         let mut new_val = None;
         if self
@@ -186,6 +225,7 @@ impl Avm1ObjectWindow {
         }
         new_val
     }
+
     fn string_edit_ui(
         &mut self,
         ui: &mut Ui,
@@ -221,6 +261,23 @@ impl Avm1ObjectWindow {
             }
         });
         new_val
+    }
+
+    fn show_style_sheet_panel(&mut self, ui: &mut Ui, object: StyleSheetObject<'_>) {
+        let style_sheet = object.style_sheet();
+        let mut selectors = style_sheet.selectors();
+        selectors.sort();
+        for selector in selectors {
+            CollapsingHeader::new(selector.to_utf8_lossy())
+                .id_salt(ui.id().with(selector.to_utf8_lossy()))
+                .show(ui, |ui| {
+                    if let Some(tf) = style_sheet.get_style(&selector) {
+                        show_text_format(ui, &tf, true);
+                    } else {
+                        ui.weak("No styles");
+                    }
+                });
+        }
     }
 }
 
