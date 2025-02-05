@@ -34,6 +34,7 @@ include "Error.as"
 
 include "Array.as"
 include "Boolean.as"
+include "int.as"
 include "Number.as"
 include "String.as"
 
