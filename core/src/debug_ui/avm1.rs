@@ -5,11 +5,11 @@ use crate::debug_ui::display_object::open_display_object_button;
 use crate::debug_ui::handle::{AVM1ObjectHandle, DisplayObjectHandle};
 use crate::debug_ui::Message;
 use crate::string::AvmString;
-use egui::{CollapsingHeader, Grid, Id, TextBuffer, TextEdit, Ui, Window};
+use egui::{Grid, Id, TextBuffer, TextEdit, Ui, Window};
 use gc_arena::Mutation;
 use ruffle_wstr::{WStr, WString};
 
-use super::display_object::show_text_format;
+use super::common::show_style_sheet;
 
 #[derive(Debug, Eq, PartialEq, Hash, Default, Copy, Clone)]
 enum Panel {
@@ -265,19 +265,7 @@ impl Avm1ObjectWindow {
 
     fn show_style_sheet_panel(&mut self, ui: &mut Ui, object: StyleSheetObject<'_>) {
         let style_sheet = object.style_sheet();
-        let mut selectors = style_sheet.selectors();
-        selectors.sort();
-        for selector in selectors {
-            CollapsingHeader::new(selector.to_utf8_lossy())
-                .id_salt(ui.id().with(selector.to_utf8_lossy()))
-                .show(ui, |ui| {
-                    if let Some(tf) = style_sheet.get_style(&selector) {
-                        show_text_format(ui, &tf, true);
-                    } else {
-                        ui.weak("No styles");
-                    }
-                });
-        }
+        show_style_sheet(ui, style_sheet);
     }
 }
 

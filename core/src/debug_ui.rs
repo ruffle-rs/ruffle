@@ -1,5 +1,6 @@
 mod avm1;
 mod avm2;
+mod common;
 mod display_object;
 mod domain;
 mod handle;
