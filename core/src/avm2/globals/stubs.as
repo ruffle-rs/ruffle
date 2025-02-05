@@ -8,6 +8,5 @@ include "Object.as"
 include "Class.as"
 
 include "Function.as"
-include "Number.as"
 include "int.as"
 include "uint.as"

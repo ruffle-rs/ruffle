@@ -543,7 +543,6 @@ pub fn load_player_globals<'gc>(
         void_def,
     ));
 
-    let number_class = number::create_class(activation);
     let int_class = int::create_class(activation);
     let uint_class = uint::create_class(activation);
 
@@ -557,7 +556,6 @@ pub fn load_player_globals<'gc>(
         (public_ns, "Object", object_i_class),
         (public_ns, "Class", class_i_class),
         (public_ns, "Function", fn_classdef),
-        (public_ns, "Number", number_class),
         (public_ns, "int", int_class),
         (public_ns, "uint", uint_class),
     ];
@@ -692,7 +690,6 @@ pub fn load_player_globals<'gc>(
     // After this point, it is safe to initialize any other classes.
     // Make sure to initialize superclasses *before* their subclasses!
 
-    avm2_system_class!(number, activation, number_class, script);
     avm2_system_class!(int, activation, int_class, script);
     avm2_system_class!(uint, activation, uint_class, script);
 
@@ -851,6 +848,7 @@ pub fn init_builtin_system_classes(activation: &mut Activation<'_, '_>) {
             ("", "Error", error),
             ("", "EvalError", evalerror),
             ("", "Namespace", namespace),
+            ("", "Number", number),
             ("", "QName", qname),
             ("", "RangeError", rangeerror),
             ("", "ReferenceError", referenceerror),
@@ -895,6 +893,7 @@ pub fn init_builtin_system_class_defs(activation: &mut Activation<'_, '_>) {
             ("", "Array", array),
             ("", "Boolean", boolean),
             ("", "Namespace", namespace),
+            ("", "Number", number),
             ("", "String", string),
             ("", "XML", xml),
             ("", "XMLList", xml_list),
