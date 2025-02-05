@@ -1,4 +1,5 @@
 use core::slice;
+use std::collections::BinaryHeap;
 use std::ffi::{c_int, c_uchar};
 use std::fmt::Display;
 use std::fs::File;
@@ -192,6 +193,33 @@ impl OpenH264Codec {
     }
 }
 
+struct EnqueuedFrame {
+    composition_time: i32,
+    frame: DecodedFrame,
+}
+
+impl PartialEq for EnqueuedFrame {
+    fn eq(&self, other: &Self) -> bool {
+        self.composition_time == other.composition_time
+    }
+}
+
+impl Eq for EnqueuedFrame {}
+
+impl Ord for EnqueuedFrame {
+    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+        // Note the reversal: BinaryHeap is a max-heap, but we always
+        // want to pop the frame with the lowest timestamp.
+        self.composition_time.cmp(&other.composition_time).reverse()
+    }
+}
+
+impl PartialOrd for EnqueuedFrame {
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
 /// H264 video decoder.
 pub struct H264Decoder {
     /// How many bytes are used to store the length of the NALU (1, 2, 3, or 4).
@@ -199,6 +227,8 @@ pub struct H264Decoder {
 
     openh264: Arc<OpenH264>,
     decoder: *mut ISVCDecoder,
+
+    frame_reorder_queue: BinaryHeap<EnqueuedFrame>,
 }
 
 struct OpenH264Data {
@@ -227,6 +257,7 @@ impl H264Decoder {
                 length_size: 0,
                 openh264,
                 decoder,
+                frame_reorder_queue: BinaryHeap::new(),
             }
         }
     }
@@ -366,55 +397,77 @@ impl VideoDecoder for H264Decoder {
                 ));
             }
             if dest_buf_info.iBufferStatus != 1 {
-                return Err(Error::DecoderError(
-                    "No output frame produced by the decoder".into(),
-                ));
-            }
-            let buffer_info = dest_buf_info.UsrData.sSystemBuffer;
-            if buffer_info.iFormat != videoFormatI420 as c_int {
-                return Err(Error::DecoderError(
-                    format!("Unexpected output format: {}", buffer_info.iFormat).into(),
-                ));
-            }
+                let ret = decoder_vtbl.FlushFrame.unwrap()(
+                    self.decoder,
+                    output.as_mut_ptr(),
+                    &mut dest_buf_info as *mut openh264_sys::SBufferInfo,
+                );
 
-            let mut yuv: Vec<u8> = Vec::with_capacity(
-                buffer_info.iWidth as usize * buffer_info.iHeight as usize * 3 / 2,
-            );
-
-            // Copying Y
-            for i in 0..buffer_info.iHeight {
-                yuv.extend_from_slice(slice::from_raw_parts(
-                    output[0].offset((i * buffer_info.iStride[0]) as isize),
-                    buffer_info.iWidth as usize,
-                ));
+                if ret != 0 {
+                    return Err(Error::DecoderError(
+                        format!("Flushing failed with status code: {}", ret).into(),
+                    ));
+                }
             }
 
-            // Copying U
-            for i in 0..buffer_info.iHeight / 2 {
-                yuv.extend_from_slice(slice::from_raw_parts(
-                    output[1].offset((i * buffer_info.iStride[1]) as isize),
-                    buffer_info.iWidth as usize / 2,
-                ));
+            if dest_buf_info.iBufferStatus == 1 {
+                let buffer_info = dest_buf_info.UsrData.sSystemBuffer;
+                if buffer_info.iFormat != videoFormatI420 as c_int {
+                    return Err(Error::DecoderError(
+                        format!("Unexpected output format: {}", buffer_info.iFormat).into(),
+                    ));
+                }
+
+                let mut yuv: Vec<u8> = Vec::with_capacity(
+                    buffer_info.iWidth as usize * buffer_info.iHeight as usize * 3 / 2,
+                );
+
+                // Copying Y
+                for i in 0..buffer_info.iHeight {
+                    yuv.extend_from_slice(slice::from_raw_parts(
+                        output[0].offset((i * buffer_info.iStride[0]) as isize),
+                        buffer_info.iWidth as usize,
+                    ));
+                }
+
+                // Copying U
+                for i in 0..buffer_info.iHeight / 2 {
+                    yuv.extend_from_slice(slice::from_raw_parts(
+                        output[1].offset((i * buffer_info.iStride[1]) as isize),
+                        buffer_info.iWidth as usize / 2,
+                    ));
+                }
+
+                // Copying V
+                for i in 0..buffer_info.iHeight / 2 {
+                    yuv.extend_from_slice(slice::from_raw_parts(
+                        output[2].offset((i * buffer_info.iStride[1]) as isize),
+                        buffer_info.iWidth as usize / 2,
+                    ));
+                }
+
+                // TODO: Check whether frames are being squished/stretched, or cropped,
+                // when encoded image size doesn't match declared video tag size.
+                // NOTE: This will always use the BT.601 coefficients, which may or may
+                // not be correct. So far I haven't seen anything to the contrary in FP.
+                self.frame_reorder_queue.push(EnqueuedFrame {
+                    composition_time: encoded_frame
+                        .composition_time
+                        .ok_or(Error::DecoderError("No composition time provided".into()))?,
+                    frame: DecodedFrame::new(
+                        buffer_info.iWidth as u32,
+                        buffer_info.iHeight as u32,
+                        BitmapFormat::Yuv420p,
+                        yuv,
+                    ),
+                });
             }
 
-            // Copying V
-            for i in 0..buffer_info.iHeight / 2 {
-                yuv.extend_from_slice(slice::from_raw_parts(
-                    output[2].offset((i * buffer_info.iStride[1]) as isize),
-                    buffer_info.iWidth as usize / 2,
-                ));
+            if self.frame_reorder_queue.len() >= 3 {
+                Ok(self.frame_reorder_queue.pop().unwrap().frame)
+            } else {
+                Err(Error::DecoderError("Not enough frames decoded yet".into()))
             }
-
-            // TODO: Check whether frames are being squished/stretched, or cropped,
-            // when encoded image size doesn't match declared video tag size.
-            // NOTE: This will always use the BT.601 coefficients, which may or may
-            // not be correct. So far I haven't seen anything to the contrary in FP.
-            Ok(DecodedFrame::new(
-                buffer_info.iWidth as u32,
-                buffer_info.iHeight as u32,
-                BitmapFormat::Yuv420p,
-                yuv,
-            ))
         }
     }
 }
