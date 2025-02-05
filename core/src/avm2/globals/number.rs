@@ -1,26 +1,12 @@
 //! `Number` impl
 
 use crate::avm2::activation::Activation;
-use crate::avm2::class::{Class, ClassAttributes};
-use crate::avm2::error::{make_error_1002, make_error_1003, make_error_1004};
-use crate::avm2::method::{Method, NativeMethodImpl};
-use crate::avm2::object::{FunctionObject, Object, TObject};
+use crate::avm2::error::{make_error_1002, make_error_1003};
+use crate::avm2::parameters::ParametersExt;
 use crate::avm2::value::Value;
-use crate::avm2::QName;
 use crate::avm2::{AvmString, Error};
 
-/// Implements `Number`'s instance initializer.
-///
-/// Because of the presence of a custom constructor, this method is unreachable.
-fn instance_init<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
-    _this: Value<'gc>,
-    _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error<'gc>> {
-    unreachable!()
-}
-
-fn number_constructor<'gc>(
+pub fn number_constructor<'gc>(
     activation: &mut Activation<'_, 'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -31,107 +17,6 @@ fn number_constructor<'gc>(
         .coerce_to_number(activation)?;
 
     Ok(number_value.into())
-}
-
-/// Implements `Number`'s class initializer.
-fn class_init<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    this: Value<'gc>,
-    _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error<'gc>> {
-    let this = this.as_object().unwrap();
-
-    let scope = activation.create_scopechain();
-    let gc_context = activation.gc();
-    let this_class = this.as_class_object().unwrap();
-    let number_proto = this_class.prototype();
-
-    number_proto.set_string_property_local(
-        "toExponential",
-        FunctionObject::from_method(
-            activation,
-            Method::from_builtin(to_exponential, "toExponential", gc_context),
-            scope,
-            None,
-            None,
-            None,
-        )
-        .into(),
-        activation,
-    )?;
-    number_proto.set_string_property_local(
-        "toFixed",
-        FunctionObject::from_method(
-            activation,
-            Method::from_builtin(to_fixed, "toFixed", gc_context),
-            scope,
-            None,
-            None,
-            None,
-        )
-        .into(),
-        activation,
-    )?;
-    number_proto.set_string_property_local(
-        "toPrecision",
-        FunctionObject::from_method(
-            activation,
-            Method::from_builtin(to_precision, "toPrecision", gc_context),
-            scope,
-            None,
-            None,
-            None,
-        )
-        .into(),
-        activation,
-    )?;
-    number_proto.set_string_property_local(
-        "toLocaleString",
-        FunctionObject::from_method(
-            activation,
-            Method::from_builtin(to_string, "toLocaleString", gc_context),
-            scope,
-            None,
-            None,
-            None,
-        )
-        .into(),
-        activation,
-    )?;
-    number_proto.set_string_property_local(
-        "toString",
-        FunctionObject::from_method(
-            activation,
-            Method::from_builtin(to_string, "toString", gc_context),
-            scope,
-            None,
-            None,
-            None,
-        )
-        .into(),
-        activation,
-    )?;
-    number_proto.set_string_property_local(
-        "valueOf",
-        FunctionObject::from_method(
-            activation,
-            Method::from_builtin(value_of, "valueOf", gc_context),
-            scope,
-            None,
-            None,
-            None,
-        )
-        .into(),
-        activation,
-    )?;
-    number_proto.set_local_property_is_enumerable(gc_context, "toExponential".into(), false);
-    number_proto.set_local_property_is_enumerable(gc_context, "toFixed".into(), false);
-    number_proto.set_local_property_is_enumerable(gc_context, "toPrecision".into(), false);
-    number_proto.set_local_property_is_enumerable(gc_context, "toLocaleString".into(), false);
-    number_proto.set_local_property_is_enumerable(gc_context, "toString".into(), false);
-    number_proto.set_local_property_is_enumerable(gc_context, "valueOf".into(), false);
-
-    Ok(Value::Undefined)
 }
 
 pub fn call_handler<'gc>(
@@ -153,13 +38,9 @@ pub fn to_exponential<'gc>(
     this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let number = this.coerce_to_number(activation)?;
+    let number = this.as_f64();
 
-    let digits = args
-        .get(0)
-        .cloned()
-        .unwrap_or(Value::Integer(0))
-        .coerce_to_i32(activation)?;
+    let digits = args.get_value(0).coerce_to_i32(activation)?;
 
     if digits < 0 || digits > 20 {
         return Err(make_error_1002(activation));
@@ -183,13 +64,9 @@ pub fn to_fixed<'gc>(
     this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let number = this.coerce_to_number(activation)?;
+    let number = this.as_f64();
 
-    let digits = args
-        .get(0)
-        .cloned()
-        .unwrap_or(Value::Integer(0))
-        .coerce_to_i32(activation)?;
+    let digits = args.get_value(0).coerce_to_i32(activation)?;
 
     if digits < 0 || digits > 20 {
         return Err(make_error_1002(activation));
@@ -232,15 +109,9 @@ pub fn to_precision<'gc>(
     this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let number = this.coerce_to_number(activation)?;
+    let number = this.as_f64();
 
-    let wanted_digits = args.get(0).cloned().unwrap_or(Value::Integer(0));
-
-    if matches!(wanted_digits, Value::Undefined) {
-        return to_string(activation, this, &[]);
-    }
-
-    let wanted_digits = wanted_digits.coerce_to_i32(activation)?;
+    let wanted_digits = args.get_value(0).coerce_to_i32(activation)?;
 
     if wanted_digits < 1 || wanted_digits > 21 {
         return Err(make_error_1002(activation));
@@ -301,29 +172,14 @@ pub fn print_with_radix<'gc>(
 }
 
 /// Implements `Number.prototype.toString`
-fn to_string<'gc>(
+pub fn to_string<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(this) = this.as_object() {
-        let number_proto = activation.avm2().classes().number.prototype();
-        if Object::ptr_eq(number_proto, this) {
-            return Ok("0".into());
-        }
-    }
+    let number = this.as_f64();
 
-    let number = match this {
-        Value::Integer(o) => o as f64,
-        Value::Number(o) => o,
-        _ => return Err(make_error_1004(activation, "Number.prototype.toString")),
-    };
-
-    let radix = args
-        .get(0)
-        .cloned()
-        .unwrap_or(Value::Integer(10))
-        .coerce_to_i32(activation)?;
+    let radix = args.get_value(0).coerce_to_i32(activation)?;
 
     if radix < 2 || radix > 36 {
         return Err(make_error_1003(activation, radix));
@@ -332,95 +188,11 @@ fn to_string<'gc>(
     Ok(print_with_radix(activation, number, radix as usize)?.into())
 }
 
-/// Implements `Number.valueOf`
-fn value_of<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+/// Implements `Number.prototype.valueOf`
+pub fn value_of<'gc>(
+    _activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(this) = this.as_object() {
-        let number_proto = activation.avm2().classes().number.prototype();
-        if Object::ptr_eq(number_proto, this) {
-            return Ok(0.into());
-        }
-    }
-
-    match this {
-        Value::Integer(_) => Ok(this),
-        Value::Number(_) => Ok(this),
-        _ => Err(make_error_1004(activation, "Number.prototype.valueOf")),
-    }
-}
-
-/// Construct `Number`'s class.
-pub fn create_class<'gc>(activation: &mut Activation<'_, 'gc>) -> Class<'gc> {
-    let mc = activation.gc();
-    let namespaces = activation.avm2().namespaces;
-
-    let class = Class::new(
-        QName::new(namespaces.public_all(), "Number"),
-        Some(activation.avm2().class_defs().object),
-        Method::from_builtin(instance_init, "<Number instance initializer>", mc),
-        Method::from_builtin(class_init, "<Number class initializer>", mc),
-        activation.avm2().class_defs().class,
-        mc,
-    );
-
-    class.set_attributes(mc, ClassAttributes::FINAL | ClassAttributes::SEALED);
-    class.set_custom_constructor(mc, number_constructor);
-    class.set_call_handler(
-        mc,
-        Method::from_builtin(call_handler, "<Number call handler>", mc),
-    );
-
-    const CLASS_CONSTANTS_NUMBER: &[(&str, f64)] = &[
-        ("MAX_VALUE", f64::MAX),
-        ("MIN_VALUE", f64::MIN_POSITIVE),
-        ("NaN", f64::NAN),
-        ("NEGATIVE_INFINITY", f64::NEG_INFINITY),
-        ("POSITIVE_INFINITY", f64::INFINITY),
-        ("E", std::f64::consts::E),
-        ("PI", std::f64::consts::PI),
-        ("SQRT2", std::f64::consts::SQRT_2),
-        ("SQRT1_2", std::f64::consts::FRAC_1_SQRT_2),
-        ("LN2", std::f64::consts::LN_2),
-        ("LN10", std::f64::consts::LN_10),
-        ("LOG2E", std::f64::consts::LOG2_E),
-        ("LOG10E", std::f64::consts::LOG10_E),
-    ];
-    class.define_constant_number_class_traits(
-        namespaces.public_all(),
-        CLASS_CONSTANTS_NUMBER,
-        activation,
-    );
-
-    const CLASS_CONSTANTS_INT: &[(&str, i32)] = &[("length", 1)];
-    class.define_constant_int_class_traits(
-        namespaces.public_all(),
-        CLASS_CONSTANTS_INT,
-        activation,
-    );
-
-    const AS3_INSTANCE_METHODS: &[(&str, NativeMethodImpl)] = &[
-        ("toExponential", to_exponential),
-        ("toFixed", to_fixed),
-        ("toPrecision", to_precision),
-        ("toString", to_string),
-        ("valueOf", value_of),
-    ];
-    class.define_builtin_instance_methods(mc, namespaces.as3, AS3_INSTANCE_METHODS);
-
-    class.mark_traits_loaded(activation.gc());
-    class
-        .init_vtable(activation.context)
-        .expect("Native class's vtable should initialize");
-
-    let c_class = class.c_class().expect("Class::new returns an i_class");
-
-    c_class.mark_traits_loaded(activation.gc());
-    c_class
-        .init_vtable(activation.context)
-        .expect("Native class's vtable should initialize");
-
-    class
+    Ok(this)
 }
