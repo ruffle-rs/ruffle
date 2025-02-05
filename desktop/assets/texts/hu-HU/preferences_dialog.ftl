@@ -23,3 +23,4 @@ theme = Téma
 theme-system = Rendszer alapértelmezett
 theme-light = Világos
 theme-dark = Sötét
+gamemode-default = Alapmód
