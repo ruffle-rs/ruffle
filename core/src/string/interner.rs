@@ -86,7 +86,16 @@ impl<'gc> AvmStringInterner<'gc> {
             intern_from_static(std::slice::from_ref(c))
         });
 
-        let common = CommonStrings::new(&mut intern_from_static, &chars);
+        let common = CommonStrings::new(
+            #[inline(never)]
+            |s| match s {
+                // Don't insert a fresh entry for single-character strings --
+                // they were already interned! Retrieve it from the one-char
+                // string cache instead.
+                [c] => chars[*c as usize].into(),
+                _ => intern_from_static(s).into(),
+            },
+        );
 
         Self {
             empty: intern_from_static(b""),
