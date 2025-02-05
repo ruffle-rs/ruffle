@@ -866,9 +866,9 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
     fn left_alignment_offset(span: &TextSpan, is_first_line: bool) -> Twips {
         if span.bullet {
             if is_first_line {
-                Twips::from_pixels(35.0 + span.left_margin + span.block_indent + span.indent)
+                Twips::from_pixels(36.0 + span.left_margin + span.block_indent + span.indent)
             } else {
-                Twips::from_pixels(35.0 + span.left_margin + span.block_indent)
+                Twips::from_pixels(36.0 + span.left_margin + span.block_indent)
             }
         } else {
             Self::left_alignment_offset_without_bullet(span, is_first_line)

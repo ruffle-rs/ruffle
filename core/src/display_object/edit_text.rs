@@ -2,15 +2,15 @@
 
 use crate::avm1::Avm1;
 use crate::avm1::ExecutionReason;
+use crate::avm1::NativeObject as Avm1NativeObject;
 use crate::avm1::{Activation as Avm1Activation, ActivationIdentifier};
 use crate::avm1::{
     Object as Avm1Object, StageObject as Avm1StageObject, TObject as Avm1TObject,
     Value as Avm1Value,
 };
-use crate::avm2::object::StyleSheetObject;
 use crate::avm2::object::{
     ClassObject as Avm2ClassObject, EventObject as Avm2EventObject, Object as Avm2Object,
-    StageObject as Avm2StageObject,
+    StageObject as Avm2StageObject, StyleSheetObject as Avm2StyleSheetObject,
 };
 use crate::avm2::{Activation as Avm2Activation, Avm2};
 use crate::backend::ui::MouseCursor;
@@ -22,6 +22,7 @@ use crate::display_object::{DisplayObjectBase, DisplayObjectPtr};
 use crate::events::{ClipEvent, ClipEventResult, TextControlCode};
 use crate::font::{FontType, Glyph, TextRenderSettings};
 use crate::html;
+use crate::html::StyleSheet;
 use crate::html::{
     FormatSpans, Layout, LayoutBox, LayoutContent, LayoutLine, LayoutMetrics, Position, TextFormat,
 };
@@ -189,9 +190,7 @@ pub struct EditTextData<'gc> {
     last_click: Option<ClickEventData>,
 
     /// Style sheet used when parsing HTML.
-    ///
-    /// TODO Add support for AVM1.
-    style_sheet: Option<StyleSheetObject<'gc>>,
+    style_sheet: EditTextStyleSheet<'gc>,
 
     /// Original HTML text before parsing.
     ///
@@ -231,7 +230,7 @@ impl EditTextData<'_> {
         self.text_spans = FormatSpans::from_html(
             text,
             default_format,
-            self.style_sheet,
+            self.style_sheet.style_sheet(),
             self.flags.contains(EditTextFlag::MULTILINE),
             self.flags.contains(EditTextFlag::CONDENSE_WHITE),
             self.static_data.swf.version(),
@@ -369,7 +368,7 @@ impl<'gc> EditText<'gc> {
                 restrict: EditTextRestrict::allow_all(),
                 last_click: None,
                 layout_debug_boxes_flags: LayoutDebugBoxesFlag::empty(),
-                style_sheet: None,
+                style_sheet: EditTextStyleSheet::None,
                 original_html_text: None,
             },
         ));
@@ -457,7 +456,7 @@ impl<'gc> EditText<'gc> {
     }
 
     pub fn html_text(self) -> WString {
-        if self.is_html() {
+        if self.is_effectively_html() {
             let text = self.0.read();
 
             if let Some(ref html) = text.original_html_text {
@@ -482,7 +481,7 @@ impl<'gc> EditText<'gc> {
             return;
         }
 
-        if self.is_html() {
+        if self.is_effectively_html() {
             self.0.write(context.gc()).parse_html(text);
             self.relayout(context);
         } else {
@@ -696,6 +695,11 @@ impl<'gc> EditText<'gc> {
         self.0.read().flags.contains(EditTextFlag::HTML)
     }
 
+    pub fn is_effectively_html(self) -> bool {
+        let text = self.0.read();
+        text.flags.contains(EditTextFlag::HTML) || text.style_sheet.is_some()
+    }
+
     pub fn set_is_html(self, context: &mut UpdateContext<'gc>, is_html: bool) {
         self.0
             .write(context.gc())
@@ -703,17 +707,58 @@ impl<'gc> EditText<'gc> {
             .set(EditTextFlag::HTML, is_html);
     }
 
-    pub fn style_sheet(self) -> Option<StyleSheetObject<'gc>> {
-        self.0.read().style_sheet
+    pub fn style_sheet(self) -> Option<StyleSheet<'gc>> {
+        self.0.read().style_sheet.style_sheet()
     }
 
-    pub fn set_style_sheet(
+    pub fn style_sheet_avm1(self) -> Option<Avm1Object<'gc>> {
+        if let EditTextStyleSheet::Avm1(object) = self.0.read().style_sheet {
+            Some(object)
+        } else {
+            None
+        }
+    }
+
+    pub fn style_sheet_avm2(self) -> Option<Avm2StyleSheetObject<'gc>> {
+        if let EditTextStyleSheet::Avm2(style_sheet_object) = self.0.read().style_sheet {
+            Some(style_sheet_object)
+        } else {
+            None
+        }
+    }
+
+    pub fn set_style_sheet_avm1(
         self,
         context: &mut UpdateContext<'gc>,
-        style_sheet: Option<StyleSheetObject<'gc>>,
+        style_sheet: Option<Avm1Object<'gc>>,
+    ) {
+        self.set_style_sheet(
+            context,
+            style_sheet
+                .map(EditTextStyleSheet::Avm1)
+                .unwrap_or_default(),
+        );
+    }
+
+    pub fn set_style_sheet_avm2(
+        self,
+        context: &mut UpdateContext<'gc>,
+        style_sheet: Option<Avm2StyleSheetObject<'gc>>,
     ) {
         self.set_is_html(context, true);
+        self.set_style_sheet(
+            context,
+            style_sheet
+                .map(EditTextStyleSheet::Avm2)
+                .unwrap_or_default(),
+        );
+    }
 
+    fn set_style_sheet(
+        self,
+        context: &mut UpdateContext<'gc>,
+        style_sheet: EditTextStyleSheet<'gc>,
+    ) {
         let mut text = self.0.write(context.gc());
         text.style_sheet = style_sheet;
 
@@ -724,6 +769,8 @@ impl<'gc> EditText<'gc> {
         if let Some(html) = text.original_html_text.clone() {
             text.parse_html(&html);
         }
+        drop(text);
+        self.relayout(context);
     }
 
     pub fn is_fte(self) -> bool {
@@ -3480,5 +3527,43 @@ impl EditTextPixelSnapping {
                 }
             }
         }
+    }
+}
+
+#[derive(Debug, Clone, Collect)]
+#[collect(no_drop)]
+enum EditTextStyleSheet<'gc> {
+    None,
+    Avm1(Avm1Object<'gc>),
+    Avm2(Avm2StyleSheetObject<'gc>),
+}
+
+impl<'gc> EditTextStyleSheet<'gc> {
+    fn is_some(&self) -> bool {
+        self.style_sheet().is_some()
+    }
+
+    fn is_none(&self) -> bool {
+        self.style_sheet().is_none()
+    }
+
+    fn style_sheet(&self) -> Option<StyleSheet<'gc>> {
+        match self {
+            EditTextStyleSheet::None => None,
+            EditTextStyleSheet::Avm1(object) => {
+                if let Avm1NativeObject::StyleSheet(style_sheet_object) = object.native() {
+                    Some(style_sheet_object.style_sheet())
+                } else {
+                    None
+                }
+            }
+            EditTextStyleSheet::Avm2(style_sheet_object) => Some(style_sheet_object.style_sheet()),
+        }
+    }
+}
+
+impl Default for EditTextStyleSheet<'_> {
+    fn default() -> Self {
+        Self::None
     }
 }

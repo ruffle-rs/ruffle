@@ -292,13 +292,13 @@ impl Avm2ObjectWindow {
     }
 
     fn show_style_sheet(&mut self, style_sheet: StyleSheetObject<'_>, ui: &mut Ui) {
-        let mut selectors = style_sheet.selectors();
+        let mut selectors = style_sheet.style_sheet().selectors();
         selectors.sort();
         for selector in selectors {
             CollapsingHeader::new(selector.to_utf8_lossy())
                 .id_salt(ui.id().with(selector.to_utf8_lossy()))
                 .show(ui, |ui| {
-                    if let Some(tf) = style_sheet.get_style(&selector) {
+                    if let Some(tf) = style_sheet.style_sheet().get_style(&selector) {
                         show_text_format(ui, &tf, true);
                     } else {
                         ui.weak("No styles");
