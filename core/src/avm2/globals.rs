@@ -427,53 +427,6 @@ fn dynamic_class<'gc>(
     domain.export_definition(name, script, activation.gc())
 }
 
-/// Add a class builtin to the global scope.
-///
-/// This function returns the class object and class prototype as a class, which
-/// may be stored in `SystemClasses`
-fn class<'gc>(
-    class_def: Class<'gc>,
-    script: Script<'gc>,
-    activation: &mut Activation<'_, 'gc>,
-) -> Result<ClassObject<'gc>, Error<'gc>> {
-    let mc = activation.gc();
-    let (_, global, mut domain) = script.init();
-
-    let super_class = if let Some(super_class) = class_def.super_class() {
-        let super_class = super_class
-            .class_object()
-            .ok_or_else(|| Error::from("Base class should have been initialized"))?;
-
-        Some(super_class)
-    } else {
-        None
-    };
-
-    let class_name = class_def.name();
-
-    let class_object = ClassObject::from_class(activation, class_def, super_class)?;
-
-    Value::from(global)
-        .init_property(&class_name.into(), class_object.into(), activation)
-        .expect("Should set property");
-
-    domain.export_definition(class_name, script, mc);
-    domain.export_class(class_name, class_def, mc);
-    Ok(class_object)
-}
-
-macro_rules! avm2_system_class {
-    ($field:ident, $activation:ident, $class:expr, $script:expr) => {
-        let class_object = class($class, $script, $activation)?;
-
-        let sc = $activation.avm2().system_classes.as_mut().unwrap();
-        sc.$field = class_object;
-
-        let scd = $activation.avm2().system_class_defs.as_mut().unwrap();
-        scd.$field = class_object.inner_class_definition();
-    };
-}
-
 /// Initialize the player global domain.
 ///
 /// This should be called only once, to construct the global scope of the
@@ -543,10 +496,6 @@ pub fn load_player_globals<'gc>(
         void_def,
     ));
 
-    let number_class = number::create_class(activation);
-    let int_class = int::create_class(activation);
-    let uint_class = uint::create_class(activation);
-
     // Unfortunately we need to specify the global traits manually, at least until
     // all the builtin classes are defined in AS.
     let mut global_traits = Vec::new();
@@ -557,9 +506,6 @@ pub fn load_player_globals<'gc>(
         (public_ns, "Object", object_i_class),
         (public_ns, "Class", class_i_class),
         (public_ns, "Function", fn_classdef),
-        (public_ns, "Number", number_class),
-        (public_ns, "int", int_class),
-        (public_ns, "uint", uint_class),
     ];
 
     // "trace" is the only builtin function not defined on the toplevel global object
@@ -690,11 +636,6 @@ pub fn load_player_globals<'gc>(
     dynamic_class(activation, class_class, script);
 
     // After this point, it is safe to initialize any other classes.
-    // Make sure to initialize superclasses *before* their subclasses!
-
-    avm2_system_class!(number, activation, number_class, script);
-    avm2_system_class!(int, activation, int_class, script);
-    avm2_system_class!(uint, activation, uint_class, script);
 
     // Inside this call, the macro `avm2_system_classes_playerglobal`
     // triggers classloading. Therefore, we run `load_playerglobal`
@@ -850,7 +791,9 @@ pub fn init_builtin_system_classes(activation: &mut Activation<'_, '_>) {
             ("", "Boolean", boolean),
             ("", "Error", error),
             ("", "EvalError", evalerror),
+            ("", "int", int),
             ("", "Namespace", namespace),
+            ("", "Number", number),
             ("", "QName", qname),
             ("", "RangeError", rangeerror),
             ("", "ReferenceError", referenceerror),
@@ -858,6 +801,7 @@ pub fn init_builtin_system_classes(activation: &mut Activation<'_, '_>) {
             ("", "String", string),
             ("", "SyntaxError", syntaxerror),
             ("", "TypeError", typeerror),
+            ("", "uint", uint),
             ("", "URIError", urierror),
             ("", "VerifyError", verifyerror),
             ("", "XML", xml),
@@ -894,8 +838,11 @@ pub fn init_builtin_system_class_defs(activation: &mut Activation<'_, '_>) {
         [
             ("", "Array", array),
             ("", "Boolean", boolean),
+            ("", "int", int),
             ("", "Namespace", namespace),
+            ("", "Number", number),
             ("", "String", string),
+            ("", "uint", uint),
             ("", "XML", xml),
             ("", "XMLList", xml_list),
             ("__AS3__.vec", "Vector", generic_vector),
