@@ -841,7 +841,7 @@ fn setup_vector_class_object<'gc>(
     vector_cls
 }
 
-pub fn init_builtin_system_classes<'gc>(activation: &mut Activation<'_, 'gc>) {
+pub fn init_builtin_system_classes(activation: &mut Activation<'_, '_>) {
     avm2_system_classes_playerglobal!(
         &mut *activation,
         [
@@ -888,7 +888,7 @@ pub fn init_builtin_system_classes<'gc>(activation: &mut Activation<'_, 'gc>) {
         .object_vector = object_vector;
 }
 
-pub fn init_builtin_system_class_defs<'gc>(activation: &mut Activation<'_, 'gc>) {
+pub fn init_builtin_system_class_defs(activation: &mut Activation<'_, '_>) {
     avm2_system_class_defs_playerglobal!(
         &mut *activation,
         [
