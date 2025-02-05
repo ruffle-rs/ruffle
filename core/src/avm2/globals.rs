@@ -543,7 +543,6 @@ pub fn load_player_globals<'gc>(
         void_def,
     ));
 
-    let int_class = int::create_class(activation);
     let uint_class = uint::create_class(activation);
 
     // Unfortunately we need to specify the global traits manually, at least until
@@ -556,7 +555,6 @@ pub fn load_player_globals<'gc>(
         (public_ns, "Object", object_i_class),
         (public_ns, "Class", class_i_class),
         (public_ns, "Function", fn_classdef),
-        (public_ns, "int", int_class),
         (public_ns, "uint", uint_class),
     ];
 
@@ -690,7 +688,6 @@ pub fn load_player_globals<'gc>(
     // After this point, it is safe to initialize any other classes.
     // Make sure to initialize superclasses *before* their subclasses!
 
-    avm2_system_class!(int, activation, int_class, script);
     avm2_system_class!(uint, activation, uint_class, script);
 
     // Inside this call, the macro `avm2_system_classes_playerglobal`
@@ -847,6 +844,7 @@ pub fn init_builtin_system_classes(activation: &mut Activation<'_, '_>) {
             ("", "Boolean", boolean),
             ("", "Error", error),
             ("", "EvalError", evalerror),
+            ("", "int", int),
             ("", "Namespace", namespace),
             ("", "Number", number),
             ("", "QName", qname),
@@ -892,6 +890,7 @@ pub fn init_builtin_system_class_defs(activation: &mut Activation<'_, '_>) {
         [
             ("", "Array", array),
             ("", "Boolean", boolean),
+            ("", "int", int),
             ("", "Namespace", namespace),
             ("", "Number", number),
             ("", "String", string),
