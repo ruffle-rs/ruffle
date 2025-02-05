@@ -543,8 +543,6 @@ pub fn load_player_globals<'gc>(
         void_def,
     ));
 
-    let uint_class = uint::create_class(activation);
-
     // Unfortunately we need to specify the global traits manually, at least until
     // all the builtin classes are defined in AS.
     let mut global_traits = Vec::new();
@@ -555,7 +553,6 @@ pub fn load_player_globals<'gc>(
         (public_ns, "Object", object_i_class),
         (public_ns, "Class", class_i_class),
         (public_ns, "Function", fn_classdef),
-        (public_ns, "uint", uint_class),
     ];
 
     // "trace" is the only builtin function not defined on the toplevel global object
@@ -686,9 +683,6 @@ pub fn load_player_globals<'gc>(
     dynamic_class(activation, class_class, script);
 
     // After this point, it is safe to initialize any other classes.
-    // Make sure to initialize superclasses *before* their subclasses!
-
-    avm2_system_class!(uint, activation, uint_class, script);
 
     // Inside this call, the macro `avm2_system_classes_playerglobal`
     // triggers classloading. Therefore, we run `load_playerglobal`
@@ -854,6 +848,7 @@ pub fn init_builtin_system_classes(activation: &mut Activation<'_, '_>) {
             ("", "String", string),
             ("", "SyntaxError", syntaxerror),
             ("", "TypeError", typeerror),
+            ("", "uint", uint),
             ("", "URIError", urierror),
             ("", "VerifyError", verifyerror),
             ("", "XML", xml),
@@ -894,6 +889,7 @@ pub fn init_builtin_system_class_defs(activation: &mut Activation<'_, '_>) {
             ("", "Namespace", namespace),
             ("", "Number", number),
             ("", "String", string),
+            ("", "uint", uint),
             ("", "XML", xml),
             ("", "XMLList", xml_list),
             ("__AS3__.vec", "Vector", generic_vector),

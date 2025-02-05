@@ -8,4 +8,3 @@ include "Object.as"
 include "Class.as"
 
 include "Function.as"
-include "uint.as"
