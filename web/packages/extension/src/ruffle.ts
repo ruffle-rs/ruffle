@@ -28,16 +28,20 @@ function handleMessage(message: Message) {
 }
 
 let ID: string | null = null;
-if (
-    document.currentScript !== undefined &&
-    document.currentScript !== null &&
-    "src" in document.currentScript &&
-    document.currentScript.src !== ""
-) {
-    try {
-        ID = new URL(document.currentScript.src).searchParams.get("id");
-    } catch (_) {
-        // ID remains null.
+if (document.currentScript !== undefined && document.currentScript !== null) {
+    if ("src" in document.currentScript && document.currentScript.src !== "") {
+        try {
+            ID = new URL(document.currentScript.src).searchParams.get("id");
+        } catch (_) {
+            // ID remains null.
+        }
+    }
+    if (ID === null) {
+        // if `script.src` is masked, get id from attrs
+        const ruffleId = document.currentScript.getAttribute("ruffle-id");
+        if (ruffleId) {
+            ID = ruffleId;
+        }
     }
 }
 
