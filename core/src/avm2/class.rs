@@ -991,63 +991,6 @@ impl<'gc> Class<'gc> {
     }
 
     #[inline(never)]
-    pub fn define_constant_number_class_traits(
-        self,
-        namespace: Namespace<'gc>,
-        items: &[(&'static str, f64)],
-        activation: &mut Activation<'_, 'gc>,
-    ) {
-        for &(name, value) in items {
-            self.define_class_trait(
-                activation.gc(),
-                Trait::from_const(
-                    QName::new(namespace, name),
-                    Some(activation.avm2().multinames.number),
-                    Some(value.into()),
-                ),
-            );
-        }
-    }
-
-    #[inline(never)]
-    pub fn define_constant_uint_class_traits(
-        self,
-        namespace: Namespace<'gc>,
-        items: &[(&'static str, u32)],
-        activation: &mut Activation<'_, 'gc>,
-    ) {
-        for &(name, value) in items {
-            self.define_class_trait(
-                activation.gc(),
-                Trait::from_const(
-                    QName::new(namespace, name),
-                    Some(activation.avm2().multinames.uint),
-                    Some(value.into()),
-                ),
-            );
-        }
-    }
-
-    #[inline(never)]
-    pub fn define_constant_int_class_traits(
-        self,
-        namespace: Namespace<'gc>,
-        items: &[(&'static str, i32)],
-        activation: &mut Activation<'_, 'gc>,
-    ) {
-        for &(name, value) in items {
-            self.define_class_trait(
-                activation.gc(),
-                Trait::from_const(
-                    QName::new(namespace, name),
-                    Some(activation.avm2().multinames.int),
-                    Some(value.into()),
-                ),
-            );
-        }
-    }
-
-    #[inline(never)]
     pub fn define_builtin_instance_methods(
         self,
         mc: &Mutation<'gc>,
@@ -1139,15 +1082,6 @@ impl<'gc> Class<'gc> {
                 ),
             );
         }
-    }
-
-    /// Define a trait on the class.
-    ///
-    /// Class traits will be accessible as properties on the class object.
-    pub fn define_class_trait(self, mc: &Mutation<'gc>, my_trait: Trait<'gc>) {
-        self.c_class()
-            .expect("Accessed class_traits on a c_class")
-            .define_instance_trait(mc, my_trait);
     }
 
     /// Define a trait on instances of the class.

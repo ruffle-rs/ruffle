@@ -541,8 +541,6 @@ pub struct CommonMultinames<'gc> {
     pub boolean: Gc<'gc, Multiname<'gc>>,
     pub function: Gc<'gc, Multiname<'gc>>,
     pub int: Gc<'gc, Multiname<'gc>>,
-    pub number: Gc<'gc, Multiname<'gc>>,
-    pub uint: Gc<'gc, Multiname<'gc>>,
 }
 
 impl<'gc> CommonMultinames<'gc> {
@@ -561,8 +559,6 @@ impl<'gc> CommonMultinames<'gc> {
             boolean: create_pub_multiname(b"Boolean"),
             function: create_pub_multiname(b"Function"),
             int: create_pub_multiname(b"int"),
-            number: create_pub_multiname(b"Number"),
-            uint: create_pub_multiname(b"uint"),
         }
     }
 }
