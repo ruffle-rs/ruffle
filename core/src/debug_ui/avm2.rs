@@ -7,13 +7,13 @@ use crate::context::UpdateContext;
 use crate::debug_ui::display_object::open_display_object_button;
 use crate::debug_ui::handle::{AVM2ObjectHandle, DisplayObjectHandle};
 use crate::debug_ui::{ItemToSave, Message};
-use egui::{Align, Checkbox, CollapsingHeader, Grid, Id, Layout, TextEdit, Ui, Window};
+use egui::{Align, Checkbox, Grid, Id, Layout, TextEdit, Ui, Window};
 use egui_extras::{Column, TableBody, TableBuilder, TableRow};
 use fnv::FnvHashMap;
 use gc_arena::Mutation;
 use std::borrow::Cow;
 
-use super::display_object::show_text_format;
+use super::common::show_style_sheet;
 use super::movie::open_movie_button;
 
 #[derive(Debug, Eq, PartialEq, Hash, Default, Copy, Clone)]
@@ -292,19 +292,7 @@ impl Avm2ObjectWindow {
     }
 
     fn show_style_sheet(&mut self, style_sheet: StyleSheetObject<'_>, ui: &mut Ui) {
-        let mut selectors = style_sheet.style_sheet().selectors();
-        selectors.sort();
-        for selector in selectors {
-            CollapsingHeader::new(selector.to_utf8_lossy())
-                .id_salt(ui.id().with(selector.to_utf8_lossy()))
-                .show(ui, |ui| {
-                    if let Some(tf) = style_sheet.style_sheet().get_style(&selector) {
-                        show_text_format(ui, &tf, true);
-                    } else {
-                        ui.weak("No styles");
-                    }
-                });
-        }
+        show_style_sheet(ui, style_sheet.style_sheet());
     }
 
     fn show_properties<'gc>(
