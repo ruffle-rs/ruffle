@@ -419,7 +419,7 @@ impl CommandTarget {
         });
         self.ensure_cleared(encoder);
         encoder.copy_texture_to_texture(
-            wgpu::ImageCopyTextureBase {
+            wgpu::TexelCopyTextureInfo {
                 texture: self
                     .resolve_buffer
                     .as_ref()
@@ -429,7 +429,7 @@ impl CommandTarget {
                 origin: Default::default(),
                 aspect: Default::default(),
             },
-            wgpu::ImageCopyTextureBase {
+            wgpu::TexelCopyTextureInfo {
                 texture: blend_buffer.texture(),
                 mip_level: 0,
                 origin: Default::default(),

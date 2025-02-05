@@ -215,7 +215,7 @@ impl UiBackend for DesktopUiBackend {
     }
 
     fn set_clipboard_content(&mut self, content: String) {
-        self.clipboard.set(content);
+        self.clipboard.set_text(content);
     }
 
     fn set_fullscreen(&mut self, is_full: bool) -> Result<(), FullscreenError> {

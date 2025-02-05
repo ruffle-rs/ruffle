@@ -1675,6 +1675,7 @@ impl<'a> NagaBuilder<'a> {
             },
             early_depth_test: None,
             workgroup_size: [0; 3],
+            workgroup_size_overrides: None,
             function: self.func,
         };
 

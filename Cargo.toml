@@ -48,9 +48,9 @@ version = "0.1.0"
 [workspace.dependencies]
 tracing = "0.1.41"
 tracing-subscriber = { version = "0.3.19", features = ["env-filter"] }
-naga = { version = "23.1.0", features = ["wgsl-out"] }
-wgpu = "23.0.1"
-egui = "0.30.0"
+naga = { version = "24.0.0", features = ["wgsl-out"] }
+wgpu = "24.0.1"
+egui = "0.31.0"
 clap = { version = "4.5.27", features = ["derive"] }
 cpal = "0.15.3"
 anyhow = "1.0"

@@ -433,6 +433,7 @@ impl ShaderBuilder<'_> {
             stage: ShaderStage::Fragment,
             early_depth_test: None,
             workgroup_size: [0; 3],
+            workgroup_size_overrides: None,
             function: builder.func,
         });
 
