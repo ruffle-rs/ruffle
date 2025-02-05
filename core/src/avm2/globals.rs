@@ -427,53 +427,6 @@ fn dynamic_class<'gc>(
     domain.export_definition(name, script, activation.gc())
 }
 
-/// Add a class builtin to the global scope.
-///
-/// This function returns the class object and class prototype as a class, which
-/// may be stored in `SystemClasses`
-fn class<'gc>(
-    class_def: Class<'gc>,
-    script: Script<'gc>,
-    activation: &mut Activation<'_, 'gc>,
-) -> Result<ClassObject<'gc>, Error<'gc>> {
-    let mc = activation.gc();
-    let (_, global, mut domain) = script.init();
-
-    let super_class = if let Some(super_class) = class_def.super_class() {
-        let super_class = super_class
-            .class_object()
-            .ok_or_else(|| Error::from("Base class should have been initialized"))?;
-
-        Some(super_class)
-    } else {
-        None
-    };
-
-    let class_name = class_def.name();
-
-    let class_object = ClassObject::from_class(activation, class_def, super_class)?;
-
-    Value::from(global)
-        .init_property(&class_name.into(), class_object.into(), activation)
-        .expect("Should set property");
-
-    domain.export_definition(class_name, script, mc);
-    domain.export_class(class_name, class_def, mc);
-    Ok(class_object)
-}
-
-macro_rules! avm2_system_class {
-    ($field:ident, $activation:ident, $class:expr, $script:expr) => {
-        let class_object = class($class, $script, $activation)?;
-
-        let sc = $activation.avm2().system_classes.as_mut().unwrap();
-        sc.$field = class_object;
-
-        let scd = $activation.avm2().system_class_defs.as_mut().unwrap();
-        scd.$field = class_object.inner_class_definition();
-    };
-}
-
 /// Initialize the player global domain.
 ///
 /// This should be called only once, to construct the global scope of the

@@ -158,23 +158,6 @@ pub fn make_error_1003<'gc>(activation: &mut Activation<'_, 'gc>, radix: i32) ->
 
 #[inline(never)]
 #[cold]
-pub fn make_error_1004<'gc>(activation: &mut Activation<'_, 'gc>, method_name: &str) -> Error<'gc> {
-    let err = type_error(
-        activation,
-        &format!(
-            "Error #1004: Method {} was invoked on an incompatible object.",
-            method_name
-        ),
-        1004,
-    );
-    match err {
-        Ok(err) => Error::AvmError(err),
-        Err(err) => err,
-    }
-}
-
-#[inline(never)]
-#[cold]
 pub fn make_error_1010<'gc>(
     activation: &mut Activation<'_, 'gc>,
     name: Option<&Multiname<'gc>>,
