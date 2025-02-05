@@ -1,10 +1,9 @@
 use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
 use crate::avm1::object::Object;
-use crate::avm1::property::Attribute;
 use crate::avm1::property_decl::{define_properties_on, Declaration};
 use crate::avm1::runtime::Avm1;
-use crate::avm1::{ScriptObject, TObject, Value};
+use crate::avm1::{ScriptObject, Value};
 use crate::avm1_stub;
 use crate::context::UpdateContext;
 use crate::string::StringContext;
@@ -504,21 +503,9 @@ pub fn create<'gc>(
     context: &mut StringContext<'gc>,
     proto: Object<'gc>,
     fn_proto: Object<'gc>,
-    security: Object<'gc>,
-    capabilities: Object<'gc>,
-    ime: Object<'gc>,
-) -> Object<'gc> {
+) -> ScriptObject<'gc> {
     let gc_context = context.gc();
     let system = ScriptObject::new(gc_context, Some(proto));
     define_properties_on(OBJECT_DECLS, context, system, fn_proto);
-    system.define_value(gc_context, "IME", ime.into(), Attribute::empty());
-    system.define_value(gc_context, "security", security.into(), Attribute::empty());
-    system.define_value(
-        gc_context,
-        "capabilities",
-        capabilities.into(),
-        Attribute::empty(),
-    );
-
-    system.into()
+    system
 }
