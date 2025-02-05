@@ -37,6 +37,7 @@ include "Boolean.as"
 include "int.as"
 include "Number.as"
 include "String.as"
+include "uint.as"
 
 include "Vector.as"
 
