@@ -293,15 +293,22 @@ impl VideoDecoder for H264Decoder {
             //in-out: for Decoding only: declare and initialize the output buffer info
             let mut dest_buf_info: openh264_sys::SBufferInfo = std::mem::zeroed();
 
-            let _ret = decoder_vtbl.DecodeFrameNoDelay.unwrap()(
+            let ret = decoder_vtbl.DecodeFrameNoDelay.unwrap()(
                 self.decoder,
                 buffer.as_mut_ptr(),
                 buffer.len() as c_int,
                 output.as_mut_ptr(),
                 &mut dest_buf_info as *mut openh264_sys::SBufferInfo,
             );
+
+            if ret == 0 {
+                Ok(())
+            } else {
+                Err(Error::DecoderError(
+                    format!("Configuration failed with status code: {}", ret).into(),
+                ))
+            }
         }
-        Ok(())
     }
 
     fn preload_frame(&mut self, encoded_frame: EncodedFrame<'_>) -> Result<FrameDependency, Error> {
