@@ -13,7 +13,7 @@ use crate::display_object::{
 };
 use crate::ecma_conversions::{f64_to_wrapping_i32, f64_to_wrapping_u32};
 use crate::loader::MovieLoaderVMData;
-use crate::string::{AvmString, StringContext, SwfStrExt as _, WStr, WString};
+use crate::string::{AvmString, HasStringContext, StringContext, SwfStrExt as _, WStr, WString};
 use crate::tag_utils::SwfSlice;
 use crate::vminterface::Instantiator;
 use crate::{avm_error, avm_warn};
@@ -232,6 +232,13 @@ pub struct Activation<'a, 'gc: 'a> {
 impl Drop for Activation<'_, '_> {
     fn drop(&mut self) {
         avm_debug!(self.context.avm1, "END {}", self.id);
+    }
+}
+
+impl<'gc> HasStringContext<'gc> for Activation<'_, 'gc> {
+    #[inline(always)]
+    fn strings_ref(&self) -> &StringContext<'gc> {
+        &self.context.strings
     }
 }
 

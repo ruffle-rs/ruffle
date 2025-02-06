@@ -21,9 +21,10 @@ use crate::avm2::Multiname;
 use crate::avm2::Namespace;
 use crate::avm2::{Avm2, Error};
 use crate::context::UpdateContext;
-use crate::string::{AvmAtom, AvmString, StringContext};
+use crate::string::{AvmAtom, AvmString, HasStringContext, StringContext};
 use crate::tag_utils::SwfMovie;
 use gc_arena::Gc;
+use ruffle_macros::istr;
 use std::cmp::{min, Ordering};
 use std::sync::Arc;
 use swf::avm2::types::{
@@ -100,6 +101,13 @@ pub struct Activation<'a, 'gc: 'a> {
     scope_depth: usize,
 
     pub context: &'a mut UpdateContext<'gc>,
+}
+
+impl<'gc> HasStringContext<'gc> for Activation<'_, 'gc> {
+    #[inline(always)]
+    fn strings_ref(&self) -> &StringContext<'gc> {
+        &self.context.strings
+    }
 }
 
 impl<'a, 'gc> Activation<'a, 'gc> {
@@ -462,7 +470,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
                 .flags
                 .contains(AbcMethodFlags::NEED_ARGUMENTS)
             {
-                let string_callee = self.strings().common().str_callee;
+                let string_callee = istr!(self, "callee");
 
                 args_object.set_string_property_local(string_callee, callee, self)?;
                 args_object.set_local_property_is_enumerable(self.gc(), string_callee, false);
@@ -2700,36 +2708,36 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         let value = self.pop_stack();
 
         let type_name = match value {
-            Value::Undefined => self.strings().common().str_undefined,
-            Value::Null => self.strings().common().str_object,
-            Value::Bool(_) => self.strings().common().str_boolean,
-            Value::Number(_) | Value::Integer(_) => self.strings().common().str_number,
+            Value::Undefined => istr!(self, "undefined"),
+            Value::Null => istr!(self, "object"),
+            Value::Bool(_) => istr!(self, "boolean"),
+            Value::Number(_) | Value::Integer(_) => istr!(self, "number"),
             Value::Object(o) => {
                 let classes = self.avm2().class_defs();
 
                 match o {
                     Object::FunctionObject(_) => {
                         if o.instance_class() == classes.function {
-                            self.strings().common().str_function
+                            istr!(self, "function")
                         } else {
                             // Subclasses always have a typeof = "object"
-                            self.strings().common().str_object
+                            istr!(self, "object")
                         }
                     }
                     Object::XmlObject(_) | Object::XmlListObject(_) => {
                         if o.instance_class() == classes.xml_list
                             || o.instance_class() == classes.xml
                         {
-                            self.strings().common().str_xml
+                            istr!(self, "xml")
                         } else {
                             // Subclasses always have a typeof = "object"
-                            self.strings().common().str_object
+                            istr!(self, "object")
                         }
                     }
-                    _ => self.strings().common().str_object,
+                    _ => istr!(self, "object"),
                 }
             }
-            Value::String(_) => self.strings().common().str_string,
+            Value::String(_) => istr!(self, "string"),
         };
 
         self.push_stack(Value::String(type_name));

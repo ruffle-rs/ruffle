@@ -101,3 +101,14 @@ impl<'gc> StringContext<'gc> {
             .substring(self.gc(), s, range.start, range.end)
     }
 }
+
+pub trait HasStringContext<'gc> {
+    fn strings_ref(&self) -> &StringContext<'gc>;
+}
+
+impl<'gc> HasStringContext<'gc> for StringContext<'gc> {
+    #[inline(always)]
+    fn strings_ref(&self) -> &StringContext<'gc> {
+        self
+    }
+}

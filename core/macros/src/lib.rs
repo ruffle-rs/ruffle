@@ -1,7 +1,9 @@
 //! Proc macros used by Ruffle to generate various boilerplate.
 extern crate proc_macro;
+
 use proc_macro::TokenStream;
 use quote::{format_ident, quote};
+use syn::parse::{Parse, ParseStream};
 use syn::{
     parse_macro_input, parse_quote, FnArg, ImplItem, ImplItemFn, ItemEnum, ItemTrait, LitStr, Meta,
     Pat, TraitItem, Visibility,
@@ -175,17 +177,56 @@ pub fn enum_trait_object(args: TokenStream, item: TokenStream) -> TokenStream {
 }
 
 /// Get the string passed to it as an interned string, assumed to be present on
-/// the StringContext of the currently in-scope `activation` variable. For example,
-/// `istr("description")` expands to `activation.strings().common.str_description`.
+/// the current `StringContext`.
+///
+/// If no extra parameter is passed, an `activation: Activation<'_, 'gc>` variable will be
+/// assumed to be in scope and will be used to retrieve the interned string. Otherwise, the
+/// extra parameter should implement the `HasStringContext` trait.
+///
+/// ```rs
+/// istr!("description");
+/// // expands to:
+/// activation.context.strings.common().str_description;
+///
+/// istr!(context, "description");
+/// // expands to:
+/// HasStringContext::strings_ref(context).str_description;
+/// ```
 #[proc_macro]
 pub fn istr(item: TokenStream) -> TokenStream {
-    let string = parse_macro_input!(item as LitStr).value();
+    struct Input {
+        str: LitStr,
+        context: Option<syn::Expr>,
+    }
 
-    let string_ident = format_ident!("str_{}", string);
+    impl Parse for Input {
+        fn parse(input: ParseStream) -> syn::Result<Self> {
+            let mut context = None;
+            if !input.peek(syn::LitStr) {
+                context = Some(input.parse()?);
+                input.parse::<syn::token::Comma>()?;
+            }
 
-    let out = quote!(
-        activation.strings().common().#string_ident
-    );
+            let str = input.parse()?;
+            Ok(Self { context, str })
+        }
+    }
+
+    let input = parse_macro_input!(item as Input);
+    let string_ident = format_ident!("str_{}", input.str.value());
+
+    let out = if let Some(context) = input.context {
+        quote!(
+            crate::string::HasStringContext::strings_ref(#context).common().#string_ident
+        )
+    } else {
+        quote!(
+            // Use raw field access instead of `HasStringContext` here:
+            // - it's more permissive for the borrow checker;
+            // - it works for both by-ref and by-value `Activation`s.
+            activation.context.strings.common().#string_ident
+        )
+    };
 
     out.into()
 }
