@@ -1,4 +1,4 @@
-use super::AvmString;
+use super::AvmAtom;
 use gc_arena::Collect;
 
 macro_rules! define_common_strings {
@@ -7,11 +7,11 @@ macro_rules! define_common_strings {
         #[derive(Collect)]
         #[collect(no_drop)]
         pub struct CommonStrings<'gc> {
-            $(pub $field: AvmString<'gc>,)*
+            $(pub $field: AvmAtom<'gc>,)*
         }
 
         impl<'gc> CommonStrings<'gc> {
-            pub fn new(mut intern_from_static: impl FnMut(&'static [u8]) -> AvmString<'gc>) -> Self {
+            pub fn new(mut intern_from_static: impl FnMut(&'static [u8]) -> AvmAtom<'gc>) -> Self {
                 Self {
                     $($field: intern_from_static($str)),*
                 }

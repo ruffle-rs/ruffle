@@ -2,6 +2,7 @@
 extern crate proc_macro;
 
 use proc_macro::TokenStream;
+use proc_macro2::TokenStream as TokenStream2;
 use quote::{format_ident, quote};
 use syn::parse::{Parse, ParseStream};
 use syn::{
@@ -176,7 +177,7 @@ pub fn enum_trait_object(args: TokenStream, item: TokenStream) -> TokenStream {
     out.into()
 }
 
-/// Get the string passed to it as an interned string, assumed to be present on
+/// Get the string passed to it as an interned `AvmAtom`, assumed to be present on
 /// the current `StringContext`.
 ///
 /// If no extra parameter is passed, an `activation: Activation<'_, 'gc>` variable will be
@@ -193,7 +194,24 @@ pub fn enum_trait_object(args: TokenStream, item: TokenStream) -> TokenStream {
 /// HasStringContext::strings_ref(context).str_description;
 /// ```
 #[proc_macro]
+pub fn atom(item: TokenStream) -> TokenStream {
+    atom_internal(item, |atom| atom)
+}
+
+/// Like `atom!`, but returns an `AvmString` instead of an `AvmAtom`.
+#[proc_macro]
 pub fn istr(item: TokenStream) -> TokenStream {
+    atom_internal(item, |atom| {
+        quote!(
+            crate::string::AvmString::from(#atom)
+        )
+    })
+}
+
+fn atom_internal(
+    item: TokenStream,
+    transform: impl FnOnce(TokenStream2) -> TokenStream2,
+) -> TokenStream {
     struct Input {
         str: LitStr,
         context: Option<syn::Expr>,
@@ -215,7 +233,7 @@ pub fn istr(item: TokenStream) -> TokenStream {
     let input = parse_macro_input!(item as Input);
     let string_ident = format_ident!("str_{}", input.str.value());
 
-    let out = if let Some(context) = input.context {
+    let atom = if let Some(context) = input.context {
         quote!(
             crate::string::HasStringContext::strings_ref(#context).common().#string_ident
         )
@@ -228,5 +246,5 @@ pub fn istr(item: TokenStream) -> TokenStream {
         )
     };
 
-    out.into()
+    transform(atom).into()
 }
