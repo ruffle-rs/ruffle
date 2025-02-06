@@ -35,6 +35,7 @@ use crate::player::{MouseData, Player};
 use crate::prelude::*;
 use crate::socket::Sockets;
 use crate::streams::StreamManager;
+use crate::string::HasStringContext;
 use crate::string::{AvmString, StringContext};
 use crate::stub::StubCollection;
 use crate::tag_utils::{SwfMovie, SwfSlice};
@@ -225,6 +226,13 @@ pub struct UpdateContext<'gc> {
     /// Currently, this is just used for handling `Loader.loadBytes`
     #[allow(clippy::type_complexity)]
     pub post_frame_callbacks: &'gc mut Vec<PostFrameCallback<'gc>>,
+}
+
+impl<'gc> HasStringContext<'gc> for UpdateContext<'gc> {
+    #[inline(always)]
+    fn strings_ref(&self) -> &StringContext<'gc> {
+        &self.strings
+    }
 }
 
 /// Convenience methods for controlling audio.

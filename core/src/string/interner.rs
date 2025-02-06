@@ -53,7 +53,7 @@ pub struct AvmStringInterner<'gc> {
     interned: WeakSet<'gc, AvmStringRepr<'gc>>,
 
     /// Strings used across both AVMs and in core code.
-    pub common: CommonStrings<'gc>,
+    pub(super) common: CommonStrings<'gc>,
 
     pub(super) empty: Gc<'gc, AvmStringRepr<'gc>>,
     pub(super) chars: [Gc<'gc, AvmStringRepr<'gc>>; INTERNED_CHAR_LEN],
