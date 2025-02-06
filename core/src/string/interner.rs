@@ -92,8 +92,8 @@ impl<'gc> AvmStringInterner<'gc> {
                 // Don't insert a fresh entry for single-character strings --
                 // they were already interned! Retrieve it from the one-char
                 // string cache instead.
-                [c] => chars[*c as usize].into(),
-                _ => intern_from_static(s).into(),
+                [c] => AvmAtom(chars[*c as usize]),
+                _ => AvmAtom(intern_from_static(s)),
             },
         );
 
