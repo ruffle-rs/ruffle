@@ -394,6 +394,7 @@ impl GuiController {
 
         command_buffers.push(encoder.finish());
         self.descriptors.queue.submit(command_buffers);
+        self.window.pre_present_notify();
         surface_texture.present();
     }
 
