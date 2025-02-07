@@ -192,6 +192,10 @@ pub fn enum_trait_object(args: TokenStream, item: TokenStream) -> TokenStream {
 /// istr!(context, "description");
 /// // expands to:
 /// HasStringContext::strings_ref(context).str_description;
+///
+/// istr!("A");
+/// // expands to:
+/// activation.context.strings.common().ascii_chars[65 /* 'A' */];
 /// ```
 #[proc_macro]
 pub fn atom(item: TokenStream) -> TokenStream {
@@ -231,9 +235,17 @@ fn atom_internal(
     }
 
     let input = parse_macro_input!(item as Input);
-    let string_ident = format_ident!("str_{}", input.str.value());
 
-    let atom = if let Some(context) = input.context {
+    let string = input.str.value();
+    let (string_ident, array_index) = if string.len() == 1 && string.is_ascii() {
+        // Special case: a single ASCII char.
+        let c = string.as_bytes()[0];
+        (format_ident!("ascii_chars"), Some(c as usize))
+    } else {
+        (format_ident!("str_{string}"), None)
+    };
+
+    let mut atom = if let Some(context) = input.context {
         quote!(
             crate::string::HasStringContext::strings_ref(#context).common().#string_ident
         )
@@ -245,6 +257,10 @@ fn atom_internal(
             activation.context.strings.common().#string_ident
         )
     };
+
+    if let Some(i) = array_index {
+        atom.extend(quote!([#i]));
+    }
 
     transform(atom).into()
 }

@@ -77,12 +77,12 @@ impl<'gc> StringContext<'gc> {
 
     #[must_use]
     pub fn empty(&self) -> AvmString<'gc> {
-        self.interner.empty.into()
+        self.common().str_.into()
     }
 
     #[must_use]
     pub fn make_char(&self, c: u16) -> AvmString<'gc> {
-        if let Some(s) = self.interner.chars.get(c as usize) {
+        if let Some(s) = self.common().ascii_chars.get(c as usize) {
             (*s).into()
         } else {
             AvmString::new(self.gc(), WString::from_unit(c))
@@ -92,7 +92,7 @@ impl<'gc> StringContext<'gc> {
     /// Like `make_char`, but panics if the passed char is not ASCII.
     #[must_use]
     pub fn ascii_char(&self, c: u8) -> AvmString<'gc> {
-        self.interner.chars[c as usize].into()
+        self.common().ascii_chars[c as usize].into()
     }
 
     #[must_use]

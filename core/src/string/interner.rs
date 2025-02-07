@@ -54,55 +54,23 @@ pub struct AvmStringInterner<'gc> {
 
     /// Strings used across both AVMs and in core code.
     pub(super) common: CommonStrings<'gc>,
-
-    pub(super) empty: Gc<'gc, AvmStringRepr<'gc>>,
-    pub(super) chars: [Gc<'gc, AvmStringRepr<'gc>>; INTERNED_CHAR_LEN],
 }
-
-const INTERNED_CHAR_LEN: usize = 128;
-static INTERNED_CHARS: [u8; INTERNED_CHAR_LEN] = {
-    let mut chs = [0; INTERNED_CHAR_LEN];
-    let mut i = 0;
-    while i < chs.len() {
-        chs[i] = i as u8;
-        i += 1;
-    }
-    chs
-};
 
 impl<'gc> AvmStringInterner<'gc> {
     pub fn new(mc: &Mutation<'gc>) -> Self {
         let mut interned = WeakSet::default();
 
-        // We can't use `Self::intern_static` because we don't have a Self yet.
-        let mut intern_from_static = |s: &'static [u8]| {
-            let wstr = WStr::from_units(s);
-            let repr = AvmStringRepr::from_raw_static(wstr, true);
-            interned.insert_fresh_no_hash(mc, Gc::new(mc, repr))
-        };
-
-        let chars = std::array::from_fn(|i| {
-            let c = &INTERNED_CHARS[i];
-            intern_from_static(std::slice::from_ref(c))
-        });
-
         let common = CommonStrings::new(
+            // We can't use `Self::intern_static` because we don't have a Self yet.
             #[inline(never)]
-            |s| match s {
-                // Don't insert a fresh entry for single-character strings --
-                // they were already interned! Retrieve it from the one-char
-                // string cache instead.
-                [c] => AvmAtom(chars[*c as usize]),
-                _ => AvmAtom(intern_from_static(s)),
+            |s: &'static [u8]| {
+                let wstr = WStr::from_units(s);
+                let repr = AvmStringRepr::from_raw_static(wstr, true);
+                AvmAtom(interned.insert_fresh_no_hash(mc, Gc::new(mc, repr)))
             },
         );
 
-        Self {
-            empty: intern_from_static(b""),
-            common,
-            chars,
-            interned,
-        }
+        Self { interned, common }
     }
 
     /// The string returned by `f` should be interned, and equivalent to `s`.
@@ -137,11 +105,11 @@ impl<'gc> AvmStringInterner<'gc> {
 
         // It's assumed that start<=end. This is tested later via a range check.
         if start_index == end_index {
-            return self.empty.into();
+            return self.common.str_.into(); // this is the empty string
         }
         if end_index == start_index + 1 {
             if let Some(c) = s.get(start_index) {
-                if let Some(s) = self.chars.get(c as usize) {
+                if let Some(s) = self.common.ascii_chars.get(c as usize) {
                     return (*s).into();
                 }
             }
