@@ -777,7 +777,7 @@ impl<'gc> Value<'gc> {
             Value::Bool(true) => istr!("true"),
             Value::Bool(false) => istr!("false"),
             Value::Number(n) if n.is_nan() => istr!("NaN"),
-            Value::Number(n) if *n == 0.0 => activation.strings().ascii_char(b'0'),
+            Value::Number(n) if *n == 0.0 => istr!("0"),
             Value::Number(n) if *n < 0.0 => AvmString::new_utf8(
                 activation.gc(),
                 format!("-{}", Value::Number(-n).coerce_to_string(activation)?),

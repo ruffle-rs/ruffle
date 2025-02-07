@@ -1,6 +1,7 @@
 //! `Number` class impl
 
 use gc_arena::Gc;
+use ruffle_macros::istr;
 
 use crate::avm1::activation::Activation;
 use crate::avm1::clamp::Clamp;
@@ -134,7 +135,7 @@ fn to_string<'gc>(
             Ordering::Greater => (number, false),
             Ordering::Equal => {
                 // Bail out immediately if we're 0.
-                return Ok("0".into());
+                return Ok(istr!("0").into());
             }
         };
 

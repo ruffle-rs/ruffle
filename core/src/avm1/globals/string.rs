@@ -269,7 +269,7 @@ fn split<'gc>(
     // and the empty string behaves the same as undefined does in later SWF versions.
     let is_swf5 = activation.swf_version() == 5;
     if let Some(delimiter) = match args.get(0).unwrap_or(&Value::Undefined) {
-        &Value::Undefined => is_swf5.then_some(",".into()),
+        &Value::Undefined => is_swf5.then_some(istr!(",")),
         v => Some(v.coerce_to_string(activation)?).filter(|s| !(is_swf5 && s.is_empty())),
     } {
         if delimiter.is_empty() {
