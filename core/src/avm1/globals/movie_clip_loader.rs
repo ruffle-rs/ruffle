@@ -24,11 +24,7 @@ pub fn constructor<'gc>(
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let listeners = ArrayObject::new(
-        activation.gc(),
-        activation.context.avm1.prototypes().array,
-        [this.into()],
-    );
+    let listeners = ArrayObject::builder(activation).with([this.into()]);
     this.define_value(
         activation.gc(),
         "_listeners",
@@ -170,7 +166,7 @@ pub fn create_proto<'gc>(
     broadcaster_functions: BroadcasterFunctions<'gc>,
 ) -> Object<'gc> {
     let mcl_proto = ScriptObject::new(context.gc(), Some(proto));
-    broadcaster_functions.initialize(context.gc(), mcl_proto.into(), array_proto);
+    broadcaster_functions.initialize(context, mcl_proto.into(), array_proto);
     define_properties_on(PROTO_DECLS, context, mcl_proto, fn_proto);
     mcl_proto.into()
 }

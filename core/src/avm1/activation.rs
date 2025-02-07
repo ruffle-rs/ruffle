@@ -1470,12 +1470,9 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             // InitArray pops no args and pushes undefined if num_elements is out of range.
             Value::Undefined
         } else {
-            ArrayObject::new(
-                self.gc(),
-                self.context.avm1.prototypes().array,
-                (0..num_elements as i32).map(|_| self.context.avm1.pop()),
-            )
-            .into()
+            ArrayObject::builder(self)
+                .with((0..num_elements as i32).map(|_| self.context.avm1.pop()))
+                .into()
         };
 
         self.context.avm1.push(result);

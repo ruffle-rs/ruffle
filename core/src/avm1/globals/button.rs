@@ -95,14 +95,13 @@ fn filters<'gc>(
     this: Avm1Button<'gc>,
     activation: &mut Activation<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
-    Ok(ArrayObject::new(
-        activation.gc(),
-        activation.context.avm1.prototypes().array,
-        this.filters()
-            .into_iter()
-            .map(|filter| bitmap_filter::filter_to_avm1(activation, filter)),
-    )
-    .into())
+    Ok(ArrayObject::builder(activation)
+        .with(
+            this.filters()
+                .into_iter()
+                .map(|filter| bitmap_filter::filter_to_avm1(activation, filter)),
+        )
+        .into())
 }
 
 fn set_filters<'gc>(

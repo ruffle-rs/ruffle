@@ -38,7 +38,7 @@ pub fn create_mouse_object<'gc>(
     array_proto: Object<'gc>,
 ) -> Object<'gc> {
     let mouse = ScriptObject::new(context.gc(), Some(proto));
-    broadcaster_functions.initialize(context.gc(), mouse.into(), array_proto);
+    broadcaster_functions.initialize(context, mouse.into(), array_proto);
     define_properties_on(OBJECT_DECLS, context, mouse, fn_proto);
     mouse.into()
 }

@@ -375,12 +375,9 @@ fn tab_stops<'gc>(activation: &mut Activation<'_, 'gc>, text_format: &TextFormat
         .tab_stops
         .as_ref()
         .map_or(Value::Null, |tab_stops| {
-            ArrayObject::new(
-                activation.gc(),
-                activation.context.avm1.prototypes().array,
-                tab_stops.iter().map(|&x| x.into()),
-            )
-            .into()
+            ArrayObject::builder(activation)
+                .with(tab_stops.iter().map(|&x| x.into()))
+                .into()
         })
 }
 

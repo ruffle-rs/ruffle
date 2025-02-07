@@ -65,12 +65,9 @@ impl<'gc> ColorMatrixFilter<'gc> {
     }
 
     fn matrix(&self, activation: &mut Activation<'_, 'gc>) -> Value<'gc> {
-        ArrayObject::new(
-            activation.gc(),
-            activation.context.avm1.prototypes().array,
-            self.0.read().matrix.iter().map(|&v| v.into()),
-        )
-        .into()
+        ArrayObject::builder(activation)
+            .with(self.0.read().matrix.iter().map(|&v| v.into()))
+            .into()
     }
 
     fn set_matrix(

@@ -39,12 +39,9 @@ fn avm1_array_from_flv_values<'gc>(
     activation: &mut Activation<'_, 'gc>,
     values: Vec<FlvValue>,
 ) -> Avm1Value<'gc> {
-    ArrayObject::new(
-        activation.gc(),
-        activation.context.avm1.prototypes().array,
-        values.iter().map(|v| v.clone().to_avm1_value(activation)),
-    )
-    .into()
+    ArrayObject::builder(activation)
+        .with(values.iter().map(|v| v.clone().to_avm1_value(activation)))
+        .into()
 }
 
 pub trait FlvValueAvm1Ext<'gc> {

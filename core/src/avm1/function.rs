@@ -194,11 +194,7 @@ impl<'gc> Avm1Function<'gc> {
             return;
         }
 
-        let arguments = ArrayObject::new(
-            frame.gc(),
-            frame.context.avm1.prototypes().array,
-            args.iter().cloned(),
-        );
+        let arguments = ArrayObject::builder(frame).with(args.iter().cloned());
 
         arguments.define_value(
             frame.gc(),

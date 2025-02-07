@@ -147,7 +147,7 @@ pub fn create_selection_object<'gc>(
     array_proto: Object<'gc>,
 ) -> Object<'gc> {
     let object = ScriptObject::new(context.gc(), Some(proto));
-    broadcaster_functions.initialize(context.gc(), object.into(), array_proto);
+    broadcaster_functions.initialize(context, object.into(), array_proto);
     define_properties_on(OBJECT_DECLS, context, object, fn_proto);
     object.into()
 }
