@@ -2,17 +2,28 @@ use super::AvmAtom;
 use gc_arena::Collect;
 
 macro_rules! define_common_strings {
-    ($($field:ident: $str:literal,)*) => {
+    (
+        $ascii:ident: <ASCII>,
+        $($field:ident: $str:literal,)*
+    ) => {
         #[allow(non_snake_case)]
         #[derive(Collect)]
         #[collect(no_drop)]
         pub struct CommonStrings<'gc> {
-            $(pub $field: AvmAtom<'gc>,)*
+            pub $ascii: [AvmAtom<'gc>; ASCII_CHARS_LEN],
+
+            $(
+                pub $field: AvmAtom<'gc>,
+            )*
         }
 
         impl<'gc> CommonStrings<'gc> {
-            pub fn new(mut intern_from_static: impl FnMut(&'static [u8]) -> AvmAtom<'gc>) -> Self {
+            pub(super) fn new(mut intern_from_static: impl FnMut(&'static [u8]) -> AvmAtom<'gc>) -> Self {
                 Self {
+                    $ascii: std::array::from_fn(|i| {
+                        let c = &ASCII_CHARS[i];
+                        intern_from_static(std::slice::from_ref(c))
+                    }),
                     $($field: intern_from_static($str)),*
                 }
             }
@@ -20,13 +31,28 @@ macro_rules! define_common_strings {
     };
 }
 
+const ASCII_CHARS_LEN: usize = 0x80;
+static ASCII_CHARS: [u8; ASCII_CHARS_LEN] = {
+    let mut chs = [0; ASCII_CHARS_LEN];
+    let mut i = 0;
+    while i < chs.len() {
+        chs[i] = i as u8;
+        i += 1;
+    }
+    chs
+};
+
 define_common_strings! {
+    ascii_chars: <ASCII>,
+
+    // Alphanumeric strings, in alphabetical order.
+    // The field name should always be the string prefixed with `str_`.
+    str_: b"",
     str___constructor__: b"__constructor__",
     str___proto__: b"__proto__",
     str___resolve: b"__resolve",
     str__bytesLoaded: b"_bytesLoaded",
     str__bytesTotal: b"_bytesTotal",
-    str_a: b"a",
     str_access: b"access",
     str_accessors: b"accessors",
     str_advanced: b"advanced",
@@ -36,7 +62,6 @@ define_common_strings! {
     str_ascent: b"ascent",
     str_asyncError: b"asyncError",
     str_auto: b"auto",
-    str_b: b"b",
     str_bases: b"bases",
     str_block: b"block",
     str_blueMultiplier: b"blueMultiplier",
@@ -45,7 +70,6 @@ define_common_strings! {
     str_boldItalic: b"boldItalic",
     str_boolean: b"boolean",
     str_builtInItems: b"builtInItems",
-    str_c: b"c",
     str_callee: b"callee",
     str_caption: b"caption",
     str_center: b"center",
@@ -54,7 +78,6 @@ define_common_strings! {
     str_color: b"color",
     str_constructor: b"constructor",
     str_customItems: b"customItems",
-    str_d: b"d",
     str_declaredBy: b"declaredBy",
     str_decode: b"decode",
     str_descent: b"descent",
@@ -70,7 +93,6 @@ define_common_strings! {
     str_function: b"function",
     str_greenMultiplier: b"greenMultiplier",
     str_greenOffset: b"greenOffset",
-    str_h: b"h",
     str_height: b"height",
     str_httpStatus: b"httpStatus",
     str_ignore: b"ignore",
@@ -140,7 +162,6 @@ define_common_strings! {
     str_print: b"print",
     str_prototype: b"prototype",
     str_quality: b"quality",
-    str_r: b"r",
     str_readonly: b"readonly",
     str_readwrite: b"readwrite",
     str_redMultiplier: b"redMultiplier",
@@ -175,15 +196,12 @@ define_common_strings! {
     str_valueOf: b"valueOf",
     str_variables: b"variables",
     str_visible: b"visible",
-    str_w: b"w",
     str_width: b"width",
     str_wrap: b"wrap",
     str_writeonly: b"writeonly",
-    str_x: b"x",
     str_xMax: b"xMax",
     str_xMin: b"xMin",
     str_xml: b"xml",
-    str_y: b"y",
     str_yMax: b"yMax",
     str_yMin: b"yMin",
     str_zoom: b"zoom",
