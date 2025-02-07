@@ -100,7 +100,7 @@ impl<'gc> Avm1<'gc> {
             global_scope: Gc::new(gc_context, Scope::from_global_object(globals)),
             prototypes,
             broadcaster_functions,
-            display_properties: stage_object::DisplayPropertyMap::new(),
+            display_properties: stage_object::DisplayPropertyMap::new(context),
             stack: vec![],
             registers: [
                 Value::Undefined,
