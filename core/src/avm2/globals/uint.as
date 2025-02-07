@@ -69,6 +69,9 @@ package {
 
         // These methods are unreachable. Calling a method on an Integer will
         // lookup and call the method using `Number`'s vtable, not `uint`'s.
+        // IMPORTANT: these methods must be kept in the same order as they are
+        // declared in Number.as. Otherwise the bytecode optimizer may emit a
+        // call to the wrong method when calling on an `int` or `uint`.
         AS3 native function toExponential(digits:* = 0):String;
 
         AS3 native function toFixed(digits:* = 0):String;
