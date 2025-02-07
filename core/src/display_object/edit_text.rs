@@ -34,6 +34,7 @@ use chrono::DateTime;
 use chrono::Utc;
 use core::fmt;
 use gc_arena::{Collect, Gc, GcCell, Mutation};
+use ruffle_macros::istr;
 use ruffle_render::commands::CommandHandler;
 use ruffle_render::quality::StageQuality;
 use ruffle_render::transform::Transform;
@@ -1403,7 +1404,7 @@ impl<'gc> EditText<'gc> {
                                 self.set_html_text(
                                     &value
                                         .coerce_to_string(activation)
-                                        .unwrap_or_else(|_| activation.strings().empty()),
+                                        .unwrap_or_else(|_| istr!("")),
                                     activation.context,
                                 );
                             } else {

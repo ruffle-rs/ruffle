@@ -16,7 +16,7 @@ use crate::types::{Degrees, Percent};
 use crate::vminterface::Instantiator;
 use bitflags::bitflags;
 use gc_arena::{Collect, Mutation};
-use ruffle_macros::enum_trait_object;
+use ruffle_macros::{enum_trait_object, istr};
 use ruffle_render::pixel_bender::PixelBenderShaderHandle;
 use ruffle_render::transform::{Transform, TransformStack};
 use std::cell::{Ref, RefMut};
@@ -2475,7 +2475,7 @@ pub trait TDisplayObject<'gc>:
             let name = AvmString::new_utf8(context.gc(), format!("root{}", self.depth() + 1));
             self.set_name(context.gc(), name);
         } else {
-            self.set_name(context.gc(), context.strings.empty());
+            self.set_name(context.gc(), istr!(context, ""));
         }
     }
 

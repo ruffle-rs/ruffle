@@ -1,5 +1,7 @@
 //! `String` impl
 
+use ruffle_macros::istr;
+
 use crate::avm2::activation::Activation;
 use crate::avm2::object::TObject;
 use crate::avm2::parameters::ParametersExt;
@@ -15,7 +17,7 @@ pub fn string_constructor<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let string_value = match args.get(0) {
         Some(arg) => arg.coerce_to_string(activation)?,
-        None => activation.strings().empty(),
+        None => istr!(""),
     };
 
     Ok(string_value.into())
@@ -28,7 +30,7 @@ pub fn call_handler<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     match args.get(0) {
         Some(arg) => arg.coerce_to_string(activation).map(Into::into),
-        None => Ok(activation.strings().empty().into()),
+        None => Ok(istr!("").into()),
     }
 }
 
@@ -56,14 +58,14 @@ pub fn char_at<'gc>(
         let n = args.get_f64(activation, 0)?;
 
         if n < 0.0 {
-            return Ok(activation.strings().empty().into());
+            return Ok(istr!("").into());
         }
 
         let index = if !n.is_nan() { n as usize } else { 0 };
         let ret = if let Some(c) = s.get(index) {
             activation.strings().make_char(c)
         } else {
-            activation.strings().empty()
+            istr!("")
         };
         return Ok(ret.into());
     }
@@ -360,7 +362,7 @@ pub fn slice<'gc>(
             .substring(this, start_index..end_index)
             .into())
     } else {
-        Ok(activation.strings().empty().into())
+        Ok(istr!("").into())
     }
 }
 
@@ -432,7 +434,7 @@ pub fn substr<'gc>(
         } else if len <= -1.0 {
             let wrapped_around = this.len() as f64 + len;
             if wrapped_around as usize + start_index >= this.len() {
-                return Ok(activation.strings().empty().into());
+                return Ok(istr!("").into());
             };
             wrapped_around
         } else {

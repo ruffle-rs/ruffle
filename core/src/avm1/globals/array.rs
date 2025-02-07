@@ -9,6 +9,7 @@ use crate::avm1::{ArrayObject, Object, TObject, Value};
 use crate::ecma_conversions::f64_to_wrapping_i32;
 use crate::string::{AvmString, StringContext};
 use bitflags::bitflags;
+use ruffle_macros::istr;
 use std::cmp::Ordering;
 
 bitflags! {
@@ -256,7 +257,7 @@ pub fn join<'gc>(
     };
 
     if length <= 0 {
-        return Ok(activation.strings().empty().into());
+        return Ok(istr!("").into());
     }
 
     let parts = (0..length)

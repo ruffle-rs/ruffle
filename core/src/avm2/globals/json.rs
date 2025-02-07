@@ -76,7 +76,7 @@ fn deserialize_json<'gc>(
     match reviver {
         None => Ok(val),
         Some(reviver) => {
-            let args = [activation.strings().empty().into(), val];
+            let args = [istr!("").into(), val];
             reviver.call(activation, Value::Null, &args)
         }
     }
@@ -252,7 +252,7 @@ impl<'gc> AvmSerializer<'gc> {
         activation: &mut Activation<'_, 'gc>,
         value: Value<'gc>,
     ) -> Result<JsonValue, Error<'gc>> {
-        let empty = activation.strings().empty();
+        let empty = istr!("");
         let mapped = self.map_value(activation, || empty, value)?;
         self.serialize_value(activation, mapped)
     }

@@ -1592,7 +1592,7 @@ pub fn get_selected_text<'gc>(
 
         return Ok(AvmString::new(activation.gc(), &text[start_index..end_index]).into());
     }
-    Ok(activation.strings().empty().into())
+    Ok(istr!("").into())
 }
 
 pub fn get_text_runs<'gc>(

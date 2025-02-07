@@ -1,3 +1,5 @@
+use ruffle_macros::istr;
+
 use crate::avm2::activation::Activation;
 use crate::avm2::error::Error;
 use crate::avm2::globals::flash::display::display_object::initialize_for_allocator;
@@ -51,7 +53,7 @@ pub fn create_text_line<'gc>(
         None => {
             let txt = content
                 .call_method(element_methods::GET_TEXT, &[], activation)
-                .unwrap_or_else(|_| activation.strings().empty().into());
+                .unwrap_or_else(|_| istr!("").into());
 
             if matches!(txt, Value::Null) {
                 // FP returns a null TextLine when `o` is null- note that

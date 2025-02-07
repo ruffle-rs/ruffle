@@ -9,6 +9,7 @@ use crate::avm2::value::Value;
 use crate::avm2::Error;
 use crate::string::AvmString;
 use bitflags::bitflags;
+use ruffle_macros::istr;
 use std::cmp::{min, Ordering};
 use std::mem::swap;
 
@@ -175,7 +176,7 @@ pub fn join<'gc>(
             let item = resolve_array_hole(activation, this, i, item)?;
 
             if matches!(item, Value::Undefined) || matches!(item, Value::Null) {
-                accum.push(activation.strings().empty());
+                accum.push(istr!(""));
             } else {
                 accum.push(item.coerce_to_string(activation)?);
             }

@@ -1,5 +1,7 @@
 //! `RegExp` impl
 
+use ruffle_macros::istr;
+
 use crate::avm2::error::type_error;
 use crate::avm2::object::{ArrayObject, Object, TObject};
 use crate::avm2::regexp::RegExpFlags;
@@ -20,7 +22,7 @@ pub fn init<'gc>(
 
     if let Some(mut regexp) = this.as_regexp_mut(activation.gc()) {
         let source: AvmString<'gc> = match args.get(0) {
-            Some(Value::Undefined) => activation.strings().empty(),
+            Some(Value::Undefined) => istr!(""),
             Some(Value::Object(Object::RegExpObject(o))) => {
                 if !matches!(args.get(1), Some(Value::Undefined)) {
                     return Err(Error::AvmError(type_error(
@@ -35,13 +37,13 @@ pub fn init<'gc>(
                 return Ok(Value::Undefined);
             }
             Some(arg) => arg.coerce_to_string(activation)?,
-            None => activation.strings().empty(),
+            None => istr!(""),
         };
 
         regexp.set_source(source);
 
         let flag_chars = match args.get(1) {
-            None | Some(Value::Undefined) => activation.strings().empty(),
+            None | Some(Value::Undefined) => istr!(""),
             Some(arg) => arg.coerce_to_string(activation)?,
         };
 

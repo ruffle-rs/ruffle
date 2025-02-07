@@ -21,6 +21,7 @@ use crate::string::AvmString;
 use crate::types::{Degrees, Percent};
 use crate::vminterface::Instantiator;
 use crate::{avm2_stub_getter, avm2_stub_setter};
+use ruffle_macros::istr;
 use ruffle_render::blend::ExtendedBlendMode;
 use ruffle_render::filters::Filter;
 use std::str::FromStr;
@@ -549,10 +550,7 @@ pub fn get_name<'gc>(
     let this = this.as_object().unwrap();
 
     if let Some(dobj) = this.as_display_object() {
-        return Ok(dobj
-            .name()
-            .unwrap_or_else(|| activation.strings().empty())
-            .into());
+        return Ok(dobj.name().unwrap_or_else(|| istr!("")).into());
     }
 
     Ok(Value::Undefined)

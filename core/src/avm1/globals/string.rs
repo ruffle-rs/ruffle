@@ -1,6 +1,7 @@
 //! `String` class impl
 
 use gc_arena::Gc;
+use ruffle_macros::istr;
 
 use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
@@ -39,7 +40,7 @@ pub fn string<'gc>(
     let value = match args.get(0).cloned() {
         Some(Value::String(s)) => s,
         Some(v) => v.coerce_to_string(activation)?,
-        None => activation.strings().empty(),
+        None => istr!(""),
     };
 
     // Called from a constructor, populate `this`.
@@ -65,7 +66,7 @@ pub fn string_function<'gc>(
     let value = match args.get(0).cloned() {
         Some(Value::String(s)) => s,
         Some(v) => v.coerce_to_string(activation)?,
-        None => activation.strings().empty(),
+        None => istr!(""),
     };
 
     Ok(value.into())
@@ -116,7 +117,7 @@ fn char_at<'gc>(
         .and_then(|i| string.get(i))
         .map(WString::from_unit)
         .map(|ret| AvmString::new(activation.gc(), ret))
-        .unwrap_or_else(|| activation.strings().empty());
+        .unwrap_or_else(|| istr!(""));
 
     Ok(ret.into())
 }
@@ -250,7 +251,7 @@ fn slice<'gc>(
         let ret = WString::from(&this[start_index..end_index]);
         Ok(AvmString::new(activation.gc(), ret).into())
     } else {
-        Ok(activation.strings().empty().into())
+        Ok(istr!("").into())
     }
 }
 
@@ -332,7 +333,7 @@ fn substr<'gc>(
         let ret = WString::from(&this[start_index..end_index]);
         Ok(AvmString::new(activation.gc(), ret).into())
     } else {
-        Ok(activation.strings().empty().into())
+        Ok(istr!("").into())
     }
 }
 

@@ -77,7 +77,7 @@ impl<'gc> NamespaceObject<'gc> {
                 base,
                 namespace,
                 prefix: if namespace.as_uri(activation.strings()).is_empty() {
-                    Some(activation.strings().empty())
+                    Some(istr!(""))
                 } else {
                     None
                 },

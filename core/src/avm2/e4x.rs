@@ -12,6 +12,7 @@ use quick_xml::{
     name::ResolveResult,
     Error as XmlError, NsReader,
 };
+use ruffle_macros::istr;
 
 use std::cell::{Ref, RefMut};
 use std::fmt::{self, Debug};
@@ -755,7 +756,7 @@ impl<'gc> E4XNode<'gc> {
     ) -> Result<Vec<Self>, Error<'gc>> {
         let string = match &value {
             // The docs claim that this throws a TypeError, but it actually doesn't
-            Value::Null | Value::Undefined => activation.strings().empty(),
+            Value::Null | Value::Undefined => istr!(""),
             // The docs claim that only String, Number or Boolean are accepted, but that's also a lie
             val => {
                 if let Some(obj) = val.as_object() {
@@ -962,7 +963,7 @@ impl<'gc> E4XNode<'gc> {
                     } else {
                         (
                             AvmString::new_utf8_bytes(activation.gc(), text.as_bytes()),
-                            activation.strings().empty(),
+                            istr!(""),
                         )
                     };
                     let node = E4XNode(GcCell::new(
@@ -1073,7 +1074,7 @@ impl<'gc> E4XNode<'gc> {
                     if &*name == b"xmlns" {
                         namespaces.push(E4XNamespace {
                             uri: value,
-                            prefix: Some(activation.strings().empty()),
+                            prefix: Some(istr!("")),
                         });
                         continue;
                     }
@@ -1418,7 +1419,7 @@ pub fn simple_content_to_string<'gc>(
     children: impl Iterator<Item = E4XOrXml<'gc>>,
     activation: &mut Activation<'_, 'gc>,
 ) -> AvmString<'gc> {
-    let mut out = activation.strings().empty();
+    let mut out = istr!("");
     for child in children {
         if matches!(
             &*child.node().kind(),

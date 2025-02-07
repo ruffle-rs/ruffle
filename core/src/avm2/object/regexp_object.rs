@@ -8,6 +8,7 @@ use crate::avm2::Error;
 use core::fmt;
 use gc_arena::barrier::unlock;
 use gc_arena::{lock::RefLock, Collect, Gc, GcWeak, Mutation};
+use ruffle_macros::istr;
 use std::cell::{Ref, RefMut};
 
 /// A class instance allocator that allocates RegExp objects.
@@ -21,7 +22,7 @@ pub fn reg_exp_allocator<'gc>(
         activation.gc(),
         RegExpObjectData {
             base,
-            regexp: RefLock::new(RegExp::new(activation.strings().empty())),
+            regexp: RefLock::new(RegExp::new(istr!(""))),
         },
     ))
     .into())

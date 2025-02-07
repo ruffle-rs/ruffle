@@ -163,7 +163,7 @@ impl<'gc> TObject<'gc> for QNameObject<'gc> {
             1 => self.local_name(activation.strings()).into(),
             2 => self
                 .uri(activation.strings())
-                .unwrap_or_else(|| activation.strings().empty())
+                .unwrap_or_else(|| istr!(""))
                 .into(),
             _ => Value::Undefined,
         })

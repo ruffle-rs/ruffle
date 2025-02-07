@@ -12,6 +12,7 @@ use gc_arena::{
     lock::{Lock, RefLock},
     Collect, Gc, GcWeak, Mutation,
 };
+use ruffle_macros::istr;
 use ruffle_wstr::WString;
 use std::cell::{Cell, Ref, RefMut};
 use std::fmt::{self, Debug};
@@ -292,7 +293,7 @@ impl<'gc> XmlListObject<'gc> {
                 // 2.e.ii. Call [[Put]] on base with arguments x.[[TargetProperty]] and the empty string
                 base.as_object().set_property_local(
                     &target_property,
-                    activation.strings().empty().into(),
+                    istr!("").into(),
                     activation,
                 )?;
 
@@ -718,7 +719,7 @@ impl<'gc> TObject<'gc> for XmlListObject<'gc> {
                                     activation.gc(),
                                     x.explicit_namespace().map(E4XNamespace::new_uri),
                                     x.local_name().unwrap(),
-                                    activation.strings().empty(),
+                                    istr!(""),
                                     r,
                                 )
                             }
@@ -726,9 +727,9 @@ impl<'gc> TObject<'gc> for XmlListObject<'gc> {
                             // 2.c.v.1. Let y.[[Name]] = null
                             // 2.c.v.2. Let y.[[Class]] = "text"
                             Some(x) if x.is_any_name() => {
-                                E4XNode::text(activation.gc(), activation.strings().empty(), r)
+                                E4XNode::text(activation.gc(), istr!(""), r)
                             }
-                            None => E4XNode::text(activation.gc(), activation.strings().empty(), r),
+                            None => E4XNode::text(activation.gc(), istr!(""), r),
                             // NOTE: avmplus edge case.
                             //       See https://github.com/adobe/avmplus/blob/858d034a3bd3a54d9b70909386435cf4aec81d21/core/XMLListObject.cpp#L297-L300
                             _ if value
@@ -736,7 +737,7 @@ impl<'gc> TObject<'gc> for XmlListObject<'gc> {
                                 .and_then(|x| x.as_xml_object())
                                 .is_some_and(|x| x.node().is_text() || x.node().is_attribute()) =>
                             {
-                                E4XNode::text(activation.gc(), activation.strings().empty(), r)
+                                E4XNode::text(activation.gc(), istr!(""), r)
                             }
 
                             // 2.c.vi. Else let y.[[Class]] = "element"

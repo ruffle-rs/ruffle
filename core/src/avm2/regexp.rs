@@ -11,6 +11,7 @@ use crate::string::WString;
 use crate::string::{AvmString, Units, WStrToUtf8};
 use bitflags::bitflags;
 use gc_arena::Collect;
+use ruffle_macros::istr;
 use ruffle_wstr::WStr;
 
 use super::object::RegExpObject;
@@ -232,7 +233,7 @@ impl<'gc> RegExp<'gc> {
                 .chain((m.captures.iter()).map(|x| x.as_ref()))
                 .map(|o| match o {
                     Some(r) => AvmString::new(activation.gc(), &txt[r.start..r.end]).into(),
-                    None => activation.strings().empty().into(),
+                    None => istr!("").into(),
                 })
                 .chain(std::iter::once(m.range.start.into()))
                 .chain(std::iter::once((*txt).into()))
