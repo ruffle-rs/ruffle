@@ -13,6 +13,7 @@ use crate::display_object::{
 use crate::string::{AvmString, WStr};
 use crate::types::Percent;
 use gc_arena::{Collect, GcCell, GcWeakCell, Mutation};
+use ruffle_macros::istr;
 use std::fmt;
 use swf::Twips;
 
@@ -658,9 +659,7 @@ fn frames_loaded<'gc>(
 }
 
 fn name<'gc>(activation: &mut Activation<'_, 'gc>, this: DisplayObject<'gc>) -> Value<'gc> {
-    this.name()
-        .unwrap_or_else(|| activation.strings().empty())
-        .into()
+    this.name().unwrap_or_else(|| istr!("")).into()
 }
 
 fn set_name<'gc>(
@@ -677,14 +676,14 @@ fn drop_target<'gc>(activation: &mut Activation<'_, 'gc>, this: DisplayObject<'g
     match this.as_movie_clip().and_then(|mc| mc.drop_target()) {
         Some(target) => AvmString::new(activation.gc(), target.slash_path()).into(),
         None if activation.swf_version() < 6 => Value::Undefined,
-        None => activation.strings().empty().into(),
+        None => istr!("").into(),
     }
 }
 
 fn url<'gc>(activation: &mut Activation<'_, 'gc>, this: DisplayObject<'gc>) -> Value<'gc> {
     match this.as_movie_clip() {
         Some(mc) => AvmString::new_utf8(activation.gc(), mc.movie().url()).into(),
-        None => activation.strings().empty().into(),
+        None => istr!("").into(),
     }
 }
 

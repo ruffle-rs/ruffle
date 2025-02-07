@@ -1,5 +1,7 @@
 //! `QName` impl
 
+use ruffle_macros::istr;
+
 use crate::avm2::activation::Activation;
 use crate::avm2::api_version::ApiVersion;
 use crate::avm2::object::{Object, QNameObject, TObject};
@@ -45,7 +47,7 @@ pub fn q_name_constructor<'gc>(
         let mut local_arg = args[1];
 
         if matches!(local_arg, Value::Undefined) {
-            local_arg = activation.strings().empty().into();
+            local_arg = istr!("").into();
         }
 
         let api_version = activation.avm2().root_api_version;
@@ -79,7 +81,7 @@ pub fn q_name_constructor<'gc>(
         }
 
         let local = if qname_arg == Value::Undefined {
-            activation.strings().empty()
+            istr!("")
         } else {
             qname_arg.coerce_to_string(activation)?
         };

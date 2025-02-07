@@ -28,7 +28,7 @@ pub fn event_allocator<'gc>(
         activation.gc(),
         EventObjectData {
             base,
-            event: RefLock::new(Event::new(activation.strings().empty())),
+            event: RefLock::new(Event::new(istr!(""))),
         },
     ))
     .into())

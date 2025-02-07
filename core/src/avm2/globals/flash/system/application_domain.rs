@@ -1,5 +1,7 @@
 //! `flash.system.ApplicationDomain` class
 
+use ruffle_macros::istr;
+
 use crate::avm2::activation::Activation;
 use crate::avm2::object::{DomainObject, Object, TObject, VectorObject};
 use crate::avm2::parameters::ParametersExt;
@@ -75,7 +77,7 @@ pub fn get_definition<'gc>(
     if let Some(appdomain) = this.as_application_domain() {
         let name = match args.get(0) {
             Some(arg) => arg.coerce_to_string(activation)?,
-            None => activation.strings().empty(),
+            None => istr!(""),
         };
         return appdomain.get_defined_value_handling_vector(activation, name);
     }
@@ -94,7 +96,7 @@ pub fn has_definition<'gc>(
     if let Some(appdomain) = this.as_application_domain() {
         let name = match args.get(0) {
             Some(arg) => arg.coerce_to_string(activation)?,
-            None => activation.strings().empty(),
+            None => istr!(""),
         };
 
         return Ok(appdomain

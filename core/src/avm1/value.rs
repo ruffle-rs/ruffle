@@ -410,7 +410,7 @@ impl<'gc> Value<'gc> {
         activation: &mut Activation<'_, 'gc>,
     ) -> Result<AvmString<'gc>, Error<'gc>> {
         Ok(match self {
-            Value::Undefined if activation.swf_version() < 7 => activation.strings().empty(),
+            Value::Undefined if activation.swf_version() < 7 => istr!(""),
             Value::Bool(true) if activation.swf_version() < 5 => {
                 activation.strings().ascii_char(b'1')
             }

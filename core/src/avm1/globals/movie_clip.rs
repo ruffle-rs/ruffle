@@ -1550,7 +1550,7 @@ pub fn get_url<'gc>(
 
         let window = match args.get(1) {
             Some(window) => window.coerce_to_string(activation)?,
-            None => activation.strings().empty(),
+            None => istr!(""),
         };
 
         let method = match args.get(2) {

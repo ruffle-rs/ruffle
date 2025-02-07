@@ -1,5 +1,7 @@
 //! XMLNode class
 
+use ruffle_macros::istr;
+
 use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
 use crate::avm1::property_decl::{define_properties_on, Declaration};
@@ -43,7 +45,7 @@ pub fn constructor<'gc>(
         let node_value = value.coerce_to_string(activation)?;
         XmlNode::new(mc, node_type, Some(node_value))
     } else {
-        XmlNode::new(mc, TEXT_NODE, Some(activation.strings().empty()))
+        XmlNode::new(mc, TEXT_NODE, Some(istr!("")))
     };
     node.introduce_script_object(mc, this);
     this.set_native(mc, NativeObject::XmlNode(node));
@@ -146,7 +148,7 @@ fn get_prefix_for_namespace<'gc>(
                         if let Some(prefix) = prefix.strip_prefix(b':') {
                             return Ok(AvmString::new(activation.gc(), prefix).into());
                         } else {
-                            return Ok(activation.strings().empty().into());
+                            return Ok(istr!("").into());
                         }
                     }
                 }
@@ -195,7 +197,7 @@ fn to_string<'gc>(
         return Ok(AvmString::new(activation.gc(), string).into());
     }
 
-    Ok(activation.strings().empty().into())
+    Ok(istr!("").into())
 }
 
 fn local_name<'gc>(
@@ -382,7 +384,7 @@ fn namespace_uri<'gc>(
         if let Some(prefix) = node.prefix(activation.strings()) {
             return Ok(node
                 .lookup_namespace_uri(&prefix)
-                .unwrap_or_else(|| activation.strings().empty().into()));
+                .unwrap_or_else(|| istr!("").into()));
         }
 
         return Ok(Value::Null);

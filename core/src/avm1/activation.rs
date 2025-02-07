@@ -20,6 +20,7 @@ use crate::{avm_error, avm_warn};
 use gc_arena::{Gc, GcCell, Mutation};
 use indexmap::IndexMap;
 use rand::Rng;
+use ruffle_macros::istr;
 use smallvec::SmallVec;
 use std::borrow::Cow;
 use std::cmp::min;
@@ -831,7 +832,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         let object = object_val.coerce_to_object(self);
 
         let method_name = if method_name == Value::Undefined {
-            self.strings().empty()
+            istr!(self, "")
         } else {
             method_name.coerce_to_string(self)?
         };
@@ -1717,7 +1718,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         let object = object_val.coerce_to_object(self);
 
         let method_name = if method_name == Value::Undefined {
-            self.strings().empty()
+            istr!(self, "")
         } else {
             method_name.coerce_to_string(self)?
         };

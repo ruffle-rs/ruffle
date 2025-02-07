@@ -1,3 +1,5 @@
+use ruffle_macros::istr;
+
 use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
 use crate::avm1::globals::as_broadcaster::BroadcasterFunctions;
@@ -105,7 +107,7 @@ pub fn get_focus<'gc>(
             .as_displayobject()
             .object()
             .coerce_to_string(activation)
-            .unwrap_or_else(|_| activation.strings().empty())
+            .unwrap_or_else(|_| istr!(""))
             .into(),
         None => Value::Null,
     })

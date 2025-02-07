@@ -1,5 +1,7 @@
 //! `Namespace` impl
 
+use ruffle_macros::istr;
+
 use crate::avm2::activation::Activation;
 use crate::avm2::e4x::is_xml_name;
 use crate::avm2::error::make_error_1098;
@@ -17,7 +19,7 @@ pub fn namespace_constructor<'gc>(
     let namespaces = activation.avm2().namespaces;
 
     let (prefix, namespace) = match args.len() {
-        0 => (Some(activation.strings().empty()), namespaces.public_all()),
+        0 => (Some(istr!("")), namespaces.public_all()),
         1 => {
             // These cases only activate with exactly one argument passed
             match args[0] {
@@ -28,7 +30,7 @@ pub fn namespace_constructor<'gc>(
                     });
                     let prefix = match uri {
                         Some(name) if !name.is_empty() => None,
-                        _ => Some(activation.strings().empty()),
+                        _ => Some(istr!("")),
                     };
                     (prefix, ns)
                 }
@@ -36,7 +38,7 @@ pub fn namespace_constructor<'gc>(
                 val => {
                     let name = val.coerce_to_string(activation)?;
                     let ns = Namespace::package(name, api_version, activation.strings());
-                    let prefix = name.is_empty().then(|| activation.strings().empty());
+                    let prefix = name.is_empty().then(|| istr!(""));
                     (prefix, ns)
                 }
             }
@@ -46,9 +48,7 @@ pub fn namespace_constructor<'gc>(
             let uri = args[1];
 
             let namespace_uri = if let Value::Object(Object::QNameObject(qname)) = uri {
-                qname
-                    .uri(activation.strings())
-                    .unwrap_or_else(|| activation.strings().empty())
+                qname.uri(activation.strings()).unwrap_or_else(|| istr!(""))
             } else {
                 uri.coerce_to_string(activation)?
             };
