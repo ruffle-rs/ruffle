@@ -458,7 +458,7 @@ fn display_name<'gc>(
     if let Some(name) = name {
         name.to_qualified_name_or_star(context)
     } else {
-        context.ascii_char(b'*')
+        istr!(context, "*")
     }
 }
 

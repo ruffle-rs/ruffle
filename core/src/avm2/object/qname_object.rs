@@ -93,7 +93,7 @@ impl<'gc> QNameObject<'gc> {
     pub fn local_name(&self, context: &mut StringContext<'gc>) -> AvmString<'gc> {
         let name = self.name();
 
-        name.local_name().unwrap_or(context.ascii_char(b'*'))
+        name.local_name().unwrap_or_else(|| istr!(context, "*"))
     }
 
     pub fn set_is_qname(&self, mc: &Mutation<'gc>, is_qname: bool) {

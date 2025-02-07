@@ -10,6 +10,7 @@ use crate::avm2::Error;
 use crate::avm2::Multiname;
 use core::fmt;
 use gc_arena::{Collect, Gc, GcWeak};
+use ruffle_macros::istr;
 
 /// A class instance allocator that allocates Proxy objects.
 pub fn proxy_allocator<'gc>(
@@ -130,10 +131,7 @@ impl<'gc> TObject<'gc> for ProxyObject<'gc> {
         Ok(self_val
             .call_method(
                 proxy_methods::HAS_PROPERTY,
-                &[name
-                    .local_name()
-                    .unwrap_or_else(|| activation.strings().ascii_char(b'*'))
-                    .into()],
+                &[name.local_name().unwrap_or_else(|| istr!("*")).into()],
                 activation,
             )?
             .coerce_to_boolean())

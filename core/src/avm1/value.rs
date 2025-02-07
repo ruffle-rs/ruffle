@@ -412,10 +412,10 @@ impl<'gc> Value<'gc> {
         Ok(match self {
             Value::Undefined if activation.swf_version() < 7 => istr!(""),
             Value::Bool(true) if activation.swf_version() < 5 => {
-                activation.strings().ascii_char(b'1')
+                istr!("1")
             }
             Value::Bool(false) if activation.swf_version() < 5 => {
-                activation.strings().ascii_char(b'0')
+                istr!("0")
             }
             Value::Object(object) => {
                 if let Some(object) = object
@@ -571,7 +571,7 @@ fn f64_to_string<'gc>(activation: &mut Activation<'_, 'gc>, mut n: f64) -> AvmSt
         // FIXME is there an easy way to use istr! here?
         AvmString::new_utf8_bytes(activation.gc(), b"-Infinity")
     } else if n == 0.0 {
-        activation.strings().ascii_char(b'0')
+        istr!("0")
     } else if n >= -2147483648.0 && n <= 2147483647.0 && n.fract() == 0.0 {
         // Fast path for integers.
         let n = n as i32;

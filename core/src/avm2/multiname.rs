@@ -9,6 +9,7 @@ use crate::string::{AvmString, StringContext, WStr, WString};
 use bitflags::bitflags;
 use gc_arena::Gc;
 use gc_arena::{Collect, Mutation};
+use ruffle_macros::istr;
 use std::fmt::Debug;
 use std::ops::Deref;
 use swf::avm2::types::{Index, Multiname as AbcMultiname, NamespaceSet as AbcNamespaceSet};
@@ -480,7 +481,7 @@ impl<'gc> Multiname<'gc> {
     /// This is used by `describeType`
     pub fn to_qualified_name_or_star(&self, context: &mut StringContext<'gc>) -> AvmString<'gc> {
         if self.is_any_name() {
-            context.ascii_char(b'*')
+            istr!(context, "*")
         } else {
             self.to_qualified_name(context.gc())
         }
@@ -497,7 +498,7 @@ impl<'gc> Multiname<'gc> {
 
         if ns.is_empty() {
             // Special-case this to avoid allocating.
-            self.name.unwrap_or_else(|| context.ascii_char(b'*'))
+            self.name.unwrap_or_else(|| istr!(context, "*"))
         } else {
             let mut uri = WString::new();
             uri.push_str(ns);

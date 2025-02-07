@@ -7,6 +7,7 @@ use crate::avm2::TranslationUnit;
 use crate::avm2::Value;
 use crate::string::{AvmString, StringContext};
 use gc_arena::{Collect, Gc};
+use ruffle_macros::istr;
 
 use super::class::Class;
 
@@ -116,7 +117,7 @@ impl<'gc> PropertyClass<'gc> {
         match self {
             PropertyClass::Class(class) => class.name().to_qualified_name(context.gc()),
             PropertyClass::Name(name, _) => name.to_qualified_name_or_star(context),
-            PropertyClass::Any => context.ascii_char(b'*'),
+            PropertyClass::Any => istr!(context, "*"),
         }
     }
 }

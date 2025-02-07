@@ -253,7 +253,7 @@ pub fn join<'gc>(
     let separator = if let Some(v) = args.get(0) {
         v.coerce_to_string(activation)?
     } else {
-        ",".into()
+        istr!(",")
     };
 
     if length <= 0 {

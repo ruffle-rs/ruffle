@@ -165,7 +165,7 @@ pub fn join<'gc>(
 
     if let Some(array) = this.as_array_storage() {
         let string_separator = if matches!(separator, Value::Undefined) {
-            activation.strings().ascii_char(b',')
+            istr!(",")
         } else {
             separator.coerce_to_string(activation)?
         };
