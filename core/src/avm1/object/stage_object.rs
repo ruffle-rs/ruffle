@@ -10,7 +10,7 @@ use crate::context::UpdateContext;
 use crate::display_object::{
     DisplayObject, EditText, MovieClip, TDisplayObject, TDisplayObjectContainer, TInteractiveObject,
 };
-use crate::string::{AvmString, WStr};
+use crate::string::{AvmString, StringContext, WStr};
 use crate::types::Percent;
 use gc_arena::{Collect, GcCell, GcWeakCell, Mutation};
 use ruffle_macros::istr;
@@ -414,40 +414,44 @@ pub struct DisplayPropertyMap<'gc>(PropertyMap<'gc, DisplayProperty>);
 
 impl<'gc> DisplayPropertyMap<'gc> {
     /// Creates the display property map.
-    pub fn new() -> Self {
+    pub fn new(context: &mut StringContext<'gc>) -> Self {
         let mut property_map = Self(PropertyMap::new());
 
-        // Order is important:
-        // should match the SWF specs for GetProperty/SetProperty.
-        property_map.add_property("_x".into(), x, Some(set_x));
-        property_map.add_property("_y".into(), y, Some(set_y));
-        property_map.add_property("_xscale".into(), x_scale, Some(set_x_scale));
-        property_map.add_property("_yscale".into(), y_scale, Some(set_y_scale));
-        property_map.add_property("_currentframe".into(), current_frame, None);
-        property_map.add_property("_totalframes".into(), total_frames, None);
-        property_map.add_property("_alpha".into(), alpha, Some(set_alpha));
-        property_map.add_property("_visible".into(), visible, Some(set_visible));
-        property_map.add_property("_width".into(), width, Some(set_width));
-        property_map.add_property("_height".into(), height, Some(set_height));
-        property_map.add_property("_rotation".into(), rotation, Some(set_rotation));
-        property_map.add_property("_target".into(), target, None);
-        property_map.add_property("_framesloaded".into(), frames_loaded, None);
-        property_map.add_property("_name".into(), name, Some(set_name));
-        property_map.add_property("_droptarget".into(), drop_target, None);
-        property_map.add_property("_url".into(), url, None);
-        property_map.add_property("_highquality".into(), high_quality, Some(set_high_quality));
-        property_map.add_property("_focusrect".into(), focus_rect, Some(set_focus_rect));
-        property_map.add_property(
-            "_soundbuftime".into(),
-            sound_buf_time,
-            Some(set_sound_buf_time),
-        );
-        property_map.add_property("_quality".into(), quality, Some(set_quality));
-        property_map.add_property("_xmouse".into(), x_mouse, None);
-        property_map.add_property("_ymouse".into(), y_mouse, None);
+        // Don't use `istr!` here, this is only done once during AVM1 initialization.
+        for &(name, getter, setter) in Self::PROPERTIES {
+            let name = context.intern_static(WStr::from_units(name));
+            property_map.add_property(name.into(), getter, setter);
+        }
 
         property_map
     }
+
+    // Order is important:
+    // should match the SWF specs for GetProperty/SetProperty.
+    const PROPERTIES: &'static [(&'static [u8], DisplayGetter, Option<DisplaySetter>)] = &[
+        (b"_x", x, Some(set_x)),
+        (b"_y", y, Some(set_y)),
+        (b"_xscale", x_scale, Some(set_x_scale)),
+        (b"_yscale", y_scale, Some(set_y_scale)),
+        (b"_currentframe", current_frame, None),
+        (b"_totalframes", total_frames, None),
+        (b"_alpha", alpha, Some(set_alpha)),
+        (b"_visible", visible, Some(set_visible)),
+        (b"_width", width, Some(set_width)),
+        (b"_height", height, Some(set_height)),
+        (b"_rotation", rotation, Some(set_rotation)),
+        (b"_target", target, None),
+        (b"_framesloaded", frames_loaded, None),
+        (b"_name", name, Some(set_name)),
+        (b"_droptarget", drop_target, None),
+        (b"_url", url, None),
+        (b"_highquality", high_quality, Some(set_high_quality)),
+        (b"_focusrect", focus_rect, Some(set_focus_rect)),
+        (b"_soundbuftime", sound_buf_time, Some(set_sound_buf_time)),
+        (b"_quality", quality, Some(set_quality)),
+        (b"_xmouse", x_mouse, None),
+        (b"_ymouse", y_mouse, None),
+    ];
 
     /// Gets a property slot by name.
     /// Used by `GetMember`, `GetVariable`, `SetMember`, and `SetVariable`.
@@ -473,12 +477,6 @@ impl<'gc> DisplayPropertyMap<'gc> {
     ) {
         let prop = DisplayProperty { get, set };
         self.0.insert(name, prop, false);
-    }
-}
-
-impl Default for DisplayPropertyMap<'_> {
-    fn default() -> Self {
-        Self::new()
     }
 }
 
