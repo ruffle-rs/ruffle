@@ -277,31 +277,25 @@ fn split<'gc>(
             // but Flash does not.
             // e.g., split("foo", "") returns ["", "f", "o", "o", ""] in Rust but ["f, "o", "o"] in Flash.
             // Special case this to match Flash's behavior.
-            Ok(ArrayObject::new(
-                activation.gc(),
-                activation.context.avm1.prototypes().array,
-                this.iter()
-                    .take(limit)
-                    .map(|c| AvmString::new(activation.gc(), WString::from_unit(c)).into()),
-            )
-            .into())
+            Ok(ArrayObject::builder(activation)
+                .with(
+                    this.iter()
+                        .take(limit)
+                        .map(|c| activation.strings().make_char(c).into()),
+                )
+                .into())
         } else {
-            Ok(ArrayObject::new(
-                activation.gc(),
-                activation.context.avm1.prototypes().array,
-                this.split(&delimiter)
-                    .take(limit)
-                    .map(|c| AvmString::new(activation.gc(), c).into()),
-            )
-            .into())
+            // TODO(moulins): make dependent AvmStrings instead of reallocating.
+            Ok(ArrayObject::builder(activation)
+                .with(
+                    this.split(&delimiter)
+                        .take(limit)
+                        .map(|c| AvmString::new(activation.gc(), c).into()),
+                )
+                .into())
         }
     } else {
-        Ok(ArrayObject::new(
-            activation.gc(),
-            activation.context.avm1.prototypes().array,
-            [this.into()],
-        )
-        .into())
+        Ok(ArrayObject::builder(activation).with([this.into()]).into())
     }
 }
 

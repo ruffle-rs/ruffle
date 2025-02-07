@@ -138,14 +138,13 @@ fn get_style_names<'gc>(
     let css = this
         .get_stored("_css".into(), activation)?
         .coerce_to_object(activation);
-    Ok(ArrayObject::new(
-        activation.gc(),
-        activation.context.avm1.prototypes().array,
-        css.get_keys(activation, false)
-            .into_iter()
-            .map(Value::String),
-    )
-    .into())
+    Ok(ArrayObject::builder(activation)
+        .with(
+            css.get_keys(activation, false)
+                .into_iter()
+                .map(Value::String),
+        )
+        .into())
 }
 
 fn load<'gc>(

@@ -8,7 +8,7 @@ use crate::avm1::property::Attribute;
 use crate::avm1::property_decl::Declaration;
 use crate::avm1::{Activation, ArrayObject, Object, ScriptObject, Value};
 use crate::string::{AvmString, StringContext};
-use gc_arena::{Collect, Mutation};
+use gc_arena::Collect;
 
 const OBJECT_DECLS: &[Declaration] = declare_properties! {
     "initialize" => method(initialize; DONT_ENUM | DONT_DELETE);
@@ -62,11 +62,11 @@ pub struct BroadcasterFunctions<'gc> {
 impl<'gc> BroadcasterFunctions<'gc> {
     pub fn initialize(
         self,
-        gc_context: &Mutation<'gc>,
+        context: &StringContext<'gc>,
         broadcaster: Object<'gc>,
         array_proto: Object<'gc>,
     ) {
-        initialize_internal(gc_context, broadcaster, self, array_proto);
+        initialize_internal(context, broadcaster, self, array_proto);
     }
 }
 
@@ -187,7 +187,7 @@ fn initialize<'gc>(
     if let Some(val) = args.get(0) {
         let broadcaster = val.coerce_to_object(activation);
         initialize_internal(
-            activation.gc(),
+            &activation.context.strings,
             broadcaster,
             activation.context.avm1.broadcaster_functions(),
             activation.context.avm1.prototypes().array,
@@ -197,31 +197,33 @@ fn initialize<'gc>(
 }
 
 fn initialize_internal<'gc>(
-    gc_context: &Mutation<'gc>,
+    context: &StringContext<'gc>,
     broadcaster: Object<'gc>,
     functions: BroadcasterFunctions<'gc>,
     array_proto: Object<'gc>,
 ) {
     broadcaster.define_value(
-        gc_context,
+        context.gc(),
         "_listeners",
-        ArrayObject::empty_with_proto(gc_context, array_proto).into(),
+        ArrayObject::builder_with_proto(context, array_proto)
+            .with([])
+            .into(),
         Attribute::DONT_ENUM,
     );
     broadcaster.define_value(
-        gc_context,
+        context.gc(),
         "addListener",
         functions.add_listener.into(),
         Attribute::DONT_DELETE | Attribute::DONT_ENUM,
     );
     broadcaster.define_value(
-        gc_context,
+        context.gc(),
         "removeListener",
         functions.remove_listener.into(),
         Attribute::DONT_DELETE | Attribute::DONT_ENUM,
     );
     broadcaster.define_value(
-        gc_context,
+        context.gc(),
         "broadcastMessage",
         functions.broadcast_message.into(),
         Attribute::DONT_DELETE | Attribute::DONT_ENUM,

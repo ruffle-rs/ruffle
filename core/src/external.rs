@@ -183,14 +183,13 @@ impl Value {
                 }
                 object.into()
             }
-            Value::List(values) => Avm1ArrayObject::new(
-                activation.gc(),
-                activation.context.avm1.prototypes().array,
-                values
-                    .iter()
-                    .map(|value| value.to_owned().into_avm1(activation)),
-            )
-            .into(),
+            Value::List(values) => Avm1ArrayObject::builder(activation)
+                .with(
+                    values
+                        .iter()
+                        .map(|value| value.to_owned().into_avm1(activation)),
+                )
+                .into(),
         }
     }
 

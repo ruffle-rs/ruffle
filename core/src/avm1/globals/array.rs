@@ -93,12 +93,9 @@ pub fn constructor<'gc>(
         array.set_length(activation, length.clamp_to_i32())?;
         Ok(array.into())
     } else {
-        Ok(ArrayObject::new(
-            activation.gc(),
-            activation.context.avm1.prototypes().array,
-            args.iter().cloned(),
-        )
-        .into())
+        Ok(ArrayObject::builder(activation)
+            .with(args.iter().cloned())
+            .into())
     }
 }
 
@@ -302,12 +299,9 @@ pub fn slice<'gc>(
         make_index_absolute(end.coerce_to_i32(activation)?, length)
     };
 
-    Ok(ArrayObject::new(
-        activation.gc(),
-        activation.context.avm1.prototypes().array,
-        (start..end).map(|i| this.get_element(activation, i)),
-    )
-    .into())
+    Ok(ArrayObject::builder(activation)
+        .with((start..end).map(|i| this.get_element(activation, i)))
+        .into())
 }
 
 pub fn splice<'gc>(
@@ -367,12 +361,9 @@ pub fn splice<'gc>(
     }
     this.set_length(activation, length - delete_count + items.len() as i32)?;
 
-    Ok(ArrayObject::new(
-        activation.gc(),
-        activation.context.avm1.prototypes().array,
-        result_elements,
-    )
-    .into())
+    Ok(ArrayObject::builder(activation)
+        .with(result_elements)
+        .into())
 }
 
 pub fn concat<'gc>(
@@ -402,12 +393,7 @@ pub fn concat<'gc>(
             elements.push(value);
         }
     }
-    Ok(ArrayObject::new(
-        activation.gc(),
-        activation.context.avm1.prototypes().array,
-        elements,
-    )
-    .into())
+    Ok(ArrayObject::builder(activation).with(elements).into())
 }
 
 pub fn to_string<'gc>(
@@ -647,12 +633,9 @@ fn sort_internal<'gc>(
     if options.contains(SortOptions::RETURN_INDEXED_ARRAY) {
         // Array.RETURNINDEXEDARRAY returns an array containing the sorted indices, and does not modify
         // the original array.
-        Ok(ArrayObject::new(
-            activation.gc(),
-            activation.context.avm1.prototypes().array,
-            elements.into_iter().map(|(index, _)| index.into()),
-        )
-        .into())
+        Ok(ArrayObject::builder(activation)
+            .with(elements.into_iter().map(|(index, _)| index.into()))
+            .into())
     } else {
         // Standard sort modifies the original array, and returns it.
         // AS2 reference incorrectly states this returns nothing, but it returns the original array, sorted.
@@ -738,7 +721,7 @@ pub fn create_proto<'gc>(
     proto: Object<'gc>,
     fn_proto: Object<'gc>,
 ) -> Object<'gc> {
-    let array = ArrayObject::empty_with_proto(context.gc(), proto);
+    let array = ArrayObject::builder_with_proto(context, proto).with([]);
     let object = array.raw_script_object();
     define_properties_on(PROTO_DECLS, context, object, fn_proto);
     object.into()

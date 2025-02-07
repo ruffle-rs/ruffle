@@ -2038,7 +2038,7 @@ impl<'gc> EditText<'gc> {
     fn initialize_as_broadcaster(&self, activation: &mut Avm1Activation<'_, 'gc>) {
         if let Avm1Value::Object(object) = self.object() {
             activation.context.avm1.broadcaster_functions().initialize(
-                activation.gc(),
+                &activation.context.strings,
                 object,
                 activation.context.avm1.prototypes().array,
             );

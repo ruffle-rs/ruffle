@@ -1,8 +1,9 @@
 use crate::avm1::property::Attribute;
 use crate::avm1::{Activation, Error, Object, ObjectPtr, ScriptObject, TObject, Value};
 use crate::ecma_conversions::f64_to_wrapping_i32;
-use crate::string::AvmString;
+use crate::string::{AvmString, StringContext};
 use gc_arena::{Collect, Mutation};
+use ruffle_macros::istr;
 use std::fmt;
 
 #[derive(Clone, Copy, Collect)]
@@ -17,46 +18,52 @@ impl fmt::Debug for ArrayObject<'_> {
     }
 }
 
-impl<'gc> ArrayObject<'gc> {
-    pub fn empty(activation: &Activation<'_, 'gc>) -> Self {
-        Self::new(
-            activation.gc(),
-            activation.context.avm1.prototypes().array,
-            [],
-        )
-    }
+/// Intermediate builder for constructing `ArrayObject`,
+/// used to work around borrow-checker issues.
+pub struct ArrayBuilder<'gc> {
+    mc: &'gc Mutation<'gc>,
+    proto: Object<'gc>,
+    length_prop: AvmString<'gc>,
+}
 
-    pub fn empty_with_proto(gc_context: &Mutation<'gc>, proto: Object<'gc>) -> Self {
-        Self::new_internal(gc_context, proto, [])
-    }
-
-    pub fn new(
-        gc_context: &Mutation<'gc>,
-        array_proto: Object<'gc>,
-        elements: impl IntoIterator<Item = Value<'gc>>,
-    ) -> Self {
-        Self::new_internal(gc_context, array_proto, elements)
-    }
-
-    fn new_internal(
-        gc_context: &Mutation<'gc>,
-        proto: Object<'gc>,
-        elements: impl IntoIterator<Item = Value<'gc>>,
-    ) -> Self {
-        let base = ScriptObject::new(gc_context, Some(proto));
+impl<'gc> ArrayBuilder<'gc> {
+    pub fn with(self, elements: impl IntoIterator<Item = Value<'gc>>) -> ArrayObject<'gc> {
+        let base = ScriptObject::new(self.mc, Some(self.proto));
         let mut length: i32 = 0;
         for value in elements.into_iter() {
-            let length_str = AvmString::new_utf8(gc_context, length.to_string());
-            base.define_value(gc_context, length_str, value, Attribute::empty());
+            let length_str = AvmString::new_utf8(self.mc, length.to_string());
+            base.define_value(self.mc, length_str, value, Attribute::empty());
             length += 1;
         }
         base.define_value(
-            gc_context,
-            "length",
+            self.mc,
+            self.length_prop,
             length.into(),
             Attribute::DONT_ENUM | Attribute::DONT_DELETE,
         );
-        Self(base)
+        ArrayObject(base)
+    }
+}
+
+impl<'gc> ArrayObject<'gc> {
+    pub fn empty(activation: &Activation<'_, 'gc>) -> Self {
+        Self::builder(activation).with([])
+    }
+
+    pub fn builder(activation: &Activation<'_, 'gc>) -> ArrayBuilder<'gc> {
+        let proto = activation.context.avm1.prototypes().array;
+        Self::builder_with_proto(&activation.context.strings, proto)
+    }
+
+    pub fn builder_with_proto(
+        context: &StringContext<'gc>,
+        proto: Object<'gc>,
+    ) -> ArrayBuilder<'gc> {
+        ArrayBuilder {
+            mc: context.gc(),
+            length_prop: istr!(context, "length"),
+            proto,
+        }
     }
 
     fn parse_index(name: AvmString<'gc>) -> Option<i32> {
@@ -85,7 +92,7 @@ impl<'gc> TObject<'gc> for ArrayObject<'gc> {
         activation: &mut Activation<'_, 'gc>,
         this: Object<'gc>,
     ) -> Result<(), Error<'gc>> {
-        if &name == b"length" {
+        if name == istr!("length") {
             let new_length = value.coerce_to_i32(activation)?;
             self.set_length(activation, new_length)?;
         } else if let Some(index) = Self::parse_index(name) {
@@ -103,7 +110,9 @@ impl<'gc> TObject<'gc> for ArrayObject<'gc> {
         activation: &mut Activation<'_, 'gc>,
         this: Object<'gc>,
     ) -> Result<Object<'gc>, Error<'gc>> {
-        Ok(Self::empty_with_proto(activation.gc(), this).into())
+        Ok(Self::builder_with_proto(activation.strings(), this)
+            .with([])
+            .into())
     }
 
     fn as_array_object(&self) -> Option<ArrayObject<'gc>> {
@@ -115,7 +124,8 @@ impl<'gc> TObject<'gc> for ArrayObject<'gc> {
         activation: &mut Activation<'_, 'gc>,
         new_length: i32,
     ) -> Result<(), Error<'gc>> {
-        if let Value::Number(old_length) = self.0.get_data("length".into(), activation) {
+        let old_length = self.0.get_data(istr!("length"), activation);
+        if let Value::Number(old_length) = old_length {
             for i in new_length.max(0)..f64_to_wrapping_i32(old_length) {
                 self.delete_element(activation, i);
             }

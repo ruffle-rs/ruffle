@@ -89,7 +89,7 @@ pub fn create_key_object<'gc>(
     array_proto: Object<'gc>,
 ) -> Object<'gc> {
     let key = ScriptObject::new(context.gc(), Some(proto));
-    broadcaster_functions.initialize(context.gc(), key.into(), array_proto);
+    broadcaster_functions.initialize(context, key.into(), array_proto);
     define_properties_on(OBJECT_DECLS, context, key, fn_proto);
     key.into()
 }

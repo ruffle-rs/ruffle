@@ -6,7 +6,6 @@ use crate::avm1::globals::bevel_filter::BevelFilterType;
 use crate::avm1::object::NativeObject;
 use crate::avm1::property_decl::{define_properties_on, Declaration};
 use crate::avm1::{Activation, ArrayObject, Error, Object, ScriptObject, TObject, Value};
-use crate::context::UpdateContext;
 use crate::string::StringContext;
 use gc_arena::{Collect, GcCell, Mutation};
 use ruffle_macros::istr;
@@ -165,11 +164,9 @@ impl<'gc> GradientFilter<'gc> {
         Ok(())
     }
 
-    fn colors(&self, context: &mut UpdateContext<'gc>) -> ArrayObject<'gc> {
+    fn colors(&self, activation: &Activation<'_, 'gc>) -> ArrayObject<'gc> {
         let read = self.0.read();
-        ArrayObject::new(
-            context.gc(),
-            context.avm1.prototypes().array,
+        ArrayObject::builder(activation).with(
             read.colors[..read.num_colors]
                 .iter()
                 .map(|r| r.color.to_rgb().into()),
@@ -203,11 +200,9 @@ impl<'gc> GradientFilter<'gc> {
         Ok(())
     }
 
-    fn alphas(&self, context: &mut UpdateContext<'gc>) -> ArrayObject<'gc> {
+    fn alphas(&self, activation: &Activation<'_, 'gc>) -> ArrayObject<'gc> {
         let read = self.0.read();
-        ArrayObject::new(
-            context.gc(),
-            context.avm1.prototypes().array,
+        ArrayObject::builder(activation).with(
             read.colors[..read.num_colors]
                 .iter()
                 .map(|r| (f64::from(r.color.a) / 255.0).into()),
@@ -243,11 +238,9 @@ impl<'gc> GradientFilter<'gc> {
         Ok(())
     }
 
-    fn ratios(&self, context: &mut UpdateContext<'gc>) -> ArrayObject<'gc> {
+    fn ratios(&self, activation: &Activation<'_, 'gc>) -> ArrayObject<'gc> {
         let read = self.0.read();
-        ArrayObject::new(
-            context.gc(),
-            context.avm1.prototypes().array,
+        ArrayObject::builder(activation).with(
             read.colors[..read.num_colors]
                 .iter()
                 .map(|r| r.ratio.into()),
@@ -474,17 +467,17 @@ fn method<'gc>(
             this.set_angle(activation, args.get(0))?;
             Value::Undefined
         }
-        GET_COLORS => this.colors(activation.context).into(),
+        GET_COLORS => this.colors(activation).into(),
         SET_COLORS => {
             this.set_colors(activation, args.get(0))?;
             Value::Undefined
         }
-        GET_ALPHAS => this.alphas(activation.context).into(),
+        GET_ALPHAS => this.alphas(activation).into(),
         SET_ALPHAS => {
             this.set_alphas(activation, args.get(0))?;
             Value::Undefined
         }
-        GET_RATIOS => this.ratios(activation.context).into(),
+        GET_RATIOS => this.ratios(activation).into(),
         SET_RATIOS => {
             this.set_ratios(activation, args.get(0))?;
             Value::Undefined

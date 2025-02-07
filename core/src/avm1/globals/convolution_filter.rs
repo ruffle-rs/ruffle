@@ -5,7 +5,6 @@ use crate::avm1::function::{Executable, FunctionObject};
 use crate::avm1::object::NativeObject;
 use crate::avm1::property_decl::{define_properties_on, Declaration};
 use crate::avm1::{Activation, ArrayObject, Error, Object, ScriptObject, TObject, Value};
-use crate::context::UpdateContext;
 use crate::string::StringContext;
 use gc_arena::{Collect, GcCell, Mutation};
 use std::ops::Deref;
@@ -167,12 +166,8 @@ impl<'gc> ConvolutionFilter<'gc> {
         Ok(())
     }
 
-    fn matrix(&self, context: &mut UpdateContext<'gc>) -> ArrayObject<'gc> {
-        ArrayObject::new(
-            context.gc(),
-            context.avm1.prototypes().array,
-            self.0.read().matrix.iter().map(|&x| x.into()),
-        )
+    fn matrix(&self, activation: &Activation<'_, 'gc>) -> ArrayObject<'gc> {
+        ArrayObject::builder(activation).with(self.0.read().matrix.iter().map(|&x| x.into()))
     }
 
     fn set_matrix(
@@ -366,7 +361,7 @@ fn method<'gc>(
             this.set_matrix_y(activation, args.get(0))?;
             Value::Undefined
         }
-        GET_MATRIX => this.matrix(activation.context).into(),
+        GET_MATRIX => this.matrix(activation).into(),
         SET_MATRIX => {
             this.set_matrix(activation, args.get(0))?;
             Value::Undefined
