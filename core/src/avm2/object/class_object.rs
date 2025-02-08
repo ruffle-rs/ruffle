@@ -90,14 +90,14 @@ impl<'gc> ClassObject<'gc> {
         self,
         activation: &mut Activation<'_, 'gc>,
         superclass_object: Option<ClassObject<'gc>>,
-    ) -> Result<Object<'gc>, Error<'gc>> {
+    ) -> Object<'gc> {
         let proto = ScriptObject::new_object(activation);
 
         if let Some(superclass_object) = superclass_object {
             let base_proto = superclass_object.prototype();
             proto.set_proto(activation.gc(), base_proto);
         }
-        Ok(proto)
+        proto
     }
 
     /// Construct a class.
@@ -114,10 +114,10 @@ impl<'gc> ClassObject<'gc> {
         class: Class<'gc>,
         superclass_object: Option<ClassObject<'gc>>,
     ) -> Result<Self, Error<'gc>> {
-        let class_object = Self::from_class_partial(activation, class, superclass_object)?;
-        let class_proto = class_object.allocate_prototype(activation, superclass_object)?;
+        let class_object = Self::from_class_partial(activation, class, superclass_object);
+        let class_proto = class_object.allocate_prototype(activation, superclass_object);
 
-        class_object.link_prototype(activation, class_proto)?;
+        class_object.link_prototype(activation, class_proto);
 
         let class_class_proto = activation.avm2().classes().class.prototype();
         class_object.link_type(activation.gc(), class_class_proto);
@@ -141,7 +141,7 @@ impl<'gc> ClassObject<'gc> {
         activation: &mut Activation<'_, 'gc>,
         class: Class<'gc>,
         superclass_object: Option<ClassObject<'gc>>,
-    ) -> Result<Self, Error<'gc>> {
+    ) -> Self {
         let c_class = class
             .c_class()
             .expect("Can only call ClassObject::from_class on i_classes");
@@ -176,14 +176,14 @@ impl<'gc> ClassObject<'gc> {
             instance_scope
         )
         .set(instance_scope);
-        class_object.init_instance_vtable(activation)?;
+        class_object.init_instance_vtable(activation);
 
         class.add_class_object(activation.gc(), class_object);
 
-        Ok(class_object)
+        class_object
     }
 
-    fn init_instance_vtable(self, activation: &mut Activation<'_, 'gc>) -> Result<(), Error<'gc>> {
+    fn init_instance_vtable(self, activation: &mut Activation<'_, 'gc>) {
         let class = self.inner_class_definition();
 
         self.instance_vtable().init_vtable(
@@ -194,9 +194,7 @@ impl<'gc> ClassObject<'gc> {
             activation.gc(),
         );
 
-        self.link_interfaces(activation)?;
-
-        Ok(())
+        self.link_interfaces(activation);
     }
 
     /// Finish initialization of the class.
@@ -244,18 +242,14 @@ impl<'gc> ClassObject<'gc> {
     }
 
     /// Link this class to a prototype.
-    pub fn link_prototype(
-        self,
-        activation: &mut Activation<'_, 'gc>,
-        class_proto: Object<'gc>,
-    ) -> Result<(), Error<'gc>> {
+    pub fn link_prototype(self, activation: &mut Activation<'_, 'gc>, class_proto: Object<'gc>) {
         let mc = activation.gc();
 
         unlock!(Gc::write(mc, self.0), ClassObjectData, prototype).set(Some(class_proto));
-        class_proto.set_string_property_local(istr!("constructor"), self.into(), activation)?;
+        class_proto
+            .set_string_property_local(istr!("constructor"), self.into(), activation)
+            .expect("Prototype is a dynamic object");
         class_proto.set_local_property_is_enumerable(mc, istr!("constructor"), false);
-
-        Ok(())
     }
 
     /// Link this class to it's interfaces.
@@ -263,7 +257,7 @@ impl<'gc> ClassObject<'gc> {
     /// This should be done after all instance traits has been resolved, as
     /// instance traits will be resolved to their corresponding methods at this
     /// time.
-    pub fn link_interfaces(self, activation: &mut Activation<'_, 'gc>) -> Result<(), Error<'gc>> {
+    fn link_interfaces(self, activation: &mut Activation<'_, 'gc>) {
         let class = self.inner_class_definition();
 
         // FIXME - we should only be copying properties for newly-implemented
@@ -283,8 +277,6 @@ impl<'gc> ClassObject<'gc> {
                 }
             }
         }
-
-        Ok(())
     }
 
     /// Manually set the type of this `Class`.
