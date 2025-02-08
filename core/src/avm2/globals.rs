@@ -555,12 +555,12 @@ pub fn load_player_globals<'gc>(
     let gs = scope.chain(mc, &[Scope::new(globals.into())]);
     activation.set_outer(gs);
 
-    let object_class = ClassObject::from_class_partial(activation, object_i_class, None)?;
+    let object_class = ClassObject::from_class_partial(activation, object_i_class, None);
     let object_proto =
         ScriptObject::custom_object(mc, object_i_class, None, object_class.instance_vtable());
 
     let class_class =
-        ClassObject::from_class_partial(activation, class_i_class, Some(object_class))?;
+        ClassObject::from_class_partial(activation, class_i_class, Some(object_class));
     let class_proto = ScriptObject::custom_object(
         mc,
         object_i_class,
@@ -568,7 +568,7 @@ pub fn load_player_globals<'gc>(
         object_class.instance_vtable(),
     );
 
-    let fn_class = ClassObject::from_class_partial(activation, fn_classdef, Some(object_class))?;
+    let fn_class = ClassObject::from_class_partial(activation, fn_classdef, Some(object_class));
     let fn_proto = ScriptObject::custom_object(
         mc,
         fn_classdef,
@@ -577,13 +577,13 @@ pub fn load_player_globals<'gc>(
     );
 
     // Now to weave the Gordian knot...
-    object_class.link_prototype(activation, object_proto)?;
+    object_class.link_prototype(activation, object_proto);
     object_class.link_type(mc, class_proto);
 
-    fn_class.link_prototype(activation, fn_proto)?;
+    fn_class.link_prototype(activation, fn_proto);
     fn_class.link_type(mc, class_proto);
 
-    class_class.link_prototype(activation, class_proto)?;
+    class_class.link_prototype(activation, class_proto);
     class_class.link_type(mc, class_proto);
 
     // At this point, we need at least a partial set of system classes in
@@ -607,7 +607,7 @@ pub fn load_player_globals<'gc>(
 
     // Function's prototype is an instance of itself
     let fn_proto = fn_class.construct(activation, &[])?.as_object().unwrap();
-    fn_class.link_prototype(activation, fn_proto)?;
+    fn_class.link_prototype(activation, fn_proto);
 
     // Object prototype is enough
     globals.set_proto(mc, object_class.prototype());

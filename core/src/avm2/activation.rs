@@ -392,6 +392,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
                     abc_method,
                     body,
                 )?;
+
                 ClassObject::from_class(&mut dummy_activation, activation_class, None)
             })?;
 
