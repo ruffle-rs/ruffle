@@ -1310,11 +1310,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             }
             if is_load_vars {
                 if let Some(clip_target) = clip_target {
-                    let target_obj = clip_target
-                        .as_movie_clip()
-                        .unwrap()
-                        .object()
-                        .coerce_to_object(self);
+                    let target_obj = clip_target.object().coerce_to_object(self);
                     let request = self.locals_into_request(
                         url,
                         NavigationMethod::from_send_vars_method(action.send_vars_method()),
