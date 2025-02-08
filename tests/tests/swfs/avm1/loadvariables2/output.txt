@@ -1,0 +1,8 @@
+test1
+Waiting for variables
+Finished loading _level0.text: hello
+test2
+Waiting for variables
+Finished loading _level0: hello
+test3
+Done
