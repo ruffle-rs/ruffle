@@ -664,6 +664,32 @@ impl<'gc> Class<'gc> {
         let superclass = read.super_class;
 
         if let Some(superclass) = superclass {
+            // We have to make an exception for `c_class`es
+            if superclass.is_final() && !self.is_c_class() {
+                return Err(Error::AvmError(verify_error(
+                    activation,
+                    &format!(
+                        "Error #1103: Class {} cannot extend final base class.",
+                        read.name.to_qualified_name(activation.gc())
+                    ),
+                    1103,
+                )?));
+            }
+
+            if superclass.is_interface() {
+                return Err(Error::AvmError(verify_error(
+                    activation,
+                    &format!(
+                        "Error #1110: Class {} cannot extend {}.",
+                        read.name.to_qualified_name(activation.gc()),
+                        superclass
+                            .name()
+                            .to_qualified_name_err_message(activation.gc())
+                    ),
+                    1110,
+                )?));
+            }
+
             for instance_trait in read.traits.iter() {
                 let is_protected = read.protected_namespace.is_some_and(|prot| {
                     prot.exact_version_match(instance_trait.name().namespace())
@@ -713,9 +739,8 @@ impl<'gc> Class<'gc> {
                                         return Err(make_error_1053(
                                             activation,
                                             instance_trait.name().local_name(),
-                                            read.name.to_qualified_name_err_message(
-                                                activation.context.gc_context,
-                                            ),
+                                            read.name
+                                                .to_qualified_name_err_message(activation.gc()),
                                         ));
                                     }
 
@@ -723,9 +748,8 @@ impl<'gc> Class<'gc> {
                                         return Err(make_error_1053(
                                             activation,
                                             instance_trait.name().local_name(),
-                                            read.name.to_qualified_name_err_message(
-                                                activation.context.gc_context,
-                                            ),
+                                            read.name
+                                                .to_qualified_name_err_message(activation.gc()),
                                         ));
                                     }
                                 }

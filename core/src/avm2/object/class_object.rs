@@ -147,23 +147,6 @@ impl<'gc> ClassObject<'gc> {
             .expect("Can only call ClassObject::from_class on i_classes");
 
         let scope = activation.create_scopechain();
-        if let Some(base_class) = superclass_object.map(|b| b.inner_class_definition()) {
-            if base_class.is_final() {
-                return Err(format!(
-                    "Base class {:?} is final and cannot be extended",
-                    base_class.name().local_name()
-                )
-                .into());
-            }
-
-            if base_class.is_interface() {
-                return Err(format!(
-                    "Base class {:?} is an interface and cannot be extended",
-                    base_class.name().local_name()
-                )
-                .into());
-            }
-        }
 
         let mc = activation.gc();
 
