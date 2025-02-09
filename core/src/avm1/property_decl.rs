@@ -1,11 +1,9 @@
 //! Declarative macro for defining AVM1 properties.
 
-use std::borrow::Cow;
-
 use crate::avm1::function::{Executable, FunctionObject, NativeFunction};
 use crate::avm1::property::Attribute;
 use crate::avm1::{Object, ScriptObject, TObject, Value};
-use crate::string::{AvmAtom, StringContext};
+use crate::string::{StringContext, WStr};
 
 /// Defines a list of properties on a [`ScriptObject`].
 #[inline(never)]
@@ -24,7 +22,7 @@ pub fn define_properties_on<'gc>(
 /// can be defined on a [`ScriptObject`].
 #[derive(Copy, Clone)]
 pub struct Declaration {
-    pub name: &'static str,
+    pub name: &'static [u8],
     pub kind: DeclKind,
     pub attributes: Attribute,
 }
@@ -47,7 +45,7 @@ pub enum DeclKind {
     /// Prefer using [`Self::Method`] when defining host functions.
     Function(NativeFunction),
     /// Declares a static string value.
-    String(&'static str),
+    String(&'static [u8]),
     /// Declares a static bool value.
     Bool(bool),
     /// Declares a static int value.
@@ -69,14 +67,7 @@ impl Declaration {
     ) -> Value<'gc> {
         let mc = context.gc();
 
-        let mut intern_utf8 = |s: &'static str| -> AvmAtom<'gc> {
-            match ruffle_wstr::from_utf8(s) {
-                Cow::Borrowed(s) => context.intern_static(s),
-                Cow::Owned(s) => context.intern_wstr(s),
-            }
-        };
-
-        let name = intern_utf8(self.name);
+        let name = context.intern_static(WStr::from_units(self.name));
         let value = match self.kind {
             DeclKind::Property { getter, setter } => {
                 let getter =
@@ -94,7 +85,7 @@ impl Declaration {
             DeclKind::Function(func) => {
                 FunctionObject::function(mc, Executable::Native(func), fn_proto, fn_proto).into()
             }
-            DeclKind::String(s) => intern_utf8(s).into(),
+            DeclKind::String(s) => context.intern_static(WStr::from_units(s)).into(),
             DeclKind::Bool(b) => b.into(),
             DeclKind::Int(i) => i.into(),
             DeclKind::Float(f) => f.into(),
@@ -126,20 +117,27 @@ impl Declaration {
 #[allow(unused_macro_rules)]
 macro_rules! declare_properties {
     ( $($name:literal => $kind:ident($($args:tt)*);)* ) => {
-        &[ $(
-            declare_properties!(@__prop $kind($name, $($args)*))
-        ),* ]
+        const {
+            const fn __assert_ascii(s: &str) -> &[u8] {
+                assert!(s.is_ascii());
+                s.as_bytes()
+            }
+
+            &[ $(
+                declare_properties!(@__prop $kind($name, $($args)*))
+            ),* ]
+        }
     };
     (@__prop $kind:ident($name:literal $(,$args:expr)*) ) => {
         crate::avm1::property_decl::Declaration {
-            name: $name,
+            name: __assert_ascii($name),
             kind: declare_properties!(@__kind $kind ($($args),*)),
             attributes: crate::avm1::property::Attribute::empty(),
         }
     };
     (@__prop $kind:ident($name:literal $(,$args:expr)*; $($attributes:ident)|*) ) => {
         crate::avm1::property_decl::Declaration {
-            name: $name,
+            name: __assert_ascii($name),
             kind: declare_properties!(@__kind $kind ($($args),*)),
             attributes: crate::avm1::property::Attribute::from_bits_truncate(
                 0 $(| crate::avm1::property::Attribute::$attributes.bits())*
@@ -165,7 +163,7 @@ macro_rules! declare_properties {
         crate::avm1::property_decl::DeclKind::Function($function)
     };
     (@__kind string($string:expr)) => {
-        crate::avm1::property_decl::DeclKind::String($string)
+        crate::avm1::property_decl::DeclKind::String(__assert_ascii($string))
     };
     (@__kind bool($boolean:expr)) => {
         crate::avm1::property_decl::DeclKind::Bool($boolean)
