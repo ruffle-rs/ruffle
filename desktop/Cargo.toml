@@ -14,10 +14,10 @@ workspace = true
 clap = { workspace = true }
 cpal = { workspace = true }
 egui = { workspace = true }
-egui_extras = { version = "0.30.0", default-features = false, features = ["image"] }
-egui-wgpu = { version = "0.30.0", features = ["winit"] }
+egui_extras = { version = "0.31.0", default-features = false, features = ["image"] }
+egui-wgpu = { version = "0.31.0", features = ["winit"] }
 image = { workspace = true, features = ["png"] }
-egui-winit = "0.30.0"
+egui-winit = "0.31.0"
 fontdb = "0.23"
 ruffle_core = { path = "../core", features = ["audio", "clap", "mp3", "aac", "nellymoser", "default_compatibility_rules", "egui"] }
 ruffle_render = { path = "../render", features = ["clap"] }
@@ -28,7 +28,7 @@ ruffle_frontend_utils = { path = "../frontend-utils", features = ["cpal"] }
 tracing = { workspace = true }
 tracing-subscriber = { workspace = true }
 tracing-appender = "0.2.3"
-winit = "0.30.8"
+winit = "0.30.9"
 webbrowser = "1.0.3"
 url = { workspace = true }
 dirs = "6.0"
@@ -42,7 +42,7 @@ wgpu = { workspace = true }
 futures = { workspace = true }
 chrono = { workspace = true }
 fluent-templates = "0.13.0"
-toml_edit = { version = "0.22.22", features = ["parse"] }
+toml_edit = { version = "0.22.23", features = ["parse"] }
 gilrs = "0.11"
 tokio = { workspace = true, features = ["rt-multi-thread", "macros", "fs"] }
 
