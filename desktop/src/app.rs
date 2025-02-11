@@ -454,8 +454,15 @@ impl ApplicationHandler<RuffleEvent> for App {
 
             #[cfg(target_os = "linux")]
             {
+                use winit::platform::startup_notify::{
+                    self, EventLoopExtStartupNotify, WindowAttributesExtStartupNotify,
+                };
                 use winit::platform::wayland::WindowAttributesExtWayland;
                 window_attributes = window_attributes.with_name("rs.ruffle.Ruffle", "main");
+                if let Some(token) = event_loop.read_token_from_env() {
+                    startup_notify::reset_activation_token_env();
+                    window_attributes = window_attributes.with_activation_token(token);
+                }
             }
 
             let event_loop_proxy = self.event_loop_proxy.clone();
