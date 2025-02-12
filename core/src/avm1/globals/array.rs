@@ -309,12 +309,12 @@ pub fn splice<'gc>(
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if args.is_empty() {
+    let Some(start) = args.get(0) else {
         return Ok(Value::Undefined);
-    }
+    };
 
     let length = this.length(activation)?;
-    let start = make_index_absolute(args.get(0).unwrap().coerce_to_i32(activation)?, length);
+    let start = make_index_absolute(start.coerce_to_i32(activation)?, length);
     let delete_count = if let Some(arg) = args.get(1) {
         let delete_count = arg.coerce_to_i32(activation)?;
         if delete_count < 0 {
@@ -325,9 +325,8 @@ pub fn splice<'gc>(
         length - start
     };
 
-    let result_elements: Vec<_> = (0..delete_count)
-        .map(|i| this.get_element(activation, start + i))
-        .collect();
+    let result = ArrayObject::builder(activation)
+        .with((0..delete_count).map(|i| this.get_element(activation, start + i)));
 
     let items = if args.len() > 2 { &args[2..] } else { &[] };
     if items.len() as i32 > delete_count {
@@ -361,9 +360,7 @@ pub fn splice<'gc>(
     }
     this.set_length(activation, length - delete_count + items.len() as i32)?;
 
-    Ok(ArrayObject::builder(activation)
-        .with(result_elements)
-        .into())
+    Ok(result.into())
 }
 
 pub fn concat<'gc>(
