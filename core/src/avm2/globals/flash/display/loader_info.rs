@@ -10,6 +10,7 @@ use crate::display_object::TDisplayObject;
 use crate::loader::ContentType;
 use crate::{avm2_stub_getter, avm2_stub_method};
 use swf::{write_swf, Compression};
+use url::Url;
 
 const INSUFFICIENT: &str =
     "Error #2099: The loading object is not sufficiently loaded to provide this information.";
@@ -288,22 +289,30 @@ pub fn get_child_allows_parent<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
-    if let Some(loader_stream) = this
-        .as_loader_info_object()
-        .and_then(|o| o.as_loader_stream())
-    {
-        match &*loader_stream {
-            LoaderStream::NotYetLoaded(_, _, _) => {
-                return Err(Error::AvmError(error(activation, INSUFFICIENT, 2099)?));
+    let loader_info = this.as_loader_info_object().unwrap();
+    let loader_stream = loader_info.as_loader_stream().unwrap();
+    match &*loader_stream {
+        LoaderStream::NotYetLoaded(_, _, _) => {
+            Err(Error::AvmError(error(activation, INSUFFICIENT, 2099)?))
+        }
+        LoaderStream::Swf(root, _) => {
+            // TODO: respect allowDomain() and polices.
+            avm2_stub_getter!(activation, "flash.display.LoaderInfo", "childAllowsParent");
+
+            let loader = loader_info.loader().expect("Loader should be Some");
+            let loader = loader.as_display_object().expect("Loader is a DO");
+            let parent_movie = loader.movie();
+
+            if let Ok(child_url) = Url::parse(root.url()) {
+                if let Ok(parent_url) = Url::parse(parent_movie.url()) {
+                    if child_url.host() == parent_url.host() {
+                        return Ok(true.into());
+                    }
+                }
             }
-            LoaderStream::Swf(_root, _) => {
-                avm2_stub_getter!(activation, "flash.display.LoaderInfo", "childAllowsParent");
-                return Ok(false.into());
-            }
+            Ok(false.into())
         }
     }
-
-    Ok(Value::Undefined)
 }
 
 /// `parentAllowsChild` getter
@@ -314,22 +323,30 @@ pub fn get_parent_allows_child<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
-    if let Some(loader_stream) = this
-        .as_loader_info_object()
-        .and_then(|o| o.as_loader_stream())
-    {
-        match &*loader_stream {
-            LoaderStream::NotYetLoaded(_, _, _) => {
-                return Err(Error::AvmError(error(activation, INSUFFICIENT, 2099)?));
+    let loader_info = this.as_loader_info_object().unwrap();
+    let loader_stream = loader_info.as_loader_stream().unwrap();
+    match &*loader_stream {
+        LoaderStream::NotYetLoaded(_, _, _) => {
+            Err(Error::AvmError(error(activation, INSUFFICIENT, 2099)?))
+        }
+        LoaderStream::Swf(root, _) => {
+            // TODO: respect allowDomain() and polices.
+            avm2_stub_getter!(activation, "flash.display.LoaderInfo", "parentAllowsChild");
+
+            let loader = loader_info.loader().expect("Loader should be Some");
+            let loader = loader.as_display_object().expect("Loader is a DO");
+            let parent_movie = loader.movie();
+
+            if let Ok(child_url) = Url::parse(root.url()) {
+                if let Ok(parent_url) = Url::parse(parent_movie.url()) {
+                    if child_url.host() == parent_url.host() {
+                        return Ok(true.into());
+                    }
+                }
             }
-            LoaderStream::Swf(_root, _) => {
-                avm2_stub_getter!(activation, "flash.display.LoaderInfo", "parentAllowsChild");
-                return Ok(false.into());
-            }
+            Ok(false.into())
         }
     }
-
-    Ok(Value::Undefined)
 }
 
 /// `swfVersion` getter
