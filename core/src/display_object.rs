@@ -2169,7 +2169,7 @@ pub trait TDisplayObject<'gc>:
         }
 
         // Unregister any text field variable bindings, and replace them on the unbound list.
-        if let Avm1Value::Object(object) = self.object() {
+        if let Avm1Value::Object(object) = self.object1() {
             if let Some(stage_object) = object.as_stage_object() {
                 stage_object.unregister_text_field_bindings(context);
             }
@@ -2279,7 +2279,7 @@ pub trait TDisplayObject<'gc>:
         // Noop for most symbols; only shapes can replace their innards with another Graphic.
     }
 
-    fn object(&self) -> Avm1Value<'gc> {
+    fn object1(&self) -> Avm1Value<'gc> {
         Avm1Value::Undefined // TODO: Implement for every type and delete this fallback.
     }
 
@@ -2519,7 +2519,7 @@ pub trait TDisplayObject<'gc>:
     where
         F: FnOnce(&mut UpdateContext<'gc>) -> bool,
     {
-        if let Avm1Value::Object(object) = self.object() {
+        if let Avm1Value::Object(object) = self.object1() {
             let mut activation = Activation::from_nothing(
                 context,
                 Avm1ActivationIdentifier::root("[AVM1 Boolean Property]"),
@@ -2544,7 +2544,7 @@ pub trait TDisplayObject<'gc>:
         name: &'static str,
         value: Avm1Value<'gc>,
     ) {
-        if let Avm1Value::Object(object) = self.object() {
+        if let Avm1Value::Object(object) = self.object1() {
             let mut activation = Activation::from_nothing(
                 context,
                 Avm1ActivationIdentifier::root("[AVM1 Property Set]"),

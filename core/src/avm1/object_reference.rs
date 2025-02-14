@@ -78,7 +78,7 @@ impl<'gc> MovieClipReference<'gc> {
         } else if activation.swf_version() <= 5 {
             let display_object = Self::process_swf5_references(activation, display_object)?;
             let stage_object = display_object
-                .object()
+                .object1()
                 .coerce_to_object(activation)
                 .as_stage_object()?;
             (display_object.path(), stage_object)
@@ -135,7 +135,7 @@ impl<'gc> MovieClipReference<'gc> {
 
                     return Some((
                         true,
-                        display_object.object().coerce_to_object(activation),
+                        display_object.object1().coerce_to_object(activation),
                         display_object,
                     ));
                 }
@@ -171,7 +171,7 @@ impl<'gc> MovieClipReference<'gc> {
 
             Some((
                 false,
-                display_object.object().coerce_to_object(activation),
+                display_object.object1().coerce_to_object(activation),
                 display_object,
             ))
         } else {

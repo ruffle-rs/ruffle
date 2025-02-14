@@ -573,7 +573,7 @@ impl<'gc> TDisplayObject<'gc> for Video<'gc> {
         self.0.read().movie.clone()
     }
 
-    fn object(&self) -> Avm1Value<'gc> {
+    fn object1(&self) -> Avm1Value<'gc> {
         self.0
             .read()
             .object

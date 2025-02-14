@@ -212,7 +212,7 @@ impl<'gc> Avm1Button<'gc> {
         name: &'static str,
         default: bool,
     ) -> bool {
-        if let Value::Object(object) = self.object() {
+        if let Value::Object(object) = self.object1() {
             let mut activation = Activation::from_nothing(
                 context,
                 ActivationIdentifier::root("[AVM1 Boolean Property]"),
@@ -366,7 +366,7 @@ impl<'gc> TDisplayObject<'gc> for Avm1Button<'gc> {
         false
     }
 
-    fn object(&self) -> Value<'gc> {
+    fn object1(&self) -> Value<'gc> {
         self.0
             .object
             .get()

@@ -193,10 +193,10 @@ impl<'gc> FocusTracker<'gc> {
                     "onSetFocus".into(),
                     &[
                         old.map(|o| o.as_displayobject())
-                            .map(|v| v.object())
+                            .map(|v| v.object1())
                             .unwrap_or(Value::Null),
                         new.map(|o| o.as_displayobject())
-                            .map(|v| v.object())
+                            .map(|v| v.object1())
                             .unwrap_or(Value::Null),
                     ],
                 );

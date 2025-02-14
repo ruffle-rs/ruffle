@@ -1129,7 +1129,7 @@ impl<'gc> Loader<'gc> {
 
                         // Clear deletable properties on the target before loading
                         // Properties written during the subsequent onLoad events will persist
-                        let clip_value = mc.object();
+                        let clip_value = mc.object1();
                         if let Value::Object(clip_object) = clip_value {
                             let mut activation = Activation::from_nothing(
                                 uc,
@@ -1159,7 +1159,7 @@ impl<'gc> Loader<'gc> {
                         // Make a copy of the properties on the root, so we can put them back after replacing it
                         let mut root_properties: IndexMap<AvmString, Value> = IndexMap::new();
                         if let Some(root) = uc.stage.root_clip() {
-                            let root_val = root.object();
+                            let root_val = root.object1();
                             if let Value::Object(root_object) = root_val {
                                 let mut activation = Activation::from_nothing(
                                     uc,
@@ -1180,7 +1180,7 @@ impl<'gc> Loader<'gc> {
                         // Add the copied properties back onto the new root
                         if !root_properties.is_empty() {
                             if let Some(root) = uc.stage.root_clip() {
-                                let val = root.object();
+                                let val = root.object1();
                                 if let Value::Object(clip_object) = val {
                                     let mut activation = Activation::from_nothing(
                                         uc,
@@ -1945,7 +1945,7 @@ impl<'gc> Loader<'gc> {
                         broadcaster,
                         uc,
                         "broadcastMessage".into(),
-                        &["onLoadStart".into(), clip.object()],
+                        &["onLoadStart".into(), clip.object1()],
                     );
                 }
             }
@@ -2322,7 +2322,7 @@ impl<'gc> Loader<'gc> {
                         "broadcastMessage".into(),
                         &[
                             "onLoadProgress".into(),
-                            clip.object(),
+                            clip.object1(),
                             cur_len.into(),
                             total_len.into(),
                         ],
@@ -2401,7 +2401,7 @@ impl<'gc> Loader<'gc> {
                 if !flashvars.is_empty() {
                     let mut activation =
                         Activation::from_nothing(uc, ActivationIdentifier::root("[Loader]"), dobj);
-                    let object = dobj.object().coerce_to_object(&mut activation);
+                    let object = dobj.object1().coerce_to_object(&mut activation);
                     for (key, value) in flashvars.iter() {
                         object.define_value(
                             activation.gc(),
@@ -2469,7 +2469,7 @@ impl<'gc> Loader<'gc> {
                         uc,
                         "broadcastMessage".into(),
                         // TODO: Pass an actual httpStatus argument instead of 0.
-                        &["onLoadComplete".into(), target_clip.object(), status.into()],
+                        &["onLoadComplete".into(), target_clip.object1(), status.into()],
                     );
                 }
             }
@@ -2538,7 +2538,7 @@ impl<'gc> Loader<'gc> {
                         "broadcastMessage".into(),
                         &[
                             "onLoadError".into(),
-                            clip.object(),
+                            clip.object1(),
                             "LoadNeverCompleted".into(),
                         ],
                     );
@@ -2664,7 +2664,7 @@ impl<'gc> Loader<'gc> {
                         ActionType::Method {
                             object: broadcaster,
                             name: "broadcastMessage",
-                            args: vec!["onLoadInit".into(), clip.object()],
+                            args: vec!["onLoadInit".into(), clip.object1()],
                         },
                         false,
                     );

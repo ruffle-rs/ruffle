@@ -109,7 +109,7 @@ impl<'gc> StageObject<'gc> {
                     .read()
                     .display_object
                     .avm1_parent()
-                    .map(|dn| dn.object().coerce_to_object(activation))
+                    .map(|dn| dn.object1().coerce_to_object(activation))
                     .map(Value::Object)
                     .unwrap_or(Value::Undefined),
             );
@@ -126,7 +126,7 @@ impl<'gc> StageObject<'gc> {
                 let level_id = Self::parse_level_id(&name[6..]);
                 let level = activation
                     .get_level(level_id)
-                    .map(|o| o.object())
+                    .map(|o| o.object1())
                     .unwrap_or(Value::Undefined);
                 return Some(level);
             }
@@ -209,13 +209,13 @@ impl<'gc> TObject<'gc> for StageObject<'gc> {
             .and_then(|o| o.child_by_name(&name, activation.is_case_sensitive()))
         {
             return if is_slash_path {
-                Some(child.object())
+                Some(child.object1())
             // If an object doesn't have an object representation, e.g. Graphic, then trying to access it
             // Returns the parent instead
             } else if let crate::display_object::DisplayObject::Graphic(_) = child {
-                child.parent().map(|p| p.object())
+                child.parent().map(|p| p.object1())
             } else {
-                Some(child.object())
+                Some(child.object1())
             };
         }
 

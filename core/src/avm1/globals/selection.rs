@@ -105,7 +105,7 @@ pub fn get_focus<'gc>(
     Ok(match focus {
         Some(focus) => focus
             .as_displayobject()
-            .object()
+            .object1()
             .coerce_to_string(activation)
             .unwrap_or_else(|_| istr!(""))
             .into(),

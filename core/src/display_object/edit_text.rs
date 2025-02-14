@@ -2036,7 +2036,7 @@ impl<'gc> EditText<'gc> {
     }
 
     fn initialize_as_broadcaster(&self, activation: &mut Avm1Activation<'_, 'gc>) {
-        if let Avm1Value::Object(object) = self.object() {
+        if let Avm1Value::Object(object) = self.object1() {
             activation.context.avm1.broadcaster_functions().initialize(
                 &activation.context.strings,
                 object,
@@ -2057,7 +2057,7 @@ impl<'gc> EditText<'gc> {
     }
 
     fn on_changed(&self, activation: &mut Avm1Activation<'_, 'gc>) {
-        if let Avm1Value::Object(object) = self.object() {
+        if let Avm1Value::Object(object) = self.object1() {
             let _ = object.call_method(
                 "broadcastMessage".into(),
                 &["onChanged".into(), object.into()],
@@ -2076,7 +2076,7 @@ impl<'gc> EditText<'gc> {
     }
 
     fn on_scroller(&self, activation: &mut Avm1Activation<'_, 'gc>) {
-        if let Avm1Value::Object(object) = self.object() {
+        if let Avm1Value::Object(object) = self.object1() {
             let _ = object.call_method(
                 "broadcastMessage".into(),
                 &["onScroller".into(), object.into()],
@@ -2366,7 +2366,7 @@ impl<'gc> EditText<'gc> {
         );
         // [NA]: Should all `from_nothings` be scoped to root? It definitely should here.
         activation.set_scope_to_display_object(parent);
-        let this = parent.object().coerce_to_object(&mut activation);
+        let this = parent.object1().coerce_to_object(&mut activation);
 
         if let Some((name, args)) = address.split_once(b',') {
             let name = AvmString::new(activation.gc(), name);
@@ -2523,7 +2523,7 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
         }
     }
 
-    fn object(&self) -> Avm1Value<'gc> {
+    fn object1(&self) -> Avm1Value<'gc> {
         self.0
             .read()
             .object
@@ -2747,7 +2747,7 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
         }
 
         // Unregister any text fields that may be bound to *this* text field.
-        if let Avm1Value::Object(object) = self.object() {
+        if let Avm1Value::Object(object) = self.object1() {
             if let Some(stage_object) = object.as_stage_object() {
                 stage_object.unregister_text_field_bindings(context);
             }

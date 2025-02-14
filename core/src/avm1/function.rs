@@ -248,7 +248,7 @@ impl<'gc> Avm1Function<'gc> {
 
     fn load_root(&self, frame: &mut Activation<'_, 'gc>, preload_r: &mut u8) {
         if self.flags.contains(FunctionFlags::PRELOAD_ROOT) {
-            let root = frame.base_clip().avm1_root().object();
+            let root = frame.base_clip().avm1_root().object1();
             frame.set_local_register(*preload_r, root);
             *preload_r += 1;
         }
@@ -260,7 +260,7 @@ impl<'gc> Avm1Function<'gc> {
             // and _global ends up incorrectly taking _parent's register.
             // See test for more info.
             if let Some(parent) = frame.base_clip().avm1_parent() {
-                frame.set_local_register(*preload_r, parent.object());
+                frame.set_local_register(*preload_r, parent.object1());
                 *preload_r += 1;
             }
         }
@@ -392,7 +392,7 @@ impl<'gc> Executable<'gc> {
             // * Use the base clip of `this`.
             // * Allocate a new scope using the given base clip. No previous scope is closed over.
             let swf_version = base_clip.swf_version().max(5);
-            let base_clip_obj = match base_clip.object() {
+            let base_clip_obj = match base_clip.object1() {
                 Value::Object(o) => o,
                 _ => unreachable!(),
             };

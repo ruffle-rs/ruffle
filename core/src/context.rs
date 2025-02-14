@@ -415,7 +415,7 @@ impl<'gc> UpdateContext<'gc> {
         // Set the version parameter on the root.
         let mut activation =
             Activation::from_stub(self, ActivationIdentifier::root("[Version Setter]"));
-        let object = root.object().coerce_to_object(&mut activation);
+        let object = root.object1().coerce_to_object(&mut activation);
         let version_string = activation
             .context
             .system

@@ -21,7 +21,7 @@ where
             .expect("Root should exist for freshly made movie");
         let mut activation =
             Activation::from_nothing(context, ActivationIdentifier::root("[Test]"), root);
-        let this = root.object().coerce_to_object(&mut activation);
+        let this = root.object1().coerce_to_object(&mut activation);
         let result = test(&mut activation, this);
         if let Err(e) = result {
             panic!("Encountered exception during test: {e}");

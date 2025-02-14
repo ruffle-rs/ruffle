@@ -2329,7 +2329,7 @@ impl<'gc> MovieClip<'gc> {
         } else if self.avm1_parent().is_none() {
             false
         } else {
-            let object = self.object();
+            let object = self.object1();
             if let Avm1Value::Object(object) = object {
                 let mut activation = Avm1Activation::from_nothing(
                     context,
@@ -2817,7 +2817,7 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
         }
     }
 
-    fn object(&self) -> Avm1Value<'gc> {
+    fn object1(&self) -> Avm1Value<'gc> {
         self.0
             .read()
             .object
@@ -2860,7 +2860,7 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
         }
 
         // Unregister any text field variable bindings.
-        if let Avm1Value::Object(object) = self.object() {
+        if let Avm1Value::Object(object) = self.object1() {
             if let Some(stage_object) = object.as_stage_object() {
                 stage_object.unregister_text_field_bindings(context);
             }
