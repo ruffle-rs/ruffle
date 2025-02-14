@@ -634,7 +634,7 @@ impl Player {
 
             let display_obj = Player::get_context_menu_display_object(context);
 
-            let menu = if let Some(Value::Object(obj)) = display_obj.map(|obj| obj.object1()) {
+            let menu = if let Some(obj) = display_obj.and_then(|obj| obj.object1()) {
                 let mut activation =
                     Activation::from_stub(context, ActivationIdentifier::root("[ContextMenu]"));
                 let menu_object = if let Ok(Value::Object(menu)) =
@@ -773,7 +773,10 @@ impl Player {
                     display_object,
                 );
 
-                let params = vec![display_object.object1(), Value::Object(item)];
+                let params = vec![
+                    Value::or_undef(display_object.object1()),
+                    Value::Object(item),
+                ];
 
                 let _ = callback.call(
                     "[Context Menu Callback]",
@@ -793,7 +796,7 @@ impl Player {
             run_mouse_pick(context, false).map(|picked_obj| picked_obj.as_displayobject());
 
         while let Some(display_obj) = picked_obj {
-            if let Value::Object(obj) = display_obj.object1() {
+            if let Some(obj) = display_obj.object1() {
                 let mut activation =
                     Activation::from_stub(context, ActivationIdentifier::root("[ContextMenu]"));
 
@@ -1086,13 +1089,14 @@ impl Player {
 
                         for display_object in activation.context.stage.iter_render_list() {
                             let level = display_object.depth();
-                            let object = display_object.object1().coerce_to_object(&mut activation);
-                            dumper.print_variables(
-                                &format!("Level #{level}:"),
-                                &format!("_level{level}"),
-                                &object,
-                                &mut activation,
-                            );
+                            if let Some(object) = display_object.object1() {
+                                dumper.print_variables(
+                                    &format!("Level #{level}:"),
+                                    &format!("_level{level}"),
+                                    &object,
+                                    &mut activation,
+                                );
+                            }
                         }
                         tracing::info!("Variable dump:\n{}", dumper.output());
                     });
@@ -2076,7 +2080,7 @@ impl Player {
                         action.clip,
                     );
                     if let Ok(prototype) = constructor.get(istr!("prototype"), &mut activation) {
-                        if let Value::Object(object) = action.clip.object1() {
+                        if let Some(object) = action.clip.object1() {
                             object.define_value(
                                 activation.gc(),
                                 istr!("__proto__"),

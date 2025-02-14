@@ -103,12 +103,13 @@ pub fn get_focus<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let focus = activation.context.focus_tracker.get();
     Ok(match focus {
-        Some(focus) => focus
-            .as_displayobject()
-            .object1()
-            .coerce_to_string(activation)
-            .unwrap_or_else(|_| istr!(""))
-            .into(),
+        Some(focus) => {
+            let obj = Value::or_undef(focus.as_displayobject().object1());
+
+            obj.coerce_to_string(activation)
+                .unwrap_or_else(|_| istr!(""))
+                .into()
+        }
         None => Value::Null,
     })
 }

@@ -1,7 +1,5 @@
 //! Contexts and helper types passed between functions.
 
-use crate::avm1::Activation;
-use crate::avm1::ActivationIdentifier;
 use crate::avm1::Attribute;
 use crate::avm1::Avm1;
 use crate::avm1::ScriptObject;
@@ -413,24 +411,17 @@ impl<'gc> UpdateContext<'gc> {
         self.stage.replace_at_depth(self, root, 0);
 
         // Set the version parameter on the root.
-        let mut activation =
-            Activation::from_stub(self, ActivationIdentifier::root("[Version Setter]"));
-        let object = root.object1().coerce_to_object(&mut activation);
-        let version_string = activation
-            .context
-            .system
-            .get_version_string(activation.context.avm1);
-        object.define_value(
-            activation.gc(),
-            "$version",
-            AvmString::new_utf8(activation.gc(), version_string).into(),
-            Attribute::empty(),
-        );
+        if let Some(object) = root.object1() {
+            let version_string = self.system.get_version_string(self.avm1);
+            object.define_value(
+                self.gc(),
+                "$version",
+                AvmString::new_utf8(self.gc(), version_string).into(),
+                Attribute::empty(),
+            );
+        }
 
-        let stage = activation.context.stage;
-        stage.build_matrices(activation.context);
-
-        drop(activation);
+        self.stage.build_matrices(self);
 
         self.audio.set_frame_rate(*self.frame_rate);
     }

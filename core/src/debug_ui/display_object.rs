@@ -1142,7 +1142,7 @@ impl DisplayObjectWindow {
                 );
                 ui.end_row();
 
-                if let crate::avm1::Value::Object(object) = object.object1() {
+                if let Some(object) = object.object1() {
                     ui.label("AVM1 Object");
                     if ui.button(format!("{:p}", object.as_ptr())).clicked() {
                         messages.push(Message::TrackAVM1Object(AVM1ObjectHandle::new(

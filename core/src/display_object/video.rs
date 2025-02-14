@@ -1,6 +1,6 @@
 //! Video player display object
 
-use crate::avm1::{Object as Avm1Object, StageObject as Avm1StageObject, Value as Avm1Value};
+use crate::avm1::{Object as Avm1Object, StageObject as Avm1StageObject};
 use crate::avm2::{
     Activation as Avm2Activation, Object as Avm2Object, StageObject as Avm2StageObject,
     Value as Avm2Value,
@@ -573,13 +573,8 @@ impl<'gc> TDisplayObject<'gc> for Video<'gc> {
         self.0.read().movie.clone()
     }
 
-    fn object1(&self) -> Avm1Value<'gc> {
-        self.0
-            .read()
-            .object
-            .and_then(|o| o.as_avm1_object())
-            .map(Avm1Value::from)
-            .unwrap_or(Avm1Value::Undefined)
+    fn object1(&self) -> Option<Avm1Object<'gc>> {
+        self.0.read().object.and_then(|o| o.as_avm1_object())
     }
 
     fn object2(&self) -> Avm2Value<'gc> {

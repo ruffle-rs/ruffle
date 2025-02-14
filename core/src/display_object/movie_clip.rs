@@ -1,5 +1,5 @@
 //! `MovieClip` display object and support code.
-use crate::avm1::{Object as Avm1Object, StageObject, TObject as Avm1TObject, Value as Avm1Value};
+use crate::avm1::{Object as Avm1Object, StageObject, TObject as Avm1TObject};
 use crate::avm2::object::LoaderInfoObject;
 use crate::avm2::object::LoaderStream;
 use crate::avm2::script::Script;
@@ -2328,22 +2328,19 @@ impl<'gc> MovieClip<'gc> {
             true
         } else if self.avm1_parent().is_none() {
             false
-        } else {
-            let object = self.object1();
-            if let Avm1Value::Object(object) = object {
-                let mut activation = Avm1Activation::from_nothing(
-                    context,
-                    ActivationIdentifier::root("[Mouse Pick]"),
-                    self.avm1_root(),
-                );
+        } else if let Some(object) = self.object1() {
+            let mut activation = Avm1Activation::from_nothing(
+                context,
+                ActivationIdentifier::root("[Mouse Pick]"),
+                self.avm1_root(),
+            );
 
-                ClipEvent::BUTTON_EVENT_METHODS
-                    .iter()
-                    .copied()
-                    .any(|handler| object.has_property(&mut activation, handler.into()))
-            } else {
-                false
-            }
+            ClipEvent::BUTTON_EVENT_METHODS
+                .iter()
+                .copied()
+                .any(|handler| object.has_property(&mut activation, handler.into()))
+        } else {
+            false
         }
     }
 
@@ -2817,13 +2814,8 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
         }
     }
 
-    fn object1(&self) -> Avm1Value<'gc> {
-        self.0
-            .read()
-            .object
-            .and_then(|o| o.as_avm1_object())
-            .map(Avm1Value::from)
-            .unwrap_or(Avm1Value::Undefined)
+    fn object1(&self) -> Option<Avm1Object<'gc>> {
+        self.0.read().object.and_then(|o| o.as_avm1_object())
     }
 
     fn object2(&self) -> Avm2Value<'gc> {
@@ -2860,7 +2852,7 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
         }
 
         // Unregister any text field variable bindings.
-        if let Avm1Value::Object(object) = self.object1() {
+        if let Some(object) = self.object1() {
             if let Some(stage_object) = object.as_stage_object() {
                 stage_object.unregister_text_field_bindings(context);
             }

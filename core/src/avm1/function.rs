@@ -249,7 +249,7 @@ impl<'gc> Avm1Function<'gc> {
     fn load_root(&self, frame: &mut Activation<'_, 'gc>, preload_r: &mut u8) {
         if self.flags.contains(FunctionFlags::PRELOAD_ROOT) {
             let root = frame.base_clip().avm1_root().object1();
-            frame.set_local_register(*preload_r, root);
+            frame.set_local_register(*preload_r, Value::or_undef(root));
             *preload_r += 1;
         }
     }
@@ -259,8 +259,9 @@ impl<'gc> Avm1Function<'gc> {
             // If _parent is undefined (because this is a root timeline), it actually does not get pushed,
             // and _global ends up incorrectly taking _parent's register.
             // See test for more info.
-            if let Some(parent) = frame.base_clip().avm1_parent() {
-                frame.set_local_register(*preload_r, parent.object1());
+            let parent = frame.base_clip().avm1_parent().and_then(|o| o.object1());
+            if let Some(parent) = parent {
+                frame.set_local_register(*preload_r, parent.into());
                 *preload_r += 1;
             }
         }
@@ -392,10 +393,7 @@ impl<'gc> Executable<'gc> {
             // * Use the base clip of `this`.
             // * Allocate a new scope using the given base clip. No previous scope is closed over.
             let swf_version = base_clip.swf_version().max(5);
-            let base_clip_obj = match base_clip.object1() {
-                Value::Object(o) => o,
-                _ => unreachable!(),
-            };
+            let base_clip_obj = base_clip.object1().unwrap();
             // TODO: It would be nice to avoid these extra Scope allocs.
             let scope = Gc::new(
                 activation.gc(),

@@ -141,9 +141,8 @@ impl<'gc> Avm1<'gc> {
             active_clip,
         );
 
-        let clip_obj = active_clip
-            .object1()
-            .coerce_to_object(&mut parent_activation);
+        let clip_obj =
+            Value::or_undef(active_clip.object1()).coerce_to_object(&mut parent_activation);
         let child_scope = Gc::new(
             parent_activation.gc(),
             Scope::new(
@@ -180,10 +179,9 @@ impl<'gc> Avm1<'gc> {
     where
         for<'b> F: FnOnce(&mut Activation<'b, 'gc>) -> R,
     {
-        let clip_obj = match active_clip.object1() {
-            Value::Object(o) => o,
-            _ => panic!("No script object for display object"),
-        };
+        let clip_obj = active_clip
+            .object1()
+            .expect("No script object for display object");
         let child_scope = Gc::new(
             action_context.gc(),
             Scope::new(
@@ -225,9 +223,8 @@ impl<'gc> Avm1<'gc> {
             active_clip,
         );
 
-        let clip_obj = active_clip
-            .object1()
-            .coerce_to_object(&mut parent_activation);
+        let clip_obj =
+            Value::or_undef(active_clip.object1()).coerce_to_object(&mut parent_activation);
         let child_scope = Gc::new(
             parent_activation.gc(),
             Scope::new(

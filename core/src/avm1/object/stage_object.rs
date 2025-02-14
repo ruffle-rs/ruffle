@@ -104,15 +104,13 @@ impl<'gc> StageObject<'gc> {
         if name.eq_with_case(b"_root", case_sensitive) {
             return Some(activation.root_object());
         } else if name.eq_with_case(b"_parent", case_sensitive) {
-            return Some(
-                self.0
-                    .read()
-                    .display_object
-                    .avm1_parent()
-                    .map(|dn| dn.object1().coerce_to_object(activation))
-                    .map(Value::Object)
-                    .unwrap_or(Value::Undefined),
-            );
+            let obj = self
+                .0
+                .read()
+                .display_object
+                .avm1_parent()
+                .and_then(|dn| dn.object1());
+            return Some(Value::or_undef(obj));
         } else if name.eq_with_case(b"_global", case_sensitive) {
             return Some(activation.context.avm1.global_object().into());
         }
@@ -124,11 +122,8 @@ impl<'gc> StageObject<'gc> {
                 || prefix.eq_with_case(b"_flash", case_sensitive)
             {
                 let level_id = Self::parse_level_id(&name[6..]);
-                let level = activation
-                    .get_level(level_id)
-                    .map(|o| o.object1())
-                    .unwrap_or(Value::Undefined);
-                return Some(level);
+                let level = activation.get_level(level_id).and_then(|o| o.object1());
+                return Some(Value::or_undef(level));
             }
         }
 
@@ -208,15 +203,13 @@ impl<'gc> TObject<'gc> for StageObject<'gc> {
             .as_container()
             .and_then(|o| o.child_by_name(&name, activation.is_case_sensitive()))
         {
-            return if is_slash_path {
-                Some(child.object1())
             // If an object doesn't have an object representation, e.g. Graphic, then trying to access it
             // Returns the parent instead
-            } else if let crate::display_object::DisplayObject::Graphic(_) = child {
-                child.parent().map(|p| p.object1())
-            } else {
-                Some(child.object1())
-            };
+            let mut obj = child.object1();
+            if obj.is_none() && !is_slash_path {
+                obj = child.parent().and_then(|p| p.object1());
+            }
+            return Some(Value::or_undef(obj));
         }
 
         // 4) Display object properties such as `_x`, `_y` (never case sensitive)

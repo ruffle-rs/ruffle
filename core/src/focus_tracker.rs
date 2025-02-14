@@ -192,12 +192,8 @@ impl<'gc> FocusTracker<'gc> {
                     "Selection".into(),
                     "onSetFocus".into(),
                     &[
-                        old.map(|o| o.as_displayobject())
-                            .map(|v| v.object1())
-                            .unwrap_or(Value::Null),
-                        new.map(|o| o.as_displayobject())
-                            .map(|v| v.object1())
-                            .unwrap_or(Value::Null),
+                        Value::or_null(old.map(|o| o.as_displayobject()).and_then(|v| v.object1())),
+                        Value::or_null(new.map(|o| o.as_displayobject()).and_then(|v| v.object1())),
                     ],
                 );
             }
