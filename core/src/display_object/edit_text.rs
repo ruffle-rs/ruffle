@@ -2018,7 +2018,8 @@ impl<'gc> EditText<'gc> {
         let filtered_text = self.0.restrict.borrow().filter_allowed(&text);
 
         if let Avm2Value::Object(target) = self.object2() {
-            let character_string = AvmString::new(context.gc(), text);
+            let character_string =
+                AvmString::new(context.gc(), text.replace(b'\r', WStr::from_units(b"\n")));
 
             let mut activation = Avm2Activation::from_nothing(context);
             let text_evt = Avm2EventObject::text_event(
