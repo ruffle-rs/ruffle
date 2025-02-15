@@ -139,9 +139,7 @@ impl<'gc> EventObject<'gc> {
                 // localY
                 local.y.to_pixels().into(),
                 // relatedObject
-                related_object
-                    .map(|o| o.as_displayobject().object2())
-                    .unwrap_or(Value::Null),
+                Value::or_null(related_object.and_then(|o| o.as_displayobject().object2())),
                 // ctrlKey
                 activation
                     .context
@@ -306,9 +304,7 @@ impl<'gc> EventObject<'gc> {
                 event_type.into(),
                 true.into(),
                 cancelable.into(),
-                related_object
-                    .map(|o| o.as_displayobject().object2())
-                    .unwrap_or(Value::Null),
+                Value::or_null(related_object.and_then(|o| o.as_displayobject().object2())),
                 shift_key.into(),
                 key_code.into(),
                 none_string.into(), // TODO implement direction

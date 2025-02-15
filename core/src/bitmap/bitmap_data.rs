@@ -1,4 +1,4 @@
-use crate::avm2::{Object as Avm2Object, Value as Avm2Value};
+use crate::avm2::Object as Avm2Object;
 use crate::display_object::{DisplayObject, DisplayObjectWeak, TDisplayObject};
 use bitflags::bitflags;
 use gc_arena::{Collect, Mutation};
@@ -247,7 +247,7 @@ enum DirtyState {
 }
 
 mod wrapper {
-    use crate::avm2::{Object as Avm2Object, Value as Avm2Value};
+    use crate::avm2::Object as Avm2Object;
     use crate::context::RenderContext;
     use crate::display_object::DisplayObjectWeak;
     use gc_arena::{Collect, GcCell, Mutation};
@@ -437,7 +437,7 @@ mod wrapper {
             self.0.read().width
         }
 
-        pub fn object2(&self) -> Avm2Value<'gc> {
+        pub fn object2(&self) -> Option<Avm2Object<'gc>> {
             self.0.read().object2()
         }
 
@@ -770,10 +770,8 @@ impl<'gc> BitmapData<'gc> {
         }
     }
 
-    pub fn object2(&self) -> Avm2Value<'gc> {
+    pub fn object2(&self) -> Option<Avm2Object<'gc>> {
         self.avm2_object
-            .map(|o| o.into())
-            .unwrap_or(Avm2Value::Null)
     }
 
     pub fn init_object2(&mut self, object: Avm2Object<'gc>) {

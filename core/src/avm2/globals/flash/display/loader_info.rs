@@ -152,7 +152,7 @@ pub fn get_content<'gc>(
         match &*loader_stream {
             LoaderStream::Swf(_, root) | LoaderStream::NotYetLoaded(_, Some(root), _) => {
                 if root.movie().is_action_script_3() || !root.movie().is_movie() {
-                    return Ok(root.object2());
+                    return Ok(Value::or_null(root.object2()));
                 } else {
                     // The movie was an AVM1 movie, return an AVM1Movie object
                     let root_obj = *root;

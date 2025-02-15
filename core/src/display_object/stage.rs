@@ -4,7 +4,7 @@ use crate::avm1::Object as Avm1Object;
 use crate::avm2::object::TObject;
 use crate::avm2::{
     Activation as Avm2Activation, Avm2, EventObject as Avm2EventObject, Object as Avm2Object,
-    StageObject as Avm2StageObject, Value as Avm2Value,
+    StageObject as Avm2StageObject,
 };
 use crate::backend::ui::MouseCursor;
 use crate::config::Letterbox;
@@ -686,7 +686,7 @@ impl<'gc> Stage<'gc> {
                     &[],
                 );
             }
-        } else if let Avm2Value::Object(stage) = self.object2() {
+        } else if let Some(stage) = self.object2() {
             let resized_event = Avm2EventObject::bare_default_event(context, "resize");
             Avm2::dispatch_event(context, resized_event, stage);
         }
@@ -716,7 +716,7 @@ impl<'gc> Stage<'gc> {
                     &[self.is_fullscreen().into()],
                 );
             }
-        } else if let Avm2Value::Object(stage) = self.object2() {
+        } else if let Some(stage) = self.object2() {
             let mut activation = Avm2Activation::from_nothing(context);
 
             let full_screen_event_cls = activation.avm2().classes().fullscreenevent;
@@ -875,12 +875,12 @@ impl<'gc> TDisplayObject<'gc> for Stage<'gc> {
         }
     }
 
-    fn object2(&self) -> Avm2Value<'gc> {
-        self.0
-            .read()
-            .avm2_object
-            .expect("Attempted to access Stage::object2 before initialization")
-            .into()
+    fn object2(&self) -> Option<Avm2Object<'gc>> {
+        self.0.read().avm2_object
+    }
+
+    fn set_object2(&self, context: &mut UpdateContext<'gc>, to: Avm2Object<'gc>) {
+        self.0.write(context.gc()).avm2_object = Some(to);
     }
 
     fn loader_info(&self) -> Option<Avm2Object<'gc>> {

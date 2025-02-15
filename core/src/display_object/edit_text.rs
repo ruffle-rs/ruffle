@@ -1999,7 +1999,7 @@ impl<'gc> EditText<'gc> {
             return;
         };
 
-        if let Avm2Value::Object(target) = self.object2() {
+        if let Some(target) = self.object2() {
             let character_string = AvmString::new_utf8(context.gc(), character.to_string());
 
             let mut activation = Avm2Activation::from_nothing(context);
@@ -2064,7 +2064,7 @@ impl<'gc> EditText<'gc> {
                 activation,
                 ExecutionReason::Special,
             );
-        } else if let Avm2Value::Object(object) = self.object2() {
+        } else if let Some(object) = self.object2() {
             let change_evt = Avm2EventObject::bare_event(
                 activation.context,
                 "change",
@@ -2387,7 +2387,7 @@ impl<'gc> EditText<'gc> {
                 error!("Couldn't execute URL \"{url:?}\": {e:?}");
             }
         } else if let Some(address) = url.strip_prefix(WStr::from_units(b"event:")) {
-            if let Avm2Value::Object(object) = self.object2() {
+            if let Some(object) = self.object2() {
                 let mut activation = Avm2Activation::from_nothing(context);
                 let text = AvmString::new(activation.gc(), address);
                 let event = Avm2EventObject::text_event(&mut activation, "link", text, true, false);
@@ -2490,7 +2490,7 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
 
     /// Construct objects placed on this frame.
     fn construct_frame(&self, context: &mut UpdateContext<'gc>) {
-        if self.movie().is_action_script_3() && matches!(self.object2(), Avm2Value::Null) {
+        if self.movie().is_action_script_3() && self.object2().is_none() {
             self.construct_as_avm2_object(context, (*self).into());
             self.on_construction_complete(context);
         }
@@ -2527,13 +2527,8 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
         self.0.read().object.and_then(|o| o.as_avm1_object())
     }
 
-    fn object2(&self) -> Avm2Value<'gc> {
-        self.0
-            .read()
-            .object
-            .and_then(|o| o.as_avm2_object())
-            .map(Avm2Value::from)
-            .unwrap_or(Avm2Value::Null)
+    fn object2(&self) -> Option<Avm2Object<'gc>> {
+        self.0.read().object.and_then(|o| o.as_avm2_object())
     }
 
     fn set_object2(&self, context: &mut UpdateContext<'gc>, to: Avm2Object<'gc>) {

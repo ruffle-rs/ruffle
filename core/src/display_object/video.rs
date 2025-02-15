@@ -3,7 +3,6 @@
 use crate::avm1::{Object as Avm1Object, StageObject as Avm1StageObject};
 use crate::avm2::{
     Activation as Avm2Activation, Object as Avm2Object, StageObject as Avm2StageObject,
-    Value as Avm2Value,
 };
 use crate::context::{RenderContext, UpdateContext};
 use crate::display_object::{DisplayObjectBase, DisplayObjectPtr};
@@ -463,7 +462,7 @@ impl<'gc> TDisplayObject<'gc> for Video<'gc> {
     }
 
     fn construct_frame(&self, context: &mut UpdateContext<'gc>) {
-        if self.movie().is_action_script_3() && matches!(self.object2(), Avm2Value::Null) {
+        if self.movie().is_action_script_3() && self.object2().is_none() {
             let video_constr = context.avm2.classes().video;
             let mut activation = Avm2Activation::from_nothing(context);
             let size = self.0.read().size;
@@ -577,12 +576,7 @@ impl<'gc> TDisplayObject<'gc> for Video<'gc> {
         self.0.read().object.and_then(|o| o.as_avm1_object())
     }
 
-    fn object2(&self) -> Avm2Value<'gc> {
-        self.0
-            .read()
-            .object
-            .and_then(|o| o.as_avm2_object())
-            .map(Avm2Value::from)
-            .unwrap_or(Avm2Value::Null)
+    fn object2(&self) -> Option<Avm2Object<'gc>> {
+        self.0.read().object.and_then(|o| o.as_avm2_object())
     }
 }

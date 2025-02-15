@@ -178,14 +178,13 @@ pub fn get_focus<'gc>(
     _this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    Ok(activation
-        .context
-        .focus_tracker
-        .get()
-        .map(|o| o.as_displayobject())
-        .and_then(|focus_dobj| focus_dobj.object2().as_object())
-        .map(|o| o.into())
-        .unwrap_or(Value::Null))
+    Ok(Value::or_null(
+        activation
+            .context
+            .focus_tracker
+            .get()
+            .and_then(|o| o.as_displayobject().object2()),
+    ))
 }
 
 /// Implement `focus`'s setter

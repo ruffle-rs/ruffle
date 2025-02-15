@@ -4,7 +4,7 @@ use super::interactive::Avm2MousePick;
 use crate::avm1::Object as Avm1Object;
 use crate::avm2::{
     Activation as Avm2Activation, ClassObject as Avm2ClassObject, Object as Avm2Object,
-    StageObject as Avm2StageObject, Value as Avm2Value,
+    StageObject as Avm2StageObject,
 };
 use crate::backend::audio::AudioManager;
 use crate::backend::ui::MouseCursor;
@@ -662,12 +662,8 @@ impl<'gc> TDisplayObject<'gc> for Avm2Button<'gc> {
         false
     }
 
-    fn object2(&self) -> Avm2Value<'gc> {
-        self.0
-            .object
-            .get()
-            .map(Avm2Value::from)
-            .unwrap_or(Avm2Value::Null)
+    fn object2(&self) -> Option<Avm2Object<'gc>> {
+        self.0.object.get()
     }
 
     fn set_object2(&self, context: &mut UpdateContext<'gc>, to: Avm2Object<'gc>) {

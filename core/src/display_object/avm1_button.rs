@@ -370,6 +370,12 @@ impl<'gc> TDisplayObject<'gc> for Avm1Button<'gc> {
         self.0.object.get()
     }
 
+    fn object2(&self) -> Option<crate::avm2::Object<'gc>> {
+        None
+    }
+
+    fn set_object2(&self, _: &mut UpdateContext<'gc>, _: crate::avm2::Object<'gc>) {}
+
     fn as_avm1_button(&self) -> Option<Self> {
         Some(*self)
     }
