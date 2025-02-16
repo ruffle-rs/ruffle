@@ -467,6 +467,8 @@ impl TextControlCode {
 }
 
 /// Flash virtual keycode.
+///
+/// See <https://docs.ruffle.rs/en_US/FlashPlatform/reference/actionscript/3/flash/ui/Keyboard.html#summaryTableConstant>
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
 pub struct KeyCode(u32);
 
@@ -477,7 +479,7 @@ impl KeyCode {
     pub const MOUSE_MIDDLE: KeyCode = KeyCode(4);
     pub const BACKSPACE: KeyCode = KeyCode(8);
     pub const TAB: KeyCode = KeyCode(9);
-    pub const RETURN: KeyCode = KeyCode(13);
+    pub const ENTER: KeyCode = KeyCode(13);
     pub const COMMAND: KeyCode = KeyCode(15);
     pub const SHIFT: KeyCode = KeyCode(16);
     pub const CONTROL: KeyCode = KeyCode(17);
@@ -487,8 +489,8 @@ impl KeyCode {
     pub const NUMPAD: KeyCode = KeyCode(21);
     pub const ESCAPE: KeyCode = KeyCode(27);
     pub const SPACE: KeyCode = KeyCode(32);
-    pub const PG_UP: KeyCode = KeyCode(33);
-    pub const PG_DOWN: KeyCode = KeyCode(34);
+    pub const PAGE_UP: KeyCode = KeyCode(33);
+    pub const PAGE_DOWN: KeyCode = KeyCode(34);
     pub const END: KeyCode = KeyCode(35);
     pub const HOME: KeyCode = KeyCode(36);
     pub const LEFT: KeyCode = KeyCode(37);
@@ -497,16 +499,16 @@ impl KeyCode {
     pub const DOWN: KeyCode = KeyCode(40);
     pub const INSERT: KeyCode = KeyCode(45);
     pub const DELETE: KeyCode = KeyCode(46);
-    pub const KEY0: KeyCode = KeyCode(48);
-    pub const KEY1: KeyCode = KeyCode(49);
-    pub const KEY2: KeyCode = KeyCode(50);
-    pub const KEY3: KeyCode = KeyCode(51);
-    pub const KEY4: KeyCode = KeyCode(52);
-    pub const KEY5: KeyCode = KeyCode(53);
-    pub const KEY6: KeyCode = KeyCode(54);
-    pub const KEY7: KeyCode = KeyCode(55);
-    pub const KEY8: KeyCode = KeyCode(56);
-    pub const KEY9: KeyCode = KeyCode(57);
+    pub const NUMBER_0: KeyCode = KeyCode(48);
+    pub const NUMBER_1: KeyCode = KeyCode(49);
+    pub const NUMBER_2: KeyCode = KeyCode(50);
+    pub const NUMBER_3: KeyCode = KeyCode(51);
+    pub const NUMBER_4: KeyCode = KeyCode(52);
+    pub const NUMBER_5: KeyCode = KeyCode(53);
+    pub const NUMBER_6: KeyCode = KeyCode(54);
+    pub const NUMBER_7: KeyCode = KeyCode(55);
+    pub const NUMBER_8: KeyCode = KeyCode(56);
+    pub const NUMBER_9: KeyCode = KeyCode(57);
     pub const A: KeyCode = KeyCode(65);
     pub const B: KeyCode = KeyCode(66);
     pub const C: KeyCode = KeyCode(67);
@@ -533,22 +535,22 @@ impl KeyCode {
     pub const X: KeyCode = KeyCode(88);
     pub const Y: KeyCode = KeyCode(89);
     pub const Z: KeyCode = KeyCode(90);
-    pub const NUMPAD0: KeyCode = KeyCode(96);
-    pub const NUMPAD1: KeyCode = KeyCode(97);
-    pub const NUMPAD2: KeyCode = KeyCode(98);
-    pub const NUMPAD3: KeyCode = KeyCode(99);
-    pub const NUMPAD4: KeyCode = KeyCode(100);
-    pub const NUMPAD5: KeyCode = KeyCode(101);
-    pub const NUMPAD6: KeyCode = KeyCode(102);
-    pub const NUMPAD7: KeyCode = KeyCode(103);
-    pub const NUMPAD8: KeyCode = KeyCode(104);
-    pub const NUMPAD9: KeyCode = KeyCode(105);
-    pub const MULTIPLY: KeyCode = KeyCode(106);
-    pub const PLUS: KeyCode = KeyCode(107);
+    pub const NUMPAD_0: KeyCode = KeyCode(96);
+    pub const NUMPAD_1: KeyCode = KeyCode(97);
+    pub const NUMPAD_2: KeyCode = KeyCode(98);
+    pub const NUMPAD_3: KeyCode = KeyCode(99);
+    pub const NUMPAD_4: KeyCode = KeyCode(100);
+    pub const NUMPAD_5: KeyCode = KeyCode(101);
+    pub const NUMPAD_6: KeyCode = KeyCode(102);
+    pub const NUMPAD_7: KeyCode = KeyCode(103);
+    pub const NUMPAD_8: KeyCode = KeyCode(104);
+    pub const NUMPAD_9: KeyCode = KeyCode(105);
+    pub const NUMPAD_MULTIPLY: KeyCode = KeyCode(106);
+    pub const NUMPAD_ADD: KeyCode = KeyCode(107);
     pub const NUMPAD_ENTER: KeyCode = KeyCode(108);
-    pub const NUMPAD_MINUS: KeyCode = KeyCode(109);
-    pub const NUMPAD_PERIOD: KeyCode = KeyCode(110);
-    pub const NUMPAD_SLASH: KeyCode = KeyCode(111);
+    pub const NUMPAD_SUBTRACT: KeyCode = KeyCode(109);
+    pub const NUMPAD_DECIMAL: KeyCode = KeyCode(110);
+    pub const NUMPAD_DIVIDE: KeyCode = KeyCode(111);
     pub const F1: KeyCode = KeyCode(112);
     pub const F2: KeyCode = KeyCode(113);
     pub const F3: KeyCode = KeyCode(114);
@@ -576,16 +578,16 @@ impl KeyCode {
     pub const NUM_LOCK: KeyCode = KeyCode(144);
     pub const SCROLL_LOCK: KeyCode = KeyCode(145);
     pub const SEMICOLON: KeyCode = KeyCode(186);
-    pub const EQUALS: KeyCode = KeyCode(187);
+    pub const EQUAL: KeyCode = KeyCode(187);
     pub const COMMA: KeyCode = KeyCode(188);
     pub const MINUS: KeyCode = KeyCode(189);
     pub const PERIOD: KeyCode = KeyCode(190);
     pub const SLASH: KeyCode = KeyCode(191);
-    pub const GRAVE: KeyCode = KeyCode(192);
-    pub const LBRACKET: KeyCode = KeyCode(219);
+    pub const BACKQUOTE: KeyCode = KeyCode(192);
+    pub const LEFTBRACKET: KeyCode = KeyCode(219);
     pub const BACKSLASH: KeyCode = KeyCode(220);
-    pub const RBRACKET: KeyCode = KeyCode(221);
-    pub const APOSTROPHE: KeyCode = KeyCode(222);
+    pub const RIGHTBRACKET: KeyCode = KeyCode(221);
+    pub const QUOTE: KeyCode = KeyCode(222);
 
     #[inline]
     pub const fn from_code(code: u32) -> Self {
@@ -753,11 +755,11 @@ impl ButtonKeyCode {
             KeyCode::INSERT => ButtonKeyCode::Insert,
             KeyCode::DELETE => ButtonKeyCode::Delete,
             KeyCode::BACKSPACE => ButtonKeyCode::Backspace,
-            KeyCode::RETURN => ButtonKeyCode::Return,
+            KeyCode::ENTER => ButtonKeyCode::Return,
             KeyCode::UP => ButtonKeyCode::Up,
             KeyCode::DOWN => ButtonKeyCode::Down,
-            KeyCode::PG_UP => ButtonKeyCode::PgUp,
-            KeyCode::PG_DOWN => ButtonKeyCode::PgDown,
+            KeyCode::PAGE_UP => ButtonKeyCode::PgUp,
+            KeyCode::PAGE_DOWN => ButtonKeyCode::PgDown,
             KeyCode::ESCAPE => ButtonKeyCode::Escape,
             KeyCode::TAB => ButtonKeyCode::Tab,
             _ => return None,
