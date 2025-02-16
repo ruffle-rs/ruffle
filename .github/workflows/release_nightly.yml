@@ -122,8 +122,8 @@ jobs:
       - name: Install WiX
         run: |
           dotnet tool install --global wix
-          wix extension add -g WixToolset.UI.wixext
-          wix extension add -g WixToolset.Util.wixext
+          dotnet add package WixToolset.UI.wixext
+          dotnet add package WixToolset.Util.wixext
         if: runner.os == 'Windows'
 
       - name: Cargo build
