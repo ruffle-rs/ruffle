@@ -1308,7 +1308,7 @@ impl Player {
                     if matches!(
                         event,
                         PlayerEvent::KeyDown {
-                            key_code: KeyCode::RETURN,
+                            key_code: KeyCode::ENTER,
                             ..
                         } | PlayerEvent::TextInput { codepoint: ' ' }
                     ) {
