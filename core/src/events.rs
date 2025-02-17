@@ -1,4 +1,4 @@
-use crate::display_object::InteractiveObject;
+use crate::{display_object::InteractiveObject, input::InputEvent};
 use std::str::FromStr;
 use swf::ClipEventFlag;
 
@@ -766,17 +766,17 @@ impl ButtonKeyCode {
         })
     }
 
-    pub fn from_player_event(event: PlayerEvent) -> Option<Self> {
+    pub fn from_input_event(event: InputEvent) -> Option<Self> {
         match event {
             // ASCII characters convert directly to keyPress button events.
-            PlayerEvent::TextInput { codepoint }
+            InputEvent::TextInput { codepoint }
                 if codepoint as u32 >= 32 && codepoint as u32 <= 126 =>
             {
                 Some(ButtonKeyCode::from_u8(codepoint as u8).unwrap())
             }
 
             // Special keys have custom values for keyPress.
-            PlayerEvent::KeyDown { key_code, .. } => Self::from_key_code(key_code),
+            InputEvent::KeyDown { key_code, .. } => Self::from_key_code(key_code),
             _ => None,
         }
     }

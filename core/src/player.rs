@@ -32,6 +32,7 @@ use crate::external::{ExternalInterface, ExternalInterfaceProvider, NullFsComman
 use crate::external::{FsCommandProvider, Value as ExternalValue};
 use crate::focus_tracker::NavigationDirection;
 use crate::frame_lifecycle::{run_all_phases_avm2, FramePhase};
+use crate::input::InputEvent;
 use crate::input::InputManager;
 use crate::library::Library;
 use crate::limits::ExecutionLimit;
@@ -1049,7 +1050,7 @@ impl Player {
     fn handle_input_event(&mut self, event: PlayerEvent) -> bool {
         let mut player_event_handled = false;
         let prev_mouse_buttons = self.input.get_mouse_down_buttons();
-        let Some(event) = self.input.process_input_event(event) else {
+        let Some(event) = self.input.process_event(event) else {
             return false;
         };
 
@@ -1062,7 +1063,7 @@ impl Player {
 
         if cfg!(feature = "avm_debug") {
             match event {
-                PlayerEvent::KeyDown {
+                InputEvent::KeyDown {
                     key_code: KeyCode::V,
                     ..
                 } if self.input.is_key_down(KeyCode::CONTROL)
@@ -1096,7 +1097,7 @@ impl Player {
                         tracing::info!("Variable dump:\n{}", dumper.output());
                     });
                 }
-                PlayerEvent::KeyDown {
+                InputEvent::KeyDown {
                     key_code: KeyCode::D,
                     ..
                 } if self.input.is_key_down(KeyCode::CONTROL)
@@ -1118,7 +1119,7 @@ impl Player {
                         }
                     });
                 }
-                PlayerEvent::KeyDown {
+                InputEvent::KeyDown {
                     key_code: KeyCode::F,
                     ..
                 } if self.input.is_key_down(KeyCode::CONTROL)
@@ -1133,11 +1134,11 @@ impl Player {
         }
 
         self.mutate_with_update_context(|context| {
-            let button_event = ButtonKeyCode::from_player_event(event)
+            let button_event = ButtonKeyCode::from_input_event(event)
                 .map(|key_code| ClipEvent::KeyPress { key_code });
 
-            if let PlayerEvent::KeyDown { key_code, key_char }
-            | PlayerEvent::KeyUp { key_code, key_char } = event
+            if let InputEvent::KeyDown { key_code, key_char }
+            | InputEvent::KeyUp { key_code, key_char } = event
             {
                 let ctrl_key = context.input.is_key_down(KeyCode::CONTROL);
                 let alt_key = context.input.is_key_down(KeyCode::ALT);
@@ -1146,8 +1147,8 @@ impl Player {
                 let mut activation = Avm2Activation::from_nothing(context);
 
                 let event_name = match event {
-                    PlayerEvent::KeyDown { .. } => istr!("keyDown"),
-                    PlayerEvent::KeyUp { .. } => istr!("keyUp"),
+                    InputEvent::KeyDown { .. } => istr!("keyDown"),
+                    InputEvent::KeyUp { .. } => istr!("keyUp"),
                     _ => unreachable!(),
                 };
 
@@ -1192,47 +1193,47 @@ impl Player {
 
             // Propagate clip events.
             let (clip_event, listener) = match event {
-                PlayerEvent::KeyDown { .. } => {
+                InputEvent::KeyDown { .. } => {
                     (Some(ClipEvent::KeyDown), Some(("Key", "onKeyDown", vec![])))
                 }
-                PlayerEvent::KeyUp { .. } => {
+                InputEvent::KeyUp { .. } => {
                     (Some(ClipEvent::KeyUp), Some(("Key", "onKeyUp", vec![])))
                 }
-                PlayerEvent::MouseMove { .. } => (
+                InputEvent::MouseMove { .. } => (
                     Some(ClipEvent::MouseMove),
                     Some(("Mouse", "onMouseMove", vec![])),
                 ),
-                PlayerEvent::MouseUp {
+                InputEvent::MouseUp {
                     button: MouseButton::Left,
                     ..
                 } => (
                     Some(ClipEvent::MouseUp),
                     Some(("Mouse", "onMouseUp", vec![])),
                 ),
-                PlayerEvent::MouseDown {
+                InputEvent::MouseDown {
                     button: MouseButton::Left,
                     ..
                 } => (
                     Some(ClipEvent::MouseDown),
                     Some(("Mouse", "onMouseDown", vec![])),
                 ),
-                PlayerEvent::MouseWheel { delta } => {
+                InputEvent::MouseWheel { delta } => {
                     let delta = Value::from(delta.lines());
                     (None, Some(("Mouse", "onMouseWheel", vec![delta])))
                 }
-                PlayerEvent::MouseUp {
+                InputEvent::MouseUp {
                     button: MouseButton::Right,
                     ..
                 } => (Some(ClipEvent::RightMouseUp), None),
-                PlayerEvent::MouseDown {
+                InputEvent::MouseDown {
                     button: MouseButton::Right,
                     ..
                 } => (Some(ClipEvent::RightMouseDown), None),
-                PlayerEvent::MouseUp {
+                InputEvent::MouseUp {
                     button: MouseButton::Middle,
                     ..
                 } => (Some(ClipEvent::MiddleMouseUp), None),
-                PlayerEvent::MouseDown {
+                InputEvent::MouseDown {
                     button: MouseButton::Middle,
                     ..
                 } => (Some(ClipEvent::MiddleMouseDown), None),
@@ -1278,10 +1279,10 @@ impl Player {
             // KeyPress events take precedence over text input.
             if !key_press_handled {
                 if let Some(text) = context.focus_tracker.get_as_edit_text() {
-                    if let PlayerEvent::TextInput { codepoint } = event {
+                    if let InputEvent::TextInput { codepoint } = event {
                         text.text_input(codepoint, context);
                     }
-                    if let PlayerEvent::TextControl { code } = event {
+                    if let InputEvent::TextControl { code } = event {
                         text.text_control_input(code, context);
                     }
                 }
@@ -1289,7 +1290,7 @@ impl Player {
 
             // KeyPress events also take precedence over tabbing.
             if !key_press_handled {
-                if let PlayerEvent::KeyDown {
+                if let InputEvent::KeyDown {
                     key_code: KeyCode::TAB,
                     ..
                 } = event
@@ -1306,10 +1307,10 @@ impl Player {
                 if let Some(focus) = context.focus_tracker.get() {
                     if matches!(
                         event,
-                        PlayerEvent::KeyDown {
+                        InputEvent::KeyDown {
                             key_code: KeyCode::ENTER,
                             ..
-                        } | PlayerEvent::TextInput { codepoint: ' ' }
+                        } | InputEvent::TextInput { codepoint: ' ' }
                     ) {
                         // The button/clip is pressed and then immediately released.
                         // We do not have to wait for KeyUp.
@@ -1317,7 +1318,7 @@ impl Player {
                         focus.handle_clip_event(context, ClipEvent::Release { index: 0 });
                     }
 
-                    if let PlayerEvent::KeyDown { key_code, .. } = event {
+                    if let InputEvent::KeyDown { key_code, .. } = event {
                         if let Some(direction) = NavigationDirection::from_key_code(key_code) {
                             let tracker = context.focus_tracker;
                             tracker.navigate(context, direction);
@@ -1330,9 +1331,9 @@ impl Player {
         });
 
         // Update mouse state.
-        if let PlayerEvent::MouseMove { x, y }
-        | PlayerEvent::MouseDown { x, y, .. }
-        | PlayerEvent::MouseUp { x, y, .. } = event
+        if let InputEvent::MouseMove { x, y }
+        | InputEvent::MouseDown { x, y, .. }
+        | InputEvent::MouseUp { x, y, .. } = event
         {
             let inverse_view_matrix =
                 self.mutate_with_update_context(|context| context.stage.inverse_view_matrix());
@@ -1356,7 +1357,7 @@ impl Player {
             }
         }
 
-        if let PlayerEvent::MouseWheel { delta } = event {
+        if let InputEvent::MouseWheel { delta } = event {
             self.mutate_with_update_context(|context| {
                 let target = if let Some(over_object) = context.mouse_data.hovered {
                     if over_object.as_displayobject().movie().is_action_script_3()
@@ -1377,7 +1378,7 @@ impl Player {
             });
         }
 
-        if let PlayerEvent::MouseLeave = event {
+        if let InputEvent::MouseLeave = event {
             if self.update_mouse_state(&changed_mouse_buttons, true, &mut player_event_handled) {
                 self.needs_render = true;
             }
@@ -1392,10 +1393,10 @@ impl Player {
         player_event_handled
     }
 
-    fn should_reset_highlight(&self, event: PlayerEvent) -> bool {
+    fn should_reset_highlight(&self, event: InputEvent) -> bool {
         if matches!(
             event,
-            PlayerEvent::MouseDown {
+            InputEvent::MouseDown {
                 button: MouseButton::Left,
                 ..
             }
@@ -1407,13 +1408,13 @@ impl Player {
         if self.swf.version() < 9
             && matches!(
                 event,
-                PlayerEvent::MouseDown {
+                InputEvent::MouseDown {
                     button: MouseButton::Left | MouseButton::Right,
                     ..
-                } | PlayerEvent::MouseUp {
+                } | InputEvent::MouseUp {
                     button: MouseButton::Left | MouseButton::Right,
                     ..
-                } | PlayerEvent::MouseMove { .. }
+                } | InputEvent::MouseMove { .. }
             )
         {
             // For SWF8 and older, other mouse events also reset the highlight.
