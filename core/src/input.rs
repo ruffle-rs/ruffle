@@ -67,9 +67,9 @@ impl InputManager {
         }
     }
 
-    pub fn map_input_event(&mut self, event: PlayerEvent) -> Option<PlayerEvent> {
+    pub fn process_input_event(&mut self, event: PlayerEvent) -> Option<PlayerEvent> {
         // Optionally transform gamepad button events into key events.
-        match event {
+        let event = match event {
             PlayerEvent::GamepadButtonDown { button } => {
                 if let Some(key_code) = self.gamepad_button_mapping.get(&button) {
                     Some(PlayerEvent::KeyDown {
@@ -93,10 +93,16 @@ impl InputManager {
                 }
             }
             _ => Some(event),
+        };
+
+        if let Some(event) = event {
+            self.handle_event(&event);
         }
+
+        event
     }
 
-    pub fn handle_event(&mut self, event: &PlayerEvent) {
+    fn handle_event(&mut self, event: &PlayerEvent) {
         match *event {
             PlayerEvent::KeyDown { key_code, key_char } => {
                 self.last_char = key_char;

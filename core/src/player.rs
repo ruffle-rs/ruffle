@@ -1048,12 +1048,11 @@ impl Player {
     ///    second wave of event processing.
     fn handle_input_event(&mut self, event: PlayerEvent) -> bool {
         let mut player_event_handled = false;
-        let Some(event) = self.input.map_input_event(event) else {
+        let prev_mouse_buttons = self.input.get_mouse_down_buttons();
+        let Some(event) = self.input.process_input_event(event) else {
             return false;
         };
 
-        let prev_mouse_buttons = self.input.get_mouse_down_buttons();
-        self.input.handle_event(&event);
         let changed_mouse_buttons = self
             .input
             .get_mouse_down_buttons()
