@@ -1,5 +1,6 @@
 use std::f64::consts::PI;
 
+use crate::avm2::error::argument_error;
 use crate::avm2::globals::slots::flash_geom_perspective_projection as pp_slots;
 use crate::avm2::{Activation, Error, Object, TObject, Value};
 use crate::display_object::TDisplayObject;
@@ -35,9 +36,10 @@ pub fn get_focal_length<'gc>(
     );
 
     let this = this.as_object().unwrap();
-    let width = get_width(activation, this);
 
     let fov = this.get_slot(pp_slots::FOV).coerce_to_number(activation)?;
+
+    let width = get_width(activation, this);
     let focal_length = (width / 2.0) / f64::tan(fov / 2.0 * DEG2RAD);
 
     Ok(focal_length.into())
@@ -55,9 +57,18 @@ pub fn set_focal_length<'gc>(
         "focalLength"
     );
     let this = this.as_object().unwrap();
-    let width = get_width(activation, this);
 
     let focal_length = args.get(0).unwrap().coerce_to_number(activation)?;
+
+    if focal_length <= 0.0 {
+        return Err(Error::AvmError(argument_error(
+            activation,
+            &format!("Error #2186: Invalid focalLength {focal_length}."),
+            2186,
+        )?));
+    }
+
+    let width = get_width(activation, this);
     let fov = f64::atan((width / 2.0) / focal_length) / DEG2RAD * 2.0;
 
     this.set_slot(pp_slots::FOV, fov.into(), activation)?;
