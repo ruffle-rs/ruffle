@@ -1,44 +1,58 @@
 package flash.geom {
-    import __ruffle__.stub_constructor;
     import __ruffle__.stub_getter;
     import __ruffle__.stub_method;
     import __ruffle__.stub_setter;
+    import flash.display.DisplayObject;
     import flash.geom.Matrix3D;
     import flash.geom.Point;
 
     public class PerspectiveProjection {
-        // Getters are stubbed with what seem to be Flash's default values
+        [Ruffle(NativeAccessible)]
+        private var displayObject: DisplayObject = null;
+
+        [Ruffle(NativeAccessible)]
+        private var fov: Number = 55.0;
+
+        [Ruffle(NativeAccessible)]
+        private var center: Point = new Point(250, 250);
+
         public function PerspectiveProjection() {
-            stub_constructor("flash.geom.PerspectiveProjection");
         }
 
         public function get fieldOfView():Number {
             stub_getter("flash.geom.PerspectiveProjection", "fieldOfView");
-            return 55;
-        }
-        public function set fieldOfView(value:Number) {
-            stub_setter("flash.geom.PerspectiveProjection", "fieldOfView");
+            return this.fov;
         }
 
-        public function get focalLength():Number {
-            stub_getter("flash.geom.PerspectiveProjection", "focalLength");
-            return 480.25;
+        public function set fieldOfView(value:Number) {
+            // TODO: This setter should update the associated displayObject when there is.
+            stub_setter("flash.geom.PerspectiveProjection", "fieldOfView");
+
+            this.fov = value;
         }
-        public function set focalLength(value:Number) {
-            stub_setter("flash.geom.PerspectiveProjection", "focalLength");
-        }
+
+        public native function get focalLength():Number;
+
+        public native function set focalLength(value:Number);
 
         public function get projectionCenter():Point {
             stub_getter("flash.geom.PerspectiveProjection", "projectionCenter");
-            return new Point(250, 250);
+            return this.center;
         }
         public function set projectionCenter(value:Point) {
+            // TODO: This setter should update the associated displayObject when there is.
             stub_setter("flash.geom.PerspectiveProjection", "projectionCenter");
+            this.center = value;
         }
 
         public function toMatrix3D():Matrix3D {
-            stub_method("flash.geom.PerspectiveProjection", "toMatrix3D");
-            return new Matrix3D();
+            var fl: Number = this.focalLength;
+            return new Matrix3D(new <Number>[
+              fl, 0, 0, 0,
+              0, fl, 0, 0,
+              0, 0, 1, 1,
+              0, 0, 0, 0
+            ]);
         }
     }
 }
