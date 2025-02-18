@@ -28,6 +28,10 @@ package flash.geom {
             // TODO: This setter should update the associated displayObject when there is.
             stub_setter("flash.geom.PerspectiveProjection", "fieldOfView");
 
+            if (value <= 0 || 180 <= value) {
+                throw new ArgumentError("Error #2182: Invalid fieldOfView value.  The value must be greater than 0 and less than 180.", 2182);
+            }
+
             this.fov = value;
         }
 
