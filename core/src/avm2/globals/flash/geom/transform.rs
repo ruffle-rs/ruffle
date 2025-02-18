@@ -1,6 +1,7 @@
 use crate::avm2::globals::slots::flash_geom_color_transform as ct_slots;
 use crate::avm2::globals::slots::flash_geom_matrix as matrix_slots;
 use crate::avm2::globals::slots::flash_geom_matrix_3d as matrix3d_slots;
+use crate::avm2::globals::slots::flash_geom_perspective_projection as pp_slots;
 use crate::avm2::globals::slots::flash_geom_transform as transform_slots;
 use crate::avm2::object::VectorObject;
 use crate::avm2::parameters::ParametersExt;
@@ -400,13 +401,34 @@ pub fn get_perspective_projection<'gc>(
     };
 
     if has_perspective_projection {
-        let object = activation
+        let result = activation
             .avm2()
             .classes()
             .perspectiveprojection
             .construct(activation, &[])?;
 
-        Ok(object)
+        let object = result.as_object().unwrap();
+        object.set_slot(
+            pp_slots::DISPLAY_OBJECT,
+            this.get_slot(transform_slots::DISPLAY_OBJECT),
+            activation,
+        )?;
+
+        if display_object.is_root() && display_object.as_stage().is_none() {
+            // TODO: Move this special PerspectiveProjection assignment to `root` object initialization time.
+            // This should be assigned to `root.transform` from the beginning.
+
+            let (width, height) = activation.context.stage.stage_size();
+
+            let center = activation.avm2().classes().point.construct(
+                activation,
+                &[(width as f64 / 2.0).into(), (height as f64 / 2.0).into()],
+            )?;
+
+            object.set_slot(pp_slots::CENTER, center, activation)?;
+        }
+
+        Ok(result)
     } else {
         Ok(Value::Null)
     }
