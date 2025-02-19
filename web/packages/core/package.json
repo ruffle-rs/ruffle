@@ -32,7 +32,7 @@
         "postcss": "^8.5.2",
         "postcss-nesting": "^13.0.1",
         "replace-in-file": "^8.3.0",
-        "tsx": "^4.19.2",
+        "tsx": "^4.19.3",
         "tsx-dom": "^3.1.0",
         "typedoc": "^0.27.7",
         "typescript": "^5.7.3"
