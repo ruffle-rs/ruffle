@@ -65,14 +65,11 @@ impl ShapePipeline {
         stencilless: wgpu::RenderPipeline,
         mut f: impl FnMut(MaskState) -> wgpu::RenderPipeline,
     ) -> Self {
-        let mask_array: [wgpu::RenderPipeline; MaskState::LENGTH] = (0..MaskState::LENGTH)
-            .map(|mask_enum| {
+        let mask_array: [wgpu::RenderPipeline; MaskState::LENGTH] =
+            std::array::from_fn(|mask_enum| {
                 let mask_state = MaskState::from_usize(mask_enum);
                 f(mask_state)
-            })
-            .collect::<Vec<_>>()
-            .try_into()
-            .unwrap();
+            });
         ShapePipeline {
             pipelines: EnumMap::from_array(mask_array),
             stencilless,
@@ -162,8 +159,8 @@ impl Pipelines {
             &bind_layouts.bitmap,
         ];
 
-        let bitmap_pipelines: [ShapePipeline; TrivialBlend::LENGTH] = (0..TrivialBlend::LENGTH)
-            .map(|blend| {
+        let bitmap_pipelines: [ShapePipeline; TrivialBlend::LENGTH] =
+            std::array::from_fn(|blend| {
                 let blend = TrivialBlend::from_usize(blend);
                 let name = format!("Bitmap ({blend:?})");
                 create_shape_pipeline(
@@ -178,10 +175,7 @@ impl Pipelines {
                     &[],
                     PrimitiveTopology::TriangleList,
                 )
-            })
-            .collect::<Vec<_>>()
-            .try_into()
-            .unwrap();
+            });
 
         let bitmap_opaque_pipeline_layout_label =
             create_debug_label!("Opaque bitmap pipeline layout");
