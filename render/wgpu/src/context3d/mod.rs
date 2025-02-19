@@ -122,7 +122,7 @@ impl WgpuContext3D {
             BitmapHandle(Arc::new(Texture {
                 bind_linear: Default::default(),
                 bind_nearest: Default::default(),
-                texture: Arc::new(dummy_texture),
+                texture: dummy_texture,
                 copy_count: Cell::new(0),
             }))
         };
@@ -669,13 +669,13 @@ impl Context3D for WgpuContext3D {
                     // which is what the Stage rendering code expects. In multisample mode,
                     // this is our resolve texture.
                     self.back_buffer_raw_texture_handle = BitmapHandle(Arc::new(Texture {
-                        texture: Arc::new(back_buffer_resolve_texture.unwrap()),
+                        texture: back_buffer_resolve_texture.unwrap(),
                         bind_linear: Default::default(),
                         bind_nearest: Default::default(),
                         copy_count: Cell::new(0),
                     }));
                     self.front_buffer_raw_texture_handle = BitmapHandle(Arc::new(Texture {
-                        texture: Arc::new(front_buffer_resolve_texture.unwrap()),
+                        texture: front_buffer_resolve_texture.unwrap(),
                         bind_linear: Default::default(),
                         bind_nearest: Default::default(),
                         copy_count: Cell::new(0),
@@ -685,13 +685,13 @@ impl Context3D for WgpuContext3D {
                     // so our main texture gets used as the raw texture handle.
 
                     self.back_buffer_raw_texture_handle = BitmapHandle(Arc::new(Texture {
-                        texture: Arc::new(back_buffer_texture),
+                        texture: back_buffer_texture,
                         bind_linear: Default::default(),
                         bind_nearest: Default::default(),
                         copy_count: Cell::new(0),
                     }));
                     self.front_buffer_raw_texture_handle = BitmapHandle(Arc::new(Texture {
-                        texture: Arc::new(front_buffer_texture),
+                        texture: front_buffer_texture,
                         bind_linear: Default::default(),
                         bind_nearest: Default::default(),
                         copy_count: Cell::new(0),

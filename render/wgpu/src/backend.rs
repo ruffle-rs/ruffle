@@ -656,7 +656,7 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
         );
 
         let handle = BitmapHandle(Arc::new(Texture {
-            texture: Arc::new(texture),
+            texture,
             bind_linear: Default::default(),
             bind_nearest: Default::default(),
             copy_count: Cell::new(0),
@@ -912,7 +912,7 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
                             | wgpu::TextureUsages::COPY_SRC,
                     });
                 BitmapHandle(Arc::new(Texture {
-                    texture: Arc::new(texture),
+                    texture,
                     bind_linear: Default::default(),
                     bind_nearest: Default::default(),
                     copy_count: Cell::new(0),
@@ -1072,7 +1072,7 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
                     | wgpu::TextureUsages::COPY_SRC,
             });
         Ok(BitmapHandle(Arc::new(Texture {
-            texture: Arc::new(texture),
+            texture,
             bind_linear: Default::default(),
             bind_nearest: Default::default(),
             copy_count: Cell::new(0),
@@ -1170,9 +1170,9 @@ pub enum RenderTargetMode {
     // we will blend with the previous contents of the texture.
     // This is used in `render_offscreen`, as we need to blend with the previous
     // contents of our `BitmapData` texture
-    FreshWithTexture(Arc<wgpu::Texture>),
+    FreshWithTexture(wgpu::Texture),
     // Use the provided texture as our frame buffer, and clear it with the given color.
-    ExistingWithColor(Arc<wgpu::Texture>, wgpu::Color),
+    ExistingWithColor(wgpu::Texture, wgpu::Color),
 }
 
 impl RenderTargetMode {
