@@ -4,7 +4,6 @@ use crate::Error;
 use ruffle_render::bitmap::PixelRegion;
 use std::fmt::Debug;
 use std::ops::Deref;
-use std::sync::Arc;
 use tracing::instrument;
 
 pub trait RenderTargetFrame: Debug {
@@ -166,7 +165,7 @@ pub struct TextureBufferInfo {
 #[derive(Debug)]
 pub struct TextureTarget {
     pub size: wgpu::Extent3d,
-    pub texture: Arc<wgpu::Texture>,
+    pub texture: wgpu::Texture,
     pub format: wgpu::TextureFormat,
     pub buffer: Option<TextureBufferInfo>,
 }
@@ -228,7 +227,7 @@ impl TextureTarget {
         });
         Ok(Self {
             size,
-            texture: Arc::new(texture),
+            texture,
             format,
             buffer: Some(TextureBufferInfo {
                 buffer: MaybeOwnedBuffer::Owned(buffer, buffer_dimensions),
@@ -237,7 +236,7 @@ impl TextureTarget {
         })
     }
 
-    pub fn get_texture(&self) -> Arc<wgpu::Texture> {
+    pub fn get_texture(&self) -> wgpu::Texture {
         self.texture.clone()
     }
 

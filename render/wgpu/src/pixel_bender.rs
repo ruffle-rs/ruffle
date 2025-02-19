@@ -31,7 +31,7 @@ use crate::{
 pub struct PixelBenderWgpuShader {
     bind_group_layout: wgpu::BindGroupLayout,
     pipeline_layout: PipelineLayout,
-    pipelines: RefCell<HashMap<(u32, wgpu::TextureFormat), Arc<RenderPipeline>>>,
+    pipelines: RefCell<HashMap<(u32, wgpu::TextureFormat), RenderPipeline>>,
     vertex_shader: wgpu::ShaderModule,
     fragment_shader: wgpu::ShaderModule,
     shader: PixelBenderShader,
@@ -50,48 +50,46 @@ impl PixelBenderWgpuShader {
         descriptors: &Descriptors,
         samples: u32,
         format: TextureFormat,
-    ) -> Arc<wgpu::RenderPipeline> {
+    ) -> wgpu::RenderPipeline {
         self.pipelines
             .borrow_mut()
             .entry((samples, format))
             .or_insert_with(|| {
-                Arc::new(
-                    descriptors
-                        .device
-                        .create_render_pipeline(&RenderPipelineDescriptor {
-                            label: create_debug_label!("PixelBender shader pipeline").as_deref(),
-                            layout: Some(&self.pipeline_layout),
-                            vertex: VertexState {
-                                module: &self.vertex_shader,
-                                entry_point: Some(naga_pixelbender::VERTEX_SHADER_ENTRYPOINT),
-                                buffers: &VERTEX_BUFFERS_DESCRIPTION_FILTERS,
-                                compilation_options: Default::default(),
-                            },
-                            fragment: Some(wgpu::FragmentState {
-                                module: &self.fragment_shader,
-                                entry_point: Some(naga_pixelbender::FRAGMENT_SHADER_ENTRYPOINT),
-                                targets: &[Some(ColorTargetState {
-                                    format,
-                                    // FIXME - what should this be?
-                                    blend: Some(wgpu::BlendState {
-                                        color: BlendComponent::OVER,
-                                        alpha: BlendComponent::OVER,
-                                    }),
-                                    write_mask: ColorWrites::all(),
-                                })],
-                                compilation_options: Default::default(),
-                            }),
-                            primitive: Default::default(),
-                            depth_stencil: None,
-                            multisample: wgpu::MultisampleState {
-                                count: samples,
-                                mask: !0,
-                                alpha_to_coverage_enabled: false,
-                            },
-                            multiview: Default::default(),
-                            cache: None,
+                descriptors
+                    .device
+                    .create_render_pipeline(&RenderPipelineDescriptor {
+                        label: create_debug_label!("PixelBender shader pipeline").as_deref(),
+                        layout: Some(&self.pipeline_layout),
+                        vertex: VertexState {
+                            module: &self.vertex_shader,
+                            entry_point: Some(naga_pixelbender::VERTEX_SHADER_ENTRYPOINT),
+                            buffers: &VERTEX_BUFFERS_DESCRIPTION_FILTERS,
+                            compilation_options: Default::default(),
+                        },
+                        fragment: Some(wgpu::FragmentState {
+                            module: &self.fragment_shader,
+                            entry_point: Some(naga_pixelbender::FRAGMENT_SHADER_ENTRYPOINT),
+                            targets: &[Some(ColorTargetState {
+                                format,
+                                // FIXME - what should this be?
+                                blend: Some(wgpu::BlendState {
+                                    color: BlendComponent::OVER,
+                                    alpha: BlendComponent::OVER,
+                                }),
+                                write_mask: ColorWrites::all(),
+                            })],
+                            compilation_options: Default::default(),
                         }),
-                )
+                        primitive: Default::default(),
+                        depth_stencil: None,
+                        multisample: wgpu::MultisampleState {
+                            count: samples,
+                            mask: !0,
+                            alpha_to_coverage_enabled: false,
+                        },
+                        multiview: Default::default(),
+                        cache: None,
+                    })
             })
             .clone()
     }
@@ -514,7 +512,7 @@ pub(super) fn run_pixelbender_shader_impl(
                         );
 
                         BitmapHandle(Arc::new(Texture {
-                            texture: Arc::new(fresh_texture),
+                            texture: fresh_texture,
                             bind_linear: Default::default(),
                             bind_nearest: Default::default(),
                             copy_count: Cell::new(0),

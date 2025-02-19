@@ -248,7 +248,7 @@ impl QueueSyncHandle {
 
 #[derive(Debug)]
 pub struct Texture {
-    pub(crate) texture: Arc<wgpu::Texture>,
+    pub(crate) texture: wgpu::Texture,
     bind_linear: OnceCell<BitmapBinds>,
     bind_nearest: OnceCell<BitmapBinds>,
     copy_count: Cell<u8>,
