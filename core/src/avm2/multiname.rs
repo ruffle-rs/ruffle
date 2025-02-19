@@ -282,7 +282,7 @@ impl<'gc> Multiname<'gc> {
             abc_multiname,
             AbcMultiname::QNameA { .. }
                 | AbcMultiname::RTQNameA { .. }
-                | AbcMultiname::RTQNameLA { .. }
+                | AbcMultiname::RTQNameLA
                 | AbcMultiname::MultinameA { .. }
                 | AbcMultiname::MultinameLA { .. }
         ) {
