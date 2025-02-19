@@ -923,18 +923,13 @@ impl<'a> NagaBuilder<'a> {
             (source.swizzle >> 4) & 0b11,
             (source.swizzle >> 6) & 0b11,
         ];
-        let swizzle_components: [SwizzleComponent; 4] = swizzle_flags
-            .into_iter()
-            .map(|flag| match flag {
-                0b00 => SwizzleComponent::X,
-                0b01 => SwizzleComponent::Y,
-                0b10 => SwizzleComponent::Z,
-                0b11 => SwizzleComponent::W,
-                _ => unreachable!(),
-            })
-            .collect::<Vec<_>>()
-            .try_into()
-            .unwrap();
+        let swizzle_components = swizzle_flags.map(|flag| match flag {
+            0b00 => SwizzleComponent::X,
+            0b01 => SwizzleComponent::Y,
+            0b10 => SwizzleComponent::Z,
+            0b11 => SwizzleComponent::W,
+            _ => unreachable!(),
+        });
 
         Ok(self.evaluate_expr(Expression::Swizzle {
             size: output,
