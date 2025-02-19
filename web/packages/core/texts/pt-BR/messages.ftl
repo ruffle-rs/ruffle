@@ -68,6 +68,10 @@ error-wasm-disabled-on-edge =
     Para corrigir isso, tente abrir configurações do seu navegador, clicando em "Privacidade, pesquisa e serviços", rolando para baixo e desativando "Melhore sua segurança na web".
     Isso permitirá que seu navegador carregue os arquivos ".wasm" necessários.
     Se o problema persistir, talvez seja necessário usar um navegador diferente.
+error-wasm-unsupported-browser =
+    O navegador que você está usando não suporta as extensões WebAssembly Ruffle exige que seja executado.
+    Por favor, mude para um navegador suportado.
+    Você pode encontrar uma lista de navegadores suportados no wiki.
 error-javascript-conflict =
     Ruffle encontrou um grande problema ao tentar inicializar.
     Parece que esta página usa código JavaScript que entra em conflito com o Ruffle.

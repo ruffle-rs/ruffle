@@ -20,6 +20,7 @@ file-menu-exit = Kilépés
 controls-menu = Vezérlők
 controls-menu-suspend = Felfüggesztés
 controls-menu-resume = Folytatás
+controls-menu-step-once = Egy lépés
 controls-menu-volume = Hangerőszabályzó
 help-menu = Súgó
 help-menu-join-discord = Csatlakozás a Discordhoz

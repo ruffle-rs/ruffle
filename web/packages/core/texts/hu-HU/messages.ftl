@@ -68,6 +68,10 @@ error-wasm-disabled-on-edge =
     A probléma megoldásához nyisd meg a böngésző beállításait, kattints az „Adatvédelem, keresés és szolgáltatások” elemre, görgess le, és kapcsold ki a „Fokozott biztonság a weben” opciót.
     Ez lehetővé teszi a böngésző számára, hogy betöltse a szükséges ".wasm" fájlokat.
     Ha a probléma továbbra is fennáll, lehet, hogy másik böngészőt kell használnod.
+error-wasm-unsupported-browser =
+    Az általad használt böngésző nem támogatja a Ruffle futtatásához szükséges WebAssembly kiegészítéseket.
+    Kérlek, válts egy támogatott böngészőre.
+    A támogatott böngészők listáját a Wikin találod.
 error-javascript-conflict =
     A Ruffle komoly problémába ütközött az inicializálás során.
     Úgy tűnik, ez az oldal olyan JavaScript-kódot használ, amely ütközik a Ruffle-lel.
