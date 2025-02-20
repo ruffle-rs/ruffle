@@ -68,7 +68,7 @@ web-sys = "0.3.77"
 log = "0.4"
 num-derive = "0.4.2"
 num-traits = "0.2.19"
-serde = "1.0.217"
+serde = "1.0.218"
 thiserror = "2.0.11"
 url = "2.5.2"
 # Make sure to match wasm-bindgen-cli version to this everywhere.
