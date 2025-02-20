@@ -219,17 +219,17 @@ impl<'gc> SystemClasses<'gc> {
     /// Construct a minimal set of system classes necessary for bootstrapping
     /// player globals.
     ///
-    /// All other system classes aside from the three given here will be set to
+    /// All other system classes aside from the two given here will be set to
     /// the empty object also handed to this function. It is the caller's
     /// responsibility to instantiate each class and replace the empty object
     /// with that.
-    fn new(object: ClassObject<'gc>, function: ClassObject<'gc>, class: ClassObject<'gc>) -> Self {
+    fn new(object: ClassObject<'gc>, class: ClassObject<'gc>) -> Self {
         SystemClasses {
             object,
-            function,
             class,
 
             // temporary initialization
+            function: object,
             string: object,
             boolean: object,
             number: object,
@@ -342,17 +342,10 @@ impl<'gc> SystemClasses<'gc> {
 }
 
 impl<'gc> SystemClassDefs<'gc> {
-    fn new(
-        object: Class<'gc>,
-        class: Class<'gc>,
-        function: Class<'gc>,
-        null: Class<'gc>,
-        void: Class<'gc>,
-    ) -> Self {
+    fn new(object: Class<'gc>, class: Class<'gc>, null: Class<'gc>, void: Class<'gc>) -> Self {
         SystemClassDefs {
             object,
             class,
-            function,
             null,
             void,
 
@@ -360,6 +353,7 @@ impl<'gc> SystemClassDefs<'gc> {
             array: object,
             boolean: object,
             int: object,
+            function: object,
             generic_vector: object,
             namespace: object,
             number: object,
@@ -449,9 +443,6 @@ pub fn load_player_globals<'gc>(
     //  - Object is an instance of itself, as well as its prototype
     //  - All other types are instances of Class, which is an instance of
     //    itself
-    //  - Function's prototype is an instance of itself
-    //  - All methods created by the above-mentioned classes are also instances
-    //    of Function
     //
     // Hence, this ridiculously complicated dance of classdef, type allocation,
     // and partial initialization.
@@ -472,9 +463,6 @@ pub fn load_player_globals<'gc>(
     class_i_class.set_c_class(mc, class_c_class);
     class_c_class.set_i_class(mc, class_i_class);
 
-    // Function is more of a "normal" class than the other two, so we can create it normally.
-    let fn_classdef = function::create_class(activation, object_i_class, class_i_class);
-
     // This is a weird internal class in avmplus, but it allows for implementing
     // `describeType(null)` in a cleaner way
     let null_def = null::create_class(activation);
@@ -485,13 +473,11 @@ pub fn load_player_globals<'gc>(
     // Register the classes in the domain, now (except for the global and null classes)
     domain.export_class(object_i_class.name(), object_i_class, mc);
     domain.export_class(class_i_class.name(), class_i_class, mc);
-    domain.export_class(fn_classdef.name(), fn_classdef, mc);
     domain.export_class(void_def.name(), void_def, mc);
 
     activation.context.avm2.system_class_defs = Some(SystemClassDefs::new(
         object_i_class,
         class_i_class,
-        fn_classdef,
         null_def,
         void_def,
     ));
@@ -505,7 +491,6 @@ pub fn load_player_globals<'gc>(
     let class_trait_list = &[
         (public_ns, "Object", object_i_class),
         (public_ns, "Class", class_i_class),
-        (public_ns, "Function", fn_classdef),
     ];
 
     // "trace" is the only builtin function not defined on the toplevel global object
@@ -568,20 +553,9 @@ pub fn load_player_globals<'gc>(
         object_class.instance_vtable(),
     );
 
-    let fn_class = ClassObject::from_class_partial(activation, fn_classdef, Some(object_class));
-    let fn_proto = ScriptObject::custom_object(
-        mc,
-        fn_classdef,
-        Some(object_proto),
-        fn_class.instance_vtable(),
-    );
-
     // Now to weave the Gordian knot...
     object_class.link_prototype(activation, object_proto);
     object_class.link_type(mc, class_proto);
-
-    fn_class.link_prototype(activation, fn_proto);
-    fn_class.link_type(mc, class_proto);
 
     class_class.link_prototype(activation, class_proto);
     class_class.link_type(mc, class_proto);
@@ -590,8 +564,7 @@ pub fn load_player_globals<'gc>(
     // order to continue initializing the player. The rest of the classes
     // are set to a temporary class until we have a chance to initialize them.
 
-    activation.context.avm2.system_classes =
-        Some(SystemClasses::new(object_class, fn_class, class_class));
+    activation.context.avm2.system_classes = Some(SystemClasses::new(object_class, class_class));
 
     // Our activation environment is now functional enough to finish
     // initializing the core class weave. We need to initialize superclasses
@@ -600,14 +573,9 @@ pub fn load_player_globals<'gc>(
 
     // Construct the `ClassObject`s, starting with `Class`. This ensures
     // that the `prototype` property of `Class` gets copied into the *class*
-    // vtables for `Object` and `Function`.
+    // vtable for `Object`.
     let class_class = class_class.into_finished_class(activation)?;
     let object_class = object_class.into_finished_class(activation)?;
-    let fn_class = fn_class.into_finished_class(activation)?;
-
-    // Function's prototype is an instance of itself
-    let fn_proto = fn_class.construct(activation, &[])?.as_object().unwrap();
-    fn_class.link_prototype(activation, fn_proto);
 
     // Object prototype is enough
     globals.set_proto(mc, object_class.prototype());
@@ -632,7 +600,6 @@ pub fn load_player_globals<'gc>(
     // From this point, `globals` is safe to be modified
 
     dynamic_class(activation, object_class, script);
-    dynamic_class(activation, fn_class, script);
     dynamic_class(activation, class_class, script);
 
     // After this point, it is safe to initialize any other classes.
@@ -783,6 +750,8 @@ fn setup_vector_class_object<'gc>(
 }
 
 pub fn init_builtin_system_classes(activation: &mut Activation<'_, '_>) {
+    // We don't include `Function` here because it registers itself manually
+    // in its class initializer
     avm2_system_classes_playerglobal!(
         &mut *activation,
         [
@@ -838,6 +807,7 @@ pub fn init_builtin_system_class_defs(activation: &mut Activation<'_, '_>) {
         [
             ("", "Array", array),
             ("", "Boolean", boolean),
+            ("", "Function", function),
             ("", "int", int),
             ("", "Namespace", namespace),
             ("", "Number", number),

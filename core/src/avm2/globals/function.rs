@@ -1,19 +1,22 @@
 //! Function builtin and prototype
 
 use crate::avm2::activation::Activation;
-use crate::avm2::class::{Class, ClassAttributes};
 use crate::avm2::error::eval_error;
 use crate::avm2::globals::array::resolve_array_hole;
-use crate::avm2::method::{Method, NativeMethodImpl};
-use crate::avm2::object::{function_allocator, FunctionObject, TObject};
+use crate::avm2::method::{Method, NativeMethod};
+use crate::avm2::object::{FunctionObject, TObject};
+use crate::avm2::parameters::ParametersExt;
 use crate::avm2::value::Value;
 use crate::avm2::Error;
-use crate::avm2::QName;
 
-/// Implements `Function`'s instance initializer.
-pub fn instance_init<'gc>(
+use gc_arena::{Gc, GcCell};
+
+/// Implements `Function`'s custom constructor.
+/// This is used when ActionScript manually calls 'new Function()',
+/// which produces a dummy function that just returns `Value::Undefined`
+/// when called.
+pub fn function_constructor<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    _this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if !args.is_empty() {
@@ -24,10 +27,33 @@ pub fn instance_init<'gc>(
         )?));
     }
 
-    Ok(Value::Undefined)
+    let mc = activation.gc();
+
+    let dummy = Gc::new(
+        mc,
+        NativeMethod {
+            method: |_, _, _| Ok(Value::Undefined),
+            name: "<Empty Function>",
+            signature: vec![],
+            resolved_signature: GcCell::new(mc, None),
+            return_type: None,
+            is_variadic: true,
+        },
+    );
+
+    let function_object = FunctionObject::from_method(
+        activation,
+        Method::Native(dummy),
+        activation.create_scopechain(),
+        None,
+        None,
+        None,
+    );
+
+    Ok(function_object.into())
 }
 
-pub fn class_call<'gc>(
+pub fn call_handler<'gc>(
     activation: &mut Activation<'_, 'gc>,
     _this: Value<'gc>,
     args: &[Value<'gc>],
@@ -39,110 +65,57 @@ pub fn class_call<'gc>(
         .construct(activation, args)
 }
 
-/// Implements `Function`'s class initializer.
-pub fn class_init<'gc>(
+pub fn _init_function_class<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let this = this.as_object().unwrap();
+    // Set Function's prototype, register it in SystemClasses, and initialize
+    // Object's prototype. This method is called from AS during builtins
+    // initialization.
+    let function_class_object = this.as_object().unwrap().as_class_object().unwrap();
 
-    let scope = activation.create_scopechain();
-    let this_class = this.as_class_object().unwrap();
-    let function_proto = this_class.prototype();
+    activation.avm2().system_classes.as_mut().unwrap().function = function_class_object;
 
-    function_proto.set_string_property_local(
-        "call",
-        FunctionObject::from_method(
-            activation,
-            Method::from_builtin(call, "call", activation.gc()),
-            scope,
-            None,
-            None,
-            None,
-        )
-        .into(),
-        activation,
-    )?;
-    function_proto.set_string_property_local(
-        "apply",
-        FunctionObject::from_method(
-            activation,
-            Method::from_builtin(apply, "apply", activation.gc()),
-            scope,
-            None,
-            None,
-            None,
-        )
-        .into(),
-        activation,
-    )?;
-    function_proto.set_string_property_local(
-        "toString",
-        FunctionObject::from_method(
-            activation,
-            Method::from_builtin(to_string, "toString", activation.gc()),
-            scope,
-            None,
-            None,
-            None,
-        )
-        .into(),
-        activation,
-    )?;
-    function_proto.set_string_property_local(
-        "toLocaleString",
-        FunctionObject::from_method(
-            activation,
-            Method::from_builtin(to_string, "toLocaleString", activation.gc()),
-            scope,
-            None,
-            None,
-            None,
-        )
-        .into(),
-        activation,
-    )?;
-    function_proto.set_local_property_is_enumerable(activation.gc(), "call".into(), false);
-    function_proto.set_local_property_is_enumerable(activation.gc(), "apply".into(), false);
-    function_proto.set_local_property_is_enumerable(activation.gc(), "toString".into(), false);
-    function_proto.set_local_property_is_enumerable(
-        activation.gc(),
-        "toLocaleString".into(),
-        false,
-    );
+    let function_proto = function_class_object
+        .construct(activation, &[])?
+        .as_object()
+        .unwrap();
+    function_class_object.link_prototype(activation, function_proto);
+
+    crate::avm2::globals::object::init_object_prototype(activation)?;
 
     Ok(Value::Undefined)
 }
 
 /// Implements `Function.prototype.call`
-fn call<'gc>(
+pub fn call<'gc>(
     activation: &mut Activation<'_, 'gc>,
     func: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let func = func.as_object().unwrap();
+    let func = func.as_object().unwrap().as_function_object().unwrap();
 
-    let this = args.get(0).copied().unwrap_or(Value::Null);
+    let this = args.get_value(0);
 
     if args.len() > 1 {
-        Ok(Value::from(func).call(activation, this, &args[1..])?)
+        Ok(func.call(activation, this, &args[1..])?)
     } else {
-        Ok(Value::from(func).call(activation, this, &[])?)
+        Ok(func.call(activation, this, &[])?)
     }
 }
 
 /// Implements `Function.prototype.apply`
-fn apply<'gc>(
+pub fn apply<'gc>(
     activation: &mut Activation<'_, 'gc>,
     func: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let func = func.as_object().unwrap();
+    let func = func.as_object().unwrap().as_function_object().unwrap();
 
-    let this = args.get(0).copied().unwrap_or(Value::Null);
+    let this = args.get_value(0);
 
-    let arg_array = args.get(1).cloned().unwrap_or(Value::Undefined).as_object();
+    let arg_array = args.get_value(1).as_object();
     let resolved_args = if let Some(arg_array) = arg_array {
         let arg_storage: Vec<Option<Value<'gc>>> = arg_array
             .as_array_storage()
@@ -161,19 +134,10 @@ fn apply<'gc>(
         Vec::new()
     };
 
-    Value::from(func).call(activation, this, &resolved_args)
+    func.call(activation, this, &resolved_args)
 }
 
-/// Implements `Function.prototype.toString` and `Function.prototype.toLocaleString`
-fn to_string<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
-    _this: Value<'gc>,
-    _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error<'gc>> {
-    Ok("function Function() {}".into())
-}
-
-fn length<'gc>(
+pub fn get_length<'gc>(
     _activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
     _args: &[Value<'gc>],
@@ -187,7 +151,7 @@ fn length<'gc>(
     Ok(Value::Undefined)
 }
 
-fn prototype<'gc>(
+pub fn get_prototype<'gc>(
     _activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
     _args: &[Value<'gc>],
@@ -205,7 +169,7 @@ fn prototype<'gc>(
     Ok(Value::Undefined)
 }
 
-fn set_prototype<'gc>(
+pub fn set_prototype<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
     args: &[Value<'gc>],
@@ -213,84 +177,9 @@ fn set_prototype<'gc>(
     let this = this.as_object().unwrap();
 
     if let Some(function) = this.as_function_object() {
-        let new_proto = args.get(0).unwrap_or(&Value::Undefined).as_object();
+        let new_proto = args.get_value(0).as_object();
         function.set_prototype(new_proto, activation.gc());
     }
 
     Ok(Value::Undefined)
-}
-
-/// Construct `Function`'s class.
-pub fn create_class<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    object_i_class: Class<'gc>,
-    class_i_class: Class<'gc>,
-) -> Class<'gc> {
-    let gc_context = activation.gc();
-    let namespaces = activation.avm2().namespaces;
-
-    let function_i_class = Class::custom_new(
-        QName::new(namespaces.public_all(), "Function"),
-        Some(object_i_class),
-        Method::from_builtin(instance_init, "<Function instance initializer>", gc_context),
-        gc_context,
-    );
-
-    let function_c_class = Class::custom_new(
-        QName::new(namespaces.public_all(), "Function$"),
-        Some(class_i_class),
-        Method::from_builtin(class_init, "<Function class initializer>", gc_context),
-        gc_context,
-    );
-    function_c_class.set_attributes(gc_context, ClassAttributes::FINAL);
-
-    function_i_class.set_c_class(gc_context, function_c_class);
-    function_c_class.set_i_class(gc_context, function_i_class);
-
-    // Fixed traits (in AS3 namespace)
-    const AS3_INSTANCE_METHODS: &[(&str, NativeMethodImpl)] = &[("call", call), ("apply", apply)];
-    function_i_class.define_builtin_instance_methods(
-        gc_context,
-        namespaces.as3,
-        AS3_INSTANCE_METHODS,
-    );
-
-    const PUBLIC_INSTANCE_PROPERTIES: &[(
-        &str,
-        Option<NativeMethodImpl>,
-        Option<NativeMethodImpl>,
-    )] = &[
-        ("prototype", Some(prototype), Some(set_prototype)),
-        ("length", Some(length), None),
-    ];
-    function_i_class.define_builtin_instance_properties(
-        gc_context,
-        namespaces.public_all(),
-        PUBLIC_INSTANCE_PROPERTIES,
-    );
-
-    const CONSTANTS_INT: &[(&str, i32)] = &[("length", 1)];
-    function_c_class.define_constant_int_instance_traits(
-        namespaces.public_all(),
-        CONSTANTS_INT,
-        activation,
-    );
-
-    function_i_class.set_instance_allocator(gc_context, function_allocator);
-    function_i_class.set_call_handler(
-        gc_context,
-        Method::from_builtin(class_call, "<Function call handler>", gc_context),
-    );
-
-    function_i_class.mark_traits_loaded(activation.gc());
-    function_i_class
-        .init_vtable(activation.context)
-        .expect("Native class's vtable should initialize");
-
-    function_c_class.mark_traits_loaded(activation.gc());
-    function_c_class
-        .init_vtable(activation.context)
-        .expect("Native class's vtable should initialize");
-
-    function_i_class
 }

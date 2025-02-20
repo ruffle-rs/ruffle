@@ -91,9 +91,7 @@ pub use crate::avm2::object::file_reference_object::{
     file_reference_allocator, FileReference, FileReferenceObject, FileReferenceObjectWeak,
 };
 pub use crate::avm2::object::font_object::{font_allocator, FontObject, FontObjectWeak};
-pub use crate::avm2::object::function_object::{
-    function_allocator, FunctionObject, FunctionObjectWeak,
-};
+pub use crate::avm2::object::function_object::{FunctionObject, FunctionObjectWeak};
 pub use crate::avm2::object::index_buffer_3d_object::{
     IndexBuffer3DObject, IndexBuffer3DObjectWeak,
 };
