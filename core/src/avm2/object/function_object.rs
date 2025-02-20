@@ -3,7 +3,7 @@
 use crate::avm2::activation::Activation;
 use crate::avm2::class::Class;
 use crate::avm2::function::BoundMethod;
-use crate::avm2::method::{Method, NativeMethod};
+use crate::avm2::method::Method;
 use crate::avm2::object::script_object::{ScriptObject, ScriptObjectData};
 use crate::avm2::object::{ClassObject, Object, ObjectPtr, TObject};
 use crate::avm2::scope::ScopeChain;
@@ -11,51 +11,7 @@ use crate::avm2::value::Value;
 use crate::avm2::Error;
 use core::fmt;
 use gc_arena::barrier::unlock;
-use gc_arena::{lock::Lock, Collect, Gc, GcCell, GcWeak, Mutation};
-
-/// A class instance allocator that allocates Function objects.
-/// This is only used when ActionScript manually calls 'new Function()',
-/// which produces a dummy object that just returns `Value::Undefined`
-/// when called.
-///
-/// Normal `FunctionObject` creation goes through `FunctionObject::from_method`
-/// or `FunctionObject::from_function`.
-pub fn function_allocator<'gc>(
-    class: ClassObject<'gc>,
-    activation: &mut Activation<'_, 'gc>,
-) -> Result<Object<'gc>, Error<'gc>> {
-    let base = ScriptObjectData::new(class);
-
-    let mc = activation.gc();
-
-    let dummy = Gc::new(
-        mc,
-        NativeMethod {
-            method: |_, _, _| Ok(Value::Undefined),
-            name: "<Empty Function>",
-            signature: vec![],
-            resolved_signature: GcCell::new(mc, None),
-            return_type: None,
-            is_variadic: true,
-        },
-    );
-
-    Ok(FunctionObject(Gc::new(
-        mc,
-        FunctionObjectData {
-            base,
-            exec: BoundMethod::from_method(
-                Method::Native(dummy),
-                activation.create_scopechain(),
-                None,
-                None,
-                None,
-            ),
-            prototype: Lock::new(None),
-        },
-    ))
-    .into())
-}
+use gc_arena::{lock::Lock, Collect, Gc, GcWeak, Mutation};
 
 /// An Object which can be called to execute its function code.
 #[derive(Collect, Clone, Copy)]

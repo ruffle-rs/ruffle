@@ -38,16 +38,22 @@ fn class_call<'gc>(
 
 /// Implements `Object`'s class initializer
 pub fn class_init<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    this: Value<'gc>,
+    _activation: &mut Activation<'_, 'gc>,
+    _this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let this = this.as_object().unwrap();
+    Ok(Value::Undefined)
+}
 
+/// This method initializes Object's prototype. We can't do this in the class
+/// initializer because the Function class is not yet loaded when Object's class
+/// is created. Instead, we call this method in Function's code, right after
+/// the Function class is loaded.
+pub fn init_object_prototype<'gc>(activation: &mut Activation<'_, 'gc>) -> Result<(), Error<'gc>> {
     let scope = activation.create_scopechain();
     let gc_context = activation.gc();
-    let this_class = this.as_class_object().unwrap();
-    let object_proto = this_class.prototype();
+    let object_class = activation.avm2().classes().object;
+    let object_proto = object_class.prototype();
 
     object_proto.set_string_property_local(
         "hasOwnProperty",
@@ -157,7 +163,7 @@ pub fn class_init<'gc>(
     object_proto.set_local_property_is_enumerable(gc_context, "toLocaleString".into(), false);
     object_proto.set_local_property_is_enumerable(gc_context, "valueOf".into(), false);
 
-    Ok(Value::Undefined)
+    Ok(())
 }
 
 /// Implements `Object.prototype.toString`

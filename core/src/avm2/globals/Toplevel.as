@@ -30,6 +30,9 @@ package {
 // These classes are required by other core code, so we put them here. Toplevel.as
 // is loaded before the rest of the global code.
 
+// Function must go first because prototype methods can't be created without it
+include "Function.as"
+
 include "Error.as"
 
 include "Array.as"
