@@ -1,7 +1,7 @@
 //! Function builtin and prototype
 
 use crate::avm2::activation::Activation;
-use crate::avm2::error::eval_error;
+use crate::avm2::error::{eval_error, type_error};
 use crate::avm2::globals::array::resolve_array_hole;
 use crate::avm2::method::{Method, NativeMethod};
 use crate::avm2::object::{FunctionObject, TObject};
@@ -115,22 +115,30 @@ pub fn apply<'gc>(
 
     let this = args.get_value(0);
 
-    let arg_array = args.get_value(1).as_object();
-    let resolved_args = if let Some(arg_array) = arg_array {
-        let arg_storage: Vec<Option<Value<'gc>>> = arg_array
-            .as_array_storage()
-            .map(|a| a.iter().collect())
-            .ok_or_else(|| {
-                Error::from("Second parameter of apply must be an array or undefined")
-            })?;
+    let arg_array = args.get_value(1);
+    let resolved_args = if !matches!(arg_array, Value::Undefined | Value::Null) {
+        if let Some(array_object) = arg_array.as_object().and_then(|o| o.as_array_object()) {
+            let arg_storage = array_object
+                .as_array_storage()
+                .unwrap()
+                .iter()
+                .collect::<Vec<_>>();
 
-        let mut resolved_args = Vec::with_capacity(arg_storage.len());
-        for (i, v) in arg_storage.iter().enumerate() {
-            resolved_args.push(resolve_array_hole(activation, arg_array, i, *v)?);
+            let mut resolved_args = Vec::with_capacity(arg_storage.len());
+            for (i, v) in arg_storage.iter().enumerate() {
+                resolved_args.push(resolve_array_hole(activation, array_object.into(), i, *v)?);
+            }
+
+            resolved_args
+        } else {
+            return Err(Error::AvmError(type_error(
+                activation,
+                "Error #1116: second argument to Function.prototype.apply must be an array.",
+                1116,
+            )?));
         }
-
-        resolved_args
     } else {
+        // Passing null or undefined results in the function being called with no arguments passed
         Vec::new()
     };
 
