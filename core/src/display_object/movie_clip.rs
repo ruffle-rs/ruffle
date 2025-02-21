@@ -196,136 +196,75 @@ pub struct MovieClipData<'gc> {
     avm1_text_field_bindings: Vec<Avm1TextFieldBinding<'gc>>,
 }
 
-impl<'gc> MovieClip<'gc> {
-    pub fn new(movie: Arc<SwfMovie>, gc_context: &Mutation<'gc>) -> Self {
-        MovieClip(GcCell::new(
-            gc_context,
-            MovieClipData {
-                base: Default::default(),
-                shared: Gc::new(
-                    gc_context,
-                    MovieClipShared::empty(movie.clone(), gc_context),
-                ),
-                tag_stream_pos: 0,
-                current_frame: 0,
-                audio_stream: None,
-                container: ChildContainer::new(movie),
-                object: None,
-                clip_event_handlers: Vec::new(),
-                clip_event_flags: ClipEventFlag::empty(),
-                frame_scripts: Vec::new(),
-                flags: Cell::new(MovieClipFlags::empty()),
-                drawing: None,
-                avm2_enabled: Cell::new(true),
-                avm2_use_hand_cursor: Cell::new(true),
-                button_mode: Cell::new(false),
-                last_queued_script_frame: None,
-                queued_script_frame: None,
-                queued_goto_frame: None,
-                drop_target: None,
-                hit_area: None,
+impl<'gc> MovieClipData<'gc> {
+    fn new(shared: MovieClipShared<'gc>, mc: &Mutation<'gc>) -> Self {
+        let movie = shared.swf.movie.clone();
+        Self {
+            base: Default::default(),
+            shared: Gc::new(mc, shared),
+            tag_stream_pos: 0,
+            current_frame: 0,
+            audio_stream: None,
+            container: ChildContainer::new(movie),
+            object: None,
+            clip_event_handlers: Vec::new(),
+            clip_event_flags: ClipEventFlag::empty(),
+            frame_scripts: Vec::new(),
+            flags: Cell::new(MovieClipFlags::empty()),
+            drawing: None,
+            avm2_enabled: Cell::new(true),
+            avm2_use_hand_cursor: Cell::new(true),
+            button_mode: Cell::new(false),
+            last_queued_script_frame: None,
+            queued_script_frame: None,
+            queued_goto_frame: None,
+            drop_target: None,
+            hit_area: None,
 
-                #[cfg(feature = "timeline_debug")]
-                tag_frame_boundaries: Default::default(),
-                queued_tags: HashMap::new(),
-                attached_audio: None,
-                importer_movie: None,
-                avm1_text_field_bindings: Vec::new(),
-            },
-        ))
+            #[cfg(feature = "timeline_debug")]
+            tag_frame_boundaries: Default::default(),
+            queued_tags: HashMap::new(),
+            attached_audio: None,
+            importer_movie: None,
+            avm1_text_field_bindings: Vec::new(),
+        }
+    }
+}
+
+impl<'gc> MovieClip<'gc> {
+    pub fn downgrade(self) -> MovieClipWeak<'gc> {
+        MovieClipWeak(GcCell::downgrade(self.0))
+    }
+
+    pub fn new(movie: Arc<SwfMovie>, mc: &Mutation<'gc>) -> Self {
+        let shared = MovieClipShared::empty(movie, mc);
+        MovieClip(GcCell::new(mc, MovieClipData::new(shared, mc)))
     }
 
     pub fn new_with_avm2(
         movie: Arc<SwfMovie>,
         this: Avm2Object<'gc>,
         class: Avm2ClassObject<'gc>,
-        gc_context: &Mutation<'gc>,
+        mc: &Mutation<'gc>,
     ) -> Self {
-        let clip = MovieClip(GcCell::new(
-            gc_context,
-            MovieClipData {
-                base: Default::default(),
-                shared: Gc::new(
-                    gc_context,
-                    MovieClipShared::empty(movie.clone(), gc_context),
-                ),
-                tag_stream_pos: 0,
-                current_frame: 0,
-                audio_stream: None,
-                container: ChildContainer::new(movie),
-                object: Some(this.into()),
-                clip_event_handlers: Vec::new(),
-                clip_event_flags: ClipEventFlag::empty(),
-                frame_scripts: Vec::new(),
-                flags: Cell::new(MovieClipFlags::empty()),
-                drawing: None,
-                avm2_enabled: Cell::new(true),
-                avm2_use_hand_cursor: Cell::new(true),
-                button_mode: Cell::new(false),
-                last_queued_script_frame: None,
-                queued_script_frame: None,
-                queued_goto_frame: None,
-                drop_target: None,
-                hit_area: None,
-
-                #[cfg(feature = "timeline_debug")]
-                tag_frame_boundaries: Default::default(),
-                queued_tags: HashMap::new(),
-                attached_audio: None,
-                importer_movie: None,
-                avm1_text_field_bindings: Vec::new(),
-            },
-        ));
-        clip.set_avm2_class(gc_context, Some(class));
-        clip
+        let shared = MovieClipShared::empty(movie, mc);
+        *shared.avm2_class.write(mc) = Some(class);
+        let mut data = MovieClipData::new(shared, mc);
+        data.object = Some(this.into());
+        MovieClip(GcCell::new(mc, data))
     }
 
     /// Constructs a non-root movie
     pub fn new_with_data(
-        gc_context: &Mutation<'gc>,
+        mc: &Mutation<'gc>,
         id: CharacterId,
         swf: SwfSlice,
         num_frames: u16,
     ) -> Self {
-        MovieClip(GcCell::new(
-            gc_context,
-            MovieClipData {
-                base: Default::default(),
-                shared: Gc::new(
-                    gc_context,
-                    MovieClipShared::with_data(id, swf.clone(), num_frames, None, gc_context),
-                ),
-                tag_stream_pos: 0,
-                current_frame: 0,
-                audio_stream: None,
-                container: ChildContainer::new(swf.movie),
-                object: None,
-                clip_event_handlers: Vec::new(),
-                clip_event_flags: ClipEventFlag::empty(),
-                frame_scripts: Vec::new(),
-                flags: Cell::new(MovieClipFlags::PLAYING),
-                drawing: None,
-                avm2_enabled: Cell::new(true),
-                avm2_use_hand_cursor: Cell::new(true),
-                button_mode: Cell::new(false),
-                last_queued_script_frame: None,
-                queued_script_frame: None,
-                queued_goto_frame: None,
-                drop_target: None,
-                hit_area: None,
-
-                #[cfg(feature = "timeline_debug")]
-                tag_frame_boundaries: Default::default(),
-                queued_tags: HashMap::new(),
-                attached_audio: None,
-                importer_movie: None,
-                avm1_text_field_bindings: Vec::new(),
-            },
-        ))
-    }
-
-    pub fn downgrade(self) -> MovieClipWeak<'gc> {
-        MovieClipWeak(GcCell::downgrade(self.0))
+        let shared = MovieClipShared::with_data(id, swf.clone(), num_frames, None, mc);
+        let data = MovieClipData::new(shared, mc);
+        data.flags.set(MovieClipFlags::PLAYING);
+        MovieClip(GcCell::new(mc, data))
     }
 
     pub fn new_import_assets(
@@ -334,52 +273,19 @@ impl<'gc> MovieClip<'gc> {
         parent: Arc<SwfMovie>,
     ) -> Self {
         let num_frames = movie.num_frames();
-
         let loader_info = None;
-
-        let mc = MovieClip(GcCell::new(
+        let shared = MovieClipShared::with_data(
+            0,
+            movie.clone().into(),
+            num_frames,
+            loader_info,
             context.gc(),
-            MovieClipData {
-                base: Default::default(),
-                shared: Gc::new(
-                    context.gc(),
-                    MovieClipShared::with_data(
-                        0,
-                        movie.clone().into(),
-                        num_frames,
-                        loader_info,
-                        context.gc(),
-                    ),
-                ),
-                tag_stream_pos: 0,
-                current_frame: 0,
-                audio_stream: None,
-                container: ChildContainer::new(movie.clone()),
-                object: None,
-                clip_event_handlers: Vec::new(),
-                clip_event_flags: ClipEventFlag::empty(),
-                frame_scripts: Vec::new(),
-                flags: Cell::new(MovieClipFlags::PLAYING),
-                drawing: None,
-                avm2_enabled: Cell::new(true),
-                avm2_use_hand_cursor: Cell::new(true),
-                button_mode: Cell::new(false),
-                last_queued_script_frame: None,
-                queued_script_frame: None,
-                queued_goto_frame: None,
-                drop_target: None,
-                hit_area: None,
+        );
 
-                #[cfg(feature = "timeline_debug")]
-                tag_frame_boundaries: Default::default(),
-                queued_tags: HashMap::new(),
-                attached_audio: None,
-                importer_movie: Some(parent.clone()),
-                avm1_text_field_bindings: Vec::new(),
-            },
-        ));
-
-        mc
+        let mut data = MovieClipData::new(shared, context.gc());
+        data.flags.set(MovieClipFlags::PLAYING);
+        data.importer_movie = Some(parent);
+        MovieClip(GcCell::new(context.gc(), data))
     }
 
     /// Construct a movie clip that represents the root movie
@@ -388,76 +294,35 @@ impl<'gc> MovieClip<'gc> {
         activation: &mut Avm2Activation<'_, 'gc>,
         movie: Arc<SwfMovie>,
     ) -> Self {
-        let num_frames = movie.num_frames();
-
         let loader_info = if movie.is_action_script_3() {
             // The root movie doesn't have a `Loader`
             // We will replace this with a `LoaderStream::Swf` later in this function
             let loader_info =
                 LoaderInfoObject::not_yet_loaded(activation, movie.clone(), None, None, false)
                     .expect("Failed to construct LoaderInfoObject");
-            let loader_info_obj = loader_info.as_loader_info_object().unwrap();
+            let loader_info_obj = *loader_info.as_loader_info_object().unwrap();
             loader_info_obj.set_expose_content();
             loader_info_obj.set_content_type(ContentType::Swf);
-            Some(loader_info)
+            Some((loader_info, loader_info_obj))
         } else {
             None
         };
 
-        let mc = MovieClip(GcCell::new(
+        let shared = MovieClipShared::with_data(
+            0,
+            movie.clone().into(),
+            movie.num_frames(),
+            loader_info.map(|l| l.0),
             activation.gc(),
-            MovieClipData {
-                base: Default::default(),
-                shared: Gc::new(
-                    activation.gc(),
-                    MovieClipShared::with_data(
-                        0,
-                        movie.clone().into(),
-                        num_frames,
-                        loader_info,
-                        activation.gc(),
-                    ),
-                ),
-                tag_stream_pos: 0,
-                current_frame: 0,
-                audio_stream: None,
-                container: ChildContainer::new(movie.clone()),
-                object: None,
-                clip_event_handlers: Vec::new(),
-                clip_event_flags: ClipEventFlag::empty(),
-                frame_scripts: Vec::new(),
-                flags: Cell::new(MovieClipFlags::PLAYING),
-                drawing: None,
-                avm2_enabled: Cell::new(true),
-                avm2_use_hand_cursor: Cell::new(true),
-                button_mode: Cell::new(false),
-                last_queued_script_frame: None,
-                queued_script_frame: None,
-                queued_goto_frame: None,
-                drop_target: None,
-                hit_area: None,
+        );
+        let data = MovieClipData::new(shared, activation.gc());
+        data.flags.set(MovieClipFlags::PLAYING);
+        data.base.base.set_is_root(true);
 
-                #[cfg(feature = "timeline_debug")]
-                tag_frame_boundaries: Default::default(),
-                queued_tags: HashMap::new(),
-                attached_audio: None,
-                importer_movie: None,
-                avm1_text_field_bindings: Vec::new(),
-            },
-        ));
-
-        if movie.is_action_script_3() {
-            let mc_data = mc.0.read();
-            let loader_info = mc_data
-                .shared
-                .loader_info
-                .as_ref()
-                .unwrap()
-                .as_loader_info_object()
-                .unwrap();
+        let mc = MovieClip(GcCell::new(activation.gc(), data));
+        if let Some((_, loader_info)) = loader_info {
             loader_info.set_loader_stream(LoaderStream::Swf(movie, mc.into()), activation.gc());
         }
-        mc.set_is_root(true);
         mc
     }
 
