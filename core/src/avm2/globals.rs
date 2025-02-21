@@ -441,8 +441,9 @@ pub fn load_player_globals<'gc>(
     // everything has to circularly reference everything else:
     //
     //  - Object is an instance of itself, as well as its prototype
-    //  - All other types are instances of Class, which is an instance of
-    //    itself
+    //  - All types are instances of Class, which is an instance of itself
+    //  - Object has prototype methods, but creating them requires the Function
+    //    class, and creating the Function class requires the Object class to exist
     //
     // Hence, this ridiculously complicated dance of classdef, type allocation,
     // and partial initialization.

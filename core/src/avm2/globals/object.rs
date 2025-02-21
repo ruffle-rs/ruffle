@@ -10,8 +10,7 @@ use crate::avm2::value::Value;
 use crate::avm2::{Error, Multiname, QName};
 use crate::string::AvmString;
 
-/// Implements `Object`'s instance initializer. This method is unreachable because
-/// `Object` has a custom constructor (`object_constructor`).
+/// Implements `Object`'s instance initializer.
 fn instance_init<'gc>(
     _activation: &mut Activation<'_, 'gc>,
     _this: Value<'gc>,
@@ -20,7 +19,8 @@ fn instance_init<'gc>(
     Ok(Value::Undefined)
 }
 
-/// Implements `Object`'s custom constructor.
+/// Implements `Object`'s custom constructor, called when ActionScript code runs
+/// `new Object(...)` directly.
 fn object_constructor<'gc>(
     activation: &mut Activation<'_, 'gc>,
     args: &[Value<'gc>],
