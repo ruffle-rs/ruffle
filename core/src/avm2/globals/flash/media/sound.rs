@@ -1,9 +1,12 @@
 //! `flash.media.Sound` builtin/prototype
 
 use crate::avm2::activation::Activation;
+use crate::avm2::error::make_error_2037;
 use crate::avm2::globals::methods::flash_media_sound as sound_methods;
 use crate::avm2::globals::slots::flash_net_url_request as url_request_slots;
-use crate::avm2::object::{EventObject, QueuedPlay, SoundChannelObject, TObject};
+use crate::avm2::object::{
+    EventObject, QueuedPlay, SoundChannelObject, SoundLoadingState, TObject,
+};
 use crate::avm2::parameters::ParametersExt;
 use crate::avm2::value::Value;
 use crate::avm2::Avm2;
@@ -233,9 +236,13 @@ pub fn load<'gc>(
     this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let this = this.as_object().unwrap();
+    let this_object = this.as_object().unwrap();
 
-    // FIXME - don't allow replacing an existing sound
+    let this = this_object.as_sound_object().unwrap();
+    if this.loading_state() != SoundLoadingState::New {
+        return Err(make_error_2037(activation));
+    }
+
     let url_request = match args.get(0) {
         Some(Value::Object(request)) => request,
         // This should never actually happen
@@ -254,11 +261,12 @@ pub fn load<'gc>(
 
     let future = activation.context.load_manager.load_sound_avm2(
         activation.context.player.clone(),
-        this,
+        this_object,
         // FIXME: Set options from the `URLRequest`.
         Request::get(url.to_string()),
     );
     activation.context.navigator.spawn_future(future);
+    this.set_loading_state(SoundLoadingState::Loading);
 
     Ok(Value::Undefined)
 }
@@ -269,7 +277,12 @@ pub fn load_compressed_data_from_byte_array<'gc>(
     this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let this = this.as_object().unwrap();
+    let this_object = this.as_object().unwrap();
+
+    let this = this_object.as_sound_object().unwrap();
+    if this.loading_state() == SoundLoadingState::Loaded {
+        return Ok(Value::Undefined);
+    }
 
     let bytearray = args.get_object(activation, 0, "bytes")?;
     let bytes_length = args.get_u32(activation, 1)?;
@@ -287,15 +300,10 @@ pub fn load_compressed_data_from_byte_array<'gc>(
     let progress_evt =
         EventObject::progress_event(activation, "progress", bytes.len(), bytes.len());
 
-    Avm2::dispatch_event(activation.context, progress_evt, this);
+    Avm2::dispatch_event(activation.context, progress_evt, this_object);
 
-    this.as_sound_object()
-        .unwrap()
-        .read_and_call_id3_event(activation, bytes);
-
-    this.as_sound_object()
-        .unwrap()
-        .set_sound(activation.context, handle)?;
+    this.read_and_call_id3_event(activation, bytes);
+    this.set_sound(activation.context, handle)?;
 
     Ok(Value::Undefined)
 }
@@ -303,10 +311,22 @@ pub fn load_compressed_data_from_byte_array<'gc>(
 /// `Sound.loadPCMFromByteArray`
 pub fn load_pcm_from_byte_array<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    _this: Value<'gc>,
+    this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this_object = this.as_object().unwrap();
+
+    let this = this_object.as_sound_object().unwrap();
+    if this.loading_state() == SoundLoadingState::Loaded {
+        return Ok(Value::Undefined);
+    }
+
+    // TODO Add proper implementation.
+    //   The following line ensures proper behavior
+    //   when calling load multiple times.
+    this.set_loading_state(SoundLoadingState::Loaded);
     avm2_stub_method!(activation, "flash.media.Sound", "loadPCMFromByteArray");
+
     Ok(Value::Undefined)
 }
 

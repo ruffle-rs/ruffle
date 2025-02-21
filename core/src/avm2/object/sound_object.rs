@@ -18,6 +18,7 @@ use gc_arena::{
     Collect, Gc, GcWeak, Mutation,
 };
 use id3::{Tag, TagLike};
+use std::cell::Cell;
 use std::io::Cursor;
 use swf::SoundInfo;
 
@@ -34,6 +35,7 @@ pub fn sound_allocator<'gc>(
         activation.gc(),
         SoundObjectData {
             base,
+            loading_state: Cell::new(SoundLoadingState::New),
             sound_data: RefLock::new(SoundData::NotLoaded {
                 queued_plays: Vec::new(),
             }),
@@ -65,6 +67,9 @@ impl fmt::Debug for SoundObject<'_> {
 pub struct SoundObjectData<'gc> {
     /// Base script object
     base: ScriptObjectData<'gc>,
+
+    /// Loading state of the sound.
+    loading_state: Cell<SoundLoadingState>,
 
     /// The sound this object holds.
     sound_data: RefLock<SoundData<'gc>>,
@@ -100,6 +105,13 @@ pub struct QueuedPlay<'gc> {
     pub position: f64,
 }
 
+#[derive(Clone, Copy, PartialEq, Eq)]
+pub enum SoundLoadingState {
+    New,
+    Loading,
+    Loaded,
+}
+
 impl<'gc> SoundObject<'gc> {
     pub fn sound_handle(self) -> Option<SoundHandle> {
         let sound_data = self.0.sound_data.borrow();
@@ -107,6 +119,14 @@ impl<'gc> SoundObject<'gc> {
             SoundData::NotLoaded { .. } => None,
             SoundData::Loaded { sound } => Some(*sound),
         }
+    }
+
+    pub fn loading_state(self) -> SoundLoadingState {
+        self.0.loading_state.get()
+    }
+
+    pub fn set_loading_state(self, value: SoundLoadingState) {
+        self.0.loading_state.set(value);
     }
 
     /// Returns `true` if a `SoundChannel` should be returned back to the AVM2 caller.
@@ -156,6 +176,7 @@ impl<'gc> SoundObject<'gc> {
                 panic!("Tried to replace sound {old_sound:?} with {sound:?}")
             }
         }
+        self.set_loading_state(SoundLoadingState::Loaded);
         Ok(())
     }
 
