@@ -292,6 +292,9 @@ pub struct Player {
     #[allow(unused)]
     player_runtime: PlayerRuntime,
 
+    /// Whether we're emulating the release or the debug build.
+    player_mode: PlayerMode,
+
     swf: Arc<SwfMovie>,
 
     run_state: RunState,
@@ -2192,6 +2195,7 @@ impl Player {
 
             let mut update_context = UpdateContext {
                 player_version: this.player_version,
+                player_mode: this.player_mode,
                 swf: &mut this.swf,
                 library,
                 rng: &mut this.rng,
@@ -2477,6 +2481,7 @@ pub struct PlayerBuilder {
     gamepad_button_mapping: HashMap<GamepadButton, KeyCode>,
     player_version: Option<u8>,
     player_runtime: PlayerRuntime,
+    player_mode: PlayerMode,
     quality: StageQuality,
     page_url: Option<String>,
     frame_rate: Option<f64>,
@@ -2530,6 +2535,7 @@ impl PlayerBuilder {
             gamepad_button_mapping: HashMap::new(),
             player_version: None,
             player_runtime: PlayerRuntime::default(),
+            player_mode: PlayerMode::default(),
             quality: StageQuality::High,
             page_url: None,
             frame_rate: None,
@@ -2708,6 +2714,12 @@ impl PlayerBuilder {
     /// Configures the player runtime (default is `PlayerRuntime::FlashPlayer`)
     pub fn with_player_runtime(mut self, runtime: PlayerRuntime) -> Self {
         self.player_runtime = runtime;
+        self
+    }
+
+    /// Configures the player mode (default is `PlayerMode::Release`)
+    pub fn with_player_mode(mut self, mode: PlayerMode) -> Self {
+        self.player_mode = mode;
         self
     }
 
@@ -2892,6 +2904,7 @@ impl PlayerBuilder {
                 instance_counter: 0,
                 player_version,
                 player_runtime: self.player_runtime,
+                player_mode: self.player_mode,
                 run_state: if self.autoplay {
                     RunState::Playing
                 } else {
@@ -3080,4 +3093,15 @@ impl FromStr for PlayerRuntime {
         };
         Ok(player_runtime)
     }
+}
+
+#[derive(Default, Clone, Copy, Debug, Eq, PartialEq)]
+#[cfg_attr(feature = "serde", derive(serde::Deserialize))]
+pub enum PlayerMode {
+    /// Represents the release version of Flash Player, i.e. flashplayer.
+    #[default]
+    Release,
+
+    /// Represents the debug version of Flash Player, i.e. flashplayerdebugger.
+    Debug,
 }
