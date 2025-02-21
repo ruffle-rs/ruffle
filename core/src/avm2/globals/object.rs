@@ -4,19 +4,35 @@ use crate::avm2::activation::Activation;
 use crate::avm2::class::{Class, ClassAttributes};
 use crate::avm2::error;
 use crate::avm2::method::{Method, NativeMethodImpl, ParamConfig};
-use crate::avm2::object::{FunctionObject, Object, TObject};
+use crate::avm2::object::{FunctionObject, Object, ScriptObject, TObject};
 use crate::avm2::traits::Trait;
 use crate::avm2::value::Value;
 use crate::avm2::{Error, Multiname, QName};
 use crate::string::AvmString;
 
-/// Implements `Object`'s instance initializer.
-pub fn instance_init<'gc>(
+/// Implements `Object`'s instance initializer. This method is unreachable because
+/// `Object` has a custom constructor (`object_constructor`).
+fn instance_init<'gc>(
     _activation: &mut Activation<'_, 'gc>,
     _this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     Ok(Value::Undefined)
+}
+
+/// Implements `Object`'s custom constructor.
+fn object_constructor<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    if let Some(arg) = args.get(0) {
+        if !matches!(arg, Value::Undefined | Value::Null) {
+            return Ok(*arg);
+        }
+    }
+
+    let constructed_object = ScriptObject::new_object(activation);
+    Ok(constructed_object.into())
 }
 
 fn class_call<'gc>(
@@ -298,6 +314,8 @@ pub fn create_i_class<'gc>(activation: &mut Activation<'_, 'gc>) -> Class<'gc> {
         gc_context,
         Method::from_builtin(class_call, "<Object call handler>", gc_context),
     );
+
+    object_i_class.set_custom_constructor(gc_context, object_constructor);
 
     // Fixed traits (in AS3 namespace)
     let as3_instance_methods: Vec<(&str, NativeMethodImpl, _, _)> = vec![
