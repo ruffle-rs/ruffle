@@ -7,7 +7,7 @@ use approx::relative_eq;
 use image::ImageFormat;
 use regex::Regex;
 use ruffle_core::tag_utils::SwfMovie;
-use ruffle_core::{PlayerBuilder, PlayerRuntime, ViewportDimensions};
+use ruffle_core::{PlayerBuilder, PlayerMode, PlayerRuntime, ViewportDimensions};
 use ruffle_render::backend::RenderBackend;
 use ruffle_render::quality::StageQuality;
 use serde::Deserialize;
@@ -150,6 +150,7 @@ pub struct PlayerOptions {
     with_audio: bool,
     with_video: bool,
     runtime: PlayerRuntime,
+    mode: Option<PlayerMode>,
 }
 
 impl PlayerOptions {
@@ -172,7 +173,10 @@ impl PlayerOptions {
             player_builder = player_builder.with_audio(TestAudioBackend::default());
         }
 
-        player_builder = player_builder.with_player_runtime(self.runtime);
+        player_builder = player_builder
+            .with_player_runtime(self.runtime)
+            // Assume flashplayerdebugger is used in tests
+            .with_player_mode(self.mode.unwrap_or(PlayerMode::Debug));
 
         if self.with_video {
             #[cfg(feature = "ruffle_video_external")]
