@@ -8,7 +8,7 @@ use crate::avm2::bytearray::ByteArrayStorage;
 use crate::avm2::globals::flash::utils::byte_array::strip_bom;
 use crate::avm2::object::{
     ByteArrayObject, EventObject as Avm2EventObject, FileReferenceObject, LoaderInfoObject,
-    LoaderStream, TObject as _,
+    LoaderStream, SoundLoadingState, TObject as _,
 };
 use crate::avm2::{
     Activation as Avm2Activation, Avm2, BitmapDataObject, Domain as Avm2Domain,
@@ -1781,15 +1781,17 @@ impl<'gc> Loader<'gc> {
                     None => return Err(Error::Cancelled),
                     _ => return Err(Error::NotSoundLoader),
                 };
+                let sound = sound_object.as_sound_object().expect("Not a sound object");
+
+                if sound.loading_state() == SoundLoadingState::Loaded {
+                    // Sound has already been loaded.
+                    return Ok(());
+                }
 
                 match response {
                     Ok((body, _, _, _)) => {
                         let handle = uc.audio.register_mp3(&body)?;
-                        if let Err(e) = sound_object
-                            .as_sound_object()
-                            .expect("Not a sound object")
-                            .set_sound(uc, handle)
-                        {
+                        if let Err(e) = sound.set_sound(uc, handle) {
                             tracing::error!("Encountered AVM2 error when setting sound: {}", e);
                         }
 
@@ -1812,10 +1814,7 @@ impl<'gc> Loader<'gc> {
 
                         Avm2::dispatch_event(activation.context, progress_evt, sound_object);
 
-                        sound_object
-                            .as_sound_object()
-                            .expect("Not a sound object")
-                            .read_and_call_id3_event(&mut activation, body.as_slice());
+                        sound.read_and_call_id3_event(&mut activation, body.as_slice());
 
                         let complete_evt =
                             Avm2EventObject::bare_default_event(activation.context, "complete");
