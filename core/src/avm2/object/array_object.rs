@@ -64,7 +64,7 @@ const _: () =
 
 impl<'gc> ArrayObject<'gc> {
     /// Construct an empty array.
-    pub fn empty(activation: &mut Activation<'_, 'gc>) -> Object<'gc> {
+    pub fn empty(activation: &mut Activation<'_, 'gc>) -> ArrayObject<'gc> {
         Self::from_storage(activation, ArrayStorage::new(0))
     }
 
@@ -74,7 +74,7 @@ impl<'gc> ArrayObject<'gc> {
     pub fn from_storage(
         activation: &mut Activation<'_, 'gc>,
         array: ArrayStorage<'gc>,
-    ) -> Object<'gc> {
+    ) -> ArrayObject<'gc> {
         let class = activation.avm2().classes().array;
         let base = ScriptObjectData::new(class);
 
@@ -85,7 +85,14 @@ impl<'gc> ArrayObject<'gc> {
                 array: RefLock::new(array),
             },
         ))
-        .into()
+    }
+
+    pub fn array_storage(&self) -> Ref<ArrayStorage<'gc>> {
+        self.0.array.borrow()
+    }
+
+    pub fn array_storage_mut(&self, mc: &Mutation<'gc>) -> RefMut<ArrayStorage<'gc>> {
+        unlock!(Gc::write(mc, self.0), ArrayObjectData, array).borrow_mut()
     }
 }
 

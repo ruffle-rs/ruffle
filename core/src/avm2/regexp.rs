@@ -6,7 +6,7 @@ use crate::avm2::activation::Activation;
 use crate::avm2::object::FunctionObject;
 use crate::avm2::object::TObject;
 use crate::avm2::Error;
-use crate::avm2::{ArrayObject, ArrayStorage, Object, Value};
+use crate::avm2::{ArrayObject, ArrayStorage, Value};
 use crate::string::WString;
 use crate::string::{AvmString, Units, WStrToUtf8};
 use bitflags::bitflags;
@@ -327,7 +327,7 @@ impl<'gc> RegExp<'gc> {
         activation: &mut Activation<'_, 'gc>,
         text: AvmString<'gc>,
         limit: usize,
-    ) -> Result<Object<'gc>, Error<'gc>> {
+    ) -> ArrayObject<'gc> {
         let mut storage = ArrayStorage::new(0);
         // The empty regex is a special case which splits into characters.
         if self.source.is_empty() {
@@ -335,7 +335,7 @@ impl<'gc> RegExp<'gc> {
             while let Some(Ok(c)) = it.next() {
                 storage.push(AvmString::new(activation.gc(), WString::from_char(c)).into());
             }
-            return Ok(ArrayObject::from_storage(activation, storage));
+            return ArrayObject::from_storage(activation, storage);
         }
 
         let mut start = 0;
@@ -362,7 +362,7 @@ impl<'gc> RegExp<'gc> {
             storage.push(AvmString::new(activation.gc(), &text[start..]).into());
         }
 
-        Ok(ArrayObject::from_storage(activation, storage))
+        ArrayObject::from_storage(activation, storage)
     }
 
     pub fn find_utf16_match(

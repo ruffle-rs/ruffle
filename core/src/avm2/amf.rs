@@ -50,12 +50,14 @@ pub fn serialize_value<'gc>(
                 None
             } else if o.as_display_object().is_some() {
                 Some(AmfValue::Undefined)
-            } else if o.as_array_storage().is_some() {
+            } else if let Some(array_storage) = o.as_array_storage() {
+                let len = array_storage.length() as u32;
+                drop(array_storage);
+
                 let mut values = Vec::new();
                 // Don't serialize properties from the vtable (we don't want a 'length' field)
                 recursive_serialize(activation, o, &mut values, None, amf_version, object_table)
                     .unwrap();
-                let len = o.as_array_storage().unwrap().length() as u32;
 
                 if amf_version == AMFVersion::AMF3 {
                     let mut dense = vec![];
@@ -297,7 +299,7 @@ pub fn deserialize_value_impl<'gc>(
         AmfValue::ECMAArray(id, values, elements, _) => {
             let empty_storage = ArrayStorage::new(0);
             let array = ArrayObject::from_storage(activation, empty_storage);
-            object_map.insert(*id, array);
+            object_map.insert(*id, array.into());
 
             // First let's create an array out of `values` (dense portion), then we add the elements onto it.
             let mut arr: Vec<Option<Value<'gc>>> = Vec::with_capacity(values.len());
@@ -305,8 +307,7 @@ pub fn deserialize_value_impl<'gc>(
                 arr.push(Some(deserialize_value_impl(activation, value, object_map)?));
             }
             array
-                .as_array_storage_mut(activation.gc())
-                .expect("Failed to get array storage from ArrayObject")
+                .array_storage_mut(activation.gc())
                 .replace_dense_storage(arr);
 
             // Now let's add each element as a property
@@ -322,7 +323,7 @@ pub fn deserialize_value_impl<'gc>(
         AmfValue::StrictArray(id, values) => {
             let empty_storage = ArrayStorage::new(0);
             let array = ArrayObject::from_storage(activation, empty_storage);
-            object_map.insert(*id, array);
+            object_map.insert(*id, array.into());
 
             let mut arr: Vec<Option<Value<'gc>>> = Vec::with_capacity(values.len());
             for value in values {
@@ -330,8 +331,7 @@ pub fn deserialize_value_impl<'gc>(
             }
 
             array
-                .as_array_storage_mut(activation.gc())
-                .expect("Failed to get array storage from ArrayObject")
+                .array_storage_mut(activation.gc())
                 .replace_dense_storage(arr);
 
             array.into()
