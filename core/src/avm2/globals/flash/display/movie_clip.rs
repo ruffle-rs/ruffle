@@ -3,7 +3,7 @@
 use crate::avm2::activation::Activation;
 use crate::avm2::array::ArrayStorage;
 use crate::avm2::error::argument_error;
-use crate::avm2::object::{ArrayObject, Object, TObject};
+use crate::avm2::object::{ArrayObject, TObject};
 use crate::avm2::parameters::ParametersExt;
 use crate::avm2::value::Value;
 use crate::avm2::Error;
@@ -119,7 +119,7 @@ fn labels_for_scene<'gc>(
     activation: &mut Activation<'_, 'gc>,
     mc: MovieClip<'gc>,
     scene: &Scene,
-) -> Result<(String, u16, Object<'gc>), Error<'gc>> {
+) -> Result<(String, u16, ArrayObject<'gc>), Error<'gc>> {
     let Scene {
         name: scene_name,
         start: scene_start,

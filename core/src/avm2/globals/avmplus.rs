@@ -96,11 +96,11 @@ fn describe_internal_body<'gc>(
 
     let traits = ScriptObject::new_object(activation);
 
-    let bases = ArrayObject::empty(activation).as_array_object().unwrap();
-    let interfaces = ArrayObject::empty(activation).as_array_object().unwrap();
-    let variables = ArrayObject::empty(activation).as_array_object().unwrap();
-    let accessors = ArrayObject::empty(activation).as_array_object().unwrap();
-    let methods = ArrayObject::empty(activation).as_array_object().unwrap();
+    let bases = ArrayObject::empty(activation);
+    let interfaces = ArrayObject::empty(activation);
+    let variables = ArrayObject::empty(activation);
+    let accessors = ArrayObject::empty(activation);
+    let methods = ArrayObject::empty(activation);
 
     if flags.contains(DescribeTypeFlags::INCLUDE_BASES) {
         traits.set_string_property_local(istr!("bases"), bases.into(), activation)?;
@@ -132,11 +132,11 @@ fn describe_internal_body<'gc>(
         traits.set_string_property_local(istr!("methods"), Value::Null, activation)?;
     }
 
-    let mut bases_array = bases.as_array_storage_mut(mc).unwrap();
-    let mut interfaces_array = interfaces.as_array_storage_mut(mc).unwrap();
-    let mut variables_array = variables.as_array_storage_mut(mc).unwrap();
-    let mut accessors_array = accessors.as_array_storage_mut(mc).unwrap();
-    let mut methods_array = methods.as_array_storage_mut(mc).unwrap();
+    let mut bases_array = bases.array_storage_mut(mc);
+    let mut interfaces_array = interfaces.array_storage_mut(mc);
+    let mut variables_array = variables.array_storage_mut(mc);
+    let mut accessors_array = accessors.array_storage_mut(mc);
+    let mut methods_array = methods.array_storage_mut(mc);
 
     let superclass = class_def.super_class();
 
@@ -403,7 +403,7 @@ fn describe_internal_body<'gc>(
                 }
 
                 if flags.contains(DescribeTypeFlags::INCLUDE_METADATA)
-                    && metadata_object.as_array_storage().unwrap().length() > 0
+                    && metadata_object.array_storage().length() > 0
                 {
                     accessor_obj.set_string_property_local(
                         istr!("metadata"),
@@ -465,9 +465,9 @@ fn display_name<'gc>(
 fn write_params<'gc>(
     method: &Method<'gc>,
     activation: &mut Activation<'_, 'gc>,
-) -> Result<Object<'gc>, Error<'gc>> {
+) -> Result<ArrayObject<'gc>, Error<'gc>> {
     let params = ArrayObject::empty(activation);
-    let mut params_array = params.as_array_storage_mut(activation.gc()).unwrap();
+    let mut params_array = params.array_storage_mut(activation.gc());
     for param in method.signature() {
         let param_type_name = display_name(activation.strings(), param.param_type_name);
         let optional = param.default_value.is_some();
@@ -480,13 +480,11 @@ fn write_params<'gc>(
 }
 
 fn write_metadata<'gc>(
-    metadata_object: Object<'gc>,
+    metadata_object: ArrayObject<'gc>,
     trait_metadata: &[Metadata<'gc>],
     activation: &mut Activation<'_, 'gc>,
 ) -> Result<(), Error<'gc>> {
-    let mut metadata_array = metadata_object
-        .as_array_storage_mut(activation.gc())
-        .unwrap();
+    let mut metadata_array = metadata_object.array_storage_mut(activation.gc());
 
     for single_trait in trait_metadata.iter() {
         metadata_array.push(single_trait.as_json_object(activation)?.into());
