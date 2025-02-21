@@ -735,12 +735,10 @@ impl<'gc> TObject<'gc> for ClassObject<'gc> {
         Gc::as_ptr(self.0) as *const ObjectPtr
     }
 
-    fn to_string(&self, activation: &mut Activation<'_, 'gc>) -> Result<Value<'gc>, Error<'gc>> {
-        Ok(AvmString::new_utf8(
-            activation.gc(),
-            format!("[class {}]", self.0.class.name().local_name()),
-        )
-        .into())
+    fn to_string(&self, mc: &Mutation<'gc>) -> AvmString<'gc> {
+        let class_name = self.0.class.name().local_name();
+
+        AvmString::new_utf8(mc, format!("[class {class_name}]"))
     }
 
     fn as_class_object(&self) -> Option<ClassObject<'gc>> {

@@ -9,6 +9,7 @@ use crate::avm2::object::{ClassObject, Object, ObjectPtr, TObject};
 use crate::avm2::scope::ScopeChain;
 use crate::avm2::value::Value;
 use crate::avm2::Error;
+use crate::string::AvmString;
 use core::fmt;
 use gc_arena::barrier::unlock;
 use gc_arena::{lock::Lock, Collect, Gc, GcWeak, Mutation};
@@ -149,6 +150,15 @@ impl<'gc> TObject<'gc> for FunctionObject<'gc> {
 
     fn as_ptr(&self) -> *const ObjectPtr {
         Gc::as_ptr(self.0) as *const ObjectPtr
+    }
+
+    fn to_string(&self, mc: &Mutation<'gc>) -> AvmString<'gc> {
+        // TODO this should use the ABC method index of the Method held by the
+        // BoundMethod (the same number that appears after "MethodInfo-" in
+        // stack traces)
+        let method_idx = 0;
+
+        AvmString::new_utf8(mc, format!("[object Function-{method_idx}]"))
     }
 
     fn as_function_object(&self) -> Option<FunctionObject<'gc>> {
