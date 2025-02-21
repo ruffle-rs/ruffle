@@ -577,10 +577,10 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     /// coercions happen by defining `toString` in a downstream class or
     /// prototype; this is then picked up by the VM runtime when doing
     /// coercions.
-    fn to_string(&self, activation: &mut Activation<'_, 'gc>) -> Result<Value<'gc>, Error<'gc>> {
+    fn to_string(&self, mc: &Mutation<'gc>) -> AvmString<'gc> {
         let class_name = self.instance_class().name().local_name();
 
-        Ok(AvmString::new_utf8(activation.gc(), format!("[object {class_name}]")).into())
+        AvmString::new_utf8(mc, format!("[object {class_name}]"))
     }
 
     /// Returns all public properties from this object's vtable, together with their values.

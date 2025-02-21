@@ -189,7 +189,7 @@ fn to_string<'gc>(
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(this) = this.as_object() {
-        this.to_string(activation)
+        Ok(this.to_string(activation.gc()).into())
     } else {
         let class_name = this.instance_class(activation).name().local_name();
 
