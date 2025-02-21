@@ -848,7 +848,7 @@ pub enum Loader<'gc> {
         #[collect(require_static)]
         self_handle: Option<LoaderHandle>,
 
-        /// The target AVM1 object to load the audio into.
+        /// The target AVM2 object to load the audio into.
         target_object: Avm2Object<'gc>,
     },
 
