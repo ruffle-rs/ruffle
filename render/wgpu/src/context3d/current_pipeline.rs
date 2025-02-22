@@ -88,7 +88,7 @@ pub struct BoundTextureData {
     /// it's used with `setRenderToTexture`. The actual shader binding
     /// uses `view`
     pub id: Rc<dyn Texture>,
-    pub view: Rc<TextureView>,
+    pub view: TextureView,
     pub cube: bool,
 }
 
