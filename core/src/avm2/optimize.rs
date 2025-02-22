@@ -1184,7 +1184,7 @@ pub fn optimize<'gc>(
                         }
 
                         if !stack_push_done {
-                            if let Ok(Some((_, script))) =
+                            if let Some((_, script)) =
                                 outer_scope.domain().get_defining_script(&multiname)
                             {
                                 // NOTE: avmplus rewrites this into a FindDef, and it caches
