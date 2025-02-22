@@ -182,13 +182,13 @@ impl<'gc> Domain<'gc> {
     pub fn get_defining_script(
         self,
         multiname: &Multiname<'gc>,
-    ) -> Result<Option<(QName<'gc>, Script<'gc>)>, Error<'gc>> {
+    ) -> Option<(QName<'gc>, Script<'gc>)> {
         let read = self.0.read();
 
         if let Some(name) = multiname.local_name() {
             if let Some((ns, script)) = read.defs.get_with_ns_for_multiname(multiname) {
                 let qname = QName::new(ns, name);
-                return Ok(Some((qname, *script)));
+                return Some((qname, *script));
             }
         }
 
@@ -196,7 +196,7 @@ impl<'gc> Domain<'gc> {
             return parent.get_defining_script(multiname);
         }
 
-        Ok(None)
+        None
     }
 
     fn get_class_inner(self, multiname: &Multiname<'gc>) -> Option<Class<'gc>> {
@@ -242,7 +242,7 @@ impl<'gc> Domain<'gc> {
         activation: &mut Activation<'_, 'gc>,
         multiname: &Multiname<'gc>,
     ) -> Result<(QName<'gc>, Script<'gc>), Error<'gc>> {
-        match self.get_defining_script(multiname)? {
+        match self.get_defining_script(multiname) {
             Some(val) => Ok(val),
             None => Err(Error::AvmError(crate::avm2::error::reference_error(
                 activation,
