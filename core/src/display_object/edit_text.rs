@@ -1370,74 +1370,74 @@ impl<'gc> EditText<'gc> {
         activation: &mut Avm1Activation<'_, 'gc>,
         set_initial_value: bool,
     ) -> bool {
-        if let Some(var_path) = self.variable() {
-            let mut bound = false;
+        let Some(var_path) = self.variable() else {
+            // No variable for this text field; success by default
+            return true;
+        };
 
-            // Any previous binding should have been cleared.
-            debug_assert!(self.0.read().bound_stage_object.is_none());
+        // Any previous binding should have been cleared.
+        debug_assert!(self.0.read().bound_stage_object.is_none());
 
-            // Avoid double-borrows by copying the string.
-            // TODO: Can we avoid this somehow? Maybe when we have a better string type.
-            let variable_path = WString::from_utf8(&var_path);
-            drop(var_path);
+        // Avoid double-borrows by copying the string.
+        // TODO: Can we avoid this somehow? Maybe when we have a better string type.
+        let variable_path = WString::from_utf8(&var_path);
+        drop(var_path);
 
-            let mut parent = self.avm1_parent().unwrap();
-            while parent.as_avm1_button().is_some() {
-                parent = parent.avm1_parent().unwrap();
-            }
+        let Some(mut parent) = self.avm1_parent() else {
+            return false;
+        };
+        while parent.as_avm1_button().is_some() {
+            let Some(p) = parent.avm1_parent() else {
+                return false;
+            };
+            parent = p;
+        }
 
-            activation.run_with_child_frame_for_display_object(
-                "[Text Field Binding]",
-                parent,
-                self.movie().version(),
-                |activation| {
-                    if let Ok(Some((object, property))) =
-                        activation.resolve_variable_path(parent, &variable_path)
-                    {
-                        let property = AvmString::new(activation.gc(), property);
+        let mut bound = false;
+        activation.run_with_child_frame_for_display_object(
+            "[Text Field Binding]",
+            parent,
+            self.movie().version(),
+            |activation| {
+                if let Ok(Some((object, property))) =
+                    activation.resolve_variable_path(parent, &variable_path)
+                {
+                    let property = AvmString::new(activation.gc(), property);
 
-                        // If this text field was just created, we immediately propagate the text to the variable (or vice versa).
-                        if set_initial_value {
-                            // If the property exists on the object, we overwrite the text with the property's value.
-                            if object.has_property(activation, property) {
-                                let value = object.get(property, activation).unwrap();
-                                self.set_html_text(
-                                    &value
-                                        .coerce_to_string(activation)
-                                        .unwrap_or_else(|_| istr!("")),
-                                    activation.context,
+                    // If this text field was just created, we immediately propagate the text to the variable (or vice versa).
+                    if set_initial_value {
+                        // If the property exists on the object, we overwrite the text with the property's value.
+                        if object.has_property(activation, property) {
+                            let value = object.get(property, activation).unwrap();
+                            self.set_html_text(
+                                &value
+                                    .coerce_to_string(activation)
+                                    .unwrap_or_else(|_| istr!("")),
+                                activation.context,
+                            );
+                        } else {
+                            // Otherwise, we initialize the property with the text field's text, if it's non-empty.
+                            // Note that HTML text fields are often initialized with an empty <p> tag, which is not considered empty.
+                            let text = self.text();
+                            if !text.is_empty() {
+                                let _ = object.set(
+                                    property,
+                                    AvmString::new(activation.gc(), self.text()).into(),
+                                    activation,
                                 );
-                            } else {
-                                // Otherwise, we initialize the property with the text field's text, if it's non-empty.
-                                // Note that HTML text fields are often initialized with an empty <p> tag, which is not considered empty.
-                                let text = self.text();
-                                if !text.is_empty() {
-                                    let _ = object.set(
-                                        property,
-                                        AvmString::new(activation.gc(), self.text()).into(),
-                                        activation,
-                                    );
-                                }
                             }
                         }
-
-                        if let Some(stage_object) = object.as_stage_object() {
-                            self.0.write(activation.gc()).bound_stage_object = Some(stage_object);
-                            stage_object.register_text_field_binding(
-                                activation.gc(),
-                                self,
-                                property,
-                            );
-                            bound = true;
-                        }
                     }
-                },
-            );
-            bound
-        } else {
-            // No variable for this text field; success by default
-            true
-        }
+
+                    if let Some(stage_object) = object.as_stage_object() {
+                        self.0.write(activation.gc()).bound_stage_object = Some(stage_object);
+                        stage_object.register_text_field_binding(activation.gc(), self, property);
+                        bound = true;
+                    }
+                }
+            },
+        );
+        bound
     }
 
     /// Unsets a bound display object from this text field.
