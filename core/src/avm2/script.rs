@@ -19,6 +19,7 @@ use crate::string::{AvmAtom, AvmString, StringContext};
 use crate::tag_utils::SwfMovie;
 use crate::PlayerRuntime;
 use gc_arena::{Collect, Gc, GcCell, Mutation};
+use std::cell::Cell;
 use std::fmt::Debug;
 use std::rc::Rc;
 use std::sync::Arc;
@@ -403,7 +404,7 @@ impl<'gc> TranslationUnit<'gc> {
 /// A loaded Script from an ABC file.
 #[derive(Copy, Clone, Collect)]
 #[collect(no_drop)]
-pub struct Script<'gc>(pub GcCell<'gc, ScriptData<'gc>>);
+pub struct Script<'gc>(pub Gc<'gc, ScriptData<'gc>>);
 
 #[derive(Clone, Collect)]
 #[collect(no_drop)]
@@ -418,7 +419,7 @@ pub struct ScriptData<'gc> {
     init: Method<'gc>,
 
     /// Whether or not script initialization occurred.
-    initialized: bool,
+    initialized: Cell<bool>,
 
     /// The `TranslationUnit` this script was loaded from.
     translation_unit: Option<TranslationUnit<'gc>>,
@@ -436,7 +437,7 @@ impl<'gc> Script<'gc> {
     /// The `globals` object should be constructed using the `global`
     /// prototype.
     pub fn empty_script(mc: &Mutation<'gc>, globals: Object<'gc>, domain: Domain<'gc>) -> Self {
-        Self(GcCell::new(
+        Self(Gc::new(
             mc,
             ScriptData {
                 globals,
@@ -446,7 +447,7 @@ impl<'gc> Script<'gc> {
                     "<Built-in script initializer>",
                     mc,
                 ),
-                initialized: false,
+                initialized: Cell::new(false),
                 translation_unit: None,
             },
         ))
@@ -472,18 +473,18 @@ impl<'gc> Script<'gc> {
 
         let globals = Script::create_globals_object(unit, script, domain, activation)?;
 
-        let created_script = Self(GcCell::new(
+        let created_script = Self(Gc::new(
             activation.gc(),
             ScriptData {
                 globals,
                 domain,
                 init,
-                initialized: false,
+                initialized: Cell::new(false),
                 translation_unit: Some(unit),
             },
         ));
 
-        // Export traits in domain now that the Script is crated
+        // Export script traits in domain now that the Script is created
         for trait_ in &*created_script.global_class().traits() {
             domain.export_definition(trait_.name(), created_script, activation.gc());
         }
@@ -538,21 +539,19 @@ impl<'gc> Script<'gc> {
 
     /// Return the entrypoint for the script and the scope it should run in.
     pub fn init(self) -> (Method<'gc>, Object<'gc>, Domain<'gc>) {
-        let read = self.0.read();
-
-        (read.init, read.globals, read.domain)
+        (self.0.init, self.0.globals, self.0.domain)
     }
 
     pub fn domain(self) -> Domain<'gc> {
-        self.0.read().domain
+        self.0.domain
     }
 
     pub fn translation_unit(self) -> Option<TranslationUnit<'gc>> {
-        self.0.read().translation_unit
+        self.0.translation_unit
     }
 
     pub fn global_class(self) -> Class<'gc> {
-        self.0.read().globals.instance_class()
+        self.0.globals.instance_class()
     }
 
     /// Return the global scope for the script.
@@ -560,25 +559,20 @@ impl<'gc> Script<'gc> {
     /// If the script has not yet been initialized, this will initialize it on
     /// the same stack.
     pub fn globals(self, context: &mut UpdateContext<'gc>) -> Result<Object<'gc>, Error<'gc>> {
-        let mut write = self.0.write(context.gc());
-
-        let globals = write.globals;
-
-        if !write.initialized {
-            write.initialized = true;
-            drop(write);
+        if !self.0.initialized.get() {
+            self.0.initialized.set(true);
 
             Avm2::run_script_initializer(self, context)?;
         }
 
-        Ok(globals)
+        Ok(self.0.globals)
     }
 }
 
 impl Debug for Script<'_> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
         f.debug_struct("Script")
-            .field("ptr", &self.0.as_ptr())
+            .field("ptr", &Gc::as_ptr(self.0))
             .finish()
     }
 }
