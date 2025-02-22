@@ -20,6 +20,7 @@
     <name xml:lang="sk">Ruffle</name>
     <name xml:lang="tr">Ruffle</name>
     <name xml:lang="uk">Ruffle</name>
+    <name xml:lang="vi">Ruffle</name>
     <name xml:lang="zh-CN">Ruffle</name>
     <name xml:lang="zh-TW">Ruffle</name>
     <summary>Play Flash games &amp; movies</summary>
@@ -57,6 +58,7 @@
         <name xml:lang="sk">Ruffle Tím</name>
         <name xml:lang="tr">Ruffle ekibi</name>
         <name xml:lang="uk">Команда Ruffle</name>
+        <name xml:lang="vi">Nhóm phát triển Ruffle</name>
         <name xml:lang="zh-CN">Ruffle 项目组</name>
         <name xml:lang="zh-TW">Ruffle 團隊</name>
     </developer>
@@ -85,6 +87,7 @@
         <p xml:lang="sk">Ruffle je emulátor Flash Player napísaný v Ruste. Využitím bezpečnostných záruk Rustu sa môžeme s istotou vyhnúť všetkým bezpečnostným nástrahám, ktorými bol Flash povestný. Ruffle vracia Flash späť na web, kam patrí!</p>
         <p xml:lang="tr">Ruffle, Rust ile yazılmış bir Flash Player emülatörüdür. Rust'ın güvenlik garantilerinden yararlanarak, Flash'ın ünlü olduğu tüm güvenlik açıklarından güvenle kaçınabiliyoruz. Ruffle, Flash'ı ait olduğu yere, web'e geri getiriyor!</p>
         <p xml:lang="uk">Ruffle це емулятор Flash Player, написаний на Rust. Використовуючи гарантії безпеки Rust, ми можемо впевнено уникнути всі підводні камені безпеки, якими славиться Flash. Ruffle повертає Flash в інтернет, де йому й місце!</p>
+        <p xml:lang="vi">Ruffle là trình giả lập Flash Player viết bằng ngôn ngữ Rust. Tận dụng lợi thế về tính đảm bảo an toàn của Rust, chúng ta có thể tự tin tránh khỏi mọi vấn đề bảo mật mà Flash từng chịu tiếng xấu. Ruffle đưa Flash trở lại thế giới web, nơi nó vốn thuộc về!</p>
         <p xml:lang="zh-CN">Ruffle 是一个用 Rust 编写的 Flash Player 模拟器，借助 Rust 的安全性保证，我们确信可以避免 Flash 众所周知的各种安全漏洞。Ruffle 将 Flash 重新带回网络，它原本所在的地方！</p>
         <p xml:lang="zh-TW">Ruffle 是用 Rust 寫成的 Flash Player 模擬器。利用 Rust 的安全保證，我們可以放心地避免 Flash 聲名狼藉的所有安全隱患。Ruffle 將 Flash 放回屬於它的網頁上！</p>
         <p>
@@ -107,6 +110,7 @@
         <p xml:lang="sk">Táto aplikácia vám umožňuje spúšťať obsah Flash na vašom počítači bez použitia prehliadača a plne využívať vaše GPU a systémové prostriedky na získanie snímok navyše pri hraní intenzívnych hier.</p>
         <p xml:lang="tr">Bu uygulama, bilgisayarınızda tarayıcıya ihtiyaç duymadan Flash içerik çalıştırmanıza ve yoğun oyunlar oynarken ekstra kare hızları elde etmek için GPU'nuzu ve sistem kaynaklarınızı tam anlamıyla kullanmanıza olanak tanır.</p>
         <p xml:lang="uk">Цей застосунок дає змогу запускати Flash контент на вашому комп’ютері без проміжного браузера та повністю використовувати переваги вашого GPU та системних ресурсів, щоб отримати додаткові кадри під час відтворення інтенсивних ігор.</p>
+        <p xml:lang="vi">Ứng dụng này cho phép bạn chạy nội dung Flash trên máy tính mà không cần trình duyệt trung gian, và tận dụng tối đa tài nguyên GPU và hệ thống để tăng thêm tốc độ khung hình khi chơi các tựa game nặng.</p>
         <p xml:lang="zh-CN">这款应用程序让您可以在电脑上直接运行 Flash 内容，无需浏览器作为中介，并充分利用您的 GPU 和系统资源，在游玩高负载游戏时获得更高的帧数。</p>
         <p xml:lang="zh-TW">此應用程式可讓您在電腦上執行 Flash 內容，中間無需瀏覽器，並可充分利用 GPU 和系統資源，在玩激烈遊戲時獲得額外的畫面。</p>
         <p>
@@ -133,6 +137,7 @@
         <p xml:lang="sk">Ruffle je plne open source projekt spravovaný dobrovoľníkmi. Všetci sme nadšení z uchovávania histórie internetu a prilákalo nás pracovať na tomto projekte, aby sme pomohli zachovať mnoho webových stránok a nepreberné množstvo obsahu, ktorý už nebude prístupný, až používatelia nebudú môcť spúšťať oficiálny prehrávač Flash Player. Ak by ste chceli pomôcť podporiť tento projekt, uvítame všetky príspevky akéhokoľvek druhu – aj keď ide len o hranie starých hier a sledovanie, ako dobre fungujú.</p>
         <p xml:lang="tr">Ruffle, gönüllüler tarafından sürdürülen tamamen açık kaynaklı bir projedir. Hepimiz internet tarihinin korunmasına tutkuyla bağlıyız ve kullanıcıların artık resmi Flash Player'ı çalıştıramayacağı zaman erişilemeyecek olan birçok web sitesini ve içeriği korumaya yardımcı olmak için bu projede çalışmaya yöneldik. Bu projeye destek olmak isterseniz, her türlü katkıyı memnuniyetle karşılarız – eski oyunları oynayıp ne kadar iyi çalıştıklarını görmek bile katkı sayılır.</p>
         <p xml:lang="uk">Ruffle це проект з повністю відкритим кодом, який підтримується волонтерами. Ми всі захоплені збереженням історії інтернету, і ми залучені в роботу над цим проектом, щоб допомогти зберегти багато вебсайтів і велику кількість контенту, який більше не доступний, якщо користувачі більше не можуть запускати офіційний Flash Player. Якщо ви бажаєте допомогти підтримати цей проект, ми вітаємо будь-які внески, навіть якщо це просто гра в старі ігри та спостереження за тим, як добре вони працюють.</p>
+        <p xml:lang="vi">Ruffle hoàn toàn là một dự án mã nguồn mở được duy trì bởi các tình nguyện viên. Tất cả chúng tôi đều đam mê bảo tồn lịch sử internet, và chúng tôi xả thân vào công việc dự án để giúp bảo tồn nhiều trang web và vô số nội dung không còn khả dụng khi người dùng không còn có thể sử dụng Flash Player chính thống. Nếu bạn muốn hỗ trợ giúp đỡ dự án này, chúng tôi hoan nghênh mọi hình thức đóng góp – ngay cả khi chỉ là chơi một số tựa game cũ và xem chúng hoạt động tốt đến đâu.</p>
         <p xml:lang="zh-CN">Ruffle 是一个完全开源的项目，由志愿者维护。我们热衷于保存互联网的历史，因此参与这个项目，以帮助保存将在官方的 Flash 播放器时无法运行后不可使用的众多网站和丰富内容。如果您想支持这个项目，我们欢迎任何形式的贡献——即使只是玩一些老游戏，看看它们的运行效果如何。</p>
         <p xml:lang="zh-TW">Ruffle 是一個完全由志願者維護的開放原始碼專案。我們都熱衷於網際網路歷史的保存，我們被吸引參與這個專案，以幫助保存許多網站和大量的內容，當使用者無法再執行官方的 Flash Player 時，這些網站和內容就無法再被存取。如果您願意協助支持此專案，我們歡迎任何形式的貢獻 - 即使只是玩一些舊遊戲，看看它們運行得有多好。</p>
     </description>
@@ -164,6 +169,7 @@
         <keyword xml:lang="sk">flash</keyword>
         <keyword xml:lang="tr">flash</keyword>
         <keyword xml:lang="uk">flash</keyword>
+        <keyword xml:lang="vi">flash</keyword>
         <keyword xml:lang="zh-CN">flash</keyword>
         <keyword xml:lang="zh-TW">flash</keyword>
         <keyword>swf</keyword>
@@ -184,6 +190,7 @@
         <keyword xml:lang="sk">swf</keyword>
         <keyword xml:lang="tr">swf</keyword>
         <keyword xml:lang="uk">swf</keyword>
+        <keyword xml:lang="vi">swf</keyword>
         <keyword xml:lang="zh-CN">swf</keyword>
         <keyword xml:lang="zh-TW">swf</keyword>
         <keyword>player</keyword>
@@ -205,6 +212,7 @@
         <keyword xml:lang="sk">prehrávač</keyword>
         <keyword xml:lang="tr">oynatıcı</keyword>
         <keyword xml:lang="uk">програвач</keyword>
+        <keyword xml:lang="vi">trình phát</keyword>
         <keyword xml:lang="zh-CN">播放器</keyword>
         <keyword xml:lang="zh-TW">播放器</keyword>
         <keyword>emulator</keyword>
@@ -227,6 +235,7 @@
         <keyword xml:lang="sv">emulator</keyword>
         <keyword xml:lang="tr">öykünücü</keyword>
         <keyword xml:lang="uk">емулятор</keyword>
+        <keyword xml:lang="vi">trình giả lập</keyword>
         <keyword xml:lang="zh-CN">模拟器</keyword>
         <keyword xml:lang="zh-TW">模擬器</keyword>
     </keywords>
