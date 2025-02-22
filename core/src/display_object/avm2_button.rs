@@ -45,7 +45,7 @@ impl fmt::Debug for Avm2Button<'_> {
 pub struct Avm2ButtonData<'gc> {
     base: RefLock<InteractiveObjectBase<'gc>>,
 
-    static_data: Gc<'gc, ButtonStatic>,
+    shared: Gc<'gc, ButtonShared>,
 
     /// The current button state to render.
     state: Cell<ButtonState>,
@@ -107,12 +107,12 @@ impl<'gc> Avm2Button<'gc> {
             context.gc(),
             Avm2ButtonData {
                 base: Default::default(),
-                static_data: Gc::new(
+                shared: Gc::new(
                     context.gc(),
-                    ButtonStatic {
+                    ButtonShared {
                         swf: source_movie.movie.clone(),
                         id: button.id,
-                        cell: RefCell::new(ButtonStaticMut {
+                        cell: RefCell::new(ButtonSharedMut {
                             records: button.records.clone(),
                             up_to_over_sound: None,
                             over_to_down_sound: None,
@@ -155,22 +155,21 @@ impl<'gc> Avm2Button<'gc> {
     }
 
     pub fn set_sounds(self, sounds: swf::ButtonSounds) {
-        let mut static_data = self.0.static_data.cell.borrow_mut();
-        static_data.up_to_over_sound = sounds.up_to_over_sound;
-        static_data.over_to_down_sound = sounds.over_to_down_sound;
-        static_data.down_to_over_sound = sounds.down_to_over_sound;
-        static_data.over_to_up_sound = sounds.over_to_up_sound;
+        let mut shared = self.0.shared.cell.borrow_mut();
+        shared.up_to_over_sound = sounds.up_to_over_sound;
+        shared.over_to_down_sound = sounds.over_to_down_sound;
+        shared.down_to_over_sound = sounds.down_to_over_sound;
+        shared.over_to_up_sound = sounds.over_to_up_sound;
     }
 
     /// Handles the ancient DefineButtonCxform SWF tag.
     /// Set the color transform for all children of each state.
     pub fn set_colors(self, color_transforms: &[swf::ColorTransform]) {
-        let mut static_data = self.0.static_data.cell.borrow_mut();
+        let mut shared = self.0.shared.cell.borrow_mut();
 
         // This tag isn't documented well in SWF19. It is only used in very old SWF<=2 content.
         // It applies color transforms to every character in a button, in sequence(?).
-        for (record, color_transform) in static_data.records.iter_mut().zip(color_transforms.iter())
-        {
+        for (record, color_transform) in shared.records.iter_mut().zip(color_transforms.iter()) {
             record.color_transform = *color_transform;
         }
     }
@@ -196,9 +195,9 @@ impl<'gc> Avm2Button<'gc> {
         let sprite_class = context.avm2.classes().sprite;
 
         let mut children = Vec::new();
-        let static_data = self.0.static_data;
+        let shared = self.0.shared;
 
-        for record in static_data.cell.borrow().records.iter() {
+        for record in shared.cell.borrow().records.iter() {
             if record.states.contains(swf_state) {
                 match context
                     .library
@@ -223,7 +222,7 @@ impl<'gc> Avm2Button<'gc> {
                     Err(error) => {
                         tracing::error!(
                             "Button ID {}: could not instantiate child ID {}: {}",
-                            static_data.id,
+                            shared.id,
                             record.id,
                             error
                         );
@@ -431,11 +430,11 @@ impl<'gc> TDisplayObject<'gc> for Avm2Button<'gc> {
     }
 
     fn id(&self) -> CharacterId {
-        self.0.static_data.id
+        self.0.shared.id
     }
 
     fn movie(&self) -> Arc<SwfMovie> {
-        self.0.static_data.swf.clone()
+        self.0.shared.swf.clone()
     }
 
     fn post_instantiation(
@@ -747,20 +746,16 @@ impl<'gc> TInteractiveObject<'gc> for Avm2Button<'gc> {
         event: ClipEvent<'gc>,
     ) -> ClipEventResult {
         // Translate the clip event to a button event, based on how the button state changes.
-        let static_data = self.0.static_data.cell.borrow();
+        let shared = self.0.shared.cell.borrow();
         let (new_state, sound) = match event {
             ClipEvent::DragOut { .. } => (ButtonState::Over, None),
             ClipEvent::DragOver { .. } => (ButtonState::Down, None),
-            ClipEvent::Press { .. } => (ButtonState::Down, static_data.over_to_down_sound.as_ref()),
-            ClipEvent::Release { .. } => {
-                (ButtonState::Over, static_data.down_to_over_sound.as_ref())
-            }
-            ClipEvent::ReleaseOutside => (ButtonState::Up, static_data.over_to_up_sound.as_ref()),
-            ClipEvent::MouseUpInside => (ButtonState::Up, static_data.over_to_up_sound.as_ref()),
-            ClipEvent::RollOut { .. } => (ButtonState::Up, static_data.over_to_up_sound.as_ref()),
-            ClipEvent::RollOver { .. } => {
-                (ButtonState::Over, static_data.up_to_over_sound.as_ref())
-            }
+            ClipEvent::Press { .. } => (ButtonState::Down, shared.over_to_down_sound.as_ref()),
+            ClipEvent::Release { .. } => (ButtonState::Over, shared.down_to_over_sound.as_ref()),
+            ClipEvent::ReleaseOutside => (ButtonState::Up, shared.over_to_up_sound.as_ref()),
+            ClipEvent::MouseUpInside => (ButtonState::Up, shared.over_to_up_sound.as_ref()),
+            ClipEvent::RollOut { .. } => (ButtonState::Up, shared.over_to_up_sound.as_ref()),
+            ClipEvent::RollOver { .. } => (ButtonState::Over, shared.up_to_over_sound.as_ref()),
             _ => return ClipEventResult::NotHandled,
         };
 
@@ -837,17 +832,17 @@ impl<'gc> TInteractiveObject<'gc> for Avm2Button<'gc> {
     }
 }
 
-/// Static data shared between all instances of a button.
+/// Data shared between all instances of a button.
 #[derive(Collect, Debug)]
 #[collect(require_static)]
-struct ButtonStatic {
+struct ButtonShared {
     swf: Arc<SwfMovie>,
     id: CharacterId,
-    cell: RefCell<ButtonStaticMut>,
+    cell: RefCell<ButtonSharedMut>,
 }
 
 #[derive(Debug)]
-struct ButtonStaticMut {
+struct ButtonSharedMut {
     records: Vec<swf::ButtonRecord>,
 
     /// The sounds to play on state changes for this button.

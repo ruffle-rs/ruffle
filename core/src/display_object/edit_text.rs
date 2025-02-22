@@ -84,8 +84,8 @@ pub struct EditTextData<'gc> {
     /// DisplayObject and InteractiveObject common properties.
     base: InteractiveObjectBase<'gc>,
 
-    /// Static data shared among all instances of this `EditText`.
-    static_data: Gc<'gc, EditTextStatic>,
+    /// Data shared among all instances of this `EditText`.
+    shared: Gc<'gc, EditTextShared>,
 
     /// The underlying text format spans of the `EditText`.
     ///
@@ -234,7 +234,7 @@ impl EditTextData<'_> {
             self.style_sheet.style_sheet(),
             self.flags.contains(EditTextFlag::MULTILINE),
             self.flags.contains(EditTextFlag::CONDENSE_WHITE),
-            self.static_data.swf.version(),
+            self.shared.swf.version(),
         );
         self.original_html_text = if self.style_sheet.is_some() {
             Some(text.to_owned())
@@ -338,9 +338,9 @@ impl<'gc> EditText<'gc> {
             EditTextData {
                 base: InteractiveObjectBase::default(),
                 text_spans,
-                static_data: Gc::new(
+                shared: Gc::new(
                     context.gc(),
-                    EditTextStatic {
+                    EditTextShared {
                         swf: swf_movie,
                         id: swf_tag.id(),
                         initial_text: swf_tag
@@ -878,7 +878,7 @@ impl<'gc> EditText<'gc> {
         let text = self
             .0
             .read()
-            .static_data
+            .shared
             .initial_text
             .clone()
             .unwrap_or_default();
@@ -898,7 +898,7 @@ impl<'gc> EditText<'gc> {
         let mut edit_text = self.0.write(context.gc());
         let autosize = edit_text.autosize;
         let is_word_wrap = edit_text.flags.contains(EditTextFlag::WORD_WRAP);
-        let movie = edit_text.static_data.swf.clone();
+        let movie = edit_text.shared.swf.clone();
         let padding = Self::GUTTER * 2;
 
         if edit_text.flags.contains(EditTextFlag::PASSWORD) {
@@ -2481,11 +2481,11 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
     }
 
     fn id(&self) -> CharacterId {
-        self.0.read().static_data.id
+        self.0.read().shared.id
     }
 
     fn movie(&self) -> Arc<SwfMovie> {
-        self.0.read().static_data.swf.clone()
+        self.0.read().shared.swf.clone()
     }
 
     /// Construct objects placed on this frame.
@@ -3117,10 +3117,10 @@ bitflags::bitflags! {
     }
 }
 
-/// Static data shared between all instances of a text object.
+/// Data shared between all instances of a text object.
 #[derive(Debug, Clone, Collect)]
 #[collect(require_static)]
-struct EditTextStatic {
+struct EditTextShared {
     swf: Arc<SwfMovie>,
     id: CharacterId,
     initial_text: Option<WString>,

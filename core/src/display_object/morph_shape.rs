@@ -30,7 +30,7 @@ impl fmt::Debug for MorphShape<'_> {
 #[collect(no_drop)]
 pub struct MorphShapeData<'gc> {
     base: DisplayObjectBase<'gc>,
-    static_data: Gc<'gc, MorphShapeStatic>,
+    shared: Gc<'gc, MorphShapeShared>,
     ratio: u16,
     /// The AVM2 representation of this MorphShape.
     object: Option<Avm2Object<'gc>>,
@@ -42,12 +42,12 @@ impl<'gc> MorphShape<'gc> {
         tag: swf::DefineMorphShape,
         movie: Arc<SwfMovie>,
     ) -> Self {
-        let static_data = MorphShapeStatic::from_swf_tag(&tag, movie);
+        let shared = MorphShapeShared::from_swf_tag(&tag, movie);
         MorphShape(GcCell::new(
             gc_context,
             MorphShapeData {
                 base: Default::default(),
-                static_data: Gc::new(gc_context, static_data),
+                shared: Gc::new(gc_context, shared),
                 ratio: 0,
                 object: None,
             },
@@ -82,7 +82,7 @@ impl<'gc> TDisplayObject<'gc> for MorphShape<'gc> {
     }
 
     fn id(&self) -> CharacterId {
-        self.0.read().static_data.id
+        self.0.read().shared.id
     }
 
     fn as_morph_shape(&self) -> Option<Self> {
@@ -95,7 +95,7 @@ impl<'gc> TDisplayObject<'gc> for MorphShape<'gc> {
             .library_for_movie_mut(self.movie())
             .get_morph_shape(id)
         {
-            self.0.write(context.gc()).static_data = new_morph_shape.0.read().static_data;
+            self.0.write(context.gc()).shared = new_morph_shape.0.read().shared;
         } else {
             tracing::warn!("PlaceObject: expected morph shape at character ID {}", id);
         }
@@ -138,8 +138,8 @@ impl<'gc> TDisplayObject<'gc> for MorphShape<'gc> {
     fn render_self(&self, context: &mut RenderContext) {
         let this = self.0.read();
         let ratio = this.ratio;
-        let static_data = this.static_data;
-        let shape_handle = static_data.get_shape(context, context.library, ratio);
+        let shared = this.shared;
+        let shape_handle = shared.get_shape(context, context.library, ratio);
         context
             .commands
             .render_shape(shape_handle, context.transform_stack.transform());
@@ -148,8 +148,8 @@ impl<'gc> TDisplayObject<'gc> for MorphShape<'gc> {
     fn self_bounds(&self) -> Rectangle<Twips> {
         let this = self.0.read();
         let ratio = this.ratio;
-        let static_data = this.static_data;
-        let frame = static_data.get_frame(ratio);
+        let shared = this.shared;
+        let frame = shared.get_frame(ratio);
         frame.bounds.clone()
     }
 
@@ -162,7 +162,7 @@ impl<'gc> TDisplayObject<'gc> for MorphShape<'gc> {
         if (!options.contains(HitTestOptions::SKIP_INVISIBLE) || self.visible())
             && self.world_bounds().contains(point)
         {
-            if let Some(frame) = self.0.read().static_data.frames.borrow().get(&self.ratio()) {
+            if let Some(frame) = self.0.read().shared.frames.borrow().get(&self.ratio()) {
                 let Some(local_matrix) = self.global_to_local_matrix() else {
                     return false;
                 };
@@ -180,7 +180,7 @@ impl<'gc> TDisplayObject<'gc> for MorphShape<'gc> {
     }
 
     fn movie(&self) -> Arc<SwfMovie> {
-        self.0.read().static_data.movie.clone()
+        self.0.read().shared.movie.clone()
     }
 }
 
@@ -191,11 +191,11 @@ struct Frame {
     bounds: Rectangle<Twips>,
 }
 
-/// Static data shared between all instances of a morph shape.
+/// Data shared between all instances of a morph shape.
 #[allow(dead_code)]
 #[derive(Collect)]
 #[collect(require_static)]
-pub struct MorphShapeStatic {
+pub struct MorphShapeShared {
     id: CharacterId,
     start: swf::MorphShape,
     end: swf::MorphShape,
@@ -203,7 +203,7 @@ pub struct MorphShapeStatic {
     movie: Arc<SwfMovie>,
 }
 
-impl MorphShapeStatic {
+impl MorphShapeShared {
     pub fn from_swf_tag(swf_tag: &swf::DefineMorphShape, movie: Arc<SwfMovie>) -> Self {
         Self {
             id: swf_tag.id,
