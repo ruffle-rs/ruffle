@@ -85,18 +85,17 @@ impl<'gc> ByteArrayObject<'gc> {
     pub fn from_storage(
         activation: &mut Activation<'_, 'gc>,
         bytes: ByteArrayStorage,
-    ) -> Result<Object<'gc>, Error<'gc>> {
+    ) -> Result<ByteArrayObject<'gc>, Error<'gc>> {
         let class = activation.avm2().classes().bytearray;
         let base = ScriptObjectData::new(class);
 
-        let instance: Object<'gc> = ByteArrayObject(Gc::new(
+        let instance = ByteArrayObject(Gc::new(
             activation.gc(),
             ByteArrayObjectData {
                 base,
                 storage: RefCell::new(bytes),
             },
-        ))
-        .into();
+        ));
 
         class.call_init(instance.into(), &[], activation)?;
 

@@ -3,6 +3,7 @@
 use std::cell::Ref;
 
 use crate::avm2::activation::Activation;
+use crate::avm2::bytearray::ByteArrayStorage;
 use crate::avm2::object::{ByteArrayObject, TObject};
 use crate::avm2::property_map::PropertyMap;
 use crate::avm2::script::Script;
@@ -393,16 +394,10 @@ impl<'gc> Domain<'gc> {
         self,
         activation: &mut Activation<'_, 'gc>,
     ) -> Result<(), Error<'gc>> {
-        let bytearray_class = activation.avm2().classes().bytearray;
+        let initial_data = vec![0; MIN_DOMAIN_MEMORY_LENGTH];
+        let storage = ByteArrayStorage::from_vec(initial_data);
 
-        let domain_memory = bytearray_class
-            .construct(activation, &[])?
-            .as_object()
-            .unwrap();
-        domain_memory
-            .as_bytearray_mut()
-            .unwrap()
-            .set_length(MIN_DOMAIN_MEMORY_LENGTH);
+        let domain_memory = ByteArrayObject::from_storage(activation, storage)?;
 
         let mut write = self.0.write(activation.gc());
 
@@ -415,10 +410,8 @@ impl<'gc> Domain<'gc> {
             "Already initialized domain memory!"
         );
 
-        let bytearray = domain_memory.as_bytearray_object().unwrap();
-
-        write.domain_memory = Some(bytearray);
-        write.default_domain_memory = Some(bytearray);
+        write.domain_memory = Some(domain_memory);
+        write.default_domain_memory = Some(domain_memory);
 
         Ok(())
     }
