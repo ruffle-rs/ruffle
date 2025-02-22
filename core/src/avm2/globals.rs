@@ -410,7 +410,7 @@ fn dynamic_class<'gc>(
     class_object: ClassObject<'gc>,
     script: Script<'gc>,
 ) {
-    let (_, global, mut domain) = script.init();
+    let (_, global, domain) = script.init();
     let class = class_object.inner_class_definition();
     let name = class.name();
 

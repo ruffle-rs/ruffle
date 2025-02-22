@@ -321,7 +321,7 @@ impl<'gc> Domain<'gc> {
     /// Export a definition from a script into the current application domain.
     ///
     /// This does nothing if the definition already exists in this domain or a parent.
-    pub fn export_definition(&mut self, name: QName<'gc>, script: Script<'gc>, mc: &Mutation<'gc>) {
+    pub fn export_definition(self, name: QName<'gc>, script: Script<'gc>, mc: &Mutation<'gc>) {
         if self.has_definition(name) {
             return;
         }
