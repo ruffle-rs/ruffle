@@ -57,20 +57,20 @@ pub struct WgpuContext3D {
 
     buffer_staging_belt: StagingBelt,
 
-    current_texture_view: Option<Rc<wgpu::TextureView>>,
+    current_texture_view: Option<wgpu::TextureView>,
     current_texture_size: Option<Extent3d>,
-    current_depth_texture_view: Option<Rc<wgpu::TextureView>>,
-    current_texture_resolve_view: Option<Rc<wgpu::TextureView>>,
+    current_depth_texture_view: Option<wgpu::TextureView>,
+    current_texture_resolve_view: Option<wgpu::TextureView>,
 
     back_buffer_sample_count: u32,
     back_buffer_size: Option<Extent3d>,
-    back_buffer_texture_view: Option<Rc<wgpu::TextureView>>,
-    back_buffer_depth_texture_view: Option<Rc<wgpu::TextureView>>,
-    back_buffer_resolve_texture_view: Option<Rc<wgpu::TextureView>>,
+    back_buffer_texture_view: Option<wgpu::TextureView>,
+    back_buffer_depth_texture_view: Option<wgpu::TextureView>,
+    back_buffer_resolve_texture_view: Option<wgpu::TextureView>,
 
-    front_buffer_texture_view: Option<Rc<wgpu::TextureView>>,
-    front_buffer_depth_texture_view: Option<Rc<wgpu::TextureView>>,
-    front_buffer_resolve_texture_view: Option<Rc<wgpu::TextureView>>,
+    front_buffer_texture_view: Option<wgpu::TextureView>,
+    front_buffer_depth_texture_view: Option<wgpu::TextureView>,
+    front_buffer_resolve_texture_view: Option<wgpu::TextureView>,
 
     back_buffer_raw_texture_handle: BitmapHandle,
     front_buffer_raw_texture_handle: BitmapHandle,
@@ -174,31 +174,24 @@ impl WgpuContext3D {
         }
     }
 
-    fn create_depth_texture(
-        &mut self,
-        width: u32,
-        height: u32,
-        sample_count: u32,
-    ) -> Rc<TextureView> {
-        Rc::new(
-            self.descriptors
-                .device
-                .create_texture(&wgpu::TextureDescriptor {
-                    label: Some("Context3D depth texture"),
-                    size: Extent3d {
-                        width,
-                        height,
-                        depth_or_array_layers: 1,
-                    },
-                    mip_level_count: 1,
-                    sample_count,
-                    dimension: TextureDimension::D2,
-                    format: wgpu::TextureFormat::Depth24PlusStencil8,
-                    view_formats: &[wgpu::TextureFormat::Depth24PlusStencil8],
-                    usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
-                })
-                .create_view(&Default::default()),
-        )
+    fn create_depth_texture(&mut self, width: u32, height: u32, sample_count: u32) -> TextureView {
+        self.descriptors
+            .device
+            .create_texture(&wgpu::TextureDescriptor {
+                label: Some("Context3D depth texture"),
+                size: Extent3d {
+                    width,
+                    height,
+                    depth_or_array_layers: 1,
+                },
+                mip_level_count: 1,
+                sample_count,
+                dimension: TextureDimension::D2,
+                format: wgpu::TextureFormat::Depth24PlusStencil8,
+                view_formats: &[wgpu::TextureFormat::Depth24PlusStencil8],
+                usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
+            })
+            .create_view(&Default::default())
     }
 
     // This restores rendering to our normal buffer. It can be triggered explicitly
@@ -283,7 +276,7 @@ impl WgpuContext3D {
             label: Some("Context3D render pass"),
             color_attachments: &[Some(wgpu::RenderPassColorAttachment {
                 view: self.current_texture_view.as_ref().unwrap(),
-                resolve_target: self.current_texture_resolve_view.as_deref(),
+                resolve_target: self.current_texture_resolve_view.as_ref(),
                 ops: wgpu::Operations {
                     load: color_load,
                     store: wgpu::StoreOp::Store,
@@ -620,9 +613,8 @@ impl Context3D for WgpuContext3D {
                 let (back_buffer_texture, back_buffer_resolve_texture) = make_it();
                 let (front_buffer_texture, front_buffer_resolve_texture) = make_it();
 
-                self.current_texture_view = Some(Rc::new(
-                    back_buffer_texture.create_view(&Default::default()),
-                ));
+                self.current_texture_view =
+                    Some(back_buffer_texture.create_view(&Default::default()));
 
                 if depth_and_stencil {
                     self.back_buffer_depth_texture_view =
@@ -648,22 +640,21 @@ impl Context3D for WgpuContext3D {
                 self.back_buffer_texture_view = self.current_texture_view.clone();
                 self.back_buffer_resolve_texture_view = back_buffer_resolve_texture
                     .as_ref()
-                    .map(|t| Rc::new(t.create_view(&Default::default())));
+                    .map(|t| t.create_view(&Default::default()));
 
-                self.front_buffer_texture_view = Some(Rc::new(
-                    front_buffer_texture.create_view(&Default::default()),
-                ));
+                self.front_buffer_texture_view =
+                    Some(front_buffer_texture.create_view(&Default::default()));
                 self.front_buffer_resolve_texture_view = front_buffer_resolve_texture
                     .as_ref()
-                    .map(|t| Rc::new(t.create_view(&Default::default())));
+                    .map(|t| t.create_view(&Default::default()));
 
                 if sample_count > 1 {
-                    self.current_texture_resolve_view = Some(Rc::new(
+                    self.current_texture_resolve_view = Some(
                         back_buffer_resolve_texture
                             .as_ref()
                             .unwrap()
                             .create_view(&Default::default()),
-                    ));
+                    );
 
                     // We always use a non-multisampled texture as our raw texture handle,
                     // which is what the Stage rendering code expects. In multisample mode,
@@ -836,12 +827,12 @@ impl Context3D for WgpuContext3D {
                             });
 
                     self.current_texture_resolve_view =
-                        Some(Rc::new(texture_wrapper.texture.create_view(&view_desc)));
-                    self.current_texture_view = Some(Rc::new(msaa_texture.create_view(&view_desc)));
+                        Some(texture_wrapper.texture.create_view(&view_desc));
+                    self.current_texture_view = Some(msaa_texture.create_view(&view_desc));
                 } else {
                     self.current_texture_resolve_view = None;
                     self.current_texture_view =
-                        Some(Rc::new(texture_wrapper.texture.create_view(&view_desc)));
+                        Some(texture_wrapper.texture.create_view(&view_desc));
                 }
 
                 if enable_depth_and_stencil {
@@ -1104,7 +1095,7 @@ impl Context3D for WgpuContext3D {
 
                     Some(BoundTextureData {
                         id: texture.clone(),
-                        view: Rc::new(texture_wrapper.texture.create_view(&view)),
+                        view: texture_wrapper.texture.create_view(&view),
                         cube,
                     })
                 } else {
