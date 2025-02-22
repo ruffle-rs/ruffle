@@ -31,7 +31,7 @@ impl fmt::Debug for Text<'_> {
 #[collect(no_drop)]
 pub struct TextData<'gc> {
     base: DisplayObjectBase<'gc>,
-    static_data: gc_arena::Gc<'gc, TextStatic>,
+    shared: gc_arena::Gc<'gc, TextShared>,
     #[collect(require_static)]
     render_settings: TextRenderSettings,
     avm2_object: Option<Avm2Object<'gc>>,
@@ -47,9 +47,9 @@ impl<'gc> Text<'gc> {
             context.gc(),
             TextData {
                 base: Default::default(),
-                static_data: gc_arena::Gc::new(
+                shared: gc_arena::Gc::new(
                     context.gc(),
-                    TextStatic {
+                    TextShared {
                         swf,
                         id: tag.id,
                         bounds: tag.bounds.clone(),
@@ -69,7 +69,7 @@ impl<'gc> Text<'gc> {
     }
 
     pub fn text(&self, context: &mut UpdateContext<'gc>) -> WString {
-        let data = self.0.read().static_data;
+        let data = self.0.read().shared;
         let mut ret = WString::new();
 
         for block in &data.text_blocks {
@@ -114,11 +114,11 @@ impl<'gc> TDisplayObject<'gc> for Text<'gc> {
     }
 
     fn id(&self) -> CharacterId {
-        self.0.read().static_data.id
+        self.0.read().shared.id
     }
 
     fn movie(&self) -> Arc<SwfMovie> {
-        self.0.read().static_data.swf.clone()
+        self.0.read().shared.swf.clone()
     }
 
     fn replace_with(&self, context: &mut UpdateContext<'gc>, id: CharacterId) {
@@ -127,7 +127,7 @@ impl<'gc> TDisplayObject<'gc> for Text<'gc> {
             .library_for_movie_mut(self.movie())
             .get_text(id)
         {
-            self.0.write(context.gc()).static_data = new_text.0.read().static_data;
+            self.0.write(context.gc()).shared = new_text.0.read().shared;
         } else {
             tracing::warn!("PlaceObject: expected text at character ID {}", id);
         }
@@ -141,7 +141,7 @@ impl<'gc> TDisplayObject<'gc> for Text<'gc> {
     fn render_self(&self, context: &mut RenderContext) {
         let tf = self.0.read();
         context.transform_stack.push(&Transform {
-            matrix: tf.static_data.text_transform,
+            matrix: tf.shared.text_transform,
             ..Default::default()
         });
 
@@ -154,7 +154,7 @@ impl<'gc> TDisplayObject<'gc> for Text<'gc> {
         let mut font_id = 0;
         let mut height = Twips::ZERO;
         let mut transform: Transform = Default::default();
-        for block in &tf.static_data.text_blocks {
+        for block in &tf.shared.text_blocks {
             if let Some(x) = block.x_offset {
                 transform.matrix.tx = x;
             }
@@ -194,7 +194,7 @@ impl<'gc> TDisplayObject<'gc> for Text<'gc> {
     }
 
     fn self_bounds(&self) -> Rectangle<Twips> {
-        self.0.read().static_data.bounds.clone()
+        self.0.read().shared.bounds.clone()
     }
 
     fn hit_test_shape(
@@ -216,7 +216,7 @@ impl<'gc> TDisplayObject<'gc> for Text<'gc> {
                 return false;
             };
             let tf = self.0.read();
-            let Some(text_matrix) = tf.static_data.text_transform.inverse() else {
+            let Some(text_matrix) = tf.shared.text_transform.inverse() else {
                 return false;
             };
             point = text_matrix * local_matrix * point;
@@ -224,7 +224,7 @@ impl<'gc> TDisplayObject<'gc> for Text<'gc> {
             let mut font_id = 0;
             let mut height = Twips::ZERO;
             let mut glyph_matrix = Matrix::default();
-            for block in &tf.static_data.text_blocks {
+            for block in &tf.shared.text_blocks {
                 if let Some(x) = block.x_offset {
                     glyph_matrix.tx = x;
                 }
@@ -305,11 +305,11 @@ impl<'gc> TDisplayObject<'gc> for Text<'gc> {
     }
 }
 
-/// Static data shared between all instances of a text object.
+/// Data shared between all instances of a text object.
 #[allow(dead_code)]
 #[derive(Debug, Clone, Collect)]
 #[collect(require_static)]
-struct TextStatic {
+struct TextShared {
     swf: Arc<SwfMovie>,
     id: CharacterId,
     bounds: Rectangle<Twips>,

@@ -33,7 +33,7 @@ impl fmt::Debug for Graphic<'_> {
 #[collect(no_drop)]
 pub struct GraphicData<'gc> {
     base: DisplayObjectBase<'gc>,
-    static_data: gc_arena::Gc<'gc, GraphicStatic>,
+    shared: gc_arena::Gc<'gc, GraphicShared>,
     class: Option<Avm2ClassObject<'gc>>,
     avm2_object: Option<Avm2Object<'gc>>,
     /// This is lazily allocated on demand, to make `GraphicData` smaller in the common case.
@@ -49,7 +49,7 @@ impl<'gc> Graphic<'gc> {
         movie: Arc<SwfMovie>,
     ) -> Self {
         let library = context.library.library_for_movie(movie.clone()).unwrap();
-        let static_data = GraphicStatic {
+        let shared = GraphicShared {
             id: swf_shape.id,
             bounds: swf_shape.shape_bounds.clone(),
             render_handle: Some(
@@ -65,7 +65,7 @@ impl<'gc> Graphic<'gc> {
             context.gc(),
             GraphicData {
                 base: Default::default(),
-                static_data: gc_arena::Gc::new(context.gc(), static_data),
+                shared: gc_arena::Gc::new(context.gc(), shared),
                 class: None,
                 avm2_object: None,
                 drawing: None,
@@ -75,7 +75,7 @@ impl<'gc> Graphic<'gc> {
 
     /// Construct an empty `Graphic`.
     pub fn empty(context: &mut UpdateContext<'gc>) -> Self {
-        let static_data = GraphicStatic {
+        let shared = GraphicShared {
             id: 0,
             bounds: Default::default(),
             render_handle: None,
@@ -98,7 +98,7 @@ impl<'gc> Graphic<'gc> {
             context.gc(),
             GraphicData {
                 base: Default::default(),
-                static_data: gc_arena::Gc::new(context.gc(), static_data),
+                shared: gc_arena::Gc::new(context.gc(), shared),
                 class: None,
                 avm2_object: None,
                 drawing: None,
@@ -135,14 +135,14 @@ impl<'gc> TDisplayObject<'gc> for Graphic<'gc> {
     }
 
     fn id(&self) -> CharacterId {
-        self.0.read().static_data.id
+        self.0.read().shared.id
     }
 
     fn self_bounds(&self) -> Rectangle<Twips> {
         if let Some(drawing) = &self.0.read().drawing {
             drawing.self_bounds().clone()
         } else {
-            self.0.read().static_data.bounds.clone()
+            self.0.read().shared.bounds.clone()
         }
     }
 
@@ -179,7 +179,7 @@ impl<'gc> TDisplayObject<'gc> for Graphic<'gc> {
             .library_for_movie_mut(self.movie())
             .get_graphic(id)
         {
-            self.0.write(context.gc()).static_data = new_graphic.0.read().static_data;
+            self.0.write(context.gc()).shared = new_graphic.0.read().shared;
         } else {
             tracing::warn!("PlaceObject: expected Graphic at character ID {}", id);
         }
@@ -198,7 +198,7 @@ impl<'gc> TDisplayObject<'gc> for Graphic<'gc> {
 
         if let Some(drawing) = &self.0.read().drawing {
             drawing.render(context);
-        } else if let Some(render_handle) = self.0.read().static_data.render_handle.clone() {
+        } else if let Some(render_handle) = self.0.read().shared.render_handle.clone() {
             context
                 .commands
                 .render_shape(render_handle, context.transform_stack.transform())
@@ -224,7 +224,7 @@ impl<'gc> TDisplayObject<'gc> for Graphic<'gc> {
                     return true;
                 }
             } else {
-                let shape = &self.0.read().static_data.shape;
+                let shape = &self.0.read().shared.shape;
                 return ruffle_render::shape_utils::shape_hit_test(shape, point, &local_matrix);
             }
         }
@@ -251,7 +251,7 @@ impl<'gc> TDisplayObject<'gc> for Graphic<'gc> {
     }
 
     fn movie(&self) -> Arc<SwfMovie> {
-        self.0.read().static_data.movie.clone()
+        self.0.read().shared.movie.clone()
     }
 
     fn object2(&self) -> Avm2Value<'gc> {
@@ -271,11 +271,11 @@ impl<'gc> TDisplayObject<'gc> for Graphic<'gc> {
     }
 }
 
-/// Static data shared between all instances of a Graphic.
+/// Data shared between all instances of a Graphic.
 #[allow(dead_code)]
 #[derive(Collect)]
 #[collect(require_static)]
-struct GraphicStatic {
+struct GraphicShared {
     id: CharacterId,
     shape: swf::Shape,
     render_handle: Option<ShapeHandle>,
