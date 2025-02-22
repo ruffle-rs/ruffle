@@ -261,8 +261,6 @@ impl<'gc> TranslationUnit<'gc> {
         let script = Script::from_abc_index(self, script_index, domain, activation)?;
         self.0.write(activation.gc()).scripts[script_index as usize] = Some(script);
 
-        script.load_traits(self, script_index, activation)?;
-
         Ok(script)
     }
 
@@ -411,7 +409,7 @@ pub struct Script<'gc>(pub GcCell<'gc, ScriptData<'gc>>);
 #[collect(no_drop)]
 pub struct ScriptData<'gc> {
     /// The global object for the script.
-    globals: Option<Object<'gc>>,
+    globals: Object<'gc>,
 
     /// The domain associated with this script.
     domain: Domain<'gc>,
@@ -419,16 +417,11 @@ pub struct ScriptData<'gc> {
     /// The initializer method to run for the script.
     init: Method<'gc>,
 
-    /// Whether or not we loaded our traits.
-    traits_loaded: bool,
-
     /// Whether or not script initialization occurred.
     initialized: bool,
 
     /// The `TranslationUnit` this script was loaded from.
     translation_unit: Option<TranslationUnit<'gc>>,
-
-    pub abc_index: Option<u32>,
 }
 
 impl<'gc> Script<'gc> {
@@ -446,30 +439,23 @@ impl<'gc> Script<'gc> {
         Self(GcCell::new(
             mc,
             ScriptData {
-                globals: Some(globals),
+                globals,
                 domain,
                 init: Method::from_builtin(
                     |_, _, _| Ok(Value::Undefined),
                     "<Built-in script initializer>",
                     mc,
                 ),
-                traits_loaded: true,
                 initialized: false,
                 translation_unit: None,
-                abc_index: None,
             },
         ))
     }
 
     /// Construct a script from a `TranslationUnit` and its script index.
     ///
-    /// The returned script will be allocated, but no traits will be loaded.
-    /// The caller is responsible for storing the class in the
-    /// `TranslationUnit` and calling `load_traits` to complete the
-    /// trait-loading process.
-    ///
-    /// The given `globals` should be an empty object of the `global` hidden
-    /// type. The initializer script will create and store traits on it.
+    /// The returned script will be allocated, and its traits will be loaded.
+    /// The caller is responsible for storing the class in the `TranslationUnit`.
     pub fn from_abc_index(
         unit: TranslationUnit<'gc>,
         script_index: u32,
@@ -477,71 +463,53 @@ impl<'gc> Script<'gc> {
         activation: &mut Activation<'_, 'gc>,
     ) -> Result<Self, Error<'gc>> {
         let abc = unit.abc();
-        let script: Result<&AbcScript, Error<'gc>> = abc
+        let script = abc
             .scripts
             .get(script_index as usize)
-            .ok_or_else(|| "LoadError: Script index not valid".into());
-        let script = script?;
+            .expect("Script index should be valid");
 
         let init = unit.load_method(script.init_method, false, activation)?;
 
-        Ok(Self(GcCell::new(
+        let globals = Script::create_globals_object(unit, script, domain, activation)?;
+
+        let created_script = Self(GcCell::new(
             activation.gc(),
             ScriptData {
-                globals: None,
+                globals,
                 domain,
                 init,
-                traits_loaded: false,
                 initialized: false,
                 translation_unit: Some(unit),
-                abc_index: Some(script_index),
             },
-        )))
-    }
+        ));
 
-    /// Finish the class-loading process by loading traits.
-    ///
-    /// This process must be done after the `Script` has been stored in the
-    /// `TranslationUnit`. Failing to do so runs the risk of runaway recursion
-    /// or double-borrows. It should be done before the script is actually
-    /// executed.
-    pub fn load_traits(
-        self,
-        unit: TranslationUnit<'gc>,
-        script_index: u32,
-        activation: &mut Activation<'_, 'gc>,
-    ) -> Result<(), Error<'gc>> {
-        let mc = activation.gc();
-
-        let mut write = self.0.write(mc);
-
-        if write.traits_loaded {
-            return Ok(());
+        // Export traits in domain now that the Script is crated
+        for trait_ in &*created_script.global_class().traits() {
+            domain.export_definition(trait_.name(), created_script, activation.gc());
         }
 
-        write.traits_loaded = true;
+        Ok(created_script)
+    }
 
-        let abc = unit.abc();
-        let script: Result<_, Error<'gc>> = abc
-            .scripts
-            .get(script_index as usize)
-            .ok_or_else(|| "LoadError: Script index not valid".into());
-        let script = script?;
-        let mut domain = write.domain;
+    /// Finish the script-loading process by loading traits and creating a global object.
+    fn create_globals_object(
+        unit: TranslationUnit<'gc>,
+        script: &AbcScript,
+        domain: Domain<'gc>,
+        activation: &mut Activation<'_, 'gc>,
+    ) -> Result<Object<'gc>, Error<'gc>> {
+        let mc = activation.gc();
 
         let mut traits = Vec::new();
 
         for abc_trait in script.traits.iter() {
             let newtrait = Trait::from_abc_trait(unit, abc_trait, activation)?;
-            domain.export_definition(newtrait.name(), self, mc);
             if let TraitKind::Class { class, .. } = newtrait.kind() {
                 domain.export_class(newtrait.name(), *class, mc);
             }
 
             traits.push(newtrait);
         }
-
-        drop(write);
 
         // Now that we have the traits, create the global class for this script
         // and use it to initialize a vtable and global object.
@@ -560,24 +528,19 @@ impl<'gc> Script<'gc> {
             mc,
         );
 
-        let global_object = ScriptObject::custom_object(
+        Ok(ScriptObject::custom_object(
             mc,
             global_class,
             object_class.proto(), // Just use Object's prototype
             global_obj_vtable,
-        );
-
-        self.0.write(mc).globals = Some(global_object);
-
-        Ok(())
+        ))
     }
 
     /// Return the entrypoint for the script and the scope it should run in.
     pub fn init(self) -> (Method<'gc>, Object<'gc>, Domain<'gc>) {
         let read = self.0.read();
-        let globals = read.globals.expect("Global object should be initialized");
 
-        (read.init, globals, read.domain)
+        (read.init, read.globals, read.domain)
     }
 
     pub fn domain(self) -> Domain<'gc> {
@@ -588,16 +551,8 @@ impl<'gc> Script<'gc> {
         self.0.read().translation_unit
     }
 
-    pub fn traits_loaded(self) -> bool {
-        self.0.read().traits_loaded
-    }
-
     pub fn global_class(self) -> Class<'gc> {
-        self.0
-            .read()
-            .globals
-            .expect("Global object should be initialized")
-            .instance_class()
+        self.0.read().globals.instance_class()
     }
 
     /// Return the global scope for the script.
@@ -607,7 +562,7 @@ impl<'gc> Script<'gc> {
     pub fn globals(self, context: &mut UpdateContext<'gc>) -> Result<Object<'gc>, Error<'gc>> {
         let mut write = self.0.write(context.gc());
 
-        let globals = write.globals.expect("Global object should be initialized");
+        let globals = write.globals;
 
         if !write.initialized {
             write.initialized = true;
