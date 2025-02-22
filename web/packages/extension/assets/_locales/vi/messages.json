@@ -1,0 +1,119 @@
+{
+    "settings_ruffle_enable": {
+        "message": "Chạy nội dung Flash trong Ruffle"
+    },
+    "settings_ignore_optout": {
+        "message": "Chạy nội dung Flash ngay cả trên các trang chặn Ruffle"
+    },
+    "settings_show_swf_download": {
+        "message": "Hiển thị Tải xuống SWF trong menu ngữ cảnh"
+    },
+    "settings_autostart": {
+        "message": "Tự động chạy nội dung Flash (bấm để bật tiếng)"
+    },
+    "settings_swf_takeover": {
+        "message": "Chạy file SWF trên trình duyệt thay vì tải về"
+    },
+    "settings_log_level": {
+        "message": "Mức độ hiển thị thông tin gỡ lỗi"
+    },
+    "settings_log_level_error": {
+        "message": "Chỉ hiển thị lỗi"
+    },
+    "settings_log_level_warn": {
+        "message": "Hiển thị lỗi và cảnh báo"
+    },
+    "settings_log_level_info": {
+        "message": "Hiển thị lỗi, cảnh báo và thông tin chính"
+    },
+    "settings_max_execution_duration": {
+        "message": "Thời gian tối đa cho ActionScript thực thi và phản hồi (tính bằng giây)"
+    },
+    "settings_player_version": {
+        "message": "Phiên bản trình phát Flash muốn giả lập (từ 1 đến 32)"
+    },
+    "settings_preferred_renderer": {
+        "message": "Trình quản lý đồ hoạ ưu tiên"
+    },
+    "settings_preferred_renderer_auto": {
+        "message": "Tự động lựa chọn"
+    },
+    "settings_advanced_options": {
+        "message": "Các tuỳ chọn nâng cao"
+    },
+    "settings_reset": {
+        "message": "Khôi phục cài đặt mặc định"
+    },
+    "settings_reset_confirm": {
+        "message": "Bạn có chắc chắn muốn khôi phục cài đặt Ruffle về mặc định ban đầu?"
+    },
+    "status_init": {
+        "message": "Đang đọc tab hiện tại…"
+    },
+    "status_no_tabs": {
+        "message": "Không có tab nào đang hoạt động."
+    },
+    "status_tabs_error": {
+        "message": "Có lỗi xảy ra khi tìm kiếm tab hiện tại."
+    },
+    "status_message_init": {
+        "message": "Đang kiểm tra trạng thái Ruffle trên tab hiện tại…"
+    },
+    "status_result_running": {
+        "message": "Ruffle đã sẵn sàng chạy nội dung Flash trên tab hiện tại."
+    },
+    "status_result_running_protected": {
+        "message": "Ruffle đã sẵn sàng chạy nội dung Flash mà bạn yêu cầu."
+    },
+    "status_result_optout": {
+        "message": "Ruffle không khả dụng vì trang web hiện tại tự đánh dấu là không tương thích."
+    },
+    "status_result_disabled": {
+        "message": "Ruffle đã bị vô hiệu hoá."
+    },
+    "status_result_error": {
+        "message": "Đã xảy ra lỗi khi truy vấn Ruffle của trang hiện tại."
+    },
+    "status_result_protected": {
+        "message": "Ruffle không khả dụng ở chế độ duyệt web an toàn nâng cao của trình duyệt."
+    },
+    "action_reload": {
+        "message": "Tải lại tab để áp dụng các thay đổi"
+    },
+    "open_player_page": {
+        "message": "Mở trình phát SWF"
+    },
+    "open_settings_page": {
+        "message": "Mở trang cài đặt"
+    },
+    "settings_page": {
+        "message": "Trang cài đặt"
+    },
+    "description": {
+        "message": "Đưa Flash trở lại thế giới web nơi nó vốn thuộc về."
+    },
+    "save_settings": {
+        "message": "Lưu cài đặt"
+    },
+    "settings_saved": {
+        "message": "Cài đặt đã được lưu"
+    },
+    "onboarding_page": {
+        "message": "Trang giới thiệu tổng quan"
+    },
+    "permissions_grant": {
+        "message": "Cấp quyền cho Ruffle được phép truy cập dữ liệu trang web của tôi trên tất cả các trang"
+    },
+    "permissions_not_granted": {
+        "message": "Bạn sẽ cần phải bấm vào biểu tượng Ruffle trên mỗi trang web mà bạn muốn sử dụng Ruffle"
+    },
+    "grant_single_site_permission": {
+        "message": "Bật vĩnh viễn đối với trang web này"
+    },
+    "permissions_explanation": {
+        "message": "Tiện ích mở rộng Ruffle hoạt động tốt nhất với quyền cho phép truy cập dữ liệu trang web trên tất cả các trang. Điều này cho phép nó được quyền chạy khi bất kỳ trang web nào tải lần đầu, cho phép nó giúp các trang web phát hiện Flash Player ngay lập tức để cho phép nội dung Flash chạy. Nó cũng cấp quyền để nó có khả năng tải các tệp SWF vào trang trình phát nội bộ của nó từ các nơi khác trên web và cho phép nó tự động tải các liên kết SWF trực tiếp vào trang đó. Nếu bạn không cấp quyền này, bạn sẽ cần phải bật Ruffle theo cách thủ công trên mọi trang web mà bạn muốn sử dụng bằng cách nhấp vào biểu tượng của tiện ích mở rộng và bật nó cho trang web đó."
+    },
+    "swf_player_permissions": {
+        "message": "Bạn phải cấp phép cho miền URL này để có thể tải các file SWF từ đó."
+    }
+}
