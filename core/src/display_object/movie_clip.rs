@@ -8,7 +8,7 @@ use crate::avm2::{
     Avm2, ClassObject as Avm2ClassObject, Error as Avm2Error, Object as Avm2Object,
     QName as Avm2QName, StageObject as Avm2StageObject, TObject as Avm2TObject, Value as Avm2Value,
 };
-use crate::backend::audio::{AudioManager, SoundHandle, SoundInstanceHandle};
+use crate::backend::audio::{AudioManager, SoundInstanceHandle};
 use crate::backend::navigator::Request;
 use crate::backend::ui::MouseCursor;
 use crate::frame_lifecycle::run_inner_goto_frame;
@@ -39,6 +39,8 @@ use crate::string::{AvmString, SwfStrExt as _, WStr, WString};
 use crate::tag_utils::{self, ControlFlow, DecodeResult, Error, SwfMovie, SwfSlice, SwfStream};
 use crate::vminterface::{AvmObject, Instantiator};
 use core::fmt;
+use gc_arena::barrier::unlock;
+use gc_arena::lock::Lock;
 use gc_arena::{Collect, Gc, GcCell, GcWeakCell, Mutation};
 use ruffle_macros::istr;
 use smallvec::SmallVec;
@@ -179,10 +181,6 @@ pub struct MovieClipData<'gc> {
     queued_goto_frame: Option<FrameNumber>,
     drop_target: Option<DisplayObject<'gc>>,
 
-    /// The tag stream start and stop positions for each frame in the clip.
-    #[cfg(feature = "timeline_debug")]
-    tag_frame_boundaries: HashMap<FrameNumber, (u64, u64)>,
-
     /// List of tags queued up for the current frame.
     #[collect(require_static)]
     queued_tags: HashMap<Depth, QueuedTagList>,
@@ -220,14 +218,16 @@ impl<'gc> MovieClipData<'gc> {
             queued_goto_frame: None,
             drop_target: None,
             hit_area: None,
-
-            #[cfg(feature = "timeline_debug")]
-            tag_frame_boundaries: Default::default(),
             queued_tags: HashMap::new(),
             attached_audio: None,
             importer_movie: None,
             avm1_text_field_bindings: Vec::new(),
         }
+    }
+
+    #[inline(always)]
+    fn shared_cell(&self) -> Ref<'_, MovieClipSharedMut> {
+        self.shared.cell.borrow()
     }
 }
 
@@ -237,7 +237,7 @@ impl<'gc> MovieClip<'gc> {
     }
 
     pub fn new(movie: Arc<SwfMovie>, mc: &Mutation<'gc>) -> Self {
-        let shared = MovieClipShared::empty(movie, mc);
+        let shared = MovieClipShared::empty(movie);
         MovieClip(GcCell::new(mc, MovieClipData::new(shared, mc)))
     }
 
@@ -247,8 +247,8 @@ impl<'gc> MovieClip<'gc> {
         class: Avm2ClassObject<'gc>,
         mc: &Mutation<'gc>,
     ) -> Self {
-        let shared = MovieClipShared::empty(movie, mc);
-        *shared.avm2_class.write(mc) = Some(class);
+        let mut shared = MovieClipShared::empty(movie);
+        *shared.avm2_class.get_mut() = Some(class);
         let mut data = MovieClipData::new(shared, mc);
         data.object = Some(this.into());
         MovieClip(GcCell::new(mc, data))
@@ -261,7 +261,7 @@ impl<'gc> MovieClip<'gc> {
         swf: SwfSlice,
         num_frames: u16,
     ) -> Self {
-        let shared = MovieClipShared::with_data(id, swf.clone(), num_frames, None, mc);
+        let shared = MovieClipShared::with_data(id, swf, num_frames, None);
         let data = MovieClipData::new(shared, mc);
         data.flags.set(MovieClipFlags::PLAYING);
         MovieClip(GcCell::new(mc, data))
@@ -274,13 +274,7 @@ impl<'gc> MovieClip<'gc> {
     ) -> Self {
         let num_frames = movie.num_frames();
         let loader_info = None;
-        let shared = MovieClipShared::with_data(
-            0,
-            movie.clone().into(),
-            num_frames,
-            loader_info,
-            context.gc(),
-        );
+        let shared = MovieClipShared::with_data(0, movie.into(), num_frames, loader_info);
 
         let mut data = MovieClipData::new(shared, context.gc());
         data.flags.set(MovieClipFlags::PLAYING);
@@ -313,7 +307,6 @@ impl<'gc> MovieClip<'gc> {
             movie.clone().into(),
             movie.num_frames(),
             loader_info.map(|l| l.0),
-            activation.gc(),
         );
         let data = MovieClipData::new(shared, activation.gc());
         data.flags.set(MovieClipFlags::PLAYING);
@@ -357,7 +350,6 @@ impl<'gc> MovieClip<'gc> {
                 movie.clone().into(),
                 total_frames,
                 loader_info.map(|l| l.into()),
-                context.gc(),
             ),
         );
         mc.tag_stream_pos = 0;
@@ -405,74 +397,38 @@ impl<'gc> MovieClip<'gc> {
         context: &mut UpdateContext<'gc>,
         chunk_limit: &mut ExecutionLimit,
     ) -> bool {
-        {
-            let read = self.0.read();
-            if read.shared.preload_progress.read().next_preload_chunk
-                >= read.shared.swf.len() as u64
-            {
-                return true;
-            }
+        let shared = Gc::as_ref(self.0.read().shared);
+        let (swf, progress) = (&shared.swf, &shared.preload_progress);
+
+        if progress.next_preload_chunk.get() >= swf.len() as u64 {
+            return true;
         }
 
-        // TODO: Re-creating static data because preload step occurs after construction.
-        // Should be able to hoist this up somewhere, or use MaybeUninit.
-        let mut shared = (*self.0.read().shared).clone();
-        let data = self.0.read().shared.swf.clone();
-        let (mut cur_frame, mut start_pos, next_preload_chunk, preload_symbol) = {
-            let read = shared.preload_progress.read();
-            (
-                read.cur_preload_frame,
-                read.last_frame_start_pos,
-                read.next_preload_chunk,
-                read.cur_preload_symbol,
-            )
-        };
-        let mut reader = data.read_from(next_preload_chunk);
+        let reader = &mut swf.read_from(progress.next_preload_chunk.get());
 
-        if let Some(cur_preload_symbol) = preload_symbol {
+        let mut sub_preload_done = true;
+        if let Some(symbol) = progress.cur_preload_symbol.take() {
             match context
                 .library
-                .library_for_movie_mut(self.movie())
-                .character_by_id(cur_preload_symbol)
+                .library_for_movie_mut(swf.movie.clone())
+                .character_by_id(symbol)
             {
                 Some(Character::MovieClip(mc)) => {
-                    let sub_preload_done = mc.preload(context, chunk_limit);
-                    if sub_preload_done {
-                        shared
-                            .preload_progress
-                            .write(context.gc())
-                            .cur_preload_symbol = None;
+                    sub_preload_done = mc.preload(context, chunk_limit);
+                    if !sub_preload_done {
+                        progress.cur_preload_symbol.set(Some(symbol));
                     }
                 }
                 Some(unk) => {
-                    tracing::error!(
-                        "Symbol {} changed to unexpected type {:?}",
-                        cur_preload_symbol,
-                        unk
-                    );
-
-                    shared
-                        .preload_progress
-                        .write(context.gc())
-                        .cur_preload_symbol = None;
+                    tracing::error!("Symbol {symbol} changed to unexpected type {unk:?}");
                 }
                 None => {
-                    tracing::error!(
-                        "Symbol {} disappeared during preloading",
-                        cur_preload_symbol
-                    );
-
-                    shared
-                        .preload_progress
-                        .write(context.gc())
-                        .cur_preload_symbol = None;
+                    tracing::error!("Symbol {symbol} disappeared during preloading");
                 }
             }
         }
 
         let mut end_tag_found = false;
-
-        let sub_preload_done = shared.preload_progress.read().cur_preload_symbol.is_none();
         let tag_callback = |reader: &mut SwfStream<'_>, tag_code, tag_len| {
             match tag_code {
                 TagCode::CsmTextSettings => self
@@ -554,41 +510,37 @@ impl<'gc> MovieClip<'gc> {
                         reader,
                         tag_len,
                         chunk_limit,
+                        shared,
                     )
                 }
                 TagCode::DefineText => self.0.write(context.gc()).define_text(context, reader, 1),
                 TagCode::DefineText2 => self.0.write(context.gc()).define_text(context, reader, 2),
                 TagCode::DoInitAction => self.do_init_action(context, reader, tag_len),
                 TagCode::DefineSceneAndFrameLabelData => {
-                    self.scene_and_frame_labels(reader, &mut shared)
+                    self.scene_and_frame_labels(reader, shared)
                 }
                 TagCode::ExportAssets => self.0.write(context.gc()).export_assets(context, reader),
-                TagCode::FrameLabel => {
-                    self.0
-                        .write(context.gc())
-                        .frame_label(reader, cur_frame, &mut shared, context)
-                }
+                TagCode::FrameLabel => self
+                    .0
+                    .write(context.gc())
+                    .frame_label(reader, shared, context),
                 TagCode::JpegTables => self.0.write(context.gc()).jpeg_tables(context, reader),
-                TagCode::ShowFrame => self.0.write(context.gc()).show_frame(
-                    reader,
-                    tag_len,
-                    &mut cur_frame,
-                    &mut start_pos,
-                ),
+                TagCode::ShowFrame => self
+                    .0
+                    .write(context.gc())
+                    .show_frame(reader, tag_len, shared),
                 TagCode::ScriptLimits => self
                     .0
                     .write(context.gc())
                     .script_limits(reader, context.avm1),
-                TagCode::SoundStreamHead => {
-                    self.0
-                        .write(context.gc())
-                        .sound_stream_head(reader, &mut shared, 1)
-                }
-                TagCode::SoundStreamHead2 => {
-                    self.0
-                        .write(context.gc())
-                        .sound_stream_head(reader, &mut shared, 2)
-                }
+                TagCode::SoundStreamHead => self
+                    .0
+                    .write(context.gc())
+                    .sound_stream_head(reader, shared, 1),
+                TagCode::SoundStreamHead2 => self
+                    .0
+                    .write(context.gc())
+                    .sound_stream_head(reader, shared, 2),
                 TagCode::VideoFrame => self
                     .0
                     .write(context.gc())
@@ -608,11 +560,9 @@ impl<'gc> MovieClip<'gc> {
                         .import_assets_2(context, reader, chunk_limit)
                 }
                 TagCode::DoAbc | TagCode::DoAbc2 => {
-                    self.preload_bytecode_tag(tag_code, reader, context, cur_frame - 1, &mut shared)
+                    self.preload_bytecode_tag(tag_code, reader, shared)
                 }
-                TagCode::SymbolClass => {
-                    self.preload_symbol_class(reader, context, cur_frame - 1, &mut shared)
-                }
+                TagCode::SymbolClass => self.preload_symbol_class(reader, shared),
                 TagCode::End => {
                     end_tag_found = true;
                     return Ok(ControlFlow::Exit);
@@ -629,7 +579,7 @@ impl<'gc> MovieClip<'gc> {
         };
 
         let result = if sub_preload_done {
-            tag_utils::decode_tags(&mut reader, tag_callback)
+            tag_utils::decode_tags(reader, tag_callback)
         } else {
             Ok(true)
         };
@@ -639,37 +589,21 @@ impl<'gc> MovieClip<'gc> {
             .write(context.gc())
             .import_exports_of_importer(context);
 
-        // These variables will be persisted to be picked back up in the next
-        // chunk.
-        {
-            let mut write = shared.preload_progress.write(context.gc());
-
-            write.next_preload_chunk = if is_finished {
-                // Flag the movie as fully preloaded when we hit the end of the
-                // tag stream.
-                u64::MAX
-            } else {
-                (reader.get_ref().as_ptr() as u64).saturating_sub(data.data().as_ptr() as u64)
-            };
-            write.cur_preload_frame = if is_finished {
-                // Flag the movie as fully preloaded when we hit the end of the
-                // tag stream.
-                shared.total_frames + 1
-            } else {
-                cur_frame
-            };
-            write.last_frame_start_pos = start_pos;
-        }
-
         if is_finished {
             // End-of-clip should be treated as ShowFrame
             self.0
                 .write(context.gc())
-                .show_frame(&mut reader, 0, &mut cur_frame, &mut start_pos)
+                .show_frame(reader, 0, shared)
                 .unwrap();
-        }
 
-        self.0.write(context.gc()).shared = Gc::new(context.gc(), shared);
+            // Flag the movie as fully preloaded when we hit the end of the tag stream.
+            progress.cur_preload_frame.set(shared.total_frames + 1);
+            progress.next_preload_chunk.set(u64::MAX);
+        } else {
+            let next_chunk =
+                (reader.get_ref().as_ptr() as u64).saturating_sub(swf.data().as_ptr() as u64);
+            progress.next_preload_chunk.set(next_chunk);
+        }
 
         is_finished
     }
@@ -782,8 +716,9 @@ impl<'gc> MovieClip<'gc> {
     fn scene_and_frame_labels(
         self,
         reader: &mut SwfStream<'_>,
-        shared: &mut MovieClipShared<'gc>,
+        shared: &MovieClipShared,
     ) -> Result<(), Error> {
+        let mut shared = shared.cell.borrow_mut();
         let mut sfl_data = reader.read_define_scene_and_frame_label_data()?;
         sfl_data
             .scenes
@@ -795,7 +730,7 @@ impl<'gc> MovieClip<'gc> {
                 .scenes
                 .get(i + 1)
                 .map(|fld| fld.frame_num as u16 + 1)
-                .unwrap_or_else(|| shared.total_frames + 1);
+                .unwrap_or_else(|| self.total_frames() + 1);
 
             let scene = Scene {
                 name: label.decode(reader.encoding()).into_owned(),
@@ -1019,7 +954,7 @@ impl<'gc> MovieClip<'gc> {
     ///
     /// Scenes will be sorted in playback order.
     pub fn scenes(self) -> Vec<Scene> {
-        let mut out: Vec<_> = self.0.read().shared.scene_labels.clone();
+        let mut out: Vec<_> = self.0.read().shared_cell().scene_labels.clone();
         out.sort_unstable_by(|Scene { start: a, .. }, Scene { start: b, .. }| a.cmp(b));
         out
     }
@@ -1031,9 +966,10 @@ impl<'gc> MovieClip<'gc> {
         F: FnMut(Option<&Scene>, &Scene) -> bool,
     {
         let read = self.0.read();
-        let mut best: Option<&Scene> = None;
+        let read = read.shared_cell();
 
-        for scene in read.shared.scene_labels.iter() {
+        let mut best: Option<&Scene> = None;
+        for scene in read.scene_labels.iter() {
             if cond(best, scene) {
                 best = Some(scene);
             }
@@ -1046,9 +982,10 @@ impl<'gc> MovieClip<'gc> {
     pub fn current_label(self) -> Option<(WString, FrameNumber)> {
         let read = self.0.read();
         let current_frame = read.current_frame();
-        let mut best: Option<(&WString, FrameNumber)> = None;
+        let read = read.shared_cell();
 
-        for (frame, label) in read.shared.frame_labels.iter() {
+        let mut best: Option<(&WString, FrameNumber)> = None;
+        for (frame, label) in read.frame_labels.iter() {
             if *frame > current_frame {
                 continue;
             }
@@ -1072,7 +1009,7 @@ impl<'gc> MovieClip<'gc> {
         let read = self.0.read();
 
         let mut values: Vec<(WString, FrameNumber)> = read
-            .shared
+            .shared_cell()
             .frame_labels
             .iter()
             .filter(|(frame, _label)| *frame >= from && *frame < to)
@@ -1100,13 +1037,13 @@ impl<'gc> MovieClip<'gc> {
 
     /// This sets the current preload frame of this MovieClipto a given number (resulting
     /// in the _framesloaded / framesLoaded property being the given number - 1).
-    pub fn set_cur_preload_frame(self, gc_context: &Mutation<'gc>, cur_preload_frame: u16) {
+    pub fn set_cur_preload_frame(self, cur_preload_frame: u16) {
         self.0
             .read()
             .shared
             .preload_progress
-            .write(gc_context)
-            .cur_preload_frame = cur_preload_frame;
+            .cur_preload_frame
+            .set(cur_preload_frame);
     }
 
     /// This sets the current frame of this MovieClip to a given number.
@@ -1130,15 +1067,15 @@ impl<'gc> MovieClip<'gc> {
 
     pub fn loaded_bytes(self) -> u32 {
         let read = self.0.read();
-        let progress_read = read.shared.preload_progress.read();
-        if progress_read.next_preload_chunk == u64::MAX {
+        let progress = &read.shared.preload_progress;
+        if progress.next_preload_chunk.get() == u64::MAX {
             // u64::MAX is a sentinel for load complete
             return max(self.total_bytes(), 0) as u32;
         }
 
         let swf_header_size = max(self.total_bytes(), 0) as u32 - self.tag_stream_len() as u32;
 
-        swf_header_size + progress_read.next_preload_chunk as u32
+        swf_header_size + progress.next_preload_chunk.get() as u32
     }
 
     /// Calculate the compressed total size of this movie clip's tag stream.
@@ -1166,7 +1103,7 @@ impl<'gc> MovieClip<'gc> {
     /// Calculate the compressed loaded size of this movie clip's tag stream.
     ///
     /// Since we only consider a byte loaded after it has been uncompressed and
-    /// run through `preload`, we instead emulate this property by scaling the
+    /// run through `progress`, we instead emulate this property by scaling the
     /// loaded bytes by the compression ratio of the SWF.
     pub fn compressed_loaded_bytes(self) -> u32 {
         (self.loaded_bytes() as f64 * self.compressed_total_bytes() as f64
@@ -1174,11 +1111,12 @@ impl<'gc> MovieClip<'gc> {
     }
 
     pub fn avm2_class(self) -> Option<Avm2ClassObject<'gc>> {
-        *self.0.read().shared.avm2_class.read()
+        self.0.read().shared.avm2_class.get()
     }
 
-    pub fn set_avm2_class(self, gc_context: &Mutation<'gc>, constr: Option<Avm2ClassObject<'gc>>) {
-        *self.0.read().shared.avm2_class.write(gc_context) = constr;
+    pub fn set_avm2_class(self, mc: &Mutation<'gc>, constr: Option<Avm2ClassObject<'gc>>) {
+        let data = Gc::write(mc, self.0.read().shared);
+        unlock!(data, MovieClipShared, avm2_class).set(constr);
     }
 
     pub fn frame_label_to_number(
@@ -1191,13 +1129,18 @@ impl<'gc> MovieClip<'gc> {
         if self.movie().is_action_script_3() {
             self.0
                 .read()
-                .shared
+                .shared_cell()
                 .frame_labels_map
                 .get(frame_label)
                 .copied()
         } else {
             let label = frame_label.to_ascii_lowercase();
-            self.0.read().shared.frame_labels_map.get(&label).copied()
+            self.0
+                .read()
+                .shared_cell()
+                .frame_labels_map
+                .get(&label)
+                .copied()
         }
     }
 
@@ -1205,7 +1148,7 @@ impl<'gc> MovieClip<'gc> {
         // Never used in AVM1, so always be case sensitive.
         self.0
             .read()
-            .shared
+            .shared_cell()
             .scene_labels_map
             .get(&WString::from(scene_label))
             .map(|Scene { start, .. }| start)
@@ -1233,7 +1176,7 @@ impl<'gc> MovieClip<'gc> {
             for Scene {
                 start: new_scene_start,
                 ..
-            } in self.0.read().shared.scene_labels.iter()
+            } in self.0.read().shared_cell().scene_labels.iter()
             {
                 if *new_scene_start < end && *new_scene_start > scene {
                     end = *new_scene_start;
@@ -1328,7 +1271,7 @@ impl<'gc> MovieClip<'gc> {
             NextFrame::Next => {
                 let mut write = self.0.write(context.gc());
                 if (write.current_frame + 1)
-                    >= write.shared.preload_progress.read().cur_preload_frame
+                    >= write.shared.preload_progress.cur_preload_frame.get()
                 {
                     return;
                 }
@@ -1527,7 +1470,8 @@ impl<'gc> MovieClip<'gc> {
 
         assert_eq!(
             Some(read.tag_stream_pos),
-            read.tag_frame_boundaries
+            read.shared_cell()
+                .tag_frame_boundaries
                 .get(&read.current_frame)
                 .map(|(_start, end)| *end), // Yes, this is correct, at least for AVM1.
             "[{:?}] Gotos must start from the correct tag position for frame {}",
@@ -1541,6 +1485,13 @@ impl<'gc> MovieClip<'gc> {
 
     #[cfg(feature = "timeline_debug")]
     fn assert_expected_tag_end(self, context: &mut UpdateContext<'gc>, hit_target_frame: bool) {
+        let read = self.0.read();
+        let tag_frame_end = read
+            .shared_cell()
+            .tag_frame_boundaries
+            .get(&read.current_frame)
+            .map(|(_start, end)| *end);
+
         // Gotos that do *not* hit their target frame will not update their tag
         // stream position, as they do not run the final frame's tags, and thus
         // cannot derive the end position of the clip anyway. This is not
@@ -1551,9 +1502,7 @@ impl<'gc> MovieClip<'gc> {
 
             assert_eq!(
                 Some(read.tag_stream_pos),
-                read.tag_frame_boundaries
-                    .get(&read.current_frame)
-                    .map(|(_start, end)| *end),
+                tag_frame_end,
                 "[{:?}] Gotos must end at the correct tag position for frame {}",
                 read.base.base.name,
                 read.current_frame
@@ -1561,14 +1510,9 @@ impl<'gc> MovieClip<'gc> {
         } else {
             // Of course, the target frame desync absolutely will break our
             // other asserts, so fix them up here.
-            let mut write = self.0.write(context.gc());
-
-            if let Some((_, end)) = write
-                .tag_frame_boundaries
-                .get(&write.current_frame)
-                .cloned()
-            {
-                write.tag_stream_pos = end;
+            drop(read);
+            if let Some(end) = tag_frame_end {
+                self.0.write(context.gc()).tag_stream_pos = end;
             }
         }
     }
@@ -1976,13 +1920,8 @@ impl<'gc> MovieClip<'gc> {
         context: &mut UpdateContext<'gc>,
         display_object: DisplayObject<'gc>,
     ) {
-        let class_object = self
-            .0
-            .read()
-            .shared
-            .avm2_class
-            .read()
-            .unwrap_or_else(|| context.avm2.classes().movieclip);
+        let class_object = self.0.read().shared.avm2_class.get();
+        let class_object = class_object.unwrap_or_else(|| context.avm2.classes().movieclip);
 
         let mut constr_thing = || {
             let mut activation = Avm2Activation::from_nothing(context);
@@ -2008,13 +1947,8 @@ impl<'gc> MovieClip<'gc> {
     /// intended to be called from `post_instantiate`.
     #[inline(never)]
     fn construct_as_avm2_object(self, context: &mut UpdateContext<'gc>) {
-        let class_object = self
-            .0
-            .read()
-            .shared
-            .avm2_class
-            .read()
-            .unwrap_or_else(|| context.avm2.classes().movieclip);
+        let class_object = self.0.read().shared.avm2_class.get();
+        let class_object = class_object.unwrap_or_else(|| context.avm2.classes().movieclip);
 
         if let Avm2Value::Object(object) = self.object2() {
             let mut constr_thing = || {
@@ -3205,7 +3139,7 @@ impl<'gc> MovieClipData<'gc> {
     }
 
     fn frames_loaded(&self) -> i32 {
-        (self.shared.preload_progress.read().cur_preload_frame) as i32 - 1
+        (self.shared.preload_progress.cur_preload_frame.get()) as i32 - 1
     }
 
     fn playing(&self) -> bool {
@@ -3325,7 +3259,7 @@ impl<'gc> MovieClipData<'gc> {
         &self,
         context: &mut UpdateContext<'gc>,
     ) -> Option<Avm1Object<'gc>> {
-        let symbol_name = self.shared.exported_name.read();
+        let symbol_name = self.shared.exported_name.get();
         let symbol_name = symbol_name.as_ref()?;
         context
             .avm1
@@ -3427,9 +3361,10 @@ impl<'gc, 'a> MovieClipData<'gc> {
     fn sound_stream_head(
         &mut self,
         reader: &mut SwfStream<'a>,
-        shared: &mut MovieClipShared,
+        shared: &MovieClipShared,
         _version: u8,
     ) -> Result<(), Error> {
+        let mut shared = shared.cell.borrow_mut();
         shared.audio_stream_info = Some(reader.read_sound_stream_head()?);
         Ok(())
     }
@@ -3852,6 +3787,7 @@ impl<'gc, 'a> MovieClipData<'gc> {
         reader: &mut SwfStream<'a>,
         tag_len: usize,
         chunk_limit: &mut ExecutionLimit,
+        shared: &MovieClipShared,
     ) -> DecodeResult {
         let start = reader.as_slice();
         let id = reader.read_character_id()?;
@@ -3861,7 +3797,7 @@ impl<'gc, 'a> MovieClipData<'gc> {
         let movie_clip = MovieClip::new_with_data(
             context.gc(),
             id,
-            self.shared.swf.resize_to_reader(reader, tag_len - num_read),
+            shared.swf.resize_to_reader(reader, tag_len - num_read),
             num_frames,
         );
 
@@ -3870,10 +3806,7 @@ impl<'gc, 'a> MovieClipData<'gc> {
             .library_for_movie_mut(self.movie())
             .register_character(id, Character::MovieClip(movie_clip));
 
-        self.shared
-            .preload_progress
-            .write(context.gc())
-            .cur_preload_symbol = Some(id);
+        shared.preload_progress.cur_preload_symbol.set(Some(id));
 
         let should_exit = chunk_limit.did_ops_breach_limit(context, 4);
         if should_exit {
@@ -3881,10 +3814,7 @@ impl<'gc, 'a> MovieClipData<'gc> {
         }
 
         if movie_clip.preload(context, chunk_limit) {
-            self.shared
-                .preload_progress
-                .write(context.gc())
-                .cur_preload_symbol = None;
+            shared.preload_progress.cur_preload_symbol.set(None);
 
             Ok(ControlFlow::Continue)
         } else {
@@ -4062,18 +3992,15 @@ impl<'gc, 'a> MovieClipData<'gc> {
         name: &AvmString<'gc>,
         movie: Arc<SwfMovie>,
     ) {
+        let mc = context.gc();
         let library = context.library.library_for_movie_mut(movie);
         library.register_export(id, *name);
 
         // TODO: do other types of Character need to know their exported name?
         if let Some(character) = library.character_by_id(id) {
-            if let Character::MovieClip(movie_clip) = character {
-                *movie_clip
-                    .0
-                    .read()
-                    .shared
-                    .exported_name
-                    .write(context.gc_context) = Some(*name);
+            if let Character::MovieClip(clip) = character {
+                let data = Gc::write(mc, clip.0.read().shared);
+                unlock!(data, MovieClipShared, exported_name).set(Some(*name));
             } else {
                 // This is fairly common, don't log anything here
             }
@@ -4132,10 +4059,12 @@ impl<'gc, 'a> MovieClipData<'gc> {
     fn frame_label(
         &mut self,
         reader: &mut SwfStream<'a>,
-        cur_frame: FrameNumber,
-        shared: &mut MovieClipShared<'gc>,
+        shared: &MovieClipShared,
         _context: &UpdateContext<'gc>,
     ) -> Result<(), Error> {
+        let cur_frame = shared.preload_progress.cur_preload_frame.get();
+        let mut shared = shared.cell.borrow_mut();
+
         // This tag is ignored if scene labels exist.
         if !shared.scene_labels.is_empty() {
             return Ok(());
@@ -4173,38 +4102,32 @@ impl<'gc, 'a> MovieClipData<'gc> {
     }
 
     #[inline]
-    #[cfg(not(feature = "timeline_debug"))]
     fn show_frame(
         &mut self,
-        _reader: &mut SwfStream<'a>,
-        _tag_len: usize,
-        cur_frame: &mut FrameNumber,
-        _start_pos: &mut u64,
+        #[allow(unused)] reader: &mut SwfStream<'a>,
+        #[allow(unused)] tag_len: usize,
+        shared: &MovieClipShared,
     ) -> Result<(), Error> {
-        *cur_frame += 1;
-        Ok(())
-    }
+        let progress = &shared.preload_progress;
 
-    #[inline]
-    #[cfg(feature = "timeline_debug")]
-    fn show_frame(
-        &mut self,
-        reader: &mut SwfStream<'a>,
-        tag_len: usize,
-        cur_frame: &mut FrameNumber,
-        start_pos: &mut u64,
-    ) -> Result<(), Error> {
-        let tag_stream_start = self.shared.swf.as_ref().as_ptr() as u64;
-        let end_pos = reader.get_ref().as_ptr() as u64 - tag_stream_start;
+        #[cfg(feature = "timeline_debug")]
+        {
+            let tag_stream_start = shared.swf.as_ref().as_ptr() as u64;
+            let end_pos = reader.get_ref().as_ptr() as u64 - tag_stream_start;
 
-        // We add tag_len because the reader position doesn't take it into
-        // account. Strictly speaking ShowFrame should not have tag data, but
-        // who *knows* what weird obfuscation hacks people have done with it.
-        self.tag_frame_boundaries
-            .insert(*cur_frame, (*start_pos, end_pos + tag_len as u64));
+            // We add tag_len because the reader position doesn't take it into
+            // account. Strictly speaking ShowFrame should not have tag data, but
+            // who *knows* what weird obfuscation hacks people have done with it.
+            shared.cell.borrow_mut().tag_frame_boundaries.insert(
+                progress.cur_preload_frame.get(),
+                (progress.start_pos.get(), end_pos + tag_len as u64),
+            );
 
-        *start_pos = end_pos;
-        *cur_frame += 1;
+            progress.start_pos.set(end_pos);
+        }
+
+        let cur = &progress.cur_preload_frame;
+        cur.set(cur.get() + 1);
 
         Ok(())
     }
@@ -4241,50 +4164,44 @@ impl<'gc, 'a> MovieClip<'gc> {
         self,
         tag_code: TagCode,
         reader: &mut SwfStream<'a>,
-        context: &mut UpdateContext<'gc>,
-        cur_frame: FrameNumber,
-        shared: &mut MovieClipShared<'gc>,
+        shared: &MovieClipShared,
     ) -> Result<(), Error> {
+        let cur_frame = shared.preload_progress.cur_preload_frame.get() - 1;
         let abc = match tag_code {
             TagCode::DoAbc | TagCode::DoAbc2 => {
-                shared.swf.resize_to_reader(reader, reader.as_slice().len())
+                let swf = &self.0.read().shared.swf;
+                swf.resize_to_reader(reader, reader.as_slice().len())
             }
             _ => unreachable!(),
         };
+
         // If we got an eager script (which happens for non-lazy DoAbc2 tags).
         // we store it for later. It will be run the first time we execute this frame
         // (for any instance of this MovieClip) in `run_eager_script_and_symbol`
-        shared
-            .abc_tags
-            .write(context.gc())
-            .entry(cur_frame)
-            .or_default()
-            .push(AbcCodeAndTag { tag_code, abc });
+        let mut shared = shared.cell.borrow_mut();
+        let eager_tags = shared.eager_tags.entry(cur_frame).or_default();
+        eager_tags.abc_tags.push((tag_code, abc));
         Ok(())
     }
 
     fn preload_symbol_class(
         self,
         reader: &mut SwfStream<'a>,
-        context: &mut UpdateContext<'gc>,
-        cur_frame: FrameNumber,
-        shared: &mut MovieClipShared<'gc>,
+        shared: &MovieClipShared,
     ) -> Result<(), Error> {
-        let mut symbolclass_names = shared.symbolclass_names.write(context.gc());
-        let symbolclass_names = symbolclass_names.entry(cur_frame).or_default();
+        let cur_frame = shared.preload_progress.cur_preload_frame.get() - 1;
+        let mut shared = shared.cell.borrow_mut();
+        let eager_tags = shared.eager_tags.entry(cur_frame).or_default();
         let num_symbols = reader.read_u16()?;
 
         for _ in 0..num_symbols {
             let id = reader.read_u16()?;
-            let class_name =
-                AvmString::new(context.gc(), reader.read_str()?.decode(reader.encoding()));
+            let class_name = reader.read_str()?.decode(reader.encoding());
 
-            let name =
-                Avm2QName::from_qualified_name(class_name, context.avm2.root_api_version, context);
             // Store the name and symbol with in the global data for this frame. The first time
             // we execute this frame (for any instance of this MovieClip), we will load the symbolclass
             // from `run_eager_script_and_symbol`
-            symbolclass_names.push((name, id));
+            eager_tags.symbolclass_names.push((class_name.into(), id));
         }
         Ok(())
     }
@@ -4307,33 +4224,25 @@ impl<'gc, 'a> MovieClip<'gc> {
         context: &mut UpdateContext<'gc>,
         current_frame: FrameNumber,
     ) -> Result<(), Error> {
-        let read = self.0.read();
-        let tags = read
-            .shared
-            .abc_tags
-            .write(context.gc())
-            .remove(&current_frame);
+        let Some(eager_tags) = self.0.read().shared.take_eager_tags(current_frame) else {
+            return Ok(());
+        };
+
         let mut eager_scripts = Vec::new();
-        if let Some(tags) = tags {
-            for AbcCodeAndTag { tag_code, abc } in tags {
-                let mut reader = abc.read_from(0);
-                let eager_script = match tag_code {
-                    TagCode::DoAbc => self.do_abc(context, &mut reader)?,
-                    TagCode::DoAbc2 => self.do_abc_2(context, &mut reader)?,
-                    _ => unreachable!(),
-                };
-                if let Some(eager_script) = eager_script {
-                    eager_scripts.push(eager_script);
-                }
+
+        for (tag_code, abc) in eager_tags.abc_tags {
+            let mut reader = abc.read_from(0);
+            let eager_script = match tag_code {
+                TagCode::DoAbc => self.do_abc(context, &mut reader)?,
+                TagCode::DoAbc2 => self.do_abc_2(context, &mut reader)?,
+                _ => unreachable!(),
+            };
+            if let Some(eager_script) = eager_script {
+                eager_scripts.push(eager_script);
             }
         }
 
-        if let Some(symbols) = read
-            .shared
-            .symbolclass_names
-            .write(context.gc())
-            .remove(&current_frame)
-        {
+        if !eager_tags.symbolclass_names.is_empty() {
             let mut activation = Avm2Activation::from_nothing(context);
 
             let movie = self.movie();
@@ -4343,8 +4252,12 @@ impl<'gc, 'a> MovieClip<'gc> {
                 .library
                 .library_for_movie_mut(movie.clone());
             let domain = library.avm2_domain();
+            let api_version = activation.context.avm2.root_api_version;
 
-            for (name, id) in symbols {
+            for (class_name, id) in eager_tags.symbolclass_names {
+                let class_name = AvmString::new(activation.gc(), class_name);
+                let name =
+                    Avm2QName::from_qualified_name(class_name, api_version, activation.context);
                 match Avm2::lookup_class_for_character(&mut activation, self, domain, name, id) {
                     Ok(class_object) => {
                         activation
@@ -4568,17 +4481,22 @@ impl<'gc, 'a> MovieClip<'gc> {
         _reader: &mut SwfStream<'a>,
     ) -> Result<(), Error> {
         let mc = self.0.read();
-        if mc.playing() {
-            if let (Some(stream_info), None) = (&mc.shared.audio_stream_info, mc.audio_stream) {
+        let audio_stream = mc.playing().then(|| {
+            let stream_info = &mc.shared_cell().audio_stream_info;
+            if let (Some(stream_info), None) = (stream_info, mc.audio_stream) {
                 let slice = mc
                     .shared
                     .swf
                     .to_start_and_end(mc.tag_stream_pos as usize, mc.tag_stream_len());
-                let audio_stream =
-                    context.start_stream(self, mc.current_frame(), slice, stream_info);
-                drop(mc);
-                self.0.write(context.gc()).audio_stream = audio_stream;
+                Some(context.start_stream(self, mc.current_frame(), slice, stream_info))
+            } else {
+                None
             }
+        });
+
+        drop(mc);
+        if let Some(stream) = audio_stream.flatten() {
+            self.0.write(context.gc()).audio_stream = stream;
         }
 
         Ok(())
@@ -4625,57 +4543,49 @@ impl Default for Scene {
 }
 
 /// The load progress for a given SWF or substream of that SWF.
-#[derive(Clone, Collect)]
-#[collect(require_static)]
 struct PreloadProgress {
-    /// The SWF offset to start the next preload chunk from.
-    next_preload_chunk: u64,
+    /// The SWF offset to start the next progress chunk from.
+    next_preload_chunk: Cell<u64>,
 
     /// The current frame being preloaded.
-    cur_preload_frame: u16,
+    cur_preload_frame: Cell<u16>,
 
     /// The SWF offset that the current frame started in.
-    last_frame_start_pos: u64,
+    #[cfg(feature = "timeline_debug")]
+    start_pos: Cell<u64>,
 
     /// The symbol we are currently asynchronously preloading.
-    cur_preload_symbol: Option<CharacterId>,
+    cur_preload_symbol: Cell<Option<CharacterId>>,
 }
 
 impl Default for PreloadProgress {
     fn default() -> Self {
         Self {
-            next_preload_chunk: 0,
-            cur_preload_frame: 1,
-            last_frame_start_pos: 0,
-            cur_preload_symbol: None,
+            next_preload_chunk: Cell::new(0),
+            cur_preload_frame: Cell::new(1),
+            #[cfg(feature = "timeline_debug")]
+            start_pos: Cell::new(0),
+            cur_preload_symbol: Cell::new(None),
         }
     }
 }
 
 /// Data shared between all instances of a movie clip.
 #[allow(dead_code)]
-#[derive(Clone, Collect)]
+#[derive(Collect)]
 #[collect(no_drop)]
 struct MovieClipShared<'gc> {
+    cell: RefCell<MovieClipSharedMut>,
     id: CharacterId,
     swf: SwfSlice,
-    #[collect(require_static)]
-    frame_labels: Vec<(FrameNumber, WString)>,
-    #[collect(require_static)]
-    frame_labels_map: HashMap<WString, FrameNumber>,
-    #[collect(require_static)]
-    scene_labels: Vec<Scene>,
-    #[collect(require_static)]
-    scene_labels_map: HashMap<WString, Scene>,
-    #[collect(require_static)]
-    audio_stream_info: Option<swf::SoundStreamHead>,
-    #[collect(require_static)]
-    audio_stream_handle: Option<SoundHandle>,
     total_frames: FrameNumber,
+    /// Preload progress for the given clip's tag stream.
+    #[collect(require_static)]
+    preload_progress: PreloadProgress,
     /// The last known symbol name under which this movie clip was exported.
     /// Used for looking up constructors registered with `Object.registerClass`.
-    exported_name: GcCell<'gc, Option<AvmString<'gc>>>,
-    avm2_class: GcCell<'gc, Option<Avm2ClassObject<'gc>>>,
+    exported_name: Lock<Option<AvmString<'gc>>>,
+    avm2_class: Lock<Option<Avm2ClassObject<'gc>>>,
     /// Only set if this MovieClip is the root movie in an SWF
     /// (either the root SWF initially loaded by the player,
     /// or an SWF dynamically loaded by `Loader`)
@@ -4684,29 +4594,37 @@ struct MovieClipShared<'gc> {
     /// However, it will be set for an AVM1 movie loaded from AVM2
     /// via `Loader`
     loader_info: Option<Avm2Object<'gc>>,
-
-    /// Preload progress for the given clip's tag stream.
-    preload_progress: GcCell<'gc, PreloadProgress>,
-
-    // These two maps hold DoAbc/SymbolClass data that was loaded during preloading, but
-    // hasn't yet been executed yet. The first time we encounter a frame, we will remove
-    // the `Vec` from this map, and process it in `run_eager_script_and_symbol`
-    abc_tags: GcCell<'gc, HashMap<FrameNumber, Vec<AbcCodeAndTag>>>,
-    symbolclass_names: GcCell<'gc, HashMap<FrameNumber, Vec<(Avm2QName<'gc>, u16)>>>,
 }
 
-#[derive(Debug, Collect)]
-#[collect(require_static)]
-struct AbcCodeAndTag {
-    tag_code: TagCode,
-    abc: SwfSlice,
+#[derive(Default)]
+struct MovieClipSharedMut {
+    frame_labels: Vec<(FrameNumber, WString)>,
+    frame_labels_map: HashMap<WString, FrameNumber>,
+    scene_labels: Vec<Scene>,
+    scene_labels_map: HashMap<WString, Scene>,
+    audio_stream_info: Option<swf::SoundStreamHead>,
+
+    /// The tag stream start and stop positions for each frame in the clip.
+    #[cfg(feature = "timeline_debug")]
+    tag_frame_boundaries: HashMap<FrameNumber, (u64, u64)>,
+
+    // This map holds DoAbc/SymbolClass data that was loaded during preloading, but hasn't
+    // yet been executed. The first time we encounter a frame, we will remove the entry
+    // from this map, and process it in `run_eager_script_and_symbol`
+    eager_tags: HashMap<FrameNumber, EagerTags>,
+}
+
+#[derive(Default)]
+struct EagerTags {
+    abc_tags: Vec<(TagCode, SwfSlice)>,
+    symbolclass_names: Vec<(WString, u16)>,
 }
 
 impl<'gc> MovieClipShared<'gc> {
-    fn empty(movie: Arc<SwfMovie>, gc_context: &Mutation<'gc>) -> Self {
-        let s = Self::with_data(0, SwfSlice::empty(movie), 1, None, gc_context);
+    fn empty(movie: Arc<SwfMovie>) -> Self {
+        let mut s = Self::with_data(0, SwfSlice::empty(movie), 1, None);
 
-        s.preload_progress.write(gc_context).cur_preload_frame = s.total_frames + 1;
+        *s.preload_progress.cur_preload_frame.get_mut() = s.total_frames + 1;
 
         s
     }
@@ -4716,25 +4634,27 @@ impl<'gc> MovieClipShared<'gc> {
         swf: SwfSlice,
         total_frames: FrameNumber,
         loader_info: Option<Avm2Object<'gc>>,
-        gc_context: &Mutation<'gc>,
     ) -> Self {
         Self {
+            cell: Default::default(),
             id,
             swf,
             total_frames,
-            frame_labels: Vec::new(),
-            frame_labels_map: HashMap::new(),
-            scene_labels: Vec::new(),
-            scene_labels_map: HashMap::new(),
-            audio_stream_info: None,
-            audio_stream_handle: None,
-            exported_name: GcCell::new(gc_context, None),
-            avm2_class: GcCell::new(gc_context, None),
+            preload_progress: Default::default(),
+            exported_name: Lock::new(None),
+            avm2_class: Lock::new(None),
             loader_info,
-            preload_progress: GcCell::new(gc_context, Default::default()),
-            abc_tags: GcCell::new(gc_context, Default::default()),
-            symbolclass_names: GcCell::new(gc_context, Default::default()),
         }
+    }
+
+    fn take_eager_tags(&self, frame: FrameNumber) -> Option<EagerTags> {
+        let mut write = self.cell.borrow_mut();
+        let tags = write.eager_tags.remove(&frame);
+        // Optimization: free memory when the last tag is removed.
+        if tags.is_some() && write.eager_tags.is_empty() {
+            write.eager_tags = HashMap::new();
+        }
+        tags
     }
 }
 
