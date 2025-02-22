@@ -40,16 +40,8 @@ fn class_call<'gc>(
     _this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let object_class = activation.avm2().classes().object;
-
-    if args.is_empty() {
-        return object_class.construct(activation, args);
-    }
-    let arg = args.get(0).cloned().unwrap();
-    if matches!(arg, Value::Undefined) || matches!(arg, Value::Null) {
-        return object_class.construct(activation, args);
-    }
-    Ok(arg)
+    // Calling `Object(...)` is equivalent to constructing `new Object(...)`
+    object_constructor(activation, args)
 }
 
 /// Implements `Object`'s class initializer
