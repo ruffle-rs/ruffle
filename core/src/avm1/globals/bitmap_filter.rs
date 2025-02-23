@@ -15,6 +15,7 @@ use crate::avm1::property_decl::{define_properties_on, Declaration};
 use crate::avm1::{Attribute, Object, ScriptObject, TObject, Value};
 use crate::context::UpdateContext;
 use crate::string::StringContext;
+use ruffle_macros::istr;
 use ruffle_render::filters::Filter;
 
 const PROTO_DECLS: &[Declaration] = declare_properties! {
@@ -64,7 +65,7 @@ pub fn clone<'gc>(
         }
         _ => return Ok(Value::Undefined),
     };
-    let proto = this.get_local_stored("__proto__", activation, false);
+    let proto = this.get_local_stored(istr!("__proto__"), activation, false);
     Ok(create_instance(activation, native, proto).into())
 }
 
@@ -163,7 +164,7 @@ pub fn create_instance<'gc>(
     if let Some(proto) = proto {
         result.define_value(
             activation.gc(),
-            "__proto__",
+            istr!("__proto__"),
             proto,
             Attribute::DONT_ENUM | Attribute::DONT_DELETE,
         );
