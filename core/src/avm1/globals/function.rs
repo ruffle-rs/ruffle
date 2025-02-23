@@ -78,7 +78,7 @@ pub fn apply<'gc>(
     };
     let args_object = myargs.get(1).cloned().unwrap_or(Value::Undefined);
     let length = match args_object {
-        Value::Object(a) => a.get("length", activation)?.coerce_to_f64(activation)? as usize,
+        Value::Object(a) => a.length(activation)? as usize,
         _ => 0,
     };
 
