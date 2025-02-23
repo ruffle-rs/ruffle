@@ -2114,9 +2114,9 @@ impl Player {
                     Avm1::run_stack_frame_for_method(
                         action.clip,
                         object,
-                        context,
                         name.into(),
                         &args,
+                        context,
                     );
                 }
 

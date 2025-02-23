@@ -1498,7 +1498,7 @@ impl<'gc> Loader<'gc> {
                         let css = AvmString::new_utf8(activation.gc(), UTF_8.decode(&body).0);
                         let success = that
                             .call_method(
-                                "parse".into(),
+                                istr!("parse"),
                                 &[css.into()],
                                 &mut activation,
                                 ExecutionReason::Special,
@@ -1942,9 +1942,9 @@ impl<'gc> Loader<'gc> {
                     Avm1::run_stack_frame_for_method(
                         clip,
                         broadcaster,
+                        istr!(uc, "broadcastMessage"),
+                        &[istr!(uc, "onLoadStart").into(), clip.object()],
                         uc,
-                        "broadcastMessage".into(),
-                        &["onLoadStart".into(), clip.object()],
                     );
                 }
             }
@@ -2317,14 +2317,14 @@ impl<'gc> Loader<'gc> {
                     Avm1::run_stack_frame_for_method(
                         clip,
                         broadcaster,
-                        uc,
-                        "broadcastMessage".into(),
+                        istr!(uc, "broadcastMessage"),
                         &[
-                            "onLoadProgress".into(),
+                            istr!(uc, "onLoadProgress").into(),
                             clip.object(),
                             cur_len.into(),
                             total_len.into(),
                         ],
+                        uc,
                     );
                 }
             }
@@ -2465,10 +2465,14 @@ impl<'gc> Loader<'gc> {
                     Avm1::run_stack_frame_for_method(
                         target_clip,
                         broadcaster,
-                        uc,
-                        "broadcastMessage".into(),
+                        istr!(uc, "broadcastMessage"),
                         // TODO: Pass an actual httpStatus argument instead of 0.
-                        &["onLoadComplete".into(), target_clip.object(), status.into()],
+                        &[
+                            istr!(uc, "onLoadComplete").into(),
+                            target_clip.object(),
+                            status.into(),
+                        ],
+                        uc,
                     );
                 }
             }
@@ -2533,13 +2537,13 @@ impl<'gc> Loader<'gc> {
                     Avm1::run_stack_frame_for_method(
                         clip,
                         broadcaster,
-                        uc,
-                        "broadcastMessage".into(),
+                        istr!(uc, "broadcastMessage"),
                         &[
-                            "onLoadError".into(),
+                            istr!(uc, "onLoadError").into(),
                             clip.object(),
-                            "LoadNeverCompleted".into(),
+                            istr!(uc, "LoadNeverCompleted").into(),
                         ],
+                        uc,
                     );
                 }
             }

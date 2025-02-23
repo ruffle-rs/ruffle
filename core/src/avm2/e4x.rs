@@ -761,7 +761,7 @@ impl<'gc> E4XNode<'gc> {
             val => {
                 if let Some(obj) = val.as_object() {
                     if obj.as_xml_object().is_some() || obj.as_xml_list_object().is_some() {
-                        value = val.call_public_property("toXMLString", &[], activation)?;
+                        value = val.call_public_property(istr!("toXMLString"), &[], activation)?;
                     }
                 }
                 value.coerce_to_string(activation)?

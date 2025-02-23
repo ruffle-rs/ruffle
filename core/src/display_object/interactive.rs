@@ -608,11 +608,11 @@ pub trait TInteractiveObject<'gc>:
                 .map(|d| d.as_displayobject().object())
                 .unwrap_or(Avm1Value::Null);
             let method_name = if focused {
-                "onSetFocus".into()
+                istr!(context, "onSetFocus")
             } else {
-                "onKillFocus".into()
+                istr!(context, "onKillFocus")
             };
-            Avm1::run_stack_frame_for_method(self_do, object, context, method_name, &[other]);
+            Avm1::run_stack_frame_for_method(self_do, object, method_name, &[other], context);
         } else if let Avm2Value::Object(object) = self_do.object2() {
             let mut activation = Avm2Activation::from_nothing(context);
             let event_name = if focused { "focusIn" } else { "focusOut" };

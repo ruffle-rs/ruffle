@@ -261,9 +261,9 @@ impl<'gc> Avm1<'gc> {
     pub fn run_stack_frame_for_method(
         active_clip: DisplayObject<'gc>,
         obj: Object<'gc>,
-        context: &mut UpdateContext<'gc>,
         name: AvmString<'gc>,
         args: &[Value<'gc>],
+        context: &mut UpdateContext<'gc>,
     ) {
         if context.avm1.halted {
             // We've been told to ignore all future execution.
