@@ -1349,7 +1349,7 @@ impl<'gc> Loader<'gc> {
                             movie_clip.into(),
                             ActionType::Method {
                                 object: that,
-                                name: "onData",
+                                name: istr!("onData"),
                                 args: vec![],
                             },
                             false,
@@ -2666,7 +2666,7 @@ impl<'gc> Loader<'gc> {
                         clip,
                         ActionType::Method {
                             object: broadcaster,
-                            name: "broadcastMessage",
+                            name: "broadcastMessage".into(),
                             args: vec!["onLoadInit".into(), clip.object()],
                         },
                         false,

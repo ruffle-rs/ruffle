@@ -15,7 +15,7 @@ use crate::focus_tracker::TabOrder;
 use crate::string::WStr;
 use crate::tag_utils::SwfMovie;
 use gc_arena::{Collect, Mutation};
-use ruffle_macros::enum_trait_object;
+use ruffle_macros::{enum_trait_object, istr};
 use ruffle_render::commands::CommandHandler;
 use std::cell::{Ref, RefMut};
 use std::cmp::Ordering;
@@ -492,7 +492,7 @@ pub trait TDisplayObjectContainer<'gc>:
         if this.movie().is_action_script_3() {
             self.raw_container_mut(context.gc()).tab_children = value;
         } else {
-            this.set_avm1_property(context, "tabChildren", value.into());
+            this.set_avm1_property(istr!(context, "tabChildren"), value.into(), context);
         }
     }
 

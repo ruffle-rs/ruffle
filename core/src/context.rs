@@ -629,14 +629,14 @@ pub enum ActionType<'gc> {
     /// An event handler method, e.g. `onEnterFrame`.
     Method {
         object: Avm1Object<'gc>,
-        name: &'static str,
+        name: AvmString<'gc>,
         args: Vec<Avm1Value<'gc>>,
     },
 
     /// A system listener method.
     NotifyListeners {
-        listener: &'static str,
-        method: &'static str,
+        listener: AvmString<'gc>,
+        method: AvmString<'gc>,
         args: Vec<Avm1Value<'gc>>,
     },
 }

@@ -681,10 +681,10 @@ impl<'gc> Stage<'gc> {
             if let Some(root_clip) = self.root_clip() {
                 crate::avm1::Avm1::notify_system_listeners(
                     root_clip,
-                    context,
-                    "Stage".into(),
-                    "onResize".into(),
+                    istr!(context, "Stage"),
+                    istr!(context, "onResize"),
                     &[],
+                    context,
                 );
             }
         } else if let Avm2Value::Object(stage) = self.object2() {
@@ -711,10 +711,10 @@ impl<'gc> Stage<'gc> {
             if let Some(root_clip) = self.root_clip() {
                 crate::avm1::Avm1::notify_system_listeners(
                     root_clip,
-                    context,
-                    "Stage".into(),
-                    "onFullScreen".into(),
+                    istr!(context, "Stage"),
+                    istr!(context, "onFullScreen"),
                     &[self.is_fullscreen().into()],
+                    context,
                 );
             }
         } else if let Avm2Value::Object(stage) = self.object2() {

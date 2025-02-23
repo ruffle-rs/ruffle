@@ -281,10 +281,10 @@ impl<'gc> Avm1<'gc> {
 
     pub fn notify_system_listeners(
         active_clip: DisplayObject<'gc>,
-        context: &mut UpdateContext<'gc>,
         broadcaster_name: AvmString<'gc>,
         method: AvmString<'gc>,
         args: &[Value<'gc>],
+        context: &mut UpdateContext<'gc>,
     ) {
         let mut activation = Activation::from_nothing(
             context,
