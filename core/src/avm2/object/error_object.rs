@@ -2,6 +2,7 @@
 
 use crate::avm2::activation::Activation;
 use crate::avm2::call_stack::CallStack;
+use crate::avm2::globals::slots::error as error_slots;
 use crate::avm2::object::script_object::ScriptObjectData;
 use crate::avm2::object::{ClassObject, Object, ObjectPtr, TObject};
 use crate::avm2::value::Value;
@@ -63,31 +64,15 @@ const _: () =
 
 impl<'gc> ErrorObject<'gc> {
     pub fn display(&self) -> Result<WString, Error<'gc>> {
-        // FIXME - we should have a safer way of accessing properties without
-        // an `Activation`. For now, we just access the 'name' and 'message' fields
-        // by hardcoded slot id. Our `Error` class definition should fully match
-        // Flash Player, and we have lots of test coverage around error, so
-        // there should be very little risk to doing this.
-        let name = match self.base().get_slot(0) {
+        let name = match self.base().get_slot(error_slots::NAME) {
             Value::String(string) => string,
             Value::Null => "null".into(),
-            Value::Undefined => "undefined".into(),
-            name => {
-                return Err(Error::RustError(
-                    format!("Error.name {name:?} is not a string on error object {self:?}",).into(),
-                ))
-            }
+            _ => unreachable!("String-typed slot must be String or Null"),
         };
-        let message = match self.base().get_slot(1) {
+        let message = match self.base().get_slot(error_slots::MESSAGE) {
             Value::String(string) => string,
             Value::Null => "null".into(),
-            Value::Undefined => "undefined".into(),
-            message => {
-                return Err(Error::RustError(
-                    format!("Error.message {message:?} is not a string on error object {self:?}")
-                        .into(),
-                ))
-            }
+            _ => unreachable!("String-typed slot must be String or Null"),
         };
         if message.is_empty() {
             return Ok(name.as_wstr().to_owned());
