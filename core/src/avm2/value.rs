@@ -1232,7 +1232,7 @@ impl<'gc> Value<'gc> {
     /// Same as call_property, but constructs a public Multiname for you.
     pub fn call_public_property(
         &self,
-        name: impl Into<AvmString<'gc>>,
+        name: AvmString<'gc>,
         arguments: &[Value<'gc>],
         activation: &mut Activation<'_, 'gc>,
     ) -> Result<Value<'gc>, Error<'gc>> {
