@@ -1054,7 +1054,7 @@ impl<'gc> ChildContainer<'gc> {
             // otherwise, check for a dynamic unload handler
             } else {
                 let obj = child.object().coerce_to_object(activation);
-                if obj.has_property(activation, "onUnload".into()) {
+                if obj.has_property(activation, istr!("onUnload")) {
                     return true;
                 }
             }
