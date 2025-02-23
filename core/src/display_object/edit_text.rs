@@ -2043,7 +2043,7 @@ impl<'gc> EditText<'gc> {
                 activation.context.avm1.prototypes().array,
             );
 
-            if let Ok(Avm1Value::Object(listeners)) = object.get("_listeners", activation) {
+            if let Ok(Avm1Value::Object(listeners)) = object.get(istr!("_listeners"), activation) {
                 let length = listeners.length(activation);
                 if matches!(length, Ok(0)) {
                     // Add the TextField as its own listener to match Flash's behavior
@@ -2059,8 +2059,8 @@ impl<'gc> EditText<'gc> {
     fn on_changed(&self, activation: &mut Avm1Activation<'_, 'gc>) {
         if let Avm1Value::Object(object) = self.object() {
             let _ = object.call_method(
-                "broadcastMessage".into(),
-                &["onChanged".into(), object.into()],
+                istr!("broadcastMessage"),
+                &[istr!("onChanged").into(), object.into()],
                 activation,
                 ExecutionReason::Special,
             );
@@ -2078,8 +2078,8 @@ impl<'gc> EditText<'gc> {
     fn on_scroller(&self, activation: &mut Avm1Activation<'_, 'gc>) {
         if let Avm1Value::Object(object) = self.object() {
             let _ = object.call_method(
-                "broadcastMessage".into(),
-                &["onScroller".into(), object.into()],
+                istr!("broadcastMessage"),
+                &[istr!("onScroller").into(), object.into()],
                 activation,
                 ExecutionReason::Special,
             );
