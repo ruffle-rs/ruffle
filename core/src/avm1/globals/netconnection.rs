@@ -66,8 +66,8 @@ impl<'gc> NetConnection<'gc> {
         let event = constructor
             .construct(&mut activation, &[])?
             .coerce_to_object(&mut activation);
-        event.set("code", code.into(), &mut activation)?;
-        event.set("level", istr!("status").into(), &mut activation)?;
+        event.set(istr!("code"), code.into(), &mut activation)?;
+        event.set(istr!("level"), istr!("status").into(), &mut activation)?;
         this.call_method(
             istr!("onStatus"),
             &[event.into()],

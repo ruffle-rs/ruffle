@@ -128,7 +128,7 @@ fn on_data<'gc>(
     };
 
     this.call_method(
-        "onLoad".into(),
+        istr!("onLoad"),
         &[success.into()],
         activation,
         ExecutionReason::FunctionCall,
