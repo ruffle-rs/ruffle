@@ -26,11 +26,7 @@ impl Debug for Error<'_> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         if let Error::AvmError(error) = self {
             if let Some(error) = error.as_object().and_then(|obj| obj.as_error_object()) {
-                return write!(
-                    f,
-                    "{}",
-                    error.display_full().expect("Failed to display error")
-                );
+                return write!(f, "{}", error.display_full());
             }
         }
 

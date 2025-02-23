@@ -362,9 +362,7 @@ pub fn deserialize_value_impl<'gc>(
                     if let Error::AvmError(e) = e {
                         if let Some(e) = e.as_object().and_then(|o| o.as_error_object()) {
                             // Flash player *traces* the error (without a stacktrace)
-                            activation.context.avm_trace(
-                                &e.display().expect("Failed to display error").to_string(),
-                            );
+                            activation.context.avm_trace(&e.display().to_string());
                         }
                     }
                 }

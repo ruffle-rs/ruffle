@@ -27,7 +27,7 @@ pub fn get_stack_trace<'gc>(
     if let Some(error) = this.as_error_object() {
         let call_stack = error.call_stack();
         if !call_stack.is_empty() {
-            return Ok(AvmString::new(activation.gc(), error.display_full()?).into());
+            return Ok(AvmString::new(activation.gc(), error.display_full()).into());
         }
     }
     Ok(Value::Null)
