@@ -49,7 +49,7 @@ pub fn string<'gc>(
 
     this.define_value(
         activation.gc(),
-        "length",
+        istr!("length"),
         value.len().into(),
         Attribute::empty(),
     );

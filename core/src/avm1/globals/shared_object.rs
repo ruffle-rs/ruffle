@@ -10,6 +10,7 @@ use flash_lso::amf0::read::AMF0Decoder;
 use flash_lso::amf0::writer::{Amf0Writer, CacheKey, ObjWriter};
 use flash_lso::types::{Lso, ObjectId, Reference, Value as AmfValue};
 use gc_arena::{Collect, GcCell};
+use ruffle_macros::istr;
 use std::borrow::Cow;
 use std::collections::BTreeMap;
 
@@ -433,7 +434,7 @@ fn get_local<'gc>(
         .into();
     }
 
-    this.define_value(activation.gc(), "data", data, Attribute::DONT_DELETE);
+    this.define_value(activation.gc(), istr!("data"), data, Attribute::DONT_DELETE);
 
     activation
         .context
@@ -457,7 +458,9 @@ fn clear<'gc>(
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let data = this.get("data", activation)?.coerce_to_object(activation);
+    let data = this
+        .get(istr!("data"), activation)?
+        .coerce_to_object(activation);
 
     for k in &data.get_keys(activation, false) {
         data.delete(activation, *k);
@@ -498,7 +501,9 @@ pub(crate) fn flush<'gc>(
         return Ok(Value::Undefined);
     };
     let name = shared_object.read().name();
-    let data = this.get("data", activation)?.coerce_to_object(activation);
+    let data = this
+        .get(istr!("data"), activation)?
+        .coerce_to_object(activation);
     let mut lso = new_lso(activation, &name, data);
     flash_lso::write::write_to_bytes(&mut lso).unwrap_or_default();
     // Flash does not write empty LSOs to disk
@@ -519,7 +524,9 @@ fn get_size<'gc>(
         return Ok(Value::Undefined);
     };
     let name = shared_object.read().name();
-    let data = this.get("data", activation)?.coerce_to_object(activation);
+    let data = this
+        .get(istr!("data"), activation)?
+        .coerce_to_object(activation);
     let mut lso = new_lso(activation, &name, data);
     // Flash returns 0 for empty LSOs, but the actual number of bytes (including the header) otherwise
     if lso.body.is_empty() {

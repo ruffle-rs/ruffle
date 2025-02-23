@@ -9,8 +9,9 @@ use crate::avm1::property::Attribute;
 use crate::avm1::property_decl::{define_properties_on, Declaration};
 use crate::avm1::{Object, ScriptObject, TObject, Value};
 use crate::display_object::{DisplayObject, TDisplayObject};
-use crate::string::StringContext;
+use crate::string::{AvmString, StringContext};
 
+use ruffle_macros::istr;
 use swf::Fixed8;
 
 const PROTO_DECLS: &[Declaration] = declare_properties! {
@@ -30,7 +31,7 @@ pub fn constructor<'gc>(
     // Set undocumented `target` property
     this.define_value(
         activation.gc(),
-        "target",
+        istr!("target"),
         target,
         Attribute::DONT_DELETE | Attribute::READ_ONLY | Attribute::DONT_ENUM,
     );
@@ -55,7 +56,7 @@ fn target<'gc>(
     // The target path resolves based on the active tellTarget clip of the stack frame.
     // This means calls on the same `Color` object could set the color of different clips
     // depending on which timeline its called from!
-    let target = this.get("target", activation)?;
+    let target = this.get(istr!("target"), activation)?;
     // Undefined or empty target is no-op.
     if target != Value::Undefined {
         let start_clip = activation.target_clip_or_root();
@@ -95,29 +96,29 @@ fn get_transform<'gc>(
             Some(activation.context.avm1.prototypes().object),
         );
         out.set(
-            "ra",
+            istr!("ra"),
             (color_transform.r_multiply.to_f64() * 100.0).into(),
             activation,
         )?;
         out.set(
-            "ga",
+            istr!("ga"),
             (color_transform.g_multiply.to_f64() * 100.0).into(),
             activation,
         )?;
         out.set(
-            "ba",
+            istr!("ba"),
             (color_transform.b_multiply.to_f64() * 100.0).into(),
             activation,
         )?;
         out.set(
-            "aa",
+            istr!("aa"),
             (color_transform.a_multiply.to_f64() * 100.0).into(),
             activation,
         )?;
-        out.set("rb", color_transform.r_add.into(), activation)?;
-        out.set("gb", color_transform.g_add.into(), activation)?;
-        out.set("bb", color_transform.b_add.into(), activation)?;
-        out.set("ab", color_transform.a_add.into(), activation)?;
+        out.set(istr!("rb"), color_transform.r_add.into(), activation)?;
+        out.set(istr!("gb"), color_transform.g_add.into(), activation)?;
+        out.set(istr!("bb"), color_transform.b_add.into(), activation)?;
+        out.set(istr!("ab"), color_transform.a_add.into(), activation)?;
         Ok(out.into())
     } else {
         Ok(Value::Undefined)
@@ -161,7 +162,7 @@ fn set_transform<'gc>(
     fn set_color_mult<'gc>(
         activation: &mut Activation<'_, 'gc>,
         transform: Object<'gc>,
-        property: &'static str,
+        property: AvmString<'gc>,
         out: &mut Fixed8,
     ) -> Result<(), Error<'gc>> {
         // The parameters are set only if the property exists on the object itself (prototype excluded).
@@ -179,7 +180,7 @@ fn set_transform<'gc>(
     fn set_color_add<'gc>(
         activation: &mut Activation<'_, 'gc>,
         transform: Object<'gc>,
-        property: &'static str,
+        property: AvmString<'gc>,
         out: &mut i16,
     ) -> Result<(), Error<'gc>> {
         // The parameters are set only if the property exists on the object itself (prototype excluded).
@@ -203,14 +204,54 @@ fn set_transform<'gc>(
             .get(0)
             .unwrap_or(&Value::Undefined)
             .coerce_to_object(activation);
-        set_color_mult(activation, transform, "ra", &mut color_transform.r_multiply)?;
-        set_color_mult(activation, transform, "ga", &mut color_transform.g_multiply)?;
-        set_color_mult(activation, transform, "ba", &mut color_transform.b_multiply)?;
-        set_color_mult(activation, transform, "aa", &mut color_transform.a_multiply)?;
-        set_color_add(activation, transform, "rb", &mut color_transform.r_add)?;
-        set_color_add(activation, transform, "gb", &mut color_transform.g_add)?;
-        set_color_add(activation, transform, "bb", &mut color_transform.b_add)?;
-        set_color_add(activation, transform, "ab", &mut color_transform.a_add)?;
+        set_color_mult(
+            activation,
+            transform,
+            istr!("ra"),
+            &mut color_transform.r_multiply,
+        )?;
+        set_color_mult(
+            activation,
+            transform,
+            istr!("ga"),
+            &mut color_transform.g_multiply,
+        )?;
+        set_color_mult(
+            activation,
+            transform,
+            istr!("ba"),
+            &mut color_transform.b_multiply,
+        )?;
+        set_color_mult(
+            activation,
+            transform,
+            istr!("aa"),
+            &mut color_transform.a_multiply,
+        )?;
+        set_color_add(
+            activation,
+            transform,
+            istr!("rb"),
+            &mut color_transform.r_add,
+        )?;
+        set_color_add(
+            activation,
+            transform,
+            istr!("gb"),
+            &mut color_transform.g_add,
+        )?;
+        set_color_add(
+            activation,
+            transform,
+            istr!("bb"),
+            &mut color_transform.b_add,
+        )?;
+        set_color_add(
+            activation,
+            transform,
+            istr!("ab"),
+            &mut color_transform.a_add,
+        )?;
     }
 
     Ok(Value::Undefined)
