@@ -40,6 +40,7 @@ use crate::tag_utils::{self, ControlFlow, DecodeResult, Error, SwfMovie, SwfSlic
 use crate::vminterface::{AvmObject, Instantiator};
 use core::fmt;
 use gc_arena::{Collect, Gc, GcCell, GcWeakCell, Mutation};
+use ruffle_macros::istr;
 use smallvec::SmallVec;
 use std::borrow::Cow;
 use std::cell::{Ref, RefCell, RefMut};
@@ -2001,7 +2002,7 @@ impl<'gc> MovieClip<'gc> {
                 );
 
                 if let Ok(prototype) = constructor
-                    .get("prototype", &mut activation)
+                    .get(istr!("prototype"), &mut activation)
                     .map(|v| v.coerce_to_object(&mut activation))
                 {
                     let object: Avm1Object<'gc> = StageObject::for_display_object(

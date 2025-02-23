@@ -854,11 +854,15 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         let constr = self.context.avm1.pop().coerce_to_object(self);
 
         let is_instance_of = if let Value::Object(obj) = obj {
-            let prototype = constr.get("prototype", self)?.coerce_to_object(self);
+            let prototype = constr
+                .get(istr!(self, "prototype"), self)?
+                .coerce_to_object(self);
             obj.is_instance_of(self, constr, prototype)?
         } else if let Value::MovieClip(_) = obj {
             let obj = obj.coerce_to_object(self);
-            let prototype = constr.get("prototype", self)?.coerce_to_object(self);
+            let prototype = constr
+                .get(istr!(self, "prototype"), self)?
+                .coerce_to_object(self);
             obj.is_instance_of(self, constr, prototype)?
         } else {
             false
@@ -1105,24 +1109,26 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         // TODO: This doesn't work if the user manually wires up `prototype`/`__proto__`.
         // The native object needs to be created later by the superclass's constructor.
         // (see #701)
-        let super_prototype = superclass.get("prototype", self)?.coerce_to_object(self);
+        let super_prototype = superclass
+            .get(istr!(self, "prototype"), self)?
+            .coerce_to_object(self);
         let sub_prototype = super_prototype.create_bare_object(self, super_prototype)?;
 
         sub_prototype.define_value(
             self.gc(),
-            "constructor",
+            istr!(self, "constructor"),
             superclass.into(),
             Attribute::DONT_ENUM,
         );
 
         sub_prototype.define_value(
             self.gc(),
-            "__constructor__",
+            istr!(self, "__constructor__"),
             superclass.into(),
             Attribute::DONT_ENUM,
         );
 
-        subclass.set("prototype", sub_prototype.into(), self)?;
+        subclass.set(istr!(self, "prototype"), sub_prototype.into(), self)?;
 
         Ok(FrameControl::Continue)
     }
@@ -1527,7 +1533,9 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             interfaces.push(self.context.avm1.pop().coerce_to_object(self));
         }
 
-        let prototype = constructor.get("prototype", self)?.coerce_to_object(self);
+        let prototype = constructor
+            .get(istr!(self, "prototype"), self)?
+            .coerce_to_object(self);
         prototype.set_interfaces(self.gc(), interfaces);
 
         Ok(FrameControl::Continue)
@@ -1538,11 +1546,15 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         let obj = self.context.avm1.pop();
 
         let result = if let Value::Object(obj) = obj {
-            let prototype = constr.get("prototype", self)?.coerce_to_object(self);
+            let prototype = constr
+                .get(istr!(self, "prototype"), self)?
+                .coerce_to_object(self);
             obj.is_instance_of(self, constr, prototype)?
         } else if let Value::MovieClip(_) = obj {
             let obj = obj.coerce_to_object(self);
-            let prototype = constr.get("prototype", self)?.coerce_to_object(self);
+            let prototype = constr
+                .get(istr!(self, "prototype"), self)?
+                .coerce_to_object(self);
             obj.is_instance_of(self, constr, prototype)?
         } else {
             false
