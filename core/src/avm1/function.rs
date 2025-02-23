@@ -546,13 +546,13 @@ impl<'gc> FunctionObject<'gc> {
 
         prototype.define_value(
             context.gc(),
-            "constructor",
+            istr!(context, "constructor"),
             Value::Object(function),
             Attribute::DONT_ENUM,
         );
         function.define_value(
             context.gc(),
-            "prototype",
+            istr!(context, "prototype"),
             prototype.into(),
             Attribute::empty(),
         );
