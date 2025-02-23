@@ -2240,7 +2240,7 @@ impl<'gc> MovieClip<'gc> {
 
     fn enabled(self, context: &mut UpdateContext<'gc>) -> bool {
         if !self.movie().is_action_script_3() {
-            self.get_avm1_boolean_property(context, "enabled", |_| true)
+            self.get_avm1_boolean_property(istr!(context, "enabled"), context, |_| true)
         } else {
             self.avm2_enabled()
         }
@@ -2256,7 +2256,7 @@ impl<'gc> MovieClip<'gc> {
 
     fn use_hand_cursor(self, context: &mut UpdateContext<'gc>) -> bool {
         if !self.movie().is_action_script_3() {
-            self.get_avm1_boolean_property(context, "useHandCursor", |_| true)
+            self.get_avm1_boolean_property(istr!(context, "useHandCursor"), context, |_| true)
         } else {
             self.avm2_use_hand_cursor()
         }
@@ -2896,7 +2896,7 @@ impl<'gc> TDisplayObjectContainer<'gc> for MovieClip<'gc> {
     }
 
     fn is_tab_children_avm1(&self, context: &mut UpdateContext<'gc>) -> bool {
-        self.get_avm1_boolean_property(context, "tabChildren", |_| true)
+        self.get_avm1_boolean_property(istr!(context, "tabChildren"), context, |_| true)
     }
 }
 
@@ -2994,7 +2994,7 @@ impl<'gc> TInteractiveObject<'gc> for MovieClip<'gc> {
                             self.into(),
                             ActionType::Method {
                                 object,
-                                name,
+                                name: name.into(),
                                 args: vec![],
                             },
                             event == ClipEvent::Unload,
@@ -3274,7 +3274,7 @@ impl<'gc> TInteractiveObject<'gc> for MovieClip<'gc> {
         } else if self.is_button_mode(context) {
             true
         } else {
-            self.get_avm1_boolean_property(context, "focusEnabled", |_| false)
+            self.get_avm1_boolean_property(istr!(context, "focusEnabled"), context, |_| false)
         }
     }
 

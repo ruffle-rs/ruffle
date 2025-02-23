@@ -7,6 +7,7 @@ use crate::{
 };
 use downcast_rs::Downcast;
 use gc_arena::Collect;
+use ruffle_macros::istr;
 use slotmap::{new_key_type, Key, SlotMap};
 
 #[cfg(feature = "audio")]
@@ -384,6 +385,9 @@ impl<'gc> AudioManager<'gc> {
         // them after running 'retain()'
         let mut event_targets = Vec::new();
 
+        // We need to declare this up here to avoid borrow-checker issues
+        let on_sound_complete_string = istr!(context, "onSoundComplete");
+
         // Update the position of sounds, and remove any completed sounds.
         context.audio_manager.sounds.retain(|sound| {
             if let Some(pos) = context.audio.get_sound_position(sound.instance) {
@@ -413,7 +417,7 @@ impl<'gc> AudioManager<'gc> {
                             root,
                             crate::context::ActionType::Method {
                                 object,
-                                name: "onSoundComplete",
+                                name: on_sound_complete_string,
                                 args: vec![],
                             },
                             false,
