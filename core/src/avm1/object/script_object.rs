@@ -5,7 +5,7 @@ use crate::avm1::object::NativeObject;
 use crate::avm1::property::{Attribute, Property};
 use crate::avm1::property_map::{Entry, PropertyMap};
 use crate::avm1::{Object, ObjectPtr, TObject, Value};
-use crate::string::AvmString;
+use crate::string::{AvmString, StringContext};
 use core::fmt;
 use gc_arena::{Collect, GcCell, Mutation};
 use ruffle_macros::istr;
@@ -69,9 +69,9 @@ impl fmt::Debug for ScriptObject<'_> {
 }
 
 impl<'gc> ScriptObject<'gc> {
-    pub fn new(gc_context: &Mutation<'gc>, proto: Option<Object<'gc>>) -> Self {
+    pub fn new(context: &StringContext<'gc>, proto: Option<Object<'gc>>) -> Self {
         let object = Self(GcCell::new(
-            gc_context,
+            context.gc(),
             ScriptObjectData {
                 native: NativeObject::None,
                 properties: PropertyMap::new(),
@@ -81,13 +81,26 @@ impl<'gc> ScriptObject<'gc> {
         ));
         if let Some(proto) = proto {
             object.define_value(
-                gc_context,
-                "__proto__",
+                context.gc(),
+                istr!(context, "__proto__"),
                 proto.into(),
                 Attribute::DONT_ENUM | Attribute::DONT_DELETE,
             );
         }
         object
+    }
+
+    // Creates a ScriptObject, without assigning any __proto__ property.
+    pub fn new_without_proto(gc_context: &Mutation<'gc>) -> Self {
+        Self(GcCell::new(
+            gc_context,
+            ScriptObjectData {
+                native: NativeObject::None,
+                properties: PropertyMap::new(),
+                interfaces: vec![],
+                watchers: PropertyMap::new(),
+            },
+        ))
     }
 
     /// Gets the value of a data property on this object.
@@ -256,7 +269,7 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
         activation: &mut Activation<'_, 'gc>,
         this: Object<'gc>,
     ) -> Result<Object<'gc>, Error<'gc>> {
-        Ok(ScriptObject::new(activation.gc(), Some(this)).into())
+        Ok(ScriptObject::new(&activation.context.strings, Some(this)).into())
     }
 
     /// Delete a named property from the object.
@@ -557,7 +570,7 @@ mod tests {
     {
         crate::avm1::test_utils::with_avm(swf_version, |activation, _root| {
             let object = ScriptObject::new(
-                activation.gc(),
+                &activation.context.strings,
                 Some(activation.context.avm1.prototypes().object),
             )
             .into();
@@ -648,7 +661,7 @@ mod tests {
     fn test_virtual_get() {
         with_object(0, |activation, object| {
             let getter = FunctionObject::function(
-                activation.gc(),
+                &activation.context.strings,
                 Executable::Native(|_avm, _this, _args| Ok("Virtual!".into())),
                 activation.context.avm1.prototypes().function,
                 activation.context.avm1.prototypes().function,
@@ -674,7 +687,7 @@ mod tests {
     fn test_delete() {
         with_object(0, |activation, object| {
             let getter = FunctionObject::function(
-                activation.gc(),
+                &activation.context.strings,
                 Executable::Native(|_avm, _this, _args| Ok("Virtual!".into())),
                 activation.context.avm1.prototypes().function,
                 activation.context.avm1.prototypes().function,
@@ -730,7 +743,7 @@ mod tests {
     fn test_get_keys() {
         with_object(0, |activation, object| {
             let getter = FunctionObject::function(
-                activation.gc(),
+                &activation.context.strings,
                 Executable::Native(|_avm, _this, _args| Ok(Value::Null)),
                 activation.context.avm1.prototypes().function,
                 activation.context.avm1.prototypes().function,

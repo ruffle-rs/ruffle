@@ -176,10 +176,10 @@ pub fn create_constructor<'gc>(
     proto: Object<'gc>,
     fn_proto: Object<'gc>,
 ) -> Object<'gc> {
-    let transform_proto = ScriptObject::new(context.gc(), Some(proto));
+    let transform_proto = ScriptObject::new(context, Some(proto));
     define_properties_on(PROTO_DECLS, context, transform_proto, fn_proto);
     FunctionObject::constructor(
-        context.gc(),
+        context,
         Executable::Native(transform_method!(0)),
         constructor_to_fn!(transform_method!(0)),
         fn_proto,

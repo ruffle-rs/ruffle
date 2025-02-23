@@ -440,11 +440,11 @@ pub fn create_constructor<'gc>(
     array_proto: Object<'gc>,
     broadcaster_functions: BroadcasterFunctions<'gc>,
 ) -> Object<'gc> {
-    let file_reference_proto = ScriptObject::new(context.gc(), Some(proto));
+    let file_reference_proto = ScriptObject::new(context, Some(proto));
     define_properties_on(PROTO_DECLS, context, file_reference_proto, fn_proto);
     broadcaster_functions.initialize(context, file_reference_proto.into(), array_proto);
     let constructor = FunctionObject::constructor(
-        context.gc(),
+        context,
         Executable::Native(constructor),
         constructor_to_fn!(constructor),
         fn_proto,

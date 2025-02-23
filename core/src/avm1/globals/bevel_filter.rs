@@ -523,7 +523,7 @@ pub fn create_proto<'gc>(
     proto: Object<'gc>,
     fn_proto: Object<'gc>,
 ) -> Object<'gc> {
-    let bevel_filter_proto = ScriptObject::new(context.gc(), Some(proto));
+    let bevel_filter_proto = ScriptObject::new(context, Some(proto));
     define_properties_on(PROTO_DECLS, context, bevel_filter_proto, fn_proto);
     bevel_filter_proto.into()
 }
@@ -534,7 +534,7 @@ pub fn create_constructor<'gc>(
     fn_proto: Object<'gc>,
 ) -> Object<'gc> {
     FunctionObject::constructor(
-        context.gc(),
+        context,
         Executable::Native(bevel_filter_method!(0)),
         constructor_to_fn!(bevel_filter_method!(0)),
         fn_proto,

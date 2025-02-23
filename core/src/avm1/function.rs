@@ -8,7 +8,7 @@ use crate::avm1::scope::Scope;
 use crate::avm1::value::Value;
 use crate::avm1::{ArrayObject, Object, ObjectPtr, ScriptObject, TObject};
 use crate::display_object::{DisplayObject, TDisplayObject};
-use crate::string::{AvmString, SwfStrExt as _};
+use crate::string::{AvmString, StringContext, SwfStrExt as _};
 use crate::tag_utils::SwfSlice;
 use gc_arena::{Collect, Gc, GcCell, Mutation};
 use ruffle_macros::istr;
@@ -512,15 +512,15 @@ struct FunctionObjectData<'gc> {
 impl<'gc> FunctionObject<'gc> {
     /// Construct a function sans prototype.
     pub fn bare_function(
-        gc_context: &Mutation<'gc>,
+        context: &StringContext<'gc>,
         function: Option<Executable<'gc>>,
         constructor: Option<Executable<'gc>>,
         fn_proto: Object<'gc>,
     ) -> Self {
         Self(GcCell::new(
-            gc_context,
+            context.gc(),
             FunctionObjectData {
-                base: ScriptObject::new(gc_context, Some(fn_proto)),
+                base: ScriptObject::new(context, Some(fn_proto)),
                 function,
                 constructor,
             },
@@ -536,22 +536,22 @@ impl<'gc> FunctionObject<'gc> {
     /// `prototype` refers to the explicit prototype of the function.
     /// The function and its prototype will be linked to each other.
     fn allocate_function(
-        gc_context: &Mutation<'gc>,
+        context: &StringContext<'gc>,
         function: Option<Executable<'gc>>,
         constructor: Option<Executable<'gc>>,
         fn_proto: Object<'gc>,
         prototype: Object<'gc>,
     ) -> Object<'gc> {
-        let function = Self::bare_function(gc_context, function, constructor, fn_proto).into();
+        let function = Self::bare_function(context, function, constructor, fn_proto).into();
 
         prototype.define_value(
-            gc_context,
+            context.gc(),
             "constructor",
             Value::Object(function),
             Attribute::DONT_ENUM,
         );
         function.define_value(
-            gc_context,
+            context.gc(),
             "prototype",
             prototype.into(),
             Attribute::empty(),
@@ -562,24 +562,24 @@ impl<'gc> FunctionObject<'gc> {
 
     /// Construct a regular function from an executable and associated protos.
     pub fn function(
-        gc_context: &Mutation<'gc>,
+        context: &StringContext<'gc>,
         function: impl Into<Executable<'gc>>,
         fn_proto: Object<'gc>,
         prototype: Object<'gc>,
     ) -> Object<'gc> {
-        Self::allocate_function(gc_context, Some(function.into()), None, fn_proto, prototype)
+        Self::allocate_function(context, Some(function.into()), None, fn_proto, prototype)
     }
 
     /// Construct a regular and constructor function from an executable and associated protos.
     pub fn constructor(
-        gc_context: &Mutation<'gc>,
+        context: &StringContext<'gc>,
         constructor: impl Into<Executable<'gc>>,
         function: impl Into<Executable<'gc>>,
         fn_proto: Object<'gc>,
         prototype: Object<'gc>,
     ) -> Object<'gc> {
         Self::allocate_function(
-            gc_context,
+            context,
             Some(function.into()),
             Some(constructor.into()),
             fn_proto,
@@ -721,7 +721,7 @@ impl<'gc> TObject<'gc> for FunctionObject<'gc> {
         Ok(FunctionObject(GcCell::new(
             activation.gc(),
             FunctionObjectData {
-                base: ScriptObject::new(activation.gc(), Some(prototype)),
+                base: ScriptObject::new(&activation.context.strings, Some(prototype)),
                 function: None,
                 constructor: None,
             },

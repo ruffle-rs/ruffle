@@ -22,10 +22,9 @@ pub fn create<'gc>(
     proto: Object<'gc>,
     fn_proto: Object<'gc>,
 ) -> (BroadcasterFunctions<'gc>, Object<'gc>) {
-    let gc_context = context.gc();
-    let as_broadcaster_proto = ScriptObject::new(gc_context, Some(proto));
+    let as_broadcaster_proto = ScriptObject::new(context, Some(proto));
     let as_broadcaster = FunctionObject::constructor(
-        gc_context,
+        context,
         Executable::Native(constructor),
         constructor_to_fn!(constructor),
         fn_proto,

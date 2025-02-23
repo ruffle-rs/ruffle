@@ -504,8 +504,7 @@ pub fn create<'gc>(
     proto: Object<'gc>,
     fn_proto: Object<'gc>,
 ) -> ScriptObject<'gc> {
-    let gc_context = context.gc();
-    let system = ScriptObject::new(gc_context, Some(proto));
+    let system = ScriptObject::new(context, Some(proto));
     define_properties_on(OBJECT_DECLS, context, system, fn_proto);
     system
 }

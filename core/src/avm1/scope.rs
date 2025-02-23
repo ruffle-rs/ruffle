@@ -53,7 +53,7 @@ impl<'gc> Scope<'gc> {
         Scope {
             parent: Some(parent),
             class: ScopeClass::Local,
-            values: ScriptObject::new(mc, None).into(),
+            values: ScriptObject::new_without_proto(mc).into(),
         }
     }
 

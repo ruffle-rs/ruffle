@@ -166,7 +166,7 @@ pub fn create<'gc>(
     proto: Object<'gc>,
     fn_proto: Object<'gc>,
 ) -> Object<'gc> {
-    let math = ScriptObject::new(context.gc(), Some(proto));
+    let math = ScriptObject::new(context, Some(proto));
     define_properties_on(OBJECT_DECLS, context, math, fn_proto);
     math.into()
 }

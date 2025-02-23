@@ -342,7 +342,7 @@ pub fn create_proto<'gc>(
     proto: Object<'gc>,
     fn_proto: Object<'gc>,
 ) -> Object<'gc> {
-    let glow_filter_proto = ScriptObject::new(context.gc(), Some(proto));
+    let glow_filter_proto = ScriptObject::new(context, Some(proto));
     define_properties_on(PROTO_DECLS, context, glow_filter_proto, fn_proto);
     glow_filter_proto.into()
 }
@@ -353,7 +353,7 @@ pub fn create_constructor<'gc>(
     fn_proto: Object<'gc>,
 ) -> Object<'gc> {
     FunctionObject::constructor(
-        context.gc(),
+        context,
         Executable::Native(glow_filter_method!(0)),
         constructor_to_fn!(glow_filter_method!(0)),
         fn_proto,
