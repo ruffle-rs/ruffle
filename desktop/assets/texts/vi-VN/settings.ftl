@@ -74,3 +74,4 @@ player-runtime-flash = Flash Player
 player-runtime-air = Adobe AIR
 custom-framerate = Tuỳ chỉnh tốc độ khung hình
 custom-framerate-suffix = { " " } fps
+dummy-external-interface = External Interface ảo
