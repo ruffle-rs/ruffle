@@ -198,14 +198,14 @@ impl<'gc> Avm1Function<'gc> {
 
         arguments.define_value(
             frame.gc(),
-            "callee",
+            istr!(frame, "callee"),
             frame.callee.unwrap().into(),
             Attribute::DONT_ENUM,
         );
 
         arguments.define_value(
             frame.gc(),
-            "caller",
+            istr!(frame, "caller"),
             caller.map(Value::from).unwrap_or(Value::Null),
             Attribute::DONT_ENUM,
         );
@@ -217,7 +217,7 @@ impl<'gc> Avm1Function<'gc> {
             frame.set_local_register(*preload_r, arguments);
             *preload_r += 1;
         } else {
-            frame.force_define_local("arguments".into(), arguments);
+            frame.force_define_local(istr!(frame, "arguments"), arguments);
         }
     }
 
