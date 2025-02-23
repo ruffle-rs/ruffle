@@ -2092,7 +2092,7 @@ impl<'gc> EditText<'gc> {
         let mut text = self.0.write(context.gc());
         if text.object.is_none() {
             let object: Avm1Object<'gc> = Avm1StageObject::for_display_object(
-                context.gc(),
+                &context.strings,
                 (*self).into(),
                 context.avm1.prototypes().text_field,
             )

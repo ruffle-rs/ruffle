@@ -45,14 +45,14 @@ impl<'gc> StageObject<'gc> {
 
     /// Create a stage object for a given display node.
     pub fn for_display_object(
-        gc_context: &Mutation<'gc>,
+        context: &StringContext<'gc>,
         display_object: DisplayObject<'gc>,
         proto: Object<'gc>,
     ) -> Self {
         Self(GcCell::new(
-            gc_context,
+            context.gc(),
             StageObjectData {
-                base: ScriptObject::new(gc_context, Some(proto)),
+                base: ScriptObject::new(context, Some(proto)),
                 display_object,
                 text_field_bindings: Vec::new(),
             },

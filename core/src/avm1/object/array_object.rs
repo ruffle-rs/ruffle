@@ -22,13 +22,21 @@ impl fmt::Debug for ArrayObject<'_> {
 /// used to work around borrow-checker issues.
 pub struct ArrayBuilder<'gc> {
     mc: &'gc Mutation<'gc>,
-    proto: Object<'gc>,
     length_prop: AvmString<'gc>,
+    proto_prop: AvmString<'gc>,
+    proto: Object<'gc>,
 }
 
 impl<'gc> ArrayBuilder<'gc> {
     pub fn with(self, elements: impl IntoIterator<Item = Value<'gc>>) -> ArrayObject<'gc> {
-        let base = ScriptObject::new(self.mc, Some(self.proto));
+        let base = ScriptObject::new_without_proto(self.mc);
+        base.define_value(
+            self.mc,
+            self.proto_prop,
+            self.proto.into(),
+            Attribute::DONT_ENUM | Attribute::DONT_DELETE,
+        );
+
         let mut length: i32 = 0;
         for value in elements.into_iter() {
             let length_str = AvmString::new_utf8(self.mc, length.to_string());
@@ -55,13 +63,14 @@ impl<'gc> ArrayObject<'gc> {
         Self::builder_with_proto(&activation.context.strings, proto)
     }
 
-    pub fn builder_with_proto(
+    pub fn builder_with_proto<'a>(
         context: &StringContext<'gc>,
         proto: Object<'gc>,
     ) -> ArrayBuilder<'gc> {
         ArrayBuilder {
             mc: context.gc(),
             length_prop: istr!(context, "length"),
+            proto_prop: istr!(context, "__proto__"),
             proto,
         }
     }

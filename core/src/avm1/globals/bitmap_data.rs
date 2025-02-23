@@ -62,7 +62,7 @@ fn new_bitmap_data<'gc>(
 ) -> ScriptObject<'gc> {
     let gc_context = activation.gc();
 
-    let object = ScriptObject::new(gc_context, None);
+    let object = ScriptObject::new_without_proto(gc_context);
     // Set `__proto__` manually since `ScriptObject::new()` doesn't support primitive prototypes.
     // TODO: Pass `proto` to `ScriptObject::new()` once possible.
     if let Some(proto) = proto {
@@ -1568,7 +1568,7 @@ pub fn create_constructor<'gc>(
     define_properties_on(PROTO_DECLS, context, proto, fn_proto);
 
     let bitmap_data_constructor = FunctionObject::constructor(
-        context.gc(),
+        context,
         Executable::Native(constructor),
         constructor_to_fn!(constructor),
         fn_proto,

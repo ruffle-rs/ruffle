@@ -79,12 +79,12 @@ pub fn create_external_interface_object<'gc>(
     proto: Object<'gc>,
     fn_proto: Object<'gc>,
 ) -> Object<'gc> {
-    let object = ScriptObject::new(context.gc(), Some(proto));
+    let object = ScriptObject::new(context, Some(proto));
     define_properties_on(OBJECT_DECLS, context, object, fn_proto);
     object.into()
 }
 
 pub fn create_proto<'gc>(context: &mut StringContext<'gc>, proto: Object<'gc>) -> Object<'gc> {
     // It's a custom prototype but it's empty.
-    ScriptObject::new(context.gc(), Some(proto)).into()
+    ScriptObject::new(context, Some(proto)).into()
 }

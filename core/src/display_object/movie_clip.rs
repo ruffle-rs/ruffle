@@ -2004,9 +2004,12 @@ impl<'gc> MovieClip<'gc> {
                     .get("prototype", &mut activation)
                     .map(|v| v.coerce_to_object(&mut activation))
                 {
-                    let object: Avm1Object<'gc> =
-                        StageObject::for_display_object(activation.gc(), self.into(), prototype)
-                            .into();
+                    let object: Avm1Object<'gc> = StageObject::for_display_object(
+                        activation.strings(),
+                        self.into(),
+                        prototype,
+                    )
+                    .into();
                     self.0.write(activation.gc()).object = Some(object.into());
 
                     if run_frame {
@@ -2033,7 +2036,7 @@ impl<'gc> MovieClip<'gc> {
             }
 
             let object: Avm1Object<'gc> = StageObject::for_display_object(
-                context.gc(),
+                &context.strings,
                 self.into(),
                 context.avm1.prototypes().movie_clip,
             )

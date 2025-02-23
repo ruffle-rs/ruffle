@@ -570,11 +570,11 @@ pub fn create_constructor<'gc>(
     proto: Object<'gc>,
     fn_proto: Object<'gc>,
 ) -> Object<'gc> {
-    let date_proto = ScriptObject::new(context.gc(), Some(proto));
+    let date_proto = ScriptObject::new(context, Some(proto));
     define_properties_on(PROTO_DECLS, context, date_proto, fn_proto);
 
     let date_constructor = FunctionObject::constructor(
-        context.gc(),
+        context,
         Executable::Native(date_method!(256)),
         Executable::Native(function),
         fn_proto,

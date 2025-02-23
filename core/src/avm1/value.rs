@@ -500,7 +500,7 @@ impl<'gc> Value<'gc> {
             Value::String(_) => (self, Some(activation.context.avm1.prototypes().string)),
         };
 
-        let obj = ScriptObject::new(activation.gc(), proto).into();
+        let obj = ScriptObject::new(&activation.context.strings, proto).into();
 
         // Constructor populates the boxed object with the value.
         use crate::avm1::globals;
@@ -959,13 +959,13 @@ mod test {
             }
 
             let valueof = FunctionObject::function(
-                activation.gc(),
+                &activation.context.strings,
                 Executable::Native(value_of_impl),
                 protos.function,
                 protos.function,
             );
 
-            let o = ScriptObject::new(activation.gc(), Some(protos.object));
+            let o = ScriptObject::new(&activation.context.strings, Some(protos.object));
             o.define_value(
                 activation.gc(),
                 istr!("valueOf"),
@@ -996,7 +996,7 @@ mod test {
             assert_eq!(f.coerce_to_f64(activation).unwrap(), 0.0);
             assert!(n.coerce_to_f64(activation).unwrap().is_nan());
 
-            let o = ScriptObject::new(activation.gc(), None);
+            let o = ScriptObject::new(&activation.context.strings, None);
 
             assert!(Value::from(o).coerce_to_f64(activation).unwrap().is_nan());
 
@@ -1018,7 +1018,7 @@ mod test {
             assert_eq!(f.coerce_to_f64(activation).unwrap(), 0.0);
             assert_eq!(n.coerce_to_f64(activation).unwrap(), 0.0);
 
-            let o = ScriptObject::new(activation.gc(), None);
+            let o = ScriptObject::new(&activation.context.strings, None);
 
             assert_eq!(Value::from(o).coerce_to_f64(activation).unwrap(), 0.0);
 
