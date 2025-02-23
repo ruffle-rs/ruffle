@@ -15,6 +15,7 @@ use crate::avm2::object::{ArrayObject, ClassObject, Object, TObject};
 use crate::avm2::{Activation, Error, Value};
 
 use gc_arena::{Collect, DynamicRoot, Rootable};
+use ruffle_macros::istr;
 use ruffle_render::filters::{
     DisplacementMapFilter, DisplacementMapFilterMode, Filter, ShaderFilter, ShaderObject,
 };
@@ -280,11 +281,11 @@ fn bevel_filter_to_avm2<'gc>(
             filter.strength.to_f64().into(),
             filter.num_passes().into(),
             if filter.is_on_top() {
-                "full"
+                istr!("full")
             } else if filter.is_inner() {
-                "inner"
+                istr!("inner")
             } else {
-                "outer"
+                istr!("outer")
             }
             .into(),
             filter.is_knockout().into(),
@@ -537,10 +538,10 @@ fn displacement_map_filter_to_avm2<'gc>(
         &[filter.map_point.0.into(), filter.map_point.1.into()],
     )?;
     let mode = match filter.mode {
-        DisplacementMapFilterMode::Clamp => "clamp",
-        DisplacementMapFilterMode::Color => "color",
-        DisplacementMapFilterMode::Ignore => "ignore",
-        DisplacementMapFilterMode::Wrap => "wrap",
+        DisplacementMapFilterMode::Clamp => istr!("clamp"),
+        DisplacementMapFilterMode::Color => istr!("color"),
+        DisplacementMapFilterMode::Ignore => istr!("ignore"),
+        DisplacementMapFilterMode::Wrap => istr!("wrap"),
     };
     activation.avm2().classes().displacementmapfilter.construct(
         activation,
@@ -797,11 +798,11 @@ fn gradient_filter_to_avm2<'gc>(
             filter.strength.to_f64().into(),
             filter.num_passes().into(),
             if filter.is_on_top() {
-                "full"
+                istr!("full")
             } else if filter.is_inner() {
-                "inner"
+                istr!("inner")
             } else {
-                "outer"
+                istr!("outer")
             }
             .into(),
             filter.is_knockout().into(),

@@ -859,7 +859,7 @@ pub fn call_handler<'gc>(
 }
 
 pub fn node_kind<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -874,7 +874,9 @@ pub fn node_kind<'gc>(
         E4XNodeKind::Attribute(_) => "attribute",
         E4XNodeKind::Element { .. } => "element",
     };
-    Ok(name.into())
+
+    // FIXME should we intern these?
+    Ok(AvmString::new_utf8(activation.gc(), name).into())
 }
 
 pub fn append_child<'gc>(

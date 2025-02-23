@@ -69,12 +69,6 @@ impl<'gc> From<AvmAtom<'gc>> for Value<'gc> {
     }
 }
 
-impl From<&'static str> for Value<'_> {
-    fn from(string: &'static str) -> Self {
-        Value::String(string.into())
-    }
-}
-
 impl From<bool> for Value<'_> {
     fn from(value: bool) -> Self {
         Value::Bool(value)

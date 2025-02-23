@@ -8,6 +8,7 @@ use crate::avm2::Error;
 use crate::avm2::TObject;
 use crate::avm2::Value;
 use crate::avm2_stub_method;
+use ruffle_macros::istr;
 use ruffle_render::backend::Context3DWrapMode;
 use ruffle_render::backend::{
     BufferUsage, Context3DBlendFactor, Context3DCompareMode, Context3DTextureFormat,
@@ -242,21 +243,23 @@ pub fn present<'gc>(
 }
 
 pub fn get_profile<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
     if let Some(context) = this.as_context_3d() {
-        return match context.with_context_3d(|context| context.profile()) {
-            Context3DProfile::Baseline => Ok("baseline".into()),
-            Context3DProfile::BaselineConstrained => Ok("baselineConstrained".into()),
-            Context3DProfile::BaselineExtended => Ok("baselineExtended".into()),
-            Context3DProfile::Standard => Ok("standard".into()),
-            Context3DProfile::StandardConstrained => Ok("standardConstrained".into()),
-            Context3DProfile::StandardExtended => Ok("standardExtended".into()),
+        let profile = match context.with_context_3d(|context| context.profile()) {
+            Context3DProfile::Baseline => istr!("baseline"),
+            Context3DProfile::BaselineConstrained => istr!("baselineConstrained"),
+            Context3DProfile::BaselineExtended => istr!("baselineExtended"),
+            Context3DProfile::Standard => istr!("standard"),
+            Context3DProfile::StandardConstrained => istr!("standardConstrained"),
+            Context3DProfile::StandardExtended => istr!("standardExtended"),
         };
+
+        return Ok(profile.into());
     }
     Ok(Value::Undefined)
 }
