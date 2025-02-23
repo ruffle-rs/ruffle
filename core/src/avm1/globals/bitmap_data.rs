@@ -16,7 +16,7 @@ use crate::display_object::DisplayObject;
 use crate::string::StringContext;
 use crate::swf::BlendMode;
 use crate::{avm1_stub, avm_error};
-use gc_arena::{GcCell, Mutation};
+use gc_arena::GcCell;
 use ruffle_macros::istr;
 use ruffle_render::transform::Transform;
 
@@ -56,17 +56,19 @@ const OBJECT_DECLS: &[Declaration] = declare_properties! {
 };
 
 fn new_bitmap_data<'gc>(
-    gc_context: &Mutation<'gc>,
     proto: Option<Value<'gc>>,
     bitmap_data: BitmapData<'gc>,
+    activation: &mut Activation<'_, 'gc>,
 ) -> ScriptObject<'gc> {
+    let gc_context = activation.gc();
+
     let object = ScriptObject::new(gc_context, None);
     // Set `__proto__` manually since `ScriptObject::new()` doesn't support primitive prototypes.
     // TODO: Pass `proto` to `ScriptObject::new()` once possible.
     if let Some(proto) = proto {
         object.define_value(
             gc_context,
-            "__proto__",
+            istr!("__proto__"),
             proto,
             Attribute::DONT_ENUM | Attribute::DONT_DELETE,
         );
@@ -412,9 +414,9 @@ fn clone<'gc>(
     if let NativeObject::BitmapData(bitmap_data) = this.native() {
         if !bitmap_data.disposed() {
             return Ok(new_bitmap_data(
-                activation.gc(),
                 this.get_local_stored(istr!("__proto__"), activation, false),
                 bitmap_data.clone_data(activation.context.renderer),
+                activation,
             )
             .into());
         }
@@ -1506,9 +1508,9 @@ fn compare<'gc>(
         other_bitmap_data,
     ) {
         Some(bitmap_data) => Ok(new_bitmap_data(
-            activation.gc(),
             this.get_local_stored(istr!("__proto__"), activation, false),
             bitmap_data,
+            activation,
         )
         .into()),
         None => Ok(EQUIVALENT.into()),
@@ -1551,9 +1553,9 @@ fn load_bitmap<'gc>(
             .collect(),
     );
     Ok(new_bitmap_data(
-        activation.gc(),
         this.get_local_stored(istr!("prototype"), activation, false),
         bitmap_data,
+        activation,
     )
     .into())
 }
