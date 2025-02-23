@@ -1,7 +1,7 @@
 use crate::avm2::error::{make_error_1010, make_error_1085, make_error_1118, type_error};
 use crate::avm2::object::{E4XOrXml, FunctionObject, NamespaceObject};
 use crate::avm2::{Activation, Error, Multiname, TObject, Value};
-use crate::string::{AvmString, WStr, WString};
+use crate::string::{AvmString, StringContext, WStr, WString};
 use crate::xml::custom_unescape;
 
 use gc_arena::{Collect, GcCell, Mutation};
@@ -109,10 +109,10 @@ impl<'gc> E4XNamespace<'gc> {
         E4XNamespace { prefix: None, uri }
     }
 
-    pub fn default_namespace() -> Self {
+    pub fn default_namespace(context: &StringContext<'gc>) -> Self {
         E4XNamespace {
             prefix: None,
-            uri: "".into(),
+            uri: istr!(context, ""),
         }
     }
 }
@@ -1170,11 +1170,15 @@ impl<'gc> E4XNode<'gc> {
     }
 
     // 13.3.5.4 [[GetNamespace]] ( [ InScopeNamespaces ] )
-    pub fn get_namespace(&self, in_scope_ns: &[E4XNamespace<'gc>]) -> E4XNamespace<'gc> {
+    pub fn get_namespace(
+        &self,
+        context: &StringContext<'gc>,
+        in_scope_ns: &[E4XNamespace<'gc>],
+    ) -> E4XNamespace<'gc> {
         // 1. If q.uri is null, throw a TypeError exception
         // NOTE: As stated in the spec, this isn't really possible.
         match self.namespace() {
-            None => E4XNamespace::default_namespace(),
+            None => E4XNamespace::default_namespace(context),
             Some(ns) => {
                 // 2. If InScopeNamespaces was not specified, let InScopeNamespaces = { }
                 // 3. Find a Namespace ns in InScopeNamespaces, such that ns.uri == q.uri. If more than one such

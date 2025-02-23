@@ -494,7 +494,7 @@ pub fn remove_namespace<'gc>(
 
     // 3. Let thisNS be the result of calling [[GetNamespace]] on x.[[Name]] with argument x.[[InScopeNamespaces]]
     let in_scope_ns = node.in_scope_namespaces();
-    let this_ns = node.get_namespace(&in_scope_ns);
+    let this_ns = node.get_namespace(activation.strings(), &in_scope_ns);
 
     // 4. If (thisNS == ns), return x
     if this_ns == ns {
@@ -509,7 +509,7 @@ pub fn remove_namespace<'gc>(
         // 5. For each a in x.[[Attributes]]
         for attr in attributes {
             // 5.a. Let aNS be the result of calling [[GetNamespace]] on a.[[Name]] with argument x.[[InScopeNamespaces]]
-            let attr_ns = attr.get_namespace(&in_scope_ns);
+            let attr_ns = attr.get_namespace(activation.strings(), &in_scope_ns);
             // 5.b. If (aNS == ns), return x
             if attr_ns == ns {
                 return Ok(this.into());
@@ -580,7 +580,7 @@ pub fn in_scope_namespaces<'gc>(
     // Note: Non-standard avmplus behavior doesn't allow an empty array.
     if in_scope_ns.is_empty() {
         in_scope_ns.push(
-            E4XNamespace::default_namespace()
+            E4XNamespace::default_namespace(activation.strings())
                 .as_namespace_object(activation)?
                 .into(),
         );

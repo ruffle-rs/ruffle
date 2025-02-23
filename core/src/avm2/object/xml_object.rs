@@ -207,7 +207,7 @@ impl<'gc> XmlObject<'gc> {
         in_scope_ns: &[E4XNamespace<'gc>],
     ) -> Result<NamespaceObject<'gc>, Error<'gc>> {
         self.node()
-            .get_namespace(in_scope_ns)
+            .get_namespace(activation.strings(), in_scope_ns)
             .as_namespace_object(activation)
     }
 
