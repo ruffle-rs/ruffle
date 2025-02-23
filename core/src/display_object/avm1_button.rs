@@ -528,7 +528,7 @@ impl<'gc> TInteractiveObject<'gc> for Avm1Button<'gc> {
                         self_display_object,
                         ActionType::Method {
                             object: self.0.object.get().unwrap(),
-                            name,
+                            name: name.into(),
                             args: vec![],
                         },
                         false,

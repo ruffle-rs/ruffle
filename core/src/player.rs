@@ -1195,33 +1195,50 @@ impl Player {
 
             // Propagate clip events.
             let (clip_event, listener) = match &event {
-                InputEvent::KeyDown { .. } => {
-                    (Some(ClipEvent::KeyDown), Some(("Key", "onKeyDown", vec![])))
-                }
-                InputEvent::KeyUp { .. } => {
-                    (Some(ClipEvent::KeyUp), Some(("Key", "onKeyUp", vec![])))
-                }
+                InputEvent::KeyDown { .. } => (
+                    Some(ClipEvent::KeyDown),
+                    Some((istr!(context, "Key"), istr!(context, "onKeyDown"), vec![])),
+                ),
+                InputEvent::KeyUp { .. } => (
+                    Some(ClipEvent::KeyUp),
+                    Some((istr!(context, "Key"), istr!(context, "onKeyUp"), vec![])),
+                ),
                 InputEvent::MouseMove { .. } => (
                     Some(ClipEvent::MouseMove),
-                    Some(("Mouse", "onMouseMove", vec![])),
+                    Some((
+                        istr!(context, "Mouse"),
+                        istr!(context, "onMouseMove"),
+                        vec![],
+                    )),
                 ),
                 InputEvent::MouseUp {
                     button: MouseButton::Left,
                     ..
                 } => (
                     Some(ClipEvent::MouseUp),
-                    Some(("Mouse", "onMouseUp", vec![])),
+                    Some((istr!(context, "Mouse"), istr!(context, "onMouseUp"), vec![])),
                 ),
                 InputEvent::MouseDown {
                     button: MouseButton::Left,
                     ..
                 } => (
                     Some(ClipEvent::MouseDown),
-                    Some(("Mouse", "onMouseDown", vec![])),
+                    Some((
+                        istr!(context, "Mouse"),
+                        istr!(context, "onMouseDown"),
+                        vec![],
+                    )),
                 ),
                 InputEvent::MouseWheel { delta } => {
                     let delta = Value::from(delta.lines());
-                    (None, Some(("Mouse", "onMouseWheel", vec![delta])))
+                    (
+                        None,
+                        Some((
+                            istr!(context, "Mouse"),
+                            istr!(context, "onMouseWheel"),
+                            vec![delta],
+                        )),
+                    )
                 }
                 InputEvent::MouseUp {
                     button: MouseButton::Right,
@@ -2113,13 +2130,7 @@ impl Player {
                 }
                 // Event handler method call (e.g. onEnterFrame).
                 ActionType::Method { object, name, args } => {
-                    Avm1::run_stack_frame_for_method(
-                        action.clip,
-                        object,
-                        name.into(),
-                        &args,
-                        context,
-                    );
+                    Avm1::run_stack_frame_for_method(action.clip, object, name, &args, context);
                 }
 
                 // Event handler method call (e.g. onEnterFrame).
@@ -2130,13 +2141,7 @@ impl Player {
                 } => {
                     // A native function ends up resolving immediately,
                     // so this doesn't require any further execution.
-                    Avm1::notify_system_listeners(
-                        action.clip,
-                        context,
-                        listener.into(),
-                        method.into(),
-                        &args,
-                    );
+                    Avm1::notify_system_listeners(action.clip, listener, method, &args, context);
                 }
             }
 

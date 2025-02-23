@@ -2512,8 +2512,8 @@ pub trait TDisplayObject<'gc>:
     /// This is required as some boolean properties in AVM1 can in fact hold any value.
     fn get_avm1_boolean_property<F>(
         self,
+        name: AvmString<'gc>,
         context: &mut UpdateContext<'gc>,
-        name: &'static str,
         default: F,
     ) -> bool
     where
@@ -2540,9 +2540,9 @@ pub trait TDisplayObject<'gc>:
 
     fn set_avm1_property(
         self,
-        context: &mut UpdateContext<'gc>,
-        name: &'static str,
+        name: AvmString<'gc>,
         value: Avm1Value<'gc>,
+        context: &mut UpdateContext<'gc>,
     ) {
         if let Avm1Value::Object(object) = self.object() {
             let mut activation = Activation::from_nothing(

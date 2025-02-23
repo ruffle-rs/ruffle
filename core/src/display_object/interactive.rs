@@ -659,10 +659,11 @@ pub trait TInteractiveObject<'gc>:
                 .tab_enabled
                 .unwrap_or_else(|| self.tab_enabled_default(context))
         } else {
-            self.as_displayobject()
-                .get_avm1_boolean_property(context, "tabEnabled", |context| {
-                    self.tab_enabled_default(context)
-                })
+            self.as_displayobject().get_avm1_boolean_property(
+                istr!(context, "tabEnabled"),
+                context,
+                |context| self.tab_enabled_default(context),
+            )
         }
     }
 
@@ -674,8 +675,11 @@ pub trait TInteractiveObject<'gc>:
         if self.as_displayobject().movie().is_action_script_3() {
             self.raw_interactive_mut(context.gc()).tab_enabled = Some(value)
         } else {
-            self.as_displayobject()
-                .set_avm1_property(context, "tabEnabled", value.into());
+            self.as_displayobject().set_avm1_property(
+                istr!(context, "tabEnabled"),
+                value.into(),
+                context,
+            );
         }
     }
 
