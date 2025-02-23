@@ -8,7 +8,6 @@ use crate::avm2::value::{abc_default_value, Value};
 use crate::avm2::verify::{resolve_param_config, VerifiedMethodInfo};
 use crate::avm2::Error;
 use crate::avm2::Multiname;
-use crate::string::AvmString;
 use crate::tag_utils::SwfMovie;
 use gc_arena::barrier::unlock;
 use gc_arena::lock::{Lock, RefLock};
@@ -42,9 +41,6 @@ pub type NativeMethodImpl = for<'gc> fn(
 #[derive(Clone, Collect, Debug)]
 #[collect(no_drop)]
 pub struct ResolvedParamConfig<'gc> {
-    /// The name of the parameter.
-    pub param_name: AvmString<'gc>,
-
     /// The type of the parameter.
     pub param_type: Option<Class<'gc>>,
 
@@ -56,9 +52,6 @@ pub struct ResolvedParamConfig<'gc> {
 #[derive(Clone, Collect, Debug)]
 #[collect(no_drop)]
 pub struct ParamConfig<'gc> {
-    /// The name of the parameter.
-    pub param_name: AvmString<'gc>,
-
     /// The name of the type of the parameter.
     pub param_type_name: Option<Gc<'gc, Multiname<'gc>>>,
 
@@ -72,11 +65,6 @@ impl<'gc> ParamConfig<'gc> {
         txunit: TranslationUnit<'gc>,
         activation: &mut Activation<'_, 'gc>,
     ) -> Result<Self, Error<'gc>> {
-        let param_name = if let Some(name) = &config.name {
-            txunit.pool_string(name.0, activation.strings())?.into()
-        } else {
-            AvmString::from("<Unnamed Parameter>")
-        };
         let param_type_name = txunit.pool_multiname_static_any(activation, config.kind)?;
 
         let default_value = if let Some(dv) = &config.default_value {
@@ -86,19 +74,16 @@ impl<'gc> ParamConfig<'gc> {
         };
 
         Ok(Self {
-            param_name,
             param_type_name,
             default_value,
         })
     }
 
     pub fn optional(
-        name: impl Into<AvmString<'gc>>,
         param_type_name: Option<Gc<'gc, Multiname<'gc>>>,
         default_value: impl Into<Value<'gc>>,
     ) -> Self {
         Self {
-            param_name: name.into(),
             param_type_name,
             default_value: Some(default_value.into()),
         }

@@ -12,6 +12,7 @@ use crate::avm2::value::Value;
 use crate::avm2::vector::VectorStorage;
 use crate::avm2::Error;
 use crate::string::AvmString;
+use ruffle_macros::istr;
 use std::cmp::{max, min, Ordering};
 
 // Allocator for generic Vector, not specialized Vector
@@ -247,7 +248,7 @@ pub fn join<'gc>(
 
         for item in vector.iter() {
             if matches!(item, Value::Undefined) || matches!(item, Value::Null) {
-                accum.push("null".into());
+                accum.push(istr!("null"));
             } else {
                 accum.push(item.coerce_to_string(activation)?);
             }
