@@ -19,7 +19,9 @@ package flash.net {
 
         public native function connect(host: String, port: int):void;
 
+        [API("662")]
         public native function get timeout():uint;
+        [API("662")]
         public native function set timeout(value:uint):void;
 
         public native function close():void;
