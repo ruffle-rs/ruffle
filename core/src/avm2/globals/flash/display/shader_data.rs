@@ -1,10 +1,14 @@
+use crate::avm2::activation::Activation;
+use crate::avm2::object::TObject;
+use crate::avm2::parameters::ParametersExt;
+use crate::avm2::value::Value;
+use crate::avm2::Error;
+use crate::pixel_bender::PixelBenderTypeExt;
+use crate::string::AvmString;
+
+use ruffle_macros::istr;
 use ruffle_render::pixel_bender::{
     parse_shader, PixelBenderParam, PixelBenderParamQualifier, OUT_COORD_NAME,
-};
-
-use crate::{
-    avm2::{parameters::ParametersExt, string::AvmString, Activation, Error, TObject, Value},
-    pixel_bender::PixelBenderTypeExt,
 };
 
 use super::shader_parameter::make_shader_parameter;
@@ -31,7 +35,7 @@ pub fn init<'gc>(
         this.set_string_property_local(name, value, activation)?;
     }
     this.set_string_property_local(
-        "name",
+        istr!("name"),
         AvmString::new_utf8(activation.gc(), &shader.name).into(),
         activation,
     )?;

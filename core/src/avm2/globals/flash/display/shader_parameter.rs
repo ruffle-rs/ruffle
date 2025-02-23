@@ -1,11 +1,14 @@
+use crate::avm2::activation::Activation;
 use crate::avm2::globals::slots::flash_display_shader_input as input_slots;
 use crate::avm2::globals::slots::flash_display_shader_parameter as parameter_slots;
-use ruffle_render::pixel_bender::PixelBenderParam;
+use crate::avm2::object::TObject;
+use crate::avm2::value::Value;
+use crate::avm2::Error;
+use crate::pixel_bender::PixelBenderTypeExt;
+use crate::string::AvmString;
 
-use crate::{
-    avm2::{string::AvmString, Activation, Error, TObject, Value},
-    pixel_bender::PixelBenderTypeExt,
-};
+use ruffle_macros::istr;
+use ruffle_render::pixel_bender::PixelBenderParam;
 
 pub fn make_shader_parameter<'gc>(
     activation: &mut Activation<'_, 'gc>,
@@ -41,7 +44,7 @@ pub fn make_shader_parameter<'gc>(
                 }
             }
             param_object.set_string_property_local(
-                "name",
+                istr!("name"),
                 AvmString::new_utf8(activation.gc(), name).into(),
                 activation,
             )?;
@@ -59,7 +62,7 @@ pub fn make_shader_parameter<'gc>(
             obj.set_slot(input_slots::_CHANNELS, (*channels).into(), activation)?;
             obj.set_slot(input_slots::_INDEX, index.into(), activation)?;
             obj.set_string_property_local(
-                "name",
+                istr!("name"),
                 AvmString::new_utf8(activation.gc(), name).into(),
                 activation,
             )?;

@@ -400,7 +400,7 @@ pub fn get_quality<'gc>(
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     let quality = activation.context.stage.quality().into_avm_str();
-    Ok(AvmString::from(quality).into())
+    Ok(AvmString::new_utf8(activation.gc(), quality).into())
 }
 
 /// Implement `quality`'s setter
