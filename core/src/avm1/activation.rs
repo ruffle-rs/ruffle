@@ -2182,7 +2182,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             "Thrown exception: {}",
             value
                 .coerce_to_string(self)
-                .unwrap_or_else(|_| "undefined".into())
+                .unwrap_or_else(|_| istr!(self, "undefined"))
         );
         Err(Error::ThrownValue(value))
     }
@@ -2231,9 +2231,9 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         // trace always prints "undefined" even though SWF6 and below normally
         // coerce undefined to "".
         let out = if val == Value::Undefined {
-            "undefined".into()
+            WStr::from_units(b"undefined")
         } else {
-            val.coerce_to_string(self)?
+            &val.coerce_to_string(self)?
         };
         self.context.avm_trace(&out.to_utf8_lossy());
         Ok(FrameControl::Continue)
@@ -2449,7 +2449,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
                 v.ok()
                     .unwrap_or(Value::Undefined)
                     .coerce_to_string(self)
-                    .unwrap_or_else(|_| "undefined".into())
+                    .unwrap_or_else(|_| istr!(self, "undefined"))
                     .to_string(),
             );
         }

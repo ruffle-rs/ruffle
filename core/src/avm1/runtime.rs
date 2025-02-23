@@ -587,10 +587,11 @@ pub fn skip_actions(reader: &mut Reader<'_>, num_actions_to_skip: u8) {
 pub fn root_error_handler<'gc>(activation: &mut Activation<'_, 'gc>, error: Error<'gc>) {
     match &error {
         Error::ThrownValue(value) => {
-            let message = value
-                .coerce_to_string(activation)
-                .unwrap_or_else(|_| "undefined".into());
-            activation.context.avm_trace(&message.to_utf8_lossy());
+            if let Ok(message) = value.coerce_to_string(activation) {
+                activation.context.avm_trace(&message.to_utf8_lossy());
+            } else {
+                activation.context.avm_trace("[type Object]");
+            }
             // Continue execution without halting.
             return;
         }
