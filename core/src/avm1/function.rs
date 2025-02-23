@@ -242,7 +242,7 @@ impl<'gc> Avm1Function<'gc> {
             frame.set_local_register(*preload_r, zuper.unwrap_or(Value::Undefined));
             *preload_r += 1;
         } else if let Some(zuper) = zuper {
-            frame.force_define_local("super".into(), zuper);
+            frame.force_define_local(istr!(frame, "super"), zuper);
         }
     }
 

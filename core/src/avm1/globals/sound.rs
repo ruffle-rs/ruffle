@@ -5,6 +5,7 @@ use std::cell::Cell;
 use std::fmt;
 
 use gc_arena::{Collect, Gc, Mutation};
+use ruffle_macros::istr;
 
 use crate::avm1::activation::Activation;
 use crate::avm1::clamp::Clamp;
@@ -287,10 +288,10 @@ fn get_transform<'gc>(
             Some(activation.context.avm1.prototypes().object),
         );
         // Surprisingly `lr` means "right-to-left" and `rl` means "left-to-right".
-        obj.set("ll", transform.left_to_left.into(), activation)?;
-        obj.set("lr", transform.right_to_left.into(), activation)?;
-        obj.set("rl", transform.left_to_right.into(), activation)?;
-        obj.set("rr", transform.right_to_right.into(), activation)?;
+        obj.set(istr!("ll"), transform.left_to_left.into(), activation)?;
+        obj.set(istr!("lr"), transform.right_to_left.into(), activation)?;
+        obj.set(istr!("rl"), transform.left_to_right.into(), activation)?;
+        obj.set(istr!("rr"), transform.right_to_right.into(), activation)?;
         Ok(obj.into())
     } else {
         Ok(Value::Undefined)
@@ -415,18 +416,26 @@ fn set_transform<'gc>(
             activation.context.global_sound_transform().clone()
         };
 
-        if obj.has_own_property(activation, "ll".into()) {
-            transform.left_to_left = obj.get("ll", activation)?.coerce_to_i32(activation)?;
+        if obj.has_own_property(activation, istr!("ll")) {
+            transform.left_to_left = obj
+                .get(istr!("ll"), activation)?
+                .coerce_to_i32(activation)?;
         }
         // Surprisingly `lr` means "right-to-left" and `rl` means "left-to-right".
-        if obj.has_own_property(activation, "rl".into()) {
-            transform.left_to_right = obj.get("rl", activation)?.coerce_to_i32(activation)?;
+        if obj.has_own_property(activation, istr!("rl")) {
+            transform.left_to_right = obj
+                .get(istr!("rl"), activation)?
+                .coerce_to_i32(activation)?;
         }
-        if obj.has_own_property(activation, "lr".into()) {
-            transform.right_to_left = obj.get("lr", activation)?.coerce_to_i32(activation)?;
+        if obj.has_own_property(activation, istr!("lr")) {
+            transform.right_to_left = obj
+                .get(istr!("lr"), activation)?
+                .coerce_to_i32(activation)?;
         }
-        if obj.has_own_property(activation, "rr".into()) {
-            transform.right_to_right = obj.get("rr", activation)?.coerce_to_i32(activation)?;
+        if obj.has_own_property(activation, istr!("rr")) {
+            transform.right_to_right = obj
+                .get(istr!("rr"), activation)?
+                .coerce_to_i32(activation)?;
         }
 
         if let Some(owner) = sound.owner() {

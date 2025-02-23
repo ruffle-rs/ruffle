@@ -420,7 +420,7 @@ fn on_data<'gc>(
 
     if let Value::Undefined = src {
         this.call_method(
-            "onLoad".into(),
+            istr!("onLoad"),
             &[false.into()],
             activation,
             ExecutionReason::FunctionCall,
@@ -428,16 +428,16 @@ fn on_data<'gc>(
     } else {
         let src = src.coerce_to_string(activation)?;
         this.call_method(
-            "parseXML".into(),
+            istr!("parseXML"),
             &[src.into()],
             activation,
             ExecutionReason::FunctionCall,
         )?;
 
-        this.set("loaded", true.into(), activation)?;
+        this.set(istr!("loaded"), true.into(), activation)?;
 
         this.call_method(
-            "onLoad".into(),
+            istr!("onLoad"),
             &[true.into()],
             activation,
             ExecutionReason::FunctionCall,
