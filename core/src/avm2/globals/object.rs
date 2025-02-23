@@ -315,19 +315,19 @@ pub fn create_i_class<'gc>(activation: &mut Activation<'_, 'gc>) -> Class<'gc> {
         (
             "hasOwnProperty",
             has_own_property,
-            vec![ParamConfig::optional("name", None, Value::Undefined)],
+            vec![ParamConfig::optional(None, Value::Undefined)],
             Some(activation.avm2().multinames.boolean),
         ),
         (
             "isPrototypeOf",
             is_prototype_of,
-            vec![ParamConfig::optional("theClass", None, Value::Undefined)],
+            vec![ParamConfig::optional(None, Value::Undefined)],
             Some(activation.avm2().multinames.boolean),
         ),
         (
             "propertyIsEnumerable",
             property_is_enumerable,
-            vec![ParamConfig::optional("name", None, Value::Undefined)],
+            vec![ParamConfig::optional(None, Value::Undefined)],
             Some(activation.avm2().multinames.boolean),
         ),
     ];

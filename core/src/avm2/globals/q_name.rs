@@ -58,7 +58,11 @@ pub fn q_name_constructor<'gc>(
                 .uri(activation.strings())
                 .map(|uri| Namespace::package(uri, ApiVersion::AllVersions, activation.strings())),
             Value::Null => None,
-            Value::Undefined => Some(Namespace::package("", api_version, activation.strings())),
+            Value::Undefined => Some(Namespace::package(
+                istr!(""),
+                api_version,
+                activation.strings(),
+            )),
             v => Some(Namespace::package(
                 v.coerce_to_string(activation)?,
                 api_version,

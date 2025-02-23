@@ -763,7 +763,6 @@ pub fn resolve_param_config<'gc>(
         };
 
         resolved_param_config.push(ResolvedParamConfig {
-            param_name: param.param_name,
             param_type: resolved_class,
             default_value: param.default_value,
         });
