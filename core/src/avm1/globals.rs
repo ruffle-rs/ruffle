@@ -521,9 +521,7 @@ pub fn create_globals<'gc>(
     Object<'gc>,
     as_broadcaster::BroadcasterFunctions<'gc>,
 ) {
-    let gc_context = context.gc();
-
-    let object_proto = ScriptObject::new(gc_context, None).into();
+    let object_proto = ScriptObject::new(context, None).into();
     let function_proto = function::create_proto(context, object_proto);
 
     object::fill_proto(context, object_proto, function_proto);
@@ -572,7 +570,7 @@ pub fn create_globals<'gc>(
     );
 
     let movie_clip_loader = FunctionObject::constructor(
-        gc_context,
+        context,
         Executable::Native(movie_clip_loader::constructor),
         constructor_to_fn!(movie_clip_loader::constructor),
         function_proto,
@@ -592,49 +590,49 @@ pub fn create_globals<'gc>(
         context_menu_item::create_proto(context, object_proto, function_proto);
 
     let button = FunctionObject::constructor(
-        gc_context,
+        context,
         Executable::Native(button::constructor),
         constructor_to_fn!(button::constructor),
         function_proto,
         button_proto,
     );
     let color = FunctionObject::constructor(
-        gc_context,
+        context,
         Executable::Native(color::constructor),
         constructor_to_fn!(color::constructor),
         function_proto,
         color_proto,
     );
     let error = FunctionObject::constructor(
-        gc_context,
+        context,
         Executable::Native(error::constructor),
         constructor_to_fn!(error::constructor),
         function_proto,
         error_proto,
     );
     let function = FunctionObject::constructor(
-        gc_context,
+        context,
         Executable::Native(function::constructor),
         Executable::Native(function::function),
         function_proto,
         function_proto,
     );
     let load_vars = FunctionObject::constructor(
-        gc_context,
+        context,
         Executable::Native(load_vars::constructor),
         constructor_to_fn!(load_vars::constructor),
         function_proto,
         load_vars_proto,
     );
     let local_connection = FunctionObject::constructor(
-        gc_context,
+        context,
         Executable::Native(local_connection::constructor),
         constructor_to_fn!(local_connection::constructor),
         function_proto,
         local_connection_proto,
     );
     let movie_clip = FunctionObject::constructor(
-        gc_context,
+        context,
         Executable::Native(movie_clip::constructor),
         constructor_to_fn!(movie_clip::constructor),
         function_proto,
@@ -642,28 +640,28 @@ pub fn create_globals<'gc>(
     );
 
     let sound = FunctionObject::constructor(
-        gc_context,
+        context,
         Executable::Native(sound::constructor),
         constructor_to_fn!(sound::constructor),
         function_proto,
         sound_proto,
     );
     let style_sheet = FunctionObject::constructor(
-        gc_context,
+        context,
         Executable::Native(style_sheet::constructor),
         constructor_to_fn!(style_sheet::constructor),
         function_proto,
         style_sheet_proto,
     );
     let text_field = FunctionObject::constructor(
-        gc_context,
+        context,
         Executable::Native(text_field::constructor),
         constructor_to_fn!(text_field::constructor),
         function_proto,
         text_field_proto,
     );
     let text_format = FunctionObject::constructor(
-        gc_context,
+        context,
         Executable::Native(text_format::constructor),
         constructor_to_fn!(text_format::constructor),
         function_proto,
@@ -671,7 +669,7 @@ pub fn create_globals<'gc>(
     );
     let array = array::create_array_object(context, array_proto, function_proto);
     let xmlnode = FunctionObject::constructor(
-        gc_context,
+        context,
         Executable::Native(xml_node::constructor),
         constructor_to_fn!(xml_node::constructor),
         function_proto,
@@ -686,18 +684,18 @@ pub fn create_globals<'gc>(
     let netconnection = netconnection::create_class(context, netconnection_proto, function_proto);
     let xml_socket = xml_socket::create_class(context, xml_socket_proto, function_proto);
 
-    let flash = ScriptObject::new(gc_context, Some(object_proto));
+    let flash = ScriptObject::new(context, Some(object_proto));
 
-    let geom = ScriptObject::new(gc_context, Some(object_proto));
-    let filters = ScriptObject::new(gc_context, Some(object_proto));
-    let display = ScriptObject::new(gc_context, Some(object_proto));
-    let net = ScriptObject::new(gc_context, Some(object_proto));
+    let geom = ScriptObject::new(context, Some(object_proto));
+    let filters = ScriptObject::new(context, Some(object_proto));
+    let display = ScriptObject::new(context, Some(object_proto));
+    let net = ScriptObject::new(context, Some(object_proto));
 
     let matrix = matrix::create_matrix_object(context, matrix_proto, function_proto);
     let point = point::create_point_object(context, point_proto, function_proto);
     let rectangle = rectangle::create_rectangle_object(context, rectangle_proto, function_proto);
     let color_transform = FunctionObject::constructor(
-        gc_context,
+        context,
         Executable::Native(color_transform::constructor),
         constructor_to_fn!(color_transform::constructor),
         function_proto,
@@ -705,7 +703,7 @@ pub fn create_globals<'gc>(
     );
     let transform = transform::create_constructor(context, object_proto, function_proto);
     let video = FunctionObject::constructor(
-        gc_context,
+        context,
         Executable::Native(video::constructor),
         constructor_to_fn!(video::constructor),
         function_proto,
@@ -714,7 +712,7 @@ pub fn create_globals<'gc>(
 
     let bitmap_filter_proto = bitmap_filter::create_proto(context, object_proto, function_proto);
     let bitmap_filter = FunctionObject::constructor(
-        gc_context,
+        context,
         Executable::Native(bitmap_filter::constructor),
         constructor_to_fn!(bitmap_filter::constructor),
         function_proto,
@@ -771,10 +769,10 @@ pub fn create_globals<'gc>(
         function_proto,
     );
 
-    let bitmap_data_proto = ScriptObject::new(context.gc(), Some(object_proto));
+    let bitmap_data_proto = ScriptObject::new(context, Some(object_proto));
     let bitmap_data = bitmap_data::create_constructor(context, bitmap_data_proto, function_proto);
 
-    let external = ScriptObject::new(gc_context, Some(object_proto));
+    let external = ScriptObject::new(context, Some(object_proto));
     let external_interface = external_interface::create_external_interface_object(
         context,
         external_interface_proto,
@@ -792,7 +790,7 @@ pub fn create_globals<'gc>(
     let shared_object = shared_object::create_constructor(context, object_proto, function_proto);
 
     let context_menu = FunctionObject::constructor(
-        gc_context,
+        context,
         Executable::Native(context_menu::constructor),
         constructor_to_fn!(context_menu::constructor),
         function_proto,
@@ -808,7 +806,7 @@ pub fn create_globals<'gc>(
     );
 
     let context_menu_item = FunctionObject::constructor(
-        gc_context,
+        context,
         Executable::Native(context_menu_item::constructor),
         constructor_to_fn!(context_menu_item::constructor),
         function_proto,
@@ -851,7 +849,7 @@ pub fn create_globals<'gc>(
     let accessibility =
         accessibility::create_accessibility_object(context, object_proto, function_proto);
 
-    let globals = ScriptObject::new(gc_context, None);
+    let globals = ScriptObject::new(context, None);
 
     type GlobalDefinition<'gc> = (ScriptObject<'gc>, &'static [u8], Object<'gc>, Attribute);
     #[inline(never)]

@@ -191,7 +191,7 @@ pub fn deserialize_value<'gc>(
         AmfValue::Object(_, elements, _) => {
             // Deserialize Object
             let obj = ScriptObject::new(
-                activation.gc(),
+                &activation.context.strings,
                 Some(activation.context.avm1.prototypes().object),
             );
 
@@ -248,7 +248,7 @@ fn deserialize_lso<'gc>(
     decoder: &AMF0Decoder,
 ) -> Result<Object<'gc>, Error<'gc>> {
     let obj = ScriptObject::new(
-        activation.gc(),
+        &activation.context.strings,
         Some(activation.context.avm1.prototypes().object),
     );
 
@@ -427,7 +427,7 @@ fn get_local<'gc>(
     if data == Value::Undefined {
         // No data; create a fresh data object.
         data = ScriptObject::new(
-            activation.gc(),
+            &activation.context.strings,
             Some(activation.context.avm1.prototypes().object),
         )
         .into();
@@ -583,10 +583,10 @@ pub fn create_constructor<'gc>(
     proto: Object<'gc>,
     fn_proto: Object<'gc>,
 ) -> Object<'gc> {
-    let shared_object_proto = ScriptObject::new(context.gc(), Some(proto));
+    let shared_object_proto = ScriptObject::new(context, Some(proto));
     define_properties_on(PROTO_DECLS, context, shared_object_proto, fn_proto);
     let constructor = FunctionObject::constructor(
-        context.gc(),
+        context,
         Executable::Native(constructor),
         constructor_to_fn!(constructor),
         fn_proto,

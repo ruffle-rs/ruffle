@@ -9,7 +9,7 @@ use crate::avm_warn;
 use crate::backend::navigator::Request;
 use crate::string::{AvmString, StringContext, WStr, WString};
 use crate::xml::{custom_unescape, XmlNode, ELEMENT_NODE, TEXT_NODE};
-use gc_arena::{Collect, GcCell, Mutation};
+use gc_arena::{Collect, GcCell};
 use quick_xml::errors::IllFormedError;
 use quick_xml::events::attributes::AttrError;
 use quick_xml::{events::Event, Reader};
@@ -82,7 +82,9 @@ pub struct XmlData<'gc> {
 
 impl<'gc> Xml<'gc> {
     /// Associate an object with a new XML document.
-    fn empty(gc_context: &Mutation<'gc>, object: Object<'gc>) -> Self {
+    fn empty(context: &StringContext<'gc>, object: Object<'gc>) -> Self {
+        let gc_context = context.gc();
+
         let mut root = XmlNode::new(gc_context, ELEMENT_NODE, None);
         root.introduce_script_object(gc_context, object);
 
@@ -92,7 +94,7 @@ impl<'gc> Xml<'gc> {
                 root,
                 xml_decl: None,
                 doctype: None,
-                id_map: ScriptObject::new(gc_context, None),
+                id_map: ScriptObject::new(context, None),
                 status: XmlStatus::NoError,
             },
         ));
@@ -275,7 +277,7 @@ fn constructor<'gc>(
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let xml = Xml::empty(activation.gc(), this);
+    let xml = Xml::empty(&activation.context.strings, this);
 
     if let [text, ..] = args {
         let text = text.coerce_to_string(activation)?;
@@ -576,10 +578,10 @@ pub fn create_constructor<'gc>(
     proto: Object<'gc>,
     fn_proto: Object<'gc>,
 ) -> Object<'gc> {
-    let xml_proto = ScriptObject::new(context.gc(), Some(proto));
+    let xml_proto = ScriptObject::new(context, Some(proto));
     define_properties_on(PROTO_DECLS, context, xml_proto, fn_proto);
     FunctionObject::constructor(
-        context.gc(),
+        context,
         Executable::Native(constructor),
         constructor_to_fn!(constructor),
         fn_proto,

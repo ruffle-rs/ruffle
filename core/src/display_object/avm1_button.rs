@@ -281,7 +281,7 @@ impl<'gc> TDisplayObject<'gc> for Avm1Button<'gc> {
 
         if self.0.object.get().is_none() {
             let object = StageObject::for_display_object(
-                context.gc(),
+                &context.strings,
                 (*self).into(),
                 context.avm1.prototypes().button,
             );

@@ -95,7 +95,7 @@ pub fn create<'gc>(
     proto: Object<'gc>,
     fn_proto: Object<'gc>,
 ) -> Object<'gc> {
-    let security = ScriptObject::new(context.gc(), Some(proto));
+    let security = ScriptObject::new(context, Some(proto));
     define_properties_on(OBJECT_DECLS, context, security, fn_proto);
     security.into()
 }

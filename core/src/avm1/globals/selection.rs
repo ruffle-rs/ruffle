@@ -146,7 +146,7 @@ pub fn create_selection_object<'gc>(
     broadcaster_functions: BroadcasterFunctions<'gc>,
     array_proto: Object<'gc>,
 ) -> Object<'gc> {
-    let object = ScriptObject::new(context.gc(), Some(proto));
+    let object = ScriptObject::new(context, Some(proto));
     broadcaster_functions.initialize(context, object.into(), array_proto);
     define_properties_on(OBJECT_DECLS, context, object, fn_proto);
     object.into()
@@ -154,5 +154,5 @@ pub fn create_selection_object<'gc>(
 
 pub fn create_proto<'gc>(context: &mut StringContext<'gc>, proto: Object<'gc>) -> Object<'gc> {
     // It's a custom prototype but it's empty.
-    ScriptObject::new(context.gc(), Some(proto)).into()
+    ScriptObject::new(context, Some(proto)).into()
 }

@@ -158,7 +158,7 @@ pub fn create_instance<'gc>(
     native: NativeObject<'gc>,
     proto: Option<Value<'gc>>,
 ) -> ScriptObject<'gc> {
-    let result = ScriptObject::new(activation.gc(), None);
+    let result = ScriptObject::new(activation.strings(), None);
     // Set `__proto__` manually since `ScriptObject::new()` doesn't support primitive prototypes.
     // TODO: Pass `proto` to `ScriptObject::new()` once possible.
     if let Some(proto) = proto {
@@ -178,7 +178,7 @@ pub fn create_proto<'gc>(
     proto: Object<'gc>,
     fn_proto: Object<'gc>,
 ) -> Object<'gc> {
-    let object = ScriptObject::new(context.gc(), Some(proto));
+    let object = ScriptObject::new(context, Some(proto));
     define_properties_on(PROTO_DECLS, context, object, fn_proto);
     object.into()
 }

@@ -529,7 +529,7 @@ fn get_text_extent<'gc>(
     temp_edittext.set_new_text_format(text_format.clone(), activation.context);
     temp_edittext.set_text(&text, activation.context);
 
-    let result = ScriptObject::new(activation.gc(), None);
+    let result = ScriptObject::new(&activation.context.strings, None);
     let metrics = temp_edittext
         .layout_metrics()
         .expect("All text boxes should have at least one line at all times");
@@ -640,7 +640,7 @@ pub fn create_proto<'gc>(
     proto: Object<'gc>,
     fn_proto: Object<'gc>,
 ) -> Object<'gc> {
-    let object = ScriptObject::new(context.gc(), Some(proto));
+    let object = ScriptObject::new(context, Some(proto));
     define_properties_on(PROTO_DECLS, context, object, fn_proto);
     object.into()
 }

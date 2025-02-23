@@ -394,7 +394,7 @@ impl<'gc> UpdateContext<'gc> {
 
         root.set_depth(self.gc(), 0);
         let flashvars = if !self.swf.parameters().is_empty() {
-            let object = ScriptObject::new(self.gc(), None);
+            let object = ScriptObject::new(&self.strings, None);
             for (key, value) in self.swf.parameters().iter() {
                 object.define_value(
                     self.gc(),

@@ -66,7 +66,7 @@ impl<'gc> XmlNode<'gc> {
                 next_sibling: None,
                 node_type,
                 node_value,
-                attributes: ScriptObject::new(mc, None),
+                attributes: ScriptObject::new_without_proto(mc),
                 cached_child_nodes: None,
                 children: Vec::new(),
             },
@@ -358,7 +358,7 @@ impl<'gc> XmlNode<'gc> {
                     .get(istr!("prototype"), activation)
                     .map(|p| p.coerce_to_object(activation))
                     .ok();
-                let object = ScriptObject::new(activation.gc(), prototype);
+                let object = ScriptObject::new(&activation.context.strings, prototype);
                 self.introduce_script_object(activation.gc(), object.into());
                 object.set_native(activation.gc(), NativeObject::XmlNode(*self));
                 object.into()
@@ -407,7 +407,7 @@ impl<'gc> XmlNode<'gc> {
     ///
     /// If the `deep` flag is set true, then the entire node tree will be cloned.
     pub fn duplicate(self, gc_context: &Mutation<'gc>, deep: bool) -> Self {
-        let attributes = ScriptObject::new(gc_context, None);
+        let attributes = ScriptObject::new_without_proto(gc_context);
         for (key, value) in self.attributes().own_properties() {
             attributes.define_value(gc_context, key, value, Attribute::empty());
         }

@@ -78,7 +78,7 @@ pub fn create_string_object<'gc>(
     fn_proto: Object<'gc>,
 ) -> Object<'gc> {
     let string = FunctionObject::constructor(
-        context.gc(),
+        context,
         Executable::Native(string),
         Executable::Native(string_function),
         fn_proto,
@@ -95,7 +95,7 @@ pub fn create_proto<'gc>(
     proto: Object<'gc>,
     fn_proto: Object<'gc>,
 ) -> Object<'gc> {
-    let string_proto = ScriptObject::new(context.gc(), Some(proto));
+    let string_proto = ScriptObject::new(context, Some(proto));
     define_properties_on(PROTO_DECLS, context, string_proto, fn_proto);
     string_proto.into()
 }
