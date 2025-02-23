@@ -70,7 +70,7 @@ impl<'gc> LocalConnection<'gc> {
     pub fn send_status(
         context: &mut UpdateContext<'gc>,
         this: Object<'gc>,
-        status: &'static str,
+        status: AvmString<'gc>,
     ) -> Result<(), Error<'gc>> {
         let Some(root_clip) = context.stage.root_clip() else {
             tracing::warn!("Ignored LocalConnection callback as there's no root movie");
@@ -85,7 +85,7 @@ impl<'gc> LocalConnection<'gc> {
         let event = constructor
             .construct(&mut activation, &[])?
             .coerce_to_object(&mut activation);
-        event.set("level", status.into(), &mut activation)?;
+        event.set(istr!("level"), status.into(), &mut activation)?;
         this.call_method(
             istr!("onStatus"),
             &[event.into()],

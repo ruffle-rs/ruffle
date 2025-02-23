@@ -664,11 +664,12 @@ impl Player {
                 if let Some(menu_object) = menu_object {
                     // TODO: contextMenuOwner and mouseTarget might not be the same
                     let context_menu_event_cls = activation.avm2().classes().contextmenuevent;
+                    let menu_select_string = istr!("menuSelect");
                     let menu_evt = Avm2EventObject::from_class_and_args(
                         &mut activation,
                         context_menu_event_cls,
                         &[
-                            "menuSelect".into(),
+                            menu_select_string.into(),
                             false.into(),
                             false.into(),
                             hit_obj.into(),
@@ -726,11 +727,12 @@ impl Player {
                                 // TODO: contextMenuOwner and mouseTarget might not be the same (see above comment)
                                 let context_menu_event_cls =
                                     activation.avm2().classes().contextmenuevent;
+                                let menu_item_select_string = istr!("menuItemSelect");
                                 let menu_evt = Avm2EventObject::from_class_and_args(
                                     &mut activation,
                                     context_menu_event_cls,
                                     &[
-                                        "menuItemSelect".into(),
+                                        menu_item_select_string.into(),
                                         false.into(),
                                         false.into(),
                                         display_obj.object2(),

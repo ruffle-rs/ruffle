@@ -104,7 +104,7 @@ impl<'gc> LocalConnectionObject<'gc> {
         }
     }
 
-    pub fn send_status(&self, context: &mut UpdateContext<'gc>, status: &'static str) {
+    pub fn send_status(&self, context: &mut UpdateContext<'gc>, status: AvmString<'gc>) {
         let mut activation = Activation::from_nothing(context);
 
         let status_event_cls = activation.avm2().classes().statusevent;

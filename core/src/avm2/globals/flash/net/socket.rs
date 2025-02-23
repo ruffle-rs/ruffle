@@ -12,6 +12,7 @@ use encoding_rs::UTF_8;
 use flash_lso::amf0::read::AMF0Decoder;
 use flash_lso::amf3::read::AMF3Decoder;
 use flash_lso::types::{AMFVersion, Element};
+use ruffle_macros::istr;
 
 macro_rules! assert_socket_open {
     ($activation:expr, $socket:expr) => {
@@ -119,7 +120,7 @@ pub fn get_bytes_available<'gc>(
 }
 
 pub fn get_endian<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -127,8 +128,8 @@ pub fn get_endian<'gc>(
 
     if let Some(socket) = this.as_socket() {
         return Ok(match socket.endian() {
-            Endian::Big => "bigEndian".into(),
-            Endian::Little => "littleEndian".into(),
+            Endian::Big => istr!("bigEndian").into(),
+            Endian::Little => istr!("littleEndian").into(),
         });
     }
 

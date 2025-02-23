@@ -7,6 +7,7 @@ use crate::string::AvmString;
 use flash_lso::types::Value as AmfValue;
 use fnv::FnvHashMap;
 use gc_arena::Collect;
+use ruffle_macros::istr;
 use ruffle_wstr::{WStr, WString};
 use std::borrow::Cow;
 
@@ -30,7 +31,7 @@ impl<'gc> From<Avm1Object<'gc>> for LocalConnectionKind<'gc> {
 }
 
 impl<'gc> LocalConnectionKind<'gc> {
-    pub fn send_status(&self, context: &mut UpdateContext<'gc>, status: &'static str) {
+    pub fn send_status(&self, status: AvmString<'gc>, context: &mut UpdateContext<'gc>) {
         match self {
             LocalConnectionKind::Avm2(_domain, object) => {
                 object.send_status(context, status);
@@ -88,7 +89,7 @@ impl<'gc> QueuedMessageKind<'gc> {
     pub fn deliver(self, source: LocalConnectionKind<'gc>, context: &mut UpdateContext<'gc>) {
         match self {
             QueuedMessageKind::Failure => {
-                source.send_status(context, "error");
+                source.send_status(istr!(context, "error"), context);
             }
             QueuedMessageKind::Message {
                 connection_name,
@@ -96,10 +97,10 @@ impl<'gc> QueuedMessageKind<'gc> {
                 arguments,
             } => {
                 if let Some(receiver) = context.local_connections.find_listener(&connection_name) {
-                    source.send_status(context, "status");
+                    source.send_status(istr!(context, "status"), context);
                     receiver.run_method(context, method_name, arguments);
                 } else {
-                    source.send_status(context, "error");
+                    source.send_status(istr!(context, "error"), context);
                 }
             }
         }

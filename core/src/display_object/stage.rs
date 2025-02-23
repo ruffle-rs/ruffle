@@ -22,6 +22,7 @@ use crate::tag_utils::SwfMovie;
 use crate::vminterface::Instantiator;
 use bitflags::bitflags;
 use gc_arena::{Collect, GcCell, Mutation};
+use ruffle_macros::istr;
 use ruffle_render::backend::ViewportDimensions;
 use ruffle_render::commands::CommandHandler;
 use ruffle_render::quality::StageQuality;
@@ -720,11 +721,12 @@ impl<'gc> Stage<'gc> {
             let mut activation = Avm2Activation::from_nothing(context);
 
             let full_screen_event_cls = activation.avm2().classes().fullscreenevent;
+            let full_screen_string = istr!("fullScreen");
             let full_screen_event = Avm2EventObject::from_class_and_args(
                 &mut activation,
                 full_screen_event_cls,
                 &[
-                    "fullScreen".into(),
+                    full_screen_string.into(),
                     false.into(),
                     false.into(),
                     self.is_fullscreen().into(),
