@@ -348,11 +348,13 @@ impl<'gc> CommonNamespaces<'gc> {
     const PUBLIC_LEN: usize = ApiVersion::VM_INTERNAL as usize + 1;
 
     pub fn new(context: &mut StringContext<'gc>) -> Self {
+        let empty_string = context.empty();
+
         Self {
             public_namespaces: std::array::from_fn(|val| {
-                Namespace::package("", ApiVersion::from_usize(val).unwrap(), context)
+                Namespace::package(empty_string, ApiVersion::from_usize(val).unwrap(), context)
             }),
-            internal: Namespace::internal("", context),
+            internal: Namespace::internal(empty_string, context),
             as3: Namespace::package(
                 "http://adobe.com/AS3/2006/builtin",
                 ApiVersion::AllVersions,
