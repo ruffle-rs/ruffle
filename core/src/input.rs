@@ -20,10 +20,12 @@ pub enum InputEvent {
     KeyDown {
         key_code: KeyCode,
         key_char: Option<char>,
+        key_location: KeyLocation,
     },
     KeyUp {
         key_code: KeyCode,
         key_char: Option<char>,
+        key_location: KeyLocation,
     },
     MouseMove {
         x: f64,
@@ -128,6 +130,7 @@ impl InputManager {
                     InputEvent::KeyDown {
                         key_code: *key_code,
                         key_char: None,
+                        key_location: KeyLocation::Standard,
                     }
                 } else {
                     // Just ignore this event.
@@ -139,6 +142,7 @@ impl InputManager {
                     InputEvent::KeyUp {
                         key_code: *key_code,
                         key_char: None,
+                        key_location: KeyLocation::Standard,
                     }
                 } else {
                     // Just ignore this event.
@@ -149,12 +153,22 @@ impl InputManager {
             PlayerEvent::KeyDown { key } => {
                 let key_code = self.map_to_key_code(key)?;
                 let key_char = self.map_to_key_char(key);
-                InputEvent::KeyDown { key_code, key_char }
+                let key_location = self.map_to_key_location(key);
+                InputEvent::KeyDown {
+                    key_code,
+                    key_char,
+                    key_location,
+                }
             }
             PlayerEvent::KeyUp { key } => {
                 let key_code = self.map_to_key_code(key)?;
                 let key_char = self.map_to_key_char(key);
-                InputEvent::KeyUp { key_code, key_char }
+                let key_location = self.map_to_key_location(key);
+                InputEvent::KeyUp {
+                    key_code,
+                    key_char,
+                    key_location,
+                }
             }
 
             PlayerEvent::MouseMove { x, y } => InputEvent::MouseMove { x, y },
@@ -198,14 +212,26 @@ impl InputManager {
         descriptor.logical_key.character()
     }
 
+    fn map_to_key_location(&self, descriptor: KeyDescriptor) -> KeyLocation {
+        match descriptor.logical_key {
+            // NumLock in FP reports Standard location, not Numpad
+            LogicalKey::Named(NamedKey::NumLock) => KeyLocation::Standard,
+            _ => descriptor.key_location,
+        }
+    }
+
     fn handle_event(&mut self, event: &InputEvent) {
         match *event {
-            InputEvent::KeyDown { key_code, key_char } => {
+            InputEvent::KeyDown {
+                key_code, key_char, ..
+            } => {
                 self.last_char = key_char;
                 self.toggle_key(key_code);
                 self.add_key(key_code);
             }
-            InputEvent::KeyUp { key_code, key_char } => {
+            InputEvent::KeyUp {
+                key_code, key_char, ..
+            } => {
                 self.last_char = key_char;
                 self.remove_key(key_code);
                 self.last_text_control = None;
