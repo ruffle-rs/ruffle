@@ -1,0 +1,23 @@
+[
+    { "type": "KeyDown", "key": { "Char": "a" } },
+    { "type": "KeyUp",   "key": { "Char": "a" } },
+    { "type": "KeyDown", "key": "LeftShift" },
+    { "type": "KeyUp",   "key": "LeftShift" },
+    { "type": "KeyDown", "key": "RightShift" },
+    { "type": "KeyUp",   "key": "RightShift" },
+    { "type": "KeyDown", "key": "LeftControl" },
+    { "type": "KeyUp",   "key": "LeftControl" },
+    { "type": "KeyDown", "key": "RightControl" },
+    { "type": "KeyUp",   "key": "RightControl" },
+    { "type": "KeyDown", "key": "LeftAlt" },
+    { "type": "KeyUp",   "key": "LeftAlt" },
+
+    { "type": "KeyDown", "key": { "Numpad": "1" } },
+    { "type": "KeyUp",   "key": { "Numpad": "1" } },
+    { "type": "KeyDown", "key": "NumLock" },
+    { "type": "KeyUp",   "key": "NumLock" },
+    { "type": "KeyDown", "key": "NumpadEnd" },
+    { "type": "KeyUp",   "key": "NumpadEnd" },
+
+    { "type": "Wait" }
+]
