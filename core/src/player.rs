@@ -1139,8 +1139,16 @@ impl Player {
             let button_event = ButtonKeyCode::from_input_event(&event)
                 .map(|key_code| ClipEvent::KeyPress { key_code });
 
-            if let InputEvent::KeyDown { key_code, key_char }
-            | InputEvent::KeyUp { key_code, key_char } = &event
+            if let InputEvent::KeyDown {
+                key_code,
+                key_char,
+                key_location,
+            }
+            | InputEvent::KeyUp {
+                key_code,
+                key_char,
+                key_location,
+            } = &event
             {
                 let ctrl_key = context.input.is_key_down(KeyCode::CONTROL);
                 let alt_key = context.input.is_key_down(KeyCode::ALT);
@@ -1156,7 +1164,6 @@ impl Player {
 
                 let keyboardevent_class = activation.avm2().classes().keyboardevent;
 
-                // TODO: keyLocation should not be a dummy value.
                 // ctrlKey and controlKey can be different from each other on Mac.
                 // commandKey should be supported.
                 let keyboard_event = Avm2EventObject::from_class_and_args(
@@ -1168,7 +1175,7 @@ impl Player {
                         false.into(),                            /* cancelable */
                         key_char.map_or(0, |c| c as u32).into(), /* charCode */
                         key_code.value().into(),                 /* keyCode */
-                        0.into(),                                /* keyLocation */
+                        (*key_location as u32).into(),           /* keyLocation */
                         ctrl_key.into(),                         /* ctrlKey */
                         alt_key.into(),                          /* altKey */
                         shift_key.into(),                        /* shiftKey */
