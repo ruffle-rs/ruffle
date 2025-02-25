@@ -30,6 +30,6 @@
     },
     {
         "type": "KeyDown",
-        "key": "Unknown"
+        "key": { "Char": "b" }
     }
 ]
