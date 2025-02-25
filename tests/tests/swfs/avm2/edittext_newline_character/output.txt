@@ -1,0 +1,18 @@
+onTextInput: U+61
+onChange
+ U+61
+onTextInput: U+a
+onChange
+ U+61
+ U+d
+onTextInput: U+62
+onChange
+ U+61
+ U+d
+ U+62
+onTextInput: U+a
+onChange
+ U+61
+ U+d
+ U+62
+ U+d
