@@ -15,6 +15,7 @@ use crate::avm1::property_decl::{define_properties_on, Declaration};
 use crate::avm1::{Attribute, Object, ScriptObject, TObject, Value};
 use crate::context::UpdateContext;
 use crate::string::StringContext;
+use ruffle_macros::istr;
 use ruffle_render::filters::Filter;
 
 const PROTO_DECLS: &[Declaration] = declare_properties! {
@@ -64,7 +65,7 @@ pub fn clone<'gc>(
         }
         _ => return Ok(Value::Undefined),
     };
-    let proto = this.get_local_stored("__proto__", activation, false);
+    let proto = this.get_local_stored(istr!("__proto__"), activation, false);
     Ok(create_instance(activation, native, proto).into())
 }
 
@@ -157,13 +158,13 @@ pub fn create_instance<'gc>(
     native: NativeObject<'gc>,
     proto: Option<Value<'gc>>,
 ) -> ScriptObject<'gc> {
-    let result = ScriptObject::new(activation.gc(), None);
+    let result = ScriptObject::new(activation.strings(), None);
     // Set `__proto__` manually since `ScriptObject::new()` doesn't support primitive prototypes.
     // TODO: Pass `proto` to `ScriptObject::new()` once possible.
     if let Some(proto) = proto {
         result.define_value(
             activation.gc(),
-            "__proto__",
+            istr!("__proto__"),
             proto,
             Attribute::DONT_ENUM | Attribute::DONT_DELETE,
         );
@@ -177,7 +178,7 @@ pub fn create_proto<'gc>(
     proto: Object<'gc>,
     fn_proto: Object<'gc>,
 ) -> Object<'gc> {
-    let object = ScriptObject::new(context.gc(), Some(proto));
+    let object = ScriptObject::new(context, Some(proto));
     define_properties_on(PROTO_DECLS, context, object, fn_proto);
     object.into()
 }

@@ -22,6 +22,7 @@ use crate::tag_utils::SwfMovie;
 use crate::vminterface::Instantiator;
 use bitflags::bitflags;
 use gc_arena::{Collect, GcCell, Mutation};
+use ruffle_macros::istr;
 use ruffle_render::backend::ViewportDimensions;
 use ruffle_render::commands::CommandHandler;
 use ruffle_render::quality::StageQuality;
@@ -680,10 +681,10 @@ impl<'gc> Stage<'gc> {
             if let Some(root_clip) = self.root_clip() {
                 crate::avm1::Avm1::notify_system_listeners(
                     root_clip,
-                    context,
-                    "Stage".into(),
-                    "onResize".into(),
+                    istr!(context, "Stage"),
+                    istr!(context, "onResize"),
                     &[],
+                    context,
                 );
             }
         } else if let Avm2Value::Object(stage) = self.object2() {
@@ -710,21 +711,22 @@ impl<'gc> Stage<'gc> {
             if let Some(root_clip) = self.root_clip() {
                 crate::avm1::Avm1::notify_system_listeners(
                     root_clip,
-                    context,
-                    "Stage".into(),
-                    "onFullScreen".into(),
+                    istr!(context, "Stage"),
+                    istr!(context, "onFullScreen"),
                     &[self.is_fullscreen().into()],
+                    context,
                 );
             }
         } else if let Avm2Value::Object(stage) = self.object2() {
             let mut activation = Avm2Activation::from_nothing(context);
 
             let full_screen_event_cls = activation.avm2().classes().fullscreenevent;
+            let full_screen_string = istr!("fullScreen");
             let full_screen_event = Avm2EventObject::from_class_and_args(
                 &mut activation,
                 full_screen_event_cls,
                 &[
-                    "fullScreen".into(),
+                    full_screen_string.into(),
                     false.into(),
                     false.into(),
                     self.is_fullscreen().into(),

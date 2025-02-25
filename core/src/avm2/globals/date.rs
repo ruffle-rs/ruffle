@@ -1,7 +1,6 @@
 //! `Date` class
 
 use crate::avm2::activation::Activation;
-pub use crate::avm2::object::date_allocator;
 use crate::avm2::object::{DateObject, TObject};
 use crate::avm2::value::Value;
 use crate::avm2::Error;
@@ -9,6 +8,8 @@ use crate::locale::{get_current_date_time, get_timezone};
 use crate::string::{utils as string_utils, AvmString, WStr};
 use chrono::{DateTime, Datelike, Duration, FixedOffset, LocalResult, TimeZone, Timelike, Utc};
 use num_traits::ToPrimitive;
+
+pub use crate::avm2::object::date_allocator;
 
 struct DateAdjustment<'builder, 'activation_a: 'builder, 'gc: 'activation_a, T: TimeZone + 'builder>
 {
@@ -933,7 +934,7 @@ pub fn to_string<'gc>(
         )
         .into())
     } else {
-        Ok("Invalid Date".into())
+        Ok(AvmString::new_utf8(activation.gc(), "Invalid Date").into())
     }
 }
 
@@ -954,7 +955,7 @@ pub fn to_utc_string<'gc>(
         )
         .into())
     } else {
-        Ok("Invalid Date".into())
+        Ok(AvmString::new_utf8(activation.gc(), "Invalid Date").into())
     }
 }
 
@@ -978,7 +979,7 @@ pub fn to_locale_string<'gc>(
         )
         .into())
     } else {
-        Ok("Invalid Date".into())
+        Ok(AvmString::new_utf8(activation.gc(), "Invalid Date").into())
     }
 }
 
@@ -998,7 +999,7 @@ pub fn to_time_string<'gc>(
     {
         Ok(AvmString::new_utf8(activation.gc(), date.format("%T GMT%z").to_string()).into())
     } else {
-        Ok("Invalid Date".into())
+        Ok(AvmString::new_utf8(activation.gc(), "Invalid Date").into())
     }
 }
 
@@ -1018,7 +1019,7 @@ pub fn to_locale_time_string<'gc>(
     {
         Ok(AvmString::new_utf8(activation.gc(), date.format("%T %p").to_string()).into())
     } else {
-        Ok("Invalid Date".into())
+        Ok(AvmString::new_utf8(activation.gc(), "Invalid Date").into())
     }
 }
 
@@ -1038,7 +1039,7 @@ pub fn to_date_string<'gc>(
     {
         Ok(AvmString::new_utf8(activation.gc(), date.format("%a %b %-d %-Y").to_string()).into())
     } else {
-        Ok("Invalid Date".into())
+        Ok(AvmString::new_utf8(activation.gc(), "Invalid Date").into())
     }
 }
 

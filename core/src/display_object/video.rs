@@ -445,7 +445,7 @@ impl<'gc> TDisplayObject<'gc> for Video<'gc> {
 
         if write.object.is_none() && !movie.is_action_script_3() {
             let object: Avm1Object<'_> = Avm1StageObject::for_display_object(
-                context.gc(),
+                &context.strings,
                 (*self).into(),
                 context.avm1.prototypes().video,
             )

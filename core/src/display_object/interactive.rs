@@ -608,11 +608,11 @@ pub trait TInteractiveObject<'gc>:
                 .map(|d| d.as_displayobject().object())
                 .unwrap_or(Avm1Value::Null);
             let method_name = if focused {
-                "onSetFocus".into()
+                istr!(context, "onSetFocus")
             } else {
-                "onKillFocus".into()
+                istr!(context, "onKillFocus")
             };
-            Avm1::run_stack_frame_for_method(self_do, object, context, method_name, &[other]);
+            Avm1::run_stack_frame_for_method(self_do, object, method_name, &[other], context);
         } else if let Avm2Value::Object(object) = self_do.object2() {
             let mut activation = Avm2Activation::from_nothing(context);
             let event_name = if focused { "focusIn" } else { "focusOut" };
@@ -659,10 +659,11 @@ pub trait TInteractiveObject<'gc>:
                 .tab_enabled
                 .unwrap_or_else(|| self.tab_enabled_default(context))
         } else {
-            self.as_displayobject()
-                .get_avm1_boolean_property(context, "tabEnabled", |context| {
-                    self.tab_enabled_default(context)
-                })
+            self.as_displayobject().get_avm1_boolean_property(
+                istr!(context, "tabEnabled"),
+                context,
+                |context| self.tab_enabled_default(context),
+            )
         }
     }
 
@@ -674,8 +675,11 @@ pub trait TInteractiveObject<'gc>:
         if self.as_displayobject().movie().is_action_script_3() {
             self.raw_interactive_mut(context.gc()).tab_enabled = Some(value)
         } else {
-            self.as_displayobject()
-                .set_avm1_property(context, "tabEnabled", value.into());
+            self.as_displayobject().set_avm1_property(
+                istr!(context, "tabEnabled"),
+                value.into(),
+                context,
+            );
         }
     }
 

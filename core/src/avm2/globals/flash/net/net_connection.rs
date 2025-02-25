@@ -107,7 +107,7 @@ pub fn get_connected_proxy_type<'gc>(
             .net_connections
             .get_connected_proxy_type(handle)
     }) {
-        return Ok(result.into());
+        return Ok(AvmString::new_utf8(activation.gc(), result).into());
     }
 
     Err(make_error_2126(activation))
@@ -128,7 +128,7 @@ pub fn get_far_id<'gc>(
         .handle()
         .and_then(|handle| activation.context.net_connections.get_far_id(handle))
     {
-        return Ok(result.into());
+        return Ok(AvmString::new_utf8(activation.gc(), result).into());
     }
 
     Err(make_error_2126(activation))
@@ -149,7 +149,7 @@ pub fn get_far_nonce<'gc>(
         .handle()
         .and_then(|handle| activation.context.net_connections.get_far_nonce(handle))
     {
-        return Ok(result.into());
+        return Ok(AvmString::new_utf8(activation.gc(), result).into());
     }
 
     Err(make_error_2126(activation))
@@ -170,7 +170,7 @@ pub fn get_near_id<'gc>(
         .handle()
         .and_then(|handle| activation.context.net_connections.get_near_id(handle))
     {
-        return Ok(result.into());
+        return Ok(AvmString::new_utf8(activation.gc(), result).into());
     }
 
     Err(make_error_2126(activation))
@@ -191,7 +191,7 @@ pub fn get_near_nonce<'gc>(
         .handle()
         .and_then(|handle| activation.context.net_connections.get_near_nonce(handle))
     {
-        return Ok(result.into());
+        return Ok(AvmString::new_utf8(activation.gc(), result).into());
     }
 
     Err(make_error_2126(activation))
@@ -212,7 +212,7 @@ pub fn get_protocol<'gc>(
         .handle()
         .and_then(|handle| activation.context.net_connections.get_protocol(handle))
     {
-        return Ok(result.into());
+        return Ok(AvmString::new_utf8(activation.gc(), result).into());
     }
 
     Err(make_error_2126(activation))

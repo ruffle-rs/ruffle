@@ -10,6 +10,7 @@ use crate::backend::navigator::Request;
 use crate::html::{transform_dashes_to_camel_case, CssStream, StyleSheet, TextFormat};
 use crate::string::{AvmString, StringContext};
 use gc_arena::{Collect, Gc, Mutation};
+use ruffle_macros::istr;
 use ruffle_wstr::{WStr, WString};
 
 /// A `StyleSheet` object that is tied to a style sheet.
@@ -56,7 +57,7 @@ fn shallow_copy<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Value::Object(object) = value {
         let object_proto = activation.context.avm1.prototypes().object;
-        let result = ScriptObject::new(activation.gc(), Some(object_proto));
+        let result = ScriptObject::new(activation.strings(), Some(object_proto));
 
         for key in object.get_keys(activation, false) {
             result.set(key, object.get_stored(key, activation)?, activation)?;
@@ -73,17 +74,25 @@ fn set_style<'gc>(
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if !this.has_property(activation, "_styles".into()) {
-        this.set("_styles", ArrayObject::empty(activation).into(), activation)?;
+    if !this.has_property(activation, istr!("_styles")) {
+        this.set(
+            istr!("_styles"),
+            ArrayObject::empty(activation).into(),
+            activation,
+        )?;
     }
-    if !this.has_property(activation, "_css".into()) {
-        this.set("_css", ArrayObject::empty(activation).into(), activation)?;
+    if !this.has_property(activation, istr!("_css")) {
+        this.set(
+            istr!("_css"),
+            ArrayObject::empty(activation).into(),
+            activation,
+        )?;
     }
     let css = this
-        .get_stored("_css".into(), activation)?
+        .get_stored(istr!("_css"), activation)?
         .coerce_to_object(activation);
     let styles = this
-        .get_stored("_styles".into(), activation)?
+        .get_stored(istr!("_styles"), activation)?
         .coerce_to_object(activation);
     let name = args
         .get(0)
@@ -93,7 +102,7 @@ fn set_style<'gc>(
 
     css.set(name, shallow_copy(activation, *object)?, activation)?;
     let text_format = this.call_method(
-        "transform".into(),
+        istr!("transform"),
         &[shallow_copy(activation, *object)?],
         activation,
         ExecutionReason::Special,
@@ -120,7 +129,7 @@ fn get_style<'gc>(
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     let css = this
-        .get_stored("_css".into(), activation)?
+        .get_stored(istr!("_css"), activation)?
         .coerce_to_object(activation);
     let name = args
         .get(0)
@@ -136,7 +145,7 @@ fn get_style_names<'gc>(
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     let css = this
-        .get_stored("_css".into(), activation)?
+        .get_stored(istr!("_css"), activation)?
         .coerce_to_object(activation);
     Ok(ArrayObject::builder(activation)
         .with(
@@ -198,7 +207,9 @@ fn transform<'gc>(
             name: &'static str,
             activation: &mut Activation<'_, 'gc>,
         ) -> Option<Value<'gc>> {
-            match style_object.get_stored(name.into(), activation).ok()? {
+            let name = AvmString::new_utf8(activation.gc(), name);
+
+            match style_object.get_stored(name, activation).ok()? {
                 Value::Undefined => None,
                 value => Some(value),
             }
@@ -265,7 +276,7 @@ fn transform<'gc>(
             }
         }
 
-        if let Ok(style) = style_object.get_stored("fontStyle".into(), activation) {
+        if let Ok(style) = style_object.get_stored(istr!("fontStyle"), activation) {
             let style = style.coerce_to_string(activation)?;
             if &style == b"normal" {
                 text_format.italic = Some(false);
@@ -274,7 +285,7 @@ fn transform<'gc>(
             }
         }
 
-        if let Ok(weight) = style_object.get_stored("fontWeight".into(), activation) {
+        if let Ok(weight) = style_object.get_stored(istr!("fontWeight"), activation) {
             let weight = weight.coerce_to_string(activation)?;
             if &weight == b"normal" {
                 text_format.bold = Some(false);
@@ -350,7 +361,7 @@ fn transform<'gc>(
     }
 
     let proto = activation.context.avm1.prototypes().text_format;
-    let object = ScriptObject::new(activation.gc(), Some(proto));
+    let object = ScriptObject::new(activation.strings(), Some(proto));
     object.set_native(
         activation.gc(),
         NativeObject::TextFormat(Gc::new(activation.gc(), text_format.into())),
@@ -372,7 +383,7 @@ fn parse_css<'gc>(
         for (selector, properties) in css.into_iter() {
             if !selector.is_empty() {
                 let proto = activation.context.avm1.prototypes().object;
-                let object = ScriptObject::new(activation.gc(), Some(proto));
+                let object = ScriptObject::new(activation.strings(), Some(proto));
 
                 for (key, value) in properties.into_iter() {
                     object.set(
@@ -403,8 +414,16 @@ fn clear<'gc>(
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    this.set("_styles", ArrayObject::empty(activation).into(), activation)?;
-    this.set("_css", ArrayObject::empty(activation).into(), activation)?;
+    this.set(
+        istr!("_styles"),
+        ArrayObject::empty(activation).into(),
+        activation,
+    )?;
+    this.set(
+        istr!("_css"),
+        ArrayObject::empty(activation).into(),
+        activation,
+    )?;
     Ok(Value::Undefined)
 }
 
@@ -424,7 +443,7 @@ pub fn create_proto<'gc>(
     proto: Object<'gc>,
     fn_proto: Object<'gc>,
 ) -> Object<'gc> {
-    let style_sheet_proto = ScriptObject::new(context.gc(), Some(proto));
+    let style_sheet_proto = ScriptObject::new(context, Some(proto));
     define_properties_on(PROTO_DECLS, context, style_sheet_proto, fn_proto);
     style_sheet_proto.into()
 }

@@ -69,12 +69,6 @@ impl<'gc> From<AvmAtom<'gc>> for Value<'gc> {
     }
 }
 
-impl From<&'static str> for Value<'_> {
-    fn from(string: &'static str) -> Self {
-        Value::String(string.into())
-    }
-}
-
 impl From<bool> for Value<'_> {
     fn from(value: bool) -> Self {
         Value::Bool(value)
@@ -1232,7 +1226,7 @@ impl<'gc> Value<'gc> {
     /// Same as call_property, but constructs a public Multiname for you.
     pub fn call_public_property(
         &self,
-        name: impl Into<AvmString<'gc>>,
+        name: AvmString<'gc>,
         arguments: &[Value<'gc>],
         activation: &mut Activation<'_, 'gc>,
     ) -> Result<Value<'gc>, Error<'gc>> {

@@ -43,7 +43,7 @@ pub fn create_text_line<'gc>(
             // TODO: Support multiple lines
             this.set_slot(
                 block_slots::_TEXT_LINE_CREATION_RESULT,
-                "complete".into(),
+                istr!("complete").into(),
                 activation,
             )?;
             return Ok(Value::Null);
@@ -95,7 +95,7 @@ pub fn create_text_line<'gc>(
 
     this.set_slot(
         block_slots::_TEXT_LINE_CREATION_RESULT,
-        "success".into(),
+        istr!("success").into(),
         activation,
     )?;
 

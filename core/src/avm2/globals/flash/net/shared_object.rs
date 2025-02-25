@@ -6,6 +6,7 @@ use crate::avm2::object::{ScriptObject, SharedObjectObject, TObject};
 use crate::avm2::{Activation, Error, Object, Value};
 use crate::{avm2_stub_getter, avm2_stub_method, avm2_stub_setter};
 use flash_lso::types::{AMFVersion, Lso};
+use ruffle_macros::istr;
 use std::borrow::Cow;
 
 fn new_lso<'gc>(
@@ -200,11 +201,11 @@ pub fn flush<'gc>(
     let mut lso = new_lso(activation, name, data)?;
     // Flash does not write empty LSOs to disk
     if lso.body.is_empty() {
-        Ok("flushed".into())
+        Ok(istr!("flushed").into())
     } else {
         let bytes = flash_lso::write::write_to_bytes(&mut lso).unwrap_or_default();
         if activation.context.storage.put(name, &bytes) {
-            Ok("flushed".into())
+            Ok(istr!("flushed").into())
         } else {
             Err(Error::AvmError(error(
                 activation,

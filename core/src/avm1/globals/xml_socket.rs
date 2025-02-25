@@ -8,6 +8,7 @@ use crate::display_object::TDisplayObject;
 use crate::socket::SocketHandle;
 use crate::string::{AvmString, StringContext};
 use gc_arena::{Collect, Gc};
+use ruffle_macros::istr;
 use std::cell::{Cell, RefCell, RefMut};
 
 #[derive(Clone, Debug, Collect)]
@@ -123,12 +124,12 @@ pub fn connect<'gc>(
 
                 if let Ok(url) = url::Url::parse(movie.url()) {
                     if url.scheme() == "file" {
-                        "localhost".into()
+                        istr!("localhost").into()
                     } else if let Some(domain) = url.domain() {
                         AvmString::new_utf8(activation.gc(), domain).into()
                     } else {
                         // no domain?
-                        "localhost".into()
+                        istr!("localhost").into()
                     }
                 } else {
                     Value::Undefined
@@ -205,7 +206,7 @@ fn on_data<'gc>(
 
     if let Ok(xml) = xml_constructor.construct(activation, args) {
         let _ = this.call_method(
-            "onXML".into(),
+            istr!("onXML"),
             &[xml],
             activation,
             ExecutionReason::FunctionCall,
@@ -251,7 +252,7 @@ pub fn create_proto<'gc>(
     proto: Object<'gc>,
     fn_proto: Object<'gc>,
 ) -> Object<'gc> {
-    let xml_socket_proto = ScriptObject::new(context.gc(), Some(proto));
+    let xml_socket_proto = ScriptObject::new(context, Some(proto));
     define_properties_on(PROTO_DECLS, context, xml_socket_proto, fn_proto);
     xml_socket_proto.into()
 }
@@ -262,7 +263,7 @@ pub fn create_class<'gc>(
     fn_proto: Object<'gc>,
 ) -> Object<'gc> {
     FunctionObject::constructor(
-        context.gc(),
+        context,
         Executable::Native(constructor),
         constructor_to_fn!(constructor),
         fn_proto,

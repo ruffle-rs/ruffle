@@ -2,11 +2,12 @@
 
 use crate::avm2::activation::Activation;
 use crate::avm2::call_stack::CallStack;
+use crate::avm2::globals::slots::error as error_slots;
 use crate::avm2::object::script_object::ScriptObjectData;
 use crate::avm2::object::{ClassObject, Object, ObjectPtr, TObject};
 use crate::avm2::value::Value;
 use crate::avm2::Error;
-use crate::string::WString;
+use crate::string::{WStr, WString};
 use core::fmt;
 use gc_arena::{Collect, Gc, GcWeak};
 use std::fmt::Debug;
@@ -62,49 +63,34 @@ const _: () =
     assert!(std::mem::align_of::<ErrorObjectData>() == std::mem::align_of::<ScriptObjectData>());
 
 impl<'gc> ErrorObject<'gc> {
-    pub fn display(&self) -> Result<WString, Error<'gc>> {
-        // FIXME - we should have a safer way of accessing properties without
-        // an `Activation`. For now, we just access the 'name' and 'message' fields
-        // by hardcoded slot id. Our `Error` class definition should fully match
-        // Flash Player, and we have lots of test coverage around error, so
-        // there should be very little risk to doing this.
-        let name = match self.base().get_slot(0) {
-            Value::String(string) => string,
-            Value::Null => "null".into(),
-            Value::Undefined => "undefined".into(),
-            name => {
-                return Err(Error::RustError(
-                    format!("Error.name {name:?} is not a string on error object {self:?}",).into(),
-                ))
-            }
+    pub fn display(&self) -> WString {
+        let name = match self.base().get_slot(error_slots::NAME) {
+            Value::String(string) => string.as_wstr(),
+            Value::Null => WStr::from_units(b"null"),
+            _ => unreachable!("String-typed slot must be String or Null"),
         };
-        let message = match self.base().get_slot(1) {
-            Value::String(string) => string,
-            Value::Null => "null".into(),
-            Value::Undefined => "undefined".into(),
-            message => {
-                return Err(Error::RustError(
-                    format!("Error.message {message:?} is not a string on error object {self:?}")
-                        .into(),
-                ))
-            }
+
+        let message = match self.base().get_slot(error_slots::MESSAGE) {
+            Value::String(string) => string.as_wstr(),
+            Value::Null => WStr::from_units(b"null"),
+            _ => unreachable!("String-typed slot must be String or Null"),
         };
         if message.is_empty() {
-            return Ok(name.as_wstr().to_owned());
+            return name.to_owned();
         }
 
         let mut output = WString::new();
-        output.push_str(&name);
+        output.push_str(name);
         output.push_utf8(": ");
-        output.push_str(&message);
-        Ok(output)
+        output.push_str(message);
+        output
     }
 
-    pub fn display_full(&self) -> Result<WString, Error<'gc>> {
+    pub fn display_full(&self) -> WString {
         let mut output = WString::new();
-        output.push_str(&self.display()?);
+        output.push_str(&self.display());
         self.call_stack().display(&mut output);
-        Ok(output)
+        output
     }
 
     pub fn call_stack(&self) -> &CallStack<'gc> {

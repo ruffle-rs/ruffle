@@ -45,7 +45,9 @@ pub fn object_function<'gc>(
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     let obj = match args.get(0).unwrap_or(&Value::Undefined) {
-        Value::Undefined | Value::Null => Object::from(ScriptObject::new(activation.gc(), None)),
+        Value::Undefined | Value::Null => {
+            Object::from(ScriptObject::new(&activation.context.strings, None))
+        }
         val => val.coerce_to_object(activation),
     };
     Ok(obj.into())
@@ -316,7 +318,7 @@ pub fn create_object_object<'gc>(
     fn_proto: Object<'gc>,
 ) -> Object<'gc> {
     let object_function = FunctionObject::constructor(
-        context.gc(),
+        context,
         Executable::Native(constructor),
         Executable::Native(object_function),
         fn_proto,

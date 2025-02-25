@@ -12,6 +12,7 @@ use crate::backend::navigator::Request;
 use crate::display_object::TDisplayObject;
 use crate::loader::MovieLoaderVMData;
 use crate::string::StringContext;
+use ruffle_macros::istr;
 
 const PROTO_DECLS: &[Declaration] = declare_properties! {
     "loadClip" => method(load_clip; DONT_ENUM | DONT_DELETE);
@@ -27,7 +28,7 @@ pub fn constructor<'gc>(
     let listeners = ArrayObject::builder(activation).with([this.into()]);
     this.define_value(
         activation.gc(),
-        "_listeners",
+        istr!("_listeners"),
         Value::Object(listeners.into()),
         Attribute::DONT_ENUM,
     );
@@ -137,17 +138,17 @@ fn get_progress<'gc>(
             Value::MovieClip(_) => target.coerce_to_object(activation).as_display_object(),
             _ => return Ok(Value::Undefined),
         };
-        let result = ScriptObject::new(activation.gc(), None);
+        let result = ScriptObject::new(&activation.context.strings, None);
         if let Some(target) = target {
             result.define_value(
                 activation.gc(),
-                "bytesLoaded",
+                istr!("bytesLoaded"),
                 target.movie().compressed_len().into(),
                 Attribute::empty(),
             );
             result.define_value(
                 activation.gc(),
-                "bytesTotal",
+                istr!("bytesTotal"),
                 target.movie().compressed_len().into(),
                 Attribute::empty(),
             );
@@ -165,7 +166,7 @@ pub fn create_proto<'gc>(
     array_proto: Object<'gc>,
     broadcaster_functions: BroadcasterFunctions<'gc>,
 ) -> Object<'gc> {
-    let mcl_proto = ScriptObject::new(context.gc(), Some(proto));
+    let mcl_proto = ScriptObject::new(context, Some(proto));
     broadcaster_functions.initialize(context, mcl_proto.into(), array_proto);
     define_properties_on(PROTO_DECLS, context, mcl_proto, fn_proto);
     mcl_proto.into()

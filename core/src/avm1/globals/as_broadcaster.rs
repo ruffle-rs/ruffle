@@ -9,6 +9,7 @@ use crate::avm1::property_decl::Declaration;
 use crate::avm1::{Activation, ArrayObject, Object, ScriptObject, Value};
 use crate::string::{AvmString, StringContext};
 use gc_arena::Collect;
+use ruffle_macros::istr;
 
 const OBJECT_DECLS: &[Declaration] = declare_properties! {
     "initialize" => method(initialize; DONT_ENUM | DONT_DELETE);
@@ -22,10 +23,9 @@ pub fn create<'gc>(
     proto: Object<'gc>,
     fn_proto: Object<'gc>,
 ) -> (BroadcasterFunctions<'gc>, Object<'gc>) {
-    let gc_context = context.gc();
-    let as_broadcaster_proto = ScriptObject::new(gc_context, Some(proto));
+    let as_broadcaster_proto = ScriptObject::new(context, Some(proto));
     let as_broadcaster = FunctionObject::constructor(
-        gc_context,
+        context,
         Executable::Native(constructor),
         constructor_to_fn!(constructor),
         fn_proto,
@@ -76,14 +76,14 @@ fn add_listener<'gc>(
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     let new_listener = args.get(0).cloned().unwrap_or(Value::Undefined);
-    let listeners = this.get("_listeners", activation)?;
+    let listeners = this.get(istr!("_listeners"), activation)?;
 
     if let Value::Object(listeners) = listeners {
         let length = listeners.length(activation)?;
         let exists = (0..length).any(|i| listeners.get_element(activation, i) == new_listener);
         if !exists {
             listeners.call_method(
-                "push".into(),
+                istr!("push"),
                 &[new_listener],
                 activation,
                 ExecutionReason::FunctionCall,
@@ -100,7 +100,7 @@ fn remove_listener<'gc>(
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     let old_listener = args.get(0).cloned().unwrap_or(Value::Undefined);
-    let listeners = this.get("_listeners", activation)?;
+    let listeners = this.get(istr!("_listeners"), activation)?;
 
     if let Value::Object(listeners) = listeners {
         let length = listeners.length(activation)?;
@@ -108,7 +108,7 @@ fn remove_listener<'gc>(
             (0..length).find(|&i| listeners.get_element(activation, i) == old_listener)
         {
             listeners.call_method(
-                "splice".into(),
+                istr!("splice"),
                 &[index.into(), 1.into()],
                 activation,
                 ExecutionReason::FunctionCall,
@@ -141,7 +141,7 @@ pub fn broadcast_internal<'gc>(
     method_name: AvmString<'gc>,
     activation: &mut Activation<'_, 'gc>,
 ) -> Result<bool, Error<'gc>> {
-    let listeners = this.get("_listeners", activation)?;
+    let listeners = this.get(istr!("_listeners"), activation)?;
 
     if let Value::Object(listeners) = listeners {
         let length = listeners.length(activation)?;
@@ -204,7 +204,7 @@ fn initialize_internal<'gc>(
 ) {
     broadcaster.define_value(
         context.gc(),
-        "_listeners",
+        istr!(context, "_listeners"),
         ArrayObject::builder_with_proto(context, array_proto)
             .with([])
             .into(),
@@ -212,19 +212,19 @@ fn initialize_internal<'gc>(
     );
     broadcaster.define_value(
         context.gc(),
-        "addListener",
+        istr!(context, "addListener"),
         functions.add_listener.into(),
         Attribute::DONT_DELETE | Attribute::DONT_ENUM,
     );
     broadcaster.define_value(
         context.gc(),
-        "removeListener",
+        istr!(context, "removeListener"),
         functions.remove_listener.into(),
         Attribute::DONT_DELETE | Attribute::DONT_ENUM,
     );
     broadcaster.define_value(
         context.gc(),
-        "broadcastMessage",
+        istr!(context, "broadcastMessage"),
         functions.broadcast_message.into(),
         Attribute::DONT_DELETE | Attribute::DONT_ENUM,
     );

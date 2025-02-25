@@ -67,7 +67,7 @@ pub fn create_number_object<'gc>(
     fn_proto: Object<'gc>,
 ) -> Object<'gc> {
     let number = FunctionObject::constructor(
-        context.gc(),
+        context,
         Executable::Native(number),
         Executable::Native(number_function),
         fn_proto,
@@ -84,7 +84,7 @@ pub fn create_proto<'gc>(
     proto: Object<'gc>,
     fn_proto: Object<'gc>,
 ) -> Object<'gc> {
-    let number_proto = ScriptObject::new(context.gc(), Some(proto));
+    let number_proto = ScriptObject::new(context, Some(proto));
     define_properties_on(PROTO_DECLS, context, number_proto, fn_proto);
     number_proto.into()
 }

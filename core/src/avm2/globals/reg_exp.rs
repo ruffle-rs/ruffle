@@ -237,9 +237,13 @@ pub fn exec<'gc>(
 
         let object = ArrayObject::from_storage(activation, storage);
 
-        object.set_string_property_local("index", Value::Number(index as f64), activation)?;
+        object.set_string_property_local(
+            istr!("index"),
+            Value::Number(index as f64),
+            activation,
+        )?;
 
-        object.set_string_property_local("input", text.into(), activation)?;
+        object.set_string_property_local(istr!("input"), text.into(), activation)?;
 
         return Ok(object.into());
     }

@@ -67,7 +67,7 @@ pub fn create_array_object<'gc>(
     fn_proto: Object<'gc>,
 ) -> Object<'gc> {
     let array = FunctionObject::constructor(
-        context.gc(),
+        context,
         Executable::Native(constructor),
         Executable::Native(constructor),
         fn_proto,

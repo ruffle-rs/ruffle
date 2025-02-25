@@ -1288,7 +1288,8 @@ impl<'gc> NetStream<'gc> {
                     Avm1ActivationIdentifier::root("[NetStream Status Event]"),
                     root,
                 );
-                let info_object = Avm1ScriptObject::new(activation.gc(), Some(object_proto));
+                let info_object =
+                    Avm1ScriptObject::new(&activation.context.strings, Some(object_proto));
 
                 for (key, value) in values {
                     let key = AvmString::new_utf8(activation.gc(), key);

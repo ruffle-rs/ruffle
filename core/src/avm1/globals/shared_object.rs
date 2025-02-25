@@ -10,6 +10,7 @@ use flash_lso::amf0::read::AMF0Decoder;
 use flash_lso::amf0::writer::{Amf0Writer, CacheKey, ObjWriter};
 use flash_lso::types::{Lso, ObjectId, Reference, Value as AmfValue};
 use gc_arena::{Collect, GcCell};
+use ruffle_macros::istr;
 use std::borrow::Cow;
 use std::collections::BTreeMap;
 
@@ -191,7 +192,7 @@ pub fn deserialize_value<'gc>(
         AmfValue::Object(_, elements, _) => {
             // Deserialize Object
             let obj = ScriptObject::new(
-                activation.gc(),
+                &activation.context.strings,
                 Some(activation.context.avm1.prototypes().object),
             );
 
@@ -248,7 +249,7 @@ fn deserialize_lso<'gc>(
     decoder: &AMF0Decoder,
 ) -> Result<Object<'gc>, Error<'gc>> {
     let obj = ScriptObject::new(
-        activation.gc(),
+        &activation.context.strings,
         Some(activation.context.avm1.prototypes().object),
     );
 
@@ -427,13 +428,13 @@ fn get_local<'gc>(
     if data == Value::Undefined {
         // No data; create a fresh data object.
         data = ScriptObject::new(
-            activation.gc(),
+            &activation.context.strings,
             Some(activation.context.avm1.prototypes().object),
         )
         .into();
     }
 
-    this.define_value(activation.gc(), "data", data, Attribute::DONT_DELETE);
+    this.define_value(activation.gc(), istr!("data"), data, Attribute::DONT_DELETE);
 
     activation
         .context
@@ -457,7 +458,9 @@ fn clear<'gc>(
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let data = this.get("data", activation)?.coerce_to_object(activation);
+    let data = this
+        .get(istr!("data"), activation)?
+        .coerce_to_object(activation);
 
     for k in &data.get_keys(activation, false) {
         data.delete(activation, *k);
@@ -498,7 +501,9 @@ pub(crate) fn flush<'gc>(
         return Ok(Value::Undefined);
     };
     let name = shared_object.read().name();
-    let data = this.get("data", activation)?.coerce_to_object(activation);
+    let data = this
+        .get(istr!("data"), activation)?
+        .coerce_to_object(activation);
     let mut lso = new_lso(activation, &name, data);
     flash_lso::write::write_to_bytes(&mut lso).unwrap_or_default();
     // Flash does not write empty LSOs to disk
@@ -519,7 +524,9 @@ fn get_size<'gc>(
         return Ok(Value::Undefined);
     };
     let name = shared_object.read().name();
-    let data = this.get("data", activation)?.coerce_to_object(activation);
+    let data = this
+        .get(istr!("data"), activation)?
+        .coerce_to_object(activation);
     let mut lso = new_lso(activation, &name, data);
     // Flash returns 0 for empty LSOs, but the actual number of bytes (including the header) otherwise
     if lso.body.is_empty() {
@@ -583,10 +590,10 @@ pub fn create_constructor<'gc>(
     proto: Object<'gc>,
     fn_proto: Object<'gc>,
 ) -> Object<'gc> {
-    let shared_object_proto = ScriptObject::new(context.gc(), Some(proto));
+    let shared_object_proto = ScriptObject::new(context, Some(proto));
     define_properties_on(PROTO_DECLS, context, shared_object_proto, fn_proto);
     let constructor = FunctionObject::constructor(
-        context.gc(),
+        context,
         Executable::Native(constructor),
         constructor_to_fn!(constructor),
         fn_proto,

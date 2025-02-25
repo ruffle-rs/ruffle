@@ -83,7 +83,7 @@ impl<'gc> DisplacementMapFilter<'gc> {
     fn map_bitmap(&self, context: &mut UpdateContext<'gc>) -> Option<Object<'gc>> {
         if let Some(map_bitmap) = self.0.read().map_bitmap {
             let proto = context.avm1.prototypes().bitmap_data;
-            let result = ScriptObject::new(context.gc(), Some(proto));
+            let result = ScriptObject::new(&context.strings, Some(proto));
             result.set_native(context.gc(), NativeObject::BitmapData(map_bitmap));
             Some(result.into())
         } else {
@@ -119,9 +119,9 @@ impl<'gc> DisplacementMapFilter<'gc> {
         let Some(value) = value else { return Ok(()) };
 
         if let Value::Object(object) = value {
-            if let Some(x) = object.get_local_stored("x", activation, false) {
+            if let Some(x) = object.get_local_stored(istr!("x"), activation, false) {
                 let x = x.coerce_to_f64(activation)?.clamp_to_i32();
-                if let Some(y) = object.get_local_stored("y", activation, false) {
+                if let Some(y) = object.get_local_stored(istr!("y"), activation, false) {
                     let y = y.coerce_to_f64(activation)?.clamp_to_i32();
                     self.0.write(activation.gc()).map_point = Point::new(x, y);
                     return Ok(());
@@ -403,7 +403,7 @@ pub fn create_proto<'gc>(
     proto: Object<'gc>,
     fn_proto: Object<'gc>,
 ) -> Object<'gc> {
-    let displacement_map_filter_proto = ScriptObject::new(context.gc(), Some(proto));
+    let displacement_map_filter_proto = ScriptObject::new(context, Some(proto));
     define_properties_on(
         PROTO_DECLS,
         context,
@@ -419,7 +419,7 @@ pub fn create_constructor<'gc>(
     fn_proto: Object<'gc>,
 ) -> Object<'gc> {
     FunctionObject::constructor(
-        context.gc(),
+        context,
         Executable::Native(displacement_map_filter_method!(0)),
         constructor_to_fn!(displacement_map_filter_method!(0)),
         fn_proto,

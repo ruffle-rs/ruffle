@@ -31,7 +31,7 @@ pub fn function<'gc>(
         Ok(arg.to_owned())
     } else {
         // Calling `Function()` seems to give a prototypeless bare object.
-        Ok(ScriptObject::new(activation.gc(), None).into())
+        Ok(ScriptObject::new(&activation.context.strings, None).into())
     }
 }
 
@@ -78,7 +78,7 @@ pub fn apply<'gc>(
     };
     let args_object = myargs.get(1).cloned().unwrap_or(Value::Undefined);
     let length = match args_object {
-        Value::Object(a) => a.get("length", activation)?.coerce_to_f64(activation)? as usize,
+        Value::Object(a) => a.length(activation)? as usize,
         _ => 0,
     };
 
@@ -114,7 +114,7 @@ pub fn apply<'gc>(
 /// returned object is also a bare object, which will need to be linked into
 /// the prototype of `Object`.
 pub fn create_proto<'gc>(context: &mut StringContext<'gc>, proto: Object<'gc>) -> Object<'gc> {
-    let function_proto = ScriptObject::new(context.gc(), Some(proto));
+    let function_proto = ScriptObject::new(context, Some(proto));
     define_properties_on(PROTO_DECLS, context, function_proto, function_proto.into());
     function_proto.into()
 }

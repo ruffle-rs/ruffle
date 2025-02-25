@@ -308,7 +308,7 @@ pub fn create_point_object<'gc>(
     fn_proto: Object<'gc>,
 ) -> Object<'gc> {
     let point = FunctionObject::constructor(
-        context.gc(),
+        context,
         Executable::Native(constructor),
         constructor_to_fn!(constructor),
         fn_proto,
@@ -324,7 +324,7 @@ pub fn create_proto<'gc>(
     proto: Object<'gc>,
     fn_proto: Object<'gc>,
 ) -> Object<'gc> {
-    let object = ScriptObject::new(context.gc(), Some(proto));
+    let object = ScriptObject::new(context, Some(proto));
     define_properties_on(PROTO_DECLS, context, object, fn_proto);
     object.into()
 }

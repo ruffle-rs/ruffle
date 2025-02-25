@@ -40,6 +40,7 @@ use crate::tag_utils::{self, ControlFlow, DecodeResult, Error, SwfMovie, SwfSlic
 use crate::vminterface::{AvmObject, Instantiator};
 use core::fmt;
 use gc_arena::{Collect, Gc, GcCell, GcWeakCell, Mutation};
+use ruffle_macros::istr;
 use smallvec::SmallVec;
 use std::borrow::Cow;
 use std::cell::{Ref, RefCell, RefMut};
@@ -2001,12 +2002,15 @@ impl<'gc> MovieClip<'gc> {
                 );
 
                 if let Ok(prototype) = constructor
-                    .get("prototype", &mut activation)
+                    .get(istr!("prototype"), &mut activation)
                     .map(|v| v.coerce_to_object(&mut activation))
                 {
-                    let object: Avm1Object<'gc> =
-                        StageObject::for_display_object(activation.gc(), self.into(), prototype)
-                            .into();
+                    let object: Avm1Object<'gc> = StageObject::for_display_object(
+                        activation.strings(),
+                        self.into(),
+                        prototype,
+                    )
+                    .into();
                     self.0.write(activation.gc()).object = Some(object.into());
 
                     if run_frame {
@@ -2033,7 +2037,7 @@ impl<'gc> MovieClip<'gc> {
             }
 
             let object: Avm1Object<'gc> = StageObject::for_display_object(
-                context.gc(),
+                &context.strings,
                 self.into(),
                 context.avm1.prototypes().movie_clip,
             )
@@ -2236,7 +2240,7 @@ impl<'gc> MovieClip<'gc> {
 
     fn enabled(self, context: &mut UpdateContext<'gc>) -> bool {
         if !self.movie().is_action_script_3() {
-            self.get_avm1_boolean_property(context, "enabled", |_| true)
+            self.get_avm1_boolean_property(istr!(context, "enabled"), context, |_| true)
         } else {
             self.avm2_enabled()
         }
@@ -2252,7 +2256,7 @@ impl<'gc> MovieClip<'gc> {
 
     fn use_hand_cursor(self, context: &mut UpdateContext<'gc>) -> bool {
         if !self.movie().is_action_script_3() {
-            self.get_avm1_boolean_property(context, "useHandCursor", |_| true)
+            self.get_avm1_boolean_property(istr!(context, "useHandCursor"), context, |_| true)
         } else {
             self.avm2_use_hand_cursor()
         }
@@ -2892,7 +2896,7 @@ impl<'gc> TDisplayObjectContainer<'gc> for MovieClip<'gc> {
     }
 
     fn is_tab_children_avm1(&self, context: &mut UpdateContext<'gc>) -> bool {
-        self.get_avm1_boolean_property(context, "tabChildren", |_| true)
+        self.get_avm1_boolean_property(istr!(context, "tabChildren"), context, |_| true)
     }
 }
 
@@ -2990,7 +2994,7 @@ impl<'gc> TInteractiveObject<'gc> for MovieClip<'gc> {
                             self.into(),
                             ActionType::Method {
                                 object,
-                                name,
+                                name: name.into(),
                                 args: vec![],
                             },
                             event == ClipEvent::Unload,
@@ -3270,7 +3274,7 @@ impl<'gc> TInteractiveObject<'gc> for MovieClip<'gc> {
         } else if self.is_button_mode(context) {
             true
         } else {
-            self.get_avm1_boolean_property(context, "focusEnabled", |_| false)
+            self.get_avm1_boolean_property(istr!(context, "focusEnabled"), context, |_| false)
         }
     }
 

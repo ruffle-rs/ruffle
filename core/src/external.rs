@@ -174,7 +174,7 @@ impl Value {
             }
             Value::Object(values) => {
                 let object = Avm1ScriptObject::new(
-                    activation.gc(),
+                    &activation.context.strings,
                     Some(activation.context.avm1.prototypes().object),
                 );
                 for (key, value) in values {

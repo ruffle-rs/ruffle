@@ -66,8 +66,8 @@ impl<'gc> NetConnection<'gc> {
         let event = constructor
             .construct(&mut activation, &[])?
             .coerce_to_object(&mut activation);
-        event.set("code", code.into(), &mut activation)?;
-        event.set("level", istr!("status").into(), &mut activation)?;
+        event.set(istr!("code"), code.into(), &mut activation)?;
+        event.set(istr!("level"), istr!("status").into(), &mut activation)?;
         this.call_method(
             istr!("onStatus"),
             &[event.into()],
@@ -340,7 +340,7 @@ pub fn create_proto<'gc>(
     proto: Object<'gc>,
     fn_proto: Object<'gc>,
 ) -> Object<'gc> {
-    let object = ScriptObject::new(context.gc(), Some(proto));
+    let object = ScriptObject::new(context, Some(proto));
     define_properties_on(PROTO_DECLS, context, object, fn_proto);
     object.into()
 }
@@ -351,7 +351,7 @@ pub fn create_class<'gc>(
     fn_proto: Object<'gc>,
 ) -> Object<'gc> {
     FunctionObject::constructor(
-        context.gc(),
+        context,
         Executable::Native(constructor),
         constructor_to_fn!(constructor),
         fn_proto,

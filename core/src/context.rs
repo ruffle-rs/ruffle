@@ -394,7 +394,7 @@ impl<'gc> UpdateContext<'gc> {
 
         root.set_depth(self.gc(), 0);
         let flashvars = if !self.swf.parameters().is_empty() {
-            let object = ScriptObject::new(self.gc(), None);
+            let object = ScriptObject::new(&self.strings, None);
             for (key, value) in self.swf.parameters().iter() {
                 object.define_value(
                     self.gc(),
@@ -629,14 +629,14 @@ pub enum ActionType<'gc> {
     /// An event handler method, e.g. `onEnterFrame`.
     Method {
         object: Avm1Object<'gc>,
-        name: &'static str,
+        name: AvmString<'gc>,
         args: Vec<Avm1Value<'gc>>,
     },
 
     /// A system listener method.
     NotifyListeners {
-        listener: &'static str,
-        method: &'static str,
+        listener: AvmString<'gc>,
+        method: AvmString<'gc>,
         args: Vec<Avm1Value<'gc>>,
     },
 }

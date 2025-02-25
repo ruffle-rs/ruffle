@@ -854,11 +854,15 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         let constr = self.context.avm1.pop().coerce_to_object(self);
 
         let is_instance_of = if let Value::Object(obj) = obj {
-            let prototype = constr.get("prototype", self)?.coerce_to_object(self);
+            let prototype = constr
+                .get(istr!(self, "prototype"), self)?
+                .coerce_to_object(self);
             obj.is_instance_of(self, constr, prototype)?
         } else if let Value::MovieClip(_) = obj {
             let obj = obj.coerce_to_object(self);
-            let prototype = constr.get("prototype", self)?.coerce_to_object(self);
+            let prototype = constr
+                .get(istr!(self, "prototype"), self)?
+                .coerce_to_object(self);
             obj.is_instance_of(self, constr, prototype)?
         } else {
             false
@@ -914,10 +918,13 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             self.base_clip(),
         );
         let name = func.name();
-        let prototype =
-            ScriptObject::new(self.gc(), Some(self.context.avm1.prototypes().object)).into();
+        let prototype = ScriptObject::new(
+            &self.context.strings,
+            Some(self.context.avm1.prototypes().object),
+        )
+        .into();
         let func_obj = FunctionObject::function(
-            self.gc(),
+            &self.context.strings,
             Gc::new(self.gc(), func),
             self.context.avm1.prototypes().function,
             prototype,
@@ -1102,24 +1109,26 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         // TODO: This doesn't work if the user manually wires up `prototype`/`__proto__`.
         // The native object needs to be created later by the superclass's constructor.
         // (see #701)
-        let super_prototype = superclass.get("prototype", self)?.coerce_to_object(self);
+        let super_prototype = superclass
+            .get(istr!(self, "prototype"), self)?
+            .coerce_to_object(self);
         let sub_prototype = super_prototype.create_bare_object(self, super_prototype)?;
 
         sub_prototype.define_value(
             self.gc(),
-            "constructor",
+            istr!(self, "constructor"),
             superclass.into(),
             Attribute::DONT_ENUM,
         );
 
         sub_prototype.define_value(
             self.gc(),
-            "__constructor__",
+            istr!(self, "__constructor__"),
             superclass.into(),
             Attribute::DONT_ENUM,
         );
 
-        subclass.set("prototype", sub_prototype.into(), self)?;
+        subclass.set(istr!(self, "prototype"), sub_prototype.into(), self)?;
 
         Ok(FrameControl::Continue)
     }
@@ -1485,7 +1494,10 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             // InitArray pops no args and pushes undefined if num_props is out of range.
             Value::Undefined
         } else {
-            let object = ScriptObject::new(self.gc(), Some(self.context.avm1.prototypes().object));
+            let object = ScriptObject::new(
+                &self.context.strings,
+                Some(self.context.avm1.prototypes().object),
+            );
             for _ in 0..num_props as usize {
                 let value = self.context.avm1.pop();
                 let name_val = self.context.avm1.pop();
@@ -1521,7 +1533,9 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             interfaces.push(self.context.avm1.pop().coerce_to_object(self));
         }
 
-        let prototype = constructor.get("prototype", self)?.coerce_to_object(self);
+        let prototype = constructor
+            .get(istr!(self, "prototype"), self)?
+            .coerce_to_object(self);
         prototype.set_interfaces(self.gc(), interfaces);
 
         Ok(FrameControl::Continue)
@@ -1532,11 +1546,15 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         let obj = self.context.avm1.pop();
 
         let result = if let Value::Object(obj) = obj {
-            let prototype = constr.get("prototype", self)?.coerce_to_object(self);
+            let prototype = constr
+                .get(istr!(self, "prototype"), self)?
+                .coerce_to_object(self);
             obj.is_instance_of(self, constr, prototype)?
         } else if let Value::MovieClip(_) = obj {
             let obj = obj.coerce_to_object(self);
-            let prototype = constr.get("prototype", self)?.coerce_to_object(self);
+            let prototype = constr
+                .get(istr!(self, "prototype"), self)?
+                .coerce_to_object(self);
             obj.is_instance_of(self, constr, prototype)?
         } else {
             false
@@ -2182,7 +2200,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             "Thrown exception: {}",
             value
                 .coerce_to_string(self)
-                .unwrap_or_else(|_| "undefined".into())
+                .unwrap_or_else(|_| istr!(self, "undefined"))
         );
         Err(Error::ThrownValue(value))
     }
@@ -2231,9 +2249,9 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         // trace always prints "undefined" even though SWF6 and below normally
         // coerce undefined to "".
         let out = if val == Value::Undefined {
-            "undefined".into()
+            WStr::from_units(b"undefined")
         } else {
-            val.coerce_to_string(self)?
+            &val.coerce_to_string(self)?
         };
         self.context.avm_trace(&out.to_utf8_lossy());
         Ok(FrameControl::Continue)
@@ -2449,7 +2467,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
                 v.ok()
                     .unwrap_or(Value::Undefined)
                     .coerce_to_string(self)
-                    .unwrap_or_else(|_| "undefined".into())
+                    .unwrap_or_else(|_| istr!(self, "undefined"))
                     .to_string(),
             );
         }

@@ -5,9 +5,10 @@ use crate::avm2::bytearray::Endian;
 use crate::avm2::error::error;
 use crate::avm2::object::{DomainObject, LoaderStream, ScriptObject, TObject};
 use crate::avm2::value::Value;
-use crate::avm2::{AvmString, Error};
+use crate::avm2::Error;
 use crate::display_object::TDisplayObject;
 use crate::loader::ContentType;
+use crate::string::AvmString;
 use crate::{avm2_stub_getter, avm2_stub_method};
 use swf::{write_swf, Compression};
 use url::Url;
@@ -176,20 +177,22 @@ pub fn get_content<'gc>(
 
 /// `contentType` getter
 pub fn get_content_type<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
     if let Some(loader_info) = this.as_loader_info_object() {
-        return match loader_info.content_type_hide_before_init() {
-            ContentType::Swf => Ok("application/x-shockwave-flash".into()),
-            ContentType::Jpeg => Ok("image/jpeg".into()),
-            ContentType::Png => Ok("image/png".into()),
-            ContentType::Gif => Ok("image/gif".into()),
-            ContentType::Unknown => Ok(Value::Null),
+        let content_type = match loader_info.content_type_hide_before_init() {
+            ContentType::Swf => "application/x-shockwave-flash",
+            ContentType::Jpeg => "image/jpeg",
+            ContentType::Png => "image/png",
+            ContentType::Gif => "image/gif",
+            ContentType::Unknown => return Ok(Value::Null),
         };
+
+        return Ok(AvmString::new_utf8(activation.gc(), content_type).into());
     }
 
     Ok(Value::Undefined)

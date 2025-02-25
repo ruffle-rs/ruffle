@@ -13,6 +13,7 @@ use either::Either;
 use gc_arena::barrier::unlock;
 use gc_arena::lock::Lock;
 use gc_arena::{Collect, Gc, Mutation};
+use ruffle_macros::istr;
 use std::cell::RefCell;
 use std::slice::Iter;
 use swf::{Color, Rectangle, Twips};
@@ -188,9 +189,8 @@ impl<'gc> FocusTracker<'gc> {
             if let Some(level0) = context.stage.root_clip() {
                 Avm1::notify_system_listeners(
                     level0,
-                    context,
-                    "Selection".into(),
-                    "onSetFocus".into(),
+                    istr!(context, "Selection"),
+                    istr!(context, "onSetFocus"),
                     &[
                         old.map(|o| o.as_displayobject())
                             .map(|v| v.object())
@@ -199,6 +199,7 @@ impl<'gc> FocusTracker<'gc> {
                             .map(|v| v.object())
                             .unwrap_or(Value::Null),
                     ],
+                    context,
                 );
             }
         }
