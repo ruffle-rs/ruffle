@@ -543,6 +543,10 @@ pub fn abc_default_value<'gc>(
 }
 
 impl<'gc> Value<'gc> {
+    pub fn or_null(v: Option<impl Into<Self>>) -> Self {
+        v.map_or(Value::Null, Into::into)
+    }
+
     pub fn as_namespace(&self) -> Result<Namespace<'gc>, Error<'gc>> {
         match self {
             Value::Object(ns) => ns

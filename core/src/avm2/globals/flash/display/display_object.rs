@@ -590,10 +590,9 @@ pub fn get_parent<'gc>(
     let this = this.as_object().unwrap();
 
     if let Some(dobj) = this.as_display_object() {
-        return Ok(dobj
-            .avm2_parent()
-            .map(|parent| parent.object2())
-            .unwrap_or(Value::Null));
+        return Ok(Value::or_null(
+            dobj.avm2_parent().and_then(|parent| parent.object2()),
+        ));
     }
 
     Ok(Value::Undefined)
@@ -608,10 +607,9 @@ pub fn get_root<'gc>(
     let this = this.as_object().unwrap();
 
     if let Some(dobj) = this.as_display_object() {
-        return Ok(dobj
-            .avm2_root()
-            .map(|root| root.object2())
-            .unwrap_or(Value::Null));
+        return Ok(Value::or_null(
+            dobj.avm2_root().and_then(|root| root.object2()),
+        ));
     }
 
     Ok(Value::Undefined)
@@ -626,10 +624,10 @@ pub fn get_stage<'gc>(
     let this = this.as_object().unwrap();
 
     if let Some(dobj) = this.as_display_object() {
-        return Ok(dobj
-            .avm2_stage(activation.context)
-            .map(|stage| stage.object2())
-            .unwrap_or(Value::Null));
+        return Ok(Value::or_null(
+            dobj.avm2_stage(activation.context)
+                .and_then(|stage| stage.object2()),
+        ));
     }
 
     Ok(Value::Undefined)
@@ -1076,7 +1074,7 @@ pub fn get_mask<'gc>(
     let this = this.as_object().unwrap();
 
     if let Some(this) = this.as_display_object() {
-        return Ok(this.masker().map_or(Value::Null, |m| m.object2()));
+        return Ok(Value::or_null(this.masker().and_then(|m| m.object2())));
     }
     Ok(Value::Undefined)
 }

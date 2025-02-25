@@ -635,7 +635,7 @@ impl Player {
 
             let display_obj = Player::get_context_menu_display_object(context);
 
-            let menu = if let Some(Value::Object(obj)) = display_obj.map(|obj| obj.object()) {
+            let menu = if let Some(obj) = display_obj.and_then(|obj| obj.object1()) {
                 let mut activation =
                     Activation::from_stub(context, ActivationIdentifier::root("[ContextMenu]"));
                 let menu_object = if let Ok(Value::Object(menu)) =
@@ -652,7 +652,7 @@ impl Player {
                 };
 
                 crate::avm1::make_context_menu_state(menu_object, display_obj, &mut activation)
-            } else if let Some(Avm2Value::Object(hit_obj)) = display_obj.map(|obj| obj.object2()) {
+            } else if let Some(hit_obj) = display_obj.and_then(|obj| obj.object2()) {
                 let mut activation = Avm2Activation::from_nothing(context);
 
                 let menu_object = display_obj
@@ -733,8 +733,8 @@ impl Player {
                                         "menuItemSelect".into(),
                                         false.into(),
                                         false.into(),
-                                        display_obj.object2(),
-                                        display_obj.object2(),
+                                        Avm2Value::or_null(display_obj.object2()),
+                                        Avm2Value::or_null(display_obj.object2()),
                                     ],
                                 );
 
@@ -774,7 +774,10 @@ impl Player {
                     display_object,
                 );
 
-                let params = vec![display_object.object(), Value::Object(item)];
+                let params = vec![
+                    Value::or_undef(display_object.object1()),
+                    Value::Object(item),
+                ];
 
                 let _ = callback.call(
                     "[Context Menu Callback]",
@@ -794,7 +797,7 @@ impl Player {
             run_mouse_pick(context, false).map(|picked_obj| picked_obj.as_displayobject());
 
         while let Some(display_obj) = picked_obj {
-            if let Value::Object(obj) = display_obj.object() {
+            if let Some(obj) = display_obj.object1() {
                 let mut activation =
                     Activation::from_stub(context, ActivationIdentifier::root("[ContextMenu]"));
 
@@ -1086,13 +1089,14 @@ impl Player {
 
                         for display_object in activation.context.stage.iter_render_list() {
                             let level = display_object.depth();
-                            let object = display_object.object().coerce_to_object(&mut activation);
-                            dumper.print_variables(
-                                &format!("Level #{level}:"),
-                                &format!("_level{level}"),
-                                &object,
-                                &mut activation,
-                            );
+                            if let Some(object) = display_object.object1() {
+                                dumper.print_variables(
+                                    &format!("Level #{level}:"),
+                                    &format!("_level{level}"),
+                                    &object,
+                                    &mut activation,
+                                );
+                            }
                         }
                         tracing::info!("Variable dump:\n{}", dumper.output());
                     });
@@ -1184,8 +1188,7 @@ impl Player {
                 if target_object.movie().is_action_script_3() {
                     let target = target_object
                         .object2()
-                        .as_object()
-                        .expect("DisplayObject is not an object!");
+                        .expect("no DisplayObject for target!");
 
                     Avm2::dispatch_event(activation.context, keyboard_event, target);
                 }
@@ -2076,7 +2079,7 @@ impl Player {
                         action.clip,
                     );
                     if let Ok(prototype) = constructor.get(istr!("prototype"), &mut activation) {
-                        if let Value::Object(object) = action.clip.object() {
+                        if let Some(object) = action.clip.object1() {
                             object.define_value(
                                 activation.gc(),
                                 istr!("__proto__"),

@@ -4,7 +4,6 @@ use crate::avm1;
 use crate::avm2::{
     Activation as Avm2Activation, BitmapDataObject as Avm2BitmapDataObject,
     ClassObject as Avm2ClassObject, Object as Avm2Object, StageObject as Avm2StageObject, TObject,
-    Value as Avm2Value,
 };
 use crate::bitmap::bitmap_data::{BitmapData, BitmapDataWrapper};
 use crate::context::{RenderContext, UpdateContext};
@@ -385,12 +384,8 @@ impl<'gc> TDisplayObject<'gc> for Bitmap<'gc> {
             .render(bitmap_data.smoothing, context, bitmap_data.pixel_snapping);
     }
 
-    fn object2(&self) -> Avm2Value<'gc> {
-        self.0
-            .read()
-            .avm2_object
-            .map(|o| o.into())
-            .unwrap_or(Avm2Value::Null)
+    fn object2(&self) -> Option<Avm2Object<'gc>> {
+        self.0.read().avm2_object
     }
 
     fn set_object2(&self, context: &mut UpdateContext<'gc>, to: Avm2Object<'gc>) {

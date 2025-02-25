@@ -145,6 +145,14 @@ impl PartialEq for Value<'_> {
 }
 
 impl<'gc> Value<'gc> {
+    pub fn or_undef(v: Option<impl Into<Self>>) -> Self {
+        v.map_or(Value::Undefined, Into::into)
+    }
+
+    pub fn or_null(v: Option<impl Into<Self>>) -> Self {
+        v.map_or(Value::Null, Into::into)
+    }
+
     /// Yields `true` if the given value is a primitive value.
     ///
     /// Note: Boxed primitive values are not considered primitive - it is

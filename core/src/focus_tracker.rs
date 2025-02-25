@@ -7,7 +7,6 @@ pub use crate::display_object::{
 };
 use crate::display_object::{EditText, InteractiveObject, TInteractiveObject};
 use crate::events::{ClipEvent, KeyCode};
-use crate::prelude::Avm2Value;
 use crate::Player;
 use either::Either;
 use gc_arena::barrier::unlock;
@@ -192,12 +191,8 @@ impl<'gc> FocusTracker<'gc> {
                     "Selection".into(),
                     "onSetFocus".into(),
                     &[
-                        old.map(|o| o.as_displayobject())
-                            .map(|v| v.object())
-                            .unwrap_or(Value::Null),
-                        new.map(|o| o.as_displayobject())
-                            .map(|v| v.object())
-                            .unwrap_or(Value::Null),
+                        Value::or_null(old.map(|o| o.as_displayobject()).and_then(|v| v.object1())),
+                        Value::or_null(new.map(|o| o.as_displayobject()).and_then(|v| v.object1())),
                     ],
                 );
             }
@@ -249,7 +244,7 @@ impl<'gc> FocusTracker<'gc> {
             .map(|int| int.as_displayobject())
             .unwrap_or_else(|| context.stage.as_displayobject())
             .object2();
-        let Avm2Value::Object(target) = target else {
+        let Some(target) = target else {
             return false;
         };
 

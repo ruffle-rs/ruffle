@@ -106,12 +106,8 @@ impl<'gc> TDisplayObject<'gc> for MorphShape<'gc> {
         // Noop
     }
 
-    fn object2(&self) -> Avm2Value<'gc> {
-        self.0
-            .read()
-            .object
-            .map(Avm2Value::from)
-            .unwrap_or(Avm2Value::Null)
+    fn object2(&self) -> Option<Avm2Object<'gc>> {
+        self.0.read().object
     }
 
     fn set_object2(&self, context: &mut UpdateContext<'gc>, to: Avm2Object<'gc>) {
@@ -120,7 +116,7 @@ impl<'gc> TDisplayObject<'gc> for MorphShape<'gc> {
 
     /// Construct objects placed on this frame.
     fn construct_frame(&self, context: &mut UpdateContext<'gc>) {
-        if self.movie().is_action_script_3() && matches!(self.object2(), Avm2Value::Null) {
+        if self.movie().is_action_script_3() && self.object2().is_none() {
             let class = context.avm2.classes().morphshape;
             let mut activation = Avm2Activation::from_nothing(context);
             match Avm2StageObject::for_display_object_childless(

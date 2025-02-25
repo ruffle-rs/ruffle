@@ -211,7 +211,7 @@ impl<'gc> Avm1Button<'gc> {
         name: &'static str,
         default: bool,
     ) -> bool {
-        if let Value::Object(object) = self.object() {
+        if let Some(object) = self.object1() {
             let mut activation = Activation::from_nothing(
                 context,
                 ActivationIdentifier::root("[AVM1 Boolean Property]"),
@@ -365,13 +365,15 @@ impl<'gc> TDisplayObject<'gc> for Avm1Button<'gc> {
         false
     }
 
-    fn object(&self) -> Value<'gc> {
-        self.0
-            .object
-            .get()
-            .map(Value::from)
-            .unwrap_or(Value::Undefined)
+    fn object1(&self) -> Option<Object<'gc>> {
+        self.0.object.get()
     }
+
+    fn object2(&self) -> Option<crate::avm2::Object<'gc>> {
+        None
+    }
+
+    fn set_object2(&self, _: &mut UpdateContext<'gc>, _: crate::avm2::Object<'gc>) {}
 
     fn as_avm1_button(&self) -> Option<Self> {
         Some(*self)

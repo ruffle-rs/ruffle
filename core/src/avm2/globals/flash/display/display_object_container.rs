@@ -142,7 +142,7 @@ pub fn get_child_at<'gc>(
     {
         let index = args.get_i32(activation, 0)?;
         return if let Some(child) = dobj.child_by_index(index as usize) {
-            Ok(child.object2())
+            Ok(Value::or_null(child.object2()))
         } else {
             // Flash error message: The supplied index is out of bounds.
             Err(Error::AvmError(range_error(
@@ -169,11 +169,8 @@ pub fn get_child_by_name<'gc>(
         .and_then(|this| this.as_container())
     {
         let name = args.get_string(activation, 0)?;
-        if let Some(child) = dobj.child_by_name(&name, false) {
-            return Ok(child.object2());
-        } else {
-            return Ok(Value::Null);
-        }
+        let child = dobj.child_by_name(&name, false).and_then(|c| c.object2());
+        return Ok(Value::or_null(child));
     }
 
     Ok(Value::Undefined)
@@ -199,7 +196,7 @@ pub fn add_child<'gc>(
             validate_add_operation(activation, parent, child, target_index)?;
             add_child_to_displaylist(activation.context, parent, child, target_index);
 
-            return Ok(child.object2());
+            return Ok(Value::or_null(child.object2()));
         }
     }
 
@@ -224,7 +221,7 @@ pub fn add_child_at<'gc>(
         validate_add_operation(activation, parent, child, target_index)?;
         add_child_to_displaylist(activation.context, parent, child, target_index);
 
-        return Ok(child.object2());
+        return Ok(Value::or_null(child.object2()));
     }
 
     Ok(Value::Undefined)
@@ -247,7 +244,7 @@ pub fn remove_child<'gc>(
         validate_remove_operation(activation, parent, child)?;
         remove_child_from_displaylist(activation.context, child);
 
-        return Ok(child.object2());
+        return Ok(Value::or_null(child.object2()));
     }
 
     Ok(Value::Undefined)
@@ -352,7 +349,7 @@ pub fn remove_child_at<'gc>(
 
             ctr.remove_child(activation.context, child);
 
-            return Ok(child.object2());
+            return Ok(Value::or_null(child.object2()));
         }
     }
 
@@ -444,7 +441,7 @@ pub fn set_child_index<'gc>(
         validate_add_operation(activation, parent, child, target_index)?;
         add_child_to_displaylist(activation.context, parent, child, target_index);
 
-        return Ok(child.object2());
+        return Ok(Value::or_null(child.object2()));
     }
 
     Ok(Value::Undefined)
@@ -548,12 +545,8 @@ pub fn stop_all_movie_clips<'gc>(
 
         if let Some(ctr) = parent.as_container() {
             for child in ctr.iter_render_list() {
-                if child.as_container().is_some() {
-                    let child_this = child.object2().as_object();
-
-                    if let Some(child_this) = child_this {
-                        stop_all_movie_clips(activation, Value::Object(child_this), &[])?;
-                    }
+                if let Some(child) = child.as_container().and_then(|_| child.object2()) {
+                    stop_all_movie_clips(activation, Value::Object(child), &[])?;
                 }
             }
         }
@@ -595,7 +588,8 @@ pub fn get_objects_under_point<'gc>(
     let options = HitTestOptions::SKIP_MASK;
     while let Some(child) = children.pop() {
         if child.hit_test_shape(activation.context, point, options) {
-            under_point.push(Some(child.object2()));
+            let child = Value::or_null(child.object2());
+            under_point.push(Some(child));
         }
         if let Some(container) = child.as_container() {
             for child in container.iter_render_list() {
