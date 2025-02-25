@@ -10,7 +10,6 @@ use crate::string::WString;
 use core::fmt;
 use gc_arena::{Collect, Gc, GcWeak};
 use std::fmt::Debug;
-use tracing::{enabled, Level};
 
 /// A class instance allocator that allocates Error objects.
 pub fn error_allocator<'gc>(
@@ -19,9 +18,8 @@ pub fn error_allocator<'gc>(
 ) -> Result<Object<'gc>, Error<'gc>> {
     let base = ScriptObjectData::new(class);
 
-    let call_stack = (enabled!(Level::INFO) || cfg!(feature = "avm_debug"))
-        .then(|| activation.avm2().call_stack().borrow().clone())
-        .unwrap_or_default();
+    // Stack trace is always collected for debugging purposes.
+    let call_stack = activation.avm2().call_stack().borrow().clone();
 
     Ok(ErrorObject(Gc::new(
         activation.gc(),

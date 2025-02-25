@@ -41,6 +41,7 @@ use crate::stub::StubCollection;
 use crate::tag_utils::{SwfMovie, SwfSlice};
 use crate::timer::Timers;
 use crate::vminterface::Instantiator;
+use crate::PlayerMode;
 use core::fmt;
 use gc_arena::{Collect, Mutation};
 use rand::rngs::SmallRng;
@@ -83,6 +84,8 @@ pub struct UpdateContext<'gc> {
     /// aren't in sync. It may be better to have separate `player_swf_version` and `player_version`
     /// variables.
     pub player_version: u8,
+
+    pub player_mode: PlayerMode,
 
     /// Requests that the player re-renders after this execution (e.g. due to `updateAfterEvent`).
     pub needs_render: &'gc mut bool,
