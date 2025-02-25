@@ -29,12 +29,12 @@
         "cssnano": "^7.0.6",
         "cssnano-preset-advanced": "^7.0.6",
         "mocha": "^11.1.0",
-        "postcss": "^8.5.2",
+        "postcss": "^8.5.3",
         "postcss-nesting": "^13.0.1",
         "replace-in-file": "^8.3.0",
         "tsx": "^4.19.3",
         "tsx-dom": "^3.1.0",
-        "typedoc": "^0.27.7",
+        "typedoc": "^0.27.9",
         "typescript": "^5.7.3"
     },
     "sideEffects": false
