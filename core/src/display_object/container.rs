@@ -680,11 +680,20 @@ impl<'gc> ChildContainer<'gc> {
     /// if no list alterations were made.
     fn remove_child_from_depth_list(&mut self, child: DisplayObject<'gc>) -> bool {
         if let Some(other_child) = self.depth_list.get(&child.depth()) {
-            DisplayObject::ptr_eq(*other_child, child)
-                && self.depth_list.remove(&child.depth()).is_some()
-        } else {
-            false
+            return DisplayObject::ptr_eq(*other_child, child)
+                && self.depth_list.remove(&child.depth()).is_some();
         }
+
+        // Hack to remove child from depth list by value if previous fast lookup didn't work.
+        if let Some((&depth, _)) = self
+            .depth_list
+            .iter()
+            .find(|(_, obj)| DisplayObject::ptr_eq(**obj, child))
+        {
+            return self.depth_list.remove(&depth).is_some();
+        }
+
+        false
     }
 
     /// Remove a child from the render list.
