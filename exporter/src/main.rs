@@ -1,13 +1,15 @@
+mod options;
+
 use anyhow::{anyhow, Result};
 use clap::Parser;
 use image::RgbaImage;
 use indicatif::{ProgressBar, ProgressStyle};
+use options::{Opt, SizeOpt};
 use rayon::prelude::*;
 use ruffle_core::limits::ExecutionLimit;
 use ruffle_core::tag_utils::SwfMovie;
 use ruffle_core::PlayerBuilder;
 use ruffle_render_wgpu::backend::{request_adapter_and_device, WgpuRenderBackend};
-use ruffle_render_wgpu::clap::{GraphicsBackend, PowerPreference};
 use ruffle_render_wgpu::descriptors::Descriptors;
 use ruffle_render_wgpu::target::TextureTarget;
 use ruffle_render_wgpu::wgpu;
@@ -17,66 +19,6 @@ use std::panic::catch_unwind;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use walkdir::{DirEntry, WalkDir};
-
-#[derive(Parser, Debug, Copy, Clone)]
-struct SizeOpt {
-    /// The amount to scale the page size with
-    #[clap(long = "scale", default_value = "1.0")]
-    scale: f64,
-
-    /// Optionally override the output width
-    #[clap(long = "width")]
-    width: Option<u32>,
-
-    /// Optionally override the output height
-    #[clap(long = "height")]
-    height: Option<u32>,
-}
-
-#[derive(Parser, Debug)]
-#[clap(name = "Ruffle Exporter", author, version)]
-struct Opt {
-    /// The file or directory of files to export frames from
-    #[clap(name = "swf")]
-    swf: PathBuf,
-
-    /// The file or directory (if multiple frames/files) to store the capture in.
-    /// The default value will either be:
-    /// - If given one swf and one frame, the name of the swf + ".png"
-    /// - If given one swf and multiple frames, the name of the swf as a directory
-    /// - If given multiple swfs, this field is required.
-    #[clap(name = "output")]
-    output_path: Option<PathBuf>,
-
-    /// Number of frames to capture per file
-    #[clap(short = 'f', long = "frames", default_value = "1")]
-    frames: u32,
-
-    /// Number of frames to skip
-    #[clap(long = "skipframes", default_value = "0")]
-    skipframes: u32,
-
-    /// Don't show a progress bar
-    #[clap(short, long, action)]
-    silent: bool,
-
-    #[clap(flatten)]
-    size: SizeOpt,
-
-    /// Type of graphics backend to use. Not all options may be supported by your current system.
-    /// Default will attempt to pick the most supported graphics backend.
-    #[clap(long, short, default_value = "default")]
-    graphics: GraphicsBackend,
-
-    /// Power preference for the graphics device used. High power usage tends to prefer dedicated GPUs,
-    /// whereas a low power usage tends prefer integrated GPUs.
-    #[clap(long, short, default_value = "high")]
-    power: PowerPreference,
-
-    /// Skip unsupported movie types (currently AVM 2)
-    #[clap(long, action)]
-    skip_unsupported: bool,
-}
 
 /// Captures a screenshot. The resulting image uses straight alpha
 fn take_screenshot(
@@ -120,18 +62,18 @@ fn take_screenshot(
     let totalframes = frames + skipframes;
 
     for i in 0..totalframes {
-        if let Some(progress) = &progress {
-            progress.set_message(format!(
-                "{} frame {}",
-                swf_path.file_stem().unwrap().to_string_lossy(),
-                i
-            ));
-        }
-
         player.lock().unwrap().preload(&mut ExecutionLimit::none());
-
         player.lock().unwrap().run_frame();
+
         if i >= skipframes {
+            if let Some(progress) = &progress {
+                progress.set_message(format!(
+                    "{} frame {}",
+                    swf_path.file_stem().unwrap().to_string_lossy(),
+                    i + 1
+                ));
+            }
+
             let image = || {
                 player.lock().unwrap().render();
                 let mut player = player.lock().unwrap();
@@ -141,6 +83,7 @@ fn take_screenshot(
                     .unwrap();
                 renderer.capture_frame()
             };
+
             match catch_unwind(image) {
                 Ok(Some(image)) => result.push(image),
                 Ok(None) => return Err(anyhow!("Unable to capture frame {} of {:?}", i, swf_path)),
@@ -153,10 +96,10 @@ fn take_screenshot(
                     ))
                 }
             }
-        }
 
-        if let Some(progress) = &progress {
-            progress.inc(1);
+            if let Some(progress) = &progress {
+                progress.inc(1);
+            }
         }
     }
     Ok(result)
@@ -192,6 +135,90 @@ fn find_files(root: &Path, with_progress: bool) -> Vec<DirEntry> {
     results
 }
 
+fn write_single_frame(frames: &[RgbaImage], opt: &Opt, output: &Path) -> Result<()> {
+    let image = frames.first().unwrap();
+    if opt.output_path == Some(PathBuf::from("-")) {
+        let mut bytes: Vec<u8> = Vec::new();
+        image
+            .write_to(&mut io::Cursor::new(&mut bytes), image::ImageFormat::Png)
+            .expect("Encoding failed");
+        io::stdout()
+            .write_all(bytes.as_slice())
+            .expect("Writing to stdout failed");
+    } else {
+        image.save(output)?;
+    }
+
+    Ok(())
+}
+
+fn write_multiple_frames(
+    frames: &[image::ImageBuffer<image::Rgba<u8>, Vec<u8>>],
+    output: &Path,
+    skipframes: usize,
+) -> Result<(), anyhow::Error> {
+    for (frame, image) in frames.iter().enumerate() {
+        let adjusted_frame = frame + skipframes;
+        let mut path: PathBuf = (output).into();
+        path.push(format!("{adjusted_frame}.png"));
+        image.save(&path)?;
+    }
+    Ok(())
+}
+
+fn capture_swf(
+    descriptors: Arc<Descriptors>,
+    opt: &Opt,
+    progress: &Option<ProgressBar>,
+    input: &Path,
+    output: &Path,
+) -> Result<usize> {
+    let mut frames_written = 0;
+
+    while frames_written != opt.frames {
+        let frame_difference: i32 =
+            if opt.frame_cache > 0 && (opt.frames - frames_written) < opt.frame_cache {
+                opt.frames as i32 - frames_written as i32
+            } else {
+                0
+            };
+
+        let frame_amount = if frame_difference > 0 {
+            frame_difference as u32
+        } else if opt.frame_cache == 0 || opt.frame_cache > opt.frames {
+            opt.frames
+        } else {
+            opt.frame_cache
+        };
+
+        let frames = take_screenshot(
+            descriptors.clone(),
+            input,
+            frame_amount,
+            frames_written + opt.skipframes,
+            progress,
+            opt.size,
+            opt.skip_unsupported,
+        )?;
+
+        if opt.frames == 1 {
+            write_single_frame(&frames, opt, output)?;
+        } else {
+            write_multiple_frames(&frames, output, frames_written.try_into()?)?;
+        }
+
+        if frame_difference > 0 {
+            frames_written += frame_difference as u32;
+        } else if opt.frame_cache == 0 {
+            frames_written = opt.frames;
+        } else {
+            frames_written += opt.frame_cache;
+        }
+    }
+
+    Ok(frames_written as usize)
+}
+
 fn capture_single_swf(descriptors: Arc<Descriptors>, opt: &Opt) -> Result<()> {
     let output = opt.output_path.clone().unwrap_or_else(|| {
         let mut result = PathBuf::new();
@@ -220,42 +247,9 @@ fn capture_single_swf(descriptors: Arc<Descriptors>, opt: &Opt) -> Result<()> {
         None
     };
 
-    let frames = take_screenshot(
-        descriptors,
-        &opt.swf,
-        opt.frames,
-        opt.skipframes,
-        &progress,
-        opt.size,
-        opt.skip_unsupported,
-    )?;
+    let frames_len = capture_swf(descriptors.clone(), opt, &progress, &opt.swf, &output)?;
 
-    if let Some(progress) = &progress {
-        progress.set_message(opt.swf.file_stem().unwrap().to_string_lossy().into_owned());
-    }
-
-    if frames.len() == 1 {
-        let image = frames.first().unwrap();
-        if opt.output_path == Some(PathBuf::from("-")) {
-            let mut bytes: Vec<u8> = Vec::new();
-            image
-                .write_to(&mut io::Cursor::new(&mut bytes), image::ImageFormat::Png)
-                .expect("Encoding failed");
-            io::stdout()
-                .write_all(bytes.as_slice())
-                .expect("Writing to stdout failed");
-        } else {
-            image.save(&output)?;
-        }
-    } else {
-        for (frame, image) in frames.iter().enumerate() {
-            let mut path: PathBuf = (&output).into();
-            path.push(format!("{frame}.png"));
-            image.save(&path)?;
-        }
-    }
-
-    let message = if frames.len() == 1 {
+    let message = if frames_len == 1 {
         if !opt.silent {
             Some(format!(
                 "Saved first frame of {} to {}",
@@ -268,7 +262,7 @@ fn capture_single_swf(descriptors: Arc<Descriptors>, opt: &Opt) -> Result<()> {
     } else {
         Some(format!(
             "Saved first {} frames of {} to {}",
-            frames.len(),
+            frames_len,
             opt.swf.to_string_lossy(),
             output.to_string_lossy()
         ))
@@ -314,41 +308,36 @@ fn capture_multiple_swfs(descriptors: Arc<Descriptors>, opt: &Opt) -> Result<()>
                     .into_owned(),
             );
         }
-        if let Ok(frames) = take_screenshot(
-            descriptors.clone(),
-            file.path(),
-            opt.frames,
-            opt.skipframes,
-            &progress,
-            opt.size,
-            opt.skip_unsupported,
-        ) {
-            let mut relative_path = file
-                .path()
-                .strip_prefix(&opt.swf)
-                .unwrap_or_else(|_| file.path())
-                .to_path_buf();
 
-            if frames.len() == 1 {
-                let mut destination: PathBuf = (&output).into();
-                relative_path.set_extension("png");
-                destination.push(relative_path);
-                if let Some(parent) = destination.parent() {
-                    let _ = create_dir_all(parent);
-                }
-                frames.first().unwrap().save(&destination)?;
-            } else {
-                let mut parent: PathBuf = (&output).into();
-                relative_path.set_extension("");
-                parent.push(&relative_path);
-                let _ = create_dir_all(&parent);
-                for (frame, image) in frames.iter().enumerate() {
-                    let mut destination = parent.clone();
-                    destination.push(format!("{frame}.png"));
-                    image.save(&destination)?;
-                }
+        let mut relative_path = file
+            .path()
+            .strip_prefix(&opt.swf)
+            .unwrap_or_else(|_| file.path())
+            .to_path_buf();
+
+        let output_path: PathBuf = if opt.frames == 1 {
+            let mut destination: PathBuf = (&output).into();
+            relative_path.set_extension("png");
+            destination.push(relative_path);
+            if let Some(parent) = destination.parent() {
+                let _ = create_dir_all(parent);
             }
-        }
+            destination
+        } else {
+            let mut parent: PathBuf = (&output).into();
+            relative_path.set_extension("");
+            parent.push(&relative_path);
+            let _ = create_dir_all(&parent);
+            parent
+        };
+
+        capture_swf(
+            descriptors.clone(),
+            opt,
+            &progress,
+            file.path(),
+            &output_path,
+        )?;
 
         Ok(())
     })?;
