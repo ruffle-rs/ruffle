@@ -1303,6 +1303,7 @@ impl<'gc> EditText<'gc> {
                             context.transform_stack.push(&Transform {
                                 matrix: transform.matrix,
                                 color_transform: ColorTransform::IDENTITY,
+                                tz: transform.tz,
                             });
                         } else {
                             context.transform_stack.push(transform);

@@ -336,6 +336,10 @@ impl<'gc> DisplayObjectBase<'gc> {
         &mut self.transform.matrix
     }
 
+    pub fn set_matrix_tz(&mut self, tz: f64) {
+        self.transform.tz = tz;
+    }
+
     pub fn set_matrix(&mut self, matrix: Matrix) {
         self.transform.matrix = matrix;
         self.set_scale_rotation_cached(false);
@@ -372,6 +376,17 @@ impl<'gc> DisplayObjectBase<'gc> {
         let changed = self.transform.matrix.ty != y;
         self.set_transformed_by_script(true);
         self.transform.matrix.ty = y;
+        changed
+    }
+
+    fn z(&self) -> f64 {
+        self.transform.tz
+    }
+
+    fn set_z(&mut self, tz: f64) -> bool {
+        let changed = self.transform.tz != tz;
+        self.set_transformed_by_script(true);
+        self.transform.tz = tz;
         changed
     }
 
@@ -941,6 +956,7 @@ pub fn render_base<'gc>(this: DisplayObject<'gc>, context: &mut RenderContext<'_
                     ty: -offset_y,
                     ..cache_info.base_transform.matrix
                 },
+                tz: cache_info.base_transform.tz,
             });
             let mut offscreen_context = RenderContext {
                 renderer: context.renderer,
@@ -973,6 +989,7 @@ pub fn render_base<'gc>(this: DisplayObject<'gc>, context: &mut RenderContext<'_
                         ..Default::default()
                     },
                     color_transform: cache_info.base_transform.color_transform,
+                    tz: context.transform_stack.transform().tz,
                 },
                 true,
                 PixelSnapping::Always, // cacheAsBitmap forces pixel snapping
@@ -1045,6 +1062,7 @@ pub fn apply_standard_mask_and_scroll<'gc, F>(
         context.transform_stack.push(&Transform {
             matrix: Matrix::translate(-rect.x_min, -rect.y_min),
             color_transform: Default::default(),
+            tz: 0.0,
         });
     }
 
@@ -1365,6 +1383,25 @@ pub trait TDisplayObject<'gc>:
     /// This invalidates any ancestors cacheAsBitmap automatically.
     fn set_y(&self, gc_context: &Mutation<'gc>, y: Twips) {
         if self.base_mut(gc_context).set_y(y) {
+            if let Some(parent) = self.parent() {
+                // Self-transform changes are automatically handled,
+                // we only want to inform ancestors to avoid unnecessary invalidations for tx/ty
+                parent.invalidate_cached_bitmap(gc_context);
+            }
+        }
+    }
+
+    /// The `z` position in local space.
+    /// Returned by the `z` ActionScript properties.
+    fn z(&self) -> f64 {
+        self.base().z()
+    }
+
+    /// Sets the `z` position of this display object in local space.
+    /// Set by the `z` ActionScript properties.
+    /// This invalidates any ancestors cacheAsBitmap automatically.
+    fn set_z(&self, gc_context: &Mutation<'gc>, z: f64) {
+        if self.base_mut(gc_context).set_z(z) {
             if let Some(parent) = self.parent() {
                 // Self-transform changes are automatically handled,
                 // we only want to inform ancestors to avoid unnecessary invalidations for tx/ty
