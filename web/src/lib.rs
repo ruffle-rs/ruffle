@@ -599,15 +599,16 @@ impl RuffleHandle {
                                 .set_pointer_capture(js_event.pointer_id());
                         }
                         let device_pixel_ratio = instance.device_pixel_ratio;
+                        let button = match js_event.button() {
+                            0 => MouseButton::Left,
+                            1 => MouseButton::Middle,
+                            2 => MouseButton::Right,
+                            _ => MouseButton::Unknown,
+                        };
                         let event = PlayerEvent::MouseDown {
                             x: f64::from(js_event.offset_x()) * device_pixel_ratio,
                             y: f64::from(js_event.offset_y()) * device_pixel_ratio,
-                            button: match js_event.button() {
-                                0 => MouseButton::Left,
-                                1 => MouseButton::Middle,
-                                2 => MouseButton::Right,
-                                _ => MouseButton::Unknown,
-                            },
+                            button,
                             // TODO The index should be provided by the browser, not calculated.
                             index: None,
                         };
@@ -615,15 +616,7 @@ impl RuffleHandle {
                             .with_core_mut(|core| core.handle_event(event))
                             .unwrap_or_default();
 
-                        if handled
-                            && matches!(
-                                event,
-                                PlayerEvent::MouseDown {
-                                    button: MouseButton::Right,
-                                    ..
-                                }
-                            )
-                        {
+                        if handled && matches!(button, MouseButton::Right) {
                             js_player_callback.suppress_context_menu();
                         }
 

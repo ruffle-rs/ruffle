@@ -24,7 +24,7 @@ impl ContextMenu {
         }
     }
 
-    pub fn close_event(&self) -> PlayerEvent {
+    pub fn close_event(self) -> PlayerEvent {
         self.close_event
     }
 
