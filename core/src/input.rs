@@ -7,7 +7,7 @@ use std::collections::{HashMap, HashSet};
 /// An event describing input in general.
 ///
 /// It's usually a processed [`PlayerEvent`].
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone)]
 pub enum InputEvent {
     KeyDown {
         key_code: KeyCode,
