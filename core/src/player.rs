@@ -1134,11 +1134,11 @@ impl Player {
         }
 
         self.mutate_with_update_context(|context| {
-            let button_event = ButtonKeyCode::from_input_event(event)
+            let button_event = ButtonKeyCode::from_input_event(&event)
                 .map(|key_code| ClipEvent::KeyPress { key_code });
 
             if let InputEvent::KeyDown { key_code, key_char }
-            | InputEvent::KeyUp { key_code, key_char } = event
+            | InputEvent::KeyUp { key_code, key_char } = &event
             {
                 let ctrl_key = context.input.is_key_down(KeyCode::CONTROL);
                 let alt_key = context.input.is_key_down(KeyCode::ALT);
@@ -1192,7 +1192,7 @@ impl Player {
             }
 
             // Propagate clip events.
-            let (clip_event, listener) = match event {
+            let (clip_event, listener) = match &event {
                 InputEvent::KeyDown { .. } => {
                     (Some(ClipEvent::KeyDown), Some(("Key", "onKeyDown", vec![])))
                 }
@@ -1279,11 +1279,11 @@ impl Player {
             // KeyPress events take precedence over text input.
             if !key_press_handled {
                 if let Some(text) = context.focus_tracker.get_as_edit_text() {
-                    if let InputEvent::TextInput { codepoint } = event {
-                        text.text_input(codepoint, context);
+                    if let InputEvent::TextInput { codepoint } = &event {
+                        text.text_input(*codepoint, context);
                     }
-                    if let InputEvent::TextControl { code } = event {
-                        text.text_control_input(code, context);
+                    if let InputEvent::TextControl { code } = &event {
+                        text.text_control_input(*code, context);
                     }
                 }
             }
@@ -1293,7 +1293,7 @@ impl Player {
                 if let InputEvent::KeyDown {
                     key_code: KeyCode::TAB,
                     ..
-                } = event
+                } = &event
                 {
                     let reversed = context.input.is_key_down(KeyCode::SHIFT);
                     let tracker = context.focus_tracker;
@@ -1306,7 +1306,7 @@ impl Player {
             if !key_press_handled && context.focus_tracker.highlight().is_visible() {
                 if let Some(focus) = context.focus_tracker.get() {
                     if matches!(
-                        event,
+                        &event,
                         InputEvent::KeyDown {
                             key_code: KeyCode::ENTER,
                             ..
@@ -1318,8 +1318,8 @@ impl Player {
                         focus.handle_clip_event(context, ClipEvent::Release { index: 0 });
                     }
 
-                    if let InputEvent::KeyDown { key_code, .. } = event {
-                        if let Some(direction) = NavigationDirection::from_key_code(key_code) {
+                    if let InputEvent::KeyDown { key_code, .. } = &event {
+                        if let Some(direction) = NavigationDirection::from_key_code(*key_code) {
                             let tracker = context.focus_tracker;
                             tracker.navigate(context, direction);
                         }
@@ -1357,7 +1357,7 @@ impl Player {
             }
         }
 
-        if let InputEvent::MouseWheel { delta } = event {
+        if let InputEvent::MouseWheel { delta } = &event {
             self.mutate_with_update_context(|context| {
                 let target = if let Some(over_object) = context.mouse_data.hovered {
                     if over_object.as_displayobject().movie().is_action_script_3()
@@ -1371,7 +1371,7 @@ impl Player {
                     context.stage.as_interactive()
                 };
                 if let Some(target) = target {
-                    let event = ClipEvent::MouseWheel { delta };
+                    let event = ClipEvent::MouseWheel { delta: *delta };
                     target.event_dispatch_to_avm2(context, event);
                     target.handle_clip_event(context, event);
                 }

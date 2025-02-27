@@ -2,7 +2,7 @@ use crate::{display_object::InteractiveObject, input::InputEvent};
 use std::str::FromStr;
 use swf::ClipEventFlag;
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone)]
 pub enum PlayerEvent {
     KeyDown {
         key_code: KeyCode,
@@ -766,17 +766,17 @@ impl ButtonKeyCode {
         })
     }
 
-    pub fn from_input_event(event: InputEvent) -> Option<Self> {
+    pub fn from_input_event(event: &InputEvent) -> Option<Self> {
         match event {
             // ASCII characters convert directly to keyPress button events.
             InputEvent::TextInput { codepoint }
-                if codepoint as u32 >= 32 && codepoint as u32 <= 126 =>
+                if *codepoint as u32 >= 32 && *codepoint as u32 <= 126 =>
             {
-                Some(ButtonKeyCode::from_u8(codepoint as u8).unwrap())
+                Some(ButtonKeyCode::from_u8(*codepoint as u8).unwrap())
             }
 
             // Special keys have custom values for keyPress.
-            InputEvent::KeyDown { key_code, .. } => Self::from_key_code(key_code),
+            InputEvent::KeyDown { key_code, .. } => Self::from_key_code(*key_code),
             _ => None,
         }
     }
