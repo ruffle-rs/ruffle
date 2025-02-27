@@ -1130,3 +1130,6 @@ pub enum KeyLocation {
     Right = 2,
     Numpad = 3,
 }
+
+#[derive(Debug, Clone)]
+pub enum PlayerNotification {}

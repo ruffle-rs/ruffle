@@ -26,6 +26,7 @@ use crate::display_object::{
     TInteractiveObject, WindowMode,
 };
 use crate::events::GamepadButton;
+use crate::events::PlayerNotification;
 use crate::events::{ButtonKeyCode, ClipEvent, ClipEventResult, KeyCode, MouseButton, PlayerEvent};
 use crate::external::{ExternalInterface, ExternalInterfaceProvider, NullFsCommandProvider};
 use crate::external::{FsCommandProvider, Value as ExternalValue};
@@ -49,6 +50,7 @@ use crate::tag_utils::SwfMovie;
 use crate::timer::Timers;
 use crate::vminterface::Instantiator;
 use crate::DefaultFont;
+use async_channel::Sender;
 use gc_arena::lock::GcRefLock;
 use gc_arena::{Collect, DynamicRootSet, Mutation, Rootable};
 use rand::{rngs::SmallRng, SeedableRng};
@@ -381,6 +383,9 @@ pub struct Player {
 
     /// Any compatibility rules to apply for this movie.
     compatibility_rules: CompatibilityRules,
+
+    /// Sends notifications back from the core player to the frontend.
+    notification_sender: Option<Sender<PlayerNotification>>,
 
     /// Debug UI windows
     #[cfg(feature = "egui")]
@@ -2243,6 +2248,7 @@ impl Player {
                 local_connections,
                 dynamic_root,
                 post_frame_callbacks,
+                notification_sender: this.notification_sender.as_ref(),
             };
 
             let prev_frame_rate = *update_context.frame_rate;
@@ -2449,6 +2455,9 @@ pub struct PlayerBuilder {
     ui: Option<Ui>,
     video: Option<Video>,
 
+    // Notifications
+    notification_sender: Option<Sender<PlayerNotification>>,
+
     // Misc. player configuration
     autoplay: bool,
     align: StageAlign,
@@ -2495,6 +2504,8 @@ impl PlayerBuilder {
             storage: None,
             ui: None,
             video: None,
+
+            notification_sender: None,
 
             autoplay: false,
             align: StageAlign::default(),
@@ -2597,6 +2608,13 @@ impl PlayerBuilder {
     #[inline]
     pub fn with_video(mut self, video: impl 'static + VideoBackend) -> Self {
         self.video = Some(Box::new(video));
+        self
+    }
+
+    /// Sets the channel for player notifications.
+    #[inline]
+    pub fn with_notification_sender(mut self, sender: Sender<PlayerNotification>) -> Self {
+        self.notification_sender = Some(sender);
         self
     }
 
@@ -2885,6 +2903,7 @@ impl PlayerBuilder {
                 spoofed_url: self.spoofed_url.clone(),
                 compatibility_rules: self.compatibility_rules.clone(),
                 stub_tracker: StubCollection::new(),
+                notification_sender: self.notification_sender,
                 #[cfg(feature = "egui")]
                 debug_ui: Default::default(),
 

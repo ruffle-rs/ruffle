@@ -1,5 +1,7 @@
 //! Custom event type for desktop ruffle
 
+use ruffle_core::events::PlayerNotification;
+
 use crate::{gui::DialogDescriptor, player::LaunchOptions};
 
 /// User-defined events.
@@ -33,4 +35,7 @@ pub enum RuffleEvent {
 
     /// The movie wants to open a dialog.
     OpenDialog(DialogDescriptor),
+
+    /// Ruffle core has a notification to handle.
+    PlayerNotification(PlayerNotification),
 }
