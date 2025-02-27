@@ -166,7 +166,7 @@ fn set_transform<'gc>(
         out: &mut Fixed8,
     ) -> Result<(), Error<'gc>> {
         // The parameters are set only if the property exists on the object itself (prototype excluded).
-        if transform.has_own_property(activation, property.into()) {
+        if transform.has_own_property(activation, property) {
             let n = transform
                 .get(property, activation)?
                 .coerce_to_f64(activation)?;
@@ -184,7 +184,7 @@ fn set_transform<'gc>(
         out: &mut i16,
     ) -> Result<(), Error<'gc>> {
         // The parameters are set only if the property exists on the object itself (prototype excluded).
-        if transform.has_own_property(activation, property.into()) {
+        if transform.has_own_property(activation, property) {
             *out = transform
                 .get(property, activation)?
                 .coerce_to_i16(activation)?;

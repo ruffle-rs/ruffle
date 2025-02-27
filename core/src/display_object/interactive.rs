@@ -17,6 +17,7 @@ use crate::display_object::{
     DisplayObject, DisplayObjectBase, TDisplayObject, TDisplayObjectContainer,
 };
 use crate::events::{ClipEvent, ClipEventResult, MouseButton};
+use crate::string::AvmString;
 use bitflags::bitflags;
 use gc_arena::{Collect, Mutation};
 use ruffle_macros::{enum_trait_object, istr};
@@ -607,11 +608,13 @@ pub trait TInteractiveObject<'gc>:
             let other = other
                 .map(|d| d.as_displayobject().object())
                 .unwrap_or(Avm1Value::Null);
+
             let method_name = if focused {
-                istr!(context, "onSetFocus")
+                AvmString::new_utf8(context.gc(), "onSetFocus")
             } else {
-                istr!(context, "onKillFocus")
+                AvmString::new_utf8(context.gc(), "onKillFocus")
             };
+
             Avm1::run_stack_frame_for_method(self_do, object, method_name, &[other], context);
         } else if let Avm2Value::Object(object) = self_do.object2() {
             let mut activation = Avm2Activation::from_nothing(context);
