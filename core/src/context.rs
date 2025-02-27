@@ -21,6 +21,7 @@ use crate::backend::{
 };
 use crate::context_menu::ContextMenuState;
 use crate::display_object::{EditText, MovieClip, SoundTransform, Stage};
+use crate::events::PlayerNotification;
 use crate::external::ExternalInterface;
 use crate::focus_tracker::FocusTracker;
 use crate::frame_lifecycle::FramePhase;
@@ -41,6 +42,7 @@ use crate::system_properties::SystemProperties;
 use crate::tag_utils::{SwfMovie, SwfSlice};
 use crate::timer::Timers;
 use crate::vminterface::Instantiator;
+use async_channel::Sender;
 use core::fmt;
 use gc_arena::{Collect, Mutation};
 use rand::rngs::SmallRng;
@@ -226,6 +228,8 @@ pub struct UpdateContext<'gc> {
     /// Currently, this is just used for handling `Loader.loadBytes`
     #[allow(clippy::type_complexity)]
     pub post_frame_callbacks: &'gc mut Vec<PostFrameCallback<'gc>>,
+
+    pub notification_sender: Option<&'gc Sender<PlayerNotification>>,
 }
 
 impl<'gc> HasStringContext<'gc> for UpdateContext<'gc> {
@@ -444,6 +448,14 @@ impl<'gc> UpdateContext<'gc> {
         self.timers.remove_all();
 
         self.set_root_movie(movie);
+    }
+
+    pub fn send_notification(&self, notification: PlayerNotification) {
+        if let Some(notification_sender) = self.notification_sender {
+            if let Err(e) = notification_sender.try_send(notification) {
+                tracing::error!("Failed to send player notification: {e}");
+            }
+        }
     }
 }
 

@@ -290,10 +290,24 @@ impl ActivePlayer {
             builder = builder.with_gamepad_button_mapping(opt.gamepad_button_mapping.clone());
         }
 
+        let (notification_sender, notification_recv) = async_channel::unbounded();
+
+        let event_loop2 = event_loop.clone();
+        tokio::spawn(async move {
+            while let Ok(notification) = notification_recv.recv().await {
+                let event = RuffleEvent::PlayerNotification(notification);
+                match event_loop2.send_event(event) {
+                    Ok(_) => continue,
+                    Err(_) => break,
+                }
+            }
+        });
+
         builder = builder
             .with_navigator(navigator)
             .with_renderer(renderer)
             .with_storage(preferences.storage_backend().create_backend(&opt))
+            .with_notification_sender(notification_sender)
             .with_fs_commands(Box::new(DesktopFSCommandProvider {
                 event_loop: event_loop.clone(),
             }))
