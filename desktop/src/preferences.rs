@@ -222,6 +222,13 @@ impl GlobalPreferences {
         })
     }
 
+    pub fn ime_enabled(&self) -> Option<bool> {
+        self.preferences
+            .lock()
+            .expect("Non-poisoned preferences")
+            .ime_enabled
+    }
+
     pub fn recents<R>(&self, fun: impl FnOnce(&Recents) -> R) -> R {
         fun(&self.recents.lock().expect("Recents is not reentrant"))
     }
@@ -279,6 +286,7 @@ pub struct SavedGlobalPreferences {
     pub storage: StoragePreferences,
     pub theme_preference: ThemePreference,
     pub open_url_mode: OpenUrlMode,
+    pub ime_enabled: Option<bool>,
 }
 
 impl Default for SavedGlobalPreferences {
@@ -302,6 +310,7 @@ impl Default for SavedGlobalPreferences {
             storage: Default::default(),
             theme_preference: Default::default(),
             open_url_mode: Default::default(),
+            ime_enabled: None,
         }
     }
 }
