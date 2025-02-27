@@ -64,7 +64,6 @@ pub struct InputManager {
     keys_toggled: HashSet<KeyCode>,
     last_key: KeyCode,
     last_char: Option<char>,
-    last_text_control: Option<TextControlCode>,
     last_click: Option<ClickEventData>,
 
     /// A map from gamepad buttons to key codes.
@@ -78,7 +77,6 @@ impl InputManager {
             keys_toggled: HashSet::new(),
             last_key: KeyCode::UNKNOWN,
             last_char: None,
-            last_text_control: None,
             last_click: None,
             gamepad_button_mapping,
         }
@@ -178,10 +176,6 @@ impl InputManager {
             InputEvent::KeyUp { key_code, key_char } => {
                 self.last_char = key_char;
                 self.remove_key(key_code);
-                self.last_text_control = None;
-            }
-            InputEvent::TextControl { code } => {
-                self.last_text_control = Some(code);
             }
             InputEvent::MouseDown { button, .. } => {
                 self.toggle_key(button.into());
@@ -226,10 +220,6 @@ impl InputManager {
 
     pub fn last_key_char(&self) -> Option<char> {
         self.last_char
-    }
-
-    pub fn last_text_control(&self) -> Option<TextControlCode> {
-        self.last_text_control
     }
 
     pub fn last_click_index(&self) -> usize {
