@@ -590,6 +590,8 @@ pub fn root_error_handler<'gc>(activation: &mut Activation<'_, 'gc>, error: Erro
             if let Ok(message) = value.coerce_to_string(activation) {
                 activation.context.avm_trace(&message.to_utf8_lossy());
             } else {
+                // The only Value variant that can throw an error when being stringified
+                // is Object, so just print "[type Object]".
                 activation.context.avm_trace("[type Object]");
             }
             // Continue execution without halting.

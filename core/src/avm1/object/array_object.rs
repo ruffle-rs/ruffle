@@ -63,7 +63,7 @@ impl<'gc> ArrayObject<'gc> {
         Self::builder_with_proto(&activation.context.strings, proto)
     }
 
-    pub fn builder_with_proto<'a>(
+    pub fn builder_with_proto(
         context: &StringContext<'gc>,
         proto: Object<'gc>,
     ) -> ArrayBuilder<'gc> {
