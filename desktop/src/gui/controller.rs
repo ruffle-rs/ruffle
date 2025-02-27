@@ -17,7 +17,7 @@ use std::time::{Duration, Instant};
 use unic_langid::LanguageIdentifier;
 use url::Url;
 use wgpu::SurfaceError;
-use winit::dpi::PhysicalSize;
+use winit::dpi::{PhysicalPosition, PhysicalSize};
 use winit::event::WindowEvent;
 use winit::event_loop::EventLoopProxy;
 use winit::keyboard::{Key, NamedKey};
@@ -253,6 +253,20 @@ impl GuiController {
                 .get()
                 .expect("Player must exist after being created."),
         );
+    }
+
+    pub fn height_offset(&self) -> f64 {
+        if self.window.fullscreen().is_some() || self.no_gui {
+            0.0
+        } else {
+            MENU_HEIGHT as f64 * self.window.scale_factor()
+        }
+    }
+
+    pub fn window_to_movie_position(&self, position: PhysicalPosition<f64>) -> (f64, f64) {
+        let x = position.x;
+        let y = position.y - self.height_offset();
+        (x, y)
     }
 
     pub fn render(&mut self, mut player: Option<MutexGuard<Player>>) {
