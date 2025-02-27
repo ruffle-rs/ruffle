@@ -64,11 +64,6 @@ impl MainWindow {
             // Event consumed by GUI.
             return;
         }
-        let height_offset = if self.gui.window().fullscreen().is_some() || self.no_gui {
-            0.0
-        } else {
-            MENU_HEIGHT as f64 * self.gui.window().scale_factor()
-        };
         match event {
             WindowEvent::CloseRequested => {
                 event_loop.exit();
@@ -81,7 +76,7 @@ impl MainWindow {
                     let viewport_scale_factor = self.gui.window().scale_factor();
                     player.set_viewport_dimensions(ViewportDimensions {
                         width: size.width,
-                        height: size.height.saturating_sub(height_offset as u32),
+                        height: size.height.saturating_sub(self.gui.height_offset() as u32),
                         scale_factor: viewport_scale_factor,
                     });
                 }
@@ -96,10 +91,8 @@ impl MainWindow {
                 }
 
                 self.mouse_pos = position;
-                let event = PlayerEvent::MouseMove {
-                    x: position.x,
-                    y: position.y - height_offset,
-                };
+                let (x, y) = self.gui.window_to_movie_position(position);
+                let event = PlayerEvent::MouseMove { x, y };
                 self.player.handle_event(event);
                 self.check_redraw();
             }
@@ -125,8 +118,7 @@ impl MainWindow {
 
                 use ruffle_core::events::MouseButton as RuffleMouseButton;
                 use winit::event::MouseButton;
-                let x = self.mouse_pos.x;
-                let y = self.mouse_pos.y - height_offset;
+                let (x, y) = self.gui.window_to_movie_position(self.mouse_pos);
                 let button = match button {
                     MouseButton::Left => RuffleMouseButton::Left,
                     MouseButton::Right => RuffleMouseButton::Right,
