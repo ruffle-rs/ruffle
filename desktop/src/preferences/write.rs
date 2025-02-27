@@ -131,6 +131,17 @@ impl<'a> PreferencesWriter<'a> {
             values.open_url_mode = open_url_mode;
         });
     }
+
+    pub fn set_ime_enabled(&mut self, ime_enabled: Option<bool>) {
+        self.0.edit(|values, toml_document| {
+            if let Some(ime_enabled) = ime_enabled {
+                toml_document["ime"]["enabled"] = value(ime_enabled);
+            } else {
+                toml_document["ime"]["enabled"] = toml_edit::Item::None;
+            }
+            values.ime_enabled = ime_enabled;
+        });
+    }
 }
 
 #[cfg(test)]
@@ -324,6 +335,25 @@ mod tests {
         test(
             "open_url_mode = \"deny\"",
             |writer| writer.set_open_url_mode(OpenUrlMode::Confirm),
+            "",
+        );
+    }
+
+    #[test]
+    fn set_ime_enabled() {
+        test(
+            "ime.enabled = true\n",
+            |writer| writer.set_ime_enabled(Some(false)),
+            "ime.enabled = false\n",
+        );
+        test(
+            "ime = {}",
+            |writer| writer.set_ime_enabled(Some(true)),
+            "ime = { enabled = true }\n",
+        );
+        test(
+            "ime.enabled = false",
+            |writer| writer.set_ime_enabled(None),
             "",
         );
     }
