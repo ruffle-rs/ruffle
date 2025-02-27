@@ -83,6 +83,10 @@ pub fn read_preferences(input: &str) -> ParseDetails<SavedGlobalPreferences> {
         }
     });
 
+    document.get_table_like(&mut cx, "ime", |cx, ime| {
+        result.ime_enabled = ime.get_bool(cx, "enabled");
+    });
+
     ParseDetails {
         warnings: cx.warnings,
         result: DocumentHolder::new(result, document),
@@ -703,6 +707,56 @@ mod tests {
                 expected: "string",
                 actual: "integer",
                 path: "open_url_mode".to_string(),
+            }],
+            result.warnings
+        );
+    }
+
+    #[test]
+    fn ime_enabled() {
+        let result = read_preferences("ime = {enabled = true}");
+        assert_eq!(
+            &SavedGlobalPreferences {
+                ime_enabled: Some(true),
+                ..Default::default()
+            },
+            result.values()
+        );
+        assert_eq!(Vec::<ParseWarning>::new(), result.warnings);
+
+        let result = read_preferences("ime.enabled = false");
+        assert_eq!(
+            &SavedGlobalPreferences {
+                ime_enabled: Some(false),
+                ..Default::default()
+            },
+            result.values()
+        );
+        assert_eq!(Vec::<ParseWarning>::new(), result.warnings);
+
+        let result = read_preferences("[ime]\nenabled = false\n");
+        assert_eq!(
+            &SavedGlobalPreferences {
+                ime_enabled: Some(false),
+                ..Default::default()
+            },
+            result.values()
+        );
+        assert_eq!(Vec::<ParseWarning>::new(), result.warnings);
+
+        let result = read_preferences("ime.enabled = \"x\"");
+        assert_eq!(
+            &SavedGlobalPreferences {
+                ime_enabled: None,
+                ..Default::default()
+            },
+            result.values()
+        );
+        assert_eq!(
+            vec![ParseWarning::UnexpectedType {
+                expected: "boolean",
+                actual: "string",
+                path: "ime.enabled".to_string(),
             }],
             result.warnings
         );
