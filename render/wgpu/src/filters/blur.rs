@@ -234,7 +234,7 @@ impl BlurFilter {
                 // implementation was inspired by it: https://fgiesen.wordpress.com/2012/08/01/fast-blurs-2/
 
                 // This is how much the blur "extends past" the center pixel to either side.
-                let radius = (full_size - 1.0) / 2.0;
+                let radius = (full_size - 1.0) / 1.99;
 
                 // This is how many simple double-1 weighted pixel pairs we can sample in the center.
                 // Note how we're not using floor() here. This is to guarantee that alpha is not 0 when
