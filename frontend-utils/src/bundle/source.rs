@@ -31,7 +31,7 @@ pub enum BundleSourceError {
     #[error("Invalid or corrupt zip")]
     InvalidZip,
 
-    #[error("IO error opening file")]
+    #[error("IO error opening file: {0}")]
     Io(#[from] Error),
 }
 
