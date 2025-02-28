@@ -1980,10 +1980,7 @@ impl<'gc> EditText<'gc> {
     }
 
     pub fn text_input(self, character: char, context: &mut UpdateContext<'gc>) {
-        if self.0.read().flags.contains(EditTextFlag::READ_ONLY)
-            || (character.is_control() && character != Self::INPUT_NEWLINE)
-            || self.available_chars() == 0
-        {
+        if self.0.read().flags.contains(EditTextFlag::READ_ONLY) || self.available_chars() == 0 {
             return;
         }
 
