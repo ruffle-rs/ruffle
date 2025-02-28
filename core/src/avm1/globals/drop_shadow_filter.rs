@@ -5,40 +5,43 @@ use crate::avm1::object::NativeObject;
 use crate::avm1::property_decl::{define_properties_on, Declaration};
 use crate::avm1::{Activation, Error, Object, ScriptObject, TObject, Value};
 use crate::string::StringContext;
-use gc_arena::{Collect, GcCell, Mutation};
-use std::ops::Deref;
+use gc_arena::{Collect, Gc, Mutation};
+use std::cell::Cell;
 use swf::{Color, DropShadowFilterFlags, Fixed16, Fixed8};
 
 #[derive(Clone, Debug, Collect)]
 #[collect(require_static)]
 struct DropShadowFilterData {
-    distance: f64,
+    distance: Cell<f64>,
     // TODO: Introduce `Angle<Radians>` struct.
-    angle: f64,
-    color: Color,
-    quality: i32,
-    inner: bool,
-    knockout: bool,
-    blur_x: f64,
-    blur_y: f64,
+    angle: Cell<f64>,
+    color: Cell<Color>,
+    quality: Cell<i32>,
+    inner: Cell<bool>,
+    knockout: Cell<bool>,
+    blur_x: Cell<f64>,
+    blur_y: Cell<f64>,
     // TODO: Introduce unsigned `Fixed8`?
-    strength: u16,
-    hide_object: bool,
+    strength: Cell<u16>,
+    hide_object: Cell<bool>,
 }
 
 impl From<&DropShadowFilterData> for swf::DropShadowFilter {
     fn from(filter: &DropShadowFilterData) -> swf::DropShadowFilter {
         let mut flags = DropShadowFilterFlags::empty();
-        flags |= DropShadowFilterFlags::from_passes(filter.quality as u8);
-        flags.set(DropShadowFilterFlags::KNOCKOUT, filter.knockout);
-        flags.set(DropShadowFilterFlags::INNER_SHADOW, filter.inner);
-        flags.set(DropShadowFilterFlags::COMPOSITE_SOURCE, !filter.hide_object);
+        flags |= DropShadowFilterFlags::from_passes(filter.quality.get() as u8);
+        flags.set(DropShadowFilterFlags::KNOCKOUT, filter.knockout.get());
+        flags.set(DropShadowFilterFlags::INNER_SHADOW, filter.inner.get());
+        flags.set(
+            DropShadowFilterFlags::COMPOSITE_SOURCE,
+            !filter.hide_object.get(),
+        );
         swf::DropShadowFilter {
-            color: filter.color,
-            blur_x: Fixed16::from_f64(filter.blur_x),
-            blur_y: Fixed16::from_f64(filter.blur_y),
-            angle: Fixed16::from_f64(filter.angle),
-            distance: Fixed16::from_f64(filter.distance),
+            color: filter.color.get(),
+            blur_x: Fixed16::from_f64(filter.blur_x.get()),
+            blur_y: Fixed16::from_f64(filter.blur_y.get()),
+            angle: Fixed16::from_f64(filter.angle.get()),
+            distance: Fixed16::from_f64(filter.distance.get()),
             strength: Fixed8::from_f64(filter.strength()),
             flags,
         }
@@ -48,16 +51,16 @@ impl From<&DropShadowFilterData> for swf::DropShadowFilter {
 impl From<swf::DropShadowFilter> for DropShadowFilterData {
     fn from(filter: swf::DropShadowFilter) -> DropShadowFilterData {
         Self {
-            distance: filter.distance.into(),
-            angle: filter.angle.into(),
-            color: filter.color,
-            quality: filter.num_passes().into(),
-            strength: (filter.strength.to_f64() * 256.0) as u16,
-            knockout: filter.is_knockout(),
-            blur_x: filter.blur_x.into(),
-            blur_y: filter.blur_y.into(),
-            inner: filter.is_inner(),
-            hide_object: filter.hide_object(),
+            distance: Cell::new(filter.distance.into()),
+            angle: Cell::new(filter.angle.into()),
+            color: Cell::new(filter.color),
+            quality: Cell::new(filter.num_passes().into()),
+            strength: Cell::new((filter.strength.to_f64() * 256.0) as u16),
+            knockout: Cell::new(filter.is_knockout()),
+            blur_x: Cell::new(filter.blur_x.into()),
+            blur_y: Cell::new(filter.blur_y.into()),
+            inner: Cell::new(filter.is_inner()),
+            hide_object: Cell::new(filter.hide_object()),
         }
     }
 }
@@ -66,38 +69,39 @@ impl Default for DropShadowFilterData {
     #[allow(clippy::approx_constant)]
     fn default() -> Self {
         Self {
-            distance: 4.0,
-            angle: 0.785398163, // ~45 degrees
-            color: Color::BLACK,
-            quality: 1,
-            inner: false,
-            knockout: false,
-            blur_x: 4.0,
-            blur_y: 4.0,
-            strength: 1 << 8,
-            hide_object: false,
+            distance: Cell::new(4.0),
+            angle: Cell::new(0.785398163), // ~45 degrees
+            color: Cell::new(Color::BLACK),
+            quality: Cell::new(1),
+            inner: Cell::new(false),
+            knockout: Cell::new(false),
+            blur_x: Cell::new(4.0),
+            blur_y: Cell::new(4.0),
+            strength: Cell::new(1 << 8),
+            hide_object: Cell::new(false),
         }
     }
 }
 
 impl DropShadowFilterData {
     pub fn strength(&self) -> f64 {
-        f64::from(self.strength) / 256.0
+        f64::from(self.strength.get()) / 256.0
     }
 
-    pub fn set_strength(&mut self, strength: f64) {
-        self.strength = ((strength * 256.0) as u16).clamp(0, 0xFF00)
+    pub fn set_strength(&self, strength: f64) {
+        let strength = ((strength * 256.0) as u16).clamp(0, 0xFF00);
+        self.strength.set(strength);
     }
 }
 
 #[derive(Copy, Clone, Debug, Collect)]
 #[collect(no_drop)]
 #[repr(transparent)]
-pub struct DropShadowFilter<'gc>(GcCell<'gc, DropShadowFilterData>);
+pub struct DropShadowFilter<'gc>(Gc<'gc, DropShadowFilterData>);
 
 impl<'gc> DropShadowFilter<'gc> {
     fn new(activation: &mut Activation<'_, 'gc>, args: &[Value<'gc>]) -> Result<Self, Error<'gc>> {
-        let drop_shadow_filter = Self(GcCell::new(activation.gc(), Default::default()));
+        let drop_shadow_filter = Self(Gc::new(activation.gc(), Default::default()));
         drop_shadow_filter.set_distance(activation, args.get(0))?;
         drop_shadow_filter.set_angle(activation, args.get(1))?;
         drop_shadow_filter.set_color(activation, args.get(2))?;
@@ -113,193 +117,193 @@ impl<'gc> DropShadowFilter<'gc> {
     }
 
     pub fn from_filter(gc_context: &Mutation<'gc>, filter: swf::DropShadowFilter) -> Self {
-        Self(GcCell::new(gc_context, filter.into()))
+        Self(Gc::new(gc_context, filter.into()))
     }
 
-    pub(crate) fn duplicate(&self, gc_context: &Mutation<'gc>) -> Self {
-        Self(GcCell::new(gc_context, self.0.read().clone()))
+    pub(crate) fn duplicate(self, gc_context: &Mutation<'gc>) -> Self {
+        Self(Gc::new(gc_context, self.0.as_ref().clone()))
     }
 
-    fn distance(&self) -> f64 {
-        self.0.read().distance
+    fn distance(self) -> f64 {
+        self.0.distance.get()
     }
 
     fn set_distance(
-        &self,
+        self,
         activation: &mut Activation<'_, 'gc>,
         value: Option<&Value<'gc>>,
     ) -> Result<(), Error<'gc>> {
         if let Some(value) = value {
             let distance = value.coerce_to_f64(activation)?;
-            self.0.write(activation.gc()).distance = distance;
+            self.0.distance.set(distance);
         }
         Ok(())
     }
 
-    fn angle(&self) -> f64 {
-        self.0.read().angle.to_degrees()
+    fn angle(self) -> f64 {
+        self.0.angle.get().to_degrees()
     }
 
     fn set_angle(
-        &self,
+        self,
         activation: &mut Activation<'_, 'gc>,
         value: Option<&Value<'gc>>,
     ) -> Result<(), Error<'gc>> {
         if let Some(value) = value {
             let angle = (value.coerce_to_f64(activation)? % 360.0).to_radians();
-            self.0.write(activation.gc()).angle = angle;
+            self.0.angle.set(angle);
         }
         Ok(())
     }
 
-    fn color(&self) -> i32 {
-        self.0.read().color.to_rgb() as i32
+    fn color(self) -> i32 {
+        self.0.color.get().to_rgb() as i32
     }
 
     fn set_color(
-        &self,
+        self,
         activation: &mut Activation<'_, 'gc>,
         value: Option<&Value<'gc>>,
     ) -> Result<(), Error<'gc>> {
         if let Some(value) = value {
             let value = value.coerce_to_u32(activation)?;
-            let mut write = self.0.write(activation.gc());
-            write.color = Color::from_rgb(value, write.color.a);
+            let color = self.0.color.get();
+            self.0.color.set(Color::from_rgb(value, color.a));
         }
         Ok(())
     }
 
-    fn alpha(&self) -> f64 {
-        f64::from(self.0.read().color.a) / 255.0
+    fn alpha(self) -> f64 {
+        f64::from(self.0.color.get().a) / 255.0
     }
 
     fn set_alpha(
-        &self,
+        self,
         activation: &mut Activation<'_, 'gc>,
         value: Option<&Value<'gc>>,
     ) -> Result<(), Error<'gc>> {
         if let Some(value) = value {
             let alpha = (value.coerce_to_f64(activation)? * 255.0) as u8;
-            self.0.write(activation.gc()).color.a = alpha;
+            let mut color = self.0.color.get();
+            color.a = alpha;
+            self.0.color.set(color);
         }
         Ok(())
     }
 
-    fn quality(&self) -> i32 {
-        self.0.read().quality
+    fn quality(self) -> i32 {
+        self.0.quality.get()
     }
 
     fn set_quality(
-        &self,
+        self,
         activation: &mut Activation<'_, 'gc>,
         value: Option<&Value<'gc>>,
     ) -> Result<(), Error<'gc>> {
         if let Some(value) = value {
             let quality = value.coerce_to_i32(activation)?.clamp(0, 15);
-            self.0.write(activation.gc()).quality = quality;
+            self.0.quality.set(quality);
         }
         Ok(())
     }
 
-    fn inner(&self) -> bool {
-        self.0.read().inner
+    fn inner(self) -> bool {
+        self.0.inner.get()
     }
 
     fn set_inner(
-        &self,
+        self,
         activation: &mut Activation<'_, 'gc>,
         value: Option<&Value<'gc>>,
     ) -> Result<(), Error<'gc>> {
         if let Some(value) = value {
             let inner = value.as_bool(activation.swf_version());
-            self.0.write(activation.gc()).inner = inner;
+            self.0.inner.set(inner);
         }
         Ok(())
     }
 
-    fn knockout(&self) -> bool {
-        self.0.read().knockout
+    fn knockout(self) -> bool {
+        self.0.knockout.get()
     }
 
     fn set_knockout(
-        &self,
+        self,
         activation: &mut Activation<'_, 'gc>,
         value: Option<&Value<'gc>>,
     ) -> Result<(), Error<'gc>> {
         if let Some(value) = value {
             let knockout = value.as_bool(activation.swf_version());
-            self.0.write(activation.gc()).knockout = knockout;
+            self.0.knockout.set(knockout);
         }
         Ok(())
     }
 
-    fn blur_x(&self) -> f64 {
-        self.0.read().blur_x
+    fn blur_x(self) -> f64 {
+        self.0.blur_x.get()
     }
 
     fn set_blur_x(
-        &self,
+        self,
         activation: &mut Activation<'_, 'gc>,
         value: Option<&Value<'gc>>,
     ) -> Result<(), Error<'gc>> {
         if let Some(value) = value {
             let blur_x = value.coerce_to_f64(activation)?.clamp(0.0, 255.0);
-            self.0.write(activation.gc()).blur_x = blur_x;
+            self.0.blur_x.set(blur_x);
         }
         Ok(())
     }
 
-    fn blur_y(&self) -> f64 {
-        self.0.read().blur_y
+    fn blur_y(self) -> f64 {
+        self.0.blur_y.get()
     }
 
     fn set_blur_y(
-        &self,
+        self,
         activation: &mut Activation<'_, 'gc>,
         value: Option<&Value<'gc>>,
     ) -> Result<(), Error<'gc>> {
         if let Some(value) = value {
             let blur_y = value.coerce_to_f64(activation)?.clamp(0.0, 255.0);
-            self.0.write(activation.gc()).blur_y = blur_y;
+            self.0.blur_y.set(blur_y);
         }
         Ok(())
     }
 
-    fn strength(&self) -> f64 {
-        self.0.read().strength()
+    fn strength(self) -> f64 {
+        self.0.strength()
     }
 
     fn set_strength(
-        &self,
+        self,
         activation: &mut Activation<'_, 'gc>,
         value: Option<&Value<'gc>>,
     ) -> Result<(), Error<'gc>> {
         if let Some(value) = value {
-            self.0
-                .write(activation.gc())
-                .set_strength(value.coerce_to_f64(activation)?);
+            self.0.set_strength(value.coerce_to_f64(activation)?);
         }
         Ok(())
     }
 
-    fn hide_object(&self) -> bool {
-        self.0.read().hide_object
+    fn hide_object(self) -> bool {
+        self.0.hide_object.get()
     }
 
     fn set_hide_object(
-        &self,
+        self,
         activation: &mut Activation<'_, 'gc>,
         value: Option<&Value<'gc>>,
     ) -> Result<(), Error<'gc>> {
         if let Some(value) = value {
             let hide_object = value.as_bool(activation.swf_version());
-            self.0.write(activation.gc()).hide_object = hide_object;
+            self.0.hide_object.set(hide_object);
         }
         Ok(())
     }
 
-    pub fn filter(&self) -> swf::DropShadowFilter {
-        self.0.read().deref().into()
+    pub fn filter(self) -> swf::DropShadowFilter {
+        self.0.as_ref().into()
     }
 }
 
