@@ -10,7 +10,7 @@ use crate::avm1::{ArrayObject, Object, ObjectPtr, ScriptObject, TObject};
 use crate::display_object::{DisplayObject, TDisplayObject};
 use crate::string::{AvmString, StringContext, SwfStrExt as _};
 use crate::tag_utils::SwfSlice;
-use gc_arena::{Collect, Gc, GcCell, Mutation};
+use gc_arena::{Collect, Gc, Mutation};
 use ruffle_macros::istr;
 use std::{borrow::Cow, fmt, num::NonZeroU8};
 use swf::{avm1::types::FunctionFlags, SwfStr};
@@ -488,12 +488,12 @@ impl<'gc> From<Gc<'gc, Avm1Function<'gc>>> for Executable<'gc> {
 /// Represents an `Object` that holds executable code.
 #[derive(Clone, Collect, Copy)]
 #[collect(no_drop)]
-pub struct FunctionObject<'gc>(GcCell<'gc, FunctionObjectData<'gc>>);
+pub struct FunctionObject<'gc>(Gc<'gc, FunctionObjectData<'gc>>);
 
 impl fmt::Debug for FunctionObject<'_> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         f.debug_struct("FunctionObject")
-            .field("ptr", &self.0.as_ptr())
+            .field("ptr", &Gc::as_ptr(self.0))
             .finish()
     }
 }
@@ -517,7 +517,7 @@ impl<'gc> FunctionObject<'gc> {
         constructor: Option<Executable<'gc>>,
         fn_proto: Object<'gc>,
     ) -> Self {
-        Self(GcCell::new(
+        Self(Gc::new(
             context.gc(),
             FunctionObjectData {
                 base: ScriptObject::new(context, Some(fn_proto)),
@@ -590,7 +590,7 @@ impl<'gc> FunctionObject<'gc> {
 
 impl<'gc> TObject<'gc> for FunctionObject<'gc> {
     fn raw_script_object(&self) -> ScriptObject<'gc> {
-        self.0.read().base
+        self.0.base
     }
 
     fn call(
@@ -635,7 +635,7 @@ impl<'gc> TObject<'gc> for FunctionObject<'gc> {
             );
         }
         // TODO: de-duplicate code.
-        if let Some(exec) = &self.0.read().constructor {
+        if let Some(exec) = &self.0.constructor {
             let _ = exec.exec(
                 ExecutionName::Static("[ctor]"),
                 activation,
@@ -645,7 +645,7 @@ impl<'gc> TObject<'gc> for FunctionObject<'gc> {
                 ExecutionReason::FunctionCall,
                 (*self).into(),
             )?;
-        } else if let Some(exec) = &self.0.read().function {
+        } else if let Some(exec) = &self.0.function {
             let _ = exec.exec(
                 ExecutionName::Static("[ctor]"),
                 activation,
@@ -684,7 +684,7 @@ impl<'gc> TObject<'gc> for FunctionObject<'gc> {
             );
         }
         // TODO: de-duplicate code.
-        if let Some(exec) = &self.0.read().constructor {
+        if let Some(exec) = &self.0.constructor {
             // Native constructors will return the constructed `this`.
             // This allows for `new Object` etc. returning different types.
             let this = exec.exec(
@@ -697,7 +697,7 @@ impl<'gc> TObject<'gc> for FunctionObject<'gc> {
                 (*self).into(),
             )?;
             Ok(this)
-        } else if let Some(exec) = &self.0.read().function {
+        } else if let Some(exec) = &self.0.function {
             let _ = exec.exec(
                 ExecutionName::Static("[ctor]"),
                 activation,
@@ -718,7 +718,7 @@ impl<'gc> TObject<'gc> for FunctionObject<'gc> {
         activation: &mut Activation<'_, 'gc>,
         prototype: Object<'gc>,
     ) -> Result<Object<'gc>, Error<'gc>> {
-        Ok(FunctionObject(GcCell::new(
+        Ok(FunctionObject(Gc::new(
             activation.gc(),
             FunctionObjectData {
                 base: ScriptObject::new(&activation.context.strings, Some(prototype)),
@@ -730,11 +730,11 @@ impl<'gc> TObject<'gc> for FunctionObject<'gc> {
     }
 
     fn as_executable(&self) -> Option<Executable<'gc>> {
-        self.0.read().function.clone()
+        self.0.function.clone()
     }
 
     fn as_ptr(&self) -> *const ObjectPtr {
-        self.0.read().base.as_ptr()
+        self.0.base.as_ptr()
     }
 }
 
