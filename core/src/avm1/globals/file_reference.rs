@@ -1,3 +1,5 @@
+use std::cell::{Cell, RefCell};
+
 use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
 use crate::avm1::function::FunctionObject;
@@ -7,7 +9,9 @@ use crate::avm1::{Executable, NativeObject, Object, ScriptObject, TObject, Value
 use crate::avm1_stub;
 use crate::backend::ui::{FileDialogResult, FileFilter};
 use crate::string::{AvmString, StringContext};
-use gc_arena::{Collect, GcCell};
+use gc_arena::barrier::unlock;
+use gc_arena::lock::Lock;
+use gc_arena::{Collect, Gc, Mutation};
 use url::Url;
 
 // There are two undocumented functions in FileReference: convertToPPT and deleteConvertedPPT.
@@ -20,16 +24,15 @@ use url::Url;
 
 #[derive(Clone, Copy, Collect)]
 #[collect(no_drop)]
-pub struct FileReferenceObject<'gc>(GcCell<'gc, FileReferenceData<'gc>>);
+pub struct FileReferenceObject<'gc>(Gc<'gc, FileReferenceData<'gc>>);
 
 impl<'gc> FileReferenceObject<'gc> {
     pub fn init_from_dialog_result(
-        &self,
+        self,
         activation: &mut Activation<'_, 'gc>,
         dialog_result: &dyn FileDialogResult,
     ) {
-        let mut s = self.0.write(activation.gc());
-        s.is_initialised = true;
+        self.0.is_initialised.set(true);
 
         let date_proto = activation.context.avm1.prototypes().date_constructor;
         if let Some(creation_time) = dialog_result.creation_time() {
@@ -37,7 +40,7 @@ impl<'gc> FileReferenceObject<'gc> {
                 activation,
                 &[(creation_time.timestamp_millis() as f64).into()],
             ) {
-                s.creation_date = Some(obj);
+                self.set_creation_date(activation.gc(), Some(obj));
             }
         }
 
@@ -46,15 +49,23 @@ impl<'gc> FileReferenceObject<'gc> {
                 activation,
                 &[(modification_time.timestamp_millis() as f64).into()],
             ) {
-                s.modification_date = Some(obj);
+                self.set_modification_date(activation.gc(), Some(obj));
             }
         }
 
-        s.file_type = dialog_result.file_type();
-        s.name = dialog_result.file_name();
-        s.size = dialog_result.size();
-        s.creator = dialog_result.creator();
-        s.data = dialog_result.contents().to_vec();
+        self.0.file_type.replace(dialog_result.file_type());
+        self.0.name.replace(dialog_result.file_name());
+        self.0.size.replace(dialog_result.size());
+        self.0.creator.replace(dialog_result.creator());
+        self.0.data.replace(dialog_result.contents().to_vec());
+    }
+
+    fn set_creation_date(self, gc: &'gc Mutation<'gc>, creation_date: Option<Object<'gc>>) {
+        unlock!(Gc::write(gc, self.0), FileReferenceData, creation_date).set(creation_date);
+    }
+
+    fn set_modification_date(self, gc: &'gc Mutation<'gc>, modification_date: Option<Object<'gc>>) {
+        unlock!(Gc::write(gc, self.0), FileReferenceData, modification_date).set(modification_date);
     }
 }
 
@@ -62,19 +73,19 @@ impl<'gc> FileReferenceObject<'gc> {
 #[collect(no_drop)]
 pub struct FileReferenceData<'gc> {
     /// Has this object been initialised from a dialog
-    is_initialised: bool,
+    is_initialised: Cell<bool>,
 
-    creation_date: Option<Object<'gc>>,
-    creator: Option<String>,
-    modification_date: Option<Object<'gc>>,
-    name: Option<String>,
-    post_data: String,
-    size: Option<u64>,
-    file_type: Option<String>,
+    creation_date: Lock<Option<Object<'gc>>>,
+    creator: RefCell<Option<String>>,
+    modification_date: Lock<Option<Object<'gc>>>,
+    name: RefCell<Option<String>>,
+    post_data: RefCell<String>,
+    size: Cell<Option<u64>>,
+    file_type: RefCell<Option<String>>,
 
     /// The contents of the referenced file
     /// We track this here so that it can be referenced in FileReference.upload
-    data: Vec<u8>,
+    data: RefCell<Vec<u8>>,
 }
 
 const PROTO_DECLS: &[Declaration] = declare_properties! {
@@ -101,8 +112,8 @@ pub fn creation_date<'gc>(
     if let NativeObject::FileReference(file_ref) = this.native() {
         return Ok(file_ref
             .0
-            .read()
             .creation_date
+            .get()
             .map_or(Value::Undefined, |x| x.into()));
     }
 
@@ -117,8 +128,8 @@ pub fn creator<'gc>(
     if let NativeObject::FileReference(file_ref) = this.native() {
         return Ok(file_ref
             .0
-            .read()
             .creator
+            .borrow()
             .as_ref()
             .map_or(Value::Undefined, |x| {
                 AvmString::new_utf8(activation.gc(), x).into()
@@ -136,8 +147,8 @@ pub fn modification_date<'gc>(
     if let NativeObject::FileReference(file_ref) = this.native() {
         return Ok(file_ref
             .0
-            .read()
             .modification_date
+            .get()
             .map_or(Value::Undefined, |x| x.into()));
     }
 
@@ -152,8 +163,8 @@ pub fn name<'gc>(
     if let NativeObject::FileReference(file_ref) = this.native() {
         return Ok(file_ref
             .0
-            .read()
             .name
+            .borrow()
             .as_ref()
             .map_or(Value::Undefined, |x| {
                 AvmString::new_utf8(activation.gc(), x).into()
@@ -170,7 +181,7 @@ pub fn post_data<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let NativeObject::FileReference(file_ref) = this.native() {
         return Ok(
-            AvmString::new_utf8(activation.gc(), file_ref.0.read().post_data.clone()).into(),
+            AvmString::new_utf8(activation.gc(), file_ref.0.post_data.borrow().clone()).into(),
         );
     }
 
@@ -188,7 +199,7 @@ pub fn set_post_data<'gc>(
         .coerce_to_string(activation)?;
 
     if let NativeObject::FileReference(file_ref) = this.native() {
-        file_ref.0.write(activation.gc()).post_data = post_data.to_string();
+        file_ref.0.post_data.replace(post_data.to_string());
     }
 
     Ok(Value::Undefined)
@@ -200,11 +211,7 @@ pub fn size<'gc>(
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let NativeObject::FileReference(file_ref) = this.native() {
-        return Ok(file_ref
-            .0
-            .read()
-            .size
-            .map_or(Value::Undefined, |x| x.into()));
+        return Ok(file_ref.0.size.get().map_or(Value::Undefined, |x| x.into()));
     }
 
     Ok(Value::Undefined)
@@ -218,8 +225,8 @@ pub fn file_type<'gc>(
     if let NativeObject::FileReference(file_ref) = this.native() {
         return Ok(file_ref
             .0
-            .read()
             .file_type
+            .borrow()
             .as_ref()
             .map_or(Value::Undefined, |x| {
                 AvmString::new_utf8(activation.gc(), x).into()
@@ -375,7 +382,7 @@ pub fn upload<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let NativeObject::FileReference(file_reference) = this.native() {
         // If we haven't `.browse()`ed something yet, we can't upload it
-        if !file_reference.0.read().is_initialised {
+        if !file_reference.0.is_initialised.get() {
             return Ok(false.into());
         }
 
@@ -398,11 +405,11 @@ pub fn upload<'gc>(
                 activation.context.player.clone(),
                 this,
                 url_string,
-                file_reference.0.read().data.clone(),
+                file_reference.0.data.borrow().clone(),
                 file_reference
                     .0
-                    .read()
                     .name
+                    .borrow()
                     .clone()
                     .unwrap_or_else(|| "file".to_string()),
             );
@@ -425,7 +432,7 @@ fn constructor<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     this.set_native(
         activation.gc(),
-        NativeObject::FileReference(FileReferenceObject(GcCell::new(
+        NativeObject::FileReference(FileReferenceObject(Gc::new(
             activation.gc(),
             Default::default(),
         ))),
