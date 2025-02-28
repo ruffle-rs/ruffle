@@ -292,12 +292,8 @@ impl<'gc> TDisplayObject<'gc> for Text<'gc> {
         }
     }
 
-    fn object2(&self) -> Avm2Value<'gc> {
-        self.0
-            .read()
-            .avm2_object
-            .map(|o| o.into())
-            .unwrap_or(Avm2Value::Null)
+    fn object2(&self) -> Option<Avm2Object<'gc>> {
+        self.0.read().avm2_object
     }
 
     fn set_object2(&self, context: &mut UpdateContext<'gc>, to: Avm2Object<'gc>) {

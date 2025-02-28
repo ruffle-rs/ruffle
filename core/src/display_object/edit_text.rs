@@ -1999,7 +1999,7 @@ impl<'gc> EditText<'gc> {
             return;
         };
 
-        if let Avm2Value::Object(target) = self.object2() {
+        if let Some(target) = self.object2() {
             let character_string = AvmString::new_utf8(context.gc(), character.to_string());
 
             let mut activation = Avm2Activation::from_nothing(context);
@@ -2036,7 +2036,7 @@ impl<'gc> EditText<'gc> {
     }
 
     fn initialize_as_broadcaster(&self, activation: &mut Avm1Activation<'_, 'gc>) {
-        if let Avm1Value::Object(object) = self.object() {
+        if let Some(object) = self.object1() {
             activation.context.avm1.broadcaster_functions().initialize(
                 &activation.context.strings,
                 object,
@@ -2057,14 +2057,14 @@ impl<'gc> EditText<'gc> {
     }
 
     fn on_changed(&self, activation: &mut Avm1Activation<'_, 'gc>) {
-        if let Avm1Value::Object(object) = self.object() {
+        if let Some(object) = self.object1() {
             let _ = object.call_method(
                 "broadcastMessage".into(),
                 &["onChanged".into(), object.into()],
                 activation,
                 ExecutionReason::Special,
             );
-        } else if let Avm2Value::Object(object) = self.object2() {
+        } else if let Some(object) = self.object2() {
             let change_evt = Avm2EventObject::bare_event(
                 activation.context,
                 "change",
@@ -2076,7 +2076,7 @@ impl<'gc> EditText<'gc> {
     }
 
     fn on_scroller(&self, activation: &mut Avm1Activation<'_, 'gc>) {
-        if let Avm1Value::Object(object) = self.object() {
+        if let Some(object) = self.object1() {
             let _ = object.call_method(
                 "broadcastMessage".into(),
                 &["onScroller".into(), object.into()],
@@ -2366,7 +2366,7 @@ impl<'gc> EditText<'gc> {
         );
         // [NA]: Should all `from_nothings` be scoped to root? It definitely should here.
         activation.set_scope_to_display_object(parent);
-        let this = parent.object().coerce_to_object(&mut activation);
+        let this = Avm1Value::or_undef(parent.object1()).coerce_to_object(&mut activation);
 
         if let Some((name, args)) = address.split_once(b',') {
             let name = AvmString::new(activation.gc(), name);
@@ -2387,7 +2387,7 @@ impl<'gc> EditText<'gc> {
                 error!("Couldn't execute URL \"{url:?}\": {e:?}");
             }
         } else if let Some(address) = url.strip_prefix(WStr::from_units(b"event:")) {
-            if let Avm2Value::Object(object) = self.object2() {
+            if let Some(object) = self.object2() {
                 let mut activation = Avm2Activation::from_nothing(context);
                 let text = AvmString::new(activation.gc(), address);
                 let event = Avm2EventObject::text_event(&mut activation, "link", text, true, false);
@@ -2490,7 +2490,7 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
 
     /// Construct objects placed on this frame.
     fn construct_frame(&self, context: &mut UpdateContext<'gc>) {
-        if self.movie().is_action_script_3() && matches!(self.object2(), Avm2Value::Null) {
+        if self.movie().is_action_script_3() && self.object2().is_none() {
             self.construct_as_avm2_object(context, (*self).into());
             self.on_construction_complete(context);
         }
@@ -2523,22 +2523,12 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
         }
     }
 
-    fn object(&self) -> Avm1Value<'gc> {
-        self.0
-            .read()
-            .object
-            .and_then(|o| o.as_avm1_object())
-            .map(Avm1Value::from)
-            .unwrap_or(Avm1Value::Undefined)
+    fn object1(&self) -> Option<Avm1Object<'gc>> {
+        self.0.read().object.and_then(|o| o.as_avm1_object())
     }
 
-    fn object2(&self) -> Avm2Value<'gc> {
-        self.0
-            .read()
-            .object
-            .and_then(|o| o.as_avm2_object())
-            .map(Avm2Value::from)
-            .unwrap_or(Avm2Value::Null)
+    fn object2(&self) -> Option<Avm2Object<'gc>> {
+        self.0.read().object.and_then(|o| o.as_avm2_object())
     }
 
     fn set_object2(&self, context: &mut UpdateContext<'gc>, to: Avm2Object<'gc>) {
@@ -2747,7 +2737,7 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
         }
 
         // Unregister any text fields that may be bound to *this* text field.
-        if let Avm1Value::Object(object) = self.object() {
+        if let Some(object) = self.object1() {
             if let Some(stage_object) = object.as_stage_object() {
                 stage_object.unregister_text_field_bindings(context);
             }

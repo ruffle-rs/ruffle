@@ -118,10 +118,10 @@ pub fn get_down_state<'gc>(
         .as_display_object()
         .and_then(|this| this.as_avm2_button())
     {
-        return Ok(btn
-            .get_state_child(ButtonState::DOWN)
-            .map(|state| state.object2())
-            .unwrap_or(Value::Null));
+        return Ok(Value::or_null(
+            btn.get_state_child(ButtonState::DOWN)
+                .and_then(|state| state.object2()),
+        ));
     }
 
     Ok(Value::Undefined)
@@ -161,10 +161,10 @@ pub fn get_over_state<'gc>(
         .as_display_object()
         .and_then(|this| this.as_avm2_button())
     {
-        return Ok(btn
-            .get_state_child(ButtonState::OVER)
-            .map(|state| state.object2())
-            .unwrap_or(Value::Null));
+        return Ok(Value::or_null(
+            btn.get_state_child(ButtonState::OVER)
+                .and_then(|state| state.object2()),
+        ));
     }
 
     Ok(Value::Undefined)
@@ -204,10 +204,10 @@ pub fn get_hit_test_state<'gc>(
         .as_display_object()
         .and_then(|this| this.as_avm2_button())
     {
-        return Ok(btn
-            .get_state_child(ButtonState::HIT_TEST)
-            .map(|state| state.object2())
-            .unwrap_or(Value::Null));
+        return Ok(Value::or_null(
+            btn.get_state_child(ButtonState::HIT_TEST)
+                .and_then(|state| state.object2()),
+        ));
     }
 
     Ok(Value::Undefined)
@@ -247,10 +247,10 @@ pub fn get_up_state<'gc>(
         .as_display_object()
         .and_then(|this| this.as_avm2_button())
     {
-        return Ok(btn
-            .get_state_child(ButtonState::UP)
-            .map(|state| state.object2())
-            .unwrap_or(Value::Null));
+        return Ok(Value::or_null(
+            btn.get_state_child(ButtonState::UP)
+                .and_then(|state| state.object2()),
+        ));
     }
 
     Ok(Value::Undefined)

@@ -264,7 +264,7 @@ pub trait TInteractiveObject<'gc>:
             }
         }
 
-        let target = if let Avm2Value::Object(target) = self.as_displayobject().object2() {
+        let target = if let Some(target) = self.as_displayobject().object2() {
             target
         } else {
             return ClipEventResult::NotHandled;
@@ -413,7 +413,7 @@ pub trait TInteractiveObject<'gc>:
                         MouseButton::Left,
                     );
 
-                    if let Avm2Value::Object(avm2_target) = tgt.object2() {
+                    if let Some(avm2_target) = tgt.object2() {
                         handled = Avm2::dispatch_event(activation.context, avm2_event, avm2_target)
                             || handled;
                     }
@@ -449,7 +449,7 @@ pub trait TInteractiveObject<'gc>:
                         MouseButton::Left,
                     );
 
-                    if let Avm2Value::Object(avm2_target) = tgt.object2() {
+                    if let Some(avm2_target) = tgt.object2() {
                         handled = Avm2::dispatch_event(activation.context, avm2_event, avm2_target)
                             || handled;
                     }
@@ -603,17 +603,15 @@ pub trait TInteractiveObject<'gc>:
         other: Option<InteractiveObject<'gc>>,
     ) {
         let self_do = self.as_displayobject();
-        if let Avm1Value::Object(object) = self_do.object() {
-            let other = other
-                .map(|d| d.as_displayobject().object())
-                .unwrap_or(Avm1Value::Null);
+        if let Some(object) = self_do.object1() {
+            let other = Avm1Value::or_null(other.and_then(|d| d.as_displayobject().object1()));
             let method_name = if focused {
                 "onSetFocus".into()
             } else {
                 "onKillFocus".into()
             };
             Avm1::run_stack_frame_for_method(self_do, object, context, method_name, &[other]);
-        } else if let Avm2Value::Object(object) = self_do.object2() {
+        } else if let Some(object) = self_do.object2() {
             let mut activation = Avm2Activation::from_nothing(context);
             let event_name = if focused { "focusIn" } else { "focusOut" };
             let event = EventObject::focus_event(&mut activation, event_name, false, other, 0);

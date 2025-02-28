@@ -1,12 +1,12 @@
 //! `MovieClip` display object and support code.
-use crate::avm1::{Object as Avm1Object, StageObject, TObject as Avm1TObject, Value as Avm1Value};
+use crate::avm1::{Object as Avm1Object, StageObject, TObject as Avm1TObject};
 use crate::avm2::object::LoaderInfoObject;
 use crate::avm2::object::LoaderStream;
 use crate::avm2::script::Script;
 use crate::avm2::Activation as Avm2Activation;
 use crate::avm2::{
     Avm2, ClassObject as Avm2ClassObject, Error as Avm2Error, Object as Avm2Object,
-    QName as Avm2QName, StageObject as Avm2StageObject, TObject as Avm2TObject, Value as Avm2Value,
+    QName as Avm2QName, StageObject as Avm2StageObject, TObject as Avm2TObject,
 };
 use crate::backend::audio::{AudioManager, SoundHandle, SoundInstanceHandle};
 use crate::backend::navigator::Request;
@@ -2144,7 +2144,7 @@ impl<'gc> MovieClip<'gc> {
             .read()
             .unwrap_or_else(|| context.avm2.classes().movieclip);
 
-        if let Avm2Value::Object(object) = self.object2() {
+        if let Some(object) = self.object2() {
             let mut constr_thing = || {
                 let mut activation = Avm2Activation::from_nothing(context);
                 class_object.call_init(object.into(), &[], &mut activation)?;
@@ -2314,22 +2314,19 @@ impl<'gc> MovieClip<'gc> {
             true
         } else if self.avm1_parent().is_none() {
             false
-        } else {
-            let object = self.object();
-            if let Avm1Value::Object(object) = object {
-                let mut activation = Avm1Activation::from_nothing(
-                    context,
-                    ActivationIdentifier::root("[Mouse Pick]"),
-                    self.avm1_root(),
-                );
+        } else if let Some(object) = self.object1() {
+            let mut activation = Avm1Activation::from_nothing(
+                context,
+                ActivationIdentifier::root("[Mouse Pick]"),
+                self.avm1_root(),
+            );
 
-                ClipEvent::BUTTON_EVENT_METHODS
-                    .iter()
-                    .copied()
-                    .any(|handler| object.has_property(&mut activation, handler.into()))
-            } else {
-                false
-            }
+            ClipEvent::BUTTON_EVENT_METHODS
+                .iter()
+                .copied()
+                .any(|handler| object.has_property(&mut activation, handler.into()))
+        } else {
+            false
         }
     }
 
@@ -2556,7 +2553,7 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
             && (self.frames_loaded() >= 1 || self.total_frames() == 0)
         {
             let is_load_frame = !self.0.read().initialized();
-            let needs_construction = if matches!(self.object2(), Avm2Value::Null) {
+            let needs_construction = if self.object2().is_none() {
                 self.allocate_as_avm2_object(context, (*self).into());
                 true
             } else {
@@ -2584,7 +2581,7 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
                 // The supercall constructor for display objects is responsible
                 // for triggering construct_frame on frame 1.
                 for child in self.iter_render_list() {
-                    if running_construct_frame && child.object2().as_object().is_none() {
+                    if running_construct_frame && child.object2().is_none() {
                         continue;
                     }
                     child.construct_frame(context);
@@ -2803,22 +2800,12 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
         }
     }
 
-    fn object(&self) -> Avm1Value<'gc> {
-        self.0
-            .read()
-            .object
-            .and_then(|o| o.as_avm1_object())
-            .map(Avm1Value::from)
-            .unwrap_or(Avm1Value::Undefined)
+    fn object1(&self) -> Option<Avm1Object<'gc>> {
+        self.0.read().object.and_then(|o| o.as_avm1_object())
     }
 
-    fn object2(&self) -> Avm2Value<'gc> {
-        self.0
-            .read()
-            .object
-            .and_then(|o| o.as_avm2_object())
-            .map(Avm2Value::from)
-            .unwrap_or(Avm2Value::Null)
+    fn object2(&self) -> Option<Avm2Object<'gc>> {
+        self.0.read().object.and_then(|o| o.as_avm2_object())
     }
 
     fn set_object2(&self, context: &mut UpdateContext<'gc>, to: Avm2Object<'gc>) {
@@ -2846,7 +2833,7 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
         }
 
         // Unregister any text field variable bindings.
-        if let Avm1Value::Object(object) = self.object() {
+        if let Some(object) = self.object1() {
             if let Some(stage_object) = object.as_stage_object() {
                 stage_object.unregister_text_field_bindings(context);
             }

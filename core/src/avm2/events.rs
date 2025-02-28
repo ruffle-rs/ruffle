@@ -339,15 +339,10 @@ impl Hash for EventHandler<'_> {
 /// to traverse. If no hierarchy is available, this returns `None`, as if the
 /// target had no parent.
 pub fn parent_of(target: Object<'_>) -> Option<Object<'_>> {
-    if let Some(dobj) = target.as_display_object() {
-        if let Some(dparent) = dobj.parent() {
-            if let Value::Object(parent) = dparent.object2() {
-                return Some(parent);
-            }
-        }
-    }
-
-    None
+    target
+        .as_display_object()
+        .and_then(|dobj| dobj.parent())
+        .and_then(|p| p.object2())
 }
 
 /// Call all of the event handlers on a given target.
@@ -435,7 +430,7 @@ pub fn dispatch_event<'gc>(
     // the parent DisplayObject hierarchy, only adding ancestors that have objects constructed.
     let mut parent = target.as_display_object().and_then(|dobj| dobj.parent());
     while let Some(parent_dobj) = parent {
-        if let Value::Object(parent_obj) = parent_dobj.object2() {
+        if let Some(parent_obj) = parent_dobj.object2() {
             ancestor_list.push(parent_obj);
         }
         parent = parent_dobj.parent();
