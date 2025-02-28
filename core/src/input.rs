@@ -1,6 +1,6 @@
 use crate::events::{
-    GamepadButton, KeyCode, KeyDescriptor, KeyLocation, LogicalKey, MouseButton, MouseWheelDelta,
-    NamedKey, PhysicalKey, PlayerEvent, TextControlCode,
+    GamepadButton, ImeEvent, KeyCode, KeyDescriptor, KeyLocation, LogicalKey, MouseButton,
+    MouseWheelDelta, NamedKey, PhysicalKey, PlayerEvent, TextControlCode,
 };
 use chrono::{DateTime, TimeDelta, Utc};
 use std::collections::{HashMap, HashSet};
@@ -53,6 +53,7 @@ pub enum InputEvent {
     TextControl {
         code: TextControlCode,
     },
+    Ime(ImeEvent),
 }
 
 struct ClickEventData {
@@ -190,6 +191,7 @@ impl InputManager {
 
             PlayerEvent::TextInput { codepoint } => InputEvent::TextInput { codepoint },
             PlayerEvent::TextControl { code } => InputEvent::TextControl { code },
+            PlayerEvent::Ime(ime) => InputEvent::Ime(ime),
 
             // The following are not input events.
             PlayerEvent::FocusGained | PlayerEvent::FocusLost => return None,
