@@ -5,24 +5,24 @@ use crate::avm1::object::NativeObject;
 use crate::avm1::property_decl::{define_properties_on, Declaration};
 use crate::avm1::{Activation, Error, Object, ScriptObject, TObject, Value};
 use crate::string::StringContext;
-use gc_arena::{Collect, GcCell, Mutation};
-use std::ops::Deref;
+use gc_arena::{Collect, Gc, Mutation};
+use std::cell::Cell;
 use swf::{BlurFilterFlags, Fixed16};
 
 #[derive(Clone, Debug, Collect)]
 #[collect(require_static)]
 struct BlurFilterData {
-    blur_x: f64,
-    blur_y: f64,
-    quality: i32,
+    blur_x: Cell<f64>,
+    blur_y: Cell<f64>,
+    quality: Cell<i32>,
 }
 
 impl Default for BlurFilterData {
     fn default() -> Self {
         Self {
-            blur_x: 4.0,
-            blur_y: 4.0,
-            quality: 1,
+            blur_x: Cell::new(4.0),
+            blur_y: Cell::new(4.0),
+            quality: Cell::new(1),
         }
     }
 }
@@ -30,9 +30,9 @@ impl Default for BlurFilterData {
 impl From<&BlurFilterData> for swf::BlurFilter {
     fn from(filter: &BlurFilterData) -> swf::BlurFilter {
         swf::BlurFilter {
-            blur_x: Fixed16::from_f64(filter.blur_x),
-            blur_y: Fixed16::from_f64(filter.blur_y),
-            flags: BlurFilterFlags::from_passes(filter.quality as u8),
+            blur_x: Fixed16::from_f64(filter.blur_x.get()),
+            blur_y: Fixed16::from_f64(filter.blur_y.get()),
+            flags: BlurFilterFlags::from_passes(filter.quality.get() as u8),
         }
     }
 }
@@ -40,9 +40,9 @@ impl From<&BlurFilterData> for swf::BlurFilter {
 impl From<swf::BlurFilter> for BlurFilterData {
     fn from(filter: swf::BlurFilter) -> BlurFilterData {
         Self {
-            quality: filter.num_passes().into(),
-            blur_x: filter.blur_x.into(),
-            blur_y: filter.blur_y.into(),
+            quality: Cell::new(filter.num_passes().into()),
+            blur_x: Cell::new(filter.blur_x.into()),
+            blur_y: Cell::new(filter.blur_y.into()),
         }
     }
 }
@@ -50,11 +50,11 @@ impl From<swf::BlurFilter> for BlurFilterData {
 #[derive(Copy, Clone, Debug, Collect)]
 #[collect(no_drop)]
 #[repr(transparent)]
-pub struct BlurFilter<'gc>(GcCell<'gc, BlurFilterData>);
+pub struct BlurFilter<'gc>(Gc<'gc, BlurFilterData>);
 
 impl<'gc> BlurFilter<'gc> {
     fn new(activation: &mut Activation<'_, 'gc>, args: &[Value<'gc>]) -> Result<Self, Error<'gc>> {
-        let blur_filter = Self(GcCell::new(activation.gc(), Default::default()));
+        let blur_filter = Self(Gc::new(activation.gc(), Default::default()));
         blur_filter.set_blur_x(activation, args.get(0))?;
         blur_filter.set_blur_y(activation, args.get(1))?;
         blur_filter.set_quality(activation, args.get(2))?;
@@ -62,63 +62,63 @@ impl<'gc> BlurFilter<'gc> {
     }
 
     pub fn from_filter(gc_context: &Mutation<'gc>, filter: swf::BlurFilter) -> Self {
-        Self(GcCell::new(gc_context, filter.into()))
+        Self(Gc::new(gc_context, filter.into()))
     }
 
-    pub(crate) fn duplicate(&self, gc_context: &Mutation<'gc>) -> Self {
-        Self(GcCell::new(gc_context, self.0.read().clone()))
+    pub(crate) fn duplicate(self, gc_context: &Mutation<'gc>) -> Self {
+        Self(Gc::new(gc_context, self.0.as_ref().clone()))
     }
 
-    fn blur_x(&self) -> f64 {
-        self.0.read().blur_x
+    fn blur_x(self) -> f64 {
+        self.0.blur_x.get()
     }
 
     fn set_blur_x(
-        &self,
+        self,
         activation: &mut Activation<'_, 'gc>,
         value: Option<&Value<'gc>>,
     ) -> Result<(), Error<'gc>> {
         if let Some(value) = value {
             let blur_x = value.coerce_to_f64(activation)?.clamp(0.0, 255.0);
-            self.0.write(activation.gc()).blur_x = blur_x;
+            self.0.blur_x.set(blur_x);
         }
         Ok(())
     }
 
-    fn blur_y(&self) -> f64 {
-        self.0.read().blur_y
+    fn blur_y(self) -> f64 {
+        self.0.blur_y.get()
     }
 
     fn set_blur_y(
-        &self,
+        self,
         activation: &mut Activation<'_, 'gc>,
         value: Option<&Value<'gc>>,
     ) -> Result<(), Error<'gc>> {
         if let Some(value) = value {
             let blur_y = value.coerce_to_f64(activation)?.clamp(0.0, 255.0);
-            self.0.write(activation.gc()).blur_y = blur_y;
+            self.0.blur_y.set(blur_y);
         }
         Ok(())
     }
 
-    fn quality(&self) -> i32 {
-        self.0.read().quality
+    fn quality(self) -> i32 {
+        self.0.quality.get()
     }
 
     fn set_quality(
-        &self,
+        self,
         activation: &mut Activation<'_, 'gc>,
         value: Option<&Value<'gc>>,
     ) -> Result<(), Error<'gc>> {
         if let Some(value) = value {
             let quality = value.coerce_to_i32(activation)?.clamp(0, 15);
-            self.0.write(activation.gc()).quality = quality;
+            self.0.quality.set(quality);
         }
         Ok(())
     }
 
-    pub fn filter(&self) -> swf::BlurFilter {
-        self.0.read().deref().into()
+    pub fn filter(self) -> swf::BlurFilter {
+        self.0.as_ref().into()
     }
 }
 
