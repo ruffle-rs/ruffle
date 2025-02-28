@@ -5,9 +5,9 @@ use crate::avm1::object::NativeObject;
 use crate::avm1::property_decl::{define_properties_on, Declaration};
 use crate::avm1::{Activation, Error, Object, ScriptObject, TObject, Value};
 use crate::string::StringContext;
-use gc_arena::{Collect, GcCell, Mutation};
+use gc_arena::{Collect, Gc, Mutation};
 use ruffle_macros::istr;
-use std::ops::Deref;
+use std::cell::Cell;
 use swf::{BevelFilterFlags, Color, Fixed16, Fixed8, GradientFilterFlags};
 
 #[derive(Copy, Clone, Debug, Collect)]
@@ -19,7 +19,7 @@ pub enum BevelFilterType {
 }
 
 impl BevelFilterType {
-    pub fn as_bevel_flags(&self) -> BevelFilterFlags {
+    pub fn as_bevel_flags(self) -> BevelFilterFlags {
         match self {
             BevelFilterType::Inner => BevelFilterFlags::INNER_SHADOW,
             BevelFilterType::Outer => BevelFilterFlags::empty(),
@@ -27,7 +27,7 @@ impl BevelFilterType {
         }
     }
 
-    pub fn as_gradient_flags(&self) -> GradientFilterFlags {
+    pub fn as_gradient_flags(self) -> GradientFilterFlags {
         match self {
             BevelFilterType::Inner => GradientFilterFlags::INNER_SHADOW,
             BevelFilterType::Outer => GradientFilterFlags::empty(),
@@ -63,33 +63,33 @@ impl From<GradientFilterFlags> for BevelFilterType {
 #[derive(Clone, Debug, Collect)]
 #[collect(require_static)]
 struct BevelFilterData {
-    distance: f64,
+    distance: Cell<f64>,
     // TODO: Introduce `Angle<Radians>` struct.
-    angle: f64,
-    highlight: Color,
-    shadow: Color,
-    quality: i32,
+    angle: Cell<f64>,
+    highlight: Cell<Color>,
+    shadow: Cell<Color>,
+    quality: Cell<i32>,
     // TODO: Introduce unsigned `Fixed8`?
-    strength: u16,
-    knockout: bool,
-    blur_x: f64,
-    blur_y: f64,
-    type_: BevelFilterType,
+    strength: Cell<u16>,
+    knockout: Cell<bool>,
+    blur_x: Cell<f64>,
+    blur_y: Cell<f64>,
+    type_: Cell<BevelFilterType>,
 }
 
 impl From<&BevelFilterData> for swf::BevelFilter {
     fn from(filter: &BevelFilterData) -> swf::BevelFilter {
         let mut flags = BevelFilterFlags::COMPOSITE_SOURCE;
-        flags |= BevelFilterFlags::from_passes(filter.quality as u8);
-        flags |= filter.type_.as_bevel_flags();
-        flags.set(BevelFilterFlags::KNOCKOUT, filter.knockout);
+        flags |= BevelFilterFlags::from_passes(filter.quality.get() as u8);
+        flags |= filter.type_.get().as_bevel_flags();
+        flags.set(BevelFilterFlags::KNOCKOUT, filter.knockout.get());
         swf::BevelFilter {
-            shadow_color: filter.shadow,
-            highlight_color: filter.highlight,
-            blur_x: Fixed16::from_f64(filter.blur_x),
-            blur_y: Fixed16::from_f64(filter.blur_y),
-            angle: Fixed16::from_f64(filter.angle),
-            distance: Fixed16::from_f64(filter.distance),
+            shadow_color: filter.shadow.get(),
+            highlight_color: filter.highlight.get(),
+            blur_x: Fixed16::from_f64(filter.blur_x.get()),
+            blur_y: Fixed16::from_f64(filter.blur_y.get()),
+            angle: Fixed16::from_f64(filter.angle.get()),
+            distance: Fixed16::from_f64(filter.distance.get()),
             strength: Fixed8::from_f64(filter.strength()),
             flags,
         }
@@ -99,16 +99,16 @@ impl From<&BevelFilterData> for swf::BevelFilter {
 impl From<swf::BevelFilter> for BevelFilterData {
     fn from(filter: swf::BevelFilter) -> BevelFilterData {
         Self {
-            distance: filter.distance.into(),
-            angle: filter.angle.into(),
-            highlight: filter.highlight_color,
-            shadow: filter.shadow_color,
-            quality: filter.num_passes().into(),
-            strength: (filter.strength.to_f64() * 256.0) as u16,
-            knockout: filter.is_knockout(),
-            blur_x: filter.blur_x.into(),
-            blur_y: filter.blur_y.into(),
-            type_: filter.flags.into(),
+            distance: Cell::new(filter.distance.into()),
+            angle: Cell::new(filter.angle.into()),
+            highlight: Cell::new(filter.highlight_color),
+            shadow: Cell::new(filter.shadow_color),
+            quality: Cell::new(filter.num_passes().into()),
+            strength: Cell::new((filter.strength.to_f64() * 256.0) as u16),
+            knockout: Cell::new(filter.is_knockout()),
+            blur_x: Cell::new(filter.blur_x.into()),
+            blur_y: Cell::new(filter.blur_y.into()),
+            type_: Cell::new(filter.flags.into()),
         }
     }
 }
@@ -117,38 +117,39 @@ impl Default for BevelFilterData {
     #[allow(clippy::approx_constant)]
     fn default() -> Self {
         Self {
-            distance: 4.0,
-            angle: 0.785398163, // ~45 degrees
-            highlight: Color::WHITE,
-            shadow: Color::BLACK,
-            quality: 1,
-            strength: 1 << 8,
-            knockout: false,
-            blur_x: 4.0,
-            blur_y: 4.0,
-            type_: BevelFilterType::Inner,
+            distance: Cell::new(4.0),
+            angle: Cell::new(0.785398163), // ~45 degrees
+            highlight: Cell::new(Color::WHITE),
+            shadow: Cell::new(Color::BLACK),
+            quality: Cell::new(1),
+            strength: Cell::new(1 << 8),
+            knockout: Cell::new(false),
+            blur_x: Cell::new(4.0),
+            blur_y: Cell::new(4.0),
+            type_: Cell::new(BevelFilterType::Inner),
         }
     }
 }
 
 impl BevelFilterData {
     pub fn strength(&self) -> f64 {
-        f64::from(self.strength) / 256.0
+        f64::from(self.strength.get()) / 256.0
     }
 
-    pub fn set_strength(&mut self, strength: f64) {
-        self.strength = ((strength * 256.0) as u16).clamp(0, 0xFF00)
+    pub fn set_strength(&self, strength: f64) {
+        let strength = ((strength * 256.0) as u16).clamp(0, 0xFF00);
+        self.strength.set(strength);
     }
 }
 
 #[derive(Copy, Clone, Debug, Collect)]
 #[collect(no_drop)]
 #[repr(transparent)]
-pub struct BevelFilter<'gc>(GcCell<'gc, BevelFilterData>);
+pub struct BevelFilter<'gc>(Gc<'gc, BevelFilterData>);
 
 impl<'gc> BevelFilter<'gc> {
     fn new(activation: &mut Activation<'_, 'gc>, args: &[Value<'gc>]) -> Result<Self, Error<'gc>> {
-        let bevel_filter = Self(GcCell::new(activation.gc(), Default::default()));
+        let bevel_filter = Self(Gc::new(activation.gc(), Default::default()));
         bevel_filter.set_distance(activation, args.get(0))?;
         bevel_filter.set_angle(activation, args.get(1))?;
         bevel_filter.set_highlight_color(activation, args.get(2))?;
@@ -165,198 +166,200 @@ impl<'gc> BevelFilter<'gc> {
     }
 
     pub fn from_filter(gc_context: &Mutation<'gc>, filter: swf::BevelFilter) -> Self {
-        Self(GcCell::new(gc_context, filter.into()))
+        Self(Gc::new(gc_context, filter.into()))
     }
 
-    pub(crate) fn duplicate(&self, gc_context: &Mutation<'gc>) -> Self {
-        Self(GcCell::new(gc_context, self.0.read().clone()))
+    pub(crate) fn duplicate(self, gc_context: &Mutation<'gc>) -> Self {
+        Self(Gc::new(gc_context, self.0.as_ref().clone()))
     }
 
-    fn distance(&self) -> f64 {
-        self.0.read().distance
+    fn distance(self) -> f64 {
+        self.0.distance.get()
     }
 
     fn set_distance(
-        &self,
+        self,
         activation: &mut Activation<'_, 'gc>,
         value: Option<&Value<'gc>>,
     ) -> Result<(), Error<'gc>> {
         if let Some(value) = value {
             let distance = value.coerce_to_f64(activation)?;
-            self.0.write(activation.gc()).distance = distance;
+            self.0.distance.set(distance);
         }
         Ok(())
     }
 
-    fn angle(&self) -> f64 {
-        self.0.read().angle.to_degrees()
+    fn angle(self) -> f64 {
+        self.0.angle.get().to_degrees()
     }
 
     fn set_angle(
-        &self,
+        self,
         activation: &mut Activation<'_, 'gc>,
         value: Option<&Value<'gc>>,
     ) -> Result<(), Error<'gc>> {
         if let Some(value) = value {
             let angle = (value.coerce_to_f64(activation)? % 360.0).to_radians();
-            self.0.write(activation.gc()).angle = angle;
+            self.0.angle.set(angle);
         }
         Ok(())
     }
 
-    fn highlight_color(&self) -> i32 {
-        self.0.read().highlight.to_rgb() as i32
+    fn highlight_color(self) -> i32 {
+        self.0.highlight.get().to_rgb() as i32
     }
 
     fn set_highlight_color(
-        &self,
+        self,
         activation: &mut Activation<'_, 'gc>,
         value: Option<&Value<'gc>>,
     ) -> Result<(), Error<'gc>> {
         if let Some(value) = value {
             let value = value.coerce_to_u32(activation)?;
-            let mut write = self.0.write(activation.gc());
-            write.highlight = Color::from_rgb(value, write.highlight.a);
+            let highlight = self.0.highlight.get();
+            self.0.highlight.set(Color::from_rgb(value, highlight.a));
         }
         Ok(())
     }
 
-    fn highlight_alpha(&self) -> f64 {
-        f64::from(self.0.read().highlight.a) / 255.0
+    fn highlight_alpha(self) -> f64 {
+        f64::from(self.0.highlight.get().a) / 255.0
     }
 
     fn set_highlight_alpha(
-        &self,
+        self,
         activation: &mut Activation<'_, 'gc>,
         value: Option<&Value<'gc>>,
     ) -> Result<(), Error<'gc>> {
         if let Some(value) = value {
             let alpha = (value.coerce_to_f64(activation)? * 255.0) as u8;
-            self.0.write(activation.gc()).highlight.a = alpha;
+            let mut highlight = self.0.highlight.get();
+            highlight.a = alpha;
+            self.0.highlight.set(highlight);
         }
         Ok(())
     }
 
-    fn shadow_color(&self) -> i32 {
-        self.0.read().shadow.to_rgb() as i32
+    fn shadow_color(self) -> i32 {
+        self.0.shadow.get().to_rgb() as i32
     }
 
     fn set_shadow_color(
-        &self,
+        self,
         activation: &mut Activation<'_, 'gc>,
         value: Option<&Value<'gc>>,
     ) -> Result<(), Error<'gc>> {
         if let Some(value) = value {
             let value = value.coerce_to_u32(activation)?;
-            let mut write = self.0.write(activation.gc());
-            write.shadow = Color::from_rgb(value, write.shadow.a);
+            let shadow = self.0.shadow.get();
+            self.0.shadow.set(Color::from_rgb(value, shadow.a));
         }
         Ok(())
     }
 
-    fn shadow_alpha(&self) -> f64 {
-        f64::from(self.0.read().shadow.a) / 255.0
+    fn shadow_alpha(self) -> f64 {
+        f64::from(self.0.shadow.get().a) / 255.0
     }
 
     fn set_shadow_alpha(
-        &self,
+        self,
         activation: &mut Activation<'_, 'gc>,
         value: Option<&Value<'gc>>,
     ) -> Result<(), Error<'gc>> {
         if let Some(value) = value {
             let alpha = (value.coerce_to_f64(activation)? * 255.0) as u8;
-            self.0.write(activation.gc()).shadow.a = alpha;
+            let mut shadow = self.0.shadow.get();
+            shadow.a = alpha;
+            self.0.shadow.set(shadow);
         }
         Ok(())
     }
 
-    fn quality(&self) -> i32 {
-        self.0.read().quality
+    fn quality(self) -> i32 {
+        self.0.quality.get()
     }
 
     fn set_quality(
-        &self,
+        self,
         activation: &mut Activation<'_, 'gc>,
         value: Option<&Value<'gc>>,
     ) -> Result<(), Error<'gc>> {
         if let Some(value) = value {
             let quality = value.coerce_to_i32(activation)?.clamp(0, 15);
-            self.0.write(activation.gc()).quality = quality;
+            self.0.quality.set(quality);
         }
         Ok(())
     }
 
-    fn strength(&self) -> f64 {
-        self.0.read().strength()
+    fn strength(self) -> f64 {
+        self.0.strength()
     }
 
     fn set_strength(
-        &self,
+        self,
         activation: &mut Activation<'_, 'gc>,
         value: Option<&Value<'gc>>,
     ) -> Result<(), Error<'gc>> {
         if let Some(value) = value {
-            self.0
-                .write(activation.gc())
-                .set_strength(value.coerce_to_f64(activation)?);
+            self.0.set_strength(value.coerce_to_f64(activation)?);
         }
         Ok(())
     }
 
-    fn knockout(&self) -> bool {
-        self.0.read().knockout
+    fn knockout(self) -> bool {
+        self.0.knockout.get()
     }
 
     fn set_knockout(
-        &self,
+        self,
         activation: &mut Activation<'_, 'gc>,
         value: Option<&Value<'gc>>,
     ) -> Result<(), Error<'gc>> {
         if let Some(value) = value {
             let knockout = value.as_bool(activation.swf_version());
-            self.0.write(activation.gc()).knockout = knockout;
+            self.0.knockout.set(knockout);
         }
         Ok(())
     }
 
-    fn blur_x(&self) -> f64 {
-        self.0.read().blur_x
+    fn blur_x(self) -> f64 {
+        self.0.blur_x.get()
     }
 
     fn set_blur_x(
-        &self,
+        self,
         activation: &mut Activation<'_, 'gc>,
         value: Option<&Value<'gc>>,
     ) -> Result<(), Error<'gc>> {
         if let Some(value) = value {
             let blur_x = value.coerce_to_f64(activation)?.clamp(0.0, 255.0);
-            self.0.write(activation.gc()).blur_x = blur_x;
+            self.0.blur_x.set(blur_x);
         }
         Ok(())
     }
 
-    fn blur_y(&self) -> f64 {
-        self.0.read().blur_y
+    fn blur_y(self) -> f64 {
+        self.0.blur_y.get()
     }
 
     fn set_blur_y(
-        &self,
+        self,
         activation: &mut Activation<'_, 'gc>,
         value: Option<&Value<'gc>>,
     ) -> Result<(), Error<'gc>> {
         if let Some(value) = value {
             let blur_y = value.coerce_to_f64(activation)?.clamp(0.0, 255.0);
-            self.0.write(activation.gc()).blur_y = blur_y;
+            self.0.blur_y.set(blur_y);
         }
         Ok(())
     }
 
-    fn type_(&self) -> BevelFilterType {
-        self.0.read().type_
+    fn type_(self) -> BevelFilterType {
+        self.0.type_.get()
     }
 
     fn set_type(
-        &self,
+        self,
         activation: &mut Activation<'_, 'gc>,
         value: Option<&Value<'gc>>,
     ) -> Result<(), Error<'gc>> {
@@ -371,13 +374,13 @@ impl<'gc> BevelFilter<'gc> {
                 BevelFilterType::Full
             };
 
-            self.0.write(activation.gc()).type_ = type_;
+            self.0.type_.set(type_);
         }
         Ok(())
     }
 
-    pub fn filter(&self) -> swf::BevelFilter {
-        self.0.read().deref().into()
+    pub fn filter(self) -> swf::BevelFilter {
+        self.0.as_ref().into()
     }
 }
 
