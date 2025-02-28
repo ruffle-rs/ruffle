@@ -1016,6 +1016,7 @@ impl Player {
             | PlayerEvent::MouseWheel { .. }
             | PlayerEvent::GamepadButtonDown { .. }
             | PlayerEvent::GamepadButtonUp { .. }
+            | PlayerEvent::Ime { .. }
             | PlayerEvent::TextInput { .. }
             | PlayerEvent::TextControl { .. } => self.handle_input_event(event),
         }
