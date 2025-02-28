@@ -1,5 +1,7 @@
 //! XML class
 
+use std::cell::Cell;
+
 use crate::avm1::function::{Executable, ExecutionReason, FunctionObject};
 use crate::avm1::property_decl::{define_properties_on, Declaration};
 use crate::avm1::{
@@ -9,7 +11,9 @@ use crate::avm_warn;
 use crate::backend::navigator::Request;
 use crate::string::{AvmString, StringContext, WStr, WString};
 use crate::xml::{custom_unescape, XmlNode, ELEMENT_NODE, TEXT_NODE};
-use gc_arena::{Collect, GcCell};
+use gc_arena::barrier::unlock;
+use gc_arena::lock::Lock;
+use gc_arena::{Collect, Gc};
 use quick_xml::errors::IllFormedError;
 use quick_xml::events::attributes::AttrError;
 use quick_xml::{events::Event, Reader};
@@ -55,7 +59,7 @@ pub enum XmlStatus {
 
 #[derive(Copy, Clone, Collect)]
 #[collect(no_drop)]
-pub struct Xml<'gc>(GcCell<'gc, XmlData<'gc>>);
+pub struct Xml<'gc>(Gc<'gc, XmlData<'gc>>);
 
 #[derive(Clone, Collect)]
 #[collect(no_drop)]
@@ -64,10 +68,10 @@ pub struct XmlData<'gc> {
     root: XmlNode<'gc>,
 
     /// The XML declaration, if set.
-    xml_decl: Option<AvmString<'gc>>,
+    xml_decl: Lock<Option<AvmString<'gc>>>,
 
     /// The XML doctype, if set.
-    doctype: Option<AvmString<'gc>>,
+    doctype: Lock<Option<AvmString<'gc>>>,
 
     /// The document's ID map.
     ///
@@ -77,7 +81,7 @@ pub struct XmlData<'gc> {
     id_map: ScriptObject<'gc>,
 
     /// The last parse error encountered, if any.
-    status: XmlStatus,
+    status: Cell<XmlStatus>,
 }
 
 impl<'gc> Xml<'gc> {
@@ -88,14 +92,14 @@ impl<'gc> Xml<'gc> {
         let mut root = XmlNode::new(gc_context, ELEMENT_NODE, None);
         root.introduce_script_object(gc_context, object);
 
-        let xml = Self(GcCell::new(
+        let xml = Self(Gc::new(
             gc_context,
             XmlData {
                 root,
-                xml_decl: None,
-                doctype: None,
+                xml_decl: Lock::new(None),
+                doctype: Lock::new(None),
                 id_map: ScriptObject::new(context, None),
-                status: XmlStatus::NoError,
+                status: Cell::new(XmlStatus::NoError),
             },
         ));
         object.set_native(gc_context, NativeObject::Xml(xml));
@@ -104,33 +108,33 @@ impl<'gc> Xml<'gc> {
 
     /// Yield the document in node form.
     pub fn root(self) -> XmlNode<'gc> {
-        self.0.read().root
+        self.0.root
     }
 
     /// Retrieve the XML declaration of this document.
     fn xml_decl(self) -> Option<AvmString<'gc>> {
-        self.0.read().xml_decl
+        self.0.xml_decl.get()
     }
 
     /// Retrieve the first DocType node in the document.
     fn doctype(self) -> Option<AvmString<'gc>> {
-        self.0.read().doctype
+        self.0.doctype.get()
     }
 
     /// Obtain the script object for the document's `idMap` property.
     fn id_map(self) -> ScriptObject<'gc> {
-        self.0.read().id_map
+        self.0.id_map
     }
 
     fn status(self) -> XmlStatus {
-        self.0.read().status
+        self.0.status.get()
     }
 
     /// Replace the contents of this document with the result of parsing a string.
     ///
     /// This method does not yet actually remove existing node contents.
     fn parse(
-        &self,
+        self,
         activation: &mut Activation<'_, 'gc>,
         data: &WStr,
         ignore_white: bool,
@@ -139,11 +143,11 @@ impl<'gc> Xml<'gc> {
         let mut parser = Reader::from_str(&data_utf8);
         let mut open_tags = vec![self.root()];
 
-        self.0.write(activation.gc()).status = XmlStatus::NoError;
+        self.0.status.set(XmlStatus::NoError);
 
         loop {
             let event = parser.read_event().map_err(|error| {
-                self.0.write(activation.gc()).status = match error {
+                self.0.status.set(match error {
                     quick_xml::Error::Syntax(_)
                     | quick_xml::Error::InvalidAttr(AttrError::ExpectedEq(_))
                     | quick_xml::Error::InvalidAttr(AttrError::Duplicated(_, _)) => {
@@ -165,7 +169,7 @@ impl<'gc> Xml<'gc> {
                     // quick_xml::Error::UnexpectedBang
                     // quick_xml::Error::TextNotFound
                     // quick_xml::Error::EscapeError(_)
-                };
+                });
                 error
             })?;
 
@@ -211,8 +215,8 @@ impl<'gc> Xml<'gc> {
                     let mut xml_decl = WString::from_buf(b"<?".to_vec());
                     xml_decl.push_str(WStr::from_units(&*bd));
                     xml_decl.push_str(WStr::from_units(b"?>"));
-                    self.0.write(activation.gc()).xml_decl =
-                        Some(AvmString::new(activation.gc(), xml_decl));
+                    let xml_decl = Some(AvmString::new(activation.gc(), xml_decl));
+                    unlock!(Gc::write(activation.gc(), self.0), XmlData, xml_decl).set(xml_decl);
                 }
                 Event::DocType(bt) => {
                     // TODO: `quick-xml` is case-insensitive for DOCTYPE declarations,
@@ -222,8 +226,8 @@ impl<'gc> Xml<'gc> {
                     let mut doctype = WString::from_buf(b"<!DOCTYPE ".to_vec());
                     doctype.push_str(WStr::from_units(&*bt.escape_ascii().collect::<Vec<_>>()));
                     doctype.push_byte(b'>');
-                    self.0.write(activation.gc()).doctype =
-                        Some(AvmString::new(activation.gc(), doctype));
+                    let doctype = Some(AvmString::new(activation.gc(), doctype));
+                    unlock!(Gc::write(activation.gc(), self.0), XmlData, doctype).set(doctype);
                 }
                 Event::Eof => break,
                 _ => {}
