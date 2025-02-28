@@ -817,7 +817,7 @@ impl<'gc> EditText<'gc> {
         Matrix::translate(-tx, -ty)
     }
 
-    fn local_to_layout(&self, data: &EditTextData, local: Point<Twips>) -> Point<Twips> {
+    fn local_to_layout(self, data: &EditTextData, local: Point<Twips>) -> Point<Twips> {
         self.local_to_layout_matrix(data) * local
     }
 
@@ -2035,7 +2035,7 @@ impl<'gc> EditText<'gc> {
         self.on_changed(&mut activation);
     }
 
-    fn initialize_as_broadcaster(&self, activation: &mut Avm1Activation<'_, 'gc>) {
+    fn initialize_as_broadcaster(self, activation: &mut Avm1Activation<'_, 'gc>) {
         if let Avm1Value::Object(object) = self.object() {
             activation.context.avm1.broadcaster_functions().initialize(
                 &activation.context.strings,
@@ -2056,7 +2056,7 @@ impl<'gc> EditText<'gc> {
         }
     }
 
-    fn on_changed(&self, activation: &mut Avm1Activation<'_, 'gc>) {
+    fn on_changed(self, activation: &mut Avm1Activation<'_, 'gc>) {
         if let Avm1Value::Object(object) = self.object() {
             let _ = object.call_method(
                 istr!("broadcastMessage"),
@@ -2075,7 +2075,7 @@ impl<'gc> EditText<'gc> {
         }
     }
 
-    fn on_scroller(&self, activation: &mut Avm1Activation<'_, 'gc>) {
+    fn on_scroller(self, activation: &mut Avm1Activation<'_, 'gc>) {
         if let Avm1Value::Object(object) = self.object() {
             let _ = object.call_method(
                 istr!("broadcastMessage"),
@@ -2088,12 +2088,12 @@ impl<'gc> EditText<'gc> {
     }
 
     /// Construct the text field's AVM1 representation.
-    fn construct_as_avm1_object(&self, context: &mut UpdateContext<'gc>, run_frame: bool) {
+    fn construct_as_avm1_object(self, context: &mut UpdateContext<'gc>, run_frame: bool) {
         let mut text = self.0.write(context.gc());
         if text.object.is_none() {
             let object: Avm1Object<'gc> = Avm1StageObject::for_display_object(
                 &context.strings,
-                (*self).into(),
+                self.into(),
                 context.avm1.prototypes().text_field,
             )
             .into();
@@ -2102,10 +2102,10 @@ impl<'gc> EditText<'gc> {
         }
         drop(text);
 
-        Avm1::run_with_stack_frame_for_display_object((*self).into(), context, |activation| {
+        Avm1::run_with_stack_frame_for_display_object(self.into(), context, |activation| {
             // If this text field has a variable set, initialize text field binding.
             if !self.try_bind_text_field_variable(activation, true) {
-                activation.context.unbound_text_fields.push(*self);
+                activation.context.unbound_text_fields.push(self);
             }
             // People can bind to properties of TextFields the same as other display objects.
             self.bind_text_field_variables(activation);
@@ -2120,7 +2120,7 @@ impl<'gc> EditText<'gc> {
 
     /// Construct the text field's AVM2 representation.
     fn construct_as_avm2_object(
-        &self,
+        self,
         context: &mut UpdateContext<'gc>,
         display_object: DisplayObject<'gc>,
     ) {
@@ -2777,7 +2777,7 @@ impl<'gc> EditText<'gc> {
     ///    the possible transforms are highly limited),
     ///  * the current implementation should be pixel-perfect (compared to FP).
     pub fn draw_device_text_box(
-        &self,
+        self,
         context: &mut RenderContext<'_, 'gc>,
         bounds: Rectangle<Twips>,
         background_color: Option<Color>,
@@ -2862,7 +2862,7 @@ impl<'gc> EditText<'gc> {
     ///    which is snapped to pixels using [`EditTextPixelSnapping`],
     ///  * the pixel-perfect position is really hard to achieve, currently it's best-effort only.
     pub fn draw_text_box(
-        &self,
+        self,
         context: &mut RenderContext<'_, 'gc>,
         bounds: Rectangle<Twips>,
         background_color: Option<Color>,
