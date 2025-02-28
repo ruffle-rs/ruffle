@@ -5,57 +5,58 @@ use crate::avm1::object::NativeObject;
 use crate::avm1::property_decl::{define_properties_on, Declaration};
 use crate::avm1::{Activation, Error, Object, ScriptObject, TObject, Value};
 use crate::string::StringContext;
-use gc_arena::{Collect, GcCell, Mutation};
-use std::ops::Deref;
+use gc_arena::{Collect, Gc, Mutation};
+use std::cell::Cell;
 use swf::{Color, Fixed16, Fixed8, GlowFilterFlags};
 
 #[derive(Clone, Debug, Collect)]
 #[collect(require_static)]
 struct GlowFilterData {
-    color: Color,
-    quality: i32,
-    inner: bool,
-    knockout: bool,
-    blur_x: f64,
-    blur_y: f64,
+    color: Cell<Color>,
+    quality: Cell<i32>,
+    inner: Cell<bool>,
+    knockout: Cell<bool>,
+    blur_x: Cell<f64>,
+    blur_y: Cell<f64>,
     // TODO: Introduce unsigned `Fixed8`?
-    strength: u16,
+    strength: Cell<u16>,
 }
 
 impl Default for GlowFilterData {
     fn default() -> Self {
         Self {
-            color: Color::RED,
-            quality: 1,
-            inner: false,
-            knockout: false,
-            blur_x: 6.0,
-            blur_y: 6.0,
-            strength: 2 << 8,
+            color: Cell::new(Color::RED),
+            quality: Cell::new(1),
+            inner: Cell::new(false),
+            knockout: Cell::new(false),
+            blur_x: Cell::new(6.0),
+            blur_y: Cell::new(6.0),
+            strength: Cell::new(2 << 8),
         }
     }
 }
 
 impl GlowFilterData {
     pub fn strength(&self) -> f64 {
-        f64::from(self.strength) / 256.0
+        f64::from(self.strength.get()) / 256.0
     }
 
-    pub fn set_strength(&mut self, strength: f64) {
-        self.strength = ((strength * 256.0) as u16).clamp(0, 0xFF00)
+    pub fn set_strength(&self, strength: f64) {
+        let strength = ((strength * 256.0) as u16).clamp(0, 0xFF00);
+        self.strength.set(strength);
     }
 }
 
 impl From<&GlowFilterData> for swf::GlowFilter {
     fn from(filter: &GlowFilterData) -> swf::GlowFilter {
         let mut flags = GlowFilterFlags::COMPOSITE_SOURCE;
-        flags |= GlowFilterFlags::from_passes(filter.quality as u8);
-        flags.set(GlowFilterFlags::KNOCKOUT, filter.knockout);
-        flags.set(GlowFilterFlags::INNER_GLOW, filter.inner);
+        flags |= GlowFilterFlags::from_passes(filter.quality.get() as u8);
+        flags.set(GlowFilterFlags::KNOCKOUT, filter.knockout.get());
+        flags.set(GlowFilterFlags::INNER_GLOW, filter.inner.get());
         swf::GlowFilter {
-            color: filter.color,
-            blur_x: Fixed16::from_f64(filter.blur_x),
-            blur_y: Fixed16::from_f64(filter.blur_y),
+            color: filter.color.get(),
+            blur_x: Fixed16::from_f64(filter.blur_x.get()),
+            blur_y: Fixed16::from_f64(filter.blur_y.get()),
             strength: Fixed8::from_f64(filter.strength()),
             flags,
         }
@@ -67,13 +68,13 @@ impl From<swf::GlowFilter> for GlowFilterData {
         let inner = filter.is_inner();
         let knockout = filter.is_knockout();
         Self {
-            color: filter.color,
-            quality: filter.num_passes().into(),
-            strength: (filter.strength.to_f64() * 256.0) as u16,
-            knockout,
-            blur_x: filter.blur_x.into(),
-            blur_y: filter.blur_y.into(),
-            inner,
+            color: Cell::new(filter.color),
+            quality: Cell::new(filter.num_passes().into()),
+            strength: Cell::new((filter.strength.to_f64() * 256.0) as u16),
+            knockout: Cell::new(knockout),
+            blur_x: Cell::new(filter.blur_x.into()),
+            blur_y: Cell::new(filter.blur_y.into()),
+            inner: Cell::new(inner),
         }
     }
 }
@@ -81,11 +82,11 @@ impl From<swf::GlowFilter> for GlowFilterData {
 #[derive(Copy, Clone, Debug, Collect)]
 #[collect(no_drop)]
 #[repr(transparent)]
-pub struct GlowFilter<'gc>(GcCell<'gc, GlowFilterData>);
+pub struct GlowFilter<'gc>(Gc<'gc, GlowFilterData>);
 
 impl<'gc> GlowFilter<'gc> {
     fn new(activation: &mut Activation<'_, 'gc>, args: &[Value<'gc>]) -> Result<Self, Error<'gc>> {
-        let glow_filter = Self(GcCell::new(activation.gc(), Default::default()));
+        let glow_filter = Self(Gc::new(activation.gc(), Default::default()));
         glow_filter.set_color(activation, args.get(0))?;
         glow_filter.set_alpha(activation, args.get(1))?;
         glow_filter.set_blur_x(activation, args.get(2))?;
@@ -98,145 +99,145 @@ impl<'gc> GlowFilter<'gc> {
     }
 
     pub fn from_filter(gc_context: &Mutation<'gc>, filter: swf::GlowFilter) -> Self {
-        Self(GcCell::new(gc_context, filter.into()))
+        Self(Gc::new(gc_context, filter.into()))
     }
 
-    pub(crate) fn duplicate(&self, gc_context: &Mutation<'gc>) -> Self {
-        Self(GcCell::new(gc_context, self.0.read().clone()))
+    pub(crate) fn duplicate(self, gc_context: &Mutation<'gc>) -> Self {
+        Self(Gc::new(gc_context, self.0.as_ref().clone()))
     }
 
-    fn color(&self) -> i32 {
-        self.0.read().color.to_rgb() as i32
+    fn color(self) -> i32 {
+        self.0.color.get().to_rgb() as i32
     }
 
     fn set_color(
-        &self,
+        self,
         activation: &mut Activation<'_, 'gc>,
         value: Option<&Value<'gc>>,
     ) -> Result<(), Error<'gc>> {
         if let Some(value) = value {
             let value = value.coerce_to_u32(activation)?;
-            let mut write = self.0.write(activation.gc());
-            write.color = Color::from_rgb(value, write.color.a);
+            let color = self.0.color.get();
+            self.0.color.set(Color::from_rgb(value, color.a));
         }
         Ok(())
     }
 
-    fn alpha(&self) -> f64 {
-        f64::from(self.0.read().color.a) / 255.0
+    fn alpha(self) -> f64 {
+        f64::from(self.0.color.get().a) / 255.0
     }
 
     fn set_alpha(
-        &self,
+        self,
         activation: &mut Activation<'_, 'gc>,
         value: Option<&Value<'gc>>,
     ) -> Result<(), Error<'gc>> {
         if let Some(value) = value {
             let alpha = (value.coerce_to_f64(activation)? * 255.0) as u8;
-            self.0.write(activation.gc()).color.a = alpha;
+            let mut color = self.0.color.get();
+            color.a = alpha;
+            self.0.color.set(color);
         }
         Ok(())
     }
 
-    fn quality(&self) -> i32 {
-        self.0.read().quality
+    fn quality(self) -> i32 {
+        self.0.quality.get()
     }
 
     fn set_quality(
-        &self,
+        self,
         activation: &mut Activation<'_, 'gc>,
         value: Option<&Value<'gc>>,
     ) -> Result<(), Error<'gc>> {
         if let Some(value) = value {
             let quality = value.coerce_to_i32(activation)?.clamp(0, 15);
-            self.0.write(activation.gc()).quality = quality;
+            self.0.quality.set(quality);
         }
         Ok(())
     }
 
-    fn inner(&self) -> bool {
-        self.0.read().inner
+    fn inner(self) -> bool {
+        self.0.inner.get()
     }
 
     fn set_inner(
-        &self,
+        self,
         activation: &mut Activation<'_, 'gc>,
         value: Option<&Value<'gc>>,
     ) -> Result<(), Error<'gc>> {
         if let Some(value) = value {
             let inner = value.as_bool(activation.swf_version());
-            self.0.write(activation.gc()).inner = inner;
+            self.0.inner.set(inner);
         }
         Ok(())
     }
 
-    fn knockout(&self) -> bool {
-        self.0.read().knockout
+    fn knockout(self) -> bool {
+        self.0.knockout.get()
     }
 
     fn set_knockout(
-        &self,
+        self,
         activation: &mut Activation<'_, 'gc>,
         value: Option<&Value<'gc>>,
     ) -> Result<(), Error<'gc>> {
         if let Some(value) = value {
             let knockout = value.as_bool(activation.swf_version());
-            self.0.write(activation.gc()).knockout = knockout;
+            self.0.knockout.set(knockout);
         }
         Ok(())
     }
 
-    fn blur_x(&self) -> f64 {
-        self.0.read().blur_x
+    fn blur_x(self) -> f64 {
+        self.0.blur_x.get()
     }
 
     fn set_blur_x(
-        &self,
+        self,
         activation: &mut Activation<'_, 'gc>,
         value: Option<&Value<'gc>>,
     ) -> Result<(), Error<'gc>> {
         if let Some(value) = value {
             let blur_x = value.coerce_to_f64(activation)?.clamp(0.0, 255.0);
-            self.0.write(activation.gc()).blur_x = blur_x;
+            self.0.blur_x.set(blur_x);
         }
         Ok(())
     }
 
-    fn blur_y(&self) -> f64 {
-        self.0.read().blur_y
+    fn blur_y(self) -> f64 {
+        self.0.blur_y.get()
     }
 
     fn set_blur_y(
-        &self,
+        self,
         activation: &mut Activation<'_, 'gc>,
         value: Option<&Value<'gc>>,
     ) -> Result<(), Error<'gc>> {
         if let Some(value) = value {
             let blur_y = value.coerce_to_f64(activation)?.clamp(0.0, 255.0);
-            self.0.write(activation.gc()).blur_y = blur_y;
+            self.0.blur_y.set(blur_y);
         }
         Ok(())
     }
 
-    fn strength(&self) -> f64 {
-        self.0.read().strength()
+    fn strength(self) -> f64 {
+        self.0.strength()
     }
 
     fn set_strength(
-        &self,
+        self,
         activation: &mut Activation<'_, 'gc>,
         value: Option<&Value<'gc>>,
     ) -> Result<(), Error<'gc>> {
         if let Some(value) = value {
-            self.0
-                .write(activation.gc())
-                .set_strength(value.coerce_to_f64(activation)?);
+            self.0.set_strength(value.coerce_to_f64(activation)?);
         }
         Ok(())
     }
 
-    pub fn filter(&self) -> swf::GlowFilter {
-        self.0.read().deref().into()
+    pub fn filter(self) -> swf::GlowFilter {
+        self.0.as_ref().into()
     }
 }
 
