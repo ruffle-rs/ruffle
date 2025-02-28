@@ -4,10 +4,12 @@ use crate::{
     buffer::Substream,
     context::UpdateContext,
     display_object::{self, DisplayObject, MovieClip, TDisplayObject},
+    tag_utils::SwfMovie,
 };
 use downcast_rs::Downcast;
 use gc_arena::Collect;
 use slotmap::{new_key_type, Key, SlotMap};
+use std::sync::Arc;
 
 #[cfg(feature = "audio")]
 pub mod decoders;
@@ -88,7 +90,7 @@ pub trait AudioBackend: Downcast {
     fn pause(&mut self);
 
     /// Registers an sound embedded in an SWF.
-    fn register_sound(&mut self, swf_sound: &swf::Sound) -> Result<SoundHandle, RegisterError>;
+    fn register_sound(&mut self, movie: Arc<SwfMovie>, swf_sound: &swf::Sound) -> Result<SoundHandle, RegisterError>;
 
     /// Registers MP3 audio from an external source.
     fn register_mp3(&mut self, data: &[u8]) -> Result<SoundHandle, DecodeError>;
@@ -225,7 +227,7 @@ impl NullAudioBackend {
 impl AudioBackend for NullAudioBackend {
     fn play(&mut self) {}
     fn pause(&mut self) {}
-    fn register_sound(&mut self, sound: &swf::Sound) -> Result<SoundHandle, RegisterError> {
+    fn register_sound(&mut self, _movie: Arc<SwfMovie>, sound: &swf::Sound) -> Result<SoundHandle, RegisterError> {
         // Slice off latency seek for MP3 data.
         let data = if sound.format.compression == swf::AudioCompression::Mp3 {
             sound.data.get(2..).ok_or(RegisterError::ShortMp3)?

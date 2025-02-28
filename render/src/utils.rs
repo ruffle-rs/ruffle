@@ -256,9 +256,9 @@ fn decode_jpeg(jpeg_data: &[u8], alpha_data: Option<&[u8]>) -> Result<Bitmap, Er
 /// Decodes the bitmap data in DefineBitsLossless tag into RGBA.
 /// DefineBitsLossless is Zlib encoded pixel data (similar to PNG), possibly
 /// palletized.
-pub fn decode_define_bits_lossless(swf_tag: &swf::DefineBitsLossless) -> Result<Bitmap, Error> {
+pub fn decode_define_bits_lossless(data: &[u8], swf_tag: &swf::DefineBitsLossless) -> Result<Bitmap, Error> {
     // Decompress the image data (DEFLATE compression).
-    let mut decoded_data = decompress_zlib(&swf_tag.data)?;
+    let mut decoded_data = decompress_zlib(&data)?;
 
     let has_alpha = swf_tag.version == 2;
 

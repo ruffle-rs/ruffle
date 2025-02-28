@@ -7,7 +7,6 @@
 use crate::string::SwfStr;
 use bitflags::bitflags;
 use enum_map::Enum;
-use std::borrow::Cow;
 use std::fmt::{self, Display, Formatter};
 use std::num::NonZeroU8;
 use std::str::FromStr;
@@ -1698,7 +1697,7 @@ pub struct DefineBitsLossless<'a> {
     pub format: BitmapFormat,
     pub width: u16,
     pub height: u16,
-    pub data: Cow<'a, [u8]>,
+    pub data: &'a [u8],
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]

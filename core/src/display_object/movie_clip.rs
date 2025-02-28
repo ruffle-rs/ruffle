@@ -16,7 +16,6 @@ use bitflags::bitflags;
 
 use crate::avm1::Avm1;
 use crate::avm1::{Activation as Avm1Activation, ActivationIdentifier};
-use crate::binary_data::BinaryData;
 use crate::character::{Character, CompressedBitmap};
 use crate::context::{ActionType, RenderContext, UpdateContext};
 use crate::display_object::container::{dispatch_removed_event, ChildContainer};
@@ -3465,14 +3464,18 @@ impl<'gc, 'a> MovieClipData<'gc> {
             .register_character(
                 define_bits_lossless.id,
                 Character::Bitmap {
-                    compressed: CompressedBitmap::Lossless(DefineBitsLossless {
-                        id: define_bits_lossless.id,
-                        format: define_bits_lossless.format,
-                        width: define_bits_lossless.width,
-                        height: define_bits_lossless.height,
-                        version: define_bits_lossless.version,
-                        data: Cow::Owned(define_bits_lossless.data.into_owned()),
-                    }),
+                    compressed: CompressedBitmap::Lossless {
+                        data: SwfSlice::new(self.movie(), define_bits_lossless.data),
+                        tag: DefineBitsLossless {
+                            id: define_bits_lossless.id,
+                            format: define_bits_lossless.format,
+                            width: define_bits_lossless.width,
+                            height: define_bits_lossless.height,
+                            version: define_bits_lossless.version,
+                            data: &[],
+                            //data: Cow::Owned(define_bits_lossless.data.into_owned()),
+                        }
+                    },
                     handle: RefCell::new(None),
                     avm2_bitmapdata_class: GcCell::new(context.gc_context, BitmapClass::NoSubclass),
                 },
@@ -3607,20 +3610,29 @@ impl<'gc, 'a> MovieClipData<'gc> {
             .library_for_movie_mut(self.movie())
             .jpeg_tables();
         let jpeg_data =
-            ruffle_render::utils::glue_tables_to_jpeg(jpeg_data, jpeg_tables).into_owned();
+            ruffle_render::utils::glue_tables_to_jpeg(jpeg_data, jpeg_tables);
         let (width, height) = ruffle_render::utils::decode_define_bits_jpeg_dimensions(&jpeg_data)?;
+        let compressed = match jpeg_data {
+            Cow::Borrowed(data) => CompressedBitmap::Jpeg {
+                data: SwfSlice::new(self.movie(), data),
+                alpha: None,
+                width,
+                height,
+            },
+            Cow::Owned(data) => CompressedBitmap::OwnedJpeg {
+                data,
+                alpha: None,
+                width,
+                height,
+            },
+        };
         context
             .library
             .library_for_movie_mut(self.movie())
             .register_character(
                 id,
                 Character::Bitmap {
-                    compressed: CompressedBitmap::Jpeg {
-                        data: jpeg_data,
-                        alpha: None,
-                        width,
-                        height,
-                    },
+                    compressed,
                     handle: RefCell::new(None),
                     avm2_bitmapdata_class: GcCell::new(context.gc_context, BitmapClass::NoSubclass),
                 },
@@ -3644,7 +3656,7 @@ impl<'gc, 'a> MovieClipData<'gc> {
                 id,
                 Character::Bitmap {
                     compressed: CompressedBitmap::Jpeg {
-                        data: jpeg_data.to_vec(),
+                        data: SwfSlice::new(self.movie(), jpeg_data),
                         alpha: None,
                         width,
                         height,
@@ -3678,8 +3690,8 @@ impl<'gc, 'a> MovieClipData<'gc> {
                 id,
                 Character::Bitmap {
                     compressed: CompressedBitmap::Jpeg {
-                        data: jpeg_data.to_owned(),
-                        alpha: Some(alpha_data.to_owned()),
+                        data: SwfSlice::new(self.movie(), jpeg_data),
+                        alpha: Some(SwfSlice::new(self.movie(), alpha_data)),
                         width,
                         height,
                     },
@@ -3929,7 +3941,7 @@ impl<'gc, 'a> MovieClipData<'gc> {
         reader: &mut SwfStream<'a>,
     ) -> Result<(), Error> {
         let sound = reader.read_define_sound()?;
-        if let Ok(handle) = context.audio.register_sound(&sound) {
+        if let Ok(handle) = context.audio.register_sound(self.movie(), &sound) {
             context
                 .library
                 .library_for_movie_mut(self.movie())
@@ -4028,7 +4040,7 @@ impl<'gc, 'a> MovieClipData<'gc> {
         reader: &mut SwfStream<'a>,
     ) -> Result<(), Error> {
         let tag_data = reader.read_define_binary_data()?;
-        let binary_data = BinaryData::from_swf_tag(self.movie(), &tag_data);
+        let binary_data = SwfSlice::new(self.movie(), tag_data.data);
         context
             .library
             .library_for_movie_mut(self.movie())
