@@ -1,0 +1,21 @@
+[
+    { "type": "SetClipboardText", "text": "text" },
+    { "type": "KeyDown", "key": "Control" },
+    { "type": "TextControl", "code": "Paste" },
+    { "type": "KeyUp", "key": "Control" },
+    { "type": "KeyDown", "key": { "Char": "y" } },
+    { "type": "TextInput", "codepoint": "y" },
+    { "type": "KeyUp", "key": { "Char": "y" } },
+    { "type": "KeyDown", "key": { "Char": "x" } },
+    { "type": "TextInput", "codepoint": "x" },
+    { "type": "KeyUp", "key": { "Char": "x" } },
+    { "type": "KeyDown", "key": "Shift" },
+    { "type": "KeyDown", "key": { "Char": "X" } },
+    { "type": "TextInput", "codepoint": "X" },
+    { "type": "KeyUp", "key": { "Char": "X" } },
+    { "type": "KeyUp", "key": "Shift" },
+    { "type": "SetClipboardText", "text": "xxxxx" },
+    { "type": "KeyDown", "key": "Control" },
+    { "type": "TextControl", "code": "Paste" },
+    { "type": "KeyUp", "key": "Control" }
+]
