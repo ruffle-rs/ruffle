@@ -93,6 +93,7 @@ egui = ["dep:egui", "dep:egui_extras", "png"]
 jpegxr = ["dep:jpegxr", "lzma"]
 default_font = []
 serde = ["serde/derive"]
+error_backtrace = []
 
 [build-dependencies]
 build_playerglobal = { path = "build_playerglobal" }
