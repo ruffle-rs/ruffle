@@ -1,0 +1,4 @@
+key down 17, xxxxx
+input ab, xxxxx
+change xxxab
+key up 17, xxxab
