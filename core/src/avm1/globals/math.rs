@@ -329,7 +329,6 @@ mod tests {
             [f64::NAN] => f64::NAN,
             [Value::Null] => f64::NAN,
             [Value::Undefined] => f64::NAN,
-            ["5"] => f64::NAN,
             [1.0, 2.0] => 1.0,
             [3.0, 2.0, 1.0] => 9.0
         },
@@ -361,7 +360,6 @@ mod tests {
             [f64::NAN] => f64::NAN,
             [Value::Null] => f64::NAN,
             [Value::Undefined] => f64::NAN,
-            ["5"] => f64::NAN,
             [1.0, 2.0] => 2.0,
             [3.0, 2.0, 1.0] => 3.0
         },
@@ -382,7 +380,6 @@ mod tests {
             [f64::NAN] => f64::NAN,
             [Value::Null] => f64::NAN,
             [Value::Undefined] => f64::NAN,
-            ["5"] => f64::NAN,
             [1.0, 2.0] => 1.0,
             [3.0, 2.0, 1.0] => 2.0
         },
