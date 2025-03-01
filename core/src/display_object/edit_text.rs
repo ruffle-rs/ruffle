@@ -1997,19 +1997,15 @@ impl<'gc> EditText<'gc> {
         }
 
         let text = WString::from_utf8(&text);
-        let text = self.0.read().restrict.filter_allowed(&text);
-        let mut text = text.as_wstr();
 
         let Some(selection) = self.selection() else {
             return;
         };
 
-        if text.len() > self.available_chars() {
-            text = &text[0..self.available_chars()];
-        }
+        let filtered_text = self.0.read().restrict.filter_allowed(&text);
 
         if let Avm2Value::Object(target) = self.object2() {
-            let character_string = AvmString::new_utf8(context.gc(), text.to_string());
+            let character_string = AvmString::new(context.gc(), text);
 
             let mut activation = Avm2Activation::from_nothing(context);
             let text_evt = Avm2EventObject::text_event(
@@ -2024,6 +2020,11 @@ impl<'gc> EditText<'gc> {
             if text_evt.event().is_cancelled() {
                 return;
             }
+        }
+
+        let mut text = filtered_text.as_wstr();
+        if text.len() > self.available_chars() {
+            text = &text[0..self.available_chars()];
         }
 
         self.replace_text(selection.start(), selection.end(), text, context);
