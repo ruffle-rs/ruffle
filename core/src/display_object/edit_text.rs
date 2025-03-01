@@ -1781,30 +1781,7 @@ impl<'gc> EditText<'gc> {
                     break 'paste;
                 }
 
-                let text = WString::from_utf8(&text);
-                let text = self.0.read().restrict.filter_allowed(&text);
-                let mut text = text.as_wstr();
-
-                if text.len() > self.available_chars() && self.available_chars() > 0 {
-                    text = &text[0..self.available_chars()];
-                }
-
-                if text.len() <= self.available_chars() {
-                    self.replace_text(selection.start(), selection.end(), text, context);
-                    let new_pos = selection.start() + text.len();
-                    if is_selectable {
-                        self.set_selection(
-                            Some(TextSelection::for_position(new_pos)),
-                            context.gc(),
-                        );
-                    } else {
-                        self.set_selection(
-                            Some(TextSelection::for_position(self.text().len())),
-                            context.gc(),
-                        );
-                    }
-                    changed = true;
-                }
+                self.text_input(text, context);
             }
             TextControlCode::Cut => {
                 let text = &self.text()[selection.start()..selection.end()];
