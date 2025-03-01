@@ -19,7 +19,10 @@ use crate::display_object::interactive::{
     InteractiveObject, InteractiveObjectBase, TInteractiveObject,
 };
 use crate::display_object::{DisplayObjectBase, DisplayObjectPtr};
-use crate::events::{ClipEvent, ClipEventResult, TextControlCode};
+use crate::events::{
+    ClipEvent, ClipEventResult, ImeCursorArea, ImeEvent, ImeNotification, ImePurpose,
+    PlayerNotification, TextControlCode,
+};
 use crate::font::{FontType, Glyph, TextRenderSettings};
 use crate::html;
 use crate::html::StyleSheet;
@@ -1848,6 +1851,15 @@ impl<'gc> EditText<'gc> {
         }
     }
 
+    pub fn ime(self, event: ImeEvent, context: &mut UpdateContext<'gc>) {
+        match event {
+            ImeEvent::Preedit(_, _) => {
+                // TODO Add support for IME preedit
+            }
+            ImeEvent::Commit(text) => self.text_input(text, context),
+        };
+    }
+
     /// Find the new position in the text for the given control code.
     ///
     /// * For selection codes it will represent the "to" part of the selection.
@@ -2880,6 +2892,17 @@ impl<'gc> EditText<'gc> {
             context.commands.draw_line_rect(border_color, text_box);
         }
     }
+
+    fn ime_cursor_area(self) -> ImeCursorArea {
+        // TODO We should be smarter here and return an area closer to the cursor.
+        let bounds = self.world_bounds();
+        ImeCursorArea {
+            x: bounds.x_min.to_pixels(),
+            y: bounds.y_min.to_pixels(),
+            width: bounds.width().to_pixels(),
+            height: bounds.height().to_pixels(),
+        }
+    }
 }
 
 impl<'gc> TInteractiveObject<'gc> for EditText<'gc> {
@@ -3050,6 +3073,20 @@ impl<'gc> TInteractiveObject<'gc> for EditText<'gc> {
         if !focused && is_avm1 {
             self.set_selection(None, context.gc());
         }
+
+        // Notify about IME
+        context.send_notification(PlayerNotification::ImeNotification(if focused {
+            ImeNotification::ImeReady {
+                purpose: if self.is_password() {
+                    ImePurpose::Password
+                } else {
+                    ImePurpose::Standard
+                },
+                cursor_area: self.ime_cursor_area(),
+            }
+        } else {
+            ImeNotification::ImeNotReady
+        }));
     }
 
     fn is_focusable_by_mouse(&self, _context: &mut UpdateContext<'gc>) -> bool {
