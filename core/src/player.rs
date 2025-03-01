@@ -1299,7 +1299,7 @@ impl Player {
             if !key_press_handled {
                 if let Some(text) = context.focus_tracker.get_as_edit_text() {
                     if let InputEvent::TextInput { codepoint } = &event {
-                        text.text_input(*codepoint, context);
+                        text.text_input((*codepoint).to_string(), context);
                     }
                     if let InputEvent::TextControl { code } = &event {
                         text.text_control_input(*code, context);
