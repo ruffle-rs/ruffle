@@ -1779,8 +1779,8 @@ impl<'gc> EditText<'gc> {
                     break 'paste;
                 }
 
-                let text = self.0.read().restrict.filter_allowed(&text);
                 let text = WString::from_utf8(&text);
+                let text = self.0.read().restrict.filter_allowed(&text);
                 let mut text = text.as_wstr();
 
                 if text.len() > self.available_chars() && self.available_chars() > 0 {
@@ -3477,11 +3477,11 @@ impl EditTextRestrict {
         }
     }
 
-    pub fn filter_allowed(&self, text: &str) -> String {
-        let mut filtered = String::with_capacity(text.len());
+    pub fn filter_allowed(&self, text: &WStr) -> WString {
+        let mut filtered = WString::with_capacity(text.len(), text.is_wide());
         for c in text.chars() {
-            if let Some(c) = self.to_allowed(c) {
-                filtered.push(c);
+            if let Some(c) = c.ok().and_then(|c| self.to_allowed(c)) {
+                filtered.push_char(c);
             }
         }
         filtered
