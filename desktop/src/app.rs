@@ -438,6 +438,7 @@ impl ApplicationHandler<RuffleEvent> for App {
             let preferred_height = self.preferences.cli.height;
             let start_fullscreen = self.preferences.cli.fullscreen;
 
+            #[cfg_attr(not(target_os = "linux"), allow(unused_mut))]
             let mut window_attributes = WindowAttributes::default()
                 .with_visible(false)
                 .with_title("Ruffle")
