@@ -1317,6 +1317,9 @@ impl Player {
                     if let InputEvent::TextControl { code } = &event {
                         text.text_control_input(*code, context);
                     }
+                    if let InputEvent::Ime(ime) = &event {
+                        text.ime(ime.clone(), context);
+                    }
                 }
             }
 
