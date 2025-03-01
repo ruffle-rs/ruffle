@@ -8,6 +8,7 @@ use crate::util::{
 };
 use anyhow::Error;
 use gilrs::{Event, EventType, Gilrs};
+use ruffle_core::events::{ImeEvent, ImeNotification, PlayerNotification};
 use ruffle_core::swf::HeaderExt;
 use ruffle_core::PlayerEvent;
 use ruffle_render::backend::ViewportDimensions;
@@ -16,7 +17,7 @@ use std::time::Instant;
 use url::Url;
 use winit::application::ApplicationHandler;
 use winit::dpi::{LogicalSize, PhysicalPosition, PhysicalSize, Size};
-use winit::event::{ElementState, KeyEvent, Modifiers, StartCause, WindowEvent};
+use winit::event::{ElementState, Ime, KeyEvent, Modifiers, StartCause, WindowEvent};
 use winit::event_loop::{ActiveEventLoop, ControlFlow, EventLoop, EventLoopProxy};
 use winit::keyboard::{Key, NamedKey};
 use winit::window::{Fullscreen, Icon, WindowAttributes, WindowId};
@@ -227,6 +228,18 @@ impl MainWindow {
                 };
                 self.check_redraw();
             }
+            WindowEvent::Ime(ime) => match ime {
+                Ime::Enabled => {}
+                Ime::Preedit(text, cursor) => {
+                    self.player
+                        .handle_event(PlayerEvent::Ime(ImeEvent::Preedit(text, cursor)));
+                }
+                Ime::Commit(text) => {
+                    self.player
+                        .handle_event(PlayerEvent::Ime(ImeEvent::Commit(text)));
+                }
+                Ime::Disabled => {}
+            },
             _ => (),
         }
     }
@@ -576,6 +589,33 @@ impl ApplicationHandler<RuffleEvent> for App {
                 if let Some(mut player) = main_window.player.get() {
                     if player.is_playing() {
                         player.set_fullscreen(false);
+                    }
+                }
+            }
+
+            (Some(main_window), RuffleEvent::PlayerNotification(notification)) => {
+                match notification {
+                    PlayerNotification::ImeNotification(ImeNotification::ImeReady {
+                        purpose,
+                        cursor_area,
+                    }) => {
+                        let ime_enabled = main_window.preferences.ime_enabled().unwrap_or(false);
+                        main_window.gui.set_ime_allowed(ime_enabled);
+                        main_window.gui.set_ime_purpose(purpose);
+                        main_window.gui.set_ime_cursor_area(cursor_area);
+                    }
+                    PlayerNotification::ImeNotification(ImeNotification::ImePurposeUpdated(
+                        purpose,
+                    )) => {
+                        main_window.gui.set_ime_purpose(purpose);
+                    }
+                    PlayerNotification::ImeNotification(ImeNotification::ImeCursorAreaUpdated(
+                        cursor_area,
+                    )) => {
+                        main_window.gui.set_ime_cursor_area(cursor_area);
+                    }
+                    PlayerNotification::ImeNotification(ImeNotification::ImeNotReady) => {
+                        main_window.gui.set_ime_allowed(false);
                     }
                 }
             }
