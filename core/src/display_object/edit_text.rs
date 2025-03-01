@@ -245,6 +245,8 @@ impl EditTextData<'_> {
 }
 
 impl<'gc> EditText<'gc> {
+    const ANY_NEWLINE: [char; 2] = ['\n', '\r'];
+
     // This seems to be OS-independent
     const INPUT_NEWLINE: char = '\r';
 
@@ -1711,7 +1713,7 @@ impl<'gc> EditText<'gc> {
         let is_selectable = self.is_selectable();
         match control_code {
             TextControlCode::Enter => {
-                self.text_input(Self::INPUT_NEWLINE, context);
+                self.text_input(Self::INPUT_NEWLINE.to_string(), context);
             }
             TextControlCode::MoveLeft
             | TextControlCode::MoveLeftWord
@@ -1979,25 +1981,35 @@ impl<'gc> EditText<'gc> {
         self.text().get(pos).unwrap_or(0) == '\n' as u16
     }
 
-    pub fn text_input(self, character: char, context: &mut UpdateContext<'gc>) {
+    pub fn text_input(self, text: String, context: &mut UpdateContext<'gc>) {
         if self.0.read().flags.contains(EditTextFlag::READ_ONLY) || self.available_chars() == 0 {
             return;
         }
 
-        if !self.is_multiline() && character == Self::INPUT_NEWLINE {
+        let text = if self.is_multiline() {
+            text
+        } else {
+            text.replace(&Self::ANY_NEWLINE[..], "")
+        };
+
+        if text.is_empty() {
             return;
         }
+
+        let text = WString::from_utf8(&text);
+        let text = self.0.read().restrict.filter_allowed(&text);
+        let mut text = text.as_wstr();
 
         let Some(selection) = self.selection() else {
             return;
         };
 
-        let Some(character) = self.0.read().restrict.to_allowed(character) else {
-            return;
-        };
+        if text.len() > self.available_chars() {
+            text = &text[0..self.available_chars()];
+        }
 
         if let Avm2Value::Object(target) = self.object2() {
-            let character_string = AvmString::new_utf8(context.gc(), character.to_string());
+            let character_string = AvmString::new_utf8(context.gc(), text.to_string());
 
             let mut activation = Avm2Activation::from_nothing(context);
             let text_evt = Avm2EventObject::text_event(
@@ -2014,13 +2026,8 @@ impl<'gc> EditText<'gc> {
             }
         }
 
-        self.replace_text(
-            selection.start(),
-            selection.end(),
-            &WString::from_char(character),
-            context,
-        );
-        let new_pos = selection.start() + character.len_utf8();
+        self.replace_text(selection.start(), selection.end(), text, context);
+        let new_pos = selection.start() + text.len();
         self.set_selection(Some(TextSelection::for_position(new_pos)), context.gc());
 
         let mut activation = Avm1Activation::from_nothing(
