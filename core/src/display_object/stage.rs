@@ -838,7 +838,12 @@ impl<'gc> TDisplayObject<'gc> for Stage<'gc> {
         context.transform_stack.push(&Transform {
             matrix: self.0.read().viewport_matrix,
             color_transform: Default::default(),
-            perspective_projection: None,
+            // TODO: Verify perspective_projection when its rendering is implemented.
+            perspective_projection: self
+                .as_displayobject()
+                .base()
+                .perspective_projection()
+                .copied(),
         });
 
         // All of our Stage3D instances get rendered *underneath* the main stage.
