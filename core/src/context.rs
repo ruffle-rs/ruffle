@@ -401,6 +401,8 @@ impl<'gc> UpdateContext<'gc> {
         drop(activation);
 
         root.set_depth(0);
+        root.set_perspective_projection(self.gc(), None); // Set default PerspectiveProjection
+
         let flashvars = if !self.swf.parameters().is_empty() {
             let object = Avm1Object::new(&self.strings, None);
             for (key, value) in self.swf.parameters().iter() {
