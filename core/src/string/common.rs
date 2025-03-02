@@ -192,6 +192,7 @@ define_common_strings! {
     str_onLoad: b"onLoad",
     str_onLoadComplete: b"onLoadComplete",
     str_onLoadError: b"onLoadError",
+    str_onLoadInit: b"onLoadInit",
     str_onLoadProgress: b"onLoadProgress",
     str_onLoadStart: b"onLoadStart",
     str_onMouseDown: b"onMouseDown",

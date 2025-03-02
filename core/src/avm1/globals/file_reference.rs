@@ -262,7 +262,8 @@ pub fn browse<'gc>(
                         return Ok(false.into());
                     }
                 } else {
-                    return Err(Error::ThrownValue("Unexpected filter value".into()));
+                    // Method will abort if any non-Object elements are in the list
+                    return Ok(false.into());
                 }
             }
 

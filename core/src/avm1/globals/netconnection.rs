@@ -66,6 +66,7 @@ impl<'gc> NetConnection<'gc> {
         let event = constructor
             .construct(&mut activation, &[])?
             .coerce_to_object(&mut activation);
+        let code = AvmString::new_utf8(activation.gc(), code);
         event.set(istr!("code"), code.into(), &mut activation)?;
         event.set(istr!("level"), istr!("status").into(), &mut activation)?;
         this.call_method(
@@ -189,7 +190,7 @@ fn protocol<'gc>(
             .handle()
             .and_then(|handle| activation.context.net_connections.get_protocol(handle))
         {
-            Ok(protocol.into())
+            Ok(AvmString::new_utf8(activation.gc(), protocol).into())
         } else {
             Ok(Value::Undefined)
         };
