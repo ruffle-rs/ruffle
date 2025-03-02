@@ -13,7 +13,7 @@ use crate::avm2::Multiname;
 use crate::avm2::Namespace;
 use crate::avm2::QName;
 use crate::context::UpdateContext;
-use crate::string::WString;
+use crate::string::{StringContext, WStr, WString};
 use bitflags::bitflags;
 use fnv::FnvHashMap;
 use gc_arena::{Collect, Gc, GcCell, Mutation};
@@ -1066,15 +1066,18 @@ impl<'gc> Class<'gc> {
     #[inline(never)]
     pub fn define_builtin_instance_methods(
         self,
-        mc: &Mutation<'gc>,
+        context: &mut StringContext<'gc>,
         namespace: Namespace<'gc>,
         items: &[(&'static str, NativeMethodImpl)],
     ) {
+        let mc = context.gc();
         for &(name, value) in items {
+            let interned_name = context.intern_static(WStr::from_units(name.as_bytes()));
+
             self.define_instance_trait(
                 mc,
                 Trait::from_method(
-                    QName::new(namespace, name),
+                    QName::new(namespace, interned_name),
                     Method::from_builtin(value, name, mc),
                 ),
             );
@@ -1085,7 +1088,7 @@ impl<'gc> Class<'gc> {
     #[inline(never)]
     pub fn define_builtin_instance_methods_with_sig(
         self,
-        mc: &Mutation<'gc>,
+        context: &mut StringContext<'gc>,
         namespace: Namespace<'gc>,
         items: Vec<(
             &'static str,
@@ -1094,11 +1097,14 @@ impl<'gc> Class<'gc> {
             Option<Gc<'gc, Multiname<'gc>>>,
         )>,
     ) {
+        let mc = context.gc();
         for (name, value, params, return_type) in items {
+            let interned_name = context.intern_static(WStr::from_units(name.as_bytes()));
+
             self.define_instance_trait(
                 mc,
                 Trait::from_method(
-                    QName::new(namespace, name),
+                    QName::new(namespace, interned_name),
                     Method::from_builtin_and_params(value, name, params, return_type, false, mc),
                 ),
             );
@@ -1108,7 +1114,7 @@ impl<'gc> Class<'gc> {
     #[inline(never)]
     pub fn define_builtin_instance_properties(
         self,
-        mc: &Mutation<'gc>,
+        context: &mut StringContext<'gc>,
         namespace: Namespace<'gc>,
         items: &[(
             &'static str,
@@ -1116,12 +1122,15 @@ impl<'gc> Class<'gc> {
             Option<NativeMethodImpl>,
         )],
     ) {
+        let mc = context.gc();
         for &(name, getter, setter) in items {
+            let interned_name = context.intern_static(WStr::from_units(name.as_bytes()));
+
             if let Some(getter) = getter {
                 self.define_instance_trait(
                     mc,
                     Trait::from_getter(
-                        QName::new(namespace, name),
+                        QName::new(namespace, interned_name),
                         Method::from_builtin(getter, name, mc),
                     ),
                 );
@@ -1130,7 +1139,7 @@ impl<'gc> Class<'gc> {
                 self.define_instance_trait(
                     mc,
                     Trait::from_setter(
-                        QName::new(namespace, name),
+                        QName::new(namespace, interned_name),
                         Method::from_builtin(setter, name, mc),
                     ),
                 );
@@ -1145,11 +1154,16 @@ impl<'gc> Class<'gc> {
         items: &[(&'static str, i32)],
         activation: &mut Activation<'_, 'gc>,
     ) {
+        let mc = activation.gc();
         for &(name, value) in items {
+            let interned_name = activation
+                .strings()
+                .intern_static(WStr::from_units(name.as_bytes()));
+
             self.define_instance_trait(
-                activation.gc(),
+                mc,
                 Trait::from_const(
-                    QName::new(namespace, name),
+                    QName::new(namespace, interned_name),
                     Some(activation.avm2().multinames.int),
                     Some(value.into()),
                 ),

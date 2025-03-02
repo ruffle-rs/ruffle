@@ -8,8 +8,9 @@ use crate::avm1::object_reference::MovieClipReference;
 use crate::avm1::property_decl::{define_properties_on, Declaration};
 use crate::avm1::{Activation, Error, Object, ScriptObject, TObject, Value};
 use crate::display_object::{DisplayObject, TDisplayObject};
-use crate::string::StringContext;
+use crate::string::{AvmString, StringContext};
 use gc_arena::Collect;
+use ruffle_macros::istr;
 use swf::{Rectangle, Twips};
 
 #[derive(Copy, Clone, Debug, Collect)]
@@ -85,12 +86,21 @@ fn method<'gc>(
     Ok(match index {
         GET_MATRIX => matrix_to_value(clip.base().matrix(), activation)?,
         SET_MATRIX => {
+            let matrix_props: &[AvmString<'_>] = &[
+                istr!("a"),
+                istr!("b"),
+                istr!("c"),
+                istr!("d"),
+                istr!("tx"),
+                istr!("ty"),
+            ];
+
             if let [value] = args {
                 let object = value.coerce_to_object(activation);
                 // Assignment only occurs for an object with Matrix properties (a, b, c, d, tx, ty).
-                let is_matrix = ["a", "b", "c", "d", "tx", "ty"]
+                let is_matrix = matrix_props
                     .iter()
-                    .all(|p| object.has_own_property(activation, (*p).into()));
+                    .all(|p| object.has_own_property(activation, *p));
                 if is_matrix {
                     let matrix = object_to_matrix(object, activation)?;
                     clip.set_matrix(activation.gc(), matrix);
