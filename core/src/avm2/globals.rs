@@ -212,6 +212,7 @@ pub struct SystemClassDefs<'gc> {
     pub rectangletexture: Class<'gc>,
     pub display_object: Class<'gc>,
     pub sprite: Class<'gc>,
+    pub urlrequestheader: Class<'gc>,
     pub contextmenuitem: Class<'gc>,
 }
 
@@ -377,6 +378,7 @@ impl<'gc> SystemClassDefs<'gc> {
             rectangletexture: object,
             display_object: object,
             sprite: object,
+            urlrequestheader: object,
             contextmenuitem: object,
         }
     }
@@ -977,6 +979,7 @@ pub fn init_native_system_classes(activation: &mut Activation<'_, '_>) {
                 "RectangleTexture",
                 rectangletexture
             ),
+            ("flash.net", "URLRequestHeader", urlrequestheader),
             ("flash.ui", "ContextMenuItem", contextmenuitem),
         ]
     );

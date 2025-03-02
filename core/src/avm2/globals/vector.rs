@@ -77,7 +77,7 @@ pub fn call_handler<'gc>(
     }
 
     let length = arg
-        .get_public_property("length", activation)?
+        .get_public_property(istr!("length"), activation)?
         .coerce_to_i32(activation)?;
 
     let arg = arg.as_object().ok_or("Cannot convert to Vector")?;
