@@ -2,6 +2,7 @@ use crate::avm2::globals::slots::flash_geom_color_transform as ct_slots;
 use crate::avm2::globals::slots::flash_geom_matrix as matrix_slots;
 use crate::avm2::globals::slots::flash_geom_matrix_3d as matrix3d_slots;
 use crate::avm2::globals::slots::flash_geom_perspective_projection as pp_slots;
+use crate::avm2::globals::slots::flash_geom_point as point_slots;
 use crate::avm2::globals::slots::flash_geom_transform as transform_slots;
 use crate::avm2::object::VectorObject;
 use crate::avm2::parameters::ParametersExt;
@@ -11,6 +12,7 @@ use crate::display_object::TDisplayObject;
 use crate::prelude::{DisplayObject, Matrix, Twips};
 use crate::{avm2_stub_getter, avm2_stub_setter};
 use ruffle_render::matrix3d::Matrix3D;
+use ruffle_render::perspective_projection::PerspectiveProjection;
 use ruffle_render::quality::StageQuality;
 use swf::{ColorTransform, Fixed8, Rectangle};
 
@@ -248,6 +250,32 @@ fn object_to_matrix3d<'gc>(
     Ok(Matrix3D { raw_data })
 }
 
+pub fn object_to_perspective_projection<'gc>(
+    object: Object<'gc>,
+    _activation: &mut Activation<'_, 'gc>,
+) -> Result<PerspectiveProjection, Error<'gc>> {
+    if let Some(display_object) = object.get_slot(pp_slots::DISPLAY_OBJECT).as_object() {
+        return Ok(display_object
+            .as_display_object()
+            .unwrap()
+            .base()
+            .perspective_projection()
+            .copied()
+            .unwrap_or_default());
+    }
+
+    let fov = object.get_slot(pp_slots::FOV).as_f64();
+
+    let center = object.get_slot(pp_slots::CENTER).as_object().unwrap();
+    let x = center.get_slot(point_slots::X).as_f64();
+    let y = center.get_slot(point_slots::Y).as_f64();
+
+    Ok(PerspectiveProjection {
+        field_of_view: fov,
+        center: (x, y),
+    })
+}
+
 pub fn matrix_to_object<'gc>(
     matrix: Matrix,
     activation: &mut Activation<'_, 'gc>,
@@ -439,15 +467,15 @@ pub fn set_perspective_projection<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
+    // FIXME: Render with the given PerspectiveProjection.
     avm2_stub_setter!(activation, "flash.geom.Transform", "perspectiveProjection");
 
-    let set = args
-        .get(0)
-        .map(|arg| arg.as_object().is_some())
-        .unwrap_or_default();
-    let display_object = get_display_object(this);
-    display_object
-        .base()
-        .set_has_perspective_projection_stub(set);
+    let perspective_projection = args
+        .try_get_object(activation, 0)
+        .map(|object| object_to_perspective_projection(object, activation))
+        .transpose()?;
+
+    get_display_object(this).set_perspective_projection(activation.gc(), perspective_projection);
+
     Ok(Value::Undefined)
 }
