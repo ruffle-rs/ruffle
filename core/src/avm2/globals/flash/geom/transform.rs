@@ -417,44 +417,25 @@ pub fn get_perspective_projection<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
-    avm2_stub_getter!(activation, "flash.geom.Transform", "perspectiveProjection");
-
-    let display_object = get_display_object(this);
-    let has_perspective_projection = if display_object.is_root() {
-        true
-    } else {
-        display_object.base().has_perspective_projection_stub()
-    };
-
-    if has_perspective_projection {
-        let result = activation
+    if get_display_object(this)
+        .base()
+        .perspective_projection()
+        .is_some()
+    {
+        let object = activation
             .avm2()
             .classes()
             .perspectiveprojection
-            .construct(activation, &[])?;
+            .construct(activation, &[])?
+            .as_object()
+            .unwrap();
 
-        let object = result.as_object().unwrap();
         object.set_slot(
             pp_slots::DISPLAY_OBJECT,
             this.get_slot(transform_slots::DISPLAY_OBJECT),
             activation,
         )?;
-
-        if display_object.is_root() && display_object.as_stage().is_none() {
-            // TODO: Move this special PerspectiveProjection assignment to `root` object initialization time.
-            // This should be assigned to `root.transform` from the beginning.
-
-            let (width, height) = activation.context.stage.stage_size();
-
-            let center = activation.avm2().classes().point.construct(
-                activation,
-                &[(width as f64 / 2.0).into(), (height as f64 / 2.0).into()],
-            )?;
-
-            object.set_slot(pp_slots::CENTER, center, activation)?;
-        }
-
-        Ok(result)
+        Ok(object.into())
     } else {
         Ok(Value::Null)
     }

@@ -26,6 +26,7 @@ use gc_arena::{Collect, Gc, Lock, Mutation, RefLock};
 use ruffle_macros::istr;
 use ruffle_render::backend::ViewportDimensions;
 use ruffle_render::commands::CommandHandler;
+use ruffle_render::perspective_projection::PerspectiveProjection;
 use ruffle_render::quality::StageQuality;
 use ruffle_render::transform::Transform;
 use std::cell::{Cell, Ref, RefCell, RefMut};
@@ -184,6 +185,7 @@ impl<'gc> Stage<'gc> {
             },
         ));
         stage.set_is_root(true);
+        stage.set_perspective_projection(gc_context, None); // Set default PerspectiveProjection
         stage
     }
 
@@ -876,6 +878,27 @@ impl<'gc> TDisplayObject<'gc> for Stage<'gc> {
             .get()
             .expect("Attempted to access Stage::object2 before initialization")
             .into()
+    }
+
+    fn set_perspective_projection(
+        &self,
+        gc_context: &Mutation<'gc>,
+        mut perspective_projection: Option<PerspectiveProjection>,
+    ) {
+        if perspective_projection.is_none() {
+            // `stage` doesn't allow null PerspectiveProjection.
+            perspective_projection = Some(Default::default());
+        }
+        if self
+            .base_mut(gc_context)
+            .set_perspective_projection(perspective_projection)
+        {
+            if let Some(parent) = self.parent() {
+                // Self-transform changes are automatically handled,
+                // we only want to inform ancestors to avoid unnecessary invalidations for tx/ty
+                parent.invalidate_cached_bitmap(gc_context);
+            }
+        }
     }
 
     fn loader_info(&self) -> Option<Avm2Object<'gc>> {
