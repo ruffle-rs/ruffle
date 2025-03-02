@@ -428,9 +428,9 @@ impl<'gc> Value<'gc> {
                         Value::String(s) => s,
                         _ => {
                             if object.as_executable().is_some() {
-                                "[type Function]".into()
+                                AvmString::new_utf8(activation.gc(), "[type Function]")
                             } else {
-                                "[type Object]".into()
+                                AvmString::new_utf8(activation.gc(), "[type Object]")
                             }
                         }
                     }

@@ -332,7 +332,7 @@ pub fn create_i_class<'gc>(activation: &mut Activation<'_, 'gc>) -> Class<'gc> {
         ),
     ];
     object_i_class.define_builtin_instance_methods_with_sig(
-        gc_context,
+        activation.strings(),
         namespaces.as3,
         as3_instance_methods,
     );
@@ -372,7 +372,7 @@ pub fn create_c_class<'gc>(
 
     const INTERNAL_INIT_METHOD: &[(&str, NativeMethodImpl)] = &[("init", init)];
     object_c_class.define_builtin_instance_methods(
-        gc_context,
+        activation.strings(),
         namespaces.internal,
         INTERNAL_INIT_METHOD,
     );
