@@ -59,39 +59,40 @@ pub fn add_property<'gc>(
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let name = args
-        .get(0)
-        .and_then(|v| v.coerce_to_string(activation).ok())
-        .unwrap_or_else(|| "undefined".into());
-    let getter = args.get(1).unwrap_or(&Value::Undefined);
-    let setter = args.get(2).unwrap_or(&Value::Undefined);
+    if let Some(name) = args.get(0) {
+        let name = name.coerce_to_string(activation)?;
+        let getter = args.get(1).unwrap_or(&Value::Undefined);
+        let setter = args.get(2).unwrap_or(&Value::Undefined);
 
-    match getter {
-        Value::Object(get) if !name.is_empty() => {
-            if let Value::Object(set) = setter {
-                this.add_property_with_case(
-                    activation,
-                    name,
-                    get.to_owned(),
-                    Some(set.to_owned()),
-                    Attribute::empty(),
-                );
-            } else if let Value::Null = setter {
-                this.add_property_with_case(
-                    activation,
-                    name,
-                    get.to_owned(),
-                    None,
-                    Attribute::READ_ONLY,
-                );
-            } else {
-                return Ok(false.into());
+        match getter {
+            Value::Object(get) if !name.is_empty() => {
+                if let Value::Object(set) = setter {
+                    this.add_property_with_case(
+                        activation,
+                        name,
+                        get.to_owned(),
+                        Some(set.to_owned()),
+                        Attribute::empty(),
+                    );
+                } else if let Value::Null = setter {
+                    this.add_property_with_case(
+                        activation,
+                        name,
+                        get.to_owned(),
+                        None,
+                        Attribute::READ_ONLY,
+                    );
+                } else {
+                    return Ok(false.into());
+                }
+
+                return Ok(true.into());
             }
-
-            Ok(true.into())
+            _ => return Ok(false.into()),
         }
-        _ => Ok(false.into()),
     }
+
+    return Ok(false.into());
 }
 
 /// Implements `Object.prototype.hasOwnProperty`
@@ -110,14 +111,14 @@ pub fn has_own_property<'gc>(
 
 /// Implements `Object.prototype.toString`
 fn to_string<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if this.as_executable().is_some() {
-        Ok("[type Function]".into())
+        Ok(AvmString::new_utf8(activation.gc(), "[type Function]").into())
     } else {
-        Ok("[object Object]".into())
+        Ok(AvmString::new_utf8(activation.gc(), "[object Object]").into())
     }
 }
 

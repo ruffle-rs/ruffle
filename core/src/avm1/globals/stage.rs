@@ -9,6 +9,7 @@ use crate::avm1::property_decl::{define_properties_on, Declaration};
 use crate::avm1::{Object, ScriptObject, Value};
 use crate::display_object::StageDisplayState;
 use crate::string::{AvmString, StringContext, WStr, WString};
+use ruffle_macros::istr;
 
 const OBJECT_DECLS: &[Declaration] = declare_properties! {
     "align" => property(align, set_align);
@@ -121,11 +122,13 @@ fn display_state<'gc>(
     _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if activation.context.stage.is_fullscreen() {
-        Ok("fullScreen".into())
+    let state = if activation.context.stage.is_fullscreen() {
+        istr!("fullScreen")
     } else {
-        Ok("normal".into())
-    }
+        istr!("normal")
+    };
+
+    Ok(state.into())
 }
 
 fn set_display_state<'gc>(
