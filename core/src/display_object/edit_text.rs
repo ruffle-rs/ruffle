@@ -2000,7 +2000,13 @@ impl<'gc> EditText<'gc> {
         };
 
         if let Avm2Value::Object(target) = self.object2() {
-            let character_string = AvmString::new_utf8(context.gc(), character.to_string());
+            let character_string = AvmString::new_utf8(
+                context.gc(),
+                match character {
+                    Self::INPUT_NEWLINE => "\n".into(),
+                    chr => chr.to_string(),
+                },
+            );
 
             let mut activation = Avm2Activation::from_nothing(context);
             let text_evt = Avm2EventObject::text_event(
