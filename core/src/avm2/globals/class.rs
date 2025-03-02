@@ -79,7 +79,7 @@ pub fn create_i_class<'gc>(
         Option<NativeMethodImpl>,
     )] = &[("prototype", Some(prototype), None)];
     class_i_class.define_builtin_instance_properties(
-        gc_context,
+        activation.strings(),
         namespaces.public_all(),
         PUBLIC_INSTANCE_PROPERTIES,
     );
