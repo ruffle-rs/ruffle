@@ -16,6 +16,7 @@ use crate::vminterface::Instantiator;
 use bitflags::bitflags;
 use gc_arena::{Collect, Mutation};
 use ruffle_macros::{enum_trait_object, istr};
+use ruffle_render::perspective_projection::PerspectiveProjection;
 use ruffle_render::pixel_bender::PixelBenderShaderHandle;
 use ruffle_render::transform::{Transform, TransformStack};
 use std::cell::{Cell, Ref, RefMut};
@@ -350,6 +351,22 @@ impl<'gc> DisplayObjectBase<'gc> {
 
     pub fn set_color_transform(&mut self, color_transform: ColorTransform) {
         self.transform.color_transform = color_transform;
+    }
+
+    pub fn perspective_projection(&self) -> Option<&PerspectiveProjection> {
+        self.transform.perspective_projection.as_ref()
+    }
+    pub fn perspective_projection_mut(&mut self) -> Option<&mut PerspectiveProjection> {
+        self.transform.perspective_projection.as_mut()
+    }
+
+    pub fn set_perspective_projection(
+        &mut self,
+        perspective_projection: Option<PerspectiveProjection>,
+    ) -> bool {
+        let changed = self.transform.perspective_projection != perspective_projection;
+        self.transform.perspective_projection = perspective_projection;
+        changed
     }
 
     fn x(&self) -> Twips {
@@ -1256,6 +1273,25 @@ pub trait TDisplayObject<'gc>:
     fn set_color_transform(&self, gc_context: &Mutation<'gc>, color_transform: ColorTransform) {
         self.base_mut(gc_context)
             .set_color_transform(color_transform)
+    }
+
+    /// Sets the perspective projection of this object.
+    /// This invalidates any ancestors cacheAsBitmap automatically.
+    fn set_perspective_projection(
+        &self,
+        gc_context: &Mutation<'gc>,
+        perspective_projection: Option<PerspectiveProjection>,
+    ) {
+        if self
+            .base_mut(gc_context)
+            .set_perspective_projection(perspective_projection)
+        {
+            if let Some(parent) = self.parent() {
+                // Self-transform changes are automatically handled,
+                // we only want to inform ancestors to avoid unnecessary invalidations for tx/ty
+                parent.invalidate_cached_bitmap(gc_context);
+            }
+        }
     }
 
     /// Should only be used to implement 'Transform.concatenatedMatrix'
