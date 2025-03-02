@@ -290,7 +290,7 @@ impl<'gc> Domain<'gc> {
                 activation.gc(),
                 &name[(start + 2)..(name.len() - 1)],
             ));
-            name = "__AS3__.vec::Vector".into();
+            name = AvmString::new_utf8(activation.gc(), "__AS3__.vec::Vector");
         }
         // FIXME - is this the correct api version?
         let api_version = activation.avm2().root_api_version;
