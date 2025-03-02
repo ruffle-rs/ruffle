@@ -26,9 +26,23 @@ package {
             TestTransform();
             trace("");
 
-            //// FIXME: DisplayObject.transform.perspectiveProjection setters should update the associated DO. Unimplemented now.
-            // TestTransformUpdate();
-            // trace("");
+            TestTransformUpdate();
+            trace("");
+
+            TestTransformUpdateSetterSync();
+            trace("");
+
+            TestTransformUpdateGetterSync();
+            trace("");
+
+            TestTransformUpdateDoubleRef();
+            trace("");
+
+            TestTransformStage();
+            trace("");
+
+            TestTransformRoot();
+            trace("");
         }
 
         private function TestDefault(): void {
@@ -171,6 +185,110 @@ package {
             trace("// Set center = (10, 10)");
             s.transform.perspectiveProjection.projectionCenter = new Point(10, 10);
             printProps(s.transform.perspectiveProjection);
+        }
+
+        private function TestTransformUpdateSetterSync(): void {
+            var s: Sprite = new Sprite();
+            var pp: PerspectiveProjection = new PerspectiveProjection();
+            s.transform.perspectiveProjection = pp;
+
+            trace("// init");
+            printProps(s.transform.perspectiveProjection);
+            printProps(pp);
+
+            trace("// Set pp.FOV = 100");
+            pp.fieldOfView = 100;
+            printProps(s.transform.perspectiveProjection);
+            printProps(pp);
+
+            trace("// Set transform.FOV = 150");
+            s.transform.perspectiveProjection.fieldOfView = 150;
+            printProps(s.transform.perspectiveProjection);
+            printProps(pp);
+        }
+
+        private function TestTransformUpdateGetterSync(): void {
+            var s: Sprite = new Sprite();
+            s.transform.perspectiveProjection = new PerspectiveProjection();
+            var pp: PerspectiveProjection = s.transform.perspectiveProjection;
+
+            trace("// init");
+            printProps(s.transform.perspectiveProjection);
+            printProps(pp);
+
+            trace("// Set pp.FOV = 100");
+            pp.fieldOfView = 100;
+            printProps(s.transform.perspectiveProjection);
+            printProps(pp);
+
+            trace("// Set transform.FOV = 150");
+            s.transform.perspectiveProjection.fieldOfView = 150;
+            printProps(s.transform.perspectiveProjection);
+            printProps(pp);
+        }
+
+        private function TestTransformUpdateDoubleRef(): void {
+            var s: Sprite = new Sprite();
+            s.transform.perspectiveProjection = new PerspectiveProjection();
+            var pp1: PerspectiveProjection = s.transform.perspectiveProjection;
+            var pp2: PerspectiveProjection = s.transform.perspectiveProjection;
+
+            trace("// init");
+            printProps(s.transform.perspectiveProjection);
+            printProps(pp1);
+            printProps(pp2);
+
+            trace("// Set pp1.FOV = 100");
+            pp1.fieldOfView = 100;
+            printProps(s.transform.perspectiveProjection);
+            printProps(pp1);
+            printProps(pp2);
+
+            trace("// Set pp2.center = (10, 10)");
+            pp2.projectionCenter = new Point(10, 10);
+            printProps(s.transform.perspectiveProjection);
+            printProps(pp1);
+            printProps(pp2);
+        }
+
+        private function TestTransformStage(): void {
+            var pp: PerspectiveProjection = new PerspectiveProjection();
+            pp.fieldOfView = 123;
+
+            trace("// stage default");
+            printProps(stage.transform.perspectiveProjection);
+
+            trace("// set null to stage");
+            stage.transform.perspectiveProjection = null;
+            printProps(stage.transform.perspectiveProjection);
+
+            trace("// set default to stage");
+            stage.transform.perspectiveProjection = pp;
+            printProps(stage.transform.perspectiveProjection);
+
+            trace("// set null to stage");
+            stage.transform.perspectiveProjection = null;
+            printProps(stage.transform.perspectiveProjection);
+        }
+
+        private function TestTransformRoot(): void {
+            var pp: PerspectiveProjection = new PerspectiveProjection();
+            pp.fieldOfView = 123;
+
+            trace("// root default");
+            printProps(root.transform.perspectiveProjection);
+
+            trace("// set null to root");
+            root.transform.perspectiveProjection = null;
+            printProps(root.transform.perspectiveProjection);
+
+            trace("// set pp to root");
+            root.transform.perspectiveProjection = pp;
+            printProps(root.transform.perspectiveProjection);
+
+            trace("// set null to root");
+            root.transform.perspectiveProjection = null;
+            printProps(root.transform.perspectiveProjection);
         }
 
         private function printProps(pp: PerspectiveProjection): void {
