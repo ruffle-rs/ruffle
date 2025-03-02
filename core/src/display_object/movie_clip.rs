@@ -1,4 +1,6 @@
 //! `MovieClip` display object and support code.
+use crate::avm1::Avm1;
+use crate::avm1::{Activation as Avm1Activation, ActivationIdentifier};
 use crate::avm1::{NativeObject as Avm1NativeObject, Object as Avm1Object, Value as Avm1Value};
 use crate::avm2::object::LoaderInfoObject;
 use crate::avm2::object::LoaderStream;
@@ -11,11 +13,6 @@ use crate::avm2::{
 use crate::backend::audio::{AudioManager, SoundInstanceHandle};
 use crate::backend::navigator::Request;
 use crate::backend::ui::MouseCursor;
-use crate::frame_lifecycle::{run_inner_goto_frame, FramePhase};
-use bitflags::bitflags;
-
-use crate::avm1::Avm1;
-use crate::avm1::{Activation as Avm1Activation, ActivationIdentifier};
 use crate::binary_data::BinaryData;
 use crate::character::{Character, CompressedBitmap};
 use crate::context::{ActionType, RenderContext, UpdateContext};
@@ -30,6 +27,7 @@ use crate::display_object::{
 use crate::drawing::Drawing;
 use crate::events::{ButtonKeyCode, ClipEvent, ClipEventResult};
 use crate::font::{Font, FontType};
+use crate::frame_lifecycle::{run_inner_goto_frame, FramePhase};
 use crate::library::MovieLibrary;
 use crate::limits::ExecutionLimit;
 use crate::loader::{self, ContentType};
@@ -39,11 +37,13 @@ use crate::streams::NetStream;
 use crate::string::{AvmString, SwfStrExt as _, WStr, WString};
 use crate::tag_utils::{self, ControlFlow, DecodeResult, Error, SwfMovie, SwfSlice, SwfStream};
 use crate::vminterface::{AvmObject, Instantiator};
+use bitflags::bitflags;
 use core::fmt;
 use gc_arena::barrier::unlock;
 use gc_arena::lock::Lock;
 use gc_arena::{Collect, Gc, GcCell, GcWeakCell, Mutation};
 use ruffle_macros::istr;
+use ruffle_render::perspective_projection::PerspectiveProjection;
 use smallvec::SmallVec;
 use std::borrow::Cow;
 use std::cell::{Cell, Ref, RefCell, RefMut};
@@ -2524,6 +2524,34 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
         self.0.write(context.gc()).object = Some(to.into());
         if self.parent().is_none() {
             context.avm2.add_orphan_obj((*self).into());
+        }
+    }
+
+    fn set_perspective_projection(
+        &self,
+        gc_context: &Mutation<'gc>,
+        mut perspective_projection: Option<PerspectiveProjection>,
+    ) {
+        if perspective_projection.is_none() && self.is_root() {
+            // `root` doesn't allow null PerspectiveProjection.
+            perspective_projection = Some(PerspectiveProjection {
+                field_of_view: 55.0,
+                center: (
+                    self.movie().width().to_pixels() / 2.0,
+                    self.movie().height().to_pixels() / 2.0,
+                ),
+            });
+        }
+
+        if self
+            .base_mut(gc_context)
+            .set_perspective_projection(perspective_projection)
+        {
+            if let Some(parent) = self.parent() {
+                // Self-transform changes are automatically handled,
+                // we only want to inform ancestors to avoid unnecessary invalidations for tx/ty
+                parent.invalidate_cached_bitmap(gc_context);
+            }
         }
     }
 
