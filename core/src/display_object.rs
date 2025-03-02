@@ -815,14 +815,6 @@ impl<'gc> DisplayObjectBase<'gc> {
     pub fn set_has_matrix3d_stub(&self, value: bool) {
         self.set_flag(DisplayObjectFlags::HAS_MATRIX3D_STUB, value)
     }
-
-    pub fn has_perspective_projection_stub(&self) -> bool {
-        self.contains_flag(DisplayObjectFlags::HAS_PERSPECTIVE_PROJECTION_STUB)
-    }
-
-    pub fn set_has_perspective_projection_stub(&self, value: bool) {
-        self.set_flag(DisplayObjectFlags::HAS_PERSPECTIVE_PROJECTION_STUB, value)
-    }
 }
 
 struct DrawCacheInfo {
@@ -2652,9 +2644,6 @@ bitflags! {
 
         /// Whether this object has matrix3D (used for stubbing).
         const HAS_MATRIX3D_STUB        = 1 << 14;
-
-        /// Whether this object has perspectiveProjection (used for stubbing).
-        const HAS_PERSPECTIVE_PROJECTION_STUB = 1 << 15;
     }
 }
 
