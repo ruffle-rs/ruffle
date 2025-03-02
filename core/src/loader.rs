@@ -28,7 +28,7 @@ use crate::frame_lifecycle::catchup_display_object_to_frame;
 use crate::limits::ExecutionLimit;
 use crate::player::{Player, PostFrameCallback};
 use crate::streams::NetStream;
-use crate::string::AvmString;
+use crate::string::{AvmString, StringContext};
 use crate::tag_utils::SwfMovie;
 use crate::vminterface::Instantiator;
 use chardetng::EncodingDetector;
@@ -429,7 +429,11 @@ impl<'gc> LoadManager<'gc> {
     /// initialized (ran its first frame).
     ///
     /// This also removes all movie loaders that have completed.
-    pub fn movie_clip_on_load(&mut self, queue: &mut ActionQueue<'gc>) {
+    pub fn movie_clip_on_load(
+        &mut self,
+        queue: &mut ActionQueue<'gc>,
+        strings: &StringContext<'gc>,
+    ) {
         // FIXME: This relies on the iteration order of the slotmap, which
         // is not defined. The container should be replaced with something
         // that preserves insertion order, such as `LinkedHashMap` -
@@ -443,7 +447,7 @@ impl<'gc> LoadManager<'gc> {
             self.0
                 .get_mut(*handle)
                 .expect("valid key")
-                .movie_clip_loaded(queue)
+                .movie_clip_loaded(queue, strings)
         });
 
         // Cleaning up the loaders that are done.
@@ -2643,7 +2647,11 @@ impl<'gc> Loader<'gc> {
     /// Returns `true` if the loader has completed and should be removed.
     ///
     /// Used to fire listener events on clips and terminate completed loaders.
-    fn movie_clip_loaded(&mut self, queue: &mut ActionQueue<'gc>) -> bool {
+    fn movie_clip_loaded(
+        &mut self,
+        queue: &mut ActionQueue<'gc>,
+        strings: &StringContext<'gc>,
+    ) -> bool {
         let (clip, vm_data, loader_status) = match self {
             Loader::Movie {
                 target_clip,
@@ -2668,8 +2676,8 @@ impl<'gc> Loader<'gc> {
                         clip,
                         ActionType::Method {
                             object: broadcaster,
-                            name: "broadcastMessage".into(),
-                            args: vec!["onLoadInit".into(), clip.object()],
+                            name: istr!(strings, "broadcastMessage"),
+                            args: vec![istr!(strings, "onLoadInit").into(), clip.object()],
                         },
                         false,
                     );
