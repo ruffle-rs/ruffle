@@ -5,7 +5,6 @@ use crate::avm1::ActivationIdentifier;
 use crate::avm1::Attribute;
 use crate::avm1::Avm1;
 use crate::avm1::ScriptObject;
-use crate::avm1::SystemProperties;
 use crate::avm1::TObject;
 use crate::avm1::{Object as Avm1Object, Value as Avm1Value};
 use crate::avm2::api_version::ApiVersion;
@@ -38,6 +37,7 @@ use crate::streams::StreamManager;
 use crate::string::HasStringContext;
 use crate::string::{AvmString, StringContext};
 use crate::stub::StubCollection;
+use crate::system_properties::SystemProperties;
 use crate::tag_utils::{SwfMovie, SwfSlice};
 use crate::timer::Timers;
 use crate::vminterface::Instantiator;
@@ -419,7 +419,7 @@ impl<'gc> UpdateContext<'gc> {
         let version_string = activation
             .context
             .system
-            .get_version_string(activation.context.avm1);
+            .get_version_string(activation.context.player_version);
         object.define_value(
             activation.gc(),
             AvmString::new_ascii_static(activation.gc(), b"$version"),
