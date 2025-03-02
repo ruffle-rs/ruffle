@@ -932,6 +932,7 @@ pub fn render_base<'gc>(this: DisplayObject<'gc>, context: &mut RenderContext<'_
                     ty: -offset_y,
                     ..cache_info.base_transform.matrix
                 },
+                perspective_projection: cache_info.base_transform.perspective_projection,
             });
             let mut offscreen_context = RenderContext {
                 renderer: context.renderer,
@@ -964,6 +965,7 @@ pub fn render_base<'gc>(this: DisplayObject<'gc>, context: &mut RenderContext<'_
                         ..Default::default()
                     },
                     color_transform: cache_info.base_transform.color_transform,
+                    perspective_projection: cache_info.base_transform.perspective_projection,
                 },
                 true,
                 PixelSnapping::Always, // cacheAsBitmap forces pixel snapping
@@ -1036,6 +1038,7 @@ pub fn apply_standard_mask_and_scroll<'gc, F>(
         context.transform_stack.push(&Transform {
             matrix: Matrix::translate(-rect.x_min, -rect.y_min),
             color_transform: Default::default(),
+            perspective_projection: None,
         });
     }
 
