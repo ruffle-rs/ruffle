@@ -2826,6 +2826,7 @@ impl PlayerBuilder {
             .unwrap_or_else(|| Box::new(null::NullVideoBackend::new()));
 
         let player_version = self.player_version.unwrap_or(NEWEST_PLAYER_VERSION);
+        let language = ui.language();
 
         // Instantiate the player.
         let fake_movie = Arc::new(SwfMovie::empty(player_version));
@@ -2867,7 +2868,7 @@ impl PlayerBuilder {
 
                 // Misc. state
                 rng: SmallRng::seed_from_u64(get_current_date_time().timestamp_millis() as u64),
-                system: SystemProperties::new(),
+                system: SystemProperties::new(language),
                 page_url: self.page_url.clone(),
                 transform_stack: TransformStack::new(),
                 instance_counter: 0,
