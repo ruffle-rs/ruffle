@@ -1283,3 +1283,162 @@ FL to FOV 999 28.099475055708687
   perspectiveProjection.projectionCenter = (x=250, y=250)
   perspectiveProjection = null
 
+// Set default PerspectiveProjection to transform
+  perspectiveProjection = [object PerspectiveProjection]
+  perspectiveProjection.fieldOfView = 55
+  perspectiveProjection.focalLength = 288.1473083496094
+  perspectiveProjection.projectionCenter = (x=250, y=250)
+// Set FOV = 100
+  perspectiveProjection = [object PerspectiveProjection]
+  perspectiveProjection.fieldOfView = 100
+  perspectiveProjection.focalLength = 125.86494445800781
+  perspectiveProjection.projectionCenter = (x=250, y=250)
+// Set FL = 10000
+  perspectiveProjection = [object PerspectiveProjection]
+  perspectiveProjection.fieldOfView = 1.7187444872893547
+  perspectiveProjection.focalLength = 10000
+  perspectiveProjection.projectionCenter = (x=250, y=250)
+// Set center = (10, 10)
+  perspectiveProjection = [object PerspectiveProjection]
+  perspectiveProjection.fieldOfView = 1.7187444872893547
+  perspectiveProjection.focalLength = 10000
+  perspectiveProjection.projectionCenter = (x=10, y=10)
+
+// init
+  perspectiveProjection = [object PerspectiveProjection]
+  perspectiveProjection.fieldOfView = 55
+  perspectiveProjection.focalLength = 288.1473083496094
+  perspectiveProjection.projectionCenter = (x=250, y=250)
+  perspectiveProjection = [object PerspectiveProjection]
+  perspectiveProjection.fieldOfView = 55
+  perspectiveProjection.focalLength = 480.24554443359375
+  perspectiveProjection.projectionCenter = (x=250, y=250)
+// Set pp.FOV = 100
+  perspectiveProjection = [object PerspectiveProjection]
+  perspectiveProjection.fieldOfView = 55
+  perspectiveProjection.focalLength = 288.1473083496094
+  perspectiveProjection.projectionCenter = (x=250, y=250)
+  perspectiveProjection = [object PerspectiveProjection]
+  perspectiveProjection.fieldOfView = 100
+  perspectiveProjection.focalLength = 209.77491760253906
+  perspectiveProjection.projectionCenter = (x=250, y=250)
+// Set transform.FOV = 150
+  perspectiveProjection = [object PerspectiveProjection]
+  perspectiveProjection.fieldOfView = 150.00000000000003
+  perspectiveProjection.focalLength = 40.192378997802734
+  perspectiveProjection.projectionCenter = (x=250, y=250)
+  perspectiveProjection = [object PerspectiveProjection]
+  perspectiveProjection.fieldOfView = 100
+  perspectiveProjection.focalLength = 209.77491760253906
+  perspectiveProjection.projectionCenter = (x=250, y=250)
+
+// init
+  perspectiveProjection = [object PerspectiveProjection]
+  perspectiveProjection.fieldOfView = 55
+  perspectiveProjection.focalLength = 288.1473083496094
+  perspectiveProjection.projectionCenter = (x=250, y=250)
+  perspectiveProjection = [object PerspectiveProjection]
+  perspectiveProjection.fieldOfView = 55
+  perspectiveProjection.focalLength = 288.1473083496094
+  perspectiveProjection.projectionCenter = (x=250, y=250)
+// Set pp.FOV = 100
+  perspectiveProjection = [object PerspectiveProjection]
+  perspectiveProjection.fieldOfView = 100
+  perspectiveProjection.focalLength = 125.86494445800781
+  perspectiveProjection.projectionCenter = (x=250, y=250)
+  perspectiveProjection = [object PerspectiveProjection]
+  perspectiveProjection.fieldOfView = 100
+  perspectiveProjection.focalLength = 125.86494445800781
+  perspectiveProjection.projectionCenter = (x=250, y=250)
+// Set transform.FOV = 150
+  perspectiveProjection = [object PerspectiveProjection]
+  perspectiveProjection.fieldOfView = 150.00000000000003
+  perspectiveProjection.focalLength = 40.192378997802734
+  perspectiveProjection.projectionCenter = (x=250, y=250)
+  perspectiveProjection = [object PerspectiveProjection]
+  perspectiveProjection.fieldOfView = 150.00000000000003
+  perspectiveProjection.focalLength = 40.192378997802734
+  perspectiveProjection.projectionCenter = (x=250, y=250)
+
+// init
+  perspectiveProjection = [object PerspectiveProjection]
+  perspectiveProjection.fieldOfView = 55
+  perspectiveProjection.focalLength = 288.1473083496094
+  perspectiveProjection.projectionCenter = (x=250, y=250)
+  perspectiveProjection = [object PerspectiveProjection]
+  perspectiveProjection.fieldOfView = 55
+  perspectiveProjection.focalLength = 288.1473083496094
+  perspectiveProjection.projectionCenter = (x=250, y=250)
+  perspectiveProjection = [object PerspectiveProjection]
+  perspectiveProjection.fieldOfView = 55
+  perspectiveProjection.focalLength = 288.1473083496094
+  perspectiveProjection.projectionCenter = (x=250, y=250)
+// Set pp1.FOV = 100
+  perspectiveProjection = [object PerspectiveProjection]
+  perspectiveProjection.fieldOfView = 100
+  perspectiveProjection.focalLength = 125.86494445800781
+  perspectiveProjection.projectionCenter = (x=250, y=250)
+  perspectiveProjection = [object PerspectiveProjection]
+  perspectiveProjection.fieldOfView = 100
+  perspectiveProjection.focalLength = 125.86494445800781
+  perspectiveProjection.projectionCenter = (x=250, y=250)
+  perspectiveProjection = [object PerspectiveProjection]
+  perspectiveProjection.fieldOfView = 100
+  perspectiveProjection.focalLength = 125.86494445800781
+  perspectiveProjection.projectionCenter = (x=250, y=250)
+// Set pp2.center = (10, 10)
+  perspectiveProjection = [object PerspectiveProjection]
+  perspectiveProjection.fieldOfView = 100
+  perspectiveProjection.focalLength = 125.86494445800781
+  perspectiveProjection.projectionCenter = (x=10, y=10)
+  perspectiveProjection = [object PerspectiveProjection]
+  perspectiveProjection.fieldOfView = 100
+  perspectiveProjection.focalLength = 125.86494445800781
+  perspectiveProjection.projectionCenter = (x=10, y=10)
+  perspectiveProjection = [object PerspectiveProjection]
+  perspectiveProjection.fieldOfView = 100
+  perspectiveProjection.focalLength = 125.86494445800781
+  perspectiveProjection.projectionCenter = (x=10, y=10)
+
+// stage default
+  perspectiveProjection = [object PerspectiveProjection]
+  perspectiveProjection.fieldOfView = 55
+  perspectiveProjection.focalLength = 480.24554443359375
+  perspectiveProjection.projectionCenter = (x=250, y=250)
+// set null to stage
+  perspectiveProjection = [object PerspectiveProjection]
+  perspectiveProjection.fieldOfView = 55
+  perspectiveProjection.focalLength = 480.24554443359375
+  perspectiveProjection.projectionCenter = (x=250, y=250)
+// set default to stage
+  perspectiveProjection = [object PerspectiveProjection]
+  perspectiveProjection.fieldOfView = 123.00000000000001
+  perspectiveProjection.focalLength = 135.73892211914063
+  perspectiveProjection.projectionCenter = (x=250, y=250)
+// set null to stage
+  perspectiveProjection = [object PerspectiveProjection]
+  perspectiveProjection.fieldOfView = 55
+  perspectiveProjection.focalLength = 480.24554443359375
+  perspectiveProjection.projectionCenter = (x=250, y=250)
+
+// root default
+  perspectiveProjection = [object PerspectiveProjection]
+  perspectiveProjection.fieldOfView = 55
+  perspectiveProjection.focalLength = 288.1473083496094
+  perspectiveProjection.projectionCenter = (x=150, y=100)
+// set null to root
+  perspectiveProjection = [object PerspectiveProjection]
+  perspectiveProjection.fieldOfView = 55
+  perspectiveProjection.focalLength = 288.1473083496094
+  perspectiveProjection.projectionCenter = (x=150, y=100)
+// set pp to root
+  perspectiveProjection = [object PerspectiveProjection]
+  perspectiveProjection.fieldOfView = 123.00000000000001
+  perspectiveProjection.focalLength = 81.44335174560547
+  perspectiveProjection.projectionCenter = (x=250, y=250)
+// set null to root
+  perspectiveProjection = [object PerspectiveProjection]
+  perspectiveProjection.fieldOfView = 55
+  perspectiveProjection.focalLength = 288.1473083496094
+  perspectiveProjection.projectionCenter = (x=150, y=100)
+
