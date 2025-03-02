@@ -1,7 +1,6 @@
 use crate::avm1::Attribute;
 use crate::avm1::Avm1;
 use crate::avm1::Object;
-use crate::avm1::SystemProperties;
 use crate::avm1::VariableDumper;
 use crate::avm1::{Activation, ActivationIdentifier};
 use crate::avm1::{TObject, Value};
@@ -45,6 +44,7 @@ use crate::socket::Sockets;
 use crate::streams::StreamManager;
 use crate::string::{AvmStringInterner, StringContext};
 use crate::stub::StubCollection;
+use crate::system_properties::SystemProperties;
 use crate::tag_utils::SwfMovie;
 use crate::timer::Timers;
 use crate::vminterface::Instantiator;
