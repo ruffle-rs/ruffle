@@ -318,10 +318,11 @@ impl<'gc> EventObject<'gc> {
 
     pub fn io_error_event(
         activation: &mut Activation<'_, 'gc>,
-        error_msg: AvmString<'gc>,
+        error_msg: &str,
         error_code: u32,
     ) -> EventObject<'gc> {
         let event_name = istr!("ioError");
+        let error_msg = AvmString::new_utf8(activation.gc(), error_msg);
         let io_error_event_cls = activation.avm2().classes().ioerrorevent;
         Self::from_class_and_args(
             activation,

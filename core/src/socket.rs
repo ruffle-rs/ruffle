@@ -261,7 +261,7 @@ impl<'gc> Sockets<'gc> {
 
                             let io_error_evt = EventObject::io_error_event(
                                 &mut activation,
-                                "Error #2031: Socket Error.".into(),
+                                "Error #2031: Socket Error.",
                                 2031,
                             );
 
