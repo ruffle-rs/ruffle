@@ -113,3 +113,17 @@ pub fn get_screen_dpi<'gc>(
     // source: https://tracker.adobe.com/#/view/FP-3949775
     Ok(72.into())
 }
+
+/// Implements `flash.system.Capabilities.language`
+pub fn get_language<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    _this: Value<'gc>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    let language = activation
+        .context
+        .system
+        .language
+        .get_language_code(activation.context.player_version);
+    Ok(AvmString::new_utf8(activation.gc(), language).into())
+}

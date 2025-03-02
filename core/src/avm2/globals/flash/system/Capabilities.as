@@ -8,13 +8,10 @@ package flash.system {
         public native static function get screenResolutionY():Number;
         public native static function get pixelAspectRatio():Number;
         public native static function get screenDPI():Number;
+        public native static function get language(): String;
         public static function get manufacturer(): String {
             stub_getter("flash.system.Capabilities", "manufacturer");
             return "Adobe Windows"
-        }
-        public static function get language(): String {
-            stub_getter("flash.system.Capabilities", "language");
-            return "en"
         }
         public static function get isDebugger(): Boolean {
             return false
