@@ -296,8 +296,9 @@ pub fn create_i_class<'gc>(activation: &mut Activation<'_, 'gc>) -> Class<'gc> {
     let gc_context = activation.gc();
     let namespaces = activation.avm2().namespaces;
 
+    let class_name = istr!("Object");
     let object_i_class = Class::custom_new(
-        QName::new(namespaces.public_all(), "Object"),
+        QName::new(namespaces.public_all(), class_name),
         None,
         Method::from_builtin(instance_init, "<Object instance initializer>", gc_context),
         gc_context,
@@ -354,8 +355,9 @@ pub fn create_c_class<'gc>(
     let gc_context = activation.gc();
     let namespaces = activation.avm2().namespaces;
 
+    let class_name = AvmString::new_utf8(gc_context, "Object$");
     let object_c_class = Class::custom_new(
-        QName::new(namespaces.public_all(), "Object$"),
+        QName::new(namespaces.public_all(), class_name),
         Some(class_i_class),
         Method::from_builtin(class_init, "<Object class initializer>", gc_context),
         gc_context,

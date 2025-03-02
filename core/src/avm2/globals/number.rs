@@ -5,6 +5,7 @@ use crate::avm2::error::{make_error_1002, make_error_1003};
 use crate::avm2::parameters::ParametersExt;
 use crate::avm2::value::Value;
 use crate::avm2::{AvmString, Error};
+use ruffle_macros::istr;
 
 pub fn number_constructor<'gc>(
     activation: &mut Activation<'_, 'gc>,
@@ -130,14 +131,14 @@ pub fn print_with_radix<'gc>(
     }
 
     if number.is_nan() {
-        return Ok("NaN".into());
+        return Ok(istr!("NaN"));
     }
 
     if number.is_infinite() {
         if number < 0.0 {
-            return Ok("-Infinity".into());
+            return Ok(AvmString::new_utf8(activation.gc(), "-Infinity"));
         } else if number > 0.0 {
-            return Ok("Infinity".into());
+            return Ok(istr!("Infinity"));
         }
     }
 

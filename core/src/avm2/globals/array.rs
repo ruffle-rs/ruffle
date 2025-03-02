@@ -233,7 +233,7 @@ impl<'gc> ArrayIter<'gc> {
         end_index: u32,
     ) -> Result<Self, Error<'gc>> {
         let length = Value::from(array_object)
-            .get_public_property("length", activation)?
+            .get_public_property(istr!("length"), activation)?
             .coerce_to_u32(activation)?;
 
         Ok(Self {

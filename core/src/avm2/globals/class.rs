@@ -8,6 +8,8 @@ use crate::avm2::object::{ClassObject, Object, TObject};
 use crate::avm2::value::Value;
 use crate::avm2::Error;
 use crate::avm2::QName;
+use crate::string::AvmString;
+use ruffle_macros::istr;
 
 pub fn class_allocator<'gc>(
     _class: ClassObject<'gc>,
@@ -61,8 +63,9 @@ pub fn create_i_class<'gc>(
     let gc_context = activation.gc();
     let namespaces = activation.avm2().namespaces;
 
+    let class_name = istr!("Class");
     let class_i_class = Class::custom_new(
-        QName::new(namespaces.public_all(), "Class"),
+        QName::new(namespaces.public_all(), class_name),
         Some(object_i_class),
         Method::from_builtin(instance_init, "<Class instance initializer>", gc_context),
         gc_context,
@@ -100,8 +103,9 @@ pub fn create_c_class<'gc>(
     let gc_context = activation.gc();
     let namespaces = activation.avm2().namespaces;
 
+    let class_name = AvmString::new_utf8(gc_context, "Class$");
     let class_c_class = Class::custom_new(
-        QName::new(namespaces.public_all(), "Class$"),
+        QName::new(namespaces.public_all(), class_name),
         Some(class_i_class),
         Method::from_builtin(class_init, "<Class class initializer>", gc_context),
         gc_context,
