@@ -1,6 +1,7 @@
 use crate::context::UpdateContext;
 use bitflags::bitflags;
 use core::fmt;
+use fluent_templates::{langid, LanguageIdentifier};
 
 /// Available cpu architectures
 #[allow(dead_code)]
@@ -88,7 +89,6 @@ impl Manufacturer {
 }
 
 /// The language of the host os
-#[allow(dead_code)]
 pub enum Language {
     Czech,
     Danish,
@@ -143,6 +143,40 @@ impl Language {
             Language::Swedish => "sv",
             Language::TraditionalChinese => "zh-TW",
             Language::Turkish => "tr",
+        }
+    }
+}
+
+impl From<LanguageIdentifier> for Language {
+    fn from(li: LanguageIdentifier) -> Self {
+        match li.language.as_str() {
+            "da" => Language::Danish,
+            "nl" => Language::Dutch,
+            "en" => Language::English,
+            "fi" => Language::Finnish,
+            "fr" => Language::French,
+            "de" => Language::German,
+            "hu" => Language::Hungarian,
+            "it" => Language::Italian,
+            "ja" => Language::Japanese,
+            "ko" => Language::Korean,
+            "no" => Language::Norwegian,
+            "und" => Language::Unknown,
+            "pl" => Language::Polish,
+            "pt" => Language::Portuguese,
+            "ru" => Language::Russian,
+            "zh" => {
+                if li == langid!("zh-TW") {
+                    Language::TraditionalChinese
+                } else {
+                    Language::SimplifiedChinese
+                }
+            }
+            "es" => Language::Spanish,
+            "sv" => Language::Swedish,
+            "tr" => Language::Turkish,
+            // Fallback to English instead of Unknown for better compatibility.
+            _ => Language::English,
         }
     }
 }
@@ -239,14 +273,8 @@ pub struct SystemProperties {
     pub idc_level: String,
 }
 
-impl Default for SystemProperties {
-    fn default() -> Self {
-        Self::new()
-    }
-}
-
 impl SystemProperties {
-    pub fn new() -> Self {
+    pub fn new(language: LanguageIdentifier) -> Self {
         SystemProperties {
             //TODO: default to true on fp>=7, false <= 6
             exact_settings: true,
@@ -256,7 +284,7 @@ impl SystemProperties {
             player_type: PlayerType::StandAlone,
             screen_color: ScreenColor::Color,
             // TODO: note for fp <7 this should be the locale and the ui lang for >= 7, on windows
-            language: Language::English,
+            language: language.into(),
             // source: https://web.archive.org/web/20230611050355/https://flylib.com/books/en/4.13.1.272/1/
             pixel_aspect_ratio: 1_f32,
             // source: https://tracker.adobe.com/#/view/FP-3949775
