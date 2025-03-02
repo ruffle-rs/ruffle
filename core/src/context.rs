@@ -393,6 +393,7 @@ impl<'gc> UpdateContext<'gc> {
         drop(activation);
 
         root.set_depth(self.gc(), 0);
+        root.set_perspective_projection(self.gc(), None); // Set default PerspectiveProjection
         let flashvars = if !self.swf.parameters().is_empty() {
             let object = ScriptObject::new(&self.strings, None);
             for (key, value) in self.swf.parameters().iter() {
