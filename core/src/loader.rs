@@ -2273,14 +2273,7 @@ impl<'gc> Loader<'gc> {
                             error += &format!(" URL: {url}");
                         }
 
-                        Loader::movie_loader_error(
-                            handle,
-                            uc,
-                            &error,
-                            status,
-                            redirected,
-                            url,
-                        )?;
+                        Loader::movie_loader_error(handle, uc, &error, status, redirected, url)?;
                     }
                 }
             }

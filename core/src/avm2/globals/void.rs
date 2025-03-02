@@ -4,6 +4,7 @@ use crate::avm2::method::Method;
 use crate::avm2::value::Value;
 use crate::avm2::Error;
 use crate::avm2::QName;
+use ruffle_macros::istr;
 
 fn void_init<'gc>(
     _activation: &mut Activation<'_, 'gc>,
@@ -16,7 +17,7 @@ fn void_init<'gc>(
 pub fn create_class<'gc>(activation: &mut Activation<'_, 'gc>) -> Class<'gc> {
     let mc = activation.gc();
     let class = Class::custom_new(
-        QName::new(activation.avm2().namespaces.public_all(), "void"),
+        QName::new(activation.avm2().namespaces.public_all(), istr!("void")),
         None,
         Method::from_builtin(void_init, "", mc),
         mc,

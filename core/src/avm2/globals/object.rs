@@ -9,6 +9,7 @@ use crate::avm2::traits::Trait;
 use crate::avm2::value::Value;
 use crate::avm2::{Error, Multiname, QName};
 use crate::string::AvmString;
+use ruffle_macros::istr;
 
 /// Implements `Object`'s instance initializer.
 fn instance_init<'gc>(
@@ -64,7 +65,7 @@ pub fn init_object_prototype<'gc>(activation: &mut Activation<'_, 'gc>) -> Resul
     let object_proto = object_class.prototype();
 
     object_proto.set_string_property_local(
-        "hasOwnProperty",
+        istr!("hasOwnProperty"),
         FunctionObject::from_method(
             activation,
             Method::from_builtin(has_own_property, "hasOwnProperty", gc_context),
@@ -77,7 +78,7 @@ pub fn init_object_prototype<'gc>(activation: &mut Activation<'_, 'gc>) -> Resul
         activation,
     )?;
     object_proto.set_string_property_local(
-        "propertyIsEnumerable",
+        istr!("propertyIsEnumerable"),
         FunctionObject::from_method(
             activation,
             Method::from_builtin(property_is_enumerable, "propertyIsEnumerable", gc_context),
@@ -90,7 +91,7 @@ pub fn init_object_prototype<'gc>(activation: &mut Activation<'_, 'gc>) -> Resul
         activation,
     )?;
     object_proto.set_string_property_local(
-        "setPropertyIsEnumerable",
+        istr!("setPropertyIsEnumerable"),
         FunctionObject::from_method(
             activation,
             Method::from_builtin(
@@ -107,7 +108,7 @@ pub fn init_object_prototype<'gc>(activation: &mut Activation<'_, 'gc>) -> Resul
         activation,
     )?;
     object_proto.set_string_property_local(
-        "isPrototypeOf",
+        istr!("isPrototypeOf"),
         FunctionObject::from_method(
             activation,
             Method::from_builtin(is_prototype_of, "isPrototypeOf", gc_context),
@@ -120,7 +121,7 @@ pub fn init_object_prototype<'gc>(activation: &mut Activation<'_, 'gc>) -> Resul
         activation,
     )?;
     object_proto.set_string_property_local(
-        "toString",
+        istr!("toString"),
         FunctionObject::from_method(
             activation,
             Method::from_builtin(to_string, "toString", gc_context),
@@ -133,7 +134,7 @@ pub fn init_object_prototype<'gc>(activation: &mut Activation<'_, 'gc>) -> Resul
         activation,
     )?;
     object_proto.set_string_property_local(
-        "toLocaleString",
+        istr!("toLocaleString"),
         FunctionObject::from_method(
             activation,
             Method::from_builtin(to_string, "toLocaleString", gc_context),
@@ -146,7 +147,7 @@ pub fn init_object_prototype<'gc>(activation: &mut Activation<'_, 'gc>) -> Resul
         activation,
     )?;
     object_proto.set_string_property_local(
-        "valueOf",
+        istr!("valueOf"),
         FunctionObject::from_method(
             activation,
             Method::from_builtin(value_of, "valueOf", gc_context),
@@ -159,17 +160,17 @@ pub fn init_object_prototype<'gc>(activation: &mut Activation<'_, 'gc>) -> Resul
         activation,
     )?;
 
-    object_proto.set_local_property_is_enumerable(gc_context, "hasOwnProperty".into(), false);
-    object_proto.set_local_property_is_enumerable(gc_context, "propertyIsEnumerable".into(), false);
+    object_proto.set_local_property_is_enumerable(gc_context, istr!("hasOwnProperty"), false);
+    object_proto.set_local_property_is_enumerable(gc_context, istr!("propertyIsEnumerable"), false);
     object_proto.set_local_property_is_enumerable(
         gc_context,
-        "setPropertyIsEnumerable".into(),
+        istr!("setPropertyIsEnumerable"),
         false,
     );
-    object_proto.set_local_property_is_enumerable(gc_context, "isPrototypeOf".into(), false);
-    object_proto.set_local_property_is_enumerable(gc_context, "toString".into(), false);
-    object_proto.set_local_property_is_enumerable(gc_context, "toLocaleString".into(), false);
-    object_proto.set_local_property_is_enumerable(gc_context, "valueOf".into(), false);
+    object_proto.set_local_property_is_enumerable(gc_context, istr!("isPrototypeOf"), false);
+    object_proto.set_local_property_is_enumerable(gc_context, istr!("toString"), false);
+    object_proto.set_local_property_is_enumerable(gc_context, istr!("toLocaleString"), false);
+    object_proto.set_local_property_is_enumerable(gc_context, istr!("valueOf"), false);
 
     Ok(())
 }
@@ -364,7 +365,7 @@ pub fn create_c_class<'gc>(
     object_c_class.define_instance_trait(
         gc_context,
         Trait::from_const(
-            QName::new(activation.avm2().namespaces.public_all(), "length"),
+            QName::new(activation.avm2().namespaces.public_all(), istr!("length")),
             Some(activation.avm2().multinames.int),
             Some(1.into()),
         ),
