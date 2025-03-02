@@ -340,8 +340,6 @@ pub struct CommonNamespaces<'gc> {
     pub(super) internal: Namespace<'gc>,
     pub(super) as3: Namespace<'gc>,
     pub(super) vector_internal: Namespace<'gc>,
-
-    pub(super) __ruffle__: Namespace<'gc>,
 }
 
 impl<'gc> CommonNamespaces<'gc> {
@@ -350,19 +348,17 @@ impl<'gc> CommonNamespaces<'gc> {
     pub fn new(context: &mut StringContext<'gc>) -> Self {
         let empty_string = context.empty();
 
+        let as3_namespace_string =
+            AvmString::new_utf8(context.gc(), "http://adobe.com/AS3/2006/builtin");
+        let vector_namespace_string = AvmString::new_utf8(context.gc(), "__AS3__.vec");
+
         Self {
             public_namespaces: std::array::from_fn(|val| {
                 Namespace::package(empty_string, ApiVersion::from_usize(val).unwrap(), context)
             }),
             internal: Namespace::internal(empty_string, context),
-            as3: Namespace::package(
-                "http://adobe.com/AS3/2006/builtin",
-                ApiVersion::AllVersions,
-                context,
-            ),
-            vector_internal: Namespace::internal("__AS3__.vec", context),
-
-            __ruffle__: Namespace::package("__ruffle__", ApiVersion::AllVersions, context),
+            as3: Namespace::package(as3_namespace_string, ApiVersion::AllVersions, context),
+            vector_internal: Namespace::internal(vector_namespace_string, context),
         }
     }
 

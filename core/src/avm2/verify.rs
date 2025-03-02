@@ -8,7 +8,7 @@ use crate::avm2::multiname::Multiname;
 use crate::avm2::op::Op;
 use crate::avm2::script::TranslationUnit;
 use crate::avm2::{Activation, Error, QName};
-use crate::string::AvmAtom;
+use crate::string::{AvmAtom, AvmString};
 
 use gc_arena::{Collect, Gc};
 use std::collections::{HashMap, HashSet};
@@ -420,7 +420,7 @@ pub fn verify_method<'gc>(
                         return Err(make_error_1014(
                             activation,
                             Error1014Type::VerifyError,
-                            "[]".into(),
+                            AvmString::new_utf8(activation.gc(), "[]"),
                         ));
                     }
 
@@ -486,7 +486,7 @@ pub fn verify_method<'gc>(
                 return Err(make_error_1014(
                     activation,
                     Error1014Type::VerifyError,
-                    "[]".into(),
+                    AvmString::new_utf8(activation.gc(), "[]"),
                 ));
             }
 
@@ -742,7 +742,7 @@ pub fn resolve_param_config<'gc>(
                 return Err(make_error_1014(
                     activation,
                     Error1014Type::VerifyError,
-                    "[]".into(),
+                    AvmString::new_utf8(activation.gc(), "[]"),
                 ));
             }
 
@@ -780,7 +780,7 @@ fn resolve_return_type<'gc>(
             return Err(make_error_1014(
                 activation,
                 Error1014Type::VerifyError,
-                "[]".into(),
+                AvmString::new_utf8(activation.gc(), "[]"),
             ));
         }
 
