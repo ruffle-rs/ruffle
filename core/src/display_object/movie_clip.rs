@@ -2330,7 +2330,10 @@ impl<'gc> MovieClip<'gc> {
                 ClipEvent::BUTTON_EVENT_METHODS
                     .iter()
                     .copied()
-                    .any(|handler| object.has_property(&mut activation, handler.into()))
+                    .any(|handler| {
+                        let handler = AvmString::new_utf8(activation.gc(), handler);
+                        object.has_property(&mut activation, handler)
+                    })
             } else {
                 false
             }
@@ -2989,12 +2992,12 @@ impl<'gc> TInteractiveObject<'gc> for MovieClip<'gc> {
                 // Queue ActionScript-defined event handlers after the SWF defined ones.
                 // (e.g., clip.onEnterFrame = foo).
                 if self.should_fire_event_handlers(context, event) {
-                    if let Some(name) = event.method_name() {
+                    if let Some(name) = event.method_name(&context.strings) {
                         context.action_queue.queue_action(
                             self.into(),
                             ActionType::Method {
                                 object,
-                                name: name.into(),
+                                name,
                                 args: vec![],
                             },
                             event == ClipEvent::Unload,
