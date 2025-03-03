@@ -38,11 +38,7 @@ impl Debug for Error<'_> {
 }
 
 // This type is used very frequently, so make sure it doesn't unexpectedly grow.
-#[cfg(target_family = "wasm")]
 const _: () = assert!(size_of::<Result<Value<'_>, Error<'_>>>() == 24);
-
-#[cfg(target_pointer_width = "64")]
-const _: () = assert!(size_of::<Result<Value<'_>, Error<'_>>>() == 32);
 
 #[inline(never)]
 #[cold]
