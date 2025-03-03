@@ -12,6 +12,7 @@ use crate::avm2::{Avm2, Error, Multiname, Namespace, QName};
 use crate::string::{AvmString, WStr};
 use crate::tag_utils::{self, ControlFlow, SwfMovie, SwfSlice, SwfStream};
 use gc_arena::Collect;
+use ruffle_macros::istr;
 use std::sync::Arc;
 use swf::TagCode;
 
@@ -384,25 +385,6 @@ impl<'gc> SystemClassDefs<'gc> {
     }
 }
 
-/// Looks up a function defined in the script domain, and defines it on the global object.
-///
-/// This expects the looked-up value to be a function.
-fn define_fn_on_global<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    name: &'static str,
-    script: Script<'gc>,
-) {
-    let (_, global, domain) = script.init();
-    let qname = QName::new(activation.avm2().namespaces.public_all(), name);
-    let func = domain
-        .get_defined_value(activation, qname)
-        .expect("Function being defined on global should be defined in domain!");
-
-    Value::from(global)
-        .init_property(&qname.into(), func, activation)
-        .expect("Should set property");
-}
-
 /// Add a fully-formed class object builtin to the global scope.
 ///
 /// This allows the caller to pre-populate the class's prototype with dynamic
@@ -485,49 +467,20 @@ pub fn load_player_globals<'gc>(
         void_def,
     ));
 
-    // Unfortunately we need to specify the global traits manually, at least until
-    // all the builtin classes are defined in AS.
+    // Unfortunately we need to specify the global traits manually
     let mut global_traits = Vec::new();
 
     let public_ns = activation.avm2().namespaces.public_all();
 
     let class_trait_list = &[
-        (public_ns, "Object", object_i_class),
-        (public_ns, "Class", class_i_class),
-    ];
-
-    // "trace" is the only builtin function not defined on the toplevel global object
-    let function_trait_list = &[
-        "decodeURI",
-        "decodeURIComponent",
-        "encodeURI",
-        "encodeURIComponent",
-        "escape",
-        "unescape",
-        "isXMLName",
-        "isFinite",
-        "isNaN",
-        "parseFloat",
-        "parseInt",
+        (public_ns, istr!("Object"), object_i_class),
+        (public_ns, istr!("Class"), class_i_class),
     ];
 
     for (namespace, name, class) in class_trait_list {
         let qname = QName::new(*namespace, *name);
 
         global_traits.push(Trait::from_class(qname, *class));
-    }
-
-    for function_name in function_trait_list {
-        let qname = QName::new(public_ns, *function_name);
-
-        // FIXME: These should be TraitKind::Methods, to match how they are when
-        // defined on the AS global object, but we don't have the actual Methods
-        // right now.
-        global_traits.push(Trait::from_const(
-            qname,
-            Some(activation.avm2().multinames.function),
-            Some(Value::Null),
-        ));
     }
 
     // Create the builtin globals' classdef
@@ -595,8 +548,6 @@ pub fn load_player_globals<'gc>(
 
     globals.set_vtable(mc, global_obj_vtable);
 
-    activation.context.avm2.toplevel_global_object = Some(globals);
-
     // Initialize the script
     let script = Script::empty_script(mc, globals, domain);
 
@@ -612,11 +563,6 @@ pub fn load_player_globals<'gc>(
     // relatively late, so that it can access classes defined before
     // this call.
     load_playerglobal(activation, domain)?;
-
-    for function_name in function_trait_list {
-        // Now copy those functions to the global object.
-        define_fn_on_global(activation, function_name, script);
-    }
 
     Ok(())
 }
