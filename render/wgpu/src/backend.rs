@@ -442,6 +442,9 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
         result.push(format!("Surface quality: {}", self.surface.quality()));
         result.push(format!("Surface samples: {}", self.surface.sample_count()));
         result.push(format!("Surface size: {:?}", self.surface.size()));
+        if let Some(report) = self.descriptors.wgpu_instance.generate_report() {
+            result.push(format!("wgpu memory report: {report:?}"));
+        }
 
         Cow::Owned(result.join("\n"))
     }
