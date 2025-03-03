@@ -708,10 +708,16 @@ impl<'gc> Avm2<'gc> {
 
         // The second script (script #1) is Toplevel.as, and includes important
         // builtin classes such as Namespace, QName, and XML.
-        tunit
+        let toplevel_script = tunit
             .load_script(1, &mut activation)
             .expect("Script should load");
         init_builtin_system_classes(&mut activation);
+
+        activation.avm2().toplevel_global_object = Some(
+            toplevel_script
+                .globals(activation.context)
+                .expect("Script should load"),
+        );
 
         // The first script (script #0) is globals.as, and includes other builtin
         // classes that are less critical for the AVM to load.
