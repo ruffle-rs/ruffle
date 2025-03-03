@@ -525,12 +525,12 @@ impl<'gc> TInteractiveObject<'gc> for Avm1Button<'gc> {
             // Queue ActionScript-defined event handlers after the SWF defined ones.
             // (e.g., clip.onRelease = foo).
             if self.should_fire_event_handlers(context, event) {
-                if let Some(name) = event.method_name() {
+                if let Some(name) = event.method_name(&context.strings) {
                     context.action_queue.queue_action(
                         self_display_object,
                         ActionType::Method {
                             object: self.0.object.get().unwrap(),
-                            name: name.into(),
+                            name,
                             args: vec![],
                         },
                         false,

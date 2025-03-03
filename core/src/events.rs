@@ -1,4 +1,7 @@
-use crate::{display_object::InteractiveObject, input::InputEvent};
+use crate::display_object::InteractiveObject;
+use crate::input::InputEvent;
+use crate::string::{AvmString, StringContext};
+use ruffle_macros::istr;
 use std::str::FromStr;
 use swf::ClipEventFlag;
 
@@ -391,27 +394,27 @@ impl ClipEvent<'_> {
     /// `ClipEvent::Data` returns `None` rather than `onData` because its behavior
     /// differs from the other events: the method must fire before the SWF-defined
     /// event handler, so we'll explicitly call `onData` in the appropriate places.
-    pub const fn method_name(self) -> Option<&'static str> {
+    pub fn method_name<'gc>(self, ctx: &StringContext<'gc>) -> Option<AvmString<'gc>> {
         match self {
             ClipEvent::Construct => None,
             ClipEvent::Data => None,
-            ClipEvent::DragOut { .. } => Some("onDragOut"),
-            ClipEvent::DragOver { .. } => Some("onDragOver"),
-            ClipEvent::EnterFrame => Some("onEnterFrame"),
+            ClipEvent::DragOut { .. } => Some(istr!(ctx, "onDragOut")),
+            ClipEvent::DragOver { .. } => Some(istr!(ctx, "onDragOver")),
+            ClipEvent::EnterFrame => Some(istr!(ctx, "onEnterFrame")),
             ClipEvent::Initialize => None,
-            ClipEvent::KeyDown => Some("onKeyDown"),
+            ClipEvent::KeyDown => Some(istr!(ctx, "onKeyDown")),
             ClipEvent::KeyPress { .. } => None,
-            ClipEvent::KeyUp => Some("onKeyUp"),
-            ClipEvent::Load => Some("onLoad"),
-            ClipEvent::MouseDown => Some("onMouseDown"),
-            ClipEvent::MouseMove => Some("onMouseMove"),
-            ClipEvent::MouseUp => Some("onMouseUp"),
-            ClipEvent::Press { .. } => Some("onPress"),
-            ClipEvent::RollOut { .. } => Some("onRollOut"),
-            ClipEvent::RollOver { .. } => Some("onRollOver"),
-            ClipEvent::Release { .. } => Some("onRelease"),
-            ClipEvent::ReleaseOutside => Some("onReleaseOutside"),
-            ClipEvent::Unload => Some("onUnload"),
+            ClipEvent::KeyUp => Some(istr!(ctx, "onKeyUp")),
+            ClipEvent::Load => Some(istr!(ctx, "onLoad")),
+            ClipEvent::MouseDown => Some(istr!(ctx, "onMouseDown")),
+            ClipEvent::MouseMove => Some(istr!(ctx, "onMouseMove")),
+            ClipEvent::MouseUp => Some(istr!(ctx, "onMouseUp")),
+            ClipEvent::Press { .. } => Some(istr!(ctx, "onPress")),
+            ClipEvent::RollOut { .. } => Some(istr!(ctx, "onRollOut")),
+            ClipEvent::RollOver { .. } => Some(istr!(ctx, "onRollOver")),
+            ClipEvent::Release { .. } => Some(istr!(ctx, "onRelease")),
+            ClipEvent::ReleaseOutside => Some(istr!(ctx, "onReleaseOutside")),
+            ClipEvent::Unload => Some(istr!(ctx, "onUnload")),
             _ => None,
         }
     }
