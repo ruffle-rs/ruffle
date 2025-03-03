@@ -57,16 +57,16 @@ tracing-subscriber = { version = "0.3.19", features = ["env-filter"] }
 naga = { version = "24.0.0", features = ["wgsl-out"] }
 wgpu = "24.0.1"
 egui = "0.31.0"
-clap = { version = "4.5.30", features = ["derive"] }
+clap = { version = "4.5.31", features = ["derive"] }
 cpal = "0.15.3"
 anyhow = "1.0"
 slotmap = "1.0.7"
 async-channel = "2.3.1"
-bitflags = "2.8.0"
-bytemuck = "1.21.0"
-chrono = { version = "0.4.39", default-features = false }
+bitflags = "2.9.0"
+bytemuck = "1.22.0"
+chrono = { version = "0.4.40", default-features = false }
 enum-map = "2.7.3"
-flate2 = "1.0.35"
+flate2 = "1.1.0"
 futures = "0.3.31"
 image = { version = "0.25.5", default-features = false }
 js-sys = "0.3.77"
@@ -74,8 +74,8 @@ web-sys = "0.3.77"
 log = "0.4"
 num-derive = "0.4.2"
 num-traits = "0.2.19"
-serde = "1.0.217"
-thiserror = "2.0.11"
+serde = "1.0.218"
+thiserror = "2.0.12"
 url = "2.5.2"
 # Make sure to match wasm-bindgen-cli version to this everywhere.
 wasm-bindgen = "=0.2.100"

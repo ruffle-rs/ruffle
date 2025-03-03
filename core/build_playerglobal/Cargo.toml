@@ -11,9 +11,9 @@ version.workspace = true
 workspace = true
 
 [dependencies]
-convert_case = "0.7.1"
-proc-macro2 = "1.0.93"
-quote = "1.0.38"
+convert_case = "0.8.0"
+proc-macro2 = "1.0.94"
+quote = "1.0.39"
 swf = { path = "../../swf" }
 clap = { workspace = true }
 regex = "1.11.1"
