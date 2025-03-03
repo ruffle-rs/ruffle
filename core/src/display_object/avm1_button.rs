@@ -12,12 +12,14 @@ use crate::display_object::interactive::{
 use crate::display_object::{DisplayObjectBase, DisplayObjectPtr};
 use crate::events::{ClipEvent, ClipEventResult};
 use crate::prelude::*;
+use crate::string::AvmString;
 use crate::tag_utils::{SwfMovie, SwfSlice};
 use crate::vminterface::Instantiator;
 use core::fmt;
 use gc_arena::barrier::unlock;
 use gc_arena::lock::{Lock, RefLock};
 use gc_arena::{Collect, Gc, Mutation};
+use ruffle_macros::istr;
 use ruffle_render::filters::Filter;
 use std::cell::{Cell, Ref, RefCell, RefMut};
 use std::collections::BTreeMap;
@@ -207,9 +209,9 @@ impl<'gc> Avm1Button<'gc> {
 
     fn get_boolean_property(
         self,
-        context: &mut UpdateContext<'gc>,
-        name: &'static str,
+        name: AvmString<'gc>,
         default: bool,
+        context: &mut UpdateContext<'gc>,
     ) -> bool {
         if let Value::Object(object) = self.object() {
             let mut activation = Activation::from_nothing(
@@ -231,11 +233,11 @@ impl<'gc> Avm1Button<'gc> {
     }
 
     fn enabled(self, context: &mut UpdateContext<'gc>) -> bool {
-        self.get_boolean_property(context, "enabled", true)
+        self.get_boolean_property(istr!(context, "enabled"), true, context)
     }
 
     fn use_hand_cursor(self, context: &mut UpdateContext<'gc>) -> bool {
-        self.get_boolean_property(context, "useHandCursor", true)
+        self.get_boolean_property(istr!(context, "useHandCursor"), true, context)
     }
 }
 
