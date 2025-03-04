@@ -1326,6 +1326,10 @@ impl DisplayObjectWindow {
 }
 
 fn matches_search(object: DisplayObject, search: &WStr) -> bool {
+    if search.is_empty() {
+        return true;
+    }
+
     if object
         .name()
         .is_some_and(|n| n.to_ascii_lowercase().contains(search))
