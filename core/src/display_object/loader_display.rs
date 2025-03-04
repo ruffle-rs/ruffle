@@ -12,8 +12,9 @@ use crate::display_object::container::ChildContainer;
 use crate::display_object::interactive::InteractiveObjectBase;
 use crate::tag_utils::SwfMovie;
 use core::fmt;
-use gc_arena::GcWeakCell;
-use gc_arena::{Collect, GcCell, Mutation};
+use gc_arena::barrier::unlock;
+use gc_arena::lock::{Lock, RefLock};
+use gc_arena::{Collect, Gc, GcWeak, Mutation};
 use std::cell::{Ref, RefMut};
 use std::sync::Arc;
 
@@ -21,12 +22,12 @@ use super::interactive::Avm2MousePick;
 
 #[derive(Clone, Collect, Copy)]
 #[collect(no_drop)]
-pub struct LoaderDisplay<'gc>(GcCell<'gc, LoaderDisplayData<'gc>>);
+pub struct LoaderDisplay<'gc>(Gc<'gc, LoaderDisplayData<'gc>>);
 
 impl fmt::Debug for LoaderDisplay<'_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct("LoaderDisplay")
-            .field("ptr", &self.0.as_ptr())
+            .field("ptr", &Gc::as_ptr(self.0))
             .finish()
     }
 }
@@ -34,20 +35,20 @@ impl fmt::Debug for LoaderDisplay<'_> {
 #[derive(Clone, Collect)]
 #[collect(no_drop)]
 pub struct LoaderDisplayData<'gc> {
-    base: InteractiveObjectBase<'gc>,
-    container: ChildContainer<'gc>,
-    avm2_object: Option<Avm2Object<'gc>>,
+    base: RefLock<InteractiveObjectBase<'gc>>,
+    container: RefLock<ChildContainer<'gc>>,
+    avm2_object: Lock<Option<Avm2Object<'gc>>>,
     movie: Arc<SwfMovie>,
 }
 
 impl<'gc> LoaderDisplay<'gc> {
     pub fn empty(activation: &mut Activation<'_, 'gc>, movie: Arc<SwfMovie>) -> Self {
-        let obj = LoaderDisplay(GcCell::new(
+        let obj = LoaderDisplay(Gc::new(
             activation.gc(),
             LoaderDisplayData {
-                base: Default::default(),
-                container: ChildContainer::new(movie.clone()),
-                avm2_object: None,
+                base: RefLock::new(Default::default()),
+                container: RefLock::new(ChildContainer::new(movie.clone())),
+                avm2_object: Lock::new(None),
                 movie,
             },
         ));
@@ -58,25 +59,25 @@ impl<'gc> LoaderDisplay<'gc> {
     }
 
     pub fn downgrade(self) -> LoaderDisplayWeak<'gc> {
-        LoaderDisplayWeak(GcCell::downgrade(self.0))
+        LoaderDisplayWeak(Gc::downgrade(self.0))
     }
 }
 
 impl<'gc> TDisplayObject<'gc> for LoaderDisplay<'gc> {
     fn base(&self) -> Ref<DisplayObjectBase<'gc>> {
-        Ref::map(self.0.read(), |r| &r.base.base)
+        Ref::map(self.raw_interactive(), |r| &r.base)
     }
 
     fn base_mut<'a>(&'a self, mc: &Mutation<'gc>) -> RefMut<'a, DisplayObjectBase<'gc>> {
-        RefMut::map(self.0.write(mc), |w| &mut w.base.base)
+        RefMut::map(self.raw_interactive_mut(mc), |w| &mut w.base)
     }
 
     fn instantiate(&self, gc_context: &Mutation<'gc>) -> DisplayObject<'gc> {
-        Self(GcCell::new(gc_context, self.0.read().clone())).into()
+        Self(Gc::new(gc_context, self.0.as_ref().clone())).into()
     }
 
     fn as_ptr(&self) -> *const DisplayObjectPtr {
-        self.0.as_ptr() as *const DisplayObjectPtr
+        Gc::as_ptr(self.0) as *const DisplayObjectPtr
     }
 
     fn id(&self) -> CharacterId {
@@ -93,14 +94,15 @@ impl<'gc> TDisplayObject<'gc> for LoaderDisplay<'gc> {
 
     fn object2(&self) -> Avm2Value<'gc> {
         self.0
-            .read()
             .avm2_object
+            .get()
             .map(Avm2Value::from)
             .unwrap_or(Avm2Value::Null)
     }
 
     fn set_object2(&self, context: &mut UpdateContext<'gc>, to: Avm2Object<'gc>) {
-        self.0.write(context.gc()).avm2_object = Some(to);
+        let mc = context.gc();
+        unlock!(Gc::write(mc, self.0), LoaderDisplayData, avm2_object).set(Some(to))
     }
 
     fn as_container(self) -> Option<DisplayObjectContainer<'gc>> {
@@ -130,7 +132,7 @@ impl<'gc> TDisplayObject<'gc> for LoaderDisplay<'gc> {
     }
 
     fn movie(&self) -> Arc<SwfMovie> {
-        self.0.read().movie.clone()
+        self.0.movie.clone()
     }
 
     fn on_parent_removed(&self, context: &mut UpdateContext<'gc>) {
@@ -142,11 +144,11 @@ impl<'gc> TDisplayObject<'gc> for LoaderDisplay<'gc> {
 
 impl<'gc> TInteractiveObject<'gc> for LoaderDisplay<'gc> {
     fn raw_interactive(&self) -> Ref<InteractiveObjectBase<'gc>> {
-        Ref::map(self.0.read(), |r| &r.base)
+        self.0.base.borrow()
     }
 
     fn raw_interactive_mut(&self, mc: &Mutation<'gc>) -> RefMut<InteractiveObjectBase<'gc>> {
-        RefMut::map(self.0.write(mc), |w| &mut w.base)
+        unlock!(Gc::write(mc, self.0), LoaderDisplayData, base).borrow_mut()
     }
 
     fn as_displayobject(self) -> DisplayObject<'gc> {
@@ -254,17 +256,17 @@ impl<'gc> TInteractiveObject<'gc> for LoaderDisplay<'gc> {
 
 impl<'gc> TDisplayObjectContainer<'gc> for LoaderDisplay<'gc> {
     fn raw_container(&self) -> Ref<'_, ChildContainer<'gc>> {
-        Ref::map(self.0.read(), |this| &this.container)
+        self.0.container.borrow()
     }
 
     fn raw_container_mut(&self, gc_context: &Mutation<'gc>) -> RefMut<'_, ChildContainer<'gc>> {
-        RefMut::map(self.0.write(gc_context), |this| &mut this.container)
+        unlock!(Gc::write(gc_context, self.0), LoaderDisplayData, container).borrow_mut()
     }
 }
 
 #[derive(Clone, Debug, Collect, Copy)]
 #[collect(no_drop)]
-pub struct LoaderDisplayWeak<'gc>(GcWeakCell<'gc, LoaderDisplayData<'gc>>);
+pub struct LoaderDisplayWeak<'gc>(GcWeak<'gc, LoaderDisplayData<'gc>>);
 
 impl<'gc> LoaderDisplayWeak<'gc> {
     pub fn upgrade(self, mc: &Mutation<'gc>) -> Option<LoaderDisplay<'gc>> {
