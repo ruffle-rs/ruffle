@@ -6,6 +6,7 @@ use anyhow::{anyhow, Result};
 use approx::relative_eq;
 use image::ImageFormat;
 use regex::Regex;
+use ruffle_core::flags::CompatibilityFlags;
 use ruffle_core::tag_utils::SwfMovie;
 use ruffle_core::{PlayerBuilder, PlayerRuntime, ViewportDimensions};
 use ruffle_render::backend::RenderBackend;
@@ -31,6 +32,7 @@ pub struct TestOptions {
     pub log_fetch: bool,
     pub required_features: RequiredFeatures,
     pub fonts: HashMap<String, FontOptions>,
+    pub flags: CompatibilityFlags,
 }
 
 impl Default for TestOptions {
@@ -49,6 +51,7 @@ impl Default for TestOptions {
             log_fetch: false,
             required_features: RequiredFeatures::default(),
             fonts: Default::default(),
+            flags: CompatibilityFlags::empty(),
         }
     }
 }

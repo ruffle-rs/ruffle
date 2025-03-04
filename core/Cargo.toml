@@ -69,6 +69,7 @@ id3 = "1.16.1"
 either = "1.14.0"
 chardetng = "0.1.17"
 tracy-client = { version = "0.17.6", optional = true, default-features = false }
+lazy_static = "1.5.0"
 
 [target.'cfg(not(target_family = "wasm"))'.dependencies.futures]
 workspace = true
