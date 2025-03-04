@@ -110,8 +110,8 @@ pub fn init<'gc>(
         if let Some(bitmap_data) = bitmap_data {
             bitmap.set_bitmap_data(activation.context, bitmap_data);
         }
-        bitmap.set_smoothing(activation.gc(), smoothing);
-        bitmap.set_pixel_snapping(activation.gc(), pixel_snapping);
+        bitmap.set_smoothing(smoothing);
+        bitmap.set_pixel_snapping(pixel_snapping);
     } else {
         unreachable!();
     }
@@ -205,7 +205,7 @@ pub fn set_pixel_snapping<'gc>(
             return Err(make_error_2008(activation, "pixelSnapping"));
         };
 
-        bitmap.set_pixel_snapping(activation.gc(), pixel_snapping);
+        bitmap.set_pixel_snapping(pixel_snapping);
     }
     Ok(Value::Undefined)
 }
@@ -227,7 +227,7 @@ pub fn get_smoothing<'gc>(
 
 /// Implement `Bitmap.smoothing`'s setter
 pub fn set_smoothing<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    _activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -235,7 +235,7 @@ pub fn set_smoothing<'gc>(
 
     if let Some(bitmap) = this.as_display_object().and_then(|dobj| dobj.as_bitmap()) {
         let smoothing = args.get_bool(0);
-        bitmap.set_smoothing(activation.gc(), smoothing);
+        bitmap.set_smoothing(smoothing);
     }
 
     Ok(Value::Undefined)
