@@ -2237,7 +2237,7 @@ pub trait TDisplayObject<'gc>:
                 }
             }
             if let Some(ratio) = place_object.ratio {
-                if let Some(mut morph_shape) = self.as_morph_shape() {
+                if let Some(morph_shape) = self.as_morph_shape() {
                     morph_shape.set_ratio(context.gc(), ratio);
                 } else if let Some(video) = self.as_video() {
                     video.seek(context, ratio.into());
