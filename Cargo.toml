@@ -45,12 +45,6 @@ license = "MIT OR Apache-2.0"
 repository = "https://github.com/ruffle-rs/ruffle"
 version = "0.1.0"
 
-# TODO: remove this when v25 releases with https://github.com/gfx-rs/wgpu/pull/6994
-# (or a v24.x with the backport: https://github.com/gfx-rs/wgpu/pull/7169)
-[patch.crates-io]
-wgpu = { git = "https://github.com/ruffle-rs/wgpu", tag = "v24.0.1-ruffle1" }
-naga = { git = "https://github.com/ruffle-rs/wgpu", tag = "v24.0.1-ruffle1" }
-
 [workspace.dependencies]
 tracing = "0.1.41"
 tracing-subscriber = { version = "0.3.19", features = ["env-filter"] }
