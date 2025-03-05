@@ -14,10 +14,10 @@ workspace = true
 clap = { workspace = true }
 cpal = { workspace = true }
 egui = { workspace = true }
-egui_extras = { version = "0.31.0", default-features = false, features = ["image"] }
-egui-wgpu = { version = "0.31.0", features = ["winit"] }
+egui_extras = { version = "0.31.1", default-features = false, features = ["image"] }
+egui-wgpu = { version = "0.31.1", features = ["winit"] }
 image = { workspace = true, features = ["png"] }
-egui-winit = "0.31.0"
+egui-winit = "0.31.1"
 fontdb = "0.23"
 ruffle_core = { path = "../core", features = ["audio", "clap", "mp3", "aac", "nellymoser", "default_compatibility_rules", "egui"] }
 ruffle_render = { path = "../render", features = ["clap"] }
