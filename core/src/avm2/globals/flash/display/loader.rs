@@ -7,6 +7,7 @@ use crate::avm2::error::make_error_2007;
 use crate::avm2::globals::flash::display::display_object::initialize_for_allocator;
 use crate::avm2::globals::slots::flash_display_loader as loader_slots;
 use crate::avm2::globals::slots::flash_net_url_request as url_request_slots;
+use crate::avm2::globals::slots::flash_net_url_request_header as url_request_header_slots;
 use crate::avm2::object::LoaderInfoObject;
 use crate::avm2::object::LoaderStream;
 use crate::avm2::object::TObject;
@@ -144,28 +145,29 @@ pub fn request_from_url_request<'gc>(
 
     let mut string_headers = IndexMap::default();
     if let Some(headers) = headers {
-        let headers = headers.as_array_object().unwrap();
-
         let headers = headers.as_array_storage().unwrap();
 
         for i in 0..headers.length() {
-            let Some(header) = headers.get(i) else {
+            let Some(header) = headers.get(i).and_then(|h| h.as_object()) else {
                 continue;
             };
 
-            let name = header
-                .get_public_property("name", activation)?
-                .coerce_to_string(activation)?
-                .to_string();
-            let value = header
-                .get_public_property("value", activation)?
-                .coerce_to_string(activation)?
-                .to_string();
+            // Non-URLRequestHeader objects are skipped
+            if header.is_of_type(activation.avm2().class_defs().urlrequestheader) {
+                let name = header
+                    .get_slot(url_request_header_slots::NAME)
+                    .coerce_to_string(activation)?
+                    .to_string();
+                let value = header
+                    .get_slot(url_request_header_slots::VALUE)
+                    .coerce_to_string(activation)?
+                    .to_string();
 
-            // Note - testing with Flash Player shows that later entries in the array
-            // overwrite earlier ones with the same name. Flash Player never sends an HTTP
-            // request with duplicate headers
-            string_headers.insert(name, value);
+                // Note - testing with Flash Player shows that later entries in the array
+                // overwrite earlier ones with the same name. Flash Player never sends an HTTP
+                // request with duplicate headers
+                string_headers.insert(name, value);
+            }
         }
     }
 

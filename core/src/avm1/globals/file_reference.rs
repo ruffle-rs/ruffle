@@ -12,6 +12,7 @@ use crate::string::{AvmString, StringContext};
 use gc_arena::barrier::unlock;
 use gc_arena::lock::Lock;
 use gc_arena::{Collect, Gc, Mutation};
+use ruffle_macros::istr;
 use url::Url;
 
 // There are two undocumented functions in FileReference: convertToPPT and deleteConvertedPPT.
@@ -255,15 +256,17 @@ pub fn browse<'gc>(
 
             for i in 0..length {
                 if let Value::Object(element) = array.get_element(activation, i) {
-                    let mac_type =
-                        if let Some(val) = element.get_local_stored("macType", activation, false) {
-                            Some(val.coerce_to_string(activation)?.to_string())
-                        } else {
-                            None
-                        };
+                    let mac_type = if let Some(val) =
+                        element.get_local_stored(istr!("macType"), activation, false)
+                    {
+                        Some(val.coerce_to_string(activation)?.to_string())
+                    } else {
+                        None
+                    };
 
-                    let description = element.get_local_stored("description", activation, false);
-                    let extension = element.get_local_stored("extension", activation, false);
+                    let description =
+                        element.get_local_stored(istr!("description"), activation, false);
+                    let extension = element.get_local_stored(istr!("extension"), activation, false);
 
                     if let (Some(description), Some(extension)) = (description, extension) {
                         let description = description.coerce_to_string(activation)?.to_string();
@@ -284,7 +287,8 @@ pub fn browse<'gc>(
                         return Ok(false.into());
                     }
                 } else {
-                    return Err(Error::ThrownValue("Unexpected filter value".into()));
+                    // Method will abort if any non-Object elements are in the list
+                    return Ok(false.into());
                 }
             }
 

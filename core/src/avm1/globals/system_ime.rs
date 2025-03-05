@@ -4,7 +4,7 @@ use crate::avm1::globals::as_broadcaster::BroadcasterFunctions;
 use crate::avm1::object::Object;
 use crate::avm1::property_decl::{define_properties_on, Declaration};
 use crate::avm1::{ScriptObject, Value};
-use crate::string::StringContext;
+use crate::string::{AvmString, StringContext};
 
 const OBJECT_DECLS: &[Declaration] = declare_properties! {
     "ALPHANUMERIC_FULL" => string("ALPHANUMERIC_FULL"; DONT_ENUM | DONT_DELETE | READ_ONLY);
@@ -40,11 +40,11 @@ fn do_conversion<'gc>(
 }
 
 fn get_conversion_mode<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    Ok("KOREAN".into())
+    Ok(AvmString::new_utf8(activation.gc(), "KOREAN").into())
 }
 
 fn get_enabled<'gc>(

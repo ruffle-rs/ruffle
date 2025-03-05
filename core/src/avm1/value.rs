@@ -29,12 +29,7 @@ pub enum Value<'gc> {
 }
 
 // This type is used very frequently, so make sure it doesn't unexpectedly grow.
-// On 32-bit x86 Android, it's 12 bytes. On most other 32-bit platforms it's 16.
-#[cfg(target_pointer_width = "32")]
 const _: () = assert!(size_of::<Value<'_>>() <= 16);
-
-#[cfg(target_pointer_width = "64")]
-const _: () = assert!(size_of::<Value<'_>>() == 24);
 
 impl<'gc> From<AvmString<'gc>> for Value<'gc> {
     fn from(string: AvmString<'gc>) -> Self {
@@ -45,12 +40,6 @@ impl<'gc> From<AvmString<'gc>> for Value<'gc> {
 impl<'gc> From<AvmAtom<'gc>> for Value<'gc> {
     fn from(atom: AvmAtom<'gc>) -> Self {
         Value::String(atom.into())
-    }
-}
-
-impl From<&'static str> for Value<'_> {
-    fn from(string: &'static str) -> Self {
-        Value::String(string.into())
     }
 }
 
@@ -434,9 +423,9 @@ impl<'gc> Value<'gc> {
                         Value::String(s) => s,
                         _ => {
                             if object.as_executable().is_some() {
-                                "[type Function]".into()
+                                AvmString::new_utf8(activation.gc(), "[type Function]")
                             } else {
-                                "[type Object]".into()
+                                AvmString::new_utf8(activation.gc(), "[type Object]")
                             }
                         }
                     }

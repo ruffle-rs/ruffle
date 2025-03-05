@@ -180,12 +180,14 @@ fn distance<'gc>(
         .coerce_to_object(activation);
     let b = args.get(1).unwrap_or(&Value::Undefined);
     let delta = a.call_method(
-        "subtract".into(),
+        istr!("subtract"),
         &[b.to_owned()],
         activation,
         ExecutionReason::FunctionCall,
     )?;
-    delta.coerce_to_object(activation).get("length", activation)
+    delta
+        .coerce_to_object(activation)
+        .get(istr!("length"), activation)
 }
 
 fn polar<'gc>(

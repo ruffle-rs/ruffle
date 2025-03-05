@@ -815,7 +815,7 @@ fn set_sound_buf_time<'gc>(
 
 fn quality<'gc>(activation: &mut Activation<'_, 'gc>, _this: DisplayObject<'gc>) -> Value<'gc> {
     let quality = activation.context.stage.quality().into_avm_str();
-    quality.into()
+    AvmString::new_utf8(activation.gc(), quality).into()
 }
 
 fn set_quality<'gc>(
