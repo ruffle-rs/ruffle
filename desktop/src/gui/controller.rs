@@ -8,6 +8,7 @@ use crate::preferences::GlobalPreferences;
 use anyhow::anyhow;
 use egui::{Context, ViewportId};
 use fontdb::{Database, Family, Query, Source};
+use ruffle_core::events::{ImeCursorArea, ImePurpose};
 use ruffle_core::{Player, PlayerEvent};
 use ruffle_render_wgpu::backend::{request_adapter_and_device, WgpuRenderBackend};
 use ruffle_render_wgpu::descriptors::Descriptors;
@@ -21,7 +22,7 @@ use winit::dpi::{PhysicalPosition, PhysicalSize};
 use winit::event::WindowEvent;
 use winit::event_loop::EventLoopProxy;
 use winit::keyboard::{Key, NamedKey};
-use winit::window::{Theme, Window};
+use winit::window::{ImePurpose as WinitImePurpose, Theme, Window};
 
 use super::{DialogDescriptor, FilePicker};
 
@@ -269,6 +270,11 @@ impl GuiController {
         (x, y)
     }
 
+    pub fn movie_to_window_position(&self, x: f64, y: f64) -> PhysicalPosition<f64> {
+        let y = y + self.height_offset();
+        PhysicalPosition::new(x, y)
+    }
+
     pub fn render(&mut self, mut player: Option<MutexGuard<Player>>) {
         let surface_texture = match self.surface.get_current_texture() {
             Ok(surface_texture) => surface_texture,
@@ -438,6 +444,24 @@ impl GuiController {
 
     pub fn open_dialog(&mut self, dialog_event: DialogDescriptor) {
         self.gui.dialogs.open_dialog(dialog_event);
+    }
+
+    pub fn set_ime_allowed(&self, allowed: bool) {
+        self.window.set_ime_allowed(allowed);
+    }
+
+    pub fn set_ime_purpose(&self, purpose: ImePurpose) {
+        self.window.set_ime_purpose(match purpose {
+            ImePurpose::Standard => WinitImePurpose::Normal,
+            ImePurpose::Password => WinitImePurpose::Password,
+        });
+    }
+
+    pub fn set_ime_cursor_area(&self, cursor_area: ImeCursorArea) {
+        self.window.set_ime_cursor_area(
+            self.movie_to_window_position(cursor_area.x, cursor_area.y),
+            PhysicalSize::new(cursor_area.width, cursor_area.height),
+        );
     }
 }
 
