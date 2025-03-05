@@ -2993,7 +2993,8 @@ dependencies = [
 [[package]]
 name = "naga"
 version = "24.0.0"
-source = "git+https://github.com/ruffle-rs/wgpu?tag=v24.0.1-ruffle1#f75a042f1c3e6f460d3b49d40717eef84b7da3f1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e380993072e52eef724eddfcde0ed013b0c023c3f0417336ed041aa9f076994e"
 dependencies = [
  "arrayvec",
  "bit-set",
@@ -6122,7 +6123,8 @@ checksum = "53a85b86a771b1c87058196170769dd264f66c0782acf1ae6cc51bfd64b39082"
 [[package]]
 name = "wgpu"
 version = "24.0.1"
-source = "git+https://github.com/ruffle-rs/wgpu?tag=v24.0.1-ruffle1#f75a042f1c3e6f460d3b49d40717eef84b7da3f1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "47f55718f85c2fa756edffa0e7f0e0a60aba463d1362b57e23123c58f035e4b6"
 dependencies = [
  "arrayvec",
  "bitflags 2.9.0",
@@ -6146,8 +6148,9 @@ dependencies = [
 
 [[package]]
 name = "wgpu-core"
-version = "24.0.0"
-source = "git+https://github.com/ruffle-rs/wgpu?tag=v24.0.1-ruffle1#f75a042f1c3e6f460d3b49d40717eef84b7da3f1"
+version = "24.0.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "671c25545d479b47d3f0a8e373aceb2060b67c6eb841b24ac8c32348151c7a0c"
 dependencies = [
  "arrayvec",
  "bit-vec",
@@ -6170,8 +6173,9 @@ dependencies = [
 
 [[package]]
 name = "wgpu-hal"
-version = "24.0.0"
-source = "git+https://github.com/ruffle-rs/wgpu?tag=v24.0.1-ruffle1#f75a042f1c3e6f460d3b49d40717eef84b7da3f1"
+version = "24.0.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4317a17171dc20e6577bf606796794580accae0716a69edbc7388c86a3ec9f23"
 dependencies = [
  "android_system_properties",
  "arrayvec",
@@ -6216,7 +6220,8 @@ dependencies = [
 [[package]]
 name = "wgpu-types"
 version = "24.0.0"
-source = "git+https://github.com/ruffle-rs/wgpu?tag=v24.0.1-ruffle1#f75a042f1c3e6f460d3b49d40717eef84b7da3f1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "50ac044c0e76c03a0378e7786ac505d010a873665e2d51383dcff8dd227dc69c"
 dependencies = [
  "bitflags 2.9.0",
  "js-sys",
