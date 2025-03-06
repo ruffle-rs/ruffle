@@ -100,7 +100,7 @@ jobs:
 
     env:
       PACKAGE_FILE: ${{ needs.create-nightly-release.outputs.package_prefix }}-${{ matrix.build_name }}.${{ startsWith(matrix.build_name, 'win') && 'zip' || 'tar.gz' }}
-      CARGO_BUILD_DIR: target/${{ matrix.target }}/release
+      CARGO_BUILD_DIR: target/${{ matrix.target }}/release-small
 
     runs-on: ${{ matrix.os }}
     steps:
@@ -127,7 +127,7 @@ jobs:
         if: runner.os == 'Windows'
 
       - name: Cargo build
-        run: cargo build --locked --package ruffle_desktop --release ${{matrix.DESKTOP_FEATURES && '--features' }} ${{matrix.DESKTOP_FEATURES}} ${{ matrix.target && '--target' }} ${{ matrix.target }}
+        run: cargo build --locked --package ruffle_desktop --profile release-small ${{matrix.DESKTOP_FEATURES && '--features' }} ${{matrix.DESKTOP_FEATURES}} ${{ matrix.target && '--target' }} ${{ matrix.target }}
         env:
           RUSTFLAGS: ${{ matrix.RUSTFLAGS }}
           MACOSX_DEPLOYMENT_TARGET: ${{ matrix.MACOSX_DEPLOYMENT_TARGET }}
@@ -144,7 +144,7 @@ jobs:
           wix build ruffle.wxs -ext WixToolset.UI.wixext -ext WixToolset.Util.wixext -arch ${{ matrix.MSI_ARCH }} -o ../../../../package/setup.msi -pdbtype none
         env:
           RUFFLE_VERSION: "0.1.0"
-          CARGO_BUILD_DIR: ../../../../target/${{ matrix.target }}/release
+          CARGO_BUILD_DIR: ../../../../target/${{ matrix.target }}/release-small
         if: runner.os == 'Windows'
 
       - name: Package Windows
@@ -176,7 +176,7 @@ jobs:
 
       - name: Build Safari Web Extension stub binary
         if: runner.os == 'macOS'
-        run: cargo build --locked --package ruffle_web_safari --release ${{ matrix.target && '--target' }} ${{ matrix.target }}
+        run: cargo build --locked --package ruffle_web_safari --profile release-small ${{ matrix.target && '--target' }} ${{ matrix.target }}
         env:
           RUSTFLAGS: ${{ matrix.RUSTFLAGS }}
           MACOSX_DEPLOYMENT_TARGET: ${{ matrix.MACOSX_DEPLOYMENT_TARGET }}
