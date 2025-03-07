@@ -92,7 +92,7 @@ pub fn add_property<'gc>(
         }
     }
 
-    return Ok(false.into());
+    Ok(false.into())
 }
 
 /// Implements `Object.prototype.hasOwnProperty`
