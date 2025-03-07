@@ -127,10 +127,10 @@ impl PartialEq for AvmString<'_> {
     fn eq(&self, other: &Self) -> bool {
         if Gc::ptr_eq(self.0, other.0) {
             // Fast accept for identical strings.
-            return true;
+            true
         } else if self.0.is_interned() && other.0.is_interned() {
             // Fast reject for distinct interned strings.
-            return false;
+            false
         } else {
             // Fallback case.
             self.as_wstr() == other.as_wstr()
