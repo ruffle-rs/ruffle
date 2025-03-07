@@ -14,7 +14,7 @@ use gc_arena::barrier::unlock;
 use gc_arena::lock::Lock;
 use gc_arena::{Collect, Gc, Mutation};
 use ruffle_macros::istr;
-use std::cell::RefCell;
+use std::cell::Cell;
 use std::slice::Iter;
 use swf::{Color, Rectangle, Twips};
 
@@ -22,7 +22,7 @@ use swf::{Color, Rectangle, Twips};
 #[collect(no_drop)]
 pub struct FocusTrackerData<'gc> {
     focus: Lock<Option<InteractiveObject<'gc>>>,
-    highlight: RefCell<Highlight>,
+    highlight: Cell<Highlight>,
 }
 
 #[derive(Copy, Clone)]
@@ -64,17 +64,17 @@ impl<'gc> FocusTracker<'gc> {
             mc,
             FocusTrackerData {
                 focus: Lock::new(None),
-                highlight: RefCell::new(Highlight::Inactive),
+                highlight: Cell::new(Highlight::Inactive),
             },
         ))
     }
 
     pub fn highlight(&self) -> Highlight {
-        *self.0.highlight.borrow()
+        self.0.highlight.get()
     }
 
     pub fn reset_highlight(&self) {
-        self.0.highlight.replace(Highlight::Inactive);
+        self.0.highlight.set(Highlight::Inactive);
     }
 
     pub fn get(&self) -> Option<InteractiveObject<'gc>> {
