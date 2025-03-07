@@ -6,18 +6,18 @@ use crate::avm1::property_decl::{define_properties_on, Declaration};
 use crate::avm1::{Activation, ArrayObject, Error, Object, ScriptObject, TObject, Value};
 use crate::string::StringContext;
 use gc_arena::{Collect, Gc, Mutation};
-use std::cell::RefCell;
+use std::cell::Cell;
 
 #[derive(Clone, Debug, Collect)]
 #[collect(require_static)]
 struct ColorMatrixFilterData {
-    matrix: RefCell<[f32; 4 * 5]>,
+    matrix: Cell<[f32; 4 * 5]>,
 }
 
 impl From<&ColorMatrixFilterData> for swf::ColorMatrixFilter {
     fn from(filter: &ColorMatrixFilterData) -> swf::ColorMatrixFilter {
         swf::ColorMatrixFilter {
-            matrix: *filter.matrix.borrow(),
+            matrix: filter.matrix.get(),
         }
     }
 }
@@ -25,7 +25,7 @@ impl From<&ColorMatrixFilterData> for swf::ColorMatrixFilter {
 impl From<swf::ColorMatrixFilter> for ColorMatrixFilterData {
     fn from(filter: swf::ColorMatrixFilter) -> ColorMatrixFilterData {
         Self {
-            matrix: RefCell::new(filter.matrix),
+            matrix: Cell::new(filter.matrix),
         }
     }
 }
@@ -34,7 +34,7 @@ impl Default for ColorMatrixFilterData {
     fn default() -> Self {
         Self {
             #[rustfmt::skip]
-            matrix: RefCell::new([
+            matrix: Cell::new([
                 1.0, 0.0, 0.0, 0.0, 0.0,
                 0.0, 1.0, 0.0, 0.0, 0.0,
                 0.0, 0.0, 1.0, 0.0, 0.0,
@@ -65,8 +65,12 @@ impl<'gc> ColorMatrixFilter<'gc> {
     }
 
     fn matrix(self, activation: &mut Activation<'_, 'gc>) -> Value<'gc> {
+        // Use `.as_slice_of_cells()` to avoid a copy out of the `Cell`.
+        // FIXME: use `.as_array_of_cells()` once stabilized.
+        let matrix: &Cell<[f32]> = &self.0.matrix;
+        let matrix = matrix.as_slice_of_cells();
         ArrayObject::builder(activation)
-            .with(self.0.matrix.borrow().iter().map(|&v| v.into()))
+            .with(matrix.iter().map(|v| v.get().into()))
             .into()
     }
 
@@ -98,7 +102,7 @@ impl<'gc> ColorMatrixFilter<'gc> {
             _ => (),
         }
 
-        self.0.matrix.replace(matrix);
+        self.0.matrix.set(matrix);
         Ok(())
     }
 
