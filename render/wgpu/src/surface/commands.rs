@@ -564,6 +564,7 @@ impl<'a> WgpuCommandHandler<'a> {
     fn add_to_current(
         &mut self,
         matrix: Matrix,
+        tz: f64,
         color_transform: ColorTransform,
         command_builder: impl FnOnce(wgpu::DynamicOffset) -> DrawCommand,
     ) {
@@ -575,7 +576,7 @@ impl<'a> WgpuCommandHandler<'a> {
                 [
                     matrix.tx.to_pixels() as f32,
                     matrix.ty.to_pixels() as f32,
-                    0.0,
+                    tz as f32,
                     1.0,
                 ],
             ],
@@ -642,6 +643,7 @@ impl CommandHandler for WgpuCommandHandler<'_> {
                 let transform = Transform {
                     matrix: Matrix::scale(target.width() as f32, target.height() as f32),
                     color_transform: Default::default(),
+                    tz: 0.0,
                 };
                 let texture = target.take_color_texture();
                 let bind_group =
@@ -673,6 +675,7 @@ impl CommandHandler for WgpuCommandHandler<'_> {
                         });
                 self.add_to_current(
                     transform.matrix,
+                    transform.tz,
                     transform.color_transform,
                     |transform_buffer| DrawCommand::RenderTexture {
                         _texture: texture,
@@ -726,15 +729,18 @@ impl CommandHandler for WgpuCommandHandler<'_> {
                 texture.texture.height() as f32,
             );
         }
-        self.add_to_current(matrix, transform.color_transform, |transform_buffer| {
-            DrawCommand::RenderBitmap {
+        self.add_to_current(
+            matrix,
+            transform.tz,
+            transform.color_transform,
+            |transform_buffer| DrawCommand::RenderBitmap {
                 bitmap,
                 transform_buffer,
                 smoothing,
                 blend_mode: TrivialBlend::Normal,
                 render_stage3d: false,
-            }
-        });
+            },
+        );
     }
     fn render_stage3d(&mut self, bitmap: BitmapHandle, transform: Transform) {
         let mut matrix = transform.matrix;
@@ -745,20 +751,24 @@ impl CommandHandler for WgpuCommandHandler<'_> {
                 texture.texture.height() as f32,
             );
         }
-        self.add_to_current(matrix, transform.color_transform, |transform_buffer| {
-            DrawCommand::RenderBitmap {
+        self.add_to_current(
+            matrix,
+            transform.tz,
+            transform.color_transform,
+            |transform_buffer| DrawCommand::RenderBitmap {
                 bitmap,
                 transform_buffer,
                 smoothing: false,
                 blend_mode: TrivialBlend::Normal,
                 render_stage3d: true,
-            }
-        });
+            },
+        );
     }
 
     fn render_shape(&mut self, shape: ShapeHandle, transform: Transform) {
         self.add_to_current(
             transform.matrix,
+            transform.tz,
             transform.color_transform,
             |transform_buffer| DrawCommand::RenderShape {
                 shape,
@@ -770,6 +780,7 @@ impl CommandHandler for WgpuCommandHandler<'_> {
     fn draw_rect(&mut self, color: Color, matrix: Matrix) {
         self.add_to_current(
             matrix,
+            0.0,
             ColorTransform::multiply_from(color),
             |transform_buffer| DrawCommand::DrawRect { transform_buffer },
         );
@@ -785,6 +796,7 @@ impl CommandHandler for WgpuCommandHandler<'_> {
             matrix.ty += Twips::HALF_PX;
             self.add_to_current(
                 matrix,
+                0.0,
                 ColorTransform::multiply_from(color),
                 |transform_buffer| DrawCommand::DrawLine { transform_buffer },
             );
@@ -801,6 +813,7 @@ impl CommandHandler for WgpuCommandHandler<'_> {
             matrix.ty += Twips::HALF_PX;
             self.add_to_current(
                 matrix,
+                0.0,
                 ColorTransform::multiply_from(color),
                 |transform_buffer| DrawCommand::DrawLineRect { transform_buffer },
             );
