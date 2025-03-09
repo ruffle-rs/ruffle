@@ -1,7 +1,6 @@
 use crate::avm1::Attribute;
 use crate::avm1::Avm1;
 use crate::avm1::Object;
-use crate::avm1::SystemProperties;
 use crate::avm1::VariableDumper;
 use crate::avm1::{Activation, ActivationIdentifier};
 use crate::avm1::{TObject, Value};
@@ -45,6 +44,7 @@ use crate::socket::Sockets;
 use crate::streams::StreamManager;
 use crate::string::{AvmStringInterner, StringContext};
 use crate::stub::StubCollection;
+use crate::system_properties::SystemProperties;
 use crate::tag_utils::SwfMovie;
 use crate::timer::Timers;
 use crate::vminterface::Instantiator;
@@ -2826,6 +2826,7 @@ impl PlayerBuilder {
             .unwrap_or_else(|| Box::new(null::NullVideoBackend::new()));
 
         let player_version = self.player_version.unwrap_or(NEWEST_PLAYER_VERSION);
+        let language = ui.language();
 
         // Instantiate the player.
         let fake_movie = Arc::new(SwfMovie::empty(player_version));
@@ -2867,7 +2868,7 @@ impl PlayerBuilder {
 
                 // Misc. state
                 rng: SmallRng::seed_from_u64(get_current_date_time().timestamp_millis() as u64),
-                system: SystemProperties::new(),
+                system: SystemProperties::new(language),
                 page_url: self.page_url.clone(),
                 transform_stack: TransformStack::new(),
                 instance_counter: 0,

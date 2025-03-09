@@ -1,10 +1,10 @@
 use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
-use crate::avm1::globals::system::SystemCapabilities;
 use crate::avm1::object::Object;
 use crate::avm1::property_decl::{define_properties_on, Declaration};
 use crate::avm1::{ScriptObject, Value};
 use crate::string::{AvmString, StringContext};
+use crate::system_properties::SystemCapabilities;
 
 const OBJECT_DECLS: &[Declaration] = declare_properties! {
     "supports64BitProcesses" => property(get_has_64_bit_support);
@@ -132,7 +132,7 @@ pub fn get_language<'gc>(
             .context
             .system
             .language
-            .get_language_code(activation.context.avm1.player_version()),
+            .get_language_code(activation.context.player_version),
     )
     .into())
 }
@@ -186,7 +186,7 @@ pub fn get_manufacturer<'gc>(
             .context
             .system
             .manufacturer
-            .get_manufacturer_string(activation.context.avm1.player_version()),
+            .get_manufacturer_string(activation.context.player_version),
     )
     .into())
 }
@@ -209,7 +209,7 @@ pub fn get_version<'gc>(
         activation
             .context
             .system
-            .get_version_string(activation.context.avm1),
+            .get_version_string(activation.context.player_version),
     )
     .into())
 }
