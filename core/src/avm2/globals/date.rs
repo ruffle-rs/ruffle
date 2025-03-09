@@ -934,7 +934,7 @@ pub fn to_string<'gc>(
         )
         .into())
     } else {
-        Ok(AvmString::new_utf8(activation.gc(), "Invalid Date").into())
+        Ok(AvmString::new_ascii_static(activation.gc(), b"Invalid Date").into())
     }
 }
 
@@ -955,7 +955,7 @@ pub fn to_utc_string<'gc>(
         )
         .into())
     } else {
-        Ok(AvmString::new_utf8(activation.gc(), "Invalid Date").into())
+        Ok(AvmString::new_ascii_static(activation.gc(), b"Invalid Date").into())
     }
 }
 
@@ -979,7 +979,7 @@ pub fn to_locale_string<'gc>(
         )
         .into())
     } else {
-        Ok(AvmString::new_utf8(activation.gc(), "Invalid Date").into())
+        Ok(AvmString::new_ascii_static(activation.gc(), b"Invalid Date").into())
     }
 }
 
@@ -999,7 +999,7 @@ pub fn to_time_string<'gc>(
     {
         Ok(AvmString::new_utf8(activation.gc(), date.format("%T GMT%z").to_string()).into())
     } else {
-        Ok(AvmString::new_utf8(activation.gc(), "Invalid Date").into())
+        Ok(AvmString::new_ascii_static(activation.gc(), b"Invalid Date").into())
     }
 }
 
@@ -1019,7 +1019,7 @@ pub fn to_locale_time_string<'gc>(
     {
         Ok(AvmString::new_utf8(activation.gc(), date.format("%T %p").to_string()).into())
     } else {
-        Ok(AvmString::new_utf8(activation.gc(), "Invalid Date").into())
+        Ok(AvmString::new_ascii_static(activation.gc(), b"Invalid Date").into())
     }
 }
 
@@ -1039,7 +1039,7 @@ pub fn to_date_string<'gc>(
     {
         Ok(AvmString::new_utf8(activation.gc(), date.format("%a %b %-d %-Y").to_string()).into())
     } else {
-        Ok(AvmString::new_utf8(activation.gc(), "Invalid Date").into())
+        Ok(AvmString::new_ascii_static(activation.gc(), b"Invalid Date").into())
     }
 }
 

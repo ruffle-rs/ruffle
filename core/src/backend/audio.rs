@@ -412,7 +412,7 @@ impl<'gc> AudioManager<'gc> {
 
                     // Fire soundComplete event.
                     if let Some(root) = context.stage.root_clip() {
-                        let method_name = AvmString::new_utf8(mc, "onSoundComplete");
+                        let method_name = AvmString::new_ascii_static(mc, b"onSoundComplete");
 
                         context.action_queue.queue_action(
                             root,

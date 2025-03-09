@@ -21,6 +21,11 @@ impl<'gc> AvmString<'gc> {
         }
     }
 
+    pub fn new_ascii_static(gc_context: &Mutation<'gc>, bytes: &'static [u8]) -> Self {
+        let repr = AvmStringRepr::from_raw_static(WStr::from_units(bytes), false);
+        Self(Gc::new(gc_context, repr))
+    }
+
     pub fn new_utf8<'s, S: Into<Cow<'s, str>>>(gc_context: &Mutation<'gc>, string: S) -> Self {
         let buf = match string.into() {
             Cow::Owned(utf8) => WString::from_utf8_owned(utf8),

@@ -1008,7 +1008,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         // SWF19: "If A is zero, the result NaN, Infinity, or -Infinity is pushed to the stack in SWF 5 and later.
         // In SWF 4, the result is the string #ERROR#."
         let result: Value<'gc> = if a == 0.0 && self.swf_version() < 5 {
-            AvmString::new_utf8(self.gc(), "#ERROR#").into()
+            AvmString::new_ascii_static(self.gc(), b"#ERROR#").into()
         } else {
             (b / a).into()
         };

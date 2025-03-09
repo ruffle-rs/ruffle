@@ -349,8 +349,8 @@ impl<'gc> CommonNamespaces<'gc> {
         let empty_string = context.empty();
 
         let as3_namespace_string =
-            AvmString::new_utf8(context.gc(), "http://adobe.com/AS3/2006/builtin");
-        let vector_namespace_string = AvmString::new_utf8(context.gc(), "__AS3__.vec");
+            AvmString::new_ascii_static(context.gc(), b"http://adobe.com/AS3/2006/builtin");
+        let vector_namespace_string = AvmString::new_ascii_static(context.gc(), b"__AS3__.vec");
 
         Self {
             public_namespaces: std::array::from_fn(|val| {

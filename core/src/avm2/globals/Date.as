@@ -4,8 +4,6 @@ package {
     public dynamic class Date {
         public static const length:int = 7;
 
-        private static const invalidDateStr:String = "Invalid Date";
-
         prototype.valueOf = function():* {
             var d:Date = this;
             return d.AS3::valueOf();

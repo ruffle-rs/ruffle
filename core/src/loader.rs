@@ -2531,7 +2531,7 @@ impl<'gc> Loader<'gc> {
         match vm_data {
             MovieLoaderVMData::Avm1 { broadcaster } => {
                 if let Some(broadcaster) = broadcaster {
-                    let error_message = AvmString::new_utf8(uc.gc(), "LoadNeverCompleted");
+                    let error_message = AvmString::new_ascii_static(uc.gc(), b"LoadNeverCompleted");
 
                     Avm1::run_stack_frame_for_method(
                         clip,

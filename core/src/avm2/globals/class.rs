@@ -103,7 +103,7 @@ pub fn create_c_class<'gc>(
     let gc_context = activation.gc();
     let namespaces = activation.avm2().namespaces;
 
-    let class_name = AvmString::new_utf8(gc_context, "Class$");
+    let class_name = AvmString::new_ascii_static(gc_context, b"Class$");
     let class_c_class = Class::custom_new(
         QName::new(namespaces.public_all(), class_name),
         Some(class_i_class),
