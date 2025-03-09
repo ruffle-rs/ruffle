@@ -40,7 +40,7 @@ pub fn get_focal_length<'gc>(
     let fov = this.get_slot(pp_slots::FOV).coerce_to_number(activation)?;
 
     let width = get_width(activation, this);
-    let focal_length = (width / 2.0) / f64::tan(fov / 2.0 * DEG2RAD);
+    let focal_length = (width / 2.0) as f32 * f64::tan((PI - fov * DEG2RAD) / 2.0) as f32;
 
     Ok(focal_length.into())
 }
