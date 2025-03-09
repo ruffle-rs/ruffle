@@ -116,9 +116,9 @@ fn to_string<'gc>(
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if this.as_executable().is_some() {
-        Ok(AvmString::new_utf8(activation.gc(), "[type Function]").into())
+        Ok(AvmString::new_ascii_static(activation.gc(), b"[type Function]").into())
     } else {
-        Ok(AvmString::new_utf8(activation.gc(), "[object Object]").into())
+        Ok(AvmString::new_ascii_static(activation.gc(), b"[object Object]").into())
     }
 }
 

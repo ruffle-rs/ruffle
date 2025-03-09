@@ -610,9 +610,9 @@ pub trait TInteractiveObject<'gc>:
                 .unwrap_or(Avm1Value::Null);
 
             let method_name = if focused {
-                AvmString::new_utf8(context.gc(), "onSetFocus")
+                AvmString::new_ascii_static(context.gc(), b"onSetFocus")
             } else {
-                AvmString::new_utf8(context.gc(), "onKillFocus")
+                AvmString::new_ascii_static(context.gc(), b"onKillFocus")
             };
 
             Avm1::run_stack_frame_for_method(self_do, object, method_name, &[other], context);

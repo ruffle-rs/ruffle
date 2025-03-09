@@ -422,7 +422,7 @@ impl<'gc> UpdateContext<'gc> {
             .get_version_string(activation.context.avm1);
         object.define_value(
             activation.gc(),
-            AvmString::new_utf8(activation.gc(), "$version"),
+            AvmString::new_ascii_static(activation.gc(), b"$version"),
             AvmString::new_utf8(activation.gc(), version_string).into(),
             Attribute::empty(),
         );

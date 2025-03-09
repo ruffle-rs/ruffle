@@ -44,7 +44,7 @@ fn get_conversion_mode<'gc>(
     _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    Ok(AvmString::new_utf8(activation.gc(), "KOREAN").into())
+    Ok(AvmString::new_ascii_static(activation.gc(), b"KOREAN").into())
 }
 
 fn get_enabled<'gc>(

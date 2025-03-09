@@ -866,17 +866,17 @@ pub fn node_kind<'gc>(
     let this = this.as_object().unwrap();
 
     let xml = this.as_xml_object().unwrap();
-    let name = match &*xml.node().kind() {
-        E4XNodeKind::Text(_) => "text",
-        E4XNodeKind::CData(_) => "text", // cdata pretends to be text here
-        E4XNodeKind::Comment(_) => "comment",
-        E4XNodeKind::ProcessingInstruction(_) => "processing-instruction",
-        E4XNodeKind::Attribute(_) => "attribute",
-        E4XNodeKind::Element { .. } => "element",
+    let name: &'static [u8] = match &*xml.node().kind() {
+        E4XNodeKind::Text(_) => b"text",
+        E4XNodeKind::CData(_) => b"text", // cdata pretends to be text here
+        E4XNodeKind::Comment(_) => b"comment",
+        E4XNodeKind::ProcessingInstruction(_) => b"processing-instruction",
+        E4XNodeKind::Attribute(_) => b"attribute",
+        E4XNodeKind::Element { .. } => b"element",
     };
 
     // FIXME should we intern these?
-    Ok(AvmString::new_utf8(activation.gc(), name).into())
+    Ok(AvmString::new_ascii_static(activation.gc(), name).into())
 }
 
 pub fn append_child<'gc>(

@@ -136,7 +136,7 @@ pub fn print_with_radix<'gc>(
 
     if number.is_infinite() {
         if number < 0.0 {
-            return Ok(AvmString::new_utf8(activation.gc(), "-Infinity"));
+            return Ok(AvmString::new_ascii_static(activation.gc(), b"-Infinity"));
         } else if number > 0.0 {
             return Ok(istr!("Infinity"));
         }
