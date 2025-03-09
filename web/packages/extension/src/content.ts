@@ -80,6 +80,9 @@ function injectScriptURL(url: string): Promise<void> {
     script.src = url;
     // safari 16+ script.src will be masked to "webkit-masked-url://hidden/"
     script.setAttribute("ruffle-id", String(ID));
+    if (url !== script.src) {
+        script.setAttribute("ruffle-src-polyfill", url);
+    }
     (document.head || document.documentElement).append(script);
     return promise;
 }
