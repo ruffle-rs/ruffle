@@ -332,6 +332,26 @@ impl<'gc> LoadManager<'gc> {
         loader_url: Option<String>,
         vm_data: MovieLoaderVMData<'gc>,
     ) -> OwnedFuture<(), Error> {
+        // When an AVM2 movie loads an AVM1 movie, that AVM1 movie cannot load
+        // another movie over itself, as in loadMovie(..., _root). Attempts to
+        // do so will be silently ignored.
+        //
+        // However, if the AVM1 movie uses MovieClipLoader.loadClip to load into
+        // its _root, FP32 will segfault. We don't reproduce that behavior.
+        if matches!(vm_data, MovieLoaderVMData::Avm1 { .. }) {
+            // This check works because the only time AVM1 can access an MC with
+            // `loader_info` set is when that MC is the root MC of an AVM1 movie
+            // that was loaded by AVM2
+            if target_clip
+                .as_movie_clip()
+                .and_then(|mc| mc.loader_info())
+                .is_some()
+            {
+                // Return a future that does nothing
+                return Box::pin(async move { Ok(()) });
+            }
+        }
+
         let loader = Loader::Movie {
             self_handle: None,
             target_clip,
