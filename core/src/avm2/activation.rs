@@ -254,7 +254,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     ) -> Result<Option<Value<'gc>>, Error<'gc>> {
         let outer_scope = self.outer;
 
-        if let Some(obj) = search_scope_stack(self, name, outer_scope.is_empty())? {
+        if let Some(obj) = search_scope_stack(self, name, outer_scope.is_empty()) {
             Ok(Some(obj))
         } else if let Some(obj) = outer_scope.find(name, self)? {
             Ok(Some(obj))

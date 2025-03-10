@@ -287,7 +287,7 @@ pub fn search_scope_stack<'gc>(
     activation: &mut Activation<'_, 'gc>,
     multiname: &Multiname<'gc>,
     global: bool,
-) -> Result<Option<Value<'gc>>, Error<'gc>> {
+) -> Option<Value<'gc>> {
     let classes = activation.context.avm2.classes();
 
     let scopes = activation.scope_frame();
@@ -299,15 +299,15 @@ pub fn search_scope_stack<'gc>(
         let values = scope.values();
 
         if value_has_trait(classes, values, multiname) {
-            return Ok(Some(values));
+            return Some(values);
         } else if scope.with() {
             // We search the dynamic properties if this is a with scope.
             if value_has_own_property(classes, values, multiname) {
-                return Ok(Some(values));
+                return Some(values);
             }
         }
     }
-    Ok(None)
+    None
 }
 
 use crate::avm2::globals::SystemClasses;
