@@ -60,8 +60,7 @@ impl Display for CompressionAlgorithm {
 }
 
 impl FromWStr for CompressionAlgorithm {
-    // FIXME - this should be an `Error<'gc>`
-    type Err = Box<dyn std::error::Error>;
+    type Err = ();
 
     fn from_wstr(s: &WStr) -> Result<Self, Self::Err> {
         if s == b"zlib" {
@@ -71,7 +70,7 @@ impl FromWStr for CompressionAlgorithm {
         } else if s == b"lzma" {
             Ok(CompressionAlgorithm::Lzma)
         } else {
-            Err("Unknown compression algorithm".into())
+            Err(())
         }
     }
 }
