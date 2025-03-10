@@ -1,6 +1,7 @@
+use crate::avm2::error::{make_error_2136, Error};
 use crate::avm2::globals::flash::display::display_object::initialize_for_allocator;
 use crate::avm2::parameters::ParametersExt;
-use crate::avm2::{Activation, ClassObject, Error, Object, TObject, Value};
+use crate::avm2::{Activation, ClassObject, Object, TObject, Value};
 use crate::display_object::{TDisplayObject, Video};
 
 pub fn video_allocator<'gc>(
@@ -27,9 +28,13 @@ pub fn video_allocator<'gc>(
                 .context
                 .library
                 .library_for_movie_mut(movie)
-                .instantiate_by_id(symbol, activation.context.gc_context)?;
+                .instantiate_by_id(symbol, activation.context.gc_context);
 
-            return initialize_for_allocator(activation, child, class);
+            if let Some(child) = child {
+                return initialize_for_allocator(activation, child, class);
+            } else {
+                return Err(make_error_2136(activation));
+            }
         }
 
         target_class = target.super_class();

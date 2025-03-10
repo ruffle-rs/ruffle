@@ -154,7 +154,7 @@ impl<'gc> Avm1Button<'gc> {
 
                     // Instantiate new child.
                     _ => {
-                        if let Ok(child) = context
+                        if let Some(child) = context
                             .library
                             .library_for_movie_mut(movie.clone())
                             .instantiate_by_id(record.id, context.gc_context)
@@ -314,18 +314,17 @@ impl<'gc> TDisplayObject<'gc> for Avm1Button<'gc> {
                         .library_for_movie_mut(self.0.movie())
                         .instantiate_by_id(record.id, context.gc_context)
                     {
-                        Ok(child) => {
+                        Some(child) => {
                             child.set_matrix(context.gc(), record.matrix.into());
                             child.set_parent(context, Some(self_display_object));
                             child.set_depth(context.gc(), record.depth.into());
                             new_children.push((child, record.depth.into()));
                         }
-                        Err(error) => {
+                        None => {
                             tracing::error!(
-                                "Button ID {}: could not instantiate child ID {}: {}",
+                                "Button ID {}: could not instantiate child ID {}",
                                 self.0.shared.id,
                                 record.id,
-                                error
                             );
                         }
                     }
