@@ -2,7 +2,6 @@ use ruffle_wstr::WString;
 
 use crate::avm2::object::TObject;
 use crate::avm2::{Activation, AvmString, Class, Multiname, Value};
-use std::borrow::Cow;
 use std::fmt::Debug;
 use std::mem::size_of;
 
@@ -652,6 +651,20 @@ pub fn make_error_2126<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> 
 
 #[inline(never)]
 #[cold]
+pub fn make_error_2136<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
+    let err = error(
+        activation,
+        "Error #2136: The SWF file contains invalid data.",
+        2136,
+    );
+    match err {
+        Ok(err) => Error::AvmError(err),
+        Err(err) => err,
+    }
+}
+
+#[inline(never)]
+#[cold]
 pub fn range_error<'gc>(
     activation: &mut Activation<'_, 'gc>,
     message: &str,
@@ -846,12 +859,6 @@ impl std::fmt::Display for Error<'_> {
 
 impl<'gc, 'a> From<&'a str> for Error<'gc> {
     fn from(val: &'a str) -> Error<'gc> {
-        Error::RustError(val.into())
-    }
-}
-
-impl<'gc, 'a> From<Cow<'a, str>> for Error<'gc> {
-    fn from(val: Cow<'a, str>) -> Error<'gc> {
         Error::RustError(val.into())
     }
 }

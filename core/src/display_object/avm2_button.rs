@@ -204,7 +204,7 @@ impl<'gc> Avm2Button<'gc> {
                     .library_for_movie_mut(movie.clone())
                     .instantiate_by_id(record.id, context.gc_context)
                 {
-                    Ok(child) => {
+                    Some(child) => {
                         child.set_matrix(context.gc(), record.matrix.into());
                         child.set_depth(context.gc(), record.depth.into());
 
@@ -219,12 +219,11 @@ impl<'gc> Avm2Button<'gc> {
 
                         children.push((child, record.depth));
                     }
-                    Err(error) => {
+                    None => {
                         tracing::error!(
-                            "Button ID {}: could not instantiate child ID {}: {}",
+                            "Button ID {}: could not instantiate child ID {}",
                             shared.id,
                             record.id,
-                            error
                         );
                     }
                 };

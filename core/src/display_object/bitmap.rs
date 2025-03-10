@@ -176,7 +176,7 @@ impl<'gc> Bitmap<'gc> {
         id: CharacterId,
         bitmap: ruffle_render::bitmap::Bitmap,
         movie: Arc<SwfMovie>,
-    ) -> Result<Self, ruffle_render::error::Error> {
+    ) -> Self {
         let width = bitmap.width();
         let height = bitmap.height();
         let transparency = match bitmap.format() {
@@ -193,13 +193,13 @@ impl<'gc> Bitmap<'gc> {
         let bitmap_data = BitmapData::new_with_pixels(width, height, transparency, pixels);
 
         let smoothing = true;
-        Ok(Self::new_with_bitmap_data(
+        Self::new_with_bitmap_data(
             mc,
             id,
             BitmapDataWrapper::new(GcCell::new(mc, bitmap_data)),
             smoothing,
             &movie,
-        ))
+        )
     }
 
     // Important - we read 'width' and 'height' from the cached

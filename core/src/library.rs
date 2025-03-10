@@ -203,12 +203,12 @@ impl<'gc> MovieLibrary<'gc> {
         &self,
         id: CharacterId,
         mc: &Mutation<'gc>,
-    ) -> Result<DisplayObject<'gc>, Cow<'static, str>> {
+    ) -> Option<DisplayObject<'gc>> {
         if let Some(character) = self.characters.get(&id) {
             self.instantiate_display_object(id, character, mc)
         } else {
             tracing::error!("Tried to instantiate non-registered character ID {}", id);
-            Err("Character id doesn't exist".into())
+            None
         }
     }
 
@@ -218,7 +218,7 @@ impl<'gc> MovieLibrary<'gc> {
         &self,
         export_name: AvmString<'gc>,
         mc: &Mutation<'gc>,
-    ) -> Result<DisplayObject<'gc>, Cow<'static, str>> {
+    ) -> Option<DisplayObject<'gc>> {
         if let Some((id, character)) = self.character_by_export_name(export_name) {
             self.instantiate_display_object(id, character, mc)
         } else {
@@ -226,7 +226,7 @@ impl<'gc> MovieLibrary<'gc> {
                 "Tried to instantiate non-registered character {}",
                 export_name
             );
-            Err("Character id doesn't exist".into())
+            None
         }
     }
 
@@ -237,7 +237,7 @@ impl<'gc> MovieLibrary<'gc> {
         id: CharacterId,
         character: &Character<'gc>,
         mc: &Mutation<'gc>,
-    ) -> Result<DisplayObject<'gc>, Cow<'static, str>> {
+    ) -> Option<DisplayObject<'gc>> {
         match character {
             Character::Bitmap {
                 compressed,
@@ -245,20 +245,22 @@ impl<'gc> MovieLibrary<'gc> {
                 handle: _,
             } => {
                 let bitmap = compressed.decode().unwrap();
-                let bitmap = Bitmap::new(mc, id, bitmap, self.swf.clone())
-                    .map_err(|e| Cow::Owned(format!("Failed to instantiate bitmap: {:?}", e)))?;
+                let bitmap = Bitmap::new(mc, id, bitmap, self.swf.clone());
                 bitmap.set_avm2_bitmapdata_class(mc, *avm2_bitmapdata_class.read());
-                Ok(bitmap.instantiate(mc))
+                Some(bitmap.instantiate(mc))
             }
-            Character::EditText(edit_text) => Ok(edit_text.instantiate(mc)),
-            Character::Graphic(graphic) => Ok(graphic.instantiate(mc)),
-            Character::MorphShape(morph_shape) => Ok(morph_shape.instantiate(mc)),
-            Character::MovieClip(movie_clip) => Ok(movie_clip.instantiate(mc)),
-            Character::Avm1Button(button) => Ok(button.instantiate(mc)),
-            Character::Avm2Button(button) => Ok(button.instantiate(mc)),
-            Character::Text(text) => Ok(text.instantiate(mc)),
-            Character::Video(video) => Ok(video.instantiate(mc)),
-            _ => Err("Not a DisplayObject".into()),
+            Character::EditText(edit_text) => Some(edit_text.instantiate(mc)),
+            Character::Graphic(graphic) => Some(graphic.instantiate(mc)),
+            Character::MorphShape(morph_shape) => Some(morph_shape.instantiate(mc)),
+            Character::MovieClip(movie_clip) => Some(movie_clip.instantiate(mc)),
+            Character::Avm1Button(button) => Some(button.instantiate(mc)),
+            Character::Avm2Button(button) => Some(button.instantiate(mc)),
+            Character::Text(text) => Some(text.instantiate(mc)),
+            Character::Video(video) => Some(video.instantiate(mc)),
+            _ => {
+                // Cannot instantiate non-display object
+                None
+            }
         }
     }
 
