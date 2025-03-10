@@ -1,5 +1,5 @@
 use crate::avm2::activation::Activation;
-use crate::avm2::error::{make_error_1032, make_error_1080};
+use crate::avm2::error::{make_error_1032, make_error_1080, make_error_1107};
 use crate::avm2::namespace::{CommonNamespaces, Namespace};
 use crate::avm2::script::TranslationUnit;
 use crate::avm2::Error;
@@ -264,12 +264,8 @@ impl<'gc> Multiname<'gc> {
                     .deref()
                     .clone();
 
-                if parameters.len() > 1 {
-                    return Err(format!(
-                        "VerifyError: Multiname has {} parameters, no more than 1 is allowed",
-                        parameters.len()
-                    )
-                    .into());
+                if parameters.len() != 1 {
+                    return Err(make_error_1107(activation));
                 }
 
                 base.param =

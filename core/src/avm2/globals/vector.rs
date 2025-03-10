@@ -169,11 +169,10 @@ pub fn concat<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
-    let mut new_vector_storage = if let Some(vector) = this.as_vector_storage() {
-        vector.clone()
-    } else {
-        return Err("Not a vector-structured object".into());
-    };
+    let mut new_vector_storage = this
+        .as_vector_storage()
+        .expect("Receiver is of type Vector.<T>")
+        .clone();
 
     let original_length = new_vector_storage.length();
 
