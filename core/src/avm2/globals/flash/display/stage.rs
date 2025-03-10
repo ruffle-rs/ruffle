@@ -198,11 +198,12 @@ pub fn set_focus<'gc>(
     match args.try_get_object(activation, 0) {
         None => focus.set(None, activation.context),
         Some(obj) => {
-            if let Some(dobj) = obj.as_display_object().and_then(|o| o.as_interactive()) {
-                focus.set(Some(dobj), activation.context);
-            } else {
-                return Err("Cannot set focus to non-DisplayObject".into());
-            }
+            let dobj = obj
+                .as_display_object()
+                .and_then(|o| o.as_interactive())
+                .expect("AS-side typing guarantees InteractiveObject");
+
+            focus.set(Some(dobj), activation.context);
         }
     };
 
