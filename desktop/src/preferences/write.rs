@@ -3,6 +3,7 @@ use crate::gui::ThemePreference;
 use crate::log::FilenamePattern;
 use crate::preferences::storage::StorageBackend;
 use crate::preferences::{GlobalPreferencesWatchers, SavedGlobalPreferences};
+use ruffle_core::flags::CompatibilityFlags;
 use ruffle_frontend_utils::parse::DocumentHolder;
 use ruffle_render_wgpu::clap::{GraphicsBackend, PowerPreference};
 use toml_edit::value;
@@ -130,6 +131,19 @@ impl<'a> PreferencesWriter<'a> {
             }
             values.open_url_mode = open_url_mode;
         });
+    }
+
+    pub fn set_flags(&mut self, flags: CompatibilityFlags) {
+        self.0
+            .edit(|values: &mut SavedGlobalPreferences, toml_document| {
+                let flags_string = flags.to_string();
+                if !flags_string.is_empty() {
+                    toml_document["flags"] = value(flags_string);
+                } else {
+                    toml_document.remove("flags");
+                }
+                values.flags = flags;
+            });
     }
 }
 
@@ -325,6 +339,21 @@ mod tests {
             "open_url_mode = \"deny\"",
             |writer| writer.set_open_url_mode(OpenUrlMode::Confirm),
             "",
+        );
+    }
+
+    #[test]
+    #[allow(clippy::unwrap_used)]
+    fn set_flags() {
+        test(
+            "flags = 6\n",
+            |writer| writer.set_flags(CompatibilityFlags::empty()),
+            "",
+        );
+        test(
+            "flags = \"tab_skip\"",
+            |writer| writer.set_flags("-tab_skip".parse::<CompatibilityFlags>().unwrap()),
+            "flags = \"-tab_skip\"\n",
         );
     }
 }

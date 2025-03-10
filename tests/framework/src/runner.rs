@@ -14,6 +14,7 @@ use ruffle_core::events::{
     TextControlCode as RuffleTextControlCode,
 };
 use ruffle_core::events::{MouseButton as RuffleMouseButton, MouseWheelDelta};
+use ruffle_core::flags::CompatibilityFlags;
 use ruffle_core::limits::ExecutionLimit;
 use ruffle_core::tag_utils::SwfMovie;
 use ruffle_core::{Player, PlayerBuilder, PlayerEvent};
@@ -60,6 +61,7 @@ impl TestRunner {
         socket_events: Option<Vec<SocketEvent>>,
         renderer: Option<(Box<dyn RenderInterface>, Box<dyn RenderBackend>)>,
         viewport_dimensions: ViewportDimensions,
+        flags: CompatibilityFlags,
     ) -> Result<Self> {
         if test.options.num_frames.is_none() && test.options.num_ticks.is_none() {
             return Err(anyhow!(
@@ -90,7 +92,7 @@ impl TestRunner {
             .with_navigator(navigator)
             .with_max_execution_duration(Duration::from_secs(300))
             .with_fs_commands(Box::new(fs_command_provider))
-            .with_ui(TestUiBackend::new(test.fonts()?))
+            .with_ui(TestUiBackend::new(test.fonts()?, flags))
             .with_viewport_dimensions(
                 viewport_dimensions.width,
                 viewport_dimensions.height,
