@@ -786,7 +786,7 @@ pub fn write_utf<'gc>(
 
         let string = args.get_string(activation, 0)?;
 
-        socket.write_utf(&string.to_utf8_lossy())?;
+        socket.write_utf(activation, &string.to_utf8_lossy())?;
     }
 
     Ok(Value::Undefined)
