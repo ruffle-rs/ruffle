@@ -27,6 +27,15 @@ pub fn create_index_buffer<'gc>(
     if let Some(context) = this.as_context_3d() {
         // FIXME - get bufferUsage and pass it through
         let num_indices = args.get_u32(activation, 0)?;
+
+        if num_indices == 0 {
+            return Err(Error::AvmError(argument_error(
+                activation,
+                "Error #3671: Buffer has zero size.",
+                3671,
+            )?));
+        }
+
         return context.create_index_buffer(num_indices, activation);
     }
     Ok(Value::Undefined)
@@ -45,7 +54,17 @@ pub fn create_vertex_buffer<'gc>(
         let data_32_per_vertex = args.get_u32(activation, 1)?;
 
         if data_32_per_vertex > 64 {
-            return Err("data_32_per_vertex is greater than 64".into());
+            return Err(Error::AvmError(argument_error(
+                activation,
+                "Error #3670: Buffer too big.",
+                3670,
+            )?));
+        } else if data_32_per_vertex == 0 {
+            return Err(Error::AvmError(argument_error(
+                activation,
+                "Error #3671: Buffer has zero size.",
+                3671,
+            )?));
         }
 
         return context.create_vertex_buffer(
