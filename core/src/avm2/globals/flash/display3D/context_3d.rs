@@ -442,16 +442,13 @@ pub fn create_texture<'gc>(
 
     if let Some(context) = this.as_context_3d() {
         // This is a native method, so all of the arguments have been checked and coerced for us
-        let width = args[0].as_i32() as u32;
-        let height = args[1].as_i32() as u32;
-        let format = args[2].coerce_to_string(activation)?;
-        let optimize_for_render_to_texture = args[3].coerce_to_boolean();
-        let streaming_levels = args[4].as_i32() as u32;
-        let format = Context3DTextureFormat::from_wstr(&format).ok_or_else(|| {
-            Error::RustError(
-                format!("Unsupported texture format in createTexture: {:?}", format).into(),
-            )
-        })?;
+        let width = args.get_i32(activation, 0)? as u32;
+        let height = args.get_i32(activation, 1)? as u32;
+        let format = args.get_string_non_null(activation, 2, "textureFormat")?;
+        let optimize_for_render_to_texture = args.get_bool(3);
+        let streaming_levels = args.get_i32(activation, 4)? as u32;
+        let format = Context3DTextureFormat::from_wstr(&format)
+            .ok_or_else(|| make_error_2008(activation, "textureFormat"))?;
 
         let class = activation.avm2().classes().texture;
 
