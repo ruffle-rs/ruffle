@@ -18,7 +18,7 @@ flate2 = { workspace = true }
 fnv = "1.0.7"
 gc-arena = { package = "ruffle_gc_arena", path = "../ruffle_gc_arena" }
 slotmap = { workspace = true }
-indexmap = "2.7.1"
+indexmap = "2.8.0"
 tracing = { workspace = true }
 ruffle_render = { path = "../render", features = ["tessellator"] }
 ruffle_video = { path = "../video" }
@@ -66,7 +66,7 @@ ttf-parser = "0.25"
 num-bigint = "0.4"
 unic-segment = "0.9.0"
 id3 = "1.16.1"
-either = "1.14.0"
+either = "1.15.0"
 chardetng = "0.1.17"
 tracy-client = { version = "0.17.6", optional = true, default-features = false }
 
