@@ -477,19 +477,12 @@ pub fn create_rectangle_texture<'gc>(
 
     if let Some(context) = this.as_context_3d() {
         // This is a native method, so all of the arguments have been checked and coerced for us
-        let width = args[0].as_i32() as u32;
-        let height = args[1].as_i32() as u32;
-        let format = args[2].coerce_to_string(activation)?;
-        let optimize_for_render_to_texture = args[3].coerce_to_boolean();
-        let format = Context3DTextureFormat::from_wstr(&format).ok_or_else(|| {
-            Error::RustError(
-                format!(
-                    "Unsupported texture format in createRectangleTexture: {:?}",
-                    format
-                )
-                .into(),
-            )
-        })?;
+        let width = args.get_i32(activation, 0)? as u32;
+        let height = args.get_i32(activation, 1)? as u32;
+        let format = args.get_string_non_null(activation, 2, "textureFormat")?;
+        let optimize_for_render_to_texture = args.get_bool(3);
+        let format = Context3DTextureFormat::from_wstr(&format)
+            .ok_or_else(|| make_error_2008(activation, "textureFormat"))?;
 
         let class = activation.avm2().classes().rectangletexture;
 
@@ -515,19 +508,12 @@ pub fn create_cube_texture<'gc>(
 
     if let Some(context) = this.as_context_3d() {
         // This is a native method, so all of the arguments have been checked and coerced for us
-        let size = args[0].as_i32() as u32;
-        let format = args[1].coerce_to_string(activation)?;
-        let optimize_for_render_to_texture = args[2].coerce_to_boolean();
-        let streaming_levels = args[3].as_i32() as u32;
-        let format = Context3DTextureFormat::from_wstr(&format).ok_or_else(|| {
-            Error::RustError(
-                format!(
-                    "Unsupported texture format in createCubeTexture: {:?}",
-                    format
-                )
-                .into(),
-            )
-        })?;
+        let size = args.get_i32(activation, 0)? as u32;
+        let format = args.get_string_non_null(activation, 1, "textureFormat")?;
+        let optimize_for_render_to_texture = args.get_bool(2);
+        let streaming_levels = args.get_i32(activation, 3)? as u32;
+        let format = Context3DTextureFormat::from_wstr(&format)
+            .ok_or_else(|| make_error_2008(activation, "textureFormat"))?;
 
         return context.create_cube_texture(
             size,
@@ -598,14 +584,11 @@ pub fn set_depth_test<'gc>(
 
     if let Some(context) = this.as_context_3d() {
         // This is a native method, so all of the arguments have been checked and coerced for us
-        let depth_mask = args[0].coerce_to_boolean();
-        let pass_compare_mode = args[1].coerce_to_string(activation)?;
-        let pass_compare_mode =
-            if let Some(mode) = Context3DCompareMode::from_wstr(&pass_compare_mode) {
-                mode
-            } else {
-                return Err(format!("Unsupported depth test mode: {:?}", pass_compare_mode).into());
-            };
+        let depth_mask = args.get_bool(0);
+        let pass_compare_mode = args.get_string_non_null(activation, 1, "passCompareMode")?;
+        let pass_compare_mode = Context3DCompareMode::from_wstr(&pass_compare_mode)
+            .ok_or_else(|| make_error_2008(activation, "passCompareMode"))?;
+
         context.set_depth_test(depth_mask, pass_compare_mode);
     }
     Ok(Value::Undefined)
@@ -620,21 +603,15 @@ pub fn set_blend_factors<'gc>(
 
     if let Some(context) = this.as_context_3d() {
         // This is a native method, so all of the arguments have been checked and coerced for us
-        let source_factor = args[0].coerce_to_string(activation)?;
-        let destination_factor = args[1].coerce_to_string(activation)?;
+        let source_factor = args.get_string_non_null(activation, 0, "sourceFactor")?;
+        let destination_factor = args.get_string_non_null(activation, 1, "destinationFactor")?;
 
-        let source_factor = if let Some(factor) = Context3DBlendFactor::from_wstr(&source_factor) {
-            factor
-        } else {
-            return Err(format!("Unsupported source blend factor: {:?}", source_factor).into());
-        };
-        let destination_factor = if let Some(factor) =
-            Context3DBlendFactor::from_wstr(&destination_factor)
-        {
-            factor
-        } else {
-            return Err(format!("Unsupported dest blend factor: {:?}", destination_factor).into());
-        };
+        let source_factor = Context3DBlendFactor::from_wstr(&source_factor)
+            .ok_or_else(|| make_error_2008(activation, "sourceFactor"))?;
+
+        let destination_factor = Context3DBlendFactor::from_wstr(&destination_factor)
+            .ok_or_else(|| make_error_2008(activation, "destinationFactor"))?;
+
         context.set_blend_factors(source_factor, destination_factor);
     }
     Ok(Value::Undefined)
