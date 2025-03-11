@@ -22,7 +22,7 @@ pub fn vector_allocator<'gc>(
     let param_type = class
         .inner_class_definition()
         .param()
-        .ok_or("Cannot convert to unparametrized Vector")?;
+        .expect("Class is parametrized vector");
 
     Ok(VectorObject(Gc::new(
         activation.gc(),
