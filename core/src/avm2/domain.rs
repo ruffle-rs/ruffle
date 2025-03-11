@@ -4,21 +4,18 @@ use std::cell::Ref;
 
 use crate::avm2::activation::Activation;
 use crate::avm2::bytearray::ByteArrayStorage;
+use crate::avm2::class::Class;
+use crate::avm2::error::{error, reference_error, Error};
 use crate::avm2::object::{ByteArrayObject, TObject};
 use crate::avm2::property_map::PropertyMap;
 use crate::avm2::script::Script;
 use crate::avm2::value::Value;
-use crate::avm2::Error;
-use crate::avm2::Multiname;
-use crate::avm2::QName;
+use crate::avm2::{Avm2, Multiname, QName};
 use crate::context::UpdateContext;
+use crate::string::AvmString;
 use gc_arena::{Collect, GcCell, GcWeakCell, Mutation};
+use ruffle_macros::istr;
 use ruffle_wstr::WStr;
-
-use super::class::Class;
-use super::error::error;
-use super::string::AvmString;
-use super::Avm2;
 
 /// Represents a set of scripts and movies that share traits across different
 /// script-global scopes.
@@ -245,13 +242,11 @@ impl<'gc> Domain<'gc> {
     ) -> Result<(QName<'gc>, Script<'gc>), Error<'gc>> {
         match self.get_defining_script(multiname) {
             Some(val) => Ok(val),
-            None => Err(Error::AvmError(crate::avm2::error::reference_error(
+            None => Err(Error::AvmError(reference_error(
                 activation,
                 &format!(
                     "Error #1065: Variable {} is not defined.",
-                    multiname
-                        .local_name()
-                        .ok_or("Attempted to resolve uninitiated multiname")?
+                    multiname.local_name().unwrap_or(istr!("*"))
                 ),
                 1065,
             )?)),

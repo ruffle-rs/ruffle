@@ -69,16 +69,14 @@ pub fn attach_net_stream<'gc>(
     let this = this.as_object().unwrap();
 
     if let Some(video) = this.as_display_object().and_then(|dobj| dobj.as_video()) {
-        let source = args.get_value(0).as_object();
+        let stream = args
+            .try_get_object(activation, 0)
+            .map(|o| o.as_netstream().unwrap());
 
-        if let Some(stream) = source.and_then(|o| o.as_netstream()) {
+        if let Some(stream) = stream {
             video.attach_netstream(activation.context, stream);
         } else {
-            return Err(format!(
-                "Cannot use value of type {:?} as video source",
-                source.map(|o| o.instance_class().name().local_name())
-            )
-            .into());
+            // TODO attachNetStream(null) should clear the current stream
         }
     }
 
