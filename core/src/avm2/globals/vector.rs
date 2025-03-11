@@ -323,7 +323,7 @@ pub fn filter<'gc>(
     let value_type = this
         .instance_class()
         .param()
-        .ok_or("Cannot filter unparameterized vector")?; // technically unreachable
+        .expect("Receiver is parametrized vector"); // technically unreachable
     let mut new_storage = VectorStorage::new(0, false, value_type, activation);
     let mut iter = ArrayIter::new(activation, this)?;
 
@@ -433,7 +433,7 @@ pub fn map<'gc>(
     let value_type = this
         .instance_class()
         .param()
-        .ok_or("Cannot filter unparameterized vector")?; // technically unreachable
+        .expect("Receiver is parametrized vector"); // technically unreachable
     let mut new_storage = VectorStorage::new(0, false, value_type, activation);
     let value_type_for_coercion = new_storage.value_type_for_coercion(activation);
     let mut iter = ArrayIter::new(activation, this)?;
