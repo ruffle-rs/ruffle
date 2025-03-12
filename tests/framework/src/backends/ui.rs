@@ -4,6 +4,7 @@ use ruffle_core::backend::ui::{
     DialogLoaderError, DialogResultFuture, FileDialogResult, FileFilter, FontDefinition,
     FullscreenError, LanguageIdentifier, MouseCursor, UiBackend, US_ENGLISH,
 };
+use ruffle_core::flags::{CompatibilityFlag, CompatibilityFlags};
 use url::Url;
 
 /// A simulated file dialog response, for use in tests
@@ -79,13 +80,15 @@ impl FileDialogResult for TestFileDialogResult {
 pub struct TestUiBackend {
     fonts: Vec<Font>,
     clipboard: String,
+    flags: CompatibilityFlags,
 }
 
 impl TestUiBackend {
-    pub fn new(fonts: Vec<Font>) -> Self {
+    pub fn new(fonts: Vec<Font>, flags: CompatibilityFlags) -> Self {
         Self {
             fonts,
             clipboard: "".to_string(),
+            flags,
         }
     }
 }
@@ -190,4 +193,8 @@ impl UiBackend for TestUiBackend {
     }
 
     fn close_file_dialog(&mut self) {}
+
+    fn flag_enabled(&self, flag: CompatibilityFlag) -> bool {
+        self.flags.enabled(flag).unwrap_or_else(|default| default)
+    }
 }
