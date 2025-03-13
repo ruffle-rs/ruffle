@@ -95,6 +95,7 @@
     display: flex;
     flex-flow: column;
     justify-content: space-around;
+    overflow: auto;
 
     a {
         color: var(--ruffle-blue);
