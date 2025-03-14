@@ -20,6 +20,7 @@ file-menu-exit = יציאה
 controls-menu = פקדים
 controls-menu-suspend = השעייה
 controls-menu-resume = המשך
+controls-menu-step-once = התקדמות יחידה
 controls-menu-volume = בקרת עוצמת קול
 help-menu = עזרה
 help-menu-join-discord = הצטרף לדיסקורד
