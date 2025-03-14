@@ -46,7 +46,28 @@ align-top-right = ימנית עליונה
 align-bottom-right = ימנית תחתונה
 align-force = כפה
 scale-mode = מצב קנה-מידה
+scale-mode-noscale = ללא קנה מידה (100%)
+scale-mode-noscale-tooltip =
+    מציג את הקובץ בגודל המקורי שלו, בלי שום הגדלה.
+    
+    מותאם לStageScaleMode.NO_SCALE
+scale-mode-showall = הגדלה עבור התאמה
+scale-mode-showall-tooltip =
+    מגדיל את הקובץ כדי למלא את החלון ככל האפשר מבלי לחתוך אותו, תוך שמירה על יחס רוחב-גובה.
+    
+    מותאם לStageScaleMode.SHOW_ALL
+scale-mode-exactfit = מתיחה עבור התאמה
+scale-mode-exactfit-tooltip =
+    מבטיח שהקובץ ימלא את כל החלון, בלי להתחשב ביחס גובה-רוחב.
+    
+    מותאם לStageScaleMode.EXACT_FIT
+scale-mode-noborder = חתיכה עבור התאמה
+scale-mode-noborder-tooltip =
+    ממלא את כל החלון תוך שמירה על יחס רוחב-גובה, יחתוך את גודל הקובץ במידת הצורך.
+    
+    מותאם לStageScaleMode.NO_BORDER
 scale-mode-force = כפה
+scale-mode-force-tooltip = מונע מהקובץ לשנות את מצב קנה המידה, נועל אותו להגדרה שנבחרה.
 player-version = גרסת שחקן
 player-runtime = הרצת נגן
 player-runtime-flash = נגן פלאש

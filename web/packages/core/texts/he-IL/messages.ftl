@@ -10,6 +10,8 @@ update-ruffle = עדכן את Ruffle
 ruffle-demo = הדגמה
 ruffle-desktop = אפליקציית שולחן עבודה
 ruffle-wiki = ראה את Ruffle wiki
+enable-hardware-acceleration = נראה שהאצת החומרה שלך לא מופעלת. בעוד שRuffle עשוי לעבוד, הוא יכול להיות איטי. תוכל לראות כיצד להפעיל תכונה זו בלחיצה על הלינק הזה:
+enable-hardware-acceleration-link = שאלות נפוצות - האצת החומרה של Chrome
 view-error-details = ראה פרטי שגיאה
 open-in-new-tab = פתח בכרטיסייה חדשה
 click-to-unmute = לחץ על מנת לבטל השתקה
@@ -62,6 +64,10 @@ error-wasm-disabled-on-edge =
     גלול מטה, וכבה את "הגבר את האבטחה שלך ברשת".
     זה יאפשר לדפדפן שלך לטעון את קובץ ה".wasm" הדרוש.
     אם הבעיה ממשיכה, ייתכן ועליך להשתמש בדפדפן אחר.
+error-wasm-unsupported-browser =
+    הדפדפן שבו אתה משתמש אינו תומך בתוספי WebAssembly ש-Ruffle דורש כדי לפעול.
+    אנא עבור לדפדפן נתמך.
+    אתה יכול למצוא רשימה של דפדפנים נתמכים ב-Wiki שלנו.
 error-javascript-conflict =
     Ruffle נתקל בבעיה חמורה תוך כדי ניסיון לאתחל.
     נדמה כי דף זה משתמש בקוד JavaScript אשר מתנגש עם Ruffle.
