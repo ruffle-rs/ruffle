@@ -592,7 +592,8 @@ pub fn get_objects_under_point<'gc>(
 
     let mut under_point = Vec::new();
     let mut children = vec![thisobj.as_display_object().unwrap()];
-    let options = HitTestOptions::SKIP_MASK | HitTestOptions::SKIP_INVISIBLE;
+    let options =
+        HitTestOptions::SKIP_MASK | HitTestOptions::SKIP_INVISIBLE | HitTestOptions::SKIP_CHILDREN;
 
     while let Some(child) = children.pop() {
         let obj = child.object2();

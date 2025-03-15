@@ -2651,6 +2651,9 @@ bitflags! {
         /// Ignore objects with the ActionScript's visibility flag turned off.
         const SKIP_INVISIBLE = 1 << 1;
 
+        /// Check only the specified object. Ignore any children of that object.
+        const SKIP_CHILDREN = 1 << 2;
+
         /// The options used for `hitTest` calls in ActionScript.
         const AVM_HIT_TEST = Self::SKIP_MASK.bits();
 
