@@ -315,7 +315,7 @@ pub fn display_function<'gc>(
 
                     let traits = bound_class.traits();
                     for t in &*traits {
-                        if let Some(b) = t.as_method().and_then(|m| m.into_bytecode().ok()) {
+                        if let Some(b) = t.as_method().and_then(|m| m.into_bytecode()) {
                             if Gc::ptr_eq(b, *method) {
                                 method_trait = Some(t);
                                 break;

@@ -1,7 +1,8 @@
 use crate::avm2::bytearray::{ByteArrayError, Endian, ObjectEncoding};
+use crate::avm2::error::{make_error_2006, Error};
 use crate::avm2::object::script_object::ScriptObjectData;
 use crate::avm2::object::{ClassObject, Object, ObjectPtr, TObject};
-use crate::avm2::{Activation, Error};
+use crate::avm2::Activation;
 use crate::socket::SocketHandle;
 use gc_arena::GcWeak;
 use gc_arena::{Collect, Gc};
@@ -146,13 +147,17 @@ impl<'gc> SocketObject<'gc> {
     }
 
     // Writes a UTF String into the buffer, with its length as a prefix
-    pub fn write_utf(&self, utf_string: &str) -> Result<(), Error<'gc>> {
+    pub fn write_utf(
+        &self,
+        activation: &mut Activation<'_, 'gc>,
+        utf_string: &str,
+    ) -> Result<(), Error<'gc>> {
         if let Ok(str_size) = u16::try_from(utf_string.len()) {
             self.write_unsigned_short(str_size);
             self.write_bytes(utf_string.as_bytes());
             Ok(())
         } else {
-            Err("RangeError: UTF String length must fit into a short".into())
+            Err(make_error_2006(activation))
         }
     }
 }

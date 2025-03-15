@@ -1,14 +1,14 @@
 //! `flash.display.Sprite` builtin/prototype
 
 use crate::avm2::activation::Activation;
+use crate::avm2::error::{make_error_2136, Error};
 use crate::avm2::globals::flash::display::display_object::initialize_for_allocator;
 use crate::avm2::globals::slots::{
     flash_display_sprite as sprite_slots, flash_geom_rectangle as rectangle_slots,
 };
-use crate::avm2::object::{Object, StageObject, TObject};
+use crate::avm2::object::{ClassObject, Object, StageObject, TObject};
 use crate::avm2::parameters::ParametersExt;
 use crate::avm2::value::Value;
-use crate::avm2::{ClassObject, Error};
 use crate::display_object::{MovieClip, SoundTransform, TDisplayObject};
 use swf::{Rectangle, Twips};
 
@@ -37,9 +37,13 @@ pub fn sprite_allocator<'gc>(
                 .context
                 .library
                 .library_for_movie_mut(movie)
-                .instantiate_by_id(symbol, activation.context.gc_context)?;
+                .instantiate_by_id(symbol, activation.context.gc_context);
 
-            return initialize_for_allocator(activation, child, orig_class);
+            if let Some(child) = child {
+                return initialize_for_allocator(activation, child, orig_class);
+            } else {
+                return Err(make_error_2136(activation));
+            }
         }
         class_def = class.super_class();
     }

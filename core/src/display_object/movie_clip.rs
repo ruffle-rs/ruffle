@@ -1584,7 +1584,7 @@ impl<'gc> MovieClip<'gc> {
         let movie = self.movie();
         let library = context.library.library_for_movie_mut(movie.clone());
         match library.instantiate_by_id(id, context.gc_context) {
-            Ok(child) => {
+            Some(child) => {
                 // Remove previous child from children list,
                 // and add new child onto front of the list.
                 let prev_child = self.replace_at_depth(context, child, depth);
@@ -1639,12 +1639,8 @@ impl<'gc> MovieClip<'gc> {
 
                 Some(child)
             }
-            Err(e) => {
-                tracing::error!(
-                    "Unable to instantiate display node id {}, reason being: {}",
-                    id,
-                    e
-                );
+            None => {
+                tracing::error!("Unable to instantiate display node id {}", id,);
                 None
             }
         }
