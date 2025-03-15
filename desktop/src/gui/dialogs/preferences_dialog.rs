@@ -51,6 +51,9 @@ pub struct PreferencesDialog {
     open_url_mode: OpenUrlMode,
     open_url_mode_readonly: bool,
     open_url_mode_changed: bool,
+
+    ime_enabled: Option<bool>,
+    ime_enabled_changed: bool,
 }
 
 impl PreferencesDialog {
@@ -109,6 +112,9 @@ impl PreferencesDialog {
             open_url_mode_readonly: preferences.cli.open_url_mode.is_some(),
             open_url_mode_changed: false,
 
+            ime_enabled: preferences.ime_enabled(),
+            ime_enabled_changed: false,
+
             preferences,
         }
     }
@@ -136,6 +142,8 @@ impl PreferencesDialog {
                             }
 
                             self.show_open_url_mode_preferences(locale, &locked_text, ui);
+
+                            self.show_ime_preferences(locale, ui);
 
                             self.show_language_preferences(locale, ui);
 
@@ -390,6 +398,32 @@ impl PreferencesDialog {
         ui.end_row();
     }
 
+    fn show_ime_preferences(&mut self, locale: &LanguageIdentifier, ui: &mut Ui) {
+        ui.label(format!(
+            "{} {}",
+            text(locale, "ime-enabled"),
+            text(locale, "ime-enabled-experimental")
+        ))
+        .on_hover_text_at_pointer(text(locale, "ime-enabled-tooltip"));
+        let previous = self.ime_enabled;
+        ComboBox::from_id_salt("ime-enabled")
+            .selected_text(ime_enabled_name(locale, self.ime_enabled))
+            .show_ui(ui, |ui| {
+                let values = [None, Some(true), Some(false)];
+                for value in values {
+                    ui.selectable_value(
+                        &mut self.ime_enabled,
+                        value,
+                        ime_enabled_name(locale, value),
+                    );
+                }
+            });
+        if self.ime_enabled != previous {
+            self.ime_enabled_changed = true;
+        }
+        ui.end_row();
+    }
+
     fn show_audio_preferences(&mut self, locale: &LanguageIdentifier, ui: &mut Ui) {
         ui.label(text(locale, "audio-output-device"));
 
@@ -566,6 +600,9 @@ impl PreferencesDialog {
             if self.open_url_mode_changed {
                 preferences.set_open_url_mode(self.open_url_mode);
             }
+            if self.ime_enabled_changed {
+                preferences.set_ime_enabled(self.ime_enabled);
+            }
         }) {
             // [NA] TODO: Better error handling... everywhere in desktop, really
             tracing::error!("Could not save preferences: {e}");
@@ -650,6 +687,14 @@ fn storage_backend_name(locale: &LanguageIdentifier, backend: StorageBackend) ->
     match backend {
         StorageBackend::Disk => text(locale, "storage-backend-disk"),
         StorageBackend::Memory => text(locale, "storage-backend-memory"),
+    }
+}
+
+fn ime_enabled_name(locale: &LanguageIdentifier, ime_enabled: Option<bool>) -> Cow<str> {
+    match ime_enabled {
+        None => text(locale, "ime-enabled-default"),
+        Some(true) => text(locale, "ime-enabled-on"),
+        Some(false) => text(locale, "ime-enabled-off"),
     }
 }
 
