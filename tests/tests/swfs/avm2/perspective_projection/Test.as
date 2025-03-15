@@ -50,8 +50,7 @@ package {
             for (var i: int = 1; i < 180; i++) {
                 var pp: PerspectiveProjection = new PerspectiveProjection();
                 pp.fieldOfView = i;
-                var fl: Number = pp.focalLength;
-                trace("FOV to FL", i, fl);
+                trace("FOV to FL", i, pp.focalLength);
             }
         }
 
@@ -59,8 +58,7 @@ package {
             for (var i: int = 1; i < 1000; i++) {
                 var pp: PerspectiveProjection = new PerspectiveProjection();
                 pp.focalLength = i;
-                var fl: Number = pp.fieldOfView;
-                trace("FL to FOV", i, roundN(fl, 100000000000));
+                trace("FL to FOV", i, pp.fieldOfView);
             }
         }
 
@@ -178,14 +176,10 @@ package {
         private function printProps(pp: PerspectiveProjection): void {
             trace("  perspectiveProjection = " + pp);
             if (pp) {
-                trace("  perspectiveProjection.fieldOfView = " + roundN(pp.fieldOfView, 100000000000));
+                trace("  perspectiveProjection.fieldOfView = " + pp.fieldOfView);
                 trace("  perspectiveProjection.focalLength = " + pp.focalLength);
                 trace("  perspectiveProjection.projectionCenter = " + pp.projectionCenter);
             }
-        }
-
-        private function roundN(n: Number, precision: Number): Number {
-            return Math.round(n * precision) / precision;
         }
     }
 }
