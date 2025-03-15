@@ -51,7 +51,7 @@ package {
                 var pp: PerspectiveProjection = new PerspectiveProjection();
                 pp.fieldOfView = i;
                 var fl: Number = pp.focalLength;
-                trace("FOV to FL", i, roundN(fl, 100)); // FIXME: Large numerical errors
+                trace("FOV to FL", i, fl);
             }
         }
 
@@ -108,35 +108,34 @@ package {
         }
 
         private function TestToMatrix3D(): void {
-            var precision: Number = 100;
             var pp: PerspectiveProjection = new PerspectiveProjection();
 
             trace("// toMatrix3D(default)");
-            trace(roundVecN(pp.toMatrix3D().rawData, precision));
+            trace(pp.toMatrix3D().rawData);
 
             trace("// toMatrix3D(FOV: 1)");
             pp.fieldOfView = 1;
-            trace(roundVecN(pp.toMatrix3D().rawData, precision));
+            trace(pp.toMatrix3D().rawData);
 
             trace("// toMatrix3D(FOV: 100)");
             pp.fieldOfView = 100;
-            trace(roundVecN(pp.toMatrix3D().rawData, precision));
+            trace(pp.toMatrix3D().rawData);
 
             trace("// toMatrix3D(FOV: 179)");
             pp.fieldOfView = 179;
-            trace(roundVecN(pp.toMatrix3D().rawData, precision));
+            trace(pp.toMatrix3D().rawData);
 
             trace("// toMatrix3D(FL: 1)");
             pp.focalLength = 1;
-            trace(roundVecN(pp.toMatrix3D().rawData, precision));
+            trace(pp.toMatrix3D().rawData);
 
             trace("// toMatrix3D(FL: 10)");
             pp.focalLength = 10;
-            trace(roundVecN(pp.toMatrix3D().rawData, precision));
+            trace(pp.toMatrix3D().rawData);
 
             trace("// toMatrix3D(FL: 10000)");
             pp.focalLength = 10000;
-            trace(roundVecN(pp.toMatrix3D().rawData, precision));
+            trace(pp.toMatrix3D().rawData);
         }
 
         private function TestTransform(): void {
@@ -180,19 +179,13 @@ package {
             trace("  perspectiveProjection = " + pp);
             if (pp) {
                 trace("  perspectiveProjection.fieldOfView = " + roundN(pp.fieldOfView, 100000000000));
-                trace("  perspectiveProjection.focalLength = " + roundN(pp.focalLength, 100)); // FIXME: Large numerical errors
+                trace("  perspectiveProjection.focalLength = " + pp.focalLength);
                 trace("  perspectiveProjection.projectionCenter = " + pp.projectionCenter);
             }
         }
 
         private function roundN(n: Number, precision: Number): Number {
             return Math.round(n * precision) / precision;
-        }
-
-        private function roundVecN(v: Vector.<Number>, precision: Number): Vector.<Number> {
-            return v.map(
-                function (n: Number, _, _): Number {return roundN(n, precision);}
-                );
         }
     }
 }
