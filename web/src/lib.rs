@@ -39,7 +39,7 @@ use wasm_bindgen::prelude::*;
 use web_sys::{
     AddEventListenerOptions, ClipboardEvent, Element, Event, EventTarget, FocusEvent,
     Gamepad as WebGamepad, GamepadButton as WebGamepadButton, HtmlCanvasElement, HtmlElement,
-    KeyboardEvent, Node, PointerEvent, ShadowRoot, WheelEvent, Window,
+    KeyboardEvent, Node, PointerEvent, ShadowRoot, WebGlContextEvent, WheelEvent, Window,
 };
 
 static RUFFLE_GLOBAL_PANIC: Once = Once::new();
@@ -137,6 +137,7 @@ struct RuffleInstance {
     focusin_callback: Option<JsCallback<FocusEvent>>,
     focusout_callback: Option<JsCallback<FocusEvent>>,
     focus_on_press_callback: Option<JsCallback<PointerEvent>>,
+    webglcontextlost_callback: Option<JsCallback<WebGlContextEvent>>,
     has_focus: bool,
     trace_observer: Rc<RefCell<JsValue>>,
     log_subscriber: Arc<Layered<WASMLayer, Registry>>,
@@ -193,6 +194,9 @@ extern "C" {
 
     #[wasm_bindgen(method, js_name = "suppressContextMenu")]
     fn suppress_context_menu(this: &JavascriptPlayer);
+
+    #[wasm_bindgen(method, js_name = "reloadWithCanvasRenderer")]
+    fn reload_with_canvas_renderer(this: &JavascriptPlayer);
 }
 
 #[derive(Debug, Clone)]
@@ -505,6 +509,7 @@ impl RuffleHandle {
             focusin_callback: None,
             focusout_callback: None,
             focus_on_press_callback: None,
+            webglcontextlost_callback: None,
             timestamp: None,
             has_focus: false,
             trace_observer: player.trace_observer,
@@ -766,6 +771,21 @@ impl RuffleHandle {
                                 core.handle_event(PlayerEvent::KeyUp { key });
                             });
                             js_event.prevent_default();
+                        }
+                    });
+                },
+            ));
+
+            // Create webglcontextlost handler.
+            instance.webglcontextlost_callback = Some(JsCallback::register(
+                &player.canvas,
+                "webglcontextlost",
+                false,
+                move |_js_event: WebGlContextEvent| {
+                    INSTANCES.with(|instances| {
+                        if instances.borrow().len() >= 8 {
+                            let _ = ruffle.remove_instance();
+                            js_player.reload_with_canvas_renderer();
                         }
                     });
                 },
