@@ -1,0 +1,15 @@
+this.hitTestPoint true
+s1.hitTestPoint true
+s2.hitTestPoint true
+s3.hitTestPoint true
+s4.hitTestPoint true
+s5.hitTestPoint true
+s6.hitTestPoint true
+s7.hitTestPoint true
+s8.hitTestPoint true
+s9.hitTestPoint true
+mask.hitTestPoint true
+masked.hitTestPoint true
+getObjectsUnderPoint():
+[object Sprite],[object Sprite],[object Sprite],[object Sprite],[object Sprite],[object Sprite],[object Sprite]
+s1,s3,s5,s2,s4,s9,masked
