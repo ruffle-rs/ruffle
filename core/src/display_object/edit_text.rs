@@ -202,6 +202,9 @@ pub struct EditTextData<'gc> {
     /// in order to preserve styles.
     #[collect(require_static)]
     original_html_text: Option<WString>,
+
+    #[collect(require_static)]
+    ime_data: Option<ImeData>,
 }
 
 impl EditTextData<'_> {
@@ -376,6 +379,7 @@ impl<'gc> EditText<'gc> {
                 layout_debug_boxes_flags: LayoutDebugBoxesFlag::empty(),
                 style_sheet: EditTextStyleSheet::None,
                 original_html_text: None,
+                ime_data: None,
             },
         ));
 
@@ -1853,11 +1857,68 @@ impl<'gc> EditText<'gc> {
 
     pub fn ime(self, event: ImeEvent, context: &mut UpdateContext<'gc>) {
         match event {
-            ImeEvent::Preedit(_, _) => {
-                // TODO Add support for IME preedit
+            ImeEvent::Preedit(text, _) if text.is_empty() => self.ensure_ime_finished(context),
+            ImeEvent::Preedit(text_utf8, cursor_utf8) => {
+                let ime_data = self.ensure_ime_started(context);
+
+                let text: WString = WString::from_utf8(&text_utf8);
+
+                let cursor = cursor_utf8.map(|(from, to)| {
+                    let to_utf8 = WStrToUtf8::new(&text);
+                    (
+                        to_utf8.utf16_index(from).unwrap_or_else(|| text.len()),
+                        to_utf8.utf16_index(to).unwrap_or_else(|| text.len()),
+                    )
+                });
+
+                let ImeData {
+                    ime_start: old_ime_start,
+                    ime_end: old_ime_end,
+                } = ime_data;
+
+                self.replace_text(old_ime_start, old_ime_end, &text, context);
+
+                self.0.write(context.gc()).ime_data = Some(ImeData {
+                    ime_start: old_ime_start,
+                    ime_end: old_ime_start + text.len(),
+                });
+
+                let new_selection = cursor.map(|(from, to)| {
+                    TextSelection::for_range(old_ime_start + from, old_ime_start + to)
+                });
+                self.set_selection(new_selection, context.gc());
             }
             ImeEvent::Commit(text) => self.text_input(text, context),
         };
+    }
+
+    fn ensure_ime_started(self, context: &mut UpdateContext<'gc>) -> ImeData {
+        if let Some(ime_data) = self.0.read().ime_data.clone() {
+            return ime_data;
+        }
+
+        let selection = self
+            .selection()
+            .unwrap_or_else(|| TextSelection::for_position(self.0.read().text_spans.text().len()));
+        self.replace_text(selection.start(), selection.end(), WStr::empty(), context);
+
+        let mut write = self.0.write(context.gc());
+        let ime_data = ImeData {
+            ime_start: selection.start(),
+            ime_end: selection.start(),
+        };
+        write.ime_data = Some(ime_data.clone());
+        ime_data
+    }
+
+    fn ensure_ime_finished(self, context: &mut UpdateContext<'gc>) {
+        let Some(ImeData { ime_start, ime_end }) = self.0.read().ime_data else {
+            return;
+        };
+
+        self.replace_text(ime_start, ime_end, WStr::empty(), context);
+        self.set_selection(Some(TextSelection::for_position(ime_start)), context.gc());
+        self.0.write(context.gc()).ime_data = None;
     }
 
     /// Find the new position in the text for the given control code.
@@ -3594,4 +3655,10 @@ impl Default for EditTextStyleSheet<'_> {
     fn default() -> Self {
         Self::None
     }
+}
+
+#[derive(Clone, Debug)]
+struct ImeData {
+    ime_start: usize,
+    ime_end: usize,
 }
