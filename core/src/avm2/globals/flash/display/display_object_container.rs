@@ -567,7 +567,7 @@ pub fn get_objects_under_point<'gc>(
     this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let this = this.as_object().unwrap();
+    let thisobj = this.as_object().unwrap();
 
     avm2_stub_method!(
         activation,
@@ -575,6 +575,7 @@ pub fn get_objects_under_point<'gc>(
         "getObjectsUnderPoint",
         "proper hit-test behavior"
     );
+    // FIXME: different result at from_shumway/hittesting/hittesting "two-layer button".
 
     let point = args.get_object(activation, 0, "point")?;
     let x = point
@@ -590,15 +591,16 @@ pub fn get_objects_under_point<'gc>(
     };
 
     let mut under_point = Vec::new();
-    let mut children = vec![this.as_display_object().unwrap()];
-    // FIXME - what are the actual options?
-    let options = HitTestOptions::SKIP_MASK;
+    let mut children = vec![thisobj.as_display_object().unwrap()];
+    let options = HitTestOptions::SKIP_MASK | HitTestOptions::SKIP_INVISIBLE;
+
     while let Some(child) = children.pop() {
-        if child.hit_test_shape(activation.context, point, options) {
-            under_point.push(Some(child.object2()));
+        let obj = child.object2();
+        if obj != this && child.hit_test_shape(activation.context, point, options) {
+            under_point.push(Some(obj));
         }
         if let Some(container) = child.as_container() {
-            for child in container.iter_render_list() {
+            for child in container.iter_render_list().rev() {
                 children.push(child);
             }
         }
