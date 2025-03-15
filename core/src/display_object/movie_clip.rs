@@ -2733,23 +2733,25 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
                 }
             }
 
-            let mut clip_depth = 0;
+            if !options.contains(HitTestOptions::SKIP_CHILDREN) {
+                let mut clip_depth = 0;
 
-            for child in self.iter_render_list() {
-                if child.clip_depth() > 0 {
-                    if child.hit_test_shape(
-                        context,
-                        point,
-                        HitTestOptions::SKIP_MASK | HitTestOptions::SKIP_INVISIBLE,
-                    ) {
-                        clip_depth = 0;
-                    } else {
-                        clip_depth = child.clip_depth();
+                for child in self.iter_render_list() {
+                    if child.clip_depth() > 0 {
+                        if child.hit_test_shape(
+                            context,
+                            point,
+                            HitTestOptions::SKIP_MASK | HitTestOptions::SKIP_INVISIBLE,
+                        ) {
+                            clip_depth = 0;
+                        } else {
+                            clip_depth = child.clip_depth();
+                        }
+                    } else if child.depth() >= clip_depth
+                        && child.hit_test_shape(context, point, options)
+                    {
+                        return true;
                     }
-                } else if child.depth() >= clip_depth
-                    && child.hit_test_shape(context, point, options)
-                {
-                    return true;
                 }
             }
 

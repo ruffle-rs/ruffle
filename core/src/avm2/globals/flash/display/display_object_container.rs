@@ -599,7 +599,9 @@ pub fn get_objects_under_point<'gc>(
             && child.hit_test_shape(
                 activation.context,
                 point,
-                HitTestOptions::SKIP_MASK | HitTestOptions::SKIP_INVISIBLE,
+                HitTestOptions::SKIP_MASK
+                    | HitTestOptions::SKIP_INVISIBLE
+                    | HitTestOptions::SKIP_CHILDREN,
             )
         {
             under_point.push(Some(obj));
