@@ -1,0 +1,12 @@
+keyDown 27, 27, abcd
+keyUp 27, 27, abcd
+keyDown 8, 8, abcd
+change acd
+keyUp 8, 8, acd
+keyDown 46, 127, acd
+change ad
+keyUp 46, 127, ad
+keyDown 13, 13, ad
+keyUp 13, 13, ad
+keyDown 9, 9, ad
+keyUp 9, 9, ad
