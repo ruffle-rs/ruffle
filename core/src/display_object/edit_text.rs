@@ -1969,6 +1969,14 @@ impl<'gc> EditText<'gc> {
             text.replace(&Self::ANY_NEWLINE[..], "")
         };
 
+        // TODO We need to test it with fonts that provide such characters.
+        //   It's possible this is just a case of
+        //   "don't input a character without a glyph".
+        let text: String = text
+            .chars()
+            .filter(|ch| !ch.is_control() || Self::ANY_NEWLINE.contains(ch))
+            .collect();
+
         if text.is_empty() {
             return;
         }
