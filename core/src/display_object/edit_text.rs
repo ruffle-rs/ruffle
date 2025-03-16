@@ -1959,7 +1959,7 @@ impl<'gc> EditText<'gc> {
     }
 
     pub fn text_input(self, text: String, context: &mut UpdateContext<'gc>) {
-        if self.0.read().flags.contains(EditTextFlag::READ_ONLY) || self.available_chars() == 0 {
+        if !self.is_editable() || self.available_chars() == 0 {
             return;
         }
 
