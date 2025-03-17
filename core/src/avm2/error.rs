@@ -38,7 +38,7 @@ impl Debug for Error<'_> {
 }
 
 // This type is used very frequently, so make sure it doesn't unexpectedly grow.
-const _: () = assert!(size_of::<Result<Value<'_>, Error<'_>>>() == 24);
+const _: () = assert!(size_of::<Result<Value<'_>, Error<'_>>>() <= 24);
 
 #[inline(never)]
 #[cold]
