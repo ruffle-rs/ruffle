@@ -301,9 +301,8 @@ impl<'gc> LoaderInfoObject<'gc> {
     }
 
     /// Unwrap this object's loader stream
-    pub fn as_loader_stream(&self) -> Option<Ref<LoaderStream<'gc>>> {
-        // TODO: this can be non-Option.
-        Some(self.0.loaded_stream.borrow())
+    pub fn loader_stream(&self) -> Ref<LoaderStream<'gc>> {
+        self.0.loaded_stream.borrow()
     }
 
     pub fn expose_content(&self) -> bool {
