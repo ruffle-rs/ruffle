@@ -94,6 +94,15 @@
                 trace("Failed: " + e);
             }
 
+            trace("9");
+            s = new Sound();
+            try {
+                s.loadCompressedDataFromByteArray(new ByteArray(), 1);
+                trace("Passed");
+            } catch (e) {
+                trace("Failed: " + e);
+            }
+
             trace("Finished");
         }
     }
