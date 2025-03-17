@@ -24,10 +24,7 @@ pub fn get_action_script_version<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
-    if let Some(loader_stream) = this
-        .as_loader_info_object()
-        .and_then(|o| o.as_loader_stream())
-    {
+    if let Some(loader_stream) = this.as_loader_info_object().map(|o| o.loader_stream()) {
         match &*loader_stream {
             LoaderStream::NotYetLoaded(_, _, _) => {
                 return Err(Error::AvmError(error(_activation, INSUFFICIENT, 2099)?));
@@ -50,10 +47,7 @@ pub fn get_application_domain<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
-    if let Some(loader_stream) = this
-        .as_loader_info_object()
-        .and_then(|o| o.as_loader_stream())
-    {
+    if let Some(loader_stream) = this.as_loader_info_object().map(|o| o.loader_stream()) {
         match &*loader_stream {
             LoaderStream::NotYetLoaded(movie, _, _) => {
                 let domain = activation
@@ -92,10 +86,7 @@ pub fn get_bytes_total<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
-    if let Some(loader_stream) = this
-        .as_loader_info_object()
-        .and_then(|o| o.as_loader_stream())
-    {
+    if let Some(loader_stream) = this.as_loader_info_object().map(|o| o.loader_stream()) {
         match &*loader_stream {
             LoaderStream::NotYetLoaded(swf, _, _) => return Ok(swf.compressed_len().into()),
             LoaderStream::Swf(movie, _) => {
@@ -116,7 +107,7 @@ pub fn get_bytes_loaded<'gc>(
     let this = this.as_object().unwrap();
 
     let loader_info = this.as_loader_info_object().unwrap();
-    let loader_stream = loader_info.as_loader_stream().unwrap();
+    let loader_stream = loader_info.loader_stream();
     match &*loader_stream {
         LoaderStream::NotYetLoaded(swf, None, _) => {
             if loader_info.errored() {
@@ -150,29 +141,24 @@ pub fn get_content<'gc>(
         return Ok(Value::Null);
     }
 
-    if let Some(loader_stream) = loader_info.as_loader_stream() {
-        match &*loader_stream {
-            LoaderStream::Swf(_, root) | LoaderStream::NotYetLoaded(_, Some(root), _) => {
-                if root.movie().is_action_script_3() || !root.movie().is_movie() {
-                    return Ok(root.object2());
-                } else {
-                    // The movie was an AVM1 movie, return an AVM1Movie object
-                    let root_obj = *root;
-                    drop(loader_stream);
+    let loader_stream = loader_info.loader_stream();
+    match &*loader_stream {
+        LoaderStream::Swf(_, root) | LoaderStream::NotYetLoaded(_, Some(root), _) => {
+            if root.movie().is_action_script_3() || !root.movie().is_movie() {
+                Ok(root.object2())
+            } else {
+                // The movie was an AVM1 movie, return an AVM1Movie object
+                let root_obj = *root;
+                drop(loader_stream);
 
-                    let loader_info = this.as_loader_info_object().unwrap();
-                    return Ok(loader_info
-                        .get_or_init_avm1movie(activation, root_obj)
-                        .into());
-                }
-            }
-            _ => {
-                return Ok(Value::Null);
+                let loader_info = this.as_loader_info_object().unwrap();
+                Ok(loader_info
+                    .get_or_init_avm1movie(activation, root_obj)
+                    .into())
             }
         }
+        _ => Ok(Value::Null),
     }
-
-    Ok(Value::Undefined)
 }
 
 /// `contentType` getter
@@ -206,10 +192,7 @@ pub fn get_frame_rate<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
-    if let Some(loader_stream) = this
-        .as_loader_info_object()
-        .and_then(|o| o.as_loader_stream())
-    {
+    if let Some(loader_stream) = this.as_loader_info_object().map(|o| o.loader_stream()) {
         match &*loader_stream {
             LoaderStream::NotYetLoaded(_, _, _) => {
                 return Err(Error::AvmError(error(_activation, INSUFFICIENT, 2099)?));
@@ -231,10 +214,7 @@ pub fn get_height<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
-    if let Some(loader_stream) = this
-        .as_loader_info_object()
-        .and_then(|o| o.as_loader_stream())
-    {
+    if let Some(loader_stream) = this.as_loader_info_object().map(|o| o.loader_stream()) {
         match &*loader_stream {
             LoaderStream::NotYetLoaded(_, _, _) => {
                 return Err(Error::AvmError(error(_activation, INSUFFICIENT, 2099)?));
@@ -266,10 +246,7 @@ pub fn get_same_domain<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
-    if let Some(loader_stream) = this
-        .as_loader_info_object()
-        .and_then(|o| o.as_loader_stream())
-    {
+    if let Some(loader_stream) = this.as_loader_info_object().map(|o| o.loader_stream()) {
         match &*loader_stream {
             LoaderStream::NotYetLoaded(_, _, _) => {
                 return Err(Error::AvmError(error(activation, INSUFFICIENT, 2099)?));
@@ -293,7 +270,7 @@ pub fn get_child_allows_parent<'gc>(
     let this = this.as_object().unwrap();
 
     let loader_info = this.as_loader_info_object().unwrap();
-    let loader_stream = loader_info.as_loader_stream().unwrap();
+    let loader_stream = loader_info.loader_stream();
     match &*loader_stream {
         LoaderStream::NotYetLoaded(_, _, _) => {
             Err(Error::AvmError(error(activation, INSUFFICIENT, 2099)?))
@@ -327,7 +304,7 @@ pub fn get_parent_allows_child<'gc>(
     let this = this.as_object().unwrap();
 
     let loader_info = this.as_loader_info_object().unwrap();
-    let loader_stream = loader_info.as_loader_stream().unwrap();
+    let loader_stream = loader_info.loader_stream();
     match &*loader_stream {
         LoaderStream::NotYetLoaded(_, _, _) => {
             Err(Error::AvmError(error(activation, INSUFFICIENT, 2099)?))
@@ -360,10 +337,7 @@ pub fn get_swf_version<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
-    if let Some(loader_stream) = this
-        .as_loader_info_object()
-        .and_then(|o| o.as_loader_stream())
-    {
+    if let Some(loader_stream) = this.as_loader_info_object().map(|o| o.loader_stream()) {
         match &*loader_stream {
             LoaderStream::NotYetLoaded(_, _, _) => {
                 return Err(Error::AvmError(error(activation, INSUFFICIENT, 2099)?));
@@ -389,12 +363,12 @@ pub fn get_url<'gc>(
         if !loader_info.expose_content() {
             return Ok(Value::Null);
         }
-        if let Some(loader_stream) = loader_info.as_loader_stream() {
-            let root = match &*loader_stream {
-                LoaderStream::NotYetLoaded(root, _, _) | LoaderStream::Swf(root, _) => root,
-            };
-            return Ok(AvmString::new_utf8(activation.gc(), root.url()).into());
-        }
+
+        let loader_stream = loader_info.loader_stream();
+        let root = match &*loader_stream {
+            LoaderStream::NotYetLoaded(root, _, _) | LoaderStream::Swf(root, _) => root,
+        };
+        return Ok(AvmString::new_utf8(activation.gc(), root.url()).into());
     }
 
     Ok(Value::Undefined)
@@ -408,10 +382,7 @@ pub fn get_width<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
-    if let Some(loader_stream) = this
-        .as_loader_info_object()
-        .and_then(|o| o.as_loader_stream())
-    {
+    if let Some(loader_stream) = this.as_loader_info_object().map(|o| o.loader_stream()) {
         match &*loader_stream {
             LoaderStream::NotYetLoaded(_, _, _) => {
                 return Err(Error::AvmError(error(_activation, INSUFFICIENT, 2099)?));
@@ -434,7 +405,7 @@ pub fn get_bytes<'gc>(
     let this = this.as_object().unwrap();
 
     let loader_info = this.as_loader_info_object().unwrap();
-    let loader_stream = loader_info.as_loader_stream().unwrap();
+    let loader_stream = loader_info.loader_stream();
     let (root, dobj) = match &*loader_stream {
         LoaderStream::NotYetLoaded(_, None, _) => {
             if loader_info.errored() {
@@ -532,10 +503,7 @@ pub fn get_loader_url<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
-    if let Some(loader_stream) = this
-        .as_loader_info_object()
-        .and_then(|o| o.as_loader_stream())
-    {
+    if let Some(loader_stream) = this.as_loader_info_object().map(|o| o.loader_stream()) {
         let root = match &*loader_stream {
             LoaderStream::NotYetLoaded(swf, _, _) => swf,
             LoaderStream::Swf(root, _) => root,
@@ -556,10 +524,7 @@ pub fn get_parameters<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
-    if let Some(loader_stream) = this
-        .as_loader_info_object()
-        .and_then(|o| o.as_loader_stream())
-    {
+    if let Some(loader_stream) = this.as_loader_info_object().map(|o| o.loader_stream()) {
         let root = match &*loader_stream {
             LoaderStream::NotYetLoaded(root, _, _) => root,
             LoaderStream::Swf(root, _) => root,
