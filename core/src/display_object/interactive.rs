@@ -123,7 +123,7 @@ impl Default for InteractiveObjectBase<'_> {
     }
 )]
 pub trait TInteractiveObject<'gc>:
-    'gc + Clone + Copy + Collect + Debug + Into<InteractiveObject<'gc>>
+    'gc + Clone + Copy + Collect<'gc> + Debug + Into<InteractiveObject<'gc>>
 {
     fn raw_interactive(&self) -> Ref<InteractiveObjectBase<'gc>>;
 

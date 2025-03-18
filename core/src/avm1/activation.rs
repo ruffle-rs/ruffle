@@ -46,11 +46,11 @@ macro_rules! avm_debug {
 #[derive(Clone)]
 pub struct RegisterSet<'gc>(SmallVec<[Value<'gc>; 8]>);
 
-unsafe impl gc_arena::Collect for RegisterSet<'_> {
+unsafe impl<'gc> gc_arena::Collect<'gc> for RegisterSet<'gc> {
     #[inline]
-    fn trace(&self, cc: &gc_arena::Collection) {
+    fn trace<C: gc_arena::collect::Trace<'gc>>(&self, cc: &mut C) {
         for register in &self.0 {
-            register.trace(cc);
+            cc.trace(register);
         }
     }
 }

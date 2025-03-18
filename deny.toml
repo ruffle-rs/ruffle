@@ -85,6 +85,7 @@ unknown-git = "deny"
 # github.com organizations to allow git sources for
 github = [
     "ruffle-rs",
+    "kyren", # for `gc-arena`
 ]
 
 [advisories]

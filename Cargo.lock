@@ -1924,19 +1924,16 @@ dependencies = [
 [[package]]
 name = "gc-arena"
 version = "0.5.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3cd70cf88a32937834aae9614ff2569b5d9467fa0c42c5d7762fd94a8de88266"
+source = "git+https://github.com/kyren/gc-arena.git?rev=d394233a367ec7352a361cf93572c428ec092d66#d394233a367ec7352a361cf93572c428ec092d66"
 dependencies = [
  "gc-arena-derive",
- "hashbrown 0.14.5",
  "sptr",
 ]
 
 [[package]]
 name = "gc-arena-derive"
 version = "0.5.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c612a69f5557a11046b77a7408d2836fe77077f842171cd211c5ef504bd3cddd"
+source = "git+https://github.com/kyren/gc-arena.git?rev=d394233a367ec7352a361cf93572c428ec092d66#d394233a367ec7352a361cf93572c428ec092d66"
 dependencies = [
  "proc-macro2",
  "quote",

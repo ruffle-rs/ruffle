@@ -6,6 +6,7 @@
 
 use crate::string::{utils as string_utils, AvmString, WStr};
 use fnv::FnvBuildHasher;
+use gc_arena::collect::Trace;
 use gc_arena::Collect;
 use indexmap::{Equivalent, IndexMap};
 use std::hash::{Hash, Hasher};
@@ -108,11 +109,11 @@ impl<'gc, V> PropertyMap<'gc, V> {
     }
 }
 
-unsafe impl<V: Collect> Collect for PropertyMap<'_, V> {
-    fn trace(&self, cc: &gc_arena::Collection) {
+unsafe impl<'gc, V: Collect<'gc>> Collect<'gc> for PropertyMap<'gc, V> {
+    fn trace<C: Trace<'gc>>(&self, cc: &mut C) {
         for (key, value) in &self.0 {
-            key.0.trace(cc);
-            value.trace(cc);
+            cc.trace(key);
+            cc.trace(value);
         }
     }
 }
@@ -194,7 +195,7 @@ impl<'gc> Equivalent<PropertyName<'gc>> for CaseSensitive<&WStr> {
 /// impls above, which allow it to be either case-sensitive or insensitive.
 /// Note that the property of if key1 == key2 -> hash(key1) == hash(key2) still holds.
 #[derive(Debug, Clone, PartialEq, Eq, Collect)]
-#[collect(require_static)]
+#[collect(no_drop)]
 struct PropertyName<'gc>(AvmString<'gc>);
 
 #[allow(clippy::derive_hash_xor_eq)]

@@ -6,6 +6,7 @@ use crate::context::UpdateContext;
 use crate::string::AvmString;
 use flash_lso::types::Value as AmfValue;
 use fnv::FnvHashMap;
+use gc_arena::collect::Trace;
 use gc_arena::Collect;
 use ruffle_macros::istr;
 use ruffle_wstr::{WStr, WString};
@@ -119,14 +120,13 @@ pub struct LocalConnections<'gc> {
     messages: Vec<QueuedMessage<'gc>>,
 }
 
-unsafe impl Collect for LocalConnections<'_> {
-    fn trace(&self, cc: &gc_arena::Collection) {
+// TODO(moulins): use gc_arena::Static to avoid unsafe impl?
+unsafe impl<'gc> Collect<'gc> for LocalConnections<'gc> {
+    fn trace<C: Trace<'gc>>(&self, cc: &mut C) {
         for (_, v) in self.connections.iter() {
-            v.trace(cc);
+            cc.trace(v);
         }
-        for m in self.messages.iter() {
-            m.trace(cc);
-        }
+        cc.trace(&self.messages);
     }
 }
 

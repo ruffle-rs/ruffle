@@ -1,5 +1,6 @@
+use crate::collect::{Collect, Trace};
 use crate::lock::RefLock;
-use crate::{Collect, Collection, GcCell, GcWeak, Mutation};
+use crate::{GcCell, GcWeak, Mutation};
 
 use core::fmt::{self, Debug};
 
@@ -21,9 +22,9 @@ impl<'gc, T: ?Sized + 'gc> Debug for GcWeakCell<'gc, T> {
     }
 }
 
-unsafe impl<'gc, T: ?Sized + 'gc> Collect for GcWeakCell<'gc, T> {
+unsafe impl<'gc, T: ?Sized + 'gc> Collect<'gc> for GcWeakCell<'gc, T> {
     #[inline]
-    fn trace(&self, cc: &Collection) {
+    fn trace<C: Trace<'gc>>(&self, cc: &mut C) {
         self.0.trace(cc);
     }
 }

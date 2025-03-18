@@ -1163,7 +1163,7 @@ mod tests {
     use crate::font::{EvalParameters, Font, FontDescriptor, FontType};
     use crate::string::WStr;
     use flate2::read::DeflateDecoder;
-    use gc_arena::{rootless_arena, Mutation};
+    use gc_arena::{arena::rootless_mutate, Mutation};
     use std::borrow::Cow;
     use std::io::Read;
     use swf::Twips;
@@ -1174,7 +1174,7 @@ mod tests {
     where
         F: for<'gc> FnOnce(&Mutation<'gc>, Font<'gc>),
     {
-        rootless_arena(|mc| {
+        rootless_mutate(|mc| {
             let mut data = Vec::new();
             let mut decoder = DeflateDecoder::new(DEVICE_FONT);
             decoder

@@ -126,7 +126,13 @@ pub fn dispatch_added_event<'gc>(
     }
 )]
 pub trait TDisplayObjectContainer<'gc>:
-    'gc + Clone + Copy + Collect + Debug + Into<DisplayObjectContainer<'gc>> + Into<DisplayObject<'gc>>
+    'gc
+    + Clone
+    + Copy
+    + Collect<'gc>
+    + Debug
+    + Into<DisplayObjectContainer<'gc>>
+    + Into<DisplayObject<'gc>>
 {
     /// Get read-only access to the raw container.
     fn raw_container(&self) -> Ref<'_, ChildContainer<'gc>>;

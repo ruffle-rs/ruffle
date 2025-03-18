@@ -14,7 +14,7 @@ use crate::avm2::globals::slots::flash_geom_point as point_slots;
 use crate::avm2::object::{ArrayObject, ClassObject, Object, TObject};
 use crate::avm2::{Activation, Error, Value};
 
-use gc_arena::{Collect, DynamicRoot, Rootable};
+use gc_arena::{Collect, DynamicRoot, Gc, Rootable};
 use ruffle_macros::istr;
 use ruffle_render::filters::{
     DisplacementMapFilter, DisplacementMapFilterMode, Filter, ShaderFilter, ShaderObject,
@@ -838,7 +838,7 @@ fn avm2_to_shader_filter<'gc>(
     let dyn_root = activation
         .context
         .dynamic_root
-        .stash(activation.gc(), shader_obj);
+        .stash(activation.gc(), Gc::new(activation.gc(), shader_obj));
 
     let (shader_handle, shader_args) = get_shader_args(shader_obj, activation)?;
 
