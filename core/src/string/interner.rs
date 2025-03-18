@@ -1,9 +1,8 @@
 use core::fmt;
 use std::borrow::Borrow;
-use std::cell::Cell;
+use std::cell::RefCell;
 use std::hash::{BuildHasher, Hash, Hasher};
-use std::marker::PhantomData;
-use std::ops::{Deref, DerefMut};
+use std::ops::Deref;
 
 use gc_arena::collect::Trace;
 use gc_arena::{Collect, Gc, GcWeak, Mutation};
@@ -90,7 +89,7 @@ impl<'gc> AvmStringInterner<'gc> {
     }
 
     #[must_use]
-    pub(super) fn get(&self, mc: &Mutation<'gc>, s: &WStr) -> Option<AvmAtom<'gc>> {
+    pub(super) fn get(&mut self, mc: &Mutation<'gc>, s: &WStr) -> Option<AvmAtom<'gc>> {
         self.interned.get(mc, s).map(AvmAtom)
     }
 
@@ -128,7 +127,8 @@ impl<'gc> AvmStringInterner<'gc> {
 struct WeakSet<'gc, T: 'gc> {
     // Note that `GcWeak<T>` does not implement `Hash`, so the `RawTable`
     // API is used for lookups and insertions.
-    table: CollectCell<'gc, HashSet<GcWeak<'gc, T>>>,
+    // The `RefCell` is only used to get mutable access in `Collect::trace`
+    table: RefCell<HashSet<GcWeak<'gc, T>>>,
     hasher: fnv::FnvBuildHasher,
 }
 
@@ -138,24 +138,13 @@ impl<'gc, T: Hash + 'gc> WeakSet<'gc, T> {
     }
 
     /// Finds the given key in the map.
-    fn get<Q>(&self, mc: &Mutation<'gc>, key: &Q) -> Option<Gc<'gc, T>>
+    /// This takes `&mut self` to be able to clean dead entries (and to avoid a `RefCell` check).
+    fn get<Q>(&mut self, mc: &Mutation<'gc>, key: &Q) -> Option<Gc<'gc, T>>
     where
         T: Borrow<Q>,
         Q: Hash + Eq + ?Sized,
     {
-        let raw = self.table.as_ref(mc).raw_table();
-        let hash = Self::hash(&self.hasher, key);
-        let mut found = None;
-        let _ = raw.find(hash, |(weak, _)| {
-            if let Some(strong) = weak.upgrade(mc) {
-                if (*strong).borrow() == key {
-                    found = Some(strong);
-                    return true;
-                }
-            }
-            false
-        });
-        found
+        self.entry(mc, key).0
     }
 
     /// Finds the given key in the map, and return its and its hash.
@@ -166,7 +155,7 @@ impl<'gc, T: Hash + 'gc> WeakSet<'gc, T> {
         T: Borrow<Q>,
         Q: Hash + Eq + ?Sized,
     {
-        let raw = self.table.as_mut().raw_table_mut();
+        let raw = self.table.get_mut().raw_table_mut();
         let hash = Self::hash(&self.hasher, key);
 
         // SAFETY: the iterator doesn't outlive the `HashSet`.
@@ -203,11 +192,11 @@ impl<'gc, T: Hash + 'gc> WeakSet<'gc, T> {
     fn insert_fresh(&mut self, mc: &Mutation<'gc>, hash: u64, key: Gc<'gc, T>) -> Gc<'gc, T> {
         let entry = (Gc::downgrade(key), ());
 
-        let raw = self.table.as_mut().raw_table_mut();
+        let raw = self.table.get_mut().raw_table_mut();
 
         if raw.try_insert_no_grow(hash, entry).is_err() {
             self.prune_and_grow(mc);
-            let raw = self.table.as_mut().raw_table_mut();
+            let raw = self.table.get_mut().raw_table_mut();
             raw.try_insert_no_grow(hash, entry)
                 .expect("failed to grow table");
         }
@@ -218,7 +207,7 @@ impl<'gc, T: Hash + 'gc> WeakSet<'gc, T> {
     /// Prune stale entries and/or resize the table to ensure at least one extra entry can be added.
     #[cold]
     fn prune_and_grow(&mut self, mc: &Mutation<'gc>) {
-        let table = self.table.as_mut();
+        let table = self.table.get_mut();
 
         // We *really* don't want to reallocate, so try to prune dead references first.
         let all = table.len();
@@ -242,59 +231,13 @@ unsafe impl<'gc, T> Collect<'gc> for WeakSet<'gc, T> {
     fn trace<C: Trace<'gc>>(&self, cc: &mut C) {
         // Prune entries known to be dead.
         // Safe, as we never pick up new GC pointers from outside this allocation.
-        // FIXME(moulins): This isn't actually sound, as `Trace` is user-implementable
-        // and so nothing guarantees that this cannot be called during mutation.
-        let mut guard = unsafe { self.table.steal_for_trace() };
-        guard.retain(|weak| {
+        let mut table = self.table.borrow_mut();
+        table.retain(|weak| {
             let keep = !weak.is_dropped();
             if keep {
                 cc.trace(weak);
             }
             keep
         });
-    }
-}
-
-/// Small utility to work-around the fact that `Collect::trace` only takes `&self`.
-#[derive(Default)]
-struct CollectCell<'gc, T> {
-    inner: Cell<T>,
-    _marker: PhantomData<Gc<'gc, T>>,
-}
-
-impl<'gc, T> CollectCell<'gc, T> {
-    #[inline(always)]
-    fn as_ref<'a>(&'a self, _mc: &Mutation<'gc>) -> &'a T {
-        unsafe { &*self.inner.as_ptr() }
-    }
-
-    #[inline(always)]
-    fn as_mut(&mut self) -> &mut T {
-        self.inner.get_mut()
-    }
-
-    /// SAFETY: must be called inside a `Collect::trace` function.
-    ///
-    /// An alternative would be to require a `&gc_arena::Collection` argument, but this is
-    /// still unsound in presence of nested arenas (preventing this would require a `'gc`
-    /// lifetime on `&gc_arena::Collection` and `Collect`):
-    ///
-    /// ```rs,ignore
-    /// fn trace(&self, cc: &gc_arena::Collection) {
-    ///     rootless_arena(|mc| {
-    ///         let cell = CollectCell::<i32>::default();
-    ///         let borrow: &i32 = dbg!(cell.as_ref(mc)); // 0
-    ///         *cell.steal_for_trace(cc) = 1;
-    ///         dbg!(borrow); // 1 - oh no!
-    ///     });
-    /// }
-    /// ```
-    #[inline(always)]
-    unsafe fn steal_for_trace(&self) -> impl DerefMut<Target = T> + '_
-    where
-        T: Default,
-    {
-        let cell = &self.inner;
-        scopeguard::guard(cell.take(), |stolen| cell.set(stolen))
     }
 }

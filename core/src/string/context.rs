@@ -71,7 +71,7 @@ impl<'gc> StringContext<'gc> {
     }
 
     #[must_use]
-    pub fn get_interned(&self, s: &WStr) -> Option<AvmAtom<'gc>> {
+    pub fn get_interned(&mut self, s: &WStr) -> Option<AvmAtom<'gc>> {
         self.interner.get(self.gc(), s)
     }
 
