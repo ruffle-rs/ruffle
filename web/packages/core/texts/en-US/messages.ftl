@@ -24,6 +24,7 @@ clipboard-message-description =
 clipboard-message-copy = { " " } for copy
 clipboard-message-cut = { " " } for cut
 clipboard-message-paste = { " " } for paste
+error-canvas-reload = Cannot reload with the canvas renderer when the canvas renderer is already in use.
 error-file-protocol =
     It appears you are running Ruffle on the "file:" protocol.
     This doesn't work as browsers block many features from working for security reasons.
