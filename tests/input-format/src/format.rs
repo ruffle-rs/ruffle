@@ -154,6 +154,15 @@ pub enum AutomatedEvent {
 
     /// Inform the player that the focus has been lost (i.e. the user focused another window).
     FocusLost,
+
+    /// Update the IME preedit string and cursor.
+    ImePreedit {
+        text: String,
+        cursor: Option<(usize, usize)>,
+    },
+
+    /// Commit text using IME.
+    ImeCommit { text: String },
 }
 
 #[derive(Serialize, Deserialize, Debug)]
