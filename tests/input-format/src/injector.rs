@@ -101,6 +101,8 @@ impl InputInjector {
                     | AutomatedEvent::TextControl { .. }
                     | AutomatedEvent::SetClipboardText { .. }
                     | AutomatedEvent::MouseWheel { .. }
+                    | AutomatedEvent::ImePreedit { .. }
+                    | AutomatedEvent::ImeCommit { .. }
                     | AutomatedEvent::FocusGained
                     | AutomatedEvent::FocusLost => {}
                     AutomatedEvent::MouseDown { btn, .. } => {
