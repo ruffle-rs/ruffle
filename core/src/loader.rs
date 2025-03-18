@@ -33,6 +33,7 @@ use crate::tag_utils::SwfMovie;
 use crate::vminterface::Instantiator;
 use chardetng::EncodingDetector;
 use encoding_rs::{UTF_8, WINDOWS_1252};
+use gc_arena::collect::Trace;
 use gc_arena::{Collect, GcCell};
 use indexmap::IndexMap;
 use ruffle_macros::istr;
@@ -241,10 +242,10 @@ impl From<crate::avm1::Error<'_>> for Error {
 /// Holds all in-progress loads for the player.
 pub struct LoadManager<'gc>(SlotMap<LoaderHandle, Loader<'gc>>);
 
-unsafe impl Collect for LoadManager<'_> {
-    fn trace(&self, cc: &gc_arena::Collection) {
+unsafe impl<'gc> Collect<'gc> for LoadManager<'gc> {
+    fn trace<C: Trace<'gc>>(&self, cc: &mut C) {
         for (_, loader) in self.0.iter() {
-            loader.trace(cc)
+            cc.trace(loader);
         }
     }
 }

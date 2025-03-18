@@ -16,6 +16,8 @@ use gc_arena::Collect;
 use std::collections::{binary_heap::PeekMut, BinaryHeap};
 
 /// Manages the collection of timers.
+#[derive(Collect)]
+#[collect(no_drop)]
 pub struct Timers<'gc> {
     /// The collection of active timers.
     timers: BinaryHeap<Timer<'gc>>,
@@ -307,13 +309,6 @@ impl Default for Timers<'_> {
     }
 }
 
-unsafe impl Collect for Timers<'_> {
-    fn trace(&self, cc: &gc_arena::Collection) {
-        for timer in &self.timers {
-            timer.trace(cc);
-        }
-    }
-}
 /// A timer created via `setInterval`/`setTimeout`.
 /// Runs a callback when it ticks.
 #[derive(Clone, Collect)]

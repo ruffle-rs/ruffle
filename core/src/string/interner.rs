@@ -5,6 +5,7 @@ use std::hash::{BuildHasher, Hash, Hasher};
 use std::marker::PhantomData;
 use std::ops::{Deref, DerefMut};
 
+use gc_arena::collect::Trace;
 use gc_arena::{Collect, Gc, GcWeak, Mutation};
 use hashbrown::HashSet;
 
@@ -237,17 +238,17 @@ impl<'gc, T: Hash + 'gc> WeakSet<'gc, T> {
     }
 }
 
-unsafe impl<T> Collect for WeakSet<'_, T> {
-    fn trace(&self, cc: &gc_arena::Collection) {
+unsafe impl<'gc, T> Collect<'gc> for WeakSet<'gc, T> {
+    fn trace<C: Trace<'gc>>(&self, cc: &mut C) {
         // Prune entries known to be dead.
         // Safe, as we never pick up new GC pointers from outside this allocation.
+        // FIXME(moulins): This isn't actually sound, as `Trace` is user-implementable
+        // and so nothing guarantees that this cannot be called during mutation.
         let mut guard = unsafe { self.table.steal_for_trace() };
         guard.retain(|weak| {
-            let keep = !weak.is_dropped(cc);
+            let keep = !weak.is_dropped();
             if keep {
-                // NOTE: The explicit dereference is necessary to not
-                // use the no-op `Collect` impl on references.
-                (*weak).trace(cc);
+                cc.trace(weak);
             }
             keep
         });

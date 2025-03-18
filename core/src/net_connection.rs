@@ -10,7 +10,8 @@ use crate::loader::Error;
 use crate::Player;
 use flash_lso::packet::{Header, Message, Packet};
 use flash_lso::types::{AMFVersion, Value as AmfValue};
-use gc_arena::{Collect, DynamicRoot, Rootable};
+use gc_arena::collect::Trace;
+use gc_arena::{Collect, DynamicRoot, Gc, Rootable};
 use slotmap::{new_key_type, SlotMap};
 use std::fmt::{Debug, Formatter};
 use std::rc::Rc;
@@ -106,10 +107,10 @@ pub struct NetConnections<'gc> {
     connections: SlotMap<NetConnectionHandle, NetConnection<'gc>>,
 }
 
-unsafe impl Collect for NetConnections<'_> {
-    fn trace(&self, cc: &gc_arena::Collection) {
+unsafe impl<'gc> Collect<'gc> for NetConnections<'gc> {
+    fn trace<C: Trace<'gc>>(&self, cc: &mut C) {
         for (_, connection) in self.connections.iter() {
-            connection.trace(cc)
+            cc.trace(connection);
         }
     }
 }
@@ -262,9 +263,11 @@ impl<'gc> NetConnections<'gc> {
         message: AmfValue,
         responder: Avm2ResponderObject<'gc>,
     ) {
+        let mc = context.gc();
         if let Some(connection) = context.net_connections.connections.get_mut(handle) {
+            // TODO(moulins): it'd be nice to avoid the double indirection here...
             let responder_handle =
-                ResponderHandle::Avm2(context.dynamic_root.stash(context.gc_context, responder));
+                ResponderHandle::Avm2(context.dynamic_root.stash(mc, Gc::new(mc, responder)));
             connection.send(command, Some(responder_handle), message);
         }
     }
@@ -276,9 +279,11 @@ impl<'gc> NetConnections<'gc> {
         message: AmfValue,
         responder: Avm1Object<'gc>,
     ) {
+        let mc = context.gc();
         if let Some(connection) = context.net_connections.connections.get_mut(handle) {
+            // TODO(moulins): it'd be nice to avoid the double indirection here...
             let responder_handle =
-                ResponderHandle::Avm1(context.dynamic_root.stash(context.gc_context, responder));
+                ResponderHandle::Avm1(context.dynamic_root.stash(mc, Gc::new(mc, responder)));
             connection.send(command, Some(responder_handle), message);
         }
     }

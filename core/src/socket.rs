@@ -9,6 +9,7 @@ use crate::context::UpdateContext;
 use crate::string::AvmString;
 
 use async_channel::{unbounded, Receiver, Sender as AsyncSender, Sender};
+use gc_arena::collect::Trace;
 use gc_arena::Collect;
 use ruffle_macros::istr;
 use slotmap::{new_key_type, SlotMap};
@@ -68,10 +69,10 @@ pub struct Sockets<'gc> {
     sender: Sender<SocketAction>,
 }
 
-unsafe impl Collect for Sockets<'_> {
-    fn trace(&self, cc: &gc_arena::Collection) {
+unsafe impl<'gc> Collect<'gc> for Sockets<'gc> {
+    fn trace<C: Trace<'gc>>(&self, cc: &mut C) {
         for (_, socket) in self.sockets.iter() {
-            socket.trace(cc)
+            cc.trace(socket);
         }
     }
 }

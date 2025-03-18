@@ -12,4 +12,4 @@ repository.workspace = true
 workspace = true
 
 [dependencies]
-gc-arena = { version = "0.5.0", features = ["hashbrown"] }
+gc-arena = { git = "https://github.com/kyren/gc-arena.git", rev = "d394233a367ec7352a361cf93572c428ec092d66" }

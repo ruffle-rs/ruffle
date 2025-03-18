@@ -9,6 +9,7 @@ use crate::font::{Font, FontDescriptor, FontType};
 use crate::prelude::*;
 use crate::string::AvmString;
 use crate::tag_utils::SwfMovie;
+use gc_arena::collect::Trace;
 use gc_arena::{Collect, Mutation};
 use ruffle_render::backend::RenderBackend;
 use ruffle_render::bitmap::BitmapHandle;
@@ -51,10 +52,10 @@ pub struct Avm2ClassRegistry<'gc> {
     class_map: WeakValueHashMap<Avm2Class<'gc>, WeakMovieSymbol>,
 }
 
-unsafe impl Collect for Avm2ClassRegistry<'_> {
-    fn trace(&self, cc: &gc_arena::Collection) {
+unsafe impl<'gc> Collect<'gc> for Avm2ClassRegistry<'gc> {
+    fn trace<C: Trace<'gc>>(&self, cc: &mut C) {
         for (k, _) in self.class_map.iter() {
-            k.trace(cc);
+            cc.trace(k);
         }
     }
 }
@@ -424,18 +425,19 @@ pub struct Library<'gc> {
     avm2_class_registry: Avm2ClassRegistry<'gc>,
 }
 
-unsafe impl gc_arena::Collect for Library<'_> {
+// TODO(moulins): use gc_arena::Static to avoid unsafe impl?
+unsafe impl<'gc> Collect<'gc> for Library<'gc> {
     #[inline]
-    fn trace(&self, cc: &gc_arena::Collection) {
+    fn trace<C: Trace<'gc>>(&self, cc: &mut C) {
         for (_, val) in self.movie_libraries.iter() {
-            val.trace(cc);
+            cc.trace(val);
         }
         for (_, val) in self.default_font_cache.iter() {
-            val.trace(cc);
+            cc.trace(val);
         }
-        self.device_fonts.trace(cc);
-        self.global_fonts.trace(cc);
-        self.avm2_class_registry.trace(cc);
+        cc.trace(&self.device_fonts);
+        cc.trace(&self.global_fonts);
+        cc.trace(&self.avm2_class_registry);
     }
 }
 
