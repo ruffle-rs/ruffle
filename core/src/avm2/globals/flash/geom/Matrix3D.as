@@ -82,7 +82,7 @@ package flash.geom {
          */
         // The 4x4 matrix data, stored in column-major order
         // This is never null.
-        [Ruffle(InternalSlot)]
+        [Ruffle(NativeAccessible)]
         private var _rawData:Vector.<Number>;
 
         public function get rawData():Vector.<Number> {
