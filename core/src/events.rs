@@ -852,7 +852,7 @@ impl FromStr for GamepadButton {
     }
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct KeyDescriptor {
     pub physical_key: PhysicalKey,
     pub logical_key: LogicalKey,
@@ -868,7 +868,7 @@ pub struct KeyDescriptor {
 ///   [`PhysicalKey::IntlBackslash`] and logical key `\`.
 ///
 /// See <https://w3c.github.io/uievents-code/#code-value-tables>.
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum PhysicalKey {
     Unknown = 0,
 
@@ -1027,7 +1027,7 @@ pub enum PhysicalKey {
 ///   with Colemak can produce `Backspace`.
 ///
 /// See <https://w3c.github.io/uievents-key/>.
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum LogicalKey {
     Unknown,
     Character(char),
@@ -1049,7 +1049,7 @@ impl LogicalKey {
     }
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum NamedKey {
     // Modifier Keys
     Alt,
@@ -1143,7 +1143,7 @@ pub enum NamedKey {
     F35,
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum KeyLocation {
     Standard = 0,
     Left = 1,

@@ -72,6 +72,8 @@ impl ClickEventData {
 }
 
 pub struct InputManager {
+    key_descriptors_down: HashSet<KeyDescriptor>,
+
     keys_down: HashSet<KeyCode>,
     keys_toggled: HashSet<KeyCode>,
     last_key: KeyCode,
@@ -87,6 +89,7 @@ pub struct InputManager {
 impl InputManager {
     pub fn new(gamepad_button_mapping: HashMap<GamepadButton, KeyCode>) -> Self {
         Self {
+            key_descriptors_down: HashSet::new(),
             keys_down: HashSet::new(),
             keys_toggled: HashSet::new(),
             last_key: KeyCode::UNKNOWN,
@@ -153,6 +156,8 @@ impl InputManager {
             }
 
             PlayerEvent::KeyDown { key } => {
+                self.key_descriptors_down.insert(key);
+
                 let key_code = self.map_to_key_code(key)?;
                 let key_char = self.map_to_key_char(key);
                 let key_location = self.map_to_key_location(key);
@@ -163,6 +168,18 @@ impl InputManager {
                 }
             }
             PlayerEvent::KeyUp { key } => {
+                if !self.key_descriptors_down.remove(&key) {
+                    // Ignore spurious KeyUp events that may happen e.g. during IME.
+                    // We assume that in order for a key to generate KeyUp, it had to
+                    // generate KeyDown for the same exact KeyDescriptor.
+
+                    // TODO Apparently this behavior is platform-dependent and
+                    //   doesn't happen on Windows. We cannot remove it fully
+                    //   though, so the only option is to skip keyUp when there
+                    //   has been an IME event and no focus event in between.
+                    return None;
+                }
+
                 let key_code = self.map_to_key_code(key)?;
                 let key_char = self.map_to_key_char(key);
                 let key_location = self.map_to_key_location(key);
