@@ -24,6 +24,7 @@ clipboard-message-description =
 clipboard-message-copy = { " " } w celu skopiowania
 clipboard-message-cut = { " " } w celu wycięcia
 clipboard-message-paste = { " " } w celu wklejenia
+error-canvas-reload = Nie można ponownie załadować renderera canvas, gdy jest już on używany.
 error-file-protocol =
     Wygląda na to, że używasz Ruffle z protokołem "file:".
     To nie działa, ponieważ przeglądarka blokuje wiele funkcji przed działaniem ze względów bezpieczeństwa.
