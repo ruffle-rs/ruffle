@@ -3,10 +3,10 @@ use crate::avm2::multiname::Multiname;
 use crate::avm2::script::Script;
 use crate::string::AvmAtom;
 
-use gc_arena::{Collect, Gc};
+use gc_arena::{Collect, Gc, Static};
 use swf::avm2::types::{Exception, Index, LookupSwitch, Method, Namespace};
 
-#[derive(Clone, Collect, Debug)]
+#[derive(Clone, Collect, Copy, Debug)]
 #[collect(no_drop)]
 pub enum Op<'gc> {
     Add,
@@ -233,7 +233,7 @@ pub enum Op<'gc> {
     Li16,
     Li32,
     Li8,
-    LookupSwitch(#[collect(require_static)] Box<LookupSwitch>),
+    LookupSwitch(Gc<'gc, Static<LookupSwitch>>),
     LShift,
     Modulo,
     Multiply,
