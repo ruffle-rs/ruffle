@@ -30,3 +30,10 @@ gamemode-tooltip =
     Ruffle żąda włączenia GameMode tylko wtedy, gdy odtwarzany jest film.
 gamemode-default = Domyślny
 gamemode-default-tooltip = GameMode będzie włączony tylko wtedy, gdy preferencje wydajności są ustawione na wysokie.
+# See for context https://wiki.archlinux.org/title/Input_method
+ime-enabled = Metoda wprowadzania
+ime-enabled-experimental = (eksperymentalne)
+ime-enabled-tooltip = Metoda wprowadzania pozwala na wprowadzanie znaków, które nie są dostępne na klawiaturze, na przykład znaki chińskie, japońskie, albo koreańskie.
+ime-enabled-default = Domyślna
+ime-enabled-on = Wł.
+ime-enabled-off = Wył.

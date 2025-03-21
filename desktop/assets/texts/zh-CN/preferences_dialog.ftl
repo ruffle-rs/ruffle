@@ -28,3 +28,10 @@ gamemode = GameMode
 gamemode-tooltip = GameMode 会对你的电脑和/或 Ruffle 临时应用一系列优化。Ruffle 仅在播放影片时对 GameMode 进行请求。
 gamemode-default = 默认
 gamemode-default-tooltip = 只有当性能偏好被设置为高时，才会启用GameMode。
+# See for context https://wiki.archlinux.org/title/Input_method
+ime-enabled = 输入法支持
+ime-enabled-experimental = (实验性)
+ime-enabled-tooltip = 输入法可以输入不在键盘上的字符，例如中文、日文或韩文字符。
+ime-enabled-default = 默认
+ime-enabled-on = 开
+ime-enabled-off = 关
