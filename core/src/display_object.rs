@@ -17,6 +17,7 @@ use crate::vminterface::Instantiator;
 use bitflags::bitflags;
 use gc_arena::{Collect, Mutation};
 use ruffle_macros::{enum_trait_object, istr};
+use ruffle_render::perspective_projection::PerspectiveProjection;
 use ruffle_render::pixel_bender::PixelBenderShaderHandle;
 use ruffle_render::transform::{Transform, TransformStack};
 use std::cell::{Ref, RefMut};
@@ -351,6 +352,22 @@ impl<'gc> DisplayObjectBase<'gc> {
 
     pub fn set_color_transform(&mut self, color_transform: ColorTransform) {
         self.transform.color_transform = color_transform;
+    }
+
+    pub fn perspective_projection(&self) -> Option<&PerspectiveProjection> {
+        self.transform.perspective_projection.as_ref()
+    }
+    pub fn perspective_projection_mut(&mut self) -> Option<&mut PerspectiveProjection> {
+        self.transform.perspective_projection.as_mut()
+    }
+
+    pub fn set_perspective_projection(
+        &mut self,
+        perspective_projection: Option<PerspectiveProjection>,
+    ) -> bool {
+        let changed = self.transform.perspective_projection != perspective_projection;
+        self.transform.perspective_projection = perspective_projection;
+        changed
     }
 
     fn x(&self) -> Twips {
@@ -805,16 +822,6 @@ impl<'gc> DisplayObjectBase<'gc> {
     pub fn set_has_matrix3d_stub(&mut self, value: bool) {
         self.flags.set(DisplayObjectFlags::HAS_MATRIX3D_STUB, value)
     }
-
-    pub fn has_perspective_projection_stub(&self) -> bool {
-        self.flags
-            .contains(DisplayObjectFlags::HAS_PERSPECTIVE_PROJECTION_STUB)
-    }
-
-    pub fn set_has_perspective_projection_stub(&mut self, value: bool) {
-        self.flags
-            .set(DisplayObjectFlags::HAS_PERSPECTIVE_PROJECTION_STUB, value)
-    }
 }
 
 struct DrawCacheInfo {
@@ -941,6 +948,7 @@ pub fn render_base<'gc>(this: DisplayObject<'gc>, context: &mut RenderContext<'_
                     ty: -offset_y,
                     ..cache_info.base_transform.matrix
                 },
+                perspective_projection: cache_info.base_transform.perspective_projection,
             });
             let mut offscreen_context = RenderContext {
                 renderer: context.renderer,
@@ -973,6 +981,7 @@ pub fn render_base<'gc>(this: DisplayObject<'gc>, context: &mut RenderContext<'_
                         ..Default::default()
                     },
                     color_transform: cache_info.base_transform.color_transform,
+                    perspective_projection: cache_info.base_transform.perspective_projection,
                 },
                 true,
                 PixelSnapping::Always, // cacheAsBitmap forces pixel snapping
@@ -1045,6 +1054,7 @@ pub fn apply_standard_mask_and_scroll<'gc, F>(
         context.transform_stack.push(&Transform {
             matrix: Matrix::translate(-rect.x_min, -rect.y_min),
             color_transform: Default::default(),
+            perspective_projection: None,
         });
     }
 
@@ -1262,6 +1272,25 @@ pub trait TDisplayObject<'gc>:
     fn set_color_transform(&self, gc_context: &Mutation<'gc>, color_transform: ColorTransform) {
         self.base_mut(gc_context)
             .set_color_transform(color_transform)
+    }
+
+    /// Sets the perspective projection of this object.
+    /// This invalidates any ancestors cacheAsBitmap automatically.
+    fn set_perspective_projection(
+        &self,
+        gc_context: &Mutation<'gc>,
+        perspective_projection: Option<PerspectiveProjection>,
+    ) {
+        if self
+            .base_mut(gc_context)
+            .set_perspective_projection(perspective_projection)
+        {
+            if let Some(parent) = self.parent() {
+                // Self-transform changes are automatically handled,
+                // we only want to inform ancestors to avoid unnecessary invalidations for tx/ty
+                parent.invalidate_cached_bitmap(gc_context);
+            }
+        }
     }
 
     /// Should only be used to implement 'Transform.concatenatedMatrix'
@@ -2634,9 +2663,6 @@ bitflags! {
 
         /// Whether this object has matrix3D (used for stubbing).
         const HAS_MATRIX3D_STUB        = 1 << 14;
-
-        /// Whether this object has perspectiveProjection (used for stubbing).
-        const HAS_PERSPECTIVE_PROJECTION_STUB = 1 << 15;
     }
 }
 
