@@ -57,7 +57,7 @@ mod multiname;
 mod namespace;
 pub mod object;
 mod op;
-mod optimize;
+mod optimizer;
 mod parameters;
 pub mod property;
 mod property_map;

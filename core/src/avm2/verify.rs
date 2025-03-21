@@ -60,11 +60,6 @@ impl<'gc> ByteInfo<'gc> {
     }
 }
 
-pub enum JumpSource {
-    JumpFrom(i32),
-    ExceptionTarget,
-}
-
 pub fn verify_method<'gc>(
     activation: &mut Activation<'_, 'gc>,
     method: Gc<'gc, BytecodeMethod<'gc>>,
@@ -268,7 +263,8 @@ pub fn verify_method<'gc>(
                 byte_info[(previous_position + j) as usize] = ByteInfo::OpContinue;
             }
 
-            let translated_ops = translate_op(activation, method, max_locals, op)?;
+            let translated_ops =
+                translate_op(activation, method, max_locals, resolved_return_type, op)?;
 
             byte_info[previous_position as usize] = ByteInfo::OpStart(translated_ops.0);
             if let Some(second_op) = translated_ops.1 {
@@ -302,7 +298,7 @@ pub fn verify_method<'gc>(
 
     // Record a target->sources mapping of all jump
     // targets- this will be used in the optimizer.
-    let mut potential_jump_targets: HashMap<i32, Vec<JumpSource>> = HashMap::new();
+    let mut jump_targets = HashSet::new();
 
     // Handle exceptions
     let mut new_exceptions = Vec::new();
@@ -434,10 +430,7 @@ pub fn verify_method<'gc>(
         if let Some(new_target_offset) = maybe_new_target_offset {
             // If this is a reachable target offset, insert it into the list
             // of potential jump targets.
-            potential_jump_targets
-                .entry(new_target_offset)
-                .or_default()
-                .push(JumpSource::ExceptionTarget);
+            jump_targets.insert(new_target_offset);
         }
 
         let new_target_offset = maybe_new_target_offset.unwrap_or(0);
@@ -496,29 +489,20 @@ pub fn verify_method<'gc>(
                 let adjusted_result = adjust_jump_to_idx(i, *offset, true)?;
                 *offset = adjusted_result.1;
 
-                potential_jump_targets
-                    .entry(adjusted_result.0)
-                    .or_default()
-                    .push(JumpSource::JumpFrom(i));
+                jump_targets.insert(adjusted_result.0);
             }
             Op::LookupSwitch(lookup_switch) => {
                 let adjusted_default = adjust_jump_to_idx(i, lookup_switch.default_offset, false)?;
                 let default_offset = adjusted_default.1;
 
-                potential_jump_targets
-                    .entry(adjusted_default.0)
-                    .or_default()
-                    .push(JumpSource::JumpFrom(i));
+                jump_targets.insert(adjusted_default.0);
 
                 let mut case_offsets = Vec::with_capacity(lookup_switch.case_offsets.len());
                 for case in lookup_switch.case_offsets.iter() {
                     let adjusted_case = adjust_jump_to_idx(i, *case, false)?;
                     case_offsets.push(adjusted_case.1);
 
-                    potential_jump_targets
-                        .entry(adjusted_case.0)
-                        .or_default()
-                        .push(JumpSource::JumpFrom(i));
+                    jump_targets.insert(adjusted_case.0);
                 }
 
                 let new_lookup_switch = LookupSwitch {
@@ -532,17 +516,14 @@ pub fn verify_method<'gc>(
         }
     }
 
-    if activation.avm2().optimizer_enabled() {
-        crate::avm2::optimize::optimize(
-            activation,
-            method,
-            &mut verified_code,
-            &resolved_param_config,
-            resolved_return_type,
-            &new_exceptions,
-            potential_jump_targets,
-        )?;
-    }
+    crate::avm2::optimizer::optimize(
+        activation,
+        method,
+        &mut verified_code,
+        &resolved_param_config,
+        &new_exceptions,
+        &jump_targets,
+    )?;
 
     Ok(VerifiedMethodInfo {
         parsed_code: verified_code,
@@ -783,6 +764,7 @@ fn translate_op<'gc>(
     activation: &mut Activation<'_, 'gc>,
     method: Gc<'gc, BytecodeMethod<'gc>>,
     max_locals: u32,
+    resolved_return_type: Option<Class<'gc>>,
     op: AbcOp,
 ) -> Result<(Op<'gc>, Option<Op<'gc>>), Error<'gc>> {
     let translation_unit = method.translation_unit();
@@ -973,7 +955,9 @@ fn translate_op<'gc>(
                 Some(Op::Pop),
             ));
         }
-        AbcOp::ReturnValue => Op::ReturnValue,
+        AbcOp::ReturnValue => Op::ReturnValue {
+            return_type: resolved_return_type,
+        },
         AbcOp::ReturnVoid => Op::ReturnVoid,
         AbcOp::GetProperty { index } => {
             let multiname = pool_multiname(activation, translation_unit, index)?;
@@ -1010,8 +994,12 @@ fn translate_op<'gc>(
         AbcOp::NewCatch { index } => Op::NewCatch { index },
         AbcOp::PushWith => Op::PushWith,
         AbcOp::PopScope => Op::PopScope,
-        AbcOp::GetOuterScope { index } => Op::GetOuterScope { index },
-        AbcOp::GetScopeObject { index } => Op::GetScopeObject { index },
+        AbcOp::GetOuterScope { index } => Op::GetOuterScope {
+            index: index as usize,
+        },
+        AbcOp::GetScopeObject { index } => Op::GetScopeObject {
+            index: index as usize,
+        },
         AbcOp::GetGlobalScope => {
             // GetGlobalScope is equivalent to either GetScopeObject or GetOuterScope,
             // depending on the outer scope stack size. Do this check here in the
