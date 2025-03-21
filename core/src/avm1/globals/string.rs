@@ -45,11 +45,12 @@ pub fn string<'gc>(
     // Called from a constructor, populate `this`.
     this.set_native(activation.gc(), NativeObject::String(value));
 
+    // The `length` property lives on the object itself, not its prototype.
     this.define_value(
         activation.gc(),
         istr!("length"),
         value.len().into(),
-        Attribute::empty(),
+        Attribute::DONT_ENUM | Attribute::DONT_DELETE,
     );
 
     Ok(this.into())
