@@ -489,21 +489,7 @@ pub fn verify_method<'gc>(
         let i = i as i32;
 
         match op {
-            Op::IfEq { offset }
-            | Op::IfFalse { offset }
-            | Op::IfGe { offset }
-            | Op::IfGt { offset }
-            | Op::IfLe { offset }
-            | Op::IfLt { offset }
-            | Op::IfNe { offset }
-            | Op::IfNge { offset }
-            | Op::IfNgt { offset }
-            | Op::IfNle { offset }
-            | Op::IfNlt { offset }
-            | Op::IfStrictEq { offset }
-            | Op::IfStrictNe { offset }
-            | Op::IfTrue { offset }
-            | Op::Jump { offset } => {
+            Op::IfFalse { offset } | Op::IfTrue { offset } | Op::Jump { offset } => {
                 let adjusted_result = adjust_jump_to_idx(i, *offset, true)?;
                 *offset = adjusted_result.1;
 
@@ -536,6 +522,7 @@ pub fn verify_method<'gc>(
                     default_offset,
                     case_offsets: case_offsets.into_boxed_slice(),
                 };
+
                 *op = Op::LookupSwitch(Gc::new(mc, new_lookup_switch.into()));
             }
             _ => {}
@@ -1136,18 +1123,42 @@ fn translate_op<'gc>(
         AbcOp::Jump { offset } => Op::Jump { offset },
         AbcOp::IfTrue { offset } => Op::IfTrue { offset },
         AbcOp::IfFalse { offset } => Op::IfFalse { offset },
-        AbcOp::IfStrictEq { offset } => Op::IfStrictEq { offset },
-        AbcOp::IfStrictNe { offset } => Op::IfStrictNe { offset },
-        AbcOp::IfEq { offset } => Op::IfEq { offset },
-        AbcOp::IfNe { offset } => Op::IfNe { offset },
-        AbcOp::IfGe { offset } => Op::IfGe { offset },
-        AbcOp::IfGt { offset } => Op::IfGt { offset },
-        AbcOp::IfLe { offset } => Op::IfLe { offset },
-        AbcOp::IfLt { offset } => Op::IfLt { offset },
-        AbcOp::IfNge { offset } => Op::IfNge { offset },
-        AbcOp::IfNgt { offset } => Op::IfNgt { offset },
-        AbcOp::IfNle { offset } => Op::IfNle { offset },
-        AbcOp::IfNlt { offset } => Op::IfNlt { offset },
+        AbcOp::IfStrictEq { offset } => {
+            return Ok((Op::StrictEquals, Some(Op::IfTrue { offset: offset - 1 })));
+        }
+        AbcOp::IfStrictNe { offset } => {
+            return Ok((Op::StrictEquals, Some(Op::IfFalse { offset: offset - 1 })));
+        }
+        AbcOp::IfEq { offset } => {
+            return Ok((Op::Equals, Some(Op::IfTrue { offset: offset - 1 })));
+        }
+        AbcOp::IfNe { offset } => {
+            return Ok((Op::Equals, Some(Op::IfFalse { offset: offset - 1 })));
+        }
+        AbcOp::IfGe { offset } => {
+            return Ok((Op::GreaterEquals, Some(Op::IfTrue { offset: offset - 1 })));
+        }
+        AbcOp::IfGt { offset } => {
+            return Ok((Op::GreaterThan, Some(Op::IfTrue { offset: offset - 1 })));
+        }
+        AbcOp::IfLe { offset } => {
+            return Ok((Op::LessEquals, Some(Op::IfTrue { offset: offset - 1 })));
+        }
+        AbcOp::IfLt { offset } => {
+            return Ok((Op::LessThan, Some(Op::IfTrue { offset: offset - 1 })));
+        }
+        AbcOp::IfNge { offset } => {
+            return Ok((Op::GreaterEquals, Some(Op::IfFalse { offset: offset - 1 })));
+        }
+        AbcOp::IfNgt { offset } => {
+            return Ok((Op::GreaterThan, Some(Op::IfFalse { offset: offset - 1 })));
+        }
+        AbcOp::IfNle { offset } => {
+            return Ok((Op::LessEquals, Some(Op::IfFalse { offset: offset - 1 })));
+        }
+        AbcOp::IfNlt { offset } => {
+            return Ok((Op::LessThan, Some(Op::IfFalse { offset: offset - 1 })));
+        }
         AbcOp::StrictEquals => Op::StrictEquals,
         AbcOp::Equals => Op::Equals,
         AbcOp::GreaterEquals => Op::GreaterEquals,
