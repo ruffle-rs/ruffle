@@ -136,13 +136,13 @@ pub enum Op<'gc> {
         index: u32,
     },
     GetOuterScope {
-        index: u32,
+        index: usize,
     },
     GetProperty {
         multiname: Gc<'gc, Multiname<'gc>>,
     },
     GetScopeObject {
-        index: u8,
+        index: usize,
     },
     GetScriptGlobals {
         script: Script<'gc>,
@@ -253,8 +253,9 @@ pub enum Op<'gc> {
     },
     PushUndefined,
     PushWith,
-    ReturnValue,
-    ReturnValueNoCoerce,
+    ReturnValue {
+        return_type: Option<Class<'gc>>,
+    },
     ReturnVoid,
     RShift,
     SetGlobalSlot {
@@ -297,18 +298,6 @@ pub enum Op<'gc> {
 }
 
 impl Op<'_> {
-    pub fn is_block_terminating(&self) -> bool {
-        matches!(
-            self,
-            Op::Jump { .. }
-                | Op::LookupSwitch { .. }
-                | Op::ReturnValue
-                | Op::ReturnValueNoCoerce
-                | Op::ReturnVoid
-                | Op::Throw
-        )
-    }
-
     pub fn can_throw_error(&self) -> bool {
         !matches!(
             self,
