@@ -321,7 +321,7 @@ pub struct Player {
 
     frame_rate: f64,
     forced_frame_rate: bool,
-    actions_since_timeout_check: u16,
+    actions_since_timeout_check: u32,
 
     frame_phase: FramePhase,
 

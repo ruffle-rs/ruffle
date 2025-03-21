@@ -44,9 +44,6 @@ pub struct Activation<'a, 'gc: 'a> {
     /// The instruction index.
     ip: i32,
 
-    /// Amount of actions performed since the last timeout check
-    actions_since_timeout_check: u32,
-
     /// The number of locals this method uses.
     num_locals: usize,
 
@@ -134,7 +131,6 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     pub fn from_nothing(context: &'a mut UpdateContext<'gc>) -> Self {
         Self {
             ip: 0,
-            actions_since_timeout_check: 0,
             num_locals: 0,
             outer: ScopeChain::new(context.avm2.stage_domain),
             caller_domain: None,
@@ -160,7 +156,6 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     pub fn from_domain(context: &'a mut UpdateContext<'gc>, domain: Domain<'gc>) -> Self {
         Self {
             ip: 0,
-            actions_since_timeout_check: 0,
             num_locals: 0,
             outer: ScopeChain::new(context.avm2.stage_domain),
             caller_domain: Some(domain),
@@ -218,7 +213,6 @@ impl<'a, 'gc> Activation<'a, 'gc> {
 
         let mut created_activation = Self {
             ip: 0,
-            actions_since_timeout_check: 0,
             num_locals,
             outer: ScopeChain::new(domain),
             caller_domain: Some(domain),
@@ -401,7 +395,6 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         }
 
         self.ip = 0;
-        self.actions_since_timeout_check = 0;
         self.num_locals = num_locals;
         self.outer = outer;
         self.caller_domain = Some(outer.domain());
@@ -509,7 +502,6 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     ) -> Self {
         Self {
             ip: 0,
-            actions_since_timeout_check: 0,
             num_locals: 0,
             outer,
             caller_domain,
@@ -729,6 +721,8 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         let verified_info = method.verified_info.borrow();
         let verified_code = verified_info.as_ref().unwrap().parsed_code.as_slice();
 
+        self.timeout_check()?;
+
         self.ip = 0;
 
         let val = loop {
@@ -787,16 +781,11 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         Err(Error::AvmError(error))
     }
 
-    /// Run a single action from a given action reader.
     #[inline(always)]
-    fn do_next_opcode(
-        &mut self,
-        method: Gc<'gc, BytecodeMethod<'gc>>,
-        opcodes: &[Op<'gc>],
-    ) -> Result<FrameControl<'gc>, Error<'gc>> {
-        self.actions_since_timeout_check += 1;
-        if self.actions_since_timeout_check >= 200000 {
-            self.actions_since_timeout_check = 0;
+    fn timeout_check(&mut self) -> Result<(), Error<'gc>> {
+        *self.context.actions_since_timeout_check += 1;
+        if *self.context.actions_since_timeout_check >= 10000 {
+            *self.context.actions_since_timeout_check = 0;
             if self.context.update_start.elapsed() >= self.context.max_execution_duration {
                 return Err(
                     "A script in this movie has taken too long to execute and has been terminated."
@@ -804,7 +793,16 @@ impl<'a, 'gc> Activation<'a, 'gc> {
                 );
             }
         }
+        Ok(())
+    }
 
+    /// Run a single action from a given action reader.
+    #[inline(always)]
+    fn do_next_opcode(
+        &mut self,
+        method: Gc<'gc, BytecodeMethod<'gc>>,
+        opcodes: &[Op<'gc>],
+    ) -> Result<FrameControl<'gc>, Error<'gc>> {
         let op = &opcodes[self.ip as usize];
         self.ip += 1;
         avm_debug!(self.avm2(), "Opcode: {op:?}");
@@ -2235,12 +2233,16 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     }
 
     fn op_jump(&mut self, offset: i32) -> Result<FrameControl<'gc>, Error<'gc>> {
+        self.timeout_check()?;
+
         self.ip += offset;
 
         Ok(FrameControl::Continue)
     }
 
     fn op_if_true(&mut self, offset: i32) -> Result<FrameControl<'gc>, Error<'gc>> {
+        self.timeout_check()?;
+
         let value = self.pop_stack().coerce_to_boolean();
 
         if value {
@@ -2251,6 +2253,8 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     }
 
     fn op_if_false(&mut self, offset: i32) -> Result<FrameControl<'gc>, Error<'gc>> {
+        self.timeout_check()?;
+
         let value = self.pop_stack().coerce_to_boolean();
 
         if !value {
@@ -2645,6 +2649,8 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         default_offset: i32,
         case_offsets: &[i32],
     ) -> Result<FrameControl<'gc>, Error<'gc>> {
+        self.timeout_check()?;
+
         let index = self.pop_stack().coerce_to_i32(self).map_err(|_| {
             Error::from(
                 "VerifyError: Invalid value type on stack (should have been int) for LookupSwitch!",

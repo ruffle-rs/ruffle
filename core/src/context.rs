@@ -204,7 +204,7 @@ pub struct UpdateContext<'gc> {
     pub forced_frame_rate: bool,
 
     /// Amount of actions performed since the last timeout check
-    pub actions_since_timeout_check: &'gc mut u16,
+    pub actions_since_timeout_check: &'gc mut u32,
 
     /// The current frame processing phase.
     ///
