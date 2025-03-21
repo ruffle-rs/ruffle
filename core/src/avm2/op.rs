@@ -161,43 +161,7 @@ pub enum Op<'gc> {
         object_register: u32,
         index_register: u32,
     },
-    IfEq {
-        offset: i32,
-    },
     IfFalse {
-        offset: i32,
-    },
-    IfGe {
-        offset: i32,
-    },
-    IfGt {
-        offset: i32,
-    },
-    IfLe {
-        offset: i32,
-    },
-    IfLt {
-        offset: i32,
-    },
-    IfNe {
-        offset: i32,
-    },
-    IfNge {
-        offset: i32,
-    },
-    IfNgt {
-        offset: i32,
-    },
-    IfNle {
-        offset: i32,
-    },
-    IfNlt {
-        offset: i32,
-    },
-    IfStrictEq {
-        offset: i32,
-    },
-    IfStrictNe {
         offset: i32,
     },
     IfTrue {
@@ -348,9 +312,24 @@ impl Op<'_> {
     pub fn can_throw_error(&self) -> bool {
         !matches!(
             self,
-            Op::Bkpt
+            Op::AsType { .. }
+                | Op::Bkpt
                 | Op::BkptLine { .. }
-                | Op::Timestamp
+                | Op::CoerceO
+                | Op::Dup
+                | Op::GetScopeObject { .. }
+                | Op::GetOuterScope { .. }
+                | Op::GetLocal { .. }
+                | Op::IfTrue { .. }
+                | Op::IfFalse { .. }
+                | Op::IsType { .. }
+                | Op::Jump { .. }
+                | Op::Kill { .. }
+                | Op::LookupSwitch { .. }
+                | Op::Nop
+                | Op::Not
+                | Op::Pop
+                | Op::PopScope
                 | Op::PushDouble { .. }
                 | Op::PushFalse
                 | Op::PushInt { .. }
@@ -361,24 +340,11 @@ impl Op<'_> {
                 | Op::PushTrue
                 | Op::PushUint { .. }
                 | Op::PushUndefined
-                | Op::Dup
-                | Op::Swap
-                | Op::Pop
-                | Op::TypeOf
-                | Op::GetScopeObject { .. }
-                | Op::GetOuterScope { .. }
-                | Op::GetLocal { .. }
                 | Op::SetLocal { .. }
-                | Op::Kill { .. }
-                | Op::Jump { .. }
-                | Op::IfTrue { .. }
-                | Op::IfFalse { .. }
-                | Op::IfStrictEq { .. }
-                | Op::IfStrictNe { .. }
-                | Op::LookupSwitch { .. }
-                | Op::Nop
-                | Op::Not
-                | Op::PopScope
+                | Op::StrictEquals
+                | Op::Swap
+                | Op::Timestamp
+                | Op::TypeOf
                 | Op::ReturnVoid
         )
     }
