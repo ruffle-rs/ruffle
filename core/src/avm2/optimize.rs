@@ -1687,33 +1687,6 @@ pub fn optimize<'gc>(
                         scope_stack.len(),
                     )?;
                 }
-                Op::IfStrictEq { offset }
-                | Op::IfStrictNe { offset }
-                | Op::IfEq { offset }
-                | Op::IfNe { offset }
-                | Op::IfGe { offset }
-                | Op::IfGt { offset }
-                | Op::IfLe { offset }
-                | Op::IfLt { offset }
-                | Op::IfNge { offset }
-                | Op::IfNgt { offset }
-                | Op::IfNle { offset }
-                | Op::IfNlt { offset } => {
-                    stack.pop(activation)?;
-                    stack.pop(activation)?;
-                    state_map.insert(i, (local_types.clone(), stack.len(), scope_stack.len()));
-
-                    check_target(
-                        activation,
-                        &mut seen_targets,
-                        &mut worklist,
-                        &mut expected_stack_heights,
-                        &mut expected_scope_stack_heights,
-                        *offset + i + 1,
-                        stack.len(),
-                        scope_stack.len(),
-                    )?;
-                }
                 Op::Si8 | Op::Si16 | Op::Si32 => {
                     stack.pop(activation)?;
                     stack.pop(activation)?;
