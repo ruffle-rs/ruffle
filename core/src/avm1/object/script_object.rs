@@ -1,6 +1,6 @@
 use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
-use crate::avm1::function::{ExecutionName, ExecutionReason};
+use crate::avm1::function::{Executable, ExecutionName, ExecutionReason};
 use crate::avm1::object::NativeObject;
 use crate::avm1::property::{Attribute, Property};
 use crate::avm1::property_map::{Entry, PropertyMap};
@@ -241,6 +241,14 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
         Ok(())
     }
 
+    fn as_executable(&self) -> Option<Executable<'gc>> {
+        if let NativeObject::Function(func) = self.native() {
+            Some(func.as_executable())
+        } else {
+            None
+        }
+    }
+
     /// Call the underlying object.
     ///
     /// This function takes a redundant `this` parameter which should be
@@ -248,12 +256,41 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
     /// overrides that may need to interact with the underlying object.
     fn call(
         &self,
-        _name: impl Into<ExecutionName<'gc>>,
-        _activation: &mut Activation<'_, 'gc>,
-        _this: Value<'gc>,
-        _args: &[Value<'gc>],
+        name: impl Into<ExecutionName<'gc>>,
+        activation: &mut Activation<'_, 'gc>,
+        this: Value<'gc>,
+        args: &[Value<'gc>],
     ) -> Result<Value<'gc>, Error<'gc>> {
-        Ok(Value::Undefined)
+        if let NativeObject::Function(func) = self.native() {
+            func.call(name, activation, (*self).into(), this, args)
+        } else {
+            Ok(Value::Undefined)
+        }
+    }
+
+    fn construct_on_existing(
+        &self,
+        activation: &mut Activation<'_, 'gc>,
+        this: Object<'gc>,
+        args: &[Value<'gc>],
+    ) -> Result<(), Error<'gc>> {
+        if let NativeObject::Function(func) = self.native() {
+            func.construct_on_existing(activation, (*self).into(), this, args)
+        } else {
+            Ok(())
+        }
+    }
+
+    fn construct(
+        &self,
+        activation: &mut Activation<'_, 'gc>,
+        args: &[Value<'gc>],
+    ) -> Result<Value<'gc>, Error<'gc>> {
+        if let NativeObject::Function(func) = self.native() {
+            func.construct(activation, (*self).into(), args)
+        } else {
+            Ok(Value::Undefined)
+        }
     }
 
     fn getter(
