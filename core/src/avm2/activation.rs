@@ -597,6 +597,11 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             .map(|scope| scope.values())
     }
 
+    pub fn activation_class(&mut self) -> ClassObject<'gc> {
+        self.activation_class
+            .expect("Expected to be running bytecode method")
+    }
+
     pub fn avm2(&mut self) -> &mut Avm2<'gc> {
         self.context.avm2
     }
@@ -1734,10 +1739,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     }
 
     fn op_new_activation(&mut self) -> Result<FrameControl<'gc>, Error<'gc>> {
-        let instance = self
-            .activation_class
-            .expect("Activation class should exist for bytecode")
-            .construct(self, &[])?;
+        let instance = self.activation_class().construct(self, &[])?;
 
         self.push_stack(instance);
 

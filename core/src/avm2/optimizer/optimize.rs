@@ -1734,8 +1734,9 @@ fn abstract_interpret_ops<'gc>(
                 stack.pop(activation)?;
             }
             Op::NewActivation => {
-                // Avoid handling for now
-                stack.push_any(activation)?;
+                let activation_class = activation.activation_class();
+
+                stack.push_class_not_null(activation, activation_class.inner_class_definition())?;
             }
             Op::Nop => {}
             Op::DebugFile { .. }
