@@ -1154,6 +1154,9 @@ pub enum KeyLocation {
 #[derive(Debug, Clone)]
 pub enum PlayerNotification {
     ImeNotification(ImeNotification),
+
+    OpenVirtualKeyboard,
+    CloseVirtualKeybard,
 }
 
 #[derive(Debug, Clone)]

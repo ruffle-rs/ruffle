@@ -13,12 +13,15 @@ mod ui;
 mod zip;
 
 use crate::builder::RuffleInstanceBuilder;
+use async_channel::Receiver;
 use external_interface::{external_to_js_value, js_to_external_value};
 use input::{web_input_to_ruffle_key_descriptor, web_to_ruffle_text_control};
 use js_sys::{Error as JsError, Uint8Array};
 use ruffle_core::context::UpdateContext;
 use ruffle_core::context_menu::ContextMenuCallback;
-use ruffle_core::events::{GamepadButton, MouseButton, MouseWheelDelta, TextControlCode};
+use ruffle_core::events::{
+    GamepadButton, MouseButton, MouseWheelDelta, PlayerNotification, TextControlCode,
+};
 use ruffle_core::tag_utils::SwfMovie;
 use ruffle_core::{Player, PlayerEvent, StaticCallstack, ViewportDimensions};
 use ruffle_web_common::JsResult;
@@ -471,8 +474,14 @@ impl RuffleHandle {
         let _subscriber = tracing::subscriber::set_default(log_subscriber.clone());
         let window = web_sys::window().ok_or("Expected window")?;
 
+        let (notification_sender, notification_receiver) = async_channel::unbounded();
+
         let player = config
-            .create_player(js_player.clone(), log_subscriber.clone())
+            .create_player(
+                js_player.clone(),
+                log_subscriber.clone(),
+                notification_sender,
+            )
             .await?;
 
         parent
@@ -532,6 +541,8 @@ impl RuffleHandle {
 
         let shadow_host = Self::get_shadow_host(&parent);
         Self::set_up_focus_management(ruffle, shadow_host.unwrap_or(parent))?;
+
+        Self::spawn_notification_handler(js_player.clone(), notification_receiver);
 
         // Create the animation frame closure.
         ruffle.with_instance_mut(|instance| {
@@ -888,6 +899,31 @@ impl RuffleHandle {
             ));
         })?;
         Ok(())
+    }
+
+    fn spawn_notification_handler(
+        js_player: JavascriptPlayer,
+        receiver: Receiver<PlayerNotification>,
+    ) {
+        wasm_bindgen_futures::spawn_local(async move {
+            while let Ok(notification) = receiver.recv().await {
+                Self::handle_notification(&js_player, notification);
+            }
+        });
+    }
+
+    fn handle_notification(js_player: &JavascriptPlayer, notification: PlayerNotification) {
+        match notification {
+            PlayerNotification::ImeNotification(_) => {
+                // TODO Add support for IME on web
+            }
+            PlayerNotification::OpenVirtualKeyboard => {
+                js_player.open_virtual_keyboard();
+            }
+            PlayerNotification::CloseVirtualKeybard => {
+                js_player.close_virtual_keyboard();
+            }
+        }
     }
 
     /// Registers a new Ruffle instance and returns the handle to the instance.

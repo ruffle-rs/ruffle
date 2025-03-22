@@ -6,6 +6,7 @@ pub use crate::display_object::{
     DisplayObject, TDisplayObject, TDisplayObjectContainer, TextSelection,
 };
 use crate::display_object::{EditText, InteractiveObject, TInteractiveObject};
+use crate::events::PlayerNotification;
 use crate::events::{ClipEvent, KeyCode};
 use crate::prelude::Avm2Value;
 use crate::Player;
@@ -208,15 +209,17 @@ impl<'gc> FocusTracker<'gc> {
     }
 
     fn update_virtual_keyboard(&self, context: &mut UpdateContext<'gc>) {
-        if let Some(text_field) = self.get_as_edit_text() {
+        let notification = if let Some(text_field) = self.get_as_edit_text() {
             if text_field.is_editable() {
-                context.ui.open_virtual_keyboard();
+                PlayerNotification::OpenVirtualKeyboard
             } else {
-                context.ui.close_virtual_keyboard();
+                PlayerNotification::CloseVirtualKeybard
             }
         } else {
-            context.ui.close_virtual_keyboard();
-        }
+            PlayerNotification::CloseVirtualKeybard
+        };
+
+        context.send_notification(notification);
     }
 
     /// Update selection on the newly focused text field.

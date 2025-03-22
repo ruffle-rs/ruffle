@@ -89,10 +89,6 @@ pub trait UiBackend: Downcast {
     // Unused, but kept in case we need it later.
     fn message(&self, message: &str);
 
-    fn open_virtual_keyboard(&self);
-
-    fn close_virtual_keyboard(&self);
-
     fn language(&self) -> LanguageIdentifier;
 
     fn display_unsupported_video(&self, url: Url);
@@ -194,10 +190,6 @@ impl UiBackend for NullUiBackend {
         _register: &mut dyn FnMut(FontDefinition),
     ) {
     }
-
-    fn open_virtual_keyboard(&self) {}
-
-    fn close_virtual_keyboard(&self) {}
 
     fn language(&self) -> LanguageIdentifier {
         US_ENGLISH.clone()

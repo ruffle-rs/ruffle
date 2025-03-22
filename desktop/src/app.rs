@@ -617,6 +617,10 @@ impl ApplicationHandler<RuffleEvent> for App {
                     PlayerNotification::ImeNotification(ImeNotification::ImeNotReady) => {
                         main_window.gui.set_ime_allowed(false);
                     }
+                    PlayerNotification::OpenVirtualKeyboard
+                    | PlayerNotification::CloseVirtualKeybard => {
+                        // TODO Winit does not support soft input (yet?)
+                    }
                 }
             }
 

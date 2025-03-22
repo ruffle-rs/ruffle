@@ -115,10 +115,6 @@ impl UiBackend for TestUiBackend {
 
     fn message(&self, _message: &str) {}
 
-    fn open_virtual_keyboard(&self) {}
-
-    fn close_virtual_keyboard(&self) {}
-
     fn language(&self) -> LanguageIdentifier {
         US_ENGLISH.clone()
     }

@@ -4,13 +4,14 @@ use crate::{
     audio, log_adapter, storage, ui, JavascriptPlayer, RuffleHandle, SocketProxy,
     RUFFLE_GLOBAL_PANIC,
 };
+use async_channel::Sender;
 use js_sys::{Promise, RegExp};
 use ruffle_core::backend::audio::{AudioBackend, NullAudioBackend};
 use ruffle_core::backend::storage::{MemoryStorageBackend, StorageBackend};
 use ruffle_core::backend::ui::FontDefinition;
 use ruffle_core::compatibility_rules::CompatibilityRules;
 use ruffle_core::config::{Letterbox, NetworkingAccessMode};
-use ruffle_core::events::{GamepadButton, KeyCode};
+use ruffle_core::events::{GamepadButton, KeyCode, PlayerNotification};
 use ruffle_core::ttf_parser;
 use ruffle_core::{
     swf, Color, DefaultFont, Player, PlayerBuilder, PlayerRuntime, StageAlign, StageScaleMode,
@@ -642,6 +643,7 @@ impl RuffleInstanceBuilder {
         &self,
         js_player: JavascriptPlayer,
         log_subscriber: Arc<Layered<WASMLayer, Registry>>,
+        notification_sender: Sender<PlayerNotification>,
     ) -> Result<BuiltPlayer, Box<dyn Error>> {
         let window = web_sys::window().ok_or("Expected window")?;
 
@@ -677,6 +679,7 @@ impl RuffleInstanceBuilder {
             .with_frame_rate(self.frame_rate)
             .with_page_url(window.location().href().ok())
             .with_gamepad_button_mapping(self.gamepad_button_mapping.clone())
+            .with_notification_sender(notification_sender)
             .build();
 
         let player_weak = Arc::downgrade(&core);
