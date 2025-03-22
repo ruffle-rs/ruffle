@@ -34,6 +34,7 @@ use gc_arena::{Collect, Gc, GcCell, Mutation};
 use ruffle_macros::{enum_trait_object, istr};
 use std::cell::{Cell, RefCell};
 use std::fmt::Debug;
+use std::marker::PhantomData;
 
 pub mod array_object;
 pub mod script_object;
@@ -44,10 +45,12 @@ pub mod super_object;
 #[collect(no_drop)]
 pub enum NativeObject<'gc> {
     None,
-    /// A boxed primitive.
-    ///
-    /// It is a logic error for a boxed value to be a `Value::Object`.
-    Value(Gc<'gc, Value<'gc>>),
+    /// A boxed boolean.
+    Bool(bool),
+    /// A boxed number.
+    Number(BoxedF64<'gc>),
+    /// A boxed string.
+    String(AvmString<'gc>),
     Date(Gc<'gc, Cell<Date>>),
     BlurFilter(BlurFilter<'gc>),
     BevelFilter(BevelFilter<'gc>),
@@ -72,6 +75,40 @@ pub enum NativeObject<'gc> {
     LocalConnection(LocalConnection<'gc>),
     Sound(Sound<'gc>),
     StyleSheet(StyleSheetObject<'gc>),
+}
+
+const _: () = assert!(size_of::<NativeObject<'_>>() <= size_of::<[usize; 2]>());
+
+/// Small wrapper struct to keep boxed f64s word-sized on every architecture.
+#[derive(Copy, Clone, Collect)]
+#[collect(no_drop)]
+pub struct BoxedF64<'gc> {
+    #[cfg(target_pointer_width = "64")]
+    value: f64,
+    #[cfg(not(target_pointer_width = "64"))]
+    value: Gc<'gc, f64>,
+    _marker: PhantomData<Gc<'gc, ()>>,
+}
+
+impl<'gc> BoxedF64<'gc> {
+    #[inline]
+    pub fn new(#[allow(unused)] mc: &Mutation<'gc>, value: f64) -> Self {
+        Self {
+            #[cfg(target_pointer_width = "64")]
+            value,
+            #[cfg(not(target_pointer_width = "64"))]
+            value: Gc::new(mc, value),
+            _marker: PhantomData,
+        }
+    }
+
+    #[inline]
+    pub fn value(&self) -> f64 {
+        #[cfg(target_pointer_width = "64")]
+        return self.value;
+        #[cfg(not(target_pointer_width = "64"))]
+        return *self.value;
+    }
 }
 
 /// Represents an object that can be directly interacted with by the AVM

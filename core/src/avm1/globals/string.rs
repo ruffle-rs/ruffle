@@ -1,6 +1,5 @@
 //! `String` class impl
 
-use gc_arena::Gc;
 use ruffle_macros::istr;
 
 use crate::avm1::activation::Activation;
@@ -44,14 +43,14 @@ pub fn string<'gc>(
     };
 
     // Called from a constructor, populate `this`.
-    let vbox = Gc::new(activation.gc(), value.into());
-    this.set_native(activation.gc(), NativeObject::Value(vbox));
+    this.set_native(activation.gc(), NativeObject::String(value));
 
+    // The `length` property lives on the object itself, not its prototype.
     this.define_value(
         activation.gc(),
         istr!("length"),
         value.len().into(),
-        Attribute::empty(),
+        Attribute::DONT_ENUM | Attribute::DONT_DELETE,
     );
 
     Ok(this.into())
@@ -379,10 +378,8 @@ pub fn to_string_value_of<'gc>(
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let NativeObject::Value(vbox) = this.native() {
-        if let Value::String(s) = *vbox {
-            return Ok(s.into());
-        }
+    if let NativeObject::String(string) = this.native() {
+        return Ok(string.into());
     }
 
     //TODO: This normally falls back to `[object Object]` or `[type Function]`,
