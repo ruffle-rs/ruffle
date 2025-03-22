@@ -68,7 +68,7 @@ pub fn create_number_object<'gc>(
 ) -> Object<'gc> {
     let number = FunctionObject::constructor(
         context,
-        Executable::Native(number),
+        number,
         Executable::Native(number_function),
         fn_proto,
         number_proto,

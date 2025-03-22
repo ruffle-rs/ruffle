@@ -575,7 +575,7 @@ pub fn create_constructor<'gc>(
 
     let date_constructor = FunctionObject::constructor(
         context,
-        Executable::Native(date_method!(256)),
+        date_method!(256),
         Executable::Native(function),
         fn_proto,
         date_proto.into(),

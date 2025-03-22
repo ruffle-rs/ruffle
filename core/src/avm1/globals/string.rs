@@ -78,7 +78,7 @@ pub fn create_string_object<'gc>(
 ) -> Object<'gc> {
     let string = FunctionObject::constructor(
         context,
-        Executable::Native(string),
+        string,
         Executable::Native(string_function),
         fn_proto,
         string_proto,

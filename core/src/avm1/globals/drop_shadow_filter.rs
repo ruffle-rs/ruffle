@@ -1,6 +1,6 @@
 //! flash.filters.DropShadowFilter object
 
-use crate::avm1::function::{Executable, FunctionObject};
+use crate::avm1::function::FunctionObject;
 use crate::avm1::object::NativeObject;
 use crate::avm1::property_decl::{define_properties_on, Declaration};
 use crate::avm1::{Activation, Error, Object, ScriptObject, TObject, Value};
@@ -448,7 +448,7 @@ pub fn create_constructor<'gc>(
 ) -> Object<'gc> {
     FunctionObject::constructor(
         context,
-        Executable::Native(drop_shadow_filter_method!(0)),
+        drop_shadow_filter_method!(0),
         constructor_to_fn!(drop_shadow_filter_method!(0)),
         fn_proto,
         proto,
