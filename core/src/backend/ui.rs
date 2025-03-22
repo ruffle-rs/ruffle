@@ -81,6 +81,10 @@ pub trait UiBackend: Downcast {
 
     fn set_fullscreen(&mut self, is_full: bool) -> Result<(), FullscreenError>;
 
+    /// Returns width and height of screens.
+    /// First element must be the main screen.
+    fn get_screens_sizes(&self) -> Vec<(u32, u32)>;
+
     /// Displays a message about an error during root movie download.
     /// In particular, on web this can be a CORS error, which we can sidestep
     /// by providing a direct .swf link instead.
@@ -178,6 +182,10 @@ impl UiBackend for NullUiBackend {
 
     fn set_fullscreen(&mut self, _is_full: bool) -> Result<(), FullscreenError> {
         Ok(())
+    }
+
+    fn get_screens_sizes(&self) -> Vec<(u32, u32)> {
+        vec![(0, 0)]
     }
 
     fn display_root_movie_download_failed_message(&self, _invalid_swf: bool) {}
