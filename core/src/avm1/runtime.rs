@@ -1,4 +1,4 @@
-use crate::avm1::function::{ExecutionReason, FunctionObject};
+use crate::avm1::function::ExecutionReason;
 use crate::avm1::globals::as_broadcaster::BroadcasterFunctions;
 use crate::avm1::globals::{as_broadcaster, create_globals};
 use crate::avm1::object::stage_object;
@@ -65,8 +65,8 @@ pub struct Avm1<'gc> {
     /// with `Object.registerClass()`.
     /// Because SWFs v6 and v7+ use different case-sensitivity rules, Flash
     /// keeps two separate registries, one case-sensitive, the other not.
-    constructor_registry_case_insensitive: PropertyMap<'gc, FunctionObject<'gc>>,
-    constructor_registry_case_sensitive: PropertyMap<'gc, FunctionObject<'gc>>,
+    constructor_registry_case_insensitive: PropertyMap<'gc, Object<'gc>>,
+    constructor_registry_case_sensitive: PropertyMap<'gc, Object<'gc>>,
 
     /// If getBounds / getRect is called on a MovieClip with invalid bounds and the
     /// target space is identical to the origin space, but the target is not the
@@ -515,21 +515,21 @@ impl<'gc> Avm1<'gc> {
         &self,
         swf_version: u8,
         symbol: AvmString<'gc>,
-    ) -> Option<&FunctionObject<'gc>> {
+    ) -> Option<Object<'gc>> {
         let is_case_sensitive = swf_version >= 7;
         let registry = if is_case_sensitive {
             &self.constructor_registry_case_sensitive
         } else {
             &self.constructor_registry_case_insensitive
         };
-        registry.get(symbol, is_case_sensitive)
+        registry.get(symbol, is_case_sensitive).copied()
     }
 
     pub fn register_constructor(
         &mut self,
         swf_version: u8,
         symbol: AvmString<'gc>,
-        constructor: Option<FunctionObject<'gc>>,
+        constructor: Option<Object<'gc>>,
     ) {
         let is_case_sensitive = swf_version >= 7;
         let registry = if is_case_sensitive {

@@ -52,6 +52,7 @@ pub fn call<'gc>(
         _ => &myargs[1..],
     };
 
+    // NOTE: does not use `Object::call`, as `super()` only works with direct calls.
     match func.as_executable() {
         Some(exec) => exec.exec(
             ExecutionName::Static("[Anonymous]"),
@@ -92,6 +93,7 @@ pub fn apply<'gc>(
         child_args.push(next_arg);
     }
 
+    // NOTE: does not use `Object::call`, as `super()` only works with direct calls.
     match func.as_executable() {
         Some(exec) => exec.exec(
             ExecutionName::Static("[Anonymous]"),

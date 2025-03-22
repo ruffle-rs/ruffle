@@ -174,7 +174,7 @@ pub fn register_class<'gc>(
 
     let constructor = match constructor {
         Value::Null | Value::Undefined => None,
-        Value::Object(Object::FunctionObject(func)) => Some(*func),
+        Value::Object(obj) if obj.as_executable().is_some() => Some(*obj),
         _ => return Ok(false.into()),
     };
 
