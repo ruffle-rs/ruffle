@@ -1,7 +1,7 @@
 //! flash.filters.ConvolutionFilter object
 
 use crate::avm1::clamp::Clamp;
-use crate::avm1::function::{Executable, FunctionObject};
+use crate::avm1::function::FunctionObject;
 use crate::avm1::object::NativeObject;
 use crate::avm1::property_decl::{define_properties_on, Declaration};
 use crate::avm1::{Activation, ArrayBuilder, Error, Object, ScriptObject, TObject, Value};
@@ -422,7 +422,7 @@ pub fn create_constructor<'gc>(
 ) -> Object<'gc> {
     FunctionObject::constructor(
         context,
-        Executable::Native(convolution_filter_method!(0)),
+        convolution_filter_method!(0),
         constructor_to_fn!(convolution_filter_method!(0)),
         fn_proto,
         proto,

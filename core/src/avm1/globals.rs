@@ -571,7 +571,7 @@ pub fn create_globals<'gc>(
 
     let movie_clip_loader = FunctionObject::constructor(
         context,
-        Executable::Native(movie_clip_loader::constructor),
+        movie_clip_loader::constructor,
         constructor_to_fn!(movie_clip_loader::constructor),
         function_proto,
         movie_clip_loader_proto,
@@ -591,49 +591,49 @@ pub fn create_globals<'gc>(
 
     let button = FunctionObject::constructor(
         context,
-        Executable::Native(button::constructor),
+        button::constructor,
         constructor_to_fn!(button::constructor),
         function_proto,
         button_proto,
     );
     let color = FunctionObject::constructor(
         context,
-        Executable::Native(color::constructor),
+        color::constructor,
         constructor_to_fn!(color::constructor),
         function_proto,
         color_proto,
     );
     let error = FunctionObject::constructor(
         context,
-        Executable::Native(error::constructor),
+        error::constructor,
         constructor_to_fn!(error::constructor),
         function_proto,
         error_proto,
     );
     let function = FunctionObject::constructor(
         context,
-        Executable::Native(function::constructor),
+        function::constructor,
         Executable::Native(function::function),
         function_proto,
         function_proto,
     );
     let load_vars = FunctionObject::constructor(
         context,
-        Executable::Native(load_vars::constructor),
+        load_vars::constructor,
         constructor_to_fn!(load_vars::constructor),
         function_proto,
         load_vars_proto,
     );
     let local_connection = FunctionObject::constructor(
         context,
-        Executable::Native(local_connection::constructor),
+        local_connection::constructor,
         constructor_to_fn!(local_connection::constructor),
         function_proto,
         local_connection_proto,
     );
     let movie_clip = FunctionObject::constructor(
         context,
-        Executable::Native(movie_clip::constructor),
+        movie_clip::constructor,
         constructor_to_fn!(movie_clip::constructor),
         function_proto,
         movie_clip_proto,
@@ -641,28 +641,28 @@ pub fn create_globals<'gc>(
 
     let sound = FunctionObject::constructor(
         context,
-        Executable::Native(sound::constructor),
+        sound::constructor,
         constructor_to_fn!(sound::constructor),
         function_proto,
         sound_proto,
     );
     let style_sheet = FunctionObject::constructor(
         context,
-        Executable::Native(style_sheet::constructor),
+        style_sheet::constructor,
         constructor_to_fn!(style_sheet::constructor),
         function_proto,
         style_sheet_proto,
     );
     let text_field = FunctionObject::constructor(
         context,
-        Executable::Native(text_field::constructor),
+        text_field::constructor,
         constructor_to_fn!(text_field::constructor),
         function_proto,
         text_field_proto,
     );
     let text_format = FunctionObject::constructor(
         context,
-        Executable::Native(text_format::constructor),
+        text_format::constructor,
         constructor_to_fn!(text_format::constructor),
         function_proto,
         text_format_proto,
@@ -670,7 +670,7 @@ pub fn create_globals<'gc>(
     let array = array::create_array_object(context, array_proto, function_proto);
     let xmlnode = FunctionObject::constructor(
         context,
-        Executable::Native(xml_node::constructor),
+        xml_node::constructor,
         constructor_to_fn!(xml_node::constructor),
         function_proto,
         xmlnode_proto,
@@ -696,7 +696,7 @@ pub fn create_globals<'gc>(
     let rectangle = rectangle::create_rectangle_object(context, rectangle_proto, function_proto);
     let color_transform = FunctionObject::constructor(
         context,
-        Executable::Native(color_transform::constructor),
+        color_transform::constructor,
         constructor_to_fn!(color_transform::constructor),
         function_proto,
         color_transform_proto,
@@ -704,7 +704,7 @@ pub fn create_globals<'gc>(
     let transform = transform::create_constructor(context, object_proto, function_proto);
     let video = FunctionObject::constructor(
         context,
-        Executable::Native(video::constructor),
+        video::constructor,
         constructor_to_fn!(video::constructor),
         function_proto,
         video_proto,
@@ -713,7 +713,7 @@ pub fn create_globals<'gc>(
     let bitmap_filter_proto = bitmap_filter::create_proto(context, object_proto, function_proto);
     let bitmap_filter = FunctionObject::constructor(
         context,
-        Executable::Native(bitmap_filter::constructor),
+        bitmap_filter::constructor,
         constructor_to_fn!(bitmap_filter::constructor),
         function_proto,
         bitmap_filter_proto,
@@ -791,7 +791,7 @@ pub fn create_globals<'gc>(
 
     let context_menu = FunctionObject::constructor(
         context,
-        Executable::Native(context_menu::constructor),
+        context_menu::constructor,
         constructor_to_fn!(context_menu::constructor),
         function_proto,
         context_menu_proto,
@@ -807,7 +807,7 @@ pub fn create_globals<'gc>(
 
     let context_menu_item = FunctionObject::constructor(
         context,
-        Executable::Native(context_menu_item::constructor),
+        context_menu_item::constructor,
         constructor_to_fn!(context_menu_item::constructor),
         function_proto,
         context_menu_item_proto,

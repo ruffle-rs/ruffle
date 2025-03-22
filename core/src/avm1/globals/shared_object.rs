@@ -1,7 +1,7 @@
 use crate::avm1::function::FunctionObject;
 use crate::avm1::property_decl::{define_properties_on, Declaration};
 use crate::avm1::{
-    Activation, Attribute, Error, Executable, NativeObject, Object, ScriptObject, TObject, Value,
+    Activation, Attribute, Error, NativeObject, Object, ScriptObject, TObject, Value,
 };
 use crate::avm1_stub;
 use crate::display_object::TDisplayObject;
@@ -594,7 +594,7 @@ pub fn create_constructor<'gc>(
     define_properties_on(PROTO_DECLS, context, shared_object_proto, fn_proto);
     let constructor = FunctionObject::constructor(
         context,
-        Executable::Native(constructor),
+        constructor,
         constructor_to_fn!(constructor),
         fn_proto,
         shared_object_proto.into(),

@@ -50,7 +50,7 @@ pub fn create_boolean_object<'gc>(
 ) -> Object<'gc> {
     FunctionObject::constructor(
         context,
-        Executable::Native(constructor),
+        constructor,
         Executable::Native(boolean_function),
         fn_proto,
         boolean_proto,

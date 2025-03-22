@@ -1,7 +1,7 @@
 //! flash.filters.GradientBevelFilter and flash.filters.GradientGlowFilter objects
 
 use crate::avm1::clamp::Clamp;
-use crate::avm1::function::{Executable, FunctionObject};
+use crate::avm1::function::FunctionObject;
 use crate::avm1::globals::bevel_filter::BevelFilterType;
 use crate::avm1::object::NativeObject;
 use crate::avm1::property_decl::{define_properties_on, Declaration};
@@ -546,7 +546,7 @@ pub fn create_bevel_constructor<'gc>(
 ) -> Object<'gc> {
     FunctionObject::constructor(
         context,
-        Executable::Native(gradient_filter_method!(1000)),
+        gradient_filter_method!(1000),
         constructor_to_fn!(gradient_filter_method!(1000)),
         fn_proto,
         proto,
@@ -570,7 +570,7 @@ pub fn create_glow_constructor<'gc>(
 ) -> Object<'gc> {
     FunctionObject::constructor(
         context,
-        Executable::Native(gradient_filter_method!(0)),
+        gradient_filter_method!(0),
         constructor_to_fn!(gradient_filter_method!(0)),
         fn_proto,
         proto,

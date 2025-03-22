@@ -1,4 +1,4 @@
-use crate::avm1::function::{Executable, FunctionObject};
+use crate::avm1::function::FunctionObject;
 use crate::avm1::object::{NativeObject, Object, TObject};
 use crate::avm1::property_decl::{define_properties_on, Declaration};
 use crate::avm1::{Activation, Error, ScriptObject, Value};
@@ -185,7 +185,7 @@ pub fn create_class<'gc>(
 ) -> Object<'gc> {
     FunctionObject::constructor(
         context,
-        Executable::Native(constructor),
+        constructor,
         constructor_to_fn!(constructor),
         fn_proto,
         netstream_proto,

@@ -2,7 +2,7 @@
 
 use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
-use crate::avm1::function::{Executable, ExecutionReason, FunctionObject};
+use crate::avm1::function::{ExecutionReason, FunctionObject};
 use crate::avm1::property_decl::{define_properties_on, Declaration};
 use crate::avm1::{Object, ScriptObject, TObject, Value};
 use crate::string::{AvmString, StringContext};
@@ -311,7 +311,7 @@ pub fn create_point_object<'gc>(
 ) -> Object<'gc> {
     let point = FunctionObject::constructor(
         context,
-        Executable::Native(constructor),
+        constructor,
         constructor_to_fn!(constructor),
         fn_proto,
         point_proto,
