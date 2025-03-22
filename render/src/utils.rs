@@ -1,5 +1,6 @@
 use crate::bitmap::{Bitmap, BitmapFormat};
 use crate::error::Error;
+use png::DecodingError;
 use std::borrow::Cow;
 use std::io::Read;
 use swf::Color;
@@ -379,7 +380,24 @@ fn decode_png(data: &[u8]) -> Result<Bitmap, Error> {
     let mut reader = decoder.read_info()?;
 
     let mut data = vec![0; reader.output_buffer_size()];
-    let info = reader.next_frame(&mut data)?;
+    let info = match reader.next_frame(&mut data) {
+        Ok(info) => info,
+        Err(e) => {
+            if let DecodingError::Format(_) = e {
+                // PNG is malformed, however we don't want to panic here
+                // we just return an empty bitmap.
+                tracing::warn!("Malformed PNG: {:?}", e);
+                return Ok(Bitmap::new(
+                    reader.info().width,
+                    reader.info().height,
+                    BitmapFormat::Rgba,
+                    vec![],
+                ));
+            } else {
+                return Err(Error::InvalidPng(e));
+            }
+        }
+    };
 
     let (format, data) = match info.color_type {
         ColorType::Rgb => (BitmapFormat::Rgb, data),
