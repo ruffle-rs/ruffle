@@ -430,8 +430,8 @@ impl<'gc> AbstractState<'gc> {
                 activation,
                 &format!(
                     "Error #1030: Stack depth is unbalanced. {} != {}.",
-                    self.stack.len(),
                     other.stack.len(),
+                    self.stack.len(),
                 ),
                 1030,
             )?));
@@ -451,8 +451,8 @@ impl<'gc> AbstractState<'gc> {
                 activation,
                 &format!(
                     "Error #1031: Scope depth is unbalanced. {} != {}.",
-                    self.scope_stack.len(),
                     other.scope_stack.len(),
+                    self.scope_stack.len(),
                 ),
                 1031,
             )?));
