@@ -5,7 +5,7 @@ use crate::avm1::error::Error;
 use crate::avm1::function::FunctionObject;
 use crate::avm1::globals::as_broadcaster::BroadcasterFunctions;
 use crate::avm1::property_decl::{define_properties_on, Declaration};
-use crate::avm1::{Executable, NativeObject, Object, ScriptObject, TObject, Value};
+use crate::avm1::{NativeObject, Object, ScriptObject, TObject, Value};
 use crate::avm1_stub;
 use crate::backend::ui::{FileDialogResult, FileFilter};
 use crate::string::{AvmString, StringContext};
@@ -433,7 +433,7 @@ pub fn create_constructor<'gc>(
     broadcaster_functions.initialize(context, file_reference_proto.into(), array_proto);
     let constructor = FunctionObject::constructor(
         context,
-        Executable::Native(constructor),
+        constructor,
         constructor_to_fn!(constructor),
         fn_proto,
         file_reference_proto.into(),

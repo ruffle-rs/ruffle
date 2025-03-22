@@ -1,6 +1,6 @@
 //! flash.filters.ColorMatrixFilter object
 
-use crate::avm1::function::{Executable, FunctionObject};
+use crate::avm1::function::FunctionObject;
 use crate::avm1::object::NativeObject;
 use crate::avm1::property_decl::{define_properties_on, Declaration};
 use crate::avm1::{Activation, ArrayBuilder, Error, Object, ScriptObject, TObject, Value};
@@ -172,7 +172,7 @@ pub fn create_constructor<'gc>(
 ) -> Object<'gc> {
     FunctionObject::constructor(
         context,
-        Executable::Native(color_matrix_filter_method!(0)),
+        color_matrix_filter_method!(0),
         constructor_to_fn!(color_matrix_filter_method!(0)),
         fn_proto,
         proto,

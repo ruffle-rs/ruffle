@@ -2,7 +2,7 @@ use crate::avm1::function::FunctionObject;
 use crate::avm1::object::{NativeObject, Object};
 use crate::avm1::property_decl::define_properties_on;
 use crate::avm1::{property_decl::Declaration, ScriptObject};
-use crate::avm1::{Activation, Error, Executable, ExecutionReason, TObject, Value};
+use crate::avm1::{Activation, Error, ExecutionReason, TObject, Value};
 use crate::context::UpdateContext;
 use crate::display_object::TDisplayObject;
 use crate::socket::SocketHandle;
@@ -264,7 +264,7 @@ pub fn create_class<'gc>(
 ) -> Object<'gc> {
     FunctionObject::constructor(
         context,
-        Executable::Native(constructor),
+        constructor,
         constructor_to_fn!(constructor),
         fn_proto,
         xml_socket_proto,

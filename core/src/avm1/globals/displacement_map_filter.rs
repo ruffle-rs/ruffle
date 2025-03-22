@@ -1,7 +1,7 @@
 //! flash.filters.DisplacementMapFilter object
 
 use crate::avm1::clamp::Clamp;
-use crate::avm1::function::{Executable, FunctionObject};
+use crate::avm1::function::FunctionObject;
 use crate::avm1::object::NativeObject;
 use crate::avm1::property_decl::{define_properties_on, Declaration};
 use crate::avm1::{Activation, Error, Object, ScriptObject, TObject, Value};
@@ -427,7 +427,7 @@ pub fn create_constructor<'gc>(
 ) -> Object<'gc> {
     FunctionObject::constructor(
         context,
-        Executable::Native(displacement_map_filter_method!(0)),
+        displacement_map_filter_method!(0),
         constructor_to_fn!(displacement_map_filter_method!(0)),
         fn_proto,
         proto,

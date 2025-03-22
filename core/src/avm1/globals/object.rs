@@ -320,7 +320,7 @@ pub fn create_object_object<'gc>(
 ) -> Object<'gc> {
     let object_function = FunctionObject::constructor(
         context,
-        Executable::Native(constructor),
+        constructor,
         Executable::Native(object_function),
         fn_proto,
         proto,

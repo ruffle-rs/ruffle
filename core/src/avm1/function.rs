@@ -489,7 +489,8 @@ pub struct FunctionObject<'gc> {
     /// The code that will be invoked when this object is called.
     function: Executable<'gc>,
     /// The code that will be invoked when this object is constructed.
-    constructor: Option<Executable<'gc>>,
+    #[collect(require_static)]
+    constructor: Option<NativeFunction>,
 }
 
 impl<'gc> FunctionObject<'gc> {
@@ -497,7 +498,7 @@ impl<'gc> FunctionObject<'gc> {
     pub fn bare_function(
         context: &StringContext<'gc>,
         function: Executable<'gc>,
-        constructor: Option<Executable<'gc>>,
+        constructor: Option<NativeFunction>,
         fn_proto: Object<'gc>,
     ) -> Object<'gc> {
         let obj = ScriptObject::new(context, Some(fn_proto));
@@ -523,11 +524,11 @@ impl<'gc> FunctionObject<'gc> {
     fn allocate_function(
         context: &StringContext<'gc>,
         function: Executable<'gc>,
-        constructor: Option<Executable<'gc>>,
+        constructor: Option<NativeFunction>,
         fn_proto: Object<'gc>,
         prototype: Object<'gc>,
     ) -> Object<'gc> {
-        let function = Self::bare_function(context, function, constructor, fn_proto).into();
+        let function = Self::bare_function(context, function, constructor, fn_proto);
 
         prototype.define_value(
             context.gc(),
@@ -558,7 +559,7 @@ impl<'gc> FunctionObject<'gc> {
     /// Construct a regular and constructor function from an executable and associated protos.
     pub fn constructor(
         context: &StringContext<'gc>,
-        constructor: impl Into<Executable<'gc>>,
+        constructor: NativeFunction,
         function: impl Into<Executable<'gc>>,
         fn_proto: Object<'gc>,
         prototype: Object<'gc>,
@@ -566,7 +567,7 @@ impl<'gc> FunctionObject<'gc> {
         Self::allocate_function(
             context,
             function.into(),
-            Some(constructor.into()),
+            Some(constructor),
             fn_proto,
             prototype,
         )
@@ -578,7 +579,7 @@ impl<'gc> FunctionObject<'gc> {
 
     pub fn as_constructor(&self) -> Executable<'gc> {
         if let Some(constr) = self.constructor {
-            constr
+            Executable::Native(constr)
         } else {
             self.function
         }
@@ -663,19 +664,10 @@ impl<'gc> FunctionObject<'gc> {
             );
         }
         // TODO: de-duplicate code.
-        if let Some(exec) = &self.constructor {
+        if let Some(constr) = &self.constructor {
             // Native constructors will return the constructed `this`.
             // This allows for `new Object` etc. returning different types.
-            let this = exec.exec(
-                ExecutionName::Static("[ctor]"),
-                activation,
-                this.into(),
-                1,
-                args,
-                ExecutionReason::FunctionCall,
-                callee,
-            )?;
-            Ok(this)
+            constr(activation, this, args)
         } else {
             let _ = self.function.exec(
                 ExecutionName::Static("[ctor]"),
