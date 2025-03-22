@@ -43,6 +43,7 @@ pub mod super_object;
 #[collect(no_drop)]
 pub enum NativeObject<'gc> {
     None,
+
     /// A boxed boolean.
     Bool(bool),
     /// A boxed number.
@@ -56,6 +57,8 @@ pub enum NativeObject<'gc> {
     /// certain circumstances (e.g. in a subclass constructor, before calling `super()`) to
     /// 'desynchronize' the "property view" and the "array view" (used by, e.g., `toString()`).
     Array(()),
+    Function(Gc<'gc, FunctionObject<'gc>>),
+
     Date(Gc<'gc, Cell<Date>>),
     BlurFilter(BlurFilter<'gc>),
     BevelFilter(BevelFilter<'gc>),
@@ -126,7 +129,6 @@ impl<'gc> BoxedF64<'gc> {
         ScriptObject(ScriptObject<'gc>),
         StageObject(StageObject<'gc>),
         SuperObject(SuperObject<'gc>),
-        FunctionObject(FunctionObject<'gc>),
     }
 )]
 pub trait TObject<'gc>: 'gc + Collect<'gc> + Into<Object<'gc>> + Clone + Copy {

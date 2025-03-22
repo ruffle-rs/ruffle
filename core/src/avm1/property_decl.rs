@@ -87,13 +87,10 @@ impl Declaration {
                 this.add_property(mc, name.into(), getter, setter, self.attributes);
                 return Value::Undefined;
             }
-            DeclKind::Method(func) => FunctionObject::bare_function(
-                context,
-                Some(Executable::Native(func)),
-                None,
-                fn_proto,
-            )
-            .into(),
+            DeclKind::Method(func) => {
+                FunctionObject::bare_function(context, Executable::Native(func), None, fn_proto)
+                    .into()
+            }
             DeclKind::Function(func) => {
                 FunctionObject::function(context, Executable::Native(func), fn_proto, fn_proto)
                     .into()
