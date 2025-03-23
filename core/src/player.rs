@@ -354,7 +354,7 @@ pub struct Player {
     instance_counter: i32,
 
     /// Time remaining until the next timer will fire.
-    time_til_next_timer: Option<f64>,
+    time_til_next_timer: Option<std::time::Duration>,
 
     /// The instant at which the SWF was launched.
     start_time: Instant,
@@ -571,14 +571,14 @@ impl Player {
 
         self.update_sockets();
         self.update_net_connections();
-        self.update_timers(dt);
+        self.update_timers(Duration::new(dt as u64, 0));
         self.update(|context| {
             StreamManager::tick(context, dt);
         });
         self.audio.tick();
     }
 
-    pub fn time_til_next_timer(&self) -> Option<f64> {
+    pub fn time_til_next_timer(&self) -> Option<std::time::Duration> {
         self.time_til_next_timer
     }
 
@@ -595,7 +595,9 @@ impl Player {
         };
 
         if let Some(time_til_next_timer) = self.time_til_next_timer {
-            dt = dt.min(time_til_next_timer)
+            dt = dt.min(time_til_next_timer.as_secs_f64());
+            // let a = Duration::from_millis(12.0);
+            // a.min();
         }
 
         dt = dt.max(0.0);
@@ -2354,7 +2356,7 @@ impl Player {
 
     /// Update all AVM-based timers (such as created via setInterval).
     /// Returns the approximate amount of time until the next timer tick.
-    pub fn update_timers(&mut self, dt: f64) {
+    pub fn update_timers(&mut self, dt: std::time::Duration) {
         self.time_til_next_timer =
             self.mutate_with_update_context(|context| Timers::update_timers(context, dt));
     }
