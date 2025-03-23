@@ -1,3 +1,4 @@
+use crate::avm1::NativeObject;
 use crate::avm1::TObject as _;
 use crate::avm1::Value as Avm1Value;
 use crate::avm1::{Activation as Avm1Activation, ActivationIdentifier as Avm1ActivationIdentifier};
@@ -135,25 +136,24 @@ impl Value {
             Avm1Value::Number(value) => value.into(),
             Avm1Value::String(value) => Value::String(value.to_string()),
             Avm1Value::MovieClip(_) => Value::Null,
+            Avm1Value::Object(object) if matches!(object.native(), NativeObject::Array(_)) => {
+                let length = object.length(activation)?;
+                let values: Result<Vec<_>, Avm1Error<'gc>> = (0..length)
+                    .map(|i| {
+                        let element = object.get_element(activation, i);
+                        Value::from_avm1(activation, element)
+                    })
+                    .collect();
+                Value::List(values?)
+            }
             Avm1Value::Object(object) => {
-                if object.as_array_object().is_some() {
-                    let length = object.length(activation)?;
-                    let values: Result<Vec<_>, Avm1Error<'gc>> = (0..length)
-                        .map(|i| {
-                            let element = object.get_element(activation, i);
-                            Value::from_avm1(activation, element)
-                        })
-                        .collect();
-                    Value::List(values?)
-                } else {
-                    let keys = object.get_keys(activation, false);
-                    let mut values = BTreeMap::new();
-                    for key in keys {
-                        let value = object.get(key, activation)?;
-                        values.insert(key.to_string(), Value::from_avm1(activation, value)?);
-                    }
-                    Value::Object(values)
+                let keys = object.get_keys(activation, false);
+                let mut values = BTreeMap::new();
+                for key in keys {
+                    let value = object.get(key, activation)?;
+                    values.insert(key.to_string(), Value::from_avm1(activation, value)?);
                 }
+                Value::Object(values)
             }
         })
     }

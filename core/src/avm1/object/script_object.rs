@@ -5,6 +5,7 @@ use crate::avm1::object::NativeObject;
 use crate::avm1::property::{Attribute, Property};
 use crate::avm1::property_map::{Entry, PropertyMap};
 use crate::avm1::{Object, ObjectPtr, TObject, Value};
+use crate::ecma_conversions::f64_to_wrapping_i32;
 use crate::string::{AvmString, StringContext};
 use core::fmt;
 use gc_arena::{Collect, GcCell, Mutation};
@@ -187,6 +188,23 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
         activation: &mut Activation<'_, 'gc>,
         this: Object<'gc>,
     ) -> Result<(), Error<'gc>> {
+        if let NativeObject::Array(_) = self.native() {
+            if name == istr!("length") {
+                let new_length = value.coerce_to_i32(activation)?;
+                let old_length = self.get_data(istr!("length"), activation);
+                if let Value::Number(old_length) = old_length {
+                    for i in new_length.max(0)..f64_to_wrapping_i32(old_length) {
+                        self.delete_element(activation, i);
+                    }
+                }
+            } else if let Some(index) = parse_array_index(name) {
+                let length = self.length(activation)?;
+                if index >= length {
+                    self.set_length(activation, index.wrapping_add(1))?;
+                }
+            }
+        }
+
         let setter = match self
             .0
             .write(activation.gc())
@@ -528,6 +546,15 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
         activation: &mut Activation<'_, 'gc>,
         new_length: i32,
     ) -> Result<(), Error<'gc>> {
+        if let NativeObject::Array(_) = self.native() {
+            let old_length = self.get_data(istr!("length"), activation);
+            if let Value::Number(old_length) = old_length {
+                for i in new_length.max(0)..f64_to_wrapping_i32(old_length) {
+                    self.delete_element(activation, i);
+                }
+            }
+        }
+
         self.set_data(istr!("length"), new_length.into(), activation)
     }
 
@@ -547,6 +574,13 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
         index: i32,
         value: Value<'gc>,
     ) -> Result<(), Error<'gc>> {
+        if let NativeObject::Array(_) = self.native() {
+            let length = self.length(activation)?;
+            if index >= length {
+                self.set_length(activation, index.wrapping_add(1))?;
+            }
+        }
+
         let index_str = AvmString::new_utf8(activation.gc(), index.to_string());
         self.set_data(index_str, value, activation)
     }
@@ -555,4 +589,13 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
         let index_str = AvmString::new_utf8(activation.gc(), index.to_string());
         self.delete(activation, index_str)
     }
+}
+
+fn parse_array_index(name: AvmString<'_>) -> Option<i32> {
+    let name = name.trim_start_matches(|c| match u8::try_from(c) {
+        Ok(c) => c.is_ascii_whitespace(),
+        Err(_) => false,
+    });
+
+    name.parse::<std::num::Wrapping<i32>>().ok().map(|i| i.0)
 }

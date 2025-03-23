@@ -2,7 +2,7 @@
 
 use crate::avm1::Attribute;
 use crate::avm1::{Activation, NativeObject};
-use crate::avm1::{ArrayBuilder, ArrayObject, Error, Object, ScriptObject, TObject, Value};
+use crate::avm1::{ArrayBuilder, Error, Object, ScriptObject, TObject, Value};
 use crate::string::{AvmString, StringContext, WStr, WString};
 use crate::xml;
 use gc_arena::{Collect, GcCell, Mutation};
@@ -48,7 +48,7 @@ pub struct XmlNodeData<'gc> {
     attributes: ScriptObject<'gc>,
 
     /// The array object used for AS2 `.childNodes`
-    cached_child_nodes: Option<ArrayObject<'gc>>,
+    cached_child_nodes: Option<ScriptObject<'gc>>,
 
     /// Child nodes of this element.
     children: Vec<XmlNode<'gc>>,
@@ -375,7 +375,7 @@ impl<'gc> XmlNode<'gc> {
     pub fn get_or_init_cached_child_nodes(
         &self,
         activation: &mut Activation<'_, 'gc>,
-    ) -> Result<ArrayObject<'gc>, Error<'gc>> {
+    ) -> Result<ScriptObject<'gc>, Error<'gc>> {
         let array = self.0.read().cached_child_nodes;
         if let Some(array) = array {
             Ok(array)
