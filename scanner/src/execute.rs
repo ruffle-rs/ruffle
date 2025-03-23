@@ -29,7 +29,7 @@ fn execute_swf(file: &Path) {
     player.lock().unwrap().preload(&mut ExecutionLimit::none());
 
     player.lock().unwrap().run_frame();
-    player.lock().unwrap().update_timers(frame_time);
+    player.lock().unwrap().update_timers(Duration::new(frame_time as u64, 0));
     //executor.poll_all().unwrap();
 }
 
