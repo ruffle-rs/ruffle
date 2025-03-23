@@ -883,6 +883,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
                     multiname,
                     num_args,
                 } => self.op_construct_prop(*multiname, *num_args),
+                Op::ConstructSlot { index, num_args } => self.op_construct_slot(*index, *num_args),
                 Op::ConstructSuper { num_args } => self.op_construct_super(*num_args),
                 Op::NewActivation => self.op_new_activation(),
                 Op::NewObject { num_args } => self.op_new_object(*num_args),
@@ -1722,6 +1723,26 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         let source = self.pop_stack().null_check(self, Some(&multiname))?;
 
         let ctor = source.get_property(&multiname, self)?;
+        let constructed_object = ctor.construct(self, &args)?;
+
+        self.push_stack(constructed_object);
+
+        Ok(FrameControl::Continue)
+    }
+
+    fn op_construct_slot(
+        &mut self,
+        index: u32,
+        arg_count: u32,
+    ) -> Result<FrameControl<'gc>, Error<'gc>> {
+        let args = self.pop_stack_args(arg_count);
+        let source = self
+            .pop_stack()
+            .null_check(self, None)?
+            .as_object()
+            .expect("Cannot get_slot on primitive");
+
+        let ctor = source.get_slot(index);
         let constructed_object = ctor.construct(self, &args)?;
 
         self.push_stack(constructed_object);

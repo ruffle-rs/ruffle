@@ -84,6 +84,10 @@ pub enum Op<'gc> {
         multiname: Gc<'gc, Multiname<'gc>>,
         num_args: u32,
     },
+    ConstructSlot {
+        index: u32,
+        num_args: u32,
+    },
     ConstructSuper {
         num_args: u32,
     },

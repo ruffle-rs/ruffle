@@ -1532,6 +1532,11 @@ fn abstract_interpret_ops<'gc>(
                         match vtable.get_trait(&multiname) {
                             Some(Property::Slot { slot_id })
                             | Some(Property::ConstSlot { slot_id }) => {
+                                optimize_op_to!(Op::ConstructSlot {
+                                    index: slot_id,
+                                    num_args
+                                });
+
                                 let mut value_class = vtable.slot_classes()[slot_id as usize];
                                 let resolved_value_class = value_class.get_class(activation)?;
 
@@ -1798,6 +1803,7 @@ fn abstract_interpret_ops<'gc>(
             | Op::CoerceDSwapPop
             | Op::CoerceISwapPop
             | Op::CoerceUSwapPop
+            | Op::ConstructSlot { .. }
             | Op::GetScriptGlobals { .. }
             | Op::SetSlotNoCoerce { .. } => unreachable!("Custom ops should not be encountered"),
         }
