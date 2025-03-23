@@ -18,7 +18,7 @@ use input::{web_input_to_ruffle_key_descriptor, web_to_ruffle_text_control};
 use js_sys::{Error as JsError, Uint8Array};
 use ruffle_core::context::UpdateContext;
 use ruffle_core::context_menu::ContextMenuCallback;
-use ruffle_core::events::{GamepadButton, MouseButton, MouseWheelDelta, TextControlCode};
+use ruffle_core::events::{GamepadButton, ImeEvent, MouseButton, MouseWheelDelta, TextControlCode};
 use ruffle_core::tag_utils::SwfMovie;
 use ruffle_core::{Player, PlayerEvent, StaticCallstack, ViewportDimensions};
 use ruffle_web_common::JsResult;
@@ -458,6 +458,38 @@ impl RuffleHandle {
     /// no other WebAssembly target feature is exposed to `cfg!`.
     pub fn is_wasm_simd_used() -> bool {
         cfg!(target_feature = "simd128")
+    }
+
+    pub fn handle_ime_preedit(
+        &self,
+        text: String,
+        cursor_from: Option<usize>,
+        cursor_to: Option<usize>,
+    ) {
+        fn char_index_to_byte_index(text: &str, index: usize) -> usize {
+            text.char_indices()
+                .nth(index)
+                .map(|(i, _)| i)
+                .unwrap_or_else(|| text.len())
+        }
+
+        let cursor = match (cursor_from, cursor_to) {
+            (Some(from), Some(to)) => Some((
+                char_index_to_byte_index(&text, from),
+                char_index_to_byte_index(&text, to),
+            )),
+            _ => None,
+        };
+
+        let _ = self.with_core_mut(|core| {
+            core.handle_event(PlayerEvent::Ime(ImeEvent::Preedit(text, cursor)));
+        });
+    }
+
+    pub fn handle_ime_commit(&self, text: String) {
+        let _ = self.with_core_mut(|core| {
+            core.handle_event(PlayerEvent::Ime(ImeEvent::Commit(text)));
+        });
     }
 }
 
