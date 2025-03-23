@@ -5,7 +5,7 @@ use crate::avm1::clamp::Clamp;
 use crate::avm1::error::Error;
 use crate::avm1::function::{Executable, FunctionObject};
 use crate::avm1::property_decl::{define_properties_on, Declaration};
-use crate::avm1::{ArrayObject, Attribute, Object, ScriptObject, TObject, Value};
+use crate::avm1::{Attribute, NativeObject, Object, ScriptObject, TObject, Value};
 use crate::ecma_conversions::f64_to_wrapping_i32;
 use crate::string::{AvmString, StringContext};
 use bitflags::bitflags;
@@ -72,7 +72,7 @@ pub struct ArrayBuilder<'gc> {
 }
 
 impl<'gc> ArrayBuilder<'gc> {
-    pub fn empty(activation: &Activation<'_, 'gc>) -> ArrayObject<'gc> {
+    pub fn empty(activation: &Activation<'_, 'gc>) -> ScriptObject<'gc> {
         Self::new(activation).with([])
     }
 
@@ -90,9 +90,9 @@ impl<'gc> ArrayBuilder<'gc> {
         }
     }
 
-    pub fn with(self, elements: impl IntoIterator<Item = Value<'gc>>) -> ArrayObject<'gc> {
-        let base = ScriptObject::new_without_proto(self.mc);
-        base.define_value(
+    pub fn with(self, elements: impl IntoIterator<Item = Value<'gc>>) -> ScriptObject<'gc> {
+        let obj = ScriptObject::new_without_proto(self.mc);
+        obj.define_value(
             self.mc,
             self.proto_prop,
             self.proto.into(),
@@ -102,16 +102,18 @@ impl<'gc> ArrayBuilder<'gc> {
         let mut length: i32 = 0;
         for value in elements.into_iter() {
             let length_str = AvmString::new_utf8(self.mc, length.to_string());
-            base.define_value(self.mc, length_str, value, Attribute::empty());
+            obj.define_value(self.mc, length_str, value, Attribute::empty());
             length += 1;
         }
-        base.define_value(
+        obj.define_value(
             self.mc,
             self.length_prop,
             length.into(),
             Attribute::DONT_ENUM | Attribute::DONT_DELETE,
         );
-        ArrayObject(base)
+
+        obj.set_native(self.mc, NativeObject::Array(()));
+        obj
     }
 }
 
@@ -142,6 +144,9 @@ pub fn constructor<'gc>(
     _this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    // FIXME(moulins): this is incorrect (see issue #9179).
+    // This should modify `this` when called as a constructor, but splitting this into a
+    // constructor and a function breaks other test cases.
     if let [Value::Number(length)] = *args {
         let array = ArrayBuilder::empty(activation);
         array.set_length(activation, length.clamp_to_i32())?;
@@ -190,7 +195,7 @@ pub fn unshift<'gc>(
         this.set_element(activation, i as i32, arg)?;
     }
 
-    if this.as_array_object().is_some() {
+    if let NativeObject::Array(_) = this.native() {
         this.set_length(activation, new_length)?;
     }
 
@@ -220,7 +225,7 @@ pub fn shift<'gc>(
 
     this.delete_element(activation, length - 1);
 
-    if this.as_array_object().is_some() {
+    if let NativeObject::Array(_) = this.native() {
         this.set_length(activation, length - 1)?;
     }
 
@@ -241,7 +246,7 @@ pub fn pop<'gc>(
 
     this.delete_element(activation, length - 1);
 
-    if this.as_array_object().is_some() {
+    if let NativeObject::Array(_) = this.native() {
         this.set_length(activation, length - 1)?;
     }
 
@@ -425,7 +430,7 @@ pub fn concat<'gc>(
     let mut elements = vec![];
     for &value in [this.into()].iter().chain(args) {
         let array_object = if let Value::Object(object) = value {
-            if object.as_array_object().is_some() {
+            if let NativeObject::Array(_) = object.native() {
                 Some(object)
             } else {
                 None
@@ -497,7 +502,7 @@ fn sort_on<'gc>(
 
     let fields = match args.get(0) {
         Some(Value::Object(field_names_array)) => {
-            if field_names_array.as_array_object().is_none() {
+            if !matches!(field_names_array.native(), NativeObject::Array(_)) {
                 // Non-Array fields.
                 // Fallback to standard sort.
                 return sort_internal(
@@ -529,7 +534,7 @@ fn sort_on<'gc>(
 
             match args.get(1) {
                 Some(Value::Object(options_array))
-                    if options_array.as_array_object().is_some()
+                    if matches!(options_array.native(), NativeObject::Array(_))
                         && options_array.length(activation)? == length =>
                 {
                     // Array of options.

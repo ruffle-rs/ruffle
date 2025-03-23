@@ -100,7 +100,7 @@ fn recursive_serialize<'gc>(
                     if o.as_executable().is_some() {
                     } else if o.as_display_object().is_some() {
                         writer.undefined(name.as_ref())
-                    } else if o.as_array_object().is_some() {
+                    } else if let NativeObject::Array(_) = o.native() {
                         let (aw, token) = writer.array(CacheKey::from_ptr(o.as_ptr()));
 
                         if let Some(mut aw) = aw {

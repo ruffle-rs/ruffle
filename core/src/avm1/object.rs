@@ -20,7 +20,6 @@ use crate::avm1::globals::style_sheet::StyleSheetObject;
 use crate::avm1::globals::transform::TransformObject;
 use crate::avm1::globals::xml::Xml;
 use crate::avm1::globals::xml_socket::XmlSocket;
-use crate::avm1::object::array_object::ArrayObject;
 use crate::avm1::object::super_object::SuperObject;
 use crate::avm1::{Activation, Attribute, Error, ScriptObject, StageObject, Value};
 use crate::bitmap::bitmap_data::BitmapDataWrapper;
@@ -36,7 +35,6 @@ use std::cell::{Cell, RefCell};
 use std::fmt::Debug;
 use std::marker::PhantomData;
 
-pub mod array_object;
 pub mod script_object;
 pub mod stage_object;
 pub mod super_object;
@@ -51,6 +49,13 @@ pub enum NativeObject<'gc> {
     Number(BoxedF64<'gc>),
     /// A boxed string.
     String(AvmString<'gc>),
+    /// Marker indicating that this object should behave like an array.
+    ///
+    /// This stores no data; all array properties are stored on the object's main `PropertyMap`.
+    /// TODO(moulins): that doesn't seem entirely correct; in Flash Player, it is possible in
+    /// certain circumstances (e.g. in a subclass constructor, before calling `super()`) to
+    /// 'desynchronize' the "property view" and the "array view" (used by, e.g., `toString()`).
+    Array(()),
     Date(Gc<'gc, Cell<Date>>),
     BlurFilter(BlurFilter<'gc>),
     BevelFilter(BevelFilter<'gc>),
@@ -119,7 +124,6 @@ impl<'gc> BoxedF64<'gc> {
     #[collect(no_drop)]
     pub enum Object<'gc> {
         ScriptObject(ScriptObject<'gc>),
-        ArrayObject(ArrayObject<'gc>),
         StageObject(StageObject<'gc>),
         SuperObject(SuperObject<'gc>),
         FunctionObject(FunctionObject<'gc>),
@@ -614,11 +618,6 @@ pub trait TObject<'gc>: 'gc + Collect<'gc> + Into<Object<'gc>> + Clone + Copy {
     }
 
     fn set_native(&self, _gc_context: &Mutation<'gc>, _native: NativeObject<'gc>) {}
-
-    /// Get the underlying array object, if it exists.
-    fn as_array_object(&self) -> Option<ArrayObject<'gc>> {
-        None
-    }
 
     /// Get the underlying stage object, if it exists.
     fn as_stage_object(&self) -> Option<StageObject<'gc>> {
