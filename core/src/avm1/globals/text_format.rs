@@ -2,7 +2,7 @@
 
 use crate::avm1::object::NativeObject;
 use crate::avm1::property_decl::{define_properties_on, Declaration};
-use crate::avm1::{Activation, ArrayObject, Error, Object, ScriptObject, TObject, Value};
+use crate::avm1::{Activation, ArrayBuilder, Error, Object, ScriptObject, TObject, Value};
 use crate::display_object::{AutoSizeMode, EditText, TDisplayObject};
 use crate::ecma_conversions::round_to_even;
 use crate::html::TextFormat;
@@ -378,7 +378,7 @@ fn tab_stops<'gc>(activation: &mut Activation<'_, 'gc>, text_format: &TextFormat
         .tab_stops
         .as_ref()
         .map_or(Value::Null, |tab_stops| {
-            ArrayObject::builder(activation)
+            ArrayBuilder::new(activation)
                 .with(tab_stops.iter().map(|&x| x.into()))
                 .into()
         })

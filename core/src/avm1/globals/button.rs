@@ -5,7 +5,7 @@ use crate::avm1::error::Error;
 use crate::avm1::globals::bitmap_filter;
 use crate::avm1::globals::movie_clip::{new_rectangle, object_to_rectangle};
 use crate::avm1::property_decl::{define_properties_on, Declaration};
-use crate::avm1::ArrayObject;
+use crate::avm1::ArrayBuilder;
 use crate::avm1::{globals, Object, ScriptObject, TObject, Value};
 use crate::avm1_stub;
 use crate::display_object::{Avm1Button, TDisplayObject, TInteractiveObject};
@@ -95,7 +95,7 @@ fn filters<'gc>(
     this: Avm1Button<'gc>,
     activation: &mut Activation<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
-    Ok(ArrayObject::builder(activation)
+    Ok(ArrayBuilder::new(activation)
         .with(
             this.filters()
                 .into_iter()

@@ -2,7 +2,7 @@ use crate::avm1::TObject as _;
 use crate::avm1::Value as Avm1Value;
 use crate::avm1::{Activation as Avm1Activation, ActivationIdentifier as Avm1ActivationIdentifier};
 use crate::avm1::{
-    ArrayObject as Avm1ArrayObject, Error as Avm1Error, Object as Avm1Object,
+    ArrayBuilder as Avm1ArrayBuilder, Error as Avm1Error, Object as Avm1Object,
     ScriptObject as Avm1ScriptObject,
 };
 use crate::avm2::activation::Activation as Avm2Activation;
@@ -183,7 +183,7 @@ impl Value {
                 }
                 object.into()
             }
-            Value::List(values) => Avm1ArrayObject::builder(activation)
+            Value::List(values) => Avm1ArrayBuilder::new(activation)
                 .with(
                     values
                         .iter()

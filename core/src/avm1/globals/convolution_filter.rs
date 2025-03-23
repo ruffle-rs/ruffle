@@ -4,7 +4,9 @@ use crate::avm1::clamp::Clamp;
 use crate::avm1::function::{Executable, FunctionObject};
 use crate::avm1::object::NativeObject;
 use crate::avm1::property_decl::{define_properties_on, Declaration};
-use crate::avm1::{Activation, ArrayObject, Error, Object, ScriptObject, TObject, Value};
+use crate::avm1::{
+    Activation, ArrayBuilder, ArrayObject, Error, Object, ScriptObject, TObject, Value,
+};
 use crate::string::StringContext;
 use gc_arena::{Collect, Gc, Mutation};
 use std::cell::{Cell, RefCell};
@@ -170,7 +172,7 @@ impl<'gc> ConvolutionFilter<'gc> {
     }
 
     fn matrix(self, activation: &Activation<'_, 'gc>) -> ArrayObject<'gc> {
-        ArrayObject::builder(activation).with(self.0.matrix.borrow().iter().map(|&x| x.into()))
+        ArrayBuilder::new(activation).with(self.0.matrix.borrow().iter().map(|&x| x.into()))
     }
 
     fn set_matrix(

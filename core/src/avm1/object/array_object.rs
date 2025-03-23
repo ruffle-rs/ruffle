@@ -1,14 +1,13 @@
-use crate::avm1::property::Attribute;
 use crate::avm1::{Activation, Error, Object, ObjectPtr, ScriptObject, TObject, Value};
 use crate::ecma_conversions::f64_to_wrapping_i32;
-use crate::string::{AvmString, StringContext};
-use gc_arena::{Collect, Mutation};
+use crate::string::AvmString;
+use gc_arena::Collect;
 use ruffle_macros::istr;
 use std::fmt;
 
 #[derive(Clone, Copy, Collect)]
 #[collect(no_drop)]
-pub struct ArrayObject<'gc>(ScriptObject<'gc>);
+pub struct ArrayObject<'gc>(pub(crate) ScriptObject<'gc>);
 
 impl fmt::Debug for ArrayObject<'_> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
@@ -18,63 +17,7 @@ impl fmt::Debug for ArrayObject<'_> {
     }
 }
 
-/// Intermediate builder for constructing `ArrayObject`,
-/// used to work around borrow-checker issues.
-pub struct ArrayBuilder<'gc> {
-    mc: &'gc Mutation<'gc>,
-    length_prop: AvmString<'gc>,
-    proto_prop: AvmString<'gc>,
-    proto: Object<'gc>,
-}
-
-impl<'gc> ArrayBuilder<'gc> {
-    pub fn with(self, elements: impl IntoIterator<Item = Value<'gc>>) -> ArrayObject<'gc> {
-        let base = ScriptObject::new_without_proto(self.mc);
-        base.define_value(
-            self.mc,
-            self.proto_prop,
-            self.proto.into(),
-            Attribute::DONT_ENUM | Attribute::DONT_DELETE,
-        );
-
-        let mut length: i32 = 0;
-        for value in elements.into_iter() {
-            let length_str = AvmString::new_utf8(self.mc, length.to_string());
-            base.define_value(self.mc, length_str, value, Attribute::empty());
-            length += 1;
-        }
-        base.define_value(
-            self.mc,
-            self.length_prop,
-            length.into(),
-            Attribute::DONT_ENUM | Attribute::DONT_DELETE,
-        );
-        ArrayObject(base)
-    }
-}
-
 impl<'gc> ArrayObject<'gc> {
-    pub fn empty(activation: &Activation<'_, 'gc>) -> Self {
-        Self::builder(activation).with([])
-    }
-
-    pub fn builder(activation: &Activation<'_, 'gc>) -> ArrayBuilder<'gc> {
-        let proto = activation.context.avm1.prototypes().array;
-        Self::builder_with_proto(&activation.context.strings, proto)
-    }
-
-    pub fn builder_with_proto(
-        context: &StringContext<'gc>,
-        proto: Object<'gc>,
-    ) -> ArrayBuilder<'gc> {
-        ArrayBuilder {
-            mc: context.gc(),
-            length_prop: istr!(context, "length"),
-            proto_prop: istr!(context, "__proto__"),
-            proto,
-        }
-    }
-
     fn parse_index(name: AvmString<'gc>) -> Option<i32> {
         let name = name.trim_start_matches(|c| match u8::try_from(c) {
             Ok(c) => c.is_ascii_whitespace(),
@@ -119,9 +62,11 @@ impl<'gc> TObject<'gc> for ArrayObject<'gc> {
         activation: &mut Activation<'_, 'gc>,
         this: Object<'gc>,
     ) -> Result<Object<'gc>, Error<'gc>> {
-        Ok(Self::builder_with_proto(activation.strings(), this)
-            .with([])
-            .into())
+        Ok(
+            crate::avm1::ArrayBuilder::new_with_proto(activation.strings(), this)
+                .with([])
+                .into(),
+        )
     }
 
     fn as_array_object(&self) -> Option<ArrayObject<'gc>> {

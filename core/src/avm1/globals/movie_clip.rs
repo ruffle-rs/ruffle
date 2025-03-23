@@ -6,7 +6,7 @@ use crate::avm1::globals::matrix::gradient_object_to_matrix;
 use crate::avm1::globals::{self, bitmap_filter, AVM_DEPTH_BIAS, AVM_MAX_DEPTH};
 use crate::avm1::object::NativeObject;
 use crate::avm1::property_decl::{define_properties_on, Declaration};
-use crate::avm1::{self, ArrayObject, Object, ScriptObject, TObject, Value};
+use crate::avm1::{self, ArrayBuilder, Object, ScriptObject, TObject, Value};
 use crate::backend::navigator::NavigationMethod;
 use crate::context::UpdateContext;
 use crate::display_object::{Bitmap, EditText, MovieClip, TInteractiveObject};
@@ -1783,7 +1783,7 @@ fn filters<'gc>(
     this: MovieClip<'gc>,
     activation: &mut Activation<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
-    Ok(ArrayObject::builder(activation)
+    Ok(ArrayBuilder::new(activation)
         .with(
             this.filters()
                 .into_iter()

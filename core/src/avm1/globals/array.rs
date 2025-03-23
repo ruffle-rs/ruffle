@@ -5,10 +5,11 @@ use crate::avm1::clamp::Clamp;
 use crate::avm1::error::Error;
 use crate::avm1::function::{Executable, FunctionObject};
 use crate::avm1::property_decl::{define_properties_on, Declaration};
-use crate::avm1::{ArrayObject, Object, TObject, Value};
+use crate::avm1::{ArrayObject, Attribute, Object, ScriptObject, TObject, Value};
 use crate::ecma_conversions::f64_to_wrapping_i32;
 use crate::string::{AvmString, StringContext};
 use bitflags::bitflags;
+use gc_arena::Mutation;
 use ruffle_macros::istr;
 use std::cmp::Ordering;
 
@@ -61,6 +62,59 @@ const OBJECT_DECLS: &[Declaration] = declare_properties! {
     "NUMERIC" => int(SortOptions::NUMERIC.bits());
 };
 
+/// Intermediate builder for constructing `ArrayObject`,
+/// used to work around borrow-checker issues.
+pub struct ArrayBuilder<'gc> {
+    mc: &'gc Mutation<'gc>,
+    length_prop: AvmString<'gc>,
+    proto_prop: AvmString<'gc>,
+    proto: Object<'gc>,
+}
+
+impl<'gc> ArrayBuilder<'gc> {
+    pub fn empty(activation: &Activation<'_, 'gc>) -> ArrayObject<'gc> {
+        Self::new(activation).with([])
+    }
+
+    pub fn new(activation: &Activation<'_, 'gc>) -> Self {
+        let proto = activation.context.avm1.prototypes().array;
+        Self::new_with_proto(&activation.context.strings, proto)
+    }
+
+    pub fn new_with_proto(context: &StringContext<'gc>, proto: Object<'gc>) -> Self {
+        Self {
+            mc: context.gc(),
+            length_prop: istr!(context, "length"),
+            proto_prop: istr!(context, "__proto__"),
+            proto,
+        }
+    }
+
+    pub fn with(self, elements: impl IntoIterator<Item = Value<'gc>>) -> ArrayObject<'gc> {
+        let base = ScriptObject::new_without_proto(self.mc);
+        base.define_value(
+            self.mc,
+            self.proto_prop,
+            self.proto.into(),
+            Attribute::DONT_ENUM | Attribute::DONT_DELETE,
+        );
+
+        let mut length: i32 = 0;
+        for value in elements.into_iter() {
+            let length_str = AvmString::new_utf8(self.mc, length.to_string());
+            base.define_value(self.mc, length_str, value, Attribute::empty());
+            length += 1;
+        }
+        base.define_value(
+            self.mc,
+            self.length_prop,
+            length.into(),
+            Attribute::DONT_ENUM | Attribute::DONT_DELETE,
+        );
+        ArrayObject(base)
+    }
+}
+
 pub fn create_array_object<'gc>(
     context: &mut StringContext<'gc>,
     array_proto: Object<'gc>,
@@ -89,11 +143,11 @@ pub fn constructor<'gc>(
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let [Value::Number(length)] = *args {
-        let array = ArrayObject::empty(activation);
+        let array = ArrayBuilder::empty(activation);
         array.set_length(activation, length.clamp_to_i32())?;
         Ok(array.into())
     } else {
-        Ok(ArrayObject::builder(activation)
+        Ok(ArrayBuilder::new(activation)
             .with(args.iter().cloned())
             .into())
     }
@@ -299,7 +353,7 @@ pub fn slice<'gc>(
         make_index_absolute(end.coerce_to_i32(activation)?, length)
     };
 
-    Ok(ArrayObject::builder(activation)
+    Ok(ArrayBuilder::new(activation)
         .with((start..end).map(|i| this.get_element(activation, i)))
         .into())
 }
@@ -325,7 +379,7 @@ pub fn splice<'gc>(
         length - start
     };
 
-    let result = ArrayObject::builder(activation)
+    let result = ArrayBuilder::new(activation)
         .with((0..delete_count).map(|i| this.get_element(activation, start + i)));
 
     let items = if args.len() > 2 { &args[2..] } else { &[] };
@@ -390,7 +444,7 @@ pub fn concat<'gc>(
             elements.push(value);
         }
     }
-    Ok(ArrayObject::builder(activation).with(elements).into())
+    Ok(ArrayBuilder::new(activation).with(elements).into())
 }
 
 pub fn to_string<'gc>(
@@ -630,7 +684,7 @@ fn sort_internal<'gc>(
     if options.contains(SortOptions::RETURN_INDEXED_ARRAY) {
         // Array.RETURNINDEXEDARRAY returns an array containing the sorted indices, and does not modify
         // the original array.
-        Ok(ArrayObject::builder(activation)
+        Ok(ArrayBuilder::new(activation)
             .with(elements.into_iter().map(|(index, _)| index.into()))
             .into())
     } else {
@@ -718,7 +772,7 @@ pub fn create_proto<'gc>(
     proto: Object<'gc>,
     fn_proto: Object<'gc>,
 ) -> Object<'gc> {
-    let array = ArrayObject::builder_with_proto(context, proto).with([]);
+    let array = ArrayBuilder::new_with_proto(context, proto).with([]);
     let object = array.raw_script_object();
     define_properties_on(PROTO_DECLS, context, object, fn_proto);
     object.into()

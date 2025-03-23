@@ -3,7 +3,7 @@
 use crate::avm1::function::{Executable, FunctionObject};
 use crate::avm1::object::NativeObject;
 use crate::avm1::property_decl::{define_properties_on, Declaration};
-use crate::avm1::{Activation, ArrayObject, Error, Object, ScriptObject, TObject, Value};
+use crate::avm1::{Activation, ArrayBuilder, Error, Object, ScriptObject, TObject, Value};
 use crate::string::StringContext;
 use gc_arena::{Collect, Gc, Mutation};
 use std::cell::Cell;
@@ -69,7 +69,7 @@ impl<'gc> ColorMatrixFilter<'gc> {
         // FIXME: use `.as_array_of_cells()` once stabilized.
         let matrix: &Cell<[f32]> = &self.0.matrix;
         let matrix = matrix.as_slice_of_cells();
-        ArrayObject::builder(activation)
+        ArrayBuilder::new(activation)
             .with(matrix.iter().map(|v| v.get().into()))
             .into()
     }
