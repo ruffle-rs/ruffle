@@ -183,26 +183,29 @@ impl<'gc> OptValue<'gc> {
         let class_defs = activation.avm2().class_defs();
 
         if let Some(checked_class) = checked_type {
-            let is_not_primitive_class = checked_class != class_defs.int
-                && checked_class != class_defs.uint
-                && checked_class != class_defs.number
-                && checked_class != class_defs.boolean
-                && checked_class != class_defs.void;
-
             if let Some(own_class) = self.class {
                 // Check if the checked class is a superclass of our class, or if
                 // the checked class is `Number` and our class is `int` or `uint`
                 if own_class.has_class_in_chain(checked_class) {
-                    true
+                    return true;
                 } else if (own_class == class_defs.int || own_class == class_defs.uint)
                     && checked_class == class_defs.number
                 {
-                    true
-                } else {
-                    // Null matches every class except the primitive classes
-                    matches!(self.null_state, NullState::IsNull) && is_not_primitive_class
+                    return true;
                 }
+            }
+
+            if checked_class == class_defs.int && self.contains_valid_integer {
+                true
+            } else if checked_class == class_defs.uint && self.contains_valid_unsigned {
+                true
             } else {
+                let is_not_primitive_class = checked_class != class_defs.int
+                    && checked_class != class_defs.uint
+                    && checked_class != class_defs.number
+                    && checked_class != class_defs.boolean
+                    && checked_class != class_defs.void;
+
                 // Null matches every class except the primitive classes
                 matches!(self.null_state, NullState::IsNull) && is_not_primitive_class
             }
