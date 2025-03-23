@@ -7,7 +7,7 @@ use crate::avm1::error::Error;
 use crate::avm1::function::{Executable, FunctionObject};
 use crate::avm1::property::Attribute;
 use crate::avm1::property_decl::{define_properties_on, Declaration};
-use crate::avm1::{ArrayObject, NativeObject, Object, ScriptObject, TObject, Value};
+use crate::avm1::{ArrayBuilder, NativeObject, Object, ScriptObject, TObject, Value};
 use crate::string::{utils as string_utils, AvmString, StringContext, WString};
 
 const PROTO_DECLS: &[Declaration] = declare_properties! {
@@ -276,7 +276,7 @@ fn split<'gc>(
             // but Flash does not.
             // e.g., split("foo", "") returns ["", "f", "o", "o", ""] in Rust but ["f, "o", "o"] in Flash.
             // Special case this to match Flash's behavior.
-            Ok(ArrayObject::builder(activation)
+            Ok(ArrayBuilder::new(activation)
                 .with(
                     this.iter()
                         .take(limit)
@@ -285,7 +285,7 @@ fn split<'gc>(
                 .into())
         } else {
             // TODO(moulins): make dependent AvmStrings instead of reallocating.
-            Ok(ArrayObject::builder(activation)
+            Ok(ArrayBuilder::new(activation)
                 .with(
                     this.split(&delimiter)
                         .take(limit)
@@ -294,7 +294,7 @@ fn split<'gc>(
                 .into())
         }
     } else {
-        Ok(ArrayObject::builder(activation).with([this.into()]).into())
+        Ok(ArrayBuilder::new(activation).with([this.into()]).into())
     }
 }
 

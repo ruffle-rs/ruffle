@@ -2,7 +2,7 @@
 
 use crate::avm1::Attribute;
 use crate::avm1::{Activation, NativeObject};
-use crate::avm1::{ArrayObject, Error, Object, ScriptObject, TObject, Value};
+use crate::avm1::{ArrayBuilder, ArrayObject, Error, Object, ScriptObject, TObject, Value};
 use crate::string::{AvmString, StringContext, WStr, WString};
 use crate::xml;
 use gc_arena::{Collect, GcCell, Mutation};
@@ -380,7 +380,7 @@ impl<'gc> XmlNode<'gc> {
         if let Some(array) = array {
             Ok(array)
         } else {
-            let array = ArrayObject::empty(activation);
+            let array = ArrayBuilder::empty(activation);
             self.0.write(activation.gc()).cached_child_nodes = Some(array);
             self.refresh_cached_child_nodes(activation)?;
             Ok(array)

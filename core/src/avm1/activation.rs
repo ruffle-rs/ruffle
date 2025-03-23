@@ -5,7 +5,7 @@ use crate::avm1::object::{Object, TObject};
 use crate::avm1::property::Attribute;
 use crate::avm1::runtime::skip_actions;
 use crate::avm1::scope::{Scope, ScopeClass};
-use crate::avm1::{fscommand, globals, scope, ArrayObject, ScriptObject, Value};
+use crate::avm1::{fscommand, globals, scope, ArrayBuilder, ScriptObject, Value};
 use crate::backend::navigator::{NavigationMethod, Request};
 use crate::context::UpdateContext;
 use crate::display_object::{
@@ -1479,7 +1479,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             // InitArray pops no args and pushes undefined if num_elements is out of range.
             Value::Undefined
         } else {
-            ArrayObject::builder(self)
+            ArrayBuilder::new(self)
                 .with((0..num_elements as i32).map(|_| self.context.avm1.pop()))
                 .into()
         };

@@ -10,7 +10,7 @@ use gc_arena::Collect;
 use std::str;
 
 mod accessibility;
-mod array;
+pub(super) mod array;
 pub(crate) mod as_broadcaster;
 pub(crate) mod bevel_filter;
 mod bitmap_data;

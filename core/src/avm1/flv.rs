@@ -1,4 +1,4 @@
-use crate::avm1::{Activation, ArrayObject, ScriptObject, TObject as _, Value as Avm1Value};
+use crate::avm1::{Activation, ArrayBuilder, ScriptObject, TObject as _, Value as Avm1Value};
 use crate::string::AvmString;
 use flv_rs::{Value as FlvValue, Variable as FlvVariable};
 
@@ -39,7 +39,7 @@ fn avm1_array_from_flv_values<'gc>(
     activation: &mut Activation<'_, 'gc>,
     values: Vec<FlvValue>,
 ) -> Avm1Value<'gc> {
-    ArrayObject::builder(activation)
+    ArrayBuilder::new(activation)
         .with(values.iter().map(|v| v.clone().to_avm1_value(activation)))
         .into()
 }

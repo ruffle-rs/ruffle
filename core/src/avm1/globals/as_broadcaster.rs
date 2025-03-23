@@ -6,7 +6,7 @@ use crate::avm1::function::{Executable, FunctionObject};
 use crate::avm1::object::TObject;
 use crate::avm1::property::Attribute;
 use crate::avm1::property_decl::Declaration;
-use crate::avm1::{Activation, ArrayObject, Object, ScriptObject, Value};
+use crate::avm1::{Activation, ArrayBuilder, Object, ScriptObject, Value};
 use crate::string::{AvmString, StringContext};
 use gc_arena::Collect;
 use ruffle_macros::istr;
@@ -205,7 +205,7 @@ fn initialize_internal<'gc>(
     broadcaster.define_value(
         context.gc(),
         istr!(context, "_listeners"),
-        ArrayObject::builder_with_proto(context, array_proto)
+        ArrayBuilder::new_with_proto(context, array_proto)
             .with([])
             .into(),
         Attribute::DONT_ENUM,

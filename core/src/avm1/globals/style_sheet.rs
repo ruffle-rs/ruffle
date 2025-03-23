@@ -3,7 +3,7 @@ use std::fmt;
 use crate::avm1::object::{Object, TObject};
 use crate::avm1::property_decl::define_properties_on;
 use crate::avm1::{
-    property_decl::Declaration, ArrayObject, ExecutionReason, NativeObject, ScriptObject,
+    property_decl::Declaration, ArrayBuilder, ExecutionReason, NativeObject, ScriptObject,
 };
 use crate::avm1::{Activation, Error, Value};
 use crate::backend::navigator::Request;
@@ -77,14 +77,14 @@ fn set_style<'gc>(
     if !this.has_property(activation, istr!("_styles")) {
         this.set(
             istr!("_styles"),
-            ArrayObject::empty(activation).into(),
+            ArrayBuilder::empty(activation).into(),
             activation,
         )?;
     }
     if !this.has_property(activation, istr!("_css")) {
         this.set(
             istr!("_css"),
-            ArrayObject::empty(activation).into(),
+            ArrayBuilder::empty(activation).into(),
             activation,
         )?;
     }
@@ -147,7 +147,7 @@ fn get_style_names<'gc>(
     let css = this
         .get_stored(istr!("_css"), activation)?
         .coerce_to_object(activation);
-    Ok(ArrayObject::builder(activation)
+    Ok(ArrayBuilder::new(activation)
         .with(
             css.get_keys(activation, false)
                 .into_iter()
@@ -416,12 +416,12 @@ fn clear<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     this.set(
         istr!("_styles"),
-        ArrayObject::empty(activation).into(),
+        ArrayBuilder::empty(activation).into(),
         activation,
     )?;
     this.set(
         istr!("_css"),
-        ArrayObject::empty(activation).into(),
+        ArrayBuilder::empty(activation).into(),
         activation,
     )?;
     Ok(Value::Undefined)

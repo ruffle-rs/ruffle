@@ -6,7 +6,7 @@ use crate::avm1::object::super_object::SuperObject;
 use crate::avm1::property::Attribute;
 use crate::avm1::scope::Scope;
 use crate::avm1::value::Value;
-use crate::avm1::{ArrayObject, Object, ObjectPtr, ScriptObject, TObject};
+use crate::avm1::{ArrayBuilder, Object, ObjectPtr, ScriptObject, TObject};
 use crate::display_object::{DisplayObject, TDisplayObject};
 use crate::string::{AvmString, StringContext, SwfStrExt as _};
 use crate::tag_utils::SwfSlice;
@@ -194,7 +194,7 @@ impl<'gc> Avm1Function<'gc> {
             return;
         }
 
-        let arguments = ArrayObject::builder(frame).with(args.iter().cloned());
+        let arguments = ArrayBuilder::new(frame).with(args.iter().cloned());
 
         arguments.define_value(
             frame.gc(),

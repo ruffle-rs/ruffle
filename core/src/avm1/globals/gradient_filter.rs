@@ -5,7 +5,9 @@ use crate::avm1::function::{Executable, FunctionObject};
 use crate::avm1::globals::bevel_filter::BevelFilterType;
 use crate::avm1::object::NativeObject;
 use crate::avm1::property_decl::{define_properties_on, Declaration};
-use crate::avm1::{Activation, ArrayObject, Error, Object, ScriptObject, TObject, Value};
+use crate::avm1::{
+    Activation, ArrayBuilder, ArrayObject, Error, Object, ScriptObject, TObject, Value,
+};
 use crate::string::StringContext;
 use gc_arena::{Collect, Gc, Mutation};
 use ruffle_macros::istr;
@@ -172,7 +174,7 @@ impl<'gc> GradientFilter<'gc> {
 
     fn colors(self, activation: &Activation<'_, 'gc>) -> ArrayObject<'gc> {
         let num_colors = self.0.num_colors.get();
-        ArrayObject::builder(activation).with(
+        ArrayBuilder::new(activation).with(
             self.0.colors.borrow()[..num_colors]
                 .iter()
                 .map(|r| r.color.to_rgb().into()),
@@ -208,7 +210,7 @@ impl<'gc> GradientFilter<'gc> {
 
     fn alphas(self, activation: &Activation<'_, 'gc>) -> ArrayObject<'gc> {
         let num_colors = self.0.num_colors.get();
-        ArrayObject::builder(activation).with(
+        ArrayBuilder::new(activation).with(
             self.0.colors.borrow()[..num_colors]
                 .iter()
                 .map(|r| (f64::from(r.color.a) / 255.0).into()),
@@ -247,7 +249,7 @@ impl<'gc> GradientFilter<'gc> {
 
     fn ratios(self, activation: &Activation<'_, 'gc>) -> ArrayObject<'gc> {
         let num_colors = self.0.num_colors.get();
-        ArrayObject::builder(activation).with(
+        ArrayBuilder::new(activation).with(
             self.0.colors.borrow()[..num_colors]
                 .iter()
                 .map(|r| r.ratio.into()),
