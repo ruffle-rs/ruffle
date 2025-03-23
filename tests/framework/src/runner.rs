@@ -164,7 +164,7 @@ impl TestRunner {
             self.player.lock().unwrap().tick(self.frame_time);
         } else {
             self.player.lock().unwrap().run_frame();
-            self.player.lock().unwrap().update_timers(self.frame_time);
+            self.player.lock().unwrap().update_timers(Duration::new(self.frame_time as u64, 0));
             self.player.lock().unwrap().audio_mut().tick();
         }
         self.remaining_iterations -= 1;
