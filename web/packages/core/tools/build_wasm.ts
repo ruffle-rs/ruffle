@@ -92,7 +92,11 @@ function buildWasm(
     extensions: boolean,
     wasmSource: string,
 ) {
-    const rustFlags = ["--cfg=web_sys_unstable_apis", "-Aunknown_lints"];
+    const rustFlags = [
+        "--cfg=web_sys_unstable_apis",
+        '--cfg=getrandom_backend="wasm_js"',
+        "-Aunknown_lints",
+    ];
     const wasmBindgenFlags = [];
     const wasmOptFlags = [];
     const flavor = extensions ? "extensions" : "vanilla";
