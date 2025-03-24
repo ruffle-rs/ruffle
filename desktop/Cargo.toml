@@ -29,7 +29,7 @@ tracing = { workspace = true }
 tracing-subscriber = { workspace = true }
 tracing-appender = "0.2.3"
 winit = "0.30.8"
-webbrowser = "1.0.3"
+webbrowser = "1.0.4"
 url = { workspace = true }
 dirs = "6.0"
 rfd = { workspace = true }
@@ -47,12 +47,12 @@ gilrs = "0.11"
 tokio = { workspace = true, features = ["rt-multi-thread", "macros", "fs"] }
 
 tracing-tracy = { version = "0.11.3", optional = true, features = ["demangle"] }
-rand = "0.8.5"
+rand = "0.9.0"
 thiserror.workspace = true
 async-channel.workspace = true
 
 [target.'cfg(target_os = "linux")'.dependencies]
-ashpd = "0.10.2"
+ashpd = "0.11.0"
 
 [target.'cfg(windows)'.dependencies]
 winapi = "0.3.9"
