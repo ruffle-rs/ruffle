@@ -23,13 +23,13 @@ impl LehmerRng {
 
     /// Generate the next value in the sequence via the following formula
     /// X_(k+1) = a * X_k mod m
-    pub fn gen(&mut self) -> u32 {
+    pub fn random(&mut self) -> u32 {
         self.x = ((self.x as u64).overflowing_mul(16_807).0 % 2_147_483_647) as u32;
         self.x
     }
 
-    pub fn gen_range(&mut self, rng: Range<u8>) -> u8 {
-        rng.start + (self.gen() % ((rng.end - rng.start) as u32 + 1)) as u8
+    pub fn random_range(&mut self, rng: Range<u8>) -> u8 {
+        rng.start + (self.random() % ((rng.end - rng.start) as u32 + 1)) as u8
     }
 }
 
