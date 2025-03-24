@@ -10,7 +10,7 @@ impl Coordinate for Twips {
 }
 
 /// A rectangular region defined by minimum and maximum x- and y-coordinate positions.
-#[derive(Clone, Eq, PartialEq)]
+#[derive(Copy, Clone, Eq, PartialEq)]
 pub struct Rectangle<T> {
     /// The minimum x-position of the rectangle.
     pub x_min: T,
@@ -49,6 +49,13 @@ impl<T: PointCoordinate + Ord> Rectangle<T> {
 
     #[inline]
     #[must_use]
+    pub fn with_width(mut self, width: T) -> Self {
+        self.set_width(width);
+        self
+    }
+
+    #[inline]
+    #[must_use]
     pub fn height(&self) -> T {
         self.y_max - self.y_min
     }
@@ -56,6 +63,12 @@ impl<T: PointCoordinate + Ord> Rectangle<T> {
     #[inline]
     pub fn set_height(&mut self, height: T) {
         self.y_max = self.y_min + height;
+    }
+    #[inline]
+    #[must_use]
+    pub fn with_height(mut self, height: T) -> Self {
+        self.set_height(height);
+        self
     }
 
     #[must_use]
@@ -120,7 +133,7 @@ impl<T: Coordinate> Rectangle<T> {
     #[must_use]
     pub fn union(mut self, other: &Self) -> Self {
         if !self.is_valid() {
-            other.clone()
+            *other
         } else {
             if other.is_valid() {
                 self.x_min = self.x_min.min(other.x_min);

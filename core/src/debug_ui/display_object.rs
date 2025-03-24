@@ -120,7 +120,7 @@ impl DisplayObjectWindow {
     }
 
     pub fn hovered_bounds(&self) -> Option<Rectangle<Twips>> {
-        self.hovered_bounds.clone()
+        self.hovered_bounds
     }
 
     pub fn show<'gc>(

@@ -152,7 +152,7 @@ impl<'gc> TDisplayObject<'gc> for MorphShape<'gc> {
         let ratio = self.0.ratio.get();
         let shared = self.0.shared.get();
         let frame = shared.get_frame(ratio);
-        frame.bounds.clone()
+        frame.bounds
     }
 
     fn hit_test_shape(
@@ -366,8 +366,8 @@ impl MorphShapeShared {
         let shape = swf::Shape {
             version: 4,
             id: 0,
-            shape_bounds: bounds.clone(),
-            edge_bounds: bounds.clone(),
+            shape_bounds: bounds,
+            edge_bounds: bounds,
             flags: swf::ShapeFlag::HAS_SCALING_STROKES,
             styles,
             shape,

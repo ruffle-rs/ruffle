@@ -52,7 +52,7 @@ impl<'gc> Text<'gc> {
                     TextShared {
                         swf,
                         id: tag.id,
-                        bounds: tag.bounds.clone(),
+                        bounds: tag.bounds,
                         text_transform: tag.matrix.into(),
                         text_blocks: tag.records.clone(),
                     },
@@ -194,7 +194,7 @@ impl<'gc> TDisplayObject<'gc> for Text<'gc> {
     }
 
     fn self_bounds(&self) -> Rectangle<Twips> {
-        self.0.read().shared.bounds.clone()
+        self.0.read().shared.bounds
     }
 
     fn hit_test_shape(

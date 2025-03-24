@@ -1449,7 +1449,7 @@ fn get_bounds<'gc>(
             // the final matrix, but this matches Flash's behavior.
             let to_global_matrix = movie_clip.local_to_global_matrix();
             let to_target_matrix = target.global_to_local_matrix().unwrap_or_default();
-            let target_bounds = to_target_matrix * to_global_matrix * bounds.clone();
+            let target_bounds = to_target_matrix * to_global_matrix * bounds;
 
             // If the bounds are invalid, the target space is identical to the origin space and
             // use_new_invalid_bounds_value is true, the returned bounds use a specific invalid value.
