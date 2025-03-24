@@ -131,7 +131,7 @@ pub struct EditTextData<'gc> {
     object: Option<AvmObject<'gc>>,
 
     /// The variable path that this text field is bound to (AVM1 only).
-    variable: Option<String>,
+    variable: Option<AvmString<'gc>>,
 
     /// The display object that the variable binding is bound to.
     bound_stage_object: Option<Avm1StageObject<'gc>>,
@@ -318,7 +318,7 @@ impl<'gc> EditText<'gc> {
         );
 
         let variable = if !swf_tag.variable_name().is_empty() {
-            Some(swf_tag.variable_name())
+            Some(swf_tag.variable_name().decode(encoding))
         } else {
             None
         };
@@ -362,7 +362,7 @@ impl<'gc> EditText<'gc> {
                 bounds: Cell::new(*swf_tag.bounds()),
                 autosize_lazy_bounds: Cell::new(None),
                 autosize,
-                variable: variable.map(|s| s.to_string_lossy(encoding)),
+                variable: variable.map(|s| context.strings.intern_wstr(s).into()),
                 bound_stage_object: None,
                 class: None,
                 selection,
@@ -861,16 +861,15 @@ impl<'gc> EditText<'gc> {
     }
 
     /// Returns the variable that this text field is bound to.
-    pub fn variable(&self) -> Option<Ref<str>> {
-        let text = self.0.read();
-        if text.variable.is_some() {
-            Some(Ref::map(text, |text| text.variable.as_deref().unwrap()))
-        } else {
-            None
-        }
+    pub fn variable(&self) -> Option<AvmString<'gc>> {
+        self.0.read().variable
     }
 
-    pub fn set_variable(self, variable: Option<String>, activation: &mut Avm1Activation<'_, 'gc>) {
+    pub fn set_variable(
+        self,
+        variable: Option<AvmString<'gc>>,
+        activation: &mut Avm1Activation<'_, 'gc>,
+    ) {
         // Clear previous binding.
         if let Some(stage_object) = self.0.write(activation.gc()).bound_stage_object.take() {
             stage_object.clear_text_field_binding(activation.gc(), self);
@@ -1377,18 +1376,13 @@ impl<'gc> EditText<'gc> {
         activation: &mut Avm1Activation<'_, 'gc>,
         set_initial_value: bool,
     ) -> bool {
-        let Some(var_path) = self.variable() else {
+        let Some(variable_path) = self.variable() else {
             // No variable for this text field; success by default
             return true;
         };
 
         // Any previous binding should have been cleared.
         debug_assert!(self.0.read().bound_stage_object.is_none());
-
-        // Avoid double-borrows by copying the string.
-        // TODO: Can we avoid this somehow? Maybe when we have a better string type.
-        let variable_path = WString::from_utf8(&var_path);
-        drop(var_path);
 
         let Some(mut parent) = self.avm1_parent() else {
             return false;
@@ -1464,12 +1458,7 @@ impl<'gc> EditText<'gc> {
             .contains(EditTextFlag::FIRING_VARIABLE_BINDING)
         {
             self.0.write(activation.gc()).flags |= EditTextFlag::FIRING_VARIABLE_BINDING;
-            if let Some(variable) = self.variable() {
-                // Avoid double-borrows by copying the string.
-                // TODO: Can we avoid this somehow? Maybe when we have a better string type.
-                let variable_path = WString::from_utf8(&variable);
-                drop(variable);
-
+            if let Some(variable_path) = self.variable() {
                 if let Ok(Some((object, property))) =
                     activation.resolve_variable_path(self.avm1_parent().unwrap(), &variable_path)
                 {
