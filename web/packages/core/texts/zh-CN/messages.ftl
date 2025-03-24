@@ -24,6 +24,7 @@ clipboard-message-description =
 clipboard-message-copy = { " " } 复制
 clipboard-message-cut = { " " } 剪切
 clipboard-message-paste = { " " } 粘贴
+error-canvas-reload = Canvas 渲染器已在使用中时，无法使用 Canvas 渲染器重新加载。
 error-file-protocol =
     看来您正在 "file:" 协议上使用 Ruffle。
     由于浏览器以安全原因阻止许多功能，因此这不起作用。

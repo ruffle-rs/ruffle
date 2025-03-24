@@ -203,7 +203,7 @@ fn describe_internal_body<'gc>(
                 if !flags.contains(DescribeTypeFlags::INCLUDE_VARIABLES) {
                     continue;
                 }
-                let prop_class_name = vtable.slot_class_name(activation.strings(), *slot_id)?;
+                let prop_class_name = vtable.slot_class_name(activation.strings(), *slot_id);
 
                 let access = match prop {
                     Property::ConstSlot { .. } => istr!("readonly"),

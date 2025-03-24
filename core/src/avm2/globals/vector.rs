@@ -169,11 +169,10 @@ pub fn concat<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
-    let mut new_vector_storage = if let Some(vector) = this.as_vector_storage() {
-        vector.clone()
-    } else {
-        return Err("Not a vector-structured object".into());
-    };
+    let mut new_vector_storage = this
+        .as_vector_storage()
+        .expect("Receiver is of type Vector.<T>")
+        .clone();
 
     let original_length = new_vector_storage.length();
 
@@ -324,7 +323,7 @@ pub fn filter<'gc>(
     let value_type = this
         .instance_class()
         .param()
-        .ok_or("Cannot filter unparameterized vector")?; // technically unreachable
+        .expect("Receiver is parametrized vector"); // technically unreachable
     let mut new_storage = VectorStorage::new(0, false, value_type, activation);
     let mut iter = ArrayIter::new(activation, this)?;
 
@@ -434,7 +433,7 @@ pub fn map<'gc>(
     let value_type = this
         .instance_class()
         .param()
-        .ok_or("Cannot filter unparameterized vector")?; // technically unreachable
+        .expect("Receiver is parametrized vector"); // technically unreachable
     let mut new_storage = VectorStorage::new(0, false, value_type, activation);
     let value_type_for_coercion = new_storage.value_type_for_coercion(activation);
     let mut iter = ArrayIter::new(activation, this)?;

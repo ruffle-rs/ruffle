@@ -5,6 +5,7 @@ import {
     DataLoadOptions,
     DEFAULT_CONFIG,
     NetworkingAccessMode,
+    RenderBackend,
     UnmuteOverlay,
     URLLoadOptions,
     WindowMode,
@@ -792,6 +793,24 @@ export class InnerPlayer {
             throw new Error("Cannot reload if load wasn't first called");
         }
     }
+
+    /**
+     * Reloads the player, as if you called {@link RufflePlayer.load} with the same config as the last time it was called, but setting the preferredRenderer to "canvas".
+     *
+     * If this player has never been loaded, this method will return an error.
+     * If this player was already trying to use the canvas render, this method will panic.
+     */
+    protected async reloadWithCanvasRenderer(): Promise<void> {
+        if (this.loadedConfig && this.loadedConfig.preferredRenderer !== RenderBackend.Canvas) {
+            const combinedOptions = { ...this.loadedConfig, preferredRenderer: RenderBackend.Canvas};
+            await this.load(combinedOptions);
+        } else if (this.loadedConfig) {
+            this.panic(new Error(text("error-canvas-reload")));
+        } else {
+            throw new Error("Cannot reload if load wasn't first called");
+        }
+    }
+
 
     /**
      * Loads a specified movie into this player.

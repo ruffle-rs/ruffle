@@ -116,13 +116,13 @@ impl<'gc> VTable<'gc> {
         &self,
         context: &mut StringContext<'gc>,
         slot_id: u32,
-    ) -> Result<AvmString<'gc>, Error<'gc>> {
+    ) -> AvmString<'gc> {
         self.0
             .read()
             .slot_classes
             .get(slot_id as usize)
-            .ok_or_else(|| "Invalid slot ID".into())
-            .map(|c| c.get_name(context))
+            .expect("Invalid slot ID")
+            .get_name(context)
     }
 
     pub fn get_trait(self, name: &Multiname<'gc>) -> Option<Property> {

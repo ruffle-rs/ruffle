@@ -1120,7 +1120,7 @@ pub fn apply_standard_mask_and_scroll<'gc, F>(
     }
 )]
 pub trait TDisplayObject<'gc>:
-    'gc + Clone + Copy + Collect + Debug + Into<DisplayObject<'gc>>
+    'gc + Clone + Copy + Collect<'gc> + Debug + Into<DisplayObject<'gc>>
 {
     fn base<'a>(&'a self) -> Ref<'a, DisplayObjectBase<'gc>>;
     fn base_mut<'a>(&'a self, mc: &Mutation<'gc>) -> RefMut<'a, DisplayObjectBase<'gc>>;

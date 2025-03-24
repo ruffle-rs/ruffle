@@ -44,6 +44,7 @@ pub enum PlayerEvent {
     TextControl {
         code: TextControlCode,
     },
+    Ime(ImeEvent),
     FocusGained,
     FocusLost,
 }
@@ -465,6 +466,25 @@ impl TextControlCode {
                 | Self::DeleteWord
         )
     }
+}
+
+/// Input method allows inputting non-Latin characters on a Latin keyboard.
+///
+/// When IME is enabled, Ruffle will accept [`ImeEvent`]s instead of key events.
+/// It allows dynamically changing the inputted text and then committing it at
+/// the end.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum ImeEvent {
+    /// A new composing text should be set.
+    ///
+    /// The second parameter is the position of the cursor. When it's `None`,
+    /// the cursor should be hidden.
+    ///
+    /// An empty text indicates that preedit was cleared.
+    Preedit(String, Option<(usize, usize)>),
+
+    /// Composition is finished, and the text should be inserted.
+    Commit(String),
 }
 
 /// Flash virtual keycode.
@@ -1129,4 +1149,34 @@ pub enum KeyLocation {
     Left = 1,
     Right = 2,
     Numpad = 3,
+}
+
+#[derive(Debug, Clone)]
+pub enum PlayerNotification {
+    ImeNotification(ImeNotification),
+}
+
+#[derive(Debug, Clone)]
+pub enum ImeNotification {
+    ImeReady {
+        purpose: ImePurpose,
+        cursor_area: ImeCursorArea,
+    },
+    ImePurposeUpdated(ImePurpose),
+    ImeCursorAreaUpdated(ImeCursorArea),
+    ImeNotReady,
+}
+
+#[derive(Debug, Clone)]
+pub enum ImePurpose {
+    Standard,
+    Password,
+}
+
+#[derive(Debug, Clone)]
+pub struct ImeCursorArea {
+    pub x: f64,
+    pub y: f64,
+    pub width: f64,
+    pub height: f64,
 }

@@ -1,6 +1,8 @@
+use crate::avm2::error::{make_error_2136, Error};
 use crate::avm2::globals::flash::display::display_object::initialize_for_allocator;
 use crate::avm2::parameters::ParametersExt;
-use crate::avm2::{Activation, ClassObject, Error, Object, TObject, Value};
+use crate::avm2::{Activation, ClassObject, Object, TObject, Value};
+use crate::avm2_stub_method;
 use crate::display_object::{TDisplayObject, Video};
 
 pub fn video_allocator<'gc>(
@@ -27,9 +29,13 @@ pub fn video_allocator<'gc>(
                 .context
                 .library
                 .library_for_movie_mut(movie)
-                .instantiate_by_id(symbol, activation.context.gc_context)?;
+                .instantiate_by_id(symbol, activation.context.gc_context);
 
-            return initialize_for_allocator(activation, child, class);
+            if let Some(child) = child {
+                return initialize_for_allocator(activation, child, class);
+            } else {
+                return Err(make_error_2136(activation));
+            }
         }
 
         target_class = target.super_class();
@@ -64,16 +70,20 @@ pub fn attach_net_stream<'gc>(
     let this = this.as_object().unwrap();
 
     if let Some(video) = this.as_display_object().and_then(|dobj| dobj.as_video()) {
-        let source = args.get_value(0).as_object();
+        let stream = args
+            .try_get_object(activation, 0)
+            .map(|o| o.as_netstream().unwrap());
 
-        if let Some(stream) = source.and_then(|o| o.as_netstream()) {
+        if let Some(stream) = stream {
             video.attach_netstream(activation.context, stream);
         } else {
-            return Err(format!(
-                "Cannot use value of type {:?} as video source",
-                source.map(|o| o.instance_class().name().local_name())
-            )
-            .into());
+            // TODO attachNetStream(null) should clear the current stream
+            avm2_stub_method!(
+                activation,
+                "flash.media.Video",
+                "attachNetStream",
+                "with null argument"
+            );
         }
     }
 

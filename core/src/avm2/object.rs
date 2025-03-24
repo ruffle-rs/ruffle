@@ -206,7 +206,7 @@ use crate::font::Font;
         StyleSheetObject(StyleSheetObject<'gc>),
     }
 )]
-pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy {
+pub trait TObject<'gc>: 'gc + Collect<'gc> + Debug + Into<Object<'gc>> + Clone + Copy {
     /// Get the base of this object.
     /// Any trait method implementations that were not overridden will forward the call to this instead.
     fn gc_base(&self) -> Gc<'gc, ScriptObjectData<'gc>>;

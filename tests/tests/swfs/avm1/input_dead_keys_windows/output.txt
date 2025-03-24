@@ -1,0 +1,15 @@
+keyDown: 16
+keyDown: 222
+keyUp: 222
+keyUp: 16
+keyDown: 65
+text.onChanged ä
+keyUp: 65
+keyDown: 16
+keyDown: 222
+keyUp: 222
+keyUp: 16
+keyDown: 82
+text.onChanged ä"
+keyPress r
+keyUp: 82

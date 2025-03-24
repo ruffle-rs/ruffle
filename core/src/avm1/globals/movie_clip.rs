@@ -811,11 +811,10 @@ fn attach_movie<'gc>(
         return Ok(Value::Undefined);
     }
 
-    if let Ok(new_clip) = activation
+    if let Some(new_clip) = activation
         .context
         .library
         .library_for_movie(movie_clip.movie())
-        .ok_or("Movie is missing!".into())
         .and_then(|l| l.instantiate_by_export_name(export_name, activation.gc()))
     {
         // Set name and attach to parent.

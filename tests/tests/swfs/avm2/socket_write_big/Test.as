@@ -57,6 +57,16 @@ socket.addEventListener(Event.CONNECT, function(evt:Event):void
     trace("writeUTF()");
     socket.writeUTF("Hello from Ruffle Socket!");
 
+    var bigString:String = "";
+    for (var i:int = 0; i < 65537; i ++) {
+        bigString += "0";
+    }
+    try {
+        socket.writeUTF(bigString);
+    } catch(e:Error) {
+        trace("Cannot write string over 65536 bytes, error #" + e.errorID);
+    }
+
     trace("writeUTFBytes()");
     socket.writeUTFBytes("Raw UTF is cool");
 

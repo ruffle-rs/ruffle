@@ -438,7 +438,7 @@ impl Context3D for WgpuContext3D {
         _optimize_for_render_to_texture: bool,
         streaming_levels: u32,
     ) -> Result<Rc<dyn ruffle_render::backend::Texture>, Error> {
-        let format = convert_texture_format(format)?;
+        let format = convert_texture_format(format);
 
         // Wgpu doesn't support using this as a render attachment. Hopefully no swfs try
         // to use it as one.
@@ -478,7 +478,7 @@ impl Context3D for WgpuContext3D {
         _optimize_for_render_to_texture: bool,
         streaming_levels: u32,
     ) -> Result<Rc<dyn ruffle_render::backend::Texture>, Error> {
-        let format = convert_texture_format(format)?;
+        let format = convert_texture_format(format);
 
         if streaming_levels != 0 {
             tracing::warn!(
@@ -1220,7 +1220,7 @@ pub struct ClearColor {
     mask: u32,
 }
 
-fn convert_texture_format(input: Context3DTextureFormat) -> Result<wgpu::TextureFormat, Error> {
+fn convert_texture_format(input: Context3DTextureFormat) -> wgpu::TextureFormat {
     match input {
         // Some of these formats are unsupported by wgpu to various degrees:
         // * Bgra doesn't exist in webgl
@@ -1231,21 +1231,21 @@ fn convert_texture_format(input: Context3DTextureFormat) -> Result<wgpu::Texture
         //
         // The Rgba8Unorm format stores more data for each channel, so this
         // will result in (hopefully minor) rendering differences.
-        Context3DTextureFormat::Bgra => Ok(TextureFormat::Rgba8Unorm),
-        Context3DTextureFormat::BgraPacked => Ok(TextureFormat::Rgba8Unorm),
+        Context3DTextureFormat::Bgra => TextureFormat::Rgba8Unorm,
+        Context3DTextureFormat::BgraPacked => TextureFormat::Rgba8Unorm,
         // Wgpu doesn't have 'Rgb8Unorm', so we use 'Rgba8Unorm' instead.
         // Applications *should* use an opaque Bitmap with this format, so the
         // alpha channel should be set to 1.0 and have no effect.
         // FIXME: Validate that this is actually the case, and throw an
         // error if we get an unexpected bitmap from ActionScript
-        Context3DTextureFormat::BgrPacked => Ok(TextureFormat::Rgba8Unorm),
+        Context3DTextureFormat::BgrPacked => TextureFormat::Rgba8Unorm,
         // Starling claims that this is dxt5, which has an alpha channel
-        Context3DTextureFormat::CompressedAlpha => Ok(TextureFormat::Bc3RgbaUnorm),
+        Context3DTextureFormat::CompressedAlpha => TextureFormat::Bc3RgbaUnorm,
         // Starling claims that this is dxt1. It's unclear if there's supposed
         // to be an alpha channel, so we're relying on SWFS doing "the right thing"
         // as with BgrPacked
-        Context3DTextureFormat::Compressed => Ok(TextureFormat::Rgba8Unorm),
-        Context3DTextureFormat::RgbaHalfFloat => Ok(TextureFormat::Rgba16Float),
+        Context3DTextureFormat::Compressed => TextureFormat::Rgba8Unorm,
+        Context3DTextureFormat::RgbaHalfFloat => TextureFormat::Rgba16Float,
     }
 }
 
