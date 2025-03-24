@@ -2247,6 +2247,7 @@ impl Player {
                 dynamic_root,
                 post_frame_callbacks,
                 notification_sender: this.notification_sender.as_ref(),
+                frame_script_cleanup_queue: VecDeque::new(),
             };
 
             let prev_frame_rate = *update_context.frame_rate;
