@@ -76,7 +76,7 @@ wasm-bindgen = "=0.2.100"
 walkdir = "2.5.0"
 tokio = "1.44.2"
 # Switching from the `async-std` to the `tokio` runtime, which we depend on anyway.
-rfd = { version = "0.15.2", default-features = false, features = ["tokio", "xdg-portal"] }
+rfd = { version = "0.15.3", default-features = false, features = ["tokio", "xdg-portal"] }
 
 [workspace.lints.rust]
 # Clippy nightly often adds new/buggy lints that we want to ignore.
