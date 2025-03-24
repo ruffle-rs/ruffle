@@ -109,8 +109,8 @@ impl<'a> From<&'a swf::Shape> for DistilledShape<'a> {
     fn from(shape: &'a Shape) -> Self {
         Self {
             paths: ShapeConverter::from_shape(shape).into_commands(),
-            shape_bounds: shape.shape_bounds.clone(),
-            edge_bounds: shape.edge_bounds.clone(),
+            shape_bounds: shape.shape_bounds,
+            edge_bounds: shape.edge_bounds,
             id: shape.id,
         }
     }
@@ -1179,13 +1179,12 @@ pub fn swf_glyph_to_shape(glyph: &swf::Glyph) -> swf::Shape {
     // SVG.
     let bounds = glyph
         .bounds
-        .clone()
         .filter(|b| b.x_min != b.x_max || b.y_min != b.y_max)
         .unwrap_or_else(|| calculate_shape_bounds(&glyph.shape_records));
     swf::Shape {
         version: 2,
         id: 0,
-        shape_bounds: bounds.clone(),
+        shape_bounds: bounds,
         edge_bounds: bounds,
         flags: swf::ShapeFlag::HAS_SCALING_STROKES | swf::ShapeFlag::NON_ZERO_WINDING_RULE,
         styles: swf::ShapeStyles {
@@ -1340,7 +1339,7 @@ mod tests {
         swf::Shape {
             version: 2,
             id: 1,
-            shape_bounds: bounds.clone(),
+            shape_bounds: bounds,
             edge_bounds: bounds,
             flags: swf::ShapeFlag::HAS_SCALING_STROKES,
             styles: swf::ShapeStyles {

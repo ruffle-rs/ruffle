@@ -451,7 +451,7 @@ impl<'gc> Stage<'gc> {
     }
 
     pub fn view_bounds(self) -> Rectangle<Twips> {
-        self.0.read().view_bounds.clone()
+        self.0.read().view_bounds
     }
 
     pub fn show_menu(self) -> bool {

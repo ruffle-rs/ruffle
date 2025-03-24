@@ -1721,11 +1721,11 @@ pub trait TDisplayObject<'gc>:
     }
 
     fn scroll_rect(&self) -> Option<Rectangle<Twips>> {
-        self.base().scroll_rect.clone()
+        self.base().scroll_rect
     }
 
     fn next_scroll_rect(&self) -> Rectangle<Twips> {
-        self.base().next_scroll_rect.clone()
+        self.base().next_scroll_rect
     }
 
     fn set_next_scroll_rect(&self, gc_context: &Mutation<'gc>, rectangle: Rectangle<Twips>) {
@@ -1738,7 +1738,7 @@ pub trait TDisplayObject<'gc>:
     }
 
     fn scaling_grid(&self) -> Rectangle<Twips> {
-        self.base().scaling_grid.clone()
+        self.base().scaling_grid
     }
 
     fn set_scaling_grid(&self, gc_context: &Mutation<'gc>, rect: Rectangle<Twips>) {
@@ -2107,9 +2107,7 @@ pub trait TDisplayObject<'gc>:
     fn pre_render(&self, context: &mut RenderContext<'_, 'gc>) {
         let mut this = self.base_mut(context.gc());
         this.clear_invalidate_flag();
-        this.scroll_rect = this
-            .has_scroll_rect()
-            .then(|| this.next_scroll_rect.clone());
+        this.scroll_rect = this.has_scroll_rect().then(|| this.next_scroll_rect);
     }
 
     fn render_self(&self, _context: &mut RenderContext<'_, 'gc>) {}

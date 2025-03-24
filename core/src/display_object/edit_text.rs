@@ -42,9 +42,9 @@ use ruffle_render::commands::CommandHandler;
 use ruffle_render::quality::StageQuality;
 use ruffle_render::transform::Transform;
 use ruffle_wstr::WStrToUtf8;
-use std::cell::RefCell;
+use std::cell::{Cell, Ref, RefMut};
 use std::collections::VecDeque;
-use std::{cell::Ref, cell::RefMut, sync::Arc};
+use std::sync::Arc;
 use swf::ColorTransform;
 use unic_segment::WordBoundIndices;
 
@@ -118,16 +118,14 @@ pub struct EditTextData<'gc> {
     layout: Layout<'gc>,
 
     /// The current intrinsic bounds of the text field.
-    #[collect(require_static)]
-    bounds: RefCell<Rectangle<Twips>>,
+    bounds: Cell<Rectangle<Twips>>,
 
     /// Lazily calculated autosize bounds.
     ///
     /// When `None`, no new bounds should be applied.
     /// When `Some`, new bounds resulting from autosize are
     /// waiting to be applied, see [`EditText::apply_autosize_bounds`].
-    #[collect(require_static)]
-    autosize_lazy_bounds: RefCell<Option<Rectangle<Twips>>>,
+    autosize_lazy_bounds: Cell<Option<Rectangle<Twips>>>,
 
     /// The AVM1 object handle
     object: Option<AvmObject<'gc>>,
@@ -361,8 +359,8 @@ impl<'gc> EditText<'gc> {
                 border_color: Color::BLACK,
                 object: None,
                 layout,
-                bounds: RefCell::new(swf_tag.bounds().clone()),
-                autosize_lazy_bounds: RefCell::new(None),
+                bounds: Cell::new(*swf_tag.bounds()),
+                autosize_lazy_bounds: Cell::new(None),
                 autosize,
                 variable: variable.map(|s| s.to_string_lossy(encoding)),
                 bound_stage_object: None,
@@ -810,7 +808,7 @@ impl<'gc> EditText<'gc> {
     /// Returns the matrix for transforming from layout
     /// coordinate space into this object's local space.
     fn layout_to_local_matrix(self, data: &EditTextData) -> Matrix {
-        let bounds = data.bounds.borrow();
+        let bounds = data.bounds.get();
         Matrix::translate(
             bounds.x_min + Self::GUTTER - Twips::from_pixels(data.hscroll),
             bounds.y_min + Self::GUTTER - data.vertical_scroll_offset(),
@@ -920,7 +918,7 @@ impl<'gc> EditText<'gc> {
 
         // Determine the internal width available for content layout.
         let content_width = if autosize == AutoSizeMode::None || is_word_wrap {
-            Some(edit_text.bounds.borrow().width() - padding)
+            Some(edit_text.bounds.get().width() - padding)
         } else {
             None
         };
@@ -942,7 +940,7 @@ impl<'gc> EditText<'gc> {
 
         let text_size = edit_text.layout.text_size();
 
-        let mut autosize_bounds = edit_text.bounds.borrow().clone();
+        let mut autosize_bounds = edit_text.bounds.get();
         if autosize != AutoSizeMode::None {
             if !is_word_wrap {
                 // The edit text's bounds needs to have the padding baked in.
@@ -966,7 +964,7 @@ impl<'gc> EditText<'gc> {
             let height = text_size.height() + padding;
             autosize_bounds.set_height(height);
         }
-        *edit_text.autosize_lazy_bounds.borrow_mut() = Some(autosize_bounds);
+        edit_text.autosize_lazy_bounds.set(Some(autosize_bounds));
         drop(edit_text);
         self.invalidate_cached_bitmap(context.gc());
     }
@@ -995,7 +993,7 @@ impl<'gc> EditText<'gc> {
     pub fn apply_autosize_bounds(self) {
         let edit_text: Ref<'_, EditTextData<'gc>> = self.0.read();
         if let Some(bounds) = edit_text.autosize_lazy_bounds.take() {
-            *edit_text.bounds.borrow_mut() = bounds;
+            edit_text.bounds.set(bounds);
             // Note: We do not have to invalidate cache here.
             //   Cache has already been invalidated on relayout, and
             //   we will apply this anyway before render.
@@ -1020,7 +1018,7 @@ impl<'gc> EditText<'gc> {
         }
 
         let mut text_width = edit_text.layout.text_size().width();
-        let window_width = (edit_text.bounds.borrow().width() - Self::GUTTER * 2).max(Twips::ZERO);
+        let window_width = (edit_text.bounds.get().width() - Self::GUTTER * 2).max(Twips::ZERO);
 
         if !edit_text.flags.contains(EditTextFlag::READ_ONLY) {
             // input fields get extra space at the end
@@ -1047,7 +1045,7 @@ impl<'gc> EditText<'gc> {
         }
 
         let text_height = edit_text.layout.text_size().height();
-        let window_height = edit_text.bounds.borrow().height() - Self::GUTTER * 2;
+        let window_height = edit_text.bounds.get().height() - Self::GUTTER * 2;
 
         // That's the y coordinate where the fully scrolled window begins.
         // We have to find a line that's below this coordinate.
@@ -1076,7 +1074,7 @@ impl<'gc> EditText<'gc> {
         let scroll_offset = lines
             .get(edit_text.scroll - 1)
             .map_or(Twips::ZERO, |l| l.offset_y());
-        let target = edit_text.bounds.borrow().height() + scroll_offset - Self::GUTTER * 2;
+        let target = edit_text.bounds.get().height() + scroll_offset - Self::GUTTER * 2;
 
         // TODO Use binary search here
         // Line before first line with extent greater than bounds.height() + line "scroll"'s offset
@@ -1250,7 +1248,7 @@ impl<'gc> EditText<'gc> {
         //      culls any other line which is not fully visible; masking is always used for left/right bounds
         // TODO: also cull text that's simply out of screen, just like we cull whole DOs in render_self().
         if origin.y() + Self::GUTTER - edit_text.vertical_scroll_offset()
-            > edit_text.bounds.borrow().height()
+            > edit_text.bounds.get().height()
         {
             return;
         }
@@ -2304,7 +2302,7 @@ impl<'gc> EditText<'gc> {
         let edit_text = self.0.read();
 
         // Check bounds
-        let bounds = edit_text.bounds.borrow().clone().grow(-Self::GUTTER);
+        let bounds = edit_text.bounds.get().grow(-Self::GUTTER);
         if !bounds.contains(position) {
             return None;
         }
@@ -2611,7 +2609,7 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
     fn self_bounds(&self) -> Rectangle<Twips> {
         self.apply_autosize_bounds();
 
-        self.0.read().bounds.borrow().clone()
+        self.0.read().bounds.get()
     }
 
     fn pixel_bounds(&self) -> Rectangle<Twips> {
@@ -2621,7 +2619,7 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
         // are applied when reading anything related to bounds.
         let old = self.0.read().autosize_lazy_bounds.take();
         let bounds = self.world_bounds();
-        *self.0.read().autosize_lazy_bounds.borrow_mut() = old;
+        self.0.read().autosize_lazy_bounds.set(old);
         bounds
     }
 
@@ -2630,7 +2628,7 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
         self.apply_autosize_bounds();
 
         let edit_text = self.0.read();
-        let offset = edit_text.bounds.borrow().x_min;
+        let offset = edit_text.bounds.get().x_min;
         edit_text.base.base.x() + offset
     }
 
@@ -2638,7 +2636,7 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
         self.apply_autosize_bounds();
 
         let mut edit_text = self.0.write(gc_context);
-        let offset = edit_text.bounds.borrow().x_min;
+        let offset = edit_text.bounds.get().x_min;
         edit_text.base.base.set_x(x - offset);
         drop(edit_text);
         self.invalidate_cached_bitmap(gc_context);
@@ -2648,7 +2646,7 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
         self.apply_autosize_bounds();
 
         let edit_text = self.0.read();
-        let offset = edit_text.bounds.borrow().y_min;
+        let offset = edit_text.bounds.get().y_min;
         edit_text.base.base.y() + offset
     }
 
@@ -2656,7 +2654,7 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
         self.apply_autosize_bounds();
 
         let mut edit_text = self.0.write(gc_context);
-        let offset = edit_text.bounds.borrow().y_min;
+        let offset = edit_text.bounds.get().y_min;
         edit_text.base.base.set_y(y - offset);
         drop(edit_text);
         self.invalidate_cached_bitmap(gc_context);
@@ -2666,8 +2664,8 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
         self.apply_autosize_bounds();
 
         let edit_text = self.0.read();
-        let bounds = edit_text.bounds.borrow();
-        (edit_text.base.base.transform.matrix * bounds.clone())
+        let bounds = edit_text.bounds.get();
+        (edit_text.base.base.transform.matrix * bounds)
             .width()
             .to_pixels()
     }
@@ -2676,10 +2674,8 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
         self.apply_autosize_bounds();
 
         let mut edit_text = self.0.write(context.gc());
-        edit_text
-            .bounds
-            .borrow_mut()
-            .set_width(Twips::from_pixels(value));
+        let bounds = &edit_text.bounds;
+        bounds.set(bounds.get().with_width(Twips::from_pixels(value)));
         edit_text.base.base.set_transformed_by_script(true);
         drop(edit_text);
         self.relayout(context);
@@ -2689,8 +2685,8 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
         self.apply_autosize_bounds();
 
         let edit_text = self.0.read();
-        let bounds = edit_text.bounds.borrow();
-        (edit_text.base.base.transform.matrix * bounds.clone())
+        let bounds = edit_text.bounds.get();
+        (edit_text.base.base.transform.matrix * bounds)
             .height()
             .to_pixels()
     }
@@ -2699,10 +2695,8 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
         self.apply_autosize_bounds();
 
         let mut edit_text = self.0.write(context.gc());
-        edit_text
-            .bounds
-            .borrow_mut()
-            .set_height(Twips::from_pixels(value));
+        let bounds = &edit_text.bounds;
+        bounds.set(bounds.get().with_height(Twips::from_pixels(value)));
         edit_text.base.base.set_transformed_by_script(true);
         drop(edit_text);
         self.relayout(context);
@@ -2746,14 +2740,14 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
             if self.is_device_font() {
                 self.draw_device_text_box(
                     context,
-                    edit_text.bounds.borrow().clone(),
+                    edit_text.bounds.get(),
                     background_color,
                     border_color,
                 );
             } else {
                 self.draw_text_box(
                     context,
-                    edit_text.bounds.borrow().clone(),
+                    edit_text.bounds.get(),
                     background_color,
                     border_color,
                 );
@@ -2761,7 +2755,7 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
         }
 
         context.commands.push_mask();
-        let mask = Matrix::create_box_from_rectangle(&edit_text.bounds.borrow());
+        let mask = Matrix::create_box_from_rectangle(&edit_text.bounds.get());
         context.commands.draw_rect(
             Color::WHITE,
             context.transform_stack.transform().matrix * mask,
