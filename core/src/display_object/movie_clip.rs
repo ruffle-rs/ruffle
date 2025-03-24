@@ -2147,6 +2147,67 @@ impl<'gc> MovieClip<'gc> {
             }
         }
     }
+
+    fn run_local_frame_scripts(self, context: &mut UpdateContext<'gc>) {
+        let mut write = self.0.write(context.gc());
+        let avm2_object = write.object.and_then(|o| o.as_avm2_object());
+
+        if let Some(avm2_object) = avm2_object {
+            if let Some(frame_id) = write.queued_script_frame {
+                // If we are already executing frame scripts, then we shouldn't
+                // run frame scripts recursively. This is because AVM2 can run
+                // gotos, which will both queue and run frame scripts for the
+                // whole movie again. If a goto is attempting to queue frame
+                // scripts on us AGAIN, we should allow the current stack to
+                // wind down before handling that.
+                if !write.contains_flag(MovieClipFlags::EXECUTING_AVM2_FRAME_SCRIPT) {
+                    let is_fresh_frame =
+                        write.queued_script_frame != write.last_queued_script_frame;
+
+                    if is_fresh_frame {
+                        if let Some(Some(callable)) =
+                            write.frame_scripts.get(frame_id as usize).cloned()
+                        {
+                            write.last_queued_script_frame = Some(frame_id);
+                            write.queued_script_frame = None;
+                            write.set_flag(MovieClipFlags::EXECUTING_AVM2_FRAME_SCRIPT, true);
+
+                            drop(write);
+
+                            let movie = self.movie();
+                            let domain = context
+                                .library
+                                .library_for_movie(movie)
+                                .unwrap()
+                                .avm2_domain();
+
+                            if let Err(e) = Avm2::run_stack_frame_for_callable(
+                                callable,
+                                avm2_object.into(),
+                                &[],
+                                domain,
+                                context,
+                            ) {
+                                tracing::error!(
+                                    "Error occurred when running AVM2 frame script: {}",
+                                    e
+                                );
+                            }
+                            write = self.0.write(context.gc());
+
+                            write.set_flag(MovieClipFlags::EXECUTING_AVM2_FRAME_SCRIPT, false);
+                        }
+                    }
+                }
+            }
+        }
+
+        let goto_frame = write.queued_goto_frame.take();
+        drop(write);
+        if let Some(frame) = goto_frame {
+            self.run_goto(context, frame, false);
+        }
+    }
 }
 
 impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
@@ -2290,64 +2351,7 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
     }
 
     fn run_frame_scripts(self, context: &mut UpdateContext<'gc>) {
-        let mut write = self.0.write(context.gc());
-        let avm2_object = write.object.and_then(|o| o.as_avm2_object());
-
-        if let Some(avm2_object) = avm2_object {
-            if let Some(frame_id) = write.queued_script_frame {
-                // If we are already executing frame scripts, then we shouldn't
-                // run frame scripts recursively. This is because AVM2 can run
-                // gotos, which will both queue and run frame scripts for the
-                // whole movie again. If a goto is attempting to queue frame
-                // scripts on us AGAIN, we should allow the current stack to
-                // wind down before handling that.
-                if !write.contains_flag(MovieClipFlags::EXECUTING_AVM2_FRAME_SCRIPT) {
-                    let is_fresh_frame =
-                        write.queued_script_frame != write.last_queued_script_frame;
-
-                    if is_fresh_frame {
-                        if let Some(Some(callable)) =
-                            write.frame_scripts.get(frame_id as usize).cloned()
-                        {
-                            write.last_queued_script_frame = Some(frame_id);
-                            write.queued_script_frame = None;
-                            write.set_flag(MovieClipFlags::EXECUTING_AVM2_FRAME_SCRIPT, true);
-
-                            drop(write);
-
-                            let movie = self.movie();
-                            let domain = context
-                                .library
-                                .library_for_movie(movie)
-                                .unwrap()
-                                .avm2_domain();
-
-                            if let Err(e) = Avm2::run_stack_frame_for_callable(
-                                callable,
-                                avm2_object.into(),
-                                &[],
-                                domain,
-                                context,
-                            ) {
-                                tracing::error!(
-                                    "Error occurred when running AVM2 frame script: {}",
-                                    e
-                                );
-                            }
-                            write = self.0.write(context.gc());
-
-                            write.set_flag(MovieClipFlags::EXECUTING_AVM2_FRAME_SCRIPT, false);
-                        }
-                    }
-                }
-            }
-        }
-
-        let goto_frame = write.queued_goto_frame.take();
-        drop(write);
-        if let Some(frame) = goto_frame {
-            self.run_goto(context, frame, false);
-        }
+        self.run_local_frame_scripts(context);
 
         if let Some(container) = self.as_container() {
             for child in container.iter_render_list() {
