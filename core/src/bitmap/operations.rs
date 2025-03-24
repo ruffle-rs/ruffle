@@ -211,9 +211,9 @@ pub fn noise<'gc>(
     for y in 0..write.height() {
         for x in 0..write.width() {
             let pixel_color = if gray_scale {
-                let gray = rng.gen_range(low..high);
+                let gray = rng.random_range(low..high);
                 let alpha = if channel_options.contains(ChannelOptions::ALPHA) {
-                    rng.gen_range(low..high)
+                    rng.random_range(low..high)
                 } else {
                     255
                 };
@@ -221,25 +221,25 @@ pub fn noise<'gc>(
                 Color::argb(alpha, gray, gray, gray)
             } else {
                 let r = if channel_options.contains(ChannelOptions::RED) {
-                    rng.gen_range(low..high)
+                    rng.random_range(low..high)
                 } else {
                     0
                 };
 
                 let g = if channel_options.contains(ChannelOptions::GREEN) {
-                    rng.gen_range(low..high)
+                    rng.random_range(low..high)
                 } else {
                     0
                 };
 
                 let b = if channel_options.contains(ChannelOptions::BLUE) {
-                    rng.gen_range(low..high)
+                    rng.random_range(low..high)
                 } else {
                     0
                 };
 
                 let a = if channel_options.contains(ChannelOptions::ALPHA) {
-                    rng.gen_range(low..high)
+                    rng.random_range(low..high)
                 } else {
                     255
                 };
