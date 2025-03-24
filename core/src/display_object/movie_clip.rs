@@ -11,7 +11,7 @@ use crate::avm2::{
 use crate::backend::audio::{AudioManager, SoundInstanceHandle};
 use crate::backend::navigator::Request;
 use crate::backend::ui::MouseCursor;
-use crate::frame_lifecycle::run_inner_goto_frame;
+use crate::frame_lifecycle::{run_inner_goto_frame, FramePhase};
 use bitflags::bitflags;
 
 use crate::avm1::Avm1;
@@ -1849,6 +1849,9 @@ impl<'gc> MovieClip<'gc> {
                 frame_scripts.resize(index + 1, None);
             }
             frame_scripts[index] = Some(callable);
+            if let FramePhase::FrameScripts = context.frame_phase {
+                context.frame_script_cleanup_queue.push_back(self);
+            }
         } else if frame_scripts.len() > index {
             frame_scripts[index] = None;
         }
