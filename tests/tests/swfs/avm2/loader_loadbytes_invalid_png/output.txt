@@ -1,0 +1,4 @@
+[object Bitmap]
+[object Bitmap]
+image/png
+1024
