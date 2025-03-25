@@ -766,7 +766,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         };
 
         if let Some((clip, frame)) = call_frame {
-            if frame <= u16::MAX.into() {
+            if frame <= u16::MAX as u32 {
                 for action in clip.actions_on_frame(self.context, frame as u16) {
                     let _ = self.run_child_frame_for_action("[Frame Call]", clip.into(), action)?;
                 }

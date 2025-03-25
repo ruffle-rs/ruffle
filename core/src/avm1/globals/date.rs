@@ -138,7 +138,7 @@ impl Date {
         let day = self.day_within_year();
         let in_leap_year = self.in_leap_year();
         for i in 0..11 {
-            if day < Self::MONTH_OFFSETS[usize::from(in_leap_year)][i as usize + 1].into() {
+            if day < Self::MONTH_OFFSETS[usize::from(in_leap_year)][i as usize + 1] as i32 {
                 return i;
             }
         }
