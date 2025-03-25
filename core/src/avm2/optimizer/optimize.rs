@@ -646,7 +646,7 @@ pub fn optimize<'gc>(
     };
 
     // A Vec holding lists of possible abstract states, indexed by block index
-    let mut abstract_states: Vec<Vec<AbstractState<'gc>>> = vec![Vec::new(); block_list.len()];
+    let mut abstract_states: Vec<Option<AbstractState<'gc>>> = vec![None; block_list.len()];
 
     // Block #0 is the entry block
     let mut worklist = Vec::new();
@@ -654,34 +654,26 @@ pub fn optimize<'gc>(
     while let Some((block_idx, provided_abstract_state)) = worklist.pop() {
         let block = &block_list[block_idx];
 
-        let known_abstract_states = &mut abstract_states[block_idx];
-        if !known_abstract_states
-            .iter()
-            .any(|s| s.eq(&provided_abstract_state))
-        {
-            // If a predecessor of this block left us off with a different abstract
-            // state than any we've encountered so far, we'll re-verify the block
-            // with the new state. Push `provided_abstract_state` to
-            // `known_abstract_states` to mark that we've checked it.
-            known_abstract_states.push(provided_abstract_state);
+        let known_abstract_state = &mut abstract_states[block_idx];
+
+        let used_entry_state = if let Some(known_abstract_state) = known_abstract_state {
+            let merged_state =
+                provided_abstract_state.merged_with(activation, known_abstract_state)?;
+            if merged_state.eq(known_abstract_state) {
+                // We've already verified that this state works, no need to run it again
+                continue;
+            } else {
+                merged_state
+            }
         } else {
-            // If we encountered a state we've already verified, no need to
-            // verify again; move on to the next worklist entry
-            continue;
-        }
+            // We don't have any state in the state list yet, so we use the provided one
+            provided_abstract_state
+        };
 
-        // We know every abstract state that could possibly end up here, but
-        // when running the abstract optimizer, we need to give it a state
-        // that is all of the abstract states that could be here merged into one
-
-        // This is guaranteed to have at least one entry because we just pushed to it
-        let mut all_merged_state = known_abstract_states[0].clone();
-        for abstract_state in known_abstract_states.iter().skip(1) {
-            all_merged_state = all_merged_state.merged_with(activation, abstract_state)?;
-        }
+        *known_abstract_state = Some(used_entry_state.clone());
 
         let resulting_state =
-            abstract_interpret_ops(activation, block.ops, all_merged_state, None, &types, false)?;
+            abstract_interpret_ops(activation, block.ops, used_entry_state, None, &types, false)?;
 
         for exit in &block.exits {
             match exit {
@@ -710,18 +702,12 @@ pub fn optimize<'gc>(
 
     // At this point we know the guaranteed state at every block start
     let mut replacement_states = HashMap::with_capacity(block_list.len());
-    for (i, abstract_states) in abstract_states.into_iter().enumerate() {
+    for (i, abstract_state) in abstract_states.into_iter().enumerate() {
         let start_index = block_list[i].start_index;
 
-        let mut all_merged_state = abstract_states
-            .get(0)
-            .expect("Abstract optimizer should have visited every block")
-            .clone();
-        for abstract_state in abstract_states.iter().skip(1) {
-            all_merged_state = all_merged_state.merged_with(activation, abstract_state)?;
-        }
+        let abstract_state = abstract_state.expect("Every block should be visited");
 
-        replacement_states.insert(start_index, all_merged_state);
+        replacement_states.insert(start_index, abstract_state);
     }
 
     if activation.avm2().optimizer_enabled() {
