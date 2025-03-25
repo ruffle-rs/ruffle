@@ -113,7 +113,7 @@ pub fn escape<'gc>(
         if not_converted.contains(x) {
             output.push(x);
         } else {
-            let encode = if x <= u8::MAX.into() {
+            let encode = if x <= u8::MAX as u16 {
                 format!("%{x:02X}")
             } else {
                 format!("%u{x:04X}")
