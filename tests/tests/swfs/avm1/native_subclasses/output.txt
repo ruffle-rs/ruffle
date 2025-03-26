@@ -1,0 +1,191 @@
+Subclassing Boolean...
+super(true): true
+obj.isSubclass: true
+obj instanceof Boolean: true
+obj: true
+
+Subclassing Number...
+super(123.4): 123.4
+obj.isSubclass: true
+obj instanceof Number: true
+obj: 123.4
+
+Subclassing String...
+super(hello): hello
+obj.isSubclass: true
+obj instanceof String: true
+obj.length: 5
+
+Subclassing Array...
+super(foo,bar): foo,bar
+obj.isSubclass: true
+obj instanceof Array: true
+obj.length: 2
+obj.shift(): foo
+obj.length: 1
+obj.shift(): bar
+obj.length: 0
+obj.shift(): undefined
+obj.length: 0
+
+Subclassing Function...
+super(myFunc): myFunc
+obj.isSubclass: true
+obj instanceof Function: true
+obj: [object Object]
+
+Subclassing Date...
+super(123456): Thu Jan 1 05:47:03 GMT+0545 1970
+obj.isSubclass: true
+obj instanceof Date: true
+obj.getTime(): 123456
+
+Subclassing flash.filters.BlurFilter...
+super(10,20): [object Object]
+obj.isSubclass: true
+obj instanceof flash.filters.BlurFilter: true
+obj.blurX: 10
+obj.blurY: 20
+
+Subclassing flash.filters.BevelFilter...
+super(5,60): [object Object]
+obj.isSubclass: true
+obj instanceof flash.filters.BevelFilter: true
+obj.distance: 5
+obj.angle: 60
+
+Subclassing flash.filters.GlowFilter...
+super(65280,1): [object Object]
+obj.isSubclass: true
+obj instanceof flash.filters.GlowFilter: true
+obj.color: 65280
+obj.alpha: 1
+
+Subclassing flash.filters.DropShadowFilter...
+super(5,60): [object Object]
+obj.isSubclass: true
+obj instanceof flash.filters.DropShadowFilter: true
+obj.distance: 5
+obj.angle: 60
+
+Subclassing flash.filters.ColorMatrixFilter...
+super(1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20): [object Object]
+obj.isSubclass: true
+obj instanceof flash.filters.ColorMatrixFilter: true
+obj.matrix: 1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20
+
+Subclassing flash.filters.DisplacementMapFilter...
+super(null,null): [object Object]
+obj.isSubclass: true
+obj instanceof flash.filters.DisplacementMapFilter: true
+obj.mapBitmap: undefined
+obj.mapPoint: (x=0, y=0)
+
+Subclassing flash.filters.ConvolutionFilter...
+super(2,3,1,2,3,4,5,6): [object Object]
+obj.isSubclass: true
+obj instanceof flash.filters.ConvolutionFilter: true
+obj.matrixX: 2
+obj.matrixY: 3
+obj.matrix: 1,2,3,4,5,6
+
+Subclassing flash.filters.GradientBevelFilter...
+super(5,60): [object Object]
+obj.isSubclass: true
+obj instanceof flash.filters.GradientBevelFilter: true
+obj.distance: 5
+obj.angle: 60
+
+Subclassing flash.filters.GradientGlowFilter...
+super(5,60): [object Object]
+obj.isSubclass: true
+obj instanceof flash.filters.GradientGlowFilter: true
+obj.distance: 5
+obj.angle: 60
+
+Subclassing flash.geom.ColorTransform...
+super(): (redMultiplier=1, greenMultiplier=1, blueMultiplier=1, alphaMultiplier=1, redOffset=0, greenOffset=0, blueOffset=0, alphaOffset=0)
+obj.isSubclass: true
+obj instanceof flash.geom.ColorTransform: true
+obj.toString(): (redMultiplier=1, greenMultiplier=1, blueMultiplier=1, alphaMultiplier=1, redOffset=0, greenOffset=0, blueOffset=0, alphaOffset=0)
+
+Subclassing flash.geom.Transform...
+super(_level0): [object Object]
+obj.isSubclass: true
+obj instanceof flash.geom.Transform: true
+
+Subclassing TextFormat...
+super(Arial,12): [object Object]
+obj.isSubclass: true
+obj instanceof TextFormat: true
+obj.font: Arial
+obj.size: 12
+
+Subclassing flash.display.BitmapData...
+super(20,30): [object Object]
+obj.isSubclass: true
+obj instanceof flash.display.BitmapData: true
+obj.width: 20
+obj.height: 30
+
+Subclassing XML...
+super(<node />): <node />
+obj.isSubclass: true
+obj instanceof XML: true
+obj.status: 0
+
+Subclassing XMLNode...
+super(1,node): <node />
+obj.isSubclass: true
+obj instanceof XMLNode: true
+obj.nodeType: 1
+obj.nodeName: node
+
+Subclassing LocalConnection...
+super(): [object Object]
+obj.isSubclass: true
+obj instanceof LocalConnection: true
+
+Subclassing Sound...
+super(_level0): [object Object]
+obj.isSubclass: true
+obj instanceof Sound: true
+obj.getVolume(): 100
+
+Subclassing TextField.StyleSheet...
+super(): [object Object]
+obj.isSubclass: true
+obj instanceof TextField.StyleSheet: true
+
+Subclassing NetConnection...
+super(): undefined
+obj.isSubclass: true
+obj instanceof NetConnection: true
+obj.isConnected: false
+
+Subclassing NetStream...
+super([object Object]): undefined
+obj.isSubclass: true
+obj instanceof NetStream: true
+
+Subclassing XMLSocket...
+super(): undefined
+obj.isSubclass: true
+obj instanceof XMLSocket: true
+
+Subclassing SharedObject...
+super(): undefined
+obj.isSubclass: true
+obj instanceof SharedObject: true
+
+Subclassing flash.net.FileReference...
+super(): undefined
+obj.isSubclass: true
+obj instanceof flash.net.FileReference: true
+
+Subclassing MovieClip...
+super(): undefined
+obj.isSubclass: true
+obj instanceof MovieClip: true
+
+Done!
