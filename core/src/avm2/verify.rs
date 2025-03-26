@@ -163,27 +163,6 @@ pub fn verify_method<'gc>(
 
             let new_position = reader.pos(&body.code) as i32;
 
-            let bytes_read = new_position - previous_position;
-            assert!(bytes_read > 0);
-
-            for j in 0..bytes_read {
-                byte_info[(previous_position + j) as usize] = ByteInfo::OpContinue;
-            }
-
-            let translated_ops = translate_op(activation, method, max_locals, op.clone())?;
-
-            byte_info[previous_position as usize] = ByteInfo::OpStart(translated_ops.0);
-            if let Some(second_op) = translated_ops.1 {
-                assert!(bytes_read > 1);
-
-                // Split this op into two.
-                // This op must be guaranteed to take up at least 2 bytes. We
-                // simply register a non-jumpable second op at the next byte.
-                // This isn't the best way to do it, but it's simpler than
-                // actually emitting ops and rewriting the jump offsets to match.
-                byte_info[previous_position as usize + 1] = ByteInfo::OpStartNonJumpable(second_op);
-            }
-
             let mut check_target = |seen_targets: &HashSet<i32>, offs: i32, is_jump: bool| {
                 let target_position = if is_jump {
                     offs + new_position
@@ -220,8 +199,8 @@ pub fn verify_method<'gc>(
                 Ok(())
             };
 
-            // Special control flow ops
-            match op {
+            // Special control flow ops: handle the worklist
+            match &op {
                 AbcOp::IfEq { offset }
                 | AbcOp::IfFalse { offset }
                 | AbcOp::IfGe { offset }
@@ -237,22 +216,13 @@ pub fn verify_method<'gc>(
                 | AbcOp::IfStrictNe { offset }
                 | AbcOp::IfTrue { offset }
                 | AbcOp::Jump { offset } => {
-                    check_target(&seen_targets, offset, true)?;
+                    check_target(&seen_targets, *offset, true)?;
 
                     let offset = offset + new_position;
                     if !seen_targets.contains(&offset) {
                         worklist.push(offset as u32);
                         seen_targets.insert(offset);
                     }
-
-                    if matches!(op, AbcOp::Jump { .. }) {
-                        break;
-                    }
-                }
-
-                // Terminal opcodes
-                AbcOp::Throw | AbcOp::ReturnValue | AbcOp::ReturnVoid => {
-                    break;
                 }
 
                 AbcOp::LookupSwitch(ref lookup_switch) => {
@@ -275,12 +245,45 @@ pub fn verify_method<'gc>(
                             worklist.push(case_offset as u32);
                         }
                     }
-
-                    // A LookupSwitch is terminal
-                    break;
                 }
 
                 _ => {}
+            }
+
+            let is_terminator_op = matches!(
+                op,
+                AbcOp::Jump { .. }
+                    | AbcOp::LookupSwitch(_)
+                    | AbcOp::Throw
+                    | AbcOp::ReturnValue
+                    | AbcOp::ReturnVoid
+            );
+
+            // Actually translate the AbcOp into an Op
+
+            let bytes_read = new_position - previous_position;
+            assert!(bytes_read > 0);
+
+            for j in 0..bytes_read {
+                byte_info[(previous_position + j) as usize] = ByteInfo::OpContinue;
+            }
+
+            let translated_ops = translate_op(activation, method, max_locals, op)?;
+
+            byte_info[previous_position as usize] = ByteInfo::OpStart(translated_ops.0);
+            if let Some(second_op) = translated_ops.1 {
+                assert!(bytes_read > 1);
+
+                // Split this op into two.
+                // This op must be guaranteed to take up at least 2 bytes. We
+                // simply register a non-jumpable second op at the next byte.
+                // This isn't the best way to do it, but it's simpler than
+                // actually emitting ops and rewriting the jump offsets to match.
+                byte_info[previous_position as usize + 1] = ByteInfo::OpStartNonJumpable(second_op);
+            }
+
+            if is_terminator_op {
+                break;
             }
         }
     }
