@@ -85,7 +85,7 @@ pub fn assemble_blocks<'a, 'gc>(
 
                 current_block_start = i + 1;
             }
-            Op::ReturnVoid => {
+            Op::ReturnVoid { .. } => {
                 let block = BasicBlock {
                     start_index: current_block_start,
                     ops: &code[current_block_start..i + 1],
