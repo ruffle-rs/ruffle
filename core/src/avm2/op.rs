@@ -260,7 +260,9 @@ pub enum Op<'gc> {
     ReturnValue {
         return_type: Option<Class<'gc>>,
     },
-    ReturnVoid,
+    ReturnVoid {
+        return_type: Option<Class<'gc>>,
+    },
     RShift,
     SetGlobalSlot {
         // note: 0-indexed, as opposed to FP.
@@ -338,7 +340,7 @@ impl Op<'_> {
                 | Op::Swap
                 | Op::Timestamp
                 | Op::TypeOf
-                | Op::ReturnVoid
+                | Op::ReturnVoid { .. }
         )
     }
 }

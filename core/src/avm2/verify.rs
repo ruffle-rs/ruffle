@@ -958,7 +958,9 @@ fn translate_op<'gc>(
         AbcOp::ReturnValue => Op::ReturnValue {
             return_type: resolved_return_type,
         },
-        AbcOp::ReturnVoid => Op::ReturnVoid,
+        AbcOp::ReturnVoid => Op::ReturnVoid {
+            return_type: resolved_return_type,
+        },
         AbcOp::GetProperty { index } => {
             let multiname = pool_multiname(activation, translation_unit, index)?;
 
