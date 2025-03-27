@@ -6,7 +6,7 @@ FROM node:22
 
 # Installing wasm-opt from GitHub:
 # Keep the version number in sync with the ones in the Actions workflows!
-RUN wget --progress=:giga https://github.com/WebAssembly/binaryen/releases/download/version_122/binaryen-version_122-x86_64-linux.tar.gz -O- | \
+RUN wget --progress=:giga https://github.com/WebAssembly/binaryen/releases/download/version_123/binaryen-version_123-x86_64-linux.tar.gz -O- | \
     tar xzf - --wildcards "*wasm-opt" --strip-components=2 && \
     mv wasm-opt /usr/local/bin
 
