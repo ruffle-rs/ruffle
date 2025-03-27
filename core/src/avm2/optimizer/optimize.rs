@@ -533,7 +533,7 @@ pub fn optimize<'gc>(
     code: &mut Vec<Op<'gc>>,
     resolved_parameters: &[ResolvedParamConfig<'gc>],
     method_exceptions: &[Exception<'gc>],
-    jump_targets: &HashSet<i32>,
+    jump_targets: &HashSet<usize>,
 ) -> Result<(), Error<'gc>> {
     // These make the code less readable
     #![allow(clippy::collapsible_if)]
