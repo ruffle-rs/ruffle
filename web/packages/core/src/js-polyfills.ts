@@ -126,6 +126,102 @@ function tryPolyfillReflect(): void {
     }
 }
 
+// The native `Map` object is overwritten in https://github.com/ruffle-rs/ruffle/discussions/19758
+// See https://data.stats.gov.cn/js/common.js
+interface CustomMap<T, U> {
+    arr: { key: T; value: U }[];
+    put: (key: T, value: U) => void;
+    get: (key: T) => U | null;
+    remove: (key: T) => void;
+}
+
+/**
+ * Polyfills the `Map` object with missing standard methods.
+ * Works for a `Map` with the functions put, get, and remove and the object arr.
+ */
+export function tryPolyfillMap() {
+    if (typeof Map !== "function") {
+        return;
+    }
+    const customMap = new Map() as unknown as CustomMap<string, string>;
+    if (
+        typeof customMap.put !== "function" ||
+        typeof customMap.get !== "function" ||
+        typeof customMap.remove !== "function" ||
+        typeof customMap.arr !== "object"
+    ) {
+        return;
+    }
+    if (typeof Map.prototype.set !== "function") {
+        Object.defineProperty(Map.prototype, "set", {
+            value: function <T, U>(
+                this: { put: (key: T, value: U) => void },
+                key: T,
+                value: U,
+            ) {
+                this.put(key, value);
+                return this;
+            },
+        });
+    }
+
+    if (typeof Map.prototype.has !== "function") {
+        Object.defineProperty(Map.prototype, "has", {
+            value: function <T>(this: { get: (key: T) => unknown }, key: T) {
+                return this.get(key) !== null;
+            },
+        });
+    }
+
+    if (typeof Map.prototype.delete !== "function") {
+        Object.defineProperty(Map.prototype, "delete", {
+            value: function <T>(this: { remove: (key: T) => void }, key: T) {
+                this.remove(key);
+            },
+        });
+    }
+
+    if (typeof Map.prototype.clear !== "function") {
+        Object.defineProperty(Map.prototype, "clear", {
+            value: function (this: { arr: unknown[] }) {
+                this.arr = [];
+            },
+        });
+    }
+
+    if (typeof Map.prototype.keys !== "function") {
+        Object.defineProperty(Map.prototype, "keys", {
+            value: function <T>(this: { arr: { key: T }[] }) {
+                return this.arr.map((entry) => entry.key);
+            },
+        });
+    }
+
+    if (typeof Map.prototype.values !== "function") {
+        Object.defineProperty(Map.prototype, "values", {
+            value: function <U>(this: { arr: { value: U }[] }) {
+                return this.arr.map((entry) => entry.value);
+            },
+        });
+    }
+
+    if (typeof Map.prototype.entries !== "function") {
+        Object.defineProperty(Map.prototype, "entries", {
+            value: function <T, U>(this: { arr: { key: T; value: U }[] }) {
+                return this.arr.map((entry) => [entry.key, entry.value]);
+            },
+        });
+    }
+
+    if (typeof Map.prototype[Symbol.iterator] !== "function") {
+        Object.defineProperty(Map.prototype, Symbol.iterator, {
+            value: function <T, U>(this: { entries: () => [T, U][] }) {
+                return this.entries()[Symbol.iterator]();
+            },
+        });
+    }
+}
+
 /**
  * Determines whether a function is native or not.
  *
