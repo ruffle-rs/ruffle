@@ -100,15 +100,6 @@ const PROTO_DECLS: &[Declaration] = declare_properties! {
     "styleSheet" => property(tf_getter!(style_sheet), tf_setter!(set_style_sheet); VERSION_7);
 };
 
-/// Implements `TextField`
-pub fn constructor<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
-    _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error<'gc>> {
-    Ok(this.into())
-}
-
 pub fn create_proto<'gc>(
     context: &mut StringContext<'gc>,
     proto: Object<'gc>,

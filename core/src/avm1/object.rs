@@ -373,19 +373,6 @@ pub trait TObject<'gc>: 'gc + Collect<'gc> + Into<Object<'gc>> + Clone + Copy {
         self.raw_script_object().setter(name, activation)
     }
 
-    /// Construct a host object of some kind and return its cell.
-    ///
-    /// As the first step in object construction, the `new` method is called on
-    /// the prototype to initialize an object. The prototype may construct any
-    /// object implementation it wants, with itself as the new object's proto.
-    /// Then, the constructor is `call`ed with the new object as `this` to
-    /// initialize the object.
-    fn create_bare_object(
-        &self,
-        activation: &mut Activation<'_, 'gc>,
-        this: Object<'gc>,
-    ) -> Result<Object<'gc>, Error<'gc>>;
-
     /// Delete a named property from the object.
     ///
     /// Returns false if the property cannot be deleted.

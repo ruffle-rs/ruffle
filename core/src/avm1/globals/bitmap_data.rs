@@ -1567,13 +1567,8 @@ pub fn create_constructor<'gc>(
 ) -> Object<'gc> {
     define_properties_on(PROTO_DECLS, context, proto, fn_proto);
 
-    let bitmap_data_constructor = FunctionObject::constructor(
-        context,
-        constructor,
-        constructor_to_fn!(constructor),
-        fn_proto,
-        proto.into(),
-    );
+    let bitmap_data_constructor =
+        FunctionObject::constructor(context, constructor, None, fn_proto, proto.into());
     let object = bitmap_data_constructor.raw_script_object();
     define_properties_on(OBJECT_DECLS, context, object, fn_proto);
     bitmap_data_constructor

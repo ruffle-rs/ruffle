@@ -547,7 +547,7 @@ pub fn create_bevel_constructor<'gc>(
     FunctionObject::constructor(
         context,
         gradient_filter_method!(1000),
-        constructor_to_fn!(gradient_filter_method!(1000)),
+        None,
         fn_proto,
         proto,
     )
@@ -568,11 +568,5 @@ pub fn create_glow_constructor<'gc>(
     proto: Object<'gc>,
     fn_proto: Object<'gc>,
 ) -> Object<'gc> {
-    FunctionObject::constructor(
-        context,
-        gradient_filter_method!(0),
-        constructor_to_fn!(gradient_filter_method!(0)),
-        fn_proto,
-        proto,
-    )
+    FunctionObject::constructor(context, gradient_filter_method!(0), None, fn_proto, proto)
 }

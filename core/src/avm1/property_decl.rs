@@ -70,20 +70,9 @@ impl Declaration {
         let name = context.intern_static(WStr::from_units(self.name));
         let value = match self.kind {
             DeclKind::Property { getter, setter } => {
-                let getter = FunctionObject::function(
-                    context,
-                    Executable::Native(getter),
-                    fn_proto,
-                    fn_proto,
-                );
-                let setter = setter.map(|setter| {
-                    FunctionObject::function(
-                        context,
-                        Executable::Native(setter),
-                        fn_proto,
-                        fn_proto,
-                    )
-                });
+                let getter = FunctionObject::native(context, getter, fn_proto, fn_proto);
+                let setter = setter
+                    .map(|setter| FunctionObject::native(context, setter, fn_proto, fn_proto));
                 this.add_property(mc, name.into(), getter, setter, self.attributes);
                 return Value::Undefined;
             }
@@ -92,8 +81,7 @@ impl Declaration {
                     .into()
             }
             DeclKind::Function(func) => {
-                FunctionObject::function(context, Executable::Native(func), fn_proto, fn_proto)
-                    .into()
+                FunctionObject::native(context, func, fn_proto, fn_proto).into()
             }
             DeclKind::String(s) => context.intern_static(WStr::from_units(s)).into(),
             DeclKind::Bool(b) => b.into(),

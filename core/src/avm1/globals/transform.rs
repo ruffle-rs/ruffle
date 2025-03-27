@@ -191,7 +191,7 @@ pub fn create_constructor<'gc>(
     FunctionObject::constructor(
         context,
         transform_method!(0),
-        constructor_to_fn!(transform_method!(0)),
+        None,
         fn_proto,
         transform_proto.into(),
     )

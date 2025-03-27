@@ -22,15 +22,6 @@ macro_rules! video_method {
     };
 }
 
-/// Implements `Video`
-pub fn constructor<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
-    _this: Object<'gc>,
-    _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error<'gc>> {
-    Ok(Value::Undefined)
-}
-
 const PROTO_DECLS: &[Declaration] = declare_properties! {
     "attachVideo" => method(video_method!(attach_video); DONT_ENUM | DONT_DELETE | VERSION_6);
 };

@@ -319,14 +319,6 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
             .and_then(|property| property.setter())
     }
 
-    fn create_bare_object(
-        &self,
-        activation: &mut Activation<'_, 'gc>,
-        this: Object<'gc>,
-    ) -> Result<Object<'gc>, Error<'gc>> {
-        Ok(ScriptObject::new(&activation.context.strings, Some(this)).into())
-    }
-
     /// Delete a named property from the object.
     ///
     /// Returns false if the property cannot be deleted.

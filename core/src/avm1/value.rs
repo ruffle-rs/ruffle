@@ -904,7 +904,7 @@ fn string_to_f64(mut s: &WStr, swf_version: u8) -> f64 {
 mod test {
     use crate::avm1::activation::Activation;
     use crate::avm1::error::Error;
-    use crate::avm1::function::{Executable, FunctionObject};
+    use crate::avm1::function::FunctionObject;
     use crate::avm1::globals::create_globals;
     use crate::avm1::object::script_object::ScriptObject;
     use crate::avm1::object::{Object, TObject};
@@ -943,9 +943,9 @@ mod test {
                 Ok(5.into())
             }
 
-            let valueof = FunctionObject::function(
+            let valueof = FunctionObject::native(
                 &activation.context.strings,
-                Executable::Native(value_of_impl),
+                value_of_impl,
                 protos.function,
                 protos.function,
             );

@@ -123,15 +123,6 @@ const PROTO_DECLS: &[Declaration] = declare_properties! {
     // NOTE: `tabChildren` is not a built-in property of MovieClip.
 };
 
-/// Implements `MovieClip`
-pub fn constructor<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
-    _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error<'gc>> {
-    Ok(this.into())
-}
-
 pub fn new_rectangle<'gc>(
     activation: &mut Activation<'_, 'gc>,
     rectangle: Rectangle<Twips>,

@@ -10,6 +10,7 @@ use ruffle_macros::istr;
 use crate::avm1::activation::Activation;
 use crate::avm1::clamp::Clamp;
 use crate::avm1::error::Error;
+use crate::avm1::function::FunctionObject;
 use crate::avm1::property_decl::{define_properties_on, Declaration};
 use crate::avm1::{NativeObject, Object, ScriptObject, TObject, Value};
 use crate::backend::audio::{SoundHandle, SoundInstanceHandle};
@@ -140,7 +141,7 @@ const PROTO_DECLS: &[Declaration] = declare_properties! {
 };
 
 /// Implements `Sound`
-pub fn constructor<'gc>(
+fn constructor<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
@@ -168,6 +169,14 @@ pub fn create_proto<'gc>(
     let object = ScriptObject::new(context, Some(proto));
     define_properties_on(PROTO_DECLS, context, object, fn_proto);
     object.into()
+}
+
+pub fn create_constructor<'gc>(
+    context: &mut StringContext<'gc>,
+    proto: Object<'gc>,
+    fn_proto: Object<'gc>,
+) -> Object<'gc> {
+    FunctionObject::constructor(context, constructor, None, fn_proto, proto)
 }
 
 fn attach_sound<'gc>(
