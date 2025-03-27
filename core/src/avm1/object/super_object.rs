@@ -100,18 +100,20 @@ impl<'gc> TObject<'gc> for SuperObject<'gc> {
             .base_proto(activation)
             .get(istr!("__constructor__"), activation)?
             .coerce_to_object(activation);
-        match constructor.as_executable() {
-            Some(exec) => exec.exec(
-                name.into(),
-                activation,
-                self.0.this.into(),
-                self.0.depth + 1,
-                args,
-                ExecutionReason::FunctionCall,
-                constructor,
-            ),
-            None => Ok(Value::Undefined),
-        }
+
+        let NativeObject::Function(constr) = constructor.native() else {
+            return Ok(Value::Undefined);
+        };
+
+        constr.as_constructor().exec(
+            name.into(),
+            activation,
+            self.0.this.into(),
+            self.0.depth + 1,
+            args,
+            ExecutionReason::FunctionCall,
+            constructor,
+        )
     }
 
     fn call_method(
@@ -139,20 +141,6 @@ impl<'gc> TObject<'gc> for SuperObject<'gc> {
                 method,
             ),
             None => method.call(name, activation, this.into(), args),
-        }
-    }
-
-    fn create_bare_object(
-        &self,
-        activation: &mut Activation<'_, 'gc>,
-        this: Object<'gc>,
-    ) -> Result<Object<'gc>, Error<'gc>> {
-        if let Value::Object(proto) = self.proto(activation) {
-            proto.create_bare_object(activation, this)
-        } else {
-            // TODO: What happens when you `new super` but there's no
-            // super? Is this code even reachable?!
-            self.0.this.create_bare_object(activation, this)
         }
     }
 

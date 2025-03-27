@@ -26,16 +26,6 @@ const PROTO_DECLS: &[Declaration] = declare_properties! {
     "addRequestHeader" => method(add_request_header; DONT_ENUM | DONT_DELETE);
 };
 
-/// Implements `LoadVars`
-pub fn constructor<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
-    _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error<'gc>> {
-    // No-op constructor
-    Ok(this.into())
-}
-
 pub fn create_proto<'gc>(
     context: &mut StringContext<'gc>,
     proto: Object<'gc>,

@@ -92,7 +92,7 @@ fn constructor<'gc>(
         )?;
     }
 
-    Ok(this.into())
+    Ok(Value::Undefined)
 }
 
 fn clone<'gc>(
@@ -309,13 +309,7 @@ pub fn create_point_object<'gc>(
     point_proto: Object<'gc>,
     fn_proto: Object<'gc>,
 ) -> Object<'gc> {
-    let point = FunctionObject::constructor(
-        context,
-        constructor,
-        constructor_to_fn!(constructor),
-        fn_proto,
-        point_proto,
-    );
+    let point = FunctionObject::native(context, constructor, fn_proto, point_proto);
     let object = point.raw_script_object();
     define_properties_on(OBJECT_DECLS, context, object, fn_proto);
     point

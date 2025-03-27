@@ -173,7 +173,7 @@ pub fn create_constructor<'gc>(
     FunctionObject::constructor(
         context,
         color_matrix_filter_method!(0),
-        constructor_to_fn!(color_matrix_filter_method!(0)),
+        None,
         fn_proto,
         proto,
     )
