@@ -35,5 +35,3 @@ ime-enabled = Metoda wprowadzania
 ime-enabled-experimental = (eksperymentalne)
 ime-enabled-tooltip = Metoda wprowadzania pozwala na wprowadzanie znaków, które nie są dostępne na klawiaturze, na przykład znaki chińskie, japońskie, albo koreańskie.
 ime-enabled-default = Domyślna
-ime-enabled-on = Wł.
-ime-enabled-off = Wył.

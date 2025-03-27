@@ -24,6 +24,7 @@ clipboard-message-description =
 clipboard-message-copy = { " " } pour copier
 clipboard-message-cut = { " " } pour couper
 clipboard-message-paste = { " " } pour coller
+error-canvas-reload = Impossible de recharger avec le moteur de rendu canvas lorsque celui-ci est déjà en cours d'utilisation.
 error-file-protocol =
     Il semblerait que vous exécutiez Ruffle sur le protocole "file:".
     Cela ne fonctionne pas car les navigateurs bloquent de nombreuses fonctionnalités pour des raisons de sécurité.

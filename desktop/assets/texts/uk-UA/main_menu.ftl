@@ -20,6 +20,7 @@ file-menu-exit = Вихід
 controls-menu = Елементи керування
 controls-menu-suspend = Призупинити
 controls-menu-resume = Продовжити
+controls-menu-step-once = Зробити Один Крок
 controls-menu-volume = Елементи керування гучністю
 help-menu = Допомога
 help-menu-join-discord = Приєднуйтесь до Discord
