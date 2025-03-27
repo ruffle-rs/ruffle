@@ -13,7 +13,7 @@ use crate::avm2::object::{
     XmlListObject,
 };
 use crate::avm2::object::{Object, TObject};
-use crate::avm2::op::Op;
+use crate::avm2::op::{LookupSwitch, Op};
 use crate::avm2::scope::{search_scope_stack, Scope, ScopeChain};
 use crate::avm2::script::Script;
 use crate::avm2::value::Value;
@@ -28,8 +28,7 @@ use ruffle_macros::istr;
 use std::cmp::{min, Ordering};
 use std::sync::Arc;
 use swf::avm2::types::{
-    Exception, Index, LookupSwitch, Method as AbcMethod, MethodFlags as AbcMethodFlags,
-    Namespace as AbcNamespace,
+    Exception, Index, Method as AbcMethod, MethodFlags as AbcMethodFlags, Namespace as AbcNamespace,
 };
 
 use super::error::make_mismatch_error;
@@ -718,7 +717,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         let mut ip = 0;
 
         loop {
-            let op = &opcodes[ip as usize];
+            let op = &opcodes[ip];
             ip += 1;
             avm_debug!(self.avm2(), "Opcode: {op:?}");
 
@@ -891,28 +890,36 @@ impl<'a, 'gc> Activation<'a, 'gc> {
 
                 // Branch ops
                 Op::Jump { offset } => {
-                    ip += offset;
+                    self.timeout_check()?;
 
-                    self.timeout_check()
+                    ip = *offset;
+
+                    continue;
                 }
                 Op::IfTrue { offset } => {
+                    self.timeout_check()?;
+
                     if self.check_if_true() {
-                        ip += offset;
+                        ip = *offset;
                     }
 
-                    self.timeout_check()
+                    continue;
                 }
                 Op::IfFalse { offset } => {
+                    self.timeout_check()?;
+
                     if !self.check_if_true() {
-                        ip += offset;
+                        ip = *offset;
                     }
 
-                    self.timeout_check()
+                    continue;
                 }
                 Op::LookupSwitch(lookup_switch) => {
-                    ip += self.lookup_switch(&*lookup_switch);
+                    self.timeout_check()?;
 
-                    self.timeout_check()
+                    ip = self.lookup_switch(&**lookup_switch);
+
+                    continue;
                 }
 
                 // Return ops
@@ -935,9 +942,9 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     fn handle_err(
         &mut self,
         method: Gc<'gc, BytecodeMethod<'gc>>,
-        ip: i32,
+        ip: usize,
         error: Error<'gc>,
-    ) -> Result<i32, Error<'gc>> {
+    ) -> Result<usize, Error<'gc>> {
         let error = match error {
             Error::AvmError(err) => err,
             Error::RustError(_) => return Err(error),
@@ -948,7 +955,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
 
         let last_ip = ip - 1;
         for e in exception_list {
-            if last_ip >= e.from_offset as i32 && last_ip < e.to_offset as i32 {
+            if last_ip >= e.from_offset && last_ip < e.to_offset {
                 let matches = if let Some(target_class) = e.target_class {
                     // This ensures null and undefined don't match
                     error.is_of_type(self, target_class)
@@ -966,7 +973,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
                     self.push_stack(error);
 
                     self.clear_scope();
-                    return Ok(e.target_offset as i32);
+                    return Ok(e.target_offset);
                 }
             }
         }
@@ -2604,7 +2611,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     }
 
     /// Implements `Op::LookupSwitch`
-    fn lookup_switch(&mut self, lookup_switch: &LookupSwitch) -> i32 {
+    fn lookup_switch(&mut self, lookup_switch: &LookupSwitch) -> usize {
         let index = self.pop_stack().as_i32();
 
         let default_offset = lookup_switch.default_offset;
