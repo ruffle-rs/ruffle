@@ -582,7 +582,7 @@ fn constructor<'gc>(
         activation.gc(),
         NativeObject::SharedObject(GcCell::new(activation.gc(), Default::default())),
     );
-    Ok(this.into())
+    Ok(Value::Undefined)
 }
 
 pub fn create_constructor<'gc>(
@@ -592,13 +592,8 @@ pub fn create_constructor<'gc>(
 ) -> Object<'gc> {
     let shared_object_proto = ScriptObject::new(context, Some(proto));
     define_properties_on(PROTO_DECLS, context, shared_object_proto, fn_proto);
-    let constructor = FunctionObject::constructor(
-        context,
-        constructor,
-        constructor_to_fn!(constructor),
-        fn_proto,
-        shared_object_proto.into(),
-    );
+    let constructor =
+        FunctionObject::native(context, constructor, fn_proto, shared_object_proto.into());
     define_properties_on(
         OBJECT_DECLS,
         context,

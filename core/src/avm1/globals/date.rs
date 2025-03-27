@@ -1,5 +1,5 @@
 use crate::avm1::clamp::Clamp;
-use crate::avm1::function::{Executable, FunctionObject};
+use crate::avm1::function::FunctionObject;
 use crate::avm1::object::NativeObject;
 use crate::avm1::property_decl::{define_properties_on, Declaration};
 use crate::avm1::{Activation, Error, Object, ScriptObject, TObject, Value};
@@ -576,7 +576,7 @@ pub fn create_constructor<'gc>(
     let date_constructor = FunctionObject::constructor(
         context,
         date_method!(256),
-        Executable::Native(function),
+        Some(function),
         fn_proto,
         date_proto.into(),
     );

@@ -428,7 +428,7 @@ pub fn create_constructor<'gc>(
     FunctionObject::constructor(
         context,
         displacement_map_filter_method!(0),
-        constructor_to_fn!(displacement_map_filter_method!(0)),
+        None,
         fn_proto,
         proto,
     )

@@ -67,7 +67,7 @@ fn constructor<'gc>(
         )?;
     }
 
-    Ok(this.into())
+    Ok(Value::Undefined)
 }
 
 fn to_string<'gc>(
@@ -98,13 +98,7 @@ pub fn create_rectangle_object<'gc>(
     rectangle_proto: Object<'gc>,
     fn_proto: Object<'gc>,
 ) -> Object<'gc> {
-    FunctionObject::constructor(
-        context,
-        constructor,
-        constructor_to_fn!(constructor),
-        fn_proto,
-        rectangle_proto,
-    )
+    FunctionObject::native(context, constructor, fn_proto, rectangle_proto)
 }
 
 fn is_empty<'gc>(

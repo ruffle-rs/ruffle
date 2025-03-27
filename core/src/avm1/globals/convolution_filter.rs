@@ -423,7 +423,7 @@ pub fn create_constructor<'gc>(
     FunctionObject::constructor(
         context,
         convolution_filter_method!(0),
-        constructor_to_fn!(convolution_filter_method!(0)),
+        None,
         fn_proto,
         proto,
     )

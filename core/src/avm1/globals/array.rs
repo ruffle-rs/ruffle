@@ -3,7 +3,7 @@
 use crate::avm1::activation::Activation;
 use crate::avm1::clamp::Clamp;
 use crate::avm1::error::Error;
-use crate::avm1::function::{Executable, FunctionObject};
+use crate::avm1::function::FunctionObject;
 use crate::avm1::property_decl::{define_properties_on, Declaration};
 use crate::avm1::{Attribute, NativeObject, Object, ScriptObject, TObject, Value};
 use crate::ecma_conversions::f64_to_wrapping_i32;
@@ -90,6 +90,23 @@ impl<'gc> ArrayBuilder<'gc> {
         }
     }
 
+    fn init_with(self, this: Object<'gc>, elements: impl IntoIterator<Item = Value<'gc>>) {
+        let mut length: i32 = 0;
+        for value in elements.into_iter() {
+            let length_str = AvmString::new_utf8(self.mc, length.to_string());
+            this.define_value(self.mc, length_str, value, Attribute::empty());
+            length += 1;
+        }
+        this.define_value(
+            self.mc,
+            self.length_prop,
+            length.into(),
+            Attribute::DONT_ENUM | Attribute::DONT_DELETE,
+        );
+
+        this.set_native(self.mc, NativeObject::Array(()));
+    }
+
     pub fn with(self, elements: impl IntoIterator<Item = Value<'gc>>) -> ScriptObject<'gc> {
         let obj = ScriptObject::new_without_proto(self.mc);
         obj.define_value(
@@ -99,20 +116,7 @@ impl<'gc> ArrayBuilder<'gc> {
             Attribute::DONT_ENUM | Attribute::DONT_DELETE,
         );
 
-        let mut length: i32 = 0;
-        for value in elements.into_iter() {
-            let length_str = AvmString::new_utf8(self.mc, length.to_string());
-            obj.define_value(self.mc, length_str, value, Attribute::empty());
-            length += 1;
-        }
-        obj.define_value(
-            self.mc,
-            self.length_prop,
-            length.into(),
-            Attribute::DONT_ENUM | Attribute::DONT_DELETE,
-        );
-
-        obj.set_native(self.mc, NativeObject::Array(()));
+        self.init_with(obj.into(), elements);
         obj
     }
 }
@@ -122,13 +126,8 @@ pub fn create_array_object<'gc>(
     array_proto: Object<'gc>,
     fn_proto: Object<'gc>,
 ) -> Object<'gc> {
-    let array = FunctionObject::constructor(
-        context,
-        constructor,
-        Executable::Native(constructor),
-        fn_proto,
-        array_proto,
-    );
+    let array =
+        FunctionObject::constructor(context, constructor, Some(array), fn_proto, array_proto);
     let object = array.raw_script_object();
 
     // TODO: These were added in Flash Player 7, but are available even to SWFv6 and lower
@@ -138,15 +137,29 @@ pub fn create_array_object<'gc>(
     array
 }
 
-/// Implements `Array` constructor and function
+/// Implements `Array` constructor
 pub fn constructor<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    this: Object<'gc>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    let builder = ArrayBuilder::new(activation);
+    if let [Value::Number(length)] = *args {
+        builder.init_with(this, []);
+        this.set_length(activation, length.clamp_to_i32())?;
+    } else {
+        builder.init_with(this, args.iter().cloned());
+    }
+
+    Ok(this.into())
+}
+
+/// Implements `Array` function
+pub fn array<'gc>(
     activation: &mut Activation<'_, 'gc>,
     _this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    // FIXME(moulins): this is incorrect (see issue #9179).
-    // This should modify `this` when called as a constructor, but splitting this into a
-    // constructor and a function breaks other test cases.
     if let [Value::Number(length)] = *args {
         let array = ArrayBuilder::empty(activation);
         array.set_length(activation, length.clamp_to_i32())?;

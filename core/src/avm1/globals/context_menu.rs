@@ -47,7 +47,7 @@ pub fn constructor<'gc>(
 
     this.set(istr!("customItems"), custom_items, activation)?;
 
-    Ok(this.into())
+    Ok(Value::Undefined)
 }
 
 pub fn copy<'gc>(

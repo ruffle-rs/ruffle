@@ -296,15 +296,6 @@ impl<'gc> TObject<'gc> for StageObject<'gc> {
         }
     }
 
-    fn create_bare_object(
-        &self,
-        activation: &mut Activation<'_, 'gc>,
-        this: Object<'gc>,
-    ) -> Result<Object<'gc>, Error<'gc>> {
-        //TODO: Create a StageObject of some kind
-        self.0.base.create_bare_object(activation, this)
-    }
-
     // Note that `hasOwnProperty` does NOT return true for child display objects.
     fn has_property(&self, activation: &mut Activation<'_, 'gc>, name: AvmString<'gc>) -> bool {
         if !self.0.display_object.avm1_removed() && self.0.base.has_property(activation, name) {

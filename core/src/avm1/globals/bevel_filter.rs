@@ -536,11 +536,5 @@ pub fn create_constructor<'gc>(
     proto: Object<'gc>,
     fn_proto: Object<'gc>,
 ) -> Object<'gc> {
-    FunctionObject::constructor(
-        context,
-        bevel_filter_method!(0),
-        constructor_to_fn!(bevel_filter_method!(0)),
-        fn_proto,
-        proto,
-    )
+    FunctionObject::constructor(context, bevel_filter_method!(0), None, fn_proto, proto)
 }

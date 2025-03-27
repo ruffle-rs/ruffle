@@ -584,11 +584,5 @@ pub fn create_constructor<'gc>(
 ) -> Object<'gc> {
     let xml_proto = ScriptObject::new(context, Some(proto));
     define_properties_on(PROTO_DECLS, context, xml_proto, fn_proto);
-    FunctionObject::constructor(
-        context,
-        constructor,
-        constructor_to_fn!(constructor),
-        fn_proto,
-        xml_proto.into(),
-    )
+    FunctionObject::constructor(context, constructor, None, fn_proto, xml_proto.into())
 }

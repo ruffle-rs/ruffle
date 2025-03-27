@@ -449,7 +449,7 @@ pub fn create_constructor<'gc>(
     FunctionObject::constructor(
         context,
         drop_shadow_filter_method!(0),
-        constructor_to_fn!(drop_shadow_filter_method!(0)),
+        None,
         fn_proto,
         proto,
     )

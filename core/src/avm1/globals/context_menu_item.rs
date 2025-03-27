@@ -48,7 +48,7 @@ pub fn constructor<'gc>(
     this.set(istr!("enabled"), enabled.into(), activation)?;
     this.set(istr!("visible"), visible.into(), activation)?;
 
-    Ok(this.into())
+    Ok(Value::Undefined)
 }
 
 pub fn copy<'gc>(

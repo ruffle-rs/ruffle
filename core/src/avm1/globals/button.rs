@@ -60,15 +60,6 @@ pub fn create_proto<'gc>(
     object.into()
 }
 
-/// Implements `Button` constructor.
-pub fn constructor<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
-    _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error<'gc>> {
-    Ok(this.into())
-}
-
 fn blend_mode<'gc>(
     this: Avm1Button<'gc>,
     activation: &mut Activation<'_, 'gc>,

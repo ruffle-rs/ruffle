@@ -218,7 +218,7 @@ fn constructor<'gc>(
         }
     }
 
-    Ok(this.into())
+    Ok(Value::Undefined)
 }
 
 fn identity<'gc>(
@@ -485,13 +485,7 @@ pub fn create_matrix_object<'gc>(
     matrix_proto: Object<'gc>,
     fn_proto: Object<'gc>,
 ) -> Object<'gc> {
-    FunctionObject::constructor(
-        context,
-        constructor,
-        constructor_to_fn!(constructor),
-        fn_proto,
-        matrix_proto,
-    )
+    FunctionObject::native(context, constructor, fn_proto, matrix_proto)
 }
 
 pub fn create_proto<'gc>(

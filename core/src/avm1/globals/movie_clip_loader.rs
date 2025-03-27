@@ -32,7 +32,7 @@ pub fn constructor<'gc>(
         Value::Object(listeners.into()),
         Attribute::DONT_ENUM,
     );
-    Ok(this.into())
+    Ok(Value::Undefined)
 }
 
 fn load_clip<'gc>(

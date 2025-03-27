@@ -35,7 +35,7 @@ pub fn constructor<'gc>(
         target,
         Attribute::DONT_DELETE | Attribute::READ_ONLY | Attribute::DONT_ENUM,
     );
-    Ok(this.into())
+    Ok(Value::Undefined)
 }
 
 pub fn create_proto<'gc>(

@@ -14,7 +14,7 @@ pub fn constructor<'gc>(
     let netstream = NetStream::new(activation.gc(), Some(this.into()));
     this.set_native(activation.gc(), NativeObject::NetStream(netstream));
 
-    Ok(this.into())
+    Ok(Value::Undefined)
 }
 
 const PROTO_DECLS: &[Declaration] = declare_properties! {
@@ -183,11 +183,5 @@ pub fn create_class<'gc>(
     netstream_proto: Object<'gc>,
     fn_proto: Object<'gc>,
 ) -> Object<'gc> {
-    FunctionObject::constructor(
-        context,
-        constructor,
-        constructor_to_fn!(constructor),
-        fn_proto,
-        netstream_proto,
-    )
+    FunctionObject::native(context, constructor, fn_proto, netstream_proto)
 }

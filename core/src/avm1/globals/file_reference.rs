@@ -418,7 +418,7 @@ fn constructor<'gc>(
             Default::default(),
         ))),
     );
-    Ok(this.into())
+    Ok(Value::Undefined)
 }
 
 pub fn create_constructor<'gc>(
@@ -431,13 +431,8 @@ pub fn create_constructor<'gc>(
     let file_reference_proto = ScriptObject::new(context, Some(proto));
     define_properties_on(PROTO_DECLS, context, file_reference_proto, fn_proto);
     broadcaster_functions.initialize(context, file_reference_proto.into(), array_proto);
-    let constructor = FunctionObject::constructor(
-        context,
-        constructor,
-        constructor_to_fn!(constructor),
-        fn_proto,
-        file_reference_proto.into(),
-    );
+    let constructor =
+        FunctionObject::native(context, constructor, fn_proto, file_reference_proto.into());
     define_properties_on(
         OBJECT_DECLS,
         context,
