@@ -35,5 +35,3 @@ ime-enabled = Metoda zadávání
 ime-enabled-experimental = (experimentální)
 ime-enabled-tooltip = Metoda zadávání umožňuje zadávat znaky, které nejsou na klávesnici k dispozici, například čínské, japonské nebo korejské znaky.
 ime-enabled-default = Výchozí
-ime-enabled-on = Zap.
-ime-enabled-off = Vyp.

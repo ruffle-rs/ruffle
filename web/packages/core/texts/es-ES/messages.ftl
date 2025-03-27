@@ -24,6 +24,7 @@ clipboard-message-description =
 clipboard-message-copy = Para copiar
 clipboard-message-cut = Para cortar
 clipboard-message-paste = Para pegar
+error-canvas-reload = No se puede recargar con el renderizado de lienzo cuando este ya está en uso.
 error-file-protocol =
     Parece que está ejecutando Ruffle en el protocolo "archivo:".
     Esto no funciona porque los navegadores bloquean que muchas características funcionen por razones de seguridad.

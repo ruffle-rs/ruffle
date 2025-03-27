@@ -33,5 +33,3 @@ ime-enabled = 输入法支持
 ime-enabled-experimental = (实验性)
 ime-enabled-tooltip = 输入法可以输入不在键盘上的字符，例如中文、日文或韩文字符。
 ime-enabled-default = 默认
-ime-enabled-on = 开
-ime-enabled-off = 关
