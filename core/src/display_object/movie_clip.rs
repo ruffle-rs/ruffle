@@ -2183,7 +2183,7 @@ impl<'gc> MovieClip<'gc> {
         callable: Option<Avm2Object<'gc>>,
         context: &mut UpdateContext<'gc>,
     ) {
-        let current_frame = self.0.write(context.gc()).current_frame;
+        let current_frame = self.current_frame();
         let frame_scripts = &mut self.0.write(context.gc()).frame_scripts;
 
         let index = frame_id as usize;
