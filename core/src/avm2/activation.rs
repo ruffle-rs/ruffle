@@ -7,6 +7,7 @@ use crate::avm2::e4x::{escape_attribute_value, escape_element_value};
 use crate::avm2::error::{
     make_error_1065, make_error_1127, make_error_1506, make_null_or_undefined_error, type_error,
 };
+use crate::avm2::function::FunctionArgs;
 use crate::avm2::method::{BytecodeMethod, Method, ResolvedParamConfig};
 use crate::avm2::object::{
     ArrayObject, ByteArrayObject, ClassObject, FunctionObject, NamespaceObject, ScriptObject,
@@ -272,9 +273,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             value
         } else if let Some(default_value) = &param_config.default_value {
             default_value
-        } else if param_config.param_type.is_none() {
-            // TODO: FP's system of allowing missing arguments
-            // is a more complicated than this.
+        } else if method.into_bytecode().is_some_and(|bm| bm.is_unchecked()) {
             return Ok(Value::Undefined);
         } else {
             return Err(Error::AvmError(make_mismatch_error(
@@ -350,11 +349,13 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         method: Gc<'gc, BytecodeMethod<'gc>>,
         outer: ScopeChain<'gc>,
         this: Value<'gc>,
-        user_arguments: &[Value<'gc>],
+        user_arguments: FunctionArgs<'_, 'gc>,
         bound_superclass_object: Option<ClassObject<'gc>>,
         bound_class: Option<Class<'gc>>,
         callee: Value<'gc>,
     ) -> Result<(), Error<'gc>> {
+        let mut user_arguments: &[Value<'gc>] = &user_arguments.to_slice(self);
+
         let body = method
             .body()
             .expect("Cannot execute non-native method without body");
@@ -399,6 +400,13 @@ impl<'a, 'gc> Activation<'a, 'gc> {
 
         let verified_info = method.verified_info.borrow();
         let signature = &verified_info.as_ref().unwrap().param_config;
+
+        if method.is_unchecked() {
+            let max_args = signature.len();
+            if user_arguments.len() > max_args && !method.is_variadic() {
+                user_arguments = &user_arguments[..max_args];
+            }
+        }
 
         if user_arguments.len() > signature.len() && !has_rest_or_args {
             return Err(Error::AvmError(make_mismatch_error(
@@ -1112,10 +1120,16 @@ impl<'a, 'gc> Activation<'a, 'gc> {
 
         // However, the optimizer can still generate it.
 
-        let args = self.pop_stack_args(arg_count);
-        let receiver = self.pop_stack().null_check(self, None)?;
+        let args = FunctionArgs::OnAvmStack { arg_count };
+        let receiver = self
+            .avm2()
+            .peek(arg_count as usize)
+            .null_check(self, None)?;
 
-        let value = receiver.call_method(index, &args, self)?;
+        let value = receiver.call_method_with_args(index, args, self)?;
+
+        // Pop receiver now: `call_method_with_args` is responsible for popping the args
+        let _ = self.pop_stack();
 
         if push_return_value {
             self.push_stack(value);
