@@ -282,11 +282,7 @@ export class InnerPlayer {
         this.contextMenuElement.addEventListener("contextmenu", preserveMenu);
         this.contextMenuElement.addEventListener("click", preserveMenu);
 
-        // TODO Add support for RTL context menu.
-        //   It should use the direction of the browser, not the document.
-        //   See <https://developer.mozilla.org/en-US/docs/Web/API/Navigator/language>
-        //   See <https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Intl/Locale/getTextInfo>
-        this.contextMenuElement.dir = 'ltr';
+        this.contextMenuElement.dir = detectBrowserDirection();
 
         document.documentElement.addEventListener(
             "pointerdown",
@@ -2327,4 +2323,32 @@ function parseAllowScriptAccess(
         default:
             return null;
     }
+}
+
+/**
+ * Detect direction (LTR/RTL) of the preferred language of the browser.
+ *
+ * @returns 'ltr' or 'rtl' depending on the detected direction
+ */
+function detectBrowserDirection(): string {
+    const browserLocale = new Intl.Locale(navigator.language);
+
+    let textInfo = null;
+    if ('getTextInfo' in browserLocale &&
+        typeof browserLocale.getTextInfo === 'function') {
+        textInfo = browserLocale.getTextInfo();
+    } else if ('textInfo' in browserLocale &&
+        typeof browserLocale.textInfo === 'object') {
+        textInfo = browserLocale.textInfo;
+    } else {
+        return 'ltr';
+    }
+
+    if (typeof textInfo === 'object' &&
+        'direction' in textInfo &&
+        typeof textInfo.direction === 'string') {
+        return textInfo.direction || 'ltr';
+    }
+
+    return 'ltr';
 }
