@@ -1640,19 +1640,30 @@ export class InnerPlayer {
         const playerRect = this.element.getBoundingClientRect();
         const contextMenuRect = this.contextMenuElement.getBoundingClientRect();
 
+        // We need to get the viewport element in order to properly detect the
+        // viewport size. We cannot use window.innerWidth, because it doesn't
+        // take into account the scrollbar. Unfortunately, the viewport element
+        // is different in standards mode (documentElement) compared to quirks
+        // mode (body).
+        //
+        // In standards mode, scrollingElement always returns the
+        // documentElement, in quirks mode it sometimes returns body, sometimes
+        // null. As we don't care about scrollability, we can just assume quirks
+        // mode and get the body when it's null.
+        const viewportElement = document.scrollingElement || document.body;
+
         // Keep the entire context menu inside the viewport.
-        // TODO: Allow the context menu to escape the document body while being mindful of scrollbars.
         const overflowX = Math.max(
             0,
             event.clientX +
                 contextMenuRect.width -
-                document.documentElement.clientWidth,
+                viewportElement.clientWidth,
         );
         const overflowY = Math.max(
             0,
             event.clientY +
                 contextMenuRect.height -
-                document.documentElement.clientHeight,
+                viewportElement.clientHeight,
         );
         const x = event.clientX - playerRect.x - overflowX;
         const y = event.clientY - playerRect.y - overflowY;
