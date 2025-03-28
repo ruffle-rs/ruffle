@@ -811,7 +811,7 @@ pub fn error<'gc>(
 pub fn make_mismatch_error<'gc>(
     activation: &mut Activation<'_, 'gc>,
     method: Method<'gc>,
-    user_arguments: &[Value<'gc>],
+    passed_arg_count: usize,
     bound_class: Option<Class<'gc>>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let expected_num_params = method
@@ -828,8 +828,7 @@ pub fn make_mismatch_error<'gc>(
         activation,
         &format!(
             "Error #1063: Argument count mismatch on {function_name}. Expected {}, got {}.",
-            expected_num_params,
-            user_arguments.len(),
+            expected_num_params, passed_arg_count,
         ),
         1063,
     )?));

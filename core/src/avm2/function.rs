@@ -129,16 +129,17 @@ impl<'gc> BoundMethod<'gc> {
     }
 }
 
+#[derive(Clone, Copy)]
 pub enum FunctionArgs<'a, 'gc> {
-    OnAvmStack { arg_count: u32 },
+    OnAvmStack { arg_count: usize, stack_base: usize },
     AsArgSlice { arguments: &'a [Value<'gc>] },
 }
 
 impl<'a, 'gc> FunctionArgs<'a, 'gc> {
     pub fn to_slice(self, activation: &mut Activation<'_, 'gc>) -> Cow<'a, [Value<'gc>]> {
         match self {
-            FunctionArgs::OnAvmStack { arg_count } => {
-                let args = activation.pop_stack_args(arg_count);
+            FunctionArgs::OnAvmStack { arg_count, .. } => {
+                let args = activation.pop_stack_args(arg_count as u32);
                 Cow::Owned(args)
             }
             FunctionArgs::AsArgSlice { arguments } => Cow::Borrowed(arguments),
@@ -147,10 +148,13 @@ impl<'a, 'gc> FunctionArgs<'a, 'gc> {
 
     pub fn get_at(&self, activation: &mut Activation<'_, 'gc>, index: usize) -> Value<'gc> {
         match self {
-            FunctionArgs::OnAvmStack { arg_count } => {
-                assert!(index < *arg_count as usize);
+            FunctionArgs::OnAvmStack {
+                arg_count,
+                stack_base,
+            } => {
+                assert!(index < *arg_count);
 
-                activation.avm2().peek(*arg_count as usize - index - 1)
+                activation.avm2().stack_at(stack_base + index)
             }
             FunctionArgs::AsArgSlice { arguments } => arguments[index],
         }
@@ -158,7 +162,7 @@ impl<'a, 'gc> FunctionArgs<'a, 'gc> {
 
     pub fn len(&self) -> usize {
         match self {
-            FunctionArgs::OnAvmStack { arg_count } => *arg_count as usize,
+            FunctionArgs::OnAvmStack { arg_count, .. } => *arg_count,
             FunctionArgs::AsArgSlice { arguments } => arguments.len(),
         }
     }
@@ -249,7 +253,7 @@ pub fn exec<'gc>(
             // This used to be a one step called Activation::from_method,
             // but avoiding moving an Activation around helps perf
             let mut activation = Activation::from_nothing(activation.context);
-            activation.init_from_method(
+            if let Err(e) = activation.init_from_method(
                 bm,
                 scope,
                 receiver,
@@ -257,7 +261,14 @@ pub fn exec<'gc>(
                 bound_superclass,
                 bound_class,
                 callee,
-            )?;
+            ) {
+                // Make sure to remove arguments passed on the AVM stack if there were any
+                if let FunctionArgs::OnAvmStack { stack_base, .. } = arguments {
+                    activation.avm2().truncate_stack(stack_base);
+                }
+
+                return Err(e);
+            }
 
             #[cfg(feature = "tracy_avm")]
             let _span = {
@@ -283,6 +294,11 @@ pub fn exec<'gc>(
             let result = activation.run_actions(bm);
 
             activation.cleanup();
+
+            // Make sure to remove arguments passed on the AVM stack if there were any
+            if let FunctionArgs::OnAvmStack { stack_base, .. } = arguments {
+                activation.avm2().truncate_stack(stack_base);
+            }
 
             result
         }
