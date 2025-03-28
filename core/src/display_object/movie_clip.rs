@@ -2354,11 +2354,25 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
     }
 
     fn run_frame_scripts(self, context: &mut UpdateContext<'gc>) {
-        self.run_local_frame_scripts(context);
+        let cleans_up = context.frame_script_cleanup_queue.is_empty();
+
+        if !context
+            .frame_script_cleanup_queue
+            .iter()
+            .any(|clip| clip.as_ptr() == self.as_ptr())
+        {
+            self.run_local_frame_scripts(context);
+        }
 
         if let Some(container) = self.as_container() {
             for child in container.iter_render_list() {
                 child.run_frame_scripts(context);
+            }
+        }
+
+        if cleans_up {
+            while let Some(clip) = context.frame_script_cleanup_queue.pop_front() {
+                clip.run_local_frame_scripts(context);
             }
         }
     }
