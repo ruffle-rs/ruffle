@@ -1853,7 +1853,7 @@ impl<'gc> MovieClip<'gc> {
                 frame_scripts.resize(index + 1, None);
             }
             frame_scripts[index] = Some(callable);
-            if let FramePhase::FrameScripts = context.frame_phase {
+            if (*context.frame_phase == FramePhase::FrameScripts) && (current_frame == frame_id) {
                 context.frame_script_cleanup_queue.push_back(self);
             }
         } else if frame_scripts.len() > index {
