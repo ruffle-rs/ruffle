@@ -2183,6 +2183,7 @@ impl<'gc> MovieClip<'gc> {
         callable: Option<Avm2Object<'gc>>,
         context: &mut UpdateContext<'gc>,
     ) {
+        let current_frame = self.0.write(context.gc()).current_frame;
         let frame_scripts = &mut self.0.write(context.gc()).frame_scripts;
 
         let index = frame_id as usize;
@@ -2191,7 +2192,7 @@ impl<'gc> MovieClip<'gc> {
                 frame_scripts.resize(index + 1, None);
             }
             frame_scripts[index] = Some(callable);
-            if let FramePhase::FrameScripts = context.frame_phase {
+            if (*context.frame_phase == FramePhase::FrameScripts) && (current_frame == frame_id) {
                 context.frame_script_cleanup_queue.push_back(self);
             }
         } else if frame_scripts.len() > index {
