@@ -255,42 +255,6 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         }
     }
 
-    /// Resolve a single parameter value.
-    ///
-    /// Given an individual parameter value and the associated parameter's
-    /// configuration, return what value should be stored in the called
-    /// function's local registers (or an error, if the parameter violates the
-    /// signature of the current called method).
-    fn resolve_parameter(
-        &mut self,
-        method: Method<'gc>,
-        value: Option<&Value<'gc>>,
-        param_config: &ResolvedParamConfig<'gc>,
-        user_arguments: &[Value<'gc>],
-        bound_class: Option<Class<'gc>>,
-    ) -> Result<Value<'gc>, Error<'gc>> {
-        let arg = if let Some(value) = value {
-            value
-        } else if let Some(default_value) = &param_config.default_value {
-            default_value
-        } else if method.into_bytecode().is_some_and(|bm| bm.is_unchecked()) {
-            return Ok(Value::Undefined);
-        } else {
-            return Err(Error::AvmError(make_mismatch_error(
-                self,
-                method,
-                user_arguments,
-                bound_class,
-            )?));
-        };
-
-        if let Some(param_class) = param_config.param_type {
-            arg.coerce_to_type(self, param_class)
-        } else {
-            Ok(*arg)
-        }
-    }
-
     /// Statically resolve all of the parameters for a given method.
     ///
     /// This function makes no attempt to enforce a given method's parameter
@@ -307,30 +271,43 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     ) -> Result<Vec<Value<'gc>>, Error<'gc>> {
         let mut arguments_list = Vec::new();
         for (arg, param_config) in user_arguments.iter().zip(signature.iter()) {
-            arguments_list.push(self.resolve_parameter(
-                method,
-                Some(arg),
-                param_config,
-                user_arguments,
-                bound_class,
-            )?);
+            let coerced_arg = if let Some(param_class) = param_config.param_type {
+                arg.coerce_to_type(self, param_class)?
+            } else {
+                *arg
+            };
+
+            arguments_list.push(coerced_arg);
         }
 
         match user_arguments.len().cmp(&signature.len()) {
             Ordering::Greater => {
-                //Variadic parameters exist, just push them into the list
+                // Variadic parameters exist, just push them into the list
                 arguments_list.extend_from_slice(&user_arguments[signature.len()..])
             }
             Ordering::Less => {
-                //Apply remaining default parameters
+                // Apply remaining default parameters
                 for param_config in signature[user_arguments.len()..].iter() {
-                    arguments_list.push(self.resolve_parameter(
-                        method,
-                        None,
-                        param_config,
-                        user_arguments,
-                        bound_class,
-                    )?);
+                    let arg = if let Some(default_value) = &param_config.default_value {
+                        *default_value
+                    } else if method.into_bytecode().is_some_and(|bm| bm.is_unchecked()) {
+                        Value::Undefined
+                    } else {
+                        return Err(Error::AvmError(make_mismatch_error(
+                            self,
+                            method,
+                            user_arguments,
+                            bound_class,
+                        )?));
+                    };
+
+                    let coerced_arg = if let Some(param_class) = param_config.param_type {
+                        arg.coerce_to_type(self, param_class)?
+                    } else {
+                        arg
+                    };
+
+                    arguments_list.push(coerced_arg);
                 }
             }
             _ => {}
