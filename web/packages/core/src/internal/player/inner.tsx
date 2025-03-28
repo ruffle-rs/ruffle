@@ -282,6 +282,12 @@ export class InnerPlayer {
         this.contextMenuElement.addEventListener("contextmenu", preserveMenu);
         this.contextMenuElement.addEventListener("click", preserveMenu);
 
+        // TODO Add support for RTL context menu.
+        //   It should use the direction of the browser, not the document.
+        //   See <https://developer.mozilla.org/en-US/docs/Web/API/Navigator/language>
+        //   See <https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Intl/Locale/getTextInfo>
+        this.contextMenuElement.dir = 'ltr';
+
         document.documentElement.addEventListener(
             "pointerdown",
             this.checkIfTouch.bind(this),
@@ -1594,7 +1600,16 @@ export class InnerPlayer {
         const x = event.clientX - playerRect.x - overflowX;
         const y = event.clientY - playerRect.y - overflowY;
 
-        this.contextMenuElement.style.transform = `translate(${x}px, ${y}px)`;
+        const isRtl = getComputedStyle(this.contextMenuElement).direction === 'rtl';
+
+        this.contextMenuElement.style.top = `${y}px`;
+        if (isRtl) {
+            this.contextMenuElement.style.right = `${playerRect.width - x}px`;
+            this.contextMenuElement.style.left = '';
+        } else {
+            this.contextMenuElement.style.right = '';
+            this.contextMenuElement.style.left = `${x}px`;
+        }
     }
 
     private hideContextMenu(): void {

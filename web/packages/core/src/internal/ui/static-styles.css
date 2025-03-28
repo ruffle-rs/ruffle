@@ -208,7 +208,7 @@
     box-shadow: 0 5px 10px -5px black;
     position: absolute;
     font-size: 14px;
-    text-align: left;
+    text-align: start;
     list-style: none;
     white-space: nowrap;
     padding: 3px 0;
