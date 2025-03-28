@@ -1035,6 +1035,10 @@ impl<'gc> MovieClip<'gc> {
             self.play();
         }
 
+        // When performing goto, frame scripts behave the same as when entering a new frame
+        // so no seperate cleaup is performed on ones registered during frame script phase
+        context.frame_script_cleanup_queue.clear();
+
         // Clamp frame number in bounds.
         let frame = frame.max(1);
 
