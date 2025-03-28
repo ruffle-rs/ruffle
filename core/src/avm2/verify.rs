@@ -1127,7 +1127,7 @@ fn translate_op<'gc>(
             return Ok((
                 Op::StrictEquals,
                 Some(Op::IfTrue {
-                    offset: offset as usize - 1,
+                    offset: (offset - 1) as usize,
                 }),
             ));
         }
@@ -1135,7 +1135,7 @@ fn translate_op<'gc>(
             return Ok((
                 Op::StrictEquals,
                 Some(Op::IfFalse {
-                    offset: offset as usize - 1,
+                    offset: (offset - 1) as usize,
                 }),
             ));
         }
@@ -1143,7 +1143,7 @@ fn translate_op<'gc>(
             return Ok((
                 Op::Equals,
                 Some(Op::IfTrue {
-                    offset: offset as usize - 1,
+                    offset: (offset - 1) as usize,
                 }),
             ));
         }
@@ -1151,7 +1151,7 @@ fn translate_op<'gc>(
             return Ok((
                 Op::Equals,
                 Some(Op::IfFalse {
-                    offset: offset as usize - 1,
+                    offset: (offset - 1) as usize,
                 }),
             ));
         }
@@ -1159,7 +1159,7 @@ fn translate_op<'gc>(
             return Ok((
                 Op::GreaterEquals,
                 Some(Op::IfTrue {
-                    offset: offset as usize - 1,
+                    offset: (offset - 1) as usize,
                 }),
             ));
         }
@@ -1167,7 +1167,7 @@ fn translate_op<'gc>(
             return Ok((
                 Op::GreaterThan,
                 Some(Op::IfTrue {
-                    offset: offset as usize - 1,
+                    offset: (offset - 1) as usize,
                 }),
             ));
         }
@@ -1175,7 +1175,7 @@ fn translate_op<'gc>(
             return Ok((
                 Op::LessEquals,
                 Some(Op::IfTrue {
-                    offset: offset as usize - 1,
+                    offset: (offset - 1) as usize,
                 }),
             ));
         }
@@ -1183,7 +1183,7 @@ fn translate_op<'gc>(
             return Ok((
                 Op::LessThan,
                 Some(Op::IfTrue {
-                    offset: offset as usize - 1,
+                    offset: (offset - 1) as usize,
                 }),
             ));
         }
@@ -1191,7 +1191,7 @@ fn translate_op<'gc>(
             return Ok((
                 Op::GreaterEquals,
                 Some(Op::IfFalse {
-                    offset: offset as usize - 1,
+                    offset: (offset - 1) as usize,
                 }),
             ));
         }
@@ -1199,7 +1199,7 @@ fn translate_op<'gc>(
             return Ok((
                 Op::GreaterThan,
                 Some(Op::IfFalse {
-                    offset: offset as usize - 1,
+                    offset: (offset - 1) as usize,
                 }),
             ));
         }
@@ -1207,7 +1207,7 @@ fn translate_op<'gc>(
             return Ok((
                 Op::LessEquals,
                 Some(Op::IfFalse {
-                    offset: offset as usize - 1,
+                    offset: (offset - 1) as usize,
                 }),
             ));
         }
@@ -1215,7 +1215,7 @@ fn translate_op<'gc>(
             return Ok((
                 Op::LessThan,
                 Some(Op::IfFalse {
-                    offset: offset as usize - 1,
+                    offset: (offset - 1) as usize,
                 }),
             ));
         }
