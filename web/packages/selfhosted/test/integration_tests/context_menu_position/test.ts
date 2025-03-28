@@ -36,7 +36,7 @@ describe("Context Menu", () => {
         await player.click();
 
         // Make the window large enough to accommodate a protruding context menu
-        await browser.setWindowSize(1000, 1000);
+        await browser.setWindowSize(1500, 1500);
     });
 
     it("open context menu in the middle LTR", async () => {
