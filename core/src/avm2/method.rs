@@ -167,12 +167,6 @@ impl<'gc> BytecodeMethod<'gc> {
             }
         }
 
-        let is_unchecked = if let Some(method) = abc.methods.get(abc_method.0 as usize) {
-            is_function && all_params_unchecked && !method.flags.contains(AbcMethodFlags::NEED_REST)
-        } else {
-            false
-        };
-
         Ok(Self {
             txunit,
             abc: txunit.abc(),
@@ -182,7 +176,7 @@ impl<'gc> BytecodeMethod<'gc> {
             signature,
             return_type,
             is_function,
-            is_unchecked,
+            is_unchecked: is_function && all_params_unchecked,
             activation_class: Lock::new(None),
         })
     }
