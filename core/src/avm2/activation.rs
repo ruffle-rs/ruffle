@@ -296,7 +296,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
                         return Err(Error::AvmError(make_mismatch_error(
                             self,
                             method,
-                            user_arguments,
+                            user_arguments.len(),
                             bound_class,
                         )?));
                     };
@@ -316,6 +316,69 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         Ok(arguments_list)
     }
 
+    /// Create an `arguments` or `rest` object for a given method. This function
+    /// expects the rest of the arguments to already be on the AVM stack.
+    #[inline(never)]
+    fn create_varargs_object(
+        &mut self,
+        method: Gc<'gc, BytecodeMethod<'gc>>,
+        signature: &[ResolvedParamConfig<'gc>],
+        user_arguments: FunctionArgs<'_, 'gc>,
+        callee: Value<'gc>,
+    ) -> ArrayObject<'gc> {
+        let mut all_arguments = Vec::new();
+
+        // Unfortunately we need to allocate now: we need to put all the
+        // arguments we just processed into a Vec, so `arguments` or `rest`
+        // can put them into an ArrayObject. The missing argument check
+        // in `init_from_method` ensures that we have at least `signature.len()`
+        // arguments on the stack right now.
+        for i in 0..signature.len() {
+            let arg = self.avm2().peek(signature.len() - i - 1);
+            all_arguments.push(arg);
+        }
+
+        // We put all the non-variadic arguments into the Vec, but there
+        // could have been more passed to the function. Add them now.
+        for i in signature.len()..user_arguments.len() {
+            let arg = user_arguments.get_at(self, i);
+            all_arguments.push(arg);
+        }
+
+        let args_array = if method.method().flags.contains(AbcMethodFlags::NEED_REST) {
+            if let Some(rest_args) = all_arguments.get(signature.len()..) {
+                ArrayStorage::from_args(rest_args)
+            } else {
+                ArrayStorage::new(0)
+            }
+        } else if method
+            .method()
+            .flags
+            .contains(AbcMethodFlags::NEED_ARGUMENTS)
+        {
+            ArrayStorage::from_args(&all_arguments[..user_arguments.len()])
+        } else {
+            unreachable!();
+        };
+
+        let args_object = ArrayObject::from_storage(self, args_array);
+
+        if method
+            .method()
+            .flags
+            .contains(AbcMethodFlags::NEED_ARGUMENTS)
+        {
+            let string_callee = istr!(self, "callee");
+
+            args_object
+                .set_string_property_local(string_callee, callee, self)
+                .unwrap();
+            args_object.set_local_property_is_enumerable(self.gc(), string_callee, false);
+        }
+
+        args_object
+    }
+
     /// Construct an activation for the execution of a particular bytecode
     /// method.
     /// NOTE: this is intended to be used immediately after from_nothing(),
@@ -331,8 +394,6 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         bound_class: Option<Class<'gc>>,
         callee: Value<'gc>,
     ) -> Result<(), Error<'gc>> {
-        let mut user_arguments: &[Value<'gc>] = &user_arguments.to_slice(self);
-
         let body = method
             .body()
             .expect("Cannot execute non-native method without body");
@@ -378,75 +439,69 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         let verified_info = method.verified_info.borrow();
         let signature = &verified_info.as_ref().unwrap().param_config;
 
-        if method.is_unchecked() {
-            let max_args = signature.len();
-            if user_arguments.len() > max_args && !method.is_variadic() {
-                user_arguments = &user_arguments[..max_args];
-            }
-        }
-
-        if user_arguments.len() > signature.len() && !has_rest_or_args {
+        if user_arguments.len() > signature.len() && !has_rest_or_args && !method.is_unchecked() {
             return Err(Error::AvmError(make_mismatch_error(
                 self,
                 Method::Bytecode(method),
-                user_arguments,
+                user_arguments.len(),
                 bound_class,
             )?));
         }
 
-        // Statically verify all non-variadic, provided parameters.
-        let arguments_list = self.resolve_parameters(
-            Method::Bytecode(method),
-            user_arguments,
-            signature,
-            bound_class,
-        )?;
-
         // Create locals
         self.push_stack(this);
 
-        let num_args = min(signature.len(), arguments_list.len());
+        // Statically verify all non-variadic, provided parameters.
+        let static_arg_count = min(user_arguments.len(), signature.len());
+        for i in 0..static_arg_count {
+            let arg = user_arguments.get_at(self, i);
+            let param_config = &signature[i];
 
-        for arg in &arguments_list[0..num_args] {
-            self.push_stack(*arg);
-        }
-
-        if has_rest_or_args {
-            let args_array = if method
-                .method()
-                .flags
-                .contains(AbcMethodFlags::NEED_ARGUMENTS)
-            {
-                // note: resolve_parameters ensures that arguments_list length is >= user_arguments
-                ArrayStorage::from_args(&arguments_list[..user_arguments.len()])
-            } else if method.method().flags.contains(AbcMethodFlags::NEED_REST) {
-                if let Some(rest_args) = arguments_list.get(signature.len()..) {
-                    ArrayStorage::from_args(rest_args)
-                } else {
-                    ArrayStorage::new(0)
-                }
+            let coerced_arg = if let Some(param_class) = param_config.param_type {
+                arg.coerce_to_type(self, param_class)?
             } else {
-                unreachable!();
+                arg
             };
 
-            let args_object = ArrayObject::from_storage(self, args_array);
+            self.push_stack(coerced_arg);
+        }
 
-            if method
-                .method()
-                .flags
-                .contains(AbcMethodFlags::NEED_ARGUMENTS)
-            {
-                let string_callee = istr!(self, "callee");
+        // Now add missing arguments
+        if user_arguments.len() < signature.len() {
+            // Apply remaining default parameters
+            for param_config in signature[user_arguments.len()..].iter() {
+                let arg = if let Some(default_value) = &param_config.default_value {
+                    *default_value
+                } else if method.is_unchecked() {
+                    Value::Undefined
+                } else {
+                    return Err(Error::AvmError(make_mismatch_error(
+                        self,
+                        Method::Bytecode(method),
+                        user_arguments.len(),
+                        bound_class,
+                    )?));
+                };
 
-                args_object.set_string_property_local(string_callee, callee, self)?;
-                args_object.set_local_property_is_enumerable(self.gc(), string_callee, false);
+                let coerced_arg = if let Some(param_class) = param_config.param_type {
+                    arg.coerce_to_type(self, param_class)?
+                } else {
+                    arg
+                };
+
+                self.push_stack(coerced_arg);
             }
+        }
+
+        // Finally, handle variadic arguments
+        if has_rest_or_args {
+            let args_object = self.create_varargs_object(method, signature, user_arguments, callee);
 
             self.push_stack(args_object);
         }
 
         // Locals not including the `this` value or arguments.
-        let mut extra_locals = num_locals - num_args - 1;
+        let mut extra_locals = num_locals - signature.len() - 1;
         if has_rest_or_args {
             extra_locals -= 1;
         }
@@ -1097,7 +1152,10 @@ impl<'a, 'gc> Activation<'a, 'gc> {
 
         // However, the optimizer can still generate it.
 
-        let args = FunctionArgs::OnAvmStack { arg_count };
+        let args = FunctionArgs::OnAvmStack {
+            arg_count: arg_count as usize,
+            stack_base: self.avm2().stack.len() - arg_count as usize,
+        };
         let receiver = self
             .avm2()
             .peek(arg_count as usize)
