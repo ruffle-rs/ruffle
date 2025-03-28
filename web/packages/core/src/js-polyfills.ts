@@ -138,12 +138,10 @@ export function resetCustomMap(): typeof Map | undefined {
         const iframe = document.createElement("iframe");
         iframe.style.display = "none";
         document.documentElement.append(iframe);
-        if (iframe.contentWindow) {
-            // eslint-disable-next-line no-global-assign
-            Map = iframe.contentWindow.Map;
-            iframe.remove();
-            return currentMap;
-        }
+        // eslint-disable-next-line no-global-assign
+        Map = iframe.contentWindow!.Map;
+        iframe.remove();
+        return currentMap;
     }
     return undefined;
 }
