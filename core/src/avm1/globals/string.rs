@@ -4,7 +4,7 @@ use ruffle_macros::istr;
 
 use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
-use crate::avm1::function::{Executable, FunctionObject};
+use crate::avm1::function::FunctionObject;
 use crate::avm1::property::Attribute;
 use crate::avm1::property_decl::{define_properties_on, Declaration};
 use crate::avm1::{ArrayBuilder, NativeObject, Object, ScriptObject, TObject, Value};
@@ -78,8 +78,8 @@ pub fn create_string_object<'gc>(
 ) -> Object<'gc> {
     let string = FunctionObject::constructor(
         context,
-        Executable::Native(string),
-        Executable::Native(string_function),
+        string,
+        Some(string_function),
         fn_proto,
         string_proto,
     );

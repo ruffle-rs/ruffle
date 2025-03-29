@@ -5,7 +5,7 @@ use ruffle_macros::istr;
 use crate::avm1::activation::Activation;
 use crate::avm1::clamp::Clamp;
 use crate::avm1::error::Error;
-use crate::avm1::function::{Executable, FunctionObject};
+use crate::avm1::function::FunctionObject;
 use crate::avm1::object::BoxedF64;
 use crate::avm1::property_decl::{define_properties_on, Declaration};
 use crate::avm1::{NativeObject, Object, ScriptObject, TObject, Value};
@@ -68,8 +68,8 @@ pub fn create_number_object<'gc>(
 ) -> Object<'gc> {
     let number = FunctionObject::constructor(
         context,
-        Executable::Native(number),
-        Executable::Native(number_function),
+        number,
+        Some(number_function),
         fn_proto,
         number_proto,
     );

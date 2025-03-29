@@ -1,6 +1,6 @@
 //! flash.filters.GlowFilter object
 
-use crate::avm1::function::{Executable, FunctionObject};
+use crate::avm1::function::FunctionObject;
 use crate::avm1::object::NativeObject;
 use crate::avm1::property_decl::{define_properties_on, Declaration};
 use crate::avm1::{Activation, Error, Object, ScriptObject, TObject, Value};
@@ -353,11 +353,5 @@ pub fn create_constructor<'gc>(
     proto: Object<'gc>,
     fn_proto: Object<'gc>,
 ) -> Object<'gc> {
-    FunctionObject::constructor(
-        context,
-        Executable::Native(glow_filter_method!(0)),
-        constructor_to_fn!(glow_filter_method!(0)),
-        fn_proto,
-        proto,
-    )
+    FunctionObject::constructor(context, glow_filter_method!(0), None, fn_proto, proto)
 }

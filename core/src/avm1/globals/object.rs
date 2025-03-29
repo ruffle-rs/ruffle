@@ -2,7 +2,7 @@
 
 use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
-use crate::avm1::function::{Executable, FunctionObject};
+use crate::avm1::function::FunctionObject;
 use crate::avm1::property::Attribute;
 use crate::avm1::property_decl::{define_properties_on, Declaration};
 use crate::avm1::{Object, ScriptObject, TObject, Value};
@@ -174,7 +174,7 @@ pub fn register_class<'gc>(
 
     let constructor = match constructor {
         Value::Null | Value::Undefined => None,
-        Value::Object(Object::FunctionObject(func)) => Some(*func),
+        Value::Object(obj) if obj.as_executable().is_some() => Some(*obj),
         _ => return Ok(false.into()),
     };
 
@@ -318,13 +318,8 @@ pub fn create_object_object<'gc>(
     proto: Object<'gc>,
     fn_proto: Object<'gc>,
 ) -> Object<'gc> {
-    let object_function = FunctionObject::constructor(
-        context,
-        Executable::Native(constructor),
-        Executable::Native(object_function),
-        fn_proto,
-        proto,
-    );
+    let object_function =
+        FunctionObject::constructor(context, constructor, Some(object_function), fn_proto, proto);
     let object = object_function.raw_script_object();
     define_properties_on(OBJECT_DECLS, context, object, fn_proto);
     object_function

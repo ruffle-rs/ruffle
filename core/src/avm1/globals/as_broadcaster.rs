@@ -2,7 +2,7 @@
 
 use crate::avm1::error::Error;
 use crate::avm1::function::ExecutionReason;
-use crate::avm1::function::{Executable, FunctionObject};
+use crate::avm1::function::FunctionObject;
 use crate::avm1::object::TObject;
 use crate::avm1::property::Attribute;
 use crate::avm1::property_decl::Declaration;
@@ -24,13 +24,10 @@ pub fn create<'gc>(
     fn_proto: Object<'gc>,
 ) -> (BroadcasterFunctions<'gc>, Object<'gc>) {
     let as_broadcaster_proto = ScriptObject::new(context, Some(proto));
-    let as_broadcaster = FunctionObject::constructor(
-        context,
-        Executable::Native(constructor),
-        constructor_to_fn!(constructor),
-        fn_proto,
-        as_broadcaster_proto.into(),
-    );
+    // Despite the documentation says that there is no constructor function for the `AsBroadcaster`
+    // class, Flash accepts expressions like `new AsBroadcaster()`, and a newly-created object is
+    // returned in such cases.
+    let as_broadcaster = FunctionObject::empty(context, fn_proto, as_broadcaster_proto.into());
     let object = as_broadcaster.raw_script_object();
 
     let mut define_as_object = |index: usize| -> Object<'gc> {
@@ -165,18 +162,6 @@ pub fn broadcast_internal<'gc>(
     } else {
         Ok(false)
     }
-}
-
-/// Implements `AsBroadcaster` constructor and function.
-// Despite the documentation says that there is no constructor function for the `AsBroadcaster`
-// class, Flash accepts expressions like `new AsBroadcaster()`, and a newly-created object is
-// returned in such cases.
-fn constructor<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
-    _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error<'gc>> {
-    Ok(this.into())
 }
 
 fn initialize<'gc>(

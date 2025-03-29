@@ -16,9 +16,9 @@ const PROTO_DECLS: &[Declaration] = declare_properties! {
 pub fn constructor<'gc>(
     _activation: &mut Activation<'_, 'gc>,
     this: Object<'gc>,
-    _args: &[Value<'gc>],
+    args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    Ok(this.into())
+    Ok(args.get(0).copied().unwrap_or_else(|| this.into()))
 }
 
 /// Implements `Function()`
@@ -27,12 +27,10 @@ pub fn function<'gc>(
     _this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(arg) = args.get(0) {
-        Ok(arg.to_owned())
-    } else {
+    Ok(args.get(0).copied().unwrap_or_else(|| {
         // Calling `Function()` seems to give a prototypeless bare object.
-        Ok(ScriptObject::new(&activation.context.strings, None).into())
-    }
+        ScriptObject::new(&activation.context.strings, None).into()
+    }))
 }
 
 /// Implements `Function.prototype.call`
@@ -52,6 +50,7 @@ pub fn call<'gc>(
         _ => &myargs[1..],
     };
 
+    // NOTE: does not use `Object::call`, as `super()` only works with direct calls.
     match func.as_executable() {
         Some(exec) => exec.exec(
             ExecutionName::Static("[Anonymous]"),
@@ -92,6 +91,7 @@ pub fn apply<'gc>(
         child_args.push(next_arg);
     }
 
+    // NOTE: does not use `Object::call`, as `super()` only works with direct calls.
     match func.as_executable() {
         Some(exec) => exec.exec(
             ExecutionName::Static("[Anonymous]"),

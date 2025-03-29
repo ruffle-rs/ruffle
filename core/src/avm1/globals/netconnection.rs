@@ -1,4 +1,4 @@
-use crate::avm1::function::{Executable, FunctionObject};
+use crate::avm1::function::FunctionObject;
 use crate::avm1::globals::shared_object::{deserialize_value, serialize};
 use crate::avm1::object::Object;
 use crate::avm1::property_decl::{define_properties_on, Declaration};
@@ -151,7 +151,7 @@ pub fn constructor<'gc>(
     ));
 
     this.set_native(activation.gc(), NativeObject::NetConnection(net_connection));
-    Ok(this.into())
+    Ok(Value::Undefined)
 }
 
 const PROTO_DECLS: &[Declaration] = declare_properties! {
@@ -351,11 +351,5 @@ pub fn create_class<'gc>(
     netconnection_proto: Object<'gc>,
     fn_proto: Object<'gc>,
 ) -> Object<'gc> {
-    FunctionObject::constructor(
-        context,
-        Executable::Native(constructor),
-        constructor_to_fn!(constructor),
-        fn_proto,
-        netconnection_proto,
-    )
+    FunctionObject::native(context, constructor, fn_proto, netconnection_proto)
 }

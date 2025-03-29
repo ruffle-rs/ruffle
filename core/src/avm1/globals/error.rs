@@ -24,7 +24,7 @@ pub fn constructor<'gc>(
         this.set(istr!("message"), message, activation)?;
     }
 
-    Ok(this.into())
+    Ok(Value::Undefined)
 }
 
 pub fn create_proto<'gc>(
