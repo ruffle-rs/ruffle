@@ -482,13 +482,11 @@ pub fn read_utf_bytes<'gc>(
 
     if let Some(bytearray) = this.as_bytearray() {
         let len = args.get_u32(activation, 0)?;
-        return Ok(AvmString::new_utf8(
+        return Ok(AvmString::new_utf8_bytes(
             activation.gc(),
-            String::from_utf8_lossy(
-                bytearray
-                    .read_utf_bytes(len as usize)
-                    .map_err(|e| e.to_avm(activation))?,
-            ),
+            bytearray
+                .read_utf_bytes(len as usize)
+                .map_err(|e| e.to_avm(activation))?,
         )
         .into());
     }
