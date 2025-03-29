@@ -22,6 +22,7 @@ clipboard-message-description =
 clipboard-message-copy = { " " } 복사
 clipboard-message-cut = { " " } 잘라내기
 clipboard-message-paste = { " " } 붙여넣기
+error-canvas-reload = 캔버스 렌더러가 이미 사용 중인 경우 캔버스 렌더러로 다시 로드할 수 없습니다.
 error-file-protocol =
     Ruffle을 "file:" 프로토콜에서 실행하고 있는 것으로 보입니다.
     브라우저에서는 이 프로토콜을 보안상의 이유로 많은 기능을 작동하지 않게 차단하므로 이 방법은 작동하지 않습니다.
