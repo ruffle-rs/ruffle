@@ -2499,6 +2499,14 @@ impl<'gc> MovieClip<'gc> {
         }
     }
 
+    pub fn run_frame_script_cleanup(context: &mut UpdateContext<'gc>) {
+        while let Some(clip) = context.frame_script_cleanup_queue.pop_front() {
+            clip.0.write(context.gc()).has_pending_script = true;
+            clip.0.write(context.gc()).last_queued_script_frame = None;
+            clip.run_local_frame_scripts(context);
+        }
+    }
+
     fn run_local_frame_scripts(self, context: &mut UpdateContext<'gc>) {
         let mut write = self.0.write(context.gc());
         let avm2_object = write.object.and_then(|o| o.as_avm2_object());
@@ -2711,21 +2719,11 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
     }
 
     fn run_frame_scripts(self, context: &mut UpdateContext<'gc>) {
-        let cleans_up = context.frame_script_cleanup_queue.is_empty();
-
         self.run_local_frame_scripts(context);
 
         if let Some(container) = self.as_container() {
             for child in container.iter_render_list() {
                 child.run_frame_scripts(context);
-            }
-        }
-
-        if cleans_up {
-            while let Some(clip) = context.frame_script_cleanup_queue.pop_front() {
-                clip.0.write(context.gc()).has_pending_script = true;
-                clip.0.write(context.gc()).last_queued_script_frame = None;
-                clip.run_local_frame_scripts(context);
             }
         }
     }
