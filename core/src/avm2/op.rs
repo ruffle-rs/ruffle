@@ -3,8 +3,8 @@ use crate::avm2::multiname::Multiname;
 use crate::avm2::script::Script;
 use crate::string::AvmAtom;
 
-use gc_arena::{Collect, Gc, Static};
-use swf::avm2::types::{Exception, Index, LookupSwitch, Method, Namespace};
+use gc_arena::{Collect, Gc};
+use swf::avm2::types::{Exception, Index, Method, Namespace};
 
 #[derive(Clone, Collect, Copy, Debug)]
 #[collect(no_drop)]
@@ -84,6 +84,10 @@ pub enum Op<'gc> {
         multiname: Gc<'gc, Multiname<'gc>>,
         num_args: u32,
     },
+    ConstructSlot {
+        index: u32,
+        num_args: u32,
+    },
     ConstructSuper {
         num_args: u32,
     },
@@ -136,13 +140,13 @@ pub enum Op<'gc> {
         index: u32,
     },
     GetOuterScope {
-        index: u32,
+        index: usize,
     },
     GetProperty {
         multiname: Gc<'gc, Multiname<'gc>>,
     },
     GetScopeObject {
-        index: u8,
+        index: usize,
     },
     GetScriptGlobals {
         script: Script<'gc>,
@@ -162,10 +166,10 @@ pub enum Op<'gc> {
         index_register: u32,
     },
     IfFalse {
-        offset: i32,
+        offset: usize,
     },
     IfTrue {
-        offset: i32,
+        offset: usize,
     },
     In,
     IncLocal {
@@ -185,7 +189,7 @@ pub enum Op<'gc> {
     },
     IsTypeLate,
     Jump {
-        offset: i32,
+        offset: usize,
     },
     Kill {
         index: u32,
@@ -197,7 +201,7 @@ pub enum Op<'gc> {
     Li16,
     Li32,
     Li8,
-    LookupSwitch(Gc<'gc, Static<LookupSwitch>>),
+    LookupSwitch(Gc<'gc, LookupSwitch>),
     LShift,
     Modulo,
     Multiply,
@@ -253,9 +257,12 @@ pub enum Op<'gc> {
     },
     PushUndefined,
     PushWith,
-    ReturnValue,
-    ReturnValueNoCoerce,
-    ReturnVoid,
+    ReturnValue {
+        return_type: Option<Class<'gc>>,
+    },
+    ReturnVoid {
+        return_type: Option<Class<'gc>>,
+    },
     RShift,
     SetGlobalSlot {
         // note: 0-indexed, as opposed to FP.
@@ -297,18 +304,6 @@ pub enum Op<'gc> {
 }
 
 impl Op<'_> {
-    pub fn is_block_terminating(&self) -> bool {
-        matches!(
-            self,
-            Op::Jump { .. }
-                | Op::LookupSwitch { .. }
-                | Op::ReturnValue
-                | Op::ReturnValueNoCoerce
-                | Op::ReturnVoid
-                | Op::Throw
-        )
-    }
-
     pub fn can_throw_error(&self) -> bool {
         !matches!(
             self,
@@ -345,9 +340,16 @@ impl Op<'_> {
                 | Op::Swap
                 | Op::Timestamp
                 | Op::TypeOf
-                | Op::ReturnVoid
+                | Op::ReturnVoid { .. }
         )
     }
+}
+
+#[derive(Collect, Debug)]
+#[collect(require_static)]
+pub struct LookupSwitch {
+    pub default_offset: usize,
+    pub case_offsets: Box<[usize]>,
 }
 
 #[cfg(target_pointer_width = "64")]
