@@ -597,6 +597,11 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             .map(|scope| scope.values())
     }
 
+    pub fn activation_class(&mut self) -> ClassObject<'gc> {
+        self.activation_class
+            .expect("Expected to be running bytecode method")
+    }
+
     pub fn avm2(&mut self) -> &mut Avm2<'gc> {
         self.context.avm2
     }
@@ -849,8 +854,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
                     multiname,
                     num_args,
                 } => self.op_call_super(*multiname, *num_args),
-                Op::ReturnValue => self.op_return_value(method),
-                Op::ReturnValueNoCoerce => self.op_return_value_no_coerce(),
+                Op::ReturnValue { return_type } => self.op_return_value(*return_type),
                 Op::ReturnVoid => self.op_return_void(),
                 Op::GetProperty { multiname } => self.op_get_property(*multiname),
                 Op::SetProperty { multiname } => self.op_set_property(*multiname),
@@ -879,6 +883,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
                     multiname,
                     num_args,
                 } => self.op_construct_prop(*multiname, *num_args),
+                Op::ConstructSlot { index, num_args } => self.op_construct_slot(*index, *num_args),
                 Op::ConstructSuper { num_args } => self.op_construct_super(*num_args),
                 Op::NewActivation => self.op_new_activation(),
                 Op::NewObject { num_args } => self.op_new_object(*num_args),
@@ -1208,10 +1213,9 @@ impl<'a, 'gc> Activation<'a, 'gc> {
 
     fn op_return_value(
         &mut self,
-        method: Gc<'gc, BytecodeMethod<'gc>>,
+        return_type: Option<Class<'gc>>,
     ) -> Result<FrameControl<'gc>, Error<'gc>> {
         let return_value = self.pop_stack();
-        let return_type = method.resolved_return_type();
 
         let coerced = if let Some(return_type) = return_type {
             return_value.coerce_to_type(self, return_type)?
@@ -1220,12 +1224,6 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         };
 
         Ok(FrameControl::Return(coerced))
-    }
-
-    fn op_return_value_no_coerce(&mut self) -> Result<FrameControl<'gc>, Error<'gc>> {
-        let return_value = self.pop_stack();
-
-        Ok(FrameControl::Return(return_value))
     }
 
     fn op_return_void(&mut self) -> Result<FrameControl<'gc>, Error<'gc>> {
@@ -1547,24 +1545,22 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         Ok(FrameControl::Continue)
     }
 
-    fn op_get_outer_scope(&mut self, index: u32) -> Result<FrameControl<'gc>, Error<'gc>> {
+    fn op_get_outer_scope(&mut self, index: usize) -> Result<FrameControl<'gc>, Error<'gc>> {
         // Verifier ensures that this points to a valid outer scope
 
-        let scope = self.outer.get_unchecked(index as usize);
+        let scope = self.outer.get_unchecked(index);
 
         self.push_stack(scope.values());
 
         Ok(FrameControl::Continue)
     }
 
-    fn op_get_scope_object(&mut self, index: u8) -> Result<FrameControl<'gc>, Error<'gc>> {
-        let scope = self.scope_frame().get(index as usize).copied();
+    fn op_get_scope_object(&mut self, index: usize) -> Result<FrameControl<'gc>, Error<'gc>> {
+        // Verifier ensures that this points to a valid local scope
 
-        if let Some(scope) = scope {
-            self.push_stack(scope.values());
-        } else {
-            self.push_stack(Value::Undefined);
-        };
+        let scope = self.scope_frame()[index];
+
+        self.push_stack(scope.values());
 
         Ok(FrameControl::Continue)
     }
@@ -1734,6 +1730,26 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         Ok(FrameControl::Continue)
     }
 
+    fn op_construct_slot(
+        &mut self,
+        index: u32,
+        arg_count: u32,
+    ) -> Result<FrameControl<'gc>, Error<'gc>> {
+        let args = self.pop_stack_args(arg_count);
+        let source = self
+            .pop_stack()
+            .null_check(self, None)?
+            .as_object()
+            .expect("Cannot get_slot on primitive");
+
+        let ctor = source.get_slot(index);
+        let constructed_object = ctor.construct(self, &args)?;
+
+        self.push_stack(constructed_object);
+
+        Ok(FrameControl::Continue)
+    }
+
     fn op_construct_super(&mut self, arg_count: u32) -> Result<FrameControl<'gc>, Error<'gc>> {
         let args = self.pop_stack_args(arg_count);
         let receiver = self.pop_stack().null_check(self, None)?;
@@ -1744,10 +1760,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     }
 
     fn op_new_activation(&mut self) -> Result<FrameControl<'gc>, Error<'gc>> {
-        let instance = self
-            .activation_class
-            .expect("Activation class should exist for bytecode")
-            .construct(self, &[])?;
+        let instance = self.activation_class().construct(self, &[])?;
 
         self.push_stack(instance);
 
