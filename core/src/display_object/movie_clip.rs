@@ -5097,7 +5097,7 @@ bitflags! {
         const RUNNING_CONSTRUCT_FRAME = 1 << 5;
 
         /// Whether this `MovieClip` has been post-instantiated yet.
-        const POST_INSTANTIATED = 1 << 5;
+        const POST_INSTANTIATED = 1 << 6;
     }
 }
 
