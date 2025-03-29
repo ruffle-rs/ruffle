@@ -178,7 +178,8 @@ pub struct MovieClipData<'gc> {
     /// trigger on this clip rather than any input-eligible children.
     button_mode: Cell<bool>,
     last_queued_script_frame: Option<FrameNumber>,
-    queued_script_frame: Option<FrameNumber>,
+    queued_script_frame: FrameNumber,
+    has_pending_script: bool,
     queued_goto_frame: Option<FrameNumber>,
     drop_target: Option<DisplayObject<'gc>>,
 
@@ -215,7 +216,8 @@ impl<'gc> MovieClipData<'gc> {
             avm2_use_hand_cursor: Cell::new(true),
             button_mode: Cell::new(false),
             last_queued_script_frame: None,
-            queued_script_frame: None,
+            queued_script_frame: 0,
+            has_pending_script: false,
             queued_goto_frame: None,
             drop_target: None,
             hit_area: None,
@@ -1244,7 +1246,8 @@ impl<'gc> MovieClip<'gc> {
             write.current_frame += 1;
         }
 
-        write.queued_script_frame = Some(write.current_frame);
+        write.queued_script_frame = write.current_frame;
+        write.has_pending_script = true;
         if write.last_queued_script_frame != Some(write.current_frame) {
             // We explicitly clear this variable since AS3 may later GOTO back
             // to the already-ran frame. Since the frame number *has* changed
@@ -1863,7 +1866,7 @@ impl<'gc> MovieClip<'gc> {
             // Ensure newly registered frame scripts are executed,
             // even if the frame is repeated due to goto.
             write.last_queued_script_frame = None;
-            write.queued_script_frame = Some(current_frame);
+            write.has_pending_script = true;
         }
     }
 
@@ -2160,7 +2163,8 @@ impl<'gc> MovieClip<'gc> {
         let avm2_object = write.object.and_then(|o| o.as_avm2_object());
 
         if let Some(avm2_object) = avm2_object {
-            if let Some(frame_id) = write.queued_script_frame {
+            if write.has_pending_script {
+                let frame_id = write.queued_script_frame;
                 // If we are already executing frame scripts, then we shouldn't
                 // run frame scripts recursively. This is because AVM2 can run
                 // gotos, which will both queue and run frame scripts for the
@@ -2169,14 +2173,14 @@ impl<'gc> MovieClip<'gc> {
                 // wind down before handling that.
                 if !write.contains_flag(MovieClipFlags::EXECUTING_AVM2_FRAME_SCRIPT) {
                     let is_fresh_frame =
-                        write.queued_script_frame != write.last_queued_script_frame;
+                        write.last_queued_script_frame != Some(write.queued_script_frame);
 
                     if is_fresh_frame {
                         if let Some(Some(callable)) =
                             write.frame_scripts.get(frame_id as usize).cloned()
                         {
                             write.last_queued_script_frame = Some(frame_id);
-                            write.queued_script_frame = None;
+                            write.has_pending_script = false;
                             write.set_flag(MovieClipFlags::EXECUTING_AVM2_FRAME_SCRIPT, true);
 
                             drop(write);
