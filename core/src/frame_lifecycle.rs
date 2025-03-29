@@ -94,6 +94,7 @@ pub fn run_all_phases_avm2(context: &mut UpdateContext<'_>) {
         orphan.run_frame_scripts(context);
     });
     stage.run_frame_scripts(context);
+    MovieClip::run_frame_script_cleanup(context);
 
     *context.frame_phase = FramePhase::Exit;
     stage.exit_frame(context);
