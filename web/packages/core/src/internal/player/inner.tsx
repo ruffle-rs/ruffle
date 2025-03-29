@@ -1256,10 +1256,15 @@ export class InnerPlayer {
         }
     }
 
-    private virtualKeyboardInput() {
-        const input = this.virtualKeyboard;
-        const string = input.value;
-        for (const char of string) {
+    private virtualKeyboardInput(e: Event) {
+        const event = e as InputEvent;
+        if (!event || event.isComposing) {
+            // Ignore composing events, we'll get the composed text at the end
+            return;
+        }
+
+        const inputtedText = event.data || "";
+        for (const char of inputtedText) {
             for (const eventType of ["keydown", "keyup"]) {
                 this.element.dispatchEvent(
                     new KeyboardEvent(eventType, {
@@ -1269,7 +1274,7 @@ export class InnerPlayer {
                 );
             }
         }
-        input.value = "";
+        this.virtualKeyboard.value = "";
     }
 
     protected openVirtualKeyboard(): void {
