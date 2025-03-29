@@ -24,6 +24,7 @@ clipboard-message-description =
 clipboard-message-copy = { " " } másoláshoz
 clipboard-message-cut = { " " } kivágáshoz
 clipboard-message-paste = { " " } beillesztéshez
+error-canvas-reload = Újratöltés a canvas megjelenítővel nem lehetséges, ha már az van használatban.
 error-file-protocol =
     Úgy tűnik, a Ruffle-t a "file:" protokollon futtatod.
     Ez nem működik, mivel így a böngészők biztonsági okokból számos funkció működését letiltják.
