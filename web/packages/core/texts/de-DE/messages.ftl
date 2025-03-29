@@ -24,6 +24,7 @@ clipboard-message-description =
 clipboard-message-copy = { " " } zum Kopieren
 clipboard-message-cut = { " " } zum Ausschneiden
 clipboard-message-paste = { " " } zum Einfügen
+error-canvas-reload = Canvas Renderer kann nicht neu geladen werden, während er in Verwendung ist.
 error-file-protocol =
     Es scheint, dass Sie Ruffle auf dem "file:"-Protokoll ausführen.
     Jedoch werden aus Sicherheitsgründen viele Funktionen vom Browser blockiert, weswegen die Datei nicht geladen werden kann.
@@ -68,6 +69,10 @@ error-wasm-disabled-on-edge =
     Um dies zu beheben, versuche die Einstellungen deines Browsers zu öffnen, klicke auf "Privatsphäre, Suche und Dienste", scrollen nach unten und schalte "Verbessere deine Sicherheit im Web" aus.
     Dies erlaubt Ihrem Browser die erforderlichen ".wasm"-Dateien zu laden.
     Wenn das Problem weiterhin besteht, müssen Sie möglicherweise einen anderen Browser verwenden.
+error-wasm-unsupported-browser =
+    Der verwendete Browser unterstützt die WebAssembly Erweiterungen nicht welche Ruffle zur Ausführung benötigt.
+    Bitte verwende einen unterstützen Browser.
+    Du kannst eine Liste der unterstützten Browser in der Wiki finden.
 error-javascript-conflict =
     Ruffle ist auf ein Fehler beim Initialisieren gestoßen.
     Es scheint, als ob diese Seite JavaScript-Code verwendet, der mit Ruffle kollidiert.

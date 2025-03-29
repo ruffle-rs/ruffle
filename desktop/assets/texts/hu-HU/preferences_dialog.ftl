@@ -30,3 +30,8 @@ gamemode-tooltip =
     A Ruffle csak akkor igényli a GameMode-ot, amikor épp lejátszik valamit.
 gamemode-default = Alapértelmezett
 gamemode-default-tooltip = A GameMode csak akkor lesz bekapcsolva, ha a teljesítménypreferencia magasra van állítva.
+# See for context https://wiki.archlinux.org/title/Input_method
+ime-enabled = Beviteli módszer
+ime-enabled-experimental = (kísérleti)
+ime-enabled-tooltip = Egy beviteli módszer lehetővé teszi olyan karakterek bevitelét, amelyek nem szerepelnek a billentyűzeten, mint például a kínai, japán vagy koreai karakterek.
+ime-enabled-default = Alapértelmezett
