@@ -1247,7 +1247,6 @@ impl<'gc> MovieClip<'gc> {
         }
 
         write.queued_script_frame = write.current_frame;
-        write.has_pending_script = true;
         if write.last_queued_script_frame != Some(write.current_frame) {
             // We explicitly clear this variable since AS3 may later GOTO back
             // to the already-ran frame. Since the frame number *has* changed
@@ -1856,17 +1855,18 @@ impl<'gc> MovieClip<'gc> {
                 frame_scripts.resize(index + 1, None);
             }
             frame_scripts[index] = Some(callable);
-            if (*context.frame_phase == FramePhase::FrameScripts) && (current_frame == frame_id) {
-                context.frame_script_cleanup_queue.push_back(self);
+            if frame_id == current_frame {
+                if *context.frame_phase == FramePhase::FrameScripts {
+                    context.frame_script_cleanup_queue.push_back(self);
+                } else {
+                    // Ensure newly registered frame scripts are executed,
+                    // even if the frame is repeated due to goto.
+                    write.last_queued_script_frame = None;
+                    write.has_pending_script = true;
+                }
             }
         } else if frame_scripts.len() > index {
             frame_scripts[index] = None;
-        }
-        if frame_id == current_frame {
-            // Ensure newly registered frame scripts are executed,
-            // even if the frame is repeated due to goto.
-            write.last_queued_script_frame = None;
-            write.has_pending_script = true;
         }
     }
 
@@ -2340,6 +2340,14 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
                 }
             }
         }
+
+        // Check for frame-scripts before starting the frame-script phase,
+        // to differentiate the pre-existing scripts from those introduced during frame-script phase.
+        let mut write = self.0.write(context.gc());
+        write.has_pending_script = write
+            .frame_scripts
+            .get(write.current_frame as usize)
+            .is_some();
     }
 
     fn run_frame_avm1(&self, context: &mut UpdateContext<'gc>) {
@@ -2364,13 +2372,7 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
     fn run_frame_scripts(self, context: &mut UpdateContext<'gc>) {
         let cleans_up = context.frame_script_cleanup_queue.is_empty();
 
-        if !context
-            .frame_script_cleanup_queue
-            .iter()
-            .any(|clip| clip.as_ptr() == self.as_ptr())
-        {
-            self.run_local_frame_scripts(context);
-        }
+        self.run_local_frame_scripts(context);
 
         if let Some(container) = self.as_container() {
             for child in container.iter_render_list() {
@@ -2380,6 +2382,8 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
 
         if cleans_up {
             while let Some(clip) = context.frame_script_cleanup_queue.pop_front() {
+                clip.0.write(context.gc()).has_pending_script = true;
+                clip.0.write(context.gc()).last_queued_script_frame = None;
                 clip.run_local_frame_scripts(context);
             }
         }
