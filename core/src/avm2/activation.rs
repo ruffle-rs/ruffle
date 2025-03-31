@@ -8,7 +8,7 @@ use crate::avm2::error::{
     make_error_1065, make_error_1127, make_error_1506, make_null_or_undefined_error, type_error,
 };
 use crate::avm2::function::FunctionArgs;
-use crate::avm2::method::{BytecodeMethod, Method, ResolvedParamConfig};
+use crate::avm2::method::{BytecodeMethod, Method, NativeMethod, ResolvedParamConfig};
 use crate::avm2::object::{
     ArrayObject, ByteArrayObject, ClassObject, FunctionObject, NamespaceObject, ScriptObject,
     XmlListObject,
@@ -255,7 +255,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         }
     }
 
-    /// Statically resolve all of the parameters for a given method.
+    /// Statically resolve all of the parameters for a native method.
     ///
     /// This function makes no attempt to enforce a given method's parameter
     /// count limits or to package variadic arguments.
@@ -264,7 +264,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     /// the signature, with missing parameters filled in with defaults.
     pub fn resolve_parameters(
         &mut self,
-        method: Method<'gc>,
+        method: Gc<'gc, NativeMethod<'gc>>,
         user_arguments: &[Value<'gc>],
         signature: &[ResolvedParamConfig<'gc>],
         bound_class: Option<Class<'gc>>,
@@ -290,12 +290,10 @@ impl<'a, 'gc> Activation<'a, 'gc> {
                 for param_config in signature[user_arguments.len()..].iter() {
                     let arg = if let Some(default_value) = &param_config.default_value {
                         *default_value
-                    } else if method.into_bytecode().is_some_and(|bm| bm.is_unchecked()) {
-                        Value::Undefined
                     } else {
                         return Err(Error::AvmError(make_mismatch_error(
                             self,
-                            method,
+                            Method::Native(method),
                             user_arguments.len(),
                             bound_class,
                         )?));

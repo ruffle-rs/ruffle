@@ -225,12 +225,8 @@ pub fn exec<'gc>(
             let resolved_signature = bm.resolved_signature.read();
             let resolved_signature = resolved_signature.as_ref().unwrap();
 
-            let arguments = activation.resolve_parameters(
-                method,
-                arguments,
-                resolved_signature,
-                bound_class,
-            )?;
+            let arguments =
+                activation.resolve_parameters(bm, arguments, resolved_signature, bound_class)?;
 
             #[cfg(feature = "tracy_avm")]
             let _span = {
