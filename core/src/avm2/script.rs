@@ -4,6 +4,7 @@ use super::api_version::ApiVersion;
 use crate::avm2::activation::Activation;
 use crate::avm2::class::Class;
 use crate::avm2::domain::Domain;
+use crate::avm2::error::{make_error_1107, Error};
 use crate::avm2::globals::global_scope;
 use crate::avm2::method::{BytecodeMethod, Method};
 use crate::avm2::object::{Object, ScriptObject, TObject};
@@ -11,9 +12,7 @@ use crate::avm2::scope::ScopeChain;
 use crate::avm2::traits::{Trait, TraitKind};
 use crate::avm2::value::Value;
 use crate::avm2::vtable::VTable;
-use crate::avm2::Multiname;
-use crate::avm2::Namespace;
-use crate::avm2::{Avm2, Error};
+use crate::avm2::{Avm2, Multiname, Namespace};
 use crate::context::UpdateContext;
 use crate::string::{AvmAtom, AvmString, StringContext};
 use crate::tag_utils::SwfMovie;
@@ -470,6 +469,11 @@ impl<'gc> Script<'gc> {
             .expect("Script index should be valid");
 
         let init = unit.load_method(script.init_method, false, activation)?;
+
+        // Script initializers cannot have parameters declared
+        if init.signature().len() != 0 {
+            return Err(make_error_1107(activation));
+        }
 
         let globals = Script::create_globals_object(unit, script, domain, activation)?;
 

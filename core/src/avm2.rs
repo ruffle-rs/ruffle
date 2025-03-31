@@ -311,12 +311,7 @@ impl<'gc> Avm2<'gc> {
 
                     // This exists purely to check if the builtin is OK with being called with
                     // no parameters.
-                    init_activation.resolve_parameters(
-                        Method::Native(method),
-                        &[],
-                        resolved_signature,
-                        None,
-                    )?;
+                    init_activation.resolve_parameters(method, &[], resolved_signature, None)?;
                     init_activation
                         .context
                         .avm2
