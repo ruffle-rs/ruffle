@@ -1872,6 +1872,7 @@ impl<'gc> EditText<'gc> {
                 let ImeData {
                     ime_start: old_ime_start,
                     ime_end: old_ime_end,
+                    ..
                 } = ime_data;
 
                 self.replace_text(old_ime_start, old_ime_end, &text, context);
@@ -1879,6 +1880,7 @@ impl<'gc> EditText<'gc> {
                 self.0.write(context.gc()).ime_data = Some(ImeData {
                     ime_start: old_ime_start,
                     ime_end: old_ime_start + text.len(),
+                    text: text_utf8,
                 });
 
                 let new_selection = cursor.map(|(from, to)| {
@@ -1904,19 +1906,32 @@ impl<'gc> EditText<'gc> {
         let ime_data = ImeData {
             ime_start: selection.start(),
             ime_end: selection.start(),
+            text: String::new(),
         };
         write.ime_data = Some(ime_data.clone());
         ime_data
     }
 
     fn ensure_ime_finished(self, context: &mut UpdateContext<'gc>) {
-        let Some(ImeData { ime_start, ime_end }) = self.0.read().ime_data else {
+        let Some(ImeData {
+            ime_start, ime_end, ..
+        }) = self.0.read().ime_data
+        else {
             return;
         };
 
         self.replace_text(ime_start, ime_end, WStr::empty(), context);
         self.set_selection(Some(TextSelection::for_position(ime_start)), context.gc());
         self.0.write(context.gc()).ime_data = None;
+    }
+
+    fn ensure_ime_committed(self, context: &mut UpdateContext<'gc>) {
+        let Some(ImeData { text, .. }) = self.0.read().ime_data.clone() else {
+            return;
+        };
+
+        self.ensure_ime_finished(context);
+        self.text_input(text, context);
     }
 
     /// Find the new position in the text for the given control code.
@@ -3124,9 +3139,15 @@ impl<'gc> TInteractiveObject<'gc> for EditText<'gc> {
         focused: bool,
         _other: Option<InteractiveObject<'gc>>,
     ) {
-        let is_avm1 = !self.movie().is_action_script_3();
-        if !focused && is_avm1 {
-            self.set_selection(None, context.gc());
+        if !focused {
+            // Commit IME on focus lost.
+            self.ensure_ime_committed(context);
+
+            let is_avm1 = !self.movie().is_action_script_3();
+            if is_avm1 {
+                // Clear selection on focus lost in AVM1 only.
+                self.set_selection(None, context.gc());
+            }
         }
 
         // Notify about IME
@@ -3655,4 +3676,5 @@ impl Default for EditTextStyleSheet<'_> {
 struct ImeData {
     ime_start: usize,
     ime_end: usize,
+    text: String,
 }
