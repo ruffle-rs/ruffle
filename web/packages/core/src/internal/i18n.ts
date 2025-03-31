@@ -21,9 +21,10 @@ const bundles: Record<string, FluentBundle> = {};
 for (const [locale, files] of Object.entries(BUNDLED_TEXTS)) {
     const bundle = new FluentBundle(locale);
     if (files) {
-        const customMap = resetCustomMap();
+        let customMap: typeof Map | undefined = undefined;
         for (const [filename, text] of Object.entries(files)) {
             if (text) {
+                customMap ??= resetCustomMap();
                 for (const error of bundle.addResource(
                     new FluentResource(text),
                 )) {
