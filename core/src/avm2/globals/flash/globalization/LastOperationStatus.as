@@ -3,11 +3,9 @@
 // by https://github.com/golfinq/ActionScript_Event_Builder
 // It won't be regenerated in the future, so feel free to edit and/or fix
 
-package flash.globalization
-{
-
-    public final class LastOperationStatus
-    {
+package flash.globalization {
+    [API("667")]
+    public final class LastOperationStatus {
         // Indicates that given buffer is not enough to hold the result.
         public static const BUFFER_OVERFLOW_ERROR:String = "bufferOverflowError";
 
@@ -58,6 +56,5 @@ package flash.globalization
 
         // Indicates that a fallback value was set during the most recent operation.
         public static const USING_FALLBACK_WARNING:String = "usingFallbackWarning";
-
     }
 }

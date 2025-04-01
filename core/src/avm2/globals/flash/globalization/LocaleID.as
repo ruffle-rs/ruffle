@@ -4,6 +4,7 @@ package flash.globalization {
     import __ruffle__.stub_method;
     import flash.globalization.LastOperationStatus;
 
+    [API("667")]
     public final class LocaleID {
         public static const DEFAULT:String = "i-default";
 
