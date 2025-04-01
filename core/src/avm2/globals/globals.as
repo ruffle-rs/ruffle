@@ -232,6 +232,7 @@ include "flash/geom/Transform.as"
 include "flash/geom/Utils3D.as"
 include "flash/geom/Vector3D.as"
 
+include "flash/globalization/Collator.as"
 include "flash/globalization/CollatorMode.as"
 include "flash/globalization/CurrencyParseResult.as"
 include "flash/globalization/CurrencyFormatter.as"
