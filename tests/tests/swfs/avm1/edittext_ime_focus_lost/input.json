@@ -1,0 +1,10 @@
+[
+  { "type": "ImePreedit", "text": "", "cursor": null },
+  { "type": "ImePreedit", "text": "q", "cursor": [1, 1] },
+  { "type": "Wait" },
+  { "type": "Wait" },
+  { "type": "Wait" },
+  { "type": "Wait" },
+  { "type": "Wait" },
+  { "type": "ImePreedit", "text": "", "cursor": null }
+]
