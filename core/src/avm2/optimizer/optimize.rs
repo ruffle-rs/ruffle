@@ -40,9 +40,6 @@ struct OptValue<'gc> {
     // should only be set if class is numeric.
     pub contains_valid_unsigned: bool,
 
-    // Whether the class of this object is its exact type.
-    pub is_exact_class: bool,
-
     // TODO: FP actually has a separate `null` type just for this, this can be observed in VerifyErrors
     // (a separate type would also prevent accidental "null int" values)
     pub null_state: NullState,
@@ -53,7 +50,6 @@ impl<'gc> OptValue<'gc> {
             class: None,
             contains_valid_integer: false,
             contains_valid_unsigned: false,
-            is_exact_class: false,
             null_state: NullState::MaybeNull,
         }
     }
@@ -69,14 +65,6 @@ impl<'gc> OptValue<'gc> {
     pub fn of_type(class: Class<'gc>) -> Self {
         Self {
             class: Some(class),
-            ..Self::any()
-        }
-    }
-
-    pub fn of_type_exact(class: Class<'gc>) -> Self {
-        Self {
-            class: Some(class),
-            is_exact_class: true,
             ..Self::any()
         }
     }
@@ -102,14 +90,6 @@ impl<'gc> OptValue<'gc> {
             || self.class == Some(class_defs.number)
             || self.class == Some(class_defs.boolean)
             || self.class == Some(class_defs.void)
-    }
-
-    pub fn exact_class(self) -> Option<Class<'gc>> {
-        if self.is_exact_class || self.class.is_some_and(|c| c.is_final()) {
-            self.class
-        } else {
-            None
-        }
     }
 
     pub fn merged_with(
@@ -157,10 +137,6 @@ impl<'gc> OptValue<'gc> {
 
         if self.contains_valid_unsigned && other.contains_valid_unsigned {
             created_value.contains_valid_unsigned = true;
-        }
-
-        if self.is_exact_class && other.is_exact_class {
-            created_value.is_exact_class = true;
         }
 
         if self.null_state == other.null_state {
@@ -278,35 +254,12 @@ impl<'gc> Stack<'gc> {
         Ok(())
     }
 
-    fn push_class_exact(
-        &mut self,
-        activation: &mut Activation<'_, 'gc>,
-        class: Class<'gc>,
-    ) -> Result<(), Error<'gc>> {
-        self.push(activation, OptValue::of_type_exact(class))?;
-
-        Ok(())
-    }
-
     fn push_class_not_null(
         &mut self,
         activation: &mut Activation<'_, 'gc>,
         class: Class<'gc>,
     ) -> Result<(), Error<'gc>> {
         let mut value = OptValue::of_type(class);
-        value.null_state = NullState::NotNull;
-
-        self.push(activation, value)?;
-
-        Ok(())
-    }
-
-    fn push_class_exact_not_null(
-        &mut self,
-        activation: &mut Activation<'_, 'gc>,
-        class: Class<'gc>,
-    ) -> Result<(), Error<'gc>> {
-        let mut value = OptValue::of_type_exact(class);
         value.null_state = NullState::NotNull;
 
         self.push(activation, value)?;
@@ -615,7 +568,6 @@ pub fn optimize<'gc>(
         class: this_class,
         contains_valid_integer: false,
         contains_valid_unsigned: false,
-        is_exact_class: true,
         null_state: NullState::NotNull,
     };
 
@@ -1011,7 +963,7 @@ fn abstract_interpret_ops<'gc>(
             Op::NewObject { num_args } => {
                 stack.popn(activation, num_args * 2)?;
 
-                stack.push_class_exact_not_null(activation, types.object)?;
+                stack.push_class_not_null(activation, types.object)?;
             }
             Op::NewFunction { .. } => {
                 stack.push_class_not_null(activation, types.function)?;
@@ -1175,7 +1127,7 @@ fn abstract_interpret_ops<'gc>(
                     .get_unchecked(index)
                     .values()
                     .instance_class(activation);
-                stack.push_class_exact(activation, class)?;
+                stack.push_class(activation, class)?;
             }
             Op::Pop => {
                 stack.pop(activation)?;
@@ -1228,19 +1180,25 @@ fn abstract_interpret_ops<'gc>(
                             stack_push_done = true;
                             stack.push_any(activation)?;
                             break;
-                        } else if let Some(class) = checked_scope.0.exact_class() {
-                            if class.vtable().has_trait(&multiname) {
+                        } else if let Some(vtable) = checked_scope.0.vtable() {
+                            // NOTE: There is a subtle issue with this logic;
+                            // if pushing an object of type `Subclass` that was
+                            // declared to be of type `Superclass` with a coerce,
+                            // the scope optimizer may "skip" traits that were on
+                            // `Subclass` when it assumes the value is of type
+                            // `Superclass`. However, this matches avmplus's
+                            // behavior- see the test `avm2/scope_optimizations`.
+                            if vtable.has_trait(&multiname) {
                                 optimize_op_to!(Op::GetScopeObject { index: i });
 
                                 stack_push_done = true;
-                                stack.push_class_not_null(activation, class)?;
+                                stack.push(activation, checked_scope.0)?;
                                 break;
                             }
                         } else {
-                            // We don't know the exact class
-                            stack_push_done = true;
-                            stack.push_any(activation)?;
-                            break;
+                            // We don't know the class...but to match avmplus,
+                            // we keep descending the scope stack, assuming that
+                            // the trait wasn't found on this scope.
                         }
                     }
 
@@ -1253,7 +1211,7 @@ fn abstract_interpret_ops<'gc>(
                                 optimize_op_to!(Op::GetOuterScope { index });
 
                                 stack_push_done = true;
-                                stack.push_class_exact_not_null(activation, class)?;
+                                stack.push_class_not_null(activation, class)?;
                             } else {
                                 // If `get_entry_for_multiname` returned `Some(None)`, there was
                                 // a `with` scope in the outer ScopeChain- abort optimization.
@@ -1275,7 +1233,7 @@ fn abstract_interpret_ops<'gc>(
                             optimize_op_to!(Op::GetScriptGlobals { script });
 
                             stack_push_done = true;
-                            stack.push_class_exact_not_null(activation, script.global_class())?;
+                            stack.push_class_not_null(activation, script.global_class())?;
                         }
                     }
 
@@ -1530,7 +1488,7 @@ fn abstract_interpret_ops<'gc>(
                                     if let Some(instance_class) = slot_class.i_class() {
                                         // ConstructProp on a c_class will construct its i_class
                                         stack_push_done = true;
-                                        stack.push_class_exact(activation, instance_class)?;
+                                        stack.push_class(activation, instance_class)?;
                                     }
                                 }
                             }
