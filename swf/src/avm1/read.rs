@@ -62,7 +62,7 @@ impl<'a> Reader<'a> {
 
         // Verify that we parsed the correct amount of data.
         let end_pos = (start.as_ptr() as usize + length) as *const u8;
-        if self.input.as_ptr() != end_pos {
+        if !std::ptr::eq(self.input.as_ptr(), end_pos) {
             // We incorrectly parsed this action.
             // Re-sync to the expected end of the action and throw an error.
             self.input = &start[length.min(start.len())..];

@@ -947,7 +947,7 @@ impl WebGlRenderBackend {
         // Set common render state, while minimizing unnecessary state changes.
         // TODO: Using designated layout specifiers in WebGL2/OpenGL ES 3, we could guarantee that uniforms
         // are in the same location between shaders, and avoid changing them unless necessary.
-        if program as *const ShaderProgram != self.active_program {
+        if !std::ptr::eq(program, self.active_program) {
             self.gl.use_program(Some(&program.program));
             self.active_program = program as *const ShaderProgram;
 
@@ -1299,7 +1299,7 @@ impl CommandHandler for WebGlRenderBackend {
         // Set common render state, while minimizing unnecessary state changes.
         // TODO: Using designated layout specifiers in WebGL2/OpenGL ES 3, we could guarantee that uniforms
         // are in the same location between shaders, and avoid changing them unless necessary.
-        if program as *const ShaderProgram != self.active_program {
+        if !std::ptr::eq(program, self.active_program) {
             self.gl.use_program(Some(&program.program));
             self.active_program = program as *const ShaderProgram;
 
@@ -1391,7 +1391,7 @@ impl CommandHandler for WebGlRenderBackend {
             // Set common render state, while minimizing unnecessary state changes.
             // TODO: Using designated layout specifiers in WebGL2/OpenGL ES 3, we could guarantee that uniforms
             // are in the same location between shaders, and avoid changing them unless necessary.
-            if program as *const ShaderProgram != self.active_program {
+            if !std::ptr::eq(program, self.active_program) {
                 self.gl.use_program(Some(&program.program));
                 self.active_program = program as *const ShaderProgram;
 
