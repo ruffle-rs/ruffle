@@ -644,7 +644,7 @@ pub trait TObject<'gc>: 'gc + Collect<'gc> + Into<Object<'gc>> + Clone + Copy {
         let mut proto = other.proto(activation);
 
         while let Value::Object(proto_ob) = proto {
-            if self.as_ptr() == proto_ob.as_ptr() {
+            if std::ptr::eq(self.as_ptr(), proto_ob.as_ptr()) {
                 return true;
             }
 
@@ -699,7 +699,7 @@ pub enum ObjectPtr {}
 
 impl<'gc> Object<'gc> {
     pub fn ptr_eq(a: Object<'gc>, b: Object<'gc>) -> bool {
-        a.as_ptr() == b.as_ptr()
+        std::ptr::eq(a.as_ptr(), b.as_ptr())
     }
 }
 

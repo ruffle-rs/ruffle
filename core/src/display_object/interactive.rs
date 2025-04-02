@@ -793,7 +793,7 @@ impl<'gc> Avm2MousePick<'gc> {
 
 impl<'gc> InteractiveObject<'gc> {
     pub fn ptr_eq<T: TInteractiveObject<'gc>>(a: T, b: T) -> bool {
-        a.as_displayobject().as_ptr() == b.as_displayobject().as_ptr()
+        std::ptr::eq(a.as_displayobject().as_ptr(), b.as_displayobject().as_ptr())
     }
 
     pub fn option_ptr_eq(
