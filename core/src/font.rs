@@ -220,7 +220,7 @@ impl FontFace {
                         );
                         Some(Glyph {
                             shape_handle: Default::default(),
-                            shape: GlyphShape::Drawing(drawing),
+                            shape: GlyphShape::Drawing(Box::new(drawing)),
                             advance,
                             character,
                         })
@@ -446,7 +446,9 @@ impl<'gc> Font<'gc> {
                 let glyph = Glyph {
                     shape_handle: None.into(),
                     advance: Twips::new(swf_glyph.advance.into()),
-                    shape: GlyphShape::Swf(RefCell::new(SwfGlyphOrShape::Glyph(swf_glyph))),
+                    shape: GlyphShape::Swf(RefCell::new(Box::new(SwfGlyphOrShape::Glyph(
+                        swf_glyph,
+                    )))),
                     character,
                 };
 
@@ -817,8 +819,8 @@ impl SwfGlyphOrShape {
 
 #[derive(Debug, Clone)]
 enum GlyphShape {
-    Swf(RefCell<SwfGlyphOrShape>),
-    Drawing(Drawing),
+    Swf(RefCell<Box<SwfGlyphOrShape>>),
+    Drawing(Box<Drawing>),
     None,
 }
 
