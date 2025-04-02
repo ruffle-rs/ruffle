@@ -479,7 +479,7 @@ mod wrapper {
             self.0
                 .write(mc)
                 .display_objects
-                .retain(|c| c.as_ptr() != callback.as_ptr())
+                .retain(|c| !std::ptr::eq(c.as_ptr(), callback.as_ptr()))
         }
 
         pub fn add_display_object(&self, mc: &Mutation<'gc>, callback: DisplayObjectWeak<'gc>) {

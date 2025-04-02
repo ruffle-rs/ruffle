@@ -3,7 +3,7 @@
 use gc_arena::Collect;
 use std::cmp::min;
 use std::fmt::{Debug, Formatter, LowerHex, UpperHex};
-use std::io::{Error as IoError, ErrorKind as IoErrorKind, Read, Result as IoResult};
+use std::io::{Error as IoError, Read, Result as IoResult};
 use std::ops::{Bound, Deref, RangeBounds};
 use std::sync::{Arc, RwLock, RwLockReadGuard};
 use thiserror::Error;
@@ -463,10 +463,7 @@ impl Read for SubstreamCursor {
         let mut out_count = 0;
         let buf_owned = self.substream.buf.clone();
         let buf = buf_owned.0.read().map_err(|_| {
-            IoError::new(
-                IoErrorKind::Other,
-                "the underlying substream is locked by a panicked process",
-            )
+            IoError::other("the underlying substream is locked by a panicked process")
         })?;
 
         let chunks = self.substream.chunks.read().unwrap();
@@ -545,7 +542,7 @@ impl Deref for SliceRef<'_> {
 
 impl PartialEq for SliceRef<'_> {
     fn eq(&self, other: &SliceRef<'_>) -> bool {
-        self.guard.as_ptr() == other.guard.as_ptr()
+        std::ptr::eq(self.guard.as_ptr(), other.guard.as_ptr())
             && self.start == other.start
             && self.end == other.end
     }

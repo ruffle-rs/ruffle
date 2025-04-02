@@ -2557,7 +2557,7 @@ pub enum DisplayObjectPtr {}
 
 impl<'gc> DisplayObject<'gc> {
     pub fn ptr_eq(a: DisplayObject<'gc>, b: DisplayObject<'gc>) -> bool {
-        a.as_ptr() == b.as_ptr()
+        std::ptr::eq(a.as_ptr(), b.as_ptr())
     }
 
     pub fn option_ptr_eq(a: Option<DisplayObject<'gc>>, b: Option<DisplayObject<'gc>>) -> bool {

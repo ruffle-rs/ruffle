@@ -225,7 +225,7 @@ impl<'gc> TInteractiveObject<'gc> for LoaderDisplay<'gc> {
                         .mouse_pick_avm2(context, point, require_button_mode)
                         .combine_with_parent((*self).into());
                     if let Avm2MousePick::Hit(target) = res {
-                        if target.as_displayobject().as_ptr() == child.as_ptr() {
+                        if std::ptr::eq(target.as_displayobject().as_ptr(), child.as_ptr()) {
                             if self.mouse_enabled() {
                                 return Avm2MousePick::Hit((*self).into());
                             } else {

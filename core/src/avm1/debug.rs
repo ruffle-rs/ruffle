@@ -40,7 +40,7 @@ impl<'a> VariableDumper<'a> {
         let ptr = object.as_ptr();
 
         for (i, other) in self.objects.iter().enumerate() {
-            if *other == ptr {
+            if std::ptr::eq(*other, ptr) {
                 return (i, false);
             }
         }

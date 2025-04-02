@@ -113,7 +113,7 @@ impl<'gc> AvmStringRepr<'gc> {
             let first_requested = left_ptr.add(char_size * left.len());
 
             let mut chars_available = 0;
-            if first_available == first_requested {
+            if std::ptr::eq(first_available, first_requested) {
                 let left_capacity_end =
                     left_origin_ptr.add(char_size * left_origin.capacity.get().len());
                 chars_available =
