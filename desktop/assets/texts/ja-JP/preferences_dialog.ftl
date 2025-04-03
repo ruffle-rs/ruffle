@@ -30,3 +30,8 @@ gamemode-tooltip =
     Ruffleはムービー再生中のみゲームモードを使用します。
 gamemode-default = 既定
 gamemode-default-tooltip = ゲームモードは、電力設定が高に設定されている場合にのみ有効化されます。
+# See for context https://wiki.archlinux.org/title/Input_method
+ime-enabled = インプットメソッド (IME)
+ime-enabled-experimental = (実験的)
+ime-enabled-tooltip = インプットメソッドによって、中国語、日本語、韓国語の文字のようなキーボード単体にはない文字を入力できるようになります。
+ime-enabled-default = 既定
