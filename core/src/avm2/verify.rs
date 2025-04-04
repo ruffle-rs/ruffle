@@ -445,7 +445,7 @@ pub fn verify_method<'gc>(
             return Err(make_error_1054(activation));
         }
 
-        if new_target_offset as usize >= verified_code.len() {
+        if new_target_offset >= verified_code.len() {
             return Err(make_error_1054(activation));
         }
 
@@ -511,7 +511,7 @@ pub fn verify_method<'gc>(
                     case_offsets: case_offsets.into_boxed_slice(),
                 };
 
-                *op = Op::LookupSwitch(Gc::new(mc, new_lookup_switch.into()));
+                *op = Op::LookupSwitch(Gc::new(mc, new_lookup_switch));
             }
             _ => {}
         }
