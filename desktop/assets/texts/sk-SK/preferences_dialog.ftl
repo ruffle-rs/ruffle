@@ -30,3 +30,8 @@ gamemode-tooltip =
     Ruffle požaduje GameMode iba pri prehrávaní filmu.
 gamemode-default = Predvolené
 gamemode-default-tooltip = GameMode bude povolený iba v prípade, že je predvoľba napájania nastavená na vysokú hodnotu.
+# See for context https://wiki.archlinux.org/title/Input_method
+ime-enabled = Metóda vstupu
+ime-enabled-experimental = (experimentálne)
+ime-enabled-tooltip = Metóda vstupu umožňuje zadávanie znakov, ktoré nie sú dostupné na klávesnici, napríklad čínske, japonské alebo kórejské znaky.
+ime-enabled-default = Predvolené
