@@ -164,7 +164,7 @@ impl ActivePlayer {
                                 tracing::warn!("{warning}");
                             }
                         }
-                        content = PlayingContent::Bundle(movie_url.clone(), bundle);
+                        content = PlayingContent::Bundle(movie_url.clone(), Box::new(bundle));
                     }
                     Err(BundleError::BundleDoesntExist)
                     | Err(BundleError::InvalidSource(BundleSourceError::UnknownSource)) => {

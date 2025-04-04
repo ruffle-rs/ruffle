@@ -93,7 +93,7 @@ impl<'gc> Domain<'gc> {
     }
 
     pub fn is_playerglobals_domain(&self, avm2: &Avm2<'gc>) -> bool {
-        avm2.playerglobals_domain.0.as_ptr() == self.0.as_ptr()
+        std::ptr::eq(avm2.playerglobals_domain.0.as_ptr(), self.0.as_ptr())
     }
 
     pub fn children(&self, mc: &Mutation<'gc>) -> Vec<Domain<'gc>> {
@@ -341,11 +341,12 @@ impl<'gc> Domain<'gc> {
 
     pub fn is_default_domain_memory(&self) -> bool {
         let read = self.0.read();
-        read.domain_memory.expect("Missing domain memory").as_ptr()
-            == read
-                .default_domain_memory
-                .expect("Missing default domain memory")
-                .as_ptr()
+        let domain_memory_ptr = read.domain_memory.expect("Missing domain memory").as_ptr();
+        let default_domain_memory_ptr = read
+            .default_domain_memory
+            .expect("Missing default domain memory")
+            .as_ptr();
+        std::ptr::eq(domain_memory_ptr, default_domain_memory_ptr)
     }
 
     pub fn domain_memory(&self) -> ByteArrayObject<'gc> {
@@ -420,7 +421,7 @@ pub enum DomainPtr {}
 
 impl PartialEq for Domain<'_> {
     fn eq(&self, other: &Self) -> bool {
-        self.0.as_ptr() == other.0.as_ptr()
+        std::ptr::eq(self.0.as_ptr(), other.0.as_ptr())
     }
 }
 

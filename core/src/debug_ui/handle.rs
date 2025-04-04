@@ -48,7 +48,7 @@ impl Debug for DisplayObjectHandle {
 impl PartialEq<DisplayObjectHandle> for DisplayObjectHandle {
     #[inline(always)]
     fn eq(&self, other: &DisplayObjectHandle) -> bool {
-        self.ptr == other.ptr
+        std::ptr::eq(self.ptr, other.ptr)
     }
 }
 
@@ -91,7 +91,7 @@ impl Debug for AVM1ObjectHandle {
 impl PartialEq<AVM1ObjectHandle> for AVM1ObjectHandle {
     #[inline(always)]
     fn eq(&self, other: &AVM1ObjectHandle) -> bool {
-        self.ptr == other.ptr
+        std::ptr::eq(self.ptr, other.ptr)
     }
 }
 
@@ -134,7 +134,7 @@ impl Debug for AVM2ObjectHandle {
 impl PartialEq<AVM2ObjectHandle> for AVM2ObjectHandle {
     #[inline(always)]
     fn eq(&self, other: &AVM2ObjectHandle) -> bool {
-        self.ptr == other.ptr
+        std::ptr::eq(self.ptr, other.ptr)
     }
 }
 
@@ -179,7 +179,7 @@ impl Debug for DomainHandle {
 impl PartialEq<DomainHandle> for DomainHandle {
     #[inline(always)]
     fn eq(&self, other: &DomainHandle) -> bool {
-        self.ptr == other.ptr
+        std::ptr::eq(self.ptr, other.ptr)
     }
 }
 

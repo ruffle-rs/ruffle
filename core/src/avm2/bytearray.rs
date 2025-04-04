@@ -396,9 +396,8 @@ impl ByteArrayStorage {
 
 impl Write for ByteArrayStorage {
     fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
-        self.write_bytes(buf).map_err(|_| {
-            io::Error::new(io::ErrorKind::Other, "Failed to write to ByteArrayStorage")
-        })?;
+        self.write_bytes(buf)
+            .map_err(|_| io::Error::other("Failed to write to ByteArrayStorage"))?;
 
         Ok(buf.len())
     }
@@ -412,9 +411,7 @@ impl Read for ByteArrayStorage {
     fn read(&mut self, buf: &mut [u8]) -> io::Result<usize> {
         let bytes = self
             .read_bytes(cmp::min(buf.len(), self.bytes_available()))
-            .map_err(|_| {
-                io::Error::new(io::ErrorKind::Other, "Failed to read from ByteArrayStorage")
-            })?;
+            .map_err(|_| io::Error::other("Failed to read from ByteArrayStorage"))?;
         buf[..bytes.len()].copy_from_slice(bytes);
         Ok(bytes.len())
     }

@@ -972,7 +972,7 @@ impl DisplayObjectWindow {
                 ui.end_row();
 
                 ui.label("AVM1 Root");
-                if object.avm1_root().as_ptr() != object.as_ptr() {
+                if !std::ptr::eq(object.avm1_root().as_ptr(), object.as_ptr()) {
                     open_display_object_button(
                         ui,
                         context,
@@ -987,7 +987,7 @@ impl DisplayObjectWindow {
 
                 ui.label("AVM2 Root");
                 if let Some(other) = object.avm2_root() {
-                    if other.as_ptr() != object.as_ptr() {
+                    if !std::ptr::eq(other.as_ptr(), object.as_ptr()) {
                         open_display_object_button(
                             ui,
                             context,

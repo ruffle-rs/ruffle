@@ -51,7 +51,7 @@ impl ShaderObject for ObjectWrapper {
 
     fn equals(&self, other: &dyn ShaderObject) -> bool {
         if let Some(other_wrapper) = other.downcast_ref::<ObjectWrapper>() {
-            self.root.as_ptr() == other_wrapper.root.as_ptr()
+            std::ptr::eq(self.root.as_ptr(), other_wrapper.root.as_ptr())
         } else {
             false
         }
