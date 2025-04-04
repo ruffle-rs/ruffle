@@ -12,6 +12,8 @@ package flash.events
         public static const SAMPLE_DATA:String = "sampleData"; // Defines the value of the type property of a SampleDataEvent event object.
 
         public var position: Number; // The position of the data in the audio stream.
+
+        [Ruffle(NativeAccessible)]
         public var data: ByteArray; // The data in the audio stream.
 
         public function SampleDataEvent(type:String, bubbles:Boolean = false, cancelable:Boolean = false, theposition:Number = 0, thedata:ByteArray = null)
