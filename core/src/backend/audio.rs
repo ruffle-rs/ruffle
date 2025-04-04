@@ -6,8 +6,9 @@ use std::{
 use crate::{
     avm1::{NativeObject, Object as Avm1Object, TObject as _},
     avm2::{
-        Activation, Avm2, EventObject as Avm2EventObject, SoundChannelObject,
-        SoundObject as Avm2SoundObject, TObject,
+        globals::slots::flash_events_sample_data_event as sample_data_event_slots, Activation,
+        Avm2, EventObject as Avm2EventObject, SoundChannelObject, SoundObject as Avm2SoundObject,
+        TObject,
     },
     buffer::Substream,
     context::UpdateContext,
@@ -427,13 +428,13 @@ impl<'gc> AudioManager<'gc> {
 
                         // Fire soundComplete event.
                         if let Some(root) = context.stage.root_clip() {
-                        let method_name = AvmString::new_ascii_static(mc, b"onSoundComplete");
+                            let method_name = AvmString::new_ascii_static(mc, b"onSoundComplete");
 
                             context.action_queue.queue_action(
                                 root,
                                 crate::context::ActionType::Method {
                                     object,
-                                name: method_name,
+                                    name: method_name,
                                     args: vec![],
                                 },
                                 false,
@@ -481,17 +482,16 @@ impl<'gc> AudioManager<'gc> {
             let mut pos = sound_state.position.write().unwrap();
             // generating 3 frames worth of audio ahead to reduce hiccups
             while ns.len() <= ((44100.0 * 2.0 * 3.0 / fps).ceil() as usize) {
-                let sample_data_evt =
-                    Avm2EventObject::sample_data_event(activation, "sampleData", *pos);
+                let sample_data_evt = Avm2EventObject::sample_data_event(activation, *pos);
                 Avm2::dispatch_event(
                     activation.context,
                     sample_data_evt,
                     sound_state.sound_object.into(),
                 );
+
                 let data = sample_data_evt
-                    .get_public_property("data", activation)
-                    .unwrap()
-                    .coerce_to_object(activation)
+                    .get_slot(sample_data_event_slots::DATA)
+                    .as_object()
                     .unwrap();
                 let ba = data.as_bytearray().unwrap();
 

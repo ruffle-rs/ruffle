@@ -231,34 +231,28 @@ impl<'gc> EventObject<'gc> {
         )
     }
 
-    pub fn sample_data_event<S>(
+    pub fn sample_data_event(
         activation: &mut Activation<'_, 'gc>,
-        event_type: S,
         position: u32,
-    ) -> Object<'gc>
-    where
-        S: Into<AvmString<'gc>>,
-    {
-        let event_type: AvmString<'gc> = event_type.into();
-
+    ) -> EventObject<'gc> {
         let storage = ByteArrayStorage::new();
         let data = ByteArrayObject::from_storage(activation, storage).unwrap();
 
+        let event_name = istr!("sampleData");
         let sample_data_event_cls = activation.avm2().classes().sampledataevent;
-        sample_data_event_cls
-            .construct(
-                activation,
-                &[
-                    event_type.into(),
-                    //bubbles
-                    false.into(),
-                    //cancelable
-                    false.into(),
-                    position.into(),
-                    data.into(),
-                ],
-            )
-            .unwrap() // we don't expect to break here
+        Self::from_class_and_args(
+            activation,
+            sample_data_event_cls,
+            &[
+                event_name.into(),
+                //bubbles
+                false.into(),
+                //cancelable
+                false.into(),
+                position.into(),
+                data.into(),
+            ],
+        )
     }
 
     pub fn net_status_event(
