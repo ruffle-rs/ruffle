@@ -917,7 +917,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
                 Op::LookupSwitch(lookup_switch) => {
                     self.timeout_check()?;
 
-                    ip = self.lookup_switch(&**lookup_switch);
+                    ip = self.lookup_switch(lookup_switch);
 
                     continue;
                 }
