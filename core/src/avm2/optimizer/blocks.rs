@@ -29,7 +29,7 @@ pub struct BasicBlock<'a, 'gc> {
 pub fn assemble_blocks<'a, 'gc>(
     code: &'a [Cell<Op<'gc>>],
     method_exceptions: &[Exception<'gc>],
-    jump_targets: &HashSet<i32>,
+    jump_targets: &HashSet<usize>,
 ) -> Vec<BasicBlock<'a, 'gc>> {
     let mut block_list = Vec::with_capacity(2);
     let mut current_block_start = 0;
@@ -41,10 +41,7 @@ pub fn assemble_blocks<'a, 'gc>(
                 let block = BasicBlock {
                     start_index: current_block_start,
                     ops: &code[current_block_start..i + 1],
-                    exits: smallvec![
-                        BlockExit::Goto(i + 1),
-                        BlockExit::Goto((i as isize + offset as isize + 1) as usize)
-                    ],
+                    exits: smallvec![BlockExit::Goto(i + 1), BlockExit::Goto(offset)],
                 };
 
                 block_list.push(block);
@@ -55,7 +52,7 @@ pub fn assemble_blocks<'a, 'gc>(
                 let block = BasicBlock {
                     start_index: current_block_start,
                     ops: &code[current_block_start..i + 1],
-                    exits: smallvec![BlockExit::Goto((i as isize + offset as isize + 1) as usize)],
+                    exits: smallvec![BlockExit::Goto(offset)],
                 };
 
                 block_list.push(block);
@@ -66,14 +63,10 @@ pub fn assemble_blocks<'a, 'gc>(
                 let mut target_list = SmallVec::new();
 
                 for offset in &lookup_switch.case_offsets {
-                    target_list.push(BlockExit::Goto(
-                        (i as isize + *offset as isize + 1) as usize,
-                    ));
+                    target_list.push(BlockExit::Goto(*offset));
                 }
 
-                target_list.push(BlockExit::Goto(
-                    (i as isize + lookup_switch.default_offset as isize + 1) as usize,
-                ));
+                target_list.push(BlockExit::Goto(lookup_switch.default_offset));
 
                 let block = BasicBlock {
                     start_index: current_block_start,
@@ -85,7 +78,7 @@ pub fn assemble_blocks<'a, 'gc>(
 
                 current_block_start = i + 1;
             }
-            Op::ReturnVoid => {
+            Op::ReturnVoid { .. } => {
                 let block = BasicBlock {
                     start_index: current_block_start,
                     ops: &code[current_block_start..i + 1],
@@ -110,12 +103,11 @@ pub fn assemble_blocks<'a, 'gc>(
 
                 if op.can_throw_error() {
                     for exception in method_exceptions {
-                        if i >= exception.from_offset as usize && i < exception.to_offset as usize {
+                        if i >= exception.from_offset && i < exception.to_offset {
                             // This op is a branch to the exception target block.
                             could_exception_branch = true;
 
-                            target_list
-                                .push(BlockExit::GotoException(exception.target_offset as usize));
+                            target_list.push(BlockExit::GotoException(exception.target_offset));
                         }
                     }
 
@@ -131,7 +123,7 @@ pub fn assemble_blocks<'a, 'gc>(
                 // 3. The next op is a jump target
                 if could_exception_branch
                     || matches!(op, Op::Throw | Op::ReturnValue { .. })
-                    || jump_targets.contains(&(i as i32 + 1))
+                    || jump_targets.contains(&(i + 1))
                 {
                     let block = BasicBlock {
                         start_index: current_block_start,
