@@ -999,31 +999,46 @@ impl<'gc> ChildContainer<'gc> {
             let prev_position = self
                 .render_list
                 .iter()
-                .position(|x| DisplayObject::ptr_eq(*x, prev_child))
-                .unwrap();
+                .position(|x| DisplayObject::ptr_eq(*x, prev_child));
             let next_position = self
                 .render_list
                 .iter()
-                .position(|x| DisplayObject::ptr_eq(*x, child))
-                .unwrap();
-            self.render_list_mut().swap(prev_position, next_position);
+                .position(|x| DisplayObject::ptr_eq(*x, child));
+
+            match (prev_position, next_position) {
+                (Some(prev_position), Some(next_position)) => {
+                    self.render_list_mut().swap(prev_position, next_position);
+                }
+                _ => {
+                    tracing::error!(
+                        "ChildContainer::swap_at_depth: A child is missing in the render list"
+                    );
+                }
+            }
         } else {
             self.depth_list.remove(&prev_depth);
 
-            let old_position = self
+            if let Some(old_position) = self
                 .render_list
                 .iter()
                 .position(|x| DisplayObject::ptr_eq(*x, child))
-                .unwrap();
-            self.render_list_mut().remove(old_position);
+            {
+                self.render_list_mut().remove(old_position);
+            }
 
             if let Some((_, below_child)) = self.depth_list.range(..depth).next_back() {
                 let new_position = self
                     .render_list
                     .iter()
                     .position(|x| DisplayObject::ptr_eq(*x, *below_child))
-                    .unwrap();
-                self.render_list_mut().insert(new_position + 1, child);
+                    .map(|pos| pos + 1)
+                    .unwrap_or_else(|| {
+                        tracing::error!(
+                            "ChildContainer::swap_at_depth: below_child is missing in the render list"
+                        );
+                        0
+                    });
+                self.render_list_mut().insert(new_position, child);
             } else {
                 self.render_list_mut().insert(0, child);
             }
