@@ -103,7 +103,7 @@ pub fn assemble_blocks<'a, 'gc>(
 
                 if op.can_throw_error() {
                     for exception in method_exceptions {
-                        if i >= exception.from_offset as usize && i < exception.to_offset as usize {
+                        if i >= exception.from_offset && i < exception.to_offset {
                             // This op is a branch to the exception target block.
                             could_exception_branch = true;
 
