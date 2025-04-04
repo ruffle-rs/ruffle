@@ -3,7 +3,7 @@
 use crate::avm2::error::{make_error_2004, Error2004Type};
 use crate::avm2::object::TObject;
 use crate::avm2::{Activation, Error, Value};
-use rand::{rngs::OsRng, RngCore};
+use rand::{rngs::OsRng, TryRngCore};
 
 /// Implements `flash.crypto.generateRandomBytes`
 pub fn generate_random_bytes<'gc>(
@@ -32,7 +32,7 @@ pub fn generate_random_bytes<'gc>(
 
     let mut rng = OsRng {};
 
-    rng.fill_bytes(ba_write.bytes_mut());
+    rng.try_fill_bytes(ba_write.bytes_mut()).unwrap();
 
     Ok(ba.into())
 }
