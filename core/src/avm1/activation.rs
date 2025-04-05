@@ -1157,7 +1157,6 @@ impl<'a, 'gc> Activation<'a, 'gc> {
                 .avm1
                 .display_properties()
                 .get_by_index(prop_index as usize)
-                .copied()
         };
 
         let result = if let Some(clip) = clip {
@@ -1917,7 +1916,6 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             .avm1
             .display_properties()
             .get_by_index(prop_index as usize)
-            .copied()
         {
             if clip.is_none() || property.is_read_only() {
                 // `prop_value` must be coerced even if the target is invalid or the property is read-only.
