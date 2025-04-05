@@ -6,14 +6,12 @@ use crate::avm1::error::Error;
 use crate::avm1::property_map::PropertyMap;
 use crate::avm1::{Object, ObjectPtr, ScriptObject, TObject, Value};
 use crate::avm_warn;
-use crate::context::UpdateContext;
 use crate::display_object::{
-    Avm1TextFieldBinding, DisplayObject, EditText, MovieClip, TDisplayObject,
-    TDisplayObjectContainer, TInteractiveObject,
+    DisplayObject, MovieClip, TDisplayObject, TDisplayObjectContainer, TInteractiveObject,
 };
 use crate::string::{AvmString, StringContext, WStr};
 use crate::types::Percent;
-use gc_arena::{Collect, Gc, GcWeak, Mutation};
+use gc_arena::{Collect, Gc, GcWeak};
 use ruffle_macros::istr;
 use std::fmt;
 use swf::Twips;
@@ -55,43 +53,6 @@ impl<'gc> StageObject<'gc> {
                 display_object,
             },
         ))
-    }
-
-    /// Registers a text field variable binding for this stage object.
-    /// Whenever a property with the given name is changed, we should change the text in the text field.
-    pub fn register_text_field_binding(
-        self,
-        mc: &Mutation<'gc>,
-        text_field: EditText<'gc>,
-        variable_name: AvmString<'gc>,
-    ) {
-        if let Some(mut bindings) = self.0.display_object.avm1_text_field_bindings_mut(mc) {
-            bindings.push(Avm1TextFieldBinding {
-                text_field,
-                variable_name,
-            });
-        }
-    }
-
-    /// Removes a text field binding for the given text field.
-    /// Does not place the text field on the unbound list.
-    /// Caller is responsible for placing the text field on the unbound list, if necessary.
-    pub fn clear_text_field_binding(self, mc: &Mutation<'gc>, text_field: EditText<'gc>) {
-        if let Some(mut bindings) = self.0.display_object.avm1_text_field_bindings_mut(mc) {
-            bindings.retain(|b| !DisplayObject::ptr_eq(text_field.into(), b.text_field.into()));
-        }
-    }
-
-    /// Clears all text field bindings from this stage object, and places the textfields on the unbound list.
-    /// This is called when the object is removed from the stage.
-    pub fn unregister_text_field_bindings(self, context: &mut UpdateContext<'gc>) {
-        let mc = context.gc();
-        if let Some(mut bindings) = self.0.display_object.avm1_text_field_bindings_mut(mc) {
-            for binding in bindings.drain(..) {
-                binding.text_field.clear_bound_stage_object(context);
-                context.unbound_text_fields.push(binding.text_field);
-            }
-        }
     }
 
     fn resolve_path_property(

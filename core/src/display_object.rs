@@ -2167,11 +2167,7 @@ pub trait TDisplayObject<'gc>:
         }
 
         // Unregister any text field variable bindings, and replace them on the unbound list.
-        if let Avm1Value::Object(object) = self.object() {
-            if let Some(stage_object) = object.as_stage_object() {
-                stage_object.unregister_text_field_bindings(context);
-            }
-        }
+        Avm1TextFieldBinding::unregister_bindings((*self).into(), context);
 
         self.set_avm1_removed(context.gc(), true);
     }
@@ -2676,6 +2672,35 @@ impl<'gc> Avm1TextFieldBinding<'gc> {
                 len -= 1;
             } else {
                 i += 1;
+            }
+        }
+    }
+
+    /// Registers a text field variable binding for this stage object.
+    /// Whenever a property with the given name is changed, we should change the text in the text field.
+    pub fn register_binding(self, dobj: DisplayObject<'gc>, mc: &Mutation<'gc>) {
+        if let Some(mut bindings) = dobj.avm1_text_field_bindings_mut(mc) {
+            bindings.push(self);
+        }
+    }
+
+    /// Removes a text field binding for the given text field.
+    /// Does not place the text field on the unbound list.
+    /// Caller is responsible for placing the text field on the unbound list, if necessary.
+    pub fn clear_binding(dobj: DisplayObject<'gc>, text_field: EditText<'gc>, mc: &Mutation<'gc>) {
+        if let Some(mut bindings) = dobj.avm1_text_field_bindings_mut(mc) {
+            bindings.retain(|b| !DisplayObject::ptr_eq(text_field.into(), b.text_field.into()));
+        }
+    }
+
+    /// Clears all text field bindings from this stage object, and places the textfields on the unbound list.
+    /// This is called when the object is removed from the stage.
+    pub fn unregister_bindings(dobj: DisplayObject<'gc>, context: &mut UpdateContext<'gc>) {
+        let mc = context.gc();
+        if let Some(mut bindings) = dobj.avm1_text_field_bindings_mut(mc) {
+            for binding in bindings.drain(..) {
+                binding.text_field.clear_bound_display_object(context);
+                context.unbound_text_fields.push(binding.text_field);
             }
         }
     }

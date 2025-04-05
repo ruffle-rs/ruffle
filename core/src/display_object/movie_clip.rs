@@ -2858,11 +2858,7 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
         }
 
         // Unregister any text field variable bindings.
-        if let Avm1Value::Object(object) = self.object() {
-            if let Some(stage_object) = object.as_stage_object() {
-                stage_object.unregister_text_field_bindings(context);
-            }
-        }
+        Avm1TextFieldBinding::unregister_bindings((*self).into(), context);
 
         self.drop_focus(context);
 
