@@ -876,11 +876,24 @@ impl<'gc> Class<'gc> {
         let mut traits = Vec::with_capacity(body.traits.len());
 
         for trait_entry in body.traits.iter() {
-            traits.push(Trait::from_abc_trait(
+            let loaded_trait = Trait::from_abc_trait(
                 translation_unit,
                 trait_entry,
                 activation,
-            )?);
+            )?;
+
+            // Methods, getters, and setters are forbidden from appearing
+            // in activation traits
+            if loaded_trait.as_method().is_some() {
+                // TODO: Is this the correct error?
+                return Err(Error::AvmError(verify_error(
+                    activation,
+                    "Error #1101: Cannot verify method with unknown scope.",
+                    1101,
+                )?));
+            }
+
+            traits.push(loaded_trait);
         }
 
         let name = QName::new(activation.avm2().namespaces.public_all(), name);
@@ -913,47 +926,9 @@ impl<'gc> Class<'gc> {
             },
         ));
 
-        let name_namespace = name.namespace();
-        let mut local_name_buf = WString::from(name.local_name().as_wstr());
-        local_name_buf.push_char('$');
-
-        let c_name = QName::new(
-            name_namespace,
-            AvmString::new(activation.gc(), local_name_buf),
-        );
-
-        let c_class = Class(GcCell::new(
-            activation.gc(),
-            ClassData {
-                name: c_name,
-                param: None,
-                super_class: Some(activation.avm2().class_defs().class),
-                attributes: ClassAttributes::FINAL,
-                protected_namespace: None,
-                direct_interfaces: Vec::new(),
-                all_interfaces: Vec::new(),
-                instance_allocator: Allocator(scriptobject_allocator),
-                instance_init: Method::from_builtin(
-                    |_, _, _| Ok(Value::Undefined),
-                    "<Activation object class constructor>",
-                    activation.gc(),
-                ),
-                traits: Vec::new(),
-                vtable: VTable::empty(activation.gc()),
-                call_handler: None,
-                custom_constructor: None,
-                traits_loaded: true,
-                is_system: false,
-                linked_class: ClassLink::LinkToInstance(i_class),
-                applications: FnvHashMap::default(),
-                class_objects: Vec::new(),
-            },
-        ));
-
-        i_class.set_c_class(activation.gc(), c_class);
-
         i_class.init_vtable(activation.context)?;
-        c_class.init_vtable(activation.context)?;
+
+        // We don't need to construct a c_class
 
         Ok(i_class)
     }
