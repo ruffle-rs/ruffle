@@ -73,16 +73,6 @@ pub struct Activation<'a, 'gc: 'a> {
 
     bound_class: Option<Class<'gc>>,
 
-    /// The class of all objects returned from `newactivation`.
-    ///
-    /// In method calls that call for an activation object, this will be
-    /// configured as the anonymous class whose traits match the method's
-    /// declared traits.
-    ///
-    /// If this is `None`, then the method did not ask for an activation object
-    /// and we will not allocate a class for one.
-    activation_class: Option<ClassObject<'gc>>,
-
     /// The index where the stack frame starts.
     stack_depth: usize,
 
@@ -128,7 +118,6 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             caller_movie: None,
             bound_superclass_object: None,
             bound_class: None,
-            activation_class: None,
             stack_depth: context.avm2.stack.len(),
             scope_depth: context.avm2.scope_stack.len(),
             context,
@@ -152,7 +141,6 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             caller_movie: None,
             bound_superclass_object: None,
             bound_class: None,
-            activation_class: None,
             stack_depth: context.avm2.stack.len(),
             scope_depth: context.avm2.scope_stack.len(),
             context,
@@ -178,29 +166,6 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             }
         };
 
-        let activation_class = if let Method::Bytecode(method) = method {
-            let body = method
-                .body()
-                .expect("Cannot execute non-native method (for script) without body");
-
-            BytecodeMethod::get_or_init_activation_class(method, context.gc(), || {
-                let translation_unit = method.translation_unit();
-                let abc_method = method.method();
-                let mut dummy_activation = Activation::from_domain(context, domain);
-                dummy_activation.set_outer(ScopeChain::new(domain));
-                let activation_class = Class::for_activation(
-                    &mut dummy_activation,
-                    translation_unit,
-                    abc_method,
-                    body,
-                )?;
-
-                ClassObject::from_class(&mut dummy_activation, activation_class, None)
-            })?
-        } else {
-            None
-        };
-
         let mut created_activation = Self {
             num_locals,
             outer: ScopeChain::new(domain),
@@ -208,7 +173,6 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             caller_movie: script.translation_unit().map(|t| t.movie()),
             bound_superclass_object: Some(context.avm2.classes().object), // The script global class extends Object
             bound_class: Some(script.global_class()),
-            activation_class,
             stack_depth: context.avm2.stack.len(),
             scope_depth: context.avm2.scope_stack.len(),
             context,
@@ -399,22 +363,6 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         let num_locals = body.num_locals as usize;
         let has_rest_or_args = method.is_variadic();
 
-        let activation_class =
-            BytecodeMethod::get_or_init_activation_class(method, self.gc(), || {
-                let translation_unit = method.translation_unit();
-                let abc_method = method.method();
-                let mut dummy_activation = Activation::from_domain(self.context, outer.domain());
-                dummy_activation.set_outer(outer);
-                let activation_class = Class::for_activation(
-                    &mut dummy_activation,
-                    translation_unit,
-                    abc_method,
-                    body,
-                )?;
-
-                ClassObject::from_class(&mut dummy_activation, activation_class, None)
-            })?;
-
         if let Some(bound_class) = bound_class {
             assert!(this.is_of_type(self, bound_class));
         }
@@ -425,7 +373,6 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         self.caller_movie = Some(method.owner_movie());
         self.bound_superclass_object = bound_superclass_object;
         self.bound_class = bound_class;
-        self.activation_class = activation_class;
         self.stack_depth = self.context.avm2.stack.len();
         self.scope_depth = self.context.avm2.scope_stack.len();
 
@@ -531,7 +478,6 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             caller_movie,
             bound_superclass_object,
             bound_class,
-            activation_class: None,
             stack_depth: context.avm2.stack.len(),
             scope_depth: context.avm2.scope_stack.len(),
             context,
@@ -618,11 +564,6 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             .get(0)
             .or_else(|| self.scope_frame().first().copied())
             .map(|scope| scope.values())
-    }
-
-    pub fn activation_class(&mut self) -> ClassObject<'gc> {
-        self.activation_class
-            .expect("Expected to be running bytecode method")
     }
 
     pub fn avm2(&mut self) -> &mut Avm2<'gc> {
@@ -828,7 +769,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
                 } => self.op_construct_prop(*multiname, *num_args),
                 Op::ConstructSlot { index, num_args } => self.op_construct_slot(*index, *num_args),
                 Op::ConstructSuper { num_args } => self.op_construct_super(*num_args),
-                Op::NewActivation => self.op_new_activation(),
+                Op::NewActivation { activation_class } => self.op_new_activation(*activation_class),
                 Op::NewObject { num_args } => self.op_new_object(*num_args),
                 Op::NewFunction { index } => self.op_new_function(method, *index),
                 Op::NewClass { class } => self.op_new_class(*class),
@@ -1787,8 +1728,8 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         Ok(())
     }
 
-    fn op_new_activation(&mut self) -> Result<(), Error<'gc>> {
-        let instance = self.activation_class().construct(self, &[])?;
+    fn op_new_activation(&mut self, activation_class: ClassObject<'gc>) -> Result<(), Error<'gc>> {
+        let instance = activation_class.construct(self, &[])?;
 
         self.push_stack(instance);
 
