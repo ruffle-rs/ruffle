@@ -7,8 +7,7 @@ use crate::avm2::error;
 use crate::avm2::object::{ClassObject, FunctionObject, Object, ObjectPtr, TObject};
 use crate::avm2::value::Value;
 use crate::avm2::vtable::VTable;
-use crate::avm2::Multiname;
-use crate::avm2::{Error, QName};
+use crate::avm2::{Error, Multiname};
 use crate::string::AvmString;
 use gc_arena::barrier::{unlock, Write};
 use gc_arena::{
@@ -121,23 +120,6 @@ impl<'gc> ScriptObject<'gc> {
             ScriptObjectData::custom_new(class, proto, vtable),
         ))
         .into()
-    }
-
-    /// A special case for `newcatch` implementation. Basically a variable (q)name
-    /// which maps to slot 1.
-    pub fn catch_scope(activation: &mut Activation<'_, 'gc>, qname: &QName<'gc>) -> Object<'gc> {
-        let mc = activation.gc();
-
-        let vt = VTable::newcatch(mc, qname);
-
-        // TODO: use a proper ClassObject here; purposefully crafted bytecode
-        // can observe (the lack of) it.
-        let base = ScriptObjectWrapper(Gc::new(
-            mc,
-            ScriptObjectData::custom_new(activation.avm2().class_defs().object, None, vt),
-        ));
-
-        ScriptObject(base.0).into()
     }
 }
 
