@@ -1,4 +1,3 @@
-use super::interactive::Avm2MousePick;
 use crate::avm1::{Activation, ActivationIdentifier, Object, StageObject, TObject, Value};
 use crate::backend::audio::AudioManager;
 use crate::backend::ui::MouseCursor;
@@ -7,9 +6,9 @@ use crate::display_object::container::{
     dispatch_added_event, dispatch_removed_event, ChildContainer,
 };
 use crate::display_object::interactive::{
-    InteractiveObject, InteractiveObjectBase, TInteractiveObject,
+    Avm2MousePick, InteractiveObject, InteractiveObjectBase, TInteractiveObject,
 };
-use crate::display_object::{DisplayObjectBase, DisplayObjectPtr};
+use crate::display_object::{Avm1TextFieldBinding, DisplayObjectBase, DisplayObjectPtr};
 use crate::events::{ClipEvent, ClipEventResult};
 use crate::prelude::*;
 use crate::string::AvmString;
@@ -57,6 +56,7 @@ struct Avm1ButtonDataMut<'gc> {
     #[collect(require_static)]
     hit_bounds: Rectangle<Twips>,
     container: ChildContainer<'gc>,
+    text_field_bindings: Vec<Avm1TextFieldBinding<'gc>>,
 }
 
 impl<'gc> Avm1Button<'gc> {
@@ -78,6 +78,7 @@ impl<'gc> Avm1Button<'gc> {
                     container: ChildContainer::new(source_movie.movie.clone()),
                     hit_area: BTreeMap::new(),
                     hit_bounds: Default::default(),
+                    text_field_bindings: Vec::new(),
                 }),
                 shared: Gc::new(
                     mc,
@@ -403,7 +404,22 @@ impl<'gc> TDisplayObject<'gc> for Avm1Button<'gc> {
             node.set_maskee(context.gc(), None, true);
         }
 
+        // Do *not* unregister text field bindings.
+
         self.set_avm1_removed(context.gc(), true);
+    }
+
+    fn avm1_text_field_bindings(&self) -> Option<Ref<'_, [Avm1TextFieldBinding<'gc>]>> {
+        let read = Gc::as_ref(self.0).cell.borrow();
+        Some(Ref::map(read, |r| &*r.text_field_bindings))
+    }
+
+    fn avm1_text_field_bindings_mut(
+        &self,
+        mc: &Mutation<'gc>,
+    ) -> Option<RefMut<'_, Vec<Avm1TextFieldBinding<'gc>>>> {
+        let write = unlock!(Gc::write(mc, self.0), Avm1ButtonData, cell).borrow_mut();
+        Some(RefMut::map(write, |w| &mut w.text_field_bindings))
     }
 }
 

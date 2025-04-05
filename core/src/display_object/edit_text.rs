@@ -18,7 +18,7 @@ use crate::context::{RenderContext, UpdateContext};
 use crate::display_object::interactive::{
     InteractiveObject, InteractiveObjectBase, TInteractiveObject,
 };
-use crate::display_object::{DisplayObjectBase, DisplayObjectPtr};
+use crate::display_object::{Avm1TextFieldBinding, DisplayObjectBase, DisplayObjectPtr};
 use crate::events::{
     ClipEvent, ClipEventResult, ImeCursorArea, ImeEvent, ImeNotification, ImePurpose,
     PlayerNotification, TextControlCode,
@@ -135,6 +135,9 @@ pub struct EditTextData<'gc> {
 
     /// The display object that the variable binding is bound to.
     bound_stage_object: Option<Avm1StageObject<'gc>>,
+
+    /// Other AVM1 text fields bound to *this* text field.
+    avm1_text_field_bindings: Vec<Avm1TextFieldBinding<'gc>>,
 
     /// The AVM2 class of this button. If None, it is flash.text.TextField.
     class: Option<Avm2ClassObject<'gc>>,
@@ -378,6 +381,7 @@ impl<'gc> EditText<'gc> {
                 style_sheet: EditTextStyleSheet::None,
                 original_html_text: None,
                 ime_data: None,
+                avm1_text_field_bindings: Vec::new(),
             },
         ));
 
@@ -2173,7 +2177,7 @@ impl<'gc> EditText<'gc> {
                 activation.context.unbound_text_fields.push(self);
             }
             // People can bind to properties of TextFields the same as other display objects.
-            self.bind_text_field_variables(activation);
+            Avm1TextFieldBinding::bind_variables(activation);
 
             self.initialize_as_broadcaster(activation);
         });
@@ -2820,6 +2824,24 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
         }
 
         self.set_avm1_removed(context.gc(), true);
+    }
+
+    fn avm1_text_field_bindings(&self) -> Option<Ref<'_, [Avm1TextFieldBinding<'gc>]>> {
+        let read = self.0.read();
+        read.object
+            .and_then(|o| o.as_avm1_object())
+            .map(|_| Ref::map(read, |r| &*r.avm1_text_field_bindings))
+    }
+
+    fn avm1_text_field_bindings_mut(
+        &self,
+        mc: &Mutation<'gc>,
+    ) -> Option<RefMut<'_, Vec<Avm1TextFieldBinding<'gc>>>> {
+        let write = self.0.write(mc);
+        write
+            .object
+            .and_then(|o| o.as_avm1_object())
+            .map(|_| RefMut::map(write, |w| &mut w.avm1_text_field_bindings))
     }
 }
 
