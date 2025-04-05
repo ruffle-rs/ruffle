@@ -1728,8 +1728,16 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         Ok(())
     }
 
-    fn op_new_activation(&mut self, activation_class: ClassObject<'gc>) -> Result<(), Error<'gc>> {
-        let instance = activation_class.construct(self, &[])?;
+    fn op_new_activation(&mut self, activation_class: Class<'gc>) -> Result<(), Error<'gc>> {
+        // Create the activation object. Activation objects don't have prototypes,
+        // and we can give it the Class's vtable because `Class::for_activation`
+        // ensures there are only slots on the vtable.
+        let instance = ScriptObject::custom_object(
+            self.gc(),
+            activation_class,
+            None,
+            activation_class.vtable(),
+        );
 
         self.push_stack(instance);
 

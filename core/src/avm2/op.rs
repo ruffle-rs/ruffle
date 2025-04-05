@@ -1,6 +1,5 @@
 use crate::avm2::class::Class;
 use crate::avm2::multiname::Multiname;
-use crate::avm2::object::ClassObject;
 use crate::avm2::script::Script;
 use crate::string::AvmAtom;
 
@@ -210,7 +209,7 @@ pub enum Op<'gc> {
     Negate,
     NegateI,
     NewActivation {
-        activation_class: ClassObject<'gc>,
+        activation_class: Class<'gc>,
     },
     NewArray {
         num_args: u32,
