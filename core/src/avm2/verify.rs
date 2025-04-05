@@ -5,6 +5,7 @@ use crate::avm2::error::{
 };
 use crate::avm2::method::{BytecodeMethod, ParamConfig, ResolvedParamConfig};
 use crate::avm2::multiname::Multiname;
+use crate::avm2::object::ClassObject;
 use crate::avm2::op::{LookupSwitch, Op};
 use crate::avm2::script::TranslationUnit;
 use crate::avm2::{Activation, Error, QName};
@@ -91,6 +92,8 @@ pub fn verify_method<'gc>(
             1043,
         )?));
     }
+
+    let activation_class = create_activation_class(activation, method)?;
 
     let resolved_param_config = resolve_param_config(activation, method.signature())?;
     let resolved_return_type = resolve_return_type(activation, method.return_type)?;
@@ -262,8 +265,14 @@ pub fn verify_method<'gc>(
                 byte_info[(previous_position + j) as usize] = ByteInfo::OpContinue;
             }
 
-            let translated_ops =
-                translate_op(activation, method, max_locals, resolved_return_type, op)?;
+            let translated_ops = translate_op(
+                activation,
+                method,
+                max_locals,
+                activation_class,
+                resolved_return_type,
+                op,
+            )?;
 
             byte_info[previous_position as usize] = ByteInfo::OpStart(translated_ops.0);
             if let Some(second_op) = translated_ops.1 {
@@ -534,6 +543,28 @@ pub fn verify_method<'gc>(
     })
 }
 
+fn create_activation_class<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    method: Gc<'gc, BytecodeMethod<'gc>>,
+) -> Result<Option<ClassObject<'gc>>, Error<'gc>> {
+    let translation_unit = method.translation_unit();
+    let abc_method = method.method();
+    let body = method
+        .body()
+        .expect("Cannot verify non-native method without body!");
+
+    if abc_method.flags.contains(AbcMethodFlags::NEED_ACTIVATION) {
+        let activation_class =
+            Class::for_activation(activation, translation_unit, abc_method, body)?;
+
+        let class_object = ClassObject::from_class(activation, activation_class, None)?;
+
+        Ok(Some(class_object))
+    } else {
+        Ok(None)
+    }
+}
+
 pub fn resolve_param_config<'gc>(
     activation: &mut Activation<'_, 'gc>,
     param_config: &[ParamConfig<'gc>],
@@ -765,6 +796,7 @@ fn translate_op<'gc>(
     activation: &mut Activation<'_, 'gc>,
     method: Gc<'gc, BytecodeMethod<'gc>>,
     max_locals: u32,
+    activation_class: Option<ClassObject<'gc>>,
     resolved_return_type: Option<Class<'gc>>,
     op: AbcOp,
 ) -> Result<(Op<'gc>, Option<Op<'gc>>), Error<'gc>> {
@@ -848,20 +880,6 @@ fn translate_op<'gc>(
                     activation,
                     "Error #1026: Slot 0 exceeds slotCount",
                     1026,
-                )?));
-            }
-        }
-
-        AbcOp::NewActivation => {
-            if !method
-                .method()
-                .flags
-                .contains(AbcMethodFlags::NEED_ACTIVATION)
-            {
-                return Err(Error::AvmError(verify_error(
-                    activation,
-                    "Error #1113: OP_newactivation used in method without NEED_ACTIVATION flag.",
-                    1113,
                 )?));
             }
         }
@@ -1070,7 +1088,24 @@ fn translate_op<'gc>(
             }
         }
         AbcOp::ConstructSuper { num_args } => Op::ConstructSuper { num_args },
-        AbcOp::NewActivation => Op::NewActivation,
+        AbcOp::NewActivation => {
+            if let Some(activation_class) = activation_class {
+                Op::NewActivation { activation_class }
+            } else {
+                // When a method's flags don't include NEED_ACTIVATION, we
+                // purposefully don't construct an `activation_class` in
+                // `create_activation_class`, which results in the
+                // `activation_class` being passed to `translate_op` being None.
+                // This results in this VerifyError being thrown upon
+                // encountering any `newactivation` op in the bytecode.
+
+                return Err(Error::AvmError(verify_error(
+                    activation,
+                    "Error #1113: OP_newactivation used in method without NEED_ACTIVATION flag.",
+                    1113,
+                )?));
+            }
+        }
         AbcOp::NewObject { num_args } => Op::NewObject { num_args },
         AbcOp::NewFunction { index } => Op::NewFunction { index },
         AbcOp::NewClass { index } => {
