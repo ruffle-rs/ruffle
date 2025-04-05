@@ -3,8 +3,8 @@ use crate::avm2::multiname::Multiname;
 use crate::avm2::script::Script;
 use crate::string::AvmAtom;
 
-use gc_arena::{Collect, Gc, Static};
-use swf::avm2::types::{Exception, Index, LookupSwitch, Method, Namespace};
+use gc_arena::{Collect, Gc};
+use swf::avm2::types::{Index, Method, Namespace};
 
 #[derive(Clone, Collect, Copy, Debug)]
 #[collect(no_drop)]
@@ -166,10 +166,10 @@ pub enum Op<'gc> {
         index_register: u32,
     },
     IfFalse {
-        offset: i32,
+        offset: usize,
     },
     IfTrue {
-        offset: i32,
+        offset: usize,
     },
     In,
     IncLocal {
@@ -189,7 +189,7 @@ pub enum Op<'gc> {
     },
     IsTypeLate,
     Jump {
-        offset: i32,
+        offset: usize,
     },
     Kill {
         index: u32,
@@ -201,20 +201,21 @@ pub enum Op<'gc> {
     Li16,
     Li32,
     Li8,
-    LookupSwitch(Gc<'gc, Static<LookupSwitch>>),
+    LookupSwitch(Gc<'gc, LookupSwitch>),
     LShift,
     Modulo,
     Multiply,
     MultiplyI,
     Negate,
     NegateI,
-    NewActivation,
+    NewActivation {
+        activation_class: Class<'gc>,
+    },
     NewArray {
         num_args: u32,
     },
     NewCatch {
-        #[collect(require_static)]
-        index: Index<Exception>,
+        index: usize,
     },
     NewClass {
         class: Class<'gc>,
@@ -260,7 +261,9 @@ pub enum Op<'gc> {
     ReturnValue {
         return_type: Option<Class<'gc>>,
     },
-    ReturnVoid,
+    ReturnVoid {
+        return_type: Option<Class<'gc>>,
+    },
     RShift,
     SetGlobalSlot {
         // note: 0-indexed, as opposed to FP.
@@ -338,9 +341,16 @@ impl Op<'_> {
                 | Op::Swap
                 | Op::Timestamp
                 | Op::TypeOf
-                | Op::ReturnVoid
+                | Op::ReturnVoid { .. }
         )
     }
+}
+
+#[derive(Collect, Debug)]
+#[collect(require_static)]
+pub struct LookupSwitch {
+    pub default_offset: usize,
+    pub case_offsets: Box<[usize]>,
 }
 
 #[cfg(target_pointer_width = "64")]

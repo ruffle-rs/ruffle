@@ -533,7 +533,7 @@ pub fn optimize<'gc>(
     code: &mut Vec<Op<'gc>>,
     resolved_parameters: &[ResolvedParamConfig<'gc>],
     method_exceptions: &[Exception<'gc>],
-    jump_targets: &HashSet<i32>,
+    jump_targets: &HashSet<usize>,
 ) -> Result<(), Error<'gc>> {
     // These make the code less readable
     #![allow(clippy::collapsible_if)]
@@ -624,8 +624,15 @@ pub fn optimize<'gc>(
 
         *known_abstract_state = Some(used_entry_state.clone());
 
-        let resulting_state =
-            abstract_interpret_ops(activation, block.ops, used_entry_state, None, &types, false)?;
+        let resulting_state = abstract_interpret_ops(
+            activation,
+            block.ops,
+            method_exceptions,
+            used_entry_state,
+            None,
+            &types,
+            false,
+        )?;
 
         for exit in &block.exits {
             match exit {
@@ -667,6 +674,7 @@ pub fn optimize<'gc>(
         abstract_interpret_ops(
             activation,
             code_slice,
+            method_exceptions,
             entry_state,
             Some(replacement_states),
             &types,
@@ -680,6 +688,7 @@ pub fn optimize<'gc>(
 fn abstract_interpret_ops<'gc>(
     activation: &mut Activation<'_, 'gc>,
     ops: &[Cell<Op<'gc>>],
+    exceptions: &[Exception<'gc>],
     initial_state: AbstractState<'gc>,
     mut replacement_states: Option<HashMap<usize, AbstractState<'gc>>>,
     types: &Types<'gc>,
@@ -973,9 +982,14 @@ fn abstract_interpret_ops<'gc>(
                 stack.pop(activation)?;
                 stack.push_class_not_null(activation, c_class)?;
             }
-            Op::NewCatch { .. } => {
-                // Avoid handling for now
-                stack.push_any(activation)?;
+            Op::NewCatch { index } => {
+                let catch_class = &exceptions[index].catch_class;
+
+                if let Some(catch_class) = catch_class {
+                    stack.push_class_not_null(activation, *catch_class)?;
+                } else {
+                    stack.push_class_not_null(activation, types.object)?;
+                }
             }
             Op::IsType { .. } => {
                 stack.pop(activation)?;
@@ -1685,10 +1699,8 @@ fn abstract_interpret_ops<'gc>(
                 // Avoid handling for now
                 stack.pop(activation)?;
             }
-            Op::NewActivation => {
-                let activation_class = activation.activation_class();
-
-                stack.push_class_not_null(activation, activation_class.inner_class_definition())?;
+            Op::NewActivation { activation_class } => {
+                stack.push_class_not_null(activation, activation_class)?;
             }
             Op::Nop => {}
             Op::DebugFile { .. }
@@ -1740,7 +1752,7 @@ fn abstract_interpret_ops<'gc>(
             }
 
             // These ops don't change the state
-            Op::ReturnVoid | Op::Jump { .. } => {}
+            Op::ReturnVoid { .. } | Op::Jump { .. } => {}
 
             Op::CallMethod { .. }
             | Op::CoerceSwapPop { .. }

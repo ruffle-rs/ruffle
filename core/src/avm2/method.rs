@@ -2,7 +2,6 @@
 
 use crate::avm2::activation::Activation;
 use crate::avm2::class::Class;
-use crate::avm2::object::ClassObject;
 use crate::avm2::script::TranslationUnit;
 use crate::avm2::value::{abc_default_value, Value};
 use crate::avm2::verify::{resolve_param_config, VerifiedMethodInfo};
@@ -10,7 +9,7 @@ use crate::avm2::Error;
 use crate::avm2::Multiname;
 use crate::tag_utils::SwfMovie;
 use gc_arena::barrier::unlock;
-use gc_arena::lock::{Lock, RefLock};
+use gc_arena::lock::RefLock;
 use gc_arena::{Collect, Gc, GcCell, Mutation};
 use std::borrow::Cow;
 use std::fmt;
@@ -116,15 +115,18 @@ pub struct BytecodeMethod<'gc> {
     /// its return value.
     pub return_type: Option<Gc<'gc, Multiname<'gc>>>,
 
-    /// The associated activation class. Initialized lazily, and only
-    /// if the method requires it.
-    activation_class: Lock<Option<ClassObject<'gc>>>,
-
     /// Whether or not this method was declared as a free-standing function.
     ///
     /// A free-standing function corresponds to the `Function` trait type, and
     /// is instantiated with the `newfunction` opcode.
     pub is_function: bool,
+
+    /// Whether or not this method substitutes Undefined for missing arguments.
+    ///
+    /// This is true when the method is a free-standing function, none of the
+    /// declared arguments have a type or a default value, and the method does
+    /// not have the NEED_REST flag.
+    pub is_unchecked: bool,
 }
 
 impl<'gc> BytecodeMethod<'gc> {
@@ -153,6 +155,13 @@ impl<'gc> BytecodeMethod<'gc> {
             }
         }
 
+        let mut all_params_unchecked = true;
+        for param in &signature {
+            if param.param_type_name.is_some() || param.default_value.is_some() {
+                all_params_unchecked = false;
+            }
+        }
+
         Ok(Self {
             txunit,
             abc: txunit.abc(),
@@ -162,7 +171,7 @@ impl<'gc> BytecodeMethod<'gc> {
             signature,
             return_type,
             is_function,
-            activation_class: Lock::new(None),
+            is_unchecked: is_function && all_params_unchecked,
         })
     }
 
@@ -257,38 +266,7 @@ impl<'gc> BytecodeMethod<'gc> {
     ///  * The function does not use rest-parameters
     ///  * The function's parameters have no declared types or default values
     pub fn is_unchecked(&self) -> bool {
-        if !self.is_function {
-            return false;
-        }
-
-        for param in self.signature() {
-            if param.param_type_name.is_some() || param.default_value.is_some() {
-                return false;
-            }
-        }
-
-        !self.method().flags.contains(AbcMethodFlags::NEED_REST)
-    }
-
-    /// Initialize and return the activation class object, if the method requires it.
-    pub fn get_or_init_activation_class(
-        this: Gc<'gc, Self>,
-        mc: &Mutation<'gc>,
-        init: impl FnOnce() -> Result<ClassObject<'gc>, Error<'gc>>,
-    ) -> Result<Option<ClassObject<'gc>>, Error<'gc>> {
-        Ok(if let Some(cached) = this.activation_class.get() {
-            Some(cached)
-        } else if this
-            .method()
-            .flags
-            .contains(AbcMethodFlags::NEED_ACTIVATION)
-        {
-            let cls = Some(init()?);
-            unlock!(Gc::write(mc, this), Self, activation_class).set(cls);
-            cls
-        } else {
-            None
-        })
+        self.is_unchecked
     }
 }
 
