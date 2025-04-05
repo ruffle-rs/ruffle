@@ -5,7 +5,6 @@ use crate::avm2::error::{
 };
 use crate::avm2::method::{BytecodeMethod, ParamConfig, ResolvedParamConfig};
 use crate::avm2::multiname::Multiname;
-use crate::avm2::object::ClassObject;
 use crate::avm2::op::{LookupSwitch, Op};
 use crate::avm2::script::TranslationUnit;
 use crate::avm2::{Activation, Error, QName};
@@ -546,7 +545,7 @@ pub fn verify_method<'gc>(
 fn create_activation_class<'gc>(
     activation: &mut Activation<'_, 'gc>,
     method: Gc<'gc, BytecodeMethod<'gc>>,
-) -> Result<Option<ClassObject<'gc>>, Error<'gc>> {
+) -> Result<Option<Class<'gc>>, Error<'gc>> {
     let translation_unit = method.translation_unit();
     let abc_method = method.method();
     let body = method
@@ -557,9 +556,7 @@ fn create_activation_class<'gc>(
         let activation_class =
             Class::for_activation(activation, translation_unit, abc_method, body)?;
 
-        let class_object = ClassObject::from_class(activation, activation_class, None)?;
-
-        Ok(Some(class_object))
+        Ok(Some(activation_class))
     } else {
         Ok(None)
     }
@@ -796,7 +793,7 @@ fn translate_op<'gc>(
     activation: &mut Activation<'_, 'gc>,
     method: Gc<'gc, BytecodeMethod<'gc>>,
     max_locals: u32,
-    activation_class: Option<ClassObject<'gc>>,
+    activation_class: Option<Class<'gc>>,
     resolved_return_type: Option<Class<'gc>>,
     op: AbcOp,
 ) -> Result<(Op<'gc>, Option<Op<'gc>>), Error<'gc>> {
