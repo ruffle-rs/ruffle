@@ -2176,6 +2176,17 @@ pub trait TDisplayObject<'gc>:
         self.set_avm1_removed(context.gc(), true);
     }
 
+    fn avm1_text_field_bindings(&self) -> Option<Ref<'_, [Avm1TextFieldBinding<'gc>]>> {
+        None
+    }
+
+    fn avm1_text_field_bindings_mut(
+        &self,
+        _mc: &Mutation<'gc>,
+    ) -> Option<RefMut<'_, Vec<Avm1TextFieldBinding<'gc>>>> {
+        None
+    }
+
     fn as_stage(&self) -> Option<Stage<'gc>> {
         None
     }
@@ -2477,23 +2488,6 @@ pub trait TDisplayObject<'gc>:
         }
     }
 
-    fn bind_text_field_variables(&self, activation: &mut Activation<'_, 'gc>) {
-        // Check all unbound text fields to see if they apply to this object.
-        // TODO: Replace with `Vec::drain_filter` when stable.
-        let mut i = 0;
-        let mut len = activation.context.unbound_text_fields.len();
-        while i < len {
-            if activation.context.unbound_text_fields[i]
-                .try_bind_text_field_variable(activation, false)
-            {
-                activation.context.unbound_text_fields.swap_remove(i);
-                len -= 1;
-            } else {
-                i += 1;
-            }
-        }
-    }
-
     /// Inform this object and its ancestors that it has visually changed and must be redrawn.
     /// If this object or any ancestor is marked as cacheAsBitmap, it will invalidate that cache.
     fn invalidate_cached_bitmap(&self, mc: &Mutation<'gc>) {
@@ -2657,6 +2651,33 @@ bitflags! {
 
         /// The options used for mouse picking, such as clicking on buttons.
         const MOUSE_PICK = Self::SKIP_MASK.bits() | Self::SKIP_INVISIBLE.bits();
+    }
+}
+
+/// A binding from a property of an AVM1 StageObject to an EditText text field.
+#[derive(Copy, Clone, Collect)]
+#[collect(no_drop)]
+pub struct Avm1TextFieldBinding<'gc> {
+    pub text_field: EditText<'gc>,
+    pub variable_name: AvmString<'gc>,
+}
+
+impl<'gc> Avm1TextFieldBinding<'gc> {
+    pub fn bind_variables(activation: &mut Activation<'_, 'gc>) {
+        // Check all unbound text fields to see if they apply to this object.
+        // TODO: Replace with `Vec::drain_filter` when stable.
+        let mut i = 0;
+        let mut len = activation.context.unbound_text_fields.len();
+        while i < len {
+            if activation.context.unbound_text_fields[i]
+                .try_bind_text_field_variable(activation, false)
+            {
+                activation.context.unbound_text_fields.swap_remove(i);
+                len -= 1;
+            } else {
+                i += 1;
+            }
+        }
     }
 }
 

@@ -8,15 +8,13 @@ use crate::avm1::{Object, ObjectPtr, ScriptObject, TObject, Value};
 use crate::avm_warn;
 use crate::context::UpdateContext;
 use crate::display_object::{
-    DisplayObject, EditText, MovieClip, TDisplayObject, TDisplayObjectContainer, TInteractiveObject,
+    Avm1TextFieldBinding, DisplayObject, EditText, MovieClip, TDisplayObject,
+    TDisplayObjectContainer, TInteractiveObject,
 };
 use crate::string::{AvmString, StringContext, WStr};
 use crate::types::Percent;
-use gc_arena::barrier::unlock;
-use gc_arena::lock::RefLock;
 use gc_arena::{Collect, Gc, GcWeak, Mutation};
 use ruffle_macros::istr;
-use std::cell::RefMut;
 use std::fmt;
 use swf::Twips;
 
@@ -36,8 +34,6 @@ pub struct StageObjectData<'gc> {
 
     /// The display node this stage object
     pub display_object: DisplayObject<'gc>,
-
-    text_field_bindings: RefLock<Vec<TextFieldBinding<'gc>>>,
 }
 
 impl<'gc> StageObject<'gc> {
@@ -57,52 +53,44 @@ impl<'gc> StageObject<'gc> {
             StageObjectData {
                 base: ScriptObject::new(context, Some(proto)),
                 display_object,
-                text_field_bindings: RefLock::new(Vec::new()),
             },
         ))
-    }
-
-    fn text_field_bindings_mut(
-        self,
-        gc_context: &Mutation<'gc>,
-    ) -> RefMut<'gc, Vec<TextFieldBinding<'gc>>> {
-        unlock!(
-            Gc::write(gc_context, self.0),
-            StageObjectData,
-            text_field_bindings
-        )
-        .borrow_mut()
     }
 
     /// Registers a text field variable binding for this stage object.
     /// Whenever a property with the given name is changed, we should change the text in the text field.
     pub fn register_text_field_binding(
         self,
-        gc_context: &Mutation<'gc>,
+        mc: &Mutation<'gc>,
         text_field: EditText<'gc>,
         variable_name: AvmString<'gc>,
     ) {
-        self.text_field_bindings_mut(gc_context)
-            .push(TextFieldBinding {
+        if let Some(mut bindings) = self.0.display_object.avm1_text_field_bindings_mut(mc) {
+            bindings.push(Avm1TextFieldBinding {
                 text_field,
                 variable_name,
-            })
+            });
+        }
     }
 
     /// Removes a text field binding for the given text field.
     /// Does not place the text field on the unbound list.
     /// Caller is responsible for placing the text field on the unbound list, if necessary.
-    pub fn clear_text_field_binding(self, gc_context: &Mutation<'gc>, text_field: EditText<'gc>) {
-        self.text_field_bindings_mut(gc_context)
-            .retain(|binding| !DisplayObject::ptr_eq(text_field.into(), binding.text_field.into()));
+    pub fn clear_text_field_binding(self, mc: &Mutation<'gc>, text_field: EditText<'gc>) {
+        if let Some(mut bindings) = self.0.display_object.avm1_text_field_bindings_mut(mc) {
+            bindings.retain(|b| !DisplayObject::ptr_eq(text_field.into(), b.text_field.into()));
+        }
     }
 
     /// Clears all text field bindings from this stage object, and places the textfields on the unbound list.
     /// This is called when the object is removed from the stage.
     pub fn unregister_text_field_bindings(self, context: &mut UpdateContext<'gc>) {
-        for binding in self.text_field_bindings_mut(context.gc()).drain(..) {
-            binding.text_field.clear_bound_stage_object(context);
-            context.unbound_text_fields.push(binding.text_field);
+        let mc = context.gc();
+        if let Some(mut bindings) = self.0.display_object.avm1_text_field_bindings_mut(mc) {
+            for binding in bindings.drain(..) {
+                binding.text_field.clear_bound_stage_object(context);
+                context.unbound_text_fields.push(binding.text_field);
+            }
         }
     }
 
@@ -164,14 +152,6 @@ impl<'gc> StageObject<'gc> {
         }
         level_id
     }
-}
-
-/// A binding from a property of this StageObject to an EditText text field.
-#[derive(Collect)]
-#[collect(no_drop)]
-struct TextFieldBinding<'gc> {
-    text_field: EditText<'gc>,
-    variable_name: AvmString<'gc>,
 }
 
 impl fmt::Debug for StageObject<'_> {
@@ -257,22 +237,18 @@ impl<'gc> TObject<'gc> for StageObject<'gc> {
     ) -> Result<(), Error<'gc>> {
         // Check if a text field is bound to this property and update the text if so.
         let case_sensitive = activation.is_case_sensitive();
-        for binding in self
-            .0
-            .text_field_bindings
-            .borrow()
-            .iter()
-            .filter(|binding| {
+        if let Some(bindings) = self.0.display_object.avm1_text_field_bindings() {
+            for binding in bindings.iter().filter(|binding| {
                 if case_sensitive {
                     binding.variable_name == name
                 } else {
                     binding.variable_name.eq_ignore_case(&name)
                 }
-            })
-        {
-            binding
-                .text_field
-                .set_html_text(&value.coerce_to_string(activation)?, activation.context);
+            }) {
+                binding
+                    .text_field
+                    .set_html_text(&value.coerce_to_string(activation)?, activation.context);
+            }
         }
 
         let base = self.0.base;
