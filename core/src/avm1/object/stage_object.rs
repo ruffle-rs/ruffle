@@ -1,4 +1,4 @@
-//! AVM1 object type to represent objects on the stage.
+//! DisplayObject-specific AVM1 operations.
 
 use crate::avm1::activation::Activation;
 use crate::avm1::clamp::Clamp;
@@ -15,6 +15,187 @@ use gc_arena::{Collect, Gc, GcWeak};
 use ruffle_macros::istr;
 use std::fmt;
 use swf::Twips;
+
+pub fn get_property<'gc>(
+    dobj: DisplayObject<'gc>,
+    name: AvmString<'gc>,
+    activation: &mut Activation<'_, 'gc>,
+    is_slash_path: bool,
+) -> Option<Value<'gc>> {
+    // Property search order for DisplayObjects:
+
+    // 1) Path properties such as `_root`, `_parent`, `_levelN` (obeys case sensitivity)
+    let magic_property = name.starts_with(b'_');
+    if magic_property {
+        if let Some(object) = resolve_path_property(dobj, name, activation) {
+            return Some(object);
+        }
+    }
+
+    // 2) Child display objects with the given instance name
+    if let Some(child) = dobj
+        .as_container()
+        .and_then(|o| o.child_by_name(&name, activation.is_case_sensitive()))
+    {
+        return if is_slash_path {
+            Some(child.object())
+        // If an object doesn't have an object representation, e.g. Graphic, then trying to access it
+        // Returns the parent instead
+        } else if let crate::display_object::DisplayObject::Graphic(_) = child {
+            child.parent().map(|p| p.object())
+        } else {
+            Some(child.object())
+        };
+    }
+
+    // 3) Display object properties such as `_x`, `_y` (never case sensitive)
+    if magic_property {
+        if let Some(property) = activation
+            .context
+            .avm1
+            .display_properties()
+            .get_by_name(name)
+        {
+            return Some(property.get(activation, dobj));
+        }
+    }
+
+    None
+}
+
+/// Notify any bound text fields of a property change.
+///
+/// This should be called every time a property is set on a AVM1 object.
+pub fn notify_property_change<'a, 'gc>(
+    dobj: DisplayObject<'gc>,
+    property_name: AvmString<'gc>,
+    value: Value<'gc>,
+    activation: &mut Activation<'a, 'gc>,
+) -> Result<(), Error<'gc>> {
+    // Check if a text field is bound to this property and update the text if so.
+    let case_sensitive = activation.is_case_sensitive();
+    if let Some(bindings) = dobj.avm1_text_field_bindings() {
+        for binding in bindings.iter().filter(|binding| {
+            if case_sensitive {
+                binding.variable_name == property_name
+            } else {
+                binding.variable_name.eq_ignore_case(&property_name)
+            }
+        }) {
+            binding
+                .text_field
+                .set_html_text(&value.coerce_to_string(activation)?, activation.context);
+        }
+    }
+    Ok(())
+}
+
+pub fn has_own_property<'gc>(
+    dobj: DisplayObject<'gc>,
+    activation: &mut Activation<'_, 'gc>,
+    name: AvmString<'gc>,
+) -> bool {
+    // Note that `hasOwnProperty` does NOT return true for child display objects.
+
+    let magic_property = name.starts_with(b'_');
+    if magic_property
+        && activation
+            .context
+            .avm1
+            .display_properties()
+            .get_by_name(name)
+            .is_some()
+    {
+        return true;
+    }
+
+    let case_sensitive = activation.is_case_sensitive();
+
+    if dobj
+        .as_container()
+        .and_then(|o| o.child_by_name(&name, case_sensitive))
+        .is_some()
+    {
+        return true;
+    }
+
+    if magic_property && resolve_path_property(dobj, name, activation).is_some() {
+        return true;
+    }
+
+    false
+}
+
+pub fn enumerate_keys<'gc>(dobj: DisplayObject<'gc>, keys: &mut Vec<AvmString<'gc>>) {
+    // Keys from the underlying object are listed first, followed by
+    // child display objects in order from highest depth to lowest depth.
+    if let Some(ctr) = dobj.as_container() {
+        // Button/MovieClip children are included in key list.
+        for child in ctr.iter_render_list().rev() {
+            if child.as_interactive().is_some() {
+                keys.push(child.name().expect("Interactive DisplayObjects have names"));
+            }
+        }
+    }
+}
+
+fn resolve_path_property<'gc>(
+    dobj: DisplayObject<'gc>,
+    name: AvmString<'gc>,
+    activation: &mut Activation<'_, 'gc>,
+) -> Option<Value<'gc>> {
+    let case_sensitive = activation.is_case_sensitive();
+    if name.eq_with_case(b"_root", case_sensitive) {
+        return Some(activation.root_object());
+    } else if name.eq_with_case(b"_parent", case_sensitive) {
+        return Some(
+            dobj.avm1_parent()
+                .map(|dn| dn.object().coerce_to_object(activation))
+                .map(Value::Object)
+                .unwrap_or(Value::Undefined),
+        );
+    } else if name.eq_with_case(b"_global", case_sensitive) {
+        return Some(activation.context.avm1.global_object().into());
+    }
+
+    // Resolve level names `_levelN`.
+    if let Some(prefix) = name.slice(..6) {
+        // `_flash` is a synonym of `_level`, a relic from the earliest Flash versions.
+        if prefix.eq_with_case(b"_level", case_sensitive)
+            || prefix.eq_with_case(b"_flash", case_sensitive)
+        {
+            let level_id = parse_level_id(&name[6..]);
+            let level = activation
+                .get_level(level_id)
+                .map(|o| o.object())
+                .unwrap_or(Value::Undefined);
+            return Some(level);
+        }
+    }
+
+    None
+}
+
+fn parse_level_id(digits: &WStr) -> i32 {
+    // TODO: Use `split_first`?
+    let (is_negative, digits) = match digits.get(0) {
+        Some(45) => (true, &digits[1..]),
+        _ => (false, digits),
+    };
+    let mut level_id: i32 = 0;
+    for digit in digits
+        .iter()
+        .map_while(|c| char::from_u32(c.into()).and_then(|c| c.to_digit(10)))
+    {
+        level_id = level_id.wrapping_mul(10);
+        level_id = level_id.wrapping_add(digit as i32);
+    }
+    if is_negative {
+        level_id = level_id.wrapping_neg();
+    }
+    level_id
+}
+
 
 /// A ScriptObject that is inherently tied to a display node.
 #[derive(Clone, Copy, Collect)]
@@ -54,65 +235,6 @@ impl<'gc> StageObject<'gc> {
             },
         ))
     }
-
-    fn resolve_path_property(
-        self,
-        name: AvmString<'gc>,
-        activation: &mut Activation<'_, 'gc>,
-    ) -> Option<Value<'gc>> {
-        let case_sensitive = activation.is_case_sensitive();
-        if name.eq_with_case(b"_root", case_sensitive) {
-            return Some(activation.root_object());
-        } else if name.eq_with_case(b"_parent", case_sensitive) {
-            return Some(
-                self.0
-                    .display_object
-                    .avm1_parent()
-                    .map(|dn| dn.object().coerce_to_object(activation))
-                    .map(Value::Object)
-                    .unwrap_or(Value::Undefined),
-            );
-        } else if name.eq_with_case(b"_global", case_sensitive) {
-            return Some(activation.context.avm1.global_object().into());
-        }
-
-        // Resolve level names `_levelN`.
-        if let Some(prefix) = name.slice(..6) {
-            // `_flash` is a synonym of `_level`, a relic from the earliest Flash versions.
-            if prefix.eq_with_case(b"_level", case_sensitive)
-                || prefix.eq_with_case(b"_flash", case_sensitive)
-            {
-                let level_id = Self::parse_level_id(&name[6..]);
-                let level = activation
-                    .get_level(level_id)
-                    .map(|o| o.object())
-                    .unwrap_or(Value::Undefined);
-                return Some(level);
-            }
-        }
-
-        None
-    }
-
-    fn parse_level_id(digits: &WStr) -> i32 {
-        // TODO: Use `split_first`?
-        let (is_negative, digits) = match digits.get(0) {
-            Some(45) => (true, &digits[1..]),
-            _ => (false, digits),
-        };
-        let mut level_id: i32 = 0;
-        for digit in digits
-            .iter()
-            .map_while(|c| char::from_u32(c.into()).and_then(|c| c.to_digit(10)))
-        {
-            level_id = level_id.wrapping_mul(10);
-            level_id = level_id.wrapping_add(digit as i32);
-        }
-        if is_negative {
-            level_id = level_id.wrapping_neg();
-        }
-        level_id
-    }
 }
 
 impl fmt::Debug for StageObject<'_> {
@@ -137,8 +259,6 @@ impl<'gc> TObject<'gc> for StageObject<'gc> {
     ) -> Option<Value<'gc>> {
         let name = name.into();
 
-        // Property search order for DisplayObjects:
-        // 1) Actual properties on the underlying object
         if let Some(value) = self
             .0
             .base
@@ -147,46 +267,8 @@ impl<'gc> TObject<'gc> for StageObject<'gc> {
             return Some(value);
         }
 
-        // 2) Path properties such as `_root`, `_parent`, `_levelN` (obeys case sensitivity)
-        let magic_property = name.starts_with(b'_');
-        if magic_property {
-            if let Some(object) = self.resolve_path_property(name, activation) {
-                return Some(object);
-            }
-        }
-
-        // 3) Child display objects with the given instance name
-        if let Some(child) = self
-            .0
-            .display_object
-            .as_container()
-            .and_then(|o| o.child_by_name(&name, activation.is_case_sensitive()))
-        {
-            return if is_slash_path {
-                Some(child.object())
-            // If an object doesn't have an object representation, e.g. Graphic, then trying to access it
-            // Returns the parent instead
-            } else if let crate::display_object::DisplayObject::Graphic(_) = child {
-                child.parent().map(|p| p.object())
-            } else {
-                Some(child.object())
-            };
-        }
-
-        // 4) Display object properties such as `_x`, `_y` (never case sensitive)
-        if magic_property {
-            if let Some(property) = activation
-                .context
-                .avm1
-                .display_properties()
-                .get_by_name(name)
-                .copied()
-            {
-                return Some(property.get(activation, self.0.display_object));
-            }
-        }
-
-        None
+        let dobj = self.0.display_object;
+        get_property(dobj, name, activation, is_slash_path)
     }
 
     fn set_local(
@@ -196,24 +278,10 @@ impl<'gc> TObject<'gc> for StageObject<'gc> {
         activation: &mut Activation<'_, 'gc>,
         this: Object<'gc>,
     ) -> Result<(), Error<'gc>> {
-        // Check if a text field is bound to this property and update the text if so.
-        let case_sensitive = activation.is_case_sensitive();
-        if let Some(bindings) = self.0.display_object.avm1_text_field_bindings() {
-            for binding in bindings.iter().filter(|binding| {
-                if case_sensitive {
-                    binding.variable_name == name
-                } else {
-                    binding.variable_name.eq_ignore_case(&name)
-                }
-            }) {
-                binding
-                    .text_field
-                    .set_html_text(&value.coerce_to_string(activation)?, activation.context);
-            }
-        }
-
         let base = self.0.base;
-        let display_object = self.0.display_object;
+        let dobj = self.0.display_object;
+
+        notify_property_change(dobj, name, value, activation)?;
 
         if base.has_own_property(activation, name) {
             // 1) Actual properties on the underlying object
@@ -223,52 +291,21 @@ impl<'gc> TObject<'gc> for StageObject<'gc> {
             .avm1
             .display_properties()
             .get_by_name(name)
-            .copied()
         {
             // 2) Display object properties such as _x, _y
-            property.set(activation, display_object, value)
+            property.set(activation, dobj, value)
         } else {
-            // 3) TODO: Prototype
             base.set_local(name, value, activation, this)
         }
     }
 
-    // Note that `hasOwnProperty` does NOT return true for child display objects.
     fn has_property(&self, activation: &mut Activation<'_, 'gc>, name: AvmString<'gc>) -> bool {
-        if !self.0.display_object.avm1_removed() && self.0.base.has_property(activation, name) {
+        let dobj = self.0.display_object;
+        if !dobj.avm1_removed() && self.0.base.has_property(activation, name) {
             return true;
         }
 
-        let magic_property = name.starts_with(b'_');
-        if magic_property
-            && activation
-                .context
-                .avm1
-                .display_properties()
-                .get_by_name(name)
-                .is_some()
-        {
-            return true;
-        }
-
-        let case_sensitive = activation.is_case_sensitive();
-
-        if !self.0.display_object.avm1_removed()
-            && self
-                .0
-                .display_object
-                .as_container()
-                .and_then(|o| o.child_by_name(&name, case_sensitive))
-                .is_some()
-        {
-            return true;
-        }
-
-        if magic_property && self.resolve_path_property(name, activation).is_some() {
-            return true;
-        }
-
-        false
+        has_own_property(dobj, activation, name)
     }
 
     fn get_keys(
@@ -276,19 +313,8 @@ impl<'gc> TObject<'gc> for StageObject<'gc> {
         activation: &mut Activation<'_, 'gc>,
         include_hidden: bool,
     ) -> Vec<AvmString<'gc>> {
-        // Keys from the underlying object are listed first, followed by
-        // child display objects in order from highest depth to lowest depth.
         let mut keys = self.0.base.get_keys(activation, include_hidden);
-
-        if let Some(ctr) = self.0.display_object.as_container() {
-            // Button/MovieClip children are included in key list.
-            for child in ctr.iter_render_list().rev() {
-                if child.as_interactive().is_some() {
-                    keys.push(child.name().expect("Interactive DisplayObjects have names"));
-                }
-            }
-        }
-
+        enumerate_keys(self.0.display_object, &mut keys);
         keys
     }
 
@@ -307,7 +333,7 @@ impl<'gc> TObject<'gc> for StageObject<'gc> {
 }
 
 /// Properties shared by display objects in AVM1, such as _x and _y.
-/// These are only accessible for movie clips, buttons, and text fields (any others?)
+/// These are only accessible for movie clips, buttons, text fields, and videos
 /// These exist outside the global or prototype machinery. Instead, they are
 /// "special" properties stored in a separate map that display objects look at in addition
 /// to normal property lookup.
@@ -397,18 +423,17 @@ impl<'gc> DisplayPropertyMap<'gc> {
 
     /// Gets a property slot by name.
     /// Used by `GetMember`, `GetVariable`, `SetMember`, and `SetVariable`.
-    pub fn get_by_name(&self, name: AvmString<'gc>) -> Option<&DisplayProperty> {
+    pub fn get_by_name(&self, name: AvmString<'gc>) -> Option<DisplayProperty> {
         // Display object properties are case insensitive, regardless of SWF version!?
-        // TODO: Another string alloc; optimize this eventually.
-        self.0.get(name, false)
+        self.0.get(name, false).copied()
     }
 
     /// Gets a property slot by SWF4 index.
     /// The order is defined by the SWF specs.
     /// Used by `GetProperty`/`SetProperty`.
     /// SWF19 pp. 85-86
-    pub fn get_by_index(&self, index: usize) -> Option<&DisplayProperty> {
-        self.0.get_index(index)
+    pub fn get_by_index(&self, index: usize) -> Option<DisplayProperty> {
+        self.0.get_index(index).copied()
     }
 
     fn add_property(
