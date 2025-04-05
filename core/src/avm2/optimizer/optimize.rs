@@ -1725,8 +1725,6 @@ fn abstract_interpret_ops<'gc>(
                 stack.pop(activation)?;
             }
             Op::NewActivation { activation_class } => {
-                let activation_class = activation_class.inner_class_definition();
-
                 stack.push_class_not_null(activation, activation_class)?;
             }
             Op::Nop => {}
