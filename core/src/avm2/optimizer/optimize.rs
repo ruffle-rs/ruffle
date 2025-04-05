@@ -1012,9 +1012,14 @@ fn abstract_interpret_ops<'gc>(
                 stack.pop(activation)?;
                 stack.push_class_not_null(activation, c_class)?;
             }
-            Op::NewCatch { .. } => {
-                // Avoid handling for now
-                stack.push_any(activation)?;
+            Op::NewCatch { index } => {
+                let catch_class = &method_exceptions[index].catch_class;
+
+                if let Some(catch_class) = catch_class {
+                    stack.push_class_not_null(activation, *catch_class)?;
+                } else {
+                    stack.push_class_not_null(activation, types.object)?;
+                }
             }
             Op::IsType { .. } => {
                 stack.pop(activation)?;

@@ -77,29 +77,6 @@ impl<'gc> VTable<'gc> {
         ))
     }
 
-    /// A special case for newcatch. A single variable (q)name that maps to slot 0.
-    pub fn newcatch(mc: &Mutation<'gc>, vname: &QName<'gc>) -> Self {
-        let mut rt = PropertyMap::new();
-
-        rt.insert(*vname, Property::Slot { slot_id: 0 });
-
-        let vt = VTable(GcCell::new(
-            mc,
-            VTableData {
-                scope: None,
-                protected_namespace: None,
-                resolved_traits: rt,
-                slot_metadata_table: HashMap::new(),
-                disp_metadata_table: HashMap::new(),
-                method_table: vec![],
-                default_slots: vec![None],
-                slot_classes: vec![PropertyClass::Any],
-            },
-        ));
-
-        vt
-    }
-
     pub fn resolved_traits(&self) -> Ref<'_, PropertyMap<'gc, Property>> {
         Ref::map(self.0.read(), |v| &v.resolved_traits)
     }

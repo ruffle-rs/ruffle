@@ -29,7 +29,7 @@ use ruffle_macros::istr;
 use std::cmp::{min, Ordering};
 use std::sync::Arc;
 use swf::avm2::types::{
-    Exception, Index, Method as AbcMethod, MethodFlags as AbcMethodFlags, Namespace as AbcNamespace,
+    Index, Method as AbcMethod, MethodFlags as AbcMethodFlags, Namespace as AbcNamespace,
 };
 
 use super::error::make_mismatch_error;
@@ -1490,16 +1490,19 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     fn op_newcatch(
         &mut self,
         method: Gc<'gc, BytecodeMethod<'gc>>,
-        index: Index<Exception>,
+        index: usize,
     ) -> Result<(), Error<'gc>> {
+        // TODO can we store the catch class in the op?
         let verified_info = method.verified_info.borrow();
         let exception_list = &verified_info.as_ref().unwrap().exceptions;
 
-        let ex = &exception_list[index.0 as usize];
-        let vname = ex.variable_name;
+        let catch_class = &exception_list[index].catch_class;
 
-        let so = if let Some(vname) = vname {
-            ScriptObject::catch_scope(self, &vname)
+        let so = if let Some(catch_class) = catch_class {
+            // Catch objects don't have prototypes, and we can give it the
+            // Class's vtable because the only trait on the vtable is a single
+            // const-slot.
+            ScriptObject::custom_object(self.gc(), *catch_class, None, catch_class.vtable())
         } else {
             // for `finally` scopes, FP just creates a normal object.
             ScriptObject::new_object(self)

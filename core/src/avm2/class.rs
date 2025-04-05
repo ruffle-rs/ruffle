@@ -876,11 +876,7 @@ impl<'gc> Class<'gc> {
         let mut traits = Vec::with_capacity(body.traits.len());
 
         for trait_entry in body.traits.iter() {
-            let loaded_trait = Trait::from_abc_trait(
-                translation_unit,
-                trait_entry,
-                activation,
-            )?;
+            let loaded_trait = Trait::from_abc_trait(translation_unit, trait_entry, activation)?;
 
             // Methods, getters, and setters are forbidden from appearing
             // in activation traits
@@ -904,7 +900,7 @@ impl<'gc> Class<'gc> {
                 name,
                 param: None,
                 super_class: None,
-                attributes: ClassAttributes::FINAL,
+                attributes: ClassAttributes::FINAL | ClassAttributes::SEALED,
                 protected_namespace: None,
                 direct_interfaces: Vec::new(),
                 all_interfaces: Vec::new(),
@@ -912,6 +908,49 @@ impl<'gc> Class<'gc> {
                 instance_init: Method::from_builtin(
                     |_, _, _| Ok(Value::Undefined),
                     "<Activation object constructor>",
+                    activation.gc(),
+                ),
+                traits,
+                vtable: VTable::empty(activation.gc()),
+                call_handler: None,
+                custom_constructor: None,
+                traits_loaded: true,
+                is_system: false,
+                linked_class: ClassLink::Unlinked,
+                applications: Default::default(),
+                class_objects: Vec::new(),
+            },
+        ));
+
+        i_class.init_vtable(activation.context)?;
+
+        // We don't need to construct a c_class
+
+        Ok(i_class)
+    }
+
+    pub fn for_catch(
+        activation: &mut Activation<'_, 'gc>,
+        variable_name: QName<'gc>,
+    ) -> Result<Class<'gc>, Error<'gc>> {
+        // TODO make the slot typed
+        let traits = vec![Trait::from_const(variable_name, None, None)];
+
+        let i_class = Class(GcCell::new(
+            activation.gc(),
+            ClassData {
+                // Yes, the name of the class is the variable's name
+                name: variable_name,
+                param: None,
+                super_class: None,
+                attributes: ClassAttributes::FINAL | ClassAttributes::SEALED,
+                protected_namespace: None,
+                direct_interfaces: Vec::new(),
+                all_interfaces: Vec::new(),
+                instance_allocator: Allocator(scriptobject_allocator),
+                instance_init: Method::from_builtin(
+                    |_, _, _| Ok(Value::Undefined),
+                    "<Catch object constructor>",
                     activation.gc(),
                 ),
                 traits,

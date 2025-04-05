@@ -36,7 +36,7 @@ pub struct Exception<'gc> {
     pub to_offset: usize,
     pub target_offset: usize,
 
-    pub variable_name: Option<QName<'gc>>,
+    pub catch_class: Option<Class<'gc>>,
     pub target_class: Option<Class<'gc>>,
 }
 
@@ -342,7 +342,7 @@ pub fn verify_method<'gc>(
             Some(resolved_type)
         };
 
-        let variable_name = if exception.variable_name.0 == 0 {
+        let catch_class = if exception.variable_name.0 == 0 {
             None
         } else {
             let pooled_variable_name = method
@@ -368,18 +368,20 @@ pub fn verify_method<'gc>(
             let name = pooled_variable_name.local_name().expect("Just checked");
 
             // avmplus uses the first namespace, regardless of how many namespaces there are.
-            Some(QName::new(namespaces[0], name))
+            let variable_name = QName::new(namespaces[0], name);
+
+            Some(Class::for_catch(activation, variable_name)?)
         };
 
         if !seen_exception_indices.contains(&exception_index) {
-            // We need to push an exception because otherwise `newcatch` ops can try to
-            // read it, but we can give it dummy from/to/target offsets because no code
+            // We need to push an exception because `newcatch` ops can try to read
+            // it, but we can give it dummy from/to/target offsets because no code
             // can actually trigger it (and we might not even have valid offsets anyway).
             new_exceptions.push(Exception {
                 from_offset: 0,
                 to_offset: 0,
                 target_offset: 0,
-                variable_name,
+                catch_class,
                 target_class,
             });
             continue;
@@ -461,7 +463,7 @@ pub fn verify_method<'gc>(
             from_offset: new_from_offset,
             to_offset: new_to_offset,
             target_offset: new_target_offset,
-            variable_name,
+            catch_class,
             target_class,
         });
     }
@@ -1009,7 +1011,9 @@ fn translate_op<'gc>(
         }
         AbcOp::In => Op::In,
         AbcOp::PushScope => Op::PushScope,
-        AbcOp::NewCatch { index } => Op::NewCatch { index },
+        AbcOp::NewCatch { index } => Op::NewCatch {
+            index: index.0 as usize,
+        },
         AbcOp::PushWith => Op::PushWith,
         AbcOp::PopScope => Op::PopScope,
         AbcOp::GetOuterScope { index } => Op::GetOuterScope {
