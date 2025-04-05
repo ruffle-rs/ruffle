@@ -133,8 +133,8 @@ pub struct EditTextData<'gc> {
     /// The variable path that this text field is bound to (AVM1 only).
     variable: Option<AvmString<'gc>>,
 
-    /// The display object that the variable binding is bound to.
-    bound_stage_object: Option<Avm1StageObject<'gc>>,
+    /// The (AVM1) display object that the variable binding is bound to.
+    bound_display_object: Option<DisplayObject<'gc>>,
 
     /// Other AVM1 text fields bound to *this* text field.
     avm1_text_field_bindings: Vec<Avm1TextFieldBinding<'gc>>,
@@ -366,7 +366,7 @@ impl<'gc> EditText<'gc> {
                 autosize_lazy_bounds: Cell::new(None),
                 autosize,
                 variable: variable.map(|s| context.strings.intern_wstr(s).into()),
-                bound_stage_object: None,
+                bound_display_object: None,
                 class: None,
                 selection,
                 render_settings: Default::default(),
@@ -875,8 +875,8 @@ impl<'gc> EditText<'gc> {
         activation: &mut Avm1Activation<'_, 'gc>,
     ) {
         // Clear previous binding.
-        if let Some(stage_object) = self.0.write(activation.gc()).bound_stage_object.take() {
-            stage_object.clear_text_field_binding(activation.gc(), self);
+        if let Some(dobj) = self.0.write(activation.gc()).bound_display_object.take() {
+            Avm1TextFieldBinding::clear_binding(dobj, self, activation.gc());
         } else {
             activation
                 .context
@@ -1386,7 +1386,7 @@ impl<'gc> EditText<'gc> {
         };
 
         // Any previous binding should have been cleared.
-        debug_assert!(self.0.read().bound_stage_object.is_none());
+        debug_assert!(self.0.read().bound_display_object.is_none());
 
         let Some(mut parent) = self.avm1_parent() else {
             return false;
@@ -1434,9 +1434,13 @@ impl<'gc> EditText<'gc> {
                         }
                     }
 
-                    if let Some(stage_object) = object.as_stage_object() {
-                        self.0.write(activation.gc()).bound_stage_object = Some(stage_object);
-                        stage_object.register_text_field_binding(activation.gc(), self, property);
+                    if let Some(dobj) = object.as_display_object() {
+                        self.0.write(activation.gc()).bound_display_object = Some(dobj);
+                        let binding = Avm1TextFieldBinding {
+                            text_field: self,
+                            variable_name: property,
+                        };
+                        binding.register_binding(dobj, activation.gc());
                         bound = true;
                     }
                 }
@@ -1448,8 +1452,8 @@ impl<'gc> EditText<'gc> {
     /// Unsets a bound display object from this text field.
     /// Does not change the unbound text field list.
     /// Caller is responsible for adding this text field to the unbound list, if necessary.
-    pub fn clear_bound_stage_object(self, context: &mut UpdateContext<'gc>) {
-        self.0.write(context.gc()).bound_stage_object = None;
+    pub fn clear_bound_display_object(self, context: &mut UpdateContext<'gc>) {
+        self.0.write(context.gc()).bound_display_object = None;
     }
 
     /// Propagates a text change to the bound display object.
@@ -2807,16 +2811,13 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
         }
 
         // Unbind any display objects bound to this text.
-        if let Some(stage_object) = self.0.write(context.gc()).bound_stage_object.take() {
-            stage_object.clear_text_field_binding(context.gc(), *self);
+        if let Some(dobj) = self.0.write(context.gc()).bound_display_object.take() {
+            Avm1TextFieldBinding::clear_binding(dobj, *self, context.gc());
         }
 
         // Unregister any text fields that may be bound to *this* text field.
-        if let Avm1Value::Object(object) = self.object() {
-            if let Some(stage_object) = object.as_stage_object() {
-                stage_object.unregister_text_field_bindings(context);
-            }
-        }
+        Avm1TextFieldBinding::unregister_bindings((*self).into(), context);
+
         if self.variable().is_some() {
             context
                 .unbound_text_fields
