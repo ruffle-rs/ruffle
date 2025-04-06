@@ -18,12 +18,12 @@ import {
  * plugin emulator is already present.
  */
 class RuffleMimeTypeArray implements MimeTypeArray {
-    private readonly __mimeTypes: MimeType[];
-    private readonly __namedMimeTypes: Record<string, MimeType>;
+    readonly #mimeTypes: MimeType[];
+    readonly #namedMimeTypes: Record<string, MimeType>;
 
     constructor(mimeTypes?: MimeTypeArray) {
-        this.__mimeTypes = [];
-        this.__namedMimeTypes = {};
+        this.#mimeTypes = [];
+        this.#namedMimeTypes = {};
 
         if (mimeTypes) {
             for (let i = 0; i < mimeTypes.length; i++) {
@@ -40,25 +40,29 @@ class RuffleMimeTypeArray implements MimeTypeArray {
     install(mimeType: MimeType): void {
         const wrapper = new RuffleMimeType(mimeType);
 
-        const index = this.__mimeTypes.length;
-        this.__mimeTypes.push(wrapper);
-        this.__namedMimeTypes[mimeType.type] = wrapper;
-        this[wrapper.type] = wrapper;
+        const index = this.#mimeTypes.length;
+        this.#mimeTypes.push(wrapper);
+        this.#namedMimeTypes[mimeType.type] = wrapper;
+        Object.defineProperty(this, wrapper.type, {
+            configurable: true,
+            enumerable: false,
+            value: wrapper,
+        });
         this[index] = wrapper;
     }
 
     item(index: number): MimeType {
         // This behavior is done to emulate a 32-bit uint,
         // which browsers use.
-        return this.__mimeTypes[index >>> 0]!;
+        return this.#mimeTypes[index >>> 0]!;
     }
 
     namedItem(name: string): MimeType {
-        return this.__namedMimeTypes[name]!;
+        return this.#namedMimeTypes[name]!;
     }
 
     get length(): number {
-        return this.__mimeTypes.length;
+        return this.#mimeTypes.length;
     }
 
     [index: number]: MimeType;
@@ -66,7 +70,7 @@ class RuffleMimeTypeArray implements MimeTypeArray {
     [name: string]: unknown;
 
     [Symbol.iterator](): IterableIterator<MimeType> {
-        return this.__mimeTypes[Symbol.iterator]();
+        return this.#mimeTypes[Symbol.iterator]();
     }
 
     get [Symbol.toStringTag](): string {
@@ -80,26 +84,26 @@ class RuffleMimeTypeArray implements MimeTypeArray {
  * need to spoof `window.MimeType`.
  */
 class RuffleMimeType implements MimeType {
-    private readonly __mimeType: MimeType;
+    readonly #mimeType: MimeType;
 
     constructor(mimeType: MimeType) {
-        this.__mimeType = mimeType;
+        this.#mimeType = mimeType;
     }
 
     get type(): string {
-        return this.__mimeType.type;
+        return this.#mimeType.type;
     }
 
     get description(): string {
-        return this.__mimeType.description;
+        return this.#mimeType.description;
     }
 
     get suffixes(): string {
-        return this.__mimeType.suffixes;
+        return this.#mimeType.suffixes;
     }
 
     get enabledPlugin(): Plugin {
-        return this.__mimeType.enabledPlugin;
+        return this.#mimeType.enabledPlugin;
     }
 
     get [Symbol.toStringTag](): string {
@@ -111,12 +115,31 @@ class RuffleMimeType implements MimeType {
  * Equivalent object to `Plugin` that allows us to falsify plugins.
  */
 class RufflePlugin extends RuffleMimeTypeArray implements Plugin {
-    constructor(
-        readonly name: string,
-        readonly description: string,
-        readonly filename: string,
-    ) {
+    readonly #name: string;
+    readonly #description: string;
+    readonly #filename: string;
+
+    constructor(name: string, description: string, filename: string) {
         super();
+        this.#name = name;
+        this.#description = description;
+        this.#filename = filename;
+    }
+
+    get name(): string {
+        return this.#name;
+    }
+
+    get description(): string {
+        return this.#description;
+    }
+
+    get filename(): string {
+        return this.#filename;
+    }
+
+    override get [Symbol.toStringTag](): string {
+        return "Plugin";
     }
 }
 
@@ -137,12 +160,12 @@ class RufflePlugin extends RuffleMimeTypeArray implements Plugin {
  * emulator is already present.
  */
 class RufflePluginArray implements PluginArray {
-    private readonly __plugins: Plugin[];
-    private readonly __namedPlugins: Record<string, Plugin>;
+    readonly #plugins: Plugin[];
+    readonly #namedPlugins: Record<string, Plugin>;
 
     constructor(plugins: PluginArray) {
-        this.__plugins = [];
-        this.__namedPlugins = {};
+        this.#plugins = [];
+        this.#namedPlugins = {};
 
         for (let i = 0; i < plugins.length; i++) {
             this.install(plugins[i]!);
@@ -150,10 +173,14 @@ class RufflePluginArray implements PluginArray {
     }
 
     install(plugin: Plugin): void {
-        const index = this.__plugins.length;
-        this.__plugins.push(plugin);
-        this.__namedPlugins[plugin.name] = plugin;
-        this[plugin.name] = plugin;
+        const index = this.#plugins.length;
+        this.#plugins.push(plugin);
+        this.#namedPlugins[plugin.name] = plugin;
+        Object.defineProperty(this, plugin.name, {
+            configurable: true,
+            enumerable: false,
+            value: plugin,
+        });
         this[index] = plugin;
     }
 
@@ -161,11 +188,11 @@ class RufflePluginArray implements PluginArray {
         // This behavior is done to emulate a 32-bit uint,
         // which browsers use. Cloudflare's anti-bot
         // checks rely on this.
-        return this.__plugins[index >>> 0]!;
+        return this.#plugins[index >>> 0]!;
     }
 
     namedItem(name: string): Plugin {
-        return this.__namedPlugins[name]!;
+        return this.#namedPlugins[name]!;
     }
 
     refresh(): void {
@@ -177,7 +204,7 @@ class RufflePluginArray implements PluginArray {
     [name: string]: unknown;
 
     [Symbol.iterator](): IterableIterator<Plugin> {
-        return this.__plugins[Symbol.iterator]();
+        return this.#plugins[Symbol.iterator]();
     }
 
     get [Symbol.toStringTag](): string {
@@ -185,7 +212,7 @@ class RufflePluginArray implements PluginArray {
     }
 
     get length(): number {
-        return this.__plugins.length;
+        return this.#plugins.length;
     }
 }
 
