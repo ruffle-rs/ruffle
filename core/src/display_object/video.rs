@@ -1,6 +1,9 @@
 //! Video player display object
 
-use crate::avm1::{Object as Avm1Object, StageObject as Avm1StageObject, Value as Avm1Value};
+use crate::avm1::{
+    NativeObject as Avm1NativeObject, Object as Avm1Object, ScriptObject as Avm1ScriptObject,
+    Value as Avm1Value,
+};
 use crate::avm2::{
     Activation as Avm2Activation, Object as Avm2Object, StageObject as Avm2StageObject,
     Value as Avm2Value,
@@ -448,12 +451,11 @@ impl<'gc> TDisplayObject<'gc> for Video<'gc> {
         write.keyframes = keyframes;
 
         if write.object.is_none() && !movie.is_action_script_3() {
-            let object: Avm1Object<'_> = Avm1StageObject::for_display_object(
+            let object = Avm1Object::from(Avm1ScriptObject::new_with_native(
                 &context.strings,
-                (*self).into(),
-                context.avm1.prototypes().video,
-            )
-            .into();
+                Some(context.avm1.prototypes().video),
+                Avm1NativeObject::Video(*self),
+            ));
             write.object = Some(object.into());
         }
 

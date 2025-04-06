@@ -21,10 +21,11 @@ use crate::avm1::globals::transform::TransformObject;
 use crate::avm1::globals::xml::Xml;
 use crate::avm1::globals::xml_socket::XmlSocket;
 use crate::avm1::object::super_object::SuperObject;
-use crate::avm1::{Activation, Attribute, Error, ScriptObject, StageObject, Value};
+use crate::avm1::{Activation, Attribute, Error, ScriptObject, Value};
 use crate::bitmap::bitmap_data::BitmapDataWrapper;
-use crate::display_object::DisplayObject;
-use crate::display_object::TDisplayObject;
+use crate::display_object::{
+    Avm1Button, DisplayObject, EditText, MovieClip, TDisplayObject as _, Video,
+};
 use crate::html::TextFormat;
 use crate::streams::NetStream;
 use crate::string::AvmString;
@@ -58,6 +59,11 @@ pub enum NativeObject<'gc> {
     /// 'desynchronize' the "property view" and the "array view" (used by, e.g., `toString()`).
     Array(()),
     Function(Gc<'gc, FunctionObject<'gc>>),
+
+    MovieClip(MovieClip<'gc>),
+    Button(Avm1Button<'gc>),
+    EditText(EditText<'gc>),
+    Video(Video<'gc>),
 
     Date(Gc<'gc, Cell<Date>>),
     BlurFilter(BlurFilter<'gc>),
@@ -119,6 +125,18 @@ impl<'gc> BoxedF64<'gc> {
     }
 }
 
+impl<'gc> NativeObject<'gc> {
+    pub fn as_display_object(self) -> Option<DisplayObject<'gc>> {
+        match self {
+            Self::MovieClip(dobj) => Some(DisplayObject::MovieClip(dobj)),
+            Self::Button(dobj) => Some(DisplayObject::Avm1Button(dobj)),
+            Self::EditText(dobj) => Some(DisplayObject::EditText(dobj)),
+            Self::Video(dobj) => Some(DisplayObject::Video(dobj)),
+            _ => None,
+        }
+    }
+}
+
 /// Represents an object that can be directly interacted with by the AVM
 /// runtime.
 #[enum_trait_object(
@@ -127,7 +145,6 @@ impl<'gc> BoxedF64<'gc> {
     #[collect(no_drop)]
     pub enum Object<'gc> {
         ScriptObject(ScriptObject<'gc>),
-        StageObject(StageObject<'gc>),
         SuperObject(SuperObject<'gc>),
     }
 )]
@@ -323,10 +340,8 @@ pub trait TObject<'gc>: 'gc + Collect<'gc> + Into<Object<'gc>> + Clone + Copy {
     ) -> Result<Value<'gc>, Error<'gc>> {
         let this = (*self).into();
 
-        if let Some(s) = this.as_stage_object() {
-            let d_o = s.as_display_object().unwrap();
-
-            if d_o.avm1_removed() {
+        if let Some(dobj) = this.as_display_object() {
+            if dobj.avm1_removed() {
                 return Ok(Value::Undefined);
             }
         }
@@ -608,11 +623,6 @@ pub trait TObject<'gc>: 'gc + Collect<'gc> + Into<Object<'gc>> + Clone + Copy {
 
     fn set_native(&self, _gc_context: &Mutation<'gc>, _native: NativeObject<'gc>) {}
 
-    /// Get the underlying stage object, if it exists.
-    fn as_stage_object(&self) -> Option<StageObject<'gc>> {
-        None
-    }
-
     /// Get the underlying super object, if it exists.
     fn as_super_object(&self) -> Option<SuperObject<'gc>> {
         None
@@ -620,6 +630,11 @@ pub trait TObject<'gc>: 'gc + Collect<'gc> + Into<Object<'gc>> + Clone + Copy {
 
     /// Get the underlying display node for this object, if it exists.
     fn as_display_object(&self) -> Option<DisplayObject<'gc>> {
+        None
+    }
+
+    /// Get the underlying stage object, if it exists, but doesn't follow `super` objects.
+    fn as_display_object_no_super(&self) -> Option<DisplayObject<'gc>> {
         None
     }
 

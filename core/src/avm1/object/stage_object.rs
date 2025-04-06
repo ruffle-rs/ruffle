@@ -4,16 +4,15 @@ use crate::avm1::activation::Activation;
 use crate::avm1::clamp::Clamp;
 use crate::avm1::error::Error;
 use crate::avm1::property_map::PropertyMap;
-use crate::avm1::{Object, ObjectPtr, ScriptObject, TObject, Value};
+use crate::avm1::Value;
 use crate::avm_warn;
 use crate::display_object::{
     DisplayObject, MovieClip, TDisplayObject, TDisplayObjectContainer, TInteractiveObject,
 };
 use crate::string::{AvmString, StringContext, WStr};
 use crate::types::Percent;
-use gc_arena::{Collect, Gc, GcWeak};
+use gc_arena::Collect;
 use ruffle_macros::istr;
-use std::fmt;
 use swf::Twips;
 
 pub fn get_property<'gc>(
@@ -66,11 +65,11 @@ pub fn get_property<'gc>(
 /// Notify any bound text fields of a property change.
 ///
 /// This should be called every time a property is set on a AVM1 object.
-pub fn notify_property_change<'a, 'gc>(
+pub fn notify_property_change<'gc>(
     dobj: DisplayObject<'gc>,
     property_name: AvmString<'gc>,
     value: Value<'gc>,
-    activation: &mut Activation<'a, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
 ) -> Result<(), Error<'gc>> {
     // Check if a text field is bound to this property and update the text if so.
     let case_sensitive = activation.is_case_sensitive();
@@ -90,13 +89,11 @@ pub fn notify_property_change<'a, 'gc>(
     Ok(())
 }
 
-pub fn has_own_property<'gc>(
+pub fn has_display_object_property<'gc>(
     dobj: DisplayObject<'gc>,
     activation: &mut Activation<'_, 'gc>,
     name: AvmString<'gc>,
 ) -> bool {
-    // Note that `hasOwnProperty` does NOT return true for child display objects.
-
     let magic_property = name.starts_with(b'_');
     if magic_property
         && activation
@@ -194,142 +191,6 @@ fn parse_level_id(digits: &WStr) -> i32 {
         level_id = level_id.wrapping_neg();
     }
     level_id
-}
-
-
-/// A ScriptObject that is inherently tied to a display node.
-#[derive(Clone, Copy, Collect)]
-#[collect(no_drop)]
-pub struct StageObject<'gc>(Gc<'gc, StageObjectData<'gc>>);
-
-#[derive(Collect)]
-#[collect(no_drop)]
-pub struct StageObjectData<'gc> {
-    /// The underlying script object.
-    ///
-    /// This is used to handle "expando properties" on AVM1 display nodes, as
-    /// well as the underlying prototype chain.
-    base: ScriptObject<'gc>,
-
-    /// The display node this stage object
-    pub display_object: DisplayObject<'gc>,
-}
-
-impl<'gc> StageObject<'gc> {
-    /// Create a weak reference to the underlying data of this `StageObject`
-    pub fn as_weak(self) -> GcWeak<'gc, StageObjectData<'gc>> {
-        Gc::downgrade(self.0)
-    }
-
-    /// Create a stage object for a given display node.
-    pub fn for_display_object(
-        context: &StringContext<'gc>,
-        display_object: DisplayObject<'gc>,
-        proto: Object<'gc>,
-    ) -> Self {
-        Self(Gc::new(
-            context.gc(),
-            StageObjectData {
-                base: ScriptObject::new(context, Some(proto)),
-                display_object,
-            },
-        ))
-    }
-}
-
-impl fmt::Debug for StageObject<'_> {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.debug_struct("StageObject")
-            .field("ptr", &Gc::as_ptr(self.0))
-            .field("display_object", &self.0.display_object)
-            .finish()
-    }
-}
-
-impl<'gc> TObject<'gc> for StageObject<'gc> {
-    fn raw_script_object(&self) -> ScriptObject<'gc> {
-        self.0.base
-    }
-
-    fn get_local_stored(
-        &self,
-        name: impl Into<AvmString<'gc>>,
-        activation: &mut Activation<'_, 'gc>,
-        is_slash_path: bool,
-    ) -> Option<Value<'gc>> {
-        let name = name.into();
-
-        if let Some(value) = self
-            .0
-            .base
-            .get_local_stored(name, activation, is_slash_path)
-        {
-            return Some(value);
-        }
-
-        let dobj = self.0.display_object;
-        get_property(dobj, name, activation, is_slash_path)
-    }
-
-    fn set_local(
-        &self,
-        name: AvmString<'gc>,
-        value: Value<'gc>,
-        activation: &mut Activation<'_, 'gc>,
-        this: Object<'gc>,
-    ) -> Result<(), Error<'gc>> {
-        let base = self.0.base;
-        let dobj = self.0.display_object;
-
-        notify_property_change(dobj, name, value, activation)?;
-
-        if base.has_own_property(activation, name) {
-            // 1) Actual properties on the underlying object
-            base.set_local(name, value, activation, this)
-        } else if let Some(property) = activation
-            .context
-            .avm1
-            .display_properties()
-            .get_by_name(name)
-        {
-            // 2) Display object properties such as _x, _y
-            property.set(activation, dobj, value)
-        } else {
-            base.set_local(name, value, activation, this)
-        }
-    }
-
-    fn has_property(&self, activation: &mut Activation<'_, 'gc>, name: AvmString<'gc>) -> bool {
-        let dobj = self.0.display_object;
-        if !dobj.avm1_removed() && self.0.base.has_property(activation, name) {
-            return true;
-        }
-
-        has_own_property(dobj, activation, name)
-    }
-
-    fn get_keys(
-        &self,
-        activation: &mut Activation<'_, 'gc>,
-        include_hidden: bool,
-    ) -> Vec<AvmString<'gc>> {
-        let mut keys = self.0.base.get_keys(activation, include_hidden);
-        enumerate_keys(self.0.display_object, &mut keys);
-        keys
-    }
-
-    /// Get the underlying stage object, if it exists.
-    fn as_stage_object(&self) -> Option<StageObject<'gc>> {
-        Some(*self)
-    }
-
-    fn as_display_object(&self) -> Option<DisplayObject<'gc>> {
-        Some(self.0.display_object)
-    }
-
-    fn as_ptr(&self) -> *const ObjectPtr {
-        self.0.base.as_ptr()
-    }
 }
 
 /// Properties shared by display objects in AVM1, such as _x and _y.

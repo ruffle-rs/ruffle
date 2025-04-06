@@ -24,10 +24,7 @@ impl<'gc> TransformObject<'gc> {
         let clip = match args {
             // `Transform` constructor accepts exactly 1 argument.
             [Value::MovieClip(clip)] => Some(*clip),
-            [Value::Object(clip)] => {
-                let stage_object = clip.as_stage_object()?;
-                MovieClipReference::try_from_stage_object(activation, stage_object)
-            }
+            [Value::Object(clip)] => MovieClipReference::try_from_stage_object(activation, *clip),
             _ => return None,
         };
         Some(Self { clip })

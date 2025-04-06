@@ -1,12 +1,9 @@
 //! `EditText` display object and support code.
 
-use crate::avm1::Avm1;
-use crate::avm1::ExecutionReason;
-use crate::avm1::NativeObject as Avm1NativeObject;
-use crate::avm1::{Activation as Avm1Activation, ActivationIdentifier};
 use crate::avm1::{
-    Object as Avm1Object, StageObject as Avm1StageObject, TObject as Avm1TObject,
-    Value as Avm1Value,
+    Activation as Avm1Activation, ActivationIdentifier, Avm1, ExecutionReason,
+    NativeObject as Avm1NativeObject, Object as Avm1Object, ScriptObject as Avm1ScriptObject,
+    TObject as Avm1TObject, Value as Avm1Value,
 };
 use crate::avm2::object::{
     ClassObject as Avm2ClassObject, EventObject as Avm2EventObject, Object as Avm2Object,
@@ -2164,14 +2161,13 @@ impl<'gc> EditText<'gc> {
     fn construct_as_avm1_object(self, context: &mut UpdateContext<'gc>, run_frame: bool) {
         let mut text = self.0.write(context.gc());
         if text.object.is_none() {
-            let object: Avm1Object<'gc> = Avm1StageObject::for_display_object(
+            let object = Avm1ScriptObject::new_with_native(
                 &context.strings,
-                self.into(),
-                context.avm1.prototypes().text_field,
-            )
-            .into();
+                Some(context.avm1.prototypes().text_field),
+                Avm1NativeObject::EditText(self),
+            );
 
-            text.object = Some(object.into());
+            text.object = Some(Avm1Object::from(object).into());
         }
         drop(text);
 
