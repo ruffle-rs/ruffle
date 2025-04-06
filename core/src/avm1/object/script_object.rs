@@ -1,14 +1,15 @@
 use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
 use crate::avm1::function::{Executable, ExecutionName, ExecutionReason};
-use crate::avm1::object::NativeObject;
+use crate::avm1::object::{stage_object, NativeObject};
 use crate::avm1::property::{Attribute, Property};
 use crate::avm1::property_map::{Entry, PropertyMap};
 use crate::avm1::{Object, ObjectPtr, TObject, Value};
+use crate::display_object::{DisplayObject, TDisplayObject as _};
 use crate::ecma_conversions::f64_to_wrapping_i32;
 use crate::string::{AvmString, StringContext};
 use core::fmt;
-use gc_arena::{Collect, GcCell, Mutation};
+use gc_arena::{Collect, GcCell, GcWeakCell, Mutation};
 use ruffle_macros::istr;
 
 #[derive(Clone, Collect)]
@@ -52,9 +53,27 @@ impl<'gc> Watcher<'gc> {
 #[collect(no_drop)]
 pub struct ScriptObject<'gc>(GcCell<'gc, ScriptObjectData<'gc>>);
 
+#[derive(Copy, Clone, Collect)]
+#[collect(no_drop)]
+pub struct ScriptObjectWeak<'gc>(GcWeakCell<'gc, ScriptObjectData<'gc>>);
+
+impl<'gc> ScriptObjectWeak<'gc> {
+    pub fn upgrade(self, mc: &Mutation<'gc>) -> Option<ScriptObject<'gc>> {
+        self.0.upgrade(mc).map(ScriptObject)
+    }
+}
+
+impl fmt::Debug for ScriptObjectWeak<'_> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("ScriptObjectWeak")
+            .field("ptr", &self.0.as_ptr())
+            .finish()
+    }
+}
+
 #[derive(Collect)]
 #[collect(no_drop)]
-pub struct ScriptObjectData<'gc> {
+struct ScriptObjectData<'gc> {
     native: NativeObject<'gc>,
     properties: PropertyMap<'gc, Property<'gc>>,
     interfaces: Vec<Object<'gc>>,
@@ -70,6 +89,10 @@ impl fmt::Debug for ScriptObject<'_> {
 }
 
 impl<'gc> ScriptObject<'gc> {
+    pub fn as_weak(self) -> ScriptObjectWeak<'gc> {
+        ScriptObjectWeak(GcCell::downgrade(self.0))
+    }
+
     pub fn new(context: &StringContext<'gc>, proto: Option<Object<'gc>>) -> Self {
         let object = Self(GcCell::new(
             context.gc(),
@@ -89,6 +112,16 @@ impl<'gc> ScriptObject<'gc> {
             );
         }
         object
+    }
+
+    pub fn new_with_native(
+        context: &StringContext<'gc>,
+        proto: Option<Object<'gc>>,
+        native: NativeObject<'gc>,
+    ) -> Self {
+        let obj = Self::new(context, proto);
+        obj.set_native(context.gc(), native);
+        obj
     }
 
     // Creates a ScriptObject, without assigning any __proto__ property.
@@ -170,14 +203,20 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
         &self,
         name: impl Into<AvmString<'gc>>,
         activation: &mut Activation<'_, 'gc>,
-        _is_slash_path: bool,
+        is_slash_path: bool,
     ) -> Option<Value<'gc>> {
-        self.0
-            .read()
-            .properties
-            .get(name.into(), activation.is_case_sensitive())
+        let name = name.into();
+        let read = self.0.read();
+
+        read.properties
+            .get(name, activation.is_case_sensitive())
             .filter(|property| property.allow_swf_version(activation.swf_version()))
             .map(|property| property.data())
+            .or_else(|| {
+                read.native.as_display_object().and_then(|dobj| {
+                    stage_object::get_property(dobj, name, activation, is_slash_path)
+                })
+            })
     }
 
     /// Set a named property on the object.
@@ -188,7 +227,8 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
         activation: &mut Activation<'_, 'gc>,
         this: Object<'gc>,
     ) -> Result<(), Error<'gc>> {
-        if let NativeObject::Array(_) = self.native() {
+        let native = self.native();
+        if let NativeObject::Array(_) = native {
             if name == istr!("length") {
                 let new_length = value.coerce_to_i32(activation)?;
                 let old_length = self.get_data(istr!("length"), activation);
@@ -201,6 +241,20 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
                 let length = self.length(activation)?;
                 if index >= length {
                     self.set_length(activation, index.wrapping_add(1))?;
+                }
+            }
+        } else if let Some(dobj) = native.as_display_object() {
+            stage_object::notify_property_change(dobj, name, value, activation)?;
+            // 'magic' display object properties (such as _x, _y, etc) take
+            // priority over properties in prototypes.
+            if !self.has_own_property(activation, name) {
+                if let Some(property) = activation
+                    .context
+                    .avm1
+                    .display_properties()
+                    .get_by_name(name)
+                {
+                    return property.set(activation, dobj, value);
                 }
             }
         }
@@ -247,6 +301,14 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
         } else {
             None
         }
+    }
+
+    fn as_display_object_no_super(&self) -> Option<DisplayObject<'gc>> {
+        self.0.read().native.as_display_object()
+    }
+
+    fn as_display_object(&self) -> Option<DisplayObject<'gc>> {
+        self.0.read().native.as_display_object()
     }
 
     /// Call the underlying object.
@@ -465,17 +527,27 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
 
     /// Checks if the object has a given named property.
     fn has_property(&self, activation: &mut Activation<'_, 'gc>, name: AvmString<'gc>) -> bool {
-        self.has_own_property(activation, name)
-            || if let Value::Object(proto) = self.proto(activation) {
-                proto.has_property(activation, name)
-            } else {
-                false
+        let dobj = self.as_display_object_no_super();
+
+        // Normal property checks
+        if dobj.is_none_or(|o| !o.avm1_removed()) {
+            if self.has_own_property(activation, name) {
+                return true;
+            } else if let Value::Object(proto) = self.proto(activation) {
+                if proto.has_property(activation, name) {
+                    return true;
+                }
             }
+        }
+
+        // Fallback: display object properties
+        dobj.is_some_and(|o| stage_object::has_display_object_property(o, activation, name))
     }
 
     /// Checks if the object has a given named property on itself (and not,
     /// say, the object's prototype or superclass)
     fn has_own_property(&self, activation: &mut Activation<'_, 'gc>, name: AvmString<'gc>) -> bool {
+        // Note that `hasOwnProperty` does NOT return true for display object properties.
         self.0
             .read()
             .properties
@@ -526,13 +598,19 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
         );
 
         // Then our own keys.
-        out_keys.extend(self.0.read().properties.iter().filter_map(move |(k, p)| {
+        let read = self.0.read();
+        out_keys.extend(read.properties.iter().filter_map(move |(k, p)| {
             if include_hidden || p.is_enumerable() {
                 Some(k)
             } else {
                 None
             }
         }));
+
+        // Then display object keys.
+        if let Some(dobj) = read.native.as_display_object() {
+            stage_object::enumerate_keys(dobj, &mut out_keys);
+        }
 
         out_keys
     }
