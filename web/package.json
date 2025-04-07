@@ -5,6 +5,9 @@
     "license": "(MIT OR Apache-2.0)",
     "private": true,
     "type": "module",
+    "config": {
+        "detect_chromedriver_version": true
+    },
     "workspaces": [
         "./packages/core",
         "./packages/demo",
