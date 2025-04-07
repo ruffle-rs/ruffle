@@ -98,7 +98,7 @@ pub struct BytecodeMethod<'gc> {
 
     /// The underlying ABC file of the above translation unit.
     #[collect(require_static)]
-    pub abc: Rc<AbcFile>,
+    abc: Rc<AbcFile>,
 
     /// The ABC method this function uses.
     pub abc_method: u32,

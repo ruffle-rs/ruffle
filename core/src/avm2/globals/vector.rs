@@ -48,7 +48,7 @@ pub fn instance_init<'gc>(
 
 pub fn call_handler<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    _this: Value<'gc>,
+    this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if args.len() != 1 {
@@ -62,9 +62,12 @@ pub fn call_handler<'gc>(
         )?));
     }
 
-    let this_class = activation
-        .bound_class()
-        .expect("Method call without bound class?");
+    let this_class = this
+        .as_object()
+        .unwrap()
+        .as_class_object()
+        .unwrap()
+        .inner_class_definition();
 
     let value_type = this_class
         .param()
