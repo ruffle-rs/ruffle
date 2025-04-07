@@ -1,5 +1,8 @@
 {
     "name": "ruffle",
+    "config": {
+        "detect_chromedriver_version": true
+    },
     "version": "0.1.0",
     "description": "Root project of ruffle web",
     "license": "(MIT OR Apache-2.0)",
