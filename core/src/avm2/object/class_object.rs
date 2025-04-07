@@ -4,7 +4,7 @@ use crate::avm2::activation::Activation;
 use crate::avm2::class::{AllocatorFn, Class, CustomConstructorFn};
 use crate::avm2::error::{argument_error, make_error_1127, reference_error, type_error};
 use crate::avm2::function::{exec, FunctionArgs};
-use crate::avm2::method::Method;
+use crate::avm2::method::{Method, NativeMethodImpl};
 use crate::avm2::object::function_object::FunctionObject;
 use crate::avm2::object::script_object::ScriptObjectData;
 use crate::avm2::object::{Object, ObjectPtr, ScriptObject, TObject};
@@ -612,17 +612,7 @@ impl<'gc> ClassObject<'gc> {
         arguments: &[Value<'gc>],
     ) -> Result<Value<'gc>, Error<'gc>> {
         if let Some(call_handler) = self.call_handler() {
-            let scope = self.0.class_scope;
-            exec(
-                call_handler,
-                scope,
-                self.into(),
-                self.superclass_object(),
-                Some(self.inner_class_definition()),
-                FunctionArgs::AsArgSlice { arguments },
-                activation,
-                self.into(),
-            )
+            call_handler(activation, self.into(), arguments)
         } else if arguments.len() == 1 {
             arguments[0].coerce_to_type(activation, self.inner_class_definition())
         } else {
@@ -667,7 +657,7 @@ impl<'gc> ClassObject<'gc> {
         self.inner_class_definition().instance_init()
     }
 
-    pub fn call_handler(self) -> Option<Method<'gc>> {
+    pub fn call_handler(self) -> Option<NativeMethodImpl> {
         self.inner_class_definition().call_handler()
     }
 

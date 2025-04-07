@@ -304,10 +304,7 @@ pub fn create_i_class<'gc>(activation: &mut Activation<'_, 'gc>) -> Class<'gc> {
         gc_context,
     );
 
-    object_i_class.set_call_handler(
-        gc_context,
-        Method::from_builtin(class_call, "<Object call handler>", gc_context),
-    );
+    object_i_class.set_call_handler(gc_context, class_call);
 
     object_i_class.set_custom_constructor(gc_context, object_constructor);
 
