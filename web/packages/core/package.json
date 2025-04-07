@@ -21,7 +21,7 @@
         "wasm-feature-detect": "^1.8.0"
     },
     "devDependencies": {
-        "@fluent/bundle": "^0.19.0",
+        "@fluent/bundle": "^0.19.1",
         "@fluent/langneg": "^0.7.0",
         "@tsconfig/strictest": "^2.0.5",
         "@types/mocha": "^10.0.10",
@@ -34,8 +34,8 @@
         "replace-in-file": "^8.3.0",
         "tsx": "^4.19.3",
         "tsx-dom": "^3.1.0",
-        "typedoc": "^0.28.1",
-        "typescript": "^5.8.2"
+        "typedoc": "^0.28.2",
+        "typescript": "^5.8.3"
     },
     "sideEffects": false
 }
