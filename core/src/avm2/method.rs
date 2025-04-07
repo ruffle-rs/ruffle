@@ -94,11 +94,11 @@ impl<'gc> ParamConfig<'gc> {
 #[collect(no_drop)]
 pub struct BytecodeMethod<'gc> {
     /// The translation unit this function was defined in.
-    pub txunit: TranslationUnit<'gc>,
+    txunit: TranslationUnit<'gc>,
 
     /// The underlying ABC file of the above translation unit.
     #[collect(require_static)]
-    pub abc: Rc<AbcFile>,
+    abc: Rc<AbcFile>,
 
     /// The ABC method this function uses.
     pub abc_method: u32,

@@ -150,7 +150,8 @@ pub struct ClassData<'gc> {
 
     /// The customization point for `Class(args...)` without `new`
     /// If None, a simple coercion is done.
-    call_handler: Option<Method<'gc>>,
+    #[collect(require_static)]
+    call_handler: Option<NativeMethodImpl>,
 
     /// The custom constructor for this class, if it exists.
     ///
@@ -500,20 +501,10 @@ impl<'gc> Class<'gc> {
                 [class_index as usize]
                 .map(|(_name, ptr)| Allocator(ptr));
 
-            if let Some((name, table_native_call_handler)) =
+            if let Some((_name, table_native_call_handler)) =
                 activation.avm2().native_call_handler_table[class_index as usize]
             {
-                let method = Method::from_builtin_and_params(
-                    table_native_call_handler,
-                    name,
-                    // A 'callable' class doesn't have a signature - let the
-                    // method do any needed coercions
-                    vec![],
-                    None,
-                    true,
-                    activation.gc(),
-                );
-                call_handler = Some(method);
+                call_handler = Some(table_native_call_handler);
             }
 
             // We only store the `name` for consistency with the other tables
@@ -1234,12 +1225,12 @@ impl<'gc> Class<'gc> {
     }
 
     /// Set a call handler for this class.
-    pub fn set_call_handler(self, mc: &Mutation<'gc>, new_call_handler: Method<'gc>) {
+    pub fn set_call_handler(self, mc: &Mutation<'gc>, new_call_handler: NativeMethodImpl) {
         self.0.write(mc).call_handler = Some(new_call_handler);
     }
 
     /// Get this class's call handler.
-    pub fn call_handler(self) -> Option<Method<'gc>> {
+    pub fn call_handler(self) -> Option<NativeMethodImpl> {
         self.0.read().call_handler
     }
 
