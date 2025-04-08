@@ -2,10 +2,10 @@
 
 use crate::avm2::activation::Activation;
 use crate::avm2::class::Class;
+use crate::avm2::error::{verify_error, Error};
 use crate::avm2::script::TranslationUnit;
 use crate::avm2::value::{abc_default_value, Value};
 use crate::avm2::verify::{resolve_param_config, VerifiedMethodInfo};
-use crate::avm2::Error;
 use crate::avm2::Multiname;
 use crate::tag_utils::SwfMovie;
 use gc_arena::barrier::unlock;
@@ -137,22 +137,22 @@ impl<'gc> BytecodeMethod<'gc> {
         activation: &mut Activation<'_, 'gc>,
     ) -> Result<Self, Error<'gc>> {
         let abc = txunit.abc();
+        let Some(method) = abc.methods.get(abc_method.0 as usize) else {
+            return Err(Error::AvmError(verify_error(
+                activation,
+                "Error #1027: Method_info exceeds method_count.",
+                1027,
+            )?));
+        };
+
         let mut signature = Vec::new();
-        let mut return_type = None;
-        let mut abc_method_body = None;
-
-        if abc.methods.get(abc_method.0 as usize).is_some() {
-            let method = &abc.methods[abc_method.0 as usize];
-            for param in &method.params {
-                signature.push(ParamConfig::from_abc_param(param, txunit, activation)?);
-            }
-
-            return_type = txunit.pool_multiname_static_any(activation, method.return_type)?;
-
-            if let Some(body) = method.body {
-                abc_method_body = Some(body.0);
-            }
+        for param in &method.params {
+            signature.push(ParamConfig::from_abc_param(param, txunit, activation)?);
         }
+
+        let return_type = txunit.pool_multiname_static_any(activation, method.return_type)?;
+
+        let abc_method_body = method.body.map(|b| b.0);
 
         let mut all_params_unchecked = true;
         for param in &signature {
