@@ -221,16 +221,16 @@
 
     .menu-item.disabled {
         cursor: default;
-        color: rgba(var(--modal-foreground-rgb), 0.5);
+        color: rgb(var(--modal-foreground-rgb), 0.5);
     }
 
     .menu-item:not(.disabled):hover {
-        background-color: rgba(var(--modal-foreground-rgb), 0.15);
+        background-color: rgb(var(--modal-foreground-rgb), 0.15);
     }
 
     .menu-separator hr {
         border: none;
-        border-bottom: 1px solid rgba(var(--modal-foreground-rgb), 0.2);
+        border-bottom: 1px solid rgb(var(--modal-foreground-rgb), 0.2);
         margin: 3px;
     }
 }
@@ -328,7 +328,7 @@
 
 .modal-button {
     display: inline-block;
-    background-color: rgba(var(--modal-foreground-rgb), 0.2);
+    background-color: rgb(var(--modal-foreground-rgb), 0.2);
     color: rgb(var(--modal-foreground-rgb));
     text-decoration: none;
     padding: 4px 8px;
@@ -345,7 +345,7 @@
 .general-save-options {
     text-align: center;
     padding-bottom: 8px;
-    border-bottom: 2px solid rgba(var(--modal-foreground-rgb), 0.3);
+    border-bottom: 2px solid rgb(var(--modal-foreground-rgb), 0.3);
 }
 
 #local-saves {
@@ -357,7 +357,7 @@
     min-height: 30px;
 
     td {
-        border-bottom: 2px solid rgba(var(--modal-foreground-rgb), 0.15);
+        border-bottom: 2px solid rgb(var(--modal-foreground-rgb), 0.15);
         height: 30px;
     }
 
