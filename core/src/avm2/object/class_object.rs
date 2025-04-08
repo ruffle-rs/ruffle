@@ -114,6 +114,22 @@ impl<'gc> ClassObject<'gc> {
         class: Class<'gc>,
         superclass_object: Option<ClassObject<'gc>>,
     ) -> Result<Self, Error<'gc>> {
+        // For the early classes `Object` and `Class`, we reuse the ClassObject
+        // already constructed in `globals::init_early_classes` so that we don't
+        // create duplicate ClassObjects for them. However, we do run their class
+        // initializers now.
+        if class == activation.avm2().class_defs().object {
+            let object_class = activation.avm2().classes().object;
+            object_class.run_class_initializer(activation)?;
+
+            return Ok(object_class);
+        } else if class == activation.avm2().class_defs().class {
+            let class_class = activation.avm2().classes().class;
+            class_class.run_class_initializer(activation)?;
+
+            return Ok(class_class);
+        }
+
         let class_object = Self::from_class_partial(activation, class, superclass_object);
         let class_proto = class_object.allocate_prototype(activation, superclass_object);
 
@@ -122,7 +138,11 @@ impl<'gc> ClassObject<'gc> {
         let class_class_proto = activation.avm2().classes().class.prototype();
         class_object.link_type(activation.gc(), class_class_proto);
 
-        class_object.into_finished_class(activation)
+        class_object.into_finished_class(activation);
+
+        class_object.run_class_initializer(activation)?;
+
+        Ok(class_object)
     }
 
     /// Allocate a class but do not properly construct it.
@@ -131,8 +151,8 @@ impl<'gc> ClassObject<'gc> {
     /// any action that would require the existence of any other objects in the
     /// object graph. The resulting class will be a bare object and should not
     /// be used or presented to user code until you finish initializing it. You
-    /// do that by calling `link_prototype`, `link_type`, and then
-    /// `into_finished_class` in that order.
+    /// do that by calling `link_prototype`, `link_type`, `into_finished_class`,
+    /// and `run_class_initializer` in that order.
     ///
     /// This returns the class object directly (*not* an `Object`), to allow
     /// further manipulation of the class once it's dependent types have been
@@ -213,10 +233,7 @@ impl<'gc> ClassObject<'gc> {
     ///
     /// This function is also when class trait validation happens. Verify
     /// errors will be raised at this time.
-    pub fn into_finished_class(
-        self,
-        activation: &mut Activation<'_, 'gc>,
-    ) -> Result<Self, Error<'gc>> {
+    pub fn into_finished_class(self, activation: &mut Activation<'_, 'gc>) {
         let i_class = self.inner_class_definition();
         let c_class = i_class
             .c_class()
@@ -235,10 +252,6 @@ impl<'gc> ClassObject<'gc> {
         );
 
         self.set_vtable(activation.gc(), class_vtable);
-
-        self.run_class_initializer(activation)?;
-
-        Ok(self)
     }
 
     /// Link this class to a prototype.

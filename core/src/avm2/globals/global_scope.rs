@@ -5,7 +5,7 @@
 //! instance of.
 
 use crate::avm2::activation::Activation;
-use crate::avm2::class::Class;
+use crate::avm2::class::{Class, ClassAttributes};
 use crate::avm2::method::Method;
 use crate::avm2::traits::Trait;
 use crate::avm2::value::Value;
@@ -34,6 +34,8 @@ pub fn create_class<'gc>(
         Method::from_builtin(instance_init, "<global instance initializer>", mc),
         mc,
     );
+
+    class.set_attributes(mc, ClassAttributes::FINAL);
 
     class.set_traits(mc, traits);
     class.mark_traits_loaded(mc);

@@ -7,6 +7,10 @@ package {
         {
             _initFunctionClass();
 
+            // Initialize prototype functions on Object
+            Object.init();
+
+            // Initialize our prototype functions
             prototype.apply = function(receiver:* = void 0, args:* = void 0):* {
                 var f:Function = this;
                 return f.AS3::apply(receiver, args);

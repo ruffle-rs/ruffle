@@ -1,15 +1,10 @@
 //! `Class` builtin/prototype
 
 use crate::avm2::activation::Activation;
-use crate::avm2::class::{Class, ClassAttributes};
 use crate::avm2::error::type_error;
-use crate::avm2::method::{Method, NativeMethodImpl};
 use crate::avm2::object::{ClassObject, Object, TObject};
 use crate::avm2::value::Value;
 use crate::avm2::Error;
-use crate::avm2::QName;
-use crate::string::AvmString;
-use ruffle_macros::istr;
 
 pub fn class_allocator<'gc>(
     _class: ClassObject<'gc>,
@@ -22,26 +17,7 @@ pub fn class_allocator<'gc>(
     )?))
 }
 
-/// Implements `Class`'s instance initializer.
-/// This can only be called by subclasses (if at all), so in practice it's a noop.
-pub fn instance_init<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
-    _this: Value<'gc>,
-    _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error<'gc>> {
-    Ok(Value::Undefined)
-}
-
-/// Implement's `Class`'s class initializer.
-pub fn class_init<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
-    _this: Value<'gc>,
-    _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error<'gc>> {
-    Ok(Value::Undefined)
-}
-
-fn prototype<'gc>(
+pub fn get_prototype<'gc>(
     _activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
     _args: &[Value<'gc>],
@@ -53,78 +29,4 @@ fn prototype<'gc>(
     }
 
     Ok(Value::Undefined)
-}
-
-/// Construct `Class`'s i_class.
-pub fn create_i_class<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    object_i_class: Class<'gc>,
-) -> Class<'gc> {
-    let gc_context = activation.gc();
-    let namespaces = activation.avm2().namespaces;
-
-    let class_name = istr!("Class");
-    let class_i_class = Class::custom_new(
-        QName::new(namespaces.public_all(), class_name),
-        Some(object_i_class),
-        Method::from_builtin(instance_init, "<Class instance initializer>", gc_context),
-        gc_context,
-    );
-    // The documentation and playerglobals are wrong; attempting to extend Class
-    // throws a VerifyError
-    class_i_class.set_attributes(gc_context, ClassAttributes::FINAL);
-
-    class_i_class.set_instance_allocator(gc_context, class_allocator);
-
-    const PUBLIC_INSTANCE_PROPERTIES: &[(
-        &str,
-        Option<NativeMethodImpl>,
-        Option<NativeMethodImpl>,
-    )] = &[("prototype", Some(prototype), None)];
-    class_i_class.define_builtin_instance_properties(
-        activation.strings(),
-        namespaces.public_all(),
-        PUBLIC_INSTANCE_PROPERTIES,
-    );
-
-    class_i_class.mark_traits_loaded(activation.gc());
-    class_i_class
-        .init_vtable(activation.context)
-        .expect("Native class's vtable should initialize");
-
-    class_i_class
-}
-
-/// Construct `Class`'s c_class.
-pub fn create_c_class<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    class_i_class: Class<'gc>,
-) -> Class<'gc> {
-    let gc_context = activation.gc();
-    let namespaces = activation.avm2().namespaces;
-
-    let class_name = AvmString::new_ascii_static(gc_context, b"Class$");
-    let class_c_class = Class::custom_new(
-        QName::new(namespaces.public_all(), class_name),
-        Some(class_i_class),
-        Method::from_builtin(class_init, "<Class class initializer>", gc_context),
-        gc_context,
-    );
-    class_c_class.set_attributes(gc_context, ClassAttributes::FINAL);
-
-    // 'length' is a weird undocumented constant in Class.
-    // We need to define it, since it shows up in 'describeType'
-    const CLASS_CONSTANTS: &[(&str, i32)] = &[("length", 1)];
-    class_c_class.define_constant_int_instance_traits(
-        namespaces.public_all(),
-        CLASS_CONSTANTS,
-        activation,
-    );
-
-    class_c_class.mark_traits_loaded(activation.gc());
-    class_c_class
-        .init_vtable(activation.context)
-        .expect("Native class's vtable should initialize");
-
-    class_c_class
 }
