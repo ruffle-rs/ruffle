@@ -3040,7 +3040,9 @@ fn run_mouse_pick<'gc>(
                 if let Avm2MousePick::Hit(target) =
                     l.mouse_pick_avm2(context, *context.mouse_position, require_button_mode)
                 {
-                    // Flash Player appears to never target events at the root object
+                    // Flash Player never targets events at the root object of a stage or loader.
+                    // If we are the root of a stage, target the stage instead (by returning None).
+                    // Avm2MousePick.combine_with_parent handles the root-of-loader case.
                     if !target.as_displayobject().is_root() {
                         res = Some(target);
                     }
