@@ -51,7 +51,7 @@ impl<'gc> Graphic<'gc> {
         let library = context.library.library_for_movie(movie.clone()).unwrap();
         let shared = GraphicShared {
             id: swf_shape.id,
-            bounds: swf_shape.shape_bounds.clone(),
+            bounds: swf_shape.shape_bounds,
             render_handle: Some(
                 context
                     .renderer
@@ -140,9 +140,9 @@ impl<'gc> TDisplayObject<'gc> for Graphic<'gc> {
 
     fn self_bounds(&self) -> Rectangle<Twips> {
         if let Some(drawing) = &self.0.read().drawing {
-            drawing.self_bounds().clone()
+            drawing.self_bounds()
         } else {
-            self.0.read().shared.bounds.clone()
+            self.0.read().shared.bounds
         }
     }
 

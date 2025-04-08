@@ -6,7 +6,7 @@ use url::Url;
 
 pub enum PlayingContent {
     DirectFile(Url),
-    Bundle(Url, Bundle),
+    Bundle(Url, Box<Bundle>),
 }
 
 impl Debug for PlayingContent {

@@ -1,13 +1,13 @@
 //! `Boolean` class impl
 
-use gc_arena::Gc;
+use ruffle_macros::istr;
 
 use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
-use crate::avm1::function::{Executable, FunctionObject};
+use crate::avm1::function::FunctionObject;
 use crate::avm1::property_decl::{define_properties_on, Declaration};
 use crate::avm1::{NativeObject, Object, ScriptObject, TObject, Value};
-use crate::string::{AvmString, StringContext};
+use crate::string::StringContext;
 
 const PROTO_DECLS: &[Declaration] = declare_properties! {
     "toString" => method(to_string; DONT_ENUM | DONT_DELETE);
@@ -24,8 +24,7 @@ pub fn constructor<'gc>(
         .get(0)
         .is_some_and(|value| value.as_bool(activation.swf_version()));
     // Called from a constructor, populate `this`.
-    let vbox = Gc::new(activation.gc(), value.into());
-    this.set_native(activation.gc(), NativeObject::Value(vbox));
+    this.set_native(activation.gc(), NativeObject::Bool(value));
 
     Ok(this.into())
 }
@@ -51,8 +50,8 @@ pub fn create_boolean_object<'gc>(
 ) -> Object<'gc> {
     FunctionObject::constructor(
         context,
-        Executable::Native(constructor),
-        Executable::Native(boolean_function),
+        constructor,
+        Some(boolean_function),
         fn_proto,
         boolean_proto,
     )
@@ -74,12 +73,13 @@ pub fn to_string<'gc>(
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let NativeObject::Value(vbox) = this.native() {
-        // Must be a bool.
-        // Boolean.prototype.toString.call(x) returns undefined for non-bools.
-        if let Value::Bool(b) = *vbox {
-            return Ok(AvmString::new_utf8(activation.gc(), b.to_string()).into());
-        }
+    // Must be a bool.
+    // Boolean.prototype.toString.call(x) returns undefined for non-bools.
+    if let NativeObject::Bool(value) = this.native() {
+        return Ok(Value::from(match value {
+            true => istr!("true"),
+            false => istr!("false"),
+        }));
     }
 
     Ok(Value::Undefined)
@@ -90,12 +90,10 @@ pub fn value_of<'gc>(
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let NativeObject::Value(vbox) = this.native() {
-        // Must be a bool.
-        // Boolean.prototype.valueOf.call(x) returns undefined for non-bools.
-        if let Value::Bool(b) = *vbox {
-            return Ok(b.into());
-        }
+    // Must be a bool.
+    // Boolean.prototype.valueOf.call(x) returns undefined for non-bools.
+    if let NativeObject::Bool(value) = this.native() {
+        return Ok(value.into());
     }
 
     Ok(Value::Undefined)

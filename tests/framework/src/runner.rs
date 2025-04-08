@@ -10,7 +10,7 @@ use image::ImageFormat;
 use pretty_assertions::Comparison;
 use ruffle_core::backend::navigator::NullExecutor;
 use ruffle_core::events::{
-    KeyDescriptor, KeyLocation, LogicalKey, NamedKey, PhysicalKey,
+    ImeEvent, KeyDescriptor, KeyLocation, LogicalKey, NamedKey, PhysicalKey,
     TextControlCode as RuffleTextControlCode,
 };
 use ruffle_core::events::{MouseButton as RuffleMouseButton, MouseWheelDelta};
@@ -292,6 +292,12 @@ impl TestRunner {
                 },
                 AutomatedEvent::FocusGained => PlayerEvent::FocusGained,
                 AutomatedEvent::FocusLost => PlayerEvent::FocusLost,
+                AutomatedEvent::ImePreedit { text, cursor } => {
+                    PlayerEvent::Ime(ImeEvent::Preedit(text.clone(), *cursor))
+                }
+                AutomatedEvent::ImeCommit { text } => {
+                    PlayerEvent::Ime(ImeEvent::Commit(text.clone()))
+                }
                 AutomatedEvent::Wait | AutomatedEvent::SetClipboardText { .. } => unreachable!(),
             });
 

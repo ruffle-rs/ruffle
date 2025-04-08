@@ -20,7 +20,6 @@ use crate::avm1::globals::style_sheet::StyleSheetObject;
 use crate::avm1::globals::transform::TransformObject;
 use crate::avm1::globals::xml::Xml;
 use crate::avm1::globals::xml_socket::XmlSocket;
-use crate::avm1::object::array_object::ArrayObject;
 use crate::avm1::object::super_object::SuperObject;
 use crate::avm1::{Activation, Attribute, Error, ScriptObject, StageObject, Value};
 use crate::bitmap::bitmap_data::BitmapDataWrapper;
@@ -34,8 +33,8 @@ use gc_arena::{Collect, Gc, GcCell, Mutation};
 use ruffle_macros::{enum_trait_object, istr};
 use std::cell::{Cell, RefCell};
 use std::fmt::Debug;
+use std::marker::PhantomData;
 
-pub mod array_object;
 pub mod script_object;
 pub mod stage_object;
 pub mod super_object;
@@ -44,10 +43,22 @@ pub mod super_object;
 #[collect(no_drop)]
 pub enum NativeObject<'gc> {
     None,
-    /// A boxed primitive.
+
+    /// A boxed boolean.
+    Bool(bool),
+    /// A boxed number.
+    Number(BoxedF64<'gc>),
+    /// A boxed string.
+    String(AvmString<'gc>),
+    /// Marker indicating that this object should behave like an array.
     ///
-    /// It is a logic error for a boxed value to be a `Value::Object`.
-    Value(Gc<'gc, Value<'gc>>),
+    /// This stores no data; all array properties are stored on the object's main `PropertyMap`.
+    /// TODO(moulins): that doesn't seem entirely correct; in Flash Player, it is possible in
+    /// certain circumstances (e.g. in a subclass constructor, before calling `super()`) to
+    /// 'desynchronize' the "property view" and the "array view" (used by, e.g., `toString()`).
+    Array(()),
+    Function(Gc<'gc, FunctionObject<'gc>>),
+
     Date(Gc<'gc, Cell<Date>>),
     BlurFilter(BlurFilter<'gc>),
     BevelFilter(BevelFilter<'gc>),
@@ -74,6 +85,40 @@ pub enum NativeObject<'gc> {
     StyleSheet(StyleSheetObject<'gc>),
 }
 
+const _: () = assert!(size_of::<NativeObject<'_>>() <= size_of::<[usize; 2]>());
+
+/// Small wrapper struct to keep boxed f64s word-sized on every architecture.
+#[derive(Copy, Clone, Collect)]
+#[collect(no_drop)]
+pub struct BoxedF64<'gc> {
+    #[cfg(target_pointer_width = "64")]
+    value: f64,
+    #[cfg(not(target_pointer_width = "64"))]
+    value: Gc<'gc, f64>,
+    _marker: PhantomData<Gc<'gc, ()>>,
+}
+
+impl<'gc> BoxedF64<'gc> {
+    #[inline]
+    pub fn new(#[allow(unused)] mc: &Mutation<'gc>, value: f64) -> Self {
+        Self {
+            #[cfg(target_pointer_width = "64")]
+            value,
+            #[cfg(not(target_pointer_width = "64"))]
+            value: Gc::new(mc, value),
+            _marker: PhantomData,
+        }
+    }
+
+    #[inline]
+    pub fn value(&self) -> f64 {
+        #[cfg(target_pointer_width = "64")]
+        return self.value;
+        #[cfg(not(target_pointer_width = "64"))]
+        return *self.value;
+    }
+}
+
 /// Represents an object that can be directly interacted with by the AVM
 /// runtime.
 #[enum_trait_object(
@@ -82,10 +127,8 @@ pub enum NativeObject<'gc> {
     #[collect(no_drop)]
     pub enum Object<'gc> {
         ScriptObject(ScriptObject<'gc>),
-        ArrayObject(ArrayObject<'gc>),
         StageObject(StageObject<'gc>),
         SuperObject(SuperObject<'gc>),
-        FunctionObject(FunctionObject<'gc>),
     }
 )]
 pub trait TObject<'gc>: 'gc + Collect<'gc> + Into<Object<'gc>> + Clone + Copy {
@@ -330,19 +373,6 @@ pub trait TObject<'gc>: 'gc + Collect<'gc> + Into<Object<'gc>> + Clone + Copy {
         self.raw_script_object().setter(name, activation)
     }
 
-    /// Construct a host object of some kind and return its cell.
-    ///
-    /// As the first step in object construction, the `new` method is called on
-    /// the prototype to initialize an object. The prototype may construct any
-    /// object implementation it wants, with itself as the new object's proto.
-    /// Then, the constructor is `call`ed with the new object as `this` to
-    /// initialize the object.
-    fn create_bare_object(
-        &self,
-        activation: &mut Activation<'_, 'gc>,
-        this: Object<'gc>,
-    ) -> Result<Object<'gc>, Error<'gc>>;
-
     /// Delete a named property from the object.
     ///
     /// Returns false if the property cannot be deleted.
@@ -578,11 +608,6 @@ pub trait TObject<'gc>: 'gc + Collect<'gc> + Into<Object<'gc>> + Clone + Copy {
 
     fn set_native(&self, _gc_context: &Mutation<'gc>, _native: NativeObject<'gc>) {}
 
-    /// Get the underlying array object, if it exists.
-    fn as_array_object(&self) -> Option<ArrayObject<'gc>> {
-        None
-    }
-
     /// Get the underlying stage object, if it exists.
     fn as_stage_object(&self) -> Option<StageObject<'gc>> {
         None
@@ -619,7 +644,7 @@ pub trait TObject<'gc>: 'gc + Collect<'gc> + Into<Object<'gc>> + Clone + Copy {
         let mut proto = other.proto(activation);
 
         while let Value::Object(proto_ob) = proto {
-            if self.as_ptr() == proto_ob.as_ptr() {
+            if std::ptr::eq(self.as_ptr(), proto_ob.as_ptr()) {
                 return true;
             }
 
@@ -674,7 +699,7 @@ pub enum ObjectPtr {}
 
 impl<'gc> Object<'gc> {
     pub fn ptr_eq(a: Object<'gc>, b: Object<'gc>) -> bool {
-        a.as_ptr() == b.as_ptr()
+        std::ptr::eq(a.as_ptr(), b.as_ptr())
     }
 }
 

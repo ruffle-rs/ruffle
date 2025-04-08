@@ -6,7 +6,7 @@ use crate::avm1::globals::matrix::gradient_object_to_matrix;
 use crate::avm1::globals::{self, bitmap_filter, AVM_DEPTH_BIAS, AVM_MAX_DEPTH};
 use crate::avm1::object::NativeObject;
 use crate::avm1::property_decl::{define_properties_on, Declaration};
-use crate::avm1::{self, ArrayObject, Object, ScriptObject, TObject, Value};
+use crate::avm1::{self, ArrayBuilder, Object, ScriptObject, TObject, Value};
 use crate::backend::navigator::NavigationMethod;
 use crate::context::UpdateContext;
 use crate::display_object::{Bitmap, EditText, MovieClip, TInteractiveObject};
@@ -122,15 +122,6 @@ const PROTO_DECLS: &[Declaration] = declare_properties! {
     "tabIndex" => property(mc_getter!(tab_index), mc_setter!(set_tab_index); DONT_ENUM | VERSION_6);
     // NOTE: `tabChildren` is not a built-in property of MovieClip.
 };
-
-/// Implements `MovieClip`
-pub fn constructor<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
-    _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error<'gc>> {
-    Ok(this.into())
-}
 
 pub fn new_rectangle<'gc>(
     activation: &mut Activation<'_, 'gc>,
@@ -1458,7 +1449,7 @@ fn get_bounds<'gc>(
             // the final matrix, but this matches Flash's behavior.
             let to_global_matrix = movie_clip.local_to_global_matrix();
             let to_target_matrix = target.global_to_local_matrix().unwrap_or_default();
-            let target_bounds = to_target_matrix * to_global_matrix * bounds.clone();
+            let target_bounds = to_target_matrix * to_global_matrix * bounds;
 
             // If the bounds are invalid, the target space is identical to the origin space and
             // use_new_invalid_bounds_value is true, the returned bounds use a specific invalid value.
@@ -1783,7 +1774,7 @@ fn filters<'gc>(
     this: MovieClip<'gc>,
     activation: &mut Activation<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
-    Ok(ArrayObject::builder(activation)
+    Ok(ArrayBuilder::new(activation)
         .with(
             this.filters()
                 .into_iter()

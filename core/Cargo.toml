@@ -18,7 +18,7 @@ flate2 = { workspace = true }
 fnv = "1.0.7"
 gc-arena = { package = "ruffle_gc_arena", path = "../ruffle_gc_arena" }
 slotmap = { workspace = true }
-indexmap = "2.8.0"
+indexmap = "2.9.0"
 tracing = { workspace = true }
 ruffle_render = { path = "../render", features = ["tessellator"] }
 ruffle_video = { path = "../video" }
@@ -26,10 +26,10 @@ ruffle_macros = { path = "macros" }
 ruffle_wstr = { path = "../wstr" }
 swf = { path = "../swf" }
 bitflags = { workspace = true }
-smallvec = { version = "1.14.0", features = ["union"] }
+smallvec = { version = "1.15.0", features = ["union"] }
 num-traits = { workspace = true }
 num-derive = { workspace = true }
-quick-xml = "0.37.2"
+quick-xml = "0.37.4"
 downcast-rs = "2.0.1"
 url = { workspace = true }
 weak-table = "0.3.2"

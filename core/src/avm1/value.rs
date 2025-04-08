@@ -9,7 +9,7 @@ use crate::ecma_conversions::{
     f64_to_wrapping_u8,
 };
 use crate::string::{AvmAtom, AvmString, Integer, WStr};
-use gc_arena::{Collect, Gc};
+use gc_arena::Collect;
 use ruffle_macros::istr;
 use std::{io::Write, mem::size_of, num::Wrapping};
 
@@ -493,16 +493,12 @@ impl<'gc> Value<'gc> {
 
         // Constructor populates the boxed object with the value.
         use crate::avm1::globals;
-        let _ = match value {
-            Value::Bool(_) => globals::boolean::constructor(activation, obj, &[value]),
-            Value::Number(_) => globals::number::number(activation, obj, &[value]),
-            Value::String(_) => globals::string::string(activation, obj, &[value]),
-            _ => {
-                let vbox = Gc::new(activation.gc(), Value::Undefined);
-                obj.set_native(activation.gc(), NativeObject::Value(vbox));
-                Ok(Value::Undefined)
-            }
-        };
+        match value {
+            Value::Bool(_) => drop(globals::boolean::constructor(activation, obj, &[value])),
+            Value::Number(_) => drop(globals::number::number(activation, obj, &[value])),
+            Value::String(_) => drop(globals::string::string(activation, obj, &[value])),
+            _ => (),
+        }
 
         obj
     }
@@ -908,7 +904,7 @@ fn string_to_f64(mut s: &WStr, swf_version: u8) -> f64 {
 mod test {
     use crate::avm1::activation::Activation;
     use crate::avm1::error::Error;
-    use crate::avm1::function::{Executable, FunctionObject};
+    use crate::avm1::function::FunctionObject;
     use crate::avm1::globals::create_globals;
     use crate::avm1::object::script_object::ScriptObject;
     use crate::avm1::object::{Object, TObject};
@@ -947,9 +943,9 @@ mod test {
                 Ok(5.into())
             }
 
-            let valueof = FunctionObject::function(
+            let valueof = FunctionObject::native(
                 &activation.context.strings,
-                Executable::Native(value_of_impl),
+                value_of_impl,
                 protos.function,
                 protos.function,
             );

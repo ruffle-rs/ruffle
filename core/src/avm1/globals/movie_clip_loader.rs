@@ -7,7 +7,7 @@ use crate::avm1::object::script_object::ScriptObject;
 use crate::avm1::object::TObject;
 use crate::avm1::property::Attribute;
 use crate::avm1::property_decl::{define_properties_on, Declaration};
-use crate::avm1::{ArrayObject, Object, Value};
+use crate::avm1::{ArrayBuilder, Object, Value};
 use crate::backend::navigator::Request;
 use crate::display_object::TDisplayObject;
 use crate::loader::MovieLoaderVMData;
@@ -25,14 +25,14 @@ pub fn constructor<'gc>(
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let listeners = ArrayObject::builder(activation).with([this.into()]);
+    let listeners = ArrayBuilder::new(activation).with([this.into()]);
     this.define_value(
         activation.gc(),
         istr!("_listeners"),
         Value::Object(listeners.into()),
         Attribute::DONT_ENUM,
     );
-    Ok(this.into())
+    Ok(Value::Undefined)
 }
 
 fn load_clip<'gc>(

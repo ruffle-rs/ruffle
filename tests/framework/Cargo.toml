@@ -27,7 +27,7 @@ serde = { workspace = true }
 toml = "0.8.16"
 anyhow = { workspace = true }
 async-channel = { workspace = true }
-vfs = "0.12.0"
+vfs = "0.12.1"
 percent-encoding = "2.3.1"
 
 [features]

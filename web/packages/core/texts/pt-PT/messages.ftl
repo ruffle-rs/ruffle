@@ -24,6 +24,7 @@ clipboard-message-description =
 clipboard-message-copy = { " " } para copiar
 clipboard-message-cut = { " " } para cortar
 clipboard-message-paste = { " " } para colar
+error-canvas-reload = Não é possível recarregar com o renderizado de tela quando o renderizado de tela já estiver em uso.
 error-file-protocol =
     Parece que executa o Ruffle no protocolo "file:".
     Isto não funciona, já que os navegadores bloqueiam muitas funcionalidades por razões de segurança.

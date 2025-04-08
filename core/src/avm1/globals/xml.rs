@@ -2,7 +2,7 @@
 
 use std::cell::Cell;
 
-use crate::avm1::function::{Executable, ExecutionReason, FunctionObject};
+use crate::avm1::function::{ExecutionReason, FunctionObject};
 use crate::avm1::property_decl::{define_properties_on, Declaration};
 use crate::avm1::{
     Activation, Attribute, Error, NativeObject, Object, ScriptObject, TObject, Value,
@@ -584,11 +584,5 @@ pub fn create_constructor<'gc>(
 ) -> Object<'gc> {
     let xml_proto = ScriptObject::new(context, Some(proto));
     define_properties_on(PROTO_DECLS, context, xml_proto, fn_proto);
-    FunctionObject::constructor(
-        context,
-        Executable::Native(constructor),
-        constructor_to_fn!(constructor),
-        fn_proto,
-        xml_proto.into(),
-    )
+    FunctionObject::constructor(context, constructor, None, fn_proto, xml_proto.into())
 }

@@ -45,7 +45,5 @@ gamemode-default-tooltip = GameMode will be enabled only when power preference i
 # See for context https://wiki.archlinux.org/title/Input_method
 ime-enabled = Input Method
 ime-enabled-experimental = (experimental)
-ime-enabled-tooltip = An input method allows inputting characters that are not available on the kaybord, for instance Chinese, Japanese, or Korean characters.
+ime-enabled-tooltip = An input method allows inputting characters that are not available on the keyboard, for instance Chinese, Japanese, or Korean characters.
 ime-enabled-default = Default
-ime-enabled-on = On
-ime-enabled-off = Off

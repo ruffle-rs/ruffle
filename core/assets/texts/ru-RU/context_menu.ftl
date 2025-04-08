@@ -1,4 +1,4 @@
-context-menu-play = Воспроизведение
+context-menu-play = Воспроизвести
 context-menu-rewind = Перемотать назад
 context-menu-forward = Вперёд
 context-menu-back = Назад

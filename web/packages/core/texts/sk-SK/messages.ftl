@@ -24,6 +24,7 @@ clipboard-message-description =
 clipboard-message-copy = { " " } pre kopírovanie
 clipboard-message-cut = { " " } pre vystrihovanie
 clipboard-message-paste = { " " } pre vloženie
+error-canvas-reload = Nie je možné znova načítať pomocou vykresľovača plátna, keď sa vykresľovanie plátna už používa.
 error-file-protocol =
     Zdá sa, že používate Ruffle na protokole "file:".
     To nie je možné, pretože prehliadače blokujú fungovanie mnohých funkcií z bezpečnostných dôvodov.

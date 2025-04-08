@@ -2697,9 +2697,7 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
     }
 
     fn self_bounds(&self) -> Rectangle<Twips> {
-        self.drawing()
-            .map(|d| d.self_bounds().clone())
-            .unwrap_or_default()
+        self.drawing().map(|d| d.self_bounds()).unwrap_or_default()
     }
 
     fn hit_test_shape(
@@ -3443,10 +3441,9 @@ impl<'gc> MovieClipData<'gc> {
     ) -> Option<Avm1Object<'gc>> {
         let symbol_name = self.shared.exported_name.read();
         let symbol_name = symbol_name.as_ref()?;
-        let constructor = context
+        context
             .avm1
-            .get_registered_constructor(self.movie().version(), *symbol_name)?;
-        Some((*constructor).into())
+            .get_registered_constructor(self.movie().version(), *symbol_name)
     }
 
     pub fn movie(&self) -> Arc<SwfMovie> {
@@ -5097,7 +5094,7 @@ bitflags! {
         const RUNNING_CONSTRUCT_FRAME = 1 << 5;
 
         /// Whether this `MovieClip` has been post-instantiated yet.
-        const POST_INSTANTIATED = 1 << 5;
+        const POST_INSTANTIATED = 1 << 6;
     }
 }
 

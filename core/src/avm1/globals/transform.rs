@@ -1,6 +1,6 @@
 //! flash.geom.Transform
 
-use crate::avm1::function::{Executable, FunctionObject};
+use crate::avm1::function::FunctionObject;
 use crate::avm1::globals::color_transform::ColorTransformObject;
 use crate::avm1::globals::matrix::{matrix_to_value, object_to_matrix};
 use crate::avm1::object::NativeObject;
@@ -190,8 +190,8 @@ pub fn create_constructor<'gc>(
     define_properties_on(PROTO_DECLS, context, transform_proto, fn_proto);
     FunctionObject::constructor(
         context,
-        Executable::Native(transform_method!(0)),
-        constructor_to_fn!(transform_method!(0)),
+        transform_method!(0),
+        None,
         fn_proto,
         transform_proto.into(),
     )

@@ -44,9 +44,6 @@ pub struct Activation<'a, 'gc: 'a> {
     /// The instruction index.
     ip: i32,
 
-    /// Amount of actions performed since the last timeout check
-    actions_since_timeout_check: u32,
-
     /// The number of locals this method uses.
     num_locals: usize,
 
@@ -134,7 +131,6 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     pub fn from_nothing(context: &'a mut UpdateContext<'gc>) -> Self {
         Self {
             ip: 0,
-            actions_since_timeout_check: 0,
             num_locals: 0,
             outer: ScopeChain::new(context.avm2.stage_domain),
             caller_domain: None,
@@ -160,7 +156,6 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     pub fn from_domain(context: &'a mut UpdateContext<'gc>, domain: Domain<'gc>) -> Self {
         Self {
             ip: 0,
-            actions_since_timeout_check: 0,
             num_locals: 0,
             outer: ScopeChain::new(context.avm2.stage_domain),
             caller_domain: Some(domain),
@@ -218,7 +213,6 @@ impl<'a, 'gc> Activation<'a, 'gc> {
 
         let mut created_activation = Self {
             ip: 0,
-            actions_since_timeout_check: 0,
             num_locals,
             outer: ScopeChain::new(domain),
             caller_domain: Some(domain),
@@ -401,7 +395,6 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         }
 
         self.ip = 0;
-        self.actions_since_timeout_check = 0;
         self.num_locals = num_locals;
         self.outer = outer;
         self.caller_domain = Some(outer.domain());
@@ -509,7 +502,6 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     ) -> Self {
         Self {
             ip: 0,
-            actions_since_timeout_check: 0,
             num_locals: 0,
             outer,
             caller_domain,
@@ -603,6 +595,11 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             .get(0)
             .or_else(|| self.scope_frame().first().copied())
             .map(|scope| scope.values())
+    }
+
+    pub fn activation_class(&mut self) -> ClassObject<'gc> {
+        self.activation_class
+            .expect("Expected to be running bytecode method")
     }
 
     pub fn avm2(&mut self) -> &mut Avm2<'gc> {
@@ -729,6 +726,8 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         let verified_info = method.verified_info.borrow();
         let verified_code = verified_info.as_ref().unwrap().parsed_code.as_slice();
 
+        self.timeout_check()?;
+
         self.ip = 0;
 
         let val = loop {
@@ -787,16 +786,11 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         Err(Error::AvmError(error))
     }
 
-    /// Run a single action from a given action reader.
     #[inline(always)]
-    fn do_next_opcode(
-        &mut self,
-        method: Gc<'gc, BytecodeMethod<'gc>>,
-        opcodes: &[Op<'gc>],
-    ) -> Result<FrameControl<'gc>, Error<'gc>> {
-        self.actions_since_timeout_check += 1;
-        if self.actions_since_timeout_check >= 200000 {
-            self.actions_since_timeout_check = 0;
+    fn timeout_check(&mut self) -> Result<(), Error<'gc>> {
+        *self.context.actions_since_timeout_check += 1;
+        if *self.context.actions_since_timeout_check >= 10000 {
+            *self.context.actions_since_timeout_check = 0;
             if self.context.update_start.elapsed() >= self.context.max_execution_duration {
                 return Err(
                     "A script in this movie has taken too long to execute and has been terminated."
@@ -804,7 +798,16 @@ impl<'a, 'gc> Activation<'a, 'gc> {
                 );
             }
         }
+        Ok(())
+    }
 
+    /// Run a single action from a given action reader.
+    #[inline(always)]
+    fn do_next_opcode(
+        &mut self,
+        method: Gc<'gc, BytecodeMethod<'gc>>,
+        opcodes: &[Op<'gc>],
+    ) -> Result<FrameControl<'gc>, Error<'gc>> {
         let op = &opcodes[self.ip as usize];
         self.ip += 1;
         avm_debug!(self.avm2(), "Opcode: {op:?}");
@@ -851,8 +854,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
                     multiname,
                     num_args,
                 } => self.op_call_super(*multiname, *num_args),
-                Op::ReturnValue => self.op_return_value(method),
-                Op::ReturnValueNoCoerce => self.op_return_value_no_coerce(),
+                Op::ReturnValue { return_type } => self.op_return_value(*return_type),
                 Op::ReturnVoid => self.op_return_void(),
                 Op::GetProperty { multiname } => self.op_get_property(*multiname),
                 Op::SetProperty { multiname } => self.op_set_property(*multiname),
@@ -881,6 +883,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
                     multiname,
                     num_args,
                 } => self.op_construct_prop(*multiname, *num_args),
+                Op::ConstructSlot { index, num_args } => self.op_construct_slot(*index, *num_args),
                 Op::ConstructSuper { num_args } => self.op_construct_super(*num_args),
                 Op::NewActivation => self.op_new_activation(),
                 Op::NewObject { num_args } => self.op_new_object(*num_args),
@@ -929,18 +932,6 @@ impl<'a, 'gc> Activation<'a, 'gc> {
                 Op::Jump { offset } => self.op_jump(*offset),
                 Op::IfTrue { offset } => self.op_if_true(*offset),
                 Op::IfFalse { offset } => self.op_if_false(*offset),
-                Op::IfStrictEq { offset } => self.op_if_strict_eq(*offset),
-                Op::IfStrictNe { offset } => self.op_if_strict_ne(*offset),
-                Op::IfEq { offset } => self.op_if_eq(*offset),
-                Op::IfNe { offset } => self.op_if_ne(*offset),
-                Op::IfGe { offset } => self.op_if_ge(*offset),
-                Op::IfGt { offset } => self.op_if_gt(*offset),
-                Op::IfLe { offset } => self.op_if_le(*offset),
-                Op::IfLt { offset } => self.op_if_lt(*offset),
-                Op::IfNge { offset } => self.op_if_nge(*offset),
-                Op::IfNgt { offset } => self.op_if_ngt(*offset),
-                Op::IfNle { offset } => self.op_if_nle(*offset),
-                Op::IfNlt { offset } => self.op_if_nlt(*offset),
                 Op::StrictEquals => self.op_strict_equals(),
                 Op::Equals => self.op_equals(),
                 Op::GreaterEquals => self.op_greater_equals(),
@@ -1222,10 +1213,9 @@ impl<'a, 'gc> Activation<'a, 'gc> {
 
     fn op_return_value(
         &mut self,
-        method: Gc<'gc, BytecodeMethod<'gc>>,
+        return_type: Option<Class<'gc>>,
     ) -> Result<FrameControl<'gc>, Error<'gc>> {
         let return_value = self.pop_stack();
-        let return_type = method.resolved_return_type();
 
         let coerced = if let Some(return_type) = return_type {
             return_value.coerce_to_type(self, return_type)?
@@ -1234,12 +1224,6 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         };
 
         Ok(FrameControl::Return(coerced))
-    }
-
-    fn op_return_value_no_coerce(&mut self) -> Result<FrameControl<'gc>, Error<'gc>> {
-        let return_value = self.pop_stack();
-
-        Ok(FrameControl::Return(return_value))
     }
 
     fn op_return_void(&mut self) -> Result<FrameControl<'gc>, Error<'gc>> {
@@ -1561,24 +1545,22 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         Ok(FrameControl::Continue)
     }
 
-    fn op_get_outer_scope(&mut self, index: u32) -> Result<FrameControl<'gc>, Error<'gc>> {
+    fn op_get_outer_scope(&mut self, index: usize) -> Result<FrameControl<'gc>, Error<'gc>> {
         // Verifier ensures that this points to a valid outer scope
 
-        let scope = self.outer.get_unchecked(index as usize);
+        let scope = self.outer.get_unchecked(index);
 
         self.push_stack(scope.values());
 
         Ok(FrameControl::Continue)
     }
 
-    fn op_get_scope_object(&mut self, index: u8) -> Result<FrameControl<'gc>, Error<'gc>> {
-        let scope = self.scope_frame().get(index as usize).copied();
+    fn op_get_scope_object(&mut self, index: usize) -> Result<FrameControl<'gc>, Error<'gc>> {
+        // Verifier ensures that this points to a valid local scope
 
-        if let Some(scope) = scope {
-            self.push_stack(scope.values());
-        } else {
-            self.push_stack(Value::Undefined);
-        };
+        let scope = self.scope_frame()[index];
+
+        self.push_stack(scope.values());
 
         Ok(FrameControl::Continue)
     }
@@ -1748,6 +1730,26 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         Ok(FrameControl::Continue)
     }
 
+    fn op_construct_slot(
+        &mut self,
+        index: u32,
+        arg_count: u32,
+    ) -> Result<FrameControl<'gc>, Error<'gc>> {
+        let args = self.pop_stack_args(arg_count);
+        let source = self
+            .pop_stack()
+            .null_check(self, None)?
+            .as_object()
+            .expect("Cannot get_slot on primitive");
+
+        let ctor = source.get_slot(index);
+        let constructed_object = ctor.construct(self, &args)?;
+
+        self.push_stack(constructed_object);
+
+        Ok(FrameControl::Continue)
+    }
+
     fn op_construct_super(&mut self, arg_count: u32) -> Result<FrameControl<'gc>, Error<'gc>> {
         let args = self.pop_stack_args(arg_count);
         let receiver = self.pop_stack().null_check(self, None)?;
@@ -1758,10 +1760,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     }
 
     fn op_new_activation(&mut self) -> Result<FrameControl<'gc>, Error<'gc>> {
-        let instance = self
-            .activation_class
-            .expect("Activation class should exist for bytecode")
-            .construct(self, &[])?;
+        let instance = self.activation_class().construct(self, &[])?;
 
         self.push_stack(instance);
 
@@ -2247,12 +2246,16 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     }
 
     fn op_jump(&mut self, offset: i32) -> Result<FrameControl<'gc>, Error<'gc>> {
+        self.timeout_check()?;
+
         self.ip += offset;
 
         Ok(FrameControl::Continue)
     }
 
     fn op_if_true(&mut self, offset: i32) -> Result<FrameControl<'gc>, Error<'gc>> {
+        self.timeout_check()?;
+
         let value = self.pop_stack().coerce_to_boolean();
 
         if value {
@@ -2263,141 +2266,11 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     }
 
     fn op_if_false(&mut self, offset: i32) -> Result<FrameControl<'gc>, Error<'gc>> {
+        self.timeout_check()?;
+
         let value = self.pop_stack().coerce_to_boolean();
 
         if !value {
-            self.ip += offset;
-        }
-
-        Ok(FrameControl::Continue)
-    }
-
-    fn op_if_strict_eq(&mut self, offset: i32) -> Result<FrameControl<'gc>, Error<'gc>> {
-        let value2 = self.pop_stack();
-        let value1 = self.pop_stack();
-
-        if value1.strict_eq(&value2) {
-            self.ip += offset;
-        }
-
-        Ok(FrameControl::Continue)
-    }
-
-    fn op_if_strict_ne(&mut self, offset: i32) -> Result<FrameControl<'gc>, Error<'gc>> {
-        let value2 = self.pop_stack();
-        let value1 = self.pop_stack();
-
-        if !value1.strict_eq(&value2) {
-            self.ip += offset;
-        }
-
-        Ok(FrameControl::Continue)
-    }
-
-    fn op_if_eq(&mut self, offset: i32) -> Result<FrameControl<'gc>, Error<'gc>> {
-        let value2 = self.pop_stack();
-        let value1 = self.pop_stack();
-
-        if value1.abstract_eq(&value2, self)? {
-            self.ip += offset;
-        }
-
-        Ok(FrameControl::Continue)
-    }
-
-    fn op_if_ne(&mut self, offset: i32) -> Result<FrameControl<'gc>, Error<'gc>> {
-        let value2 = self.pop_stack();
-        let value1 = self.pop_stack();
-
-        if !value1.abstract_eq(&value2, self)? {
-            self.ip += offset;
-        }
-
-        Ok(FrameControl::Continue)
-    }
-
-    fn op_if_ge(&mut self, offset: i32) -> Result<FrameControl<'gc>, Error<'gc>> {
-        let value2 = self.pop_stack();
-        let value1 = self.pop_stack();
-
-        if value1.abstract_lt(&value2, self)? == Some(false) {
-            self.ip += offset;
-        }
-
-        Ok(FrameControl::Continue)
-    }
-
-    fn op_if_gt(&mut self, offset: i32) -> Result<FrameControl<'gc>, Error<'gc>> {
-        let value2 = self.pop_stack();
-        let value1 = self.pop_stack();
-
-        if value2.abstract_lt(&value1, self)? == Some(true) {
-            self.ip += offset;
-        }
-
-        Ok(FrameControl::Continue)
-    }
-
-    fn op_if_le(&mut self, offset: i32) -> Result<FrameControl<'gc>, Error<'gc>> {
-        let value2 = self.pop_stack();
-        let value1 = self.pop_stack();
-
-        if value2.abstract_lt(&value1, self)? == Some(false) {
-            self.ip += offset;
-        }
-
-        Ok(FrameControl::Continue)
-    }
-
-    fn op_if_lt(&mut self, offset: i32) -> Result<FrameControl<'gc>, Error<'gc>> {
-        let value2 = self.pop_stack();
-        let value1 = self.pop_stack();
-
-        if value1.abstract_lt(&value2, self)? == Some(true) {
-            self.ip += offset;
-        }
-
-        Ok(FrameControl::Continue)
-    }
-
-    fn op_if_nge(&mut self, offset: i32) -> Result<FrameControl<'gc>, Error<'gc>> {
-        let value2 = self.pop_stack();
-        let value1 = self.pop_stack();
-
-        if value1.abstract_lt(&value2, self)?.unwrap_or(true) {
-            self.ip += offset;
-        }
-
-        Ok(FrameControl::Continue)
-    }
-
-    fn op_if_ngt(&mut self, offset: i32) -> Result<FrameControl<'gc>, Error<'gc>> {
-        let value2 = self.pop_stack();
-        let value1 = self.pop_stack();
-
-        if !value2.abstract_lt(&value1, self)?.unwrap_or(false) {
-            self.ip += offset;
-        }
-
-        Ok(FrameControl::Continue)
-    }
-
-    fn op_if_nle(&mut self, offset: i32) -> Result<FrameControl<'gc>, Error<'gc>> {
-        let value2 = self.pop_stack();
-        let value1 = self.pop_stack();
-
-        if value2.abstract_lt(&value1, self)?.unwrap_or(true) {
-            self.ip += offset;
-        }
-
-        Ok(FrameControl::Continue)
-    }
-
-    fn op_if_nlt(&mut self, offset: i32) -> Result<FrameControl<'gc>, Error<'gc>> {
-        let value2 = self.pop_stack();
-        let value1 = self.pop_stack();
-
-        if !value1.abstract_lt(&value2, self)?.unwrap_or(false) {
             self.ip += offset;
         }
 
@@ -2789,6 +2662,8 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         default_offset: i32,
         case_offsets: &[i32],
     ) -> Result<FrameControl<'gc>, Error<'gc>> {
+        self.timeout_check()?;
+
         let index = self.pop_stack().coerce_to_i32(self).map_err(|_| {
             Error::from(
                 "VerifyError: Invalid value type on stack (should have been int) for LookupSwitch!",

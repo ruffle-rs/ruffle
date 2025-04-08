@@ -1,5 +1,5 @@
 use crate::avm1::clamp::Clamp;
-use crate::avm1::function::{Executable, FunctionObject};
+use crate::avm1::function::FunctionObject;
 use crate::avm1::object::NativeObject;
 use crate::avm1::property_decl::{define_properties_on, Declaration};
 use crate::avm1::{Activation, Error, Object, ScriptObject, TObject, Value};
@@ -138,7 +138,7 @@ impl Date {
         let day = self.day_within_year();
         let in_leap_year = self.in_leap_year();
         for i in 0..11 {
-            if day < Self::MONTH_OFFSETS[usize::from(in_leap_year)][i as usize + 1].into() {
+            if day < Self::MONTH_OFFSETS[usize::from(in_leap_year)][i as usize + 1] as i32 {
                 return i;
             }
         }
@@ -575,8 +575,8 @@ pub fn create_constructor<'gc>(
 
     let date_constructor = FunctionObject::constructor(
         context,
-        Executable::Native(date_method!(256)),
-        Executable::Native(function),
+        date_method!(256),
+        Some(function),
         fn_proto,
         date_proto.into(),
     );

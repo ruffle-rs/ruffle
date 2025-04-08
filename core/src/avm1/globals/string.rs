@@ -1,14 +1,13 @@
 //! `String` class impl
 
-use gc_arena::Gc;
 use ruffle_macros::istr;
 
 use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
-use crate::avm1::function::{Executable, FunctionObject};
+use crate::avm1::function::FunctionObject;
 use crate::avm1::property::Attribute;
 use crate::avm1::property_decl::{define_properties_on, Declaration};
-use crate::avm1::{ArrayObject, NativeObject, Object, ScriptObject, TObject, Value};
+use crate::avm1::{ArrayBuilder, NativeObject, Object, ScriptObject, TObject, Value};
 use crate::string::{utils as string_utils, AvmString, StringContext, WString};
 
 const PROTO_DECLS: &[Declaration] = declare_properties! {
@@ -44,14 +43,14 @@ pub fn string<'gc>(
     };
 
     // Called from a constructor, populate `this`.
-    let vbox = Gc::new(activation.gc(), value.into());
-    this.set_native(activation.gc(), NativeObject::Value(vbox));
+    this.set_native(activation.gc(), NativeObject::String(value));
 
+    // The `length` property lives on the object itself, not its prototype.
     this.define_value(
         activation.gc(),
         istr!("length"),
         value.len().into(),
-        Attribute::empty(),
+        Attribute::DONT_ENUM | Attribute::DONT_DELETE,
     );
 
     Ok(this.into())
@@ -79,8 +78,8 @@ pub fn create_string_object<'gc>(
 ) -> Object<'gc> {
     let string = FunctionObject::constructor(
         context,
-        Executable::Native(string),
-        Executable::Native(string_function),
+        string,
+        Some(string_function),
         fn_proto,
         string_proto,
     );
@@ -277,7 +276,7 @@ fn split<'gc>(
             // but Flash does not.
             // e.g., split("foo", "") returns ["", "f", "o", "o", ""] in Rust but ["f, "o", "o"] in Flash.
             // Special case this to match Flash's behavior.
-            Ok(ArrayObject::builder(activation)
+            Ok(ArrayBuilder::new(activation)
                 .with(
                     this.iter()
                         .take(limit)
@@ -286,7 +285,7 @@ fn split<'gc>(
                 .into())
         } else {
             // TODO(moulins): make dependent AvmStrings instead of reallocating.
-            Ok(ArrayObject::builder(activation)
+            Ok(ArrayBuilder::new(activation)
                 .with(
                     this.split(&delimiter)
                         .take(limit)
@@ -295,7 +294,7 @@ fn split<'gc>(
                 .into())
         }
     } else {
-        Ok(ArrayObject::builder(activation).with([this.into()]).into())
+        Ok(ArrayBuilder::new(activation).with([this.into()]).into())
     }
 }
 
@@ -379,10 +378,8 @@ pub fn to_string_value_of<'gc>(
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let NativeObject::Value(vbox) = this.native() {
-        if let Value::String(s) = *vbox {
-            return Ok(s.into());
-        }
+    if let NativeObject::String(string) = this.native() {
+        return Ok(string.into());
     }
 
     //TODO: This normally falls back to `[object Object]` or `[type Function]`,

@@ -2,8 +2,8 @@ package flash.globalization {
     import __ruffle__.stub_constructor;
     import __ruffle__.stub_getter;
     import __ruffle__.stub_method;
-    import flash.globalization.LastOperationStatus;
 
+    [API("667")]
     public final class DateTimeFormatter {
         private var _dateStyle:String;
         private var _dateTimePattern:String;

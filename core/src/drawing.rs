@@ -51,8 +51,8 @@ impl Drawing {
     pub fn from_swf_shape(shape: &swf::Shape) -> Self {
         let mut this = Self {
             render_handle: RefCell::new(None),
-            shape_bounds: shape.shape_bounds.clone(),
-            edge_bounds: shape.edge_bounds.clone(),
+            shape_bounds: shape.shape_bounds,
+            edge_bounds: shape.edge_bounds,
             dirty: Cell::new(true),
             paths: Vec::new(),
             bitmaps: Vec::new(),
@@ -107,8 +107,8 @@ impl Drawing {
         *self = Drawing {
             render_handle: RefCell::new(None),
             dirty: Cell::new(true),
-            shape_bounds: other.shape_bounds.clone(),
-            edge_bounds: other.edge_bounds.clone(),
+            shape_bounds: other.shape_bounds,
+            edge_bounds: other.edge_bounds,
             paths: other.paths.clone(),
             bitmaps: other.bitmaps.clone(),
             current_fill: other.current_fill.clone(),
@@ -317,8 +317,8 @@ impl Drawing {
             } else {
                 let shape = DistilledShape {
                     paths,
-                    shape_bounds: self.shape_bounds.clone(),
-                    edge_bounds: self.edge_bounds.clone(),
+                    shape_bounds: self.shape_bounds,
+                    edge_bounds: self.edge_bounds,
                     id: 0,
                 };
                 Some(renderer.register_shape(shape, self))
@@ -340,8 +340,8 @@ impl Drawing {
         }
     }
 
-    pub fn self_bounds(&self) -> &Rectangle<Twips> {
-        &self.shape_bounds
+    pub fn self_bounds(&self) -> Rectangle<Twips> {
+        self.shape_bounds
     }
 
     pub fn hit_test(
@@ -470,7 +470,6 @@ fn stretch_bounds(
     stroke_width: Twips,
     from: Point<Twips>,
 ) -> Rectangle<Twips> {
-    let bounds = bounds.clone();
     match *command {
         DrawCommand::MoveTo(point) | DrawCommand::LineTo(point) => {
             let radius = stroke_width / 2;

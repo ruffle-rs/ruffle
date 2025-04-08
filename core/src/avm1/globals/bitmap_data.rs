@@ -1,7 +1,7 @@
 //! flash.display.BitmapData object
 
 use super::matrix::object_to_matrix;
-use crate::avm1::function::{Executable, FunctionObject};
+use crate::avm1::function::FunctionObject;
 use crate::avm1::globals::bitmap_filter;
 use crate::avm1::globals::color_transform::ColorTransformObject;
 use crate::avm1::object::NativeObject;
@@ -1567,13 +1567,8 @@ pub fn create_constructor<'gc>(
 ) -> Object<'gc> {
     define_properties_on(PROTO_DECLS, context, proto, fn_proto);
 
-    let bitmap_data_constructor = FunctionObject::constructor(
-        context,
-        Executable::Native(constructor),
-        constructor_to_fn!(constructor),
-        fn_proto,
-        proto.into(),
-    );
+    let bitmap_data_constructor =
+        FunctionObject::constructor(context, constructor, None, fn_proto, proto.into());
     let object = bitmap_data_constructor.raw_script_object();
     define_properties_on(OBJECT_DECLS, context, object, fn_proto);
     bitmap_data_constructor

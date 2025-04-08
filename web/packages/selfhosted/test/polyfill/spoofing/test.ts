@@ -62,4 +62,20 @@ describe("Spoofing is not easily detectable", () => {
         });
         expect(instance).be.true;
     });
+
+    it("Spoof of navigator.plugins works with JSON.stringify", async () => {
+        const json = await browser.execute(() => {
+            return JSON.stringify(navigator.plugins);
+        });
+        expect(json).to.equal(
+            '{"0":{"0":{},"1":{}},"1":{"0":{},"1":{}},"2":{"0":{},"1":{}},"3":{"0":{},"1":{}},"4":{"0":{},"1":{}},"5":{"0":{},"1":{},"2":{},"3":{}}}',
+        );
+    });
+
+    it("Spoof of navigator.mimeTypes works with JSON.stringify", async () => {
+        const json = await browser.execute(() => {
+            return JSON.stringify(navigator.mimeTypes);
+        });
+        expect(json).to.equal('{"0":{},"1":{},"2":{},"3":{},"4":{},"5":{}}');
+    });
 });

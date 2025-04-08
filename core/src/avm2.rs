@@ -57,7 +57,7 @@ mod multiname;
 mod namespace;
 pub mod object;
 mod op;
-mod optimize;
+mod optimizer;
 mod parameters;
 pub mod property;
 mod property_map;
@@ -361,7 +361,7 @@ impl<'gc> Avm2<'gc> {
         if self
             .orphan_objects
             .iter()
-            .all(|d| d.as_ptr() != dobj.as_ptr())
+            .all(|d| !std::ptr::eq(d.as_ptr(), dobj.as_ptr()))
         {
             self.orphan_objects_mut().push(dobj.downgrade());
         }
@@ -493,7 +493,7 @@ impl<'gc> Avm2<'gc> {
         for entry in bucket.iter() {
             // Note: comparing pointers is correct because GcWeak keeps its allocation alive,
             // so the pointers can't overlap by accident.
-            if entry.as_ptr() == object.as_ptr() {
+            if std::ptr::eq(entry.as_ptr(), object.as_ptr()) {
                 return;
             }
         }

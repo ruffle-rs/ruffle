@@ -2,7 +2,7 @@
 
 use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
-use crate::avm1::function::{Executable, FunctionObject};
+use crate::avm1::function::FunctionObject;
 use crate::avm1::globals::point::{point_to_object, value_to_point};
 use crate::avm1::property_decl::{define_properties_on, Declaration};
 use crate::avm1::{Object, ScriptObject, TObject, Value};
@@ -218,7 +218,7 @@ fn constructor<'gc>(
         }
     }
 
-    Ok(this.into())
+    Ok(Value::Undefined)
 }
 
 fn identity<'gc>(
@@ -485,13 +485,7 @@ pub fn create_matrix_object<'gc>(
     matrix_proto: Object<'gc>,
     fn_proto: Object<'gc>,
 ) -> Object<'gc> {
-    FunctionObject::constructor(
-        context,
-        Executable::Native(constructor),
-        constructor_to_fn!(constructor),
-        fn_proto,
-        matrix_proto,
-    )
+    FunctionObject::native(context, constructor, fn_proto, matrix_proto)
 }
 
 pub fn create_proto<'gc>(

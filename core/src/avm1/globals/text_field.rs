@@ -3,7 +3,7 @@ use crate::avm1::error::Error;
 use crate::avm1::globals::bitmap_filter;
 use crate::avm1::object::NativeObject;
 use crate::avm1::property_decl::{define_properties_on, Declaration};
-use crate::avm1::{globals, ArrayObject, Object, ScriptObject, TObject, Value};
+use crate::avm1::{globals, ArrayBuilder, Object, ScriptObject, TObject, Value};
 use crate::display_object::{
     AutoSizeMode, EditText, TDisplayObject, TInteractiveObject, TextSelection,
 };
@@ -99,15 +99,6 @@ const PROTO_DECLS: &[Declaration] = declare_properties! {
     "tabIndex" => property(tf_getter!(tab_index), tf_setter!(set_tab_index); VERSION_6);
     "styleSheet" => property(tf_getter!(style_sheet), tf_setter!(set_style_sheet); VERSION_7);
 };
-
-/// Implements `TextField`
-pub fn constructor<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
-    _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error<'gc>> {
-    Ok(this.into())
-}
 
 pub fn create_proto<'gc>(
     context: &mut StringContext<'gc>,
@@ -847,7 +838,7 @@ fn filters<'gc>(
     this: EditText<'gc>,
     activation: &mut Activation<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
-    Ok(ArrayObject::builder(activation)
+    Ok(ArrayBuilder::new(activation)
         .with(
             this.filters()
                 .into_iter()

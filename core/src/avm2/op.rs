@@ -3,10 +3,10 @@ use crate::avm2::multiname::Multiname;
 use crate::avm2::script::Script;
 use crate::string::AvmAtom;
 
-use gc_arena::{Collect, Gc};
+use gc_arena::{Collect, Gc, Static};
 use swf::avm2::types::{Exception, Index, LookupSwitch, Method, Namespace};
 
-#[derive(Clone, Collect, Debug)]
+#[derive(Clone, Collect, Copy, Debug)]
 #[collect(no_drop)]
 pub enum Op<'gc> {
     Add,
@@ -84,6 +84,10 @@ pub enum Op<'gc> {
         multiname: Gc<'gc, Multiname<'gc>>,
         num_args: u32,
     },
+    ConstructSlot {
+        index: u32,
+        num_args: u32,
+    },
     ConstructSuper {
         num_args: u32,
     },
@@ -136,13 +140,13 @@ pub enum Op<'gc> {
         index: u32,
     },
     GetOuterScope {
-        index: u32,
+        index: usize,
     },
     GetProperty {
         multiname: Gc<'gc, Multiname<'gc>>,
     },
     GetScopeObject {
-        index: u8,
+        index: usize,
     },
     GetScriptGlobals {
         script: Script<'gc>,
@@ -161,43 +165,7 @@ pub enum Op<'gc> {
         object_register: u32,
         index_register: u32,
     },
-    IfEq {
-        offset: i32,
-    },
     IfFalse {
-        offset: i32,
-    },
-    IfGe {
-        offset: i32,
-    },
-    IfGt {
-        offset: i32,
-    },
-    IfLe {
-        offset: i32,
-    },
-    IfLt {
-        offset: i32,
-    },
-    IfNe {
-        offset: i32,
-    },
-    IfNge {
-        offset: i32,
-    },
-    IfNgt {
-        offset: i32,
-    },
-    IfNle {
-        offset: i32,
-    },
-    IfNlt {
-        offset: i32,
-    },
-    IfStrictEq {
-        offset: i32,
-    },
-    IfStrictNe {
         offset: i32,
     },
     IfTrue {
@@ -233,7 +201,7 @@ pub enum Op<'gc> {
     Li16,
     Li32,
     Li8,
-    LookupSwitch(#[collect(require_static)] Box<LookupSwitch>),
+    LookupSwitch(Gc<'gc, Static<LookupSwitch>>),
     LShift,
     Modulo,
     Multiply,
@@ -289,8 +257,9 @@ pub enum Op<'gc> {
     },
     PushUndefined,
     PushWith,
-    ReturnValue,
-    ReturnValueNoCoerce,
+    ReturnValue {
+        return_type: Option<Class<'gc>>,
+    },
     ReturnVoid,
     RShift,
     SetGlobalSlot {
@@ -333,24 +302,27 @@ pub enum Op<'gc> {
 }
 
 impl Op<'_> {
-    pub fn is_block_terminating(&self) -> bool {
-        matches!(
-            self,
-            Op::Jump { .. }
-                | Op::LookupSwitch { .. }
-                | Op::ReturnValue
-                | Op::ReturnValueNoCoerce
-                | Op::ReturnVoid
-                | Op::Throw
-        )
-    }
-
     pub fn can_throw_error(&self) -> bool {
         !matches!(
             self,
-            Op::Bkpt
+            Op::AsType { .. }
+                | Op::Bkpt
                 | Op::BkptLine { .. }
-                | Op::Timestamp
+                | Op::CoerceO
+                | Op::Dup
+                | Op::GetScopeObject { .. }
+                | Op::GetOuterScope { .. }
+                | Op::GetLocal { .. }
+                | Op::IfTrue { .. }
+                | Op::IfFalse { .. }
+                | Op::IsType { .. }
+                | Op::Jump { .. }
+                | Op::Kill { .. }
+                | Op::LookupSwitch { .. }
+                | Op::Nop
+                | Op::Not
+                | Op::Pop
+                | Op::PopScope
                 | Op::PushDouble { .. }
                 | Op::PushFalse
                 | Op::PushInt { .. }
@@ -361,24 +333,11 @@ impl Op<'_> {
                 | Op::PushTrue
                 | Op::PushUint { .. }
                 | Op::PushUndefined
-                | Op::Dup
-                | Op::Swap
-                | Op::Pop
-                | Op::TypeOf
-                | Op::GetScopeObject { .. }
-                | Op::GetOuterScope { .. }
-                | Op::GetLocal { .. }
                 | Op::SetLocal { .. }
-                | Op::Kill { .. }
-                | Op::Jump { .. }
-                | Op::IfTrue { .. }
-                | Op::IfFalse { .. }
-                | Op::IfStrictEq { .. }
-                | Op::IfStrictNe { .. }
-                | Op::LookupSwitch { .. }
-                | Op::Nop
-                | Op::Not
-                | Op::PopScope
+                | Op::StrictEquals
+                | Op::Swap
+                | Op::Timestamp
+                | Op::TypeOf
                 | Op::ReturnVoid
         )
     }

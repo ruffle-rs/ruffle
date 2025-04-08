@@ -1,6 +1,7 @@
 import { FluentBundle, FluentResource } from "@fluent/bundle";
 import { negotiateLanguages } from "@fluent/langneg";
 import type { FluentVariable } from "@fluent/bundle";
+import { resetCustomMap, restoreCustomMap } from "../js-polyfills";
 
 interface FileBundle {
     [filename: string]: string;
@@ -20,6 +21,7 @@ const bundles: Record<string, FluentBundle> = {};
 for (const [locale, files] of Object.entries(BUNDLED_TEXTS)) {
     const bundle = new FluentBundle(locale);
     if (files) {
+        const customMap = resetCustomMap();
         for (const [filename, text] of Object.entries(files)) {
             if (text) {
                 for (const error of bundle.addResource(
@@ -31,6 +33,7 @@ for (const [locale, files] of Object.entries(BUNDLED_TEXTS)) {
                 }
             }
         }
+        restoreCustomMap(customMap);
     }
     bundles[locale] = bundle;
 }
@@ -76,6 +79,9 @@ export function text(
     id: string,
     args?: Record<string, FluentVariable> | null,
 ): string {
+    // A Map override, as in https://github.com/ruffle-rs/ruffle/discussions/19758, may happen after some translations and before others.
+    // As such, the reset may not be needed after one call to this function, but then be needed on the next call to it.
+    const customMap = resetCustomMap();
     const locales = negotiateLanguages(
         navigator.languages,
         Object.keys(bundles),
@@ -90,6 +96,7 @@ export function text(
     }
 
     console.error(`Unknown text key '${id}'`);
+    restoreCustomMap(customMap);
     return id;
 }
 

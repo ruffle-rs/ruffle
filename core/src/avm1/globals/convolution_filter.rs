@@ -1,10 +1,10 @@
 //! flash.filters.ConvolutionFilter object
 
 use crate::avm1::clamp::Clamp;
-use crate::avm1::function::{Executable, FunctionObject};
+use crate::avm1::function::FunctionObject;
 use crate::avm1::object::NativeObject;
 use crate::avm1::property_decl::{define_properties_on, Declaration};
-use crate::avm1::{Activation, ArrayObject, Error, Object, ScriptObject, TObject, Value};
+use crate::avm1::{Activation, ArrayBuilder, Error, Object, ScriptObject, TObject, Value};
 use crate::string::StringContext;
 use gc_arena::{Collect, Gc, Mutation};
 use std::cell::{Cell, RefCell};
@@ -169,8 +169,8 @@ impl<'gc> ConvolutionFilter<'gc> {
         Ok(())
     }
 
-    fn matrix(self, activation: &Activation<'_, 'gc>) -> ArrayObject<'gc> {
-        ArrayObject::builder(activation).with(self.0.matrix.borrow().iter().map(|&x| x.into()))
+    fn matrix(self, activation: &Activation<'_, 'gc>) -> ScriptObject<'gc> {
+        ArrayBuilder::new(activation).with(self.0.matrix.borrow().iter().map(|&x| x.into()))
     }
 
     fn set_matrix(
@@ -422,8 +422,8 @@ pub fn create_constructor<'gc>(
 ) -> Object<'gc> {
     FunctionObject::constructor(
         context,
-        Executable::Native(convolution_filter_method!(0)),
-        constructor_to_fn!(convolution_filter_method!(0)),
+        convolution_filter_method!(0),
+        None,
         fn_proto,
         proto,
     )

@@ -693,8 +693,8 @@ fn storage_backend_name(locale: &LanguageIdentifier, backend: StorageBackend) ->
 fn ime_enabled_name(locale: &LanguageIdentifier, ime_enabled: Option<bool>) -> Cow<str> {
     match ime_enabled {
         None => text(locale, "ime-enabled-default"),
-        Some(true) => text(locale, "ime-enabled-on"),
-        Some(false) => text(locale, "ime-enabled-off"),
+        Some(true) => text(locale, "enable"),
+        Some(false) => text(locale, "disable"),
     }
 }
 

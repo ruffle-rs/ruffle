@@ -916,7 +916,7 @@ pub enum ObjectPtr {}
 
 impl<'gc> Object<'gc> {
     pub fn ptr_eq<T: TObject<'gc>>(a: T, b: T) -> bool {
-        a.as_ptr() == b.as_ptr()
+        std::ptr::eq(a.as_ptr(), b.as_ptr())
     }
 
     #[rustfmt::skip]

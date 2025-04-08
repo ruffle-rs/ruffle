@@ -44,10 +44,7 @@ fn checkpoint<W: Write>(
     writer.serialize(file_result).unwrap();
 
     if has_error {
-        Err(std::io::Error::new(
-            std::io::ErrorKind::Other,
-            "Error encountered, test terminated",
-        ))
+        Err(std::io::Error::other("Error encountered, test terminated"))
     } else {
         Ok(())
     }

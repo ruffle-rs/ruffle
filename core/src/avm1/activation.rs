@@ -5,7 +5,7 @@ use crate::avm1::object::{Object, TObject};
 use crate::avm1::property::Attribute;
 use crate::avm1::runtime::skip_actions;
 use crate::avm1::scope::{Scope, ScopeClass};
-use crate::avm1::{fscommand, globals, scope, ArrayObject, ScriptObject, Value};
+use crate::avm1::{fscommand, globals, scope, ArrayBuilder, ScriptObject, Value};
 use crate::backend::navigator::{NavigationMethod, Request};
 use crate::context::UpdateContext;
 use crate::display_object::{
@@ -766,7 +766,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         };
 
         if let Some((clip, frame)) = call_frame {
-            if frame <= u16::MAX.into() {
+            if frame <= u16::MAX as u32 {
                 for action in clip.actions_on_frame(self.context, frame as u16) {
                     let _ = self.run_child_frame_for_action("[Frame Call]", clip.into(), action)?;
                 }
@@ -1103,16 +1103,11 @@ impl<'a, 'gc> Activation<'a, 'gc> {
 
         //TODO: What happens if we try to extend an object which has no `prototype`?
         //e.g. `class Whatever extends Object.prototype` or `class Whatever extends 5`
-
-        // Use `create_bare_object` to ensure the proper underlying object type when
-        // extending native objects.
-        // TODO: This doesn't work if the user manually wires up `prototype`/`__proto__`.
-        // The native object needs to be created later by the superclass's constructor.
-        // (see #701)
         let super_prototype = superclass
             .get(istr!(self, "prototype"), self)?
             .coerce_to_object(self);
-        let sub_prototype = super_prototype.create_bare_object(self, super_prototype)?;
+
+        let sub_prototype = ScriptObject::new(self.strings(), Some(super_prototype));
 
         sub_prototype.define_value(
             self.gc(),
@@ -1479,7 +1474,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             // InitArray pops no args and pushes undefined if num_elements is out of range.
             Value::Undefined
         } else {
-            ArrayObject::builder(self)
+            ArrayBuilder::new(self)
                 .with((0..num_elements as i32).map(|_| self.context.avm1.pop()))
                 .into()
         };

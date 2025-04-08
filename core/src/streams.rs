@@ -153,7 +153,7 @@ pub struct NetStream<'gc>(GcCell<'gc, NetStreamData<'gc>>);
 
 impl PartialEq for NetStream<'_> {
     fn eq(&self, other: &Self) -> bool {
-        self.0.as_ptr() == other.0.as_ptr()
+        std::ptr::eq(self.0.as_ptr(), other.0.as_ptr())
     }
 }
 

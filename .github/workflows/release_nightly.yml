@@ -356,7 +356,7 @@ jobs:
         uses: sigoden/install-binary@v1
         with:
           repo: WebAssembly/binaryen
-          tag: version_122
+          tag: version_123
           name: wasm-opt
 
       - name: Install node packages

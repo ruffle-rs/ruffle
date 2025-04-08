@@ -3,12 +3,13 @@
 use crate::avm1::activation::Activation;
 use crate::avm1::clamp::Clamp;
 use crate::avm1::error::Error;
-use crate::avm1::function::{Executable, FunctionObject};
+use crate::avm1::function::FunctionObject;
 use crate::avm1::property_decl::{define_properties_on, Declaration};
-use crate::avm1::{ArrayObject, Object, TObject, Value};
+use crate::avm1::{Attribute, NativeObject, Object, ScriptObject, TObject, Value};
 use crate::ecma_conversions::f64_to_wrapping_i32;
 use crate::string::{AvmString, StringContext};
 use bitflags::bitflags;
+use gc_arena::Mutation;
 use ruffle_macros::istr;
 use std::cmp::Ordering;
 
@@ -61,18 +62,72 @@ const OBJECT_DECLS: &[Declaration] = declare_properties! {
     "NUMERIC" => int(SortOptions::NUMERIC.bits());
 };
 
+/// Intermediate builder for constructing `ArrayObject`,
+/// used to work around borrow-checker issues.
+pub struct ArrayBuilder<'gc> {
+    mc: &'gc Mutation<'gc>,
+    length_prop: AvmString<'gc>,
+    proto_prop: AvmString<'gc>,
+    proto: Object<'gc>,
+}
+
+impl<'gc> ArrayBuilder<'gc> {
+    pub fn empty(activation: &Activation<'_, 'gc>) -> ScriptObject<'gc> {
+        Self::new(activation).with([])
+    }
+
+    pub fn new(activation: &Activation<'_, 'gc>) -> Self {
+        let proto = activation.context.avm1.prototypes().array;
+        Self::new_with_proto(&activation.context.strings, proto)
+    }
+
+    pub fn new_with_proto(context: &StringContext<'gc>, proto: Object<'gc>) -> Self {
+        Self {
+            mc: context.gc(),
+            length_prop: istr!(context, "length"),
+            proto_prop: istr!(context, "__proto__"),
+            proto,
+        }
+    }
+
+    fn init_with(self, this: Object<'gc>, elements: impl IntoIterator<Item = Value<'gc>>) {
+        let mut length: i32 = 0;
+        for value in elements.into_iter() {
+            let length_str = AvmString::new_utf8(self.mc, length.to_string());
+            this.define_value(self.mc, length_str, value, Attribute::empty());
+            length += 1;
+        }
+        this.define_value(
+            self.mc,
+            self.length_prop,
+            length.into(),
+            Attribute::DONT_ENUM | Attribute::DONT_DELETE,
+        );
+
+        this.set_native(self.mc, NativeObject::Array(()));
+    }
+
+    pub fn with(self, elements: impl IntoIterator<Item = Value<'gc>>) -> ScriptObject<'gc> {
+        let obj = ScriptObject::new_without_proto(self.mc);
+        obj.define_value(
+            self.mc,
+            self.proto_prop,
+            self.proto.into(),
+            Attribute::DONT_ENUM | Attribute::DONT_DELETE,
+        );
+
+        self.init_with(obj.into(), elements);
+        obj
+    }
+}
+
 pub fn create_array_object<'gc>(
     context: &mut StringContext<'gc>,
     array_proto: Object<'gc>,
     fn_proto: Object<'gc>,
 ) -> Object<'gc> {
-    let array = FunctionObject::constructor(
-        context,
-        Executable::Native(constructor),
-        Executable::Native(constructor),
-        fn_proto,
-        array_proto,
-    );
+    let array =
+        FunctionObject::constructor(context, constructor, Some(array), fn_proto, array_proto);
     let object = array.raw_script_object();
 
     // TODO: These were added in Flash Player 7, but are available even to SWFv6 and lower
@@ -82,18 +137,35 @@ pub fn create_array_object<'gc>(
     array
 }
 
-/// Implements `Array` constructor and function
+/// Implements `Array` constructor
 pub fn constructor<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    this: Object<'gc>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    let builder = ArrayBuilder::new(activation);
+    if let [Value::Number(length)] = *args {
+        builder.init_with(this, []);
+        this.set_length(activation, length.clamp_to_i32())?;
+    } else {
+        builder.init_with(this, args.iter().cloned());
+    }
+
+    Ok(this.into())
+}
+
+/// Implements `Array` function
+pub fn array<'gc>(
     activation: &mut Activation<'_, 'gc>,
     _this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let [Value::Number(length)] = *args {
-        let array = ArrayObject::empty(activation);
+        let array = ArrayBuilder::empty(activation);
         array.set_length(activation, length.clamp_to_i32())?;
         Ok(array.into())
     } else {
-        Ok(ArrayObject::builder(activation)
+        Ok(ArrayBuilder::new(activation)
             .with(args.iter().cloned())
             .into())
     }
@@ -136,7 +208,7 @@ pub fn unshift<'gc>(
         this.set_element(activation, i as i32, arg)?;
     }
 
-    if this.as_array_object().is_some() {
+    if let NativeObject::Array(_) = this.native() {
         this.set_length(activation, new_length)?;
     }
 
@@ -166,7 +238,7 @@ pub fn shift<'gc>(
 
     this.delete_element(activation, length - 1);
 
-    if this.as_array_object().is_some() {
+    if let NativeObject::Array(_) = this.native() {
         this.set_length(activation, length - 1)?;
     }
 
@@ -187,7 +259,7 @@ pub fn pop<'gc>(
 
     this.delete_element(activation, length - 1);
 
-    if this.as_array_object().is_some() {
+    if let NativeObject::Array(_) = this.native() {
         this.set_length(activation, length - 1)?;
     }
 
@@ -299,7 +371,7 @@ pub fn slice<'gc>(
         make_index_absolute(end.coerce_to_i32(activation)?, length)
     };
 
-    Ok(ArrayObject::builder(activation)
+    Ok(ArrayBuilder::new(activation)
         .with((start..end).map(|i| this.get_element(activation, i)))
         .into())
 }
@@ -325,7 +397,7 @@ pub fn splice<'gc>(
         length - start
     };
 
-    let result = ArrayObject::builder(activation)
+    let result = ArrayBuilder::new(activation)
         .with((0..delete_count).map(|i| this.get_element(activation, start + i)));
 
     let items = if args.len() > 2 { &args[2..] } else { &[] };
@@ -371,7 +443,7 @@ pub fn concat<'gc>(
     let mut elements = vec![];
     for &value in [this.into()].iter().chain(args) {
         let array_object = if let Value::Object(object) = value {
-            if object.as_array_object().is_some() {
+            if let NativeObject::Array(_) = object.native() {
                 Some(object)
             } else {
                 None
@@ -390,7 +462,7 @@ pub fn concat<'gc>(
             elements.push(value);
         }
     }
-    Ok(ArrayObject::builder(activation).with(elements).into())
+    Ok(ArrayBuilder::new(activation).with(elements).into())
 }
 
 pub fn to_string<'gc>(
@@ -443,7 +515,7 @@ fn sort_on<'gc>(
 
     let fields = match args.get(0) {
         Some(Value::Object(field_names_array)) => {
-            if field_names_array.as_array_object().is_none() {
+            if !matches!(field_names_array.native(), NativeObject::Array(_)) {
                 // Non-Array fields.
                 // Fallback to standard sort.
                 return sort_internal(
@@ -475,7 +547,7 @@ fn sort_on<'gc>(
 
             match args.get(1) {
                 Some(Value::Object(options_array))
-                    if options_array.as_array_object().is_some()
+                    if matches!(options_array.native(), NativeObject::Array(_))
                         && options_array.length(activation)? == length =>
                 {
                     // Array of options.
@@ -630,7 +702,7 @@ fn sort_internal<'gc>(
     if options.contains(SortOptions::RETURN_INDEXED_ARRAY) {
         // Array.RETURNINDEXEDARRAY returns an array containing the sorted indices, and does not modify
         // the original array.
-        Ok(ArrayObject::builder(activation)
+        Ok(ArrayBuilder::new(activation)
             .with(elements.into_iter().map(|(index, _)| index.into()))
             .into())
     } else {
@@ -718,7 +790,7 @@ pub fn create_proto<'gc>(
     proto: Object<'gc>,
     fn_proto: Object<'gc>,
 ) -> Object<'gc> {
-    let array = ArrayObject::builder_with_proto(context, proto).with([]);
+    let array = ArrayBuilder::new_with_proto(context, proto).with([]);
     let object = array.raw_script_object();
     define_properties_on(PROTO_DECLS, context, object, fn_proto);
     object.into()

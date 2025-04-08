@@ -282,6 +282,8 @@ export class InnerPlayer {
         this.contextMenuElement.addEventListener("contextmenu", preserveMenu);
         this.contextMenuElement.addEventListener("click", preserveMenu);
 
+        this.contextMenuElement.dir = detectBrowserDirection();
+
         document.documentElement.addEventListener(
             "pointerdown",
             this.checkIfTouch.bind(this),
@@ -1594,7 +1596,16 @@ export class InnerPlayer {
         const x = event.clientX - playerRect.x - overflowX;
         const y = event.clientY - playerRect.y - overflowY;
 
-        this.contextMenuElement.style.transform = `translate(${x}px, ${y}px)`;
+        const isRtl = getComputedStyle(this.contextMenuElement).direction === 'rtl';
+
+        this.contextMenuElement.style.top = `${y}px`;
+        if (isRtl) {
+            this.contextMenuElement.style.right = `${playerRect.width - x}px`;
+            this.contextMenuElement.style.left = '';
+        } else {
+            this.contextMenuElement.style.right = '';
+            this.contextMenuElement.style.left = `${x}px`;
+        }
     }
 
     private hideContextMenu(): void {
@@ -2312,4 +2323,32 @@ function parseAllowScriptAccess(
         default:
             return null;
     }
+}
+
+/**
+ * Detect direction (LTR/RTL) of the preferred language of the browser.
+ *
+ * @returns 'ltr' or 'rtl' depending on the detected direction
+ */
+function detectBrowserDirection(): string {
+    const browserLocale = new Intl.Locale(navigator.language);
+
+    let textInfo = null;
+    if ('getTextInfo' in browserLocale &&
+        typeof browserLocale.getTextInfo === 'function') {
+        textInfo = browserLocale.getTextInfo();
+    } else if ('textInfo' in browserLocale &&
+        typeof browserLocale.textInfo === 'object') {
+        textInfo = browserLocale.textInfo;
+    } else {
+        return 'ltr';
+    }
+
+    if (typeof textInfo === 'object' &&
+        'direction' in textInfo &&
+        typeof textInfo.direction === 'string') {
+        return textInfo.direction || 'ltr';
+    }
+
+    return 'ltr';
 }

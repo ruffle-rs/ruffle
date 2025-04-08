@@ -3,6 +3,7 @@ declare global {
         Prototype?: {
             Version?: string;
         };
+        Map: typeof Map;
     }
 }
 
@@ -123,6 +124,37 @@ function tryPolyfillReflect(): void {
                 ];
             },
         });
+    }
+}
+
+/**
+ * Replaces a `Map` object missing standard methods with an unchanged `Map` object from a fresh global.
+ *
+ * @returns The custom `Map` object that exists on the page, or undefined if the page uses the standard `Map`.
+ */
+export function resetCustomMap(): typeof Map | undefined {
+    if (typeof Map.prototype.set !== "function") {
+        const currentMap = Map;
+        const iframe = document.createElement("iframe");
+        iframe.style.display = "none";
+        document.documentElement.append(iframe);
+        // eslint-disable-next-line no-global-assign
+        Map = iframe.contentWindow!.Map;
+        iframe.remove();
+        return currentMap;
+    }
+    return undefined;
+}
+
+/**
+ * Restores a custom map object to the global namespace if one was defined, as in https://github.com/ruffle-rs/ruffle/discussions/19758.
+ *
+ * @param customMap The custom `Map` object that existed on the page, or undefined if the page used the standard `Map`.
+ */
+export function restoreCustomMap(customMap: typeof Map | undefined) {
+    if (customMap) {
+        // eslint-disable-next-line no-global-assign
+        Map = customMap;
     }
 }
 

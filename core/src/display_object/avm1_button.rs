@@ -611,7 +611,7 @@ impl<'gc> TInteractiveObject<'gc> for Avm1Button<'gc> {
         // usually change on hover (children are swapped out),
         // which would cause the automatic tab order to change during tabbing.
         // That could potentially create a loop in the tab ordering (soft locking the tab).
-        self.local_to_global_matrix() * self.0.cell.borrow().hit_bounds.clone()
+        self.local_to_global_matrix() * self.0.cell.borrow().hit_bounds
     }
 }
 

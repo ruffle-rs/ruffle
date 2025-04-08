@@ -245,7 +245,7 @@ impl<'gc> ScopeChain<'gc> {
         &self,
         activation: &mut Activation<'_, 'gc>,
         multiname: &Multiname<'gc>,
-    ) -> Option<Option<(Class<'gc>, u32)>> {
+    ) -> Option<Option<(Class<'gc>, usize)>> {
         if let Some(container) = self.container {
             for (index, scope) in container.scopes.iter().enumerate().skip(1).rev() {
                 if scope.with() {
@@ -256,7 +256,7 @@ impl<'gc> ScopeChain<'gc> {
 
                 let values = scope.values();
                 if values.has_trait(activation, multiname) {
-                    return Some(Some((values.instance_class(activation), index as u32)));
+                    return Some(Some((values.instance_class(activation), index)));
                 }
             }
         }

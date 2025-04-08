@@ -24,6 +24,7 @@ clipboard-message-description =
 clipboard-message-copy = { " " } : コピー
 clipboard-message-cut = { " " } : 切り取り
 clipboard-message-paste = { " " } : 貼り付け
+error-canvas-reload = canvasレンダラ使用中のため、canvasレンダラによる再読み込みはできません。
 error-file-protocol =
     Ruffleを"file:"プロトコルで使用しているようです。
     ブラウザはセキュリティ上の理由から多くの機能を制限しているため、正しく動作しません。

@@ -1,12 +1,12 @@
 //! `Number` class impl
 
-use gc_arena::Gc;
 use ruffle_macros::istr;
 
 use crate::avm1::activation::Activation;
 use crate::avm1::clamp::Clamp;
 use crate::avm1::error::Error;
-use crate::avm1::function::{Executable, FunctionObject};
+use crate::avm1::function::FunctionObject;
+use crate::avm1::object::BoxedF64;
 use crate::avm1::property_decl::{define_properties_on, Declaration};
 use crate::avm1::{NativeObject, Object, ScriptObject, TObject, Value};
 use crate::string::{AvmString, StringContext};
@@ -39,8 +39,8 @@ pub fn number<'gc>(
     };
 
     // Called from a constructor, populate `this`.
-    let vbox = Gc::new(activation.gc(), value.into());
-    this.set_native(activation.gc(), NativeObject::Value(vbox));
+    let value = BoxedF64::new(activation.gc(), value);
+    this.set_native(activation.gc(), NativeObject::Number(value));
 
     Ok(this.into())
 }
@@ -68,8 +68,8 @@ pub fn create_number_object<'gc>(
 ) -> Object<'gc> {
     let number = FunctionObject::constructor(
         context,
-        Executable::Native(number),
-        Executable::Native(number_function),
+        number,
+        Some(number_function),
         fn_proto,
         number_proto,
     );
@@ -95,15 +95,10 @@ fn to_string<'gc>(
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     // Boxed value must be a number. No coercion.
-    let number = if let NativeObject::Value(vbox) = this.native() {
-        if let Value::Number(number) = *vbox {
-            number
-        } else {
-            return Ok(Value::Undefined);
-        }
-    } else {
+    let NativeObject::Number(number) = this.native() else {
         return Ok(Value::Undefined);
     };
+    let number = number.value();
 
     let radix = match args {
         [] => 10,
@@ -166,10 +161,9 @@ fn value_of<'gc>(
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let NativeObject::Value(vbox) = this.native() {
-        if let Value::Number(n) = *vbox {
-            return Ok(n.into());
-        }
+    // Boxed value must be a number. No coercion.
+    if let NativeObject::Number(number) = this.native() {
+        return Ok(number.value().into());
     }
 
     Ok(Value::Undefined)

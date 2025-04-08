@@ -24,6 +24,7 @@ clipboard-message-description =
 clipboard-message-copy = { " " } копировать
 clipboard-message-cut = { " " } вырезать
 clipboard-message-paste = { " " } вставить
+error-canvas-reload = Невозможно перезагрузить с рендерером canvas, когда рендерер canvas уже используется.
 error-file-protocol =
     Похоже, что вы запускаете Ruffle по протоколу "file:".
     Это не работает, поскольку браузеры блокируют работу многих функций по соображениям безопасности.

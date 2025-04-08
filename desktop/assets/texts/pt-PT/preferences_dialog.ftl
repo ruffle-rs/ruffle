@@ -28,3 +28,8 @@ gamemode = GameMode
 gamemode-tooltip = O GameMode aplica temporariamente um conjunto de otimizações ao computador e/ou ao Ruffle. O Ruffle apenas chama o GameMode quando um filme está a ser reproduzido.
 gamemode-default = Padrão
 gamemode-default-tooltip = O GameMode só será ativado quando a preferência de energia estiver definida como alta.
+# See for context https://wiki.archlinux.org/title/Input_method
+ime-enabled = Método de Entrada
+ime-enabled-experimental = (experimental)
+ime-enabled-tooltip = Um método de entrada permite inserir caracteres que não estão disponíveis no teclado, por exemplo, caracteres chineses, japoneses ou coreanos.
+ime-enabled-default = Predefinição
