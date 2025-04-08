@@ -179,6 +179,13 @@ impl<'gc> VTable<'gc> {
         self.0.write(mc).slot_classes[index] = value;
     }
 
+    pub fn replace_scopes_with(&self, mc: &Mutation<'gc>, new_scope: ScopeChain<'gc>) {
+        let mut write = self.0.write(mc);
+        for method in write.method_table.iter_mut() {
+            method.scope = Some(new_scope);
+        }
+    }
+
     /// Calculate the flattened list of instance traits that this class
     /// maintains.
     ///
