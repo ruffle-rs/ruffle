@@ -133,6 +133,12 @@ impl<'gc> TranslationUnit<'gc> {
         Ok(())
     }
 
+    /// Manually set a loaded class in this TranslationUnit. This is useful for
+    /// early class setup.
+    pub fn set_class(self, mc: &Mutation<'gc>, index: usize, class: Class<'gc>) {
+        self.0.write(mc).classes[index] = Some(class);
+    }
+
     pub fn domain(self) -> Domain<'gc> {
         self.0.read().domain
     }
