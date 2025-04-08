@@ -749,11 +749,15 @@ impl<'gc> Avm2MousePick<'gc> {
     pub fn combine_with_parent(&self, parent: DisplayObjectContainer<'gc>) -> Avm2MousePick<'gc> {
         let parent_int = DisplayObject::from(parent).as_interactive().unwrap();
         let res = match self {
-            Avm2MousePick::Hit(_) => {
+            Avm2MousePick::Hit(target) => {
                 // If the parent has `mouseChildren=true` then propagate the existing
                 // Avm2MousePick::Hit, leaving the target unchanged. This is unaffected
                 // by the parent `mouseEnabled` property.
-                if parent.raw_container().mouse_children() {
+                // However, the root object of a loader or stage is never a valid target of hit
+                // events (even if moved out of the loader's hierarchy).
+                // The root-of-stage case is handled in run_mouse_pick, this code won't run as
+                // there's no parent.
+                if parent.raw_container().mouse_children() && !target.as_displayobject().is_root() {
                     *self
                 // If the parent has `mouseChildren=false`, then the eventual
                 // MouseEvent (if it gets fired) will *not* have a `target`
