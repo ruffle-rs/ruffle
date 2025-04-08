@@ -755,8 +755,6 @@ impl<'gc> Avm2MousePick<'gc> {
                 // by the parent `mouseEnabled` property.
                 // However, the root object of a loader or stage is never a valid target of hit
                 // events (even if moved out of the loader's hierarchy).
-                // The root-of-stage case is handled in run_mouse_pick, this code won't run as
-                // there's no parent.
                 if parent.raw_container().mouse_children() && !target.as_displayobject().is_root() {
                     *self
                 // If the parent has `mouseChildren=false`, then the eventual

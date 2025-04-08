@@ -3036,19 +3036,22 @@ fn run_mouse_pick<'gc>(
     context.stage.iter_render_list().rev().find_map(|level| {
         level.as_interactive().and_then(|l| {
             if l.as_displayobject().movie().is_action_script_3() {
-                let mut res = None;
-                if let Avm2MousePick::Hit(target) =
-                    l.mouse_pick_avm2(context, *context.mouse_position, require_button_mode)
-                {
-                    // Flash Player never targets events at the root object of a stage or loader.
-                    // If we are the root of a stage, target the stage instead (by returning None).
-                    // Avm2MousePick.combine_with_parent handles the root-of-loader case.
-                    if !target.as_displayobject().is_root() {
-                        res = Some(target);
-                    }
-                }
+                let pick = l
+                    .mouse_pick_avm2(context, *context.mouse_position, require_button_mode)
+                    .combine_with_parent(context.stage.into());
 
-                res
+                match pick {
+                    Avm2MousePick::Hit(target) => {
+                        if target == context.stage.into() {
+                            // The caller does not expect the stage to be the target, instead return
+                            // None. We can end up here because the root objects of stages and
+                            // loaders do not accept hit events. (handled by combine_with_parent)
+                            return None;
+                        }
+                        Some(target)
+                    }
+                    _ => None,
+                }
             } else {
                 l.mouse_pick_avm1(context, *context.mouse_position, require_button_mode)
             }
