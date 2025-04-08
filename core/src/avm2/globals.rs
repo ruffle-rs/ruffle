@@ -1,6 +1,6 @@
 use crate::avm2::activation::Activation;
 use crate::avm2::api_version::ApiVersion;
-use crate::avm2::class::{Class, ClassAttributes};
+use crate::avm2::class::Class;
 use crate::avm2::domain::Domain;
 use crate::avm2::object::{ClassObject, ScriptObject, TObject};
 use crate::avm2::scope::{Scope, ScopeChain};
@@ -9,7 +9,7 @@ use crate::avm2::traits::Trait;
 use crate::avm2::value::Value;
 use crate::avm2::vtable::VTable;
 use crate::avm2::{Avm2, Error, Multiname, Namespace, QName};
-use crate::string::{AvmString, WStr};
+use crate::string::WStr;
 use crate::tag_utils::{self, ControlFlow, SwfMovie, SwfSlice, SwfStream};
 use gc_arena::Collect;
 use ruffle_macros::istr;
@@ -634,70 +634,6 @@ macro_rules! avm2_system_class_defs_playerglobal {
     }
 }
 
-/// Set up a builtin vector's Class. This will change its name, mark it as a
-/// specialization of Vector, and set its class parameter to the passed
-/// `param_class`. This function returns the vector Class.
-fn setup_vector_class<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    old_name: &'static str,
-    new_name: &'static str,
-    param_class: Option<Class<'gc>>,
-) -> Class<'gc> {
-    let generic_vector_cls = activation.avm2().class_defs().generic_vector;
-
-    let vector_ns = activation.avm2().namespaces.vector_internal;
-
-    // First, lookup the class
-    let old_name = activation
-        .strings()
-        .intern_static(WStr::from_units(old_name.as_bytes()));
-
-    let vector_cls = activation
-        .domain()
-        .get_class(activation.context, &Multiname::new(vector_ns, old_name))
-        .expect("Vector class should be defined");
-
-    // Set its name to Vector.<T>
-    let new_name = AvmString::new_utf8(activation.gc(), new_name);
-
-    vector_cls.set_name(activation.gc(), QName::new(vector_ns, new_name));
-
-    // Set its parameter to the given parameter and add it to the map of
-    // applications on the generic vector Class
-    vector_cls.set_param(activation.gc(), Some(param_class));
-    generic_vector_cls.add_application(activation.gc(), param_class, vector_cls);
-
-    vector_cls
-}
-
-/// Set up a builtin vector's ClassObject. This marks it as a specialization of
-/// Vector. This function returns the vector ClassObject.
-fn setup_vector_class_object<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    vector_name: &'static str,
-    param_class: Option<Class<'gc>>,
-) -> ClassObject<'gc> {
-    let generic_vector_cls = activation.avm2().classes().generic_vector;
-
-    let vector_ns = activation.avm2().namespaces.vector_internal;
-
-    // `vector_name` should be ASCII
-    let class_name = activation
-        .strings()
-        .intern_static(WStr::from_units(vector_name.as_bytes()));
-
-    let value = activation
-        .domain()
-        .get_defined_value(activation, QName::new(vector_ns, class_name))
-        .expect("Vector class should be defined");
-
-    let vector_cls = value.as_object().unwrap().as_class_object().unwrap();
-
-    generic_vector_cls.add_application(activation.gc(), param_class, vector_cls);
-
-    vector_cls
-}
-
 pub fn init_builtin_system_classes(activation: &mut Activation<'_, '_>) {
     // We don't include `Function` here because it registers itself manually
     // in its class initializer
@@ -728,26 +664,7 @@ pub fn init_builtin_system_classes(activation: &mut Activation<'_, '_>) {
         ]
     );
 
-    // Register Vector$int/uint/Number/Object as being applications of the Vector ClassObject
-    let number_cls = activation.avm2().class_defs().number;
-    setup_vector_class_object(activation, "Vector$double", Some(number_cls));
-
-    let int_cls = activation.avm2().class_defs().int;
-    setup_vector_class_object(activation, "Vector$int", Some(int_cls));
-
-    let uint_cls = activation.avm2().class_defs().uint;
-    setup_vector_class_object(activation, "Vector$uint", Some(uint_cls));
-
-    let object_vector = setup_vector_class_object(activation, "Vector$object", None);
-
-    // Manually set the object vector class since it's in an internal namespace
-    // (`avm2_system_classes_playerglobal` only works for classes in public namespaces)
-    activation
-        .avm2()
-        .system_classes
-        .as_mut()
-        .unwrap()
-        .object_vector = object_vector;
+    crate::avm2::globals::vector::init_vector_class_objects(activation);
 }
 
 pub fn init_builtin_system_class_defs(activation: &mut Activation<'_, '_>) {
@@ -768,30 +685,7 @@ pub fn init_builtin_system_class_defs(activation: &mut Activation<'_, '_>) {
         ]
     );
 
-    // Mark Vector as a generic class
-    let generic_vector = activation.avm2().class_defs().generic_vector;
-    generic_vector.set_attributes(
-        activation.gc(),
-        ClassAttributes::GENERIC | ClassAttributes::FINAL,
-    );
-
-    // Setup the four builtin vector classes
-
-    let number_cls = activation.avm2().class_defs().number;
-    setup_vector_class(
-        activation,
-        "Vector$double",
-        "Vector.<Number>",
-        Some(number_cls),
-    );
-
-    let int_cls = activation.avm2().class_defs().int;
-    setup_vector_class(activation, "Vector$int", "Vector.<int>", Some(int_cls));
-
-    let uint_cls = activation.avm2().class_defs().uint;
-    setup_vector_class(activation, "Vector$uint", "Vector.<uint>", Some(uint_cls));
-
-    setup_vector_class(activation, "Vector$object", "Vector.<*>", None);
+    crate::avm2::globals::vector::init_vector_class_defs(activation);
 }
 
 pub fn init_native_system_classes(activation: &mut Activation<'_, '_>) {
