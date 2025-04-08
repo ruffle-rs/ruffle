@@ -251,7 +251,7 @@ impl<'gc> Avm2<'gc> {
     pub fn load_player_globals(context: &mut UpdateContext<'gc>) -> Result<(), Error<'gc>> {
         let globals = context.avm2.playerglobals_domain;
         let mut activation = Activation::from_domain(context, globals);
-        globals::load_player_globals(&mut activation, globals)
+        globals::load_playerglobal(&mut activation, globals)
     }
 
     pub fn playerglobals_domain(&self) -> Domain<'gc> {
@@ -688,11 +688,16 @@ impl<'gc> Avm2<'gc> {
         };
 
         let mut activation = Activation::from_domain(context, domain);
-        // Make sure we have the correct domain for code that tries to access it
-        // using `activation.domain()`
+        // Make sure we have the correct domain for code that tries to access its
+        // domain using `activation.domain()`
         activation.set_outer(ScopeChain::new(domain));
 
         let tunit = TranslationUnit::from_abc(abc, domain, None, movie, activation.gc());
+
+        globals::init_early_classes(&mut activation, tunit).expect("Early classes should load");
+
+        // At this point we have everything necessary to load scripts and classes.
+
         tunit
             .load_classes(&mut activation)
             .expect("Classes should load");
@@ -706,13 +711,29 @@ impl<'gc> Avm2<'gc> {
         let toplevel_script = tunit
             .load_script(1, &mut activation)
             .expect("Script should load");
-        init_builtin_system_classes(&mut activation);
 
-        activation.avm2().toplevel_global_object = Some(
-            toplevel_script
-                .globals(activation.context)
-                .expect("Script should load"),
-        );
+        // We intentionally avoid running the script initializer here
+        let (_, toplevel_global, _) = toplevel_script.init();
+
+        activation.avm2().toplevel_global_object = Some(toplevel_global);
+
+        // HACK: Replace ScopeChains on the class vtable of `Object` to include
+        // the toplevel global.
+        let mc = activation.gc();
+
+        let new_scope = ScopeChain::new(tunit.domain());
+        let new_scope = new_scope.chain(mc, &[Scope::new(toplevel_global.into())]);
+
+        activation
+            .avm2()
+            .classes()
+            .object
+            .vtable()
+            .replace_scopes_with(mc, new_scope);
+
+        // The scopes must be correct before we run the script initializer from
+        // `init_builtin_system_classes`.
+        init_builtin_system_classes(&mut activation);
 
         // The first script (script #0) is globals.as, and includes other builtin
         // classes that are less critical for the AVM to load.
