@@ -32,13 +32,12 @@ pub fn create_class<'gc>(
         QName::new(activation.avm2().namespaces.public_all(), istr!("global")),
         Some(activation.avm2().class_defs().object),
         Method::from_builtin(instance_init, "<global instance initializer>", mc),
+        traits,
         mc,
     );
 
     class.set_attributes(mc, ClassAttributes::FINAL);
 
-    class.set_traits(mc, traits);
-    class.mark_traits_loaded(mc);
     class
         .init_vtable(activation.context)
         .expect("Native class's vtable should initialize");

@@ -282,10 +282,12 @@ impl<'gc> Class<'gc> {
         i_class
     }
 
+    /// Create an unlinked class from its name, superclass, and traits.
     pub fn custom_new(
         name: QName<'gc>,
         super_class: Option<Class<'gc>>,
         instance_init: Method<'gc>,
+        traits: Vec<Trait<'gc>>,
         mc: &Mutation<'gc>,
     ) -> Self {
         Class(GcCell::new(
@@ -300,11 +302,11 @@ impl<'gc> Class<'gc> {
                 all_interfaces: Vec::new(),
                 instance_allocator: Allocator(scriptobject_allocator),
                 instance_init,
-                traits: Vec::new(),
+                traits,
                 vtable: VTable::empty(mc),
                 call_handler: None,
                 custom_constructor: None,
-                traits_loaded: false,
+                traits_loaded: true,
                 is_system: true,
                 linked_class: ClassLink::Unlinked,
                 applications: FnvHashMap::default(),
@@ -1133,10 +1135,6 @@ impl<'gc> Class<'gc> {
     /// Return traits provided by this class.
     pub fn traits(&self) -> Ref<Vec<Trait<'gc>>> {
         Ref::map(self.0.read(), |c| &c.traits)
-    }
-
-    pub fn set_traits(&self, mc: &Mutation<'gc>, traits: Vec<Trait<'gc>>) {
-        self.0.write(mc).traits = traits;
     }
 
     /// Get this class's instance allocator.
