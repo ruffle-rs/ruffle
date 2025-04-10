@@ -19,6 +19,7 @@ clipboard-message-title = העתקה והדבקה בRuffle
 clipboard-message-copy = { " " } עבור העתקה
 clipboard-message-cut = { " " } עבור גזירה
 clipboard-message-paste = { " " } עבור הדבקה
+error-canvas-reload = לא ניתן לטעון מחדש עם מעבד הקנבס כאשר מעבד הקנבס כבר בשימוש.
 error-file-protocol =
     נדמה שאתה מריץ את Ruffle תחת פרוטוקול "file:".
     זה לא יעבוד מכיוון שדפדפנים חוסמים אפשרויות רבות מלעבוד עקב סיבות אבטחה.

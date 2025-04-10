@@ -24,6 +24,7 @@ clipboard-message-description =
 clipboard-message-copy = { " " } để sao chép
 clipboard-message-cut = { " " } để cắt
 clipboard-message-paste = { " " } để dán
+error-canvas-reload = Trình kết xuất đồ hoạ canvas renderer đang được sử dụng nên không thể làm mới.
 error-file-protocol =
     Có vẻ như bạn đang chạy Ruffle trên giao thức "file:".
     Điều này không được phép vì trình duyệt chặn nhiều tính năng hoạt động vì lý do bảo mật.

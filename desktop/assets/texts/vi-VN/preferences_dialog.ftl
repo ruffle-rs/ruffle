@@ -30,3 +30,8 @@ gamemode-tooltip =
     Ruffle chỉ yêu cầu GameMode khi đang hoạt động.
 gamemode-default = Mặc định
 gamemode-default-tooltip = Chế độ GameMode sẽ chỉ được bật khi thiết lập nguồn điện được chỉnh ở mức cao.
+# See for context https://wiki.archlinux.org/title/Input_method
+ime-enabled = Phương thức nhập liệu
+ime-enabled-experimental = (thử nghiệm)
+ime-enabled-tooltip = Phương thức nhập liệu cho phép nhập các kí tự không có sẵn trên bàn phím, ví dụ tiếng Trung, Nhật, Hàn.
+ime-enabled-default = Mặc định
