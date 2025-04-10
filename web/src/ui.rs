@@ -215,6 +215,10 @@ impl UiBackend for WebUiBackend {
         self.update_mouse_cursor();
     }
 
+    fn get_screens_sizes(&self) -> Vec<(u32, u32)> {
+        vec![(self.canvas.width(), self.canvas.height())]
+    }
+
     fn set_mouse_cursor(&mut self, cursor: MouseCursor) {
         self.cursor = cursor;
         self.update_mouse_cursor();
