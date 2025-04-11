@@ -540,14 +540,10 @@ pub fn set_selectable<'gc>(
 
 fn variable<'gc>(
     this: EditText<'gc>,
-    activation: &mut Activation<'_, 'gc>,
+    _activation: &mut Activation<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(variable) = this.variable() {
-        return Ok(AvmString::new_utf8(activation.gc(), &variable[..]).into());
-    }
-
     // Unset `variable` returns null, not undefined
-    Ok(Value::Null)
+    Ok(this.variable().map(Value::from).unwrap_or(Value::Null))
 }
 
 fn set_variable<'gc>(
@@ -559,7 +555,7 @@ fn set_variable<'gc>(
         Value::Undefined | Value::Null => None,
         v => Some(v.coerce_to_string(activation)?),
     };
-    this.set_variable(variable.map(|v| v.to_string()), activation);
+    this.set_variable(variable, activation);
     Ok(())
 }
 

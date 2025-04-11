@@ -1,9 +1,9 @@
-use super::{object::stage_object::StageObjectData, Activation, Object, StageObject, TObject};
+use super::{object::script_object::ScriptObjectWeak, Activation, Object, TObject, Value};
 use crate::{
     display_object::{DisplayObject, TDisplayObject, TDisplayObjectContainer},
     string::{AvmString, WStr, WString},
 };
-use gc_arena::{lock::Lock, GcWeak};
+use gc_arena::lock::Lock;
 use gc_arena::{Collect, Gc, Mutation};
 use ruffle_macros::istr;
 
@@ -63,32 +63,33 @@ struct MovieClipReferenceData<'gc> {
     /// A weak reference to the target stage object that `path` points to
     /// This is used for fast-path resvoling when possible, as well as for re-generating `path` (in the case the target object is renamed)
     /// If this is `None` then we have previously missed the cache, due to the target object being removed and re-created, causing us to fallback to the slow path resolution
-    cached_stage_object: Lock<Option<GcWeak<'gc, StageObjectData<'gc>>>>,
+    cached_object: Lock<Option<ScriptObjectWeak<'gc>>>,
 }
 
 impl<'gc> MovieClipReference<'gc> {
     pub fn try_from_stage_object(
         activation: &mut Activation<'_, 'gc>,
-        stage_object: StageObject<'gc>,
+        object: Object<'gc>,
     ) -> Option<Self> {
-        // We can't use as_display_object + as_movie_clip here as we explicitly don't want to convert `SuperObjects`
-        let display_object = stage_object.as_display_object().unwrap();
+        // We can't use as_display_object here as we explicitly don't want to convert `SuperObjects`
+        let display_object = object.as_display_object_no_super()?;
         let (path, cached) = if let DisplayObject::MovieClip(mc) = display_object {
-            (mc.path(), stage_object)
+            (mc.path(), display_object.object())
         } else if activation.swf_version() <= 5 {
             let display_object = Self::process_swf5_references(activation, display_object)?;
-            let stage_object = display_object
-                .object()
-                .coerce_to_object(activation)
-                .as_stage_object()?;
-            (display_object.path(), stage_object)
+
+            (display_object.path(), display_object.object())
         } else {
+            return None;
+        };
+
+        let Value::Object(Object::ScriptObject(cached)) = cached else {
             return None;
         };
 
         let mc_ref = MovieClipReferenceData {
             path: MovieClipPath::new_from_path(activation.gc(), path),
-            cached_stage_object: Some(cached.as_weak()).into(),
+            cached_object: Some(cached.as_weak()).into(),
         };
         Some(Self(Gc::new(activation.gc(), mc_ref)))
     }
@@ -119,13 +120,16 @@ impl<'gc> MovieClipReference<'gc> {
         self,
         activation: &mut Activation<'_, 'gc>,
     ) -> Option<(bool, Object<'gc>, DisplayObject<'gc>)> {
-        // Check if we have a cache we can use
-        if let Some(cache) = self.0.cached_stage_object.get() {
-            // Check if we can re-use the cached `DisplayObject`, if we can then take this fast path
-            if let Some(mc) = cache.upgrade(activation.gc()) {
+        // Check if we can re-use the cached `DisplayObject`, if we can then take this fast path
+        if let Some(cache) = self
+            .0
+            .cached_object
+            .get()
+            .and_then(|c| c.upgrade(activation.gc()))
+        {
+            if let Some(display_object) = cache.as_display_object_no_super() {
                 // We have to fallback to manual path-walking if the object is removed
-                if !mc.display_object.avm1_removed() {
-                    let display_object = mc.display_object;
+                if !display_object.avm1_removed() {
                     let display_object = Self::process_swf5_references(activation, display_object)?;
 
                     // Note that there is a bug here but this *is* how it works in Flash:
@@ -133,17 +137,13 @@ impl<'gc> MovieClipReference<'gc> {
                     // However, if we remove and re-create the clip, the stored path (the original path) will differ from the path of the cached object (the modified path)
                     // Essentially, changes to `_name` are reverted after the clip is re-created
 
-                    return Some((
-                        true,
-                        display_object.object().coerce_to_object(activation),
-                        display_object,
-                    ));
+                    return Some((true, cache.into(), display_object));
                 }
             }
         }
 
         // We missed the cache, switch to always use the slow-path
-        self.0.cached_stage_object.take();
+        self.0.cached_object.take();
 
         // Either the GcWeak ref is gone, or the clip can't be used (not on stage etc)
         // Here we manually parse the path, in order to find the target display object
