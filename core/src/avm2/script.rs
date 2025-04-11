@@ -471,7 +471,7 @@ impl<'gc> Script<'gc> {
         let init = unit.load_method(script.init_method, false, activation)?;
 
         // Script initializers cannot have parameters declared
-        if init.signature().len() != 0 {
+        if !init.signature().is_empty() {
             return Err(make_error_1107(activation));
         }
 

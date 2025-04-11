@@ -451,9 +451,8 @@ impl<'a, 'gc> Activation<'a, 'gc> {
 
         // Statically verify all non-variadic, provided parameters.
         let static_arg_count = min(user_arguments.len(), signature.len());
-        for i in 0..static_arg_count {
+        for (i, param_config) in signature.iter().enumerate().take(static_arg_count) {
             let arg = user_arguments.get_at(self, i);
-            let param_config = &signature[i];
 
             let coerced_arg = if let Some(param_class) = param_config.param_type {
                 arg.coerce_to_type(self, param_class)?
