@@ -14,6 +14,7 @@ use crate::display_object::{DisplayObject, TDisplayObject};
 use crate::string::AvmString;
 use gc_arena::Collect;
 use std::collections::{binary_heap::PeekMut, BinaryHeap};
+use std::time::Duration;
 
 /// Manages the collection of timers.
 #[derive(Collect)]
@@ -31,11 +32,11 @@ pub struct Timers<'gc> {
 
 impl<'gc> Timers<'gc> {
     /// Ticks all timers and runs necessary callbacks.
-    pub fn update_timers(context: &mut UpdateContext<'gc>, dt: f64) -> Option<f64> {
+    pub fn update_timers(context: &mut UpdateContext<'gc>, dt: std::time::Duration) -> Option<std::time::Duration> {
         context.timers.cur_time = context
             .timers
             .cur_time
-            .wrapping_add((dt * Self::TIMER_SCALE) as u64);
+            .wrapping_add((dt.as_secs_f64() * Self::TIMER_SCALE) as u64);
 
         if context.timers.is_empty() {
             return None;
@@ -190,7 +191,9 @@ impl<'gc> Timers<'gc> {
 
         // Return estimated time until next timer tick.
         context.timers.peek().map(|timer| {
-            (timer.tick_time.wrapping_sub(context.timers.cur_time)) as f64 / Self::TIMER_SCALE
+            Duration::new(
+                Duration::new(timer.tick_time.wrapping_sub(context.timers.cur_time), 0) 
+            .div_duration_f64(Duration::new(Self::TIMER_SCALE as u64, 0)) as u64, 0)
         })
     }
 
