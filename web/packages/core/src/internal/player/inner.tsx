@@ -229,6 +229,14 @@ export class InnerPlayer {
             "input",
             this.virtualKeyboardInput.bind(this),
         );
+        this.virtualKeyboard.addEventListener(
+            "compositionupdate",
+            this.virtualKeyboardCompositionUpdate.bind(this),
+        );
+        this.virtualKeyboard.addEventListener(
+            "compositionend",
+            this.virtualKeyboardCompositionEnd.bind(this),
+        );
         this.saveManager = this.shadow.getElementById(
             "save-manager",
         )! as HTMLDivElement;
@@ -1252,10 +1260,15 @@ export class InnerPlayer {
         }
     }
 
-    private virtualKeyboardInput() {
-        const input = this.virtualKeyboard;
-        const string = input.value;
-        for (const char of string) {
+    private virtualKeyboardInput(e: Event) {
+        const event = e as InputEvent;
+        if (!event || event.isComposing || event.inputType === 'insertCompositionText') {
+            // Ignore composing events, we'll get the composed text at the end
+            return;
+        }
+
+        const text = event.data || "";
+        for (const char of text) {
             for (const eventType of ["keydown", "keyup"]) {
                 this.element.dispatchEvent(
                     new KeyboardEvent(eventType, {
@@ -1265,7 +1278,24 @@ export class InnerPlayer {
                 );
             }
         }
-        input.value = "";
+        this.virtualKeyboard.value = "";
+    }
+
+    private virtualKeyboardCompositionUpdate(e: Event) {
+        const event = e as CompositionEvent;
+        // TODO Add support for moving cursor during IME,
+        //   we cannot use selectionStart & selectionEnd here,
+        //   as they lag behind and don't take into account
+        //   moving the caret with arrows.
+        const text = event.data || "";
+        this.instance?.handle_ime_preedit(text, text.length, text.length);
+    }
+
+    private virtualKeyboardCompositionEnd(e: Event) {
+        const event = e as CompositionEvent;
+        this.instance?.handle_ime_preedit("", 0, 0);
+        this.instance?.handle_ime_commit(event.data || "");
+        this.virtualKeyboard.value = "";
     }
 
     protected openVirtualKeyboard(): void {
