@@ -128,9 +128,8 @@ pub struct BytecodeMethod<'gc> {
 
     /// Whether or not this method substitutes Undefined for missing arguments.
     ///
-    /// This is true when the method is a free-standing function, none of the
-    /// declared arguments have a type or a default value, and the method does
-    /// not have the NEED_REST flag.
+    /// This is true when the method is a free-standing function and none of the
+    /// declared arguments have a type or a default value.
     pub is_unchecked: bool,
 }
 
@@ -266,10 +265,9 @@ impl<'gc> BytecodeMethod<'gc> {
 
     /// Determine if a given method is unchecked.
     ///
-    /// A method is unchecked if all of the following are true:
+    /// A method is unchecked if both of the following are true:
     ///
     ///  * The method was declared as a free-standing function
-    ///  * The function does not use rest-parameters
     ///  * The function's parameters have no declared types or default values
     pub fn is_unchecked(&self) -> bool {
         self.is_unchecked
