@@ -36,7 +36,7 @@ pub struct Exception<'gc> {
     pub to_offset: usize,
     pub target_offset: usize,
 
-    pub variable_name: Option<QName<'gc>>,
+    pub catch_class: Option<Class<'gc>>,
     pub target_class: Option<Class<'gc>>,
 }
 
@@ -91,6 +91,8 @@ pub fn verify_method<'gc>(
             1043,
         )?));
     }
+
+    let activation_class = create_activation_class(activation, method)?;
 
     let resolved_param_config = resolve_param_config(activation, method.signature())?;
     let resolved_return_type = resolve_return_type(activation, method.return_type)?;
@@ -262,8 +264,14 @@ pub fn verify_method<'gc>(
                 byte_info[(previous_position + j) as usize] = ByteInfo::OpContinue;
             }
 
-            let translated_ops =
-                translate_op(activation, method, max_locals, resolved_return_type, op)?;
+            let translated_ops = translate_op(
+                activation,
+                method,
+                max_locals,
+                activation_class,
+                resolved_return_type,
+                op,
+            )?;
 
             byte_info[previous_position as usize] = ByteInfo::OpStart(translated_ops.0);
             if let Some(second_op) = translated_ops.1 {
@@ -334,7 +342,7 @@ pub fn verify_method<'gc>(
             Some(resolved_type)
         };
 
-        let variable_name = if exception.variable_name.0 == 0 {
+        let catch_class = if exception.variable_name.0 == 0 {
             None
         } else {
             let pooled_variable_name = method
@@ -360,18 +368,20 @@ pub fn verify_method<'gc>(
             let name = pooled_variable_name.local_name().expect("Just checked");
 
             // avmplus uses the first namespace, regardless of how many namespaces there are.
-            Some(QName::new(namespaces[0], name))
+            let variable_name = QName::new(namespaces[0], name);
+
+            Some(Class::for_catch(activation, variable_name)?)
         };
 
         if !seen_exception_indices.contains(&exception_index) {
-            // We need to push an exception because otherwise `newcatch` ops can try to
-            // read it, but we can give it dummy from/to/target offsets because no code
+            // We need to push an exception because `newcatch` ops can try to read
+            // it, but we can give it dummy from/to/target offsets because no code
             // can actually trigger it (and we might not even have valid offsets anyway).
             new_exceptions.push(Exception {
                 from_offset: 0,
                 to_offset: 0,
                 target_offset: 0,
-                variable_name,
+                catch_class,
                 target_class,
             });
             continue;
@@ -453,7 +463,7 @@ pub fn verify_method<'gc>(
             from_offset: new_from_offset,
             to_offset: new_to_offset,
             target_offset: new_target_offset,
-            variable_name,
+            catch_class,
             target_class,
         });
     }
@@ -532,6 +542,26 @@ pub fn verify_method<'gc>(
         param_config: resolved_param_config,
         return_type: resolved_return_type,
     })
+}
+
+fn create_activation_class<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    method: Gc<'gc, BytecodeMethod<'gc>>,
+) -> Result<Option<Class<'gc>>, Error<'gc>> {
+    let translation_unit = method.translation_unit();
+    let abc_method = method.method();
+    let body = method
+        .body()
+        .expect("Cannot verify non-native method without body!");
+
+    if abc_method.flags.contains(AbcMethodFlags::NEED_ACTIVATION) {
+        let activation_class =
+            Class::for_activation(activation, translation_unit, abc_method, body)?;
+
+        Ok(Some(activation_class))
+    } else {
+        Ok(None)
+    }
 }
 
 pub fn resolve_param_config<'gc>(
@@ -765,6 +795,7 @@ fn translate_op<'gc>(
     activation: &mut Activation<'_, 'gc>,
     method: Gc<'gc, BytecodeMethod<'gc>>,
     max_locals: u32,
+    activation_class: Option<Class<'gc>>,
     resolved_return_type: Option<Class<'gc>>,
     op: AbcOp,
 ) -> Result<(Op<'gc>, Option<Op<'gc>>), Error<'gc>> {
@@ -848,20 +879,6 @@ fn translate_op<'gc>(
                     activation,
                     "Error #1026: Slot 0 exceeds slotCount",
                     1026,
-                )?));
-            }
-        }
-
-        AbcOp::NewActivation => {
-            if !method
-                .method()
-                .flags
-                .contains(AbcMethodFlags::NEED_ACTIVATION)
-            {
-                return Err(Error::AvmError(verify_error(
-                    activation,
-                    "Error #1113: OP_newactivation used in method without NEED_ACTIVATION flag.",
-                    1113,
                 )?));
             }
         }
@@ -994,7 +1011,9 @@ fn translate_op<'gc>(
         }
         AbcOp::In => Op::In,
         AbcOp::PushScope => Op::PushScope,
-        AbcOp::NewCatch { index } => Op::NewCatch { index },
+        AbcOp::NewCatch { index } => Op::NewCatch {
+            index: index.0 as usize,
+        },
         AbcOp::PushWith => Op::PushWith,
         AbcOp::PopScope => Op::PopScope,
         AbcOp::GetOuterScope { index } => Op::GetOuterScope {
@@ -1070,7 +1089,24 @@ fn translate_op<'gc>(
             }
         }
         AbcOp::ConstructSuper { num_args } => Op::ConstructSuper { num_args },
-        AbcOp::NewActivation => Op::NewActivation,
+        AbcOp::NewActivation => {
+            if let Some(activation_class) = activation_class {
+                Op::NewActivation { activation_class }
+            } else {
+                // When a method's flags don't include NEED_ACTIVATION, we
+                // purposefully don't construct an `activation_class` in
+                // `create_activation_class`, which results in the
+                // `activation_class` being passed to `translate_op` being None.
+                // This results in this VerifyError being thrown upon
+                // encountering any `newactivation` op in the bytecode.
+
+                return Err(Error::AvmError(verify_error(
+                    activation,
+                    "Error #1113: OP_newactivation used in method without NEED_ACTIVATION flag.",
+                    1113,
+                )?));
+            }
+        }
         AbcOp::NewObject { num_args } => Op::NewObject { num_args },
         AbcOp::NewFunction { index } => Op::NewFunction { index },
         AbcOp::NewClass { index } => {

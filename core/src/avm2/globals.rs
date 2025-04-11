@@ -1,18 +1,14 @@
 use crate::avm2::activation::Activation;
 use crate::avm2::api_version::ApiVersion;
-use crate::avm2::class::{Class, ClassAttributes};
+use crate::avm2::class::Class;
 use crate::avm2::domain::Domain;
 use crate::avm2::object::{ClassObject, ScriptObject, TObject};
 use crate::avm2::scope::{Scope, ScopeChain};
-use crate::avm2::script::Script;
-use crate::avm2::traits::Trait;
-use crate::avm2::value::Value;
-use crate::avm2::vtable::VTable;
+use crate::avm2::script::TranslationUnit;
 use crate::avm2::{Avm2, Error, Multiname, Namespace, QName};
-use crate::string::{AvmString, WStr};
+use crate::string::WStr;
 use crate::tag_utils::{self, ControlFlow, SwfMovie, SwfSlice, SwfStream};
 use gc_arena::Collect;
-use ruffle_macros::istr;
 use std::sync::Arc;
 use swf::TagCode;
 
@@ -385,68 +381,66 @@ impl<'gc> SystemClassDefs<'gc> {
     }
 }
 
-/// Add a fully-formed class object builtin to the global scope.
-///
-/// This allows the caller to pre-populate the class's prototype with dynamic
-/// properties, if necessary.
-fn dynamic_class<'gc>(
+/// Setup the `Object`, `Class`, and `void` classes, which are special "early
+/// classes". This step of VM initialization must be done before everything else,
+/// including the construction of the first `Script` and loading of any other classes.
+pub fn init_early_classes<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    class_object: ClassObject<'gc>,
-    script: Script<'gc>,
-) {
-    let (_, global, domain) = script.init();
-    let class = class_object.inner_class_definition();
-    let name = class.name();
-
-    Value::from(global)
-        .init_property(&name.into(), class_object.into(), activation)
-        .expect("Should set property");
-
-    domain.export_definition(name, script, activation.gc())
-}
-
-/// Initialize the player global domain.
-///
-/// This should be called only once, to construct the global scope of the
-/// player. It will return a list of prototypes it has created, which should be
-/// stored on the AVM. All relevant declarations will also be attached to the
-/// given domain.
-pub fn load_player_globals<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    domain: Domain<'gc>,
+    tunit: TranslationUnit<'gc>,
 ) -> Result<(), Error<'gc>> {
+    // We know that Object is class #0 and Class is class #1 in the builtin ABC
+    const OBJECT_IDX: u32 = 0;
+    const CLASS_IDX: u32 = 1;
+
     let mc = activation.gc();
 
-    // Set the outer scope of this activation to the global scope.
+    // We need to load `Object`'s `i_class` before we do anything else, even
+    // initialize the script.
+    // Object's i_class has no superclass, so we load it first.
+    let object_i_class = Class::instance_from_abc_index(tunit, OBJECT_IDX, activation)?;
+    object_i_class.load_instance_traits(activation, tunit, OBJECT_IDX)?;
+    object_i_class.init_vtable(activation.context)?;
 
-    // public / root package
-    //
-    // This part of global initialization is very complicated, because
-    // everything has to circularly reference everything else:
-    //
-    //  - Object is an instance of itself, as well as its prototype
-    //  - All types are instances of Class, which is an instance of itself
-    //  - Object has prototype methods, but creating them requires the Function
-    //    class, and creating the Function class requires the Object class to exist
-    //
-    // Hence, this ridiculously complicated dance of classdef, type allocation,
-    // and partial initialization.
+    // We're going to need the `Object` class registered in the domain for the
+    // `Class` class to load. These will be overwritten when we properly load
+    // the rest of the classes, but it doesn't matter since it'll be overwritten
+    // with the same class anyways.
+    activation
+        .domain()
+        .export_class(object_i_class.name(), object_i_class, mc);
 
-    // Object extends nothing
-    let object_i_class = object::create_i_class(activation);
+    // Now we can load `Class`'s `i_class`:
+    let class_i_class = Class::instance_from_abc_index(tunit, CLASS_IDX, activation)?;
+    class_i_class.load_instance_traits(activation, tunit, CLASS_IDX)?;
+    class_i_class.init_vtable(activation.context)?;
 
-    // Class extends Object
-    let class_i_class = class::create_i_class(activation, object_i_class);
+    // Register the `Class` class in the domain
+    activation
+        .domain()
+        .export_class(class_i_class.name(), class_i_class, mc);
 
-    // Object$ extends Class
-    let object_c_class = object::create_c_class(activation, class_i_class);
+    // Now we can load the `c_class`es for `Object` and `Class` safely.
+    let object_c_class = Class::class_from_abc_index(tunit, OBJECT_IDX, class_i_class, activation)?;
+    object_c_class.load_class_traits(activation, tunit, OBJECT_IDX)?;
+    object_c_class.init_vtable(activation.context)?;
+
+    let class_c_class = Class::class_from_abc_index(tunit, CLASS_IDX, class_i_class, activation)?;
+    class_c_class.load_class_traits(activation, tunit, CLASS_IDX)?;
+    class_c_class.init_vtable(activation.context)?;
+
+    // Now we link the i_classes and c_classes with each other:
     object_i_class.set_c_class(mc, object_c_class);
     object_c_class.set_i_class(mc, object_i_class);
 
-    // Class$ extends Class
-    let class_c_class = class::create_c_class(activation, class_i_class);
     class_i_class.set_c_class(mc, class_c_class);
     class_c_class.set_i_class(mc, class_i_class);
+
+    // Set the classes on the TranslationUnit to prevent `TranslationUnit::load_class`
+    // from creating duplicate classes for them
+    tunit.set_class(mc, OBJECT_IDX as usize, object_i_class);
+    tunit.set_class(mc, CLASS_IDX as usize, class_i_class);
+
+    // Set up the `null` and `void` classes and initialize `SystemClasses`
 
     // This is a weird internal class in avmplus, but it allows for implementing
     // `describeType(null)` in a cleaner way
@@ -454,47 +448,30 @@ pub fn load_player_globals<'gc>(
 
     // void doesn't have a ClassObject
     let void_def = void::create_class(activation);
+    activation
+        .domain()
+        .export_class(void_def.name(), void_def, mc);
 
-    // Register the classes in the domain, now (except for the global and null classes)
-    domain.export_class(object_i_class.name(), object_i_class, mc);
-    domain.export_class(class_i_class.name(), class_i_class, mc);
-    domain.export_class(void_def.name(), void_def, mc);
-
-    activation.context.avm2.system_class_defs = Some(SystemClassDefs::new(
+    activation.avm2().system_class_defs = Some(SystemClassDefs::new(
         object_i_class,
         class_i_class,
         null_def,
         void_def,
     ));
 
-    // Unfortunately we need to specify the global traits manually
-    let mut global_traits = Vec::new();
+    // NOTE: We don't create correct outer ScopeChains for `Object` and `Class`
+    // here. This could cause unexpected behavior in their code, but the current
+    // AS method implementations don't ever use properties from the outer ScopeChain.
+    // However, we do need to ensure that the outer ScopeChain isn't zero-sized.
+    // We will need to replace this ScopeChain once the script is created.
+    let dummy_object =
+        ScriptObject::custom_object(mc, object_i_class, None, object_i_class.vtable());
 
-    let public_ns = activation.avm2().namespaces.public_all();
+    let empty_scope = ScopeChain::new(tunit.domain());
+    let dummy_scope = empty_scope.chain(mc, &[Scope::new(dummy_object.into())]);
+    activation.set_outer(dummy_scope);
 
-    let class_trait_list = &[
-        (public_ns, istr!("Object"), object_i_class),
-        (public_ns, istr!("Class"), class_i_class),
-    ];
-
-    for (namespace, name, class) in class_trait_list {
-        let qname = QName::new(*namespace, *name);
-
-        global_traits.push(Trait::from_class(qname, *class));
-    }
-
-    // Create the builtin globals' classdef
-    let global_classdef = global_scope::create_class(activation, global_traits);
-
-    // Initialize the global object. This gives it a temporary vtable until the
-    // global ClassObject is constructed and we have the true vtable; nothing actually
-    // operates on the global object until it gets its true vtable, so this should
-    // be fine.
-    let globals = ScriptObject::custom_object(mc, global_classdef, None, global_classdef.vtable());
-
-    let scope = ScopeChain::new(domain);
-    let gs = scope.chain(mc, &[Scope::new(globals.into())]);
-    activation.set_outer(gs);
+    // Finally, we can actually create the ClassObjects for `Object` and `Class`.
 
     let object_class = ClassObject::from_class_partial(activation, object_i_class, None);
     let object_proto =
@@ -516,53 +493,17 @@ pub fn load_player_globals<'gc>(
     class_class.link_prototype(activation, class_proto);
     class_class.link_type(mc, class_proto);
 
-    // At this point, we need at least a partial set of system classes in
-    // order to continue initializing the player. The rest of the classes
-    // are set to a temporary class until we have a chance to initialize them.
+    // At this point, we need both early classes to be available in `SystemClasses`
+    // in order to call `into_finished_class` on both ClassObjects.
 
-    activation.context.avm2.system_classes = Some(SystemClasses::new(object_class, class_class));
+    activation.avm2().system_classes = Some(SystemClasses::new(object_class, class_class));
 
-    // Our activation environment is now functional enough to finish
-    // initializing the core class weave. We need to initialize superclasses
-    // (e.g. `Object`) before subclasses, so that `into_finished_class` can
-    // copy traits from the initialized superclass vtable.
+    // Construct the `ClassObject`s. We will run the class initializers later.
+    class_class.into_finished_class(activation);
+    object_class.into_finished_class(activation);
 
-    // Construct the `ClassObject`s, starting with `Class`. This ensures
-    // that the `prototype` property of `Class` gets copied into the *class*
-    // vtable for `Object`.
-    let class_class = class_class.into_finished_class(activation)?;
-    let object_class = object_class.into_finished_class(activation)?;
-
-    // Object prototype is enough
-    globals.set_proto(mc, object_class.prototype());
-
-    // Create a new, full vtable for globals.
-    let global_obj_vtable = VTable::empty(mc);
-    global_obj_vtable.init_vtable(
-        global_classdef,
-        Some(object_class),
-        Some(scope),
-        Some(object_class.instance_vtable()),
-        mc,
-    );
-
-    globals.set_vtable(mc, global_obj_vtable);
-
-    // Initialize the script
-    let script = Script::empty_script(mc, globals, domain);
-
-    // From this point, `globals` is safe to be modified
-
-    dynamic_class(activation, object_class, script);
-    dynamic_class(activation, class_class, script);
-
-    // After this point, it is safe to initialize any other classes.
-
-    // Inside this call, the macro `avm2_system_classes_playerglobal`
-    // triggers classloading. Therefore, we run `load_playerglobal`
-    // relatively late, so that it can access classes defined before
-    // this call.
-    load_playerglobal(activation, domain)?;
+    // Reset the Activation's outer scope.
+    activation.set_outer(empty_scope);
 
     Ok(())
 }
@@ -634,70 +575,6 @@ macro_rules! avm2_system_class_defs_playerglobal {
     }
 }
 
-/// Set up a builtin vector's Class. This will change its name, mark it as a
-/// specialization of Vector, and set its class parameter to the passed
-/// `param_class`. This function returns the vector Class.
-fn setup_vector_class<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    old_name: &'static str,
-    new_name: &'static str,
-    param_class: Option<Class<'gc>>,
-) -> Class<'gc> {
-    let generic_vector_cls = activation.avm2().class_defs().generic_vector;
-
-    let vector_ns = activation.avm2().namespaces.vector_internal;
-
-    // First, lookup the class
-    let old_name = activation
-        .strings()
-        .intern_static(WStr::from_units(old_name.as_bytes()));
-
-    let vector_cls = activation
-        .domain()
-        .get_class(activation.context, &Multiname::new(vector_ns, old_name))
-        .expect("Vector class should be defined");
-
-    // Set its name to Vector.<T>
-    let new_name = AvmString::new_utf8(activation.gc(), new_name);
-
-    vector_cls.set_name(activation.gc(), QName::new(vector_ns, new_name));
-
-    // Set its parameter to the given parameter and add it to the map of
-    // applications on the generic vector Class
-    vector_cls.set_param(activation.gc(), Some(param_class));
-    generic_vector_cls.add_application(activation.gc(), param_class, vector_cls);
-
-    vector_cls
-}
-
-/// Set up a builtin vector's ClassObject. This marks it as a specialization of
-/// Vector. This function returns the vector ClassObject.
-fn setup_vector_class_object<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    vector_name: &'static str,
-    param_class: Option<Class<'gc>>,
-) -> ClassObject<'gc> {
-    let generic_vector_cls = activation.avm2().classes().generic_vector;
-
-    let vector_ns = activation.avm2().namespaces.vector_internal;
-
-    // `vector_name` should be ASCII
-    let class_name = activation
-        .strings()
-        .intern_static(WStr::from_units(vector_name.as_bytes()));
-
-    let value = activation
-        .domain()
-        .get_defined_value(activation, QName::new(vector_ns, class_name))
-        .expect("Vector class should be defined");
-
-    let vector_cls = value.as_object().unwrap().as_class_object().unwrap();
-
-    generic_vector_cls.add_application(activation.gc(), param_class, vector_cls);
-
-    vector_cls
-}
-
 pub fn init_builtin_system_classes(activation: &mut Activation<'_, '_>) {
     // We don't include `Function` here because it registers itself manually
     // in its class initializer
@@ -728,26 +605,7 @@ pub fn init_builtin_system_classes(activation: &mut Activation<'_, '_>) {
         ]
     );
 
-    // Register Vector$int/uint/Number/Object as being applications of the Vector ClassObject
-    let number_cls = activation.avm2().class_defs().number;
-    setup_vector_class_object(activation, "Vector$double", Some(number_cls));
-
-    let int_cls = activation.avm2().class_defs().int;
-    setup_vector_class_object(activation, "Vector$int", Some(int_cls));
-
-    let uint_cls = activation.avm2().class_defs().uint;
-    setup_vector_class_object(activation, "Vector$uint", Some(uint_cls));
-
-    let object_vector = setup_vector_class_object(activation, "Vector$object", None);
-
-    // Manually set the object vector class since it's in an internal namespace
-    // (`avm2_system_classes_playerglobal` only works for classes in public namespaces)
-    activation
-        .avm2()
-        .system_classes
-        .as_mut()
-        .unwrap()
-        .object_vector = object_vector;
+    crate::avm2::globals::vector::init_vector_class_objects(activation);
 }
 
 pub fn init_builtin_system_class_defs(activation: &mut Activation<'_, '_>) {
@@ -768,30 +626,7 @@ pub fn init_builtin_system_class_defs(activation: &mut Activation<'_, '_>) {
         ]
     );
 
-    // Mark Vector as a generic class
-    let generic_vector = activation.avm2().class_defs().generic_vector;
-    generic_vector.set_attributes(
-        activation.gc(),
-        ClassAttributes::GENERIC | ClassAttributes::FINAL,
-    );
-
-    // Setup the four builtin vector classes
-
-    let number_cls = activation.avm2().class_defs().number;
-    setup_vector_class(
-        activation,
-        "Vector$double",
-        "Vector.<Number>",
-        Some(number_cls),
-    );
-
-    let int_cls = activation.avm2().class_defs().int;
-    setup_vector_class(activation, "Vector$int", "Vector.<int>", Some(int_cls));
-
-    let uint_cls = activation.avm2().class_defs().uint;
-    setup_vector_class(activation, "Vector$uint", "Vector.<uint>", Some(uint_cls));
-
-    setup_vector_class(activation, "Vector$object", "Vector.<*>", None);
+    crate::avm2::globals::vector::init_vector_class_defs(activation);
 }
 
 pub fn init_native_system_classes(activation: &mut Activation<'_, '_>) {
@@ -933,7 +768,7 @@ pub fn init_native_system_classes(activation: &mut Activation<'_, '_>) {
 
 /// Loads classes from our custom 'playerglobal' (which are written in ActionScript)
 /// into the environment. See 'core/src/avm2/globals/README.md' for more information
-fn load_playerglobal<'gc>(
+pub fn load_playerglobal<'gc>(
     activation: &mut Activation<'_, 'gc>,
     domain: Domain<'gc>,
 ) -> Result<(), Error<'gc>> {

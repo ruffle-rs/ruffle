@@ -14,7 +14,6 @@ use gc_arena::Mutation;
 use std::borrow::Cow;
 
 use super::common::show_style_sheet;
-use super::movie::open_movie_button;
 
 #[derive(Debug, Eq, PartialEq, Hash, Default, Copy, Clone)]
 enum Panel {
@@ -258,12 +257,6 @@ impl Avm2ObjectWindow {
                 ui.label("Name");
                 ui.text_edit_singleline(&mut name.local_name().to_string().as_str());
                 ui.end_row();
-
-                if let Some(tuint) = class.translation_unit() {
-                    ui.label("Movie");
-                    open_movie_button(ui, &tuint.movie(), messages);
-                    ui.end_row();
-                }
 
                 ui.label("Super Chain");
                 ui.vertical(|ui| {

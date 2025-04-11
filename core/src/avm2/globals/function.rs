@@ -70,9 +70,8 @@ pub fn _init_function_class<'gc>(
     this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    // Set Function's prototype, register it in SystemClasses, and initialize
-    // Object's prototype. This method is called from AS during builtins
-    // initialization.
+    // Set Function's prototype and register it in SystemClasses. This method is
+    // called from AS during builtins initialization.
     let function_class_object = this.as_object().unwrap().as_class_object().unwrap();
 
     activation.avm2().system_classes.as_mut().unwrap().function = function_class_object;
@@ -82,8 +81,6 @@ pub fn _init_function_class<'gc>(
         .as_object()
         .unwrap();
     function_class_object.link_prototype(activation, function_proto);
-
-    crate::avm2::globals::object::init_object_prototype(activation)?;
 
     Ok(Value::Undefined)
 }
