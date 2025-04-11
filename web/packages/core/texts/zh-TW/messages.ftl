@@ -24,6 +24,7 @@ clipboard-message-description =
 clipboard-message-copy = { " " } 複製
 clipboard-message-cut = { " " } 剪下
 clipboard-message-paste = { " " } 貼上
+error-canvas-reload = 當畫布渲染器已在使用中時，無法使用畫布渲染器重新載入。
 error-file-protocol =
     您似乎是在 「file: 」協定上執行 Ruffle。
     這並不可行，因為瀏覽器基於安全理由會阻擋許多功能的運作。
