@@ -4,7 +4,7 @@ use crate::avm2::script::Script;
 use crate::string::AvmAtom;
 
 use gc_arena::{Collect, Gc};
-use swf::avm2::types::{Exception, Index, Method, Namespace};
+use swf::avm2::types::{Index, Method, Namespace};
 
 #[derive(Clone, Collect, Copy, Debug)]
 #[collect(no_drop)]
@@ -208,13 +208,14 @@ pub enum Op<'gc> {
     MultiplyI,
     Negate,
     NegateI,
-    NewActivation,
+    NewActivation {
+        activation_class: Class<'gc>,
+    },
     NewArray {
         num_args: u32,
     },
     NewCatch {
-        #[collect(require_static)]
-        index: Index<Exception>,
+        index: usize,
     },
     NewClass {
         class: Class<'gc>,

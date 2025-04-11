@@ -7,7 +7,8 @@ use crate::avm2::e4x::{escape_attribute_value, escape_element_value};
 use crate::avm2::error::{
     make_error_1065, make_error_1127, make_error_1506, make_null_or_undefined_error, type_error,
 };
-use crate::avm2::method::{BytecodeMethod, Method, ResolvedParamConfig};
+use crate::avm2::function::FunctionArgs;
+use crate::avm2::method::{BytecodeMethod, Method, NativeMethod, ResolvedParamConfig};
 use crate::avm2::object::{
     ArrayObject, ByteArrayObject, ClassObject, FunctionObject, NamespaceObject, ScriptObject,
     XmlListObject,
@@ -28,7 +29,7 @@ use ruffle_macros::istr;
 use std::cmp::{min, Ordering};
 use std::sync::Arc;
 use swf::avm2::types::{
-    Exception, Index, Method as AbcMethod, MethodFlags as AbcMethodFlags, Namespace as AbcNamespace,
+    Index, Method as AbcMethod, MethodFlags as AbcMethodFlags, Namespace as AbcNamespace,
 };
 
 use super::error::make_mismatch_error;
@@ -71,16 +72,6 @@ pub struct Activation<'a, 'gc: 'a> {
     bound_superclass_object: Option<ClassObject<'gc>>,
 
     bound_class: Option<Class<'gc>>,
-
-    /// The class of all objects returned from `newactivation`.
-    ///
-    /// In method calls that call for an activation object, this will be
-    /// configured as the anonymous class whose traits match the method's
-    /// declared traits.
-    ///
-    /// If this is `None`, then the method did not ask for an activation object
-    /// and we will not allocate a class for one.
-    activation_class: Option<ClassObject<'gc>>,
 
     /// The index where the stack frame starts.
     stack_depth: usize,
@@ -127,7 +118,6 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             caller_movie: None,
             bound_superclass_object: None,
             bound_class: None,
-            activation_class: None,
             stack_depth: context.avm2.stack.len(),
             scope_depth: context.avm2.scope_stack.len(),
             context,
@@ -151,7 +141,6 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             caller_movie: None,
             bound_superclass_object: None,
             bound_class: None,
-            activation_class: None,
             stack_depth: context.avm2.stack.len(),
             scope_depth: context.avm2.scope_stack.len(),
             context,
@@ -177,29 +166,6 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             }
         };
 
-        let activation_class = if let Method::Bytecode(method) = method {
-            let body = method
-                .body()
-                .expect("Cannot execute non-native method (for script) without body");
-
-            BytecodeMethod::get_or_init_activation_class(method, context.gc(), || {
-                let translation_unit = method.translation_unit();
-                let abc_method = method.method();
-                let mut dummy_activation = Activation::from_domain(context, domain);
-                dummy_activation.set_outer(ScopeChain::new(domain));
-                let activation_class = Class::for_activation(
-                    &mut dummy_activation,
-                    translation_unit,
-                    abc_method,
-                    body,
-                )?;
-
-                ClassObject::from_class(&mut dummy_activation, activation_class, None)
-            })?
-        } else {
-            None
-        };
-
         let mut created_activation = Self {
             num_locals,
             outer: ScopeChain::new(domain),
@@ -207,7 +173,6 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             caller_movie: script.translation_unit().map(|t| t.movie()),
             bound_superclass_object: Some(context.avm2.classes().object), // The script global class extends Object
             bound_class: Some(script.global_class()),
-            activation_class,
             stack_depth: context.avm2.stack.len(),
             scope_depth: context.avm2.scope_stack.len(),
             context,
@@ -254,45 +219,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         }
     }
 
-    /// Resolve a single parameter value.
-    ///
-    /// Given an individual parameter value and the associated parameter's
-    /// configuration, return what value should be stored in the called
-    /// function's local registers (or an error, if the parameter violates the
-    /// signature of the current called method).
-    fn resolve_parameter(
-        &mut self,
-        method: Method<'gc>,
-        value: Option<&Value<'gc>>,
-        param_config: &ResolvedParamConfig<'gc>,
-        user_arguments: &[Value<'gc>],
-        bound_class: Option<Class<'gc>>,
-    ) -> Result<Value<'gc>, Error<'gc>> {
-        let arg = if let Some(value) = value {
-            value
-        } else if let Some(default_value) = &param_config.default_value {
-            default_value
-        } else if param_config.param_type.is_none() {
-            // TODO: FP's system of allowing missing arguments
-            // is a more complicated than this.
-            return Ok(Value::Undefined);
-        } else {
-            return Err(Error::AvmError(make_mismatch_error(
-                self,
-                method,
-                user_arguments,
-                bound_class,
-            )?));
-        };
-
-        if let Some(param_class) = param_config.param_type {
-            arg.coerce_to_type(self, param_class)
-        } else {
-            Ok(*arg)
-        }
-    }
-
-    /// Statically resolve all of the parameters for a given method.
+    /// Statically resolve all of the parameters for a native method.
     ///
     /// This function makes no attempt to enforce a given method's parameter
     /// count limits or to package variadic arguments.
@@ -301,43 +228,117 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     /// the signature, with missing parameters filled in with defaults.
     pub fn resolve_parameters(
         &mut self,
-        method: Method<'gc>,
+        method: Gc<'gc, NativeMethod<'gc>>,
         user_arguments: &[Value<'gc>],
         signature: &[ResolvedParamConfig<'gc>],
         bound_class: Option<Class<'gc>>,
     ) -> Result<Vec<Value<'gc>>, Error<'gc>> {
         let mut arguments_list = Vec::new();
         for (arg, param_config) in user_arguments.iter().zip(signature.iter()) {
-            arguments_list.push(self.resolve_parameter(
-                method,
-                Some(arg),
-                param_config,
-                user_arguments,
-                bound_class,
-            )?);
+            let coerced_arg = if let Some(param_class) = param_config.param_type {
+                arg.coerce_to_type(self, param_class)?
+            } else {
+                *arg
+            };
+
+            arguments_list.push(coerced_arg);
         }
 
         match user_arguments.len().cmp(&signature.len()) {
             Ordering::Greater => {
-                //Variadic parameters exist, just push them into the list
+                // Variadic parameters exist, just push them into the list
                 arguments_list.extend_from_slice(&user_arguments[signature.len()..])
             }
             Ordering::Less => {
-                //Apply remaining default parameters
+                // Apply remaining default parameters
                 for param_config in signature[user_arguments.len()..].iter() {
-                    arguments_list.push(self.resolve_parameter(
-                        method,
-                        None,
-                        param_config,
-                        user_arguments,
-                        bound_class,
-                    )?);
+                    let arg = if let Some(default_value) = &param_config.default_value {
+                        *default_value
+                    } else {
+                        return Err(Error::AvmError(make_mismatch_error(
+                            self,
+                            Method::Native(method),
+                            user_arguments.len(),
+                            bound_class,
+                        )?));
+                    };
+
+                    let coerced_arg = if let Some(param_class) = param_config.param_type {
+                        arg.coerce_to_type(self, param_class)?
+                    } else {
+                        arg
+                    };
+
+                    arguments_list.push(coerced_arg);
                 }
             }
             _ => {}
         }
 
         Ok(arguments_list)
+    }
+
+    /// Create an `arguments` or `rest` object for a given method. This function
+    /// expects the rest of the arguments to already be on the AVM stack.
+    #[inline(never)]
+    fn create_varargs_object(
+        &mut self,
+        method: Gc<'gc, BytecodeMethod<'gc>>,
+        signature: &[ResolvedParamConfig<'gc>],
+        user_arguments: FunctionArgs<'_, 'gc>,
+        callee: Value<'gc>,
+    ) -> ArrayObject<'gc> {
+        let mut all_arguments = Vec::new();
+
+        // Unfortunately we need to allocate now: we need to put all the
+        // arguments we just processed into a Vec, so `arguments` or `rest`
+        // can put them into an ArrayObject. The missing argument check
+        // in `init_from_method` ensures that we have at least `signature.len()`
+        // arguments on the stack right now.
+        for i in 0..signature.len() {
+            let arg = self.avm2().peek(signature.len() - i - 1);
+            all_arguments.push(arg);
+        }
+
+        // We put all the non-variadic arguments into the Vec, but there
+        // could have been more passed to the function. Add them now.
+        for i in signature.len()..user_arguments.len() {
+            let arg = user_arguments.get_at(self, i);
+            all_arguments.push(arg);
+        }
+
+        let args_array = if method.method().flags.contains(AbcMethodFlags::NEED_REST) {
+            if let Some(rest_args) = all_arguments.get(signature.len()..) {
+                ArrayStorage::from_args(rest_args)
+            } else {
+                ArrayStorage::new(0)
+            }
+        } else if method
+            .method()
+            .flags
+            .contains(AbcMethodFlags::NEED_ARGUMENTS)
+        {
+            ArrayStorage::from_args(&all_arguments[..user_arguments.len()])
+        } else {
+            unreachable!();
+        };
+
+        let args_object = ArrayObject::from_storage(self, args_array);
+
+        if method
+            .method()
+            .flags
+            .contains(AbcMethodFlags::NEED_ARGUMENTS)
+        {
+            let string_callee = istr!(self, "callee");
+
+            args_object
+                .set_string_property_local(string_callee, callee, self)
+                .unwrap();
+            args_object.set_local_property_is_enumerable(self.gc(), string_callee, false);
+        }
+
+        args_object
     }
 
     /// Construct an activation for the execution of a particular bytecode
@@ -350,7 +351,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         method: Gc<'gc, BytecodeMethod<'gc>>,
         outer: ScopeChain<'gc>,
         this: Value<'gc>,
-        user_arguments: &[Value<'gc>],
+        user_arguments: FunctionArgs<'_, 'gc>,
         bound_superclass_object: Option<ClassObject<'gc>>,
         bound_class: Option<Class<'gc>>,
         callee: Value<'gc>,
@@ -362,22 +363,6 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         let num_locals = body.num_locals as usize;
         let has_rest_or_args = method.is_variadic();
 
-        let activation_class =
-            BytecodeMethod::get_or_init_activation_class(method, self.gc(), || {
-                let translation_unit = method.translation_unit();
-                let abc_method = method.method();
-                let mut dummy_activation = Activation::from_domain(self.context, outer.domain());
-                dummy_activation.set_outer(outer);
-                let activation_class = Class::for_activation(
-                    &mut dummy_activation,
-                    translation_unit,
-                    abc_method,
-                    body,
-                )?;
-
-                ClassObject::from_class(&mut dummy_activation, activation_class, None)
-            })?;
-
         if let Some(bound_class) = bound_class {
             assert!(this.is_of_type(self, bound_class));
         }
@@ -388,7 +373,6 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         self.caller_movie = Some(method.owner_movie());
         self.bound_superclass_object = bound_superclass_object;
         self.bound_class = bound_class;
-        self.activation_class = activation_class;
         self.stack_depth = self.context.avm2.stack.len();
         self.scope_depth = self.context.avm2.scope_stack.len();
 
@@ -400,68 +384,69 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         let verified_info = method.verified_info.borrow();
         let signature = &verified_info.as_ref().unwrap().param_config;
 
-        if user_arguments.len() > signature.len() && !has_rest_or_args {
+        if user_arguments.len() > signature.len() && !has_rest_or_args && !method.is_unchecked() {
             return Err(Error::AvmError(make_mismatch_error(
                 self,
                 Method::Bytecode(method),
-                user_arguments,
+                user_arguments.len(),
                 bound_class,
             )?));
         }
 
-        // Statically verify all non-variadic, provided parameters.
-        let arguments_list = self.resolve_parameters(
-            Method::Bytecode(method),
-            user_arguments,
-            signature,
-            bound_class,
-        )?;
-
         // Create locals
         self.push_stack(this);
 
-        let num_args = min(signature.len(), arguments_list.len());
+        // Statically verify all non-variadic, provided parameters.
+        let static_arg_count = min(user_arguments.len(), signature.len());
+        for i in 0..static_arg_count {
+            let arg = user_arguments.get_at(self, i);
+            let param_config = &signature[i];
 
-        for arg in &arguments_list[0..num_args] {
-            self.push_stack(*arg);
-        }
-
-        if has_rest_or_args {
-            let args_array = if method
-                .method()
-                .flags
-                .contains(AbcMethodFlags::NEED_ARGUMENTS)
-            {
-                // note: resolve_parameters ensures that arguments_list length is >= user_arguments
-                ArrayStorage::from_args(&arguments_list[..user_arguments.len()])
-            } else if method.method().flags.contains(AbcMethodFlags::NEED_REST) {
-                if let Some(rest_args) = arguments_list.get(signature.len()..) {
-                    ArrayStorage::from_args(rest_args)
-                } else {
-                    ArrayStorage::new(0)
-                }
+            let coerced_arg = if let Some(param_class) = param_config.param_type {
+                arg.coerce_to_type(self, param_class)?
             } else {
-                unreachable!();
+                arg
             };
 
-            let args_object = ArrayObject::from_storage(self, args_array);
+            self.push_stack(coerced_arg);
+        }
 
-            if method
-                .method()
-                .flags
-                .contains(AbcMethodFlags::NEED_ARGUMENTS)
-            {
-                let string_callee = istr!(self, "callee");
+        // Now add missing arguments
+        if user_arguments.len() < signature.len() {
+            // Apply remaining default parameters
+            for param_config in signature[user_arguments.len()..].iter() {
+                let arg = if let Some(default_value) = &param_config.default_value {
+                    *default_value
+                } else if method.is_unchecked() {
+                    Value::Undefined
+                } else {
+                    return Err(Error::AvmError(make_mismatch_error(
+                        self,
+                        Method::Bytecode(method),
+                        user_arguments.len(),
+                        bound_class,
+                    )?));
+                };
 
-                args_object.set_string_property_local(string_callee, callee, self)?;
-                args_object.set_local_property_is_enumerable(self.gc(), string_callee, false);
+                let coerced_arg = if let Some(param_class) = param_config.param_type {
+                    arg.coerce_to_type(self, param_class)?
+                } else {
+                    arg
+                };
+
+                self.push_stack(coerced_arg);
             }
+        }
+
+        // Finally, handle variadic arguments
+        if has_rest_or_args {
+            let args_object = self.create_varargs_object(method, signature, user_arguments, callee);
 
             self.push_stack(args_object);
         }
 
         // Locals not including the `this` value or arguments.
-        let mut extra_locals = num_locals - num_args - 1;
+        let mut extra_locals = num_locals - signature.len() - 1;
         if has_rest_or_args {
             extra_locals -= 1;
         }
@@ -494,7 +479,6 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             caller_movie,
             bound_superclass_object,
             bound_class,
-            activation_class: None,
             stack_depth: context.avm2.stack.len(),
             scope_depth: context.avm2.scope_stack.len(),
             context,
@@ -581,11 +565,6 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             .get(0)
             .or_else(|| self.scope_frame().first().copied())
             .map(|scope| scope.values())
-    }
-
-    pub fn activation_class(&mut self) -> ClassObject<'gc> {
-        self.activation_class
-            .expect("Expected to be running bytecode method")
     }
 
     pub fn avm2(&mut self) -> &mut Avm2<'gc> {
@@ -791,7 +770,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
                 } => self.op_construct_prop(*multiname, *num_args),
                 Op::ConstructSlot { index, num_args } => self.op_construct_slot(*index, *num_args),
                 Op::ConstructSuper { num_args } => self.op_construct_super(*num_args),
-                Op::NewActivation => self.op_new_activation(),
+                Op::NewActivation { activation_class } => self.op_new_activation(*activation_class),
                 Op::NewObject { num_args } => self.op_new_object(*num_args),
                 Op::NewFunction { index } => self.op_new_function(method, *index),
                 Op::NewClass { class } => self.op_new_class(*class),
@@ -1112,10 +1091,19 @@ impl<'a, 'gc> Activation<'a, 'gc> {
 
         // However, the optimizer can still generate it.
 
-        let args = self.pop_stack_args(arg_count);
-        let receiver = self.pop_stack().null_check(self, None)?;
+        let args = FunctionArgs::OnAvmStack {
+            arg_count: arg_count as usize,
+            stack_base: self.avm2().stack.len() - arg_count as usize,
+        };
+        let receiver = self
+            .avm2()
+            .peek(arg_count as usize)
+            .null_check(self, None)?;
 
-        let value = receiver.call_method(index, &args, self)?;
+        let value = receiver.call_method_with_args(index, args, self)?;
+
+        // Pop receiver now: `call_method_with_args` is responsible for popping the args
+        let _ = self.pop_stack();
 
         if push_return_value {
             self.push_stack(value);
@@ -1501,16 +1489,19 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     fn op_newcatch(
         &mut self,
         method: Gc<'gc, BytecodeMethod<'gc>>,
-        index: Index<Exception>,
+        index: usize,
     ) -> Result<(), Error<'gc>> {
+        // TODO can we store the catch class in the op?
         let verified_info = method.verified_info.borrow();
         let exception_list = &verified_info.as_ref().unwrap().exceptions;
 
-        let ex = &exception_list[index.0 as usize];
-        let vname = ex.variable_name;
+        let catch_class = &exception_list[index].catch_class;
 
-        let so = if let Some(vname) = vname {
-            ScriptObject::catch_scope(self, &vname)
+        let so = if let Some(catch_class) = catch_class {
+            // Catch objects don't have prototypes, and we can give it the
+            // Class's vtable because the only trait on the vtable is a single
+            // const-slot.
+            ScriptObject::custom_object(self.gc(), *catch_class, None, catch_class.vtable())
         } else {
             // for `finally` scopes, FP just creates a normal object.
             ScriptObject::new_object(self)
@@ -1739,8 +1730,16 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         Ok(())
     }
 
-    fn op_new_activation(&mut self) -> Result<(), Error<'gc>> {
-        let instance = self.activation_class().construct(self, &[])?;
+    fn op_new_activation(&mut self, activation_class: Class<'gc>) -> Result<(), Error<'gc>> {
+        // Create the activation object. Activation objects don't have prototypes,
+        // and we can give it the Class's vtable because `Class::for_activation`
+        // ensures there are only slots on the vtable.
+        let instance = ScriptObject::custom_object(
+            self.gc(),
+            activation_class,
+            None,
+            activation_class.vtable(),
+        );
 
         self.push_stack(instance);
 

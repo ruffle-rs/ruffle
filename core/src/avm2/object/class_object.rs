@@ -3,7 +3,7 @@
 use crate::avm2::activation::Activation;
 use crate::avm2::class::{AllocatorFn, Class, CustomConstructorFn};
 use crate::avm2::error::{argument_error, make_error_1127, reference_error, type_error};
-use crate::avm2::function::exec;
+use crate::avm2::function::{exec, FunctionArgs};
 use crate::avm2::method::Method;
 use crate::avm2::object::function_object::FunctionObject;
 use crate::avm2::object::script_object::ScriptObjectData;
@@ -334,7 +334,7 @@ impl<'gc> ClassObject<'gc> {
             receiver,
             self.superclass_object(),
             Some(self.inner_class_definition()),
-            arguments,
+            FunctionArgs::AsArgSlice { arguments },
             activation,
             self.into(),
         )
@@ -619,7 +619,7 @@ impl<'gc> ClassObject<'gc> {
                 self.into(),
                 self.superclass_object(),
                 Some(self.inner_class_definition()),
-                arguments,
+                FunctionArgs::AsArgSlice { arguments },
                 activation,
                 self.into(),
             )
