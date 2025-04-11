@@ -125,6 +125,12 @@ pub struct BytecodeMethod<'gc> {
     /// A free-standing function corresponds to the `Function` trait type, and
     /// is instantiated with the `newfunction` opcode.
     pub is_function: bool,
+
+    /// Whether or not this method substitutes Undefined for missing arguments.
+    ///
+    /// This is true when the method is a free-standing function and none of the
+    /// declared arguments have a type or a default value.
+    pub is_unchecked: bool,
 }
 
 impl<'gc> BytecodeMethod<'gc> {
@@ -153,6 +159,13 @@ impl<'gc> BytecodeMethod<'gc> {
             }
         }
 
+        let mut all_params_unchecked = true;
+        for param in &signature {
+            if param.param_type_name.is_some() || param.default_value.is_some() {
+                all_params_unchecked = false;
+            }
+        }
+
         Ok(Self {
             txunit,
             abc: txunit.abc(),
@@ -162,6 +175,7 @@ impl<'gc> BytecodeMethod<'gc> {
             signature,
             return_type,
             is_function,
+            is_unchecked: is_function && all_params_unchecked,
             activation_class: Lock::new(None),
         })
     }
@@ -251,23 +265,12 @@ impl<'gc> BytecodeMethod<'gc> {
 
     /// Determine if a given method is unchecked.
     ///
-    /// A method is unchecked if all of the following are true:
+    /// A method is unchecked if both of the following are true:
     ///
     ///  * The method was declared as a free-standing function
-    ///  * The function does not use rest-parameters
     ///  * The function's parameters have no declared types or default values
     pub fn is_unchecked(&self) -> bool {
-        if !self.is_function {
-            return false;
-        }
-
-        for param in self.signature() {
-            if param.param_type_name.is_some() || param.default_value.is_some() {
-                return false;
-            }
-        }
-
-        !self.method().flags.contains(AbcMethodFlags::NEED_REST)
+        self.is_unchecked
     }
 
     /// Initialize and return the activation class object, if the method requires it.
