@@ -29,7 +29,11 @@ function handleMessage(message: Message) {
 
 let ID: string | null = null;
 if (document.currentScript !== undefined && document.currentScript !== null) {
-    if ("src" in document.currentScript && document.currentScript.src !== "") {
+    polyfillCurrentScript();
+    if (
+        document.currentScript instanceof HTMLScriptElement &&
+        document.currentScript.src
+    ) {
         try {
             ID = new URL(document.currentScript.src).searchParams.get("id");
         } catch (_) {
@@ -37,7 +41,7 @@ if (document.currentScript !== undefined && document.currentScript !== null) {
         }
     }
     if (ID === null) {
-        // if `script.src` is masked, get id from attrs
+        // Fallback to get id from attrs
         const ruffleId = document.currentScript.getAttribute("ruffle-id");
         if (ruffleId) {
             ID = ruffleId;
@@ -55,6 +59,44 @@ function openInNewTab(swf: URL): void {
         },
     };
     window.postMessage(message, "*");
+}
+
+function polyfillCurrentScript(): void {
+    const script = document.currentScript;
+    if (!(script instanceof HTMLScriptElement) || !script.src) {
+        return;
+    }
+    try {
+        applyPolyfillIfNeeded(script);
+    } catch (_) {
+        // Continue to run
+    }
+}
+
+function applyPolyfillIfNeeded(script: HTMLScriptElement): void {
+    const scriptUrlPolyfill = script.getAttribute("ruffle-src-polyfill");
+    if (!scriptUrlPolyfill) {
+        return;
+    }
+    const scriptUrl = script.src;
+    const scriptAutoPublicPath = getWebpackPublicPathFromScriptSrc(scriptUrl);
+
+    if (__webpack_public_path__ === scriptAutoPublicPath) {
+        const polyfillPath =
+            getWebpackPublicPathFromScriptSrc(scriptUrlPolyfill);
+        // TODO: If there are other scripts that need to be dynamically created and executed, the current polyfill logic should also be applied.
+        __webpack_public_path__ = polyfillPath;
+    }
+    // TODO: Process other situations when mask url not webkit-masked-url://hidden/
+}
+
+// Copied from Webpack: https://github.com/webpack/webpack/blob/f1bdec5cc70236083e45b665831d5d79d6485db7/lib/runtime/AutoPublicPathRuntimeModule.js#L75
+function getWebpackPublicPathFromScriptSrc(scriptUrl: string): string {
+    return scriptUrl
+        .replace(/^blob:/, "")
+        .replace(/#.*$/, "")
+        .replace(/\?.*$/, "")
+        .replace(/\/[^/]+$/, "/");
 }
 
 if (ID) {
