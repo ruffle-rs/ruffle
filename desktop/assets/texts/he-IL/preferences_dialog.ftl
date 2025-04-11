@@ -30,3 +30,7 @@ gamemode-tooltip =
     Ruffle משתמש בGameMode רק כאשר קובץ מתנגן.
 gamemode-default = ברירת מחדל
 gamemode-default-tooltip = GameMode יופעל רק כאשר העדפת הספק מוגדרת לרמה גבוהה.
+# See for context https://wiki.archlinux.org/title/Input_method
+ime-enabled = שיטת קלט
+ime-enabled-experimental = (ניסיוני)
+ime-enabled-tooltip = שיטת קלט מאפשרת להזין תווים שאינם זמינים במקלדת, כמו למשל תווים סיניים, יפניים או קוריאניים.
