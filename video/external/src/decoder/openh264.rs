@@ -119,6 +119,7 @@ impl OpenH264Codec {
 
         // If the binary doesn't exist in the expected location, download it.
         if !filepath.is_file() {
+            tracing::info!("Downloading OpenH264 library");
             let url = format!("{}{}{}", URL_BASE, filename, URL_SUFFIX);
             let response = reqwest::blocking::get(url)?;
             let mut bzip2_reader = BzDecoder::new(response);
@@ -185,7 +186,6 @@ impl OpenH264Codec {
             }
         }
 
-        tracing::info!("Downloading OpenH264 library");
         let filename = Self::fetch_and_verify(&openh264_data, directory)?;
         tracing::info!("Using OpenH264 at {:?}", filename);
         Ok(OpenH264Codec::load_existing(&filename)?)
