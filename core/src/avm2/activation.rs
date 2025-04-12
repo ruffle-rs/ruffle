@@ -170,7 +170,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             num_locals,
             outer: ScopeChain::new(domain),
             caller_domain: Some(domain),
-            caller_movie: script.translation_unit().map(|t| t.movie()),
+            caller_movie: Some(script.translation_unit().movie()),
             bound_superclass_object: Some(context.avm2.classes().object), // The script global class extends Object
             bound_class: Some(script.global_class()),
             stack_depth: context.avm2.stack.len(),
