@@ -84,7 +84,7 @@ pub use crate::avm2::domain::{Domain, DomainPtr};
 pub use crate::avm2::error::Error;
 pub use crate::avm2::flv::FlvValueAvm2Ext;
 pub use crate::avm2::globals::flash::ui::context_menu::make_context_menu_state;
-pub use crate::avm2::multiname::{CommonMultinames, Multiname};
+pub use crate::avm2::multiname::Multiname;
 pub use crate::avm2::namespace::{CommonNamespaces, Namespace};
 pub use crate::avm2::object::{
     ArrayObject, BitmapDataObject, ClassObject, EventObject, Object, SoundChannelObject,
@@ -142,8 +142,6 @@ pub struct Avm2<'gc> {
 
     /// Pre-created known namespaces.
     namespaces: Gc<'gc, CommonNamespaces<'gc>>,
-
-    pub multinames: Gc<'gc, CommonMultinames<'gc>>,
 
     #[collect(require_static)]
     native_method_table: &'static [Option<(&'static str, NativeMethodImpl)>],
@@ -208,7 +206,6 @@ impl<'gc> Avm2<'gc> {
         let stage_domain = Domain::uninitialized_domain(mc, Some(playerglobals_domain));
 
         let namespaces = CommonNamespaces::new(context);
-        let multinames = CommonMultinames::new(context, &namespaces);
 
         Self {
             player_version,
@@ -223,7 +220,6 @@ impl<'gc> Avm2<'gc> {
             toplevel_global_object: None,
 
             namespaces: Gc::new(mc, namespaces),
-            multinames: Gc::new(mc, multinames),
 
             native_method_table: Default::default(),
             native_instance_allocator_table: Default::default(),
