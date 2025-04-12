@@ -319,6 +319,7 @@ impl<'gc> Video<'gc> {
                         codec: streamdef.codec,
                         data: &read.movie.data()[*slice_start..*slice_end],
                         frame_id,
+                        composition_time: None,
                     };
                     context
                         .video
@@ -416,6 +417,7 @@ impl<'gc> TDisplayObject<'gc> for Video<'gc> {
                                 codec: streamdef.codec,
                                 data: &movie.data()[*frame_start..*frame_end],
                                 frame_id: *frame_id,
+                                composition_time: None,
                             },
                         );
 
