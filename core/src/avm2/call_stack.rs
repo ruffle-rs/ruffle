@@ -44,14 +44,11 @@ impl<'gc> CallStack<'gc> {
             output.push_utf8("\n\tat ");
             match call {
                 CallNode::GlobalInit(script) => {
-                    let name = if let Some(tuint) = script.translation_unit() {
-                        if let Some(name) = tuint.name() {
-                            name.to_utf8_lossy().to_string()
-                        } else {
-                            "<No name>".to_string()
-                        }
+                    let tunit = script.translation_unit();
+                    let name = if let Some(name) = tunit.name() {
+                        name.to_utf8_lossy().to_string()
                     } else {
-                        "<No translation unit>".to_string()
+                        "<No name>".to_string()
                     };
 
                     // NOTE: We intentionally diverge from Flash Player's output

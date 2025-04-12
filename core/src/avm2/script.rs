@@ -10,7 +10,6 @@ use crate::avm2::method::{BytecodeMethod, Method};
 use crate::avm2::object::{Object, ScriptObject, TObject};
 use crate::avm2::scope::ScopeChain;
 use crate::avm2::traits::{Trait, TraitKind};
-use crate::avm2::value::Value;
 use crate::avm2::vtable::VTable;
 use crate::avm2::{Avm2, Multiname, Namespace};
 use crate::context::UpdateContext;
@@ -427,37 +426,10 @@ pub struct ScriptData<'gc> {
     initialized: Cell<bool>,
 
     /// The `TranslationUnit` this script was loaded from.
-    translation_unit: Option<TranslationUnit<'gc>>,
+    translation_unit: TranslationUnit<'gc>,
 }
 
 impl<'gc> Script<'gc> {
-    /// Create an empty script.
-    ///
-    /// This method is intended for builtin script initialization, such as our
-    /// implementation of player globals. The builtin script initializer will
-    /// be responsible for actually installing traits into both the script
-    /// globals as well as the domain that this script is supposed to be a part
-    /// of.
-    ///
-    /// The `globals` object should be constructed using the `global`
-    /// prototype.
-    pub fn empty_script(mc: &Mutation<'gc>, globals: Object<'gc>, domain: Domain<'gc>) -> Self {
-        Self(Gc::new(
-            mc,
-            ScriptData {
-                globals,
-                domain,
-                init: Method::from_builtin(
-                    |_, _, _| Ok(Value::Undefined),
-                    "<Built-in script initializer>",
-                    mc,
-                ),
-                initialized: Cell::new(false),
-                translation_unit: None,
-            },
-        ))
-    }
-
     /// Construct a script from a `TranslationUnit` and its script index.
     ///
     /// The returned script will be allocated, and its traits will be loaded.
@@ -490,7 +462,7 @@ impl<'gc> Script<'gc> {
                 domain,
                 init,
                 initialized: Cell::new(false),
-                translation_unit: Some(unit),
+                translation_unit: unit,
             },
         ));
 
@@ -556,7 +528,7 @@ impl<'gc> Script<'gc> {
         self.0.domain
     }
 
-    pub fn translation_unit(self) -> Option<TranslationUnit<'gc>> {
+    pub fn translation_unit(self) -> TranslationUnit<'gc> {
         self.0.translation_unit
     }
 
@@ -568,6 +540,7 @@ impl<'gc> Script<'gc> {
     ///
     /// If the script has not yet been initialized, this will initialize it on
     /// the same stack.
+    #[inline]
     pub fn globals(self, context: &mut UpdateContext<'gc>) -> Result<Object<'gc>, Error<'gc>> {
         if !self.0.initialized.get() {
             self.0.initialized.set(true);
