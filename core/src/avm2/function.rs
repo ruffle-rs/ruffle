@@ -138,9 +138,12 @@ pub enum FunctionArgs<'a, 'gc> {
 impl<'a, 'gc> FunctionArgs<'a, 'gc> {
     pub fn to_slice(self, activation: &mut Activation<'_, 'gc>) -> Cow<'a, [Value<'gc>]> {
         match self {
-            FunctionArgs::OnAvmStack { arg_count, .. } => {
-                let args = activation.pop_stack_args(arg_count as u32);
-                Cow::Owned(args)
+            FunctionArgs::OnAvmStack {
+                arg_count,
+                stack_base,
+            } => {
+                let args_slice = activation.avm2().stack_slice(stack_base, arg_count);
+                Cow::Owned(args_slice.to_vec())
             }
             FunctionArgs::AsArgSlice { arguments } => Cow::Borrowed(arguments),
         }
@@ -249,7 +252,7 @@ pub fn exec<'gc>(
             // This used to be a one step called Activation::from_method,
             // but avoiding moving an Activation around helps perf
             let mut activation = Activation::from_nothing(activation.context);
-            if let Err(e) = activation.init_from_method(
+            activation.init_from_method(
                 bm,
                 scope,
                 receiver,
@@ -257,14 +260,7 @@ pub fn exec<'gc>(
                 bound_superclass,
                 bound_class,
                 callee,
-            ) {
-                // Make sure to remove arguments passed on the AVM stack if there were any
-                if let FunctionArgs::OnAvmStack { stack_base, .. } = arguments {
-                    activation.avm2().truncate_stack(stack_base);
-                }
-
-                return Err(e);
-            }
+            )?;
 
             #[cfg(feature = "tracy_avm")]
             let _span = {
@@ -290,11 +286,6 @@ pub fn exec<'gc>(
             let result = activation.run_actions(bm);
 
             activation.cleanup();
-
-            // Make sure to remove arguments passed on the AVM stack if there were any
-            if let FunctionArgs::OnAvmStack { stack_base, .. } = arguments {
-                activation.avm2().truncate_stack(stack_base);
-            }
 
             result
         }
