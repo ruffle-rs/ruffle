@@ -1149,9 +1149,11 @@ impl<'a, 'gc> Activation<'a, 'gc> {
 
         // However, the optimizer can still generate it.
 
+        let stack_base = self.avm2().stack.len() - arg_count as usize;
+
         let args = FunctionArgs::OnAvmStack {
             arg_count: arg_count as usize,
-            stack_base: self.avm2().stack.len() - arg_count as usize,
+            stack_base,
         };
         let receiver = self
             .avm2()
@@ -1160,8 +1162,8 @@ impl<'a, 'gc> Activation<'a, 'gc> {
 
         let value = receiver.call_method_with_args(index, args, self)?;
 
-        // Pop receiver now: `call_method_with_args` is responsible for popping the args
-        let _ = self.pop_stack();
+        // Ensure all arguments are popped
+        self.avm2().truncate_stack(stack_base - 1);
 
         if push_return_value {
             self.push_stack(value);

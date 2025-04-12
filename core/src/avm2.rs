@@ -813,6 +813,10 @@ impl<'gc> Avm2<'gc> {
         args
     }
 
+    fn stack_slice(&mut self, start: usize, len: usize) -> &[Value<'gc>] {
+        &self.stack[start..start + len]
+    }
+
     fn truncate_stack(&mut self, size: usize) {
         self.stack.truncate(size);
     }
