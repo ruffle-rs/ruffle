@@ -150,7 +150,7 @@ impl<W: Write> BitWriter<W> {
     #[inline]
     fn write_ubits(&mut self, num_bits: u32, n: u32) -> io::Result<()> {
         if num_bits > 0 {
-            self.bits.write(num_bits, n)
+            self.bits.write_var(num_bits, n)
         } else {
             Ok(())
         }
@@ -159,7 +159,7 @@ impl<W: Write> BitWriter<W> {
     #[inline]
     fn write_sbits(&mut self, num_bits: u32, n: i32) -> io::Result<()> {
         if num_bits > 0 {
-            self.bits.write_signed(num_bits, n)
+            self.bits.write_signed_var(num_bits, n)
         } else {
             Ok(())
         }
