@@ -264,7 +264,7 @@ impl<'a, 'b> BitReader<'a, 'b> {
     #[inline]
     fn read_ubits(&mut self, num_bits: u32) -> io::Result<u32> {
         if num_bits > 0 {
-            self.bits.read(num_bits)
+            self.bits.read_var(num_bits)
         } else {
             Ok(0)
         }
@@ -273,7 +273,7 @@ impl<'a, 'b> BitReader<'a, 'b> {
     #[inline]
     fn read_sbits(&mut self, num_bits: u32) -> io::Result<i32> {
         if num_bits > 0 {
-            self.bits.read_signed(num_bits)
+            self.bits.read_signed_var(num_bits)
         } else {
             Ok(0)
         }
