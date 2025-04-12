@@ -1,6 +1,6 @@
 use crate::avm2::activation::Activation;
 use crate::avm2::error::{make_error_1032, make_error_1080, make_error_1107};
-use crate::avm2::namespace::{CommonNamespaces, Namespace};
+use crate::avm2::namespace::Namespace;
 use crate::avm2::script::TranslationUnit;
 use crate::avm2::Error;
 use crate::avm2::QName;
@@ -528,34 +528,6 @@ impl<'gc> From<QName<'gc>> for Multiname<'gc> {
             name: Some(q.local_name()),
             param: None,
             flags: Default::default(),
-        }
-    }
-}
-
-#[derive(Collect)]
-#[collect(no_drop)]
-pub struct CommonMultinames<'gc> {
-    pub boolean: Gc<'gc, Multiname<'gc>>,
-    pub function: Gc<'gc, Multiname<'gc>>,
-    pub int: Gc<'gc, Multiname<'gc>>,
-}
-
-impl<'gc> CommonMultinames<'gc> {
-    pub fn new(context: &mut StringContext<'gc>, namespaces: &CommonNamespaces<'gc>) -> Self {
-        let mut create_pub_multiname = |local_name: &'static [u8]| -> Gc<'gc, Multiname<'gc>> {
-            Gc::new(
-                context.gc(),
-                Multiname::new(
-                    namespaces.public_all(),
-                    context.intern_static(WStr::from_units(local_name)),
-                ),
-            )
-        };
-
-        Self {
-            boolean: create_pub_multiname(b"Boolean"),
-            function: create_pub_multiname(b"Function"),
-            int: create_pub_multiname(b"int"),
         }
     }
 }
