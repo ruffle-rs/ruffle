@@ -287,6 +287,7 @@ impl<'gc> Avm2<'gc> {
     }
 
     /// Run a script's initializer method.
+    #[inline(never)]
     pub fn run_script_initializer(
         script: Script<'gc>,
         context: &mut UpdateContext<'gc>,
