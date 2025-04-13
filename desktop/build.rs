@@ -20,9 +20,6 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     println!("cargo:rerun-if-env-changed=CFG_RELEASE_CHANNEL");
     let channel = channel();
-    if channel == "nightly" || channel == "dev" {
-        println!("cargo:rustc-cfg=nightly");
-    }
     println!("cargo:rustc-env=CFG_RELEASE_CHANNEL={channel}");
 
     // Some SWFS have a large amount of recursion (particularly
