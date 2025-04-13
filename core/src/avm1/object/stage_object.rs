@@ -13,6 +13,7 @@ use crate::string::{AvmString, StringContext, WStr};
 use crate::types::Percent;
 use gc_arena::Collect;
 use ruffle_macros::istr;
+use smallvec::SmallVec;
 use swf::Twips;
 
 pub fn get_property<'gc>(
@@ -71,6 +72,9 @@ pub fn notify_property_change<'gc>(
     value: Value<'gc>,
     activation: &mut Activation<'_, 'gc>,
 ) -> Result<(), Error<'gc>> {
+    // Temporary vec to avoid double-borrow errors.
+    let mut text_fields = SmallVec::<[_; 1]>::new();
+
     // Check if a text field is bound to this property and update the text if so.
     let case_sensitive = activation.is_case_sensitive();
     if let Some(bindings) = dobj.avm1_text_field_bindings() {
@@ -81,11 +85,14 @@ pub fn notify_property_change<'gc>(
                 binding.variable_name.eq_ignore_case(&property_name)
             }
         }) {
-            binding
-                .text_field
-                .set_html_text(&value.coerce_to_string(activation)?, activation.context);
+            text_fields.push(binding.text_field);
         }
     }
+
+    for tf in text_fields {
+        tf.set_html_text(&value.coerce_to_string(activation)?, activation.context);
+    }
+
     Ok(())
 }
 
