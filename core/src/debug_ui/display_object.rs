@@ -77,6 +77,8 @@ pub struct DisplayObjectWindow {
     hovered_bounds: Option<Rectangle<Twips>>,
     search: String,
     track_current_frame: bool,
+    /// Which frame to scroll to in the frame list, if any
+    scroll_to_frame: Option<usize>,
 
     /// A buffer for editing EditText
     html_text: String,
@@ -97,6 +99,7 @@ impl Default for DisplayObjectWindow {
             hovered_bounds: None,
             search: Default::default(),
             track_current_frame: false,
+            scroll_to_frame: None,
             html_text: Default::default(),
         }
     }
@@ -805,77 +808,102 @@ impl DisplayObjectWindow {
                 let mut table = egui_extras::TableBuilder::new(ui)
                     .columns(egui_extras::Column::auto(), 4)
                     .column(egui_extras::Column::remainder())
+                    .cell_layout(egui::Layout::left_to_right(egui::Align::Center))
                     .auto_shrink(false);
                 if self.track_current_frame {
                     table = table
                         .scroll_to_row(object.current_frame() as usize, Some(egui::Align::Center));
                 }
-                table
-                    .header(row_h, |mut row| {
-                        row.col(|ui| {
-                            ui.label("#");
-                        });
-                        row.col(|ui| {
-                            ui.label("Scene");
-                        });
-                        row.col(|ui| {
-                            ui.label("Label");
-                        });
-                        row.col(|ui| {
-                            ui.label("Has Script");
-                        });
-                        row.col(|ui| {
-                            ui.label("Goto-and-");
-                        });
-                    })
-                    .body(|body| {
-                        body.rows(row_h, usize::from(object.total_frames()), |mut row| {
-                            let frame = (row.index() + 1) as u16;
-                            row.set_selected(object.current_frame() == frame);
-                            row.col(|ui| {
-                                ui.label(frame.to_string());
-                            });
-                            row.col(|ui| {
-                                ui.label(
-                                    scenes
-                                        .iter()
-                                        .find(|s| s.start <= frame && (s.start + s.length) > frame)
-                                        .map(|s| s.name.to_string())
-                                        .unwrap_or_default(),
-                                );
-                            });
-                            row.col(|ui| {
-                                ui.label(
-                                    object
-                                        .labels_in_range(frame, frame + 1)
-                                        .first()
-                                        .map(|(l, _)| l.to_string())
-                                        .unwrap_or_default(),
-                                );
-                            });
-                            row.col(|ui| {
-                                if object.has_frame_script(frame) {
-                                    ui.add_enabled(false, Button::new("AVM2 Script"));
-                                } else {
-                                    ui.label("");
-                                }
-                            });
-                            row.col(|ui| {
-                                if object.current_frame() != frame {
-                                    ui.horizontal(|ui| {
-                                        if ui.button("Stop").clicked() {
-                                            object.goto_frame(context, frame, true);
-                                        }
-                                        if ui.button("Play").clicked() {
-                                            object.goto_frame(context, frame, false);
-                                        }
-                                    });
-                                } else {
-                                    ui.label("(current)");
+                // Due to an API limitation of `Table`, we can't scroll to a row inside the
+                // table UI code, instead, we store which frame to scroll to, and do the scrolling
+                // here.
+                if let Some(frame) = self.scroll_to_frame.take() {
+                    table = table.scroll_to_row(frame, Some(egui::Align::Center))
+                }
+                let mut table = table.header(row_h, |mut row| {
+                    row.col(|ui| {
+                        ui.label("#");
+                    });
+                    row.col(|ui| {
+                        ui.menu_button("Scene", |ui| {
+                            egui::ScrollArea::vertical().show(ui, |ui| {
+                                for scene in &scenes {
+                                    if ui.button(scene.name.to_string()).clicked() {
+                                        ui.close_menu();
+                                        self.scroll_to_frame = Some(usize::from(scene.start));
+                                    }
                                 }
                             });
                         });
                     });
+                    row.col(|ui| {
+                        ui.menu_button("Label", |ui| {
+                            egui::ScrollArea::vertical().show(ui, |ui| {
+                                for (name, frame) in object.labels_in_range(0, u16::MAX) {
+                                    if ui.button(name.to_string()).clicked() {
+                                        ui.close_menu();
+                                        self.scroll_to_frame = Some(usize::from(frame));
+                                    }
+                                }
+                            });
+                        });
+                    });
+                    row.col(|ui| {
+                        ui.label("Has Script");
+                    });
+                    row.col(|ui| {
+                        ui.label("Goto-and-");
+                    });
+                });
+                table.ui_mut().separator();
+                table.body(|body| {
+                    body.rows(row_h, usize::from(object.total_frames()), |mut row| {
+                        let frame = (row.index() + 1) as u16;
+                        row.set_selected(object.current_frame() == frame);
+                        row.col(|ui| {
+                            ui.label(frame.to_string());
+                        });
+                        row.col(|ui| {
+                            ui.label(
+                                scenes
+                                    .iter()
+                                    .find(|s| s.start <= frame && (s.start + s.length) > frame)
+                                    .map(|s| s.name.to_string())
+                                    .unwrap_or_default(),
+                            );
+                        });
+                        row.col(|ui| {
+                            ui.label(
+                                object
+                                    .labels_in_range(frame, frame + 1)
+                                    .first()
+                                    .map(|(l, _)| l.to_string())
+                                    .unwrap_or_default(),
+                            );
+                        });
+                        row.col(|ui| {
+                            if object.has_frame_script(frame) {
+                                ui.add_enabled(false, Button::new("AVM2 Script"));
+                            } else {
+                                ui.label("");
+                            }
+                        });
+                        row.col(|ui| {
+                            if object.current_frame() != frame {
+                                ui.horizontal(|ui| {
+                                    if ui.button("Stop").clicked() {
+                                        object.goto_frame(context, frame, true);
+                                    }
+                                    if ui.button("Play").clicked() {
+                                        object.goto_frame(context, frame, false);
+                                    }
+                                });
+                            } else {
+                                ui.label("(current)");
+                            }
+                        });
+                    });
+                });
             });
     }
 
