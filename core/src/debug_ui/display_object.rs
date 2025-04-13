@@ -833,10 +833,14 @@ impl DisplayObjectWindow {
                     row.col(|ui| {
                         ui.menu_button("Scene", |ui| {
                             egui::ScrollArea::vertical().show(ui, |ui| {
-                                for scene in &scenes {
-                                    if ui.button(scene.name.to_string()).clicked() {
-                                        ui.close_menu();
-                                        self.scroll_to_frame = Some(usize::from(scene.start));
+                                if scenes.is_empty() {
+                                    ui.label("<no scenes>");
+                                } else {
+                                    for scene in &scenes {
+                                        if ui.button(scene.name.to_string()).clicked() {
+                                            ui.close_menu();
+                                            self.scroll_to_frame = Some(usize::from(scene.start));
+                                        }
                                     }
                                 }
                             });
@@ -845,10 +849,15 @@ impl DisplayObjectWindow {
                     row.col(|ui| {
                         ui.menu_button("Label", |ui| {
                             egui::ScrollArea::vertical().show(ui, |ui| {
-                                for (name, frame) in object.labels_in_range(0, u16::MAX) {
-                                    if ui.button(name.to_string()).clicked() {
-                                        ui.close_menu();
-                                        self.scroll_to_frame = Some(usize::from(frame));
+                                let labels = object.labels_in_range(0, u16::MAX);
+                                if labels.is_empty() {
+                                    ui.label("<no labels>");
+                                } else {
+                                    for (name, frame) in labels {
+                                        if ui.button(name.to_string()).clicked() {
+                                            ui.close_menu();
+                                            self.scroll_to_frame = Some(usize::from(frame));
+                                        }
                                     }
                                 }
                             });
