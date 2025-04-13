@@ -261,6 +261,18 @@ impl<'a, 'b> BitReader<'a, 'b> {
         self.bits.read_bit()
     }
 
+    /// A variant of `read_ubits` for when the number of bits to read is
+    /// a *c*ompile-*t*ime constant. This should be more efficient.
+    #[inline]
+    fn read_ubits_ct<const NUM_BITS: u32>(&mut self) -> io::Result<u32> {
+        if NUM_BITS > 0 {
+            self.bits.read::<NUM_BITS, u32>()
+        } else {
+            Ok(0)
+        }
+    }
+
+    /// If `num_bits` is a compile-time constant, consider `read_ubits_ct` instead.
     #[inline]
     fn read_ubits(&mut self, num_bits: u32) -> io::Result<u32> {
         if num_bits > 0 {
@@ -626,7 +638,7 @@ impl<'a> Reader<'a> {
 
     pub fn read_rectangle(&mut self) -> Result<Rectangle<Twips>> {
         let mut bits = self.bits();
-        let num_bits = bits.read_ubits(5)?;
+        let num_bits = bits.read_ubits_ct::<5>()?;
         Ok(Rectangle {
             x_min: bits.read_sbits_twips(num_bits)?,
             x_max: bits.read_sbits_twips(num_bits)?,
@@ -659,7 +671,7 @@ impl<'a> Reader<'a> {
         let mut bits = self.bits();
         let has_add = bits.read_bit()?;
         let has_mult = bits.read_bit()?;
-        let num_bits = bits.read_ubits(4)?;
+        let num_bits = bits.read_ubits_ct::<4>()?;
         let mut color_transform = ColorTransform::default();
         if has_mult {
             color_transform.r_multiply = bits.read_sbits_fixed8(num_bits)?;
@@ -685,18 +697,18 @@ impl<'a> Reader<'a> {
         let mut m = Matrix::IDENTITY;
         // Scale
         if bits.read_bit()? {
-            let num_bits = bits.read_ubits(5)?;
+            let num_bits = bits.read_ubits_ct::<5>()?;
             m.a = bits.read_fbits(num_bits)?;
             m.d = bits.read_fbits(num_bits)?;
         }
         // Rotate/Skew
         if bits.read_bit()? {
-            let num_bits = bits.read_ubits(5)?;
+            let num_bits = bits.read_ubits_ct::<5>()?;
             m.b = bits.read_fbits(num_bits)?;
             m.c = bits.read_fbits(num_bits)?;
         }
         // Translate (always present)
-        let num_bits = bits.read_ubits(5)?;
+        let num_bits = bits.read_ubits_ct::<5>()?;
         m.tx = bits.read_sbits_twips(num_bits)?;
         m.ty = bits.read_sbits_twips(num_bits)?;
         Ok(m)
@@ -1278,8 +1290,8 @@ impl<'a> Reader<'a> {
         let mut shape_context = ShapeContext {
             swf_version,
             shape_version: version,
-            num_fill_bits: bits.read_ubits(4)? as u8,
-            num_line_bits: bits.read_ubits(4)? as u8,
+            num_fill_bits: bits.read_ubits_ct::<4>()? as u8,
+            num_line_bits: bits.read_ubits_ct::<4>()? as u8,
         };
         let mut start_shape = Vec::new();
         while let Some(record) = Self::read_shape_record(&mut bits, &mut shape_context)? {
@@ -1729,7 +1741,7 @@ impl<'a> Reader<'a> {
         let is_edge_record = bits.read_bit()?;
         let shape_record = if is_edge_record {
             let is_straight_edge = bits.read_bit()?;
-            let num_bits = bits.read_ubits(4)? + 2;
+            let num_bits = bits.read_ubits_ct::<4>()? + 2;
             if is_straight_edge {
                 // StraightEdge
                 let is_axis_aligned = !bits.read_bit()?;
@@ -1759,13 +1771,13 @@ impl<'a> Reader<'a> {
                 })
             }
         } else {
-            let flags = ShapeRecordFlag::from_bits_truncate(bits.read_ubits(5)? as u8);
+            let flags = ShapeRecordFlag::from_bits_truncate(bits.read_ubits_ct::<5>()? as u8);
             if !flags.is_empty() {
                 // StyleChange
                 let num_fill_bits = context.num_fill_bits as u32;
                 let num_line_bits = context.num_line_bits as u32;
                 let move_to = if flags.contains(ShapeRecordFlag::MOVE_TO) {
-                    let num_bits = bits.read_ubits(5)?;
+                    let num_bits = bits.read_ubits_ct::<5>()?;
                     let move_x = bits.read_sbits_twips(num_bits)?;
                     let move_y = bits.read_sbits_twips(num_bits)?;
                     Some(Point::new(move_x, move_y))
@@ -2698,6 +2710,19 @@ pub mod tests {
                 false, true, false, true, false, true, false, true, false, false, true, false,
                 false, true, false, true
             ]
+        );
+    }
+
+    #[test]
+    fn read_ubits_ct() {
+        let buf: &[u8] = &[0b01010101, 0b00100101];
+        let mut reader = Reader::new(buf, 1);
+        let mut bits = reader.bits();
+        assert_eq!(
+            (0..8)
+                .map(|_| bits.read_ubits_ct::<2>().unwrap())
+                .collect::<Vec<_>>(),
+            [1, 1, 1, 1, 0, 2, 1, 1]
         );
     }
 
