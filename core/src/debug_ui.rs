@@ -16,6 +16,7 @@ use crate::debug_ui::handle::{
 };
 use crate::debug_ui::movie::{MovieListWindow, MovieWindow};
 use crate::display_object::TDisplayObject;
+use crate::prelude::DisplayObject;
 use crate::tag_utils::SwfMovie;
 use gc_arena::DynamicRootSet;
 use hashbrown::HashMap;
@@ -51,6 +52,7 @@ pub enum Message {
     ShowDomains,
     SaveFile(ItemToSave),
     SearchForDisplayObject,
+    TrackRootMovieClip,
 }
 
 impl DebugUi {
@@ -132,6 +134,15 @@ impl DebugUi {
                 }
                 Message::SearchForDisplayObject => {
                     self.display_object_search = Some(Default::default());
+                }
+                Message::TrackRootMovieClip => {
+                    // Convenience action to quickly access the root movie clip
+                    if let Some(obj @ DisplayObject::MovieClip(_)) = context.stage.root_clip() {
+                        let win =
+                            DisplayObjectWindow::with_panel(display_object::Panel::TypeSpecific);
+                        self.display_objects
+                            .insert(DisplayObjectHandle::new(context, obj), win);
+                    }
                 }
             }
         }

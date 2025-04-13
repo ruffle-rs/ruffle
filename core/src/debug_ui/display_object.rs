@@ -59,7 +59,7 @@ const ALL_BLEND_MODES: [ExtendedBlendMode; 15] = [
 ];
 
 #[derive(Debug, Eq, PartialEq, Hash, Default, Copy, Clone)]
-enum Panel {
+pub enum Panel {
     #[default]
     Position,
     Display,
@@ -106,6 +106,12 @@ impl Default for DisplayObjectWindow {
 }
 
 impl DisplayObjectWindow {
+    pub fn with_panel(panel: Panel) -> Self {
+        Self {
+            open_panel: panel,
+            ..Default::default()
+        }
+    }
     pub fn debug_rect_color(&self) -> Option<Color> {
         if self.debug_rect_visible {
             Some(Color {

@@ -5,6 +5,7 @@ use crate::player::LaunchOptions;
 use crate::preferences::GlobalPreferences;
 use egui::{menu, Button, Key, KeyboardShortcut, Modifiers, Widget};
 use ruffle_core::config::Letterbox;
+use ruffle_core::focus_tracker::DisplayObject;
 use ruffle_core::{Player, StageScaleMode};
 use ruffle_frontend_utils::recents::Recent;
 use ruffle_render::quality::StageQuality;
@@ -133,6 +134,17 @@ impl MenuBar {
                             ui.close_menu();
                             if let Some(player) = &mut player {
                                 player.debug_ui().queue_message(DebugMessage::TrackStage);
+                            }
+                        }
+                        if let Some(player) = &mut player {
+                            let mut has_root_movie_clip = false;
+                            player.mutate_with_update_context(|ctx| {
+                                has_root_movie_clip = matches!(ctx.stage.root_clip(), Some(DisplayObject::MovieClip(_)));
+                            });
+                            let button = Button::new(text(locale, "debug-menu-open-root-movie-clip"));
+                            if ui.add_enabled(has_root_movie_clip, button).clicked() {
+                                ui.close_menu();
+                                player.debug_ui().queue_message(DebugMessage::TrackRootMovieClip);
                             }
                         }
                         if Button::new(text(locale, "debug-menu-open-movie")).ui(ui).clicked() {

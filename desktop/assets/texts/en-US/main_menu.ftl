@@ -36,6 +36,7 @@ bookmarks-menu-manage = Manage Bookmarks...
 
 debug-menu = Debug Tools
 debug-menu-open-stage = View Stage Info
+debug-menu-open-root-movie-clip = View Root MovieClip
 debug-menu-open-movie = View Movie
 debug-menu-open-movie-list = Show Known Movies
 debug-menu-open-domain-list = Show Domains
