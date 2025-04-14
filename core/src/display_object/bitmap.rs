@@ -77,7 +77,7 @@ impl<'gc> BitmapClass<'gc> {
     }
 }
 
-/// A Bitmap display object is a raw bitamp on the stage.
+/// A Bitmap display object is a raw bitmap on the stage.
 /// This can only be instanitated on the display list in SWFv9 AVM2 files.
 /// In AVM1, this is only a library symbol that is referenced by `Graphic`.
 /// Normally bitmaps are drawn in Flash as part of a Shape tag (`Graphic`),

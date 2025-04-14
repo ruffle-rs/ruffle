@@ -460,7 +460,7 @@ pub fn verify_method<'gc>(
 
     // We have to deal with AbcOp storing branch offsets as i32 offsets, while Op
     // stores them as usize absolute positions. When initially converting AbcOps
-    // to Ops, we convert the values without processessing them at all. Now we
+    // to Ops, we convert the values without processing them at all. Now we
     // convert them back, and get the correct absolute positions.
     let mut adjust_jump_to_idx = |i, offset, is_jump| -> Result<usize, Error<'gc>> {
         const JUMP_INSTRUCTION_LENGTH: usize = 4;

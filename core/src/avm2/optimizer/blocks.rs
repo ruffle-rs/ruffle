@@ -139,7 +139,7 @@ pub fn assemble_blocks<'a, 'gc>(
         }
     }
 
-    // Create a table mapping op indices to block indicies.
+    // Create a table mapping op indices to block indices.
     let mut op_index_to_block_index_table = HashMap::new();
     for (i, block) in block_list.iter().enumerate() {
         op_index_to_block_index_table.insert(block.start_index, i);

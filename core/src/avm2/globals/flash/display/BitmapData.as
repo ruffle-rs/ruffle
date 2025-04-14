@@ -95,9 +95,9 @@ package flash.display {
         ):int;
         public native function merge(
             sourceBitmapData:BitmapData, sourceRect:Rectangle, destPoint:Point, redMultiplier:uint, greenMultiplier:uint, blueMultiplier:uint, alphaMultiplier:uint
-        ):void 
+        ):void;
         public function generateFilterRect(sourceRect:Rectangle, filter:BitmapFilter):Rectangle {
-            // Flash always reports that a ShaderFilter affects the entire BitampData, ignoring SourceRect.
+            // Flash always reports that a ShaderFilter affects the entire BitmapData, ignoring sourceRect.
             if (filter is ShaderFilter) {
                 return this.rect.clone();
             }

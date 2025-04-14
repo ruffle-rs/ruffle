@@ -450,7 +450,7 @@ pub(super) fn run_pixelbender_shader_impl(
         ShaderMode::ShaderJob => [0.0f32, 0.0f32, 0.0f32, 0.0f32],
         // When a Shader is run through a ShaderFilter, out-of-range texture sample coordinates
         // return transparent black (0.0, 0.0, 0.0, 0.0). This is easiest to observe with
-        // BitmapData.applyFilter when the BitampData destination is larger than the source.
+        // BitmapData.applyFilter when the BitmapData destination is larger than the source.
         ShaderMode::Filter => [1.0f32, 1.0f32, 1.0f32, 1.0f32],
     }]));
     drop(zeroed_out_of_range_mode_slice);
