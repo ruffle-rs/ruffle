@@ -294,48 +294,16 @@ impl<'gc> Avm2<'gc> {
     ) -> Result<(), Error<'gc>> {
         let mut init_activation = Activation::from_script(context, script)?;
 
-        // Execute everything in a closure so we can run `cleanup` more easily.
-        let mut closure = || -> Result<(), Error<'gc>> {
-            let (method, scope, _domain) = script.init();
-            match method {
-                Method::Native(method) => {
-                    if method.resolved_signature.read().is_none() {
-                        method.resolve_signature(&mut init_activation)?;
-                    }
+        let mc = init_activation.gc();
 
-                    let resolved_signature = method.resolved_signature.read();
-                    let resolved_signature = resolved_signature.as_ref().unwrap();
-
-                    // This exists purely to check if the builtin is OK with being called with
-                    // no parameters.
-                    init_activation.resolve_parameters(method, &[], resolved_signature, None)?;
-                    init_activation
-                        .context
-                        .avm2
-                        .push_global_init(init_activation.gc(), script);
-                    let r = (method.method)(&mut init_activation, Value::Object(scope), &[]);
-                    init_activation.context.avm2.pop_call(init_activation.gc());
-                    r?;
-                }
-                Method::Bytecode(method) => {
-                    init_activation
-                        .context
-                        .avm2
-                        .push_global_init(init_activation.gc(), script);
-                    let r = init_activation.run_actions(method);
-                    init_activation.context.avm2.pop_call(init_activation.gc());
-                    r?;
-                }
-            };
-
-            Ok(())
-        };
-
-        let result = closure();
+        let (method, _globals, _domain) = script.init();
+        init_activation.avm2().push_global_init(mc, script);
+        let result = init_activation.run_actions(method);
+        init_activation.avm2().pop_call(mc);
 
         init_activation.cleanup();
 
-        result
+        result.map(|_| {})
     }
 
     fn orphan_objects_mut(&mut self) -> &mut Vec<DisplayObjectWeak<'gc>> {

@@ -460,7 +460,7 @@ fn write_native_table(data: &[u8], out_dir: &Path) -> Result<Vec<u8>, Box<dyn st
     let mut rust_accessible_slots: HashMap<String, Vec<_>> = HashMap::new();
     let mut rust_accessible_methods: HashMap<String, Vec<_>> = HashMap::new();
 
-    let mut check_trait = |trait_: &Trait, parent: Option<Index<Multiname>>| {
+    let mut check_trait = |trait_: &Trait, parent: Option<Index<Multiname>>, is_class: bool| {
         match trait_.kind {
             TraitKind::Slot { slot_id, .. } | TraitKind::Const { slot_id, .. } => {
                 if trait_has_metadata(&abc, trait_, METADATA_NATIVE_ACCESSIBLE) {
@@ -491,9 +491,12 @@ fn write_native_table(data: &[u8], out_dir: &Path) -> Result<Vec<u8>, Box<dyn st
                     if disp_id == 0 {
                         panic!("ASC should calculate disp ids for all methods; cannot apply NativeCallable without a compiler-calculated disp id")
                     } else {
-                        // Disp-ids are 1-indexed, but ASC generates them one disp-id
-                        // off. Instead of subtracting 1 from it the disp-id, subtract 2.
-                        let disp_id = disp_id - 2;
+                        // Disp-ids are 1-indexed, but ASC generates them two disp-ids
+                        // too low for class methods and one disp-id too high for
+                        // instance methods. Instead of subtracting 1 from it the disp-id,
+                        // add 1 if it's a class method, or subtract 2 if it's
+                        // an instance method.
+                        let disp_id = if is_class { disp_id + 1 } else { disp_id - 2 };
 
                         let (trait_name, const_name) =
                             rust_path_and_trait_name(&abc, trait_, parent);
@@ -551,18 +554,18 @@ fn write_native_table(data: &[u8], out_dir: &Path) -> Result<Vec<u8>, Box<dyn st
     for (i, instance) in abc.instances.iter().enumerate() {
         // Look for native instance methods
         for trait_ in &instance.traits {
-            check_trait(trait_, Some(instance.name));
+            check_trait(trait_, Some(instance.name), false);
         }
         // Look for native class methods (in the corresponding
         // `Class` definition)
         for trait_ in &abc.classes[i].traits {
-            check_trait(trait_, Some(instance.name));
+            check_trait(trait_, Some(instance.name), true);
         }
     }
     // Look for freestanding methods
     for script in &abc.scripts {
         for trait_ in &script.traits {
-            check_trait(trait_, None);
+            check_trait(trait_, None, false);
         }
     }
 

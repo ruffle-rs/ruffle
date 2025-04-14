@@ -6,7 +6,7 @@ use crate::avm2::class::Class;
 use crate::avm2::domain::Domain;
 use crate::avm2::error::{make_error_1107, Error};
 use crate::avm2::globals::global_scope;
-use crate::avm2::method::{BytecodeMethod, Method};
+use crate::avm2::method::Method;
 use crate::avm2::object::{Object, ScriptObject, TObject};
 use crate::avm2::scope::ScopeChain;
 use crate::avm2::traits::{Trait, TraitKind};
@@ -183,34 +183,18 @@ impl<'gc> TranslationUnit<'gc> {
         let is_global = read.domain.is_playerglobals_domain(activation.avm2());
         drop(read);
 
-        let bc_method =
-            BytecodeMethod::from_method_index(self, method_index, is_function, activation)?;
+        let mut native_method = None;
 
-        // This closure lets us move out of 'bc_method.signature' and then return,
-        // allowing us to use 'bc_method' later on without a borrow-checker error.
-        let method = (|| {
-            if is_global {
-                if let Some((name, native)) =
-                    activation.avm2().native_method_table[method_index.0 as usize]
-                {
-                    assert_eq!(
-                        bc_method.abc_method_body, None,
-                        "Method in native method table has a bytecode body!"
-                    );
-                    let variadic = bc_method.is_variadic();
-                    // Set the method name and function pointer from the table.
-                    return Method::from_builtin_and_params(
-                        native,
-                        name,
-                        bc_method.signature,
-                        bc_method.return_type,
-                        variadic,
-                        activation.gc(),
-                    );
-                }
+        if is_global {
+            if let Some((_name, native)) =
+                activation.avm2().native_method_table[method_index.0 as usize]
+            {
+                native_method = Some(native);
             }
-            Gc::new(activation.gc(), bc_method).into()
-        })();
+        }
+
+        let method =
+            Method::from_method_index(self, method_index, native_method, is_function, activation)?;
 
         self.0.write(activation.gc()).methods[method_index.0 as usize] = Some(method);
 
