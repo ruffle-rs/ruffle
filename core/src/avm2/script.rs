@@ -186,9 +186,7 @@ impl<'gc> TranslationUnit<'gc> {
         let mut native_method = None;
 
         if is_global {
-            if let Some((_name, native)) =
-                activation.avm2().native_method_table[method_index.0 as usize]
-            {
+            if let Some(native) = activation.avm2().native_method_table[method_index.0 as usize] {
                 native_method = Some(native);
             }
         }

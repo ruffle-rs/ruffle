@@ -144,16 +144,16 @@ pub struct Avm2<'gc> {
     namespaces: Gc<'gc, CommonNamespaces<'gc>>,
 
     #[collect(require_static)]
-    native_method_table: &'static [Option<(&'static str, NativeMethodImpl)>],
+    native_method_table: &'static [Option<NativeMethodImpl>],
 
     #[collect(require_static)]
-    native_instance_allocator_table: &'static [Option<(&'static str, AllocatorFn)>],
+    native_instance_allocator_table: &'static [Option<AllocatorFn>],
 
     #[collect(require_static)]
-    native_call_handler_table: &'static [Option<(&'static str, NativeMethodImpl)>],
+    native_call_handler_table: &'static [Option<NativeMethodImpl>],
 
     #[collect(require_static)]
-    native_custom_constructor_table: &'static [Option<(&'static str, CustomConstructorFn)>],
+    native_custom_constructor_table: &'static [Option<CustomConstructorFn>],
 
     /// A list of objects which are capable of receiving broadcasts.
     ///
