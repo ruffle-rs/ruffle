@@ -511,16 +511,15 @@ impl<'gc> Class<'gc> {
         if unit.domain().is_playerglobals_domain(activation.avm2()) {
             instance_allocator = activation.avm2().native_instance_allocator_table
                 [class_index as usize]
-                .map(|(_name, ptr)| Allocator(ptr));
+                .map(Allocator);
 
-            if let Some((_name, table_native_call_handler)) =
+            if let Some(table_native_call_handler) =
                 activation.avm2().native_call_handler_table[class_index as usize]
             {
                 call_handler = Some(table_native_call_handler);
             }
 
-            // We only store the `name` for consistency with the other tables
-            if let Some((_name, table_custom_constructor)) =
+            if let Some(table_custom_constructor) =
                 activation.avm2().native_custom_constructor_table[class_index as usize]
             {
                 custom_constructor = Some(table_custom_constructor);
