@@ -8,7 +8,7 @@ use crate::avm2::error::{
     make_error_1065, make_error_1127, make_error_1506, make_null_or_undefined_error, type_error,
 };
 use crate::avm2::function::FunctionArgs;
-use crate::avm2::method::{BytecodeMethod, Method, NativeMethod, ResolvedParamConfig};
+use crate::avm2::method::{Method, ResolvedParamConfig};
 use crate::avm2::object::{
     ArrayObject, ByteArrayObject, ClassObject, FunctionObject, NamespaceObject, ScriptObject,
     XmlListObject,
@@ -155,16 +155,11 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     ) -> Result<Self, Error<'gc>> {
         let (method, global_object, domain) = script.init();
 
-        let num_locals = match method {
-            Method::Native { .. } => 1,
-            Method::Bytecode(bytecode) => {
-                let body = bytecode
-                    .body()
-                    .expect("Cannot execute non-native method (for script) without body");
+        let body = method
+            .body()
+            .expect("Cannot execute method for script without body");
 
-                body.num_locals as usize
-            }
-        };
+        let num_locals = body.num_locals as usize;
 
         let mut created_activation = Self {
             num_locals,
@@ -178,12 +173,13 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             context,
         };
 
+        // Script initializers should only be run once
+        assert!(!method.is_info_resolved());
+        // Resolve signature
+        method.resolve_info(&mut created_activation)?;
+
         // Run verifier for bytecode methods
-        if let Method::Bytecode(method) = method {
-            if method.verified_info.borrow().is_none() {
-                BytecodeMethod::verify(method, &mut created_activation)?;
-            }
-        }
+        method.verify(&mut created_activation)?;
 
         // Create locals- script init methods are run with no parameters passed
         created_activation.push_stack(global_object);
@@ -228,7 +224,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     /// the signature, with missing parameters filled in with defaults.
     pub fn resolve_parameters(
         &mut self,
-        method: Gc<'gc, NativeMethod<'gc>>,
+        method: Method<'gc>,
         user_arguments: &[Value<'gc>],
         signature: &[ResolvedParamConfig<'gc>],
         bound_class: Option<Class<'gc>>,
@@ -257,7 +253,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
                     } else {
                         return Err(Error::AvmError(make_mismatch_error(
                             self,
-                            Method::Native(method),
+                            method,
                             user_arguments.len(),
                             bound_class,
                         )?));
@@ -283,7 +279,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     #[inline(never)]
     fn create_varargs_object(
         &mut self,
-        method: Gc<'gc, BytecodeMethod<'gc>>,
+        method: Method<'gc>,
         signature: &[ResolvedParamConfig<'gc>],
         user_arguments: FunctionArgs<'_, 'gc>,
         callee: Value<'gc>,
@@ -348,7 +344,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     #[allow(clippy::too_many_arguments)]
     pub fn init_from_method(
         &mut self,
-        method: Gc<'gc, BytecodeMethod<'gc>>,
+        method: Method<'gc>,
         outer: ScopeChain<'gc>,
         this: Value<'gc>,
         user_arguments: FunctionArgs<'_, 'gc>,
@@ -376,18 +372,20 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         self.stack_depth = self.context.avm2.stack.len();
         self.scope_depth = self.context.avm2.scope_stack.len();
 
-        // Everything is now setup for the verifier to run
-        if method.verified_info.borrow().is_none() {
-            BytecodeMethod::verify(method, self)?;
+        // Resolve parameters and return type
+        if !method.is_info_resolved() {
+            method.resolve_info(self)?;
         }
 
-        let verified_info = method.verified_info.borrow();
-        let signature = &verified_info.as_ref().unwrap().param_config;
+        // Everything is now setup for the verifier to run
+        method.verify(self)?;
+
+        let signature = &*method.resolved_param_config();
 
         if user_arguments.len() > signature.len() && !has_rest_or_args && !method.is_unchecked() {
             return Err(Error::AvmError(make_mismatch_error(
                 self,
-                Method::Bytecode(method),
+                method,
                 user_arguments.len(),
                 bound_class,
             )?));
@@ -421,7 +419,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
                 } else {
                     return Err(Error::AvmError(make_mismatch_error(
                         self,
-                        Method::Bytecode(method),
+                        method,
                         user_arguments.len(),
                         bound_class,
                     )?));
@@ -663,7 +661,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     /// Retrieve a namespace from the current constant pool.
     fn pool_namespace(
         &mut self,
-        method: Gc<'gc, BytecodeMethod<'gc>>,
+        method: Method<'gc>,
         index: Index<AbcNamespace>,
     ) -> Result<Namespace<'gc>, Error<'gc>> {
         method.translation_unit().pool_namespace(self, index)
@@ -672,7 +670,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     /// Retrieve a method entry from the current ABC file's method table.
     fn table_method(
         &mut self,
-        method: Gc<'gc, BytecodeMethod<'gc>>,
+        method: Method<'gc>,
         index: Index<AbcMethod>,
         is_function: bool,
     ) -> Result<Method<'gc>, Error<'gc>> {
@@ -681,14 +679,11 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             .load_method(index, is_function, self)
     }
 
-    pub fn run_actions(
-        &mut self,
-        method: Gc<'gc, BytecodeMethod<'gc>>,
-    ) -> Result<Value<'gc>, Error<'gc>> {
+    pub fn run_actions(&mut self, method: Method<'gc>) -> Result<Value<'gc>, Error<'gc>> {
         // The method must be verified at this point
 
-        let verified_info = method.verified_info.borrow();
-        let opcodes = verified_info.as_ref().unwrap().parsed_code.as_slice();
+        let verified_info = method.get_verified_info();
+        let opcodes = verified_info.parsed_code.as_slice();
 
         self.timeout_check()?;
 
@@ -919,7 +914,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     /// the error. Otherwise pass the error down the stack.
     fn handle_err(
         &mut self,
-        method: Gc<'gc, BytecodeMethod<'gc>>,
+        method: Method<'gc>,
         ip: usize,
         error: Error<'gc>,
     ) -> Result<usize, Error<'gc>> {
@@ -928,8 +923,8 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             Error::RustError(_) => return Err(error),
         };
 
-        let verified_info = method.verified_info.borrow();
-        let exception_list = &verified_info.as_ref().unwrap().exceptions;
+        let verified_info = method.get_verified_info();
+        let exception_list = &verified_info.exceptions;
 
         let last_ip = ip - 1;
         for e in exception_list {
@@ -991,7 +986,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
 
     fn op_push_namespace(
         &mut self,
-        method: Gc<'gc, BytecodeMethod<'gc>>,
+        method: Method<'gc>,
         value: Index<AbcNamespace>,
     ) -> Result<(), Error<'gc>> {
         let ns = self.pool_namespace(method, value)?;
@@ -1161,7 +1156,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
 
     fn op_call_static(
         &mut self,
-        method: Gc<'gc, BytecodeMethod<'gc>>,
+        method: Method<'gc>,
         index: Index<AbcMethod>,
         arg_count: u32,
     ) -> Result<(), Error<'gc>> {
@@ -1487,14 +1482,10 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         Ok(())
     }
 
-    fn op_newcatch(
-        &mut self,
-        method: Gc<'gc, BytecodeMethod<'gc>>,
-        index: usize,
-    ) -> Result<(), Error<'gc>> {
+    fn op_newcatch(&mut self, method: Method<'gc>, index: usize) -> Result<(), Error<'gc>> {
         // TODO can we store the catch class in the op?
-        let verified_info = method.verified_info.borrow();
-        let exception_list = &verified_info.as_ref().unwrap().exceptions;
+        let verified_info = method.get_verified_info();
+        let exception_list = &verified_info.exceptions;
 
         let catch_class = &exception_list[index].catch_class;
 
@@ -1764,7 +1755,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
 
     fn op_new_function(
         &mut self,
-        method: Gc<'gc, BytecodeMethod<'gc>>,
+        method: Method<'gc>,
         index: Index<AbcMethod>,
     ) -> Result<(), Error<'gc>> {
         let method_entry = self.table_method(method, index, true)?;

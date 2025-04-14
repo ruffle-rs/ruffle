@@ -44,9 +44,13 @@ package {
         public native function get prototype():*;
         public native function set prototype(proto:*):*;
 
+        AS3 native function apply(receiver:* = void 0, args:* = void 0):*;
         AS3 native function call(receiver:* = void 0, ...rest):*;
 
-        AS3 native function apply(receiver:* = void 0, args:* = void 0):*;
+        [Ruffle(NativeCallable)]
+        private static function createDummyFunction():Function {
+            return function() { };
+        }
 
         public static const length:int = 1;
     }
