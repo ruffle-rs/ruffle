@@ -315,7 +315,10 @@ impl<'gc> ClassObject<'gc> {
             .c_class()
             .expect("ClassObject stores an i_class");
 
-        let class_initializer = c_class.instance_init();
+        let Some(class_initializer) = c_class.instance_init() else {
+            unreachable!("c_classes should always have initializer methods")
+        };
+
         let class_init_fn = FunctionObject::from_method(
             activation,
             class_initializer,
@@ -341,16 +344,20 @@ impl<'gc> ClassObject<'gc> {
     ) -> Result<Value<'gc>, Error<'gc>> {
         let scope = self.0.instance_scope.get();
         let method = self.init_method();
-        exec(
-            method,
-            scope,
-            receiver,
-            self.superclass_object(),
-            Some(self.inner_class_definition()),
-            FunctionArgs::AsArgSlice { arguments },
-            activation,
-            self.into(),
-        )
+        if let Some(method) = method {
+            exec(
+                method,
+                scope,
+                receiver,
+                self.superclass_object(),
+                Some(self.inner_class_definition()),
+                FunctionArgs::AsArgSlice { arguments },
+                activation,
+                self.into(),
+            )
+        } else {
+            unreachable!("Cannot instantiate a class without an init method")
+        }
     }
 
     /// Supercall a method defined in this class.
@@ -659,14 +666,10 @@ impl<'gc> ClassObject<'gc> {
     }
 
     pub fn translation_unit(self) -> Option<TranslationUnit<'gc>> {
-        if let Method::Bytecode(bc) = self.init_method() {
-            Some(bc.txunit)
-        } else {
-            None
-        }
+        self.init_method().map(|m| m.translation_unit())
     }
 
-    pub fn init_method(self) -> Method<'gc> {
+    pub fn init_method(self) -> Option<Method<'gc>> {
         self.inner_class_definition().instance_init()
     }
 

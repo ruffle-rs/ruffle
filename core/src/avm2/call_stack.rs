@@ -56,7 +56,7 @@ impl<'gc> CallStack<'gc> {
                     // added by Ruffle
                     output.push_utf8(&format!("global$init() [TU={}]", name));
                 }
-                CallNode::Method { method, class } => display_function(output, method, *class),
+                CallNode::Method { method, class } => display_function(output, *method, *class),
             }
         }
     }

@@ -153,12 +153,10 @@ impl<'gc> TObject<'gc> for FunctionObject<'gc> {
     }
 
     fn to_string(&self, mc: &Mutation<'gc>) -> AvmString<'gc> {
-        // TODO this should use the ABC method index of the Method held by the
-        // BoundMethod (the same number that appears after "MethodInfo-" in
-        // stack traces)
-        let method_idx = 0;
+        let method = self.0.exec.as_method();
+        let method_index = method.abc_method_index();
 
-        AvmString::new_utf8(mc, format!("[object Function-{method_idx}]"))
+        AvmString::new_utf8(mc, format!("[object Function-{method_index}]"))
     }
 
     fn as_function_object(&self) -> Option<FunctionObject<'gc>> {

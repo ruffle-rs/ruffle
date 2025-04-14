@@ -129,10 +129,11 @@ pub struct ClassData<'gc> {
     #[collect(require_static)]
     instance_allocator: Allocator,
 
-    /// The instance initializer for this class.
+    /// The instance initializer for this class, None if this class is not
+    /// instantiable.
     ///
     /// Must be called each time a new class instance is constructed.
-    instance_init: Method<'gc>,
+    instance_init: Option<Method<'gc>>,
 
     /// Traits for a given class.
     ///
@@ -214,8 +215,8 @@ impl<'gc> Class<'gc> {
     pub fn new(
         name: QName<'gc>,
         super_class: Option<Class<'gc>>,
-        instance_init: Method<'gc>,
-        class_init: Method<'gc>,
+        instance_init: Option<Method<'gc>>,
+        class_init: Option<Method<'gc>>,
         class_i_class: Class<'gc>,
         mc: &Mutation<'gc>,
     ) -> Self {
@@ -286,7 +287,6 @@ impl<'gc> Class<'gc> {
     pub fn custom_new(
         name: QName<'gc>,
         super_class: Option<Class<'gc>>,
-        instance_init: Method<'gc>,
         traits: Vec<Trait<'gc>>,
         mc: &Mutation<'gc>,
     ) -> Self {
@@ -301,7 +301,7 @@ impl<'gc> Class<'gc> {
                 direct_interfaces: Vec::new(),
                 all_interfaces: Vec::new(),
                 instance_allocator: Allocator(scriptobject_allocator),
-                instance_init,
+                instance_init: None,
                 traits,
                 vtable: VTable::empty(mc),
                 call_handler: None,
@@ -542,7 +542,7 @@ impl<'gc> Class<'gc> {
                 direct_interfaces: interfaces,
                 all_interfaces: Vec::new(),
                 instance_allocator,
-                instance_init,
+                instance_init: Some(instance_init),
                 traits: Vec::new(),
                 vtable: VTable::empty(activation.gc()),
                 call_handler,
@@ -606,7 +606,7 @@ impl<'gc> Class<'gc> {
                 direct_interfaces: Vec::new(),
                 all_interfaces: Vec::new(),
                 instance_allocator: Allocator(scriptobject_allocator),
-                instance_init: class_init,
+                instance_init: Some(class_init),
                 traits: Vec::new(),
                 vtable: VTable::empty(activation.gc()),
                 call_handler: None,
@@ -960,11 +960,7 @@ impl<'gc> Class<'gc> {
                 direct_interfaces: Vec::new(),
                 all_interfaces: Vec::new(),
                 instance_allocator: Allocator(scriptobject_allocator),
-                instance_init: Method::from_builtin(
-                    |_, _, _| Ok(Value::Undefined),
-                    "<Activation object constructor>",
-                    activation.gc(),
-                ),
+                instance_init: None,
                 traits,
                 vtable: VTable::empty(activation.gc()),
                 call_handler: None,
@@ -1003,11 +999,7 @@ impl<'gc> Class<'gc> {
                 direct_interfaces: Vec::new(),
                 all_interfaces: Vec::new(),
                 instance_allocator: Allocator(scriptobject_allocator),
-                instance_init: Method::from_builtin(
-                    |_, _, _| Ok(Value::Undefined),
-                    "<Catch object constructor>",
-                    activation.gc(),
-                ),
+                instance_init: None,
                 traits,
                 vtable: VTable::empty(activation.gc()),
                 call_handler: None,
@@ -1153,7 +1145,7 @@ impl<'gc> Class<'gc> {
     }
 
     /// Get this class's instance initializer.
-    pub fn instance_init(self) -> Method<'gc> {
+    pub fn instance_init(self) -> Option<Method<'gc>> {
         self.0.read().instance_init
     }
 

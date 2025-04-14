@@ -822,7 +822,7 @@ pub fn make_mismatch_error<'gc>(
 
     let mut function_name = WString::new();
 
-    display_function(&mut function_name, &method, bound_class);
+    display_function(&mut function_name, method, bound_class);
 
     return Err(Error::AvmError(argument_error(
         activation,
