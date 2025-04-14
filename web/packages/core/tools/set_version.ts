@@ -19,7 +19,7 @@ try {
 
 let versionName =
     versionChannel === "nightly"
-        ? `nightly ${buildDate.substr(0, 10)}`
+        ? `nightly ${buildDate.substring(0, 10)}`
         : versionNumber;
 
 interface VersionInformation {
