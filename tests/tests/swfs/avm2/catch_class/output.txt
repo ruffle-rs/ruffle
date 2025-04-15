@@ -1,0 +1,6 @@
+trace([catch scope object])
+Threw error, code 1069
+[catch scope object].AS3::hasOwnProperty:
+Threw error, code 1069
+[catch scope object].dynamicProp = 3
+Threw error, code 1056
