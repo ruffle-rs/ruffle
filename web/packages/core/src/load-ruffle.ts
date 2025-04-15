@@ -111,7 +111,7 @@ async function fetchRuffle(
         response = wasmResponse;
     }
 
-    await init(response);
+    await init({ module_or_path: response });
 
     return [RuffleInstanceBuilder, ZipWriter];
 }
