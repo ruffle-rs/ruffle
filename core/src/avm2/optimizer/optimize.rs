@@ -1500,6 +1500,18 @@ fn abstract_interpret_ops<'gc>(
 
                 // Then receiver.
                 stack.pop(activation)?;
+
+                // Remove `super()` calls in classes that extend Object, since they
+                // are noops anyway.
+                if num_args == 0 {
+                    let object_class = activation.avm2().classes().object;
+                    if activation
+                        .bound_superclass_object()
+                        .is_some_and(|c| c == object_class)
+                    {
+                        optimize_op_to!(Op::Pop);
+                    }
+                }
             }
             Op::ConstructProp {
                 multiname,
