@@ -43,6 +43,6 @@ fn channel() -> String {
     if let Ok(channel) = env::var("CFG_RELEASE_CHANNEL") {
         channel
     } else {
-        "nightly".to_owned()
+        "none".to_owned()
     }
 }

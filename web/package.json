@@ -6,7 +6,10 @@
     "private": true,
     "type": "module",
     "workspaces": [
-        "./packages/*"
+        "./packages/core",
+        "./packages/demo",
+        "./packages/extension",
+        "./packages/selfhosted"
     ],
     "devDependencies": {
         "@eslint/js": "^9.24.0",
@@ -40,6 +43,7 @@
         "webdriverio": "^9.2.2",
         "webpack": "^5.99.5",
         "webpack-cli": "^6.0.1"
+        "workspace-version": "^0.1.4"
     },
     "scripts": {
         "build": "npm run build --workspace=ruffle-core && npm run build --workspace=ruffle-demo --workspace=ruffle-extension --workspace=ruffle-selfhosted",

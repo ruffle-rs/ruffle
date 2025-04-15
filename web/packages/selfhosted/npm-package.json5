@@ -1,14 +1,17 @@
 {
     "name": "@ruffle-rs/ruffle",
-    "version": null, // Filled by Webpack.
-    "description": "Putting Flash back on the web. Ruffle will polyfill all Flash content and replace it with the Ruffle flash player.",
-    "license": "(MIT OR Apache-2.0)",
-    "keywords": [
-        "flash",
-        "swf",
-    ],
-    "homepage": "https://ruffle.rs",
-    "bugs": "https://github.com/ruffle-rs/ruffle/issues",
-    "repository": "github:ruffle-rs/ruffle",
     "main": "ruffle.js",
+
+    "webpack-copy-properties": {
+        "from": "package.json",
+        "properties": [
+            "version",
+            "description",
+            "license",
+            "keywords",
+            "homepage",
+            "bugs",
+            "repository",
+        ],
+    },
 }
