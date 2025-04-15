@@ -201,7 +201,9 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             Ok(Some(obj))
         } else if let Some(obj) = outer_scope.find(name, self)? {
             Ok(Some(obj))
-        } else if let Some(global) = self.global_scope() {
+        } else {
+            let global = self.global_scope();
+
             if global
                 .as_object()
                 .is_some_and(|o| o.base().has_own_dynamic_property(name))
@@ -210,8 +212,6 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             } else {
                 Ok(None)
             }
-        } else {
-            Ok(None)
         }
     }
 
@@ -554,14 +554,14 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     /// outer scope. If the outer scope is empty, we use the bottom
     /// of the current scope stack instead.
     ///
-    /// A return value of `None` implies that both the outer scope, and
-    /// the current scope stack were both empty.
-    pub fn global_scope(&self) -> Option<Value<'gc>> {
+    /// The verifier guarantees that there is always a global scope
+    /// when this function is called.
+    pub fn global_scope(&self) -> Value<'gc> {
         let outer_scope = self.outer;
         outer_scope
             .get(0)
-            .or_else(|| self.scope_frame().first().copied())
-            .map(|scope| scope.values())
+            .unwrap_or_else(|| self.scope_frame()[0])
+            .values()
     }
 
     pub fn avm2(&mut self) -> &mut Avm2<'gc> {
@@ -1559,9 +1559,9 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         let multiname = multiname.fill_with_runtime_params(self)?;
         let result = self
             .find_definition(&multiname)?
-            .or_else(|| self.global_scope());
+            .unwrap_or_else(|| self.global_scope());
 
-        self.push_stack(result.unwrap_or(Value::Undefined));
+        self.push_stack(result);
 
         Ok(())
     }
@@ -1662,8 +1662,9 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         let value = self.pop_stack();
 
         self.global_scope()
-            .map(|global| global.as_object().unwrap().set_slot(index, value, self))
-            .transpose()?;
+            .as_object()
+            .unwrap()
+            .set_slot(index, value, self)?;
 
         Ok(())
     }
