@@ -640,17 +640,10 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     /// Get the superclass of the class that defined the currently-executing
     /// method, if it exists.
     ///
-    /// If the currently-executing method is not part of a class, or the class
-    /// does not have a superclass, then this panics. The `name` parameter
-    /// allows you to provide the name of a property you were attempting to
-    /// access on the object.
-    pub fn bound_superclass_object(&self, name: &Multiname<'gc>) -> ClassObject<'gc> {
-        self.bound_superclass_object.unwrap_or_else(|| {
-            panic!(
-                "Cannot call supermethod {} without a superclass",
-                name.to_qualified_name(self.gc()),
-            )
-        })
+    /// If the currently-executing method is not part of a class, then this
+    /// returns `None`.
+    pub fn bound_superclass_object(&self) -> Option<ClassObject<'gc>> {
+        self.bound_superclass_object
     }
 
     /// Get the class that defined the currently-executing method, if it exists.
@@ -1186,7 +1179,9 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             .as_object()
             .expect("Super ops should not appear in primitive functions");
 
-        let bound_superclass_object = self.bound_superclass_object(&multiname);
+        let bound_superclass_object = self
+            .bound_superclass_object()
+            .expect("Expected a superclass when running callsuper");
 
         let value = bound_superclass_object.call_super(&multiname, receiver, &args, self)?;
 
@@ -1417,7 +1412,9 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             .as_object()
             .expect("Super ops should not appear in primitive functions");
 
-        let bound_superclass_object = self.bound_superclass_object(&multiname);
+        let bound_superclass_object = self
+            .bound_superclass_object()
+            .expect("Expected a superclass when running getsuper");
 
         let value = bound_superclass_object.get_super(&multiname, object, self)?;
 
@@ -1435,7 +1432,9 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             .as_object()
             .expect("Super ops should not appear in primitive functions");
 
-        let bound_superclass_object = self.bound_superclass_object(&multiname);
+        let bound_superclass_object = self
+            .bound_superclass_object()
+            .expect("Expected a superclass when running setsuper");
 
         bound_superclass_object.set_super(&multiname, value, object, self)?;
 
