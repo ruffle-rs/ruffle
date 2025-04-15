@@ -1200,6 +1200,15 @@ fn abstract_interpret_ops<'gc>(
                 stack.push(activation, local_type)?;
             }
             Op::FindPropStrict { multiname } | Op::FindProperty { multiname } => {
+                let outer_scope = activation.outer();
+                if outer_scope.is_empty() && scope_stack.is_empty() {
+                    return Err(Error::AvmError(verify_error(
+                        activation,
+                        "Error #1013: Cannot call OP_findproperty when scopeDepth is 0.",
+                        1013,
+                    )?));
+                }
+
                 let mut stack_push_done = false;
                 stack.pop_for_multiname(activation, multiname)?;
 
@@ -1544,7 +1553,7 @@ fn abstract_interpret_ops<'gc>(
                                     if let Some(instance_class) = slot_class.i_class() {
                                         // ConstructProp on a c_class will construct its i_class
                                         stack_push_done = true;
-                                        stack.push_class(activation, instance_class)?;
+                                        stack.push_class_not_null(activation, instance_class)?;
                                     }
                                 }
                             }
