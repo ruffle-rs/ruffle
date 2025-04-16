@@ -33,7 +33,7 @@ use ruffle_video::frame::EncodedFrame;
 use ruffle_video::VideoStreamHandle;
 use std::cmp::max;
 use std::io::{Seek, SeekFrom};
-use std::sync::Arc;
+use std::rc::Rc;
 use swf::{AudioCompression, SoundFormat, VideoCodec, VideoDeblocking};
 use thiserror::Error;
 use url::Url;
@@ -179,7 +179,7 @@ pub enum NetStreamType {
         frame_id: u32,
     },
     F4v {
-        context: Arc<mp4parse::MediaContext>,
+        context: Option<Rc<mp4parse::MediaContext>>,
 
         /// The currently playing video track's stream instance.
         video_stream: Option<VideoStreamHandle>,
@@ -855,13 +855,9 @@ impl<'gc> NetStream<'gc> {
             Some([_, _, _, _, b'f', b't', b'y', b'p'])
             | Some([_, _, _, _, b'm', b'o', b'o', b'v'])
             | Some([_, _, _, _, b'm', b'd', b'a', b't']) => {
-                println!("F4V");
-
-                let mut cursor = slice.as_cursor();
-                let context = mp4parse::read_mp4(&mut cursor).unwrap();
-                println!("{:#?}", context);
+                println!("MP4 detected");
                 write.stream_type = Some(NetStreamType::F4v {
-                    context: Arc::new(context),
+                    context: None,
                     video_stream: None,
                     frame_id: None,
                 });
@@ -1275,7 +1271,33 @@ impl<'gc> NetStream<'gc> {
             video_stream,
         }) = &mut write.stream_type
         {
-            println!("frame id: {:?}, end_time: {}", frame_id, max_time);
+
+            if media_context.is_none() {
+                let mut cursor = slice.as_cursor();
+                let mut iter = mp4parse::BoxIter::new(&mut cursor);
+                while let Ok(Some(mut b)) = iter.next_box() {
+                    dbg!(&b.head.name);
+                    match b.head.name {
+                        mp4parse::BoxType::MovieBox => {
+                            let rm = mp4parse::read_moov(&mut b, None);
+                            //dbg!(&rm);
+                            if let Ok(ctx) = rm {
+                                media_context.replace(Rc::new(ctx));
+                            }
+                            break;
+                        }
+                        _ => {
+                            //mp4parse::skip_box_content(&mut b);
+                        }
+                    };
+                }
+            }
+
+            if media_context.is_none() {
+                return;
+            }
+
+            let media_context = media_context.as_ref().unwrap();
 
             let should_do_frame;
             let sample_id;
@@ -1301,7 +1323,7 @@ impl<'gc> NetStream<'gc> {
             if should_do_frame {
                 let sample_sizes = &media_context
                     .tracks
-                    .get(1)
+                    .get(0)
                     .unwrap()
                     .stsz
                     .as_ref()
@@ -1309,7 +1331,7 @@ impl<'gc> NetStream<'gc> {
                     .sample_sizes;
                 let chunk_runs = &media_context
                     .tracks
-                    .get(1)
+                    .get(0)
                     .unwrap()
                     .stsc
                     .as_ref()
@@ -1342,7 +1364,7 @@ impl<'gc> NetStream<'gc> {
                 let (chunk, first_sample_in_chunk) = chunk_of_sample(sample_id);
                 let chunk_offsets = &media_context
                     .tracks
-                    .get(1)
+                    .get(0)
                     .unwrap()
                     .stco
                     .as_ref()
@@ -1392,7 +1414,7 @@ impl<'gc> NetStream<'gc> {
                 };
 
                 let mdct = media_context.clone();
-                let trk = mdct.tracks.get(1).unwrap();
+                let trk = mdct.tracks.get(0).unwrap();
                 let stsd = trk.stsd.as_ref().unwrap();
                 let descs = stsd.descriptions.get(0).unwrap();
 
@@ -1400,8 +1422,7 @@ impl<'gc> NetStream<'gc> {
                     mp4parse::SampleEntry::Video(video) => match &video.codec_specific {
                         mp4parse::VideoCodecSpecific::AVCConfig(avcconf) => {
                             if *frame_id == Some(0) {
-                                println!("preloading avc config");
-                                let _ = context.video.configure_video_stream_decoder(
+                                let res = context.video.configure_video_stream_decoder(
                                     video_handle,
                                     avcconf.as_slice(),
                                 );
@@ -1416,13 +1437,19 @@ impl<'gc> NetStream<'gc> {
                     mp4parse::SampleEntry::Audio(_) => todo!(),
                     mp4parse::SampleEntry::Unknown => todo!(),
                 }
-
-                write.last_decoded_bitmap = Some(
-                    context
-                        .video
-                        .decode_video_stream_frame(video_handle, encoded_frame, context.renderer)
-                        .unwrap(),
-                );
+                //dbg!(&encoded_frame.data);
+                match context.video.decode_video_stream_frame(
+                    video_handle,
+                    encoded_frame,
+                    context.renderer,
+                ) {
+                    Ok(frame) => {
+                        write.last_decoded_bitmap = Some(frame);
+                    }
+                    Err(e) => {
+                        tracing::error!("Error decoding video frame: {}", e);
+                    }
+                }
             }
         }
 
