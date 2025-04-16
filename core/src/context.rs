@@ -5,7 +5,6 @@ use crate::avm1::ActivationIdentifier;
 use crate::avm1::Attribute;
 use crate::avm1::Avm1;
 use crate::avm1::ScriptObject;
-use crate::avm1::TObject;
 use crate::avm1::{Object as Avm1Object, Value as Avm1Value};
 use crate::avm2::api_version::ApiVersion;
 use crate::avm2::object::LoaderInfoObject;

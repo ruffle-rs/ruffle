@@ -1,4 +1,3 @@
-use crate::avm1::TObject as _;
 use crate::avm2::object::TObject as _;
 use crate::context::UpdateContext;
 use crate::display_object::{DisplayObject, DisplayObjectPtr, TDisplayObject};

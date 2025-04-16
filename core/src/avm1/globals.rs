@@ -3,7 +3,7 @@ use crate::avm1::error::Error;
 use crate::avm1::function::FunctionObject;
 use crate::avm1::property::Attribute;
 use crate::avm1::property_decl::{define_properties_on, Declaration};
-use crate::avm1::{Object, ScriptObject, TObject, Value};
+use crate::avm1::{Object, ScriptObject, Value};
 use crate::display_object::{DisplayObject, TDisplayObject, TDisplayObjectContainer};
 use crate::string::{AvmString, StringContext, WStr, WString};
 use gc_arena::Collect;
@@ -874,7 +874,7 @@ pub fn create_globals<'gc>(
         (system, b"security", system_security, Attribute::empty()),
         (system, b"capabilities", system_capabilities, Attribute::empty()),
 
-        (text_field.raw_script_object(), b"StyleSheet", style_sheet, Attribute::DONT_ENUM | Attribute::VERSION_7),
+        (text_field, b"StyleSheet", style_sheet, Attribute::DONT_ENUM | Attribute::VERSION_7),
     ]);
 
     (

@@ -6,7 +6,7 @@ use crate::avm1::object::super_object::SuperObject;
 use crate::avm1::property::Attribute;
 use crate::avm1::scope::Scope;
 use crate::avm1::value::Value;
-use crate::avm1::{ArrayBuilder, Object, ScriptObject, TObject};
+use crate::avm1::{ArrayBuilder, Object, ScriptObject};
 use crate::display_object::{DisplayObject, TDisplayObject};
 use crate::string::{AvmString, StringContext, SwfStrExt as _};
 use crate::tag_utils::SwfSlice;

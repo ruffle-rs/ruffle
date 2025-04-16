@@ -5,9 +5,7 @@
 //! is ready to tick each frame.
 
 use crate::avm1::ExecutionReason;
-use crate::avm1::{
-    Activation, ActivationIdentifier, Object as Avm1Object, TObject as _, Value as Avm1Value,
-};
+use crate::avm1::{Activation, ActivationIdentifier, Object as Avm1Object, Value as Avm1Value};
 use crate::avm2::{Activation as Avm2Activation, Object as Avm2Object, Value as Avm2Value};
 use crate::context::UpdateContext;
 use crate::display_object::{DisplayObject, TDisplayObject};

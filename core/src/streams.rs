@@ -3,7 +3,7 @@
 use crate::avm1::{
     Activation as Avm1Activation, ActivationIdentifier as Avm1ActivationIdentifier,
     ExecutionReason as Avm1ExecutionReason, FlvValueAvm1Ext, ScriptObject as Avm1ScriptObject,
-    TObject as Avm1TObject, Value as Avm1Value,
+    Value as Avm1Value,
 };
 use crate::avm2::{
     Activation as Avm2Activation, Avm2, Error as Avm2Error, EventObject as Avm2EventObject,

@@ -1,9 +1,9 @@
 use crate::avm1::Attribute;
 use crate::avm1::Avm1;
 use crate::avm1::Object;
+use crate::avm1::Value;
 use crate::avm1::VariableDumper;
 use crate::avm1::{Activation, ActivationIdentifier};
-use crate::avm1::{TObject, Value};
 use crate::avm2::object::{EventObject as Avm2EventObject, Object as Avm2Object};
 use crate::avm2::{Activation as Avm2Activation, Avm2, CallStack};
 use crate::backend::ui::FontDefinition;

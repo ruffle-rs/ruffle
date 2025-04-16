@@ -8,7 +8,7 @@ use crate::avm1::error::Error;
 use crate::avm1::function::FunctionObject;
 use crate::avm1::object::BoxedF64;
 use crate::avm1::property_decl::{define_properties_on, Declaration};
-use crate::avm1::{NativeObject, Object, ScriptObject, TObject, Value};
+use crate::avm1::{NativeObject, Object, ScriptObject, Value};
 use crate::string::{AvmString, StringContext};
 
 const PROTO_DECLS: &[Declaration] = declare_properties! {
@@ -73,8 +73,7 @@ pub fn create_number_object<'gc>(
         fn_proto,
         number_proto,
     );
-    let object = number.raw_script_object();
-    define_properties_on(OBJECT_DECLS, context, object, fn_proto);
+    define_properties_on(OBJECT_DECLS, context, number, fn_proto);
     number
 }
 
