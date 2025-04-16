@@ -407,10 +407,7 @@ impl<'gc> Value<'gc> {
                 istr!("0")
             }
             Value::Object(object) => {
-                if let Some(object) = object
-                    .as_display_object()
-                    .filter(|_| !matches!(object, Object::SuperObject(_)))
-                {
+                if let Some(object) = object.as_display_object_no_super() {
                     // StageObjects are special-cased to return their path.
                     AvmString::new(activation.gc(), object.path())
                 } else {
