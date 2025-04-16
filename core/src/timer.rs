@@ -103,7 +103,7 @@ impl<'gc> Timers<'gc> {
 
                     let mut removed = false;
 
-                    // We can't use as_display_object + as_movie_clip here as we explicitly don't want to convert `SuperObjects`
+                    // We can't use as_display_object + as_movie_clip here as we explicitly don't want to convert `super`s
                     if let Some(DisplayObject::MovieClip(mc)) = this.as_display_object_no_super() {
                         // Note that we don't want to fire the timer here
                         if mc.avm1_removed() {

@@ -45,6 +45,11 @@ pub mod super_object;
 pub enum NativeObject<'gc> {
     None,
 
+    /// A `super` object, used to call superclass methods.
+    ///
+    /// `super` objects should never have any properties (including `__proto__`); instead,
+    /// relevant operations are forwarded to the `SuperObject`'s target.
+    Super(SuperObject<'gc>),
     /// A boxed boolean.
     Bool(bool),
     /// A boxed number.
@@ -145,7 +150,6 @@ impl<'gc> NativeObject<'gc> {
     #[collect(no_drop)]
     pub enum Object<'gc> {
         ScriptObject(ScriptObject<'gc>),
-        SuperObject(SuperObject<'gc>),
     }
 )]
 pub trait TObject<'gc>: 'gc + Collect<'gc> + Into<Object<'gc>> + Clone + Copy {
@@ -340,9 +344,15 @@ pub trait TObject<'gc>: 'gc + Collect<'gc> + Into<Object<'gc>> + Clone + Copy {
     ) -> Result<Value<'gc>, Error<'gc>> {
         let this = (*self).into();
 
-        if let Some(dobj) = this.as_display_object() {
-            if dobj.avm1_removed() {
-                return Ok(Value::Undefined);
+        match this.native_no_super() {
+            NativeObject::Super(zuper) => return zuper.call_method(name, args, activation, reason),
+            native => {
+                if native
+                    .as_display_object()
+                    .is_some_and(|dobj| dobj.avm1_removed())
+                {
+                    return Ok(Value::Undefined);
+                }
             }
         }
 
@@ -615,6 +625,10 @@ pub trait TObject<'gc>: 'gc + Collect<'gc> + Into<Object<'gc>> + Clone + Copy {
         }
 
         Ok(false)
+    }
+
+    fn native_no_super(&self) -> NativeObject<'gc> {
+        NativeObject::None
     }
 
     fn native(&self) -> NativeObject<'gc> {
