@@ -3,7 +3,7 @@ use crate::avm1::error::Error;
 use crate::avm1::function::FunctionObject;
 use crate::avm1::property::Attribute;
 use crate::avm1::property_decl::{define_properties_on, Declaration};
-use crate::avm1::{Object, ScriptObject, Value};
+use crate::avm1::{Object, Value};
 use crate::display_object::{DisplayObject, TDisplayObject, TDisplayObjectContainer};
 use crate::string::{AvmString, StringContext, WStr, WString};
 use gc_arena::Collect;
@@ -521,7 +521,7 @@ pub fn create_globals<'gc>(
     Object<'gc>,
     as_broadcaster::BroadcasterFunctions<'gc>,
 ) {
-    let object_proto = ScriptObject::new(context, None).into();
+    let object_proto = Object::new(context, None);
     let function_proto = function::create_proto(context, object_proto);
 
     object::fill_proto(context, object_proto, function_proto);
@@ -640,12 +640,12 @@ pub fn create_globals<'gc>(
     let netconnection = netconnection::create_class(context, netconnection_proto, function_proto);
     let xml_socket = xml_socket::create_class(context, xml_socket_proto, function_proto);
 
-    let flash = ScriptObject::new(context, Some(object_proto));
+    let flash = Object::new(context, Some(object_proto));
 
-    let geom = ScriptObject::new(context, Some(object_proto));
-    let filters = ScriptObject::new(context, Some(object_proto));
-    let display = ScriptObject::new(context, Some(object_proto));
-    let net = ScriptObject::new(context, Some(object_proto));
+    let geom = Object::new(context, Some(object_proto));
+    let filters = Object::new(context, Some(object_proto));
+    let display = Object::new(context, Some(object_proto));
+    let net = Object::new(context, Some(object_proto));
 
     let matrix = matrix::create_matrix_object(context, matrix_proto, function_proto);
     let point = point::create_point_object(context, point_proto, function_proto);
@@ -713,10 +713,10 @@ pub fn create_globals<'gc>(
         function_proto,
     );
 
-    let bitmap_data_proto = ScriptObject::new(context, Some(object_proto));
+    let bitmap_data_proto = Object::new(context, Some(object_proto));
     let bitmap_data = bitmap_data::create_constructor(context, bitmap_data_proto, function_proto);
 
-    let external = ScriptObject::new(context, Some(object_proto));
+    let external = Object::new(context, Some(object_proto));
     let external_interface = external_interface::create_external_interface_object(
         context,
         external_interface_proto,
@@ -791,9 +791,9 @@ pub fn create_globals<'gc>(
     let accessibility =
         accessibility::create_accessibility_object(context, object_proto, function_proto);
 
-    let globals = ScriptObject::new(context, None);
+    let globals = Object::new(context, None);
 
-    type GlobalDefinition<'gc> = (ScriptObject<'gc>, &'static [u8], Object<'gc>, Attribute);
+    type GlobalDefinition<'gc> = (Object<'gc>, &'static [u8], Object<'gc>, Attribute);
     #[inline(never)]
     fn define_globals<'gc>(context: &mut StringContext<'gc>, defs: &[GlobalDefinition<'gc>]) {
         for &(obj, field, value, attrs) in defs {
@@ -830,7 +830,7 @@ pub fn create_globals<'gc>(
         (globals, b"ContextMenu", context_menu, Attribute::DONT_ENUM),
         (globals, b"Selection", selection, Attribute::DONT_ENUM),
         (globals, b"ContextMenuItem", context_menu_item, Attribute::DONT_ENUM),
-        (globals, b"System", system.into(), Attribute::DONT_ENUM),
+        (globals, b"System", system, Attribute::DONT_ENUM),
         (globals, b"Math", math, Attribute::DONT_ENUM),
         (globals, b"Mouse", mouse, Attribute::DONT_ENUM),
         (globals, b"Key", key, Attribute::DONT_ENUM),
@@ -844,12 +844,12 @@ pub fn create_globals<'gc>(
 
         (external, b"ExternalInterface", external_interface, Attribute::empty()),
 
-        (globals, b"flash", flash.into(), Attribute::DONT_ENUM),
-        (flash, b"display", display.into(), Attribute::empty()),
-        (flash, b"external", external.into(), Attribute::empty()),
-        (flash, b"filters", filters.into(), Attribute::empty()),
-        (flash, b"geom", geom.into(), Attribute::empty()),
-        (flash, b"net", net.into(), Attribute::empty()),
+        (globals, b"flash", flash, Attribute::DONT_ENUM),
+        (flash, b"display", display, Attribute::empty()),
+        (flash, b"external", external, Attribute::empty()),
+        (flash, b"filters", filters, Attribute::empty()),
+        (flash, b"geom", geom, Attribute::empty()),
+        (flash, b"net", net, Attribute::empty()),
 
         (geom, b"ColorTransform", color_transform, Attribute::empty()),
         (geom, b"Matrix", matrix, Attribute::empty()),
@@ -909,7 +909,7 @@ pub fn create_globals<'gc>(
             context_menu_item: context_menu_item_proto,
             context_menu_item_constructor: context_menu_item,
             date_constructor: date,
-            bitmap_data: bitmap_data_proto.into(),
+            bitmap_data: bitmap_data_proto,
             video: video_proto,
             video_constructor: video,
             blur_filter: blur_filter_proto,
@@ -922,7 +922,7 @@ pub fn create_globals<'gc>(
             gradient_bevel_filter: gradient_bevel_filter_proto,
             gradient_glow_filter: gradient_glow_filter_proto,
         },
-        globals.into(),
+        globals,
         broadcaster_functions,
     )
 }

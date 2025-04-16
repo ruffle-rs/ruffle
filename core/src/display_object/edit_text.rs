@@ -2,8 +2,7 @@
 
 use crate::avm1::{
     Activation as Avm1Activation, ActivationIdentifier, Avm1, ExecutionReason,
-    NativeObject as Avm1NativeObject, Object as Avm1Object, ScriptObject as Avm1ScriptObject,
-    Value as Avm1Value,
+    NativeObject as Avm1NativeObject, Object as Avm1Object, Value as Avm1Value,
 };
 use crate::avm2::object::{
     ClassObject as Avm2ClassObject, EventObject as Avm2EventObject, Object as Avm2Object,
@@ -2161,13 +2160,13 @@ impl<'gc> EditText<'gc> {
     fn construct_as_avm1_object(self, context: &mut UpdateContext<'gc>, run_frame: bool) {
         let mut text = self.0.write(context.gc());
         if text.object.is_none() {
-            let object = Avm1ScriptObject::new_with_native(
+            let object = Avm1Object::new_with_native(
                 &context.strings,
                 Some(context.avm1.prototypes().text_field),
                 Avm1NativeObject::EditText(self),
             );
 
-            text.object = Some(Avm1Object::from(object).into());
+            text.object = Some(object.into());
         }
         drop(text);
 

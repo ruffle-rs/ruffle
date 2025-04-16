@@ -2,10 +2,10 @@
 
 use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
-use crate::avm1::object::{NativeObject, Object};
+use crate::avm1::object::NativeObject;
 use crate::avm1::property_decl::{define_properties_on, Declaration};
 use crate::avm1::value::Value;
-use crate::avm1::ScriptObject;
+use crate::avm1::Object;
 use crate::display_object::{TDisplayObject, Video};
 use crate::string::StringContext;
 
@@ -51,7 +51,7 @@ pub fn create_proto<'gc>(
     proto: Object<'gc>,
     fn_proto: Object<'gc>,
 ) -> Object<'gc> {
-    let object = ScriptObject::new(context, Some(proto));
+    let object = Object::new(context, Some(proto));
     define_properties_on(PROTO_DECLS, context, object, fn_proto);
-    object.into()
+    object
 }

@@ -12,7 +12,7 @@ use crate::avm1::globals::glow_filter::GlowFilter;
 use crate::avm1::globals::gradient_filter::GradientFilter;
 use crate::avm1::object::NativeObject;
 use crate::avm1::property_decl::{define_properties_on, Declaration};
-use crate::avm1::{Attribute, Object, ScriptObject, Value};
+use crate::avm1::{Attribute, Object, Value};
 use crate::context::UpdateContext;
 use crate::string::StringContext;
 use ruffle_macros::istr;
@@ -149,10 +149,10 @@ pub fn create_instance<'gc>(
     activation: &mut Activation<'_, 'gc>,
     native: NativeObject<'gc>,
     proto: Option<Value<'gc>>,
-) -> ScriptObject<'gc> {
-    let result = ScriptObject::new(activation.strings(), None);
-    // Set `__proto__` manually since `ScriptObject::new()` doesn't support primitive prototypes.
-    // TODO: Pass `proto` to `ScriptObject::new()` once possible.
+) -> Object<'gc> {
+    let result = Object::new(activation.strings(), None);
+    // Set `__proto__` manually since `Object::new()` doesn't support primitive prototypes.
+    // TODO: Pass `proto` to `Object::new()` once possible.
     if let Some(proto) = proto {
         result.define_value(
             activation.gc(),
@@ -170,7 +170,7 @@ pub fn create_proto<'gc>(
     proto: Object<'gc>,
     fn_proto: Object<'gc>,
 ) -> Object<'gc> {
-    let object = ScriptObject::new(context, Some(proto));
+    let object = Object::new(context, Some(proto));
     define_properties_on(PROTO_DECLS, context, object, fn_proto);
-    object.into()
+    object
 }

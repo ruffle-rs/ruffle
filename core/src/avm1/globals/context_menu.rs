@@ -1,8 +1,7 @@
 use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
 use crate::avm1::property_decl::{define_properties_on, Declaration};
-use crate::avm1::Object;
-use crate::avm1::{ScriptObject, Value};
+use crate::avm1::{Object, Value};
 use crate::context_menu;
 use crate::display_object::DisplayObject;
 use crate::string::StringContext;
@@ -25,7 +24,7 @@ pub fn constructor<'gc>(
 
     this.set(istr!("onSelect"), callback.into(), activation)?;
 
-    let built_in_items = ScriptObject::new(
+    let built_in_items = Object::new(
         &activation.context.strings,
         Some(activation.context.avm1.prototypes().object),
     );
@@ -146,9 +145,9 @@ pub fn create_proto<'gc>(
     proto: Object<'gc>,
     fn_proto: Object<'gc>,
 ) -> Object<'gc> {
-    let object = ScriptObject::new(context, Some(proto));
+    let object = Object::new(context, Some(proto));
     define_properties_on(PROTO_DECLS, context, object, fn_proto);
-    object.into()
+    object
 }
 
 pub fn make_context_menu_state<'gc>(

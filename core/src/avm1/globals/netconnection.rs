@@ -2,9 +2,7 @@ use crate::avm1::function::FunctionObject;
 use crate::avm1::globals::shared_object::{deserialize_value, serialize};
 use crate::avm1::object::Object;
 use crate::avm1::property_decl::{define_properties_on, Declaration};
-use crate::avm1::{
-    Activation, ActivationIdentifier, Error, ExecutionReason, NativeObject, ScriptObject, Value,
-};
+use crate::avm1::{Activation, ActivationIdentifier, Error, ExecutionReason, NativeObject, Value};
 use crate::avm1_stub;
 use crate::context::UpdateContext;
 use crate::net_connection::{NetConnectionHandle, NetConnections, ResponderCallback};
@@ -340,9 +338,9 @@ pub fn create_proto<'gc>(
     proto: Object<'gc>,
     fn_proto: Object<'gc>,
 ) -> Object<'gc> {
-    let object = ScriptObject::new(context, Some(proto));
+    let object = Object::new(context, Some(proto));
     define_properties_on(PROTO_DECLS, context, object, fn_proto);
-    object.into()
+    object
 }
 
 pub fn create_class<'gc>(

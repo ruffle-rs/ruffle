@@ -12,7 +12,7 @@ use crate::avm1::clamp::Clamp;
 use crate::avm1::error::Error;
 use crate::avm1::function::FunctionObject;
 use crate::avm1::property_decl::{define_properties_on, Declaration};
-use crate::avm1::{NativeObject, Object, ScriptObject, Value};
+use crate::avm1::{NativeObject, Object, Value};
 use crate::backend::audio::{SoundHandle, SoundInstanceHandle};
 use crate::backend::navigator::Request;
 use crate::character::Character;
@@ -166,9 +166,9 @@ pub fn create_proto<'gc>(
     proto: Object<'gc>,
     fn_proto: Object<'gc>,
 ) -> Object<'gc> {
-    let object = ScriptObject::new(context, Some(proto));
+    let object = Object::new(context, Some(proto));
     define_properties_on(PROTO_DECLS, context, object, fn_proto);
-    object.into()
+    object
 }
 
 pub fn create_constructor<'gc>(
@@ -292,7 +292,7 @@ fn get_transform<'gc>(
             .map(|owner| owner.base().sound_transform().clone())
             .unwrap_or_else(|| activation.context.global_sound_transform().clone());
 
-        let obj = ScriptObject::new(
+        let obj = Object::new(
             &activation.context.strings,
             Some(activation.context.avm1.prototypes().object),
         );

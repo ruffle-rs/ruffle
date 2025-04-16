@@ -4,7 +4,7 @@ use crate::avm1::clamp::Clamp;
 use crate::avm1::function::FunctionObject;
 use crate::avm1::object::NativeObject;
 use crate::avm1::property_decl::{define_properties_on, Declaration};
-use crate::avm1::{Activation, Error, Object, ScriptObject, Value};
+use crate::avm1::{Activation, Error, Object, Value};
 use crate::bitmap::bitmap_data::BitmapDataWrapper;
 use crate::context::UpdateContext;
 use crate::string::StringContext;
@@ -81,9 +81,9 @@ impl<'gc> DisplacementMapFilter<'gc> {
     fn map_bitmap(self, context: &mut UpdateContext<'gc>) -> Option<Object<'gc>> {
         if let Some(map_bitmap) = self.0.map_bitmap.get() {
             let proto = context.avm1.prototypes().bitmap_data;
-            let result = ScriptObject::new(&context.strings, Some(proto));
+            let result = Object::new(&context.strings, Some(proto));
             result.set_native(context.gc(), NativeObject::BitmapData(map_bitmap));
-            Some(result.into())
+            Some(result)
         } else {
             None
         }
@@ -410,14 +410,14 @@ pub fn create_proto<'gc>(
     proto: Object<'gc>,
     fn_proto: Object<'gc>,
 ) -> Object<'gc> {
-    let displacement_map_filter_proto = ScriptObject::new(context, Some(proto));
+    let displacement_map_filter_proto = Object::new(context, Some(proto));
     define_properties_on(
         PROTO_DECLS,
         context,
         displacement_map_filter_proto,
         fn_proto,
     );
-    displacement_map_filter_proto.into()
+    displacement_map_filter_proto
 }
 
 pub fn create_constructor<'gc>(

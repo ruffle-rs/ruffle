@@ -1,8 +1,5 @@
 //! `MovieClip` display object and support code.
-use crate::avm1::{
-    NativeObject as Avm1NativeObject, Object as Avm1Object, ScriptObject as Avm1ScriptObject,
-    Value as Avm1Value,
-};
+use crate::avm1::{NativeObject as Avm1NativeObject, Object as Avm1Object, Value as Avm1Value};
 use crate::avm2::object::LoaderInfoObject;
 use crate::avm2::object::LoaderStream;
 use crate::avm2::script::Script;
@@ -2011,11 +2008,11 @@ impl<'gc> MovieClip<'gc> {
                     .get(istr!("prototype"), &mut activation)
                     .map(|v| v.coerce_to_object(&mut activation))
                 {
-                    let object = Avm1Object::from(Avm1ScriptObject::new_with_native(
+                    let object = Avm1Object::new_with_native(
                         &activation.context.strings,
                         Some(prototype),
                         Avm1NativeObject::MovieClip(self),
-                    ));
+                    );
                     self.0.write(activation.gc()).object = Some(object.into());
 
                     if run_frame {
@@ -2041,11 +2038,11 @@ impl<'gc> MovieClip<'gc> {
                 return;
             }
 
-            let object = Avm1Object::from(Avm1ScriptObject::new_with_native(
+            let object = Avm1Object::new_with_native(
                 &context.strings,
                 Some(context.avm1.prototypes().movie_clip),
                 Avm1NativeObject::MovieClip(self),
-            ));
+            );
             self.0.write(context.gc()).object = Some(object.into());
 
             if run_frame {

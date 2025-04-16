@@ -6,7 +6,7 @@ use crate::avm1::globals::bitmap_filter;
 use crate::avm1::globals::movie_clip::{new_rectangle, object_to_rectangle};
 use crate::avm1::property_decl::{define_properties_on, Declaration};
 use crate::avm1::ArrayBuilder;
-use crate::avm1::{globals, Object, ScriptObject, Value};
+use crate::avm1::{globals, Object, Value};
 use crate::avm1_stub;
 use crate::display_object::{Avm1Button, TDisplayObject, TInteractiveObject};
 use crate::string::{AvmString, StringContext};
@@ -55,9 +55,9 @@ pub fn create_proto<'gc>(
     proto: Object<'gc>,
     fn_proto: Object<'gc>,
 ) -> Object<'gc> {
-    let object = ScriptObject::new(context, Some(proto));
+    let object = Object::new(context, Some(proto));
     define_properties_on(PROTO_DECLS, context, object, fn_proto);
-    object.into()
+    object
 }
 
 fn blend_mode<'gc>(

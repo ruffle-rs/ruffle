@@ -4,7 +4,7 @@ use std::cell::Cell;
 
 use crate::avm1::function::{ExecutionReason, FunctionObject};
 use crate::avm1::property_decl::{define_properties_on, Declaration};
-use crate::avm1::{Activation, Attribute, Error, NativeObject, Object, ScriptObject, Value};
+use crate::avm1::{Activation, Attribute, Error, NativeObject, Object, Value};
 use crate::avm_warn;
 use crate::backend::navigator::Request;
 use crate::string::{AvmString, StringContext, WStr, WString};
@@ -76,7 +76,7 @@ pub struct XmlData<'gc> {
     /// When nodes are parsed into the document by way of `parseXML` or the
     /// document constructor, they get put into this object, which is accessible
     /// through the document's `idMap`.
-    id_map: ScriptObject<'gc>,
+    id_map: Object<'gc>,
 
     /// The last parse error encountered, if any.
     status: Cell<XmlStatus>,
@@ -96,7 +96,7 @@ impl<'gc> Xml<'gc> {
                 root,
                 xml_decl: Lock::new(None),
                 doctype: Lock::new(None),
-                id_map: ScriptObject::new(context, None),
+                id_map: Object::new(context, None),
                 status: Cell::new(XmlStatus::NoError),
             },
         ));
@@ -120,7 +120,7 @@ impl<'gc> Xml<'gc> {
     }
 
     /// Obtain the script object for the document's `idMap` property.
-    fn id_map(self) -> ScriptObject<'gc> {
+    fn id_map(self) -> Object<'gc> {
         self.0.id_map
     }
 
@@ -580,7 +580,7 @@ pub fn create_constructor<'gc>(
     proto: Object<'gc>,
     fn_proto: Object<'gc>,
 ) -> Object<'gc> {
-    let xml_proto = ScriptObject::new(context, Some(proto));
+    let xml_proto = Object::new(context, Some(proto));
     define_properties_on(PROTO_DECLS, context, xml_proto, fn_proto);
-    FunctionObject::constructor(context, constructor, None, fn_proto, xml_proto.into())
+    FunctionObject::constructor(context, constructor, None, fn_proto, xml_proto)
 }

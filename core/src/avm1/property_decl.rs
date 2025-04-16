@@ -2,15 +2,15 @@
 
 use crate::avm1::function::{Executable, FunctionObject, NativeFunction};
 use crate::avm1::property::Attribute;
-use crate::avm1::{Object, ScriptObject, Value};
+use crate::avm1::{Object, Value};
 use crate::string::{StringContext, WStr};
 
-/// Defines a list of properties on a [`ScriptObject`].
+/// Defines a list of properties on a [`Object`].
 #[inline(never)]
 pub fn define_properties_on<'gc>(
     decls: &[Declaration],
     context: &mut StringContext<'gc>,
-    this: ScriptObject<'gc>,
+    this: Object<'gc>,
     fn_proto: Object<'gc>,
 ) {
     for decl in decls {
@@ -19,7 +19,7 @@ pub fn define_properties_on<'gc>(
 }
 
 /// The declaration of a property, method, or simple field, that
-/// can be defined on a [`ScriptObject`].
+/// can be defined on a [`Object`].
 #[derive(Copy, Clone)]
 pub struct Declaration {
     pub name: &'static [u8],
@@ -56,13 +56,13 @@ pub enum DeclKind {
 
 impl Declaration {
     #[inline(never)]
-    /// Defines the field represented by this declaration on a [`ScriptObject`].
+    /// Defines the field represented by this declaration on a [`Object`].
     /// Returns the value defined on the object, or `undefined` if this declaration
     /// defined a property.
     pub fn define_on<'gc>(
         &self,
         context: &mut StringContext<'gc>,
-        this: ScriptObject<'gc>,
+        this: Object<'gc>,
         fn_proto: Object<'gc>,
     ) -> Value<'gc> {
         let mc = context.gc();
@@ -94,7 +94,7 @@ impl Declaration {
     }
 }
 
-/// Declares a list of property [`Declaration`]s that can be later defined on [`ScriptObject`]s.
+/// Declares a list of property [`Declaration`]s that can be later defined on [`Object`]s.
 ///
 /// # Usage:
 ///

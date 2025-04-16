@@ -2,7 +2,7 @@
 
 use crate::avm1::object::NativeObject;
 use crate::avm1::property_decl::{define_properties_on, Declaration};
-use crate::avm1::{Activation, Error, Object, ScriptObject, Value};
+use crate::avm1::{Activation, Error, Object, Value};
 use crate::string::{AvmString, StringContext};
 use gc_arena::{Collect, GcCell};
 use ruffle_macros::istr;
@@ -269,7 +269,7 @@ pub fn create_proto<'gc>(
     proto: Object<'gc>,
     fn_proto: Object<'gc>,
 ) -> Object<'gc> {
-    let object = ScriptObject::new(context, Some(proto));
+    let object = Object::new(context, Some(proto));
     define_properties_on(PROTO_DECLS, context, object, fn_proto);
-    object.into()
+    object
 }

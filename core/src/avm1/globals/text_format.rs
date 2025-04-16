@@ -2,7 +2,7 @@
 
 use crate::avm1::object::NativeObject;
 use crate::avm1::property_decl::{define_properties_on, Declaration};
-use crate::avm1::{Activation, ArrayBuilder, Error, Object, ScriptObject, Value};
+use crate::avm1::{Activation, ArrayBuilder, Error, Object, Value};
 use crate::display_object::{AutoSizeMode, EditText, TDisplayObject};
 use crate::ecma_conversions::round_to_even;
 use crate::html::TextFormat;
@@ -529,7 +529,7 @@ fn get_text_extent<'gc>(
     temp_edittext.set_new_text_format(text_format.clone(), activation.context);
     temp_edittext.set_text(&text, activation.context);
 
-    let result = ScriptObject::new(&activation.context.strings, None);
+    let result = Object::new(&activation.context.strings, None);
     let metrics = temp_edittext
         .layout_metrics()
         .expect("All text boxes should have at least one line at all times");
@@ -640,7 +640,7 @@ pub fn create_proto<'gc>(
     proto: Object<'gc>,
     fn_proto: Object<'gc>,
 ) -> Object<'gc> {
-    let object = ScriptObject::new(context, Some(proto));
+    let object = Object::new(context, Some(proto));
     define_properties_on(PROTO_DECLS, context, object, fn_proto);
-    object.into()
+    object
 }

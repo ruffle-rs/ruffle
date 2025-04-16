@@ -1,8 +1,7 @@
 use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
-use crate::avm1::object::Object;
 use crate::avm1::property_decl::{define_properties_on, Declaration};
-use crate::avm1::{ScriptObject, Value};
+use crate::avm1::{Object, Value};
 use crate::avm1_stub;
 use crate::string::StringContext;
 
@@ -125,8 +124,8 @@ pub fn create<'gc>(
     context: &mut StringContext<'gc>,
     proto: Object<'gc>,
     fn_proto: Object<'gc>,
-) -> ScriptObject<'gc> {
-    let system = ScriptObject::new(context, Some(proto));
+) -> Object<'gc> {
+    let system = Object::new(context, Some(proto));
     define_properties_on(OBJECT_DECLS, context, system, fn_proto);
     system
 }

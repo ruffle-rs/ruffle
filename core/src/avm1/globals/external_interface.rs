@@ -3,7 +3,7 @@
 use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
 use crate::avm1::property_decl::{define_properties_on, Declaration};
-use crate::avm1::{Object, ScriptObject, Value};
+use crate::avm1::{Object, Value};
 use crate::external::{Callback, ExternalInterface, Value as ExternalValue};
 use crate::string::StringContext;
 
@@ -79,12 +79,12 @@ pub fn create_external_interface_object<'gc>(
     proto: Object<'gc>,
     fn_proto: Object<'gc>,
 ) -> Object<'gc> {
-    let object = ScriptObject::new(context, Some(proto));
+    let object = Object::new(context, Some(proto));
     define_properties_on(OBJECT_DECLS, context, object, fn_proto);
-    object.into()
+    object
 }
 
 pub fn create_proto<'gc>(context: &mut StringContext<'gc>, proto: Object<'gc>) -> Object<'gc> {
     // It's a custom prototype but it's empty.
-    ScriptObject::new(context, Some(proto)).into()
+    Object::new(context, Some(proto))
 }
