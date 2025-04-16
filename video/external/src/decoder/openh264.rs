@@ -337,7 +337,9 @@ impl VideoDecoder for H264Decoder {
                 }
                 i += self.length_size as usize;
                 buffer.extend_from_slice(&[0, 0, 1]);
-                buffer.extend_from_slice(&encoded_frame.data[i..i + length]);
+                buffer.extend_from_slice(
+                    &encoded_frame.data[i..i + length - self.length_size as usize],
+                );
                 i += length;
             }
 
