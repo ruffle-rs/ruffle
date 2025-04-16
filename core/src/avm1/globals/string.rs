@@ -7,7 +7,7 @@ use crate::avm1::error::Error;
 use crate::avm1::function::FunctionObject;
 use crate::avm1::property::Attribute;
 use crate::avm1::property_decl::{define_properties_on, Declaration};
-use crate::avm1::{ArrayBuilder, NativeObject, Object, ScriptObject, Value};
+use crate::avm1::{ArrayBuilder, NativeObject, Object, Value};
 use crate::string::{utils as string_utils, AvmString, StringContext, WString};
 
 const PROTO_DECLS: &[Declaration] = declare_properties! {
@@ -93,9 +93,9 @@ pub fn create_proto<'gc>(
     proto: Object<'gc>,
     fn_proto: Object<'gc>,
 ) -> Object<'gc> {
-    let string_proto = ScriptObject::new(context, Some(proto));
+    let string_proto = Object::new(context, Some(proto));
     define_properties_on(PROTO_DECLS, context, string_proto, fn_proto);
-    string_proto.into()
+    string_proto
 }
 
 fn char_at<'gc>(

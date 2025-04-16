@@ -5,7 +5,7 @@ use ruffle_macros::istr;
 use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
 use crate::avm1::property_decl::{define_properties_on, Declaration};
-use crate::avm1::{NativeObject, Object, ScriptObject, Value};
+use crate::avm1::{NativeObject, Object, Value};
 use crate::string::{AvmString, StringContext, WStr};
 use crate::xml::{XmlNode, TEXT_NODE};
 
@@ -399,7 +399,7 @@ pub fn create_proto<'gc>(
     proto: Object<'gc>,
     fn_proto: Object<'gc>,
 ) -> Object<'gc> {
-    let xml_node_proto = ScriptObject::new(context, Some(proto));
+    let xml_node_proto = Object::new(context, Some(proto));
     define_properties_on(PROTO_DECLS, context, xml_node_proto, fn_proto);
-    xml_node_proto.into()
+    xml_node_proto
 }

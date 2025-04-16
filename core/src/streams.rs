@@ -2,7 +2,7 @@
 
 use crate::avm1::{
     Activation as Avm1Activation, ActivationIdentifier as Avm1ActivationIdentifier,
-    ExecutionReason as Avm1ExecutionReason, FlvValueAvm1Ext, ScriptObject as Avm1ScriptObject,
+    ExecutionReason as Avm1ExecutionReason, FlvValueAvm1Ext, Object as Avm1Object,
     Value as Avm1Value,
 };
 use crate::avm2::{
@@ -1288,8 +1288,7 @@ impl<'gc> NetStream<'gc> {
                     Avm1ActivationIdentifier::root("[NetStream Status Event]"),
                     root,
                 );
-                let info_object =
-                    Avm1ScriptObject::new(&activation.context.strings, Some(object_proto));
+                let info_object = Avm1Object::new(&activation.context.strings, Some(object_proto));
 
                 for (key, value) in values {
                     let key = AvmString::new_utf8(activation.gc(), key);

@@ -1,10 +1,7 @@
 use crate::avm1::NativeObject;
 use crate::avm1::Value as Avm1Value;
 use crate::avm1::{Activation as Avm1Activation, ActivationIdentifier as Avm1ActivationIdentifier};
-use crate::avm1::{
-    ArrayBuilder as Avm1ArrayBuilder, Error as Avm1Error, Object as Avm1Object,
-    ScriptObject as Avm1ScriptObject,
-};
+use crate::avm1::{ArrayBuilder as Avm1ArrayBuilder, Error as Avm1Error, Object as Avm1Object};
 use crate::avm2::activation::Activation as Avm2Activation;
 use crate::avm2::error::Error as Avm2Error;
 use crate::avm2::object::{
@@ -172,7 +169,7 @@ impl Value {
                 Avm1Value::String(AvmString::new_utf8(activation.gc(), value))
             }
             Value::Object(values) => {
-                let object = Avm1ScriptObject::new(
+                let object = Avm1Object::new(
                     &activation.context.strings,
                     Some(activation.context.avm1.prototypes().object),
                 );

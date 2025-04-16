@@ -1,8 +1,7 @@
 use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
-use crate::avm1::object::Object;
 use crate::avm1::property_decl::{define_properties_on, Declaration};
-use crate::avm1::{ScriptObject, Value};
+use crate::avm1::{Object, Value};
 use crate::avm1_stub;
 use crate::prelude::TDisplayObject;
 use crate::sandbox::SandboxType;
@@ -95,7 +94,7 @@ pub fn create<'gc>(
     proto: Object<'gc>,
     fn_proto: Object<'gc>,
 ) -> Object<'gc> {
-    let security = ScriptObject::new(context, Some(proto));
+    let security = Object::new(context, Some(proto));
     define_properties_on(OBJECT_DECLS, context, security, fn_proto);
-    security.into()
+    security
 }

@@ -6,7 +6,7 @@ use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
 use crate::avm1::function::FunctionObject;
 use crate::avm1::property_decl::{define_properties_on, Declaration};
-use crate::avm1::{NativeObject, Object, ScriptObject, Value};
+use crate::avm1::{NativeObject, Object, Value};
 use crate::string::StringContext;
 
 const PROTO_DECLS: &[Declaration] = declare_properties! {
@@ -63,9 +63,9 @@ pub fn create_proto<'gc>(
     proto: Object<'gc>,
     fn_proto: Object<'gc>,
 ) -> Object<'gc> {
-    let boolean_proto = ScriptObject::new(context, Some(proto));
+    let boolean_proto = Object::new(context, Some(proto));
     define_properties_on(PROTO_DECLS, context, boolean_proto, fn_proto);
-    boolean_proto.into()
+    boolean_proto
 }
 
 pub fn to_string<'gc>(
