@@ -1,7 +1,7 @@
 use crate::avm1::function::ExecutionReason;
 use crate::avm1::globals::as_broadcaster::BroadcasterFunctions;
 use crate::avm1::globals::{as_broadcaster, create_globals};
-use crate::avm1::object::{stage_object, TObject};
+use crate::avm1::object::stage_object;
 use crate::avm1::property_map::PropertyMap;
 use crate::avm1::scope::Scope;
 use crate::avm1::{scope, Activation, ActivationIdentifier, Error, Object, Value};

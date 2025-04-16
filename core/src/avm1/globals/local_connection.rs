@@ -3,7 +3,6 @@
 use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
 use crate::avm1::globals::shared_object::{deserialize_value, serialize};
-use crate::avm1::object::TObject;
 use crate::avm1::property_decl::{define_properties_on, Declaration};
 use crate::avm1::{
     ActivationIdentifier, ExecutionReason, NativeObject, Object, ScriptObject, Value,

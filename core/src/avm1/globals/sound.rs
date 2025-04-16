@@ -12,7 +12,7 @@ use crate::avm1::clamp::Clamp;
 use crate::avm1::error::Error;
 use crate::avm1::function::FunctionObject;
 use crate::avm1::property_decl::{define_properties_on, Declaration};
-use crate::avm1::{NativeObject, Object, ScriptObject, TObject, Value};
+use crate::avm1::{NativeObject, Object, ScriptObject, Value};
 use crate::backend::audio::{SoundHandle, SoundInstanceHandle};
 use crate::backend::navigator::Request;
 use crate::character::Character;

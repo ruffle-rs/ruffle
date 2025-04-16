@@ -6,7 +6,7 @@ use crate::avm1::globals::matrix::{matrix_to_value, object_to_matrix};
 use crate::avm1::object::NativeObject;
 use crate::avm1::object_reference::MovieClipReference;
 use crate::avm1::property_decl::{define_properties_on, Declaration};
-use crate::avm1::{Activation, Error, Object, ScriptObject, TObject, Value};
+use crate::avm1::{Activation, Error, Object, ScriptObject, Value};
 use crate::display_object::{DisplayObject, TDisplayObject};
 use crate::string::{AvmString, StringContext};
 use gc_arena::Collect;

@@ -5,7 +5,7 @@ use crate::avm1::clamp::Clamp;
 use crate::avm1::error::Error;
 use crate::avm1::function::FunctionObject;
 use crate::avm1::property_decl::{define_properties_on, Declaration};
-use crate::avm1::{Attribute, NativeObject, Object, ScriptObject, TObject, Value};
+use crate::avm1::{Attribute, NativeObject, Object, ScriptObject, Value};
 use crate::ecma_conversions::f64_to_wrapping_i32;
 use crate::string::{AvmString, StringContext};
 use bitflags::bitflags;
@@ -128,12 +128,11 @@ pub fn create_array_object<'gc>(
 ) -> Object<'gc> {
     let array =
         FunctionObject::constructor(context, constructor, Some(array), fn_proto, array_proto);
-    let object = array.raw_script_object();
 
     // TODO: These were added in Flash Player 7, but are available even to SWFv6 and lower
     // when run in Flash Player 7. Make these conditional if we add a parameter to control
     // target Flash Player version.
-    define_properties_on(OBJECT_DECLS, context, object, fn_proto);
+    define_properties_on(OBJECT_DECLS, context, array, fn_proto);
     array
 }
 
@@ -791,7 +790,6 @@ pub fn create_proto<'gc>(
     fn_proto: Object<'gc>,
 ) -> Object<'gc> {
     let array = ArrayBuilder::new_with_proto(context, proto).with([]);
-    let object = array.raw_script_object();
-    define_properties_on(PROTO_DECLS, context, object, fn_proto);
-    object.into()
+    define_properties_on(PROTO_DECLS, context, array, fn_proto);
+    array
 }

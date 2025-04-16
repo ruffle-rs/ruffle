@@ -7,7 +7,7 @@ use crate::avm1::error::Error;
 use crate::avm1::function::FunctionObject;
 use crate::avm1::property::Attribute;
 use crate::avm1::property_decl::{define_properties_on, Declaration};
-use crate::avm1::{ArrayBuilder, NativeObject, Object, ScriptObject, TObject, Value};
+use crate::avm1::{ArrayBuilder, NativeObject, Object, ScriptObject, Value};
 use crate::string::{utils as string_utils, AvmString, StringContext, WString};
 
 const PROTO_DECLS: &[Declaration] = declare_properties! {
@@ -83,8 +83,7 @@ pub fn create_string_object<'gc>(
         fn_proto,
         string_proto,
     );
-    let object = string.raw_script_object();
-    define_properties_on(OBJECT_DECLS, context, object, fn_proto);
+    define_properties_on(OBJECT_DECLS, context, string, fn_proto);
     string
 }
 

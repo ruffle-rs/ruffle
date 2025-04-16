@@ -3,7 +3,7 @@
 use crate::avm1::{
     Activation as Avm1Activation, ActivationIdentifier, Avm1, ExecutionReason,
     NativeObject as Avm1NativeObject, Object as Avm1Object, ScriptObject as Avm1ScriptObject,
-    TObject as Avm1TObject, Value as Avm1Value,
+    Value as Avm1Value,
 };
 use crate::avm2::object::{
     ClassObject as Avm2ClassObject, EventObject as Avm2EventObject, Object as Avm2Object,

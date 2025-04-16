@@ -43,7 +43,7 @@ macro_rules! test_method {
 
                         $(
                             let args: Vec<Value> = vec![$($arg.into()),*];
-                            let ret = crate::avm1::object::TObject::call_method(&object, name, &args, activation, crate::avm1::function::ExecutionReason::Special)?;
+                            let ret = crate::avm1::object::Object::call_method(object, name, &args, activation, crate::avm1::function::ExecutionReason::Special)?;
 
                             // Do a numeric comparison with tolerance if `@epsilon` was given:
                             $(

@@ -1,7 +1,7 @@
 //! `MovieClip` display object and support code.
 use crate::avm1::{
     NativeObject as Avm1NativeObject, Object as Avm1Object, ScriptObject as Avm1ScriptObject,
-    TObject as Avm1TObject, Value as Avm1Value,
+    Value as Avm1Value,
 };
 use crate::avm2::object::LoaderInfoObject;
 use crate::avm2::object::LoaderStream;

@@ -2,7 +2,7 @@ use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
 use crate::avm1::function::ExecutionReason;
 use crate::avm1::object::NativeObject;
-use crate::avm1::{Object, ScriptObject, TObject};
+use crate::avm1::{Object, ScriptObject};
 use crate::display_object::TDisplayObject;
 use crate::ecma_conversions::{
     f64_to_wrapping_i16, f64_to_wrapping_i32, f64_to_wrapping_u16, f64_to_wrapping_u32,
@@ -904,7 +904,7 @@ mod test {
     use crate::avm1::function::FunctionObject;
     use crate::avm1::globals::create_globals;
     use crate::avm1::object::script_object::ScriptObject;
-    use crate::avm1::object::{Object, TObject};
+    use crate::avm1::object::Object;
     use crate::avm1::property::Attribute;
     use crate::avm1::test_utils::with_avm;
     use crate::avm1::Value;

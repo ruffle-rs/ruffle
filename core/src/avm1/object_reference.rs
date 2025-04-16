@@ -1,4 +1,4 @@
-use super::{object::script_object::ScriptObjectWeak, Activation, Object, TObject, Value};
+use super::{object::script_object::ScriptObjectWeak, Activation, Object, Value};
 use crate::{
     display_object::{DisplayObject, TDisplayObject, TDisplayObjectContainer},
     string::{AvmString, WStr, WString},
@@ -83,7 +83,7 @@ impl<'gc> MovieClipReference<'gc> {
             return None;
         };
 
-        let Value::Object(Object::ScriptObject(cached)) = cached else {
+        let Value::Object(cached) = cached else {
             return None;
         };
 
