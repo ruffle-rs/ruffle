@@ -6,11 +6,9 @@ use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
 use crate::avm1::function::ExecutionReason;
 use crate::avm1::object::{search_prototype, ExecutionName};
-use crate::avm1::property::Attribute;
-use crate::avm1::{NativeObject, Object, ObjectPtr, ScriptObject, TObject, Value};
-use crate::display_object::DisplayObject;
+use crate::avm1::{NativeObject, Object, TObject, Value};
 use crate::string::AvmString;
-use gc_arena::{Collect, Gc, Mutation};
+use gc_arena::{Collect, Gc};
 use ruffle_macros::istr;
 
 /// Implementation of the `super` object in AS2.
@@ -50,7 +48,11 @@ impl<'gc> SuperObject<'gc> {
         self.0.this
     }
 
-    fn base_proto(&self, activation: &mut Activation<'_, 'gc>) -> Object<'gc> {
+    pub fn depth(&self) -> u8 {
+        self.0.depth
+    }
+
+    pub(super) fn base_proto(&self, activation: &mut Activation<'_, 'gc>) -> Object<'gc> {
         let depth = self.0.depth;
         let mut proto = self.0.this;
         for _ in 0..depth {
@@ -58,42 +60,15 @@ impl<'gc> SuperObject<'gc> {
         }
         proto
     }
-}
 
-impl<'gc> TObject<'gc> for SuperObject<'gc> {
-    fn raw_script_object(&self) -> ScriptObject<'gc> {
-        self.0.this.raw_script_object()
+    pub(super) fn proto(&self, activation: &mut Activation<'_, 'gc>) -> Value<'gc> {
+        self.base_proto(activation).proto(activation)
     }
 
-    fn as_ptr(&self) -> *const ObjectPtr {
-        Gc::as_ptr(self.0) as *const ObjectPtr
-    }
-
-    fn get_local_stored(
-        &self,
-        _name: impl Into<AvmString<'gc>>,
-        _activation: &mut Activation<'_, 'gc>,
-        _is_slash_path: bool,
-    ) -> Option<Value<'gc>> {
-        None
-    }
-
-    fn set_local(
-        &self,
-        _name: AvmString<'gc>,
-        _value: Value<'gc>,
-        _activation: &mut Activation<'_, 'gc>,
-        _this: Object<'gc>,
-    ) -> Result<(), Error<'gc>> {
-        //TODO: What happens if you set `super.__proto__`?
-        Ok(())
-    }
-
-    fn call(
+    pub(super) fn call(
         &self,
         name: impl Into<ExecutionName<'gc>>,
         activation: &mut Activation<'_, 'gc>,
-        _this: Value<'gc>,
         args: &[Value<'gc>],
     ) -> Result<Value<'gc>, Error<'gc>> {
         let constructor = self
@@ -116,7 +91,7 @@ impl<'gc> TObject<'gc> for SuperObject<'gc> {
         )
     }
 
-    fn call_method(
+    pub(super) fn call_method(
         &self,
         name: AvmString<'gc>,
         args: &[Value<'gc>],
@@ -142,138 +117,5 @@ impl<'gc> TObject<'gc> for SuperObject<'gc> {
             ),
             None => method.call(name, activation, this.into(), args),
         }
-    }
-
-    fn delete(&self, _activation: &mut Activation<'_, 'gc>, _name: AvmString<'gc>) -> bool {
-        //`super` cannot have properties deleted from it
-        false
-    }
-
-    fn proto(&self, activation: &mut Activation<'_, 'gc>) -> Value<'gc> {
-        self.base_proto(activation).proto(activation)
-    }
-
-    fn define_value(
-        &self,
-        _gc_context: &Mutation<'gc>,
-        _name: impl Into<AvmString<'gc>>,
-        _value: Value<'gc>,
-        _attributes: Attribute,
-    ) {
-        //`super` cannot have values defined on it
-    }
-
-    fn set_attributes(
-        &self,
-        _gc_context: &Mutation<'gc>,
-        _name: Option<AvmString<'gc>>,
-        _set_attributes: Attribute,
-        _clear_attributes: Attribute,
-    ) {
-        //TODO: Does ASSetPropFlags work on `super`? What would it even work on?
-    }
-
-    fn add_property(
-        &self,
-        _gc_context: &Mutation<'gc>,
-        _name: AvmString<'gc>,
-        _get: Object<'gc>,
-        _set: Option<Object<'gc>>,
-        _attributes: Attribute,
-    ) {
-        //`super` cannot have properties defined on it
-    }
-
-    fn add_property_with_case(
-        &self,
-        _activation: &mut Activation<'_, 'gc>,
-        _name: AvmString<'gc>,
-        _get: Object<'gc>,
-        _set: Option<Object<'gc>>,
-        _attributes: Attribute,
-    ) {
-        //`super` cannot have properties defined on it
-    }
-
-    fn watch(
-        &self,
-        _activation: &mut Activation<'_, 'gc>,
-        _name: AvmString<'gc>,
-        _callback: Object<'gc>,
-        _user_data: Value<'gc>,
-    ) {
-        //`super` cannot have properties defined on it
-    }
-
-    fn unwatch(&self, _activation: &mut Activation<'_, 'gc>, _name: AvmString<'gc>) -> bool {
-        //`super` cannot have properties defined on it
-        false
-    }
-
-    fn get_keys(
-        &self,
-        _activation: &mut Activation<'_, 'gc>,
-        _include_hidden: bool,
-    ) -> Vec<AvmString<'gc>> {
-        vec![]
-    }
-
-    fn length(&self, _activation: &mut Activation<'_, 'gc>) -> Result<i32, Error<'gc>> {
-        Ok(0)
-    }
-
-    fn set_length(
-        &self,
-        _activation: &mut Activation<'_, 'gc>,
-        _length: i32,
-    ) -> Result<(), Error<'gc>> {
-        Ok(())
-    }
-
-    fn has_element(&self, _activation: &mut Activation<'_, 'gc>, _index: i32) -> bool {
-        false
-    }
-
-    fn get_element(&self, _activation: &mut Activation<'_, 'gc>, _index: i32) -> Value<'gc> {
-        Value::Undefined
-    }
-
-    fn set_element(
-        &self,
-        _activation: &mut Activation<'_, 'gc>,
-        _index: i32,
-        _value: Value<'gc>,
-    ) -> Result<(), Error<'gc>> {
-        Ok(())
-    }
-
-    fn delete_element(&self, _activation: &mut Activation<'_, 'gc>, _index: i32) -> bool {
-        false
-    }
-
-    fn interfaces(&self) -> Vec<Object<'gc>> {
-        //`super` does not implement interfaces
-        vec![]
-    }
-
-    fn set_interfaces(&self, _gc_context: &Mutation<'gc>, _iface_list: Vec<Object<'gc>>) {
-        //`super` probably cannot have interfaces set on it
-    }
-
-    fn as_super_object(&self) -> Option<SuperObject<'gc>> {
-        Some(*self)
-    }
-
-    fn as_display_object(&self) -> Option<DisplayObject<'gc>> {
-        //`super` actually can be used to invoke MovieClip methods
-        self.0.this.as_display_object()
-    }
-
-    fn native(&self) -> NativeObject<'gc> {
-        self.0.this.native()
-    }
-
-    fn set_native(&self, gc_context: &Mutation<'gc>, native: NativeObject<'gc>) {
-        self.0.this.set_native(gc_context, native);
     }
 }
