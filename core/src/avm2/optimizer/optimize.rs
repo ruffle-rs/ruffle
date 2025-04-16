@@ -3,6 +3,7 @@ use crate::avm2::method::{Method, ResolvedParamConfig};
 use crate::avm2::multiname::Multiname;
 use crate::avm2::op::Op;
 use crate::avm2::optimizer::blocks::assemble_blocks;
+use crate::avm2::optimizer::peephole;
 use crate::avm2::property::Property;
 use crate::avm2::verify::Exception;
 use crate::avm2::vtable::VTable;
@@ -549,6 +550,10 @@ pub fn optimize<'gc>(
     let code_slice = Cell::from_mut(code.as_mut_slice());
     let code_slice = code_slice.as_slice_of_cells();
 
+    // We run the preprocess peephole before assembling blocks because it removes
+    // zero-length jumps, which usually reduces the number of blocks in obfuscated code.
+    peephole::preprocess_peephole(code_slice);
+
     let (block_list, op_index_to_block_index_table) = assemble_blocks(code_slice, jump_targets);
 
     let types = Types {
@@ -649,7 +654,10 @@ pub fn optimize<'gc>(
                 true,
             )?;
         }
+
+        peephole::postprocess_peephole(code_slice, jump_targets, !method_exceptions.is_empty());
     }
+
     Ok(())
 }
 
