@@ -2,7 +2,7 @@ use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
 use crate::avm1::function::ExecutionReason;
 use crate::avm1::object::NativeObject;
-use crate::avm1::{Object, ScriptObject};
+use crate::avm1::Object;
 use crate::display_object::TDisplayObject;
 use crate::ecma_conversions::{
     f64_to_wrapping_i16, f64_to_wrapping_i32, f64_to_wrapping_u16, f64_to_wrapping_u32,
@@ -49,12 +49,9 @@ impl From<bool> for Value<'_> {
     }
 }
 
-impl<'gc, T> From<T> for Value<'gc>
-where
-    Object<'gc>: From<T>,
-{
-    fn from(value: T) -> Self {
-        Value::Object(Object::from(value))
+impl<'gc> From<Object<'gc>> for Value<'gc> {
+    fn from(value: Object<'gc>) -> Self {
+        Value::Object(value)
     }
 }
 
@@ -486,7 +483,7 @@ impl<'gc> Value<'gc> {
             Value::String(_) => (self, Some(activation.context.avm1.prototypes().string)),
         };
 
-        let obj = ScriptObject::new(&activation.context.strings, proto).into();
+        let obj = Object::new(&activation.context.strings, proto);
 
         // Constructor populates the boxed object with the value.
         use crate::avm1::globals;
@@ -903,7 +900,6 @@ mod test {
     use crate::avm1::error::Error;
     use crate::avm1::function::FunctionObject;
     use crate::avm1::globals::create_globals;
-    use crate::avm1::object::script_object::ScriptObject;
     use crate::avm1::object::Object;
     use crate::avm1::property::Attribute;
     use crate::avm1::test_utils::with_avm;
@@ -947,7 +943,7 @@ mod test {
                 protos.function,
             );
 
-            let o = ScriptObject::new(&activation.context.strings, Some(protos.object));
+            let o = Object::new(&activation.context.strings, Some(protos.object));
             o.define_value(
                 activation.gc(),
                 istr!("valueOf"),
@@ -978,7 +974,7 @@ mod test {
             assert_eq!(f.coerce_to_f64(activation).unwrap(), 0.0);
             assert!(n.coerce_to_f64(activation).unwrap().is_nan());
 
-            let o = ScriptObject::new(&activation.context.strings, None);
+            let o = Object::new(&activation.context.strings, None);
 
             assert!(Value::from(o).coerce_to_f64(activation).unwrap().is_nan());
 
@@ -1000,7 +996,7 @@ mod test {
             assert_eq!(f.coerce_to_f64(activation).unwrap(), 0.0);
             assert_eq!(n.coerce_to_f64(activation).unwrap(), 0.0);
 
-            let o = ScriptObject::new(&activation.context.strings, None);
+            let o = Object::new(&activation.context.strings, None);
 
             assert_eq!(Value::from(o).coerce_to_f64(activation).unwrap(), 0.0);
 

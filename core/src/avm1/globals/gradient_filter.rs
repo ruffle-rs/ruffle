@@ -5,7 +5,7 @@ use crate::avm1::function::FunctionObject;
 use crate::avm1::globals::bevel_filter::BevelFilterType;
 use crate::avm1::object::NativeObject;
 use crate::avm1::property_decl::{define_properties_on, Declaration};
-use crate::avm1::{Activation, ArrayBuilder, Error, Object, ScriptObject, Value};
+use crate::avm1::{Activation, ArrayBuilder, Error, Object, Value};
 use crate::string::StringContext;
 use gc_arena::{Collect, Gc, Mutation};
 use ruffle_macros::istr;
@@ -170,7 +170,7 @@ impl<'gc> GradientFilter<'gc> {
         Ok(())
     }
 
-    fn colors(self, activation: &Activation<'_, 'gc>) -> ScriptObject<'gc> {
+    fn colors(self, activation: &Activation<'_, 'gc>) -> Object<'gc> {
         let num_colors = self.0.num_colors.get();
         ArrayBuilder::new(activation).with(
             self.0.colors.borrow()[..num_colors]
@@ -206,7 +206,7 @@ impl<'gc> GradientFilter<'gc> {
         Ok(())
     }
 
-    fn alphas(self, activation: &Activation<'_, 'gc>) -> ScriptObject<'gc> {
+    fn alphas(self, activation: &Activation<'_, 'gc>) -> Object<'gc> {
         let num_colors = self.0.num_colors.get();
         ArrayBuilder::new(activation).with(
             self.0.colors.borrow()[..num_colors]
@@ -245,7 +245,7 @@ impl<'gc> GradientFilter<'gc> {
         Ok(())
     }
 
-    fn ratios(self, activation: &Activation<'_, 'gc>) -> ScriptObject<'gc> {
+    fn ratios(self, activation: &Activation<'_, 'gc>) -> Object<'gc> {
         let num_colors = self.0.num_colors.get();
         ArrayBuilder::new(activation).with(
             self.0.colors.borrow()[..num_colors]
@@ -534,9 +534,9 @@ pub fn create_bevel_proto<'gc>(
     proto: Object<'gc>,
     fn_proto: Object<'gc>,
 ) -> Object<'gc> {
-    let gradient_bevel_filter_proto = ScriptObject::new(context, Some(proto));
+    let gradient_bevel_filter_proto = Object::new(context, Some(proto));
     define_properties_on(PROTO_DECLS, context, gradient_bevel_filter_proto, fn_proto);
-    gradient_bevel_filter_proto.into()
+    gradient_bevel_filter_proto
 }
 
 pub fn create_bevel_constructor<'gc>(
@@ -558,9 +558,9 @@ pub fn create_glow_proto<'gc>(
     proto: Object<'gc>,
     fn_proto: Object<'gc>,
 ) -> Object<'gc> {
-    let gradient_bevel_filter_proto = ScriptObject::new(context, Some(proto));
+    let gradient_bevel_filter_proto = Object::new(context, Some(proto));
     define_properties_on(PROTO_DECLS, context, gradient_bevel_filter_proto, fn_proto);
-    gradient_bevel_filter_proto.into()
+    gradient_bevel_filter_proto
 }
 
 pub fn create_glow_constructor<'gc>(

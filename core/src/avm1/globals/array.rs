@@ -5,7 +5,7 @@ use crate::avm1::clamp::Clamp;
 use crate::avm1::error::Error;
 use crate::avm1::function::FunctionObject;
 use crate::avm1::property_decl::{define_properties_on, Declaration};
-use crate::avm1::{Attribute, NativeObject, Object, ScriptObject, Value};
+use crate::avm1::{Attribute, NativeObject, Object, Value};
 use crate::ecma_conversions::f64_to_wrapping_i32;
 use crate::string::{AvmString, StringContext};
 use bitflags::bitflags;
@@ -72,7 +72,7 @@ pub struct ArrayBuilder<'gc> {
 }
 
 impl<'gc> ArrayBuilder<'gc> {
-    pub fn empty(activation: &Activation<'_, 'gc>) -> ScriptObject<'gc> {
+    pub fn empty(activation: &Activation<'_, 'gc>) -> Object<'gc> {
         Self::new(activation).with([])
     }
 
@@ -107,8 +107,8 @@ impl<'gc> ArrayBuilder<'gc> {
         this.set_native(self.mc, NativeObject::Array(()));
     }
 
-    pub fn with(self, elements: impl IntoIterator<Item = Value<'gc>>) -> ScriptObject<'gc> {
-        let obj = ScriptObject::new_without_proto(self.mc);
+    pub fn with(self, elements: impl IntoIterator<Item = Value<'gc>>) -> Object<'gc> {
+        let obj = Object::new_without_proto(self.mc);
         obj.define_value(
             self.mc,
             self.proto_prop,
@@ -116,7 +116,7 @@ impl<'gc> ArrayBuilder<'gc> {
             Attribute::DONT_ENUM | Attribute::DONT_DELETE,
         );
 
-        self.init_with(obj.into(), elements);
+        self.init_with(obj, elements);
         obj
     }
 }

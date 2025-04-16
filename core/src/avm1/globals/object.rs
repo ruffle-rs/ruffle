@@ -5,7 +5,7 @@ use crate::avm1::error::Error;
 use crate::avm1::function::FunctionObject;
 use crate::avm1::property::Attribute;
 use crate::avm1::property_decl::{define_properties_on, Declaration};
-use crate::avm1::{Object, ScriptObject, Value};
+use crate::avm1::{Object, Value};
 use crate::avm_warn;
 use crate::display_object::TDisplayObject;
 use crate::string::{AvmString, StringContext};
@@ -45,9 +45,7 @@ pub fn object_function<'gc>(
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     let obj = match args.get(0).unwrap_or(&Value::Undefined) {
-        Value::Undefined | Value::Null => {
-            Object::from(ScriptObject::new(&activation.context.strings, None))
-        }
+        Value::Undefined | Value::Null => Object::new(&activation.context.strings, None),
         val => val.coerce_to_object(activation),
     };
     Ok(obj.into())

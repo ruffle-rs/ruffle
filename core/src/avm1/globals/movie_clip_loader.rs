@@ -3,7 +3,6 @@
 use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
 use crate::avm1::globals::as_broadcaster::BroadcasterFunctions;
-use crate::avm1::object::script_object::ScriptObject;
 use crate::avm1::property::Attribute;
 use crate::avm1::property_decl::{define_properties_on, Declaration};
 use crate::avm1::{ArrayBuilder, Object, Value};
@@ -28,7 +27,7 @@ pub fn constructor<'gc>(
     this.define_value(
         activation.gc(),
         istr!("_listeners"),
-        Value::Object(listeners.into()),
+        Value::Object(listeners),
         Attribute::DONT_ENUM,
     );
     Ok(Value::Undefined)
@@ -137,7 +136,7 @@ fn get_progress<'gc>(
             Value::MovieClip(_) => target.coerce_to_object(activation).as_display_object(),
             _ => return Ok(Value::Undefined),
         };
-        let result = ScriptObject::new(&activation.context.strings, None);
+        let result = Object::new(&activation.context.strings, None);
         if let Some(target) = target {
             result.define_value(
                 activation.gc(),
@@ -165,8 +164,8 @@ pub fn create_proto<'gc>(
     array_proto: Object<'gc>,
     broadcaster_functions: BroadcasterFunctions<'gc>,
 ) -> Object<'gc> {
-    let mcl_proto = ScriptObject::new(context, Some(proto));
-    broadcaster_functions.initialize(context, mcl_proto.into(), array_proto);
+    let mcl_proto = Object::new(context, Some(proto));
+    broadcaster_functions.initialize(context, mcl_proto, array_proto);
     define_properties_on(PROTO_DECLS, context, mcl_proto, fn_proto);
-    mcl_proto.into()
+    mcl_proto
 }

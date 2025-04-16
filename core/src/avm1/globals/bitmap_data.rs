@@ -6,7 +6,7 @@ use crate::avm1::globals::bitmap_filter;
 use crate::avm1::globals::color_transform::ColorTransformObject;
 use crate::avm1::object::NativeObject;
 use crate::avm1::property_decl::{define_properties_on, Declaration};
-use crate::avm1::{Activation, Attribute, Error, Object, ScriptObject, Value};
+use crate::avm1::{Activation, Attribute, Error, Object, Value};
 use crate::bitmap::bitmap_data::{BitmapData, BitmapDataWrapper};
 use crate::bitmap::bitmap_data::{BitmapDataDrawError, IBitmapDrawable};
 use crate::bitmap::bitmap_data::{ChannelOptions, ThresholdOperation};
@@ -59,12 +59,12 @@ fn new_bitmap_data<'gc>(
     proto: Option<Value<'gc>>,
     bitmap_data: BitmapData<'gc>,
     activation: &mut Activation<'_, 'gc>,
-) -> ScriptObject<'gc> {
+) -> Object<'gc> {
     let gc_context = activation.gc();
 
-    let object = ScriptObject::new_without_proto(gc_context);
-    // Set `__proto__` manually since `ScriptObject::new()` doesn't support primitive prototypes.
-    // TODO: Pass `proto` to `ScriptObject::new()` once possible.
+    let object = Object::new_without_proto(gc_context);
+    // Set `__proto__` manually since `Object::new()` doesn't support primitive prototypes.
+    // TODO: Pass `proto` to `Object::new()` once possible.
     if let Some(proto) = proto {
         object.define_value(
             gc_context,
@@ -1562,13 +1562,13 @@ fn load_bitmap<'gc>(
 
 pub fn create_constructor<'gc>(
     context: &mut StringContext<'gc>,
-    proto: ScriptObject<'gc>,
+    proto: Object<'gc>,
     fn_proto: Object<'gc>,
 ) -> Object<'gc> {
     define_properties_on(PROTO_DECLS, context, proto, fn_proto);
 
     let bitmap_data_constructor =
-        FunctionObject::constructor(context, constructor, None, fn_proto, proto.into());
+        FunctionObject::constructor(context, constructor, None, fn_proto, proto);
     define_properties_on(OBJECT_DECLS, context, bitmap_data_constructor, fn_proto);
     bitmap_data_constructor
 }

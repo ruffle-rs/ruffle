@@ -2,7 +2,7 @@ use crate::avm1::clamp::Clamp;
 use crate::avm1::function::FunctionObject;
 use crate::avm1::object::NativeObject;
 use crate::avm1::property_decl::{define_properties_on, Declaration};
-use crate::avm1::{Activation, Error, Object, ScriptObject, Value};
+use crate::avm1::{Activation, Error, Object, Value};
 use crate::locale::{get_current_date_time, get_timezone};
 use crate::string::{AvmString, StringContext};
 use gc_arena::Gc;
@@ -570,7 +570,7 @@ pub fn create_constructor<'gc>(
     proto: Object<'gc>,
     fn_proto: Object<'gc>,
 ) -> Object<'gc> {
-    let date_proto = ScriptObject::new(context, Some(proto));
+    let date_proto = Object::new(context, Some(proto));
     define_properties_on(PROTO_DECLS, context, date_proto, fn_proto);
 
     let date_constructor = FunctionObject::constructor(
@@ -578,7 +578,7 @@ pub fn create_constructor<'gc>(
         date_method!(256),
         Some(function),
         fn_proto,
-        date_proto.into(),
+        date_proto,
     );
     define_properties_on(OBJECT_DECLS, context, date_constructor, fn_proto);
 

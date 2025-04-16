@@ -4,7 +4,7 @@ use crate::avm1::activation::Activation;
 use crate::avm1::callable_value::CallableValue;
 use crate::avm1::error::Error;
 use crate::avm1::property::Attribute;
-use crate::avm1::{Object, ScriptObject, Value};
+use crate::avm1::{Object, Value};
 use crate::display_object::TDisplayObject;
 use crate::string::AvmString;
 use gc_arena::{Collect, Gc, Mutation};
@@ -53,7 +53,7 @@ impl<'gc> Scope<'gc> {
         Scope {
             parent: Some(parent),
             class: ScopeClass::Local,
-            values: ScriptObject::new_without_proto(mc).into(),
+            values: Object::new_without_proto(mc),
         }
     }
 

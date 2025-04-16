@@ -6,7 +6,7 @@ use crate::avm1::globals::matrix::gradient_object_to_matrix;
 use crate::avm1::globals::{self, bitmap_filter, AVM_DEPTH_BIAS, AVM_MAX_DEPTH};
 use crate::avm1::object::NativeObject;
 use crate::avm1::property_decl::{define_properties_on, Declaration};
-use crate::avm1::{self, ArrayBuilder, Object, ScriptObject, Value};
+use crate::avm1::{self, ArrayBuilder, Object, Value};
 use crate::backend::navigator::NavigationMethod;
 use crate::context::UpdateContext;
 use crate::display_object::{Bitmap, EditText, MovieClip, TInteractiveObject};
@@ -258,9 +258,9 @@ pub fn create_proto<'gc>(
     proto: Object<'gc>,
     fn_proto: Object<'gc>,
 ) -> Object<'gc> {
-    let object = ScriptObject::new(context, Some(proto));
+    let object = Object::new(context, Some(proto));
     define_properties_on(PROTO_DECLS, context, object, fn_proto);
-    object.into()
+    object
 }
 
 fn attach_bitmap<'gc>(
@@ -993,7 +993,7 @@ pub fn clone_sprite<'gc>(
         *new_clip.drawing_mut(context.gc()) = drawing;
     }
     // TODO: Any other properties we should copy...?
-    // Definitely not ScriptObject properties.
+    // Definitely not Object properties.
 
     new_clip.post_instantiation(context, init_object, Instantiator::Avm1, true);
 
@@ -1468,7 +1468,7 @@ fn get_bounds<'gc>(
             }
         };
 
-        let out = ScriptObject::new(
+        let out = Object::new(
             &activation.context.strings,
             Some(activation.context.avm1.prototypes().object),
         );

@@ -3,7 +3,7 @@ use crate::avm1::error::Error;
 use crate::avm1::globals::bitmap_filter;
 use crate::avm1::object::NativeObject;
 use crate::avm1::property_decl::{define_properties_on, Declaration};
-use crate::avm1::{globals, ArrayBuilder, Object, ScriptObject, Value};
+use crate::avm1::{globals, ArrayBuilder, Object, Value};
 use crate::display_object::{
     AutoSizeMode, EditText, TDisplayObject, TInteractiveObject, TextSelection,
 };
@@ -105,9 +105,9 @@ pub fn create_proto<'gc>(
     proto: Object<'gc>,
     fn_proto: Object<'gc>,
 ) -> Object<'gc> {
-    let object = ScriptObject::new(context, Some(proto));
+    let object = Object::new(context, Some(proto));
     define_properties_on(PROTO_DECLS, context, object, fn_proto);
-    object.into()
+    object
 }
 
 pub fn password<'gc>(
@@ -129,9 +129,9 @@ pub fn set_password<'gc>(
 fn new_text_format<'gc>(
     activation: &mut Activation<'_, 'gc>,
     text_format: TextFormat,
-) -> ScriptObject<'gc> {
+) -> Object<'gc> {
     let proto = activation.context.avm1.prototypes().text_format;
-    let object = ScriptObject::new(&activation.context.strings, Some(proto));
+    let object = Object::new(&activation.context.strings, Some(proto));
     object.set_native(
         activation.gc(),
         NativeObject::TextFormat(Gc::new(activation.gc(), text_format.into())),

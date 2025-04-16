@@ -3,7 +3,7 @@
 use crate::avm1::function::FunctionObject;
 use crate::avm1::object::NativeObject;
 use crate::avm1::property_decl::{define_properties_on, Declaration};
-use crate::avm1::{Activation, Error, Object, ScriptObject, Value};
+use crate::avm1::{Activation, Error, Object, Value};
 use crate::string::StringContext;
 use gc_arena::{Collect, Gc, Mutation};
 use ruffle_macros::istr;
@@ -526,9 +526,9 @@ pub fn create_proto<'gc>(
     proto: Object<'gc>,
     fn_proto: Object<'gc>,
 ) -> Object<'gc> {
-    let bevel_filter_proto = ScriptObject::new(context, Some(proto));
+    let bevel_filter_proto = Object::new(context, Some(proto));
     define_properties_on(PROTO_DECLS, context, bevel_filter_proto, fn_proto);
-    bevel_filter_proto.into()
+    bevel_filter_proto
 }
 
 pub fn create_constructor<'gc>(

@@ -1,4 +1,4 @@
-use crate::avm1::{Activation, ActivationIdentifier, NativeObject, Object, ScriptObject, Value};
+use crate::avm1::{Activation, ActivationIdentifier, NativeObject, Object, Value};
 use crate::backend::audio::AudioManager;
 use crate::backend::ui::MouseCursor;
 use crate::context::{ActionType, RenderContext, UpdateContext};
@@ -283,13 +283,13 @@ impl<'gc> TDisplayObject<'gc> for Avm1Button<'gc> {
         }
 
         if self.0.object.get().is_none() {
-            let object = ScriptObject::new_with_native(
+            let object = Object::new_with_native(
                 &context.strings,
                 Some(context.avm1.prototypes().button),
                 NativeObject::Button(*self),
             );
             let obj = unlock!(Gc::write(context.gc(), self.0), Avm1ButtonData, object);
-            obj.set(Some(object.into()));
+            obj.set(Some(object));
 
             if run_frame {
                 self.run_frame_avm1(context);

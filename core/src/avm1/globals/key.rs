@@ -2,7 +2,7 @@ use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
 use crate::avm1::globals::as_broadcaster::BroadcasterFunctions;
 use crate::avm1::property_decl::{define_properties_on, Declaration};
-use crate::avm1::{Object, ScriptObject, Value};
+use crate::avm1::{Object, Value};
 use crate::events::KeyCode;
 use crate::string::StringContext;
 
@@ -88,8 +88,8 @@ pub fn create_key_object<'gc>(
     broadcaster_functions: BroadcasterFunctions<'gc>,
     array_proto: Object<'gc>,
 ) -> Object<'gc> {
-    let key = ScriptObject::new(context, Some(proto));
-    broadcaster_functions.initialize(context, key.into(), array_proto);
+    let key = Object::new(context, Some(proto));
+    broadcaster_functions.initialize(context, key, array_proto);
     define_properties_on(OBJECT_DECLS, context, key, fn_proto);
-    key.into()
+    key
 }

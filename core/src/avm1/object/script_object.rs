@@ -4,7 +4,7 @@ use crate::avm1::function::{Executable, ExecutionName, ExecutionReason};
 use crate::avm1::object::{stage_object, NativeObject};
 use crate::avm1::property::{Attribute, Property};
 use crate::avm1::property_map::{Entry, PropertyMap};
-use crate::avm1::{Object, ObjectPtr, Value};
+use crate::avm1::{ObjectPtr, Value};
 use crate::display_object::{DisplayObject, TDisplayObject as _};
 use crate::ecma_conversions::f64_to_wrapping_i32;
 use crate::string::{AvmString, StringContext};
@@ -53,21 +53,21 @@ impl<'gc> Watcher<'gc> {
 
 #[derive(Copy, Clone, Collect)]
 #[collect(no_drop)]
-pub struct ScriptObject<'gc>(GcCell<'gc, ScriptObjectData<'gc>>);
+pub struct Object<'gc>(GcCell<'gc, ObjectData<'gc>>);
 
 #[derive(Copy, Clone, Collect)]
 #[collect(no_drop)]
-pub struct ScriptObjectWeak<'gc>(GcWeakCell<'gc, ScriptObjectData<'gc>>);
+pub struct ObjectWeak<'gc>(GcWeakCell<'gc, ObjectData<'gc>>);
 
-impl<'gc> ScriptObjectWeak<'gc> {
-    pub fn upgrade(self, mc: &Mutation<'gc>) -> Option<ScriptObject<'gc>> {
-        self.0.upgrade(mc).map(ScriptObject)
+impl<'gc> ObjectWeak<'gc> {
+    pub fn upgrade(self, mc: &Mutation<'gc>) -> Option<Object<'gc>> {
+        self.0.upgrade(mc).map(Object)
     }
 }
 
-impl fmt::Debug for ScriptObjectWeak<'_> {
+impl fmt::Debug for ObjectWeak<'_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.debug_struct("ScriptObjectWeak")
+        f.debug_struct("ObjectWeak")
             .field("ptr", &self.0.as_ptr())
             .finish()
     }
@@ -75,30 +75,30 @@ impl fmt::Debug for ScriptObjectWeak<'_> {
 
 #[derive(Collect)]
 #[collect(no_drop)]
-struct ScriptObjectData<'gc> {
+struct ObjectData<'gc> {
     native: NativeObject<'gc>,
     properties: PropertyMap<'gc, Property<'gc>>,
     interfaces: Vec<Object<'gc>>,
     watchers: PropertyMap<'gc, Watcher<'gc>>,
 }
 
-impl fmt::Debug for ScriptObject<'_> {
+impl fmt::Debug for Object<'_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.debug_struct("ScriptObject")
+        f.debug_struct("Object")
             .field("ptr", &self.0.as_ptr())
             .finish()
     }
 }
 
-impl<'gc> ScriptObject<'gc> {
-    pub fn as_weak(self) -> ScriptObjectWeak<'gc> {
-        ScriptObjectWeak(GcCell::downgrade(self.0))
+impl<'gc> Object<'gc> {
+    pub fn as_weak(self) -> ObjectWeak<'gc> {
+        ObjectWeak(GcCell::downgrade(self.0))
     }
 
     pub fn new(context: &StringContext<'gc>, proto: Option<Object<'gc>>) -> Self {
         let object = Self(GcCell::new(
             context.gc(),
-            ScriptObjectData {
+            ObjectData {
                 native: NativeObject::None,
                 properties: PropertyMap::new(),
                 interfaces: vec![],
@@ -126,11 +126,11 @@ impl<'gc> ScriptObject<'gc> {
         obj
     }
 
-    // Creates a ScriptObject, without assigning any __proto__ property.
+    // Creates a Object, without assigning any __proto__ property.
     pub fn new_without_proto(gc_context: &Mutation<'gc>) -> Self {
         Self(GcCell::new(
             gc_context,
-            ScriptObjectData {
+            ObjectData {
                 native: NativeObject::None,
                 properties: PropertyMap::new(),
                 interfaces: vec![],
@@ -312,7 +312,7 @@ impl<'gc> ScriptObject<'gc> {
     /// refers to the object which has this property, although
     /// it can be changed by `Function.apply`/`Function.call`.
     pub fn call(
-        &self,
+        self,
         name: impl Into<ExecutionName<'gc>>,
         activation: &mut Activation<'_, 'gc>,
         this: Value<'gc>,
@@ -320,21 +320,21 @@ impl<'gc> ScriptObject<'gc> {
     ) -> Result<Value<'gc>, Error<'gc>> {
         match self.native_no_super() {
             NativeObject::Super(zuper) => zuper.call(name, activation, args),
-            NativeObject::Function(func) => func.call(name, activation, (*self).into(), this, args),
+            NativeObject::Function(func) => func.call(name, activation, self, this, args),
             _ => Ok(Value::Undefined),
         }
     }
 
     /// Takes an already existing object and performs this constructor (if valid) on it.
     pub fn construct_on_existing(
-        &self,
+        self,
         activation: &mut Activation<'_, 'gc>,
         this: Object<'gc>,
         args: &[Value<'gc>],
     ) -> Result<(), Error<'gc>> {
         // `super` cannot be called as a constructor with `new`.
         if let NativeObject::Function(func) = self.native_no_super() {
-            func.construct_on_existing(activation, (*self).into(), this, args)
+            func.construct_on_existing(activation, self, this, args)
         } else {
             Ok(())
         }
@@ -343,13 +343,13 @@ impl<'gc> ScriptObject<'gc> {
     /// Construct the underlying object, if this is a valid constructor, and returns the result.
     /// Calling this on something other than a constructor will return a new Undefined object.
     pub fn construct(
-        &self,
+        self,
         activation: &mut Activation<'_, 'gc>,
         args: &[Value<'gc>],
     ) -> Result<Value<'gc>, Error<'gc>> {
         // `super` cannot be called as a constructor with `new`.
         if let NativeObject::Function(func) = self.native_no_super() {
-            func.construct(activation, (*self).into(), args)
+            func.construct(activation, self, args)
         } else {
             Ok(Value::Undefined)
         }

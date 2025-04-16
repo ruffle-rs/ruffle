@@ -1,11 +1,10 @@
 use crate::avm1::callable_value::CallableValue;
 use crate::avm1::error::Error;
 use crate::avm1::function::{Avm1Function, ExecutionReason, FunctionObject};
-use crate::avm1::object::Object;
 use crate::avm1::property::Attribute;
 use crate::avm1::runtime::skip_actions;
 use crate::avm1::scope::{Scope, ScopeClass};
-use crate::avm1::{fscommand, globals, scope, ArrayBuilder, ScriptObject, Value};
+use crate::avm1::{fscommand, globals, scope, ArrayBuilder, Object, Value};
 use crate::backend::navigator::{NavigationMethod, Request};
 use crate::context::UpdateContext;
 use crate::display_object::{
@@ -918,11 +917,10 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             self.base_clip(),
         );
         let name = func.name();
-        let prototype = ScriptObject::new(
+        let prototype = Object::new(
             &self.context.strings,
             Some(self.context.avm1.prototypes().object),
-        )
-        .into();
+        );
         let func_obj = FunctionObject::function(
             &self.context.strings,
             Gc::new(self.gc(), func),
@@ -1107,7 +1105,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             .get(istr!(self, "prototype"), self)?
             .coerce_to_object(self);
 
-        let sub_prototype = ScriptObject::new(self.strings(), Some(super_prototype));
+        let sub_prototype = Object::new(self.strings(), Some(super_prototype));
 
         sub_prototype.define_value(
             self.gc(),
@@ -1488,7 +1486,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             // InitArray pops no args and pushes undefined if num_props is out of range.
             Value::Undefined
         } else {
-            let object = ScriptObject::new(
+            let object = Object::new(
                 &self.context.strings,
                 Some(self.context.avm1.prototypes().object),
             );
@@ -1498,7 +1496,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
                 let name = name_val.coerce_to_string(self)?;
                 object.set(name, value, self)?;
             }
-            Value::Object(object.into())
+            Value::Object(object)
         };
 
         self.stack_push(result);

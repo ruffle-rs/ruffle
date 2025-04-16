@@ -2,7 +2,7 @@
 
 use crate::avm1::Attribute;
 use crate::avm1::{Activation, NativeObject};
-use crate::avm1::{ArrayBuilder, Error, Object, ScriptObject, Value};
+use crate::avm1::{ArrayBuilder, Error, Object, Value};
 use crate::string::{AvmString, StringContext, WStr, WString};
 use crate::xml;
 use gc_arena::{Collect, GcCell, Mutation};
@@ -45,10 +45,10 @@ pub struct XmlNodeData<'gc> {
     node_value: Option<AvmString<'gc>>,
 
     /// Attributes of the element.
-    attributes: ScriptObject<'gc>,
+    attributes: Object<'gc>,
 
     /// The array object used for AS2 `.childNodes`
-    cached_child_nodes: Option<ScriptObject<'gc>>,
+    cached_child_nodes: Option<Object<'gc>>,
 
     /// Child nodes of this element.
     children: Vec<XmlNode<'gc>>,
@@ -66,7 +66,7 @@ impl<'gc> XmlNode<'gc> {
                 next_sibling: None,
                 node_type,
                 node_value,
-                attributes: ScriptObject::new_without_proto(mc),
+                attributes: Object::new_without_proto(mc),
                 cached_child_nodes: None,
                 children: Vec::new(),
             },
@@ -80,7 +80,7 @@ impl<'gc> XmlNode<'gc> {
     pub fn from_start_event(
         activation: &mut Activation<'_, 'gc>,
         bs: BytesStart<'_>,
-        id_map: ScriptObject<'gc>,
+        id_map: Object<'gc>,
         decoder: quick_xml::Decoder,
     ) -> Result<Self, quick_xml::Error> {
         let name = AvmString::new_utf8_bytes(activation.gc(), bs.name().into_inner());
@@ -358,16 +358,16 @@ impl<'gc> XmlNode<'gc> {
                     .get(istr!("prototype"), activation)
                     .map(|p| p.coerce_to_object(activation))
                     .ok();
-                let object = ScriptObject::new(&activation.context.strings, prototype);
-                self.introduce_script_object(activation.gc(), object.into());
+                let object = Object::new(&activation.context.strings, prototype);
+                self.introduce_script_object(activation.gc(), object);
                 object.set_native(activation.gc(), NativeObject::XmlNode(*self));
-                object.into()
+                object
             }
         }
     }
 
     /// Obtain the script object for a given XML tree node's attributes.
-    pub fn attributes(&self) -> ScriptObject<'gc> {
+    pub fn attributes(&self) -> Object<'gc> {
         self.0.read().attributes
     }
 
@@ -375,7 +375,7 @@ impl<'gc> XmlNode<'gc> {
     pub fn get_or_init_cached_child_nodes(
         &self,
         activation: &mut Activation<'_, 'gc>,
-    ) -> Result<ScriptObject<'gc>, Error<'gc>> {
+    ) -> Result<Object<'gc>, Error<'gc>> {
         let array = self.0.read().cached_child_nodes;
         if let Some(array) = array {
             Ok(array)
@@ -407,7 +407,7 @@ impl<'gc> XmlNode<'gc> {
     ///
     /// If the `deep` flag is set true, then the entire node tree will be cloned.
     pub fn duplicate(self, gc_context: &Mutation<'gc>, deep: bool) -> Self {
-        let attributes = ScriptObject::new_without_proto(gc_context);
+        let attributes = Object::new_without_proto(gc_context);
         for (key, value) in self.attributes().own_properties() {
             attributes.define_value(gc_context, key, value, Attribute::empty());
         }

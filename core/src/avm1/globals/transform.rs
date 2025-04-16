@@ -6,7 +6,7 @@ use crate::avm1::globals::matrix::{matrix_to_value, object_to_matrix};
 use crate::avm1::object::NativeObject;
 use crate::avm1::object_reference::MovieClipReference;
 use crate::avm1::property_decl::{define_properties_on, Declaration};
-use crate::avm1::{Activation, Error, Object, ScriptObject, Value};
+use crate::avm1::{Activation, Error, Object, Value};
 use crate::display_object::{DisplayObject, TDisplayObject};
 use crate::string::{AvmString, StringContext};
 use gc_arena::Collect;
@@ -183,13 +183,13 @@ pub fn create_constructor<'gc>(
     proto: Object<'gc>,
     fn_proto: Object<'gc>,
 ) -> Object<'gc> {
-    let transform_proto = ScriptObject::new(context, Some(proto));
+    let transform_proto = Object::new(context, Some(proto));
     define_properties_on(PROTO_DECLS, context, transform_proto, fn_proto);
     FunctionObject::constructor(
         context,
         transform_method!(0),
         None,
         fn_proto,
-        transform_proto.into(),
+        transform_proto,
     )
 }

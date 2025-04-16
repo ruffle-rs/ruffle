@@ -2,9 +2,7 @@ use std::fmt;
 
 use crate::avm1::object::Object;
 use crate::avm1::property_decl::define_properties_on;
-use crate::avm1::{
-    property_decl::Declaration, ArrayBuilder, ExecutionReason, NativeObject, ScriptObject,
-};
+use crate::avm1::{property_decl::Declaration, ArrayBuilder, ExecutionReason, NativeObject};
 use crate::avm1::{Activation, Error, Value};
 use crate::backend::navigator::Request;
 use crate::html::{transform_dashes_to_camel_case, CssStream, StyleSheet, TextFormat};
@@ -57,7 +55,7 @@ fn shallow_copy<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Value::Object(object) = value {
         let object_proto = activation.context.avm1.prototypes().object;
-        let result = ScriptObject::new(activation.strings(), Some(object_proto));
+        let result = Object::new(activation.strings(), Some(object_proto));
 
         for key in object.get_keys(activation, false) {
             result.set(key, object.get_stored(key, activation)?, activation)?;
@@ -361,7 +359,7 @@ fn transform<'gc>(
     }
 
     let proto = activation.context.avm1.prototypes().text_format;
-    let object = ScriptObject::new(activation.strings(), Some(proto));
+    let object = Object::new(activation.strings(), Some(proto));
     object.set_native(
         activation.gc(),
         NativeObject::TextFormat(Gc::new(activation.gc(), text_format.into())),
@@ -383,7 +381,7 @@ fn parse_css<'gc>(
         for (selector, properties) in css.into_iter() {
             if !selector.is_empty() {
                 let proto = activation.context.avm1.prototypes().object;
-                let object = ScriptObject::new(activation.strings(), Some(proto));
+                let object = Object::new(activation.strings(), Some(proto));
 
                 for (key, value) in properties.into_iter() {
                     object.set(
@@ -443,7 +441,7 @@ pub fn create_proto<'gc>(
     proto: Object<'gc>,
     fn_proto: Object<'gc>,
 ) -> Object<'gc> {
-    let style_sheet_proto = ScriptObject::new(context, Some(proto));
+    let style_sheet_proto = Object::new(context, Some(proto));
     define_properties_on(PROTO_DECLS, context, style_sheet_proto, fn_proto);
-    style_sheet_proto.into()
+    style_sheet_proto
 }

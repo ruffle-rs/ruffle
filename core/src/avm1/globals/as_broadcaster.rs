@@ -5,7 +5,7 @@ use crate::avm1::function::ExecutionReason;
 use crate::avm1::function::FunctionObject;
 use crate::avm1::property::Attribute;
 use crate::avm1::property_decl::Declaration;
-use crate::avm1::{Activation, ArrayBuilder, Object, ScriptObject, Value};
+use crate::avm1::{Activation, ArrayBuilder, Object, Value};
 use crate::string::{AvmString, StringContext};
 use gc_arena::Collect;
 use ruffle_macros::istr;
@@ -22,11 +22,11 @@ pub fn create<'gc>(
     proto: Object<'gc>,
     fn_proto: Object<'gc>,
 ) -> (BroadcasterFunctions<'gc>, Object<'gc>) {
-    let as_broadcaster_proto = ScriptObject::new(context, Some(proto));
+    let as_broadcaster_proto = Object::new(context, Some(proto));
     // Despite the documentation says that there is no constructor function for the `AsBroadcaster`
     // class, Flash accepts expressions like `new AsBroadcaster()`, and a newly-created object is
     // returned in such cases.
-    let as_broadcaster = FunctionObject::empty(context, fn_proto, as_broadcaster_proto.into());
+    let as_broadcaster = FunctionObject::empty(context, fn_proto, as_broadcaster_proto);
 
     let mut define_as_object = |index: usize| -> Object<'gc> {
         match OBJECT_DECLS[index].define_on(context, as_broadcaster, fn_proto) {

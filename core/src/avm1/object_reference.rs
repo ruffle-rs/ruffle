@@ -1,4 +1,4 @@
-use super::{object::script_object::ScriptObjectWeak, Activation, Object, Value};
+use super::{object::ObjectWeak, Activation, Object, Value};
 use crate::{
     display_object::{DisplayObject, TDisplayObject, TDisplayObjectContainer},
     string::{AvmString, WStr, WString},
@@ -63,7 +63,7 @@ struct MovieClipReferenceData<'gc> {
     /// A weak reference to the target stage object that `path` points to
     /// This is used for fast-path resvoling when possible, as well as for re-generating `path` (in the case the target object is renamed)
     /// If this is `None` then we have previously missed the cache, due to the target object being removed and re-created, causing us to fallback to the slow path resolution
-    cached_object: Lock<Option<ScriptObjectWeak<'gc>>>,
+    cached_object: Lock<Option<ObjectWeak<'gc>>>,
 }
 
 impl<'gc> MovieClipReference<'gc> {
@@ -137,7 +137,7 @@ impl<'gc> MovieClipReference<'gc> {
                     // However, if we remove and re-create the clip, the stored path (the original path) will differ from the path of the cached object (the modified path)
                     // Essentially, changes to `_name` are reverted after the clip is re-created
 
-                    return Some((true, cache.into(), display_object));
+                    return Some((true, cache, display_object));
                 }
             }
         }

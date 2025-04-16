@@ -4,7 +4,7 @@ use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
 use crate::avm1::function::{ExecutionName, ExecutionReason};
 use crate::avm1::property_decl::{define_properties_on, Declaration};
-use crate::avm1::{Object, ScriptObject, Value};
+use crate::avm1::{Object, Value};
 use crate::string::{AvmString, StringContext};
 
 const PROTO_DECLS: &[Declaration] = declare_properties! {
@@ -29,7 +29,7 @@ pub fn function<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     Ok(args.get(0).copied().unwrap_or_else(|| {
         // Calling `Function()` seems to give a prototypeless bare object.
-        ScriptObject::new(&activation.context.strings, None).into()
+        Object::new(&activation.context.strings, None).into()
     }))
 }
 
@@ -114,7 +114,7 @@ pub fn apply<'gc>(
 /// returned object is also a bare object, which will need to be linked into
 /// the prototype of `Object`.
 pub fn create_proto<'gc>(context: &mut StringContext<'gc>, proto: Object<'gc>) -> Object<'gc> {
-    let function_proto = ScriptObject::new(context, Some(proto));
-    define_properties_on(PROTO_DECLS, context, function_proto, function_proto.into());
-    function_proto.into()
+    let function_proto = Object::new(context, Some(proto));
+    define_properties_on(PROTO_DECLS, context, function_proto, function_proto);
+    function_proto
 }

@@ -4,7 +4,6 @@ use crate::avm1::Activation;
 use crate::avm1::ActivationIdentifier;
 use crate::avm1::Attribute;
 use crate::avm1::Avm1;
-use crate::avm1::ScriptObject;
 use crate::avm1::{Object as Avm1Object, Value as Avm1Value};
 use crate::avm2::api_version::ApiVersion;
 use crate::avm2::object::LoaderInfoObject;
@@ -397,7 +396,7 @@ impl<'gc> UpdateContext<'gc> {
 
         root.set_depth(self.gc(), 0);
         let flashvars = if !self.swf.parameters().is_empty() {
-            let object = ScriptObject::new(&self.strings, None);
+            let object = Avm1Object::new(&self.strings, None);
             for (key, value) in self.swf.parameters().iter() {
                 object.define_value(
                     self.gc(),
@@ -406,7 +405,7 @@ impl<'gc> UpdateContext<'gc> {
                     Attribute::empty(),
                 );
             }
-            Some(object.into())
+            Some(object)
         } else {
             None
         };

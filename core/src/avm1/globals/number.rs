@@ -8,7 +8,7 @@ use crate::avm1::error::Error;
 use crate::avm1::function::FunctionObject;
 use crate::avm1::object::BoxedF64;
 use crate::avm1::property_decl::{define_properties_on, Declaration};
-use crate::avm1::{NativeObject, Object, ScriptObject, Value};
+use crate::avm1::{NativeObject, Object, Value};
 use crate::string::{AvmString, StringContext};
 
 const PROTO_DECLS: &[Declaration] = declare_properties! {
@@ -83,9 +83,9 @@ pub fn create_proto<'gc>(
     proto: Object<'gc>,
     fn_proto: Object<'gc>,
 ) -> Object<'gc> {
-    let number_proto = ScriptObject::new(context, Some(proto));
+    let number_proto = Object::new(context, Some(proto));
     define_properties_on(PROTO_DECLS, context, number_proto, fn_proto);
-    number_proto.into()
+    number_proto
 }
 
 fn to_string<'gc>(

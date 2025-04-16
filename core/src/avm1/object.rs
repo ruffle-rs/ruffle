@@ -21,7 +21,7 @@ use crate::avm1::globals::transform::TransformObject;
 use crate::avm1::globals::xml::Xml;
 use crate::avm1::globals::xml_socket::XmlSocket;
 use crate::avm1::object::super_object::SuperObject;
-use crate::avm1::{Activation, Error, ScriptObject, Value};
+use crate::avm1::{Activation, Error, Value};
 use crate::bitmap::bitmap_data::BitmapDataWrapper;
 use crate::display_object::{
     Avm1Button, DisplayObject, EditText, MovieClip, TDisplayObject as _, Video,
@@ -35,9 +35,11 @@ use ruffle_macros::istr;
 use std::cell::{Cell, RefCell};
 use std::marker::PhantomData;
 
-pub mod script_object;
+mod script_object;
 pub mod stage_object;
 pub mod super_object;
+
+pub use script_object::{Object, ObjectWeak};
 
 #[derive(Copy, Clone, Collect)]
 #[collect(no_drop)]
@@ -141,15 +143,10 @@ impl<'gc> NativeObject<'gc> {
     }
 }
 
-/// Represents an object that can be directly interacted with by the AVM
-/// runtime.
-/// TODO(moulins): remove this type alias.
-pub type Object<'gc> = ScriptObject<'gc>;
-
 impl<'gc> Object<'gc> {
     /// Retrieve a named property from the object, or its prototype.
     pub fn get_non_slash_path(
-        &self,
+        self,
         name: impl Into<AvmString<'gc>>,
         activation: &mut Activation<'_, 'gc>,
     ) -> Result<Value<'gc>, Error<'gc>> {
@@ -157,7 +154,7 @@ impl<'gc> Object<'gc> {
         let (this, proto) = if let Some(super_object) = self.as_super_object() {
             (super_object.this(), super_object.proto(activation))
         } else {
-            ((*self).into(), Value::Object((*self).into()))
+            (self, Value::Object(self))
         };
         match search_prototype(proto, name.into(), activation, this, false)? {
             Some((value, _depth)) => Ok(value),
@@ -167,7 +164,7 @@ impl<'gc> Object<'gc> {
 
     /// Retrieve a named property from the object, or its prototype.
     pub fn get(
-        &self,
+        self,
         name: impl Into<AvmString<'gc>>,
         activation: &mut Activation<'_, 'gc>,
     ) -> Result<Value<'gc>, Error<'gc>> {
@@ -175,7 +172,7 @@ impl<'gc> Object<'gc> {
         let (this, proto) = if let Some(super_object) = self.as_super_object() {
             (super_object.this(), super_object.proto(activation))
         } else {
-            ((*self).into(), Value::Object((*self).into()))
+            (self, Value::Object(self))
         };
         match search_prototype(proto, name.into(), activation, this, true)? {
             Some((value, _depth)) => Ok(value),
@@ -185,14 +182,12 @@ impl<'gc> Object<'gc> {
 
     /// Retrieve a non-virtual property from the object, or its prototype.
     pub fn get_stored(
-        &self,
+        self,
         name: AvmString<'gc>,
         activation: &mut Activation<'_, 'gc>,
     ) -> Result<Value<'gc>, Error<'gc>> {
-        let this = (*self).into();
-
         let mut depth = 0;
-        let mut proto = Value::Object(this);
+        let mut proto = Value::Object(self);
 
         while let Value::Object(p) = proto {
             if depth == 255 {
@@ -212,7 +207,7 @@ impl<'gc> Object<'gc> {
 
     /// Set a named property on this object, or its prototype.
     pub fn set(
-        &self,
+        self,
         name: impl Into<AvmString<'gc>>,
         value: Value<'gc>,
         activation: &mut Activation<'_, 'gc>,
@@ -226,7 +221,7 @@ impl<'gc> Object<'gc> {
         let (this, mut proto) = if let Some(super_object) = self.as_super_object() {
             (super_object.this(), super_object.proto(activation))
         } else {
-            ((*self).into(), Value::Object((*self).into()))
+            (self, Value::Object(self))
         };
         let watcher_result = self.call_watcher(activation, name, &mut value, this);
 
