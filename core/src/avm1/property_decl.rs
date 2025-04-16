@@ -2,7 +2,7 @@
 
 use crate::avm1::function::{Executable, FunctionObject, NativeFunction};
 use crate::avm1::property::Attribute;
-use crate::avm1::{Object, ScriptObject, TObject, Value};
+use crate::avm1::{Object, ScriptObject, Value};
 use crate::string::{StringContext, WStr};
 
 /// Defines a list of properties on a [`ScriptObject`].

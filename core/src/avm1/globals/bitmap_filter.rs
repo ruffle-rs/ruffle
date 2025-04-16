@@ -12,7 +12,7 @@ use crate::avm1::globals::glow_filter::GlowFilter;
 use crate::avm1::globals::gradient_filter::GradientFilter;
 use crate::avm1::object::NativeObject;
 use crate::avm1::property_decl::{define_properties_on, Declaration};
-use crate::avm1::{Attribute, Object, ScriptObject, TObject, Value};
+use crate::avm1::{Attribute, Object, ScriptObject, Value};
 use crate::context::UpdateContext;
 use crate::string::StringContext;
 use ruffle_macros::istr;

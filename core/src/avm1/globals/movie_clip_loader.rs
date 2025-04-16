@@ -4,7 +4,6 @@ use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
 use crate::avm1::globals::as_broadcaster::BroadcasterFunctions;
 use crate::avm1::object::script_object::ScriptObject;
-use crate::avm1::object::TObject;
 use crate::avm1::property::Attribute;
 use crate::avm1::property_decl::{define_properties_on, Declaration};
 use crate::avm1::{ArrayBuilder, Object, Value};

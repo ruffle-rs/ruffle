@@ -3,7 +3,7 @@ use crate::avm1::error::Error;
 use crate::avm1::globals::bitmap_filter;
 use crate::avm1::object::NativeObject;
 use crate::avm1::property_decl::{define_properties_on, Declaration};
-use crate::avm1::{globals, ArrayBuilder, Object, ScriptObject, TObject, Value};
+use crate::avm1::{globals, ArrayBuilder, Object, ScriptObject, Value};
 use crate::display_object::{
     AutoSizeMode, EditText, TDisplayObject, TInteractiveObject, TextSelection,
 };

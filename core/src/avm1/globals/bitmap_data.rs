@@ -6,7 +6,7 @@ use crate::avm1::globals::bitmap_filter;
 use crate::avm1::globals::color_transform::ColorTransformObject;
 use crate::avm1::object::NativeObject;
 use crate::avm1::property_decl::{define_properties_on, Declaration};
-use crate::avm1::{Activation, Attribute, Error, Object, ScriptObject, TObject, Value};
+use crate::avm1::{Activation, Attribute, Error, Object, ScriptObject, Value};
 use crate::bitmap::bitmap_data::{BitmapData, BitmapDataWrapper};
 use crate::bitmap::bitmap_data::{BitmapDataDrawError, IBitmapDrawable};
 use crate::bitmap::bitmap_data::{ChannelOptions, ThresholdOperation};
@@ -1569,7 +1569,6 @@ pub fn create_constructor<'gc>(
 
     let bitmap_data_constructor =
         FunctionObject::constructor(context, constructor, None, fn_proto, proto.into());
-    let object = bitmap_data_constructor.raw_script_object();
-    define_properties_on(OBJECT_DECLS, context, object, fn_proto);
+    define_properties_on(OBJECT_DECLS, context, bitmap_data_constructor, fn_proto);
     bitmap_data_constructor
 }

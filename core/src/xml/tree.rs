@@ -2,7 +2,7 @@
 
 use crate::avm1::Attribute;
 use crate::avm1::{Activation, NativeObject};
-use crate::avm1::{ArrayBuilder, Error, Object, ScriptObject, TObject, Value};
+use crate::avm1::{ArrayBuilder, Error, Object, ScriptObject, Value};
 use crate::string::{AvmString, StringContext, WStr, WString};
 use crate::xml;
 use gc_arena::{Collect, GcCell, Mutation};

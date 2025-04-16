@@ -4,9 +4,7 @@ use std::cell::Cell;
 
 use crate::avm1::function::{ExecutionReason, FunctionObject};
 use crate::avm1::property_decl::{define_properties_on, Declaration};
-use crate::avm1::{
-    Activation, Attribute, Error, NativeObject, Object, ScriptObject, TObject, Value,
-};
+use crate::avm1::{Activation, Attribute, Error, NativeObject, Object, ScriptObject, Value};
 use crate::avm_warn;
 use crate::backend::navigator::Request;
 use crate::string::{AvmString, StringContext, WStr, WString};

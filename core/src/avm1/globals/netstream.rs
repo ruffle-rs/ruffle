@@ -1,5 +1,5 @@
 use crate::avm1::function::FunctionObject;
-use crate::avm1::object::{NativeObject, Object, TObject};
+use crate::avm1::object::{NativeObject, Object};
 use crate::avm1::property_decl::{define_properties_on, Declaration};
 use crate::avm1::{Activation, Error, ScriptObject, Value};
 use crate::avm1_stub;

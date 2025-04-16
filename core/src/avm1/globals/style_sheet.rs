@@ -1,6 +1,6 @@
 use std::fmt;
 
-use crate::avm1::object::{Object, TObject};
+use crate::avm1::object::Object;
 use crate::avm1::property_decl::define_properties_on;
 use crate::avm1::{
     property_decl::Declaration, ArrayBuilder, ExecutionReason, NativeObject, ScriptObject,

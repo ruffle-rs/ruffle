@@ -5,7 +5,7 @@ use crate::avm1::error::Error;
 use crate::avm1::function::FunctionObject;
 use crate::avm1::property::Attribute;
 use crate::avm1::property_decl::{define_properties_on, Declaration};
-use crate::avm1::{Object, ScriptObject, TObject, Value};
+use crate::avm1::{Object, ScriptObject, Value};
 use crate::avm_warn;
 use crate::display_object::TDisplayObject;
 use crate::string::{AvmString, StringContext};
@@ -244,8 +244,7 @@ pub fn fill_proto<'gc>(
     object_proto: Object<'gc>,
     fn_proto: Object<'gc>,
 ) {
-    let object = object_proto.raw_script_object();
-    define_properties_on(PROTO_DECLS, context, object, fn_proto);
+    define_properties_on(PROTO_DECLS, context, object_proto, fn_proto);
 }
 
 /// Implements `ASSetPropFlags`.
@@ -320,7 +319,6 @@ pub fn create_object_object<'gc>(
 ) -> Object<'gc> {
     let object_function =
         FunctionObject::constructor(context, constructor, Some(object_function), fn_proto, proto);
-    let object = object_function.raw_script_object();
-    define_properties_on(OBJECT_DECLS, context, object, fn_proto);
+    define_properties_on(OBJECT_DECLS, context, object_function, fn_proto);
     object_function
 }

@@ -7,7 +7,7 @@ use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
 use crate::avm1::property::Attribute;
 use crate::avm1::property_decl::{define_properties_on, Declaration};
-use crate::avm1::{Object, ScriptObject, TObject, Value};
+use crate::avm1::{Object, ScriptObject, Value};
 use crate::display_object::{DisplayObject, TDisplayObject};
 use crate::string::{AvmString, StringContext};
 

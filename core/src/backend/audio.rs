@@ -1,5 +1,5 @@
 use crate::{
-    avm1::{NativeObject, Object as Avm1Object, TObject as _},
+    avm1::{NativeObject, Object as Avm1Object},
     avm2::{Avm2, EventObject as Avm2EventObject, SoundChannelObject},
     buffer::Substream,
     context::UpdateContext,

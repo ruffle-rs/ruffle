@@ -1,5 +1,4 @@
 use crate::avm1::NativeObject;
-use crate::avm1::TObject as _;
 use crate::avm1::Value as Avm1Value;
 use crate::avm1::{Activation as Avm1Activation, ActivationIdentifier as Avm1ActivationIdentifier};
 use crate::avm1::{

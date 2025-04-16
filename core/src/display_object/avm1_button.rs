@@ -1,6 +1,4 @@
-use crate::avm1::{
-    Activation, ActivationIdentifier, NativeObject, Object, ScriptObject, TObject, Value,
-};
+use crate::avm1::{Activation, ActivationIdentifier, NativeObject, Object, ScriptObject, Value};
 use crate::backend::audio::AudioManager;
 use crate::backend::ui::MouseCursor;
 use crate::context::{ActionType, RenderContext, UpdateContext};

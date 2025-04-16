@@ -1,4 +1,4 @@
-use crate::avm1::{Activation, ArrayBuilder, ScriptObject, TObject as _, Value as Avm1Value};
+use crate::avm1::{Activation, ArrayBuilder, ScriptObject, Value as Avm1Value};
 use crate::string::AvmString;
 use flv_rs::{Value as FlvValue, Variable as FlvVariable};
 

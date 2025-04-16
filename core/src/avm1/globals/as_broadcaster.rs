@@ -3,7 +3,6 @@
 use crate::avm1::error::Error;
 use crate::avm1::function::ExecutionReason;
 use crate::avm1::function::FunctionObject;
-use crate::avm1::object::TObject;
 use crate::avm1::property::Attribute;
 use crate::avm1::property_decl::Declaration;
 use crate::avm1::{Activation, ArrayBuilder, Object, ScriptObject, Value};
@@ -28,10 +27,9 @@ pub fn create<'gc>(
     // class, Flash accepts expressions like `new AsBroadcaster()`, and a newly-created object is
     // returned in such cases.
     let as_broadcaster = FunctionObject::empty(context, fn_proto, as_broadcaster_proto.into());
-    let object = as_broadcaster.raw_script_object();
 
     let mut define_as_object = |index: usize| -> Object<'gc> {
-        match OBJECT_DECLS[index].define_on(context, object, fn_proto) {
+        match OBJECT_DECLS[index].define_on(context, as_broadcaster, fn_proto) {
             Value::Object(o) => o,
             _ => panic!("expected object for broadcaster function"),
         }
