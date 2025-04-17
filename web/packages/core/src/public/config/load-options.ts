@@ -515,6 +515,8 @@ export interface BaseLoadOptions {
     /**
      * Controls orientation on mobile in fullscreen mode.
      *
+     * This is equivalent to Stage.setAspectRatio.
+     *
      * @default ""
      */
     fullScreenAspectRatio?: string;
