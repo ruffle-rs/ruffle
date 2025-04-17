@@ -515,7 +515,7 @@ export interface BaseLoadOptions {
     /**
      * Controls orientation on mobile in fullscreen mode.
      *
-     * This is equivalent to Stage.setAspectRatio.
+     * This is equivalent to the AIR-only method Stage.setAspectRatio.
      *
      * @default ""
      */
