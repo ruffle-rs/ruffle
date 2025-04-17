@@ -1,5 +1,5 @@
 use crate::avm2::error::verify_error;
-use crate::avm2::method::{BytecodeMethod, ResolvedParamConfig};
+use crate::avm2::method::{Method, ResolvedParamConfig};
 use crate::avm2::multiname::Multiname;
 use crate::avm2::op::Op;
 use crate::avm2::optimizer::blocks::assemble_blocks;
@@ -535,7 +535,7 @@ struct Types<'gc> {
 
 pub fn optimize<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    method: Gc<'gc, BytecodeMethod<'gc>>,
+    method: Method<'gc>,
     code: &mut Vec<Op<'gc>>,
     resolved_parameters: &[ResolvedParamConfig<'gc>],
     method_exceptions: &[Exception<'gc>],

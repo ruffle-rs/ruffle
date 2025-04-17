@@ -1,6 +1,7 @@
 //! `Vector` builtin/prototype
 
 use crate::avm2::activation::Activation;
+use crate::avm2::class::{Class, ClassAttributes};
 use crate::avm2::error::{argument_error, type_error};
 use crate::avm2::globals::array::{
     compare_numeric, compare_string_case_insensitive, compare_string_case_sensitive, ArrayIter,
@@ -10,8 +11,8 @@ use crate::avm2::object::{ClassObject, Object, TObject, VectorObject};
 use crate::avm2::parameters::ParametersExt;
 use crate::avm2::value::Value;
 use crate::avm2::vector::VectorStorage;
-use crate::avm2::Error;
-use crate::string::AvmString;
+use crate::avm2::{Error, Multiname, QName};
+use crate::string::{AvmString, WStr};
 use ruffle_macros::istr;
 use std::cmp::{max, min, Ordering};
 
@@ -48,7 +49,7 @@ pub fn instance_init<'gc>(
 
 pub fn call_handler<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    _this: Value<'gc>,
+    this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if args.len() != 1 {
@@ -62,9 +63,12 @@ pub fn call_handler<'gc>(
         )?));
     }
 
-    let this_class = activation
-        .bound_class()
-        .expect("Method call without bound class?");
+    let this_class = this
+        .as_object()
+        .unwrap()
+        .as_class_object()
+        .unwrap()
+        .inner_class_definition();
 
     let value_type = this_class
         .param()
@@ -735,4 +739,118 @@ pub fn splice<'gc>(
     }
 
     Ok(Value::Undefined)
+}
+
+/// Set up a builtin vector's Class. This will change its name, mark it as a
+/// specialization of Vector, and set its class parameter to the passed
+/// `param_class`. This function returns the vector Class.
+fn setup_vector_class<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    old_name: &'static str,
+    new_name: &'static str,
+    param_class: Option<Class<'gc>>,
+) -> Class<'gc> {
+    let generic_vector_cls = activation.avm2().class_defs().generic_vector;
+
+    let vector_ns = activation.avm2().namespaces.vector_internal;
+
+    // First, lookup the class
+    let old_name = activation
+        .strings()
+        .intern_static(WStr::from_units(old_name.as_bytes()));
+
+    let vector_cls = activation
+        .domain()
+        .get_class(activation.context, &Multiname::new(vector_ns, old_name))
+        .expect("Vector class should be defined");
+
+    // Set its name to Vector.<T>
+    let new_name = AvmString::new_utf8(activation.gc(), new_name);
+
+    vector_cls.set_name(activation.gc(), QName::new(vector_ns, new_name));
+
+    // Set its parameter to the given parameter and add it to the map of
+    // applications on the generic vector Class
+    vector_cls.set_param(activation.gc(), Some(param_class));
+    generic_vector_cls.add_application(activation.gc(), param_class, vector_cls);
+
+    vector_cls
+}
+
+pub fn init_vector_class_defs(activation: &mut Activation<'_, '_>) {
+    // Mark Vector as a generic class
+    let generic_vector = activation.avm2().class_defs().generic_vector;
+    generic_vector.set_attributes(
+        activation.gc(),
+        ClassAttributes::GENERIC | ClassAttributes::FINAL,
+    );
+
+    // Setup the four builtin vector classes
+
+    let number_cls = activation.avm2().class_defs().number;
+    setup_vector_class(
+        activation,
+        "Vector$double",
+        "Vector.<Number>",
+        Some(number_cls),
+    );
+
+    let int_cls = activation.avm2().class_defs().int;
+    setup_vector_class(activation, "Vector$int", "Vector.<int>", Some(int_cls));
+
+    let uint_cls = activation.avm2().class_defs().uint;
+    setup_vector_class(activation, "Vector$uint", "Vector.<uint>", Some(uint_cls));
+
+    setup_vector_class(activation, "Vector$object", "Vector.<*>", None);
+}
+
+/// Set up a builtin vector's ClassObject. This marks it as a specialization of
+/// Vector. This function returns the vector ClassObject.
+fn setup_vector_class_object<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    vector_name: &'static str,
+    param_class: Option<Class<'gc>>,
+) -> ClassObject<'gc> {
+    let generic_vector_cls = activation.avm2().classes().generic_vector;
+
+    let vector_ns = activation.avm2().namespaces.vector_internal;
+
+    // `vector_name` should be ASCII
+    let class_name = activation
+        .strings()
+        .intern_static(WStr::from_units(vector_name.as_bytes()));
+
+    let value = activation
+        .domain()
+        .get_defined_value(activation, QName::new(vector_ns, class_name))
+        .expect("Vector class should be defined");
+
+    let vector_cls = value.as_object().unwrap().as_class_object().unwrap();
+
+    generic_vector_cls.add_application(activation.gc(), param_class, vector_cls);
+
+    vector_cls
+}
+
+pub fn init_vector_class_objects(activation: &mut Activation<'_, '_>) {
+    // Register Vector$int/uint/Number/Object as being applications of the Vector ClassObject
+    let number_cls = activation.avm2().class_defs().number;
+    setup_vector_class_object(activation, "Vector$double", Some(number_cls));
+
+    let int_cls = activation.avm2().class_defs().int;
+    setup_vector_class_object(activation, "Vector$int", Some(int_cls));
+
+    let uint_cls = activation.avm2().class_defs().uint;
+    setup_vector_class_object(activation, "Vector$uint", Some(uint_cls));
+
+    let object_vector = setup_vector_class_object(activation, "Vector$object", None);
+
+    // Manually set the object vector class since it's in an internal namespace
+    // (`avm2_system_classes_playerglobal` only works for classes in public namespaces)
+    activation
+        .avm2()
+        .system_classes
+        .as_mut()
+        .unwrap()
+        .object_vector = object_vector;
 }

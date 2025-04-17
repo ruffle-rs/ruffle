@@ -3,13 +3,38 @@
 use crate::avm2::activation::Activation;
 use crate::avm2::error::{eval_error, type_error};
 use crate::avm2::globals::array::resolve_array_hole;
-use crate::avm2::method::{Method, NativeMethod};
+use crate::avm2::globals::slots::function as function_class_slots;
 use crate::avm2::object::{FunctionObject, TObject};
 use crate::avm2::parameters::ParametersExt;
 use crate::avm2::value::Value;
 use crate::avm2::Error;
 
-use gc_arena::{Gc, GcCell};
+/// Create a dummy function using the method data in Function.dummyFunction. The
+/// Function class must be stored properly in SystemClasses and `Function.dummyFunction`
+/// must be initialized; otherwise, this method will panic.
+fn create_dummy_function<'gc>(activation: &mut Activation<'_, 'gc>) -> FunctionObject<'gc> {
+    let dummy_method = activation
+        .avm2()
+        .classes()
+        .function
+        .get_slot(function_class_slots::DUMMY_FUNCTION)
+        .as_object()
+        .unwrap()
+        .as_function_object()
+        .unwrap()
+        .executable()
+        .as_method();
+
+    // We create a new FunctionObject to ensure that `new Function() != new Function()`
+    FunctionObject::from_method(
+        activation,
+        dummy_method,
+        activation.create_scopechain(),
+        None,
+        None,
+        None,
+    )
+}
 
 /// Implements `Function`'s custom constructor.
 /// This is used when ActionScript manually calls 'new Function()',
@@ -27,28 +52,7 @@ pub fn function_constructor<'gc>(
         )?));
     }
 
-    let mc = activation.gc();
-
-    let dummy = Gc::new(
-        mc,
-        NativeMethod {
-            method: |_, _, _| Ok(Value::Undefined),
-            name: "<Empty Function>",
-            signature: vec![],
-            resolved_signature: GcCell::new(mc, None),
-            return_type: None,
-            is_variadic: true,
-        },
-    );
-
-    let function_object = FunctionObject::from_method(
-        activation,
-        Method::Native(dummy),
-        activation.create_scopechain(),
-        None,
-        None,
-        None,
-    );
+    let function_object = create_dummy_function(activation);
 
     Ok(function_object.into())
 }
@@ -70,20 +74,26 @@ pub fn _init_function_class<'gc>(
     this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    // Set Function's prototype, register it in SystemClasses, and initialize
-    // Object's prototype. This method is called from AS during builtins
-    // initialization.
+    // Register the Function class in SystemClasses. This method is called from
+    // AS during builtins initialization.
     let function_class_object = this.as_object().unwrap().as_class_object().unwrap();
 
     activation.avm2().system_classes.as_mut().unwrap().function = function_class_object;
 
-    let function_proto = function_class_object
-        .construct(activation, &[])?
-        .as_object()
-        .unwrap();
-    function_class_object.link_prototype(activation, function_proto);
+    Ok(Value::Undefined)
+}
 
-    crate::avm2::globals::object::init_object_prototype(activation)?;
+pub fn _init_function_proto<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    this: Value<'gc>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    // Set Function's prototype. This method is called from AS during builtins
+    // initialization.
+    let function_class_object = this.as_object().unwrap().as_class_object().unwrap();
+
+    let function_proto = create_dummy_function(activation);
+    function_class_object.link_prototype(activation, function_proto.into());
 
     Ok(Value::Undefined)
 }
@@ -153,7 +163,7 @@ pub fn get_length<'gc>(
     let this = this.as_object().unwrap();
 
     if let Some(this) = this.as_function_object() {
-        return Ok(this.executable().num_parameters().into());
+        return Ok(this.executable().signature().len().into());
     }
 
     Ok(Value::Undefined)
