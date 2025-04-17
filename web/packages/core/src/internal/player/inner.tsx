@@ -497,6 +497,10 @@ export class InnerPlayer {
                 const alignValue = alignAttr.value.toLowerCase();
 
                 const alignCSS = (() => {
+                    // Blink: https://source.chromium.org/chromium/chromium/src/+/42e06bc6:third_party/blink/renderer/core/html/html_element.cc;l=1062-1083
+                    // WebKit: https://github.com/WebKit/WebKit/blob/f6b6c1d/Source/WebCore/html/HTMLElement.cpp#L592-L611
+                    // Gecko: https://github.com/mozilla/gecko-dev/blob/0383ce6/dom/html/nsGenericHTMLElement.cpp#L1326-L1341
+                    // Gecko (cont): https://github.com/mozilla/gecko-dev/blob/0383ce6/dom/html/nsGenericHTMLElement.cpp#L1557-L1561
                     switch (alignValue) {
                         case "right":
                             return "vertical-align: top; float: right;";
