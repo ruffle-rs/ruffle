@@ -3,6 +3,7 @@ use std::ffi::{c_int, c_uchar};
 use std::fmt::Display;
 use std::fs::File;
 use std::io::copy;
+use std::os::raw::c_void;
 use std::path::{Path, PathBuf};
 use std::ptr;
 use std::sync::Arc;
@@ -223,6 +224,14 @@ impl H264Decoder {
 
             (decoder_vtbl.Initialize.unwrap())(decoder, &dec_param);
 
+            let mut log_level: u32 = openh264_sys::WELS_LOG_DETAIL;
+
+            (decoder_vtbl.SetOption.unwrap())(
+                decoder,
+                openh264_sys::DECODER_OPTION_TRACE_LEVEL,
+                &mut log_level as *mut u32 as *mut c_void,
+            );
+
             Self {
                 length_size: 0,
                 openh264,
@@ -355,6 +364,10 @@ impl VideoDecoder for H264Decoder {
                 // also works for mea culpa, but not for axon: i += length + 20000;
                 i += length;
                 println!("i after: {}", i);
+            }
+
+            if &buffer[buffer.len() - 6..buffer.len() - 1] == [0, 0, 0, 1, 9] {
+                buffer.truncate(buffer.len() - 6);
             }
 
             // output: [0~2] for Y,U,V buffer
