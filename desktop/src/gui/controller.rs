@@ -541,7 +541,9 @@ fn load_system_fonts(
     }
     families.extend(
         [
-            Family::Name("Arial Unicode MS"), // macos
+            Family::Name("Source Han Sans"),   // linux
+            Family::Name("WenQuanYi Zen Hei"), // linux, old
+            Family::Name("Arial Unicode MS"),  // macos
             Family::SansSerif,
         ]
         .iter(),
