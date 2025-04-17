@@ -337,7 +337,6 @@ impl<'gc> Namespace<'gc> {
 pub struct CommonNamespaces<'gc> {
     public_namespaces: [Namespace<'gc>; CommonNamespaces::PUBLIC_LEN],
 
-    pub(super) internal: Namespace<'gc>,
     pub(super) as3: Namespace<'gc>,
     pub(super) vector_internal: Namespace<'gc>,
 }
@@ -356,7 +355,6 @@ impl<'gc> CommonNamespaces<'gc> {
             public_namespaces: std::array::from_fn(|val| {
                 Namespace::package(empty_string, ApiVersion::from_usize(val).unwrap(), context)
             }),
-            internal: Namespace::internal(empty_string, context),
             as3: Namespace::package(as3_namespace_string, ApiVersion::AllVersions, context),
             vector_internal: Namespace::internal(vector_namespace_string, context),
         }
