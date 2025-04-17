@@ -6,7 +6,7 @@ use crate::avm1::object::super_object::SuperObject;
 use crate::avm1::property::Attribute;
 use crate::avm1::scope::Scope;
 use crate::avm1::value::Value;
-use crate::avm1::{ArrayBuilder, Object, ScriptObject, TObject};
+use crate::avm1::{ArrayBuilder, Object};
 use crate::display_object::{DisplayObject, TDisplayObject};
 use crate::string::{AvmString, StringContext, SwfStrExt as _};
 use crate::tag_utils::SwfSlice;
@@ -218,9 +218,10 @@ impl<'gc> Avm1Function<'gc> {
 
         // TODO: `super` should only be defined if this was a method call (depth > 0?)
         // `f[""]()` emits a CallMethod op, causing `this` to be undefined, but `super` is a function; what is it?
-        let zuper = this
-            .filter(|_| !suppress)
-            .map(|this| SuperObject::new(frame, this, depth).into());
+        let zuper = this.filter(|_| !suppress).map(|this| {
+            let zuper = NativeObject::Super(SuperObject::new(frame, this, depth));
+            Object::new_with_native(frame.strings(), None, zuper).into()
+        });
 
         if preload {
             // The register is set to undefined if both flags are set.
@@ -493,7 +494,7 @@ impl<'gc> FunctionObject<'gc> {
         constructor: Option<NativeFunction>,
         fn_proto: Object<'gc>,
     ) -> Object<'gc> {
-        let obj = ScriptObject::new(context, Some(fn_proto));
+        let obj = Object::new(context, Some(fn_proto));
         let native = NativeObject::Function(Gc::new(
             context.gc(),
             Self {
@@ -502,7 +503,7 @@ impl<'gc> FunctionObject<'gc> {
             },
         ));
         obj.set_native(context.gc(), native);
-        obj.into()
+        obj
     }
 
     /// Construct a function with any combination of regular and constructor parts.
@@ -675,7 +676,7 @@ impl<'gc> FunctionObject<'gc> {
         let prototype = callee
             .get(istr!("prototype"), activation)?
             .coerce_to_object(activation);
-        let this = ScriptObject::new(activation.strings(), Some(prototype));
+        let this = Object::new(activation.strings(), Some(prototype));
 
         // TODO: de-duplicate code.
         this.define_value(

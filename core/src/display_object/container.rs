@@ -1,6 +1,6 @@
 //! Container mix-in for display objects
 
-use crate::avm1::{Activation, ActivationIdentifier, TObject};
+use crate::avm1::{Activation, ActivationIdentifier};
 use crate::avm2::{
     Activation as Avm2Activation, Avm2, EventObject as Avm2EventObject, Multiname as Avm2Multiname,
     Value as Avm2Value,

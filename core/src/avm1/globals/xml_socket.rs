@@ -1,8 +1,8 @@
 use crate::avm1::function::FunctionObject;
-use crate::avm1::object::{NativeObject, Object};
+use crate::avm1::object::NativeObject;
 use crate::avm1::property_decl::define_properties_on;
-use crate::avm1::{property_decl::Declaration, ScriptObject};
-use crate::avm1::{Activation, Error, ExecutionReason, TObject, Value};
+use crate::avm1::{property_decl::Declaration, Object};
+use crate::avm1::{Activation, Error, ExecutionReason, Value};
 use crate::context::UpdateContext;
 use crate::display_object::TDisplayObject;
 use crate::socket::SocketHandle;
@@ -252,9 +252,9 @@ pub fn create_proto<'gc>(
     proto: Object<'gc>,
     fn_proto: Object<'gc>,
 ) -> Object<'gc> {
-    let xml_socket_proto = ScriptObject::new(context, Some(proto));
+    let xml_socket_proto = Object::new(context, Some(proto));
     define_properties_on(PROTO_DECLS, context, xml_socket_proto, fn_proto);
-    xml_socket_proto.into()
+    xml_socket_proto
 }
 
 pub fn create_class<'gc>(

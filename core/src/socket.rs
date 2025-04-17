@@ -1,6 +1,6 @@
 use crate::avm1::{
     globals::xml_socket::XmlSocket, Activation as Avm1Activation, ActivationIdentifier,
-    ExecutionReason, Object as Avm1Object, TObject as Avm1TObject,
+    ExecutionReason, Object as Avm1Object,
 };
 use crate::avm2::object::{EventObject, SocketObject};
 use crate::avm2::{Activation as Avm2Activation, Avm2};
