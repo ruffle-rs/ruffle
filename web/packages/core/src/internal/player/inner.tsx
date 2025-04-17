@@ -1074,7 +1074,7 @@ export class InnerPlayer {
     private fullScreenChange(): void {
         // If fullScreenAspectRatio is specified, lock orientation in fullscreen mode if supported
         if (this.isFullscreen && screen.orientation && typeof screen.orientation.lock === "function") {
-            // TODO (danielhjacobs): Instead of just checking the loadedConfig fullScreenAspectRatio,
+            // TODO (danielhjacobs): If playerRuntime is "air", instead of just checking the loadedConfig fullScreenAspectRatio,
             // when Ruffle loads the fullScreenAspectRatio should be applied by `Stage.setAspectRatio`,
             // This code should check the current Stage aspect ratio, including if it was later changed.
             // Note: "any" is not documented as a supported embed attribute, but it is documented for `Stage.setAspectRatio`.
