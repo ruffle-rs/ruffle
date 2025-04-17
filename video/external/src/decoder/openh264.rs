@@ -292,7 +292,7 @@ impl VideoDecoder for H264Decoder {
             let mut output = [ptr::null_mut() as *mut c_uchar; 3];
             //in-out: for Decoding only: declare and initialize the output buffer info
             let mut dest_buf_info: openh264_sys::SBufferInfo = std::mem::zeroed();
-
+            dbg!(buffer.as_slice());
             let _ret = decoder_vtbl.DecodeFrameNoDelay.unwrap()(
                 self.decoder,
                 buffer.as_mut_ptr(),
@@ -330,23 +330,37 @@ impl VideoDecoder for H264Decoder {
             let mut buffer: Vec<c_uchar> = Vec::with_capacity(encoded_frame.data.len());
 
             let mut i = 0;
+            println!(
+                "--- lensize {} data len {}",
+                self.length_size,
+                encoded_frame.data.len()
+            );
             while i < encoded_frame.data.len() {
+                println!("i: {}", i);
                 let mut length = 0;
                 for j in 0..self.length_size {
                     length = (length << 8) | encoded_frame.data[i + j as usize] as usize;
                 }
+                println!("length: {}", length);
                 i += self.length_size as usize;
                 buffer.extend_from_slice(&[0, 0, 1]);
-                buffer.extend_from_slice(
-                    &encoded_frame.data[i..i + length - self.length_size as usize],
-                );
+
+                // works for mea culpa:
+                buffer.extend_from_slice(&encoded_frame.data[i..i + length]);
+                // works for axon:
+                //buffer.extend_from_slice(
+                //    &encoded_frame.data[i..i + length - self.length_size as usize],
+                //);
+
+                // also works for mea culpa, but not for axon: i += length + 20000;
                 i += length;
+                println!("i after: {}", i);
             }
 
             // output: [0~2] for Y,U,V buffer
             let mut output = [ptr::null_mut() as *mut c_uchar; 3];
             let mut dest_buf_info: openh264_sys::SBufferInfo = std::mem::zeroed();
-
+            //dbg!(buffer.as_slice());
             let ret = decoder_vtbl.DecodeFrameNoDelay.unwrap()(
                 self.decoder,
                 buffer.as_mut_ptr(),

@@ -1271,25 +1271,21 @@ impl<'gc> NetStream<'gc> {
             video_stream,
         }) = &mut write.stream_type
         {
-
             if media_context.is_none() {
                 let mut cursor = slice.as_cursor();
                 let mut iter = mp4parse::BoxIter::new(&mut cursor);
                 while let Ok(Some(mut b)) = iter.next_box() {
-                    dbg!(&b.head.name);
-                    match b.head.name {
-                        mp4parse::BoxType::MovieBox => {
-                            let rm = mp4parse::read_moov(&mut b, None);
-                            //dbg!(&rm);
-                            if let Ok(ctx) = rm {
-                                media_context.replace(Rc::new(ctx));
-                            }
+                    if let mp4parse::BoxType::MovieBox = b.head.name {
+                        println!("trying to read moov");
+                        let rm = mp4parse::read_moov(&mut b, None);
+                        if let Ok(ctx) = rm {
+                            println!("MOOV FOUND");
+                            media_context.replace(Rc::new(ctx));
                             break;
                         }
-                        _ => {
-                            //mp4parse::skip_box_content(&mut b);
-                        }
-                    };
+                    } else {
+                        mp4parse::skip_box_content(&mut b);
+                    }
                 }
             }
 
@@ -1382,6 +1378,16 @@ impl<'gc> NetStream<'gc> {
                 println!("offs: {}, siz: {}", offs, siz);
                 let s = buffer;
 
+                if (s.len() < offs + siz) {
+                    tracing::error!("Buffer too small for FLV video frame");
+                    *frame_id = if sample_id == 0 {
+                        None
+                    } else {
+                        Some(sample_id - 1)
+                    };
+                    return;
+                }
+
                 let encoded_frame = EncodedFrame {
                     codec: VideoCodec::H264,
                     data: s[offs..offs + siz].as_ref(),
@@ -1400,6 +1406,31 @@ impl<'gc> NetStream<'gc> {
                             Ok(new_handle) => {
                                 *video_stream = Some(new_handle);
 
+                                let mdct = media_context.clone();
+                                let trk = mdct.tracks.get(0).unwrap();
+                                let stsd = trk.stsd.as_ref().unwrap();
+                                let descs = stsd.descriptions.get(0).unwrap();
+
+                                match descs {
+                                    mp4parse::SampleEntry::Video(video) => match &video
+                                        .codec_specific
+                                    {
+                                        mp4parse::VideoCodecSpecific::AVCConfig(avcconf) => {
+                                            let res = context.video.configure_video_stream_decoder(
+                                                new_handle,
+                                                avcconf.as_slice(),
+                                            );
+                                        }
+                                        mp4parse::VideoCodecSpecific::VPxConfig(_) => todo!(),
+                                        mp4parse::VideoCodecSpecific::AV1Config(_) => todo!(),
+                                        mp4parse::VideoCodecSpecific::ESDSConfig(_) => todo!(),
+                                        mp4parse::VideoCodecSpecific::H263Config(_) => todo!(),
+                                        mp4parse::VideoCodecSpecific::HEVCConfig(_) => todo!(),
+                                    },
+                                    mp4parse::SampleEntry::Audio(_) => todo!(),
+                                    mp4parse::SampleEntry::Unknown => todo!(),
+                                }
+
                                 new_handle
                             }
                             Err(e) => {
@@ -1413,30 +1444,6 @@ impl<'gc> NetStream<'gc> {
                     }
                 };
 
-                let mdct = media_context.clone();
-                let trk = mdct.tracks.get(0).unwrap();
-                let stsd = trk.stsd.as_ref().unwrap();
-                let descs = stsd.descriptions.get(0).unwrap();
-
-                match descs {
-                    mp4parse::SampleEntry::Video(video) => match &video.codec_specific {
-                        mp4parse::VideoCodecSpecific::AVCConfig(avcconf) => {
-                            if *frame_id == Some(0) {
-                                let res = context.video.configure_video_stream_decoder(
-                                    video_handle,
-                                    avcconf.as_slice(),
-                                );
-                            }
-                        }
-                        mp4parse::VideoCodecSpecific::VPxConfig(_) => todo!(),
-                        mp4parse::VideoCodecSpecific::AV1Config(_) => todo!(),
-                        mp4parse::VideoCodecSpecific::ESDSConfig(_) => todo!(),
-                        mp4parse::VideoCodecSpecific::H263Config(_) => todo!(),
-                        mp4parse::VideoCodecSpecific::HEVCConfig(_) => todo!(),
-                    },
-                    mp4parse::SampleEntry::Audio(_) => todo!(),
-                    mp4parse::SampleEntry::Unknown => todo!(),
-                }
                 //dbg!(&encoded_frame.data);
                 match context.video.decode_video_stream_frame(
                     video_handle,
