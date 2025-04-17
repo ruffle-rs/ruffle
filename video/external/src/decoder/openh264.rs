@@ -3,6 +3,7 @@ use std::ffi::{c_int, c_uchar};
 use std::fmt::Display;
 use std::fs::File;
 use std::io::copy;
+use std::os::raw::c_void;
 use std::path::{Path, PathBuf};
 use std::ptr;
 use std::sync::Arc;
@@ -223,6 +224,14 @@ impl H264Decoder {
 
             (decoder_vtbl.Initialize.unwrap())(decoder, &dec_param);
 
+            let mut log_level: u32 = openh264_sys::WELS_LOG_DETAIL;
+
+            (decoder_vtbl.SetOption.unwrap())(
+                decoder,
+                openh264_sys::DECODER_OPTION_TRACE_LEVEL,
+                &mut log_level as *mut u32 as *mut c_void,
+            );
+
             Self {
                 length_size: 0,
                 openh264,
@@ -292,7 +301,7 @@ impl VideoDecoder for H264Decoder {
             let mut output = [ptr::null_mut() as *mut c_uchar; 3];
             //in-out: for Decoding only: declare and initialize the output buffer info
             let mut dest_buf_info: openh264_sys::SBufferInfo = std::mem::zeroed();
-
+            dbg!(buffer.as_slice());
             let _ret = decoder_vtbl.DecodeFrameNoDelay.unwrap()(
                 self.decoder,
                 buffer.as_mut_ptr(),
@@ -330,21 +339,41 @@ impl VideoDecoder for H264Decoder {
             let mut buffer: Vec<c_uchar> = Vec::with_capacity(encoded_frame.data.len());
 
             let mut i = 0;
+            println!(
+                "--- lensize {} data len {}",
+                self.length_size,
+                encoded_frame.data.len()
+            );
             while i < encoded_frame.data.len() {
+                println!("i: {}", i);
                 let mut length = 0;
                 for j in 0..self.length_size {
                     length = (length << 8) | encoded_frame.data[i + j as usize] as usize;
                 }
+                println!("length: {}", length);
                 i += self.length_size as usize;
                 buffer.extend_from_slice(&[0, 0, 1]);
+
+                // works for mea culpa:
                 buffer.extend_from_slice(&encoded_frame.data[i..i + length]);
+                // works for axon:
+                //buffer.extend_from_slice(
+                //    &encoded_frame.data[i..i + length - self.length_size as usize],
+                //);
+
+                // also works for mea culpa, but not for axon: i += length + 20000;
                 i += length;
+                println!("i after: {}", i);
+            }
+
+            if &buffer[buffer.len() - 6..buffer.len() - 1] == [0, 0, 0, 1, 9] {
+                buffer.truncate(buffer.len() - 6);
             }
 
             // output: [0~2] for Y,U,V buffer
             let mut output = [ptr::null_mut() as *mut c_uchar; 3];
             let mut dest_buf_info: openh264_sys::SBufferInfo = std::mem::zeroed();
-
+            //dbg!(buffer.as_slice());
             let ret = decoder_vtbl.DecodeFrameNoDelay.unwrap()(
                 self.decoder,
                 buffer.as_mut_ptr(),
