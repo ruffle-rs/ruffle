@@ -5,6 +5,7 @@ use crate::avm2::error::{
 };
 use crate::avm2::method::Method;
 use crate::avm2::multiname::Multiname;
+use crate::avm2::namespace::Namespace;
 use crate::avm2::op::{LookupSwitch, Op};
 use crate::avm2::script::TranslationUnit;
 use crate::avm2::{Activation, Error, QName};
@@ -14,7 +15,8 @@ use gc_arena::{Collect, Gc};
 use std::collections::{HashMap, HashSet};
 use swf::avm2::read::Reader;
 use swf::avm2::types::{
-    Class as AbcClass, Index, MethodFlags as AbcMethodFlags, Multiname as AbcMultiname, Op as AbcOp,
+    Class as AbcClass, Index, MethodFlags as AbcMethodFlags, Multiname as AbcMultiname,
+    Namespace as AbcNamespace, Op as AbcOp,
 };
 use swf::error::Error as AbcReadError;
 
@@ -687,6 +689,14 @@ fn pool_class<'gc>(
     translation_unit.load_class(index.0, activation)
 }
 
+fn pool_namespace<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    translation_unit: TranslationUnit<'gc>,
+    index: Index<AbcNamespace>,
+) -> Result<Namespace<'gc>, Error<'gc>> {
+    translation_unit.pool_namespace(activation, index)
+}
+
 fn lookup_class<'gc>(
     activation: &mut Activation<'_, 'gc>,
     translation_unit: TranslationUnit<'gc>,
@@ -825,7 +835,11 @@ fn translate_op<'gc>(
 
             Op::PushInt { value }
         }
-        AbcOp::PushNamespace { value } => Op::PushNamespace { value },
+        AbcOp::PushNamespace { value } => {
+            let namespace = pool_namespace(activation, translation_unit, value)?;
+
+            Op::PushNamespace { namespace }
+        }
         AbcOp::PushNaN => Op::PushDouble { value: f64::NAN },
         AbcOp::PushNull => Op::PushNull,
         AbcOp::PushShort { value } => Op::PushShort { value },

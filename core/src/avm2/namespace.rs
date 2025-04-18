@@ -1,6 +1,6 @@
 use crate::avm2::activation::Activation;
+use crate::avm2::error::{make_error_1032, Error};
 use crate::avm2::script::TranslationUnit;
-use crate::avm2::Error;
 use crate::string::{AvmAtom, AvmString, StringContext};
 use gc_arena::{Collect, Gc};
 use num_traits::FromPrimitive;
@@ -94,12 +94,11 @@ impl<'gc> Namespace<'gc> {
 
         let actual_index = namespace_index.0 as usize - 1;
         let abc = translation_unit.abc();
-        let abc_namespace: Result<_, Error<'gc>> = abc
+        let abc_namespace = abc
             .constant_pool
             .namespaces
             .get(actual_index)
-            .ok_or_else(|| format!("Unknown namespace constant {}", namespace_index.0).into());
-        let abc_namespace = abc_namespace?;
+            .ok_or_else(|| make_error_1032(activation, namespace_index.0))?;
 
         let index = match abc_namespace {
             AbcNamespace::Namespace(idx)
