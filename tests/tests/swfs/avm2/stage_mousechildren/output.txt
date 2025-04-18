@@ -1,0 +1,2 @@
+Clicked at: 45 47 on: [object Sprite] (childHolder)
+Clicked at: 45 47 on: [object Stage] (null)
