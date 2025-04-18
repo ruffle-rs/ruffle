@@ -68,6 +68,10 @@ error-wasm-disabled-on-edge =
     Bunu düzeltmek için tarayıcınızın ayarlarını açın, "Gizlilik, arama ve hizmetler"i tıklayın, aşağı kaydırın ve "Web'de güvenliğinizi artırın"ı kapatmayı deneyin.
     Bu, tarayıcınızın gerekli ".wasm" dosyalarını yüklemesine izin verecektir.
     Sorun devam ederse, farklı bir tarayıcı kullanmanız gerekebilir.
+error-wasm-unsupported-browser =
+    Kullandığınız tarayıcı, Ruffle'ın çalışması için gereken WebAssembly uzantılarını desteklemiyor.
+    Lütfen desteklenen bir tarayıcıya geçin.
+    Wiki'de desteklenen tarayıcıların bir listesini bulabilirsiniz.
 error-javascript-conflict =
     Ruffle, başlatmaya çalışırken önemli bir sorunla karşılaştı.
     Görünüşe göre bu sayfa, Ruffle ile çakışan JavaScript kodu kullanıyor.
