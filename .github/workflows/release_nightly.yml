@@ -129,6 +129,7 @@ jobs:
       - name: Cargo build
         run: cargo build --locked --package ruffle_desktop --release ${{matrix.DESKTOP_FEATURES && '--features' }} ${{matrix.DESKTOP_FEATURES}} ${{ matrix.target && '--target' }} ${{ matrix.target }}
         env:
+          CFG_RELEASE_CHANNEL: nightly
           RUSTFLAGS: ${{ matrix.RUSTFLAGS }}
           MACOSX_DEPLOYMENT_TARGET: ${{ matrix.MACOSX_DEPLOYMENT_TARGET }}
 
@@ -178,6 +179,7 @@ jobs:
         if: runner.os == 'macOS'
         run: cargo build --locked --package ruffle_web_safari --release ${{ matrix.target && '--target' }} ${{ matrix.target }}
         env:
+          CFG_RELEASE_CHANNEL: nightly
           RUSTFLAGS: ${{ matrix.RUSTFLAGS }}
           MACOSX_DEPLOYMENT_TARGET: ${{ matrix.MACOSX_DEPLOYMENT_TARGET }}
 
@@ -368,6 +370,7 @@ jobs:
         shell: bash -l {0}
         working-directory: web
         env:
+          CFG_RELEASE_CHANNEL: nightly
           BUILD_ID: ${{ github.run_number }}
           ENABLE_VERSION_SEAL: "true"
           FIREFOX_EXTENSION_ID: ${{ secrets.FIREFOX_EXTENSION_ID }} # Needed to inject into manifest.json
@@ -375,6 +378,7 @@ jobs:
 
       - name: Build web
         env:
+          CFG_RELEASE_CHANNEL: nightly
           BUILD_ID: ${{ github.run_number }}
           CARGO_FEATURES: jpegxr
           FIREFOX_EXTENSION_ID: ${{ secrets.FIREFOX_EXTENSION_ID }} # Needed to inject into manifest.json
@@ -518,6 +522,7 @@ jobs:
         shell: bash -l {0}
         working-directory: web
         env:
+          CFG_RELEASE_CHANNEL: nightly
           BUILD_ID: ${{ github.run_number }}
           ENABLE_VERSION_SEAL: "true"
           FIREFOX_EXTENSION_ID: ${{ secrets.FIREFOX_EXTENSION_ID }} # Needed to inject into manifest.json
@@ -525,6 +530,7 @@ jobs:
 
       - name: Build web
         env:
+          CFG_RELEASE_CHANNEL: nightly
           BUILD_ID: ${{ github.run_number }}
           # NOTE: In the future, we might want to enable some features (like `webgpu`) only in
           # the demo build, for limited testing (like a Chrome origin trial) on ruffle.rs.
