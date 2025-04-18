@@ -28,9 +28,7 @@ use gc_arena::Gc;
 use ruffle_macros::istr;
 use std::cmp::{min, Ordering};
 use std::sync::Arc;
-use swf::avm2::types::{
-    Index, Method as AbcMethod, MethodFlags as AbcMethodFlags, Namespace as AbcNamespace,
-};
+use swf::avm2::types::{Index, Method as AbcMethod, MethodFlags as AbcMethodFlags};
 
 use super::error::make_mismatch_error;
 
@@ -651,15 +649,6 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         self.bound_class
     }
 
-    /// Retrieve a namespace from the current constant pool.
-    fn pool_namespace(
-        &mut self,
-        method: Method<'gc>,
-        index: Index<AbcNamespace>,
-    ) -> Result<Namespace<'gc>, Error<'gc>> {
-        method.translation_unit().pool_namespace(self, index)
-    }
-
     /// Retrieve a method entry from the current ABC file's method table.
     fn table_method(
         &mut self,
@@ -691,7 +680,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
                 Op::PushDouble { value } => self.op_push_double(*value),
                 Op::PushFalse => self.op_push_false(),
                 Op::PushInt { value } => self.op_push_int(*value),
-                Op::PushNamespace { value } => self.op_push_namespace(method, *value),
+                Op::PushNamespace { namespace } => self.op_push_namespace(*namespace),
                 Op::PushNull => self.op_push_null(),
                 Op::PushShort { value } => self.op_push_short(*value),
                 Op::PushString { string } => self.op_push_string(*string),
@@ -977,13 +966,8 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         Ok(())
     }
 
-    fn op_push_namespace(
-        &mut self,
-        method: Method<'gc>,
-        value: Index<AbcNamespace>,
-    ) -> Result<(), Error<'gc>> {
-        let ns = self.pool_namespace(method, value)?;
-        let ns_object = NamespaceObject::from_namespace(self, ns);
+    fn op_push_namespace(&mut self, namespace: Namespace<'gc>) -> Result<(), Error<'gc>> {
+        let ns_object = NamespaceObject::from_namespace(self, namespace);
 
         self.push_stack(ns_object);
         Ok(())

@@ -1,10 +1,11 @@
 use crate::avm2::class::Class;
 use crate::avm2::multiname::Multiname;
+use crate::avm2::namespace::Namespace;
 use crate::avm2::script::Script;
 use crate::string::AvmAtom;
 
 use gc_arena::{Collect, Gc};
-use swf::avm2::types::{Index, Method, Namespace};
+use swf::avm2::types::{Index, Method};
 
 #[derive(Clone, Collect, Copy, Debug)]
 #[collect(no_drop)]
@@ -241,8 +242,7 @@ pub enum Op<'gc> {
         value: i32,
     },
     PushNamespace {
-        #[collect(require_static)]
-        value: Index<Namespace>,
+        namespace: Namespace<'gc>,
     },
     PushNull,
     PushScope,
