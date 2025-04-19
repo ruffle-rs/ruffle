@@ -6,11 +6,10 @@ use crate::avm2::class::Class;
 use crate::avm2::domain::Domain;
 use crate::avm2::error::{make_error_1107, Error};
 use crate::avm2::globals::global_scope;
-use crate::avm2::method::{BytecodeMethod, Method};
+use crate::avm2::method::Method;
 use crate::avm2::object::{Object, ScriptObject, TObject};
 use crate::avm2::scope::ScopeChain;
 use crate::avm2::traits::{Trait, TraitKind};
-use crate::avm2::value::Value;
 use crate::avm2::vtable::VTable;
 use crate::avm2::{Avm2, Multiname, Namespace};
 use crate::context::UpdateContext;
@@ -133,6 +132,12 @@ impl<'gc> TranslationUnit<'gc> {
         Ok(())
     }
 
+    /// Manually set a loaded class in this TranslationUnit. This is useful for
+    /// early class setup.
+    pub fn set_class(self, mc: &Mutation<'gc>, index: usize, class: Class<'gc>) {
+        self.0.write(mc).classes[index] = Some(class);
+    }
+
     pub fn domain(self) -> Domain<'gc> {
         self.0.read().domain
     }
@@ -178,34 +183,16 @@ impl<'gc> TranslationUnit<'gc> {
         let is_global = read.domain.is_playerglobals_domain(activation.avm2());
         drop(read);
 
-        let bc_method =
-            BytecodeMethod::from_method_index(self, method_index, is_function, activation)?;
+        let mut native_method = None;
 
-        // This closure lets us move out of 'bc_method.signature' and then return,
-        // allowing us to use 'bc_method' later on without a borrow-checker error.
-        let method = (|| {
-            if is_global {
-                if let Some((name, native)) =
-                    activation.avm2().native_method_table[method_index.0 as usize]
-                {
-                    assert_eq!(
-                        bc_method.abc_method_body, None,
-                        "Method in native method table has a bytecode body!"
-                    );
-                    let variadic = bc_method.is_variadic();
-                    // Set the method name and function pointer from the table.
-                    return Method::from_builtin_and_params(
-                        native,
-                        name,
-                        bc_method.signature,
-                        bc_method.return_type,
-                        variadic,
-                        activation.gc(),
-                    );
-                }
+        if is_global {
+            if let Some(native) = activation.avm2().native_method_table[method_index.0 as usize] {
+                native_method = Some(native);
             }
-            Gc::new(activation.gc(), bc_method).into()
-        })();
+        }
+
+        let method =
+            Method::from_method_index(self, method_index, native_method, is_function, activation)?;
 
         self.0.write(activation.gc()).methods[method_index.0 as usize] = Some(method);
 
@@ -421,37 +408,10 @@ pub struct ScriptData<'gc> {
     initialized: Cell<bool>,
 
     /// The `TranslationUnit` this script was loaded from.
-    translation_unit: Option<TranslationUnit<'gc>>,
+    translation_unit: TranslationUnit<'gc>,
 }
 
 impl<'gc> Script<'gc> {
-    /// Create an empty script.
-    ///
-    /// This method is intended for builtin script initialization, such as our
-    /// implementation of player globals. The builtin script initializer will
-    /// be responsible for actually installing traits into both the script
-    /// globals as well as the domain that this script is supposed to be a part
-    /// of.
-    ///
-    /// The `globals` object should be constructed using the `global`
-    /// prototype.
-    pub fn empty_script(mc: &Mutation<'gc>, globals: Object<'gc>, domain: Domain<'gc>) -> Self {
-        Self(Gc::new(
-            mc,
-            ScriptData {
-                globals,
-                domain,
-                init: Method::from_builtin(
-                    |_, _, _| Ok(Value::Undefined),
-                    "<Built-in script initializer>",
-                    mc,
-                ),
-                initialized: Cell::new(false),
-                translation_unit: None,
-            },
-        ))
-    }
-
     /// Construct a script from a `TranslationUnit` and its script index.
     ///
     /// The returned script will be allocated, and its traits will be loaded.
@@ -484,7 +444,7 @@ impl<'gc> Script<'gc> {
                 domain,
                 init,
                 initialized: Cell::new(false),
-                translation_unit: Some(unit),
+                translation_unit: unit,
             },
         ));
 
@@ -550,7 +510,7 @@ impl<'gc> Script<'gc> {
         self.0.domain
     }
 
-    pub fn translation_unit(self) -> Option<TranslationUnit<'gc>> {
+    pub fn translation_unit(self) -> TranslationUnit<'gc> {
         self.0.translation_unit
     }
 
@@ -562,6 +522,7 @@ impl<'gc> Script<'gc> {
     ///
     /// If the script has not yet been initialized, this will initialize it on
     /// the same stack.
+    #[inline]
     pub fn globals(self, context: &mut UpdateContext<'gc>) -> Result<Object<'gc>, Error<'gc>> {
         if !self.0.initialized.get() {
             self.0.initialized.set(true);

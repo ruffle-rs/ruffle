@@ -3,8 +3,9 @@ use crate::avm2::error::{
     make_error_1014, make_error_1021, make_error_1025, make_error_1032, make_error_1054,
     make_error_1107, verify_error, Error1014Type,
 };
-use crate::avm2::method::{BytecodeMethod, ParamConfig, ResolvedParamConfig};
+use crate::avm2::method::Method;
 use crate::avm2::multiname::Multiname;
+use crate::avm2::namespace::Namespace;
 use crate::avm2::op::{LookupSwitch, Op};
 use crate::avm2::script::TranslationUnit;
 use crate::avm2::{Activation, Error, QName};
@@ -14,7 +15,8 @@ use gc_arena::{Collect, Gc};
 use std::collections::{HashMap, HashSet};
 use swf::avm2::read::Reader;
 use swf::avm2::types::{
-    Class as AbcClass, Index, MethodFlags as AbcMethodFlags, Multiname as AbcMultiname, Op as AbcOp,
+    Class as AbcClass, Index, MethodFlags as AbcMethodFlags, Multiname as AbcMultiname,
+    Namespace as AbcNamespace, Op as AbcOp,
 };
 use swf::error::Error as AbcReadError;
 
@@ -24,9 +26,6 @@ pub struct VerifiedMethodInfo<'gc> {
     pub parsed_code: Vec<Op<'gc>>,
 
     pub exceptions: Vec<Exception<'gc>>,
-
-    pub param_config: Vec<ResolvedParamConfig<'gc>>,
-    pub return_type: Option<Class<'gc>>,
 }
 
 #[derive(Collect)]
@@ -61,7 +60,7 @@ impl<'gc> ByteInfo<'gc> {
 
 pub fn verify_method<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    method: Gc<'gc, BytecodeMethod<'gc>>,
+    method: Method<'gc>,
 ) -> Result<VerifiedMethodInfo<'gc>, Error<'gc>> {
     let mc = activation.gc();
     let body = method
@@ -94,8 +93,8 @@ pub fn verify_method<'gc>(
 
     let activation_class = create_activation_class(activation, method)?;
 
-    let resolved_param_config = resolve_param_config(activation, method.signature())?;
-    let resolved_return_type = resolve_return_type(activation, method.return_type)?;
+    let resolved_return_type = method.resolved_return_type();
+    let resolved_param_config = method.resolved_param_config();
 
     let mut seen_exception_indices = HashSet::new();
 
@@ -539,14 +538,12 @@ pub fn verify_method<'gc>(
     Ok(VerifiedMethodInfo {
         parsed_code: verified_code,
         exceptions: new_exceptions,
-        param_config: resolved_param_config,
-        return_type: resolved_return_type,
     })
 }
 
 fn create_activation_class<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    method: Gc<'gc, BytecodeMethod<'gc>>,
+    method: Method<'gc>,
 ) -> Result<Option<Class<'gc>>, Error<'gc>> {
     let translation_unit = method.translation_unit();
     let abc_method = method.method();
@@ -559,77 +556,6 @@ fn create_activation_class<'gc>(
             Class::for_activation(activation, translation_unit, abc_method, body)?;
 
         Ok(Some(activation_class))
-    } else {
-        Ok(None)
-    }
-}
-
-pub fn resolve_param_config<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    param_config: &[ParamConfig<'gc>],
-) -> Result<Vec<ResolvedParamConfig<'gc>>, Error<'gc>> {
-    let mut resolved_param_config = Vec::new();
-
-    for param in param_config {
-        let resolved_class = if let Some(param_type_name) = param.param_type_name {
-            if param_type_name.has_lazy_component() {
-                return Err(make_error_1014(
-                    activation,
-                    Error1014Type::VerifyError,
-                    AvmString::new_utf8(activation.gc(), "[]"),
-                ));
-            }
-
-            Some(
-                activation
-                    .domain()
-                    .get_class(activation.context, &param_type_name)
-                    .ok_or_else(|| {
-                        make_error_1014(
-                            activation,
-                            Error1014Type::VerifyError,
-                            param_type_name.to_qualified_name(activation.gc()),
-                        )
-                    })?,
-            )
-        } else {
-            None
-        };
-
-        resolved_param_config.push(ResolvedParamConfig {
-            param_type: resolved_class,
-            default_value: param.default_value,
-        });
-    }
-
-    Ok(resolved_param_config)
-}
-
-fn resolve_return_type<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    return_type: Option<Gc<'gc, Multiname<'gc>>>,
-) -> Result<Option<Class<'gc>>, Error<'gc>> {
-    if let Some(return_type) = return_type {
-        if return_type.has_lazy_component() {
-            return Err(make_error_1014(
-                activation,
-                Error1014Type::VerifyError,
-                AvmString::new_utf8(activation.gc(), "[]"),
-            ));
-        }
-
-        Ok(Some(
-            activation
-                .domain()
-                .get_class(activation.context, &return_type)
-                .ok_or_else(|| {
-                    make_error_1014(
-                        activation,
-                        Error1014Type::VerifyError,
-                        return_type.to_qualified_name(activation.gc()),
-                    )
-                })?,
-        ))
     } else {
         Ok(None)
     }
@@ -763,6 +689,14 @@ fn pool_class<'gc>(
     translation_unit.load_class(index.0, activation)
 }
 
+fn pool_namespace<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    translation_unit: TranslationUnit<'gc>,
+    index: Index<AbcNamespace>,
+) -> Result<Namespace<'gc>, Error<'gc>> {
+    translation_unit.pool_namespace(activation, index)
+}
+
 fn lookup_class<'gc>(
     activation: &mut Activation<'_, 'gc>,
     translation_unit: TranslationUnit<'gc>,
@@ -793,7 +727,7 @@ fn lookup_class<'gc>(
 
 fn translate_op<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    method: Gc<'gc, BytecodeMethod<'gc>>,
+    method: Method<'gc>,
     max_locals: u32,
     activation_class: Option<Class<'gc>>,
     resolved_return_type: Option<Class<'gc>>,
@@ -901,7 +835,11 @@ fn translate_op<'gc>(
 
             Op::PushInt { value }
         }
-        AbcOp::PushNamespace { value } => Op::PushNamespace { value },
+        AbcOp::PushNamespace { value } => {
+            let namespace = pool_namespace(activation, translation_unit, value)?;
+
+            Op::PushNamespace { namespace }
+        }
         AbcOp::PushNaN => Op::PushDouble { value: f64::NAN },
         AbcOp::PushNull => Op::PushNull,
         AbcOp::PushShort { value } => Op::PushShort { value },

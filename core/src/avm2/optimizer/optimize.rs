@@ -1,8 +1,9 @@
 use crate::avm2::error::verify_error;
-use crate::avm2::method::{BytecodeMethod, ResolvedParamConfig};
+use crate::avm2::method::{Method, ResolvedParamConfig};
 use crate::avm2::multiname::Multiname;
 use crate::avm2::op::Op;
 use crate::avm2::optimizer::blocks::assemble_blocks;
+use crate::avm2::optimizer::peephole;
 use crate::avm2::property::Property;
 use crate::avm2::verify::Exception;
 use crate::avm2::vtable::VTable;
@@ -535,7 +536,7 @@ struct Types<'gc> {
 
 pub fn optimize<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    method: Gc<'gc, BytecodeMethod<'gc>>,
+    method: Method<'gc>,
     code: &mut Vec<Op<'gc>>,
     resolved_parameters: &[ResolvedParamConfig<'gc>],
     method_exceptions: &[Exception<'gc>],
@@ -548,6 +549,10 @@ pub fn optimize<'gc>(
 
     let code_slice = Cell::from_mut(code.as_mut_slice());
     let code_slice = code_slice.as_slice_of_cells();
+
+    // We run the preprocess peephole before assembling blocks because it removes
+    // zero-length jumps, which usually reduces the number of blocks in obfuscated code.
+    peephole::preprocess_peephole(code_slice);
 
     let (block_list, op_index_to_block_index_table) = assemble_blocks(code_slice, jump_targets);
 
@@ -649,7 +654,10 @@ pub fn optimize<'gc>(
                 true,
             )?;
         }
+
+        peephole::postprocess_peephole(code_slice, jump_targets, !method_exceptions.is_empty());
     }
+
     Ok(())
 }
 
@@ -1200,6 +1208,15 @@ fn abstract_interpret_ops<'gc>(
                 stack.push(activation, local_type)?;
             }
             Op::FindPropStrict { multiname } | Op::FindProperty { multiname } => {
+                let outer_scope = activation.outer();
+                if outer_scope.is_empty() && scope_stack.is_empty() {
+                    return Err(Error::AvmError(verify_error(
+                        activation,
+                        "Error #1013: Cannot call OP_findproperty when scopeDepth is 0.",
+                        1013,
+                    )?));
+                }
+
                 let mut stack_push_done = false;
                 stack.pop_for_multiname(activation, multiname)?;
 
@@ -1500,6 +1517,18 @@ fn abstract_interpret_ops<'gc>(
 
                 // Then receiver.
                 stack.pop(activation)?;
+
+                // Remove `super()` calls in classes that extend Object, since they
+                // are noops anyway.
+                if num_args == 0 {
+                    let object_class = activation.avm2().classes().object;
+                    if activation
+                        .bound_superclass_object()
+                        .is_some_and(|c| c == object_class)
+                    {
+                        optimize_op_to!(Op::Pop);
+                    }
+                }
             }
             Op::ConstructProp {
                 multiname,
@@ -1532,7 +1561,7 @@ fn abstract_interpret_ops<'gc>(
                                     if let Some(instance_class) = slot_class.i_class() {
                                         // ConstructProp on a c_class will construct its i_class
                                         stack_push_done = true;
-                                        stack.push_class(activation, instance_class)?;
+                                        stack.push_class_not_null(activation, instance_class)?;
                                     }
                                 }
                             }

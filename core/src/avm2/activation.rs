@@ -8,7 +8,7 @@ use crate::avm2::error::{
     make_error_1065, make_error_1127, make_error_1506, make_null_or_undefined_error, type_error,
 };
 use crate::avm2::function::FunctionArgs;
-use crate::avm2::method::{BytecodeMethod, Method, NativeMethod, ResolvedParamConfig};
+use crate::avm2::method::{Method, ResolvedParamConfig};
 use crate::avm2::object::{
     ArrayObject, ByteArrayObject, ClassObject, FunctionObject, NamespaceObject, ScriptObject,
     XmlListObject,
@@ -28,9 +28,7 @@ use gc_arena::Gc;
 use ruffle_macros::istr;
 use std::cmp::{min, Ordering};
 use std::sync::Arc;
-use swf::avm2::types::{
-    Index, Method as AbcMethod, MethodFlags as AbcMethodFlags, Namespace as AbcNamespace,
-};
+use swf::avm2::types::{Index, Method as AbcMethod, MethodFlags as AbcMethodFlags};
 
 use super::error::make_mismatch_error;
 
@@ -155,22 +153,17 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     ) -> Result<Self, Error<'gc>> {
         let (method, global_object, domain) = script.init();
 
-        let num_locals = match method {
-            Method::Native { .. } => 1,
-            Method::Bytecode(bytecode) => {
-                let body = bytecode
-                    .body()
-                    .expect("Cannot execute non-native method (for script) without body");
+        let body = method
+            .body()
+            .expect("Cannot execute method for script without body");
 
-                body.num_locals as usize
-            }
-        };
+        let num_locals = body.num_locals as usize;
 
         let mut created_activation = Self {
             num_locals,
             outer: ScopeChain::new(domain),
             caller_domain: Some(domain),
-            caller_movie: script.translation_unit().map(|t| t.movie()),
+            caller_movie: Some(script.translation_unit().movie()),
             bound_superclass_object: Some(context.avm2.classes().object), // The script global class extends Object
             bound_class: Some(script.global_class()),
             stack_depth: context.avm2.stack.len(),
@@ -178,12 +171,13 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             context,
         };
 
+        // Script initializers should only be run once
+        assert!(!method.is_info_resolved());
+        // Resolve signature
+        method.resolve_info(&mut created_activation)?;
+
         // Run verifier for bytecode methods
-        if let Method::Bytecode(method) = method {
-            if method.verified_info.borrow().is_none() {
-                BytecodeMethod::verify(method, &mut created_activation)?;
-            }
-        }
+        method.verify(&mut created_activation)?;
 
         // Create locals- script init methods are run with no parameters passed
         created_activation.push_stack(global_object);
@@ -205,7 +199,9 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             Ok(Some(obj))
         } else if let Some(obj) = outer_scope.find(name, self)? {
             Ok(Some(obj))
-        } else if let Some(global) = self.global_scope() {
+        } else {
+            let global = self.global_scope();
+
             if global
                 .as_object()
                 .is_some_and(|o| o.base().has_own_dynamic_property(name))
@@ -214,8 +210,6 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             } else {
                 Ok(None)
             }
-        } else {
-            Ok(None)
         }
     }
 
@@ -228,7 +222,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     /// the signature, with missing parameters filled in with defaults.
     pub fn resolve_parameters(
         &mut self,
-        method: Gc<'gc, NativeMethod<'gc>>,
+        method: Method<'gc>,
         user_arguments: &[Value<'gc>],
         signature: &[ResolvedParamConfig<'gc>],
         bound_class: Option<Class<'gc>>,
@@ -257,7 +251,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
                     } else {
                         return Err(Error::AvmError(make_mismatch_error(
                             self,
-                            Method::Native(method),
+                            method,
                             user_arguments.len(),
                             bound_class,
                         )?));
@@ -283,7 +277,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     #[inline(never)]
     fn create_varargs_object(
         &mut self,
-        method: Gc<'gc, BytecodeMethod<'gc>>,
+        method: Method<'gc>,
         signature: &[ResolvedParamConfig<'gc>],
         user_arguments: FunctionArgs<'_, 'gc>,
         callee: Value<'gc>,
@@ -348,7 +342,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     #[allow(clippy::too_many_arguments)]
     pub fn init_from_method(
         &mut self,
-        method: Gc<'gc, BytecodeMethod<'gc>>,
+        method: Method<'gc>,
         outer: ScopeChain<'gc>,
         this: Value<'gc>,
         user_arguments: FunctionArgs<'_, 'gc>,
@@ -376,18 +370,20 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         self.stack_depth = self.context.avm2.stack.len();
         self.scope_depth = self.context.avm2.scope_stack.len();
 
-        // Everything is now setup for the verifier to run
-        if method.verified_info.borrow().is_none() {
-            BytecodeMethod::verify(method, self)?;
+        // Resolve parameters and return type
+        if !method.is_info_resolved() {
+            method.resolve_info(self)?;
         }
 
-        let verified_info = method.verified_info.borrow();
-        let signature = &verified_info.as_ref().unwrap().param_config;
+        // Everything is now setup for the verifier to run
+        method.verify(self)?;
+
+        let signature = &*method.resolved_param_config();
 
         if user_arguments.len() > signature.len() && !has_rest_or_args && !method.is_unchecked() {
             return Err(Error::AvmError(make_mismatch_error(
                 self,
-                Method::Bytecode(method),
+                method,
                 user_arguments.len(),
                 bound_class,
             )?));
@@ -421,7 +417,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
                 } else {
                     return Err(Error::AvmError(make_mismatch_error(
                         self,
-                        Method::Bytecode(method),
+                        method,
                         user_arguments.len(),
                         bound_class,
                     )?));
@@ -556,14 +552,14 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     /// outer scope. If the outer scope is empty, we use the bottom
     /// of the current scope stack instead.
     ///
-    /// A return value of `None` implies that both the outer scope, and
-    /// the current scope stack were both empty.
-    pub fn global_scope(&self) -> Option<Value<'gc>> {
+    /// The verifier guarantees that there is always a global scope
+    /// when this function is called.
+    pub fn global_scope(&self) -> Value<'gc> {
         let outer_scope = self.outer;
         outer_scope
             .get(0)
-            .or_else(|| self.scope_frame().first().copied())
-            .map(|scope| scope.values())
+            .unwrap_or_else(|| self.scope_frame()[0])
+            .values()
     }
 
     pub fn avm2(&mut self) -> &mut Avm2<'gc> {
@@ -642,17 +638,10 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     /// Get the superclass of the class that defined the currently-executing
     /// method, if it exists.
     ///
-    /// If the currently-executing method is not part of a class, or the class
-    /// does not have a superclass, then this panics. The `name` parameter
-    /// allows you to provide the name of a property you were attempting to
-    /// access on the object.
-    pub fn bound_superclass_object(&self, name: &Multiname<'gc>) -> ClassObject<'gc> {
-        self.bound_superclass_object.unwrap_or_else(|| {
-            panic!(
-                "Cannot call supermethod {} without a superclass",
-                name.to_qualified_name(self.gc()),
-            )
-        })
+    /// If the currently-executing method is not part of a class, then this
+    /// returns `None`.
+    pub fn bound_superclass_object(&self) -> Option<ClassObject<'gc>> {
+        self.bound_superclass_object
     }
 
     /// Get the class that defined the currently-executing method, if it exists.
@@ -660,19 +649,10 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         self.bound_class
     }
 
-    /// Retrieve a namespace from the current constant pool.
-    fn pool_namespace(
-        &mut self,
-        method: Gc<'gc, BytecodeMethod<'gc>>,
-        index: Index<AbcNamespace>,
-    ) -> Result<Namespace<'gc>, Error<'gc>> {
-        method.translation_unit().pool_namespace(self, index)
-    }
-
     /// Retrieve a method entry from the current ABC file's method table.
     fn table_method(
         &mut self,
-        method: Gc<'gc, BytecodeMethod<'gc>>,
+        method: Method<'gc>,
         index: Index<AbcMethod>,
         is_function: bool,
     ) -> Result<Method<'gc>, Error<'gc>> {
@@ -681,14 +661,11 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             .load_method(index, is_function, self)
     }
 
-    pub fn run_actions(
-        &mut self,
-        method: Gc<'gc, BytecodeMethod<'gc>>,
-    ) -> Result<Value<'gc>, Error<'gc>> {
+    pub fn run_actions(&mut self, method: Method<'gc>) -> Result<Value<'gc>, Error<'gc>> {
         // The method must be verified at this point
 
-        let verified_info = method.verified_info.borrow();
-        let opcodes = verified_info.as_ref().unwrap().parsed_code.as_slice();
+        let verified_info = method.get_verified_info();
+        let opcodes = verified_info.parsed_code.as_slice();
 
         self.timeout_check()?;
 
@@ -703,7 +680,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
                 Op::PushDouble { value } => self.op_push_double(*value),
                 Op::PushFalse => self.op_push_false(),
                 Op::PushInt { value } => self.op_push_int(*value),
-                Op::PushNamespace { value } => self.op_push_namespace(method, *value),
+                Op::PushNamespace { namespace } => self.op_push_namespace(*namespace),
                 Op::PushNull => self.op_push_null(),
                 Op::PushShort { value } => self.op_push_short(*value),
                 Op::PushString { string } => self.op_push_string(*string),
@@ -919,7 +896,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     /// the error. Otherwise pass the error down the stack.
     fn handle_err(
         &mut self,
-        method: Gc<'gc, BytecodeMethod<'gc>>,
+        method: Method<'gc>,
         ip: usize,
         error: Error<'gc>,
     ) -> Result<usize, Error<'gc>> {
@@ -928,8 +905,8 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             Error::RustError(_) => return Err(error),
         };
 
-        let verified_info = method.verified_info.borrow();
-        let exception_list = &verified_info.as_ref().unwrap().exceptions;
+        let verified_info = method.get_verified_info();
+        let exception_list = &verified_info.exceptions;
 
         let last_ip = ip - 1;
         for e in exception_list {
@@ -989,13 +966,8 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         Ok(())
     }
 
-    fn op_push_namespace(
-        &mut self,
-        method: Gc<'gc, BytecodeMethod<'gc>>,
-        value: Index<AbcNamespace>,
-    ) -> Result<(), Error<'gc>> {
-        let ns = self.pool_namespace(method, value)?;
-        let ns_object = NamespaceObject::from_namespace(self, ns);
+    fn op_push_namespace(&mut self, namespace: Namespace<'gc>) -> Result<(), Error<'gc>> {
+        let ns_object = NamespaceObject::from_namespace(self, namespace);
 
         self.push_stack(ns_object);
         Ok(())
@@ -1161,7 +1133,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
 
     fn op_call_static(
         &mut self,
-        method: Gc<'gc, BytecodeMethod<'gc>>,
+        method: Method<'gc>,
         index: Index<AbcMethod>,
         arg_count: u32,
     ) -> Result<(), Error<'gc>> {
@@ -1191,7 +1163,9 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             .as_object()
             .expect("Super ops should not appear in primitive functions");
 
-        let bound_superclass_object = self.bound_superclass_object(&multiname);
+        let bound_superclass_object = self
+            .bound_superclass_object()
+            .expect("Expected a superclass when running callsuper");
 
         let value = bound_superclass_object.call_super(&multiname, receiver, &args, self)?;
 
@@ -1422,7 +1396,9 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             .as_object()
             .expect("Super ops should not appear in primitive functions");
 
-        let bound_superclass_object = self.bound_superclass_object(&multiname);
+        let bound_superclass_object = self
+            .bound_superclass_object()
+            .expect("Expected a superclass when running getsuper");
 
         let value = bound_superclass_object.get_super(&multiname, object, self)?;
 
@@ -1440,7 +1416,9 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             .as_object()
             .expect("Super ops should not appear in primitive functions");
 
-        let bound_superclass_object = self.bound_superclass_object(&multiname);
+        let bound_superclass_object = self
+            .bound_superclass_object()
+            .expect("Expected a superclass when running setsuper");
 
         bound_superclass_object.set_super(&multiname, value, object, self)?;
 
@@ -1487,14 +1465,10 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         Ok(())
     }
 
-    fn op_newcatch(
-        &mut self,
-        method: Gc<'gc, BytecodeMethod<'gc>>,
-        index: usize,
-    ) -> Result<(), Error<'gc>> {
+    fn op_newcatch(&mut self, method: Method<'gc>, index: usize) -> Result<(), Error<'gc>> {
         // TODO can we store the catch class in the op?
-        let verified_info = method.verified_info.borrow();
-        let exception_list = &verified_info.as_ref().unwrap().exceptions;
+        let verified_info = method.get_verified_info();
+        let exception_list = &verified_info.exceptions;
 
         let catch_class = &exception_list[index].catch_class;
 
@@ -1569,9 +1543,9 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         let multiname = multiname.fill_with_runtime_params(self)?;
         let result = self
             .find_definition(&multiname)?
-            .or_else(|| self.global_scope());
+            .unwrap_or_else(|| self.global_scope());
 
-        self.push_stack(result.unwrap_or(Value::Undefined));
+        self.push_stack(result);
 
         Ok(())
     }
@@ -1672,8 +1646,9 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         let value = self.pop_stack();
 
         self.global_scope()
-            .map(|global| global.as_object().unwrap().set_slot(index, value, self))
-            .transpose()?;
+            .as_object()
+            .unwrap()
+            .set_slot(index, value, self)?;
 
         Ok(())
     }
@@ -1764,7 +1739,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
 
     fn op_new_function(
         &mut self,
-        method: Gc<'gc, BytecodeMethod<'gc>>,
+        method: Method<'gc>,
         index: Index<AbcMethod>,
     ) -> Result<(), Error<'gc>> {
         let method_entry = self.table_method(method, index, true)?;
