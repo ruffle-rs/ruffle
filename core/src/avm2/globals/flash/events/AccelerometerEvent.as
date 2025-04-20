@@ -4,23 +4,23 @@
 // It won't be regenerated in the future, so feel free to edit and/or fix
 package flash.events
 {
-
+    [API("667")]
     public class AccelerometerEvent extends Event
     {
         // Defines the value of the type property of a AccelerometerEvent event object.
         public static const UPDATE:String = "update";
 
         // The number of milliseconds at the time of the event since the runtime was initialized.
-        public var timestamp:Number;
+        private var _timestamp:Number;
 
         // Acceleration along the x-axis, measured in Gs.
-        public var accelerationX:Number;
+        private var _accelerationX:Number;
 
         // Acceleration along the y-axis, measured in Gs.
-        public var accelerationY:Number;
+        private var _accelerationY:Number;
         
         // Acceleration along the z-axis, measured in Gs.
-        public var accelerationZ:Number;
+        private var _accelerationZ:Number;
 
         public function AccelerometerEvent(type:String, bubbles:Boolean = false, cancelable:Boolean = false, timestamp:Number = 0,
             accelerationX:Number = 0, accelerationY:Number = 0, accelerationZ:Number = 0)
@@ -30,6 +30,34 @@ package flash.events
             this.accelerationX = accelerationX;
             this.accelerationY = accelerationY;
             this.accelerationZ = accelerationZ;
+        }
+
+        public function get timestamp():Number {
+            return this._timestamp;
+        }
+        public function set timestamp(value:Number):void {
+            this._timestamp = value;
+        }
+
+        public function get accelerationX():Number {
+            return this._accelerationX;
+        }
+        public function set accelerationX(value:Number):void {
+            this._accelerationX = value;
+        }
+
+        public function get accelerationY():Number {
+            return this._accelerationY;
+        }
+        public function set accelerationY(value:Number):void {
+            this._accelerationY = value;
+        }
+
+        public function get accelerationZ():Number {
+            return this._accelerationZ;
+        }
+        public function set accelerationZ(value:Number):void {
+            this._accelerationZ = value;
         }
 
         // Creates a copy of an AccelerometerEvent object and sets the value of each property to match that of the original.
