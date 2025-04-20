@@ -7,17 +7,17 @@ package flash.display {
     [API("667")]
     public class NativeMenuItem extends EventDispatcher {
         [Ruffle(NativeAccessible)]
-        public var enabled: Boolean = false;
+        private var _enabled: Boolean = false;
 
-        public var checked: Boolean = false;
-        public var data: Object;
-        public var isSeparator: Boolean;
-        public var keyEquivalent: String = "k";
-        public var keyEquivalentModifiers: Array = [];
-        public var label: String;
-        public var mnemonicIndex: int = 0;
-        public var name: String = "";
-        public var submenu: NativeMenu = new NativeMenu();
+        private var _checked: Boolean = false;
+        private var _data: Object;
+        private var _isSeparator: Boolean;
+        private var _keyEquivalent: String = "k";
+        private var _keyEquivalentModifiers: Array = [];
+        private var _label: String;
+        private var _mnemonicIndex: int = 0;
+        private var _name: String = "";
+        private var _submenu: NativeMenu = new NativeMenu();
 
         public function NativeMenuItem(label:String = "", isSeparator:Boolean = false)
         {
@@ -26,6 +26,98 @@ package flash.display {
             this.isSeparator = isSeparator;
         }
 
+        public function get enabled():Boolean {
+            return this._enabled;
+        }
+        public function set enabled(value:Boolean):void {
+            this._enabled = value;
+        }
+
+        // The rest of the properties are AIR-only
+
+        [API("668")]
+        public function get checked():Boolean {
+            return this._checked;
+        }
+        [API("668")]
+        public function set checked(value:Boolean):void {
+            this._checked = value;
+        }
+
+        [API("668")]
+        public function get data():Object {
+            return this._data;
+        }
+        [API("668")]
+        public function set data(value:Object):void {
+            this._data = value;
+        }
+
+        [API("668")]
+        public function get isSeparator():Boolean {
+            return this._isSeparator;
+        }
+        [API("668")]
+        public function set isSeparator(value:Boolean):void {
+            this._isSeparator = value;
+        }
+
+        [API("668")]
+        public function get keyEquivalent():String {
+            return this._keyEquivalent;
+        }
+        [API("668")]
+        public function set keyEquivalent(value:String):void {
+            this._keyEquivalent = value;
+        }
+
+        [API("668")]
+        public function get keyEquivalentModifiers():Array {
+            return this._keyEquivalentModifiers;
+        }
+        [API("668")]
+        public function set keyEquivalentModifiers(value:Array):void {
+            this._keyEquivalentModifiers = value;
+        }
+
+        [API("668")]
+        public function get label():String {
+            return this._label;
+        }
+        [API("668")]
+        public function set label(value:String):void {
+            this._label = value;
+        }
+
+        [API("668")]
+        public function get mnemonicIndex():int {
+            return this._mnemonicIndex;
+        }
+        [API("668")]
+        public function set mnemonicIndex(value:int):void {
+            // TODO validation
+            this._mnemonicIndex = value;
+        }
+
+        [API("668")]
+        public function get name():String {
+            return this._name;
+        }
+        [API("668")]
+        public function set name(value:String):void {
+            this._name = value;
+        }
+
+        [API("668")]
+        public function get submenu():NativeMenu {
+            return this._submenu;
+        }
+        [API("668")]
+        public function set submenu(value:NativeMenu):void {
+            this._submenu = value;
+        }
+
+        [API("668")]
         public function get menu():NativeMenu
         {
             stub_getter("flash.display.NativeMenuItem", "menu");
