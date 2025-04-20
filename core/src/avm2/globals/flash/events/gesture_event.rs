@@ -11,7 +11,7 @@ pub fn get_stage_x<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
-    mouse_event::local_to_stage_x(activation, this, slots::LOCAL_X, slots::LOCAL_Y)
+    mouse_event::local_to_stage_x(activation, this, slots::_LOCAL_X, slots::_LOCAL_Y)
 }
 
 pub fn get_stage_y<'gc>(
@@ -21,5 +21,5 @@ pub fn get_stage_y<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
-    mouse_event::local_to_stage_y(activation, this, slots::LOCAL_X, slots::LOCAL_Y)
+    mouse_event::local_to_stage_y(activation, this, slots::_LOCAL_X, slots::_LOCAL_Y)
 }
