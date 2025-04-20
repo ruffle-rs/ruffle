@@ -1,4 +1,4 @@
-﻿package flash.filters {
+package flash.filters {
     import flash.display.BitmapData;
     import flash.geom.Point;
 

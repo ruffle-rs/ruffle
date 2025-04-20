@@ -1,4 +1,4 @@
-﻿package flash.filters {
+package flash.filters {
     public final class BevelFilter extends BitmapFilter {
         // FIXME these should all be getters/setters to match Flash
 
