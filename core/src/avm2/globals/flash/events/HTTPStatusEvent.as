@@ -12,13 +12,9 @@ package flash.events
         public static const HTTP_STATUS:String = "httpStatus"; // The HTTPStatusEvent.HTTP_STATUS constant defines the value of the type property of a httpStatus event object.
 
         private var _status: int; // The HTTP status code returned by the server.
-        [API("690")]
-        public var redirected: Boolean; // Indicates whether the request was redirected.
-
-        [API("661")]
-        public var responseHeaders: Array; // The response headers that the response returned, as an array of URLRequestHeader objects.
-        [API("661")]
-        public var responseURL: String; // The URL that the response was returned from.
+        private var _redirected: Boolean; // Indicates whether the request was redirected.
+        private var _responseHeaders: Array; // The response headers that the response returned, as an array of URLRequestHeader objects.
+        private var _responseURL: String; // The URL that the response was returned from.
 
         public function HTTPStatusEvent(type:String, bubbles:Boolean = false, cancelable:Boolean = false, status:int = 0, redirected:Boolean = false)
         {
@@ -26,7 +22,6 @@ package flash.events
             this._status = status;
             this.redirected = redirected;
         }
-        
 
         //  Creates a copy of the HTTPStatusEvent object and sets the value of each property to match that of the original.
         override public function clone():Event
@@ -40,11 +35,36 @@ package flash.events
             return this.formatToString("HTTPStatusEvent","type","bubbles","cancelable","eventPhase","status","redirected","responseURL");
         }
 
-        public function get status() : int
-        {
+        public function get status():int {
             return this._status;
         }
-        
+
+        [API("690")]
+        public function get redirected():Boolean {
+            return this._redirected;
+        }
+        [API("690")]
+        public function set redirected(value:Boolean):void {
+            this._redirected = value;
+        }
+
+        [API("661")]
+        public function get responseHeaders():Array {
+            return this._responseHeaders;
+        }
+        [API("661")]
+        public function set responseHeaders(value:Array):void {
+            this._responseHeaders = value;
+        }
+
+        [API("661")]
+        public function get responseURL():String {
+            return this._responseURL;
+        }
+        [API("661")]
+        public function set responseURL(value:String):void {
+            this._responseURL = value;
+        }
     }
 }
 
