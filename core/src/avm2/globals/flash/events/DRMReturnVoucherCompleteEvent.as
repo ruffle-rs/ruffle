@@ -12,16 +12,16 @@ package flash.events
         public static const RETURN_VOUCHER_COMPLETE:String = "returnVoucherComplete";
 
         // The URL of the media rights server.
-        public var serverURL: String;
+        private var _serverURL: String;
 
         // The license ID that was passed into the DRMManager.returnVoucher() call.
-        public var licenseID: String;
+        private var _licenseID: String;
 
         // The policyID that was passed into the DRMManager.returnVoucher() call.
-        public var policyID: String;
+        private var _policyID: String;
 
         // The number of vouchers that matches the criterion passed into DRMManager.returnVoucher() and subsequently returned.
-        public var numberOfVouchersReturned: int;
+        private var _numberOfVouchersReturned: int;
 
         public function DRMReturnVoucherCompleteEvent(type:String, bubbles:Boolean = false, cancelable:Boolean = false, inServerURL:String = null,
             inLicenseID:String = null, inPolicyID:String = null, inNumberOfVouchersReturned:int = 0)
@@ -32,7 +32,34 @@ package flash.events
             this.policyID = inPolicyID;
             this.numberOfVouchersReturned = inNumberOfVouchersReturned;
         }
-        
+
+        public function get serverURL():String {
+            return this._serverURL;
+        }
+        public function set serverURL(value:String):void {
+            this._serverURL = value;
+        }
+
+        public function get licenseID():String {
+            return this._licenseID;
+        }
+        public function set licenseID(value:String):void {
+            this._licenseID = value;
+        }
+
+        public function get policyID():String {
+            return this._policyID;
+        }
+        public function set policyID(value:String):void {
+            this._policyID = value;
+        }
+
+        public function get numberOfVouchersReturned():int {
+            return this._numberOfVouchersReturned;
+        }
+        public function set numberOfVouchersReturned(value:int):void {
+            this._numberOfVouchersReturned = value;
+        }
 
         // Duplicates an instance of an Event subclass.
         override public function clone():Event

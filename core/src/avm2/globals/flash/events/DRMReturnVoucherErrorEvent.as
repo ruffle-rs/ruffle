@@ -11,16 +11,16 @@ package flash.events
         public static const RETURN_VOUCHER_ERROR:String = "returnVoucherError";
 
         // A more detailed error code.
-        public var subErrorID: int;
+        private var _subErrorID: int;
 
          // The URL of the media rights server for this return Voucher attempt.
-        public var serverURL: String;
+        private var _serverURL: String;
 
         // The license ID that was passed into the returnVoucher() call that resulted in this error.
-        public var licenseID: String;
+        private var _licenseID: String;
 
         // The policy ID that was passed into the returnVoucher() call that resulted in this error.
-        public var policyID: String;
+        private var _policyID: String;
 
         public function DRMReturnVoucherErrorEvent(type:String, bubbles:Boolean = false, cancelable:Boolean = false, inDetail:String = "",
             inErrorID:int = 0, inSubErrorID:int = 0, inServerURL:String = null, inLicenseID:String = null, inPolicyID:String = null)
@@ -31,7 +31,34 @@ package flash.events
             this.licenseID = inLicenseID;
             this.policyID = inPolicyID;
         }
-        
+
+        public function get subErrorID():int {
+            return this._subErrorID;
+        }
+        public function set subErrorID(value:int):void {
+            this._subErrorID = value;
+        }
+
+        public function get serverURL():String {
+            return this._serverURL;
+        }
+        public function set serverURL(value:String):void {
+            this._serverURL = value;
+        }
+
+        public function get licenseID():String {
+            return this._licenseID;
+        }
+        public function set licenseID(value:String):void {
+            this._licenseID = value;
+        }
+
+        public function get policyID():String {
+            return this._policyID;
+        }
+        public function set policyID(value:String):void {
+            this._policyID = value;
+        }
 
         // Creates a copy of the ErrorEvent object and sets the value of each property to match that of the original.
         override public function clone():Event
