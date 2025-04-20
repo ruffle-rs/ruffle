@@ -13,6 +13,9 @@ package flash.events
         private var _status: String; // The status of the VideoTexture object.
         private var _colorSpace: String; // The color space used by the video being displayed in the VideoTexture object.
 
+        [API("706")]
+        public const codecInfo:String;
+
         public function VideoTextureEvent(type:String, bubbles:Boolean = false, cancelable:Boolean = false, status:String = null, colorSpace:String = null)
         {
             super(type,bubbles,cancelable);
