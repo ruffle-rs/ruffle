@@ -13,9 +13,9 @@ package flash.events
         // The string constant to use for the authentication complete event in the type parameter when adding and removing event listeners.
         public static const AUTHENTICATION_COMPLETE:String = "authenticationComplete";
 
-        public var serverURL: String; // The URL of the media rights server.
-        public var domain: String; // The content domain of the media rights server.
-        public var token: ByteArray; // The authentication token.
+        private var _serverURL: String; // The URL of the media rights server.
+        private var _domain: String; // The content domain of the media rights server.
+        private var _token: ByteArray; // The authentication token.
 
         public function DRMAuthenticationCompleteEvent(type:String, bubbles:Boolean = false, cancelable:Boolean = false, inServerURL:String = null, inDomain:String = null, inToken:ByteArray = null)
         {
@@ -24,7 +24,27 @@ package flash.events
             this.domain = inDomain;
             this.token = inToken;
         }
-        
+
+        public function get serverURL():String {
+            return this._serverURL;
+        }
+        public function set serverURL(value:String):void {
+            this._serverURL = value;
+        }
+
+        public function get domain():String {
+            return this._domain;
+        }
+        public function set domain(value:String):void {
+            this._domain = value;
+        }
+
+        public function get token():ByteArray {
+            return this._token;
+        }
+        public function set token(value:ByteArray):void {
+            this._token = value;
+        }
 
         //  Duplicates an instance of an Event subclass.
         override public function clone():Event
