@@ -1591,6 +1591,16 @@ impl<'gc> Loader<'gc> {
                 ) {
                     use crate::avm2::globals::slots::flash_net_url_loader as url_loader_slots;
 
+                    let body_len = body.len().into();
+
+                    // TODO - update these as the download progresses
+                    target
+                        .set_slot(url_loader_slots::BYTES_LOADED, body_len, activation)
+                        .unwrap();
+                    target
+                        .set_slot(url_loader_slots::BYTES_TOTAL, body_len, activation)
+                        .unwrap();
+
                     let data_format = target
                         .get_slot(url_loader_slots::DATA_FORMAT)
                         .coerce_to_string(activation)
