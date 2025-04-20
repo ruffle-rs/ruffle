@@ -10,7 +10,7 @@ package flash.events
 
         private var _error: *; // The error object associated with the uncaught error.
 
-        public function UncaughtErrorEvent(type:String, bubbles:Boolean = true, cancelable:Boolean = true, error_in:* = null)
+        public function UncaughtErrorEvent(type:String = "uncaughtError", bubbles:Boolean = true, cancelable:Boolean = true, error_in:* = null)
         {
             super(type,bubbles,cancelable);
             this._error = error_in;

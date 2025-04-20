@@ -26,17 +26,17 @@ package flash.media {
         private var _width:int;
 
         // The number of video frames transmitted in full (called keyframes or Instantaneous Decoding Refresh (IDR) frames) instead of being interpolated by the video compression algorithm.
-        public function setKeyFrameInterval(keyFrameInterval:int = 15):void {
+        public function setKeyFrameInterval(keyFrameInterval:int):void {
             stub_method("flash.media.VideoStreamSettings", "setKeyFrameInterval");
         }
 
         // Sets the resolution and frame rate used for video encoding.
-        public function setMode(width:int = -1, height:int = -1, fps:Number = -1):void {
+        public function setMode(width:int, height:int, fps:Number):void {
             stub_method("flash.media.VideoStreamSettings", "setMode");
         }
 
         // Sets maximum amount of bandwidth per second or the required picture quality that the current outgoing video feed can use.
-        public function setQuality(bandwidth:int = 16384, quality:int = 0):void {
+        public function setQuality(bandwidth:int, quality:int):void {
             stub_method("flash.media.VideoStreamSettings", "setQuality");
         }
 
