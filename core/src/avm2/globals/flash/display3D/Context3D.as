@@ -33,7 +33,13 @@ package flash.display3D {
             return "Dummy Ruffle driver";
         }
 
-        public var enableErrorChecking:Boolean = true;
+        private var _enableErrorChecking:Boolean = false;
+        public function get enableErrorChecking():Boolean {
+            return this._enableErrorChecking;
+        }
+        public function set enableErrorChecking(enable:Boolean):void {
+            this._enableErrorChecking = enable;
+        }
 
         public native function setProgramConstantsFromMatrix(programType:String, firstRegister:int, matrix:Matrix3D, transposedMatrix:Boolean = false):void;
         public native function setProgramConstantsFromVector(programType:String, firstRegister:int, data:Vector.<Number>, numRegisters:int = -1):void;
