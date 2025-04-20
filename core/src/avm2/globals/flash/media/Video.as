@@ -2,8 +2,8 @@ package flash.media
 {
     import __ruffle__.stub_method;
 
-    import flash.display.DisplayObject
-    import flash.net.NetStream
+    import flash.display.DisplayObject;
+    import flash.net.NetStream;
     
     [Ruffle(InstanceAllocator)]
     public class Video extends DisplayObject
@@ -48,7 +48,7 @@ package flash.media
             return this._videoHeight;
         }
 
-        public native function attachNetStream(netStream: NetStream);
+        public native function attachNetStream(netStream:NetStream):void;
 
         public function clear():void {
             stub_method("flash.media.Video", "clear");
