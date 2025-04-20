@@ -12,13 +12,13 @@ package flash.events
         public static const AUTHENTICATION_ERROR:String = "authenticationError";
 
         // A more detailed error code.
-        public var subErrorID: int;
+        private var _subErrorID: int;
 
         // The URL of the media rights server that rejected the authentication attempt.
-        public var serverURL: String;
+        private var _serverURL: String;
 
         // The content domain of the media rights server.
-        public var domain: String;
+        private var _domain: String;
 
         public function DRMAuthenticationErrorEvent(type:String, bubbles:Boolean = false, cancelable:Boolean = false, inDetail:String = "",
             inErrorID:int = 0, inSubErrorID:int = 0, inServerURL:String = null, inDomain:String = null)
@@ -28,7 +28,28 @@ package flash.events
             this.serverURL = inServerURL;
             this.domain = inDomain;
         }
-        
+
+        public function get subErrorID():int {
+            return this._subErrorID;
+        }
+        public function set subErrorID(value:int):void {
+            this._subErrorID = value;
+        }
+
+        public function get serverURL():String {
+            return this._serverURL;
+        }
+        public function set serverURL(value:String):void {
+            this._serverURL = value;
+        }
+
+        public function get domain():String {
+            return this._domain;
+        }
+        public function set domain(value:String):void {
+            this._domain = value;
+        }
+
         // Creates a copy of the ErrorEvent object and sets the value of each property to match that of the original.
         override public function clone():Event
         {
