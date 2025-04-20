@@ -22,20 +22,19 @@ package flash.events
         public static const MOUSE_FOCUS_CHANGE:String = "mouseFocusChange";
 
         // A reference to the complementary InteractiveObject instance that is affected by the change in focus.
-        public var relatedObject: InteractiveObject;
+        private var _relatedObject: InteractiveObject;
 
         // Indicates whether the Shift key modifier is activated, in which case the value is true.
-        public var shiftKey: Boolean;
+        private var _shiftKey: Boolean;
 
         // The key code value of the key pressed to trigger a keyFocusChange event.
-        public var keyCode: uint;
+        private var _keyCode: uint;
 
         // Specifies direction of focus for a focusIn event.
-        [API("661")]
-        public var direction: String;
+        private var _direction: String;
 
         // If true, the relatedObject property is set to null for reasons related to security sandboxes.
-        public var isRelatedObjectInaccessible: Boolean;
+        private var _isRelatedObjectInaccessible: Boolean;
 
         public function FocusEvent(type:String, bubbles:Boolean = true, cancelable:Boolean = false, relatedObject:InteractiveObject = null,
             shiftKey:Boolean = false, keyCode:uint = 0, direction:String = "none")
@@ -47,7 +46,45 @@ package flash.events
             this.direction = direction;
             this.isRelatedObjectInaccessible = false; // Unimplemented
         }
-        
+
+        public function get relatedObject():InteractiveObject {
+            return this._relatedObject;
+        }
+        public function set relatedObject(value:InteractiveObject):void {
+            this._relatedObject = value;
+        }
+
+        public function get shiftKey():Boolean {
+            return this._shiftKey;
+        }
+        public function set shiftKey(value:Boolean):void {
+            this._shiftKey = value;
+        }
+
+        public function get keyCode():uint {
+            return this._keyCode;
+        }
+        public function set keyCode(value:uint):void {
+            this._keyCode = value;
+        }
+
+        [API("661")]
+        public function get direction():String {
+            return this._direction;
+        }
+        [API("661")]
+        public function set direction(value:String):void {
+            this._direction = value;
+        }
+
+        [API("667")]
+        public function get isRelatedObjectInaccessible():Boolean {
+            return this._isRelatedObjectInaccessible;
+        }
+        [API("667")]
+        public function set isRelatedObjectInaccessible(value:Boolean):void {
+            this._isRelatedObjectInaccessible = value;
+        }
 
         //  Creates a copy of the FocusEvent object and sets the value of each property to match that of the original.
         override public function clone():Event
