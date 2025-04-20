@@ -10,8 +10,8 @@ package flash.events
         public static const AV_HTTP_RESPONSE_STATUS:String = "avHttpResponseStatus"; // Unlike the httpStatus event, the httpResponseStatus event is delivered before any response data.
 
         private var _status: int; // The HTTP status code returned by the server.
-        public var responseURL: String; // The URL that the response was returned from.
-        public var responseHeaders: Array; // The response headers that the response returned, as an array of URLRequestHeader objects.
+        private var _responseURL: String; // The URL that the response was returned from.
+        private var _responseHeaders: Array; // The response headers that the response returned, as an array of URLRequestHeader objects.
 
         public function AVHTTPStatusEvent(type:String, bubbles:Boolean = false, cancelable:Boolean = false, status:int = 0, responseUrl:String = null, responseHeaders:Array = null)
         {
@@ -31,14 +31,26 @@ package flash.events
         //  Returns a string that contains all the properties of the AVHTTPStatusEvent object.
         override public function toString():String
         {
-            return this.formatToString("AVHTTPStatusEvent","type","bubbles","cancelable","eventPhase","status");
+            return this.formatToString("AVHTTPStatusEvent","type","bubbles","cancelable","eventPhase","status","responseUrl","responseHeaders");
         }
 
-        public function get status() : int
-        {
+        public function get status():int {
             return this._status;
         }
-        
+
+        public function get responseURL():String {
+            return this._responseURL;
+        }
+        public function set responseURL(value:String):void {
+            this._responseURL = value;
+        }
+
+        public function get responseHeaders():Array {
+            return this._responseHeaders;
+        }
+        public function set responseHeaders(value:Array):void {
+            this._responseHeaders = value;
+        }
     }
 }
 
