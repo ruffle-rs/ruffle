@@ -10,7 +10,7 @@ package {
         }
 
         public native function get localName():String;
-        public native function get uri():String;
+        public native function get uri():*;
 
         AS3 native function toString():String;
         AS3 function valueOf():QName {
