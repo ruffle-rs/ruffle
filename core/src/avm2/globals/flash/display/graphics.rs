@@ -1593,7 +1593,7 @@ fn handle_graphics_triangle_path<'gc>(
 ) -> Result<(), Error<'gc>> {
     let culling = {
         let culling = obj
-            .get_slot(graphics_triangle_path_slots::CULLING)
+            .get_slot(graphics_triangle_path_slots::_CULLING)
             .coerce_to_string(activation)?;
 
         TriangleCulling::from_string(culling)
