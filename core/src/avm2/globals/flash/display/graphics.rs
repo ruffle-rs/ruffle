@@ -1686,7 +1686,7 @@ fn handle_gradient_fill<'gc>(
 
     let gradient_type = {
         let gradient_type = obj
-            .get_slot(graphics_gradient_fill_slots::TYPE)
+            .get_slot(graphics_gradient_fill_slots::_TYPE)
             .coerce_to_string(activation)?;
 
         parse_gradient_type(activation, gradient_type)?
@@ -1712,7 +1712,7 @@ fn handle_gradient_fill<'gc>(
 
     let spread = {
         let spread_method = obj
-            .get_slot(graphics_gradient_fill_slots::SPREAD_METHOD)
+            .get_slot(graphics_gradient_fill_slots::_SPREAD_METHOD)
             .coerce_to_string(activation)?;
 
         parse_spread_method(spread_method)
@@ -1720,7 +1720,7 @@ fn handle_gradient_fill<'gc>(
 
     let interpolation = {
         let interpolation_method = obj
-            .get_slot(graphics_gradient_fill_slots::INTERPOLATION_METHOD)
+            .get_slot(graphics_gradient_fill_slots::_INTERPOLATION_METHOD)
             .coerce_to_string(activation)?;
 
         parse_interpolation_method(interpolation_method)
