@@ -4,6 +4,7 @@ package flash.display {
     import flash.display3D.Context3D;
     import flash.display3D.Context3DProfile;
     import flash.utils.setTimeout;
+    import __ruffle__.stub_setter;
 
     [Ruffle(InstanceAllocator)]
     [API("674")]
@@ -44,9 +45,24 @@ package flash.display {
             }
         }
 
-        // FIXME - actually implement this
-        public var x:Number;
-        public var y:Number;
+        private var _x:Number;
+        private var _y:Number;
+
+        public function get x():Number {
+            return this._x;
+        }
+        public function set x(value:Number):void {
+            stub_setter("flash.display.Stage3D", "x");
+            this._x = value;
+        }
+
+        public function get y():Number {
+            return this._y;
+        }
+        public function set y(value:Number):void {
+            stub_setter("flash.display.Stage3D", "y");
+            this._y = value;
+        }
 
         public native function get visible():Boolean;
         public native function set visible(value:Boolean):void;
