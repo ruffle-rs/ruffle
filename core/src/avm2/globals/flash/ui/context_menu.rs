@@ -71,7 +71,7 @@ pub fn make_context_menu_state<'gc>(
                                     continue;
                                 };
 
-                            let enabled = check_bool!(item, native_item_slots::ENABLED, true);
+                            let enabled = check_bool!(item, native_item_slots::_ENABLED, true);
                             let visible = check_bool!(item, item_slots::VISIBLE, true);
                             let separator_before =
                                 check_bool!(item, item_slots::SEPARATOR_BEFORE, true);
