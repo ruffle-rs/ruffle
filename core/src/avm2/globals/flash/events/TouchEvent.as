@@ -3,183 +3,182 @@
 // by https://github.com/golfinq/ActionScript_Event_Builder
 // It won't be regenerated in the future, so feel free to edit and/or fix
 package flash.events {
+    import flash.utils.ByteArray;
+    import flash.display.InteractiveObject;
+    import __ruffle__.stub_method;
 
-import flash.utils.ByteArray;
-import flash.display.InteractiveObject;
-import __ruffle__.stub_method;
+    [API("667")]
+    public class TouchEvent extends Event {
+        public static const PROXIMITY_BEGIN: String = "proximityBegin"; // [static] Defines the value of the type property of a PROXIMITY_BEGIN touch event object.
+        public static const PROXIMITY_END: String = "proximityEnd"; // [static] Defines the value of the type property of a PROXIMITY_END touch event object.
+        public static const PROXIMITY_MOVE: String = "proximityMove"; // [static] Defines the value of the type property of a PROXIMITY_MOVE touch event object.
+        public static const PROXIMITY_OUT: String = "proximityOut"; // [static] Defines the value of the type property of a PROXIMITY_OUT touch event object.
+        public static const PROXIMITY_OVER: String = "proximityOver"; // [static] Defines the value of the type property of a PROXIMITY_OVER touch event object.
+        public static const PROXIMITY_ROLL_OUT: String = "proximityRollOut"; // [static] Defines the value of the type property of a PROXIMITY_ROLL_OUT touch event object.
+        public static const PROXIMITY_ROLL_OVER: String = "proximityRollOver"; // [static] Defines the value of the type property of a PROXIMITY_ROLL_OVER touch event object.
+        public static const TOUCH_BEGIN: String = "touchBegin"; // [static] Defines the value of the type property of a TOUCH_BEGIN touch event object.
+        public static const TOUCH_END: String = "touchEnd"; // [static] Defines the value of the type property of a TOUCH_END touch event object.
+        public static const TOUCH_MOVE: String = "touchMove"; // [static] Defines the value of the type property of a TOUCH_MOVE touch event object.
+        public static const TOUCH_OUT: String = "touchOut"; // [static] Defines the value of the type property of a TOUCH_OUT touch event object.
+        public static const TOUCH_OVER: String = "touchOver"; // [static] Defines the value of the type property of a TOUCH_OVER touch event object.
+        public static const TOUCH_ROLL_OUT: String = "touchRollOut"; // [static] Defines the value of the type property of a TOUCH_ROLL_OUT touch event object.
+        public static const TOUCH_ROLL_OVER: String = "touchRollOver"; // [static] Defines the value of the type property of a TOUCH_ROLL_OVER touch event object.
+        public static const TOUCH_TAP: String = "touchTap"; // [static] Defines the value of the type property of a TOUCH_TAP touch event object.
 
-[API("667")]
-public class TouchEvent extends Event {
-    public static const PROXIMITY_BEGIN: String = "proximityBegin"; // [static] Defines the value of the type property of a PROXIMITY_BEGIN touch event object.
-    public static const PROXIMITY_END: String = "proximityEnd"; // [static] Defines the value of the type property of a PROXIMITY_END touch event object.
-    public static const PROXIMITY_MOVE: String = "proximityMove"; // [static] Defines the value of the type property of a PROXIMITY_MOVE touch event object.
-    public static const PROXIMITY_OUT: String = "proximityOut"; // [static] Defines the value of the type property of a PROXIMITY_OUT touch event object.
-    public static const PROXIMITY_OVER: String = "proximityOver"; // [static] Defines the value of the type property of a PROXIMITY_OVER touch event object.
-    public static const PROXIMITY_ROLL_OUT: String = "proximityRollOut"; // [static] Defines the value of the type property of a PROXIMITY_ROLL_OUT touch event object.
-    public static const PROXIMITY_ROLL_OVER: String = "proximityRollOver"; // [static] Defines the value of the type property of a PROXIMITY_ROLL_OVER touch event object.
-    public static const TOUCH_BEGIN: String = "touchBegin"; // [static] Defines the value of the type property of a TOUCH_BEGIN touch event object.
-    public static const TOUCH_END: String = "touchEnd"; // [static] Defines the value of the type property of a TOUCH_END touch event object.
-    public static const TOUCH_MOVE: String = "touchMove"; // [static] Defines the value of the type property of a TOUCH_MOVE touch event object.
-    public static const TOUCH_OUT: String = "touchOut"; // [static] Defines the value of the type property of a TOUCH_OUT touch event object.
-    public static const TOUCH_OVER: String = "touchOver"; // [static] Defines the value of the type property of a TOUCH_OVER touch event object.
-    public static const TOUCH_ROLL_OUT: String = "touchRollOut"; // [static] Defines the value of the type property of a TOUCH_ROLL_OUT touch event object.
-    public static const TOUCH_ROLL_OVER: String = "touchRollOver"; // [static] Defines the value of the type property of a TOUCH_ROLL_OVER touch event object.
-    public static const TOUCH_TAP: String = "touchTap"; // [static] Defines the value of the type property of a TOUCH_TAP touch event object.
+        private var _touchPointID: int; // A unique identification number (as an int) assigned to the touch point.
+        private var _isPrimaryTouchPoint: Boolean; // Indicates whether the first point of contact is mapped to mouse events.
+        private var _localX: Number; // The horizontal coordinate at which the event occurred relative to the containing sprite.
+        private var _localY: Number; // The vertical coordinate at which the event occurred relative to the containing sprite.
+        private var _sizeX: Number; // Width of the contact area.
+        private var _sizeY: Number; // Height of the contact area.
+        private var _pressure: Number; // A value between 0.0 and 1.0 indicating force of the contact with the device.
+        private var _relatedObject: InteractiveObject; // A reference to a display list object that is related to the event.
+        private var _ctrlKey: Boolean; // On Windows or Linux, indicates whether the Ctrl key is active (true) or inactive (false).
+        private var _altKey: Boolean; // Indicates whether the Alt key is active (true) or inactive (false).
+        private var _shiftKey: Boolean; // Indicates whether the Shift key is active (true) or inactive (false).
+        private var _isRelatedObjectInaccessible: Boolean; // If true, the relatedObject property is set to null for reasons related to security sandboxes.
+        private var _stageX: Number; // [read-only] The horizontal coordinate at which the event occurred in global Stage coordinates.
+        private var _stageY: Number; // [read-only] The vertical coordinate at which the event occurred in global Stage coordinates.
 
-    private var _touchPointID: int; // A unique identification number (as an int) assigned to the touch point.
-    private var _isPrimaryTouchPoint: Boolean; // Indicates whether the first point of contact is mapped to mouse events.
-    private var _localX: Number; // The horizontal coordinate at which the event occurred relative to the containing sprite.
-    private var _localY: Number; // The vertical coordinate at which the event occurred relative to the containing sprite.
-    private var _sizeX: Number; // Width of the contact area.
-    private var _sizeY: Number; // Height of the contact area.
-    private var _pressure: Number; // A value between 0.0 and 1.0 indicating force of the contact with the device.
-    private var _relatedObject: InteractiveObject; // A reference to a display list object that is related to the event.
-    private var _ctrlKey: Boolean; // On Windows or Linux, indicates whether the Ctrl key is active (true) or inactive (false).
-    private var _altKey: Boolean; // Indicates whether the Alt key is active (true) or inactive (false).
-    private var _shiftKey: Boolean; // Indicates whether the Shift key is active (true) or inactive (false).
-    private var _isRelatedObjectInaccessible: Boolean; // If true, the relatedObject property is set to null for reasons related to security sandboxes.
-    private var _stageX: Number; // [read-only] The horizontal coordinate at which the event occurred in global Stage coordinates.
-    private var _stageY: Number; // [read-only] The vertical coordinate at which the event occurred in global Stage coordinates.
+        public function TouchEvent(type: String, bubbles: Boolean = true, cancelable: Boolean = false, touchPointID: int = 0,
+                                   isPrimaryTouchPoint: Boolean = false, localX: Number = NaN, localY: Number = NaN,
+                                   sizeX: Number = NaN, sizeY: Number = NaN, pressure: Number = NaN,
+                                   relatedObject: InteractiveObject = null, ctrlKey: Boolean = false,
+                                   altKey: Boolean = false, shiftKey: Boolean = false) {
+            super(type, bubbles, cancelable);
+            this.touchPointID = touchPointID;
+            this.isPrimaryTouchPoint = isPrimaryTouchPoint;
+            this.localX = localX;
+            this.localY = localY;
+            this.sizeX = sizeX;
+            this.sizeY = sizeY;
+            this.pressure = pressure;
+            this.relatedObject = relatedObject;
+            this.ctrlKey = ctrlKey;
+            this.altKey = altKey;
+            this.shiftKey = shiftKey;
+        }
 
-    public function TouchEvent(type: String, bubbles: Boolean = true, cancelable: Boolean = false, touchPointID: int = 0,
-                               isPrimaryTouchPoint: Boolean = false, localX: Number = NaN, localY: Number = NaN,
-                               sizeX: Number = NaN, sizeY: Number = NaN, pressure: Number = NaN,
-                               relatedObject: InteractiveObject = null, ctrlKey: Boolean = false,
-                               altKey: Boolean = false, shiftKey: Boolean = false) {
-        super(type, bubbles, cancelable);
-        this.touchPointID = touchPointID;
-        this.isPrimaryTouchPoint = isPrimaryTouchPoint;
-        this.localX = localX;
-        this.localY = localY;
-        this.sizeX = sizeX;
-        this.sizeY = sizeY;
-        this.pressure = pressure;
-        this.relatedObject = relatedObject;
-        this.ctrlKey = ctrlKey;
-        this.altKey = altKey;
-        this.shiftKey = shiftKey;
-    }
+        // [override] Creates a copy of the TouchEvent object and sets the value of each property to match that of the original.
+        override public function clone(): Event {
+            return new TouchEvent(this.type, this.bubbles, this.cancelable, this.touchPointID, this.isPrimaryTouchPoint,
+                this.localX, this.localY, this.sizeX, this.sizeY, this.pressure, this.relatedObject, this.ctrlKey,
+                this.altKey, this.shiftKey);
+        }
 
-    // [override] Creates a copy of the TouchEvent object and sets the value of each property to match that of the original.
-    override public function clone(): Event {
-        return new TouchEvent(this.type, this.bubbles, this.cancelable, this.touchPointID, this.isPrimaryTouchPoint,
-            this.localX, this.localY, this.sizeX, this.sizeY, this.pressure, this.relatedObject, this.ctrlKey,
-            this.altKey, this.shiftKey);
-    }
+        // Updates the specified ByteArray object with the high-frequency data points for a multi-point touch event.
+        [API("675")]
+        public function getSamples(buffer: ByteArray, append: Boolean = false): uint {
+            stub_method("flash.events.TouchEvent", "getSamples");
+            return 0;
+        }
 
-    // Updates the specified ByteArray object with the high-frequency data points for a multi-point touch event.
-    [API("675")]
-    public function getSamples(buffer: ByteArray, append: Boolean = false): uint {
-        stub_method("flash.events.TouchEvent", "getSamples");
-        return 0;
-    }
+        // Reports that the hardware button at the specified index is pressed.
+        [API("675")]
+        public function isToolButtonDown(index: int): Boolean {
+            stub_method("flash.events.TouchEvent", "isToolButtonDown");
+            return false;
+        }
 
-    // Reports that the hardware button at the specified index is pressed.
-    [API("675")]
-    public function isToolButtonDown(index: int): Boolean {
-        stub_method("flash.events.TouchEvent", "isToolButtonDown");
-        return false;
-    }
+        // [override] Returns a string that contains all the properties of the TouchEvent object.
+        override public function toString(): String {
+            return this.formatToString("TouchEvent", "type", "bubbles", "cancelable", "eventPhase", "touchPointID",
+                "isPrimaryTouchPoint", "localX", "localY", "stageX", "stageY", "sizeX", "sizeY", "pressure", "relatedObject",
+                "ctrlKey", "altKey", "shiftKey");
+        }
 
-    // [override] Returns a string that contains all the properties of the TouchEvent object.
-    override public function toString(): String {
-        return this.formatToString("TouchEvent", "type", "bubbles", "cancelable", "eventPhase", "touchPointID",
-            "isPrimaryTouchPoint", "localX", "localY", "stageX", "stageY", "sizeX", "sizeY", "pressure", "relatedObject",
-            "ctrlKey", "altKey", "shiftKey");
-    }
+        // Instructs Flash Player or Adobe AIR to render after processing of this event completes, if the display list has been modified.
+        public native function updateAfterEvent(): void;
 
-    // Instructs Flash Player or Adobe AIR to render after processing of this event completes, if the display list has been modified.
-    public native function updateAfterEvent(): void;
+        public function get touchPointID():int {
+            return this._touchPointID;
+        }
+        public function set touchPointID(value:int):void {
+            this._touchPointID = value;
+        }
 
-    public function get touchPointID():int {
-        return this._touchPointID;
-    }
-    public function set touchPointID(value:int):void {
-        this._touchPointID = value;
-    }
+        public function get isPrimaryTouchPoint():Boolean {
+            return this._isPrimaryTouchPoint;
+        }
+        public function set isPrimaryTouchPoint(value:Boolean):void {
+            this._isPrimaryTouchPoint = value;
+        }
 
-    public function get isPrimaryTouchPoint():Boolean {
-        return this._isPrimaryTouchPoint;
-    }
-    public function set isPrimaryTouchPoint(value:Boolean):void {
-        this._isPrimaryTouchPoint = value;
-    }
+        public function get localX():Number {
+            return this._localX;
+        }
+        public function set localX(value:Number):void {
+            this._localX = value;
+        }
 
-    public function get localX():Number {
-        return this._localX;
-    }
-    public function set localX(value:Number):void {
-        this._localX = value;
-    }
+        public function get localY():Number {
+            return this._localY;
+        }
+        public function set localY(value:Number):void {
+            this._localY = value;
+        }
 
-    public function get localY():Number {
-        return this._localY;
-    }
-    public function set localY(value:Number):void {
-        this._localY = value;
-    }
+        public function get sizeX():Number {
+            return this._sizeX;
+        }
+        public function set sizeX(value:Number):void {
+            this._sizeX = value;
+        }
 
-    public function get sizeX():Number {
-        return this._sizeX;
-    }
-    public function set sizeX(value:Number):void {
-        this._sizeX = value;
-    }
+        public function get sizeY():Number {
+            return this._sizeY;
+        }
+        public function set sizeY(value:Number):void {
+            this._sizeY = value;
+        }
 
-    public function get sizeY():Number {
-        return this._sizeY;
-    }
-    public function set sizeY(value:Number):void {
-        this._sizeY = value;
-    }
+        public function get pressure():Number {
+            return this._pressure;
+        }
+        public function set pressure(value:Number):void {
+            this._pressure = value;
+        }
 
-    public function get pressure():Number {
-        return this._pressure;
-    }
-    public function set pressure(value:Number):void {
-        this._pressure = value;
-    }
+        public function get relatedObject():InteractiveObject {
+            return this._relatedObject;
+        }
+        public function set relatedObject(value:InteractiveObject):void {
+            this._relatedObject = value;
+        }
 
-    public function get relatedObject():InteractiveObject {
-        return this._relatedObject;
-    }
-    public function set relatedObject(value:InteractiveObject):void {
-        this._relatedObject = value;
-    }
+        public function get ctrlKey():Boolean {
+            return this._ctrlKey;
+        }
+        public function set ctrlKey(value:Boolean):void {
+            this._ctrlKey = value;
+        }
 
-    public function get ctrlKey():Boolean {
-        return this._ctrlKey;
-    }
-    public function set ctrlKey(value:Boolean):void {
-        this._ctrlKey = value;
-    }
+        public function get altKey():Boolean {
+            return this._altKey;
+        }
+        public function set altKey(value:Boolean):void {
+            this._altKey = value;
+        }
 
-    public function get altKey():Boolean {
-        return this._altKey;
-    }
-    public function set altKey(value:Boolean):void {
-        this._altKey = value;
-    }
+        public function get shiftKey():Boolean {
+            return this._shiftKey;
+        }
+        public function set shiftKey(value:Boolean):void {
+            this._shiftKey = value;
+        }
 
-    public function get shiftKey():Boolean {
-        return this._shiftKey;
-    }
-    public function set shiftKey(value:Boolean):void {
-        this._shiftKey = value;
-    }
+        public function get isRelatedObjectInaccessible():Boolean {
+            return this._isRelatedObjectInaccessible;
+        }
+        public function set isRelatedObjectInaccessible(value:Boolean):void {
+            this._isRelatedObjectInaccessible = value;
+        }
 
-    public function get isRelatedObjectInaccessible():Boolean {
-        return this._isRelatedObjectInaccessible;
+        public function get stageX(): Number {
+            return this._stageX;
+        }
+        public function get stageY(): Number {
+            return this._stageY;
+        }
     }
-    public function set isRelatedObjectInaccessible(value:Boolean):void {
-        this._isRelatedObjectInaccessible = value;
-    }
-
-    public function get stageX(): Number {
-        return this._stageX;
-    }
-    public function get stageY(): Number {
-        return this._stageY;
-    }
-}
 }
