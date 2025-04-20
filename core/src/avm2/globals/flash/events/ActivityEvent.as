@@ -3,12 +3,19 @@ package flash.events {
 
 		public static const ACTIVITY:String = "activity";
 
-		public var activating:Boolean;
+		private var _activating:Boolean;
 
 		public function ActivityEvent(type:String, bubbles:Boolean = false, cancelable:Boolean = false, activating:Boolean = false) {
 			super(type, bubbles, cancelable);
 			this.activating = activating;
 		}
+
+        public function get activating():Boolean {
+            return this._activating;
+        }
+        public function set activating(value:Boolean):void {
+            this._activating = value;
+        }
 
 		override public function clone() : Event {
 			return new ActivityEvent(this.type, this.bubbles, this.cancelable, this.activating);
