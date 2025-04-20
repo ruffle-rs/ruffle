@@ -65,16 +65,16 @@ pub fn make_context_menu_state<'gc>(
                     if let Some(Value::Object(item)) = item {
                         if item.is_of_type(context_menu_item_class) {
                             let caption =
-                                if let Value::String(s) = item.get_slot(item_slots::CAPTION) {
+                                if let Value::String(s) = item.get_slot(item_slots::_CAPTION) {
                                     s
                                 } else {
                                     continue;
                                 };
 
                             let enabled = check_bool!(item, native_item_slots::_ENABLED, true);
-                            let visible = check_bool!(item, item_slots::VISIBLE, true);
+                            let visible = check_bool!(item, item_slots::_VISIBLE, true);
                             let separator_before =
-                                check_bool!(item, item_slots::SEPARATOR_BEFORE, true);
+                                check_bool!(item, item_slots::_SEPARATOR_BEFORE, true);
 
                             if !visible {
                                 continue;
