@@ -31,25 +31,22 @@ package flash.events
         [API("678")]
         public static const CONTEXT_MENU:String = "contextMenu";
 
-        public var relatedObject: InteractiveObject;
-
-        [Ruffle(NativeAccessible)]
-        public var localX: Number;
-
-        [Ruffle(NativeAccessible)]
-        public var localY: Number;
-
-        public var ctrlKey: Boolean;
-        public var altKey: Boolean;
-        public var shiftKey: Boolean;
-        public var buttonDown: Boolean;
-        public var delta: int;
         private var _isRelatedObjectInaccessible: Boolean;
+        private var _relatedObject: InteractiveObject;
 
-        [API("678")]
-        public var movementX: Number;
-        [API("678")]
-        public var movementY: Number;
+        [Ruffle(NativeAccessible)]
+        private var _localX: Number;
+
+        [Ruffle(NativeAccessible)]
+        private var _localY: Number;
+
+        private var _delta: int;
+        private var _buttonDown: Boolean;
+        private var _altKey: Boolean;
+        private var _ctrlKey: Boolean;
+        private var _shiftKey: Boolean;
+        private var _movementX: Number;
+        private var _movementY: Number;
 
         public function MouseEvent(type:String, 
                                    bubbles:Boolean = true, 
@@ -89,11 +86,95 @@ package flash.events
         }
 
         public function get isRelatedObjectInaccessible():Boolean {
-            return _isRelatedObjectInaccessible;
+            return this._isRelatedObjectInaccessible;
         }
 
         public function set isRelatedObjectInaccessible(value:Boolean):void {
-            _isRelatedObjectInaccessible = value;
+            this._isRelatedObjectInaccessible = value;
+        }
+
+        public function get relatedObject():InteractiveObject {
+            return this._relatedObject;
+        }
+
+        public function set relatedObject(value:InteractiveObject):void {
+            this._relatedObject = value;
+        }
+
+        public function get localX():Number {
+            return this._localX;
+        }
+
+        public function set localX(value:Number):void {
+            this._localX = value;
+        }
+
+        public function get localY():Number {
+            return this._localY;
+        }
+
+        public function set localY(value:Number):void {
+            this._localY = value;
+        }
+
+        public function get delta():int {
+            return this._delta;
+        }
+
+        public function set delta(value:int):void {
+            this._delta = value;
+        }
+
+        public function get buttonDown():Boolean {
+            return this._buttonDown;
+        }
+
+        public function set buttonDown(value:Boolean):void {
+            this._buttonDown = value;
+        }
+
+        public function get altKey():Boolean {
+            return this._altKey;
+        }
+
+        public function set altKey(value:Boolean):void {
+            this._altKey = value;
+        }
+
+        public function get ctrlKey():Boolean {
+            return this._ctrlKey;
+        }
+
+        public function set ctrlKey(value:Boolean):void {
+            this._ctrlKey = value;
+        }
+
+        public function get shiftKey():Boolean {
+            return this._shiftKey;
+        }
+
+        public function set shiftKey(value:Boolean):void {
+            this._shiftKey = value;
+        }
+
+        [API("678")]
+        public function get movementX():Number {
+            return this._movementX;
+        }
+
+        [API("678")]
+        public function set movementX(value:Number):void {
+            this._movementX = value;
+        }
+
+        [API("678")]
+        public function get movementY():Number {
+            return this._movementY;
+        }
+
+        [API("678")]
+        public function set movementY(value:Number):void {
+            this._movementY = value;
         }
 
         public native function updateAfterEvent():void;
