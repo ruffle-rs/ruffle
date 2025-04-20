@@ -201,6 +201,7 @@ pub fn exec<'gc>(
             }
 
             let signature = &*method.resolved_param_config();
+            let return_type = method.resolved_return_type();
 
             // Check for too many arguments
             if arguments.len() > signature.len() && !method.is_variadic() && !method.is_unchecked()
@@ -231,7 +232,15 @@ pub fn exec<'gc>(
                 .context
                 .avm2
                 .push_call(activation.gc(), method, bound_class);
-            native_method(&mut activation, receiver, &arguments)
+
+            let result = native_method(&mut activation, receiver, &arguments);
+            result.and_then(|v| {
+                if let Some(return_type) = return_type {
+                    v.coerce_to_type(&mut activation, return_type)
+                } else {
+                    Ok(v)
+                }
+            })
         }
         MethodKind::Bytecode(_) => {
             // This used to be a one step called Activation::from_method,
