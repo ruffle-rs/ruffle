@@ -1749,6 +1749,9 @@ impl<'gc> Loader<'gc> {
                     .map_err(|e| e.error)
                     .and_then(|(body, _, _, _)| {
                         let handle = uc.audio.register_mp3(&body)?;
+                        let total_len = body.len();
+                        sound.set_bytes_loaded(Some(total_len as u32));
+                        sound.set_bytes_total(Some(total_len as u32));
                         sound.set_sound(Some(handle));
                         let duration = uc
                             .audio
