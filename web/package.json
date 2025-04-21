@@ -24,7 +24,7 @@
         "eslint-config-prettier": "^10.1.2",
         "eslint-plugin-jsdoc": "^50.6.9",
         "eslint-plugin-prettier": "^5.2.6",
-        "eslint-plugin-react-hooks": "^5.2.0",
+        "eslint-plugin-react-hooks": "^6.0.0",
         "eslint-plugin-react-refresh": "^0.4.19",
         "globals": "^16.0.0",
         "mocha": "^11.1.0",
