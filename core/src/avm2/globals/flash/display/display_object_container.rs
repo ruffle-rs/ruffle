@@ -443,8 +443,6 @@ pub fn set_child_index<'gc>(
 
         validate_add_operation(activation, parent, child, target_index)?;
         add_child_to_displaylist(activation.context, parent, child, target_index);
-
-        return Ok(child.object2());
     }
 
     Ok(Value::Undefined)
