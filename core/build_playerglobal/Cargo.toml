@@ -12,7 +12,7 @@ workspace = true
 
 [dependencies]
 convert_case = "0.8.0"
-proc-macro2 = "1.0.94"
+proc-macro2 = "1.0.95"
 quote = "1.0.40"
 swf = { path = "../../swf" }
 clap = { workspace = true }
