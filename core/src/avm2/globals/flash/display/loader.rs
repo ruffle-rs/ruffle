@@ -209,7 +209,7 @@ pub fn request_from_url_request<'gc>(
     };
 
     // Undocumented behaviour:
-    // When no payload is null, flash will ignore the method and does a GET request instead.
+    // When payload is null, flash will ignore the method and do a GET request instead.
     // This is still an issue even on Flash 35.
     if body.is_none() {
         method = NavigationMethod::Get;
