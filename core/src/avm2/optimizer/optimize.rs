@@ -6,7 +6,7 @@ use crate::avm2::optimizer::blocks::assemble_blocks;
 use crate::avm2::optimizer::peephole;
 use crate::avm2::property::Property;
 use crate::avm2::verify::Exception;
-use crate::avm2::vtable::VTable;
+use crate::avm2::vtable::{ClassBoundMethod, VTable};
 use crate::avm2::{Activation, Class, Error};
 
 use gc_arena::Gc;
@@ -1413,6 +1413,23 @@ fn abstract_interpret_ops<'gc>(
                                     index: disp_id,
                                     push_return_value: true,
                                 });
+
+                                stack_push_done = true;
+
+                                let full_method = vtable
+                                    .get_full_method(disp_id)
+                                    .expect("Method should exist");
+                                let ClassBoundMethod { method, .. } = full_method;
+                                if !method.is_info_resolved() {
+                                    method.resolve_info(activation)?;
+                                }
+
+                                let return_type = method.resolved_return_type();
+                                if let Some(return_type) = return_type {
+                                    stack.push_class(activation, return_type)?;
+                                } else {
+                                    stack.push_any(activation)?;
+                                }
                             }
                             _ => {}
                         }
@@ -1640,6 +1657,23 @@ fn abstract_interpret_ops<'gc>(
                                     index: disp_id,
                                     push_return_value: true,
                                 });
+
+                                stack_push_done = true;
+
+                                let full_method = vtable
+                                    .get_full_method(disp_id)
+                                    .expect("Method should exist");
+                                let ClassBoundMethod { method, .. } = full_method;
+                                if !method.is_info_resolved() {
+                                    method.resolve_info(activation)?;
+                                }
+
+                                let return_type = method.resolved_return_type();
+                                if let Some(return_type) = return_type {
+                                    stack.push_class(activation, return_type)?;
+                                } else {
+                                    stack.push_any(activation)?;
+                                }
                             }
                             Some(Property::Slot { slot_id })
                             | Some(Property::ConstSlot { slot_id }) => {
