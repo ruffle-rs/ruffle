@@ -163,12 +163,6 @@ pub struct ClassData<'gc> {
     /// Only applicable if this class is generic.
     applications: FnvHashMap<Option<Class<'gc>>, Class<'gc>>,
 
-    /// Whether or not this is a system-defined class.
-    ///
-    /// System defined classes are allowed to have illegal trait configurations
-    /// without throwing a VerifyError.
-    is_system: bool,
-
     /// The Class this Class is linked to. If this class represents instance info,
     /// this will be a ClassLink::LinkToClass. If this class represents class info,
     /// this will be a ClassLink::LinkToInstance. This must be one of the two,
@@ -241,7 +235,6 @@ impl<'gc> Class<'gc> {
                 call_handler: None,
                 custom_constructor: None,
                 traits_loaded: false,
-                is_system: true,
                 linked_class: ClassLink::Unlinked,
                 applications: FnvHashMap::default(),
                 class_objects: Vec::new(),
@@ -271,7 +264,6 @@ impl<'gc> Class<'gc> {
                 call_handler: None,
                 custom_constructor: None,
                 traits_loaded: false,
-                is_system: true,
                 linked_class: ClassLink::LinkToInstance(i_class),
                 applications: FnvHashMap::default(),
                 class_objects: Vec::new(),
@@ -307,7 +299,6 @@ impl<'gc> Class<'gc> {
                 call_handler: None,
                 custom_constructor: None,
                 traits_loaded: true,
-                is_system: true,
                 linked_class: ClassLink::Unlinked,
                 applications: FnvHashMap::default(),
                 class_objects: Vec::new(),
@@ -547,7 +538,6 @@ impl<'gc> Class<'gc> {
                 call_handler,
                 custom_constructor: custom_constructor.map(CustomConstructor),
                 traits_loaded: false,
-                is_system: false,
                 linked_class: ClassLink::Unlinked,
                 applications: Default::default(),
                 class_objects: Vec::new(),
@@ -611,7 +601,6 @@ impl<'gc> Class<'gc> {
                 call_handler: None,
                 custom_constructor: None,
                 traits_loaded: false,
-                is_system: false,
                 linked_class: ClassLink::Unlinked,
                 applications: FnvHashMap::default(),
                 class_objects: Vec::new(),
@@ -707,13 +696,12 @@ impl<'gc> Class<'gc> {
     /// This should be called at class creation time once the superclass name
     /// has been resolved. It will return Ok for a valid class, and a
     /// VerifyError for any invalid class.
-    pub fn validate_class(self, activation: &mut Activation<'_, 'gc>) -> Result<(), Error<'gc>> {
+    pub fn validate_class(
+        self,
+        activation: &mut Activation<'_, 'gc>,
+        allow_class_trait: bool,
+    ) -> Result<(), Error<'gc>> {
         let read = self.0.read();
-
-        // System classes do not throw verify errors.
-        if read.is_system {
-            return Ok(());
-        }
 
         let superclass = read.super_class;
 
@@ -777,12 +765,14 @@ impl<'gc> Class<'gc> {
                                     // overriding trait isn't marked as override.
                                 }
                                 (_, TraitKind::Class { .. }) => {
-                                    // Class traits aren't allowed in a class (except `global` classes)
-                                    return Err(Error::AvmError(verify_error(
-                                        activation,
-                                        "Error #1059: ClassInfo is referenced before definition.",
-                                        1059,
-                                    )?));
+                                    if !allow_class_trait {
+                                        // Class traits aren't allowed in a class (except `global` classes)
+                                        return Err(Error::AvmError(verify_error(
+                                            activation,
+                                            "Error #1059: ClassInfo is referenced before definition.",
+                                            1059,
+                                        )?));
+                                    }
                                 }
                                 (TraitKind::Getter { .. }, TraitKind::Getter { .. })
                                 | (TraitKind::Setter { .. }, TraitKind::Setter { .. })
@@ -810,14 +800,14 @@ impl<'gc> Class<'gc> {
                                 (_, TraitKind::Getter { .. })
                                 | (_, TraitKind::Setter { .. })
                                 | (_, TraitKind::Method { .. }) => {
-                                    // FIXME: Getters, setters, and methods cannot override
-                                    // any other traits in FP. However, currently our
-                                    // playerglobals don't match FP closely enough;
-                                    // without explicitly allowing this, many SWFs VerifyError
-                                    // attempting to declare an overridden getter on what
-                                    // should be a getter in the subclass but which we
-                                    // declare as a field (such as MouseEvent.delta).
-                                    did_override = true;
+                                    // Getters, setters, and methods cannot override
+                                    // any other traits of a different type (except
+                                    // slots, the logic for which is handled above)
+                                    return Err(make_error_1053(
+                                        activation,
+                                        instance_trait.name().local_name(),
+                                        read.name.to_qualified_name_err_message(activation.gc()),
+                                    ));
                                 }
                             }
 
@@ -965,7 +955,6 @@ impl<'gc> Class<'gc> {
                 call_handler: None,
                 custom_constructor: None,
                 traits_loaded: true,
-                is_system: false,
                 linked_class: ClassLink::Unlinked,
                 applications: Default::default(),
                 class_objects: Vec::new(),
@@ -1004,7 +993,6 @@ impl<'gc> Class<'gc> {
                 call_handler: None,
                 custom_constructor: None,
                 traits_loaded: true,
-                is_system: false,
                 linked_class: ClassLink::Unlinked,
                 applications: Default::default(),
                 class_objects: Vec::new(),

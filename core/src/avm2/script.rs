@@ -221,8 +221,8 @@ impl<'gc> TranslationUnit<'gc> {
             .c_class()
             .expect("Class::from_abc_index returns an i_class");
 
-        class.validate_class(activation)?;
-        c_class.validate_class(activation)?;
+        class.validate_class(activation, false)?;
+        c_class.validate_class(activation, false)?;
 
         class.init_vtable(activation.context)?;
         c_class.init_vtable(activation.context)?;
@@ -479,7 +479,7 @@ impl<'gc> Script<'gc> {
         // Now that we have the traits, create the global class for this script
         // and use it to initialize a vtable and global object.
 
-        let global_class = global_scope::create_class(activation, traits);
+        let global_class = global_scope::create_class(activation, traits)?;
 
         let scope = ScopeChain::new(domain);
         let object_class = activation.avm2().classes().object;

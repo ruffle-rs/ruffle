@@ -6,6 +6,7 @@
 
 use crate::avm2::activation::Activation;
 use crate::avm2::class::{Class, ClassAttributes};
+use crate::avm2::error::Error;
 use crate::avm2::traits::Trait;
 use crate::avm2::QName;
 use ruffle_macros::istr;
@@ -14,7 +15,7 @@ use ruffle_macros::istr;
 pub fn create_class<'gc>(
     activation: &mut Activation<'_, 'gc>,
     traits: Vec<Trait<'gc>>,
-) -> Class<'gc> {
+) -> Result<Class<'gc>, Error<'gc>> {
     let mc = activation.gc();
     let class = Class::custom_new(
         QName::new(activation.avm2().namespaces.public_all(), istr!("global")),
@@ -25,9 +26,10 @@ pub fn create_class<'gc>(
 
     class.set_attributes(mc, ClassAttributes::FINAL);
 
+    class.validate_class(activation, true)?;
     class
         .init_vtable(activation.context)
         .expect("Native class's vtable should initialize");
 
-    class
+    Ok(class)
 }
