@@ -27,6 +27,7 @@ pub fn create_class<'gc>(
     class.set_attributes(mc, ClassAttributes::FINAL);
 
     class.validate_class(activation, true)?;
+    class.validate_signatures(activation)?;
     class
         .init_vtable(activation.context)
         .expect("Native class's vtable should initialize");

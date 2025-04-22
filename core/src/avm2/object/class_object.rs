@@ -298,19 +298,21 @@ impl<'gc> ClassObject<'gc> {
         self.base().set_proto(gc_context, proto);
     }
 
-    /// Run the class's initializer method.
+    /// Validate signatures of the class and run the class's initializer method.
     pub fn run_class_initializer(
         self,
         activation: &mut Activation<'_, 'gc>,
     ) -> Result<(), Error<'gc>> {
+        let class = self.inner_class_definition();
+        let c_class = class.c_class().expect("ClassObject stores an i_class");
+
+        class.validate_signatures(activation)?;
+        c_class.validate_signatures(activation)?;
+
         let self_value: Value<'gc> = self.into();
         let class_classobject = activation.avm2().classes().class;
 
         let scope = self.0.class_scope;
-        let c_class = self
-            .inner_class_definition()
-            .c_class()
-            .expect("ClassObject stores an i_class");
 
         let Some(class_initializer) = c_class.instance_init() else {
             unreachable!("c_classes should always have initializer methods")
