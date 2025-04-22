@@ -205,16 +205,14 @@ pub fn request_from_url_request<'gc>(
                     content_type,
                 ))
             }
-		}
+        }
     };
 
     // Undocumented behaviour:
     // When no payload is null, flash will ignore the method and does a GET request instead.
     // This is still an issue even on Flash 35.
-	println!("BODY: {body:?}");
-	
     if body.is_none() {
-		method = NavigationMethod::Get;
+        method = NavigationMethod::Get;
     }
 
     let mut request = Request::request(method, url.to_string(), body);
