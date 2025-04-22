@@ -838,6 +838,98 @@ impl<'gc> Class<'gc> {
         Ok(())
     }
 
+    /// Like validate_class, but instead validates the method signatures of
+    /// all methods, getters, and setters in the class. This should be called
+    /// at ClassObject construction time, after all classes are loaded.
+    pub fn validate_signatures(
+        self,
+        activation: &mut Activation<'_, 'gc>,
+    ) -> Result<(), Error<'gc>> {
+        let read = self.0.read();
+
+        let superclass = read.super_class;
+
+        if let Some(superclass) = superclass {
+            for instance_trait in read.traits.iter() {
+                let is_protected = read.protected_namespace.is_some_and(|prot| {
+                    prot.exact_version_match(instance_trait.name().namespace())
+                });
+
+                let mut current_superclass = Some(superclass);
+                let mut found_match = false;
+
+                while let Some(superclass) = current_superclass {
+                    for supertrait in &*superclass.traits() {
+                        let super_name = supertrait.name();
+                        let my_name = instance_trait.name();
+
+                        let names_match = super_name.local_name() == my_name.local_name()
+                            && (super_name.namespace().matches_ns(my_name.namespace())
+                                || (is_protected
+                                    && superclass.protected_namespace().is_some_and(|prot| {
+                                        prot.exact_version_match(super_name.namespace())
+                                    })));
+                        if names_match {
+                            match (supertrait.kind(), instance_trait.kind()) {
+                                (TraitKind::Getter { .. }, TraitKind::Setter { .. }) => continue,
+                                (TraitKind::Setter { .. }, TraitKind::Getter { .. }) => continue,
+
+                                (_, TraitKind::Const { .. })
+                                | (_, TraitKind::Slot { .. })
+                                | (_, TraitKind::Class { .. }) => {
+                                    found_match = true;
+                                }
+                                (TraitKind::Getter { .. }, TraitKind::Getter { .. })
+                                | (TraitKind::Setter { .. }, TraitKind::Setter { .. })
+                                | (TraitKind::Method { .. }, TraitKind::Method { .. }) => {
+                                    found_match = true;
+
+                                    let instance_method = instance_trait.as_method().unwrap();
+                                    if !instance_method.is_info_resolved() {
+                                        instance_method.resolve_info(activation)?;
+                                    }
+
+                                    let super_method = supertrait.as_method().unwrap();
+                                    if !super_method.is_info_resolved() {
+                                        super_method.resolve_info(activation)?;
+                                    }
+
+                                    // Methods must have same return type
+                                    let instance_return_type =
+                                        instance_method.resolved_return_type();
+                                    let super_return_type = super_method.resolved_return_type();
+
+                                    if instance_return_type != super_return_type {
+                                        return Err(make_error_1053(
+                                            activation,
+                                            instance_trait.name().local_name(),
+                                            read.name.to_qualified_name_err_message(
+                                                activation.context.gc_context,
+                                            ),
+                                        ));
+                                    }
+                                }
+                                _ => unreachable!("Other trait combinations are invalid"),
+                            }
+
+                            break;
+                        }
+                    }
+
+                    // The signature is already validated so we don't need to
+                    // check further.
+                    if found_match {
+                        break;
+                    }
+
+                    current_superclass = superclass.super_class();
+                }
+            }
+        }
+
+        Ok(())
+    }
+
     pub fn init_vtable(self, context: &mut UpdateContext<'gc>) -> Result<(), Error<'gc>> {
         let read = self.0.read();
 
