@@ -193,17 +193,21 @@ pub fn request_from_url_request<'gc>(
                 .get_slot(url_request_slots::_CONTENT_TYPE)
                 .coerce_to_string(activation)?
                 .to_string();
-            if let Some(ba) = data.as_object().and_then(|o| o.as_bytearray_object()) {
+
+            let payload = if let Some(ba) = data.as_object().and_then(|o| o.as_bytearray_object()) {
                 // Note that this does *not* respect or modify the position.
-                Some((ba.storage().bytes().to_vec(), content_type))
+                ba.storage().bytes().to_vec()
             } else {
-                Some((
-                    data.coerce_to_string(activation)?
-                        .to_utf8_lossy()
-                        .as_bytes()
-                        .to_vec(),
-                    content_type,
-                ))
+                data.coerce_to_string(activation)?
+                    .to_utf8_lossy()
+                    .as_bytes()
+                    .to_vec()
+            };
+
+            if payload.is_empty() {
+                None
+            } else {
+                Some((payload, content_type))
             }
         }
     };
