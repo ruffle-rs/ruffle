@@ -1,12 +1,9 @@
 //! `EditText` display object and support code.
 
-use crate::avm1::Avm1;
-use crate::avm1::ExecutionReason;
-use crate::avm1::NativeObject as Avm1NativeObject;
-use crate::avm1::{Activation as Avm1Activation, ActivationIdentifier};
 use crate::avm1::{
-    Object as Avm1Object, StageObject as Avm1StageObject, TObject as Avm1TObject,
-    Value as Avm1Value,
+    Activation as Avm1Activation, ActivationIdentifier, Avm1, ExecutionReason,
+    NativeObject as Avm1NativeObject, Object as Avm1Object, ScriptObject as Avm1ScriptObject,
+    TObject as Avm1TObject, Value as Avm1Value,
 };
 use crate::avm2::object::{
     ClassObject as Avm2ClassObject, EventObject as Avm2EventObject, Object as Avm2Object,
@@ -18,7 +15,7 @@ use crate::context::{RenderContext, UpdateContext};
 use crate::display_object::interactive::{
     InteractiveObject, InteractiveObjectBase, TInteractiveObject,
 };
-use crate::display_object::{DisplayObjectBase, DisplayObjectPtr};
+use crate::display_object::{Avm1TextFieldBinding, DisplayObjectBase, DisplayObjectPtr};
 use crate::events::{
     ClipEvent, ClipEventResult, ImeCursorArea, ImeEvent, ImeNotification, ImePurpose,
     PlayerNotification, TextControlCode,
@@ -131,10 +128,13 @@ pub struct EditTextData<'gc> {
     object: Option<AvmObject<'gc>>,
 
     /// The variable path that this text field is bound to (AVM1 only).
-    variable: Option<String>,
+    variable: Option<AvmString<'gc>>,
 
-    /// The display object that the variable binding is bound to.
-    bound_stage_object: Option<Avm1StageObject<'gc>>,
+    /// The (AVM1) display object that the variable binding is bound to.
+    bound_display_object: Option<DisplayObject<'gc>>,
+
+    /// Other AVM1 text fields bound to *this* text field.
+    avm1_text_field_bindings: Vec<Avm1TextFieldBinding<'gc>>,
 
     /// The AVM2 class of this button. If None, it is flash.text.TextField.
     class: Option<Avm2ClassObject<'gc>>,
@@ -318,7 +318,7 @@ impl<'gc> EditText<'gc> {
         );
 
         let variable = if !swf_tag.variable_name().is_empty() {
-            Some(swf_tag.variable_name())
+            Some(swf_tag.variable_name().decode(encoding))
         } else {
             None
         };
@@ -362,8 +362,8 @@ impl<'gc> EditText<'gc> {
                 bounds: Cell::new(*swf_tag.bounds()),
                 autosize_lazy_bounds: Cell::new(None),
                 autosize,
-                variable: variable.map(|s| s.to_string_lossy(encoding)),
-                bound_stage_object: None,
+                variable: variable.map(|s| context.strings.intern_wstr(s).into()),
+                bound_display_object: None,
                 class: None,
                 selection,
                 render_settings: Default::default(),
@@ -378,6 +378,7 @@ impl<'gc> EditText<'gc> {
                 style_sheet: EditTextStyleSheet::None,
                 original_html_text: None,
                 ime_data: None,
+                avm1_text_field_bindings: Vec::new(),
             },
         ));
 
@@ -861,19 +862,18 @@ impl<'gc> EditText<'gc> {
     }
 
     /// Returns the variable that this text field is bound to.
-    pub fn variable(&self) -> Option<Ref<str>> {
-        let text = self.0.read();
-        if text.variable.is_some() {
-            Some(Ref::map(text, |text| text.variable.as_deref().unwrap()))
-        } else {
-            None
-        }
+    pub fn variable(&self) -> Option<AvmString<'gc>> {
+        self.0.read().variable
     }
 
-    pub fn set_variable(self, variable: Option<String>, activation: &mut Avm1Activation<'_, 'gc>) {
+    pub fn set_variable(
+        self,
+        variable: Option<AvmString<'gc>>,
+        activation: &mut Avm1Activation<'_, 'gc>,
+    ) {
         // Clear previous binding.
-        if let Some(stage_object) = self.0.write(activation.gc()).bound_stage_object.take() {
-            stage_object.clear_text_field_binding(activation.gc(), self);
+        if let Some(dobj) = self.0.write(activation.gc()).bound_display_object.take() {
+            Avm1TextFieldBinding::clear_binding(dobj, self, activation.gc());
         } else {
             activation
                 .context
@@ -1377,18 +1377,13 @@ impl<'gc> EditText<'gc> {
         activation: &mut Avm1Activation<'_, 'gc>,
         set_initial_value: bool,
     ) -> bool {
-        let Some(var_path) = self.variable() else {
+        let Some(variable_path) = self.variable() else {
             // No variable for this text field; success by default
             return true;
         };
 
         // Any previous binding should have been cleared.
-        debug_assert!(self.0.read().bound_stage_object.is_none());
-
-        // Avoid double-borrows by copying the string.
-        // TODO: Can we avoid this somehow? Maybe when we have a better string type.
-        let variable_path = WString::from_utf8(&var_path);
-        drop(var_path);
+        debug_assert!(self.0.read().bound_display_object.is_none());
 
         let Some(mut parent) = self.avm1_parent() else {
             return false;
@@ -1436,9 +1431,13 @@ impl<'gc> EditText<'gc> {
                         }
                     }
 
-                    if let Some(stage_object) = object.as_stage_object() {
-                        self.0.write(activation.gc()).bound_stage_object = Some(stage_object);
-                        stage_object.register_text_field_binding(activation.gc(), self, property);
+                    if let Some(dobj) = object.as_display_object() {
+                        self.0.write(activation.gc()).bound_display_object = Some(dobj);
+                        let binding = Avm1TextFieldBinding {
+                            text_field: self,
+                            variable_name: property,
+                        };
+                        binding.register_binding(dobj, activation.gc());
                         bound = true;
                     }
                 }
@@ -1450,8 +1449,8 @@ impl<'gc> EditText<'gc> {
     /// Unsets a bound display object from this text field.
     /// Does not change the unbound text field list.
     /// Caller is responsible for adding this text field to the unbound list, if necessary.
-    pub fn clear_bound_stage_object(self, context: &mut UpdateContext<'gc>) {
-        self.0.write(context.gc()).bound_stage_object = None;
+    pub fn clear_bound_display_object(self, context: &mut UpdateContext<'gc>) {
+        self.0.write(context.gc()).bound_display_object = None;
     }
 
     /// Propagates a text change to the bound display object.
@@ -1464,12 +1463,7 @@ impl<'gc> EditText<'gc> {
             .contains(EditTextFlag::FIRING_VARIABLE_BINDING)
         {
             self.0.write(activation.gc()).flags |= EditTextFlag::FIRING_VARIABLE_BINDING;
-            if let Some(variable) = self.variable() {
-                // Avoid double-borrows by copying the string.
-                // TODO: Can we avoid this somehow? Maybe when we have a better string type.
-                let variable_path = WString::from_utf8(&variable);
-                drop(variable);
-
+            if let Some(variable_path) = self.variable() {
                 if let Ok(Some((object, property))) =
                     activation.resolve_variable_path(self.avm1_parent().unwrap(), &variable_path)
                 {
@@ -2167,14 +2161,13 @@ impl<'gc> EditText<'gc> {
     fn construct_as_avm1_object(self, context: &mut UpdateContext<'gc>, run_frame: bool) {
         let mut text = self.0.write(context.gc());
         if text.object.is_none() {
-            let object: Avm1Object<'gc> = Avm1StageObject::for_display_object(
+            let object = Avm1ScriptObject::new_with_native(
                 &context.strings,
-                self.into(),
-                context.avm1.prototypes().text_field,
-            )
-            .into();
+                Some(context.avm1.prototypes().text_field),
+                Avm1NativeObject::EditText(self),
+            );
 
-            text.object = Some(object.into());
+            text.object = Some(Avm1Object::from(object).into());
         }
         drop(text);
 
@@ -2184,7 +2177,7 @@ impl<'gc> EditText<'gc> {
                 activation.context.unbound_text_fields.push(self);
             }
             // People can bind to properties of TextFields the same as other display objects.
-            self.bind_text_field_variables(activation);
+            Avm1TextFieldBinding::bind_variables(activation);
 
             self.initialize_as_broadcaster(activation);
         });
@@ -2814,16 +2807,13 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
         }
 
         // Unbind any display objects bound to this text.
-        if let Some(stage_object) = self.0.write(context.gc()).bound_stage_object.take() {
-            stage_object.clear_text_field_binding(context.gc(), *self);
+        if let Some(dobj) = self.0.write(context.gc()).bound_display_object.take() {
+            Avm1TextFieldBinding::clear_binding(dobj, *self, context.gc());
         }
 
         // Unregister any text fields that may be bound to *this* text field.
-        if let Avm1Value::Object(object) = self.object() {
-            if let Some(stage_object) = object.as_stage_object() {
-                stage_object.unregister_text_field_bindings(context);
-            }
-        }
+        Avm1TextFieldBinding::unregister_bindings((*self).into(), context);
+
         if self.variable().is_some() {
             context
                 .unbound_text_fields
@@ -2831,6 +2821,24 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
         }
 
         self.set_avm1_removed(context.gc(), true);
+    }
+
+    fn avm1_text_field_bindings(&self) -> Option<Ref<'_, [Avm1TextFieldBinding<'gc>]>> {
+        let read = self.0.read();
+        read.object
+            .and_then(|o| o.as_avm1_object())
+            .map(|_| Ref::map(read, |r| &*r.avm1_text_field_bindings))
+    }
+
+    fn avm1_text_field_bindings_mut(
+        &self,
+        mc: &Mutation<'gc>,
+    ) -> Option<RefMut<'_, Vec<Avm1TextFieldBinding<'gc>>>> {
+        let write = self.0.write(mc);
+        write
+            .object
+            .and_then(|o| o.as_avm1_object())
+            .map(|_| RefMut::map(write, |w| &mut w.avm1_text_field_bindings))
     }
 }
 

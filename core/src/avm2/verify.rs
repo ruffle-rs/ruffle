@@ -5,7 +5,7 @@ use crate::avm2::error::{
 };
 use crate::avm2::method::{BytecodeMethod, ParamConfig, ResolvedParamConfig};
 use crate::avm2::multiname::Multiname;
-use crate::avm2::op::Op;
+use crate::avm2::op::{LookupSwitch, Op};
 use crate::avm2::script::TranslationUnit;
 use crate::avm2::{Activation, Error, QName};
 use crate::string::{AvmAtom, AvmString};
@@ -14,8 +14,7 @@ use gc_arena::{Collect, Gc};
 use std::collections::{HashMap, HashSet};
 use swf::avm2::read::Reader;
 use swf::avm2::types::{
-    Class as AbcClass, Index, LookupSwitch, MethodFlags as AbcMethodFlags,
-    Multiname as AbcMultiname, Op as AbcOp,
+    Class as AbcClass, Index, MethodFlags as AbcMethodFlags, Multiname as AbcMultiname, Op as AbcOp,
 };
 use swf::error::Error as AbcReadError;
 
@@ -33,11 +32,11 @@ pub struct VerifiedMethodInfo<'gc> {
 #[derive(Collect)]
 #[collect(no_drop)]
 pub struct Exception<'gc> {
-    pub from_offset: u32,
-    pub to_offset: u32,
-    pub target_offset: u32,
+    pub from_offset: usize,
+    pub to_offset: usize,
+    pub target_offset: usize,
 
-    pub variable_name: Option<QName<'gc>>,
+    pub catch_class: Option<Class<'gc>>,
     pub target_class: Option<Class<'gc>>,
 }
 
@@ -92,6 +91,8 @@ pub fn verify_method<'gc>(
             1043,
         )?));
     }
+
+    let activation_class = create_activation_class(activation, method)?;
 
     let resolved_param_config = resolve_param_config(activation, method.signature())?;
     let resolved_return_type = resolve_return_type(activation, method.return_type)?;
@@ -263,8 +264,14 @@ pub fn verify_method<'gc>(
                 byte_info[(previous_position + j) as usize] = ByteInfo::OpContinue;
             }
 
-            let translated_ops =
-                translate_op(activation, method, max_locals, resolved_return_type, op)?;
+            let translated_ops = translate_op(
+                activation,
+                method,
+                max_locals,
+                activation_class,
+                resolved_return_type,
+                op,
+            )?;
 
             byte_info[previous_position as usize] = ByteInfo::OpStart(translated_ops.0);
             if let Some(second_op) = translated_ops.1 {
@@ -290,7 +297,7 @@ pub fn verify_method<'gc>(
     let mut verified_code = Vec::new();
     for (i, info) in byte_info.iter().enumerate() {
         if let Some(op) = info.get_op() {
-            byte_offset_to_idx.insert(i, verified_code.len() as i32);
+            byte_offset_to_idx.insert(i, verified_code.len());
             verified_code.push(op);
             idx_to_byte_offset.push(i);
         }
@@ -335,7 +342,7 @@ pub fn verify_method<'gc>(
             Some(resolved_type)
         };
 
-        let variable_name = if exception.variable_name.0 == 0 {
+        let catch_class = if exception.variable_name.0 == 0 {
             None
         } else {
             let pooled_variable_name = method
@@ -361,18 +368,20 @@ pub fn verify_method<'gc>(
             let name = pooled_variable_name.local_name().expect("Just checked");
 
             // avmplus uses the first namespace, regardless of how many namespaces there are.
-            Some(QName::new(namespaces[0], name))
+            let variable_name = QName::new(namespaces[0], name);
+
+            Some(Class::for_catch(activation, variable_name)?)
         };
 
         if !seen_exception_indices.contains(&exception_index) {
-            // We need to push an exception because otherwise `newcatch` ops can try to
-            // read it, but we can give it dummy from/to/target offsets because no code
+            // We need to push an exception because `newcatch` ops can try to read
+            // it, but we can give it dummy from/to/target offsets because no code
             // can actually trigger it (and we might not even have valid offsets anyway).
             new_exceptions.push(Exception {
                 from_offset: 0,
                 to_offset: 0,
                 target_offset: 0,
-                variable_name,
+                catch_class,
                 target_class,
             });
             continue;
@@ -415,8 +424,8 @@ pub fn verify_method<'gc>(
             }
         }
 
-        let new_from_offset = from_offset.unwrap() as u32;
-        let new_to_offset = to_offset.unwrap() as u32;
+        let new_from_offset = from_offset.unwrap();
+        let new_to_offset = to_offset.unwrap();
 
         if new_to_offset < new_from_offset {
             return Err(make_error_1054(activation));
@@ -446,24 +455,28 @@ pub fn verify_method<'gc>(
             return Err(make_error_1054(activation));
         }
 
-        if new_target_offset as usize >= verified_code.len() {
+        if new_target_offset >= verified_code.len() {
             return Err(make_error_1054(activation));
         }
 
         new_exceptions.push(Exception {
             from_offset: new_from_offset,
             to_offset: new_to_offset,
-            target_offset: new_target_offset as u32,
-            variable_name,
+            target_offset: new_target_offset,
+            catch_class,
             target_class,
         });
     }
 
-    let mut adjust_jump_to_idx = |i, offset, is_jump| -> Result<(i32, i32), Error<'gc>> {
+    // We have to deal with AbcOp storing branch offsets as i32 offsets, while Op
+    // stores them as usize absolute positions. When initially converting AbcOps
+    // to Ops, we convert the values without processing them at all. Now we
+    // convert them back, and get the correct absolute positions.
+    let mut adjust_jump_to_idx = |i, offset, is_jump| -> Result<usize, Error<'gc>> {
         const JUMP_INSTRUCTION_LENGTH: usize = 4;
 
         let mut byte_offset = idx_to_byte_offset
-            .get(i as usize)
+            .get(i)
             .copied()
             .ok_or_else(|| make_error_1021(activation))?; // This is still reachable with some weird bytecode, see the `verify_jump_to_middle_of_op` test
 
@@ -477,32 +490,30 @@ pub fn verify_method<'gc>(
             .copied()
             .ok_or_else(|| make_error_1021(activation))?; // See above comment
 
-        Ok((new_idx, new_idx - i - 1))
+        Ok(new_idx)
     };
 
     // Adjust jump offsets from byte-based to idx-based
     for (i, op) in verified_code.iter_mut().enumerate() {
-        let i = i as i32;
-
         match op {
             Op::IfFalse { offset } | Op::IfTrue { offset } | Op::Jump { offset } => {
-                let adjusted_result = adjust_jump_to_idx(i, *offset, true)?;
-                *offset = adjusted_result.1;
+                let adjusted_result = adjust_jump_to_idx(i, *offset as i32, true)?;
+                *offset = adjusted_result;
 
-                jump_targets.insert(adjusted_result.0);
+                jump_targets.insert(adjusted_result);
             }
             Op::LookupSwitch(lookup_switch) => {
-                let adjusted_default = adjust_jump_to_idx(i, lookup_switch.default_offset, false)?;
-                let default_offset = adjusted_default.1;
+                let default_offset =
+                    adjust_jump_to_idx(i, lookup_switch.default_offset as i32, false)?;
 
-                jump_targets.insert(adjusted_default.0);
+                jump_targets.insert(default_offset);
 
                 let mut case_offsets = Vec::with_capacity(lookup_switch.case_offsets.len());
                 for case in lookup_switch.case_offsets.iter() {
-                    let adjusted_case = adjust_jump_to_idx(i, *case, false)?;
-                    case_offsets.push(adjusted_case.1);
+                    let adjusted_case = adjust_jump_to_idx(i, *case as i32, false)?;
+                    case_offsets.push(adjusted_case);
 
-                    jump_targets.insert(adjusted_case.0);
+                    jump_targets.insert(adjusted_case);
                 }
 
                 let new_lookup_switch = LookupSwitch {
@@ -510,7 +521,7 @@ pub fn verify_method<'gc>(
                     case_offsets: case_offsets.into_boxed_slice(),
                 };
 
-                *op = Op::LookupSwitch(Gc::new(mc, new_lookup_switch.into()));
+                *op = Op::LookupSwitch(Gc::new(mc, new_lookup_switch));
             }
             _ => {}
         }
@@ -531,6 +542,26 @@ pub fn verify_method<'gc>(
         param_config: resolved_param_config,
         return_type: resolved_return_type,
     })
+}
+
+fn create_activation_class<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    method: Gc<'gc, BytecodeMethod<'gc>>,
+) -> Result<Option<Class<'gc>>, Error<'gc>> {
+    let translation_unit = method.translation_unit();
+    let abc_method = method.method();
+    let body = method
+        .body()
+        .expect("Cannot verify non-native method without body!");
+
+    if abc_method.flags.contains(AbcMethodFlags::NEED_ACTIVATION) {
+        let activation_class =
+            Class::for_activation(activation, translation_unit, abc_method, body)?;
+
+        Ok(Some(activation_class))
+    } else {
+        Ok(None)
+    }
 }
 
 pub fn resolve_param_config<'gc>(
@@ -764,6 +795,7 @@ fn translate_op<'gc>(
     activation: &mut Activation<'_, 'gc>,
     method: Gc<'gc, BytecodeMethod<'gc>>,
     max_locals: u32,
+    activation_class: Option<Class<'gc>>,
     resolved_return_type: Option<Class<'gc>>,
     op: AbcOp,
 ) -> Result<(Op<'gc>, Option<Op<'gc>>), Error<'gc>> {
@@ -847,20 +879,6 @@ fn translate_op<'gc>(
                     activation,
                     "Error #1026: Slot 0 exceeds slotCount",
                     1026,
-                )?));
-            }
-        }
-
-        AbcOp::NewActivation => {
-            if !method
-                .method()
-                .flags
-                .contains(AbcMethodFlags::NEED_ACTIVATION)
-            {
-                return Err(Error::AvmError(verify_error(
-                    activation,
-                    "Error #1113: OP_newactivation used in method without NEED_ACTIVATION flag.",
-                    1113,
                 )?));
             }
         }
@@ -958,7 +976,9 @@ fn translate_op<'gc>(
         AbcOp::ReturnValue => Op::ReturnValue {
             return_type: resolved_return_type,
         },
-        AbcOp::ReturnVoid => Op::ReturnVoid,
+        AbcOp::ReturnVoid => Op::ReturnVoid {
+            return_type: resolved_return_type,
+        },
         AbcOp::GetProperty { index } => {
             let multiname = pool_multiname(activation, translation_unit, index)?;
 
@@ -991,7 +1011,9 @@ fn translate_op<'gc>(
         }
         AbcOp::In => Op::In,
         AbcOp::PushScope => Op::PushScope,
-        AbcOp::NewCatch { index } => Op::NewCatch { index },
+        AbcOp::NewCatch { index } => Op::NewCatch {
+            index: index.0 as usize,
+        },
         AbcOp::PushWith => Op::PushWith,
         AbcOp::PopScope => Op::PopScope,
         AbcOp::GetOuterScope { index } => Op::GetOuterScope {
@@ -1067,7 +1089,24 @@ fn translate_op<'gc>(
             }
         }
         AbcOp::ConstructSuper { num_args } => Op::ConstructSuper { num_args },
-        AbcOp::NewActivation => Op::NewActivation,
+        AbcOp::NewActivation => {
+            if let Some(activation_class) = activation_class {
+                Op::NewActivation { activation_class }
+            } else {
+                // When a method's flags don't include NEED_ACTIVATION, we
+                // purposefully don't construct an `activation_class` in
+                // `create_activation_class`, which results in the
+                // `activation_class` being passed to `translate_op` being None.
+                // This results in this VerifyError being thrown upon
+                // encountering any `newactivation` op in the bytecode.
+
+                return Err(Error::AvmError(verify_error(
+                    activation,
+                    "Error #1113: OP_newactivation used in method without NEED_ACTIVATION flag.",
+                    1113,
+                )?));
+            }
+        }
         AbcOp::NewObject { num_args } => Op::NewObject { num_args },
         AbcOp::NewFunction { index } => Op::NewFunction { index },
         AbcOp::NewClass { index } => {
@@ -1111,44 +1150,110 @@ fn translate_op<'gc>(
         AbcOp::SubtractI => Op::SubtractI,
         AbcOp::Swap => Op::Swap,
         AbcOp::URShift => Op::URShift,
-        AbcOp::Jump { offset } => Op::Jump { offset },
-        AbcOp::IfTrue { offset } => Op::IfTrue { offset },
-        AbcOp::IfFalse { offset } => Op::IfFalse { offset },
+        AbcOp::Jump { offset } => Op::Jump {
+            offset: offset as usize,
+        },
+        AbcOp::IfTrue { offset } => Op::IfTrue {
+            offset: offset as usize,
+        },
+        AbcOp::IfFalse { offset } => Op::IfFalse {
+            offset: offset as usize,
+        },
         AbcOp::IfStrictEq { offset } => {
-            return Ok((Op::StrictEquals, Some(Op::IfTrue { offset: offset - 1 })));
+            return Ok((
+                Op::StrictEquals,
+                Some(Op::IfTrue {
+                    offset: (offset - 1) as usize,
+                }),
+            ));
         }
         AbcOp::IfStrictNe { offset } => {
-            return Ok((Op::StrictEquals, Some(Op::IfFalse { offset: offset - 1 })));
+            return Ok((
+                Op::StrictEquals,
+                Some(Op::IfFalse {
+                    offset: (offset - 1) as usize,
+                }),
+            ));
         }
         AbcOp::IfEq { offset } => {
-            return Ok((Op::Equals, Some(Op::IfTrue { offset: offset - 1 })));
+            return Ok((
+                Op::Equals,
+                Some(Op::IfTrue {
+                    offset: (offset - 1) as usize,
+                }),
+            ));
         }
         AbcOp::IfNe { offset } => {
-            return Ok((Op::Equals, Some(Op::IfFalse { offset: offset - 1 })));
+            return Ok((
+                Op::Equals,
+                Some(Op::IfFalse {
+                    offset: (offset - 1) as usize,
+                }),
+            ));
         }
         AbcOp::IfGe { offset } => {
-            return Ok((Op::GreaterEquals, Some(Op::IfTrue { offset: offset - 1 })));
+            return Ok((
+                Op::GreaterEquals,
+                Some(Op::IfTrue {
+                    offset: (offset - 1) as usize,
+                }),
+            ));
         }
         AbcOp::IfGt { offset } => {
-            return Ok((Op::GreaterThan, Some(Op::IfTrue { offset: offset - 1 })));
+            return Ok((
+                Op::GreaterThan,
+                Some(Op::IfTrue {
+                    offset: (offset - 1) as usize,
+                }),
+            ));
         }
         AbcOp::IfLe { offset } => {
-            return Ok((Op::LessEquals, Some(Op::IfTrue { offset: offset - 1 })));
+            return Ok((
+                Op::LessEquals,
+                Some(Op::IfTrue {
+                    offset: (offset - 1) as usize,
+                }),
+            ));
         }
         AbcOp::IfLt { offset } => {
-            return Ok((Op::LessThan, Some(Op::IfTrue { offset: offset - 1 })));
+            return Ok((
+                Op::LessThan,
+                Some(Op::IfTrue {
+                    offset: (offset - 1) as usize,
+                }),
+            ));
         }
         AbcOp::IfNge { offset } => {
-            return Ok((Op::GreaterEquals, Some(Op::IfFalse { offset: offset - 1 })));
+            return Ok((
+                Op::GreaterEquals,
+                Some(Op::IfFalse {
+                    offset: (offset - 1) as usize,
+                }),
+            ));
         }
         AbcOp::IfNgt { offset } => {
-            return Ok((Op::GreaterThan, Some(Op::IfFalse { offset: offset - 1 })));
+            return Ok((
+                Op::GreaterThan,
+                Some(Op::IfFalse {
+                    offset: (offset - 1) as usize,
+                }),
+            ));
         }
         AbcOp::IfNle { offset } => {
-            return Ok((Op::LessEquals, Some(Op::IfFalse { offset: offset - 1 })));
+            return Ok((
+                Op::LessEquals,
+                Some(Op::IfFalse {
+                    offset: (offset - 1) as usize,
+                }),
+            ));
         }
         AbcOp::IfNlt { offset } => {
-            return Ok((Op::LessThan, Some(Op::IfFalse { offset: offset - 1 })));
+            return Ok((
+                Op::LessThan,
+                Some(Op::IfFalse {
+                    offset: (offset - 1) as usize,
+                }),
+            ));
         }
         AbcOp::StrictEquals => Op::StrictEquals,
         AbcOp::Equals => Op::Equals,
@@ -1214,7 +1319,16 @@ fn translate_op<'gc>(
         }
         AbcOp::DxnsLate => Op::DxnsLate,
         AbcOp::LookupSwitch(lookup_switch) => {
-            Op::LookupSwitch(Gc::new(activation.gc(), (*lookup_switch).into()))
+            let created_lookup_switch = LookupSwitch {
+                default_offset: lookup_switch.default_offset as usize,
+                case_offsets: lookup_switch
+                    .case_offsets
+                    .iter()
+                    .map(|o| *o as usize)
+                    .collect(),
+            };
+
+            Op::LookupSwitch(Gc::new(activation.gc(), created_lookup_switch))
         }
         AbcOp::Coerce { index } => {
             let class = lookup_class(activation, translation_unit, index)?;

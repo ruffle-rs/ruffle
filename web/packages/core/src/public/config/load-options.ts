@@ -513,6 +513,15 @@ export interface BaseLoadOptions {
     salign?: string;
 
     /**
+     * Controls orientation on mobile in fullscreen mode.
+     *
+     * This is equivalent to the AIR-only method Stage.setAspectRatio.
+     *
+     * @default ""
+     */
+    fullScreenAspectRatio?: string;
+
+    /**
      * If set to true, movies are prevented from changing the stage alignment.
      *
      * @default false

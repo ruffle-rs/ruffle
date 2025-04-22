@@ -34,7 +34,7 @@
         "replace-in-file": "^8.3.0",
         "tsx": "^4.19.3",
         "tsx-dom": "^3.1.0",
-        "typedoc": "^0.28.2",
+        "typedoc": "^0.28.3",
         "typescript": "^5.8.3"
     },
     "sideEffects": false

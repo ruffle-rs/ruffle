@@ -30,3 +30,8 @@ gamemode-tooltip =
     只有在播放動畫時，Ruffle 才會要求 GameMode。
 gamemode-default = 預設
 gamemode-default-tooltip = 僅當電源偏好設定為高電源時，才會啟用 GameMode。
+# See for context https://wiki.archlinux.org/title/Input_method
+ime-enabled = 輸入法
+ime-enabled-experimental = (實驗性)
+ime-enabled-tooltip = 輸入法允許輸入鍵盤上沒有的字元，例如中文、日文或韓文字元。
+ime-enabled-default = 預設

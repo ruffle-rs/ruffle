@@ -13,22 +13,17 @@ use crate::avm2::Multiname;
 use crate::avm2::Namespace;
 use crate::avm2::QName;
 use crate::context::UpdateContext;
-use crate::string::{StringContext, WStr, WString};
+use crate::string::{AvmString, WString};
 use bitflags::bitflags;
 use fnv::FnvHashMap;
-use gc_arena::{Collect, Gc, GcCell, Mutation};
+use gc_arena::{Collect, GcCell, Mutation};
 
 use std::cell::Ref;
 use std::collections::HashSet;
 use std::fmt;
 use std::hash::{Hash, Hasher};
 
-use swf::avm2::types::{
-    Class as AbcClass, Instance as AbcInstance, Method as AbcMethod, MethodBody as AbcMethodBody,
-};
-
-use super::method::ParamConfig;
-use super::string::AvmString;
+use swf::avm2::types::{Method as AbcMethod, MethodBody as AbcMethodBody};
 
 bitflags! {
     /// All possible attributes for a given class.
@@ -150,7 +145,8 @@ pub struct ClassData<'gc> {
 
     /// The customization point for `Class(args...)` without `new`
     /// If None, a simple coercion is done.
-    call_handler: Option<Method<'gc>>,
+    #[collect(require_static)]
+    call_handler: Option<NativeMethodImpl>,
 
     /// The custom constructor for this class, if it exists.
     ///
@@ -286,10 +282,12 @@ impl<'gc> Class<'gc> {
         i_class
     }
 
+    /// Create an unlinked class from its name, superclass, and traits.
     pub fn custom_new(
         name: QName<'gc>,
         super_class: Option<Class<'gc>>,
         instance_init: Method<'gc>,
+        traits: Vec<Trait<'gc>>,
         mc: &Mutation<'gc>,
     ) -> Self {
         Class(GcCell::new(
@@ -304,11 +302,11 @@ impl<'gc> Class<'gc> {
                 all_interfaces: Vec::new(),
                 instance_allocator: Allocator(scriptobject_allocator),
                 instance_init,
-                traits: Vec::new(),
+                traits,
                 vtable: VTable::empty(mc),
                 call_handler: None,
                 custom_constructor: None,
-                traits_loaded: false,
+                traits_loaded: true,
                 is_system: true,
                 linked_class: ClassLink::Unlinked,
                 applications: FnvHashMap::default(),
@@ -423,18 +421,34 @@ impl<'gc> Class<'gc> {
         class_index: u32,
         activation: &mut Activation<'_, 'gc>,
     ) -> Result<Self, Error<'gc>> {
-        let abc = unit.abc();
-        let abc_class: Result<&AbcClass, Error<'gc>> = abc
-            .classes
-            .get(class_index as usize)
-            .ok_or_else(|| "LoadError: Class index not valid".into());
-        let abc_class = abc_class?;
+        let mc = activation.gc();
 
-        let abc_instance: Result<&AbcInstance, Error<'gc>> = abc
+        let i_class = Self::instance_from_abc_index(unit, class_index, activation)?;
+
+        let c_class = Self::class_from_abc_index(
+            unit,
+            class_index,
+            activation.avm2().class_defs().class,
+            activation,
+        )?;
+
+        i_class.set_c_class(mc, c_class);
+        c_class.set_i_class(mc, i_class);
+
+        Ok(i_class)
+    }
+
+    /// Loads an i_class from a `TranslationUnit`, without loading its c_class.
+    pub fn instance_from_abc_index(
+        unit: TranslationUnit<'gc>,
+        class_index: u32,
+        activation: &mut Activation<'_, 'gc>,
+    ) -> Result<Self, Error<'gc>> {
+        let abc = unit.abc();
+        let abc_instance = abc
             .instances
             .get(class_index as usize)
-            .ok_or_else(|| "LoadError: Instance index not valid".into());
-        let abc_instance = abc_instance?;
+            .ok_or("LoadError: Instance index not valid")?;
 
         let name = QName::from_abc_multiname(activation, unit, abc_instance.name)?;
 
@@ -482,7 +496,6 @@ impl<'gc> Class<'gc> {
         }
 
         let instance_init = unit.load_method(abc_instance.init_method, false, activation)?;
-        let class_init = unit.load_method(abc_class.init_method, false, activation)?;
 
         let mut attributes = ClassAttributes::empty();
         attributes.set(ClassAttributes::SEALED, abc_instance.is_sealed);
@@ -500,20 +513,10 @@ impl<'gc> Class<'gc> {
                 [class_index as usize]
                 .map(|(_name, ptr)| Allocator(ptr));
 
-            if let Some((name, table_native_call_handler)) =
+            if let Some((_name, table_native_call_handler)) =
                 activation.avm2().native_call_handler_table[class_index as usize]
             {
-                let method = Method::from_builtin_and_params(
-                    table_native_call_handler,
-                    name,
-                    // A 'callable' class doesn't have a signature - let the
-                    // method do any needed coercions
-                    vec![],
-                    None,
-                    true,
-                    activation.gc(),
-                );
-                call_handler = Some(method);
+                call_handler = Some(table_native_call_handler);
             }
 
             // We only store the `name` for consistency with the other tables
@@ -528,7 +531,7 @@ impl<'gc> Class<'gc> {
             .or_else(|| super_class.map(|c| c.instance_allocator()))
             .unwrap_or(Allocator(scriptobject_allocator));
 
-        let i_class = Class(GcCell::new(
+        Ok(Class(GcCell::new(
             activation.gc(),
             ClassData {
                 name,
@@ -550,7 +553,38 @@ impl<'gc> Class<'gc> {
                 applications: Default::default(),
                 class_objects: Vec::new(),
             },
-        ));
+        )))
+    }
+
+    /// Loads a c_class from a `TranslationUnit`, without loading its i_class.
+    pub fn class_from_abc_index(
+        unit: TranslationUnit<'gc>,
+        class_index: u32,
+        class_class: Class<'gc>,
+        activation: &mut Activation<'_, 'gc>,
+    ) -> Result<Self, Error<'gc>> {
+        let abc = unit.abc();
+
+        let abc_instance = abc
+            .instances
+            .get(class_index as usize)
+            .ok_or("LoadError: Instance index not valid")?;
+
+        let abc_class = abc
+            .classes
+            .get(class_index as usize)
+            .ok_or("LoadError: Class index not valid")?;
+
+        // FIXME loading name again is a little wasteful
+        let name = QName::from_abc_multiname(activation, unit, abc_instance.name)?;
+
+        let protected_namespace = if let Some(ns) = &abc_instance.protected_namespace {
+            Some(unit.pool_namespace(activation, *ns)?)
+        } else {
+            None
+        };
+
+        let class_init = unit.load_method(abc_class.init_method, false, activation)?;
 
         let name_namespace = name.namespace();
         let mut local_name_buf = WString::from(name.local_name().as_wstr());
@@ -561,12 +595,12 @@ impl<'gc> Class<'gc> {
             AvmString::new(activation.gc(), local_name_buf),
         );
 
-        let c_class = Class(GcCell::new(
+        Ok(Class(GcCell::new(
             activation.gc(),
             ClassData {
                 name: c_name,
                 param: None,
-                super_class: Some(activation.avm2().class_defs().class),
+                super_class: Some(class_class),
                 attributes: ClassAttributes::FINAL,
                 protected_namespace,
                 direct_interfaces: Vec::new(),
@@ -579,15 +613,11 @@ impl<'gc> Class<'gc> {
                 custom_constructor: None,
                 traits_loaded: false,
                 is_system: false,
-                linked_class: ClassLink::LinkToInstance(i_class),
+                linked_class: ClassLink::Unlinked,
                 applications: FnvHashMap::default(),
                 class_objects: Vec::new(),
             },
-        ));
-
-        i_class.set_c_class(activation.gc(), c_class);
-
-        Ok(i_class)
+        )))
     }
 
     /// Finish the class-loading process by loading traits.
@@ -613,34 +643,59 @@ impl<'gc> Class<'gc> {
         let c_class = self
             .c_class()
             .expect("Just checked that this class was an i_class");
-        let mut c_class_write = c_class.0.write(activation.gc());
 
-        let mut i_class_write = self.0.write(activation.gc());
+        self.load_instance_traits(activation, unit, class_index)?;
+        c_class.load_class_traits(activation, unit, class_index)?;
 
-        i_class_write.traits_loaded = true;
-        c_class_write.traits_loaded = true;
+        Ok(())
+    }
+
+    /// Loads traits for an i_class from the instance traits declared in the ABC file.
+    pub fn load_instance_traits(
+        self,
+        activation: &mut Activation<'_, 'gc>,
+        unit: TranslationUnit<'gc>,
+        class_index: u32,
+    ) -> Result<(), Error<'gc>> {
+        let mut write = self.0.write(activation.gc());
+
+        write.traits_loaded = true;
 
         let abc = unit.abc();
-        let abc_class: Result<&AbcClass, Error<'gc>> = abc
-            .classes
-            .get(class_index as usize)
-            .ok_or_else(|| "LoadError: Class index not valid".into());
-        let abc_class = abc_class?;
 
-        let abc_instance: Result<&AbcInstance, Error<'gc>> = abc
+        let abc_instance = abc
             .instances
             .get(class_index as usize)
-            .ok_or_else(|| "LoadError: Instance index not valid".into());
-        let abc_instance = abc_instance?;
+            .ok_or("LoadError: Instance index not valid")?;
 
         for abc_trait in abc_instance.traits.iter() {
-            i_class_write
+            write
                 .traits
                 .push(Trait::from_abc_trait(unit, abc_trait, activation)?);
         }
 
+        Ok(())
+    }
+
+    /// Loads traits for a c_class from the class traits declared in the ABC file.
+    pub fn load_class_traits(
+        self,
+        activation: &mut Activation<'_, 'gc>,
+        unit: TranslationUnit<'gc>,
+        class_index: u32,
+    ) -> Result<(), Error<'gc>> {
+        let mut write = self.0.write(activation.gc());
+
+        write.traits_loaded = true;
+
+        let abc = unit.abc();
+        let abc_class = abc
+            .classes
+            .get(class_index as usize)
+            .ok_or("LoadError: Class index not valid")?;
+
         for abc_trait in abc_class.traits.iter() {
-            c_class_write
+            write
                 .traits
                 .push(Trait::from_abc_trait(unit, abc_trait, activation)?);
         }
@@ -876,11 +931,20 @@ impl<'gc> Class<'gc> {
         let mut traits = Vec::with_capacity(body.traits.len());
 
         for trait_entry in body.traits.iter() {
-            traits.push(Trait::from_abc_trait(
-                translation_unit,
-                trait_entry,
-                activation,
-            )?);
+            let loaded_trait = Trait::from_abc_trait(translation_unit, trait_entry, activation)?;
+
+            // Methods, getters, and setters are forbidden from appearing
+            // in activation traits
+            if loaded_trait.as_method().is_some() {
+                // TODO: Is this the correct error?
+                return Err(Error::AvmError(verify_error(
+                    activation,
+                    "Error #1101: Cannot verify method with unknown scope.",
+                    1101,
+                )?));
+            }
+
+            traits.push(loaded_trait);
         }
 
         let name = QName::new(activation.avm2().namespaces.public_all(), name);
@@ -891,7 +955,7 @@ impl<'gc> Class<'gc> {
                 name,
                 param: None,
                 super_class: None,
-                attributes: ClassAttributes::FINAL,
+                attributes: ClassAttributes::FINAL | ClassAttributes::SEALED,
                 protected_namespace: None,
                 direct_interfaces: Vec::new(),
                 all_interfaces: Vec::new(),
@@ -913,47 +977,52 @@ impl<'gc> Class<'gc> {
             },
         ));
 
-        let name_namespace = name.namespace();
-        let mut local_name_buf = WString::from(name.local_name().as_wstr());
-        local_name_buf.push_char('$');
+        i_class.init_vtable(activation.context)?;
 
-        let c_name = QName::new(
-            name_namespace,
-            AvmString::new(activation.gc(), local_name_buf),
-        );
+        // We don't need to construct a c_class
 
-        let c_class = Class(GcCell::new(
+        Ok(i_class)
+    }
+
+    pub fn for_catch(
+        activation: &mut Activation<'_, 'gc>,
+        variable_name: QName<'gc>,
+    ) -> Result<Class<'gc>, Error<'gc>> {
+        // TODO make the slot typed
+        let traits = vec![Trait::from_const(variable_name, None, None)];
+
+        let i_class = Class(GcCell::new(
             activation.gc(),
             ClassData {
-                name: c_name,
+                // Yes, the name of the class is the variable's name
+                name: variable_name,
                 param: None,
-                super_class: Some(activation.avm2().class_defs().class),
-                attributes: ClassAttributes::FINAL,
+                super_class: None,
+                attributes: ClassAttributes::FINAL | ClassAttributes::SEALED,
                 protected_namespace: None,
                 direct_interfaces: Vec::new(),
                 all_interfaces: Vec::new(),
                 instance_allocator: Allocator(scriptobject_allocator),
                 instance_init: Method::from_builtin(
                     |_, _, _| Ok(Value::Undefined),
-                    "<Activation object class constructor>",
+                    "<Catch object constructor>",
                     activation.gc(),
                 ),
-                traits: Vec::new(),
+                traits,
                 vtable: VTable::empty(activation.gc()),
                 call_handler: None,
                 custom_constructor: None,
                 traits_loaded: true,
                 is_system: false,
-                linked_class: ClassLink::LinkToInstance(i_class),
-                applications: FnvHashMap::default(),
+                linked_class: ClassLink::Unlinked,
+                applications: Default::default(),
                 class_objects: Vec::new(),
             },
         ));
 
-        i_class.set_c_class(activation.gc(), c_class);
-
         i_class.init_vtable(activation.context)?;
-        c_class.init_vtable(activation.context)?;
+
+        // We don't need to construct a c_class
 
         Ok(i_class)
     }
@@ -1063,130 +1132,9 @@ impl<'gc> Class<'gc> {
         self.0.write(mc).traits_loaded = true;
     }
 
-    #[inline(never)]
-    pub fn define_builtin_instance_methods(
-        self,
-        context: &mut StringContext<'gc>,
-        namespace: Namespace<'gc>,
-        items: &[(&'static str, NativeMethodImpl)],
-    ) {
-        let mc = context.gc();
-        for &(name, value) in items {
-            let interned_name = context.intern_static(WStr::from_units(name.as_bytes()));
-
-            self.define_instance_trait(
-                mc,
-                Trait::from_method(
-                    QName::new(namespace, interned_name),
-                    Method::from_builtin(value, name, mc),
-                ),
-            );
-        }
-    }
-
-    #[allow(clippy::type_complexity)]
-    #[inline(never)]
-    pub fn define_builtin_instance_methods_with_sig(
-        self,
-        context: &mut StringContext<'gc>,
-        namespace: Namespace<'gc>,
-        items: Vec<(
-            &'static str,
-            NativeMethodImpl,
-            Vec<ParamConfig<'gc>>,
-            Option<Gc<'gc, Multiname<'gc>>>,
-        )>,
-    ) {
-        let mc = context.gc();
-        for (name, value, params, return_type) in items {
-            let interned_name = context.intern_static(WStr::from_units(name.as_bytes()));
-
-            self.define_instance_trait(
-                mc,
-                Trait::from_method(
-                    QName::new(namespace, interned_name),
-                    Method::from_builtin_and_params(value, name, params, return_type, false, mc),
-                ),
-            );
-        }
-    }
-
-    #[inline(never)]
-    pub fn define_builtin_instance_properties(
-        self,
-        context: &mut StringContext<'gc>,
-        namespace: Namespace<'gc>,
-        items: &[(
-            &'static str,
-            Option<NativeMethodImpl>,
-            Option<NativeMethodImpl>,
-        )],
-    ) {
-        let mc = context.gc();
-        for &(name, getter, setter) in items {
-            let interned_name = context.intern_static(WStr::from_units(name.as_bytes()));
-
-            if let Some(getter) = getter {
-                self.define_instance_trait(
-                    mc,
-                    Trait::from_getter(
-                        QName::new(namespace, interned_name),
-                        Method::from_builtin(getter, name, mc),
-                    ),
-                );
-            }
-            if let Some(setter) = setter {
-                self.define_instance_trait(
-                    mc,
-                    Trait::from_setter(
-                        QName::new(namespace, interned_name),
-                        Method::from_builtin(setter, name, mc),
-                    ),
-                );
-            }
-        }
-    }
-
-    #[inline(never)]
-    pub fn define_constant_int_instance_traits(
-        self,
-        namespace: Namespace<'gc>,
-        items: &[(&'static str, i32)],
-        activation: &mut Activation<'_, 'gc>,
-    ) {
-        let mc = activation.gc();
-        for &(name, value) in items {
-            let interned_name = activation
-                .strings()
-                .intern_static(WStr::from_units(name.as_bytes()));
-
-            self.define_instance_trait(
-                mc,
-                Trait::from_const(
-                    QName::new(namespace, interned_name),
-                    Some(activation.avm2().multinames.int),
-                    Some(value.into()),
-                ),
-            );
-        }
-    }
-
-    /// Define a trait on instances of the class.
-    ///
-    /// Instance traits will be accessible as properties on instances of the
-    /// class. They will not be accessible on the class prototype, and any
-    /// properties defined on the prototype will be shadowed by these traits.
-    pub fn define_instance_trait(self, mc: &Mutation<'gc>, my_trait: Trait<'gc>) {
-        self.0.write(mc).traits.push(my_trait);
-    }
-
     /// Return traits provided by this class.
     pub fn traits(&self) -> Ref<Vec<Trait<'gc>>> {
         Ref::map(self.0.read(), |c| &c.traits)
-    }
-
-    pub fn set_traits(&self, mc: &Mutation<'gc>, traits: Vec<Trait<'gc>>) {
-        self.0.write(mc).traits = traits;
     }
 
     /// Get this class's instance allocator.
@@ -1197,11 +1145,6 @@ impl<'gc> Class<'gc> {
         self.0.read().instance_allocator
     }
 
-    /// Set this class's instance allocator.
-    pub fn set_instance_allocator(self, mc: &Mutation<'gc>, alloc: AllocatorFn) {
-        self.0.write(mc).instance_allocator = Allocator(alloc);
-    }
-
     /// Get this class's custom constructor.
     ///
     /// If `None`, then this class should be constructed normally.
@@ -1209,23 +1152,13 @@ impl<'gc> Class<'gc> {
         self.0.read().custom_constructor
     }
 
-    /// Set this class's custom constructor.
-    pub fn set_custom_constructor(self, mc: &Mutation<'gc>, ctor: CustomConstructorFn) {
-        self.0.write(mc).custom_constructor = Some(CustomConstructor(ctor));
-    }
-
     /// Get this class's instance initializer.
     pub fn instance_init(self) -> Method<'gc> {
         self.0.read().instance_init
     }
 
-    /// Set a call handler for this class.
-    pub fn set_call_handler(self, mc: &Mutation<'gc>, new_call_handler: Method<'gc>) {
-        self.0.write(mc).call_handler = Some(new_call_handler);
-    }
-
     /// Get this class's call handler.
-    pub fn call_handler(self) -> Option<Method<'gc>> {
+    pub fn call_handler(self) -> Option<NativeMethodImpl> {
         self.0.read().call_handler
     }
 

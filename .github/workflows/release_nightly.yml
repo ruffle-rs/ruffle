@@ -39,13 +39,13 @@ jobs:
           echo "is_active=$is_active" >> $GITHUB_OUTPUT
 
       - name: Get current time with dashes
-        uses: 1466587594/get-current-time@v2.1.2
+        uses: josStorer/get-current-time@v2.1.2
         id: current_time_dashes
         with:
           format: YYYY-MM-DD
 
       - name: Get current time with underscores
-        uses: 1466587594/get-current-time@v2.1.2
+        uses: josStorer/get-current-time@v2.1.2
         id: current_time_underscores
         with:
           format: YYYY_MM_DD
@@ -129,6 +129,7 @@ jobs:
       - name: Cargo build
         run: cargo build --locked --package ruffle_desktop --release ${{matrix.DESKTOP_FEATURES && '--features' }} ${{matrix.DESKTOP_FEATURES}} ${{ matrix.target && '--target' }} ${{ matrix.target }}
         env:
+          CFG_RELEASE_CHANNEL: nightly
           RUSTFLAGS: ${{ matrix.RUSTFLAGS }}
           MACOSX_DEPLOYMENT_TARGET: ${{ matrix.MACOSX_DEPLOYMENT_TARGET }}
 
@@ -178,6 +179,7 @@ jobs:
         if: runner.os == 'macOS'
         run: cargo build --locked --package ruffle_web_safari --release ${{ matrix.target && '--target' }} ${{ matrix.target }}
         env:
+          CFG_RELEASE_CHANNEL: nightly
           RUSTFLAGS: ${{ matrix.RUSTFLAGS }}
           MACOSX_DEPLOYMENT_TARGET: ${{ matrix.MACOSX_DEPLOYMENT_TARGET }}
 
@@ -193,7 +195,7 @@ jobs:
 
   build-mac-universal-binary:
     name: Build macOS universal binary
-    needs: [create-nightly-release, build, build-web]
+    needs: [create-nightly-release, build, build-browser-extensions]
     runs-on: macos-14
     env:
       PACKAGE_FILE: ${{ needs.create-nightly-release.outputs.package_prefix }}-macos-universal.tar.gz
@@ -311,8 +313,11 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-  build-web:
-    name: Build web${{ matrix.demo && ' demo' || '' }}
+  # The first couple steps of this and the `build-web-demo-and-selfhosted` job
+  # (tool setup and dependency install) are identical. Hopefully in the future
+  # https://github.com/actions/runner/issues/1182 can help deduplicate them.
+  build-browser-extensions:
+    name: Build browser extensions
     needs: create-nightly-release
     if: needs.create-nightly-release.outputs.is_active == 'true'
     runs-on: ubuntu-24.04
@@ -324,9 +329,6 @@ jobs:
       id-token: write
       pull-requests: read
       statuses: write
-    strategy:
-      matrix:
-        demo: [false, true]
     steps:
       - name: Clone Ruffle repo
         uses: actions/checkout@v4
@@ -362,13 +364,13 @@ jobs:
       - name: Install node packages
         working-directory: web
         shell: bash -l {0}
-        run: |
-          npm ci
+        run: npm ci
 
       - name: Seal version data
         shell: bash -l {0}
         working-directory: web
         env:
+          CFG_RELEASE_CHANNEL: nightly
           BUILD_ID: ${{ github.run_number }}
           ENABLE_VERSION_SEAL: "true"
           FIREFOX_EXTENSION_ID: ${{ secrets.FIREFOX_EXTENSION_ID }} # Needed to inject into manifest.json
@@ -376,9 +378,9 @@ jobs:
 
       - name: Build web
         env:
+          CFG_RELEASE_CHANNEL: nightly
           BUILD_ID: ${{ github.run_number }}
-          # Build web demo with WebGPU support for testing in Chrome origin trial on ruffle.rs
-          CARGO_FEATURES: jpegxr${{ matrix.demo && ',webgpu' || '' }}
+          CARGO_FEATURES: jpegxr
           FIREFOX_EXTENSION_ID: ${{ secrets.FIREFOX_EXTENSION_ID }} # Needed to inject into manifest.json
           WASM_SOURCE: cargo_and_store
         working-directory: web
@@ -386,14 +388,12 @@ jobs:
         run: npm run build:repro
 
       - name: Produce reproducible source archive
-        if: ${{ !matrix.demo }}
         shell: bash -l {0}
         run: |
           zip -r reproducible-source.zip . -x '/web/node_modules/*' '/web/*/node_modules/*' '/web/packages/*/dist/*' '/web/docker/docker_builds/packages/*' '/target/*' '/.git/*' '/tests/tests/swfs/*'
           cp reproducible-source.zip "${{ needs.create-nightly-release.outputs.package_prefix }}-reproducible-source.zip"
 
       - name: Upload reproducible source archive
-        if: ${{ !matrix.demo }}
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GH_REPO: ${{ github.repository }}
@@ -402,36 +402,7 @@ jobs:
           package_file="${{ needs.create-nightly-release.outputs.package_prefix }}-reproducible-source.zip"
           gh release upload "$tag_name" "$package_file"
 
-      - name: Build web docs
-        working-directory: web
-        run: npm run docs
-
-      - name: Publish npm package
-        if: ${{ !matrix.demo }}
-        # npm scoped packages are private by default, explicitly make public
-        run: npm publish --access public --provenance
-        continue-on-error: true
-        working-directory: web/packages/selfhosted/dist
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-
-      - name: Package selfhosted
-        if: ${{ !matrix.demo }}
-        run: zip -r "${{ needs.create-nightly-release.outputs.package_prefix }}-web-selfhosted.zip" .
-        working-directory: web/packages/selfhosted/dist
-
-      - name: Upload selfhosted
-        if: ${{ !matrix.demo }}
-        run: |
-          tag_name="${{ needs.create-nightly-release.outputs.tag_name }}"
-          package_file="${{ needs.create-nightly-release.outputs.package_prefix }}-web-selfhosted.zip"
-          gh release upload "$tag_name" "$package_file"
-        working-directory: web/packages/selfhosted/dist
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
       - name: Upload generic extension
-        if: ${{ !matrix.demo }}
         run: |
           tag_name="${{ needs.create-nightly-release.outputs.tag_name }}"
           package_file="${{ needs.create-nightly-release.outputs.package_prefix }}-web-extension.zip"
@@ -442,14 +413,12 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Upload Safari build artifact
-        if: ${{ !matrix.demo }}
         uses: actions/upload-artifact@v4
         with:
           name: macos-safari
           path: ./web/packages/extension/dist/ruffle_extension.zip
 
       - name: Upload Firefox extension (unsigned)
-        if: ${{ !matrix.demo }}
         run: |
           tag_name="${{ needs.create-nightly-release.outputs.tag_name }}"
           package_file="${{ needs.create-nightly-release.outputs.package_prefix }}-web-extension-firefox-unsigned.xpi"
@@ -460,7 +429,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Publish Chrome extension
-        if: env.CHROME_EXTENSION_ID != '' && !matrix.demo
+        if: env.CHROME_EXTENSION_ID != ''
         id: publish-chrome-extension
         continue-on-error: true
         env:
@@ -474,7 +443,7 @@ jobs:
           file-path: ./web/packages/extension/dist/ruffle_extension.zip
 
       - name: Publish Edge extension
-        if: env.EDGE_PRODUCT_ID != '' && !matrix.demo
+        if: env.EDGE_PRODUCT_ID != ''
         id: publish-edge-extension
         continue-on-error: true
         env:
@@ -486,8 +455,151 @@ jobs:
           client-id: ${{ secrets.EDGE_CLIENT_ID }}
           api-key: ${{ secrets.EDGE_API_KEY }}
 
+      - name: Publish Firefox extension
+        if: env.FIREFOX_EXTENSION_ID != ''
+        id: publish-firefox-extension
+        continue-on-error: true
+        env:
+          FIREFOX_EXTENSION_ID: ${{ secrets.FIREFOX_EXTENSION_ID }}
+          MOZILLA_API_KEY: ${{ secrets.MOZILLA_API_KEY }}
+          MOZILLA_API_SECRET: ${{ secrets.MOZILLA_API_SECRET }}
+          SOURCE_TAG: ${{ needs.create-nightly-release.outputs.tag_name }}
+        working-directory: web/packages/extension
+        shell: bash -l {0}
+        run: npm run sign-firefox
+
+  build-web-demo-and-selfhosted:
+    name: Build web demo and selfhosted package with docs
+    needs: create-nightly-release
+    if: needs.create-nightly-release.outputs.is_active == 'true'
+    runs-on: ubuntu-24.04
+    permissions:
+      actions: read
+      attestations: write
+      checks: read
+      contents: write
+      id-token: write
+      pull-requests: read
+      statuses: write
+    steps:
+      - name: Clone Ruffle repo
+        uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: stable
+          targets: wasm32-unknown-unknown
+          components: rust-src
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          registry-url: https://registry.npmjs.org
+
+      # wasm-bindgen-cli version must match wasm-bindgen crate version.
+      # Be sure to update in test_web.yml, Cargo.toml, web/docker/Dockerfile,
+      # and web/README.md as well.
+      - name: Install wasm-bindgen
+        run: cargo install wasm-bindgen-cli --version 0.2.100
+
+      # Keep the version number in sync in all workflows,
+      # and in the extension builder Dockerfile!
+      - name: Install wasm-opt
+        uses: sigoden/install-binary@v1
+        with:
+          repo: WebAssembly/binaryen
+          tag: version_123
+          name: wasm-opt
+
+      - name: Install node packages
+        working-directory: web
+        shell: bash -l {0}
+        run: npm ci
+
+      - name: Seal version data
+        shell: bash -l {0}
+        working-directory: web
+        env:
+          CFG_RELEASE_CHANNEL: nightly
+          BUILD_ID: ${{ github.run_number }}
+          ENABLE_VERSION_SEAL: "true"
+          FIREFOX_EXTENSION_ID: ${{ secrets.FIREFOX_EXTENSION_ID }} # Needed to inject into manifest.json
+        run: npm run version-seal
+
+      - name: Build web
+        env:
+          CFG_RELEASE_CHANNEL: nightly
+          BUILD_ID: ${{ github.run_number }}
+          # NOTE: In the future, we might want to enable some features (like `webgpu`) only in
+          # the demo build, for limited testing (like a Chrome origin trial) on ruffle.rs.
+          CARGO_FEATURES: jpegxr
+          FIREFOX_EXTENSION_ID: ${{ secrets.FIREFOX_EXTENSION_ID }} # Needed to inject into manifest.json
+          WASM_SOURCE: cargo_and_store
+        working-directory: web
+        shell: bash -l {0}
+        run: npm run build:dual-wasm-repro
+
+      - name: Build web docs
+        working-directory: web
+        run: npm run docs
+
+      - name: Publish npm package
+        # npm scoped packages are private by default, explicitly make public
+        run: npm publish --access public --provenance
+        continue-on-error: true
+        working-directory: web/packages/selfhosted/dist
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: Package selfhosted
+        run: zip -r "${{ needs.create-nightly-release.outputs.package_prefix }}-web-selfhosted.zip" .
+        working-directory: web/packages/selfhosted/dist
+
+      - name: Upload selfhosted
+        run: |
+          tag_name="${{ needs.create-nightly-release.outputs.tag_name }}"
+          package_file="${{ needs.create-nightly-release.outputs.package_prefix }}-web-selfhosted.zip"
+          gh release upload "$tag_name" "$package_file"
+        working-directory: web/packages/selfhosted/dist
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Clone JS docs
+        uses: actions/checkout@v4
+        with:
+          repository: ruffle-rs/js-docs
+          path: js-docs
+          ref: master
+          fetch-depth: 0
+          persist-credentials: false # Needed to allow commit via RUFFLE_BUILD_TOKEN below
+
+      - name: Update JS docs
+        run: |
+          # Delete the old docs
+          rm -rf master/
+
+          # Copy the fresh docs into this folder.
+          cp -r ../web/packages/core/docs master
+
+          # Create git commit. Amend previous commit to avoid daily commit spam.
+          git config user.name "RuffleBuild"
+          git config user.email "ruffle@ruffle.rs"
+          git add -A
+          git commit --amend -m "Nightly build ${{ needs.create-nightly-release.outputs.date }}"
+        working-directory: js-docs
+
+      - name: Push JS docs
+        if: github.repository == 'ruffle-rs/ruffle'
+        uses: ad-m/github-push-action@master
+        with:
+          repository: ruffle-rs/js-docs
+          github_token: ${{ secrets.RUFFLE_BUILD_TOKEN }}
+          directory: js-docs
+          force: true
+
       - name: Clone web demo
-        if: matrix.demo
         uses: actions/checkout@v4
         with:
           repository: ruffle-rs/demo
@@ -497,7 +609,6 @@ jobs:
           persist-credentials: false # Needed to allow commit via RUFFLE_BUILD_TOKEN below
 
       - name: Update web demo
-        if: matrix.demo
         run: |
           # Delete the old build.
           rm -fr *
@@ -516,47 +627,12 @@ jobs:
         working-directory: demo
 
       - name: Push web demo
-        if: github.repository == 'ruffle-rs/ruffle' && matrix.demo
+        if: github.repository == 'ruffle-rs/ruffle'
         uses: ad-m/github-push-action@master
         with:
           repository: ruffle-rs/demo
           github_token: ${{ secrets.RUFFLE_BUILD_TOKEN }}
           directory: demo
-          force: true
-
-      - name: Clone JS docs
-        if: ${{ !matrix.demo }}
-        uses: actions/checkout@v4
-        with:
-          repository: ruffle-rs/js-docs
-          path: js-docs
-          ref: master
-          fetch-depth: 0
-          persist-credentials: false # Needed to allow commit via RUFFLE_BUILD_TOKEN below
-
-      - name: Update JS docs
-        if: ${{ !matrix.demo }}
-        run: |
-          # Delete the old docs
-          rm -rf master/
-
-          # Copy the fresh docs into this folder.
-          cp -r ../web/packages/core/docs master
-
-          # Create git commit. Amend previous commit to avoid daily commit spam.
-          git config user.name "RuffleBuild"
-          git config user.email "ruffle@ruffle.rs"
-          git add -A
-          git commit --amend -m "Nightly build ${{ needs.create-nightly-release.outputs.date }}"
-        working-directory: js-docs
-
-      - name: Push JS docs
-        if: github.repository == 'ruffle-rs/ruffle' && !matrix.demo
-        uses: ad-m/github-push-action@master
-        with:
-          repository: ruffle-rs/js-docs
-          github_token: ${{ secrets.RUFFLE_BUILD_TOKEN }}
-          directory: js-docs
           force: true
 
   publish-aur-package:
@@ -568,13 +644,13 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Get current time with dashes
-        uses: 1466587594/get-current-time@v2.1.2
+        uses: josStorer/get-current-time@v2.1.2
         id: current_time_dashes
         with:
           format: YYYY-MM-DD
 
       - name: Get current time with dots
-        uses: 1466587594/get-current-time@v2.1.2
+        uses: josStorer/get-current-time@v2.1.2
         id: current_time_dots
         with:
           format: YYYY.MM.DD

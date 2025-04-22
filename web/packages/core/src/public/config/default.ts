@@ -33,6 +33,7 @@ export const DEFAULT_CONFIG: Required<BaseLoadOptions> = {
     menu: true,
     allowFullscreen: false,
     salign: "",
+    fullScreenAspectRatio: "",
     forceAlign: false,
     quality: "high",
     scale: "showAll",

@@ -1,376 +1,207 @@
-//! AVM1 object type to represent objects on the stage.
+//! DisplayObject-specific AVM1 operations.
 
 use crate::avm1::activation::Activation;
 use crate::avm1::clamp::Clamp;
 use crate::avm1::error::Error;
 use crate::avm1::property_map::PropertyMap;
-use crate::avm1::{Object, ObjectPtr, ScriptObject, TObject, Value};
+use crate::avm1::Value;
 use crate::avm_warn;
-use crate::context::UpdateContext;
 use crate::display_object::{
-    DisplayObject, EditText, MovieClip, TDisplayObject, TDisplayObjectContainer, TInteractiveObject,
+    DisplayObject, MovieClip, TDisplayObject, TDisplayObjectContainer, TInteractiveObject,
 };
 use crate::string::{AvmString, StringContext, WStr};
 use crate::types::Percent;
-use gc_arena::barrier::unlock;
-use gc_arena::lock::RefLock;
-use gc_arena::{Collect, Gc, GcWeak, Mutation};
+use gc_arena::Collect;
 use ruffle_macros::istr;
-use std::cell::RefMut;
-use std::fmt;
+use smallvec::SmallVec;
 use swf::Twips;
 
-/// A ScriptObject that is inherently tied to a display node.
-#[derive(Clone, Copy, Collect)]
-#[collect(no_drop)]
-pub struct StageObject<'gc>(Gc<'gc, StageObjectData<'gc>>);
+pub fn get_property<'gc>(
+    dobj: DisplayObject<'gc>,
+    name: AvmString<'gc>,
+    activation: &mut Activation<'_, 'gc>,
+    is_slash_path: bool,
+) -> Option<Value<'gc>> {
+    // Property search order for DisplayObjects:
 
-#[derive(Collect)]
-#[collect(no_drop)]
-pub struct StageObjectData<'gc> {
-    /// The underlying script object.
-    ///
-    /// This is used to handle "expando properties" on AVM1 display nodes, as
-    /// well as the underlying prototype chain.
-    base: ScriptObject<'gc>,
-
-    /// The display node this stage object
-    pub display_object: DisplayObject<'gc>,
-
-    text_field_bindings: RefLock<Vec<TextFieldBinding<'gc>>>,
-}
-
-impl<'gc> StageObject<'gc> {
-    /// Create a weak reference to the underlying data of this `StageObject`
-    pub fn as_weak(self) -> GcWeak<'gc, StageObjectData<'gc>> {
-        Gc::downgrade(self.0)
-    }
-
-    /// Create a stage object for a given display node.
-    pub fn for_display_object(
-        context: &StringContext<'gc>,
-        display_object: DisplayObject<'gc>,
-        proto: Object<'gc>,
-    ) -> Self {
-        Self(Gc::new(
-            context.gc(),
-            StageObjectData {
-                base: ScriptObject::new(context, Some(proto)),
-                display_object,
-                text_field_bindings: RefLock::new(Vec::new()),
-            },
-        ))
-    }
-
-    fn text_field_bindings_mut(
-        self,
-        gc_context: &Mutation<'gc>,
-    ) -> RefMut<'gc, Vec<TextFieldBinding<'gc>>> {
-        unlock!(
-            Gc::write(gc_context, self.0),
-            StageObjectData,
-            text_field_bindings
-        )
-        .borrow_mut()
-    }
-
-    /// Registers a text field variable binding for this stage object.
-    /// Whenever a property with the given name is changed, we should change the text in the text field.
-    pub fn register_text_field_binding(
-        self,
-        gc_context: &Mutation<'gc>,
-        text_field: EditText<'gc>,
-        variable_name: AvmString<'gc>,
-    ) {
-        self.text_field_bindings_mut(gc_context)
-            .push(TextFieldBinding {
-                text_field,
-                variable_name,
-            })
-    }
-
-    /// Removes a text field binding for the given text field.
-    /// Does not place the text field on the unbound list.
-    /// Caller is responsible for placing the text field on the unbound list, if necessary.
-    pub fn clear_text_field_binding(self, gc_context: &Mutation<'gc>, text_field: EditText<'gc>) {
-        self.text_field_bindings_mut(gc_context)
-            .retain(|binding| !DisplayObject::ptr_eq(text_field.into(), binding.text_field.into()));
-    }
-
-    /// Clears all text field bindings from this stage object, and places the textfields on the unbound list.
-    /// This is called when the object is removed from the stage.
-    pub fn unregister_text_field_bindings(self, context: &mut UpdateContext<'gc>) {
-        for binding in self.text_field_bindings_mut(context.gc()).drain(..) {
-            binding.text_field.clear_bound_stage_object(context);
-            context.unbound_text_fields.push(binding.text_field);
+    // 1) Path properties such as `_root`, `_parent`, `_levelN` (obeys case sensitivity)
+    let magic_property = name.starts_with(b'_');
+    if magic_property {
+        if let Some(object) = resolve_path_property(dobj, name, activation) {
+            return Some(object);
         }
     }
 
-    fn resolve_path_property(
-        self,
-        name: AvmString<'gc>,
-        activation: &mut Activation<'_, 'gc>,
-    ) -> Option<Value<'gc>> {
-        let case_sensitive = activation.is_case_sensitive();
-        if name.eq_with_case(b"_root", case_sensitive) {
-            return Some(activation.root_object());
-        } else if name.eq_with_case(b"_parent", case_sensitive) {
-            return Some(
-                self.0
-                    .display_object
-                    .avm1_parent()
-                    .map(|dn| dn.object().coerce_to_object(activation))
-                    .map(Value::Object)
-                    .unwrap_or(Value::Undefined),
-            );
-        } else if name.eq_with_case(b"_global", case_sensitive) {
-            return Some(activation.context.avm1.global_object().into());
-        }
-
-        // Resolve level names `_levelN`.
-        if let Some(prefix) = name.slice(..6) {
-            // `_flash` is a synonym of `_level`, a relic from the earliest Flash versions.
-            if prefix.eq_with_case(b"_level", case_sensitive)
-                || prefix.eq_with_case(b"_flash", case_sensitive)
-            {
-                let level_id = Self::parse_level_id(&name[6..]);
-                let level = activation
-                    .get_level(level_id)
-                    .map(|o| o.object())
-                    .unwrap_or(Value::Undefined);
-                return Some(level);
-            }
-        }
-
-        None
-    }
-
-    fn parse_level_id(digits: &WStr) -> i32 {
-        // TODO: Use `split_first`?
-        let (is_negative, digits) = match digits.get(0) {
-            Some(45) => (true, &digits[1..]),
-            _ => (false, digits),
+    // 2) Child display objects with the given instance name
+    if let Some(child) = dobj
+        .as_container()
+        .and_then(|o| o.child_by_name(&name, activation.is_case_sensitive()))
+    {
+        return if is_slash_path {
+            Some(child.object())
+        // If an object doesn't have an object representation, e.g. Graphic, then trying to access it
+        // Returns the parent instead
+        } else if let crate::display_object::DisplayObject::Graphic(_) = child {
+            child.parent().map(|p| p.object())
+        } else {
+            Some(child.object())
         };
-        let mut level_id: i32 = 0;
-        for digit in digits
-            .iter()
-            .map_while(|c| char::from_u32(c.into()).and_then(|c| c.to_digit(10)))
-        {
-            level_id = level_id.wrapping_mul(10);
-            level_id = level_id.wrapping_add(digit as i32);
-        }
-        if is_negative {
-            level_id = level_id.wrapping_neg();
-        }
-        level_id
-    }
-}
-
-/// A binding from a property of this StageObject to an EditText text field.
-#[derive(Collect)]
-#[collect(no_drop)]
-struct TextFieldBinding<'gc> {
-    text_field: EditText<'gc>,
-    variable_name: AvmString<'gc>,
-}
-
-impl fmt::Debug for StageObject<'_> {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.debug_struct("StageObject")
-            .field("ptr", &Gc::as_ptr(self.0))
-            .field("display_object", &self.0.display_object)
-            .finish()
-    }
-}
-
-impl<'gc> TObject<'gc> for StageObject<'gc> {
-    fn raw_script_object(&self) -> ScriptObject<'gc> {
-        self.0.base
     }
 
-    fn get_local_stored(
-        &self,
-        name: impl Into<AvmString<'gc>>,
-        activation: &mut Activation<'_, 'gc>,
-        is_slash_path: bool,
-    ) -> Option<Value<'gc>> {
-        let name = name.into();
-
-        // Property search order for DisplayObjects:
-        // 1) Actual properties on the underlying object
-        if let Some(value) = self
-            .0
-            .base
-            .get_local_stored(name, activation, is_slash_path)
-        {
-            return Some(value);
-        }
-
-        // 2) Path properties such as `_root`, `_parent`, `_levelN` (obeys case sensitivity)
-        let magic_property = name.starts_with(b'_');
-        if magic_property {
-            if let Some(object) = self.resolve_path_property(name, activation) {
-                return Some(object);
-            }
-        }
-
-        // 3) Child display objects with the given instance name
-        if let Some(child) = self
-            .0
-            .display_object
-            .as_container()
-            .and_then(|o| o.child_by_name(&name, activation.is_case_sensitive()))
-        {
-            return if is_slash_path {
-                Some(child.object())
-            // If an object doesn't have an object representation, e.g. Graphic, then trying to access it
-            // Returns the parent instead
-            } else if let crate::display_object::DisplayObject::Graphic(_) = child {
-                child.parent().map(|p| p.object())
-            } else {
-                Some(child.object())
-            };
-        }
-
-        // 4) Display object properties such as `_x`, `_y` (never case sensitive)
-        if magic_property {
-            if let Some(property) = activation
-                .context
-                .avm1
-                .display_properties()
-                .get_by_name(name)
-                .copied()
-            {
-                return Some(property.get(activation, self.0.display_object));
-            }
-        }
-
-        None
-    }
-
-    fn set_local(
-        &self,
-        name: AvmString<'gc>,
-        value: Value<'gc>,
-        activation: &mut Activation<'_, 'gc>,
-        this: Object<'gc>,
-    ) -> Result<(), Error<'gc>> {
-        // Check if a text field is bound to this property and update the text if so.
-        let case_sensitive = activation.is_case_sensitive();
-        for binding in self
-            .0
-            .text_field_bindings
-            .borrow()
-            .iter()
-            .filter(|binding| {
-                if case_sensitive {
-                    binding.variable_name == name
-                } else {
-                    binding.variable_name.eq_ignore_case(&name)
-                }
-            })
-        {
-            binding
-                .text_field
-                .set_html_text(&value.coerce_to_string(activation)?, activation.context);
-        }
-
-        let base = self.0.base;
-        let display_object = self.0.display_object;
-
-        if base.has_own_property(activation, name) {
-            // 1) Actual properties on the underlying object
-            base.set_local(name, value, activation, this)
-        } else if let Some(property) = activation
+    // 3) Display object properties such as `_x`, `_y` (never case sensitive)
+    if magic_property {
+        if let Some(property) = activation
             .context
             .avm1
             .display_properties()
             .get_by_name(name)
-            .copied()
         {
-            // 2) Display object properties such as _x, _y
-            property.set(activation, display_object, value)
-        } else {
-            // 3) TODO: Prototype
-            base.set_local(name, value, activation, this)
+            return Some(property.get(activation, dobj));
         }
     }
 
-    // Note that `hasOwnProperty` does NOT return true for child display objects.
-    fn has_property(&self, activation: &mut Activation<'_, 'gc>, name: AvmString<'gc>) -> bool {
-        if !self.0.display_object.avm1_removed() && self.0.base.has_property(activation, name) {
-            return true;
+    None
+}
+
+/// Notify any bound text fields of a property change.
+///
+/// This should be called every time a property is set on a AVM1 object.
+pub fn notify_property_change<'gc>(
+    dobj: DisplayObject<'gc>,
+    property_name: AvmString<'gc>,
+    value: Value<'gc>,
+    activation: &mut Activation<'_, 'gc>,
+) -> Result<(), Error<'gc>> {
+    // Temporary vec to avoid double-borrow errors.
+    let mut text_fields = SmallVec::<[_; 1]>::new();
+
+    // Check if a text field is bound to this property and update the text if so.
+    let case_sensitive = activation.is_case_sensitive();
+    if let Some(bindings) = dobj.avm1_text_field_bindings() {
+        for binding in bindings.iter().filter(|binding| {
+            if case_sensitive {
+                binding.variable_name == property_name
+            } else {
+                binding.variable_name.eq_ignore_case(&property_name)
+            }
+        }) {
+            text_fields.push(binding.text_field);
         }
-
-        let magic_property = name.starts_with(b'_');
-        if magic_property
-            && activation
-                .context
-                .avm1
-                .display_properties()
-                .get_by_name(name)
-                .is_some()
-        {
-            return true;
-        }
-
-        let case_sensitive = activation.is_case_sensitive();
-
-        if !self.0.display_object.avm1_removed()
-            && self
-                .0
-                .display_object
-                .as_container()
-                .and_then(|o| o.child_by_name(&name, case_sensitive))
-                .is_some()
-        {
-            return true;
-        }
-
-        if magic_property && self.resolve_path_property(name, activation).is_some() {
-            return true;
-        }
-
-        false
     }
 
-    fn get_keys(
-        &self,
-        activation: &mut Activation<'_, 'gc>,
-        include_hidden: bool,
-    ) -> Vec<AvmString<'gc>> {
-        // Keys from the underlying object are listed first, followed by
-        // child display objects in order from highest depth to lowest depth.
-        let mut keys = self.0.base.get_keys(activation, include_hidden);
+    for tf in text_fields {
+        tf.set_html_text(&value.coerce_to_string(activation)?, activation.context);
+    }
 
-        if let Some(ctr) = self.0.display_object.as_container() {
-            // Button/MovieClip children are included in key list.
-            for child in ctr.iter_render_list().rev() {
-                if child.as_interactive().is_some() {
-                    keys.push(child.name().expect("Interactive DisplayObjects have names"));
-                }
+    Ok(())
+}
+
+pub fn has_display_object_property<'gc>(
+    dobj: DisplayObject<'gc>,
+    activation: &mut Activation<'_, 'gc>,
+    name: AvmString<'gc>,
+) -> bool {
+    let magic_property = name.starts_with(b'_');
+    if magic_property
+        && activation
+            .context
+            .avm1
+            .display_properties()
+            .get_by_name(name)
+            .is_some()
+    {
+        return true;
+    }
+
+    let case_sensitive = activation.is_case_sensitive();
+
+    if dobj
+        .as_container()
+        .and_then(|o| o.child_by_name(&name, case_sensitive))
+        .is_some()
+    {
+        return true;
+    }
+
+    if magic_property && resolve_path_property(dobj, name, activation).is_some() {
+        return true;
+    }
+
+    false
+}
+
+pub fn enumerate_keys<'gc>(dobj: DisplayObject<'gc>, keys: &mut Vec<AvmString<'gc>>) {
+    // Keys from the underlying object are listed first, followed by
+    // child display objects in order from highest depth to lowest depth.
+    if let Some(ctr) = dobj.as_container() {
+        // Button/MovieClip children are included in key list.
+        for child in ctr.iter_render_list().rev() {
+            if child.as_interactive().is_some() {
+                keys.push(child.name().expect("Interactive DisplayObjects have names"));
             }
         }
-
-        keys
-    }
-
-    /// Get the underlying stage object, if it exists.
-    fn as_stage_object(&self) -> Option<StageObject<'gc>> {
-        Some(*self)
-    }
-
-    fn as_display_object(&self) -> Option<DisplayObject<'gc>> {
-        Some(self.0.display_object)
-    }
-
-    fn as_ptr(&self) -> *const ObjectPtr {
-        self.0.base.as_ptr()
     }
 }
 
+fn resolve_path_property<'gc>(
+    dobj: DisplayObject<'gc>,
+    name: AvmString<'gc>,
+    activation: &mut Activation<'_, 'gc>,
+) -> Option<Value<'gc>> {
+    let case_sensitive = activation.is_case_sensitive();
+    if name.eq_with_case(b"_root", case_sensitive) {
+        return Some(activation.root_object());
+    } else if name.eq_with_case(b"_parent", case_sensitive) {
+        return Some(
+            dobj.avm1_parent()
+                .map(|dn| dn.object().coerce_to_object(activation))
+                .map(Value::Object)
+                .unwrap_or(Value::Undefined),
+        );
+    } else if name.eq_with_case(b"_global", case_sensitive) {
+        return Some(activation.context.avm1.global_object().into());
+    }
+
+    // Resolve level names `_levelN`.
+    if let Some(prefix) = name.slice(..6) {
+        // `_flash` is a synonym of `_level`, a relic from the earliest Flash versions.
+        if prefix.eq_with_case(b"_level", case_sensitive)
+            || prefix.eq_with_case(b"_flash", case_sensitive)
+        {
+            let level_id = parse_level_id(&name[6..]);
+            let level = activation
+                .get_level(level_id)
+                .map(|o| o.object())
+                .unwrap_or(Value::Undefined);
+            return Some(level);
+        }
+    }
+
+    None
+}
+
+fn parse_level_id(digits: &WStr) -> i32 {
+    // TODO: Use `split_first`?
+    let (is_negative, digits) = match digits.get(0) {
+        Some(45) => (true, &digits[1..]),
+        _ => (false, digits),
+    };
+    let mut level_id: i32 = 0;
+    for digit in digits
+        .iter()
+        .map_while(|c| char::from_u32(c.into()).and_then(|c| c.to_digit(10)))
+    {
+        level_id = level_id.wrapping_mul(10);
+        level_id = level_id.wrapping_add(digit as i32);
+    }
+    if is_negative {
+        level_id = level_id.wrapping_neg();
+    }
+    level_id
+}
+
 /// Properties shared by display objects in AVM1, such as _x and _y.
-/// These are only accessible for movie clips, buttons, and text fields (any others?)
+/// These are only accessible for movie clips, buttons, text fields, and videos
 /// These exist outside the global or prototype machinery. Instead, they are
 /// "special" properties stored in a separate map that display objects look at in addition
 /// to normal property lookup.
@@ -460,18 +291,17 @@ impl<'gc> DisplayPropertyMap<'gc> {
 
     /// Gets a property slot by name.
     /// Used by `GetMember`, `GetVariable`, `SetMember`, and `SetVariable`.
-    pub fn get_by_name(&self, name: AvmString<'gc>) -> Option<&DisplayProperty> {
+    pub fn get_by_name(&self, name: AvmString<'gc>) -> Option<DisplayProperty> {
         // Display object properties are case insensitive, regardless of SWF version!?
-        // TODO: Another string alloc; optimize this eventually.
-        self.0.get(name, false)
+        self.0.get(name, false).copied()
     }
 
     /// Gets a property slot by SWF4 index.
     /// The order is defined by the SWF specs.
     /// Used by `GetProperty`/`SetProperty`.
     /// SWF19 pp. 85-86
-    pub fn get_by_index(&self, index: usize) -> Option<&DisplayProperty> {
-        self.0.get_index(index)
+    pub fn get_by_index(&self, index: usize) -> Option<DisplayProperty> {
+        self.0.get_index(index).copied()
     }
 
     fn add_property(

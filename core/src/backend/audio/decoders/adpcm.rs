@@ -97,7 +97,7 @@ pub struct AdpcmDecoder<R: Read> {
 impl<R: Read> AdpcmDecoder<R> {
     pub fn new(inner: R, is_stereo: bool, sample_rate: u16) -> Result<Self, Error> {
         let mut reader = BitReader::new(inner);
-        let bits_per_sample = reader.read::<u8>(2).map_err(|_| Error::Invalid)? as usize + 2;
+        let bits_per_sample = reader.read::<2, u8>().map_err(|_| Error::Invalid)? as usize + 2;
 
         let num_channels = if is_stereo { 2 } else { 1 };
 
@@ -119,8 +119,8 @@ impl<R: Read> Iterator for AdpcmDecoder<R> {
         if self.sample_num == 0 {
             // The initial sample values are NOT byte-aligned.
             for channel in &mut self.channels {
-                channel.sample = self.inner.read_signed(16).ok()?;
-                channel.step_index = self.inner.read::<u16>(6).ok()? as i16;
+                channel.sample = self.inner.read_signed::<16, i16>().ok()?;
+                channel.step_index = self.inner.read::<6, u16>().ok()? as i16;
             }
         }
 
@@ -130,7 +130,10 @@ impl<R: Read> Iterator for AdpcmDecoder<R> {
             let step = STEP_TABLE[channel.step_index as usize];
 
             // `data` is sign-magnitude, NOT two's complement.
-            let data = self.inner.read::<u32>(self.bits_per_sample as u32).ok()?;
+            let data = self
+                .inner
+                .read_var::<u32>(self.bits_per_sample as u32)
+                .ok()?;
             let sign_mask = 1 << (self.bits_per_sample - 1);
             let magnitude = data & !sign_mask;
 

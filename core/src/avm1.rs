@@ -32,7 +32,6 @@ pub use globals::array::ArrayBuilder;
 pub use globals::context_menu::make_context_menu_state;
 pub use globals::sound::start as start_sound;
 pub use object::script_object::ScriptObject;
-pub use object::stage_object::StageObject;
 pub use object::{NativeObject, Object, ObjectPtr, TObject};
 pub use property::Attribute;
 pub use property_map::PropertyMap;

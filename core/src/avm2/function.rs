@@ -8,6 +8,7 @@ use crate::avm2::value::Value;
 use crate::avm2::{Error, Multiname};
 use crate::string::WString;
 use gc_arena::{Collect, Gc};
+use std::borrow::Cow;
 use std::fmt;
 
 /// Represents a bound method.
@@ -79,7 +80,7 @@ impl<'gc> BoundMethod<'gc> {
             receiver,
             self.bound_superclass,
             self.bound_class,
-            arguments,
+            FunctionArgs::AsArgSlice { arguments },
             activation,
             callee,
         )
@@ -128,6 +129,48 @@ impl<'gc> BoundMethod<'gc> {
     }
 }
 
+#[derive(Clone, Copy)]
+pub enum FunctionArgs<'a, 'gc> {
+    OnAvmStack { arg_count: usize, stack_base: usize },
+    AsArgSlice { arguments: &'a [Value<'gc>] },
+}
+
+impl<'a, 'gc> FunctionArgs<'a, 'gc> {
+    pub fn to_slice(self, activation: &mut Activation<'_, 'gc>) -> Cow<'a, [Value<'gc>]> {
+        match self {
+            FunctionArgs::OnAvmStack {
+                arg_count,
+                stack_base,
+            } => {
+                let args_slice = activation.avm2().stack_slice(stack_base, arg_count);
+                Cow::Owned(args_slice.to_vec())
+            }
+            FunctionArgs::AsArgSlice { arguments } => Cow::Borrowed(arguments),
+        }
+    }
+
+    pub fn get_at(&self, activation: &mut Activation<'_, 'gc>, index: usize) -> Value<'gc> {
+        match self {
+            FunctionArgs::OnAvmStack {
+                arg_count,
+                stack_base,
+            } => {
+                assert!(index < *arg_count);
+
+                activation.avm2().stack_at(stack_base + index)
+            }
+            FunctionArgs::AsArgSlice { arguments } => arguments[index],
+        }
+    }
+
+    pub fn len(&self) -> usize {
+        match self {
+            FunctionArgs::OnAvmStack { arg_count, .. } => *arg_count,
+            FunctionArgs::AsArgSlice { arguments } => arguments.len(),
+        }
+    }
+}
+
 /// Execute a method.
 ///
 /// The function will either be called directly if it is a Rust builtin, or
@@ -149,12 +192,14 @@ pub fn exec<'gc>(
     receiver: Value<'gc>,
     bound_superclass: Option<ClassObject<'gc>>,
     bound_class: Option<Class<'gc>>,
-    mut arguments: &[Value<'gc>],
+    arguments: FunctionArgs<'_, 'gc>,
     activation: &mut Activation<'_, 'gc>,
     callee: Value<'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let ret = match method {
         Method::Native(bm) => {
+            let arguments = &arguments.to_slice(activation);
+
             let caller_domain = activation.caller_domain();
             let caller_movie = activation.caller_movie();
             let mut activation = Activation::from_builtin(
@@ -183,12 +228,8 @@ pub fn exec<'gc>(
             let resolved_signature = bm.resolved_signature.read();
             let resolved_signature = resolved_signature.as_ref().unwrap();
 
-            let arguments = activation.resolve_parameters(
-                method,
-                arguments,
-                resolved_signature,
-                bound_class,
-            )?;
+            let arguments =
+                activation.resolve_parameters(bm, arguments, resolved_signature, bound_class)?;
 
             #[cfg(feature = "tracy_avm")]
             let _span = {
@@ -208,13 +249,6 @@ pub fn exec<'gc>(
             (bm.method)(&mut activation, receiver, &arguments)
         }
         Method::Bytecode(bm) => {
-            if bm.is_unchecked() {
-                let max_args = bm.signature().len();
-                if arguments.len() > max_args && !bm.is_variadic() {
-                    arguments = &arguments[..max_args];
-                }
-            }
-
             // This used to be a one step called Activation::from_method,
             // but avoiding moving an Activation around helps perf
             let mut activation = Activation::from_nothing(activation.context);

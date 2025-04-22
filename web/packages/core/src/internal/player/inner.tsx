@@ -55,6 +55,11 @@ declare global {
     interface AudioSession {
         type?: string;
     }
+    // See https://github.com/microsoft/TypeScript-DOM-lib-generator/issues/1615
+    type OrientationLockType = "any" | "landscape" | "landscape-primary" | "landscape-secondary" | "natural" | "portrait" | "portrait-primary" | "portrait-secondary";
+    interface ScreenOrientation extends EventTarget {
+        lock(orientation: OrientationLockType): Promise<void>;
+    }
 }
 
 /**
@@ -489,6 +494,47 @@ export class InnerPlayer {
                     i--
                 ) {
                     this.dynamicStyles.sheet.deleteRule(i);
+                }
+            }
+
+            const alignAttr = this.element.attributes.getNamedItem("align");
+            if (alignAttr !== undefined && alignAttr !== null) {
+                const alignValue = alignAttr.value.toLowerCase();
+
+                const alignCSS = (() => {
+                    // Blink: https://source.chromium.org/chromium/chromium/src/+/42e06bc6:third_party/blink/renderer/core/html/html_element.cc;l=1062-1083
+                    // WebKit: https://github.com/WebKit/WebKit/blob/f6b6c1d/Source/WebCore/html/HTMLElement.cpp#L592-L611
+                    // Gecko: https://github.com/mozilla/gecko-dev/blob/0383ce6/dom/html/nsGenericHTMLElement.cpp#L1326-L1341
+                    // Gecko (cont): https://github.com/mozilla/gecko-dev/blob/0383ce6/dom/html/nsGenericHTMLElement.cpp#L1557-L1561
+                    switch (alignValue) {
+                        case "right":
+                            return "vertical-align: top; float: right;";
+                        case "left":
+                            return "vertical-align: top; float: left;";
+                        case "bottom":
+                            return "vertical-align: baseline;";
+                        case "top":
+                            return "vertical-align: top;";
+                        case "center":
+                            return "vertical-align: middle; vertical-align: -moz-middle-with-baseline;";
+                        case "middle":
+                            return "vertical-align: middle; vertical-align: -webkit-baseline-middle; vertical-align: -moz-middle-with-baseline;";
+                        case "absbottom":
+                            return "vertical-align: bottom;";
+                        case "absmiddle":
+                        case "abscenter":
+                            return "vertical-align: middle;";
+                        case "texttop":
+                            return "vertical-align: text-top;";
+                        default:
+                            return "";
+                    }
+                })();
+
+                if (alignCSS) {
+                    this.dynamicStyles.sheet.insertRule(
+                        `:host { ${alignCSS} }`
+                    );
                 }
             }
 
@@ -1026,6 +1072,21 @@ export class InnerPlayer {
      * Called when entering / leaving fullscreen.
      */
     private fullScreenChange(): void {
+        // If fullScreenAspectRatio is specified, lock orientation in fullscreen mode if supported
+        if (this.isFullscreen && screen.orientation && typeof screen.orientation.lock === "function") {
+            // TODO (danielhjacobs): If playerRuntime is "air", instead of just checking the loadedConfig fullScreenAspectRatio,
+            // when Ruffle loads the fullScreenAspectRatio should be applied by `Stage.setAspectRatio`,
+            // This code should check the current Stage aspect ratio, including if it was later changed.
+            // Note: "any" is not documented as a supported embed attribute, but it is documented for `Stage.setAspectRatio`.
+            const fullScreenAspectRatio = this.loadedConfig?.fullScreenAspectRatio?.toLowerCase() ?? "";
+            if (["portrait", "landscape", "any"].includes(fullScreenAspectRatio)) {
+                screen.orientation.lock(fullScreenAspectRatio as OrientationLockType).catch(() => {});
+            }
+        } else {
+            try {
+                screen.orientation.unlock();
+            } catch { }
+        }
         this.instance?.set_fullscreen(this.isFullscreen);
     }
 
@@ -2117,6 +2178,10 @@ export function getPolyfillOptions(
     const wmode = getOptionString("wmode");
     if (wmode !== null) {
         options.wmode = wmode as WindowMode;
+    }
+    const fullScreenAspectRatio = getOptionString("fullScreenAspectRatio");
+    if (fullScreenAspectRatio !== null) {
+        options.fullScreenAspectRatio = fullScreenAspectRatio;
     }
 
     return options;

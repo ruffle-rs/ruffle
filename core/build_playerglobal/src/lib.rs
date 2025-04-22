@@ -77,9 +77,6 @@ pub fn build_playerglobal(
             &out_dir.to_string_lossy(),
             "-out",
             "playerglobal",
-            "-import",
-            &classes_dir.join("stubs.as").to_string_lossy(),
-            // From some reason this has to be passed as a separate argument.
             &classes_dir.join("Toplevel.as").to_string_lossy(),
             &classes_dir.join("globals.as").to_string_lossy(),
         ])
@@ -494,9 +491,9 @@ fn write_native_table(data: &[u8], out_dir: &Path) -> Result<Vec<u8>, Box<dyn st
                     if disp_id == 0 {
                         panic!("ASC should calculate disp ids for all methods; cannot apply NativeCallable without a compiler-calculated disp id")
                     } else {
-                        // Disp-ids are 1-indexed, but ASC generates them two disp-ids
-                        // off. Instead of subtracting 1 from it the disp-id, add 1.
-                        let disp_id = disp_id + 1;
+                        // Disp-ids are 1-indexed, but ASC generates them one disp-id
+                        // off. Instead of subtracting 1 from it the disp-id, subtract 2.
+                        let disp_id = disp_id - 2;
 
                         let (trait_name, const_name) =
                             rust_path_and_trait_name(&abc, trait_, parent);

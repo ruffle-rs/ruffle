@@ -133,7 +133,7 @@ impl InputManager {
                     InputEvent::KeyDown {
                         key_code: *key_code,
                         key_char: None,
-                        // TODO what location shoud we use here?
+                        // TODO what location should we use here?
                         key_location: KeyLocation::Standard,
                     }
                 } else {
@@ -146,7 +146,7 @@ impl InputManager {
                     InputEvent::KeyUp {
                         key_code: *key_code,
                         key_char: None,
-                        // TODO what location shoud we use here?
+                        // TODO what location should we use here?
                         key_location: KeyLocation::Standard,
                     }
                 } else {

@@ -43,7 +43,7 @@ pub enum Error {
     TooManySounds,
 }
 
-/// An audio decoder. Can be used as an `Iterator` to return stero sample frames.
+/// An audio decoder. Can be used as an `Iterator` to return stereo sample frames.
 /// If the sound is mono, the sample is duplicated across both channels.
 pub trait Decoder: Iterator<Item = [i16; 2]> + Send + Sync {
     /// The number of channels of this audio decoder. Always 1 or 2.

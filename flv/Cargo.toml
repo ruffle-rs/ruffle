@@ -1,6 +1,6 @@
 [package]
 name = "flv-rs"
-version = "0.1.0"
+version.workspace = true
 authors = ["David Wendt <dcrkid@gmail.com>"]
 edition = "2021"
 license = "MIT OR Apache-2.0"

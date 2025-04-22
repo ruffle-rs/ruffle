@@ -1,12 +1,15 @@
 //! Video player display object
 
-use crate::avm1::{Object as Avm1Object, StageObject as Avm1StageObject, Value as Avm1Value};
+use crate::avm1::{
+    NativeObject as Avm1NativeObject, Object as Avm1Object, ScriptObject as Avm1ScriptObject,
+    Value as Avm1Value,
+};
 use crate::avm2::{
     Activation as Avm2Activation, Object as Avm2Object, StageObject as Avm2StageObject,
     Value as Avm2Value,
 };
 use crate::context::{RenderContext, UpdateContext};
-use crate::display_object::{DisplayObjectBase, DisplayObjectPtr};
+use crate::display_object::{Avm1TextFieldBinding, DisplayObjectBase, DisplayObjectPtr};
 use crate::prelude::*;
 use crate::streams::NetStream;
 use crate::tag_utils::{SwfMovie, SwfSlice};
@@ -47,6 +50,8 @@ impl fmt::Debug for Video<'_> {
 #[collect(no_drop)]
 pub struct VideoData<'gc> {
     base: DisplayObjectBase<'gc>,
+
+    avm1_text_field_bindings: Vec<Avm1TextFieldBinding<'gc>>,
 
     /// The source of the video data (e.g. an external file, a SWF bitstream)
     source: GcCell<'gc, VideoSource<'gc>>,
@@ -142,6 +147,7 @@ impl<'gc> Video<'gc> {
             mc,
             VideoData {
                 base: Default::default(),
+                avm1_text_field_bindings: Vec::new(),
                 source,
                 stream: VideoStream::Uninstantiated(0),
                 object: None,
@@ -166,6 +172,7 @@ impl<'gc> Video<'gc> {
             mc,
             VideoData {
                 base: Default::default(),
+                avm1_text_field_bindings: Vec::new(),
                 source,
                 stream: VideoStream::Uninstantiated(0),
                 object,
@@ -444,12 +451,11 @@ impl<'gc> TDisplayObject<'gc> for Video<'gc> {
         write.keyframes = keyframes;
 
         if write.object.is_none() && !movie.is_action_script_3() {
-            let object: Avm1Object<'_> = Avm1StageObject::for_display_object(
+            let object = Avm1Object::from(Avm1ScriptObject::new_with_native(
                 &context.strings,
-                (*self).into(),
-                context.avm1.prototypes().video,
-            )
-            .into();
+                Some(context.avm1.prototypes().video),
+                Avm1NativeObject::Video(*self),
+            ));
             write.object = Some(object.into());
         }
 
@@ -589,5 +595,23 @@ impl<'gc> TDisplayObject<'gc> for Video<'gc> {
             .and_then(|o| o.as_avm2_object())
             .map(Avm2Value::from)
             .unwrap_or(Avm2Value::Null)
+    }
+
+    fn avm1_text_field_bindings(&self) -> Option<Ref<'_, [Avm1TextFieldBinding<'gc>]>> {
+        let read = self.0.read();
+        read.object
+            .and_then(|o| o.as_avm1_object())
+            .map(|_| Ref::map(read, |r| &*r.avm1_text_field_bindings))
+    }
+
+    fn avm1_text_field_bindings_mut(
+        &self,
+        mc: &Mutation<'gc>,
+    ) -> Option<RefMut<'_, Vec<Avm1TextFieldBinding<'gc>>>> {
+        let write = self.0.write(mc);
+        write
+            .object
+            .and_then(|o| o.as_avm1_object())
+            .map(|_| RefMut::map(write, |w| &mut w.avm1_text_field_bindings))
     }
 }

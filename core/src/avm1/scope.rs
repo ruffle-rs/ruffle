@@ -148,16 +148,15 @@ impl<'gc> Scope<'gc> {
 
             // If we failed to find the value in the scope chain, but it *would* resolve on `self.locals()` if it wasn't
             // a removed clip, then try resolving on root instead
-            if let (CallableValue::UnCallable(Value::Undefined), Object::StageObject(s)) =
-                (&res, self.locals())
+            if top_level
+                && matches!(res, CallableValue::UnCallable(Value::Undefined))
+                && self.locals().has_own_property(activation, name)
             {
-                if top_level && s.raw_script_object().has_property(activation, name) {
-                    return activation
-                        .root_object()
-                        .coerce_to_object(activation)
-                        .get_non_slash_path(name, activation)
-                        .map(|v| CallableValue::Callable(self.locals_cell(), v));
-                }
+                return activation
+                    .root_object()
+                    .coerce_to_object(activation)
+                    .get_non_slash_path(name, activation)
+                    .map(|v| CallableValue::Callable(self.locals_cell(), v));
             }
 
             Ok(res)
@@ -178,11 +177,11 @@ impl<'gc> Scope<'gc> {
         value: Value<'gc>,
         activation: &mut Activation<'_, 'gc>,
     ) -> Result<(), Error<'gc>> {
-        let removed = if let Some(s) = self.values.as_stage_object() {
-            s.as_display_object().unwrap().avm1_removed()
-        } else {
-            false
-        };
+        let removed = self
+            .values
+            .as_display_object()
+            .map(|o| o.avm1_removed())
+            .unwrap_or_default();
 
         if !removed
             && (self.class == ScopeClass::Target || self.locals().has_property(activation, name))

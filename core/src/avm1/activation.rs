@@ -582,7 +582,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     }
 
     fn stack_push(&mut self, mut value: Value<'gc>) {
-        if let Value::Object(Object::StageObject(s)) = value {
+        if let Value::Object(obj) = value {
             // Note that there currently exists a subtle issue with this logic:
             // If the cached `Object` in a `MovieClipReference` becomes invalidated, causing it to switch back to path-based object resolution,
             // it should *never* switch back to cache-based resolution
@@ -591,7 +591,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             // Fixing this will require a thorough refactor of AVM1 to store `Either<MovieClipReference, Object>
             // can refer to a MovieClip
             // There is a ignored test for this issue of "reference laundering" at "avm1/string_paths_reference_launder"
-            if let Some(mcr) = MovieClipReference::try_from_stage_object(self, s) {
+            if let Some(mcr) = MovieClipReference::try_from_stage_object(self, obj) {
                 value = Value::MovieClip(mcr);
             }
         }
@@ -1157,7 +1157,6 @@ impl<'a, 'gc> Activation<'a, 'gc> {
                 .avm1
                 .display_properties()
                 .get_by_index(prop_index as usize)
-                .copied()
         };
 
         let result = if let Some(clip) = clip {
@@ -1917,7 +1916,6 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             .avm1
             .display_properties()
             .get_by_index(prop_index as usize)
-            .copied()
         {
             if clip.is_none() || property.is_read_only() {
                 // `prop_value` must be coerced even if the target is invalid or the property is read-only.

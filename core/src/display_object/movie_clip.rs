@@ -1,5 +1,8 @@
 //! `MovieClip` display object and support code.
-use crate::avm1::{Object as Avm1Object, StageObject, TObject as Avm1TObject, Value as Avm1Value};
+use crate::avm1::{
+    NativeObject as Avm1NativeObject, Object as Avm1Object, ScriptObject as Avm1ScriptObject,
+    TObject as Avm1TObject, Value as Avm1Value,
+};
 use crate::avm2::object::LoaderInfoObject;
 use crate::avm2::object::LoaderStream;
 use crate::avm2::script::Script;
@@ -24,8 +27,8 @@ use crate::display_object::interactive::{
     InteractiveObject, InteractiveObjectBase, TInteractiveObject,
 };
 use crate::display_object::{
-    Avm1Button, Avm2Button, DisplayObjectBase, DisplayObjectPtr, EditText, Graphic, MorphShape,
-    Text, Video,
+    Avm1Button, Avm1TextFieldBinding, Avm2Button, DisplayObjectBase, DisplayObjectPtr, EditText,
+    Graphic, MorphShape, Text, Video,
 };
 use crate::drawing::Drawing;
 use crate::events::{ButtonKeyCode, ClipEvent, ClipEventResult};
@@ -193,6 +196,8 @@ pub struct MovieClipData<'gc> {
 
     // If this movie was loaded from ImportAssets(2), this will be the parent movie.
     importer_movie: Option<Arc<SwfMovie>>,
+
+    avm1_text_field_bindings: Vec<Avm1TextFieldBinding<'gc>>,
 }
 
 impl<'gc> MovieClip<'gc> {
@@ -229,6 +234,7 @@ impl<'gc> MovieClip<'gc> {
                 queued_tags: HashMap::new(),
                 attached_audio: None,
                 importer_movie: None,
+                avm1_text_field_bindings: Vec::new(),
             },
         ))
     }
@@ -271,6 +277,7 @@ impl<'gc> MovieClip<'gc> {
                 queued_tags: HashMap::new(),
                 attached_audio: None,
                 importer_movie: None,
+                avm1_text_field_bindings: Vec::new(),
             },
         ));
         clip.set_avm2_class(gc_context, Some(class));
@@ -316,6 +323,7 @@ impl<'gc> MovieClip<'gc> {
                 queued_tags: HashMap::new(),
                 attached_audio: None,
                 importer_movie: None,
+                avm1_text_field_bindings: Vec::new(),
             },
         ))
     }
@@ -371,6 +379,7 @@ impl<'gc> MovieClip<'gc> {
                 queued_tags: HashMap::new(),
                 attached_audio: None,
                 importer_movie: Some(parent.clone()),
+                avm1_text_field_bindings: Vec::new(),
             },
         ));
 
@@ -437,6 +446,7 @@ impl<'gc> MovieClip<'gc> {
                 queued_tags: HashMap::new(),
                 attached_audio: None,
                 importer_movie: None,
+                avm1_text_field_bindings: Vec::new(),
             },
         ));
 
@@ -2001,12 +2011,11 @@ impl<'gc> MovieClip<'gc> {
                     .get(istr!("prototype"), &mut activation)
                     .map(|v| v.coerce_to_object(&mut activation))
                 {
-                    let object: Avm1Object<'gc> = StageObject::for_display_object(
-                        activation.strings(),
-                        self.into(),
-                        prototype,
-                    )
-                    .into();
+                    let object = Avm1Object::from(Avm1ScriptObject::new_with_native(
+                        &activation.context.strings,
+                        Some(prototype),
+                        Avm1NativeObject::MovieClip(self),
+                    ));
                     self.0.write(activation.gc()).object = Some(object.into());
 
                     if run_frame {
@@ -2032,12 +2041,11 @@ impl<'gc> MovieClip<'gc> {
                 return;
             }
 
-            let object: Avm1Object<'gc> = StageObject::for_display_object(
+            let object = Avm1Object::from(Avm1ScriptObject::new_with_native(
                 &context.strings,
-                self.into(),
-                context.avm1.prototypes().movie_clip,
-            )
-            .into();
+                Some(context.avm1.prototypes().movie_clip),
+                Avm1NativeObject::MovieClip(self),
+            ));
             self.0.write(context.gc()).object = Some(object.into());
 
             if run_frame {
@@ -2088,9 +2096,11 @@ impl<'gc> MovieClip<'gc> {
         }
 
         // If this text field has a variable set, initialize text field binding.
-        Avm1::run_with_stack_frame_for_display_object(self.into(), context, |activation| {
-            self.bind_text_field_variables(activation);
-        });
+        Avm1::run_with_stack_frame_for_display_object(
+            self.into(),
+            context,
+            Avm1TextFieldBinding::bind_variables,
+        );
     }
 
     /// Allocate the AVM2 side of this object.
@@ -2849,11 +2859,7 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
         }
 
         // Unregister any text field variable bindings.
-        if let Avm1Value::Object(object) = self.object() {
-            if let Some(stage_object) = object.as_stage_object() {
-                stage_object.unregister_text_field_bindings(context);
-            }
-        }
+        Avm1TextFieldBinding::unregister_bindings((*self).into(), context);
 
         self.drop_focus(context);
 
@@ -2874,6 +2880,24 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
         }
 
         self.set_avm1_removed(context.gc(), true);
+    }
+
+    fn avm1_text_field_bindings(&self) -> Option<Ref<'_, [Avm1TextFieldBinding<'gc>]>> {
+        let read = self.0.read();
+        read.object
+            .and_then(|o| o.as_avm1_object())
+            .map(|_| Ref::map(read, |r| &*r.avm1_text_field_bindings))
+    }
+
+    fn avm1_text_field_bindings_mut(
+        &self,
+        mc: &Mutation<'gc>,
+    ) -> Option<RefMut<'_, Vec<Avm1TextFieldBinding<'gc>>>> {
+        let write = self.0.write(mc);
+        write
+            .object
+            .and_then(|o| o.as_avm1_object())
+            .map(|_| RefMut::map(write, |w| &mut w.avm1_text_field_bindings))
     }
 
     fn loader_info(&self) -> Option<Avm2Object<'gc>> {

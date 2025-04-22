@@ -53,9 +53,9 @@ package {
                 return s.AS3::slice(start, end);
             };
 
-            prototype.split = function(delimeter:* = void 0, limit:* = 4294967295.0):Array {
+            prototype.split = function(delimiter:* = void 0, limit:* = 4294967295.0):Array {
                 var s:String = this;
-                return s.AS3::split(delimeter, limit);
+                return s.AS3::split(delimiter, limit);
             };
 
             prototype.substr = function(start:Number = 0, len:Number = 2147483647.0):String {
@@ -170,7 +170,7 @@ package {
 
         AS3 native function slice(start:Number = 0, end:Number = 2147483647.0):String;
 
-        AS3 native function split(delimeter:* = void 0, limit:* = 4294967295):Array;
+        AS3 native function split(delimiter:* = void 0, limit:* = 4294967295):Array;
 
         AS3 native function substr(start:Number = 0, length:Number = 2147483647.0):String;
 

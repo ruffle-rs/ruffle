@@ -20,11 +20,10 @@ pub fn create_class<'gc>(activation: &mut Activation<'_, 'gc>) -> Class<'gc> {
         QName::new(activation.avm2().namespaces.public_all(), istr!("null")),
         None,
         Method::from_builtin(null_init, "", mc),
+        vec![],
         mc,
     );
     class.set_attributes(mc, ClassAttributes::FINAL | ClassAttributes::SEALED);
-
-    class.mark_traits_loaded(activation.gc());
 
     class
 }

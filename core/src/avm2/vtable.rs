@@ -77,29 +77,6 @@ impl<'gc> VTable<'gc> {
         ))
     }
 
-    /// A special case for newcatch. A single variable (q)name that maps to slot 0.
-    pub fn newcatch(mc: &Mutation<'gc>, vname: &QName<'gc>) -> Self {
-        let mut rt = PropertyMap::new();
-
-        rt.insert(*vname, Property::Slot { slot_id: 0 });
-
-        let vt = VTable(GcCell::new(
-            mc,
-            VTableData {
-                scope: None,
-                protected_namespace: None,
-                resolved_traits: rt,
-                slot_metadata_table: HashMap::new(),
-                disp_metadata_table: HashMap::new(),
-                method_table: vec![],
-                default_slots: vec![None],
-                slot_classes: vec![PropertyClass::Any],
-            },
-        ));
-
-        vt
-    }
-
     pub fn resolved_traits(&self) -> Ref<'_, PropertyMap<'gc, Property>> {
         Ref::map(self.0.read(), |v| &v.resolved_traits)
     }
@@ -200,6 +177,13 @@ impl<'gc> VTable<'gc> {
 
     pub fn set_slot_class(&self, mc: &Mutation<'gc>, index: usize, value: PropertyClass<'gc>) {
         self.0.write(mc).slot_classes[index] = value;
+    }
+
+    pub fn replace_scopes_with(&self, mc: &Mutation<'gc>, new_scope: ScopeChain<'gc>) {
+        let mut write = self.0.write(mc);
+        for method in write.method_table.iter_mut() {
+            method.scope = Some(new_scope);
+        }
     }
 
     /// Calculate the flattened list of instance traits that this class

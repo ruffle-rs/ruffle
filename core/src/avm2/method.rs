@@ -2,15 +2,14 @@
 
 use crate::avm2::activation::Activation;
 use crate::avm2::class::Class;
-use crate::avm2::object::ClassObject;
+use crate::avm2::error::{verify_error, Error};
 use crate::avm2::script::TranslationUnit;
 use crate::avm2::value::{abc_default_value, Value};
 use crate::avm2::verify::{resolve_param_config, VerifiedMethodInfo};
-use crate::avm2::Error;
 use crate::avm2::Multiname;
 use crate::tag_utils::SwfMovie;
 use gc_arena::barrier::unlock;
-use gc_arena::lock::{Lock, RefLock};
+use gc_arena::lock::RefLock;
 use gc_arena::{Collect, Gc, GcCell, Mutation};
 use std::borrow::Cow;
 use std::fmt;
@@ -99,7 +98,7 @@ pub struct BytecodeMethod<'gc> {
 
     /// The underlying ABC file of the above translation unit.
     #[collect(require_static)]
-    pub abc: Rc<AbcFile>,
+    abc: Rc<AbcFile>,
 
     /// The ABC method this function uses.
     pub abc_method: u32,
@@ -116,15 +115,17 @@ pub struct BytecodeMethod<'gc> {
     /// its return value.
     pub return_type: Option<Gc<'gc, Multiname<'gc>>>,
 
-    /// The associated activation class. Initialized lazily, and only
-    /// if the method requires it.
-    activation_class: Lock<Option<ClassObject<'gc>>>,
-
     /// Whether or not this method was declared as a free-standing function.
     ///
     /// A free-standing function corresponds to the `Function` trait type, and
     /// is instantiated with the `newfunction` opcode.
     pub is_function: bool,
+
+    /// Whether or not this method substitutes Undefined for missing arguments.
+    ///
+    /// This is true when the method is a free-standing function and none of the
+    /// declared arguments have a type or a default value.
+    pub is_unchecked: bool,
 }
 
 impl<'gc> BytecodeMethod<'gc> {
@@ -136,20 +137,27 @@ impl<'gc> BytecodeMethod<'gc> {
         activation: &mut Activation<'_, 'gc>,
     ) -> Result<Self, Error<'gc>> {
         let abc = txunit.abc();
+        let Some(method) = abc.methods.get(abc_method.0 as usize) else {
+            return Err(Error::AvmError(verify_error(
+                activation,
+                "Error #1027: Method_info exceeds method_count.",
+                1027,
+            )?));
+        };
+
         let mut signature = Vec::new();
-        let mut return_type = None;
-        let mut abc_method_body = None;
+        for param in &method.params {
+            signature.push(ParamConfig::from_abc_param(param, txunit, activation)?);
+        }
 
-        if abc.methods.get(abc_method.0 as usize).is_some() {
-            let method = &abc.methods[abc_method.0 as usize];
-            for param in &method.params {
-                signature.push(ParamConfig::from_abc_param(param, txunit, activation)?);
-            }
+        let return_type = txunit.pool_multiname_static_any(activation, method.return_type)?;
 
-            return_type = txunit.pool_multiname_static_any(activation, method.return_type)?;
+        let abc_method_body = method.body.map(|b| b.0);
 
-            if let Some(body) = method.body {
-                abc_method_body = Some(body.0);
+        let mut all_params_unchecked = true;
+        for param in &signature {
+            if param.param_type_name.is_some() || param.default_value.is_some() {
+                all_params_unchecked = false;
             }
         }
 
@@ -162,7 +170,7 @@ impl<'gc> BytecodeMethod<'gc> {
             signature,
             return_type,
             is_function,
-            activation_class: Lock::new(None),
+            is_unchecked: is_function && all_params_unchecked,
         })
     }
 
@@ -251,44 +259,12 @@ impl<'gc> BytecodeMethod<'gc> {
 
     /// Determine if a given method is unchecked.
     ///
-    /// A method is unchecked if all of the following are true:
+    /// A method is unchecked if both of the following are true:
     ///
     ///  * The method was declared as a free-standing function
-    ///  * The function does not use rest-parameters
     ///  * The function's parameters have no declared types or default values
     pub fn is_unchecked(&self) -> bool {
-        if !self.is_function {
-            return false;
-        }
-
-        for param in self.signature() {
-            if param.param_type_name.is_some() || param.default_value.is_some() {
-                return false;
-            }
-        }
-
-        !self.method().flags.contains(AbcMethodFlags::NEED_REST)
-    }
-
-    /// Initialize and return the activation class object, if the method requires it.
-    pub fn get_or_init_activation_class(
-        this: Gc<'gc, Self>,
-        mc: &Mutation<'gc>,
-        init: impl FnOnce() -> Result<ClassObject<'gc>, Error<'gc>>,
-    ) -> Result<Option<ClassObject<'gc>>, Error<'gc>> {
-        Ok(if let Some(cached) = this.activation_class.get() {
-            Some(cached)
-        } else if this
-            .method()
-            .flags
-            .contains(AbcMethodFlags::NEED_ACTIVATION)
-        {
-            let cls = Some(init()?);
-            unlock!(Gc::write(mc, this), Self, activation_class).set(cls);
-            cls
-        } else {
-            None
-        })
+        self.is_unchecked
     }
 }
 

@@ -3,7 +3,7 @@
 use crate::avm2::activation::Activation;
 use crate::avm2::error;
 use crate::avm2::error::type_error;
-use crate::avm2::function::exec;
+use crate::avm2::function::{exec, FunctionArgs};
 use crate::avm2::object::{NamespaceObject, Object, TObject};
 use crate::avm2::property::Property;
 use crate::avm2::script::TranslationUnit;
@@ -1244,10 +1244,20 @@ impl<'gc> Value<'gc> {
         arguments: &[Value<'gc>],
         activation: &mut Activation<'_, 'gc>,
     ) -> Result<Value<'gc>, Error<'gc>> {
+        self.call_method_with_args(id, FunctionArgs::AsArgSlice { arguments }, activation)
+    }
+
+    pub fn call_method_with_args(
+        &self,
+        id: u32,
+        arguments: FunctionArgs<'_, 'gc>,
+        activation: &mut Activation<'_, 'gc>,
+    ) -> Result<Value<'gc>, Error<'gc>> {
         // TODO: Bound methods should be cached on the Method in a
         // WeakKeyHashMap<Value, FunctionObject>, not on the Object
         if let Some(object) = self.as_object() {
             if let Some(bound_method) = object.get_bound_method(id) {
+                let arguments = &arguments.to_slice(activation);
                 return bound_method.call(activation, *self, arguments);
             }
         }
@@ -1285,6 +1295,7 @@ impl<'gc> Value<'gc> {
             object.install_bound_method(activation.gc(), id, bound_method);
         }
 
+        let arguments = &arguments.to_slice(activation);
         bound_method.call(activation, *self, arguments)
     }
 
