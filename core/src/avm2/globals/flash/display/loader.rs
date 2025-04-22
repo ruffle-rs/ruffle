@@ -171,7 +171,7 @@ pub fn request_from_url_request<'gc>(
         }
     }
 
-    let method =
+    let mut method =
         NavigationMethod::from_method_str(&method).expect("URLRequest should have a valid method");
     let data = url_request.get_slot(url_request_slots::_DATA);
     let body = match (method, data) {
@@ -205,11 +205,25 @@ pub fn request_from_url_request<'gc>(
                     content_type,
                 ))
             }
-        }
+		}
     };
 
+    // Undocumented behaviour:
+    // When no payload is null, flash will ignore the method and does a GET request instead.
+    // This is still an issue even on Flash 35.
+	println!("BODY: {body:?}");
+	
+    if body.is_none() {
+		method = NavigationMethod::Get;
+    }
+
     let mut request = Request::request(method, url.to_string(), body);
-    request.set_headers(string_headers);
+
+    // Even though the documentation said that on browsers it sends headers only through POST
+    // It also doesn't send headers on GET request on Flash 35 (Adobe Animate)
+    if method == NavigationMethod::Post {
+        request.set_headers(string_headers);
+    }
 
     Ok(request)
 }
