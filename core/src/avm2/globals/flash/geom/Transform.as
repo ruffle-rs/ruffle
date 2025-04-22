@@ -27,7 +27,7 @@ package flash.geom {
         public native function get pixelBounds():Rectangle;
 
         public native function get matrix3D():Matrix3D;
-        public native function set matrix3D(m:Matrix3D):void;
+        public native function set matrix3D(m:Matrix3D):*;
 
         public native function get perspectiveProjection():PerspectiveProjection;
         public native function set perspectiveProjection(val: PerspectiveProjection):void;
