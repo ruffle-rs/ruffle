@@ -191,6 +191,7 @@ async function enable() {
                     "https://*.edgenuity.com/*", // See https://github.com/ruffle-rs/ruffle/pull/16186
                     "https://www.chewy.com/*", // See https://github.com/ruffle-rs/ruffle/issues/18265
                     "https://*.duosecurity.com/*", // See https://github.com/ruffle-rs/ruffle/pull/18299
+                    "https://*.tiktok.com/*", // See https://github.com/ruffle-rs/ruffle/pull/20250
                 ],
                 runAt: "document_start",
                 allFrames: true,
