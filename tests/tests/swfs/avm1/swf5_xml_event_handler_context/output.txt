@@ -1,0 +1,2 @@
+xmlDoc.onLoad(success: true)
+callback called from child
