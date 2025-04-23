@@ -29,7 +29,7 @@
 			for each (var method in ["POST"]) {
 				for each (var data in datas) {
 					var request: URLRequest = new URLRequest();
-					request.url = "https://google.com";
+					request.url = "http://localhost:8000";
 					request.method = method;
 					request.data = data;
 					var headers = new Array();
