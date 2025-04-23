@@ -213,7 +213,7 @@ pub fn request_from_url_request<'gc>(
     };
 
     // Flash behaviour:
-    // When payload is null, flash will ignore the method and do a GET request instead.
+    // When payload is null or empty, flash will ignore the method and do a GET request instead.
     if body.is_none() {
         method = NavigationMethod::Get;
     }

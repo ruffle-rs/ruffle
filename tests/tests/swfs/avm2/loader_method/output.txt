@@ -1,0 +1,90 @@
+Test 0
+// request.url
+http://localhost:8000
+
+// request.data
+
+
+// request.method
+POST
+
+// loader.load(request)
+undefined
+Navigator::fetch:
+  URL: http://localhost:8000
+  Method: GET
+
+Test 1
+// request.url
+http://localhost:8000
+
+// request.data
+[object Object]
+
+// request.method
+POST
+
+// loader.load(request)
+undefined
+Navigator::fetch:
+  URL: http://localhost:8000
+  Method: POST
+  Headers:
+MyHeader1: MyDuplicateVal
+MyHeader2: MyVal2
+MyHeader3: MyVal3
+MyHeader4: MyVal4
+ANewHeader: MyVal4
+SomeHeader: MyVal4
+  Mime-Type: application/x-www-form-urlencoded
+  Body: [object Object]
+
+Test 2
+// request.url
+http://localhost:8000
+
+// request.data
+
+
+// request.method
+POST
+
+// loader.load(request)
+undefined
+Navigator::fetch:
+  URL: http://localhost:8000
+  Method: GET
+
+Test 3
+// request.url
+http://localhost:8000
+
+// request.data
+
+
+// request.method
+POST
+
+// loader.load(request)
+undefined
+Navigator::fetch:
+  URL: http://localhost:8000
+  Method: GET
+
+Test 4
+// request.url
+http://localhost:8000
+
+// request.data
+a=b
+
+// request.method
+POST
+
+// loader.load(request)
+undefined
+Navigator::fetch:
+  URL: http://localhost:8000
+  Method: GET
+
+Test 5

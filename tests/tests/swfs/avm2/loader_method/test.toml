@@ -1,0 +1,4 @@
+# Note that this test does not run "successfully" in Flash Player, it's testing Ruffle's navigator
+
+num_frames = 10
+log_fetch = true
