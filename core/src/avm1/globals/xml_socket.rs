@@ -205,12 +205,7 @@ fn on_data<'gc>(
     let xml_constructor = activation.context.avm1.prototypes().xml_constructor;
 
     if let Ok(xml) = xml_constructor.construct(activation, args) {
-        let _ = this.call_method(
-            istr!("onXML"),
-            &[xml],
-            activation,
-            ExecutionReason::FunctionCall,
-        )?;
+        let _ = this.call_method(istr!("onXML"), &[xml], activation, ExecutionReason::Special)?;
     } else {
         tracing::warn!("default XMLSocket.onData() received invalid XML; message ignored");
     }

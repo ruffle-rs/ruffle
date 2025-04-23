@@ -427,7 +427,7 @@ fn on_data<'gc>(
             istr!("onLoad"),
             &[false.into()],
             activation,
-            ExecutionReason::FunctionCall,
+            ExecutionReason::Special,
         )?;
     } else {
         let src = src.coerce_to_string(activation)?;
@@ -435,7 +435,7 @@ fn on_data<'gc>(
             istr!("parseXML"),
             &[src.into()],
             activation,
-            ExecutionReason::FunctionCall,
+            ExecutionReason::Special,
         )?;
 
         this.set(istr!("loaded"), true.into(), activation)?;
@@ -444,7 +444,7 @@ fn on_data<'gc>(
             istr!("onLoad"),
             &[true.into()],
             activation,
-            ExecutionReason::FunctionCall,
+            ExecutionReason::Special,
         )?;
     }
 
