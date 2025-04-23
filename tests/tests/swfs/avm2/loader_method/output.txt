@@ -13,6 +13,13 @@ undefined
 Navigator::fetch:
   URL: http://localhost:8000
   Method: GET
+  Headers:
+MyHeader1: MyDuplicateVal
+MyHeader2: MyVal2
+MyHeader3: MyVal3
+MyHeader4: MyVal4
+ANewHeader: MyVal4
+SomeHeader: MyVal4
 
 Test 1
 // request.url
@@ -54,6 +61,13 @@ undefined
 Navigator::fetch:
   URL: http://localhost:8000
   Method: GET
+  Headers:
+MyHeader1: MyDuplicateVal
+MyHeader2: MyVal2
+MyHeader3: MyVal3
+MyHeader4: MyVal4
+ANewHeader: MyVal4
+SomeHeader: MyVal4
 
 Test 3
 // request.url
@@ -70,13 +84,20 @@ undefined
 Navigator::fetch:
   URL: http://localhost:8000
   Method: GET
+  Headers:
+MyHeader1: MyDuplicateVal
+MyHeader2: MyVal2
+MyHeader3: MyVal3
+MyHeader4: MyVal4
+ANewHeader: MyVal4
+SomeHeader: MyVal4
 
 Test 4
 // request.url
 http://localhost:8000
 
 // request.data
-a=b
+
 
 // request.method
 POST
@@ -86,5 +107,12 @@ undefined
 Navigator::fetch:
   URL: http://localhost:8000
   Method: GET
+  Headers:
+MyHeader1: MyDuplicateVal
+MyHeader2: MyVal2
+MyHeader3: MyVal3
+MyHeader4: MyVal4
+ANewHeader: MyVal4
+SomeHeader: MyVal4
 
 Test 5

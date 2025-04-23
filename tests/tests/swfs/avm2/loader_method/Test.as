@@ -40,7 +40,7 @@
 					headers.push(new URLRequestHeader("MyHeader4", "MyVal4"));
 					headers.push(new URLRequestHeader("ANewHeader", "MyVal4"));
 					headers.push(new URLRequestHeader("SomeHeader", "MyVal4"));
-					//request.requestHeaders = headers;
+					request.requestHeaders = headers;
 					requests.push(request);
 				}
 			}
