@@ -219,7 +219,7 @@ pub fn request_from_url_request<'gc>(
     }
 
     let mut request = Request::request(method, url.to_string(), body);
-	request.set_headers(string_headers);
+    request.set_headers(string_headers);
 
     Ok(request)
 }
