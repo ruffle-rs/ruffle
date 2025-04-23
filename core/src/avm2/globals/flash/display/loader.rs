@@ -219,12 +219,7 @@ pub fn request_from_url_request<'gc>(
     }
 
     let mut request = Request::request(method, url.to_string(), body);
-
-    // Even though the documentation said that on browsers it sends headers only through POST
-    // It also doesn't send headers on GET request on Flash 35 (Adobe Animate)
-    if method == NavigationMethod::Post {
-        request.set_headers(string_headers);
-    }
+	request.set_headers(string_headers);
 
     Ok(request)
 }
