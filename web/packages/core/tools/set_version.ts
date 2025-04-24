@@ -17,10 +17,16 @@ try {
     console.log("Couldn't fetch latest git commit...");
 }
 
-let versionName =
-    versionChannel === "nightly"
-        ? `nightly ${buildDate.substring(0, 10)}`
-        : versionNumber;
+let versionName;
+if (versionChannel === "stable") {
+    versionName = versionNumber;
+} else if (versionChannel === "nightly") {
+    // TODO Try to include the build date in
+    //      the version and drop this branch.
+    versionName = `${versionNumber} nightly ${buildDate.substring(0, 10)}`;
+} else {
+    versionName = `${versionChannel} ${versionNumber}`;
+}
 
 interface VersionInformation {
     version_number: string;
