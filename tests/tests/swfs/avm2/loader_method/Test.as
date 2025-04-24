@@ -32,15 +32,6 @@
 					request.url = "http://localhost:8000";
 					request.method = method;
 					request.data = data;
-					var headers = new Array();
-					headers.push(new URLRequestHeader("MyHeader1", "MyVal1"));
-					headers.push(new URLRequestHeader("MyHeader2", "MyVal2"));
-					headers.push(new URLRequestHeader("MyHeader1", "MyDuplicateVal"));
-					headers.push(new URLRequestHeader("MyHeader3", "MyVal3"));
-					headers.push(new URLRequestHeader("MyHeader4", "MyVal4"));
-					headers.push(new URLRequestHeader("ANewHeader", "MyVal4"));
-					headers.push(new URLRequestHeader("SomeHeader", "MyVal4"));
-					request.requestHeaders = headers;
 					requests.push(request);
 				}
 			}
