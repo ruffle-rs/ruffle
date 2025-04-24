@@ -1055,6 +1055,8 @@ impl<'gc> MovieClip<'gc> {
                 self.run_goto(context, frame, false);
             }
         } else if self.movie().is_action_script_3() {
+            // Despite not running, the goto still overwrites the currently enqueued frame.
+            self.0.write(context.gc()).queued_goto_frame = None;
             // Pretend we actually did a goto, but don't do anything.
             run_inner_goto_frame(context, &[], self);
         }
