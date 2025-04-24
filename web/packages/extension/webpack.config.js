@@ -57,10 +57,15 @@ function transformManifest(content, env) {
             scripts: ["dist/background.js"],
         };
     } else {
-        manifest.version_name =
-            versionChannel === "nightly"
-                ? `${packageVersion} nightly ${buildDate}`
-                : packageVersion;
+        if (versionChannel === "stable") {
+            manifest.version_name = packageVersion;
+        } else if (versionChannel === "nightly") {
+            // TODO Try to include the build date in
+            //      the version and drop this branch.
+            manifest.version_name = `${packageVersion} nightly ${buildDate}`;
+        } else {
+            manifest.version_name = `${versionChannel} ${packageVersion}`;
+        }
 
         manifest.background = {
             service_worker: "dist/background.js",
