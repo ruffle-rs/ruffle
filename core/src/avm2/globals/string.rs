@@ -218,7 +218,7 @@ pub fn match_internal<'gc>(
     if let Some(mut regexp) = pattern.as_regexp_mut(activation.gc()) {
         let mut storage = ArrayStorage::new(0);
         if regexp.flags().contains(RegExpFlags::GLOBAL) {
-            let mut last = regexp.last_index();
+            let mut last = 0;
             let old_last_index = regexp.last_index();
             regexp.set_last_index(0);
             while let Some(result) = regexp.exec(this) {
