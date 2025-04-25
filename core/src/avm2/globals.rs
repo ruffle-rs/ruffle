@@ -776,6 +776,7 @@ pub fn load_playerglobal<'gc>(
     activation.avm2().native_instance_allocator_table = native::NATIVE_INSTANCE_ALLOCATOR_TABLE;
     activation.avm2().native_call_handler_table = native::NATIVE_CALL_HANDLER_TABLE;
     activation.avm2().native_custom_constructor_table = native::NATIVE_CUSTOM_CONSTRUCTOR_TABLE;
+    activation.avm2().native_fast_call_list = native::NATIVE_FAST_CALL_LIST;
 
     let movie = Arc::new(
         SwfMovie::from_data(PLAYERGLOBAL, "file:///".into(), None)
