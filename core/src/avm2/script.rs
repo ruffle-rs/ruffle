@@ -180,19 +180,9 @@ impl<'gc> TranslationUnit<'gc> {
             return Ok(*method);
         }
 
-        let is_global = read.domain.is_playerglobals_domain(activation.avm2());
         drop(read);
 
-        let mut native_method = None;
-
-        if is_global {
-            if let Some(native) = activation.avm2().native_method_table[method_index.0 as usize] {
-                native_method = Some(native);
-            }
-        }
-
-        let method =
-            Method::from_method_index(self, method_index, native_method, is_function, activation)?;
+        let method = Method::from_method_index(self, method_index, is_function, activation)?;
 
         self.0.write(activation.gc()).methods[method_index.0 as usize] = Some(method);
 

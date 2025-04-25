@@ -155,6 +155,8 @@ pub struct Avm2<'gc> {
     #[collect(require_static)]
     native_custom_constructor_table: &'static [Option<CustomConstructorFn>],
 
+    native_fast_call_list: &'static [usize],
+
     /// A list of objects which are capable of receiving broadcasts.
     ///
     /// Certain types of events are "broadcast events" that are emitted on all
@@ -225,6 +227,7 @@ impl<'gc> Avm2<'gc> {
             native_instance_allocator_table: Default::default(),
             native_call_handler_table: Default::default(),
             native_custom_constructor_table: Default::default(),
+            native_fast_call_list: Default::default(),
             broadcast_list: Default::default(),
 
             orphan_objects: Default::default(),
