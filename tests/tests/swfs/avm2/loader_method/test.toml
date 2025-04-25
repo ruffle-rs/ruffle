@@ -1,0 +1,5 @@
+# Note that this test does not run "successfully" in Flash Player, it's testing Ruffle's navigator
+# Note that test 4 isn't currently accurate to FP due to a bug(?) in bytearray implementation.
+
+num_frames = 10
+log_fetch = true

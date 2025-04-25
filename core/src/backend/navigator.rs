@@ -34,7 +34,7 @@ pub fn url_from_relative_url(base: &str, relative: &str) -> Result<Url, ParseErr
 }
 
 /// Enumerates all possible navigation methods.
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, PartialEq)]
 pub enum NavigationMethod {
     /// Indicates that navigation should generate a GET request.
     Get,
