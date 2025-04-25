@@ -5,6 +5,7 @@ package {
             // Unreachable because InstanceAllocator always throws an error
         }
 
+        [Ruffle(FastCall)]
         public final native function get prototype():*;
 
         public static const length:int = 1;

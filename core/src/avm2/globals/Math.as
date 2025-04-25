@@ -38,12 +38,23 @@ package {
         [Ruffle(FastCall)]
         public static native function tan(x: Number): Number;
 
+        [Ruffle(FastCall)]
         public static native function atan2(y: Number, x: Number): Number;
+        [Ruffle(FastCall)]
         public static native function pow(x: Number, y: Number): Number;
 
         // This is a hacky way to specify `-Infinity` as a default value.
         private static const NegInfinity: Number = -1 / 0;
+
+        // NOTE: These methods are marked as FastCall despite their ability to
+        // throw an error (when Objects are passed in the restargs). This is fine
+        // because the optimizer will only convert calls to these methods to
+        // CallNative calls when the methods are called with exactly two
+        // parameters; the methods cannot error if called with only two parameters.
+
+        [Ruffle(FastCall)]
         public static native function max(x: Number = NegInfinity, y: Number = NegInfinity, ...rest): Number;
+        [Ruffle(FastCall)]
         public static native function min(x: Number = Infinity, y: Number = Infinity, ...rest): Number;
 
         [Ruffle(FastCall)]

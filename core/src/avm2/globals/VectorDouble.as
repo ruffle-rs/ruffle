@@ -145,6 +145,7 @@ package __AS3__.vec {
 
         public native function set fixed(isFixed:Boolean):*;
 
+        [Ruffle(FastCall)]
         public native function get length():uint;
 
         public native function set length(length:uint):*;

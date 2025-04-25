@@ -143,10 +143,13 @@ package {
         public static native function fromCharCode(... rest):String;
 
         // Instance methods
+        [Ruffle(FastCall)]
         public native function get length():int;
 
+        [Ruffle(FastCall)]
         AS3 native function charAt(index:Number = 0):String;
 
+        [Ruffle(FastCall)]
         AS3 native function charCodeAt(index:Number = 0):Number;
 
         AS3 native function concat(... rest):String;
@@ -168,12 +171,15 @@ package {
 
         AS3 native function search(pattern:* = void 0):int;
 
+        [Ruffle(FastCall)]
         AS3 native function slice(start:Number = 0, end:Number = 2147483647.0):String;
 
         AS3 native function split(delimiter:* = void 0, limit:* = 4294967295):Array;
 
+        [Ruffle(FastCall)]
         AS3 native function substr(start:Number = 0, length:Number = 2147483647.0):String;
 
+        [Ruffle(FastCall)]
         AS3 native function substring(start:Number = 0, end:Number = 2147483647.0):String;
 
         AS3 function toLocaleLowerCase() : String {
@@ -184,8 +190,10 @@ package {
             return this.toUpperCase();
         }
 
+        [Ruffle(FastCall)]
         AS3 native function toLowerCase() : String;
 
+        [Ruffle(FastCall)]
         AS3 native function toUpperCase() : String;
 
         AS3 function toString() : String {
