@@ -9,10 +9,15 @@ package {
             // this AS-defined method does nothing
         }
 
+        [Ruffle(FastCall)]
         public native function get localName():String;
+
+        [Ruffle(FastCall)]
         public native function get uri():*;
 
+        [Ruffle(FastCall)]
         AS3 native function toString():String;
+
         AS3 function valueOf():QName {
             return this;
         }

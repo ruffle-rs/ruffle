@@ -19,7 +19,9 @@ package {
             // this AS-defined method does nothing
         }
 
+        [Ruffle(FastCall)]
         public native function get prefix():*;
+        [Ruffle(FastCall)]
         public native function get uri():String;
 
         AS3 function toString():String {
