@@ -182,7 +182,7 @@ pub fn exec<'gc>(
     callee: Value<'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let ret = match method.method_kind() {
-        MethodKind::Native(native_method) => {
+        MethodKind::Native { native_method, .. } => {
             let arguments = &arguments.to_slice(activation);
 
             let caller_domain = activation.caller_domain();
@@ -234,7 +234,7 @@ pub fn exec<'gc>(
 
             native_method(&mut activation, receiver, &arguments)
         }
-        MethodKind::Bytecode(_) => {
+        MethodKind::Bytecode { .. } => {
             // This used to be a one step called Activation::from_method,
             // but avoiding moving an Activation around helps perf
             let mut activation = Activation::from_nothing(activation.context);

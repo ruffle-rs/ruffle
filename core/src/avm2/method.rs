@@ -155,12 +155,13 @@ impl<'gc> Method<'gc> {
     pub fn from_method_index(
         txunit: TranslationUnit<'gc>,
         abc_method: Index<AbcMethod>,
-        native_method: Option<NativeMethodImpl>,
         is_function: bool,
         activation: &mut Activation<'_, 'gc>,
     ) -> Result<Self, Error<'gc>> {
+        let method_index = abc_method.0 as usize;
         let abc = txunit.abc();
-        let Some(method) = abc.methods.get(abc_method.0 as usize) else {
+
+        let Some(method) = abc.methods.get(method_index) else {
             return Err(Error::AvmError(verify_error(
                 activation,
                 "Error #1027: Method_info exceeds method_count.",
@@ -184,10 +185,27 @@ impl<'gc> Method<'gc> {
             }
         }
 
-        let method_kind = if let Some(native_method) = native_method {
-            MethodKind::Native(native_method)
+        let mut native_info = None;
+        if txunit.domain().is_playerglobals_domain(activation.avm2()) {
+            if let Some(native_method) = activation.avm2().native_method_table[method_index] {
+                let fast_call = activation
+                    .avm2()
+                    .native_fast_call_list
+                    .contains(&method_index);
+
+                native_info = Some((native_method, fast_call));
+            }
+        };
+
+        let method_kind = if let Some((native_method, fast_call)) = native_info {
+            MethodKind::Native {
+                native_method,
+                fast_call,
+            }
         } else {
-            MethodKind::Bytecode(RefLock::new(None))
+            MethodKind::Bytecode {
+                verified_info: RefLock::new(None),
+            }
         };
 
         Ok(Self(Gc::new(
@@ -249,7 +267,7 @@ impl<'gc> Method<'gc> {
         let method_kind = &self.0.method_kind;
 
         match method_kind {
-            MethodKind::Bytecode(verified_info) => {
+            MethodKind::Bytecode { verified_info } => {
                 let needs_verify = verified_info.borrow().is_none();
 
                 if needs_verify {
@@ -287,7 +305,7 @@ impl<'gc> Method<'gc> {
 
     pub fn get_verified_info(&self) -> Ref<VerifiedMethodInfo<'gc>> {
         match &self.0.method_kind {
-            MethodKind::Bytecode(verified_info) => {
+            MethodKind::Bytecode { verified_info } => {
                 Ref::map(verified_info.borrow(), |b| b.as_ref().unwrap())
             }
             _ => panic!("get_verified_info should be called on a bytecode method"),
@@ -372,9 +390,14 @@ impl<'gc> Method<'gc> {
 #[derive(Collect)]
 #[collect(no_drop)]
 pub enum MethodKind<'gc> {
-    Bytecode(RefLock<Option<VerifiedMethodInfo<'gc>>>),
-
-    Native(#[collect(require_static)] NativeMethodImpl),
+    Bytecode {
+        verified_info: RefLock<Option<VerifiedMethodInfo<'gc>>>,
+    },
+    Native {
+        #[collect(require_static)]
+        native_method: NativeMethodImpl,
+        fast_call: bool,
+    },
 }
 
 impl<'gc> MethodKind<'gc> {
@@ -386,7 +409,7 @@ impl<'gc> MethodKind<'gc> {
         method: Method<'gc>,
     ) -> Result<(), Error<'gc>> {
         match self {
-            MethodKind::Bytecode(verified_info) => {
+            MethodKind::Bytecode { verified_info } => {
                 Gc::write(activation.gc(), method.0);
 
                 // SAFETY: We just triggered a write barrier on the Gc.
@@ -397,7 +420,7 @@ impl<'gc> MethodKind<'gc> {
 
                 Ok(())
             }
-            MethodKind::Native(_) => Ok(()),
+            MethodKind::Native { .. } => Ok(()),
         }
     }
 }
