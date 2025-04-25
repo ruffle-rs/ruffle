@@ -42,8 +42,9 @@ const ID = Math.floor(Math.random() * 100000000000);
  */
 function sendMessageToPage(data: unknown): Promise<unknown> {
     const message = {
-        to: `ruffle_page${ID}`,
+        to: "ruffle_page",
         index: pendingMessages.length,
+        id: ID,
         data,
     };
     window.postMessage(message, "*");
@@ -78,8 +79,6 @@ function injectScriptURL(url: string): Promise<void> {
     });
     script.charset = "utf-8";
     script.src = url;
-    // safari 16+ script.src will be masked to "webkit-masked-url://hidden/"
-    script.setAttribute("ruffle-id", String(ID));
     (document.head || document.documentElement).append(script);
     return promise;
 }
@@ -180,8 +179,8 @@ function isXMLDocument(): boolean {
             return;
         }
 
-        const { to, index, data } = event.data;
-        if (to === `ruffle_content${ID}`) {
+        const { to, index, data, id } = event.data;
+        if (to === "ruffle_content" && id === ID) {
             const request = index !== null ? pendingMessages[index] : null;
             if (request) {
                 pendingMessages[index] = null;
