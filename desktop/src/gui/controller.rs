@@ -575,6 +575,22 @@ fn load_system_fonts(
         ],
     ));
 
+    // Hebrew
+    queries.push((
+        4,
+        vec![
+            Family::Name("Noto Sans Hebrew"), // Open font
+        ],
+    ));
+
+    // Arabic
+    queries.push((
+        5,
+        vec![
+            Family::Name("Noto Sans Arabic"), // Open font
+        ],
+    ));
+
     register_family(
         font_database,
         &mut fd,
