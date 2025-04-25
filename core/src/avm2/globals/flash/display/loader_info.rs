@@ -57,7 +57,7 @@ pub fn get_application_domain<'gc>(
                     .try_avm2_domain();
 
                 if let Some(domain) = domain {
-                    return Ok(DomainObject::from_domain(activation, domain)?.into());
+                    return Ok(DomainObject::from_domain(activation, domain).into());
                 } else {
                     return Ok(Value::Null);
                 }
@@ -70,7 +70,7 @@ pub fn get_application_domain<'gc>(
                     .library
                     .library_for_movie_mut(movie.clone())
                     .avm2_domain();
-                return Ok(DomainObject::from_domain(activation, domain)?.into());
+                return Ok(DomainObject::from_domain(activation, domain).into());
             }
         }
     }

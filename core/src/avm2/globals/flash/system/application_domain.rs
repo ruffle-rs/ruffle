@@ -43,7 +43,7 @@ pub fn get_current_domain<'gc>(
         .caller_domain()
         .expect("Missing caller domain in ApplicationDomain.currentDomain");
 
-    Ok(DomainObject::from_domain(activation, appdomain)?.into())
+    Ok(DomainObject::from_domain(activation, appdomain).into())
 }
 
 /// `parentDomain` property
@@ -59,7 +59,7 @@ pub fn get_parent_domain<'gc>(
             if parent_domain.is_playerglobals_domain(activation.avm2()) {
                 return Ok(Value::Null);
             }
-            return Ok(DomainObject::from_domain(activation, parent_domain)?.into());
+            return Ok(DomainObject::from_domain(activation, parent_domain).into());
         }
     }
 
