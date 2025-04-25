@@ -6,7 +6,7 @@ use crate::gui::{RuffleGui, MENU_HEIGHT};
 use crate::player::{LaunchOptions, PlayerController};
 use crate::preferences::GlobalPreferences;
 use anyhow::anyhow;
-use egui::{Context, ViewportId};
+use egui::{Context, FontData, FontDefinitions, ViewportId};
 use fontdb::{Database, Family, Query, Source};
 use ruffle_core::events::{ImeCursorArea, ImePurpose};
 use ruffle_core::{Player, PlayerEvent};
@@ -15,7 +15,6 @@ use ruffle_render_wgpu::descriptors::Descriptors;
 use ruffle_render_wgpu::utils::{format_list, get_backend_names};
 use std::sync::{Arc, MutexGuard};
 use std::time::{Duration, Instant};
-use unic_langid::LanguageIdentifier;
 use url::Url;
 use wgpu::SurfaceError;
 use winit::dpi::{PhysicalPosition, PhysicalSize};
@@ -129,8 +128,7 @@ impl GuiController {
             LaunchOptions::from(&preferences),
             preferences.clone(),
         );
-        let system_fonts =
-            load_system_fonts(font_database, preferences.language().to_owned()).unwrap_or_default();
+        let system_fonts = load_system_fonts(font_database, preferences.language().to_owned());
         egui_winit.egui_ctx().set_fonts(system_fonts);
 
         egui_extras::install_image_loaders(egui_winit.egui_ctx());
@@ -511,46 +509,123 @@ fn try_wgpu_backend(backend: wgpu::Backends) -> Option<wgpu::Instance> {
     }
 }
 
-// try to load known unicode supporting fonts to draw cjk characters in egui
+// Load fallback fonts
 fn load_system_fonts(
     font_database: &Database,
-    locale: LanguageIdentifier,
-) -> anyhow::Result<egui::FontDefinitions> {
-    let mut families = Vec::new();
-    if let Some(windows_font) = match locale.language.as_str() {
-        "ja" => Some(Family::Name("MS UI Gothic")),
-        "zh" => Some(match locale.to_string().as_str() {
-            "zh-CN" => Family::Name("Microsoft YaHei"),
-            _ => Family::Name("Microsoft JhengHei"),
-        }),
-        "ko" => Some(Family::Name("Malgun Gothic")),
-        _ => None,
-    } {
-        families.push(windows_font);
-    }
-    if let Some(linux_font) = match locale.language.as_str() {
-        "ja" => Some(Family::Name("Noto Sans CJK JP")),
-        "zh" => Some(match locale.to_string().as_str() {
-            "zh-CN" => Family::Name("Noto Sans CJK SC"),
-            _ => Family::Name("Noto Sans CJK TC"),
-        }),
-        "ko" => Some(Family::Name("Noto Sans CJK KR")),
-        _ => Some(Family::Name("Noto Sans")),
-    } {
-        families.push(linux_font);
-    }
-    families.extend(
-        [
-            Family::Name("Source Han Sans"),   // linux
-            Family::Name("WenQuanYi Zen Hei"), // linux, old
-            Family::Name("Arial Unicode MS"),  // macos
-            Family::SansSerif,
-        ]
-        .iter(),
+    locale: unic_langid::LanguageIdentifier,
+) -> egui::FontDefinitions {
+    let mut fd: FontDefinitions = egui::FontDefinitions::default();
+
+    let lang = locale.language.as_str();
+    let is_ja = lang == "ja";
+    let is_ko = lang == "ko";
+    let is_zh = lang == "zh";
+    let is_sc = is_zh && locale.to_string().as_str() == "zh-CN";
+    let is_tc = is_zh && !is_sc;
+
+    let mut queries: PrioritizedQueries = Vec::new();
+
+    // The main font
+    queries.push((1, vec![Family::SansSerif]));
+
+    // Pan-CJK fonts
+    queries.push((
+        2,
+        vec![
+            Family::Name("Noto Sans CJK"),     // Open font
+            Family::Name("Source Han Sans"),   // Open font, same as Noto Sans CJK
+            Family::Name("WenQuanYi Zen Hei"), // Open font
+            Family::Name("Arial Unicode MS"),  // MacOS
+        ],
+    ));
+
+    // Korean
+    queries.push((
+        3 + if is_ko { 0 } else { 1 },
+        vec![
+            Family::Name("Noto Sans CJK KR"), // Open font
+            Family::Name("Malgun Gothic"),    // Windows
+        ],
+    ));
+
+    // Japanese
+    queries.push((
+        3 + if is_ja { 0 } else { 1 },
+        vec![
+            Family::Name("Noto Sans CJK JP"), // Open font
+            Family::Name("MS UI Gothic"),     // Windows
+        ],
+    ));
+
+    // Chinese Simplified
+    queries.push((
+        3 + if is_sc { 0 } else { 1 },
+        vec![
+            Family::Name("Noto Sans CJK SC"), // Open font
+            Family::Name("Microsoft YaHei"),  // Windows
+        ],
+    ));
+
+    // Chinese Traditional
+    queries.push((
+        3 + if is_tc { 0 } else { 1 },
+        vec![
+            Family::Name("Noto Sans CJK TC"),   // Open font
+            Family::Name("Microsoft JhengHei"), // Windows
+        ],
+    ));
+
+    register_family(
+        font_database,
+        &mut fd,
+        egui::FontFamily::Proportional,
+        queries,
     );
 
+    fd
+}
+
+type FamilyQuery<'a> = Vec<Family<'a>>;
+type PrioritizedQueries<'a> = Vec<(usize, FamilyQuery<'a>)>;
+
+fn register_family(
+    font_database: &Database,
+    fd: &mut FontDefinitions,
+    family: egui::FontFamily,
+    mut queries: PrioritizedQueries<'_>,
+) {
+    queries.sort_by_key(|(priority, _)| *priority);
+    for (_, query) in queries {
+        register_family_font(font_database, fd, family.clone(), &query);
+    }
+}
+
+fn register_family_font(
+    font_database: &Database,
+    fd: &mut FontDefinitions,
+    family: egui::FontFamily,
+    query: &FamilyQuery<'_>,
+) {
+    let (name, fontdata) = match load_system_font(font_database, query) {
+        Ok((name, fontdata)) => (name, fontdata),
+        Err(e) => {
+            tracing::warn!("Failed to register {query:?} as {family}: {e}");
+            return;
+        }
+    };
+
+    tracing::info!("Registering font {name} as {family}");
+
+    fd.font_data.insert(name.clone(), fontdata.into());
+    fd.families.entry(family).or_default().push(name);
+}
+
+fn load_system_font(
+    font_database: &Database,
+    families: &Vec<Family<'_>>,
+) -> anyhow::Result<(String, FontData)> {
     let system_unicode_fonts = Query {
-        families: &families,
+        families,
         ..Query::default()
     };
 
@@ -573,14 +648,6 @@ fn load_system_fonts(
         }
     };
     fontdata.index = index;
-    tracing::info!("loaded cjk fallback font \"{}\"", name);
 
-    let mut fd = egui::FontDefinitions::default();
-    fd.font_data.insert(name.clone(), fontdata.into());
-    fd.families
-        .get_mut(&egui::FontFamily::Proportional)
-        .expect("font family not found")
-        .push(name);
-
-    Ok(fd)
+    Ok((name, fontdata))
 }
