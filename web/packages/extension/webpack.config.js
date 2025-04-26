@@ -104,7 +104,9 @@ export default function (/** @type {Record<string, any>} */ env, _argv) {
         },
         output: {
             path: url.fileURLToPath(new URL("assets/dist/", import.meta.url)),
-            publicPath: "auto",
+            // publicPath: "auto" throws for content scripts, which lack a script src
+            // This is changed at runtime to the full URL of the extension's /dist/ folder
+            publicPath: "/dist/",
             clean: true,
             assetModuleFilename: "assets/[name][ext][query]",
         },

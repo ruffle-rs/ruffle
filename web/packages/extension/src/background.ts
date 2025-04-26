@@ -175,24 +175,35 @@ async function enable() {
         return;
     }
     if (!(await contentScriptRegistered())) {
+        const excludeMatches = [
+            "https://sso.godaddy.com/*", // See https://github.com/ruffle-rs/ruffle/pull/7146
+            "https://authentication.td.com/*", // See https://github.com/ruffle-rs/ruffle/issues/2158
+            "https://*.twitch.tv/*", // See https://github.com/ruffle-rs/ruffle/pull/8150
+            "https://www.tuxedocomputers.com/*", // See https://github.com/ruffle-rs/ruffle/issues/11906
+            "https://*.taobao.com/*", // See https://github.com/ruffle-rs/ruffle/pull/12650
+            "https://*.time4learning.com/*", // See https://github.com/ruffle-rs/ruffle/pull/16186
+            "https://*.edgenuity.com/*", // See https://github.com/ruffle-rs/ruffle/pull/16186
+            "https://www.chewy.com/*", // See https://github.com/ruffle-rs/ruffle/issues/18265
+            "https://*.duosecurity.com/*", // See https://github.com/ruffle-rs/ruffle/pull/18299
+            "https://*.tiktok.com/*", // See https://github.com/ruffle-rs/ruffle/pull/20250
+        ];
         await utils.scripting.registerContentScripts([
+            {
+                id: "ruffle",
+                js: ["dist/ruffle.js"],
+                persistAcrossSessions: true,
+                matches: ["<all_urls>"],
+                excludeMatches,
+                runAt: "document_start",
+                allFrames: true,
+                world: "MAIN",
+            },
             {
                 id: "plugin-polyfill",
                 js: ["dist/pluginPolyfill.js"],
                 persistAcrossSessions: true,
                 matches: ["<all_urls>"],
-                excludeMatches: [
-                    "https://sso.godaddy.com/*", // See https://github.com/ruffle-rs/ruffle/pull/7146
-                    "https://authentication.td.com/*", // See https://github.com/ruffle-rs/ruffle/issues/2158
-                    "https://*.twitch.tv/*", // See https://github.com/ruffle-rs/ruffle/pull/8150
-                    "https://www.tuxedocomputers.com/*", // See https://github.com/ruffle-rs/ruffle/issues/11906
-                    "https://*.taobao.com/*", // See https://github.com/ruffle-rs/ruffle/pull/12650
-                    "https://*.time4learning.com/*", // See https://github.com/ruffle-rs/ruffle/pull/16186
-                    "https://*.edgenuity.com/*", // See https://github.com/ruffle-rs/ruffle/pull/16186
-                    "https://www.chewy.com/*", // See https://github.com/ruffle-rs/ruffle/issues/18265
-                    "https://*.duosecurity.com/*", // See https://github.com/ruffle-rs/ruffle/pull/18299
-                    "https://*.tiktok.com/*", // See https://github.com/ruffle-rs/ruffle/pull/20250
-                ],
+                excludeMatches,
                 runAt: "document_start",
                 allFrames: true,
                 world: "MAIN",
@@ -222,7 +233,7 @@ async function disable() {
     }
     if (await contentScriptRegistered()) {
         await utils.scripting.unregisterContentScripts({
-            ids: ["plugin-polyfill", "4399"],
+            ids: ["ruffle", "plugin-polyfill", "4399"],
         });
     }
     await disableSWFTakeover();
