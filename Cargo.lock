@@ -4257,6 +4257,7 @@ dependencies = [
  "tracing-subscriber",
  "tracing-tracy",
  "unic-langid",
+ "unicode-bidi",
  "url",
  "vergen",
  "webbrowser",
@@ -5741,6 +5742,12 @@ checksum = "96bd2f2237fe450fcd0a1d2f5f4e91711124f7857ba2e964247776ebeeb7b0c4"
 dependencies = [
  "unic-common",
 ]
+
+[[package]]
+name = "unicode-bidi"
+version = "0.3.18"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5c1cb5db39152898a79168971543b1cb5020dff7fe43c8dc468b0885f5e29df5"
 
 [[package]]
 name = "unicode-ident"
