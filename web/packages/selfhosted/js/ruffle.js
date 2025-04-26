@@ -7,9 +7,7 @@ let currentScriptURL = null;
 
 try {
     if (
-        document.currentScript !== undefined &&
-        document.currentScript !== null &&
-        "src" in document.currentScript &&
+        document.currentScript instanceof HTMLScriptElement &&
         document.currentScript.src !== ""
     ) {
         let src = document.currentScript.src;
@@ -22,9 +20,8 @@ try {
 
         currentScriptURL = new URL(".", src);
     }
-    // eslint-disable-next-line no-unused-vars
-} catch (_e) {
-    console.warn("Unable to get currentScript URL");
+} catch (e) {
+    console.warn("Unable to get currentScript URL", e);
 }
 
 function publicPath(config) {

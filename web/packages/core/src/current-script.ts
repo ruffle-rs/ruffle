@@ -5,9 +5,7 @@ export let isExtension = false;
 
 try {
     if (
-        document.currentScript !== undefined &&
-        document.currentScript !== null &&
-        "src" in document.currentScript &&
+        document.currentScript instanceof HTMLScriptElement &&
         document.currentScript.src !== ""
     ) {
         let src = document.currentScript.src;
@@ -21,8 +19,8 @@ try {
         currentScriptURL = new URL(".", src);
         isExtension = currentScriptURL.protocol.includes("extension");
     }
-} catch (_e) {
-    console.warn("Unable to get currentScript URL");
+} catch (e) {
+    console.warn("Unable to get currentScript URL", e);
 }
 
 /**
