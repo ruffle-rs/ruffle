@@ -1,6 +1,16 @@
 import { Setup, setCurrentScriptURL } from "ruffle-core";
 import { Message } from "./messages";
 
+/**
+ *
+ * This script runs in the MAIN ExecutionWorld for the following reasons:
+ *
+ * 1. On Chrome, you are explicitly banned from registering custom elements.
+ * 2. On Firefox, you can register custom elements but they can't expose any
+ *    useful API surface, and can't even see their own methods.
+ *
+ */
+
 // Current message ID to be included in openInNewTab
 let currentMessageId: string | null = null;
 

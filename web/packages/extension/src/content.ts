@@ -1,21 +1,10 @@
 /**
- * Pierce the extension sandbox by copying our code into main world.
  *
- * The isolation extension content scripts get is neat, but it causes problems
- * based on what browser you use:
- *
- * 1. On Chrome, you are explicitly banned from registering custom elements.
- * 2. On Firefox, you can register custom elements but they can't expose any
- *    useful API surface, and can't even see their own methods.
- *
- * This code exists to pierce the extension sandbox, while maintaining:
- *
- * 1. The isolation of not interfering with the page's execution environment
- *    unintentionally.
- * 2. The ability to load extension resources such as .wasm files.
- *
- * We also provide a content script message listener that proxies messages
+ * This code provides a content script message listener that proxies messages
  * into/from the main world.
+ *
+ * On older Firefox, it also pierces the extension sandbox by copying our code into the main world
+ *
  */
 
 import * as utils from "./utils";
@@ -169,9 +158,8 @@ function isXMLDocument(): boolean {
             ?.filename !== "ruffle.js"
     ) {
         injectScriptRaw("%PLUGIN_POLYFILL_SOURCE%");
+        await injectScriptURL(utils.runtime.getURL("dist/ruffle.js"));
     }
-
-    await injectScriptURL(utils.runtime.getURL(`dist/ruffle.js?id=${ID}`));
 
     window.addEventListener("message", (event) => {
         // We only accept messages from ourselves.
