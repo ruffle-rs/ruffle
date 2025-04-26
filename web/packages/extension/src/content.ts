@@ -208,5 +208,6 @@ function isXMLDocument(): boolean {
             unmuteOverlay: options.autostart ? "hidden" : "visible",
             splashScreen: !options.autostart,
         },
+        publicPath: utils.runtime.getURL("/dist/"),
     });
 })();

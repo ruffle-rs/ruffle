@@ -3,6 +3,7 @@ import type { Config } from "ruffle-core";
 export interface LoadMessage {
     type: "load";
     config: Config.BaseLoadOptions;
+    publicPath: string;
 }
 
 export interface PingMessage {

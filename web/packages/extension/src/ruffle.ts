@@ -1,4 +1,4 @@
-import { Setup } from "ruffle-core";
+import { Setup, setCurrentScriptURL } from "ruffle-core";
 import { Message } from "./messages";
 
 // Current message ID to be included in openInNewTab
@@ -7,6 +7,7 @@ let currentMessageId: string | null = null;
 function handleMessage(message: Message) {
     switch (message.type) {
         case "load": {
+            const publicPath = new URL(".", message.publicPath);
             if (window.RufflePlayer === undefined) {
                 window.RufflePlayer = {};
             }
@@ -18,6 +19,7 @@ function handleMessage(message: Message) {
                 ...window.RufflePlayer.config,
                 openInNewTab,
             };
+            setCurrentScriptURL(publicPath);
             Setup.installRuffle("extension");
             return {};
         }
