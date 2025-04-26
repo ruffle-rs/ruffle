@@ -50,6 +50,7 @@ tracing-tracy = { version = "0.11.3", optional = true, features = ["demangle"] }
 rand = "0.8.5"
 thiserror.workspace = true
 async-channel.workspace = true
+unicode-bidi = "0.3.18"
 
 [target.'cfg(target_os = "linux")'.dependencies]
 ashpd = "0.10.2"
