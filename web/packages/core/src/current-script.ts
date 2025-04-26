@@ -24,3 +24,13 @@ try {
 } catch (_e) {
     console.warn("Unable to get currentScript URL");
 }
+
+/**
+ * Sets the current script URL and isExtension boolean manually when using the extension.
+ *
+ * @param src The location of Ruffle's resources within the extension.
+ */
+export function setCurrentScriptURL(src: URL) {
+    currentScriptURL = src;
+    isExtension = currentScriptURL.protocol.includes("extension");
+}
