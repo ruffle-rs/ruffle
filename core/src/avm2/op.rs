@@ -1,4 +1,5 @@
 use crate::avm2::class::Class;
+use crate::avm2::method::NativeMethodImpl;
 use crate::avm2::multiname::Multiname;
 use crate::avm2::namespace::Namespace;
 use crate::avm2::script::Script;
@@ -32,6 +33,12 @@ pub enum Op<'gc> {
     },
     CallMethod {
         index: u32,
+        num_args: u32,
+        push_return_value: bool,
+    },
+    CallNative {
+        #[collect(require_static)]
+        method: NativeMethodImpl,
         num_args: u32,
         push_return_value: bool,
     },

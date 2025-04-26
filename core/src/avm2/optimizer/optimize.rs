@@ -1,5 +1,5 @@
 use crate::avm2::error::verify_error;
-use crate::avm2::method::{Method, ResolvedParamConfig};
+use crate::avm2::method::{Method, MethodKind, ResolvedParamConfig};
 use crate::avm2::multiname::Multiname;
 use crate::avm2::op::Op;
 use crate::avm2::optimizer::blocks::assemble_blocks;
@@ -311,12 +311,17 @@ impl<'gc> Stack<'gc> {
         Ok(())
     }
 
-    fn popn(&mut self, activation: &mut Activation<'_, 'gc>, count: u32) -> Result<(), Error<'gc>> {
-        for _ in 0..count {
-            self.pop(activation)?;
+    fn popn(
+        &mut self,
+        activation: &mut Activation<'_, 'gc>,
+        count: u32,
+    ) -> Result<Vec<OptValue<'gc>>, Error<'gc>> {
+        let mut vec = vec![OptValue::any(); count as usize];
+        for item in vec.iter_mut().rev() {
+            *item = self.pop(activation)?;
         }
 
-        Ok(())
+        Ok(vec)
     }
 
     fn set(&mut self, index: usize, value: OptValue<'gc>) {
@@ -1377,67 +1382,27 @@ fn abstract_interpret_ops<'gc>(
                 stack.pop(activation)?;
             }
             Op::GetProperty { multiname } => {
-                let mut stack_push_done = false;
                 stack.pop_for_multiname(activation, multiname)?;
+
                 let stack_value = stack.pop(activation)?;
 
                 if !multiname.has_lazy_component() {
-                    if let Some(vtable) = stack_value.vtable() {
-                        match vtable.get_trait(&multiname) {
-                            Some(Property::Slot { slot_id })
-                            | Some(Property::ConstSlot { slot_id }) => {
-                                optimize_op_to!(Op::GetSlot { index: slot_id });
+                    let opt_result = optimize_get_property(activation, multiname, stack_value)?;
 
-                                stack_push_done = true;
+                    if let Some((new_op, return_type)) = opt_result {
+                        optimize_op_to!(new_op);
 
-                                let mut value_class = vtable.slot_classes()[slot_id as usize];
-                                let resolved_value_class = value_class.get_class(activation)?;
-
-                                if let Some(class) = resolved_value_class {
-                                    stack.push_class(activation, class)?;
-                                } else {
-                                    stack.push_any(activation)?;
-                                }
-
-                                vtable.set_slot_class(
-                                    activation.gc(),
-                                    slot_id as usize,
-                                    value_class,
-                                );
-                            }
-                            Some(Property::Virtual {
-                                get: Some(disp_id), ..
-                            }) => {
-                                optimize_op_to!(Op::CallMethod {
-                                    num_args: 0,
-                                    index: disp_id,
-                                    push_return_value: true,
-                                });
-
-                                stack_push_done = true;
-
-                                let full_method = vtable
-                                    .get_full_method(disp_id)
-                                    .expect("Method should exist");
-                                let ClassBoundMethod { method, .. } = full_method;
-                                if !method.is_info_resolved() {
-                                    method.resolve_info(activation)?;
-                                }
-
-                                let return_type = method.resolved_return_type();
-                                if let Some(return_type) = return_type {
-                                    stack.push_class(activation, return_type)?;
-                                } else {
-                                    stack.push_any(activation)?;
-                                }
-                            }
-                            _ => {}
+                        if let Some(return_type) = return_type {
+                            stack.push_class(activation, return_type)?;
+                        } else {
+                            stack.push_any(activation)?;
                         }
+                    } else {
+                        stack.push_any(activation)?;
                     }
-                }
-                // `stack_pop_multiname` handled lazy
+                } else {
+                    // `stack_pop_multiname` handled lazy
 
-                if !stack_push_done {
                     stack.push_any(activation)?;
                 }
             }
@@ -1465,11 +1430,46 @@ fn abstract_interpret_ops<'gc>(
                             Some(Property::Virtual {
                                 set: Some(disp_id), ..
                             }) => {
-                                optimize_op_to!(Op::CallMethod {
+                                let full_method = vtable
+                                    .get_full_method(disp_id)
+                                    .expect("Method should exist");
+                                let ClassBoundMethod { method, .. } = full_method;
+                                if !method.is_info_resolved() {
+                                    method.resolve_info(activation)?;
+                                }
+
+                                let declared_params = method.resolved_param_config();
+
+                                let mut result_op = Op::CallMethod {
                                     num_args: 1,
                                     index: disp_id,
                                     push_return_value: false,
-                                });
+                                };
+
+                                // We can further optimize calling FastCall setters into a
+                                // static native method call
+                                if let MethodKind::Native {
+                                    native_method,
+                                    fast_call: true,
+                                } = method.method_kind()
+                                {
+                                    if stack_value.class.is_some_and(|c| c.is_final()) {
+                                        if declared_params.len() == 1
+                                            && set_value.matches_type(
+                                                activation,
+                                                declared_params[0].param_type,
+                                            )
+                                        {
+                                            result_op = Op::CallNative {
+                                                method: *native_method,
+                                                num_args: 1,
+                                                push_return_value: false,
+                                            };
+                                        }
+                                    }
+                                }
+
+                                optimize_op_to!(result_op);
                             }
                             _ => {}
                         }
@@ -1500,11 +1500,46 @@ fn abstract_interpret_ops<'gc>(
                             Some(Property::Virtual {
                                 set: Some(disp_id), ..
                             }) => {
-                                optimize_op_to!(Op::CallMethod {
+                                let full_method = vtable
+                                    .get_full_method(disp_id)
+                                    .expect("Method should exist");
+                                let ClassBoundMethod { method, .. } = full_method;
+                                if !method.is_info_resolved() {
+                                    method.resolve_info(activation)?;
+                                }
+
+                                let declared_params = method.resolved_param_config();
+
+                                let mut result_op = Op::CallMethod {
                                     num_args: 1,
                                     index: disp_id,
                                     push_return_value: false,
-                                });
+                                };
+
+                                // We can further optimize calling FastCall setters into a
+                                // static native method call
+                                if let MethodKind::Native {
+                                    native_method,
+                                    fast_call: true,
+                                } = method.method_kind()
+                                {
+                                    if stack_value.class.is_some_and(|c| c.is_final()) {
+                                        if declared_params.len() == 1
+                                            && set_value.matches_type(
+                                                activation,
+                                                declared_params[0].param_type,
+                                            )
+                                        {
+                                            result_op = Op::CallNative {
+                                                method: *native_method,
+                                                num_args: 1,
+                                                push_return_value: false,
+                                            };
+                                        }
+                                    }
+                                }
+
+                                optimize_op_to!(result_op);
                             }
                             _ => {}
                         }
@@ -1638,10 +1673,8 @@ fn abstract_interpret_ops<'gc>(
                 multiname,
                 num_args,
             } => {
-                let mut stack_push_done = false;
-
                 // Arguments
-                stack.popn(activation, num_args)?;
+                let args = stack.popn(activation, num_args)?;
 
                 stack.pop_for_multiname(activation, multiname)?;
 
@@ -1649,80 +1682,29 @@ fn abstract_interpret_ops<'gc>(
                 let stack_value = stack.pop(activation)?;
 
                 if !multiname.has_lazy_component() {
-                    if let Some(vtable) = stack_value.vtable() {
-                        match vtable.get_trait(&multiname) {
-                            Some(Property::Method { disp_id }) => {
-                                optimize_op_to!(Op::CallMethod {
-                                    num_args,
-                                    index: disp_id,
-                                    push_return_value: true,
-                                });
+                    let opt_result = optimize_call_property(
+                        activation,
+                        types,
+                        multiname,
+                        stack_value,
+                        args,
+                        true,
+                    )?;
 
-                                stack_push_done = true;
+                    if let Some((new_op, return_type)) = opt_result {
+                        optimize_op_to!(new_op);
 
-                                let full_method = vtable
-                                    .get_full_method(disp_id)
-                                    .expect("Method should exist");
-                                let ClassBoundMethod { method, .. } = full_method;
-                                if !method.is_info_resolved() {
-                                    method.resolve_info(activation)?;
-                                }
-
-                                let return_type = method.resolved_return_type();
-                                if let Some(return_type) = return_type {
-                                    stack.push_class(activation, return_type)?;
-                                } else {
-                                    stack.push_any(activation)?;
-                                }
-                            }
-                            Some(Property::Slot { slot_id })
-                            | Some(Property::ConstSlot { slot_id }) => {
-                                if stack_value.not_null(activation) {
-                                    if num_args == 1 {
-                                        let mut value_class =
-                                            vtable.slot_classes()[slot_id as usize];
-                                        let resolved_value_class =
-                                            value_class.get_class(activation)?;
-
-                                        if let Some(slot_class) = resolved_value_class {
-                                            if let Some(called_class) = slot_class.i_class() {
-                                                // Calling a c_class will perform a simple coercion to the class
-                                                if called_class.call_handler().is_none() {
-                                                    optimize_op_to!(Op::CoerceSwapPop {
-                                                        class: called_class,
-                                                    });
-
-                                                    stack_push_done = true;
-                                                    stack.push_class(activation, called_class)?;
-                                                } else if called_class == types.int {
-                                                    optimize_op_to!(Op::CoerceISwapPop);
-
-                                                    stack_push_done = true;
-                                                    stack.push_class(activation, types.int)?;
-                                                } else if called_class == types.uint {
-                                                    optimize_op_to!(Op::CoerceUSwapPop);
-
-                                                    stack_push_done = true;
-                                                    stack.push_class(activation, types.uint)?;
-                                                } else if called_class == types.number {
-                                                    optimize_op_to!(Op::CoerceDSwapPop);
-
-                                                    stack_push_done = true;
-                                                    stack.push_class(activation, types.number)?;
-                                                }
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                            _ => {}
+                        if let Some(return_type) = return_type {
+                            stack.push_class(activation, return_type)?;
+                        } else {
+                            stack.push_any(activation)?;
                         }
+                    } else {
+                        stack.push_any(activation)?;
                     }
-                }
-                // `stack_pop_multiname` handled lazy
+                } else {
+                    // `stack_pop_multiname` handled lazy
 
-                // Avoid checking return value for now
-                if !stack_push_done {
                     stack.push_any(activation)?;
                 }
             }
@@ -1731,7 +1713,7 @@ fn abstract_interpret_ops<'gc>(
                 num_args,
             } => {
                 // Arguments
-                stack.popn(activation, num_args)?;
+                let args = stack.popn(activation, num_args)?;
 
                 stack.pop_for_multiname(activation, multiname)?;
 
@@ -1739,20 +1721,19 @@ fn abstract_interpret_ops<'gc>(
                 let stack_value = stack.pop(activation)?;
 
                 if !multiname.has_lazy_component() {
-                    if let Some(vtable) = stack_value.vtable() {
-                        match vtable.get_trait(&multiname) {
-                            Some(Property::Method { disp_id }) => {
-                                optimize_op_to!(Op::CallMethod {
-                                    num_args,
-                                    index: disp_id,
-                                    push_return_value: false,
-                                });
-                            }
-                            _ => {}
-                        }
+                    let opt_result = optimize_call_property(
+                        activation,
+                        types,
+                        multiname,
+                        stack_value,
+                        args,
+                        false,
+                    )?;
+
+                    if let Some((new_op, _)) = opt_result {
+                        optimize_op_to!(new_op);
                     }
                 }
-                // `stack_pop_multiname` handled lazy
             }
             Op::GetSuper { multiname } => {
                 stack.pop_for_multiname(activation, multiname)?;
@@ -1916,6 +1897,7 @@ fn abstract_interpret_ops<'gc>(
             }
 
             Op::CallMethod { .. }
+            | Op::CallNative { .. }
             | Op::CoerceSwapPop { .. }
             | Op::CoerceDSwapPop
             | Op::CoerceISwapPop
@@ -1943,4 +1925,185 @@ fn abstract_interpret_ops<'gc>(
         do_optimize,
     )?;
     Ok(())
+}
+
+// Optimize a `getproperty` of the given `multiname` on a value `stack_value`.
+// If optimization succeeds, the optimized version of the op and the value to
+// push to the stack will be returned; if it fails, the function returns `None`.
+fn optimize_get_property<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    multiname: Gc<'gc, Multiname<'gc>>,
+    stack_value: OptValue<'gc>,
+) -> Result<Option<(Op<'gc>, Option<Class<'gc>>)>, Error<'gc>> {
+    // Makes the code less readable
+    #![allow(clippy::collapsible_if)]
+
+    if let Some(vtable) = stack_value.vtable() {
+        match vtable.get_trait(&multiname) {
+            Some(Property::Slot { slot_id }) | Some(Property::ConstSlot { slot_id }) => {
+                let mut value_class = vtable.slot_classes()[slot_id as usize];
+                let resolved_value_class = value_class.get_class(activation)?;
+
+                vtable.set_slot_class(activation.gc(), slot_id as usize, value_class);
+
+                return Ok(Some((Op::GetSlot { index: slot_id }, resolved_value_class)));
+            }
+            Some(Property::Virtual {
+                get: Some(disp_id), ..
+            }) => {
+                let full_method = vtable
+                    .get_full_method(disp_id)
+                    .expect("Method should exist");
+                let ClassBoundMethod { method, .. } = full_method;
+                if !method.is_info_resolved() {
+                    method.resolve_info(activation)?;
+                }
+
+                let declared_params = method.resolved_param_config();
+                let return_type = method.resolved_return_type();
+
+                let mut result_op = Op::CallMethod {
+                    num_args: 0,
+                    index: disp_id,
+                    push_return_value: true,
+                };
+
+                // We can further optimize calling FastCall getters into a
+                // static native method call
+                if let MethodKind::Native {
+                    native_method,
+                    fast_call: true,
+                } = method.method_kind()
+                {
+                    if stack_value.class.is_some_and(|c| c.is_final()) {
+                        if declared_params.is_empty() {
+                            result_op = Op::CallNative {
+                                method: *native_method,
+                                num_args: 0,
+                                push_return_value: true,
+                            };
+                        }
+                    }
+                }
+
+                return Ok(Some((result_op, return_type)));
+            }
+            _ => {}
+        }
+    }
+
+    Ok(None)
+}
+
+// Optimize a `callproperty` of the given `multiname` on a value `stack_value`,
+// with the method being passed the parameters `passed_args`.
+// If optimization succeeds, the optimized version of the op and the value to
+// push to the stack will be returned; if it fails, the function returns `None`.
+fn optimize_call_property<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    types: &Types<'gc>,
+    multiname: Gc<'gc, Multiname<'gc>>,
+    stack_value: OptValue<'gc>,
+    passed_args: Vec<OptValue<'gc>>,
+    push_return_value: bool,
+) -> Result<Option<(Op<'gc>, Option<Class<'gc>>)>, Error<'gc>> {
+    // Makes the code less readable
+    #![allow(clippy::collapsible_if)]
+
+    let num_args = passed_args.len() as u32;
+
+    if let Some(vtable) = stack_value.vtable() {
+        match vtable.get_trait(&multiname) {
+            Some(Property::Method { disp_id }) => {
+                let full_method = vtable
+                    .get_full_method(disp_id)
+                    .expect("Method should exist");
+                let ClassBoundMethod { method, .. } = full_method;
+                if !method.is_info_resolved() {
+                    method.resolve_info(activation)?;
+                }
+
+                let declared_params = method.resolved_param_config();
+                let return_type = method.resolved_return_type();
+
+                let mut result_op = Op::CallMethod {
+                    num_args,
+                    index: disp_id,
+                    push_return_value,
+                };
+
+                // If this is calling a FastCall native method on a final class,
+                // and the provided arguments match the method's signature, we
+                // can further optimize the call to a static native method call
+                // and skip the argument coercion.
+                if let MethodKind::Native {
+                    native_method,
+                    fast_call: true,
+                } = method.method_kind()
+                {
+                    if stack_value.class.is_some_and(|c| c.is_final()) {
+                        if declared_params.len() == passed_args.len() {
+                            let mut all_matches = true;
+                            for (i, passed_arg) in passed_args.iter().enumerate() {
+                                let declared_param = &declared_params[i];
+                                if !passed_arg.matches_type(activation, declared_param.param_type) {
+                                    all_matches = false;
+                                }
+                            }
+
+                            if all_matches {
+                                result_op = Op::CallNative {
+                                    method: *native_method,
+                                    num_args,
+                                    push_return_value,
+                                };
+                            }
+                        }
+                    }
+                }
+
+                return Ok(Some((result_op, return_type)));
+            }
+            Some(Property::Slot { slot_id }) | Some(Property::ConstSlot { slot_id }) => {
+                // Don't optimize this for `callpropvoid`
+                if push_return_value {
+                    if stack_value.not_null(activation) {
+                        if num_args == 1 {
+                            let mut value_class = vtable.slot_classes()[slot_id as usize];
+                            let resolved_value_class = value_class.get_class(activation)?;
+
+                            if let Some(slot_class) = resolved_value_class {
+                                if let Some(called_class) = slot_class.i_class() {
+                                    // Calling a c_class will perform a simple coercion to the class
+                                    let result = if called_class.call_handler().is_none() {
+                                        Some((
+                                            Op::CoerceSwapPop {
+                                                class: called_class,
+                                            },
+                                            called_class,
+                                        ))
+                                    } else if called_class == types.int {
+                                        Some((Op::CoerceISwapPop, types.int))
+                                    } else if called_class == types.uint {
+                                        Some((Op::CoerceUSwapPop, types.uint))
+                                    } else if called_class == types.number {
+                                        Some((Op::CoerceDSwapPop, types.number))
+                                    } else {
+                                        None
+                                    };
+
+                                    if let Some((new_op, return_type)) = result {
+                                        return Ok(Some((new_op, Some(return_type))));
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            _ => {}
+        }
+    }
+
+    Ok(None)
 }
