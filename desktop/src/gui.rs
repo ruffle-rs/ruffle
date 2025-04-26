@@ -1,6 +1,7 @@
 mod context_menu;
 mod controller;
 pub mod dialogs;
+mod locale;
 mod menu_bar;
 mod movie;
 mod picker;
@@ -9,11 +10,14 @@ mod widgets;
 
 pub use controller::GuiController;
 pub use dialogs::DialogDescriptor;
+pub use locale::available_languages;
+pub use locale::optional_text;
+pub use locale::text;
+pub use locale::text_with_args;
+pub use locale::LocalizableText;
 pub use movie::MovieView;
 pub use picker::FilePicker;
-use std::borrow::Cow;
 pub use theme::ThemePreference;
-use url::Url;
 
 use crate::custom_event::RuffleEvent;
 use crate::gui::context_menu::ContextMenu;
@@ -21,77 +25,14 @@ use crate::player::LaunchOptions;
 use crate::preferences::GlobalPreferences;
 use dialogs::Dialogs;
 use egui::*;
-use fluent_templates::fluent_bundle::FluentValue;
-use fluent_templates::{static_loader, Loader};
 use menu_bar::MenuBar;
 use rfd::AsyncFileDialog;
 use ruffle_core::debug_ui::Message as DebugMessage;
 use ruffle_core::{Player, PlayerEvent};
-use std::collections::HashMap;
 use std::sync::{MutexGuard, Weak};
 use std::{fs, mem};
-use unic_langid::LanguageIdentifier;
+use url::Url;
 use winit::event_loop::EventLoopProxy;
-
-static_loader! {
-    static TEXTS = {
-        locales: "./assets/texts",
-        fallback_language: "en-US"
-    };
-}
-
-pub fn text<'a>(locale: &LanguageIdentifier, id: &'a str) -> Cow<'a, str> {
-    TEXTS
-        .try_lookup(locale, id)
-        .map(Cow::Owned)
-        .unwrap_or_else(|| {
-            tracing::error!("Unknown desktop text id '{id}'");
-            Cow::Borrowed(id)
-        })
-}
-
-pub fn optional_text(locale: &LanguageIdentifier, id: &str) -> Option<String> {
-    TEXTS
-        .lookup_single_language::<&str>(locale, id, None)
-        .inspect_err(|e| tracing::trace!("Error looking up text: {e}"))
-        .ok()
-}
-
-pub fn available_languages() -> Vec<&'static LanguageIdentifier> {
-    let mut result: Vec<_> = TEXTS.locales().collect();
-    result.sort();
-    result
-}
-
-#[allow(dead_code)]
-pub fn text_with_args(
-    locale: &LanguageIdentifier,
-    id: &'static str,
-    args: &HashMap<Cow<'static, str>, FluentValue>,
-) -> Cow<'static, str> {
-    TEXTS
-        .try_lookup_with_args(locale, id, args)
-        .map(Cow::Owned)
-        .unwrap_or_else(|| {
-            tracing::error!("Unknown desktop text id '{id}'");
-            Cow::Borrowed(id)
-        })
-}
-
-pub enum LocalizableText {
-    NonLocalizedText(Cow<'static, str>),
-    LocalizedText(&'static str),
-}
-
-impl LocalizableText {
-    pub fn localize(&self, locale: &LanguageIdentifier) -> Cow<'_, str> {
-        match self {
-            LocalizableText::NonLocalizedText(Cow::Borrowed(text)) => Cow::Borrowed(text),
-            LocalizableText::NonLocalizedText(Cow::Owned(text)) => Cow::Borrowed(text),
-            LocalizableText::LocalizedText(id) => text(locale, id),
-        }
-    }
-}
 
 /// Size of the top menu bar in pixels.
 /// This is the offset at which the movie will be shown,
