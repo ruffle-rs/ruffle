@@ -13,6 +13,7 @@
     "content_scripts": [
         {
             "matches": ["<all_urls>"],
+            // Note: This array is directly referenced by background.ts
             "exclude_matches": [
                 "https://sso.godaddy.com/*", // See https://github.com/ruffle-rs/ruffle/pull/7146
                 "https://authentication.td.com/*", // See https://github.com/ruffle-rs/ruffle/issues/2158
