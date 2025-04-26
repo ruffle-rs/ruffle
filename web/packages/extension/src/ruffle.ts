@@ -8,6 +8,9 @@ function handleMessage(message: Message) {
     switch (message.type) {
         case "load": {
             const publicPath = new URL(".", message.publicPath);
+            if (publicPath.protocol.includes("extension")) {
+                __webpack_public_path__ = publicPath.href;
+            }
             if (window.RufflePlayer === undefined) {
                 window.RufflePlayer = {};
             }
