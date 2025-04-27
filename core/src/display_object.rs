@@ -18,7 +18,7 @@ use gc_arena::{Collect, Mutation};
 use ruffle_macros::{enum_trait_object, istr};
 use ruffle_render::pixel_bender::PixelBenderShaderHandle;
 use ruffle_render::transform::{Transform, TransformStack};
-use std::cell::{Ref, RefMut};
+use std::cell::{Cell, Ref, RefMut};
 use std::fmt::Debug;
 use std::hash::Hash;
 use std::sync::Arc;
@@ -203,14 +203,10 @@ pub struct DisplayObjectBase<'gc> {
     // Cached transform properties `_xscale`, `_yscale`, `_rotation`.
     // These are expensive to calculate, so they will be calculated and cached
     // when AS requests one of these properties.
-    #[collect(require_static)]
-    rotation: Degrees,
-    #[collect(require_static)]
-    scale_x: Percent,
-    #[collect(require_static)]
-    scale_y: Percent,
-
-    skew: f64,
+    rotation: Cell<Degrees>,
+    scale_x: Cell<Percent>,
+    scale_y: Cell<Percent>,
+    skew: Cell<f64>,
 
     /// The next display object in order of execution.
     ///
@@ -279,10 +275,10 @@ impl Default for DisplayObjectBase<'_> {
             name: None,
             filters: Default::default(),
             clip_depth: Default::default(),
-            rotation: Degrees::from_radians(0.0),
-            scale_x: Percent::from_unit(1.0),
-            scale_y: Percent::from_unit(1.0),
-            skew: 0.0,
+            rotation: Cell::new(Degrees::from_radians(0.0)),
+            scale_x: Cell::new(Percent::from_unit(1.0)),
+            scale_y: Cell::new(Percent::from_unit(1.0)),
+            skew: Cell::new(0.0),
             next_avm1_clip: None,
             masker: None,
             maskee: None,
@@ -377,7 +373,7 @@ impl<'gc> DisplayObjectBase<'gc> {
     /// Caches the scale and rotation factors for this display object, if necessary.
     /// Calculating these requires heavy trig ops, so we only do it when `_xscale`, `_yscale` or
     /// `_rotation` is accessed.
-    fn cache_scale_rotation(&mut self) {
+    fn cache_scale_rotation(&self) {
         if !self.scale_rotation_cached() {
             let (a, b, c, d) = (
                 f64::from(self.transform.matrix.a),
@@ -403,23 +399,23 @@ impl<'gc> DisplayObjectBase<'gc> {
             let rotation_y = f64::atan2(-c, d);
             let scale_x = f64::sqrt(a * a + b * b);
             let scale_y = f64::sqrt(c * c + d * d);
-            self.rotation = Degrees::from_radians(rotation_x);
-            self.scale_x = Percent::from_unit(scale_x);
-            self.scale_y = Percent::from_unit(scale_y);
-            self.skew = rotation_y - rotation_x;
+            self.rotation.set(Degrees::from_radians(rotation_x));
+            self.scale_x.set(Percent::from_unit(scale_x));
+            self.scale_y.set(Percent::from_unit(scale_y));
+            self.skew.set(rotation_y - rotation_x);
         }
     }
 
-    fn rotation(&mut self) -> Degrees {
+    fn rotation(&self) -> Degrees {
         self.cache_scale_rotation();
-        self.rotation
+        self.rotation.get()
     }
 
     fn set_rotation(&mut self, degrees: Degrees) -> bool {
         self.set_transformed_by_script(true);
         self.cache_scale_rotation();
-        let changed = self.rotation != degrees;
-        self.rotation = degrees;
+        let changed = self.rotation.get() != degrees;
+        self.rotation.set(degrees);
 
         // FIXME - this isn't quite correct. In Flash player,
         // trying to set rotation to NaN does nothing if the current
@@ -434,29 +430,32 @@ impl<'gc> DisplayObjectBase<'gc> {
             return changed;
         }
 
+        let skew = self.skew.get();
         let cos_x = f64::cos(degrees.into_radians());
         let sin_x = f64::sin(degrees.into_radians());
-        let cos_y = f64::cos(degrees.into_radians() + self.skew);
-        let sin_y = f64::sin(degrees.into_radians() + self.skew);
+        let cos_y = f64::cos(degrees.into_radians() + skew);
+        let sin_y = f64::sin(degrees.into_radians() + skew);
+        let scale_x = self.scale_x.get().unit();
+        let scale_y = self.scale_y.get().unit();
         let matrix = &mut self.transform.matrix;
-        matrix.a = (self.scale_x.unit() * cos_x) as f32;
-        matrix.b = (self.scale_x.unit() * sin_x) as f32;
-        matrix.c = (self.scale_y.unit() * -sin_y) as f32;
-        matrix.d = (self.scale_y.unit() * cos_y) as f32;
+        matrix.a = (scale_x * cos_x) as f32;
+        matrix.b = (scale_x * sin_x) as f32;
+        matrix.c = (scale_y * -sin_y) as f32;
+        matrix.d = (scale_y * cos_y) as f32;
 
         changed
     }
 
-    fn scale_x(&mut self) -> Percent {
+    fn scale_x(&self) -> Percent {
         self.cache_scale_rotation();
-        self.scale_x
+        self.scale_x.get()
     }
 
     fn set_scale_x(&mut self, mut value: Percent) -> bool {
-        let changed = self.scale_x != value;
+        let changed = self.scale_x.get() != value;
         self.set_transformed_by_script(true);
         self.cache_scale_rotation();
-        self.scale_x = value;
+        self.scale_x.set(value);
 
         // Note - in order to match Flash's behavior, the 'scale_x' field is set to NaN
         // (which gets reported back to ActionScript), but we treat it as 0 for
@@ -467,7 +466,7 @@ impl<'gc> DisplayObjectBase<'gc> {
 
         // Similarly, a rotation of `NaN` can be reported to ActionScript, but we
         // treat it as 0.0 when calculating the matrix
-        let mut rot = self.rotation.into_radians();
+        let mut rot = self.rotation.get().into_radians();
         if rot.is_nan() {
             rot = 0.0;
         }
@@ -481,16 +480,16 @@ impl<'gc> DisplayObjectBase<'gc> {
         changed
     }
 
-    fn scale_y(&mut self) -> Percent {
+    fn scale_y(&self) -> Percent {
         self.cache_scale_rotation();
-        self.scale_y
+        self.scale_y.get()
     }
 
     fn set_scale_y(&mut self, mut value: Percent) -> bool {
-        let changed = self.scale_y != value;
+        let changed = self.scale_y.get() != value;
         self.set_transformed_by_script(true);
         self.cache_scale_rotation();
-        self.scale_y = value;
+        self.scale_y.set(value);
 
         // Note - in order to match Flash's behavior, the 'scale_y' field is set to NaN
         // (which gets reported back to ActionScript), but we treat it as 0 for
@@ -501,13 +500,14 @@ impl<'gc> DisplayObjectBase<'gc> {
 
         // Similarly, a rotation of `NaN` can be reported to ActionScript, but we
         // treat it as 0.0 when calculating the matrix
-        let mut rot = self.rotation.into_radians();
+        let mut rot = self.rotation.get().into_radians();
         if rot.is_nan() {
             rot = 0.0;
         }
 
-        let cos = f64::cos(rot + self.skew);
-        let sin = f64::sin(rot + self.skew);
+        let skew = self.skew.get();
+        let cos = f64::cos(rot + skew);
+        let sin = f64::sin(rot + skew);
         let matrix = &mut self.transform.matrix;
         matrix.c = (-sin * value.unit()) as f32;
         matrix.d = (cos * value.unit()) as f32;
@@ -1375,7 +1375,7 @@ pub trait TDisplayObject<'gc>:
     /// The rotation in degrees this display object in local space.
     /// Returned by the `_rotation`/`rotation` ActionScript properties.
     fn rotation(&self, gc_context: &Mutation<'gc>) -> Degrees {
-        let degrees = self.base_mut(gc_context).rotation();
+        let degrees = self.base().rotation();
         self.set_scale_rotation_cached(gc_context);
         degrees
     }
@@ -1397,7 +1397,7 @@ pub trait TDisplayObject<'gc>:
     /// The X axis scale for this display object in local space.
     /// Returned by the `_xscale`/`scaleX` ActionScript properties.
     fn scale_x(&self, gc_context: &Mutation<'gc>) -> Percent {
-        let percent = self.base_mut(gc_context).scale_x();
+        let percent = self.base().scale_x();
         self.set_scale_rotation_cached(gc_context);
         percent
     }
@@ -1419,7 +1419,7 @@ pub trait TDisplayObject<'gc>:
     /// The Y axis scale for this display object in local space.
     /// Returned by the `_yscale`/`scaleY` ActionScript properties.
     fn scale_y(&self, gc_context: &Mutation<'gc>) -> Percent {
-        let percent = self.base_mut(gc_context).scale_y();
+        let percent = self.base().scale_y();
         self.set_scale_rotation_cached(gc_context);
         percent
     }
