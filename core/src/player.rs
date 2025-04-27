@@ -914,9 +914,7 @@ impl Player {
     }
 
     pub fn set_background_color(&mut self, color: Option<Color>) {
-        self.mutate_with_update_context(|context| {
-            context.stage.set_background_color(context.gc(), color)
-        })
+        self.mutate_with_update_context(|context| context.stage.set_background_color(color))
     }
 
     pub fn letterbox(&mut self) -> Letterbox {
@@ -924,9 +922,7 @@ impl Player {
     }
 
     pub fn set_letterbox(&mut self, letterbox: Letterbox) {
-        self.mutate_with_update_context(|context| {
-            context.stage.set_letterbox(context.gc(), letterbox)
-        })
+        self.mutate_with_update_context(|context| context.stage.set_letterbox(letterbox))
     }
 
     pub fn movie_width(&mut self) -> u32 {
@@ -951,7 +947,7 @@ impl Player {
     pub fn set_show_menu(&mut self, show_menu: bool) {
         self.mutate_with_update_context(|context| {
             let stage = context.stage;
-            stage.set_show_menu(context, show_menu);
+            stage.set_show_menu(show_menu);
         })
     }
 
@@ -959,7 +955,7 @@ impl Player {
     pub fn set_allow_fullscreen(&mut self, allow_fullscreen: bool) {
         self.mutate_with_update_context(|context| {
             let stage = context.stage;
-            stage.set_allow_fullscreen(context, allow_fullscreen);
+            stage.set_allow_fullscreen(allow_fullscreen);
         })
     }
 
@@ -977,7 +973,7 @@ impl Player {
         self.mutate_with_update_context(|context| {
             let stage = context.stage;
             if let Ok(window_mode) = WindowMode::from_str(window_mode) {
-                stage.set_window_mode(context, window_mode);
+                stage.set_window_mode(window_mode);
             }
         })
     }
@@ -998,7 +994,7 @@ impl Player {
 
     pub fn set_forced_scale_mode(&mut self, force: bool) {
         self.mutate_with_update_context(|context| {
-            context.stage.set_forced_scale_mode(context, force);
+            context.stage.set_forced_scale_mode(force);
         })
     }
 
@@ -2975,10 +2971,10 @@ impl PlayerBuilder {
 
             let stage = context.stage;
             stage.set_align(context, self.align);
-            stage.set_forced_align(context, self.forced_align);
+            stage.set_forced_align(self.forced_align);
             stage.set_scale_mode(context, self.scale_mode, false);
-            stage.set_forced_scale_mode(context, self.forced_scale_mode);
-            stage.set_allow_fullscreen(context, self.allow_fullscreen);
+            stage.set_forced_scale_mode(self.forced_scale_mode);
+            stage.set_allow_fullscreen(self.allow_fullscreen);
             stage.post_instantiation(context, None, Instantiator::Movie, false);
             stage.build_matrices(context);
             #[cfg(feature = "known_stubs")]

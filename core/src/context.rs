@@ -357,7 +357,6 @@ impl<'gc> UpdateContext<'gc> {
         }
 
         self.stage.set_movie_size(
-            self.gc(),
             self.swf.width().to_pixels() as u32,
             self.swf.height().to_pixels() as u32,
         );

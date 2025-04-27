@@ -174,10 +174,7 @@ fn set_show_menu<'gc>(
         .unwrap_or(&true.into())
         .to_owned()
         .as_bool(activation.swf_version());
-    activation
-        .context
-        .stage
-        .set_show_menu(activation.context, show_menu);
+    activation.context.stage.set_show_menu(show_menu);
     Ok(Value::Undefined)
 }
 
