@@ -267,14 +267,6 @@ impl<'gc> GcRootData<'gc> {
 
 type GcArena = gc_arena::Arena<Rootable![GcRoot<'_>]>;
 
-type Audio = Box<dyn AudioBackend>;
-type Navigator = Box<dyn NavigatorBackend>;
-type Renderer = Box<dyn RenderBackend>;
-type Storage = Box<dyn StorageBackend>;
-type Log = Box<dyn LogBackend>;
-type Ui = Box<dyn UiBackend>;
-type Video = Box<dyn VideoBackend>;
-
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]
 enum RunState {
     Playing,
@@ -305,13 +297,13 @@ pub struct Player {
     run_state: RunState,
     needs_render: bool,
 
-    renderer: Renderer,
-    audio: Audio,
-    navigator: Navigator,
-    storage: Storage,
-    log: Log,
-    ui: Ui,
-    video: Video,
+    renderer: Box<dyn RenderBackend>,
+    audio: Box<dyn AudioBackend>,
+    navigator: Box<dyn NavigatorBackend>,
+    storage: Box<dyn StorageBackend>,
+    log: Box<dyn LogBackend>,
+    ui: Box<dyn UiBackend>,
+    video: Box<dyn VideoBackend>,
 
     transform_stack: TransformStack,
 
@@ -2031,20 +2023,20 @@ impl Player {
         self.current_frame
     }
 
-    pub fn audio(&self) -> &Audio {
-        &self.audio
+    pub fn audio(&self) -> &dyn AudioBackend {
+        &*self.audio
     }
 
-    pub fn audio_mut(&mut self) -> &mut Audio {
-        &mut self.audio
+    pub fn audio_mut(&mut self) -> &mut dyn AudioBackend {
+        &mut *self.audio
     }
 
-    pub fn navigator(&self) -> &Navigator {
-        &self.navigator
+    pub fn navigator(&self) -> &dyn NavigatorBackend {
+        &*self.navigator
     }
 
-    pub fn navigator_mut(&mut self) -> &mut Navigator {
-        &mut self.navigator
+    pub fn navigator_mut(&mut self) -> &mut dyn NavigatorBackend {
+        &mut *self.navigator
     }
 
     // The frame rate of the current movie in FPS.
@@ -2052,32 +2044,38 @@ impl Player {
         self.frame_rate
     }
 
-    pub fn renderer(&self) -> &Renderer {
-        &self.renderer
+    pub fn renderer(&self) -> &dyn RenderBackend {
+        &*self.renderer
     }
 
-    pub fn renderer_mut(&mut self) -> &mut Renderer {
-        &mut self.renderer
+    pub fn renderer_mut(&mut self) -> &mut dyn RenderBackend {
+        &mut *self.renderer
     }
 
-    pub fn storage(&self) -> &Storage {
-        &self.storage
+    pub fn storage(&self) -> &dyn StorageBackend {
+        &*self.storage
     }
 
-    pub fn storage_mut(&mut self) -> &mut Storage {
-        &mut self.storage
+    pub fn storage_mut(&mut self) -> &mut dyn StorageBackend {
+        &mut *self.storage
     }
 
-    pub fn destroy(self) -> Renderer {
+    /// Only used by tests.
+    // TODO: consider removing this?
+    pub fn swap_storage(&mut self, storage: &mut Box<dyn StorageBackend>) {
+        std::mem::swap(&mut self.storage, storage);
+    }
+
+    pub fn destroy(self) -> Box<dyn RenderBackend> {
         self.renderer
     }
 
-    pub fn ui(&self) -> &Ui {
-        &self.ui
+    pub fn ui(&self) -> &dyn UiBackend {
+        &*self.ui
     }
 
-    pub fn ui_mut(&mut self) -> &mut Ui {
-        &mut self.ui
+    pub fn ui_mut(&mut self) -> &mut dyn UiBackend {
+        &mut *self.ui
     }
 
     pub fn run_actions(context: &mut UpdateContext<'_>) {
@@ -2406,8 +2404,8 @@ impl Player {
         &self.compatibility_rules
     }
 
-    pub fn log_backend(&self) -> &Log {
-        &self.log
+    pub fn log_backend(&self) -> &dyn LogBackend {
+        &*self.log
     }
 
     pub fn max_execution_duration(&self) -> Duration {
@@ -2447,13 +2445,13 @@ pub struct PlayerBuilder {
     movie: Option<SwfMovie>,
 
     // Backends
-    audio: Option<Audio>,
-    log: Option<Log>,
-    navigator: Option<Navigator>,
-    renderer: Option<Renderer>,
-    storage: Option<Storage>,
-    ui: Option<Ui>,
-    video: Option<Video>,
+    audio: Option<Box<dyn AudioBackend>>,
+    log: Option<Box<dyn LogBackend>>,
+    navigator: Option<Box<dyn NavigatorBackend>>,
+    renderer: Option<Box<dyn RenderBackend>>,
+    storage: Option<Box<dyn StorageBackend>>,
+    ui: Option<Box<dyn UiBackend>>,
+    video: Option<Box<dyn VideoBackend>>,
 
     // Notifications
     notification_sender: Option<Sender<PlayerNotification>>,
