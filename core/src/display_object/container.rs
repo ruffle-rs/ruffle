@@ -277,7 +277,7 @@ pub trait TDisplayObjectContainer<'gc>:
         child.set_place_frame(context.gc(), 0);
         child.set_parent(context, Some(this));
         if !self.raw_container().movie().is_action_script_3() {
-            child.set_avm1_removed(context.gc(), false);
+            child.set_avm1_removed(false);
         }
 
         self.raw_container_mut(context.gc())
@@ -433,7 +433,7 @@ pub trait TDisplayObjectContainer<'gc>:
         for removed in removed_list {
             // The `remove_range` method is only ever called as a result of an ActionScript
             // call
-            removed.set_placed_by_script(context.gc(), true);
+            removed.set_placed_by_script(true);
             write.remove_child_from_depth_list(removed);
             drop(write);
 
@@ -993,7 +993,7 @@ impl<'gc> ChildContainer<'gc> {
             child.set_clip_depth(context.gc(), 0);
             prev_child.set_depth(context.gc(), prev_depth);
             prev_child.set_clip_depth(context.gc(), 0);
-            prev_child.set_transformed_by_script(context.gc(), true);
+            prev_child.set_transformed_by_script(true);
             self.depth_list.insert(prev_depth, prev_child);
 
             let prev_position = self
@@ -1107,7 +1107,7 @@ impl<'gc> ChildContainer<'gc> {
         let cur_depth = child.depth();
         // Note that the depth returned by AS will be offset by the `AVM_DEPTH_BIAS`, so this is really `-(cur_depth+1+AVM_DEPTH_BIAS)`
         child.set_depth(context.gc(), -cur_depth - 1);
-        child.set_avm1_pending_removal(context.gc(), true);
+        child.set_avm1_pending_removal(true);
 
         if let Some(mc) = child.as_movie_clip() {
             // Clip events should still fire

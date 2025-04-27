@@ -76,7 +76,7 @@ pub fn set_matrix<'gc>(
 
     let dobj = get_display_object(this);
     let Some(obj) = args.try_get_object(activation, 0) else {
-        dobj.base_mut(activation.gc()).set_has_matrix3d_stub(true);
+        dobj.base().set_has_matrix3d_stub(true);
         return Ok(Value::Undefined);
     };
 
@@ -87,7 +87,7 @@ pub fn set_matrix<'gc>(
         // we only want to inform ancestors to avoid unnecessary invalidations for tx/ty
         parent.invalidate_cached_bitmap(activation.gc());
     }
-    dobj.base_mut(activation.gc()).set_has_matrix3d_stub(false);
+    dobj.base().set_has_matrix3d_stub(false);
     Ok(Value::Undefined)
 }
 
@@ -377,9 +377,7 @@ pub fn set_matrix_3d<'gc>(
         // we only want to inform ancestors to avoid unnecessary invalidations for tx/ty
         parent.invalidate_cached_bitmap(activation.gc());
     }
-    display_object
-        .base_mut(activation.gc())
-        .set_has_matrix3d_stub(has_matrix3d);
+    display_object.base().set_has_matrix3d_stub(has_matrix3d);
 
     Ok(Value::Undefined)
 }
@@ -449,7 +447,7 @@ pub fn set_perspective_projection<'gc>(
         .unwrap_or_default();
     let display_object = get_display_object(this);
     display_object
-        .base_mut(activation.gc())
+        .base()
         .set_has_perspective_projection_stub(set);
     Ok(Value::Undefined)
 }

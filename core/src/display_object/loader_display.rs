@@ -53,7 +53,7 @@ impl<'gc> LoaderDisplay<'gc> {
             },
         ));
 
-        obj.set_placed_by_script(activation.gc(), true);
+        obj.set_placed_by_script(true);
         activation.context.avm2.add_orphan_obj(obj.into());
         obj
     }
@@ -118,11 +118,11 @@ impl<'gc> TDisplayObject<'gc> for LoaderDisplay<'gc> {
         for child in self.iter_render_list() {
             // See MovieClip::enter_frame for an explanation of this.
             if skip_frame {
-                child.base_mut(context.gc()).set_skip_next_enter_frame(true);
+                child.base().set_skip_next_enter_frame(true);
             }
             child.enter_frame(context);
         }
-        self.base_mut(context.gc()).set_skip_next_enter_frame(false);
+        self.base().set_skip_next_enter_frame(false);
     }
 
     fn construct_frame(&self, context: &mut UpdateContext<'gc>) {

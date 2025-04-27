@@ -406,7 +406,7 @@ impl<'gc> TDisplayObject<'gc> for Avm1Button<'gc> {
 
         // Do *not* unregister text field bindings.
 
-        self.set_avm1_removed(context.gc(), true);
+        self.set_avm1_removed(true);
     }
 
     fn avm1_text_field_bindings(&self) -> Option<Ref<'_, [Avm1TextFieldBinding<'gc>]>> {

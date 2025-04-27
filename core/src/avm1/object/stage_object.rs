@@ -345,8 +345,8 @@ fn set_y<'gc>(
     Ok(())
 }
 
-fn x_scale<'gc>(activation: &mut Activation<'_, 'gc>, this: DisplayObject<'gc>) -> Value<'gc> {
-    this.scale_x(activation.gc()).percent().into()
+fn x_scale<'gc>(_activation: &mut Activation<'_, 'gc>, this: DisplayObject<'gc>) -> Value<'gc> {
+    this.scale_x().percent().into()
 }
 
 fn set_x_scale<'gc>(
@@ -360,8 +360,8 @@ fn set_x_scale<'gc>(
     Ok(())
 }
 
-fn y_scale<'gc>(activation: &mut Activation<'_, 'gc>, this: DisplayObject<'gc>) -> Value<'gc> {
-    this.scale_y(activation.gc()).percent().into()
+fn y_scale<'gc>(_activation: &mut Activation<'_, 'gc>, this: DisplayObject<'gc>) -> Value<'gc> {
+    this.scale_y().percent().into()
 }
 
 fn set_y_scale<'gc>(
@@ -455,8 +455,8 @@ fn set_height<'gc>(
     Ok(())
 }
 
-fn rotation<'gc>(activation: &mut Activation<'_, 'gc>, this: DisplayObject<'gc>) -> Value<'gc> {
-    let degrees: f64 = this.rotation(activation.gc()).into();
+fn rotation<'gc>(_activation: &mut Activation<'_, 'gc>, this: DisplayObject<'gc>) -> Value<'gc> {
+    let degrees: f64 = this.rotation().into();
     degrees.into()
 }
 

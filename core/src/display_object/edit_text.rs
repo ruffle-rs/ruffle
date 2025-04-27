@@ -2680,7 +2680,7 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
     fn set_width(&self, context: &mut UpdateContext<'gc>, value: f64) {
         self.apply_autosize_bounds();
 
-        let mut edit_text = self.0.write(context.gc());
+        let edit_text = self.0.read();
         let bounds = &edit_text.bounds;
         bounds.set(bounds.get().with_width(Twips::from_pixels(value)));
         edit_text.base.base.set_transformed_by_script(true);
@@ -2701,7 +2701,7 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
     fn set_height(&self, context: &mut UpdateContext<'gc>, value: f64) {
         self.apply_autosize_bounds();
 
-        let mut edit_text = self.0.write(context.gc());
+        let edit_text = self.0.read();
         let bounds = &edit_text.bounds;
         bounds.set(bounds.get().with_height(Twips::from_pixels(value)));
         edit_text.base.base.set_transformed_by_script(true);
@@ -2819,7 +2819,7 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
                 .retain(|&text_field| !DisplayObject::ptr_eq(text_field.into(), (*self).into()));
         }
 
-        self.set_avm1_removed(context.gc(), true);
+        self.set_avm1_removed(true);
     }
 
     fn avm1_text_field_bindings(&self) -> Option<Ref<'_, [Avm1TextFieldBinding<'gc>]>> {

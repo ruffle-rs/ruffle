@@ -2412,7 +2412,7 @@ impl<'gc> Loader<'gc> {
                 // and consequently are observed to have their currentFrame lag one
                 // frame behind objects placed by the timeline (even if they were
                 // both placed in the same frame to begin with).
-                dobj.base_mut(uc.gc()).set_skip_next_enter_frame(true);
+                dobj.base().set_skip_next_enter_frame(true);
 
                 let flashvars = movie.clone().unwrap().parameters().to_owned();
                 if !flashvars.is_empty() {

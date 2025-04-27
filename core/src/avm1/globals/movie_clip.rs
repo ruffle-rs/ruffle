@@ -175,12 +175,12 @@ fn set_scroll_rect<'gc>(
     value: Value<'gc>,
 ) -> Result<(), Error<'gc>> {
     if let Value::Object(object) = value {
-        this.set_has_scroll_rect(activation.gc(), true);
+        this.set_has_scroll_rect(true);
         if let Some(rectangle) = object_to_rectangle(activation, object)? {
             this.set_next_scroll_rect(activation.gc(), rectangle);
         }
     } else {
-        this.set_has_scroll_rect(activation.gc(), false);
+        this.set_has_scroll_rect(false);
     };
     Ok(())
 }
@@ -1370,7 +1370,7 @@ fn swap_depths<'gc>(
 
         if depth != movie_clip.depth() {
             parent.swap_at_depth(activation.context, movie_clip.into(), depth);
-            movie_clip.set_transformed_by_script(activation.gc(), true);
+            movie_clip.set_transformed_by_script(true);
         }
     }
 
@@ -1678,7 +1678,7 @@ fn set_transform<'gc>(
                     parent.invalidate_cached_bitmap(activation.gc());
                 }
 
-                this.set_transformed_by_script(activation.gc(), true);
+                this.set_transformed_by_script(true);
             }
         }
     }
@@ -1699,7 +1699,7 @@ fn set_lock_root<'gc>(
     value: Value<'gc>,
 ) -> Result<(), Error<'gc>> {
     let lock_root = value.as_bool(activation.swf_version());
-    this.set_lock_root(activation.gc(), lock_root);
+    this.set_lock_root(lock_root);
     Ok(())
 }
 

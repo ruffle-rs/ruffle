@@ -192,7 +192,7 @@ impl<'gc> Stage<'gc> {
                 focus_tracker: FocusTracker::new(gc_context),
             },
         ));
-        stage.set_is_root(gc_context, true);
+        stage.set_is_root(true);
         stage
     }
 
