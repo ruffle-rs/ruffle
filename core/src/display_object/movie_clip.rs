@@ -43,7 +43,7 @@ use gc_arena::{Collect, Gc, GcCell, GcWeakCell, Mutation};
 use ruffle_macros::istr;
 use smallvec::SmallVec;
 use std::borrow::Cow;
-use std::cell::{Ref, RefCell, RefMut};
+use std::cell::{Cell, Ref, RefCell, RefMut};
 use std::cmp::max;
 use std::collections::HashMap;
 use std::sync::Arc;
@@ -163,17 +163,17 @@ pub struct MovieClipData<'gc> {
     /// This is lazily allocated on demand, to make `MovieClipData` smaller in the common case.
     #[collect(require_static)]
     drawing: Option<Box<Drawing>>,
-    avm2_enabled: bool,
+    avm2_enabled: Cell<bool>,
 
     /// Show a hand cursor when the clip is in button mode.
-    avm2_use_hand_cursor: bool,
+    avm2_use_hand_cursor: Cell<bool>,
 
     /// A DisplayObject (doesn't need to be visible) to use for hit tests instead of this clip.
     hit_area: Option<DisplayObject<'gc>>,
 
     /// Force enable button mode, which causes all mouse-related events to
     /// trigger on this clip rather than any input-eligible children.
-    button_mode: bool,
+    button_mode: Cell<bool>,
     last_queued_script_frame: Option<FrameNumber>,
     queued_script_frame: Option<FrameNumber>,
     queued_goto_frame: Option<FrameNumber>,
@@ -216,9 +216,9 @@ impl<'gc> MovieClip<'gc> {
                 frame_scripts: Vec::new(),
                 flags: Cell::new(MovieClipFlags::empty()),
                 drawing: None,
-                avm2_enabled: true,
-                avm2_use_hand_cursor: true,
-                button_mode: false,
+                avm2_enabled: Cell::new(true),
+                avm2_use_hand_cursor: Cell::new(true),
+                button_mode: Cell::new(false),
                 last_queued_script_frame: None,
                 queued_script_frame: None,
                 queued_goto_frame: None,
@@ -259,9 +259,9 @@ impl<'gc> MovieClip<'gc> {
                 frame_scripts: Vec::new(),
                 flags: Cell::new(MovieClipFlags::empty()),
                 drawing: None,
-                avm2_enabled: true,
-                avm2_use_hand_cursor: true,
-                button_mode: false,
+                avm2_enabled: Cell::new(true),
+                avm2_use_hand_cursor: Cell::new(true),
+                button_mode: Cell::new(false),
                 last_queued_script_frame: None,
                 queued_script_frame: None,
                 queued_goto_frame: None,
@@ -305,9 +305,9 @@ impl<'gc> MovieClip<'gc> {
                 frame_scripts: Vec::new(),
                 flags: Cell::new(MovieClipFlags::PLAYING),
                 drawing: None,
-                avm2_enabled: true,
-                avm2_use_hand_cursor: true,
-                button_mode: false,
+                avm2_enabled: Cell::new(true),
+                avm2_use_hand_cursor: Cell::new(true),
+                button_mode: Cell::new(false),
                 last_queued_script_frame: None,
                 queued_script_frame: None,
                 queued_goto_frame: None,
@@ -361,9 +361,9 @@ impl<'gc> MovieClip<'gc> {
                 frame_scripts: Vec::new(),
                 flags: Cell::new(MovieClipFlags::PLAYING),
                 drawing: None,
-                avm2_enabled: true,
-                avm2_use_hand_cursor: true,
-                button_mode: false,
+                avm2_enabled: Cell::new(true),
+                avm2_use_hand_cursor: Cell::new(true),
+                button_mode: Cell::new(false),
                 last_queued_script_frame: None,
                 queued_script_frame: None,
                 queued_goto_frame: None,
@@ -428,9 +428,9 @@ impl<'gc> MovieClip<'gc> {
                 frame_scripts: Vec::new(),
                 flags: Cell::new(MovieClipFlags::PLAYING),
                 drawing: None,
-                avm2_enabled: true,
-                avm2_use_hand_cursor: true,
-                button_mode: false,
+                avm2_enabled: Cell::new(true),
+                avm2_use_hand_cursor: Cell::new(true),
+                button_mode: Cell::new(false),
                 last_queued_script_frame: None,
                 queued_script_frame: None,
                 queued_goto_frame: None,
@@ -2250,11 +2250,11 @@ impl<'gc> MovieClip<'gc> {
     }
 
     pub fn avm2_enabled(self) -> bool {
-        self.0.read().avm2_enabled
+        self.0.read().avm2_enabled.get()
     }
 
-    pub fn set_avm2_enabled(self, context: &mut UpdateContext<'gc>, enabled: bool) {
-        self.0.write(context.gc()).avm2_enabled = enabled;
+    pub fn set_avm2_enabled(self, enabled: bool) {
+        self.0.read().avm2_enabled.set(enabled);
     }
 
     fn use_hand_cursor(self, context: &mut UpdateContext<'gc>) -> bool {
@@ -2266,11 +2266,11 @@ impl<'gc> MovieClip<'gc> {
     }
 
     pub fn avm2_use_hand_cursor(self) -> bool {
-        self.0.read().avm2_use_hand_cursor
+        self.0.read().avm2_use_hand_cursor.get()
     }
 
-    pub fn set_avm2_use_hand_cursor(self, context: &mut UpdateContext<'gc>, use_hand_cursor: bool) {
-        self.0.write(context.gc()).avm2_use_hand_cursor = use_hand_cursor;
+    pub fn set_avm2_use_hand_cursor(self, use_hand_cursor: bool) {
+        self.0.read().avm2_use_hand_cursor.set(use_hand_cursor);
     }
 
     pub fn hit_area(self) -> Option<DisplayObject<'gc>> {
@@ -2290,11 +2290,11 @@ impl<'gc> MovieClip<'gc> {
     }
 
     pub fn forced_button_mode(self) -> bool {
-        self.0.read().button_mode
+        self.0.read().button_mode.get()
     }
 
-    pub fn set_forced_button_mode(self, context: &mut UpdateContext<'gc>, button_mode: bool) {
-        self.0.write(context.gc()).button_mode = button_mode;
+    pub fn set_forced_button_mode(self, button_mode: bool) {
+        self.0.read().button_mode.set(button_mode);
     }
 
     pub fn drawing_mut(&self, gc_context: &Mutation<'gc>) -> RefMut<'_, Drawing> {

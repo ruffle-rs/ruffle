@@ -219,7 +219,7 @@ pub fn get_enabled<'gc>(
 }
 
 pub fn set_enabled<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    _activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -231,7 +231,7 @@ pub fn set_enabled<'gc>(
     {
         let enabled = args.get_bool(0);
 
-        mc.set_avm2_enabled(activation.context, enabled);
+        mc.set_avm2_enabled(enabled);
     }
 
     Ok(Value::Undefined)
