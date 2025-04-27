@@ -17,6 +17,7 @@ use ruffle_render::quality::StageQuality;
 use ruffle_render::shape_utils::{DistilledShape, DrawCommand, LineScaleMode, LineScales};
 use ruffle_render::transform::Transform;
 use ruffle_web_common::{JsError, JsResult};
+use std::any::Any;
 use std::borrow::Cow;
 use std::sync::Arc;
 use swf::{BlendMode, Color, ColorTransform, Point, Twips};
@@ -52,8 +53,7 @@ struct ShapeData(Vec<CanvasDrawCommand>);
 impl ShapeHandleImpl for ShapeData {}
 
 fn as_shape_data(handle: &ShapeHandle) -> &ShapeData {
-    <dyn ShapeHandleImpl>::downcast_ref(&*handle.0)
-        .expect("Shape handle must be a Canvas ShapeData")
+    <dyn Any>::downcast_ref(&*handle.0).expect("Shape handle must be a Canvas ShapeData")
 }
 
 #[derive(Debug)]
@@ -155,8 +155,7 @@ struct BitmapData {
 impl BitmapHandleImpl for BitmapData {}
 
 fn as_bitmap_data(handle: &BitmapHandle) -> &BitmapData {
-    <dyn BitmapHandleImpl>::downcast_ref(&*handle.0)
-        .expect("Bitmap handle must be a Canvas BitmapData")
+    <dyn Any>::downcast_ref(&*handle.0).expect("Bitmap handle must be a Canvas BitmapData")
 }
 
 impl BitmapData {

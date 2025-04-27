@@ -30,7 +30,6 @@ smallvec = { version = "1.15.0", features = ["union"] }
 num-traits = { workspace = true }
 num-derive = { workspace = true }
 quick-xml = "0.37.5"
-downcast-rs = "2.0.1"
 url = { workspace = true }
 weak-table = "0.3.2"
 percent-encoding = "2.3.1"

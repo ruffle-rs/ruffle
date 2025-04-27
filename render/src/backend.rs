@@ -7,8 +7,8 @@ use crate::filters::Filter;
 use crate::pixel_bender::{PixelBenderShader, PixelBenderShaderArgument, PixelBenderShaderHandle};
 use crate::quality::StageQuality;
 use crate::shape_utils::DistilledShape;
-use downcast_rs::{impl_downcast, Downcast};
 use ruffle_wstr::WStr;
+use std::any::Any;
 use std::borrow::Cow;
 use std::cell::RefCell;
 use std::fmt::Debug;
@@ -23,7 +23,7 @@ pub struct BitmapCacheEntry {
     pub filters: Vec<Filter>,
 }
 
-pub trait RenderBackend: Downcast {
+pub trait RenderBackend: Any {
     fn viewport_dimensions(&self) -> ViewportDimensions;
     // Do not call this method directly - use `player.set_viewport_dimensions`,
     // which will ensure that the stage is properly updated as well.
@@ -112,7 +112,6 @@ pub trait RenderBackend: Downcast {
         with_rgba: RgbaBufRead,
     ) -> Result<(), Error>;
 }
-impl_downcast!(RenderBackend);
 
 pub enum PixelBenderTarget {
     // The shader will write to the provided bitmap texture,
@@ -129,29 +128,24 @@ pub enum PixelBenderOutput {
     Bytes(Vec<u8>),
 }
 
-pub trait IndexBuffer: Downcast {}
-impl_downcast!(IndexBuffer);
-pub trait VertexBuffer: Downcast {}
-impl_downcast!(VertexBuffer);
+pub trait IndexBuffer: Any {}
+pub trait VertexBuffer: Any {}
 
-pub trait ShaderModule: Downcast {}
-impl_downcast!(ShaderModule);
+pub trait ShaderModule: Any {}
 
-pub trait Texture: Downcast + Debug {
+pub trait Texture: Any + Debug {
     fn width(&self) -> u32;
     fn height(&self) -> u32;
 }
-impl_downcast!(Texture);
 
-pub trait RawTexture: Downcast + Debug {
+pub trait RawTexture: Any + Debug {
     fn equals(&self, other: &dyn RawTexture) -> bool;
 }
-impl_downcast!(RawTexture);
 
 #[cfg(feature = "wgpu")]
 impl RawTexture for wgpu::Texture {
     fn equals(&self, other: &dyn RawTexture) -> bool {
-        if let Some(other_texture) = other.downcast_ref::<wgpu::Texture>() {
+        if let Some(other_texture) = (other as &dyn Any).downcast_ref::<wgpu::Texture>() {
             std::ptr::eq(self, other_texture)
         } else {
             false
@@ -241,7 +235,7 @@ pub enum ProgramType {
     Fragment,
 }
 
-pub trait Context3D: Downcast {
+pub trait Context3D: Any {
     fn profile(&self) -> Context3DProfile;
     // The BitmapHandle for the texture we're rendering to
     fn bitmap_handle(&self) -> BitmapHandle;
@@ -284,7 +278,6 @@ pub trait Context3D: Downcast {
 
     fn process_command(&mut self, command: Context3DCommand<'_>);
 }
-impl_downcast!(Context3D);
 
 #[derive(Copy, Clone, Debug)]
 pub enum Context3DVertexBufferFormat {
@@ -529,8 +522,7 @@ pub enum Context3DCommand<'a> {
 #[derive(Clone, Debug)]
 pub struct ShapeHandle(pub Arc<dyn ShapeHandleImpl>);
 
-pub trait ShapeHandleImpl: Downcast + Debug {}
-impl_downcast!(ShapeHandleImpl);
+pub trait ShapeHandleImpl: Any + Debug {}
 
 #[derive(Copy, Clone, Debug)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]

@@ -1293,12 +1293,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "75b325c5dbd37f80359721ad39aca5a29fb04c89279657cffdda8736d0c0b9d2"
 
 [[package]]
-name = "downcast-rs"
-version = "2.0.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ea8a8b81cacc08888170eef4d13b775126db426d0b348bee9d18c2c1eaf123cf"
-
-[[package]]
 name = "dpi"
 version = "0.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4171,7 +4165,6 @@ dependencies = [
  "chrono",
  "clap",
  "dasp",
- "downcast-rs 2.0.1",
  "egui",
  "egui_extras",
  "either",
@@ -4328,7 +4321,6 @@ dependencies = [
  "approx",
  "byteorder",
  "clap",
- "downcast-rs 2.0.1",
  "enum-map",
  "flate2",
  "gif",
@@ -5999,7 +5991,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "056535ced7a150d45159d3a8dc30f91a2e2d588ca0b23f70e56033622b8016f6"
 dependencies = [
  "cc",
- "downcast-rs 1.2.1",
+ "downcast-rs",
  "rustix",
  "scoped-tls",
  "smallvec",

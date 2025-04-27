@@ -31,6 +31,7 @@ use ruffle_render::pixel_bender::{
 use ruffle_render::quality::StageQuality;
 use ruffle_render::shape_utils::DistilledShape;
 use ruffle_render::tessellator::ShapeTessellator;
+use std::any::Any;
 use std::borrow::Cow;
 use std::cell::Cell;
 use std::path::Path;
@@ -413,10 +414,7 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
 
     #[instrument(level = "debug", skip_all)]
     fn context3d_present(&mut self, context: &mut dyn Context3D) -> Result<(), BitmapError> {
-        let context = context
-            .as_any_mut()
-            .downcast_mut::<WgpuContext3D>()
-            .unwrap();
+        let context = <dyn Any>::downcast_mut::<WgpuContext3D>(context).unwrap();
         context.present();
         Ok(())
     }
@@ -1084,7 +1082,7 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
         handle: Box<dyn SyncHandle>,
         with_rgba: RgbaBufRead,
     ) -> Result<(), ruffle_render::error::Error> {
-        let handle = handle.downcast::<QueueSyncHandle>().unwrap();
+        let handle = Box::<dyn Any>::downcast::<QueueSyncHandle>(handle).unwrap();
         handle.capture(with_rgba, &mut self.active_frame);
         Ok(())
     }

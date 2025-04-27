@@ -13,6 +13,7 @@ use ruffle_core::{Player, PlayerEvent};
 use ruffle_render_wgpu::backend::{request_adapter_and_device, WgpuRenderBackend};
 use ruffle_render_wgpu::descriptors::Descriptors;
 use ruffle_render_wgpu::utils::{format_list, get_backend_names};
+use std::any::Any;
 use std::sync::{Arc, MutexGuard};
 use std::time::{Duration, Instant};
 use url::Url;
@@ -329,11 +330,10 @@ impl GuiController {
         // If we're not in a UI, tell egui which cursor we prefer to use instead
         if !self.egui_winit.egui_ctx().wants_pointer_input() {
             if let Some(player) = player.as_deref() {
-                full_output.platform_output.cursor_icon = player
-                    .ui()
-                    .downcast_ref::<DesktopUiBackend>()
-                    .unwrap_or_else(|| panic!("UI Backend should be DesktopUiBackend"))
-                    .cursor();
+                full_output.platform_output.cursor_icon =
+                    <dyn Any>::downcast_ref::<DesktopUiBackend>(player.ui())
+                        .unwrap_or_else(|| panic!("UI Backend should be DesktopUiBackend"))
+                        .cursor();
             }
         }
         self.egui_winit
@@ -375,10 +375,9 @@ impl GuiController {
         );
 
         let movie_view = if let Some(player) = player.as_deref_mut() {
-            let renderer = player
-                .renderer_mut()
-                .downcast_mut::<WgpuRenderBackend<MovieView>>()
-                .expect("Renderer must be correct type");
+            let renderer =
+                <dyn Any>::downcast_ref::<WgpuRenderBackend<MovieView>>(player.renderer_mut())
+                    .expect("Renderer must be correct type");
             Some(renderer.target())
         } else {
             None

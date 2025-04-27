@@ -1,8 +1,8 @@
 use h263_rs_yuv::bt601::yuv420_to_rgba;
+use std::any::Any;
 use std::fmt::Debug;
 use std::sync::Arc;
 
-use downcast_rs::{impl_downcast, Downcast};
 use swf::{Rectangle, Twips};
 
 use crate::backend::RenderBackend;
@@ -17,8 +17,7 @@ impl PartialEq for BitmapHandle {
     }
 }
 
-pub trait BitmapHandleImpl: Downcast + Debug {}
-impl_downcast!(BitmapHandleImpl);
+pub trait BitmapHandleImpl: Any + Debug {}
 
 /// Info returned by the `register_bitmap` methods.
 #[derive(Clone, Debug)]
@@ -45,8 +44,7 @@ pub trait BitmapSource {
 
 pub type RgbaBufRead<'a> = Box<dyn FnOnce(&[u8], u32) + 'a>;
 
-pub trait SyncHandle: Downcast + Debug {}
-impl_downcast!(SyncHandle);
+pub trait SyncHandle: Any + Debug {}
 
 impl Clone for Box<dyn SyncHandle> {
     fn clone(&self) -> Box<dyn SyncHandle> {

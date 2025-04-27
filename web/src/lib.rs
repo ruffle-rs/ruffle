@@ -24,6 +24,7 @@ use ruffle_core::{Player, PlayerEvent, StaticCallstack, ViewportDimensions};
 use ruffle_web_common::JsResult;
 use serde::Serialize;
 use slotmap::{new_key_type, SlotMap};
+use std::any::Any;
 use std::rc::Rc;
 use std::str::FromStr;
 use std::sync::Once;
@@ -387,9 +388,7 @@ impl RuffleHandle {
         if !clipboard.is_empty() {
             let _ = self.with_core_mut(|core| {
                 core.mutate_with_update_context(|context| {
-                    context
-                        .ui
-                        .downcast_mut::<WebUiBackend>()
+                    <dyn Any>::downcast_mut::<WebUiBackend>(context.ui)
                         .expect("Web UI backend")
                         .set_clipboard_content_buffer(clipboard);
                 });
@@ -444,8 +443,7 @@ impl RuffleHandle {
     /// Returns `None` if the audio backend does not use Web Audio.
     pub fn audio_context(&self) -> Option<web_sys::AudioContext> {
         self.with_core_mut(|core| {
-            core.audio()
-                .downcast_ref::<audio::WebAudioBackend>()
+            <dyn Any>::downcast_ref::<audio::WebAudioBackend>(core.audio())
                 .map(|audio| audio.audio_context().clone())
         })
         .unwrap_or_default()
@@ -744,8 +742,7 @@ impl RuffleHandle {
                                     } else {
                                         "".into()
                                     };
-                                core.ui_mut()
-                                    .downcast_mut::<WebUiBackend>()
+                                <dyn Any>::downcast_mut::<WebUiBackend>(core.ui_mut())
                                     .expect("Web UI backend")
                                     .set_clipboard_content_buffer(clipboard_content);
                                 core.handle_event(PlayerEvent::TextControl {

@@ -1,3 +1,5 @@
+use std::any::Any;
+
 use crate::{
     avm1::{NativeObject, Object as Avm1Object},
     avm2::{Avm2, EventObject as Avm2EventObject, SoundChannelObject},
@@ -6,7 +8,6 @@ use crate::{
     display_object::{self, DisplayObject, MovieClip, TDisplayObject},
     string::AvmString,
 };
-use downcast_rs::Downcast;
 use gc_arena::Collect;
 use slotmap::{new_key_type, Key, SlotMap};
 
@@ -84,7 +85,7 @@ pub enum RegisterError {
     ShortMp3,
 }
 
-pub trait AudioBackend: Downcast {
+pub trait AudioBackend: Any {
     fn play(&mut self);
     fn pause(&mut self);
 
@@ -193,8 +194,6 @@ pub trait AudioBackend: Downcast {
         self.get_sound_position(instance).is_some()
     }
 }
-
-impl_downcast!(AudioBackend);
 
 /// Information about a sound provided to `NullAudioBackend`.
 struct NullSound {

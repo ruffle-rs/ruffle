@@ -5,9 +5,9 @@
 mod tests;
 
 use byteorder::{BigEndian, LittleEndian, ReadBytesExt};
-use downcast_rs::{impl_downcast, Downcast};
 use num_traits::FromPrimitive;
 use std::{
+    any::Any,
     fmt::{Debug, Display, Formatter},
     io::Read,
     sync::Arc,
@@ -28,10 +28,9 @@ impl PartialEq for PixelBenderShaderHandle {
     }
 }
 
-pub trait PixelBenderShaderImpl: Downcast + Debug {
+pub trait PixelBenderShaderImpl: Any + Debug {
     fn parsed_shader(&self) -> &PixelBenderShader;
 }
-impl_downcast!(PixelBenderShaderImpl);
 
 #[repr(u8)]
 #[derive(Debug, Clone, PartialEq)]

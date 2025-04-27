@@ -19,6 +19,7 @@ use ruffle_render::backend::RenderBackend;
 use ruffle_render::quality::StageQuality;
 use ruffle_video_external::backend::ExternalVideoBackend;
 use ruffle_web_common::JsResult;
+use std::any::Any;
 use std::cell::RefCell;
 use std::collections::HashMap;
 use std::error::Error;
@@ -688,8 +689,7 @@ impl RuffleInstanceBuilder {
             let mut core = core
                 .lock()
                 .expect("Failed to lock player after construction");
-            core.navigator_mut()
-                .downcast_mut::<WebNavigatorBackend>()
+            <dyn Any>::downcast_mut::<WebNavigatorBackend>(core.navigator_mut())
                 .expect("Expected WebNavigatorBackend")
                 .set_player(player_weak);
             // Set config parameters.
