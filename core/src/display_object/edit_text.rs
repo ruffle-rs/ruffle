@@ -438,6 +438,18 @@ impl<'gc> EditText<'gc> {
         text
     }
 
+    fn bounds_x_offset(&self) -> Twips {
+        let scale_x = self.base().scale_x().unit();
+        let offset = self.0.read().bounds.get().x_min.to_pixels();
+        Twips::from_pixels(scale_x * offset)
+    }
+
+    fn bounds_y_offset(&self) -> Twips {
+        let scale_y = self.base().scale_y().unit();
+        let offset = self.0.read().bounds.get().y_min.to_pixels();
+        Twips::from_pixels(scale_y * offset)
+    }
+
     pub fn text(self) -> WString {
         self.0.read().text_spans.text().into()
     }
@@ -2633,37 +2645,25 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
     // The returned position x and y of a text field is offset by the text bounds.
     fn x(&self) -> Twips {
         self.apply_autosize_bounds();
-
-        let edit_text = self.0.read();
-        let offset = edit_text.bounds.get().x_min;
-        edit_text.base.base.x() + offset
+        self.base().x() + self.bounds_x_offset()
     }
 
     fn set_x(&self, gc_context: &Mutation<'gc>, x: Twips) {
         self.apply_autosize_bounds();
-
-        let mut edit_text = self.0.write(gc_context);
-        let offset = edit_text.bounds.get().x_min;
-        edit_text.base.base.set_x(x - offset);
-        drop(edit_text);
+        let offset = self.bounds_x_offset();
+        self.base_mut(gc_context).set_x(x - offset);
         self.invalidate_cached_bitmap(gc_context);
     }
 
     fn y(&self) -> Twips {
         self.apply_autosize_bounds();
-
-        let edit_text = self.0.read();
-        let offset = edit_text.bounds.get().y_min;
-        edit_text.base.base.y() + offset
+        self.base().y() + self.bounds_y_offset()
     }
 
     fn set_y(&self, gc_context: &Mutation<'gc>, y: Twips) {
         self.apply_autosize_bounds();
-
-        let mut edit_text = self.0.write(gc_context);
-        let offset = edit_text.bounds.get().y_min;
-        edit_text.base.base.set_y(y - offset);
-        drop(edit_text);
+        let offset = self.bounds_y_offset();
+        self.base_mut(gc_context).set_y(y - offset);
         self.invalidate_cached_bitmap(gc_context);
     }
 
