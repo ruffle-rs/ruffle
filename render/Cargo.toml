@@ -18,7 +18,6 @@ gif = "0.13.1"
 png = "0.17.16"
 flate2 = { workspace = true }
 smallvec = { version = "1.15.0", features = ["union"] }
-downcast-rs = "2.0.1"
 lyon = { version = "1.0.1", optional = true }
 lyon_geom = "1.0.6"
 thiserror = { workspace = true }

@@ -19,6 +19,7 @@ use ruffle_macros::istr;
 use ruffle_render::filters::{
     DisplacementMapFilter, DisplacementMapFilterMode, Filter, ShaderFilter, ShaderObject,
 };
+use std::any::Any;
 use std::fmt::Debug;
 use swf::{
     BevelFilter, BevelFilterFlags, BlurFilter, BlurFilterFlags, Color, ColorMatrixFilter,
@@ -50,7 +51,7 @@ impl ShaderObject for ObjectWrapper {
     }
 
     fn equals(&self, other: &dyn ShaderObject) -> bool {
-        if let Some(other_wrapper) = other.downcast_ref::<ObjectWrapper>() {
+        if let Some(other_wrapper) = <dyn Any>::downcast_ref::<ObjectWrapper>(other) {
             std::ptr::eq(self.root.as_ptr(), other_wrapper.root.as_ptr())
         } else {
             false
@@ -857,9 +858,7 @@ fn shader_filter_to_avm2<'gc>(
     activation: &mut Activation<'_, 'gc>,
     filter: &ShaderFilter<'static>,
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let object_wrapper: &ObjectWrapper = filter
-        .shader_object
-        .downcast_ref::<ObjectWrapper>()
+    let object_wrapper: &ObjectWrapper = <dyn Any>::downcast_ref(filter.shader_object.as_ref())
         .expect("ShaderObject was not an ObjectWrapper");
 
     let obj = *activation.context.dynamic_root.fetch(&object_wrapper.root);

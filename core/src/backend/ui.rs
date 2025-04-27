@@ -1,10 +1,9 @@
 use crate::backend::navigator::OwnedFuture;
 pub use crate::loader::Error as DialogLoaderError;
 use chrono::{DateTime, Utc};
-use downcast_rs::Downcast;
 use fluent_templates::loader::langid;
 pub use fluent_templates::LanguageIdentifier;
-use std::borrow::Cow;
+use std::{any::Any, borrow::Cow};
 use url::Url;
 
 pub type FullscreenError = Cow<'static, str>;
@@ -38,7 +37,7 @@ pub struct FileFilter {
 }
 
 /// A result of a file selection
-pub trait FileDialogResult: Downcast {
+pub trait FileDialogResult: Any {
     /// Was the file selection canceled by the user
     fn is_cancelled(&self) -> bool;
     fn creation_time(&self) -> Option<DateTime<Utc>>;
@@ -55,12 +54,11 @@ pub trait FileDialogResult: Downcast {
     /// the state at the time of the last refresh
     fn write_and_refresh(&mut self, data: &[u8]);
 }
-impl_downcast!(FileDialogResult);
 
 /// Future representing a file selection in process
 pub type DialogResultFuture = OwnedFuture<Box<dyn FileDialogResult>, DialogLoaderError>;
 
-pub trait UiBackend: Downcast {
+pub trait UiBackend: Any {
     fn mouse_visible(&self) -> bool;
 
     fn set_mouse_visible(&mut self, visible: bool);
@@ -129,7 +127,6 @@ pub trait UiBackend: Downcast {
     /// Mark that any previously open dialog has been closed
     fn close_file_dialog(&mut self);
 }
-impl_downcast!(UiBackend);
 
 /// A mouse cursor icon displayed by the Flash Player.
 /// Communicated from the core to the UI backend via `UiBackend::set_mouse_cursor`.

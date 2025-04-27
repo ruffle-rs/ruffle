@@ -13,9 +13,6 @@ pub use display_object::{StageAlign, StageDisplayState, StageScaleMode};
 extern crate smallvec;
 
 #[macro_use]
-extern crate downcast_rs;
-
-#[macro_use]
 extern crate num_derive;
 
 #[macro_use]

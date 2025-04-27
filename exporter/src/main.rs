@@ -11,6 +11,7 @@ use ruffle_render_wgpu::clap::{GraphicsBackend, PowerPreference};
 use ruffle_render_wgpu::descriptors::Descriptors;
 use ruffle_render_wgpu::target::TextureTarget;
 use ruffle_render_wgpu::wgpu;
+use std::any::Any;
 use std::fs::create_dir_all;
 use std::io::{self, Write};
 use std::panic::catch_unwind;
@@ -135,10 +136,10 @@ fn take_screenshot(
             let image = || {
                 player.lock().unwrap().render();
                 let mut player = player.lock().unwrap();
-                let renderer = player
-                    .renderer_mut()
-                    .downcast_mut::<WgpuRenderBackend<TextureTarget>>()
-                    .unwrap();
+                let renderer = <dyn Any>::downcast_mut::<WgpuRenderBackend<TextureTarget>>(
+                    player.renderer_mut(),
+                )
+                .unwrap();
                 renderer.capture_frame()
             };
             match catch_unwind(image) {

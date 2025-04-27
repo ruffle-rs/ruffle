@@ -21,6 +21,7 @@ use ruffle_render::tessellator::{
 };
 use ruffle_render::transform::Transform;
 use ruffle_web_common::{JsError, JsResult};
+use std::any::Any;
 use std::borrow::Cow;
 use std::sync::Arc;
 use swf::{BlendMode, Color, Twips};
@@ -169,8 +170,7 @@ impl Drop for RegistryData {
 impl BitmapHandleImpl for RegistryData {}
 
 fn as_registry_data(handle: &BitmapHandle) -> &RegistryData {
-    <dyn BitmapHandleImpl>::downcast_ref(&*handle.0)
-        .expect("Bitmap handle must be webgl RegistryData")
+    <dyn Any>::downcast_ref(&*handle.0).expect("Bitmap handle must be webgl RegistryData")
 }
 
 const MAX_GRADIENT_COLORS: usize = 15;
@@ -1647,7 +1647,7 @@ impl Drop for Mesh {
 impl ShapeHandleImpl for Mesh {}
 
 fn as_mesh(handle: &ShapeHandle) -> &Mesh {
-    <dyn ShapeHandleImpl>::downcast_ref(&*handle.0).expect("Shape handle must be a WebGL ShapeData")
+    <dyn Any>::downcast_ref(&*handle.0).expect("Shape handle must be a WebGL ShapeData")
 }
 
 #[derive(Debug)]

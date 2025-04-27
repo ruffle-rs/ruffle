@@ -4,6 +4,7 @@ use ruffle_render::backend::{
 };
 use ruffle_render::bitmap::BitmapHandle;
 use ruffle_render::error::Error;
+use std::any::Any;
 use std::cell::Cell;
 use swf::{Rectangle, Twips};
 
@@ -702,10 +703,7 @@ impl Context3D for WgpuContext3D {
                 if data.is_empty() {
                     return;
                 }
-                let buffer: &mut IndexBufferWrapper = buffer
-                    .as_any_mut()
-                    .downcast_mut::<IndexBufferWrapper>()
-                    .unwrap();
+                let buffer: &mut IndexBufferWrapper = <dyn Any>::downcast_mut(buffer).unwrap();
 
                 // Unfortunately, ActionScript works with 2-byte indices, while wgpu requires
                 // copy offsets and sizes to have 4-byte alignment. To support this, we need
@@ -745,11 +743,8 @@ impl Context3D for WgpuContext3D {
                     return;
                 }
 
-                let buffer: Rc<VertexBufferWrapper> = buffer
-                    .clone()
-                    .into_any_rc()
-                    .downcast::<VertexBufferWrapper>()
-                    .unwrap();
+                let buffer: Rc<VertexBufferWrapper> =
+                    Rc::<dyn Any>::downcast(buffer.clone()).unwrap();
 
                 // ActionScript can only work with 32-bit chunks of data, so our `write_buffer`
                 // offset and size will always be a multiple of `COPY_BUFFER_ALIGNMENT` (4 bytes)
@@ -787,7 +782,8 @@ impl Context3D for WgpuContext3D {
                     }
                 }
 
-                let texture_wrapper = texture.as_any().downcast_ref::<TextureWrapper>().unwrap();
+                let texture_wrapper =
+                    <dyn Any>::downcast_ref::<TextureWrapper>(texture.as_ref()).unwrap();
                 self.current_texture_size = Some(Extent3d {
                     width: texture_wrapper.texture.width(),
                     height: texture_wrapper.texture.height(),
@@ -862,10 +858,8 @@ impl Context3D for WgpuContext3D {
                 first_index,
                 num_triangles,
             } => {
-                let index_buffer: &IndexBufferWrapper = index_buffer
-                    .as_any()
-                    .downcast_ref::<IndexBufferWrapper>()
-                    .unwrap();
+                let index_buffer: &IndexBufferWrapper =
+                    <dyn Any>::downcast_ref(index_buffer).unwrap();
 
                 let indices =
                     (first_index as u32)..((first_index as u32) + (num_triangles as u32 * 3));
@@ -926,11 +920,8 @@ impl Context3D for WgpuContext3D {
                 buffer_offset,
             } => {
                 let info = if let Some((buffer, format)) = buffer {
-                    let buffer = buffer
-                        .clone()
-                        .into_any_rc()
-                        .downcast::<VertexBufferWrapper>()
-                        .unwrap();
+                    let buffer =
+                        Rc::<dyn Any>::downcast::<VertexBufferWrapper>(buffer.clone()).unwrap();
 
                     Some(VertexAttributeInfo {
                         buffer,
@@ -958,8 +949,7 @@ impl Context3D for WgpuContext3D {
             }
 
             Context3DCommand::SetShaders { module } => {
-                let shaders =
-                    module.map(|shader| shader.into_any_rc().downcast::<ShaderPairAgal>().unwrap());
+                let shaders = module.map(|shader| Rc::<dyn Any>::downcast(shader).unwrap());
 
                 self.current_pipeline.set_shaders(shaders)
             }
@@ -1008,7 +998,7 @@ impl Context3D for WgpuContext3D {
                 dest,
                 layer,
             } => {
-                let dest = dest.as_any().downcast_ref::<TextureWrapper>().unwrap();
+                let dest = Rc::<dyn Any>::downcast::<TextureWrapper>(dest).unwrap();
 
                 // Unfortunately, we need to copy from the CPU data, rather than using the GPU texture.
                 // The GPU side of a BitmapData can be updated at any time from non-Stage3D code.
@@ -1085,7 +1075,7 @@ impl Context3D for WgpuContext3D {
             } => {
                 let bound_texture = if let Some(texture) = texture {
                     let texture_wrapper =
-                        texture.as_any().downcast_ref::<TextureWrapper>().unwrap();
+                        <dyn Any>::downcast_ref::<TextureWrapper>(texture.as_ref()).unwrap();
 
                     let mut view: wgpu::TextureViewDescriptor = Default::default();
                     if cube {
@@ -1094,8 +1084,8 @@ impl Context3D for WgpuContext3D {
                     }
 
                     Some(BoundTextureData {
-                        id: texture.clone(),
                         view: texture_wrapper.texture.create_view(&view),
+                        id: texture,
                         cube,
                     })
                 } else {

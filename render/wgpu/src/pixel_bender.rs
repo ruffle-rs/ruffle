@@ -1,3 +1,4 @@
+use std::any::Any;
 use std::cell::RefCell;
 use std::collections::HashMap;
 use std::num::NonZeroU64;
@@ -102,7 +103,7 @@ impl PixelBenderShaderImpl for PixelBenderWgpuShader {
 }
 
 pub fn as_cache_holder(handle: &PixelBenderShaderHandle) -> &PixelBenderWgpuShader {
-    <dyn PixelBenderShaderImpl>::downcast_ref(&*handle.0).unwrap()
+    <dyn Any>::downcast_ref(&*handle.0).unwrap()
 }
 
 impl PixelBenderWgpuShader {
