@@ -152,10 +152,10 @@ fn set_scale_9_grid<'gc>(
     avm1_stub!(activation, "Button", "scale9Grid");
     if let Value::Object(object) = value {
         if let Some(rectangle) = object_to_rectangle(activation, object)? {
-            this.set_scaling_grid(activation.gc(), rectangle);
+            this.set_scaling_grid(rectangle);
         }
     } else {
-        this.set_scaling_grid(activation.gc(), Default::default());
+        this.set_scaling_grid(Default::default());
     };
     Ok(())
 }

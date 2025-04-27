@@ -204,8 +204,8 @@ pub trait TDisplayObjectContainer<'gc>:
             .replace_at_depth(child, depth);
 
         child.set_parent(context, Some(self.into()));
-        child.set_place_frame(context.gc(), 0);
-        child.set_depth(context.gc(), depth);
+        child.set_place_frame(0);
+        child.set_depth(depth);
 
         if let Some(removed_child) = removed_child {
             if !self.raw_container().movie().is_action_script_3() {
@@ -274,7 +274,7 @@ pub trait TDisplayObjectContainer<'gc>:
 
         let child_was_on_stage = child.is_on_stage(context);
 
-        child.set_place_frame(context.gc(), 0);
+        child.set_place_frame(0);
         child.set_parent(context, Some(this));
         if !self.raw_container().movie().is_action_script_3() {
             child.set_avm1_removed(false);
@@ -384,7 +384,7 @@ pub trait TDisplayObjectContainer<'gc>:
     ) {
         let this: DisplayObject<'_> = (*self).into();
 
-        child.set_depth(context.gc(), depth);
+        child.set_depth(depth);
         child.set_parent(context, Some(this));
         self.raw_container_mut(context.gc())
             .insert_child_into_depth_list(depth, child);
@@ -986,13 +986,13 @@ impl<'gc> ChildContainer<'gc> {
         depth: Depth,
     ) {
         let prev_depth = child.depth();
-        child.set_depth(context.gc(), depth);
+        child.set_depth(depth);
         child.set_parent(context, Some(parent));
 
         if let Some(prev_child) = self.depth_list.insert(depth, child) {
-            child.set_clip_depth(context.gc(), 0);
-            prev_child.set_depth(context.gc(), prev_depth);
-            prev_child.set_clip_depth(context.gc(), 0);
+            child.set_clip_depth(0);
+            prev_child.set_depth(prev_depth);
+            prev_child.set_clip_depth(0);
             prev_child.set_transformed_by_script(true);
             self.depth_list.insert(prev_depth, prev_child);
 
@@ -1106,7 +1106,7 @@ impl<'gc> ChildContainer<'gc> {
 
         let cur_depth = child.depth();
         // Note that the depth returned by AS will be offset by the `AVM_DEPTH_BIAS`, so this is really `-(cur_depth+1+AVM_DEPTH_BIAS)`
-        child.set_depth(context.gc(), -cur_depth - 1);
+        child.set_depth(-cur_depth - 1);
         child.set_avm1_pending_removal(true);
 
         if let Some(mc) = child.as_movie_clip() {

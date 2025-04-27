@@ -191,14 +191,14 @@ impl BitmapCache {
 #[collect(no_drop)]
 pub struct DisplayObjectBase<'gc> {
     parent: Option<DisplayObject<'gc>>,
-    place_frame: u16,
-    depth: Depth,
+    place_frame: Cell<u16>,
+    depth: Cell<Depth>,
     #[collect(require_static)]
     transform: Transform,
     name: Option<AvmString<'gc>>,
     #[collect(require_static)]
     filters: Vec<Filter>,
-    clip_depth: Depth,
+    clip_depth: Cell<Depth>,
 
     // Cached transform properties `_xscale`, `_yscale`, `_rotation`.
     // These are expensive to calculate, so they will be calculated and cached
@@ -227,8 +227,7 @@ pub struct DisplayObjectBase<'gc> {
 
     /// The blend mode used when rendering this display object.
     /// Values other than the default `BlendMode::Normal` implicitly cause cache-as-bitmap behavior.
-    #[collect(require_static)]
-    blend_mode: ExtendedBlendMode,
+    blend_mode: Cell<ExtendedBlendMode>,
 
     #[collect(require_static)]
     blend_shader: Option<PixelBenderShaderHandle>,
@@ -237,26 +236,22 @@ pub struct DisplayObjectBase<'gc> {
     /// The bounding box of the display object will be filled with the given color. This also
     /// triggers cache-as-bitmap behavior. Only solid backgrounds are supported; the alpha channel
     /// is ignored.
-    #[collect(require_static)]
-    opaque_background: Option<Color>,
+    opaque_background: Cell<Option<Color>>,
 
     /// Bit flags for various display object properties.
     flags: Cell<DisplayObjectFlags>,
 
     /// The 'internal' scroll rect used for rendering and methods like 'localToGlobal'.
     /// This is updated from 'pre_render'
-    #[collect(require_static)]
-    scroll_rect: Option<Rectangle<Twips>>,
+    scroll_rect: Cell<Option<Rectangle<Twips>>>,
 
     /// The 'next' scroll rect, which we will copy to 'scroll_rect' from 'pre_render'.
     /// This is used by the ActionScript 'DisplayObject.scrollRect' getter, which sees
     /// changes immediately (without needing wait for a render)
-    #[collect(require_static)]
-    next_scroll_rect: Rectangle<Twips>,
+    next_scroll_rect: Cell<Rectangle<Twips>>,
 
     /// Rectangle used for 9-slice scaling (`DisplayObject.scale9grid`).
-    #[collect(require_static)]
-    scaling_grid: Rectangle<Twips>,
+    scaling_grid: Cell<Rectangle<Twips>>,
 
     /// If this Display Object should cacheAsBitmap - and if so, the cache itself.
     /// None means not cached, Some means cached.
@@ -268,12 +263,12 @@ impl Default for DisplayObjectBase<'_> {
     fn default() -> Self {
         Self {
             parent: Default::default(),
-            place_frame: Default::default(),
-            depth: Default::default(),
+            place_frame: Cell::new(Default::default()),
+            depth: Cell::new(Default::default()),
             transform: Default::default(),
             name: None,
             filters: Default::default(),
-            clip_depth: Default::default(),
+            clip_depth: Cell::new(Default::default()),
             rotation: Cell::new(Degrees::from_radians(0.0)),
             scale_x: Cell::new(Percent::from_unit(1.0)),
             scale_y: Cell::new(Percent::from_unit(1.0)),
@@ -283,13 +278,13 @@ impl Default for DisplayObjectBase<'_> {
             maskee: None,
             meta_data: None,
             sound_transform: Default::default(),
-            blend_mode: Default::default(),
+            blend_mode: Cell::new(Default::default()),
             blend_shader: None,
-            opaque_background: Default::default(),
+            opaque_background: Cell::new(Default::default()),
             flags: Cell::new(DisplayObjectFlags::VISIBLE),
-            scroll_rect: None,
-            next_scroll_rect: Default::default(),
-            scaling_grid: Default::default(),
+            scroll_rect: Cell::new(None),
+            next_scroll_rect: Cell::new(Default::default()),
+            scaling_grid: Cell::new(Default::default()),
             cache: None,
         }
     }
@@ -313,19 +308,19 @@ impl<'gc> DisplayObjectBase<'gc> {
     }
 
     fn depth(&self) -> Depth {
-        self.depth
+        self.depth.get()
     }
 
-    fn set_depth(&mut self, depth: Depth) {
-        self.depth = depth;
+    fn set_depth(&self, depth: Depth) {
+        self.depth.set(depth);
     }
 
     fn place_frame(&self) -> u16 {
-        self.place_frame
+        self.place_frame.get()
     }
 
-    fn set_place_frame(&mut self, frame: u16) {
-        self.place_frame = frame;
+    fn set_place_frame(&self, frame: u16) {
+        self.place_frame.set(frame);
     }
 
     fn transform(&self) -> &Transform {
@@ -558,11 +553,11 @@ impl<'gc> DisplayObjectBase<'gc> {
     }
 
     fn clip_depth(&self) -> Depth {
-        self.clip_depth
+        self.clip_depth.get()
     }
 
-    fn set_clip_depth(&mut self, depth: Depth) {
-        self.clip_depth = depth;
+    fn set_clip_depth(&self, depth: Depth) {
+        self.clip_depth.set(depth);
     }
 
     fn parent(&self) -> Option<DisplayObject<'gc>> {
@@ -639,13 +634,11 @@ impl<'gc> DisplayObjectBase<'gc> {
     }
 
     fn blend_mode(&self) -> ExtendedBlendMode {
-        self.blend_mode
+        self.blend_mode.get()
     }
 
-    fn set_blend_mode(&mut self, value: ExtendedBlendMode) -> bool {
-        let changed = self.blend_mode != value;
-        self.blend_mode = value;
-        changed
+    fn set_blend_mode(&self, value: ExtendedBlendMode) -> bool {
+        self.blend_mode.replace(value) != value
     }
 
     fn blend_shader(&self) -> Option<PixelBenderShaderHandle> {
@@ -659,20 +652,20 @@ impl<'gc> DisplayObjectBase<'gc> {
     /// The opaque background color of this display object.
     /// The bounding box of the display object will be filled with this color.
     fn opaque_background(&self) -> Option<Color> {
-        self.opaque_background
+        self.opaque_background.get()
     }
 
     /// The opaque background color of this display object.
     /// The bounding box of the display object will be filled with the given color. This also
     /// triggers cache-as-bitmap behavior. Only solid backgrounds are supported; the alpha channel
     /// is ignored.
-    fn set_opaque_background(&mut self, value: Option<Color>) -> bool {
+    fn set_opaque_background(&self, value: Option<Color>) -> bool {
         let value = value.map(|mut color| {
             color.a = 255;
             color
         });
-        let changed = self.opaque_background != value;
-        self.opaque_background = value;
+        let changed = self.opaque_background.get() != value;
+        self.opaque_background.set(value);
         changed
     }
 
@@ -1136,8 +1129,8 @@ pub trait TDisplayObject<'gc>:
         self.base().depth()
     }
 
-    fn set_depth(&self, gc_context: &Mutation<'gc>, depth: Depth) {
-        self.base_mut(gc_context).set_depth(depth)
+    fn set_depth(&self, depth: Depth) {
+        self.base().set_depth(depth)
     }
 
     /// The untransformed inherent bounding box of this object.
@@ -1243,8 +1236,8 @@ pub trait TDisplayObject<'gc>:
     fn place_frame(&self) -> u16 {
         self.base().place_frame()
     }
-    fn set_place_frame(&self, gc_context: &Mutation<'gc>, frame: u16) {
-        self.base_mut(gc_context).set_place_frame(frame)
+    fn set_place_frame(&self, frame: u16) {
+        self.base().set_place_frame(frame)
     }
 
     /// Sets the matrix of this object.
@@ -1619,8 +1612,8 @@ pub trait TDisplayObject<'gc>:
     fn clip_depth(&self) -> Depth {
         self.base().clip_depth()
     }
-    fn set_clip_depth(&self, gc_context: &Mutation<'gc>, depth: Depth) {
-        self.base_mut(gc_context).set_clip_depth(depth);
+    fn set_clip_depth(&self, depth: Depth) {
+        self.base().set_clip_depth(depth);
     }
 
     /// Retrieve the parent of this display object.
@@ -1719,15 +1712,15 @@ pub trait TDisplayObject<'gc>:
     }
 
     fn scroll_rect(&self) -> Option<Rectangle<Twips>> {
-        self.base().scroll_rect
+        self.base().scroll_rect.get()
     }
 
     fn next_scroll_rect(&self) -> Rectangle<Twips> {
-        self.base().next_scroll_rect
+        self.base().next_scroll_rect.get()
     }
 
     fn set_next_scroll_rect(&self, gc_context: &Mutation<'gc>, rectangle: Rectangle<Twips>) {
-        self.base_mut(gc_context).next_scroll_rect = rectangle;
+        self.base().next_scroll_rect.set(rectangle);
 
         // Scroll rect is natively handled by cacheAsBitmap - don't invalidate self, only parents
         if let Some(parent) = self.parent() {
@@ -1736,11 +1729,11 @@ pub trait TDisplayObject<'gc>:
     }
 
     fn scaling_grid(&self) -> Rectangle<Twips> {
-        self.base().scaling_grid
+        self.base().scaling_grid.get()
     }
 
-    fn set_scaling_grid(&self, gc_context: &Mutation<'gc>, rect: Rectangle<Twips>) {
-        self.base_mut(gc_context).scaling_grid = rect;
+    fn set_scaling_grid(&self, rect: Rectangle<Twips>) {
+        self.base().scaling_grid.set(rect);
     }
 
     /// Whether this object has been removed. Only applies to AVM1.
@@ -1805,7 +1798,7 @@ pub trait TDisplayObject<'gc>:
     /// Sets the blend mode used when rendering this display object.
     /// Values other than the default `BlendMode::Normal` implicitly cause cache-as-bitmap behavior.
     fn set_blend_mode(&self, gc_context: &Mutation<'gc>, value: ExtendedBlendMode) {
-        if self.base_mut(gc_context).set_blend_mode(value) {
+        if self.base().set_blend_mode(value) {
             if let Some(parent) = self.parent() {
                 // We don't need to invalidate ourselves, we're just toggling how the bitmap is rendered.
 
@@ -1835,7 +1828,7 @@ pub trait TDisplayObject<'gc>:
     /// triggers cache-as-bitmap behavior. Only solid backgrounds are supported; the alpha channel
     /// is ignored.
     fn set_opaque_background(&self, gc_context: &Mutation<'gc>, value: Option<Color>) {
-        if self.base_mut(gc_context).set_opaque_background(value) {
+        if self.base().set_opaque_background(value) {
             self.invalidate_cached_bitmap(gc_context);
         }
     }
@@ -2101,10 +2094,11 @@ pub trait TDisplayObject<'gc>:
     /// Called before the child is about to be rendered.
     /// Note that this happens even if the child is invisible
     /// (as long as the child is still on a render list)
-    fn pre_render(&self, context: &mut RenderContext<'_, 'gc>) {
-        let mut this = self.base_mut(context.gc());
+    fn pre_render(&self, _context: &mut RenderContext<'_, 'gc>) {
+        let this = self.base();
         this.clear_invalidate_flag();
-        this.scroll_rect = this.has_scroll_rect().then(|| this.next_scroll_rect);
+        this.scroll_rect
+            .set(this.has_scroll_rect().then(|| this.next_scroll_rect.get()));
     }
 
     fn render_self(&self, _context: &mut RenderContext<'_, 'gc>) {}

@@ -206,7 +206,7 @@ impl<'gc> Avm2Button<'gc> {
                 {
                     Some(child) => {
                         child.set_matrix(context.gc(), record.matrix.into());
-                        child.set_depth(context.gc(), record.depth.into());
+                        child.set_depth(record.depth.into());
 
                         if swf_state != swf::ButtonState::HIT_TEST {
                             child.set_color_transform(context.gc(), record.color_transform);

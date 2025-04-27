@@ -2123,7 +2123,7 @@ impl<'gc> Loader<'gc> {
                         // When an AVM2 movie loads an AVM1 movie, we need to call `post_instantiation` here.
                         mc.post_instantiation(uc, None, Instantiator::Movie, false);
 
-                        mc.set_depth(uc.gc(), LOADER_INSERTED_AVM1_DEPTH);
+                        mc.set_depth(LOADER_INSERTED_AVM1_DEPTH);
                     }
 
                     if from_bytes {
