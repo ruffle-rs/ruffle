@@ -65,7 +65,7 @@ pub fn display_object_initializer<'gc>(
 
     if let Some(dobj) = this.as_display_object() {
         if let Some(clip) = dobj.as_movie_clip() {
-            clip.set_constructing_frame(true, activation.gc());
+            clip.set_constructing_frame(true);
         }
 
         if let Some(container) = dobj.as_container() {
@@ -75,7 +75,7 @@ pub fn display_object_initializer<'gc>(
         }
 
         if let Some(clip) = dobj.as_movie_clip() {
-            clip.set_constructing_frame(false, activation.gc());
+            clip.set_constructing_frame(false);
         }
     }
 

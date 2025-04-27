@@ -2011,7 +2011,7 @@ pub trait TDisplayObject<'gc>:
             if !obj.is_of_type(movieclip_class) && !movie.is_root() {
                 movie.stop(context);
             }
-            movie.set_initialized(context.gc());
+            movie.set_initialized();
         }
     }
 

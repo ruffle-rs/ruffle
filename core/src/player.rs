@@ -842,7 +842,7 @@ impl Player {
             if mc.playing() {
                 mc.stop(context);
             } else {
-                mc.play(context);
+                mc.play();
             }
         }
     }

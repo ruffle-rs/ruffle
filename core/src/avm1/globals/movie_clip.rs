@@ -1148,10 +1148,10 @@ fn next_frame<'gc>(
 
 fn play<'gc>(
     movie_clip: MovieClip<'gc>,
-    activation: &mut Activation<'_, 'gc>,
+    _activation: &mut Activation<'_, 'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    movie_clip.play(activation.context);
+    movie_clip.play();
     Ok(Value::Undefined)
 }
 
