@@ -2210,7 +2210,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         self.context.stage.set_quality(self.context, new_quality);
         self.context
             .stage
-            .set_use_bitmap_downsampling(self.gc(), use_bitmap_downsamping);
+            .set_use_bitmap_downsampling(use_bitmap_downsamping);
         Ok(FrameControl::Continue)
     }
 

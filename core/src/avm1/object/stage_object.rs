@@ -596,10 +596,7 @@ fn set_focus_rect<'gc>(
             Value::Object(_) => false,
             _ => val.coerce_to_f64(activation)? != 0.0,
         };
-        activation
-            .context
-            .stage
-            .set_stage_focus_rect(activation.gc(), val);
+        activation.context.stage.set_stage_focus_rect(val);
     } else if let Some(obj) = this.as_interactive() {
         let val = match val {
             Value::Undefined | Value::Null => None,

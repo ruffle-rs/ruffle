@@ -107,7 +107,7 @@ pub fn set_color<'gc>(
 
     if let Some(dobj) = this.as_display_object().and_then(|this| this.as_stage()) {
         let color = Color::from_rgb(args.get_u32(activation, 0)?, 255);
-        dobj.set_background_color(activation.gc(), Some(color));
+        dobj.set_background_color(Some(color));
     }
 
     Ok(Value::Undefined)
@@ -255,7 +255,7 @@ pub fn set_show_default_context_menu<'gc>(
     activation
         .context
         .stage
-        .set_show_menu(activation.context, show_default_context_menu);
+        .set_show_menu(show_default_context_menu);
     Ok(Value::Undefined)
 }
 
@@ -306,7 +306,7 @@ pub fn get_stage_focus_rect<'gc>(
 
 /// Implement `stageFocusRect`'s setter
 pub fn set_stage_focus_rect<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    _activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -314,7 +314,7 @@ pub fn set_stage_focus_rect<'gc>(
 
     if let Some(dobj) = this.as_display_object().and_then(|this| this.as_stage()) {
         let rf = args.get_bool(0);
-        dobj.set_stage_focus_rect(activation.gc(), rf);
+        dobj.set_stage_focus_rect(rf);
     }
 
     Ok(Value::Undefined)
@@ -446,14 +446,14 @@ pub fn get_stage3ds<'gc>(
 
 /// Implement `invalidate`
 pub fn invalidate<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    _activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
     if let Some(stage) = this.as_display_object().and_then(|this| this.as_stage()) {
-        stage.set_invalidated(activation.gc(), true);
+        stage.set_invalidated(true);
     }
     Ok(Value::Undefined)
 }

@@ -27,7 +27,7 @@ use ruffle_render::backend::ViewportDimensions;
 use ruffle_render::commands::CommandHandler;
 use ruffle_render::quality::StageQuality;
 use ruffle_render::transform::Transform;
-use std::cell::{Ref, RefMut};
+use std::cell::{Cell, Ref, RefMut};
 use std::fmt::{self, Display, Formatter};
 use std::str::FromStr;
 use std::sync::Arc;
@@ -64,55 +64,47 @@ pub struct StageData<'gc> {
     /// The stage background.
     ///
     /// If the background color is not specified, it should be white.
-    #[collect(require_static)]
-    background_color: Option<Color>,
+    background_color: Cell<Option<Color>>,
 
     /// Determines how player content is resized to fit the stage.
-    #[collect(require_static)]
-    letterbox: Letterbox,
+    letterbox: Cell<Letterbox>,
 
     /// The dimensions of the SWF file.
-    #[collect(require_static)]
-    movie_size: (u32, u32),
+    movie_size: Cell<(u32, u32)>,
 
     /// The quality settings of the stage.
-    #[collect(require_static)]
-    quality: StageQuality,
+    quality: Cell<StageQuality>,
 
     /// The dimensions of the stage, as reported to ActionScript.
-    #[collect(require_static)]
-    stage_size: (u32, u32),
+    stage_size: Cell<(u32, u32)>,
 
     /// The scale mode of the stage.
-    #[collect(require_static)]
-    scale_mode: StageScaleMode,
+    scale_mode: Cell<StageScaleMode>,
 
     /// Whether to prevent movies from changing the stage scale mode.
-    forced_scale_mode: bool,
+    forced_scale_mode: Cell<bool>,
 
     /// The display state of the stage.
-    #[collect(require_static)]
-    display_state: StageDisplayState,
+    display_state: Cell<StageDisplayState>,
 
     /// The alignment of the stage.
-    #[collect(require_static)]
-    align: StageAlign,
+    align: Cell<StageAlign>,
 
     /// Whether to prevent movies from the changing the stage alignment
-    forced_align: bool,
+    forced_align: Cell<bool>,
 
     /// Whether to allow the stage's displayState to be changed.
-    allow_fullscreen: bool,
+    allow_fullscreen: Cell<bool>,
 
     /// Whether or not a RENDER event should be dispatched on the next render
-    invalidated: bool,
+    invalidated: Cell<bool>,
 
     /// Whether to use high quality downsampling for bitmaps.
     ///
     /// This is usually implied by `quality` being `Best` or higher, but the AVM1
     /// `ToggleHighQuality` op can adjust stage quality independently of this flag.
     /// This setting is currently ignored in Ruffle.
-    use_bitmap_downsampling: bool,
+    use_bitmap_downsampling: Cell<bool>,
 
     /// The bounds of the current viewport in twips, used for culling.
     #[collect(require_static)]
@@ -122,13 +114,13 @@ pub struct StageData<'gc> {
     ///
     /// Only used on web to control how the Flash content layers with other content on the page.
     #[collect(require_static)]
-    window_mode: WindowMode,
+    window_mode: Cell<WindowMode>,
 
     /// Whether objects display a glowing border when they have focus.
-    stage_focus_rect: bool,
+    stage_focus_rect: Cell<bool>,
 
     /// Whether to show default context menu items
-    show_menu: bool,
+    show_menu: Cell<bool>,
 
     /// The AVM2 view of this stage object.
     avm2_object: Option<Avm2Object<'gc>>,
@@ -161,29 +153,29 @@ impl<'gc> Stage<'gc> {
             StageData {
                 base: Default::default(),
                 child: ChildContainer::new(movie.clone()),
-                background_color: None,
-                letterbox: Letterbox::Fullscreen,
+                background_color: Cell::new(None),
+                letterbox: Cell::new(Letterbox::Fullscreen),
                 // This is updated when we set the root movie
-                movie_size: (0, 0),
+                movie_size: Cell::new((0, 0)),
                 quality: Default::default(),
                 // This is updated in `build_matrices`
-                stage_size: (0, 0),
+                stage_size: Cell::new((0, 0)),
                 scale_mode: Default::default(),
-                forced_scale_mode: false,
-                display_state: if fullscreen {
+                forced_scale_mode: Cell::new(false),
+                display_state: Cell::new(if fullscreen {
                     StageDisplayState::FullScreen
                 } else {
                     StageDisplayState::Normal
-                },
-                invalidated: false,
+                }),
+                invalidated: Cell::new(false),
                 align: Default::default(),
-                forced_align: false,
-                allow_fullscreen: true,
-                use_bitmap_downsampling: false,
+                forced_align: Cell::new(false),
+                allow_fullscreen: Cell::new(true),
+                use_bitmap_downsampling: Cell::new(false),
                 view_bounds: Default::default(),
                 window_mode: Default::default(),
-                show_menu: true,
-                stage_focus_rect: true,
+                show_menu: Cell::new(true),
+                stage_focus_rect: Cell::new(true),
                 avm2_object: None,
                 loader_info: None,
                 stage3ds: vec![],
@@ -197,11 +189,11 @@ impl<'gc> Stage<'gc> {
     }
 
     pub fn background_color(self) -> Option<Color> {
-        self.0.read().background_color
+        self.0.read().background_color.get()
     }
 
-    pub fn set_background_color(self, gc_context: &Mutation<'gc>, color: Option<Color>) {
-        self.0.write(gc_context).background_color = color;
+    pub fn set_background_color(self, color: Option<Color>) {
+        self.0.read().background_color.set(color);
     }
 
     pub fn inverse_view_matrix(self) -> Matrix {
@@ -218,21 +210,21 @@ impl<'gc> Stage<'gc> {
     }
 
     pub fn letterbox(self) -> Letterbox {
-        self.0.read().letterbox
+        self.0.read().letterbox.get()
     }
 
-    pub fn set_letterbox(self, gc_context: &Mutation<'gc>, letterbox: Letterbox) {
-        self.0.write(gc_context).letterbox = letterbox
+    pub fn set_letterbox(self, letterbox: Letterbox) {
+        self.0.read().letterbox.set(letterbox)
     }
 
     /// Get the size of the SWF file.
     pub fn movie_size(self) -> (u32, u32) {
-        self.0.read().movie_size
+        self.0.read().movie_size.get()
     }
 
     /// Set the size of the SWF file.
-    pub fn set_movie_size(self, gc_context: &Mutation<'gc>, width: u32, height: u32) {
-        self.0.write(gc_context).movie_size = (width, height);
+    pub fn set_movie_size(self, width: u32, height: u32) {
+        self.0.read().movie_size.set((width, height));
     }
 
     pub fn set_movie(self, gc_context: &Mutation<'gc>, movie: Arc<SwfMovie>) {
@@ -248,12 +240,12 @@ impl<'gc> Stage<'gc> {
 
     // Get the invalidation state
     pub fn invalidated(self) -> bool {
-        self.0.read().invalidated
+        self.0.read().invalidated.get()
     }
 
     // Set the invalidation state
-    pub fn set_invalidated(self, gc_context: &Mutation<'gc>, value: bool) {
-        self.0.write(gc_context).invalidated = value;
+    pub fn set_invalidated(self, value: bool) {
+        self.0.read().invalidated.set(value);
     }
 
     /// Returns the quality setting of the stage.
@@ -262,7 +254,7 @@ impl<'gc> Stage<'gc> {
     /// This setting is currently ignored in Ruffle.
     /// Used by AVM1 `stage.quality` and AVM2 `Stage.quality` properties.
     pub fn quality(self) -> StageQuality {
-        self.0.read().quality
+        self.0.read().quality.get()
     }
 
     /// Sets the quality setting of the stage.
@@ -271,16 +263,16 @@ impl<'gc> Stage<'gc> {
     /// This setting is currently ignored in Ruffle.
     /// Used by AVM1 `stage.quality` and AVM2 `Stage.quality` properties.
     pub fn set_quality(self, context: &mut UpdateContext<'gc>, quality: StageQuality) {
-        let mut this = self.0.write(context.gc());
-        this.quality = quality;
-        this.use_bitmap_downsampling = matches!(
+        let this = self.0.read();
+        this.quality.set(quality);
+        this.use_bitmap_downsampling.set(matches!(
             quality,
             StageQuality::Best
                 | StageQuality::High8x8
                 | StageQuality::High8x8Linear
                 | StageQuality::High16x16
                 | StageQuality::High16x16Linear
-        );
+        ));
         context.renderer.set_quality(quality);
     }
 
@@ -291,13 +283,13 @@ impl<'gc> Stage<'gc> {
     /// Get the boolean flag which determines whether objects display a glowing border
     /// when they have focus.
     pub fn stage_focus_rect(self) -> bool {
-        self.0.read().stage_focus_rect
+        self.0.read().stage_focus_rect.get()
     }
 
     /// Set the boolean flag which determines whether objects display a glowing border
     /// when they have focus.
-    pub fn set_stage_focus_rect(self, gc_context: &Mutation<'gc>, value: bool) {
-        self.0.write(gc_context).stage_focus_rect = value
+    pub fn set_stage_focus_rect(self, value: bool) {
+        self.0.read().stage_focus_rect.set(value);
     }
 
     /// Get the size of the stage.
@@ -305,13 +297,13 @@ impl<'gc> Stage<'gc> {
     /// If `scale_mode` is `StageScaleMode::NO_SCALE`, this returns the size of the viewport.
     /// Otherwise, this returns the size of the SWF file.
     pub fn stage_size(self) -> (u32, u32) {
-        self.0.read().stage_size
+        self.0.read().stage_size.get()
     }
 
     /// Get the stage mode.
     /// This controls how the content scales to fill the viewport.
     pub fn scale_mode(self) -> StageScaleMode {
-        self.0.read().scale_mode
+        self.0.read().scale_mode.get()
     }
 
     /// Set the stage scale mode.
@@ -325,28 +317,28 @@ impl<'gc> Stage<'gc> {
             return;
         }
 
-        self.0.write(context.gc()).scale_mode = scale_mode;
+        self.0.read().scale_mode.set(scale_mode);
         self.build_matrices(context);
     }
 
     /// Get whether movies are prevented from changing the stage scale mode.
     pub fn forced_scale_mode(self) -> bool {
-        self.0.read().forced_scale_mode
+        self.0.read().forced_scale_mode.get()
     }
 
     /// Set whether movies are prevented from changing the stage scale mode.
-    pub fn set_forced_scale_mode(self, context: &mut UpdateContext<'gc>, force: bool) {
-        self.0.write(context.gc()).forced_scale_mode = force;
+    pub fn set_forced_scale_mode(self, force: bool) {
+        self.0.read().forced_scale_mode.set(force);
     }
 
     /// Get whether the Stage's display state can be changed.
     pub fn allow_fullscreen(self) -> bool {
-        self.0.read().allow_fullscreen
+        self.0.read().allow_fullscreen.get()
     }
 
     /// Set whether the Stage's display state can be changed.
-    pub fn set_allow_fullscreen(self, context: &mut UpdateContext<'gc>, allow: bool) {
-        self.0.write(context.gc()).allow_fullscreen = allow;
+    pub fn set_allow_fullscreen(self, allow: bool) {
+        self.0.read().allow_fullscreen.set(allow);
     }
 
     fn is_fullscreen_state(display_state: StageDisplayState) -> bool {
@@ -363,7 +355,7 @@ impl<'gc> Stage<'gc> {
     /// Get the stage display state.
     /// This controls the fullscreen state.
     pub fn display_state(self) -> StageDisplayState {
-        self.0.read().display_state
+        self.0.read().display_state.get()
     }
 
     /// Toggles display state between fullscreen and normal
@@ -397,57 +389,57 @@ impl<'gc> Stage<'gc> {
         };
 
         if result.is_ok() {
-            self.0.write(context.gc()).display_state = display_state;
+            self.0.read().display_state.set(display_state);
             self.fire_fullscreen_event(context);
         }
     }
 
     /// Get the stage alignment.
     pub fn align(self) -> StageAlign {
-        self.0.read().align
+        self.0.read().align.get()
     }
 
     /// Set the stage alignment.
     /// This only has an effect if the scale mode is not `StageScaleMode::ExactFit`.
     pub fn set_align(self, context: &mut UpdateContext<'gc>, align: StageAlign) {
         if !self.forced_align() {
-            self.0.write(context.gc()).align = align;
+            self.0.read().align.set(align);
             self.build_matrices(context);
         }
     }
 
     /// Get whether movies are prevented from changing the stage alignment.
     pub fn forced_align(self) -> bool {
-        self.0.read().forced_align
+        self.0.read().forced_align.get()
     }
 
     /// Set whether movies are prevented from changing the stage alignment.
-    pub fn set_forced_align(self, context: &mut UpdateContext<'gc>, force: bool) {
-        self.0.write(context.gc()).forced_align = force;
+    pub fn set_forced_align(self, force: bool) {
+        self.0.read().forced_align.set(force);
     }
 
     /// Returns whether bitmaps will use high quality downsampling when scaled down.
     /// This setting is currently ignored in Ruffle.
     pub fn use_bitmap_downsampling(self) -> bool {
-        self.0.read().use_bitmap_downsampling
+        self.0.read().use_bitmap_downsampling.get()
     }
 
     /// Sets whether bitmaps will use high quality downsampling when scaled down.
     /// This setting is currently ignored in Ruffle.
-    pub fn set_use_bitmap_downsampling(self, gc_context: &Mutation<'gc>, value: bool) {
-        self.0.write(gc_context).use_bitmap_downsampling = value;
+    pub fn set_use_bitmap_downsampling(self, value: bool) {
+        self.0.read().use_bitmap_downsampling.set(value);
     }
 
     /// Get the stage mode.
     /// This controls how the content layers with other content on the page.
     /// Only used on web.
     pub fn window_mode(self) -> WindowMode {
-        self.0.read().window_mode
+        self.0.read().window_mode.get()
     }
 
     /// Sets the window mode.
-    pub fn set_window_mode(self, context: &mut UpdateContext<'gc>, window_mode: WindowMode) {
-        self.0.write(context.gc()).window_mode = window_mode;
+    pub fn set_window_mode(self, window_mode: WindowMode) {
+        self.0.read().window_mode.set(window_mode);
     }
 
     pub fn view_bounds(self) -> Rectangle<Twips> {
@@ -455,12 +447,11 @@ impl<'gc> Stage<'gc> {
     }
 
     pub fn show_menu(self) -> bool {
-        self.0.read().show_menu
+        self.0.read().show_menu.get()
     }
 
-    pub fn set_show_menu(self, context: &mut UpdateContext<'gc>, show_menu: bool) {
-        let mut write = self.0.write(context.gc());
-        write.show_menu = show_menu;
+    pub fn set_show_menu(self, show_menu: bool) {
+        self.0.read().show_menu.set(show_menu);
     }
 
     /// Determine if we should letterbox the stage content.
@@ -469,34 +460,36 @@ impl<'gc> Stage<'gc> {
         // If content changes the scale mode or alignment, it signals that it is size-aware.
         // For example, `NoScale` is used to make responsive layouts; don't letterbox over it.
         let stage = self.0.read();
-        stage.scale_mode == StageScaleMode::ShowAll
-            && stage.align.is_empty()
-            && stage.window_mode != WindowMode::Transparent
-            && (stage.letterbox == Letterbox::On
-                || (stage.letterbox == Letterbox::Fullscreen && self.is_fullscreen()))
+        let letterbox = stage.letterbox.get();
+        stage.scale_mode.get() == StageScaleMode::ShowAll
+            && stage.align.get().is_empty()
+            && stage.window_mode.get() != WindowMode::Transparent
+            && (letterbox == Letterbox::On
+                || (letterbox == Letterbox::Fullscreen && self.is_fullscreen()))
     }
 
     /// Update the stage's transform matrix in response to a root movie change.
     pub fn build_matrices(self, context: &mut UpdateContext<'gc>) {
         let mut stage = self.0.write(context.gc());
-        let scale_mode = stage.scale_mode;
-        let align = stage.align;
-        let prev_stage_size = stage.stage_size;
+        let scale_mode = stage.scale_mode.get();
+        let align = stage.align.get();
+        let prev_stage_size = stage.stage_size.get();
         let viewport_size = context.renderer.viewport_dimensions();
 
         // Update stage size based on scale mode and DPI.
-        stage.stage_size = if stage.scale_mode == StageScaleMode::NoScale {
+        let new_stage_size = if stage.scale_mode.get() == StageScaleMode::NoScale {
             // Viewport size is adjusted for HiDPI.
             let width = f64::from(viewport_size.width) / viewport_size.scale_factor;
             let height = f64::from(viewport_size.height) / viewport_size.scale_factor;
             (width.round() as u32, height.round() as u32)
         } else {
-            stage.movie_size
+            stage.movie_size.get()
         };
-        let stage_size_changed = prev_stage_size != stage.stage_size;
+        stage.stage_size.set(new_stage_size);
+        let stage_size_changed = prev_stage_size != new_stage_size;
 
         // Create view matrix to scale stage into viewport area.
-        let (movie_width, movie_height) = stage.movie_size;
+        let (movie_width, movie_height) = stage.movie_size.get();
         let movie_width = movie_width as f64;
         let movie_height = movie_height as f64;
 
@@ -605,7 +598,7 @@ impl<'gc> Stage<'gc> {
 
         let view_matrix = self.0.read().viewport_matrix;
 
-        let (movie_width, movie_height) = self.0.read().movie_size;
+        let (movie_width, movie_height) = self.0.read().movie_size.get();
         let movie_width = movie_width as f32 * view_matrix.a;
         let movie_height = movie_height as f32 * view_matrix.d;
 
@@ -702,7 +695,7 @@ impl<'gc> Stage<'gc> {
         let dobject_constr = context.avm2.classes().display_object;
         Avm2::broadcast_event(context, render_evt, dobject_constr);
 
-        self.set_invalidated(context.gc(), false);
+        self.set_invalidated(false);
     }
 
     /// Fires `Stage.onFullScreen` in AVM1 or `Event.FULLSCREEN` in AVM2.
