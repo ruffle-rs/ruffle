@@ -1,0 +1,7 @@
+<asformat-config>
+	<open-brace-new-line>false</open-brace-new-line>
+	<insert-new-line-else>false</insert-new-line-else>
+	<insert-spaces>true</insert-spaces>
+	<tab-size>4</tab-size>
+	<insert-final-new-line>true</insert-final-new-line>
+</asformat-config>
