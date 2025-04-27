@@ -777,7 +777,7 @@ impl DisplayObjectWindow {
                 ui.label("Controls");
                 ui.horizontal(|ui| {
                     if ui.button("Play").clicked() {
-                        object.play(context);
+                        object.play();
                     }
                     if ui.button("Stop").clicked() {
                         object.stop(context);

@@ -159,8 +159,7 @@ pub struct MovieClipData<'gc> {
     #[collect(require_static)]
     clip_event_flags: ClipEventFlag,
     frame_scripts: Vec<Option<Avm2Object<'gc>>>,
-    #[collect(require_static)]
-    flags: MovieClipFlags,
+    flags: Cell<MovieClipFlags>,
     /// This is lazily allocated on demand, to make `MovieClipData` smaller in the common case.
     #[collect(require_static)]
     drawing: Option<Box<Drawing>>,
@@ -215,7 +214,7 @@ impl<'gc> MovieClip<'gc> {
                 clip_event_handlers: Vec::new(),
                 clip_event_flags: ClipEventFlag::empty(),
                 frame_scripts: Vec::new(),
-                flags: MovieClipFlags::empty(),
+                flags: Cell::new(MovieClipFlags::empty()),
                 drawing: None,
                 avm2_enabled: true,
                 avm2_use_hand_cursor: true,
@@ -258,7 +257,7 @@ impl<'gc> MovieClip<'gc> {
                 clip_event_handlers: Vec::new(),
                 clip_event_flags: ClipEventFlag::empty(),
                 frame_scripts: Vec::new(),
-                flags: MovieClipFlags::empty(),
+                flags: Cell::new(MovieClipFlags::empty()),
                 drawing: None,
                 avm2_enabled: true,
                 avm2_use_hand_cursor: true,
@@ -304,7 +303,7 @@ impl<'gc> MovieClip<'gc> {
                 clip_event_handlers: Vec::new(),
                 clip_event_flags: ClipEventFlag::empty(),
                 frame_scripts: Vec::new(),
-                flags: MovieClipFlags::PLAYING,
+                flags: Cell::new(MovieClipFlags::PLAYING),
                 drawing: None,
                 avm2_enabled: true,
                 avm2_use_hand_cursor: true,
@@ -360,7 +359,7 @@ impl<'gc> MovieClip<'gc> {
                 clip_event_handlers: Vec::new(),
                 clip_event_flags: ClipEventFlag::empty(),
                 frame_scripts: Vec::new(),
-                flags: MovieClipFlags::PLAYING,
+                flags: Cell::new(MovieClipFlags::PLAYING),
                 drawing: None,
                 avm2_enabled: true,
                 avm2_use_hand_cursor: true,
@@ -427,7 +426,7 @@ impl<'gc> MovieClip<'gc> {
                 clip_event_handlers: Vec::new(),
                 clip_event_flags: ClipEventFlag::empty(),
                 frame_scripts: Vec::new(),
-                flags: MovieClipFlags::PLAYING,
+                flags: Cell::new(MovieClipFlags::PLAYING),
                 drawing: None,
                 avm2_enabled: true,
                 avm2_use_hand_cursor: true,
@@ -497,7 +496,7 @@ impl<'gc> MovieClip<'gc> {
             ),
         );
         mc.tag_stream_pos = 0;
-        mc.flags = MovieClipFlags::PLAYING;
+        mc.flags.set(MovieClipFlags::PLAYING);
         mc.base.base.set_is_root(is_root);
         mc.current_frame = 0;
         mc.audio_stream = None;
@@ -505,8 +504,8 @@ impl<'gc> MovieClip<'gc> {
         drop(mc);
     }
 
-    pub fn set_initialized(self, gc_context: &Mutation<'gc>) {
-        self.0.write(gc_context).set_initialized(true);
+    pub fn set_initialized(self) {
+        self.0.read().set_initialized(true);
     }
 
     /// Tries to fire events from our `LoaderInfo` object if we're ready - returns
@@ -986,8 +985,8 @@ impl<'gc> MovieClip<'gc> {
         self.0.write(gc_context).drop_target = drop_target;
     }
 
-    pub fn set_programmatically_played(self, mc: &Mutation<'gc>) {
-        self.0.write(mc).set_programmatically_played()
+    pub fn set_programmatically_played(self) {
+        self.0.read().set_programmatically_played()
     }
 
     pub fn next_frame(self, context: &mut UpdateContext<'gc>) {
@@ -996,8 +995,8 @@ impl<'gc> MovieClip<'gc> {
         }
     }
 
-    pub fn play(self, context: &mut UpdateContext<'gc>) {
-        self.0.write(context.gc()).play()
+    pub fn play(self) {
+        self.0.read().play()
     }
 
     pub fn prev_frame(self, context: &mut UpdateContext<'gc>) {
@@ -1033,7 +1032,7 @@ impl<'gc> MovieClip<'gc> {
         if stop {
             self.stop(context);
         } else {
-            self.play(context);
+            self.play();
         }
 
         // Clamp frame number in bounds.
@@ -1045,8 +1044,7 @@ impl<'gc> MovieClip<'gc> {
             if self
                 .0
                 .read()
-                .flags
-                .contains(MovieClipFlags::EXECUTING_AVM2_FRAME_SCRIPT)
+                .contains_flag(MovieClipFlags::EXECUTING_AVM2_FRAME_SCRIPT)
             {
                 // AVM2 does not allow a clip to see while it is executing a frame script.
                 // The goto is instead queued and run once the frame script is completed.
@@ -2575,7 +2573,7 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
                 false
             };
 
-            self.0.write(context.gc()).unset_loop_queued();
+            self.0.read().unset_loop_queued();
 
             if needs_construction {
                 self.construct_as_avm2_object(context);
@@ -2591,8 +2589,7 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
                 let running_construct_frame = self
                     .0
                     .read()
-                    .flags
-                    .contains(MovieClipFlags::RUNNING_CONSTRUCT_FRAME);
+                    .contains_flag(MovieClipFlags::RUNNING_CONSTRUCT_FRAME);
                 // The supercall constructor for display objects is responsible
                 // for triggering construct_frame on frame 1.
                 for child in self.iter_render_list() {
@@ -2608,10 +2605,10 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
     fn run_frame_avm1(&self, context: &mut UpdateContext<'gc>) {
         if !self.movie().is_action_script_3() {
             // Run my load/enterFrame clip event.
-            let is_load_frame = !self.0.read().flags.contains(MovieClipFlags::INITIALIZED);
+            let is_load_frame = !self.0.read().contains_flag(MovieClipFlags::INITIALIZED);
             if is_load_frame {
                 self.event_dispatch(context, ClipEvent::Load);
-                self.0.write(context.gc()).set_initialized(true);
+                self.0.read().set_initialized(true);
             } else {
                 self.event_dispatch(context, ClipEvent::EnterFrame);
             }
@@ -2636,10 +2633,7 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
                 // whole movie again. If a goto is attempting to queue frame
                 // scripts on us AGAIN, we should allow the current stack to
                 // wind down before handling that.
-                if !write
-                    .flags
-                    .contains(MovieClipFlags::EXECUTING_AVM2_FRAME_SCRIPT)
-                {
+                if !write.contains_flag(MovieClipFlags::EXECUTING_AVM2_FRAME_SCRIPT) {
                     let is_fresh_frame =
                         write.queued_script_frame != write.last_queued_script_frame;
 
@@ -2649,9 +2643,7 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
                         {
                             write.last_queued_script_frame = Some(frame_id);
                             write.queued_script_frame = None;
-                            write
-                                .flags
-                                .insert(MovieClipFlags::EXECUTING_AVM2_FRAME_SCRIPT);
+                            write.set_flag(MovieClipFlags::EXECUTING_AVM2_FRAME_SCRIPT, true);
 
                             drop(write);
 
@@ -2676,9 +2668,7 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
                             }
                             write = self.0.write(context.gc());
 
-                            write
-                                .flags
-                                .remove(MovieClipFlags::EXECUTING_AVM2_FRAME_SCRIPT);
+                            write.set_flag(MovieClipFlags::EXECUTING_AVM2_FRAME_SCRIPT, false);
                         }
                     }
                 }
@@ -2794,17 +2784,15 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
     ) {
         if self
             .0
-            .write(context.gc())
-            .flags
-            .contains(MovieClipFlags::POST_INSTANTIATED)
+            .read()
+            .contains_flag(MovieClipFlags::POST_INSTANTIATED)
         {
             // Ensure that the same clip doesn't get post-instantiated twice.
             return;
         }
         self.0
-            .write(context.gc())
-            .flags
-            .insert(MovieClipFlags::POST_INSTANTIATED);
+            .read()
+            .set_flag(MovieClipFlags::POST_INSTANTIATED, true);
 
         self.set_default_instance_name(context);
 
@@ -3333,6 +3321,16 @@ impl<'gc> MovieClipData<'gc> {
         self.shared.id
     }
 
+    fn set_flag(&self, flag: MovieClipFlags, value: bool) {
+        let mut flags = self.flags.get();
+        flags.set(flag, value);
+        self.flags.set(flags);
+    }
+
+    fn contains_flag(&self, flag: MovieClipFlags) -> bool {
+        self.flags.get().contains(flag)
+    }
+
     fn current_frame(&self) -> FrameNumber {
         self.current_frame
     }
@@ -3346,34 +3344,34 @@ impl<'gc> MovieClipData<'gc> {
     }
 
     fn playing(&self) -> bool {
-        self.flags.contains(MovieClipFlags::PLAYING)
+        self.contains_flag(MovieClipFlags::PLAYING)
     }
 
-    fn set_playing(&mut self, value: bool) {
-        self.flags.set(MovieClipFlags::PLAYING, value);
+    fn set_playing(&self, value: bool) {
+        self.set_flag(MovieClipFlags::PLAYING, value);
     }
 
     fn programmatically_played(&self) -> bool {
-        self.flags.contains(MovieClipFlags::PROGRAMMATICALLY_PLAYED)
+        self.contains_flag(MovieClipFlags::PROGRAMMATICALLY_PLAYED)
     }
 
-    fn set_programmatically_played(&mut self) {
-        self.flags |= MovieClipFlags::PROGRAMMATICALLY_PLAYED;
+    fn set_programmatically_played(&self) {
+        self.set_flag(MovieClipFlags::PROGRAMMATICALLY_PLAYED, true);
     }
 
     fn loop_queued(&self) -> bool {
-        self.flags.contains(MovieClipFlags::LOOP_QUEUED)
+        self.contains_flag(MovieClipFlags::LOOP_QUEUED)
     }
 
-    fn set_loop_queued(&mut self) {
-        self.flags |= MovieClipFlags::LOOP_QUEUED;
+    fn set_loop_queued(&self) {
+        self.set_flag(MovieClipFlags::LOOP_QUEUED, true);
     }
 
-    fn unset_loop_queued(&mut self) {
-        self.flags.remove(MovieClipFlags::LOOP_QUEUED);
+    fn unset_loop_queued(&self) {
+        self.set_flag(MovieClipFlags::LOOP_QUEUED, false);
     }
 
-    fn play(&mut self) {
+    fn play(&self) {
         // Can only play clips with multiple frames.
         if self.total_frames() > 1 {
             self.set_playing(true);
@@ -3439,12 +3437,12 @@ impl<'gc> MovieClipData<'gc> {
     }
 
     fn initialized(&self) -> bool {
-        self.flags.contains(MovieClipFlags::INITIALIZED)
+        self.contains_flag(MovieClipFlags::INITIALIZED)
     }
 
-    fn set_initialized(&mut self, value: bool) -> bool {
-        let ret = self.flags.contains(MovieClipFlags::INITIALIZED);
-        self.flags.set(MovieClipFlags::INITIALIZED, value);
+    fn set_initialized(&self, value: bool) -> bool {
+        let ret = self.contains_flag(MovieClipFlags::INITIALIZED);
+        self.set_flag(MovieClipFlags::INITIALIZED, value);
         !ret
     }
 
@@ -4738,11 +4736,10 @@ impl<'gc, 'a> MovieClip<'gc> {
         Ok(())
     }
 
-    pub fn set_constructing_frame(&self, val: bool, mc: &Mutation<'gc>) {
+    pub fn set_constructing_frame(&self, val: bool) {
         self.0
-            .write(mc)
-            .flags
-            .set(MovieClipFlags::RUNNING_CONSTRUCT_FRAME, val);
+            .read()
+            .set_flag(MovieClipFlags::RUNNING_CONSTRUCT_FRAME, val);
     }
 }
 
