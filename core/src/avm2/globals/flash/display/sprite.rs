@@ -145,7 +145,7 @@ pub fn get_button_mode<'gc>(
 
 /// Implements `buttonMode`'s setter
 pub fn set_button_mode<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    _activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -154,7 +154,7 @@ pub fn set_button_mode<'gc>(
     if let Some(mc) = this.as_display_object().and_then(|o| o.as_movie_clip()) {
         let forced_button_mode = args.get_bool(0);
 
-        mc.set_forced_button_mode(activation.context, forced_button_mode);
+        mc.set_forced_button_mode(forced_button_mode);
     }
 
     Ok(Value::Undefined)
@@ -259,7 +259,7 @@ pub fn get_use_hand_cursor<'gc>(
 
 /// Implements `useHandCursor`'s setter
 pub fn set_use_hand_cursor<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    _activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -269,7 +269,7 @@ pub fn set_use_hand_cursor<'gc>(
         .as_display_object()
         .and_then(|this| this.as_movie_clip())
     {
-        mc.set_avm2_use_hand_cursor(activation.context, args.get_bool(0));
+        mc.set_avm2_use_hand_cursor(args.get_bool(0));
     }
 
     Ok(Value::Undefined)
