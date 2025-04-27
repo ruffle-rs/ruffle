@@ -2897,7 +2897,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             let level: DisplayObject<'_> =
                 MovieClip::new(self.base_clip().movie(), self.gc()).into();
 
-            level.set_depth(self.gc(), level_id);
+            level.set_depth(level_id);
             level.set_default_root_name(self.context);
             self.get_root_parent_container()
                 .and_then(|c| c.replace_at_depth(self.context, level, level_id));

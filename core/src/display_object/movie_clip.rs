@@ -1600,9 +1600,9 @@ impl<'gc> MovieClip<'gc> {
                 {
                     // Set initial properties for child.
                     child.set_instantiated_by_timeline(true);
-                    child.set_depth(context.gc(), depth);
+                    child.set_depth(depth);
                     child.set_parent(context, Some(self.into()));
-                    child.set_place_frame(context.gc(), self.current_frame());
+                    child.set_place_frame(self.current_frame());
 
                     // Apply PlaceObject parameters.
                     child.apply_place_object(context, place_object);
@@ -1613,7 +1613,7 @@ impl<'gc> MovieClip<'gc> {
                         child.set_has_explicit_name(true);
                     }
                     if let Some(clip_depth) = place_object.clip_depth {
-                        child.set_clip_depth(context.gc(), clip_depth.into());
+                        child.set_clip_depth(clip_depth.into());
                     }
                     // Clip events only apply to movie clips.
                     if let (Some(clip_actions), Some(clip)) =
@@ -1912,7 +1912,7 @@ impl<'gc> MovieClip<'gc> {
                 (swf::PlaceObjectAction::Replace(id), Some(prev_child), _) => {
                     prev_child.replace_with(context, id);
                     prev_child.apply_place_object(context, &params.place_object);
-                    prev_child.set_place_frame(context.gc(), params.frame);
+                    prev_child.set_place_frame(params.frame);
                 }
                 (PlaceObjectAction::Place(id), _, _)
                 | (swf::PlaceObjectAction::Replace(id), _, _) => {
@@ -1920,7 +1920,7 @@ impl<'gc> MovieClip<'gc> {
                         clip.instantiate_child(context, id, params.depth(), &params.place_object)
                     {
                         // Set the place frame to the frame where the object *would* have been placed.
-                        child.set_place_frame(context.gc(), params.frame);
+                        child.set_place_frame(params.frame);
                     }
                 }
                 _ => {
@@ -3516,7 +3516,7 @@ impl<'gc, 'a> MovieClipData<'gc> {
         let library = context.library.library_for_movie_mut(self.movie());
         if let Some(character) = library.character_by_id(id) {
             if let Character::MovieClip(clip) = character {
-                clip.set_scaling_grid(context.gc_context, rect);
+                clip.set_scaling_grid(rect);
             } else {
                 tracing::warn!("DefineScalingGrid for invalid ID {}", id);
             }
@@ -4615,7 +4615,7 @@ impl<'gc, 'a> MovieClip<'gc> {
                 if let Some(child) = self.child_by_depth(place_object.depth.into()) {
                     child.replace_with(context, id);
                     child.apply_place_object(context, &place_object);
-                    child.set_place_frame(context.gc(), self.current_frame());
+                    child.set_place_frame(self.current_frame());
                 }
             }
             PlaceObjectAction::Modify => {

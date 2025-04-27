@@ -181,7 +181,7 @@ pub fn set_scale9grid<'gc>(
             None => Rectangle::default(),
             Some(rect) => object_to_rectangle(activation, rect)?,
         };
-        dobj.set_scaling_grid(activation.gc(), rect);
+        dobj.set_scaling_grid(rect);
     }
 
     Ok(Value::Undefined)

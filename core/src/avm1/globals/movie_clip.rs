@@ -206,10 +206,10 @@ fn set_scale_9_grid<'gc>(
     avm1_stub!(activation, "MovieClip", "scale9Grid");
     if let Value::Object(object) = value {
         if let Some(rectangle) = object_to_rectangle(activation, object)? {
-            this.set_scaling_grid(activation.gc(), rectangle);
+            this.set_scaling_grid(rectangle);
         }
     } else {
-        this.set_scaling_grid(activation.gc(), Rectangle::default());
+        this.set_scaling_grid(Rectangle::default());
     };
     Ok(())
 }
@@ -1197,7 +1197,7 @@ fn set_mask<'gc>(
     };
     let movie_clip = DisplayObject::MovieClip(movie_clip);
     let mc = activation.gc();
-    movie_clip.set_clip_depth(mc, 0);
+    movie_clip.set_clip_depth(0);
     movie_clip.set_masker(mc, mask, true);
     if let Some(m) = mask {
         m.set_maskee(mc, Some(movie_clip), true);
