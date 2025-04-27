@@ -101,7 +101,7 @@ fn method<'gc>(
                 if is_matrix {
                     let matrix = object_to_matrix(object, activation)?;
                     clip.set_matrix(activation.gc(), matrix);
-                    clip.set_transformed_by_script(activation.gc(), true);
+                    clip.set_transformed_by_script(true);
                     if let Some(parent) = clip.parent() {
                         // Self-transform changes are automatically handled,
                         // we only want to inform ancestors to avoid unnecessary invalidations for tx/ty
@@ -131,7 +131,7 @@ fn method<'gc>(
                         color_transform.read().clone().into(),
                     );
                     clip.invalidate_cached_bitmap(activation.gc());
-                    clip.set_transformed_by_script(activation.gc(), true);
+                    clip.set_transformed_by_script(true);
                 }
             }
             Value::Undefined

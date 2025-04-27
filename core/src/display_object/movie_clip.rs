@@ -458,7 +458,7 @@ impl<'gc> MovieClip<'gc> {
                 .unwrap();
             loader_info.set_loader_stream(LoaderStream::Swf(movie, mc.into()), activation.gc());
         }
-        mc.set_is_root(activation.gc(), true);
+        mc.set_is_root(true);
         mc
     }
 
@@ -1599,7 +1599,7 @@ impl<'gc> MovieClip<'gc> {
                 let prev_child = self.replace_at_depth(context, child, depth);
                 {
                     // Set initial properties for child.
-                    child.set_instantiated_by_timeline(context.gc(), true);
+                    child.set_instantiated_by_timeline(true);
                     child.set_depth(context.gc(), depth);
                     child.set_parent(context, Some(self.into()));
                     child.set_place_frame(context.gc(), self.current_frame());
@@ -1610,7 +1610,7 @@ impl<'gc> MovieClip<'gc> {
                         let encoding = swf::SwfStr::encoding_for_version(self.swf_version());
                         let name = AvmString::new(context.gc(), name.decode(encoding));
                         child.set_name(context.gc(), name);
-                        child.set_has_explicit_name(context.gc(), true);
+                        child.set_has_explicit_name(true);
                     }
                     if let Some(clip_depth) = place_object.clip_depth {
                         child.set_clip_depth(context.gc(), clip_depth.into());
@@ -1728,7 +1728,7 @@ impl<'gc> MovieClip<'gc> {
         }
 
         let frame_before_rewind = self.current_frame();
-        self.base_mut(context.gc()).set_skip_next_enter_frame(false);
+        self.base().set_skip_next_enter_frame(false);
 
         // Flash gotos are tricky:
         // 1) Conceptually, a goto should act like the playhead is advancing forward or
@@ -2523,13 +2523,13 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
                 // executing parent can add a child that should have its first frame skipped.
 
                 // FIXME - does this propagate through non-movie-clip children (Loader/Button)?
-                child.base_mut(context.gc()).set_skip_next_enter_frame(true);
+                child.base().set_skip_next_enter_frame(true);
             }
             child.enter_frame(context);
         }
 
         if skip_frame {
-            self.base_mut(context.gc()).set_skip_next_enter_frame(false);
+            self.base().set_skip_next_enter_frame(false);
             return;
         }
 
@@ -2878,7 +2878,7 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
             self.event_dispatch(context, ClipEvent::Unload);
         }
 
-        self.set_avm1_removed(context.gc(), true);
+        self.set_avm1_removed(true);
     }
 
     fn avm1_text_field_bindings(&self) -> Option<Ref<'_, [Avm1TextFieldBinding<'gc>]>> {

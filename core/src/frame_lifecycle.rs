@@ -136,9 +136,7 @@ pub fn run_inner_goto_frame<'gc>(
         initial_clip.construct_frame(context);
         // We skip the next `enter_frame` call, so that we will still run the framescripts
         // queued for our target frame.
-        initial_clip
-            .base_mut(context.gc())
-            .set_skip_next_enter_frame(true);
+        initial_clip.base().set_skip_next_enter_frame(true);
 
         return;
     }

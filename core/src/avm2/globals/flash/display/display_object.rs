@@ -35,7 +35,7 @@ pub fn initialize_for_allocator<'gc>(
     class: ClassObject<'gc>,
 ) -> Result<Object<'gc>, Error<'gc>> {
     let obj: StageObject = StageObject::for_display_object(activation, dobj, class)?;
-    dobj.set_placed_by_script(activation.gc(), true);
+    dobj.set_placed_by_script(true);
     dobj.set_object2(activation.context, obj.into());
 
     // [NA] Should these run for everything?
@@ -47,8 +47,7 @@ pub fn initialize_for_allocator<'gc>(
     // and consequently are observed to have their currentFrame lag one
     // frame behind objects placed by the timeline (even if they were
     // both placed in the same frame to begin with).
-    dobj.base_mut(activation.gc())
-        .set_skip_next_enter_frame(true);
+    dobj.base().set_skip_next_enter_frame(true);
     dobj.on_construction_complete(activation.context);
 
     Ok(obj.into())
@@ -190,14 +189,14 @@ pub fn set_scale9grid<'gc>(
 
 /// Implements `scaleY`'s getter.
 pub fn get_scale_y<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    _activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
     if let Some(dobj) = this.as_display_object() {
-        return Ok(dobj.scale_y(activation.gc()).unit().into());
+        return Ok(dobj.scale_y().unit().into());
     }
 
     Ok(Value::Undefined)
@@ -254,14 +253,14 @@ pub fn set_width<'gc>(
 
 /// Implements `scaleX`'s getter.
 pub fn get_scale_x<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    _activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
     if let Some(dobj) = this.as_display_object() {
-        return Ok(dobj.scale_x(activation.gc()).unit().into());
+        return Ok(dobj.scale_x().unit().into());
     }
 
     Ok(Value::Undefined)
@@ -504,14 +503,14 @@ pub fn set_scale_z<'gc>(
 
 /// Implements `rotation`'s getter.
 pub fn get_rotation<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    _activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
     if let Some(dobj) = this.as_display_object() {
-        let rot: f64 = dobj.rotation(activation.gc()).into();
+        let rot: f64 = dobj.rotation().into();
         let rem = rot % 360.0;
 
         if rem <= 180.0 {
@@ -962,9 +961,9 @@ pub fn set_scroll_rect<'gc>(
             // `localToGlobal`.
             dobj.set_next_scroll_rect(activation.gc(), object_to_rectangle(activation, rectangle)?);
 
-            dobj.set_has_scroll_rect(activation.gc(), true);
+            dobj.set_has_scroll_rect(true);
         } else {
-            dobj.set_has_scroll_rect(activation.gc(), false);
+            dobj.set_has_scroll_rect(false);
         }
     }
     Ok(Value::Undefined)
