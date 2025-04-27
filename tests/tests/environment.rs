@@ -67,7 +67,7 @@ mod renderer {
             }
         }
 
-        fn capture(&self, backend: &mut Box<dyn RenderBackend>) -> RgbaImage {
+        fn capture(&self, backend: &mut dyn RenderBackend) -> RgbaImage {
             let renderer = backend
                 .downcast_mut::<WgpuRenderBackend<TextureTarget>>()
                 .unwrap();
