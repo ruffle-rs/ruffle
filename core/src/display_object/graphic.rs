@@ -11,20 +11,21 @@ use crate::prelude::*;
 use crate::tag_utils::SwfMovie;
 use crate::vminterface::Instantiator;
 use core::fmt;
-use gc_arena::{Collect, GcCell, Mutation};
+use gc_arena::barrier::unlock;
+use gc_arena::{Collect, Gc, Lock, Mutation, RefLock};
 use ruffle_render::backend::ShapeHandle;
 use ruffle_render::commands::CommandHandler;
-use std::cell::{Ref, RefMut};
+use std::cell::{Ref, RefCell, RefMut};
 use std::sync::Arc;
 
 #[derive(Clone, Collect, Copy)]
 #[collect(no_drop)]
-pub struct Graphic<'gc>(GcCell<'gc, GraphicData<'gc>>);
+pub struct Graphic<'gc>(Gc<'gc, GraphicData<'gc>>);
 
 impl fmt::Debug for Graphic<'_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct("Graphic")
-            .field("ptr", &self.0.as_ptr())
+            .field("ptr", &Gc::as_ptr(self.0))
             .finish()
     }
 }
@@ -32,13 +33,12 @@ impl fmt::Debug for Graphic<'_> {
 #[derive(Clone, Collect)]
 #[collect(no_drop)]
 pub struct GraphicData<'gc> {
-    base: DisplayObjectBase<'gc>,
-    shared: gc_arena::Gc<'gc, GraphicShared>,
-    class: Option<Avm2ClassObject<'gc>>,
-    avm2_object: Option<Avm2Object<'gc>>,
+    base: RefLock<DisplayObjectBase<'gc>>,
+    shared: Lock<Gc<'gc, GraphicShared>>,
+    class: Lock<Option<Avm2ClassObject<'gc>>>,
+    avm2_object: Lock<Option<Avm2Object<'gc>>>,
     /// This is lazily allocated on demand, to make `GraphicData` smaller in the common case.
-    #[collect(require_static)]
-    drawing: Option<Box<Drawing>>,
+    drawing: RefCell<Option<Box<Drawing>>>,
 }
 
 impl<'gc> Graphic<'gc> {
@@ -61,14 +61,14 @@ impl<'gc> Graphic<'gc> {
             movie,
         };
 
-        Graphic(GcCell::new(
+        Graphic(Gc::new(
             context.gc(),
             GraphicData {
-                base: Default::default(),
-                shared: gc_arena::Gc::new(context.gc(), shared),
-                class: None,
-                avm2_object: None,
-                drawing: None,
+                base: RefLock::new(Default::default()),
+                shared: Lock::new(Gc::new(context.gc(), shared)),
+                class: Lock::new(None),
+                avm2_object: Lock::new(None),
+                drawing: RefCell::new(None),
             },
         ))
     }
@@ -94,55 +94,59 @@ impl<'gc> Graphic<'gc> {
             movie: context.swf.clone(),
         };
 
-        Graphic(GcCell::new(
+        Graphic(Gc::new(
             context.gc(),
             GraphicData {
                 base: Default::default(),
-                shared: gc_arena::Gc::new(context.gc(), shared),
-                class: None,
-                avm2_object: None,
-                drawing: None,
+                shared: Lock::new(Gc::new(context.gc(), shared)),
+                class: Lock::new(None),
+                avm2_object: Lock::new(None),
+                drawing: RefCell::new(None),
             },
         ))
     }
 
-    pub fn drawing_mut(&self, gc_context: &Mutation<'gc>) -> RefMut<'_, Drawing> {
-        RefMut::map(self.0.write(gc_context), |w| {
-            &mut **w.drawing.get_or_insert_with(Default::default)
+    pub fn drawing_mut(&self) -> RefMut<'_, Drawing> {
+        RefMut::map(self.0.drawing.borrow_mut(), |drawing| {
+            &mut **drawing.get_or_insert_with(Default::default)
         })
     }
 
     pub fn set_avm2_class(self, mc: &Mutation<'gc>, class: Avm2ClassObject<'gc>) {
-        self.0.write(mc).class = Some(class);
+        unlock!(Gc::write(mc, self.0), GraphicData, class).set(Some(class));
+    }
+
+    fn set_shared(self, mc: &Mutation<'gc>, shared: Gc<'gc, GraphicShared>) {
+        unlock!(Gc::write(mc, self.0), GraphicData, shared).set(shared);
     }
 }
 
 impl<'gc> TDisplayObject<'gc> for Graphic<'gc> {
     fn base(&self) -> Ref<DisplayObjectBase<'gc>> {
-        Ref::map(self.0.read(), |r| &r.base)
+        self.0.base.borrow()
     }
 
     fn base_mut<'a>(&'a self, mc: &Mutation<'gc>) -> RefMut<'a, DisplayObjectBase<'gc>> {
-        RefMut::map(self.0.write(mc), |w| &mut w.base)
+        unlock!(Gc::write(mc, self.0), GraphicData, base).borrow_mut()
     }
 
     fn instantiate(&self, gc_context: &Mutation<'gc>) -> DisplayObject<'gc> {
-        Self(GcCell::new(gc_context, self.0.read().clone())).into()
+        Self(Gc::new(gc_context, self.0.as_ref().clone())).into()
     }
 
     fn as_ptr(&self) -> *const DisplayObjectPtr {
-        self.0.as_ptr() as *const DisplayObjectPtr
+        Gc::as_ptr(self.0) as *const DisplayObjectPtr
     }
 
     fn id(&self) -> CharacterId {
-        self.0.read().shared.id
+        self.0.shared.get().id
     }
 
     fn self_bounds(&self) -> Rectangle<Twips> {
-        if let Some(drawing) = &self.0.read().drawing {
+        if let Some(drawing) = self.0.drawing.borrow().as_ref() {
             drawing.self_bounds()
         } else {
-            self.0.read().shared.bounds
+            self.0.shared.get().bounds
         }
     }
 
@@ -150,8 +154,8 @@ impl<'gc> TDisplayObject<'gc> for Graphic<'gc> {
         if self.movie().is_action_script_3() && matches!(self.object2(), Avm2Value::Null) {
             let class_object = self
                 .0
-                .read()
                 .class
+                .get()
                 .unwrap_or_else(|| context.avm2.classes().shape);
 
             let mut activation = Avm2Activation::from_nothing(context);
@@ -161,7 +165,7 @@ impl<'gc> TDisplayObject<'gc> for Graphic<'gc> {
                 (*self).into(),
                 class_object,
             ) {
-                Ok(object) => self.0.write(activation.gc()).avm2_object = Some(object.into()),
+                Ok(object) => self.set_object2(activation.context, object.into()),
                 Err(e) => {
                     tracing::error!("Got error when constructing AVM2 side of shape: {}", e)
                 }
@@ -179,7 +183,7 @@ impl<'gc> TDisplayObject<'gc> for Graphic<'gc> {
             .library_for_movie_mut(self.movie())
             .get_graphic(id)
         {
-            self.0.write(context.gc()).shared = new_graphic.0.read().shared;
+            self.set_shared(context.gc(), new_graphic.0.shared.get());
         } else {
             tracing::warn!("PlaceObject: expected Graphic at character ID {}", id);
         }
@@ -196,9 +200,9 @@ impl<'gc> TDisplayObject<'gc> for Graphic<'gc> {
             return;
         }
 
-        if let Some(drawing) = &self.0.read().drawing {
+        if let Some(drawing) = &self.0.drawing.borrow().as_ref() {
             drawing.render(context);
-        } else if let Some(render_handle) = self.0.read().shared.render_handle.clone() {
+        } else if let Some(render_handle) = self.0.shared.get().render_handle.clone() {
             context
                 .commands
                 .render_shape(render_handle, context.transform_stack.transform())
@@ -219,12 +223,12 @@ impl<'gc> TDisplayObject<'gc> for Graphic<'gc> {
                 return false;
             };
             let point = local_matrix * point;
-            if let Some(drawing) = &self.0.read().drawing {
+            if let Some(drawing) = &self.0.drawing.borrow().as_ref() {
                 if drawing.hit_test(point, &local_matrix) {
                     return true;
                 }
             } else {
-                let shape = &self.0.read().shared.shape;
+                let shape = &self.0.shared.get().shape;
                 return ruffle_render::shape_utils::shape_hit_test(shape, point, &local_matrix);
             }
         }
@@ -251,23 +255,24 @@ impl<'gc> TDisplayObject<'gc> for Graphic<'gc> {
     }
 
     fn movie(&self) -> Arc<SwfMovie> {
-        self.0.read().shared.movie.clone()
+        self.0.shared.get().movie.clone()
     }
 
     fn object2(&self) -> Avm2Value<'gc> {
         self.0
-            .read()
             .avm2_object
+            .get()
             .map(Avm2Value::from)
             .unwrap_or(Avm2Value::Null)
     }
 
     fn set_object2(&self, context: &mut UpdateContext<'gc>, to: Avm2Object<'gc>) {
-        self.0.write(context.gc()).avm2_object = Some(to);
+        let mc = context.gc();
+        unlock!(Gc::write(mc, self.0), GraphicData, avm2_object).set(Some(to));
     }
 
-    fn as_drawing(&self, gc_context: &Mutation<'gc>) -> Option<RefMut<'_, Drawing>> {
-        Some(self.drawing_mut(gc_context))
+    fn as_drawing(&self, _gc_context: &Mutation<'gc>) -> Option<RefMut<'_, Drawing>> {
+        Some(self.drawing_mut())
     }
 }
 
