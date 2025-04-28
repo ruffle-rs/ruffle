@@ -13,7 +13,7 @@ workspace = true
 [dependencies]
 linkme = { version = "0.3", optional = true }
 byteorder = "1.5"
-bitstream-io = "3.2.0"
+bitstream-io = "3.3.0"
 flate2 = { workspace = true }
 fnv = "1.0.7"
 gc-arena = { package = "ruffle_gc_arena", path = "../ruffle_gc_arena" }
@@ -29,7 +29,7 @@ bitflags = { workspace = true }
 smallvec = { version = "1.15.0", features = ["union"] }
 num-traits = { workspace = true }
 num-derive = { workspace = true }
-quick-xml = "0.37.4"
+quick-xml = "0.37.5"
 downcast-rs = "2.0.1"
 url = { workspace = true }
 weak-table = "0.3.2"
