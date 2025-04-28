@@ -252,6 +252,7 @@ impl VideoDecoder for H264Decoder {
             // configuration_data[2]: compatibility
             // configuration_data[3]: level
             // configuration_data[4]: 6 reserved bits | NALU length size - 1
+            // configuration_data[5]: 3 reserved bits | number of SPSs
 
             self.length_size = (configuration_data[4] & 0b0000_0011) + 1;
 
@@ -263,6 +264,9 @@ impl VideoDecoder for H264Decoder {
             // Converting from AVCC to Annex B (stream-like) format,
             // putting the PPS and SPS into a NALU.
 
+            let num_sps = configuration_data[5] as usize & 0b0001_1111;
+            assert_eq!(num_sps, 1, "More than one SPS is not supported");
+
             buffer.extend_from_slice(&[0, 0, 0, 1]);
 
             let sps_length = configuration_data[6] as usize * 256 + configuration_data[7] as usize;
@@ -272,7 +276,6 @@ impl VideoDecoder for H264Decoder {
             }
 
             let num_pps = configuration_data[8 + sps_length] as usize;
-
             assert_eq!(num_pps, 1, "More than one PPS is not supported");
 
             buffer.extend_from_slice(&[0, 0, 0, 1]);
