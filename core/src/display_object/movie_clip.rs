@@ -3608,9 +3608,8 @@ impl<'gc, 'a> MovieClipData<'gc> {
         let vframe = reader.read_video_frame()?;
         let library = context.library.library_for_movie_mut(self.movie());
         match library.character_by_id(vframe.stream_id) {
-            Some(Character::Video(mut v)) => {
-                v.preload_swf_frame(vframe, context);
-
+            Some(Character::Video(v)) => {
+                v.preload_swf_frame(vframe);
                 Ok(())
             }
             _ => Err(Error::PreloadVideoIntoInvalidCharacter(vframe.stream_id)),
