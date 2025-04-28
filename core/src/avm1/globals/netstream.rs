@@ -150,7 +150,7 @@ fn set_buffer_time<'gc>(
             .unwrap_or(Value::Undefined)
             .coerce_to_f64(activation)?;
 
-        ns.set_buffer_time(activation.gc(), buffer_time);
+        ns.set_buffer_time(buffer_time);
     }
 
     Ok(Value::Undefined)

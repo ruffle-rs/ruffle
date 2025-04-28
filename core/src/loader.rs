@@ -1896,7 +1896,7 @@ impl<'gc> Loader<'gc> {
 
                         stream.reset_buffer(uc);
                         if let Ok(Some(len)) = expected_length {
-                            stream.set_expected_length(uc, len as usize);
+                            stream.set_expected_length(len as usize);
                         }
 
                         Ok(())
@@ -1915,7 +1915,7 @@ impl<'gc> Loader<'gc> {
 
                             match chunk {
                                 Ok(Some(mut data)) => stream.load_buffer(uc, &mut data),
-                                Ok(None) => stream.finish_buffer(uc),
+                                Ok(None) => stream.finish_buffer(),
                                 Err(err) => stream.report_error(err),
                             }
                             Ok(())
