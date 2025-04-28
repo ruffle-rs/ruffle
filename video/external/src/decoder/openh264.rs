@@ -208,8 +208,6 @@ struct OpenH264Data {
 }
 
 impl H264Decoder {
-    /// `extradata` should hold "AVCC (MP4) format" decoder configuration, including PPS and SPS.
-    /// Make sure it has any start code emulation prevention "three bytes" removed.
     pub fn new(h264: &OpenH264Codec) -> Self {
         let openh264 = h264.openh264.clone();
         let mut decoder: *mut ISVCDecoder = ptr::null_mut();
@@ -244,18 +242,16 @@ impl Drop for H264Decoder {
 }
 
 impl VideoDecoder for H264Decoder {
+    /// `configuration_data` should hold "AVCC (MP4) format" decoder configuration, including PPS and SPS.
+    /// Make sure it has any start code emulation prevention "three bytes" removed.
     fn configure_decoder(&mut self, configuration_data: &[u8]) -> Result<(), Error> {
         unsafe {
-            // TODO: Check whether the "start code emulation prevention" needs to be
-            // undone here before looking into the data. (i.e. conversion from SODB
-            // into RBSP, by replacing each 0x00000301 byte sequence with 0x000001)
-
             assert_eq!(configuration_data[0], 1, "Invalid configuration version");
-            // extradata[0]: configuration version, always 1
-            // extradata[1]: profile
-            // extradata[2]: compatibility
-            // extradata[3]: level
-            // extradata[4]: 6 reserved bits | NALU length size - 1
+            // configuration_data[0]: configuration version, always 1
+            // configuration_data[1]: profile
+            // configuration_data[2]: compatibility
+            // configuration_data[3]: level
+            // configuration_data[4]: 6 reserved bits | NALU length size - 1
 
             self.length_size = (configuration_data[4] & 0b0000_0011) + 1;
 
@@ -288,9 +284,8 @@ impl VideoDecoder for H264Decoder {
                 buffer.push(configuration_data[8 + sps_length + 3 + i]);
             }
 
-            //output: [0~2] for Y,U,V buffer for Decoding only
+            //output: [0~2] for Y,U,V buffer
             let mut output = [ptr::null_mut() as *mut c_uchar; 3];
-            //in-out: for Decoding only: declare and initialize the output buffer info
             let mut dest_buf_info: openh264_sys::SBufferInfo = std::mem::zeroed();
 
             let _ret = decoder_vtbl.DecodeFrameNoDelay.unwrap()(
