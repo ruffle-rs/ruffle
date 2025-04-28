@@ -56,7 +56,7 @@ pub fn init<'gc>(
         let width = args.get_i32(activation, 0)?;
         let height = args.get_i32(activation, 1)?;
 
-        video.set_size(activation.gc(), width, height);
+        video.set_size(width, height);
     }
 
     Ok(Value::Undefined)
