@@ -584,7 +584,7 @@ impl<'gc> Stage<'gc> {
     }
 
     /// Draw the stage's letterbox.
-    fn draw_letterbox(&self, context: &mut RenderContext<'_, 'gc>) {
+    fn draw_letterbox(self, context: &mut RenderContext<'_, 'gc>) {
         let ViewportDimensions {
             width: viewport_width,
             height: viewport_height,
@@ -687,7 +687,7 @@ impl<'gc> Stage<'gc> {
     ///
     /// TODO: Need additional check as Flash Player does not
     /// broadcast the 'render' event on the first render
-    pub fn broadcast_render(&self, context: &mut UpdateContext<'gc>) {
+    pub fn broadcast_render(self, context: &mut UpdateContext<'gc>) {
         let render_evt = Avm2EventObject::bare_default_event(context, "render");
         let dobject_constr = context.avm2.classes().display_object;
         Avm2::broadcast_event(context, render_evt, dobject_constr);
@@ -728,7 +728,7 @@ impl<'gc> Stage<'gc> {
         }
     }
 
-    pub fn focus_tracker(&self) -> FocusTracker<'gc> {
+    pub fn focus_tracker(self) -> FocusTracker<'gc> {
         self.0.focus_tracker
     }
 }
