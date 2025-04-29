@@ -2066,10 +2066,6 @@ impl Player {
         std::mem::swap(&mut self.storage, storage);
     }
 
-    pub fn destroy(self) -> Box<dyn RenderBackend> {
-        self.renderer
-    }
-
     pub fn ui(&self) -> &dyn UiBackend {
         &*self.ui
     }
@@ -2437,6 +2433,12 @@ impl Player {
         self.mutate_with_update_context(|context| {
             context.library.set_default_font(font, names);
         });
+    }
+}
+
+impl Drop for Player {
+    fn drop(&mut self) {
+        self.flush_shared_objects();
     }
 }
 
