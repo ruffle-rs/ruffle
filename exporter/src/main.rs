@@ -74,8 +74,8 @@ struct Opt {
     #[clap(long, short, default_value = "high")]
     power: PowerPreference,
 
-    /// Skip unsupported movie types (currently AVM 2)
-    #[clap(long, action)]
+    /// TODO Unused, remove after some time
+    #[clap(long, action, hide = true)]
     skip_unsupported: bool,
 }
 
@@ -87,13 +87,8 @@ fn take_screenshot(
     skipframes: u32,
     progress: &Option<ProgressBar>,
     size: SizeOpt,
-    skip_unsupported: bool,
 ) -> Result<Vec<RgbaImage>> {
     let movie = SwfMovie::from_path(swf_path, None).map_err(|e| anyhow!(e.to_string()))?;
-
-    if movie.is_action_script_3() && skip_unsupported {
-        return Err(anyhow!("Skipping unsupported movie"));
-    }
 
     let width = size
         .width
@@ -228,7 +223,6 @@ fn capture_single_swf(descriptors: Arc<Descriptors>, opt: &Opt) -> Result<()> {
         opt.skipframes,
         &progress,
         opt.size,
-        opt.skip_unsupported,
     )?;
 
     if let Some(progress) = &progress {
@@ -322,7 +316,6 @@ fn capture_multiple_swfs(descriptors: Arc<Descriptors>, opt: &Opt) -> Result<()>
             opt.skipframes,
             &progress,
             opt.size,
-            opt.skip_unsupported,
         ) {
             let mut relative_path = file
                 .path()
