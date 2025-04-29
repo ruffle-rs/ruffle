@@ -1516,17 +1516,24 @@ fn abstract_interpret_ops<'gc>(
                 stack.popn(activation, num_args)?;
 
                 // Then receiver.
-                stack.pop(activation)?;
+                let receiver = stack.pop(activation)?;
 
                 // Remove `super()` calls in classes that extend Object, since they
                 // are noops anyway.
                 if num_args == 0 {
                     let object_class = activation.avm2().classes().object;
+                    // TODO: A `None` `bound_superclass_object` should throw
+                    // a VerifyError
                     if activation
                         .bound_superclass_object()
                         .is_some_and(|c| c == object_class)
                     {
-                        optimize_op_to!(Op::Pop);
+                        // When the receiver is null, this op can still throw an
+                        // error, so let's ensure it's guaranteed nonnull before
+                        // optimizing it
+                        if receiver.not_null(activation) {
+                            optimize_op_to!(Op::Pop);
+                        }
                     }
                 }
             }
