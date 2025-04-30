@@ -147,6 +147,7 @@ impl MenuBar {
                                 player.debug_ui().queue_message(DebugMessage::TrackRootMovieClip);
                             }
                         }
+                        ui.separator();
                         if Button::new(text(locale, "debug-menu-open-movie")).ui(ui).clicked() {
                             ui.close_menu();
                             if let Some(player) = &mut player {
@@ -165,6 +166,7 @@ impl MenuBar {
                                 player.debug_ui().queue_message(DebugMessage::ShowDomains);
                             }
                         }
+                        ui.separator();
                         if Button::new(text(locale, "debug-menu-search-display-objects")).ui(ui).clicked() {
                             ui.close_menu();
                             if let Some(player) = &mut player {
