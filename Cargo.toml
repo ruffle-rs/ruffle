@@ -57,8 +57,8 @@ anyhow = "1.0"
 slotmap = "1.0.7"
 async-channel = "2.3.1"
 bitflags = "2.9.0"
-bytemuck = "1.22.0"
-chrono = { version = "0.4.40", default-features = false }
+bytemuck = "1.23.0"
+chrono = { version = "0.4.41", default-features = false }
 enum-map = "2.7.3"
 flate2 = "1.1.1"
 futures = "0.3.31"
