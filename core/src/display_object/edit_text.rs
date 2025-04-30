@@ -441,13 +441,13 @@ impl<'gc> EditText<'gc> {
         self.0.read().flags.set(flags);
     }
 
-    fn bounds_x_offset(&self) -> Twips {
+    fn bounds_x_offset(self) -> Twips {
         let scale_x = self.base().scale_x().unit();
         let offset = self.0.read().bounds.get().x_min.to_pixels();
         Twips::from_pixels(scale_x * offset)
     }
 
-    fn bounds_y_offset(&self) -> Twips {
+    fn bounds_y_offset(self) -> Twips {
         let scale_y = self.base().scale_y().unit();
         let offset = self.0.read().bounds.get().y_min.to_pixels();
         Twips::from_pixels(scale_y * offset)
@@ -836,7 +836,7 @@ impl<'gc> EditText<'gc> {
     }
 
     /// Returns the variable that this text field is bound to.
-    pub fn variable(&self) -> Option<AvmString<'gc>> {
+    pub fn variable(self) -> Option<AvmString<'gc>> {
         self.0.read().variable
     }
 
