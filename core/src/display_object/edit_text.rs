@@ -162,12 +162,10 @@ pub struct EditTextData<'gc> {
     mouse_wheel_enabled: Cell<bool>,
 
     /// Flags indicating the text field's settings.
-    #[collect(require_static)]
-    flags: EditTextFlag,
+    flags: Cell<EditTextFlag>,
 
     /// Flags specifying how layout debug boxes should be drawn.
-    #[collect(require_static)]
-    layout_debug_boxes_flags: LayoutDebugBoxesFlag,
+    layout_debug_boxes_flags: Cell<LayoutDebugBoxesFlag>,
 
     /// Whether this EditText represents an AVM2 TextLine.
     ///
@@ -215,7 +213,7 @@ impl EditTextData<'_> {
     }
 
     fn font_type(&self) -> FontType {
-        if !self.flags.contains(EditTextFlag::USE_OUTLINES) {
+        if !self.flags.get().contains(EditTextFlag::USE_OUTLINES) {
             FontType::Device
         } else if self.is_fte.get() {
             FontType::EmbeddedCFF
@@ -230,8 +228,8 @@ impl EditTextData<'_> {
             text,
             default_format,
             self.style_sheet.style_sheet(),
-            self.flags.contains(EditTextFlag::MULTILINE),
-            self.flags.contains(EditTextFlag::CONDENSE_WHITE),
+            self.flags.get().contains(EditTextFlag::MULTILINE),
+            self.flags.get().contains(EditTextFlag::CONDENSE_WHITE),
             self.shared.swf.version(),
         );
         self.original_html_text = if self.style_sheet.is_some() {
@@ -348,7 +346,7 @@ impl<'gc> EditText<'gc> {
                             .map(|s| s.decode(encoding).into_owned()),
                     },
                 ),
-                flags,
+                flags: Cell::new(flags),
                 background_color: Cell::new(Color::WHITE),
                 border_color: Cell::new(Color::BLACK),
                 object: None,
@@ -368,7 +366,7 @@ impl<'gc> EditText<'gc> {
                 is_fte: Cell::new(false),
                 restrict: EditTextRestrict::allow_all(),
                 last_click: Cell::new(None),
-                layout_debug_boxes_flags: LayoutDebugBoxesFlag::empty(),
+                layout_debug_boxes_flags: Cell::new(LayoutDebugBoxesFlag::empty()),
                 style_sheet: EditTextStyleSheet::None,
                 original_html_text: None,
                 ime_data: None,
@@ -428,9 +426,19 @@ impl<'gc> EditText<'gc> {
     ) -> Self {
         let text = Self::new(context, swf_movie, x, y, width, height);
         text.set_is_fte(true);
-        text.set_selectable(false, context);
+        text.set_selectable(false);
 
         text
+    }
+
+    fn contains_flag(self, flag: EditTextFlag) -> bool {
+        self.0.read().flags.get().contains(flag)
+    }
+
+    fn set_flag(self, flag: EditTextFlag, value: bool) {
+        let mut flags = self.0.read().flags.get();
+        flags.set(flag, value);
+        self.0.read().flags.set(flags);
     }
 
     fn bounds_x_offset(&self) -> Twips {
@@ -537,18 +545,15 @@ impl<'gc> EditText<'gc> {
     }
 
     pub fn is_editable(self) -> bool {
-        !self.0.read().flags.contains(EditTextFlag::READ_ONLY)
+        !self.contains_flag(EditTextFlag::READ_ONLY)
     }
 
     pub fn was_static(self) -> bool {
-        self.0.read().flags.contains(EditTextFlag::WAS_STATIC)
+        self.contains_flag(EditTextFlag::WAS_STATIC)
     }
 
-    pub fn set_editable(self, is_editable: bool, context: &mut UpdateContext<'gc>) {
-        self.0
-            .write(context.gc())
-            .flags
-            .set(EditTextFlag::READ_ONLY, !is_editable);
+    pub fn set_editable(self, is_editable: bool) {
+        self.set_flag(EditTextFlag::READ_ONLY, !is_editable);
     }
 
     pub fn is_mouse_wheel_enabled(self) -> bool {
@@ -560,18 +565,15 @@ impl<'gc> EditText<'gc> {
     }
 
     pub fn is_multiline(self) -> bool {
-        self.0.read().flags.contains(EditTextFlag::MULTILINE)
+        self.contains_flag(EditTextFlag::MULTILINE)
     }
 
     pub fn is_password(self) -> bool {
-        self.0.read().flags.contains(EditTextFlag::PASSWORD)
+        self.contains_flag(EditTextFlag::PASSWORD)
     }
 
     pub fn set_password(self, is_password: bool, context: &mut UpdateContext<'gc>) {
-        self.0
-            .write(context.gc())
-            .flags
-            .set(EditTextFlag::PASSWORD, is_password);
+        self.set_flag(EditTextFlag::PASSWORD, is_password);
         self.relayout(context);
     }
 
@@ -584,33 +586,24 @@ impl<'gc> EditText<'gc> {
     }
 
     pub fn set_multiline(self, is_multiline: bool, context: &mut UpdateContext<'gc>) {
-        self.0
-            .write(context.gc())
-            .flags
-            .set(EditTextFlag::MULTILINE, is_multiline);
+        self.set_flag(EditTextFlag::MULTILINE, is_multiline);
         self.relayout(context);
     }
 
     pub fn is_selectable(self) -> bool {
-        !self.0.read().flags.contains(EditTextFlag::NO_SELECT)
+        !self.contains_flag(EditTextFlag::NO_SELECT)
     }
 
-    pub fn set_selectable(self, is_selectable: bool, context: &mut UpdateContext<'gc>) {
-        self.0
-            .write(context.gc())
-            .flags
-            .set(EditTextFlag::NO_SELECT, !is_selectable);
+    pub fn set_selectable(self, is_selectable: bool) {
+        self.set_flag(EditTextFlag::NO_SELECT, !is_selectable);
     }
 
     pub fn is_word_wrap(self) -> bool {
-        self.0.read().flags.contains(EditTextFlag::WORD_WRAP)
+        self.contains_flag(EditTextFlag::WORD_WRAP)
     }
 
     pub fn set_word_wrap(self, is_word_wrap: bool, context: &mut UpdateContext<'gc>) {
-        self.0
-            .write(context.gc())
-            .flags
-            .set(EditTextFlag::WORD_WRAP, is_word_wrap);
+        self.set_flag(EditTextFlag::WORD_WRAP, is_word_wrap);
         self.relayout(context);
     }
 
@@ -624,14 +617,11 @@ impl<'gc> EditText<'gc> {
     }
 
     pub fn has_background(self) -> bool {
-        self.0.read().flags.contains(EditTextFlag::HAS_BACKGROUND)
+        self.contains_flag(EditTextFlag::HAS_BACKGROUND)
     }
 
     pub fn set_has_background(self, gc_context: &Mutation<'gc>, has_background: bool) {
-        self.0
-            .write(gc_context)
-            .flags
-            .set(EditTextFlag::HAS_BACKGROUND, has_background);
+        self.set_flag(EditTextFlag::HAS_BACKGROUND, has_background);
         self.invalidate_cached_bitmap(gc_context);
     }
 
@@ -648,14 +638,11 @@ impl<'gc> EditText<'gc> {
     }
 
     pub fn has_border(self) -> bool {
-        self.0.read().flags.contains(EditTextFlag::BORDER)
+        self.contains_flag(EditTextFlag::BORDER)
     }
 
     pub fn set_has_border(self, gc_context: &Mutation<'gc>, has_border: bool) {
-        self.0
-            .write(gc_context)
-            .flags
-            .set(EditTextFlag::BORDER, has_border);
+        self.set_flag(EditTextFlag::BORDER, has_border);
         self.invalidate_cached_bitmap(gc_context);
     }
 
@@ -669,39 +656,27 @@ impl<'gc> EditText<'gc> {
     }
 
     pub fn condense_white(self) -> bool {
-        self.0.read().flags.contains(EditTextFlag::CONDENSE_WHITE)
+        self.contains_flag(EditTextFlag::CONDENSE_WHITE)
     }
 
-    pub fn set_condense_white(self, context: &mut UpdateContext<'gc>, condense_white: bool) {
-        self.0
-            .write(context.gc())
-            .flags
-            .set(EditTextFlag::CONDENSE_WHITE, condense_white);
+    pub fn set_condense_white(self, condense_white: bool) {
+        self.set_flag(EditTextFlag::CONDENSE_WHITE, condense_white);
     }
 
     pub fn always_show_selection(self) -> bool {
-        self.0
-            .read()
-            .flags
-            .contains(EditTextFlag::ALWAYS_SHOW_SELECTION)
+        self.contains_flag(EditTextFlag::ALWAYS_SHOW_SELECTION)
     }
 
-    pub fn set_always_show_selection(self, context: &mut UpdateContext<'gc>, value: bool) {
-        self.0
-            .write(context.gc())
-            .flags
-            .set(EditTextFlag::ALWAYS_SHOW_SELECTION, value);
+    pub fn set_always_show_selection(self, value: bool) {
+        self.set_flag(EditTextFlag::ALWAYS_SHOW_SELECTION, value);
     }
 
     pub fn is_device_font(self) -> bool {
-        !self.0.read().flags.contains(EditTextFlag::USE_OUTLINES)
+        !self.contains_flag(EditTextFlag::USE_OUTLINES)
     }
 
     pub fn set_is_device_font(self, context: &mut UpdateContext<'gc>, is_device_font: bool) {
-        self.0
-            .write(context.gc())
-            .flags
-            .set(EditTextFlag::USE_OUTLINES, !is_device_font);
+        self.set_flag(EditTextFlag::USE_OUTLINES, !is_device_font);
         self.relayout(context);
     }
 
@@ -710,19 +685,15 @@ impl<'gc> EditText<'gc> {
     }
 
     pub fn is_html(self) -> bool {
-        self.0.read().flags.contains(EditTextFlag::HTML)
+        self.contains_flag(EditTextFlag::HTML)
     }
 
     pub fn is_effectively_html(self) -> bool {
-        let text = self.0.read();
-        text.flags.contains(EditTextFlag::HTML) || text.style_sheet.is_some()
+        self.contains_flag(EditTextFlag::HTML) || self.0.read().style_sheet.is_some()
     }
 
-    pub fn set_is_html(self, context: &mut UpdateContext<'gc>, is_html: bool) {
-        self.0
-            .write(context.gc())
-            .flags
-            .set(EditTextFlag::HTML, is_html);
+    pub fn set_is_html(self, is_html: bool) {
+        self.set_flag(EditTextFlag::HTML, is_html);
     }
 
     pub fn style_sheet(self) -> Option<StyleSheet<'gc>> {
@@ -763,7 +734,7 @@ impl<'gc> EditText<'gc> {
         context: &mut UpdateContext<'gc>,
         style_sheet: Option<Avm2StyleSheetObject<'gc>>,
     ) {
-        self.set_is_html(context, true);
+        self.set_is_html(true);
         self.set_style_sheet(
             context,
             style_sheet
@@ -800,19 +771,13 @@ impl<'gc> EditText<'gc> {
     }
 
     pub fn layout_debug_boxes_flag(self, flag: LayoutDebugBoxesFlag) -> bool {
-        self.0.read().layout_debug_boxes_flags.contains(flag)
+        self.0.read().layout_debug_boxes_flags.get().contains(flag)
     }
 
-    pub fn set_layout_debug_boxes_flag(
-        self,
-        context: &mut UpdateContext<'gc>,
-        flag: LayoutDebugBoxesFlag,
-        value: bool,
-    ) {
-        self.0
-            .write(context.gc())
-            .layout_debug_boxes_flags
-            .set(flag, value);
+    pub fn set_layout_debug_boxes_flag(self, flag: LayoutDebugBoxesFlag, value: bool) {
+        let mut flags = self.0.read().layout_debug_boxes_flags.get();
+        flags.set(flag, value);
+        self.0.read().layout_debug_boxes_flags.set(flags);
     }
 
     /// Returns the matrix for transforming from layout
@@ -913,11 +878,11 @@ impl<'gc> EditText<'gc> {
     pub fn relayout(self, context: &mut UpdateContext<'gc>) {
         let mut edit_text = self.0.write(context.gc());
         let autosize = edit_text.autosize.get();
-        let is_word_wrap = edit_text.flags.contains(EditTextFlag::WORD_WRAP);
+        let is_word_wrap = edit_text.flags.get().contains(EditTextFlag::WORD_WRAP);
         let movie = edit_text.shared.swf.clone();
         let padding = Self::GUTTER * 2;
 
-        if edit_text.flags.contains(EditTextFlag::PASSWORD) {
+        if edit_text.flags.get().contains(EditTextFlag::PASSWORD) {
             // If the text is a password, hide the text
             edit_text.text_spans.hide_text();
         } else if edit_text.text_spans.has_displayed_text() {
@@ -937,7 +902,7 @@ impl<'gc> EditText<'gc> {
             context,
             movie,
             content_width,
-            !edit_text.flags.contains(EditTextFlag::READ_ONLY),
+            !edit_text.flags.get().contains(EditTextFlag::READ_ONLY),
             is_word_wrap,
             edit_text.font_type(),
         );
@@ -954,7 +919,7 @@ impl<'gc> EditText<'gc> {
             if !is_word_wrap {
                 // The edit text's bounds needs to have the padding baked in.
                 let mut width = text_size.width() + padding;
-                if !edit_text.flags.contains(EditTextFlag::READ_ONLY) {
+                if !edit_text.flags.get().contains(EditTextFlag::READ_ONLY) {
                     // When the field is editable, FP adds 2.5px to add some
                     // space to place the caret.
                     width += Twips::from_pixels(2.5);
@@ -1022,14 +987,14 @@ impl<'gc> EditText<'gc> {
         let edit_text = self.0.read();
 
         // word-wrapped text can't be scrolled
-        if edit_text.flags.contains(EditTextFlag::WORD_WRAP) {
+        if edit_text.flags.get().contains(EditTextFlag::WORD_WRAP) {
             return 0.0;
         }
 
         let mut text_width = edit_text.layout.text_size().width();
         let window_width = (edit_text.bounds.get().width() - Self::GUTTER * 2).max(Twips::ZERO);
 
-        if !edit_text.flags.contains(EditTextFlag::READ_ONLY) {
+        if !edit_text.flags.get().contains(EditTextFlag::READ_ONLY) {
             // input fields get extra space at the end
             text_width += window_width / 4;
         }
@@ -1101,7 +1066,7 @@ impl<'gc> EditText<'gc> {
         let selection = edit_text.selection.get()?;
         #[allow(clippy::collapsible_else_if)]
         if selection.is_caret() {
-            if self.has_focus() && !edit_text.flags.contains(EditTextFlag::READ_ONLY) {
+            if self.has_focus() && !edit_text.flags.get().contains(EditTextFlag::READ_ONLY) {
                 Some(selection)
             } else {
                 None
@@ -1273,7 +1238,7 @@ impl<'gc> EditText<'gc> {
             if let Some(visible_selection) = visible_selection {
                 let text_len = edit_text.text_spans.text().len();
                 if visible_selection.is_caret()
-                    && !edit_text.flags.contains(EditTextFlag::READ_ONLY)
+                    && !edit_text.flags.get().contains(EditTextFlag::READ_ONLY)
                     && visible_selection.start() >= *start
                     && (visible_selection.end() < *end || *end == text_len)
                     && !visible_selection.blinks_now()
@@ -1465,13 +1430,8 @@ impl<'gc> EditText<'gc> {
     /// Propagates a text change to the bound display object.
     ///
     pub fn propagate_text_binding(self, activation: &mut Avm1Activation<'_, 'gc>) {
-        if !self
-            .0
-            .read()
-            .flags
-            .contains(EditTextFlag::FIRING_VARIABLE_BINDING)
-        {
-            self.0.write(activation.gc()).flags |= EditTextFlag::FIRING_VARIABLE_BINDING;
+        if !self.contains_flag(EditTextFlag::FIRING_VARIABLE_BINDING) {
+            self.set_flag(EditTextFlag::FIRING_VARIABLE_BINDING, true);
             if let Some(variable_path) = self.variable() {
                 if let Ok(Some((object, property))) =
                     activation.resolve_variable_path(self.avm1_parent().unwrap(), &variable_path)
@@ -1493,7 +1453,7 @@ impl<'gc> EditText<'gc> {
                     );
                 }
             }
-            self.0.write(activation.gc()).flags -= EditTextFlag::FIRING_VARIABLE_BINDING;
+            self.set_flag(EditTextFlag::FIRING_VARIABLE_BINDING, false);
         }
     }
 
@@ -2736,12 +2696,13 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
 
         if edit_text
             .flags
+            .get()
             .intersects(EditTextFlag::BORDER | EditTextFlag::HAS_BACKGROUND)
         {
             let background_color = Some(edit_text.background_color.get())
-                .filter(|_| edit_text.flags.contains(EditTextFlag::HAS_BACKGROUND));
+                .filter(|_| edit_text.flags.get().contains(EditTextFlag::HAS_BACKGROUND));
             let border_color = Some(edit_text.border_color.get())
-                .filter(|_| edit_text.flags.contains(EditTextFlag::BORDER));
+                .filter(|_| edit_text.flags.get().contains(EditTextFlag::BORDER));
 
             if self.is_device_font() {
                 self.draw_device_text_box(
@@ -2777,7 +2738,7 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
 
         self.render_debug_boxes(
             context,
-            edit_text.layout_debug_boxes_flags,
+            edit_text.layout_debug_boxes_flags.get(),
             &edit_text.layout,
         );
 

@@ -325,7 +325,7 @@ pub fn set_html<'gc>(
     value: Value<'gc>,
 ) -> Result<(), Error<'gc>> {
     let value = value.as_bool(activation.swf_version());
-    this.set_is_html(activation.context, value);
+    this.set_is_html(value);
     Ok(())
 }
 
@@ -534,7 +534,7 @@ pub fn set_selectable<'gc>(
     value: Value<'gc>,
 ) -> Result<(), Error<'gc>> {
     let set_selectable = value.as_bool(activation.swf_version());
-    this.set_selectable(set_selectable, activation.context);
+    this.set_selectable(set_selectable);
     Ok(())
 }
 
@@ -626,9 +626,9 @@ pub fn set_type<'gc>(
     let value = value.coerce_to_string(activation)?;
 
     if value.eq_ignore_case(WStr::from_units(b"input")) {
-        this.set_editable(true, activation.context);
+        this.set_editable(true);
     } else if value.eq_ignore_case(WStr::from_units(b"dynamic")) {
-        this.set_editable(false, activation.context)
+        this.set_editable(false)
     } else {
         tracing::warn!("Invalid TextField.type: {}", value);
     }
@@ -924,7 +924,7 @@ pub fn set_condense_white<'gc>(
     value: Value<'gc>,
 ) -> Result<(), Error<'gc>> {
     let condense_white = value.as_bool(activation.swf_version());
-    this.set_condense_white(activation.context, condense_white);
+    this.set_condense_white(condense_white);
     Ok(())
 }
 

@@ -43,7 +43,7 @@ pub fn get_always_show_selection<'gc>(
 }
 
 pub fn set_always_show_selection<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    _activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -57,7 +57,7 @@ pub fn set_always_show_selection<'gc>(
     };
 
     let value = args.get_bool(0);
-    this.set_always_show_selection(activation.context, value);
+    this.set_always_show_selection(value);
 
     Ok(Value::Undefined)
 }
@@ -277,7 +277,7 @@ pub fn get_condense_white<'gc>(
 }
 
 pub fn set_condense_white<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    _activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -288,7 +288,7 @@ pub fn set_condense_white<'gc>(
         .and_then(|this| this.as_edit_text())
     {
         let value = args.get_bool(0);
-        this.set_condense_white(activation.context, value);
+        this.set_condense_white(value);
     }
 
     Ok(Value::Undefined)
@@ -436,7 +436,7 @@ pub fn set_html_text<'gc>(
     {
         let html_text = args.get_string(activation, 0)?;
 
-        this.set_is_html(activation.context, true);
+        this.set_is_html(true);
         this.set_html_text(&html_text, activation.context);
     }
 
@@ -514,7 +514,7 @@ pub fn get_selectable<'gc>(
 }
 
 pub fn set_selectable<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    _activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -526,7 +526,7 @@ pub fn set_selectable<'gc>(
     {
         let is_selectable = args.get_bool(0);
 
-        this.set_selectable(is_selectable, activation.context);
+        this.set_selectable(is_selectable);
     }
 
     Ok(Value::Undefined)
@@ -694,9 +694,9 @@ pub fn set_type<'gc>(
         let is_editable = args.get_string_non_null(activation, 0, "type")?;
 
         if &is_editable == b"input" {
-            this.set_editable(true, activation.context);
+            this.set_editable(true);
         } else if &is_editable == b"dynamic" {
-            this.set_editable(false, activation.context);
+            this.set_editable(false);
         } else {
             return Err(make_error_2008(activation, "type"));
         }
