@@ -183,7 +183,7 @@ pub enum NetStreamType {
 
 #[derive(Clone, Debug, Collect)]
 #[collect(no_drop)]
-pub struct NetStreamData<'gc> {
+pub struct NetStreamSource {
     /// All data currently loaded in the stream.
     buffer: RefCell<Buffer>,
 
@@ -219,6 +219,20 @@ pub struct NetStreamData<'gc> {
     /// Seeks are only executed on the next stream tick.
     queued_seek_time: Cell<Option<f64>>,
 
+    /// The `Substream` associated with the currently playing audio track and
+    /// the expected playback format of that audio.
+    audio_stream: RefCell<Option<(Substream, SoundStreamInfo)>>,
+
+    /// The currently playing sound stream
+    sound_instance: Cell<Option<SoundInstanceHandle>>,
+}
+
+#[derive(Clone, Debug, Collect)]
+#[collect(no_drop)]
+pub struct NetStreamData<'gc> {
+    /// Stream source.
+    source: Lock<Gc<'gc, NetStreamSource>>,
+
     /// The number of seconds of video data that should be buffered. This is
     /// currently unsupported and changing it has no effect.
     buffer_time: Cell<f64>,
@@ -238,13 +252,6 @@ pub struct NetStreamData<'gc> {
     /// The URL of the requested FLV if one exists.
     url: RefCell<Option<String>>,
 
-    /// The `Substream` associated with the currently playing audio track and
-    /// the expected playback format of that audio.
-    audio_stream: RefCell<Option<(Substream, SoundStreamInfo)>>,
-
-    /// The currently playing sound stream
-    sound_instance: Cell<Option<SoundInstanceHandle>>,
-
     /// The MovieClip this `NetStream` is attached to.
     attached_to: Lock<Option<MovieClip<'gc>>>,
 
@@ -252,31 +259,43 @@ pub struct NetStreamData<'gc> {
     playing: Cell<bool>,
 }
 
+impl Default for NetStreamSource {
+    fn default() -> Self {
+        Self {
+            buffer: RefCell::new(Buffer::new()),
+            offset: Cell::new(0),
+            expected_length: Cell::new(Some(0)),
+            preload_offset: Cell::new(0),
+            stream_type: RefCell::new(None),
+            stream_time: Cell::new(0.0),
+            queued_seek_time: Cell::new(None),
+            audio_stream: RefCell::new(None),
+            sound_instance: Cell::new(None),
+        }
+    }
+}
+
 impl<'gc> NetStream<'gc> {
     pub fn new(gc_context: &Mutation<'gc>, avm_object: Option<AvmObject<'gc>>) -> Self {
         // IMPORTANT: When adding new fields consider if they need to be
-        // initialized in `reset_buffer` as well.
+        //     added here or to NetStreamSource.
         Self(Gc::new(
             gc_context,
             NetStreamData {
-                buffer: RefCell::new(Buffer::new()),
-                offset: Cell::new(0),
-                preload_offset: Cell::new(0),
-                stream_type: RefCell::new(None),
-                stream_time: Cell::new(0.0),
-                queued_seek_time: Cell::new(None),
+                source: Lock::new(Gc::new(gc_context, Default::default())),
                 buffer_time: Cell::new(0.1),
                 last_decoded_bitmap: RefCell::new(None),
                 avm_object: Lock::new(avm_object),
                 avm2_client: Lock::new(None),
                 url: RefCell::new(None),
-                audio_stream: RefCell::new(None),
-                sound_instance: Cell::new(None),
                 attached_to: Lock::new(None),
                 playing: Cell::new(false),
-                expected_length: Cell::new(Some(0)),
             },
         ))
+    }
+
+    fn source(self) -> Gc<'gc, NetStreamSource> {
+        self.0.source.get()
     }
 
     pub fn set_client(self, gc_context: &Mutation<'gc>, new_client: Avm2Object<'gc>) {
@@ -304,7 +323,7 @@ impl<'gc> NetStream<'gc> {
     /// Externally visible AVM state must not be reinitialized here - i.e. the
     /// AS3 `client` doesn't go away because you played a new video file.
     pub fn reset_buffer(self, context: &mut UpdateContext<'gc>) {
-        if let Some(instance) = self.0.sound_instance.get() {
+        if let Some(instance) = self.source().sound_instance.get() {
             // We stop the sound twice because sounds may have either been
             // played through the audio manager or through the backend directly
             // depending on the attachment state at the time of first audio
@@ -313,20 +332,14 @@ impl<'gc> NetStream<'gc> {
             context.audio_manager.stop_sound(context.audio, instance);
         }
 
-        self.0.buffer.replace(Buffer::new());
-        self.0.offset.set(0);
-        self.0.preload_offset.set(0);
-        self.0.stream_type.replace(None);
-        self.0.stream_time.set(0.0);
-        self.0.queued_seek_time.set(None);
-        self.0.audio_stream.replace(None);
-        self.0.sound_instance.set(None);
-        self.0.expected_length.set(Some(0));
+        unlock!(Gc::write(context.gc(), self.0), NetStreamData, source)
+            .set(Gc::new(context.gc(), Default::default()));
     }
 
     /// Set the total number of bytes expected to be downloaded.
     pub fn set_expected_length(self, expected: usize) {
-        let mut buffer = self.0.buffer.borrow_mut();
+        let source = self.source();
+        let mut buffer = source.buffer.borrow_mut();
         let len = buffer.len();
 
         // The subtract is to avoid reserving space for already-downloaded data.
@@ -334,7 +347,7 @@ impl<'gc> NetStream<'gc> {
             buffer.reserve(expected - len);
         }
 
-        self.0.expected_length.set(Some(expected));
+        source.expected_length.set(Some(expected));
     }
 
     /// Append data to the `NetStream`'s current internal buffer.
@@ -347,7 +360,7 @@ impl<'gc> NetStream<'gc> {
     /// that all data is appended in the correct order and that data from
     /// separate streams is not mixed together.
     pub fn load_buffer(self, context: &mut UpdateContext<'gc>, data: &mut Vec<u8>) {
-        self.0.buffer.borrow_mut().append(data);
+        self.source().buffer.borrow_mut().append(data);
 
         StreamManager::activate(context, self);
 
@@ -361,7 +374,7 @@ impl<'gc> NetStream<'gc> {
     /// Indicate that the buffer has finished loading and that no further data
     /// is expected to be downloaded to it.
     pub fn finish_buffer(self) {
-        self.0.expected_length.set(None);
+        self.source().expected_length.set(None);
     }
 
     pub fn report_error(self, _error: Error) {
@@ -369,16 +382,17 @@ impl<'gc> NetStream<'gc> {
     }
 
     pub fn bytes_loaded(self) -> usize {
-        self.0.buffer.borrow().len()
+        self.source().buffer.borrow().len()
     }
 
     pub fn bytes_total(self) -> usize {
-        let buflen = self.0.buffer.borrow().len();
-        std::cmp::max(self.0.expected_length.get().unwrap_or(buflen), buflen)
+        let source = self.source();
+        let buflen = source.buffer.borrow().len();
+        std::cmp::max(source.expected_length.get().unwrap_or(buflen), buflen)
     }
 
     pub fn time(self) -> f64 {
-        self.0.stream_time.get()
+        self.source().stream_time.get()
     }
 
     pub fn buffer_time(self) -> f64 {
@@ -393,7 +407,7 @@ impl<'gc> NetStream<'gc> {
     ///
     /// `offset` is in milliseconds.
     pub fn seek(self, context: &mut UpdateContext<'gc>, offset: f64, notify: bool) {
-        self.0.queued_seek_time.set(Some(offset));
+        self.source().queued_seek_time.set(Some(offset));
         StreamManager::activate(context, self);
 
         if notify {
@@ -431,32 +445,34 @@ impl<'gc> NetStream<'gc> {
             vec![("code", "NetStream.Seek.Notify"), ("level", "status")],
         );
 
+        let source = self.source();
+
         // Ensure the container stream type is known before continuing.
-        if self.0.stream_type.borrow().is_none() && !self.sniff_stream_type(context) {
+        if source.stream_type.borrow().is_none() && !self.sniff_stream_type(context) {
             return;
         }
 
-        if self.0.stream_time.get() == offset {
+        if source.stream_time.get() == offset {
             //Don't do anything for no-op seeks.
             return;
         }
 
-        if let Some(sound) = self.0.sound_instance.get() {
+        if let Some(sound) = source.sound_instance.get() {
             context.stop_sound(sound);
             context.audio.stop_sound(sound);
 
-            self.0.sound_instance.set(None);
-            self.0.audio_stream.replace(None);
+            source.sound_instance.set(None);
+            source.audio_stream.replace(None);
         }
 
         if matches!(
-            &*self.0.stream_type.borrow(),
+            &*source.stream_type.borrow(),
             Some(NetStreamType::Flv { .. })
         ) {
-            let slice = self.0.buffer.borrow().to_full_slice();
+            let slice = source.buffer.borrow().to_full_slice();
             let buffer = slice.data();
-            let mut reader = FlvReader::from_parts(&buffer, self.0.offset.get());
-            let skipping_back = self.0.stream_time.get() > offset;
+            let mut reader = FlvReader::from_parts(&buffer, source.offset.get());
+            let skipping_back = source.stream_time.get() > offset;
 
             loop {
                 if skipping_back {
@@ -496,7 +512,7 @@ impl<'gc> NetStream<'gc> {
 
                 let tag = tag.unwrap();
                 let stream_time = tag.timestamp as f64;
-                self.0.stream_time.set(stream_time);
+                source.stream_time.set(stream_time);
 
                 if skipping_back && stream_time > offset || !skipping_back && stream_time < offset {
                     continue;
@@ -522,7 +538,7 @@ impl<'gc> NetStream<'gc> {
             let offset = reader
                 .stream_position()
                 .expect("FLV reader stream position") as usize;
-            self.0.offset.set(offset);
+            source.offset.set(offset);
         }
 
         if let Some(AvmObject::Avm2(_)) = self.0.avm_object.get() {
@@ -552,7 +568,7 @@ impl<'gc> NetStream<'gc> {
                 Request::get(name.to_string())
             };
             self.0.url.replace(Some(request.url().to_string()));
-            self.0.preload_offset.set(0);
+            self.source().preload_offset.set(0);
             let future = context
                 .load_manager
                 .load_netstream(context.player.clone(), self, request);
@@ -604,29 +620,32 @@ impl<'gc> NetStream<'gc> {
 
     /// Indicates that this `NetStream`'s audio was detached from a `MovieClip` (AVM1)
     pub fn was_detached(self, context: &mut UpdateContext<'gc>) {
-        if let Some(sound_instance) = self.0.sound_instance.get() {
+        let source = self.source();
+        if let Some(sound_instance) = source.sound_instance.get() {
             context
                 .audio_manager
                 .stop_sound(context.audio, sound_instance);
         }
 
-        self.0.audio_stream.replace(None);
+        source.audio_stream.replace(None);
         self.set_attached_to(context.gc(), None);
     }
 
     /// Indicates that this `NetStream`'s audio was attached to a `MovieClip` (AVM1)
     pub fn was_attached(self, context: &mut UpdateContext<'gc>, clip: MovieClip<'gc>) {
+        let source = self.source();
+
         // A `NetStream` cannot be attached to two `MovieClip`s at once.
         // Stop the old sound; the new one will stream at the next tag read.
         // TODO: Change this to have `audio_manager` just switch the sound
         // transforms around
-        if let Some(sound_instance) = self.0.sound_instance.get() {
+        if let Some(sound_instance) = source.sound_instance.get() {
             context
                 .audio_manager
                 .stop_sound(context.audio, sound_instance);
         }
 
-        self.0.audio_stream.replace(None);
+        source.audio_stream.replace(None);
         self.set_attached_to(context.gc(), Some(clip));
     }
 
@@ -644,7 +663,8 @@ impl<'gc> NetStream<'gc> {
             | FlvAudioDataType::AacSequenceHeader(data)
             | FlvAudioDataType::AacRaw(data) => slice.to_subslice(data),
         };
-        let audio_stream = &mut *self.0.audio_stream.borrow_mut();
+        let source = self.source();
+        let audio_stream = &mut *source.audio_stream.borrow_mut();
         let substream = match audio_stream {
             Some((substream, _sound_stream_info)) => {
                 if substream
@@ -738,9 +758,10 @@ impl<'gc> NetStream<'gc> {
     /// Intended to be called at the start of tag processing, before any new
     /// audio data has been streamed.
     fn cleanup_sound_stream(self, context: &mut UpdateContext<'gc>) {
-        if !Self::sound_currently_playing(context, self.0.sound_instance.get()) {
-            self.0.audio_stream.replace(None);
-            self.0.sound_instance.set(None);
+        let source = self.source();
+        if !Self::sound_currently_playing(context, source.sound_instance.get()) {
+            source.audio_stream.replace(None);
+            source.sound_instance.set(None);
         }
     }
 
@@ -751,8 +772,9 @@ impl<'gc> NetStream<'gc> {
     /// should occur only after a minimum number of tags have been processed to
     /// avoid audio underruns.
     fn commit_sound_stream(self, context: &mut UpdateContext<'gc>) -> Result<(), NetstreamError> {
-        if !Self::sound_currently_playing(context, self.0.sound_instance.get()) {
-            if let Some((substream, sound_stream_head)) = &mut *self.0.audio_stream.borrow_mut() {
+        let source = self.source();
+        if !Self::sound_currently_playing(context, source.sound_instance.get()) {
+            if let Some((substream, sound_stream_head)) = &mut *source.audio_stream.borrow_mut() {
                 let sound_instance = if let Some(mc) = self.0.attached_to.get() {
                     context.audio_manager.start_substream(
                         context.audio,
@@ -765,7 +787,7 @@ impl<'gc> NetStream<'gc> {
                         .audio
                         .start_substream(substream.clone(), sound_stream_head)?
                 };
-                self.0.sound_instance.set(Some(sound_instance));
+                source.sound_instance.set(Some(sound_instance));
             }
         }
 
@@ -779,24 +801,25 @@ impl<'gc> NetStream<'gc> {
     /// data is of an unrecognized format. This should be used as a signal to
     /// stop stream processing until new data has been retrieved.
     pub fn sniff_stream_type(self, context: &mut UpdateContext<'gc>) -> bool {
-        let slice = self.0.buffer.borrow().to_full_slice();
+        let source = self.source();
+        let slice = source.buffer.borrow().to_full_slice();
         let buffer = slice.data();
 
         // A nonzero preload offset indicates that we tried and failed to
         // sniff the container format, so in that case do not process the
         // stream anymore.
-        if self.0.preload_offset.get() > 0 {
+        if source.preload_offset.get() > 0 {
             return false;
         }
 
         match buffer.get(0..3) {
             Some([0x46, 0x4C, 0x56]) => {
-                let mut reader = FlvReader::from_parts(&buffer, self.0.offset.get());
+                let mut reader = FlvReader::from_parts(&buffer, source.offset.get());
                 match FlvHeader::parse(&mut reader) {
                     Ok(header) => {
-                        self.0.offset.set(reader.into_parts().1);
-                        self.0.preload_offset.set(self.0.offset.get());
-                        self.0.stream_type.replace(Some(NetStreamType::Flv {
+                        source.offset.set(reader.into_parts().1);
+                        source.preload_offset.set(source.offset.get());
+                        source.stream_type.replace(Some(NetStreamType::Flv {
                             header,
                             video_stream: None,
                             frame_id: 0,
@@ -807,7 +830,7 @@ impl<'gc> NetStream<'gc> {
                     Err(e) => {
                         //TODO: Fire an error event to AS & stop playing too
                         tracing::error!("FLV header parsing failed: {}", e);
-                        self.0.preload_offset.set(3);
+                        source.preload_offset.set(3);
                         false
                     }
                 }
@@ -816,7 +839,7 @@ impl<'gc> NetStream<'gc> {
                 //Unrecognized signature
                 //TODO: Fire an error event to AS & stop playing too
                 tracing::error!("Unrecognized file signature: {:?}", magic);
-                self.0.preload_offset.set(3);
+                source.preload_offset.set(3);
                 if let Some(url) = &*self.0.url.borrow() {
                     if url.is_empty() {
                         return false;
@@ -854,7 +877,8 @@ impl<'gc> NetStream<'gc> {
         video_data: FlvVideoData<'_>,
         tag_needs_preloading: bool,
     ) {
-        let (video_handle, frame_id) = match *self.0.stream_type.borrow() {
+        let source = self.source();
+        let (video_handle, frame_id) = match *source.stream_type.borrow() {
             Some(NetStreamType::Flv {
                 video_stream,
                 frame_id,
@@ -889,7 +913,7 @@ impl<'gc> NetStream<'gc> {
                             VideoDeblocking::UseVideoPacketValue,
                         ) {
                             Ok(new_handle) => {
-                                match &mut *self.0.stream_type.borrow_mut() {
+                                match &mut *source.stream_type.borrow_mut() {
                                     Some(NetStreamType::Flv { video_stream, .. }) => {
                                         *video_stream = Some(new_handle)
                                     }
@@ -1018,7 +1042,7 @@ impl<'gc> NetStream<'gc> {
             }
         }
 
-        match &mut *self.0.stream_type.borrow_mut() {
+        match &mut *source.stream_type.borrow_mut() {
             Some(NetStreamType::Flv {
                 ref mut frame_id, ..
             }) => *frame_id += 1,
@@ -1039,7 +1063,8 @@ impl<'gc> NetStream<'gc> {
         script_data: FlvScriptData<'_>,
         tag_needs_preloading: bool,
     ) {
-        let has_stream_already = match &*self.0.stream_type.borrow() {
+        let source = self.source();
+        let has_stream_already = match &*source.stream_type.borrow() {
             Some(NetStreamType::Flv { video_stream, .. }) => video_stream.is_some(),
             _ => unreachable!(),
         };
@@ -1095,7 +1120,7 @@ impl<'gc> NetStream<'gc> {
                         video_codec,
                         VideoDeblocking::UseVideoPacketValue,
                     ) {
-                        Ok(stream_handle) => match &mut *self.0.stream_type.borrow_mut() {
+                        Ok(stream_handle) => match &mut *source.stream_type.borrow_mut() {
                             Some(NetStreamType::Flv { video_stream, .. }) => {
                                 *video_stream = Some(stream_handle)
                             }
@@ -1116,7 +1141,8 @@ impl<'gc> NetStream<'gc> {
     ///
     /// `dt` is in milliseconds.
     pub fn tick(self, context: &mut UpdateContext<'gc>, dt: f64) {
-        let seek_offset = self.0.queued_seek_time.take();
+        let source = self.source();
+        let seek_offset = source.queued_seek_time.take();
         if let Some(offset) = seek_offset {
             self.execute_seek(context, offset);
         }
@@ -1128,15 +1154,15 @@ impl<'gc> NetStream<'gc> {
         }
 
         // Ensure the container stream type is known before continuing.
-        if self.0.stream_type.borrow().is_none() && !self.sniff_stream_type(context) {
+        if source.stream_type.borrow().is_none() && !self.sniff_stream_type(context) {
             return;
         }
 
         self.cleanup_sound_stream(context);
-        let slice = self.0.buffer.borrow().to_full_slice();
+        let slice = source.buffer.borrow().to_full_slice();
         let buffer = slice.data();
 
-        let max_time = self.0.stream_time.get() + dt;
+        let max_time = source.stream_time.get() + dt;
         let mut buffer_underrun = false;
         let mut error = false;
         let mut max_lookahead_audio_tags = 5;
@@ -1144,10 +1170,10 @@ impl<'gc> NetStream<'gc> {
 
         // At this point we should know our stream type.
         if matches!(
-            &*self.0.stream_type.borrow(),
+            &*source.stream_type.borrow(),
             Some(NetStreamType::Flv { .. })
         ) {
-            let mut reader = FlvReader::from_parts(&buffer, self.0.offset.get());
+            let mut reader = FlvReader::from_parts(&buffer, source.offset.get());
 
             loop {
                 let tag = FlvTag::parse(&mut reader);
@@ -1175,7 +1201,7 @@ impl<'gc> NetStream<'gc> {
 
                 let tag_needs_preloading = reader.stream_position().expect("valid position")
                     as usize
-                    >= self.0.preload_offset.get();
+                    >= source.preload_offset.get();
 
                 match tag.data {
                     FlvTagData::Audio(audio_data) => {
@@ -1205,22 +1231,22 @@ impl<'gc> NetStream<'gc> {
                         .stream_position()
                         .expect("FLV reader stream position")
                         as usize;
-                    self.0.offset.set(offset);
-                    self.0
+                    source.offset.set(offset);
+                    source
                         .preload_offset
-                        .set(max(self.0.offset.get(), self.0.preload_offset.get()));
+                        .set(max(source.offset.get(), source.preload_offset.get()));
                 }
             }
         }
 
-        self.0.stream_time.set(max_time);
+        source.stream_time.set(max_time);
         if let Err(e) = self.commit_sound_stream(context) {
             //TODO: Fire an error event at AS.
             tracing::error!("Error committing sound stream: {}", e);
         }
 
         if buffer_underrun {
-            let is_end_of_video = self.0.expected_length.get().is_none();
+            let is_end_of_video = source.expected_length.get().is_none();
 
             self.trigger_status_event(
                 context,
