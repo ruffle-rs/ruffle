@@ -984,7 +984,7 @@ impl FontDescriptor {
 /// This is controlled by the "Anti-alias" setting in the Flash IDE.
 /// Using "Anti-alias for readability" switches to the "Advanced" text
 /// rendering engine.
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug, PartialEq, Clone, Copy)]
 pub enum TextRenderSettings {
     /// This text should render with the standard rendering engine.
     /// Set via "Anti-alias for animation" in the Flash IDE.

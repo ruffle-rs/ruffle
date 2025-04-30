@@ -98,17 +98,15 @@ pub struct EditTextData<'gc> {
     text_spans: FormatSpans,
 
     /// The color of the background fill. Only applied when has_border and has_background.
-    #[collect(require_static)]
-    background_color: Color,
+    background_color: Cell<Color>,
 
     /// The color of the border.
-    #[collect(require_static)]
-    border_color: Color,
+    border_color: Cell<Color>,
 
     /// Whether the width of the field should change in response to text
     /// changes, and in what direction the added or removed width should
     /// apply.
-    autosize: AutoSizeMode,
+    autosize: Cell<AutoSizeMode>,
 
     /// The calculated layout.
     layout: Layout<'gc>,
@@ -145,25 +143,23 @@ pub struct EditTextData<'gc> {
     /// In AVM2, every text field has its own mandatory selection.
     /// In Ruffle, every text field has its own optional selection. This hybrid approach means manually maintaining
     /// the invariants that selection is always None for an unfocused AVM1 field, and never None for an AVM2 field.
-    #[collect(require_static)]
-    selection: Option<TextSelection>,
+    selection: Cell<Option<TextSelection>>,
 
     /// Which rendering engine this text field will use.
-    #[collect(require_static)]
-    render_settings: TextRenderSettings,
+    render_settings: Cell<TextRenderSettings>,
 
     /// How many pixels right the text is offset by. 0-based index.
-    hscroll: f64,
+    hscroll: Cell<f64>,
 
     /// How many lines down the text is offset by. 1-based index.
-    scroll: usize,
+    scroll: Cell<usize>,
 
     /// The limit of characters that can be manually input by the user.
     /// Doesn't affect script-triggered modifications.
-    max_chars: i32,
+    max_chars: Cell<i32>,
 
     /// Indicates if the text is scrollable using the mouse wheel.
-    mouse_wheel_enabled: bool,
+    mouse_wheel_enabled: Cell<bool>,
 
     /// Flags indicating the text field's settings.
     #[collect(require_static)]
@@ -180,15 +176,14 @@ pub struct EditTextData<'gc> {
     /// See <https://docs.ruffle.rs/en_US/FlashPlatform/reference/actionscript/3/flash/text/engine/TextLine.html>
     /// See <https://docs.ruffle.rs/en_US/FlashPlatform/reference/actionscript/3/flash/text/engine/package-detail.html>
     /// See <https://docs.ruffle.rs/en_US/as3/dev/WS9dd7ed846a005b294b857bfa122bd808ea6-8000.html>
-    is_fte: bool,
+    is_fte: Cell<bool>,
 
     /// Restrict what characters the user may input.
     #[collect(require_static)]
     restrict: EditTextRestrict,
 
     /// Information related to the last click event inside this text field.
-    #[collect(require_static)]
-    last_click: Option<ClickEventData>,
+    last_click: Cell<Option<ClickEventData>>,
 
     /// Style sheet used when parsing HTML.
     style_sheet: EditTextStyleSheet<'gc>,
@@ -206,10 +201,10 @@ pub struct EditTextData<'gc> {
 
 impl EditTextData<'_> {
     fn vertical_scroll_offset(&self) -> Twips {
-        if self.scroll > 1 {
+        if self.scroll.get() > 1 {
             let lines = self.layout.lines();
 
-            if let Some(line_data) = lines.get(self.scroll - 1) {
+            if let Some(line_data) = lines.get(self.scroll.get() - 1) {
                 line_data.offset_y()
             } else {
                 Twips::ZERO
@@ -222,7 +217,7 @@ impl EditTextData<'_> {
     fn font_type(&self) -> FontType {
         if !self.flags.contains(EditTextFlag::USE_OUTLINES) {
             FontType::Device
-        } else if self.is_fte {
+        } else if self.is_fte.get() {
             FontType::EmbeddedCFF
         } else {
             FontType::Embedded
@@ -354,25 +349,25 @@ impl<'gc> EditText<'gc> {
                     },
                 ),
                 flags,
-                background_color: Color::WHITE,
-                border_color: Color::BLACK,
+                background_color: Cell::new(Color::WHITE),
+                border_color: Cell::new(Color::BLACK),
                 object: None,
                 layout,
                 bounds: Cell::new(*swf_tag.bounds()),
                 autosize_lazy_bounds: Cell::new(None),
-                autosize,
+                autosize: Cell::new(autosize),
                 variable: variable.map(|s| context.strings.intern_wstr(s).into()),
                 bound_display_object: None,
                 class: None,
-                selection,
+                selection: Cell::new(selection),
                 render_settings: Default::default(),
-                hscroll: 0.0,
-                scroll: 1,
-                max_chars: swf_tag.max_length().unwrap_or_default() as i32,
-                mouse_wheel_enabled: true,
-                is_fte: false,
+                hscroll: Cell::new(0.0),
+                scroll: Cell::new(1),
+                max_chars: Cell::new(swf_tag.max_length().unwrap_or_default() as i32),
+                mouse_wheel_enabled: Cell::new(true),
+                is_fte: Cell::new(false),
                 restrict: EditTextRestrict::allow_all(),
-                last_click: None,
+                last_click: Cell::new(None),
                 layout_debug_boxes_flags: LayoutDebugBoxesFlag::empty(),
                 style_sheet: EditTextStyleSheet::None,
                 original_html_text: None,
@@ -432,7 +427,7 @@ impl<'gc> EditText<'gc> {
         height: f64,
     ) -> Self {
         let text = Self::new(context, swf_movie, x, y, width, height);
-        text.set_is_fte(context.gc(), true);
+        text.set_is_fte(true);
         text.set_selectable(false, context);
 
         text
@@ -557,11 +552,11 @@ impl<'gc> EditText<'gc> {
     }
 
     pub fn is_mouse_wheel_enabled(self) -> bool {
-        self.0.read().mouse_wheel_enabled
+        self.0.read().mouse_wheel_enabled.get()
     }
 
-    pub fn set_mouse_wheel_enabled(self, is_enabled: bool, context: &mut UpdateContext<'gc>) {
-        self.0.write(context.gc()).mouse_wheel_enabled = is_enabled;
+    pub fn set_mouse_wheel_enabled(self, is_enabled: bool) {
+        self.0.read().mouse_wheel_enabled.set(is_enabled);
     }
 
     pub fn is_multiline(self) -> bool {
@@ -620,11 +615,11 @@ impl<'gc> EditText<'gc> {
     }
 
     pub fn autosize(self) -> AutoSizeMode {
-        self.0.read().autosize
+        self.0.read().autosize.get()
     }
 
     pub fn set_autosize(self, asm: AutoSizeMode, context: &mut UpdateContext<'gc>) {
-        self.0.write(context.gc()).autosize = asm;
+        self.0.read().autosize.set(asm);
         self.relayout(context);
     }
 
@@ -641,11 +636,14 @@ impl<'gc> EditText<'gc> {
     }
 
     pub fn background_color(self) -> Color {
-        self.0.read().background_color
+        self.0.read().background_color.get()
     }
 
     pub fn set_background_color(self, gc_context: &Mutation<'gc>, background_color: Color) {
-        self.0.write(gc_context).background_color = background_color;
+        self.0
+            .write(gc_context)
+            .background_color
+            .set(background_color);
         self.invalidate_cached_bitmap(gc_context);
     }
 
@@ -662,11 +660,11 @@ impl<'gc> EditText<'gc> {
     }
 
     pub fn border_color(self) -> Color {
-        self.0.read().border_color
+        self.0.read().border_color.get()
     }
 
     pub fn set_border_color(self, gc_context: &Mutation<'gc>, border_color: Color) {
-        self.0.write(gc_context).border_color = border_color;
+        self.0.read().border_color.set(border_color);
         self.invalidate_cached_bitmap(gc_context);
     }
 
@@ -794,11 +792,11 @@ impl<'gc> EditText<'gc> {
     }
 
     pub fn is_fte(self) -> bool {
-        self.0.read().is_fte
+        self.0.read().is_fte.get()
     }
 
-    pub fn set_is_fte(self, gc_context: &Mutation<'gc>, is_fte: bool) {
-        self.0.write(gc_context).is_fte = is_fte;
+    pub fn set_is_fte(self, is_fte: bool) {
+        self.0.read().is_fte.set(is_fte);
     }
 
     pub fn layout_debug_boxes_flag(self, flag: LayoutDebugBoxesFlag) -> bool {
@@ -822,7 +820,7 @@ impl<'gc> EditText<'gc> {
     fn layout_to_local_matrix(self, data: &EditTextData) -> Matrix {
         let bounds = data.bounds.get();
         Matrix::translate(
-            bounds.x_min + Self::GUTTER - Twips::from_pixels(data.hscroll),
+            bounds.x_min + Self::GUTTER - Twips::from_pixels(data.hscroll.get()),
             bounds.y_min + Self::GUTTER - data.vertical_scroll_offset(),
         )
     }
@@ -914,7 +912,7 @@ impl<'gc> EditText<'gc> {
     /// text-span representation.
     pub fn relayout(self, context: &mut UpdateContext<'gc>) {
         let mut edit_text = self.0.write(context.gc());
-        let autosize = edit_text.autosize;
+        let autosize = edit_text.autosize.get();
         let is_word_wrap = edit_text.flags.contains(EditTextFlag::WORD_WRAP);
         let movie = edit_text.shared.swf.clone();
         let padding = Self::GUTTER * 2;
@@ -946,8 +944,8 @@ impl<'gc> EditText<'gc> {
 
         edit_text.layout = new_layout;
         // reset scroll
-        edit_text.hscroll = 0.0;
-        edit_text.scroll = 1;
+        edit_text.hscroll.set(0.0);
+        edit_text.scroll.set(1);
 
         let text_size = edit_text.layout.text_size();
 
@@ -1083,7 +1081,7 @@ impl<'gc> EditText<'gc> {
         }
 
         let scroll_offset = lines
-            .get(edit_text.scroll - 1)
+            .get(edit_text.scroll.get() - 1)
             .map_or(Twips::ZERO, |l| l.offset_y());
         let target = edit_text.bounds.get().height() + scroll_offset - Self::GUTTER * 2;
 
@@ -1100,7 +1098,7 @@ impl<'gc> EditText<'gc> {
 
     /// Returns the selection, but takes into account whether the selection should be rendered.
     fn visible_selection(self, edit_text: &EditTextData<'gc>) -> Option<TextSelection> {
-        let selection = edit_text.selection?;
+        let selection = edit_text.selection.get()?;
         #[allow(clippy::collapsible_else_if)]
         if selection.is_caret() {
             if self.has_focus() && !edit_text.flags.contains(EditTextFlag::READ_ONLY) {
@@ -1500,20 +1498,20 @@ impl<'gc> EditText<'gc> {
     }
 
     pub fn selection(self) -> Option<TextSelection> {
-        self.0.read().selection
+        self.0.read().selection.get()
     }
 
     pub fn set_selection(self, selection: Option<TextSelection>, gc_context: &Mutation<'gc>) {
-        let mut text = self.0.write(gc_context);
-        let old_selection = text.selection;
+        let text = self.0.read();
+        let old_selection = text.selection.get();
         if let Some(mut selection) = selection {
             selection.clamp(text.text_spans.text().len());
-            text.selection = Some(selection);
+            text.selection.set(Some(selection));
         } else {
-            text.selection = None;
+            text.selection.set(None);
         }
 
-        if old_selection != text.selection {
+        if old_selection != text.selection.get() {
             drop(text);
             self.invalidate_cached_bitmap(gc_context);
         }
@@ -1537,9 +1535,10 @@ impl<'gc> EditText<'gc> {
         }
     }
 
-    pub fn reset_selection_blinking(self, gc_context: &Mutation<'gc>) {
-        if let Some(selection) = self.0.write(gc_context).selection.as_mut() {
+    pub fn reset_selection_blinking(self) {
+        if let Some(mut selection) = self.0.read().selection.get() {
             selection.reset_blinking();
+            self.0.read().selection.set(Some(selection));
         }
     }
 
@@ -1548,24 +1547,24 @@ impl<'gc> EditText<'gc> {
     }
 
     pub fn render_settings(self) -> TextRenderSettings {
-        self.0.read().render_settings.clone()
+        self.0.read().render_settings.get()
     }
 
-    pub fn set_render_settings(self, gc_context: &Mutation<'gc>, settings: TextRenderSettings) {
-        self.0.write(gc_context).render_settings = settings
+    pub fn set_render_settings(self, settings: TextRenderSettings) {
+        self.0.read().render_settings.set(settings)
     }
 
     pub fn hscroll(self) -> f64 {
-        self.0.read().hscroll
+        self.0.read().hscroll.get()
     }
 
     pub fn set_hscroll(self, hscroll: f64, context: &mut UpdateContext<'gc>) {
-        self.0.write(context.gc()).hscroll = hscroll;
+        self.0.read().hscroll.set(hscroll);
         self.invalidate_cached_bitmap(context.gc());
     }
 
     pub fn scroll(self) -> usize {
-        self.0.read().scroll
+        self.0.read().scroll.get()
     }
 
     pub fn set_scroll(self, scroll: f64, context: &mut UpdateContext<'gc>) {
@@ -1578,16 +1577,16 @@ impl<'gc> EditText<'gc> {
             scroll as usize
         };
         let clamped = scroll_lines.clamp(1, self.maxscroll());
-        self.0.write(context.gc()).scroll = clamped;
+        self.0.read().scroll.set(clamped);
         self.invalidate_cached_bitmap(context.gc());
     }
 
     pub fn max_chars(self) -> i32 {
-        self.0.read().max_chars
+        self.0.read().max_chars.get()
     }
 
-    pub fn set_max_chars(self, value: i32, context: &mut UpdateContext<'gc>) {
-        self.0.write(context.gc()).max_chars = value;
+    pub fn set_max_chars(self, value: i32) {
+        self.0.read().max_chars.set(value);
     }
 
     /// Map the position on the screen to caret index.
@@ -1661,7 +1660,7 @@ impl<'gc> EditText<'gc> {
     /// constraint, current text length, and current text selection length.
     fn available_chars(self) -> usize {
         let read = self.0.read();
-        let max_chars = read.max_chars;
+        let max_chars = read.max_chars.get();
         if max_chars == 0 {
             usize::MAX
         } else {
@@ -1842,7 +1841,7 @@ impl<'gc> EditText<'gc> {
                     let end = self.find_new_position(control_code, selection.start());
                     self.replace_text(selection.start(), end, WStr::empty(), context);
                     // No need to change selection, reset it to prevent caret from blinking
-                    self.reset_selection_blinking(context.gc());
+                    self.reset_selection_blinking();
                     changed = true;
                 }
             }
@@ -2486,7 +2485,7 @@ impl<'gc> EditText<'gc> {
         let Some(mut position) = self.global_to_local(point) else {
             return false;
         };
-        position.x += Self::GUTTER + Twips::from_pixels(text.hscroll);
+        position.x += Self::GUTTER + Twips::from_pixels(text.hscroll.get());
         position.y += Self::GUTTER + text.vertical_scroll_offset();
 
         text.layout.boxes_iter().any(|layout| {
@@ -2507,7 +2506,7 @@ impl<'gc> EditText<'gc> {
             click_index,
         };
         let selection_mode = this_click.selection_mode();
-        self.0.write(context.gc()).last_click = Some(this_click);
+        self.0.read().last_click.set(Some(this_click));
 
         // Update selection
         let selection = self.calculate_selection_at(position, selection_mode);
@@ -2523,7 +2522,7 @@ impl<'gc> EditText<'gc> {
             .0
             .read()
             .last_click
-            .as_ref()
+            .get()
             .map(|last_click| (last_click.position, last_click.selection_mode()))
         else {
             // No last click, so no drag
@@ -2739,9 +2738,9 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
             .flags
             .intersects(EditTextFlag::BORDER | EditTextFlag::HAS_BACKGROUND)
         {
-            let background_color = Some(edit_text.background_color)
+            let background_color = Some(edit_text.background_color.get())
                 .filter(|_| edit_text.flags.contains(EditTextFlag::HAS_BACKGROUND));
-            let border_color = Some(edit_text.border_color)
+            let border_color = Some(edit_text.border_color.get())
                 .filter(|_| edit_text.flags.contains(EditTextFlag::BORDER));
 
             if self.is_device_font() {
@@ -3236,7 +3235,7 @@ struct EditTextShared {
     initial_text: Option<WString>,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Copy, Debug)]
 struct ClickEventData {
     /// The position in text resolved from click coordinates.
     position: usize,
@@ -3641,7 +3640,7 @@ impl EditTextPixelSnapping {
     }
 }
 
-#[derive(Debug, Clone, Collect)]
+#[derive(Debug, Clone, Copy, Collect)]
 #[collect(no_drop)]
 enum EditTextStyleSheet<'gc> {
     None,
