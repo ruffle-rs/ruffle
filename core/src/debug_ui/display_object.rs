@@ -363,7 +363,7 @@ impl DisplayObjectWindow {
                     let mut editable = object.is_editable();
                     ui.checkbox(&mut editable, "Enabled");
                     if editable != object.is_editable() {
-                        object.set_editable(editable, context);
+                        object.set_editable(editable);
                     }
                 });
                 ui.end_row();
@@ -373,7 +373,7 @@ impl DisplayObjectWindow {
                     let mut is_html = object.is_html();
                     ui.checkbox(&mut is_html, "Enabled");
                     if is_html != object.is_html() {
-                        object.set_is_html(context, is_html);
+                        object.set_is_html(is_html);
                     }
                 });
                 ui.end_row();
@@ -383,7 +383,7 @@ impl DisplayObjectWindow {
                     let mut selectable = object.is_selectable();
                     ui.checkbox(&mut selectable, "Enabled");
                     if selectable != object.is_selectable() {
-                        object.set_selectable(selectable, context);
+                        object.set_selectable(selectable);
                     }
                 });
                 ui.end_row();
@@ -423,7 +423,7 @@ impl DisplayObjectWindow {
                     let mut always_show_selection = object.always_show_selection();
                     ui.checkbox(&mut always_show_selection, "Enabled");
                     if always_show_selection != object.always_show_selection() {
-                        object.set_always_show_selection(context, always_show_selection);
+                        object.set_always_show_selection(always_show_selection);
                     }
                 });
                 ui.end_row();
@@ -433,7 +433,7 @@ impl DisplayObjectWindow {
                     let mut condense_white = object.condense_white();
                     ui.checkbox(&mut condense_white, "Enabled");
                     if condense_white != object.condense_white() {
-                        object.set_condense_white(context, condense_white);
+                        object.set_condense_white(condense_white);
                     }
                 });
                 ui.end_row();
@@ -587,7 +587,7 @@ impl DisplayObjectWindow {
                         let mut value = old_value;
                         ui.checkbox(&mut value, name);
                         if value != old_value {
-                            object.set_layout_debug_boxes_flag(context, flag, value);
+                            object.set_layout_debug_boxes_flag(flag, value);
                         }
                     }
                 });
