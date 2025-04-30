@@ -426,9 +426,9 @@ dependencies = [
 
 [[package]]
 name = "bitstream-io"
-version = "3.3.0"
+version = "4.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0a5b5a2b75d152e75add7773b5806f86fdea1731126d05dc8491b89dbede8cf5"
+checksum = "4dc7691a79ba3cf60484e3fb6c53003b2a609921b6578aec7726a655939266d6"
 dependencies = [
  "core2",
 ]
@@ -3101,7 +3101,7 @@ dependencies = [
 [[package]]
 name = "nellymoser-rs"
 version = "0.1.2"
-source = "git+https://github.com/ruffle-rs/nellymoser?rev=03660d5f9e1b3ae3d822ac8e9b2743f7c5074cc8#03660d5f9e1b3ae3d822ac8e9b2743f7c5074cc8"
+source = "git+https://github.com/ruffle-rs/nellymoser?rev=073eb48d907201f46dea0c8feb4e8d9a1d92208c#073eb48d907201f46dea0c8feb4e8d9a1d92208c"
 dependencies = [
  "bitstream-io",
  "once_cell",
