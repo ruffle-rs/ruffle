@@ -3581,7 +3581,7 @@ impl<'gc, 'a> MovieClipData<'gc> {
                 text.set_render_settings(context.gc(), settings.into());
             }
             Some(Character::EditText(edit_text)) => {
-                edit_text.set_render_settings(context.gc(), settings.into());
+                edit_text.set_render_settings(settings.into());
             }
             Some(_) => {
                 tracing::warn!(

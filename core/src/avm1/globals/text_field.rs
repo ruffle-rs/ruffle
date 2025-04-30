@@ -500,7 +500,7 @@ pub fn set_mouse_wheel_enabled<'gc>(
     value: Value<'gc>,
 ) -> Result<(), Error<'gc>> {
     let is_enabled = value.as_bool(activation.swf_version());
-    this.set_mouse_wheel_enabled(is_enabled, activation.context);
+    this.set_mouse_wheel_enabled(is_enabled);
     Ok(())
 }
 
@@ -692,7 +692,7 @@ pub fn set_max_chars<'gc>(
     value: Value<'gc>,
 ) -> Result<(), Error<'gc>> {
     let input = value.coerce_to_i32(activation)?;
-    this.set_max_chars(input, activation.context);
+    this.set_max_chars(input);
     Ok(())
 }
 
@@ -735,9 +735,9 @@ pub fn set_anti_alias_type<'gc>(
     let new_type = value.coerce_to_string(activation)?;
 
     if &new_type == b"advanced" {
-        this.set_render_settings(activation.gc(), old_settings.with_advanced_rendering());
+        this.set_render_settings(old_settings.with_advanced_rendering());
     } else if &new_type == b"normal" {
-        this.set_render_settings(activation.gc(), old_settings.with_normal_rendering());
+        this.set_render_settings(old_settings.with_normal_rendering());
     }
 
     Ok(())
@@ -765,20 +765,11 @@ pub fn set_grid_fit_type<'gc>(
     let new_type = value.coerce_to_string(activation)?;
 
     if &new_type == b"pixel" {
-        this.set_render_settings(
-            activation.gc(),
-            old_settings.with_grid_fit(swf::TextGridFit::Pixel),
-        );
+        this.set_render_settings(old_settings.with_grid_fit(swf::TextGridFit::Pixel));
     } else if &new_type == b"subpixel" {
-        this.set_render_settings(
-            activation.gc(),
-            old_settings.with_grid_fit(swf::TextGridFit::SubPixel),
-        );
+        this.set_render_settings(old_settings.with_grid_fit(swf::TextGridFit::SubPixel));
     } else if &new_type == b"none" {
-        this.set_render_settings(
-            activation.gc(),
-            old_settings.with_grid_fit(swf::TextGridFit::None),
-        );
+        this.set_render_settings(old_settings.with_grid_fit(swf::TextGridFit::None));
     } // NOTE: In AS2 invalid values do nothing.
 
     Ok(())
@@ -799,10 +790,7 @@ pub fn set_thickness<'gc>(
     let old_settings = this.render_settings();
     let new_thickness = value.coerce_to_f64(activation)?;
 
-    this.set_render_settings(
-        activation.gc(),
-        old_settings.with_thickness(new_thickness as f32),
-    );
+    this.set_render_settings(old_settings.with_thickness(new_thickness as f32));
 
     Ok(())
 }
@@ -822,10 +810,7 @@ pub fn set_sharpness<'gc>(
     let old_settings = this.render_settings();
     let new_sharpness = value.coerce_to_f64(activation)?;
 
-    this.set_render_settings(
-        activation.gc(),
-        old_settings.with_sharpness(new_sharpness as f32),
-    );
+    this.set_render_settings(old_settings.with_sharpness(new_sharpness as f32));
 
     Ok(())
 }

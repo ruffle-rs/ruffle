@@ -495,7 +495,7 @@ impl DisplayObjectWindow {
                     let mut max_chars = object.max_chars();
                     DragValue::new(&mut max_chars).ui(ui);
                     if max_chars != object.max_chars() {
-                        object.set_max_chars(max_chars, context);
+                        object.set_max_chars(max_chars);
                     }
                 });
                 ui.end_row();

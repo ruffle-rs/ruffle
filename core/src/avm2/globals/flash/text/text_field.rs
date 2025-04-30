@@ -1051,9 +1051,9 @@ pub fn set_anti_alias_type<'gc>(
         let new_type = args.get_string_non_null(activation, 0, "antiAliasType")?;
 
         if &new_type == b"advanced" {
-            this.set_render_settings(activation.gc(), old_settings.with_advanced_rendering());
+            this.set_render_settings(old_settings.with_advanced_rendering());
         } else if &new_type == b"normal" {
-            this.set_render_settings(activation.gc(), old_settings.with_normal_rendering());
+            this.set_render_settings(old_settings.with_normal_rendering());
         }
     }
     Ok(Value::Undefined)
@@ -1097,21 +1097,12 @@ pub fn set_grid_fit_type<'gc>(
         let new_type = args.get_string_non_null(activation, 0, "gridFitType")?;
 
         if &new_type == b"pixel" {
-            this.set_render_settings(
-                activation.gc(),
-                old_settings.with_grid_fit(swf::TextGridFit::Pixel),
-            );
+            this.set_render_settings(old_settings.with_grid_fit(swf::TextGridFit::Pixel));
         } else if &new_type == b"subpixel" {
-            this.set_render_settings(
-                activation.gc(),
-                old_settings.with_grid_fit(swf::TextGridFit::SubPixel),
-            );
+            this.set_render_settings(old_settings.with_grid_fit(swf::TextGridFit::SubPixel));
         } else {
             //NOTE: In AS3 invalid values are treated as None.
-            this.set_render_settings(
-                activation.gc(),
-                old_settings.with_grid_fit(swf::TextGridFit::None),
-            );
+            this.set_render_settings(old_settings.with_grid_fit(swf::TextGridFit::None));
         }
     }
     Ok(Value::Undefined)
@@ -1155,10 +1146,7 @@ pub fn set_thickness<'gc>(
         // NOTE: The thickness clamp is ONLY enforced on AS3.
         new_thickness = new_thickness.clamp(-200.0, 200.0);
 
-        this.set_render_settings(
-            activation.gc(),
-            old_settings.with_thickness(new_thickness as f32),
-        );
+        this.set_render_settings(old_settings.with_thickness(new_thickness as f32));
     }
 
     Ok(Value::Undefined)
@@ -1202,10 +1190,7 @@ pub fn set_sharpness<'gc>(
         // NOTE: The sharpness clamp is only enforced on AS3.
         new_sharpness = new_sharpness.clamp(-400.0, 400.0);
 
-        this.set_render_settings(
-            activation.gc(),
-            old_settings.with_sharpness(new_sharpness as f32),
-        );
+        this.set_render_settings(old_settings.with_sharpness(new_sharpness as f32));
     }
 
     Ok(Value::Undefined)
@@ -1507,7 +1492,7 @@ pub fn set_max_chars<'gc>(
             .cloned()
             .unwrap_or(Value::Undefined)
             .coerce_to_i32(activation)?;
-        this.set_max_chars(input, activation.context);
+        this.set_max_chars(input);
     }
 
     Ok(Value::Undefined)
