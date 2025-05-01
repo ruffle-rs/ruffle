@@ -1,3 +1,8 @@
+// testEq
+t.matrix === t.matrix false
+t.perspectiveProjection === t.perspectiveProjection false
+t.colorTransform === t.colorTransform false
+
 // sprite2D: new Sprite has null matrix3D and valid matrix
 sprite2D.transform.matrix (a=1, b=0, c=0, d=1, tx=0, ty=0)
 sprite2D.transform.matrix3D null
