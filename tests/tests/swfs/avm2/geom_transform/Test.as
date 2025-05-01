@@ -8,6 +8,9 @@ package {
         public function Test() {
             super();
 
+            testEq();
+            trace("");
+
             test2D();
             trace("");
 
@@ -21,6 +24,26 @@ package {
             trace("");
 
             testImageComparison();
+        }
+
+        private function testEq() : void {
+            var s: Sprite = new Sprite();
+            var t: Transform = s.transform;
+
+            trace("// testEq");
+
+            t.matrix = new Matrix();
+            trace("t.matrix === t.matrix", t.matrix === t.matrix);
+
+            t.matrix3D = new Matrix3D();
+            //// FIXME: Should be true.
+            // trace("t.matrix3D === t.matrix3D", t.matrix3D === t.matrix3D);
+
+            t.perspectiveProjection = new PerspectiveProjection();
+            trace("t.perspectiveProjection === t.perspectiveProjection", t.perspectiveProjection === t.perspectiveProjection);
+
+            t.colorTransform = new ColorTransform();
+            trace("t.colorTransform === t.colorTransform", t.colorTransform === t.colorTransform);
         }
 
         private function test2D() : void {
