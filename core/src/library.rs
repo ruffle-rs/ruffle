@@ -142,16 +142,22 @@ impl<'gc> MovieLibrary<'gc> {
         }
     }
 
-    pub fn register_character(&mut self, id: CharacterId, character: Character<'gc>) {
-        // TODO(Herschel): What is the behavior if id already exists?
-        if !self.contains_character(id) {
-            if let Character::Font(font) = character {
-                self.fonts.register(font);
+    /// Registers a character; returns `true` if successful, or `false` if a character with
+    /// the given ID already exists.
+    pub fn register_character(&mut self, id: CharacterId, character: Character<'gc>) -> bool {
+        use std::collections::hash_map::Entry;
+        match self.characters.entry(id) {
+            Entry::Vacant(e) => {
+                if let Character::Font(font) = character {
+                    self.fonts.register(font);
+                }
+                e.insert(character);
+                true
             }
-
-            self.characters.insert(id, character);
-        } else {
-            tracing::error!("Character ID collision: Tried to register ID {} twice", id);
+            Entry::Occupied(_) => {
+                tracing::error!("Character ID collision: Tried to register ID {} twice", id);
+                false
+            }
         }
     }
 
