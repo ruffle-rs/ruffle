@@ -3801,12 +3801,17 @@ impl<'gc, 'a> MovieClipData<'gc> {
             num_frames,
         );
 
-        context
+        if context
             .library
             .library_for_movie_mut(self.movie())
-            .register_character(id, Character::MovieClip(movie_clip));
-
-        shared.preload_progress.cur_preload_symbol.set(Some(id));
+            .register_character(id, Character::MovieClip(movie_clip))
+        {
+            shared.preload_progress.cur_preload_symbol.set(Some(id));
+        } else {
+            // This character was already defined, so we can skip preloading it, as the
+            // character ID refers to the pre-existing character, and not this one.
+            return Ok(ControlFlow::Exit);
+        }
 
         let should_exit = chunk_limit.did_ops_breach_limit(context, 4);
         if should_exit {
