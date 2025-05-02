@@ -117,7 +117,7 @@ jobs:
         if: runner.os == 'Linux'
         run: |
           sudo apt-get update
-          sudo apt install -y libasound2-dev libxcb-shape0-dev libxcb-xfixes0-dev libgtk-3-dev libudev-dev
+          sudo apt install -y libasound2-dev libudev-dev
 
       - name: Install WiX
         run: |
