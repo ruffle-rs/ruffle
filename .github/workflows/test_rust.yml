@@ -77,7 +77,7 @@ jobs:
         if: runner.os == 'Linux'
         run: |
           sudo apt-get update
-          sudo apt install -y libasound2-dev libxcb-shape0-dev libxcb-xfixes0-dev libgtk-3-dev mesa-vulkan-drivers libpango1.0-dev libudev-dev
+          sudo apt install -y libasound2-dev mesa-vulkan-drivers libudev-dev
 
       # Needed after: https://github.com/rust-lang/rust/pull/124129
       # See also: https://github.com/dtolnay/linkme/issues/94
@@ -142,7 +142,7 @@ jobs:
       - name: Install Linux dependencies
         run: |
           sudo apt-get update
-          sudo apt install -y libasound2-dev libxcb-shape0-dev libxcb-xfixes0-dev libgtk-3-dev mesa-vulkan-drivers libpango1.0-dev libudev-dev
+          sudo apt install -y libasound2-dev mesa-vulkan-drivers libudev-dev
 
       - name: Check formatting
         run: cargo fmt --all -- --check
