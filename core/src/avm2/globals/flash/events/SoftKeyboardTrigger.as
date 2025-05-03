@@ -1,8 +1,6 @@
-package flash.events
-{
+package flash.events {
 
-    public class SoftKeyboardTrigger
-    {
+    public class SoftKeyboardTrigger {
         // Indicates that ActionScript invoked the event.
         public static const CONTENT_TRIGGERED:String = "contentTriggered";
 

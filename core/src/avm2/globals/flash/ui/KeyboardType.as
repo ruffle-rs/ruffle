@@ -3,11 +3,9 @@
 // by https://github.com/golfinq/ActionScript_Event_Builder
 // It won't be regenerated in the future, so feel free to edit and/or fix
 
-package flash.ui
-{
+package flash.ui {
 
-    public final class KeyboardType
-    {
+    public final class KeyboardType {
         // A standard keyboard with a full set of numbers and letters.
         public static const ALPHANUMERIC:String = "alphanumeric";
 

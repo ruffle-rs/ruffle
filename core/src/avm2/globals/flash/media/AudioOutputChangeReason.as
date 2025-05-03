@@ -3,12 +3,10 @@
 // by https://github.com/golfinq/ActionScript_Event_Builder
 // It won't be regenerated in the future, so feel free to edit and/or fix
 
-package flash.media
-{
+package flash.media {
 
     // TODO: [API("724")]
-    public final class AudioOutputChangeReason
-    {
+    public final class AudioOutputChangeReason {
         // Audio Output is changed because system device has been added or removed.
         public static const DEVICE_CHANGE:String = "deviceChange";
 

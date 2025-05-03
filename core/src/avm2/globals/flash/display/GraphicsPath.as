@@ -2,13 +2,13 @@ package flash.display {
 
     public final class GraphicsPath implements IGraphicsPath, IGraphicsData {
         [Ruffle(NativeAccessible)]
-        public var commands : Vector.<int>;
+        public var commands:Vector.<int>;
 
         [Ruffle(NativeAccessible)]
-        public var data : Vector.<Number>;
+        public var data:Vector.<Number>;
 
         [Ruffle(NativeAccessible)]
-        private var _winding : String;
+        private var _winding:String;
 
         public function GraphicsPath(commands:Vector.<int> = null, data:Vector.<Number> = null, winding:String = "evenOdd") {
             this.commands = commands;
@@ -28,7 +28,8 @@ package flash.display {
             }
         }
 
-        [API("674")] // The online docs say 694, but that's a lie. This is the correct number from playerglobal.swc.
+        [API("674")]
+        // The online docs say 694, but that's a lie. This is the correct number from playerglobal.swc.
         public function cubicCurveTo(controlX1:Number, controlY1:Number, controlX2:Number, controlY2:Number, anchorX:Number, anchorY:Number):void {
             if (commands == null) {
                 commands = new Vector.<int>();

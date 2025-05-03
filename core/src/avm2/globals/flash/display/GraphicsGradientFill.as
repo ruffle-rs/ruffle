@@ -1,42 +1,42 @@
 package flash.display {
 
-import flash.geom.Matrix;
+    import flash.geom.Matrix;
 
     public final class GraphicsGradientFill implements IGraphicsFill, IGraphicsData {
         [Ruffle(NativeAccessible)]
-        public var alphas : Array;
+        public var alphas:Array;
 
         [Ruffle(NativeAccessible)]
-        public var colors : Array;
+        public var colors:Array;
 
         [Ruffle(NativeAccessible)]
-        public var focalPointRatio : Number;
+        public var focalPointRatio:Number;
 
         [Ruffle(NativeAccessible)]
-        public var interpolationMethod : String;
+        public var interpolationMethod:String;
 
         [Ruffle(NativeAccessible)]
-        public var matrix : Matrix;
+        public var matrix:Matrix;
 
         [Ruffle(NativeAccessible)]
-        public var ratios : Array;
+        public var ratios:Array;
 
         [Ruffle(NativeAccessible)]
-        public var spreadMethod : String;
+        public var spreadMethod:String;
 
         [Ruffle(NativeAccessible)]
-        public var type : String;
+        public var type:String;
 
         public function GraphicsGradientFill(
-            type:String = "linear",
-            colors:Array = null,
-            alphas:Array = null,
-            ratios:Array = null,
-            matrix:Matrix = null,
-            spreadMethod:String = SpreadMethod.PAD,
-            interpolationMethod:String = InterpolationMethod.RGB,
-            focalPointRatio:Number = 0.0
-        ) {
+                type:String = "linear",
+                colors:Array = null,
+                alphas:Array = null,
+                ratios:Array = null,
+                matrix:Matrix = null,
+                spreadMethod:String = SpreadMethod.PAD,
+                interpolationMethod:String = InterpolationMethod.RGB,
+                focalPointRatio:Number = 0.0
+            ) {
             this.alphas = alphas;
             this.colors = colors;
             this.focalPointRatio = focalPointRatio;

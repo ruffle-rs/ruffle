@@ -157,7 +157,7 @@ package flash.display {
             throw new IllegalOperationError("Error #2071: The Stage class does not implement this property or method.", 2071);
         }
 
-        override public function set transform(value: Transform):void {
+        override public function set transform(value:Transform):void {
             throw new IllegalOperationError("Error #2071: The Stage class does not implement this property or method.", 2071);
         }
 
@@ -217,7 +217,7 @@ package flash.display {
             return this._fullScreenSourceRect;
         }
 
-        public function set fullScreenSourceRect(rect: Rectangle):void {
+        public function set fullScreenSourceRect(rect:Rectangle):void {
             stub_setter("flash.display.Stage", "fullScreenSourceRect");
             this._fullScreenSourceRect = rect;
         }
@@ -240,7 +240,7 @@ package flash.display {
         public native function set stageFocusRect(value:Boolean):void;
 
         [API("670")]
-        public function get softKeyboardRect() : Rectangle {
+        public function get softKeyboardRect():Rectangle {
             stub_getter("flash.display.Stage", "softKeyboardRect");
             // This is technically a valid implementation most of the time,
             // as 0x0 Rect is the expected value with no soft keyboard.
@@ -266,7 +266,8 @@ package flash.display {
         }
         public function set colorCorrection(value:String):void {
             stub_setter("flash.display.Stage", "colorCorrection");
-            if (value == null) throw new TypeError("Error #2007: Parameter colorCorrection must be non-null.", 2007);
+            if (value == null)
+                throw new TypeError("Error #2007: Parameter colorCorrection must be non-null.", 2007);
             this._colorCorrection = value;
         }
 

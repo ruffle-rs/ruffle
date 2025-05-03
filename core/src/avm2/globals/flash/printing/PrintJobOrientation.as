@@ -3,11 +3,9 @@
 // by https://github.com/golfinq/ActionScript_Event_Builder
 // It won't be regenerated in the future, so feel free to edit and/or fix
 
-package flash.printing
-{
+package flash.printing {
 
-    public final class PrintJobOrientation
-    {
+    public final class PrintJobOrientation {
         // The landscape (horizontal) image orientation for printing.
         public static const LANDSCAPE:String = "landscape";
 

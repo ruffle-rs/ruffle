@@ -1,3 +1,4 @@
 package flash.display {
-    public interface IBitmapDrawable {}
+    public interface IBitmapDrawable {
+    }
 }

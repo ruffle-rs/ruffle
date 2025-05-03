@@ -21,8 +21,7 @@ package flash.display3D.textures {
                         self.uploadCompressedTextureFromByteArrayInternal(copiedData, byteArrayOffset);
                         self.dispatchEvent(new Event("textureReady"));
                     }, 0);
-            }
-            else {
+            } else {
                 this.uploadCompressedTextureFromByteArrayInternal(data, byteArrayOffset);
             }
         }

@@ -3,11 +3,9 @@
 // by https://github.com/golfinq/ActionScript_Event_Builder
 // It won't be regenerated in the future, so feel free to edit and/or fix
 
-package flash.text.engine
-{
+package flash.text.engine {
     [API("662")]
-    public final class TextLineValidity
-    {
+    public final class TextLineValidity {
         // Specifies that the line is invalid.
         public static const INVALID:String = "invalid";
 
@@ -19,7 +17,6 @@ package flash.text.engine
 
         // Specifies that the text line is valid.
         public static const VALID:String = "valid";
-
 
     }
 }

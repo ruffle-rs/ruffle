@@ -3,12 +3,10 @@
 // by https://github.com/golfinq/ActionScript_Event_Builder
 // It won't be regenerated in the future, so feel free to edit and/or fix
 
-package flash.display3D
-{
+package flash.display3D {
 
     [API("674")]
-    public final class Context3DRenderMode
-    {
+    public final class Context3DRenderMode {
         // Automatically choose rendering engine.
         public static const AUTO:String = "auto";
 

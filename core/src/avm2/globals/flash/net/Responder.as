@@ -1,5 +1,5 @@
 package flash.net {
-[Ruffle(InstanceAllocator)]
+    [Ruffle(InstanceAllocator)]
     public class Responder {
         public function Responder(result:Function, status:Function = null) {
             init(result, status);

@@ -5,11 +5,11 @@ package flash.display {
     import flash.geom.Matrix;
     import flash.display.DisplayObject;
     import flash.media.SoundTransform;
-    
+
     [Ruffle(InstanceAllocator)]
     public class SimpleButton extends InteractiveObject {
         public function SimpleButton(upState:DisplayObject = null, overState:DisplayObject = null, downState:DisplayObject = null, hitTestState:DisplayObject = null) {
-            this.init(upState, overState, downState, hitTestState)
+            this.init(upState, overState, downState, hitTestState);
         }
 
         private native function init(upState:DisplayObject, overState:DisplayObject, downState:DisplayObject, hitTestState:DisplayObject):void;

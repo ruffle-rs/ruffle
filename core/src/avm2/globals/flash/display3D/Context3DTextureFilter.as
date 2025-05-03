@@ -3,12 +3,10 @@
 // by https://github.com/golfinq/ActionScript_Event_Builder
 // It won't be regenerated in the future, so feel free to edit and/or fix
 
-package flash.display3D
-{
+package flash.display3D {
 
     [API("686")]
-    public final class Context3DTextureFilter
-    {
+    public final class Context3DTextureFilter {
         // Use anisotropic filter with radio 16 when upsampling textures
         [API("698")]
         public static const ANISOTROPIC16X:String = "anisotropic16x";

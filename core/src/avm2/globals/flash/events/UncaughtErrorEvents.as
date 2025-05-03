@@ -3,5 +3,5 @@ package flash.events {
         public function UncaughtErrorEvents() {
 
         }
-    } 
+    }
 }

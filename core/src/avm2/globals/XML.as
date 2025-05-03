@@ -2,7 +2,7 @@ package {
     [Ruffle(InstanceAllocator)]
     [Ruffle(CallHandler)]
     public final dynamic class XML {
-        AS3 static function setSettings(settings:Object = null): void {
+        AS3 static function setSettings(settings:Object = null):void {
             if (settings == null) {
                 settings = XML.AS3::defaultSettings();
             }
@@ -25,22 +25,22 @@ package {
 
         AS3 static function settings():Object {
             return {
-                ignoreComments: XML.ignoreComments,
-                ignoreProcessingInstructions: XML.ignoreProcessingInstructions,
-                ignoreWhitespace: XML.ignoreWhitespace,
-                prettyIndent: XML.prettyIndent,
-                prettyPrinting: XML.prettyPrinting
-            };
+                    ignoreComments: XML.ignoreComments,
+                    ignoreProcessingInstructions: XML.ignoreProcessingInstructions,
+                    ignoreWhitespace: XML.ignoreWhitespace,
+                    prettyIndent: XML.prettyIndent,
+                    prettyPrinting: XML.prettyPrinting
+                };
         }
 
         AS3 static function defaultSettings():Object {
             return {
-                ignoreComments: true,
-                ignoreProcessingInstructions: true,
-                ignoreWhitespace: true,
-                prettyIndent: 2,
-                prettyPrinting: true
-            };
+                    ignoreComments: true,
+                    ignoreProcessingInstructions: true,
+                    ignoreWhitespace: true,
+                    prettyIndent: 2,
+                    prettyPrinting: true
+                };
         }
 
         public function XML(value:* = void 0) {
@@ -61,7 +61,7 @@ package {
         AS3 native function copy():XML;
         AS3 native function descendants(name:Object = "*"):XMLList;
         AS3 native function length():int;
-        AS3 native function normalize(): XML;
+        AS3 native function normalize():XML;
         AS3 native function parent():*;
         AS3 native function text():XMLList;
         AS3 native function toString():String;
@@ -76,7 +76,7 @@ package {
             return this;
         }
 
-        AS3 function toJSON(k:String) : * {
+        AS3 function toJSON(k:String):* {
             return this.toJSON(k);
         }
 
@@ -107,7 +107,7 @@ package {
         private native function namespace_internal_impl(hasPrefix:Boolean, prefix:String = null):*;
 
         [Ruffle(NativeCallable)]
-        AS3 function namespace(prefix:* = null):* {
+        AS3 function namespace (prefix:* = null):* {
             return namespace_internal_impl(arguments.length > 0, prefix);
         }
 
@@ -168,12 +168,12 @@ package {
         prototype.hasComplexContent = function():Boolean {
             var self:XML = this;
             return self.AS3::hasComplexContent();
-        }
+        };
 
         prototype.hasSimpleContent = function():Boolean {
             var self:XML = this;
             return self.AS3::hasSimpleContent();
-        }
+        };
 
         prototype.name = function():Object {
             var self:XML = this;
@@ -191,7 +191,7 @@ package {
 
         prototype.namespace = function(prefix:* = null):* {
             var self:XML = this;
-            return self.AS3::namespace.apply(self, arguments);
+            return self.AS3::namespace .apply(self, arguments);
         };
 
         prototype.addNamespace = function(ns:*):XML {
@@ -252,7 +252,7 @@ package {
         prototype.copy = function():XML {
             var self:XML = this;
             return self.AS3::copy();
-        }
+        };
 
         prototype.parent = function():* {
             var self:XML = this;
@@ -262,7 +262,7 @@ package {
         prototype.elements = function(name:* = "*"):XMLList {
             var self:XML = this;
             return self.AS3::elements(name);
-        }
+        };
 
         prototype.toString = function():String {
             if (this === prototype) {
@@ -315,7 +315,7 @@ package {
         prototype.length = function():int {
             var self:XML = this;
             return self.AS3::length();
-        }
+        };
 
         prototype.toJSON = function(k:String):* {
             return "XML";
@@ -324,37 +324,37 @@ package {
         prototype.comments = function():XMLList {
             var self:XML = this;
             return self.AS3::comments();
-        }
+        };
 
         prototype.processingInstructions = function(name:* = "*"):XMLList {
             var self:XML = this;
             return self.AS3::processingInstructions(name);
-        }
+        };
 
         prototype.insertChildAfter = function(child1:*, child2:*):* {
             var self:XML = this;
             return self.AS3::insertChildAfter(child1, child2);
-        }
+        };
 
         prototype.insertChildBefore = function(child1:*, child2:*):* {
             var self:XML = this;
             return self.AS3::insertChildBefore(child1, child2);
-        }
+        };
 
         prototype.replace = function(propertyName:*, value:*):XML {
             var self:XML = this;
             return self.AS3::replace(propertyName, value);
-        }
+        };
 
         prototype.setChildren = function(value:*):XML {
             var self:XML = this;
             return self.AS3::setChildren(value);
-        }
+        };
 
         prototype.setLocalName = function(name:*):void {
             var self:XML = this;
             self.AS3::setLocalName(name);
-        }
+        };
 
         prototype.setPropertyIsEnumerable("hasComplexContent", false);
         prototype.setPropertyIsEnumerable("hasSimpleContent", false);
@@ -396,15 +396,16 @@ package {
 
         XML.settings = function() {
             return XML.AS3::settings();
-        }
+        };
 
         XML.setSettings = function(v:* = void 0) {
-            XML.AS3::setSettings(v)
-        }
+            XML.AS3::setSettings(v);
+
+        };
 
         XML.defaultSettings = function() {
             return XML.AS3::defaultSettings();
-        }
+        };
 
         public static const length:* = 1;
     }

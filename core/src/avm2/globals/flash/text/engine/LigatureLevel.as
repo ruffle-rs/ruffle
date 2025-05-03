@@ -3,11 +3,9 @@
 // by https://github.com/golfinq/ActionScript_Event_Builder
 // It won't be regenerated in the future, so feel free to edit and/or fix
 
-package flash.text.engine
-{
+package flash.text.engine {
     [API("662")]
-    public final class LigatureLevel
-    {
+    public final class LigatureLevel {
         // Used to specify common ligatures.
         public static const COMMON:String = "common";
 

@@ -3,12 +3,10 @@
 // by https://github.com/golfinq/ActionScript_Event_Builder
 // It won't be regenerated in the future, so feel free to edit and/or fix
 
-package flash.display3D
-{
+package flash.display3D {
 
     [API("686")]
-    public final class Context3DMipFilter
-    {
+    public final class Context3DMipFilter {
         // Select the two closest MIP levels and linearly blend between them (the highest quality mode, but has some performance cost).
         public static const MIPLINEAR:String = "miplinear";
 

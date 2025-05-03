@@ -3,11 +3,9 @@
 // by https://github.com/golfinq/ActionScript_Event_Builder
 // It won't be regenerated in the future, so feel free to edit and/or fix
 
-package flash.text.engine
-{
+package flash.text.engine {
     [API("662")]
-    public final class JustificationStyle
-    {
+    public final class JustificationStyle {
         // Bases justification on either expanding or compressing the line, whichever gives a result closest to the desired width.
         public static const PRIORITIZE_LEAST_ADJUSTMENT:String = "prioritizeLeastAdjustment";
 

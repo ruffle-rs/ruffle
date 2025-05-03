@@ -3,11 +3,9 @@
 // by https://github.com/golfinq/ActionScript_Event_Builder
 // It won't be regenerated in the future, so feel free to edit and/or fix
 
-package flash.text.engine
-{
+package flash.text.engine {
     [API("662")]
-    public final class BreakOpportunity
-    {
+    public final class BreakOpportunity {
         // Treats all characters in the ContentElement object as line break opportunities, meaning that a line break will occur after each character.
         public static const ALL:String = "all";
 

@@ -16,7 +16,7 @@ package flash.display {
 
         [Ruffle(NativeAccessible)]
         private var _height:int;
-        
+
         public function ShaderJob(shader:Shader = null, target:Object = null, width:int = 0, height:int = 0) {
             this._shader = shader;
             this._target = target;
@@ -26,7 +26,7 @@ package flash.display {
         }
 
         public function cancel():void {
-            stub_method("flash.display.ShaderJob", "cancel")
+            stub_method("flash.display.ShaderJob", "cancel");
         }
 
         public native function start(waitForCompletion:Boolean = false):void;
@@ -48,7 +48,7 @@ package flash.display {
         }
 
         public function get progress():Number {
-            stub_getter("flash.display.ShaderJob", "progress")
+            stub_getter("flash.display.ShaderJob", "progress");
             return 0;
         }
 

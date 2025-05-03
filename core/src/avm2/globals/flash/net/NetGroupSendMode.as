@@ -3,11 +3,9 @@
 // by https://github.com/golfinq/ActionScript_Event_Builder
 // It won't be regenerated in the future, so feel free to edit and/or fix
 
-package flash.net
-{
+package flash.net {
 
-    public final class NetGroupSendMode
-    {
+    public final class NetGroupSendMode {
         // Specifies the neighbor with the nearest group address in the decreasing direction.
         public static const NEXT_DECREASING:String = "nextDecreasing";
 

@@ -3,14 +3,12 @@
 // by https://github.com/golfinq/ActionScript_Event_Builder
 // It won't be regenerated in the future, so feel free to edit and/or fix
 
-package flash.desktop
-{
+package flash.desktop {
 
     // The AS3 docs specify various API versions for the different members,
     // as also indicated by their comments. The docs, however, are lying.
     [API("662")]
-    public class ClipboardFormats
-    {
+    public class ClipboardFormats {
         // Image data (AIR only).
         public static const BITMAP_FORMAT:String = "air:bitmap";
 

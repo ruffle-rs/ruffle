@@ -3,15 +3,12 @@
 // by https://github.com/golfinq/ActionScript_Event_Builder
 // It won't be regenerated in the future, so feel free to edit and/or fix
 
-package
-{
+package {
 
-    public dynamic class SecurityError extends Error
-    {
+    public dynamic class SecurityError extends Error {
         prototype.name = "SecurityError";
 
-        public function SecurityError(message:String = "", id:int = 0)
-        {
+        public function SecurityError(message:String = "", id:int = 0) {
             super(message, id);
             this.name = prototype.name;
         }
@@ -19,4 +16,3 @@ package
         public static const length:int = 1;
     }
 }
-

@@ -155,7 +155,8 @@ package flash.text.engine {
         }
 
         // This function does nothing in Flash Player 32
-        public function flushAtomData():void { }
+        public function flushAtomData():void {
+        }
 
         // Overrides
 

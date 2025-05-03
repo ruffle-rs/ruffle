@@ -10,10 +10,10 @@ package flash.net {
         private var _url:String;
 
         [Ruffle(NativeAccessible)]
-        private var _contentType: String = "application/x-www-form-urlencoded"; // ignored
+        private var _contentType:String = "application/x-www-form-urlencoded"; // ignored
 
         [Ruffle(NativeAccessible)]
-        private var _requestHeaders: Array = [];
+        private var _requestHeaders:Array = [];
 
         private var _digest:String;
 
@@ -39,7 +39,7 @@ package flash.net {
             return this._method;
         }
 
-        public function set method(value: String):void {
+        public function set method(value:String):void {
             // The method can apparently either be all upper or lower case, but not mixed.
             if (value !== "GET" && value !== "get" && value !== "POST" && value !== "post") {
                 throw new ArgumentError("Error #2008: Parameter method must be one of the accepted values.", 2008);

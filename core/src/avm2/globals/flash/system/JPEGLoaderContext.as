@@ -3,18 +3,15 @@
 // by https://github.com/golfinq/ActionScript_Event_Builder
 // It won't be regenerated in the future, so feel free to edit and/or fix
 
-package flash.system
-{
+package flash.system {
     // Both the docs and playerglobal.swc says this is "663", but it's actually available in regular Flash Player
     [API("662")]
-    public class JPEGLoaderContext extends LoaderContext
-    {
+    public class JPEGLoaderContext extends LoaderContext {
         // Specifies the strength of the deblocking filter.
-        public var deblockingFilter: Number = 0.0;
+        public var deblockingFilter:Number = 0.0;
 
-        public function JPEGLoaderContext(deblockingFilter:Number = 0.0, checkPolicyFile:Boolean = false, applicationDomain:ApplicationDomain = null, securityDomain:SecurityDomain = null)
-        {
-            super(checkPolicyFile,applicationDomain,securityDomain);
+        public function JPEGLoaderContext(deblockingFilter:Number = 0.0, checkPolicyFile:Boolean = false, applicationDomain:ApplicationDomain = null, securityDomain:SecurityDomain = null) {
+            super(checkPolicyFile, applicationDomain, securityDomain);
             this.deblockingFilter = deblockingFilter;
         }
     }

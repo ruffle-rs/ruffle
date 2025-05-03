@@ -16,7 +16,7 @@ package flash.display3D {
         public native function createIndexBuffer(numIndices:int, bufferUsage:String = "staticDraw"):IndexBuffer3D;
         public native function createVertexBuffer(numVertices:int, data32PerVertex:int, bufferUsage:String = "staticDraw"):VertexBuffer3D;
         public native function configureBackBuffer(
-            width:int, height:int, antiAlias:int, enableDepthAndStencil:Boolean = true, wantsBestResolution:Boolean = false, wantsBestResolutionOnBrowserZoom:Boolean = false
+                width:int, height:int, antiAlias:int, enableDepthAndStencil:Boolean = true, wantsBestResolution:Boolean = false, wantsBestResolutionOnBrowserZoom:Boolean = false
             ):void;
         public native function setVertexBufferAt(index:int, buffer:VertexBuffer3D, bufferOffset:int = 0, format:String = "float4"):void;
         public native function createProgram():Program3D;
@@ -71,12 +71,12 @@ package flash.display3D {
         public native function setRenderToTexture(texture:TextureBase, enableDepthAndStencil:Boolean = false, antiAlias:int = 0, surfaceSelector:int = 0, colorOutputIndex:int = 0):void;
 
         public function setStencilActions(
-            triangleFace:String = "frontAndBack",
-            compareMode:String = "always",
-            actionOnBothPass:String = "keep",
-            actionOnDepthFail:String = "keep",
-            actionOnDepthPassStencilFail:String = "keep"
-        ):void {
+                triangleFace:String = "frontAndBack",
+                compareMode:String = "always",
+                actionOnBothPass:String = "keep",
+                actionOnDepthFail:String = "keep",
+                actionOnDepthPassStencilFail:String = "keep"
+            ):void {
             stub_method("flash.display3D.Context3D", "setStencilActions");
         }
 

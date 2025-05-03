@@ -38,4 +38,3 @@ package flash.display {
         }
     }
 }
-

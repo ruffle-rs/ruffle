@@ -3,12 +3,11 @@
 // by https://github.com/golfinq/ActionScript_Event_Builder
 // It won't be regenerated in the future, so feel free to edit and/or fix
 
-package flash.media
-{
+package flash.media {
 
-    [API("688")] // the docs say 670, that's wrong
-    public final class StageVideoAvailabilityReason
-    {
+    [API("688")]
+    // the docs say 670, that's wrong
+    public final class StageVideoAvailabilityReason {
         // Stage video is not currently available, the driver is too old or black listed
         public static const DRIVER_TOO_OLD:String = "driverTooOld";
 

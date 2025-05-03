@@ -3,18 +3,14 @@
 // by https://github.com/golfinq/ActionScript_Event_Builder
 // It won't be regenerated in the future, so feel free to edit and/or fix
 
-package flash.errors
-{
+package flash.errors {
 
-    public dynamic class MemoryError extends Error
-    {
+    public dynamic class MemoryError extends Error {
         prototype.name = "MemoryError";
 
-        public function MemoryError(message:String = "", id:int = 0)
-        {
+        public function MemoryError(message:String = "", id:int = 0) {
             super(message, id);
         }
 
     }
 }
-

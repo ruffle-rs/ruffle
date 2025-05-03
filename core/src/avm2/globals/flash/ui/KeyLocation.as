@@ -3,11 +3,9 @@
 // by https://github.com/golfinq/ActionScript_Event_Builder
 // It won't be regenerated in the future, so feel free to edit and/or fix
 
-package flash.ui
-{
+package flash.ui {
 
-    public final class KeyLocation
-    {
+    public final class KeyLocation {
         // Indicates the key activation originated on a directional pad of input device.
         // Example: The trackball on a mobile device or the left arrow on a remote control.
         [API("669")]

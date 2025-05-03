@@ -12,7 +12,8 @@ package {
         // We reuse the undocumented `init` method for lazily initializing Object's
         // prototype (since we can only do so once the Function class is initialized)
         internal static function init():* {
-            if (_isPrototypeInitialized) return;
+            if (_isPrototypeInitialized)
+                return;
             _isPrototypeInitialized = true;
 
             prototype.isPrototypeOf = function(obj:* = void 0):Boolean {
@@ -62,4 +63,3 @@ package {
         public static const length:int = 1;
     }
 }
-

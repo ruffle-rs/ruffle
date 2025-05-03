@@ -7,7 +7,7 @@ package flash.net {
     [Ruffle(InstanceAllocator)]
     public class SharedObject extends EventDispatcher {
         public function SharedObject() {
-           // Unreachable; the allocator always throws
+            // Unreachable; the allocator always throws
         }
 
         // NOTE: We currently always use AMF3 serialization.
@@ -15,15 +15,15 @@ package flash.net {
         // you will need to adjust the serialization and deserialization code
         // to work with AMF0.
 
-        public static native function getLocal(name:String, localPath:String = null, secure:Boolean = false): SharedObject;
+        public static native function getLocal(name:String, localPath:String = null, secure:Boolean = false):SharedObject;
 
-        public native function get size() : uint;
-        public native function get objectEncoding() : uint;
-        public native function set objectEncoding(value:uint) : void;
+        public native function get size():uint;
+        public native function get objectEncoding():uint;
+        public native function set objectEncoding(value:uint):void;
 
-        public native function flush(minDiskSpace:int = 0) : String;
-        public native function close() : void;
-        public native function clear() : void;
+        public native function flush(minDiskSpace:int = 0):String;
+        public native function close():void;
+        public native function clear():void;
 
         public function setProperty(propertyName:String, value:Object = null):void {
             this.data[propertyName] = value;

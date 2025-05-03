@@ -3,15 +3,12 @@
 // by https://github.com/golfinq/ActionScript_Event_Builder
 // It won't be regenerated in the future, so feel free to edit and/or fix
 
-package
-{
+package {
 
-    public dynamic class EvalError extends Error
-    {
+    public dynamic class EvalError extends Error {
         prototype.name = "EvalError";
 
-        public function EvalError(message:String = "", id:int = 0)
-        {
+        public function EvalError(message:String = "", id:int = 0) {
             super(message, id);
             this.name = prototype.name;
         }

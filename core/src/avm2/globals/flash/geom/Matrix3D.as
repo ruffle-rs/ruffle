@@ -30,11 +30,11 @@ package flash.geom {
         public function identity():void {
             // Note that every 4 elements is a *column*, not a row
             this._rawData = new <Number>[
-                1, 0, 0, 0,
-                0, 1, 0, 0,
-                0, 0, 1, 0,
-                0, 0, 0, 1
-            ];
+                    1, 0, 0, 0,
+                    0, 1, 0, 0,
+                    0, 0, 1, 0,
+                    0, 0, 0, 1
+                ];
         }
 
         public function appendTranslation(x:Number, y:Number, z:Number):void {
@@ -198,14 +198,14 @@ package flash.geom {
         public function transformVectors(vin:Vector.<Number>, vout:Vector.<Number>):void {
             if (vin == null) {
                 throw new TypeError("Error #2007: Parameter vin must be non-null.", 2007);
-}
+            }
             if (vout == null) {
                 throw new TypeError("Error #2007: Parameter vout must be non-null.", 2007);
             }
 
             var resultVecsLength:Number = Math.floor(vin.length / 3) * 3;
             if (resultVecsLength > vout.length && vout.fixed) {
-                throw new RangeError("Error #1126: Cannot change the length of a fixed Vector.")
+                throw new RangeError("Error #1126: Cannot change the length of a fixed Vector.");
             }
 
             var result3D:Vector3D;
@@ -297,8 +297,8 @@ package flash.geom {
         // Based on https://github.com/openfl/openfl/blob/971a4c9e43b5472fd84d73920a2b7c1b3d8d9257/src/openfl/geom/Matrix3D.hx#L307
         public function appendScale(xScale:Number, yScale:Number, zScale:Number):void {
             this.append(new Matrix3D(Vector.<Number>([
-                    xScale, 0.0, 0.0, 0.0, 0.0, yScale, 0.0, 0.0, 0.0, 0.0, zScale, 0.0, 0.0, 0.0, 0.0, 1.0
-                ])));
+                                xScale, 0.0, 0.0, 0.0, 0.0, yScale, 0.0, 0.0, 0.0, 0.0, zScale, 0.0, 0.0, 0.0, 0.0, 1.0
+                            ])));
         }
 
         public function prependTranslation(x:Number, y:Number, z:Number):void {
@@ -628,8 +628,7 @@ package flash.geom {
                         rot.x = (mr[6] - mr[9]) / len;
                         rot.y = (mr[8] - mr[2]) / len;
                         rot.z = (mr[1] - mr[4]) / len;
-                    }
-                    else {
+                    } else {
                         rot.x = rot.y = rot.z = 0;
                     }
                     break;
@@ -643,22 +642,19 @@ package flash.geom {
                         rot.x = (mr[6] - mr[9]) / (4 * rot.w);
                         rot.y = (mr[8] - mr[2]) / (4 * rot.w);
                         rot.z = (mr[1] - mr[4]) / (4 * rot.w);
-                    }
-                    else if ((mr[0] > mr[5]) && (mr[0] > mr[10])) {
+                    } else if ((mr[0] > mr[5]) && (mr[0] > mr[10])) {
                         rot.x = Math.sqrt(1 + mr[0] - mr[5] - mr[10]) / 2;
 
                         rot.w = (mr[6] - mr[9]) / (4 * rot.x);
                         rot.y = (mr[1] + mr[4]) / (4 * rot.x);
                         rot.z = (mr[8] + mr[2]) / (4 * rot.x);
-                    }
-                    else if (mr[5] > mr[10]) {
+                    } else if (mr[5] > mr[10]) {
                         rot.y = Math.sqrt(1 + mr[5] - mr[0] - mr[10]) / 2;
 
                         rot.x = (mr[1] + mr[4]) / (4 * rot.y);
                         rot.w = (mr[8] - mr[2]) / (4 * rot.y);
                         rot.z = (mr[6] + mr[9]) / (4 * rot.y);
-                    }
-                    else {
+                    } else {
                         rot.z = Math.sqrt(1 + mr[10] - mr[0] - mr[5]) / 2;
 
                         rot.x = (mr[8] + mr[2]) / (4 * rot.z);
@@ -673,8 +669,7 @@ package flash.geom {
                     if (mr[2] != 1 && mr[2] != -1) {
                         rot.x = Math.atan2(mr[6], mr[10]);
                         rot.z = Math.atan2(mr[1], mr[0]);
-                    }
-                    else {
+                    } else {
                         rot.z = 0;
                         rot.x = Math.atan2(mr[4], mr[5]);
                     }
@@ -735,11 +730,11 @@ package flash.geom {
 
         public function get determinant():Number {
             return 1 * ((_rawData[0] * _rawData[5] - _rawData[4] * _rawData[1]) * (_rawData[10] * _rawData[15] - _rawData[14] * _rawData[11])
-                - (_rawData[0] * _rawData[9] - _rawData[8] * _rawData[1]) * (_rawData[6] * _rawData[15] - _rawData[14] * _rawData[7])
-                + (_rawData[0] * _rawData[13] - _rawData[12] * _rawData[1]) * (_rawData[6] * _rawData[11] - _rawData[10] * _rawData[7])
-                + (_rawData[4] * _rawData[9] - _rawData[8] * _rawData[5]) * (_rawData[2] * _rawData[15] - _rawData[14] * _rawData[3])
-                - (_rawData[4] * _rawData[13] - _rawData[12] * _rawData[5]) * (_rawData[2] * _rawData[11] - _rawData[10] * _rawData[3])
-                + (_rawData[8] * _rawData[13] - _rawData[12] * _rawData[9]) * (_rawData[2] * _rawData[7] - _rawData[6] * _rawData[3]));
+                    - (_rawData[0] * _rawData[9] - _rawData[8] * _rawData[1]) * (_rawData[6] * _rawData[15] - _rawData[14] * _rawData[7])
+                    + (_rawData[0] * _rawData[13] - _rawData[12] * _rawData[1]) * (_rawData[6] * _rawData[11] - _rawData[10] * _rawData[7])
+                    + (_rawData[4] * _rawData[9] - _rawData[8] * _rawData[5]) * (_rawData[2] * _rawData[15] - _rawData[14] * _rawData[3])
+                    - (_rawData[4] * _rawData[13] - _rawData[12] * _rawData[5]) * (_rawData[2] * _rawData[11] - _rawData[10] * _rawData[3])
+                    + (_rawData[8] * _rawData[13] - _rawData[12] * _rawData[9]) * (_rawData[2] * _rawData[7] - _rawData[6] * _rawData[3]));
         }
 
     }

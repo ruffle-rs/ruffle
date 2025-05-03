@@ -3,11 +3,9 @@
 // by https://github.com/golfinq/ActionScript_Event_Builder
 // It won't be regenerated in the future, so feel free to edit and/or fix
 
-package flash.system
-{
+package flash.system {
 
-    public final class TouchscreenType
-    {
+    public final class TouchscreenType {
         // A touchscreen designed to respond to finger touches.
         public static const FINGER:String = "finger";
 

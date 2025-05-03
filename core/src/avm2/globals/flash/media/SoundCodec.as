@@ -3,11 +3,9 @@
 // by https://github.com/golfinq/ActionScript_Event_Builder
 // It won't be regenerated in the future, so feel free to edit and/or fix
 
-package flash.media
-{
+package flash.media {
 
-    public final class SoundCodec
-    {
+    public final class SoundCodec {
         // Specifies that the Nellymoser codec be used for compressing audio.
         public static const NELLYMOSER:String = "NellyMoser";
 

@@ -3,11 +3,9 @@
 // by https://github.com/golfinq/ActionScript_Event_Builder
 // It won't be regenerated in the future, so feel free to edit and/or fix
 
-package flash.ui
-{
+package flash.ui {
 
-    public final class MouseCursor
-    {
+    public final class MouseCursor {
         // Used to specify that the arrow cursor should be used.
         public static const ARROW:String = "arrow";
 

@@ -3,18 +3,14 @@
 // by https://github.com/golfinq/ActionScript_Event_Builder
 // It won't be regenerated in the future, so feel free to edit and/or fix
 
-package flash.errors
-{
+package flash.errors {
 
-    public dynamic class IOError extends Error
-    {
+    public dynamic class IOError extends Error {
         prototype.name = "IOError";
 
-        public function IOError(message:String = "", id:int = 0)
-        {
+        public function IOError(message:String = "", id:int = 0) {
             super(message, id);
         }
 
     }
 }
-

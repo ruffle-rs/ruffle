@@ -29,4 +29,3 @@ package flash.text.engine {
         }
     }
 }
-

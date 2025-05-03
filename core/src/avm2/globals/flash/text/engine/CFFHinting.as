@@ -3,11 +3,9 @@
 // by https://github.com/golfinq/ActionScript_Event_Builder
 // It won't be regenerated in the future, so feel free to edit and/or fix
 
-package flash.text.engine
-{
+package flash.text.engine {
     [API("662")]
-    public final class CFFHinting
-    {
+    public final class CFFHinting {
         // Fits strong horizontal stems to the pixel grid for improved readability.
         public static const HORIZONTAL_STEM:String = "horizontalStem";
 

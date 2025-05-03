@@ -3,11 +3,9 @@
 // by https://github.com/golfinq/ActionScript_Event_Builder
 // It won't be regenerated in the future, so feel free to edit and/or fix
 
-package flash.system
-{
+package flash.system {
 
-    public final class SecurityPanel
-    {
+    public final class SecurityPanel {
         // When passed to Security.showSettings(), displays the Camera panel in Flash Player Settings.
         public static const CAMERA:String = "camera";
 
