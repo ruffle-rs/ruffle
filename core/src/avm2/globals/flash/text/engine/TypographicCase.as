@@ -3,11 +3,9 @@
 // by https://github.com/golfinq/ActionScript_Event_Builder
 // It won't be regenerated in the future, so feel free to edit and/or fix
 
-package flash.text.engine
-{
+package flash.text.engine {
     [API("662")]
-    public final class TypographicCase
-    {
+    public final class TypographicCase {
         // Specifies that spacing is adjusted for uppercase characters on output.
         public static const CAPS:String = "caps";
 

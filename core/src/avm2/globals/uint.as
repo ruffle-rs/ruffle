@@ -85,4 +85,3 @@ package {
         public static const length:int = 1;
     }
 }
-

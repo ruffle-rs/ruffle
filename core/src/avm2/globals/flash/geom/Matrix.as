@@ -28,7 +28,7 @@ package flash.geom {
         }
 
         public function clone():Matrix {
-            return new Matrix(this.a,this.b,this.c,this.d,this.tx,this.ty);
+            return new Matrix(this.a, this.b, this.c, this.d, this.tx, this.ty);
         }
 
         public function concat(m:Matrix):void {
@@ -55,17 +55,15 @@ package flash.geom {
 
         [API("674")]
         public function copyColumnTo(column:uint, vector3D:Vector3D):void {
-            if(column == 0) {
+            if (column == 0) {
                 vector3D.x = this.a;
                 vector3D.y = this.b;
                 vector3D.z = 0;
-            }
-            else if (column == 1) {
+            } else if (column == 1) {
                 vector3D.x = this.c;
                 vector3D.y = this.d;
                 vector3D.z = 0;
-            }
-            else if (column == 2) {
+            } else if (column == 2) {
                 vector3D.x = this.tx;
                 vector3D.y = this.ty;
                 vector3D.z = 1;
@@ -73,7 +71,7 @@ package flash.geom {
         }
 
         [API("674")]
-        public function copyFrom(sourceMatrix: Matrix): void {
+        public function copyFrom(sourceMatrix:Matrix):void {
             this.a = sourceMatrix.a;
             this.b = sourceMatrix.b;
             this.c = sourceMatrix.c;
@@ -83,12 +81,12 @@ package flash.geom {
         }
 
         [API("674")]
-        public function copyRowFrom(row: uint, vector3D: Vector3D): void {
+        public function copyRowFrom(row:uint, vector3D:Vector3D):void {
             if (row == 0) {
                 this.a = vector3D.x;
                 this.c = vector3D.y;
                 this.tx = vector3D.z;
-            } else if(row == 1) {
+            } else if (row == 1) {
                 this.b = vector3D.x;
                 this.d = vector3D.y;
                 this.ty = vector3D.z;
@@ -97,17 +95,15 @@ package flash.geom {
 
         [API("674")]
         public function copyRowTo(row:uint, vector3D:Vector3D):void {
-            if(row == 0) {
+            if (row == 0) {
                 vector3D.x = this.a;
                 vector3D.y = this.c;
                 vector3D.z = this.tx;
-            }
-            else if (row == 1) {
+            } else if (row == 1) {
                 vector3D.x = this.b;
                 vector3D.y = this.d;
                 vector3D.z = this.ty;
-            }
-            else if (row == 2) {
+            } else if (row == 2) {
                 vector3D.x = 0;
                 vector3D.y = 0;
                 vector3D.z = 1;
@@ -121,7 +117,7 @@ package flash.geom {
             this.translate(tx, ty);
         }
 
-        public function createGradientBox(width: Number, height: Number, rotation: Number = 0, tx: Number = 0, ty: Number = 0): void {
+        public function createGradientBox(width:Number, height:Number, rotation:Number = 0, tx:Number = 0, ty:Number = 0):void {
             this.createBox(width / 1638.4, height / 1638.4, rotation, tx + width / 2, ty + height / 2);
         }
 

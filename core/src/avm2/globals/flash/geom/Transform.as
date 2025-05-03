@@ -31,7 +31,7 @@ package flash.geom {
         public native function set matrix3D(m:Matrix3D):void;
 
         public native function get perspectiveProjection():PerspectiveProjection;
-        public native function set perspectiveProjection(val: PerspectiveProjection):void;
+        public native function set perspectiveProjection(val:PerspectiveProjection):void;
 
         public function getRelativeMatrix3D(relativeTo:DisplayObject):Matrix3D {
             stub_method("flash.geom.Transform", "getRelativeMatrix3D");

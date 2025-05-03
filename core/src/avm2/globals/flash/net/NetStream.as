@@ -14,8 +14,8 @@ package flash.net {
 
     [Ruffle(InstanceAllocator)]
     public class NetStream extends EventDispatcher {
-        public static const CONNECT_TO_FMS: String = "connectToFMS";
-        public static const DIRECT_CONNECTIONS: String = "directConnections";
+        public static const CONNECT_TO_FMS:String = "connectToFMS";
+        public static const DIRECT_CONNECTIONS:String = "directConnections";
 
         public function NetStream(connection:NetConnection, peer:String = CONNECT_TO_FMS) {
 
@@ -51,9 +51,9 @@ package flash.net {
         }
 
         public native function pause();
-        
+
         public native function play(...args);
-        
+
         public function play2(param:NetStreamPlayOptions) {
             stub_method("flash.net.NetStream", "play2");
         }
@@ -63,7 +63,7 @@ package flash.net {
             stub_method("flash.net.NetStream", "preloadEmbeddedData");
         }
 
-        public function publish(name:String=null, type:String=null) {
+        public function publish(name:String = null, type:String = null) {
             stub_method("flash.net.NetStream", "publish");
         }
 
@@ -213,14 +213,13 @@ package flash.net {
             return new NetStreamInfo();
         }
 
-
-        public function get liveDelay(): Number {
+        public function get liveDelay():Number {
             stub_getter("flash.net.NetStream", "liveDelay");
             return 0;
 
         };
 
-        public function get maxPauseBufferTime(): Number {
+        public function get maxPauseBufferTime():Number {
             stub_getter("flash.net.NetStream", "maxPauseBufferTime");
             return 0;
         };
@@ -238,7 +237,7 @@ package flash.net {
             stub_setter("flash.net.NetStream", "multicastAvailabilitySendToAll");
         };
 
-        public function get multicastAvailabilityUpdatePeriod(): Number {
+        public function get multicastAvailabilityUpdatePeriod():Number {
             stub_getter("flash.net.NetStream", "multicastAvailabilityUpdatePeriod");
             return 0;
         };
@@ -256,12 +255,12 @@ package flash.net {
             stub_setter("flash.net.NetStream", "multicastFetchPeriod");
         };
 
-        public function get multicastInfo() : NetStreamMulticastInfo {
+        public function get multicastInfo():NetStreamMulticastInfo {
             stub_getter("flash.net.NetStream", "multicastInfo");
             return new NetStreamMulticastInfo();
         };
 
-        public function get multicastPushNeighborLimit() : Number {
+        public function get multicastPushNeighborLimit():Number {
             stub_getter("flash.net.NetStream", "multicastPushNeighborLimit");
             return 0;
         };
@@ -270,16 +269,16 @@ package flash.net {
             stub_setter("flash.net.NetStream", "multicastPushNeighborLimit");
         };
 
-        public function get multicastRelayMarginDuration() : Number {
+        public function get multicastRelayMarginDuration():Number {
             stub_getter("flash.net.NetStream", "multicastRelayMarginDuration");
             return 0;
         };
 
-        public function set multicastRelayMarginDuration(dur: Number) {
+        public function set multicastRelayMarginDuration(dur:Number) {
             stub_setter("flash.net.NetStream", "multicastRelayMarginDuration");
         };
 
-        public function get multicastWindowDuration() : Number {
+        public function get multicastWindowDuration():Number {
             stub_getter("flash.net.NetStream", "multicastWindowDuration");
             return 0;
 
@@ -289,22 +288,22 @@ package flash.net {
             stub_setter("flash.net.NetStream", "multicastWindowDuration");
         };
 
-        public function get nearNonce(): String {
+        public function get nearNonce():String {
             stub_getter("flash.net.NetStream", "nearNonce");
             return "";
         };
 
-        public function get objectEncoding(): uint {
+        public function get objectEncoding():uint {
             stub_getter("flash.net.NetStream", "objectEncoding");
             return 0;
         };
 
-        public function get peerStreams(): Array {
+        public function get peerStreams():Array {
             stub_getter("flash.net.NetStream", "peerStreams");
             return [];
         };
 
-        public function get soundTransform(): flash.media.SoundTransform {
+        public function get soundTransform():flash.media.SoundTransform {
             stub_getter("flash.net.NetStream", "soundTransform");
             return new flash.media.SoundTransform();
         };
@@ -313,9 +312,9 @@ package flash.net {
             stub_setter("flash.net.NetStream", "soundTransform");
         };
 
-        public native function get time(): Number;
+        public native function get time():Number;
 
-        public function get useHardwareDecoder(): Boolean {
+        public function get useHardwareDecoder():Boolean {
             stub_getter("flash.net.NetStream", "useHardwareDecoder");
             return true;
         };
@@ -325,7 +324,7 @@ package flash.net {
         };
 
         [API("680")]
-        public function get useJitterBuffer(): Boolean {
+        public function get useJitterBuffer():Boolean {
             stub_getter("flash.net.NetStream", "useJitterBuffer");
             return false;
         };
@@ -335,7 +334,7 @@ package flash.net {
             stub_setter("flash.net.NetStream", "useJitterBuffer");
         };
 
-        public function get videoReliable(): Boolean {
+        public function get videoReliable():Boolean {
             stub_getter("flash.net.NetStream", "videoReliable");
             return false;
         };
@@ -354,13 +353,13 @@ package flash.net {
         };
 
         [API("674")]
-        public function get videoStreamSettings(): VideoStreamSettings {
+        public function get videoStreamSettings():VideoStreamSettings {
             stub_getter("flash.net.NetStream", "videoStreamSettings");
             return null;
         };
 
         [API("674")]
-        public function set videoStreamSettings(settings: VideoStreamSettings) {
+        public function set videoStreamSettings(settings:VideoStreamSettings) {
             stub_setter("flash.net.NetStream", "videoStreamSettings");
         };
     }

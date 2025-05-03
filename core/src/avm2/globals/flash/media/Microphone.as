@@ -2,7 +2,7 @@ package flash.media {
     import flash.events.EventDispatcher;
 
     public final class Microphone extends EventDispatcher {
-        
+
         [API("672")]
         public static function getEnhancedMicrophone(index:int = -1):Microphone {
             __ruffle__.stub_method("flash.media.Microphone", "getEnhancedMicrophone");
@@ -14,7 +14,7 @@ package flash.media {
             return new Microphone();
         }
 
-        public function setLoopBack(isLooped:Boolean=true) {
+        public function setLoopBack(isLooped:Boolean = true) {
             __ruffle__.stub_method("flash.media.Microphone", "setLoopBack");
         }
 

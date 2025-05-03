@@ -5,11 +5,11 @@ package {
         prototype.toString = function():String {
             var n:Namespace = this;
             return n.uri;
-        }
+        };
         prototype.valueOf = function():String {
             var n:Namespace = this;
             return n.uri;
-        }
+        };
 
         prototype.setPropertyIsEnumerable("toString", false);
         prototype.setPropertyIsEnumerable("valueOf", false);

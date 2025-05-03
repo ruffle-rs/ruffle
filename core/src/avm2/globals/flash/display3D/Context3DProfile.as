@@ -3,12 +3,10 @@
 // by https://github.com/golfinq/ActionScript_Event_Builder
 // It won't be regenerated in the future, so feel free to edit and/or fix
 
-package flash.display3D
-{
+package flash.display3D {
 
     [API("682")]
-    public final class Context3DProfile
-    {
+    public final class Context3DProfile {
         // Use the default feature support profile.
         public static const BASELINE:String = "baseline";
 
@@ -28,7 +26,8 @@ package flash.display3D
         public static const STANDARD_CONSTRAINED:String = "standardConstrained";
 
         // Use standard extended profile to target GPUs which support AGAL3 and instanced drawing feature.
-        [API("704")] // the docs say 706, that's wrong
+        [API("704")]
+        // the docs say 706, that's wrong
         public static const STANDARD_EXTENDED:String = "standardExtended";
 
     }

@@ -7,171 +7,211 @@ package {
         prototype.valueOf = function():* {
             var d:Date = this;
             return d.AS3::valueOf();
-        }
+        };
         prototype.toString = function():String {
             var d:Date = this;
             return d.AS3::toString();
-        }
+        };
+
         prototype.toDateString = function():String {
             var d:Date = this;
             return d.AS3::toDateString();
-        }
+        };
+
         prototype.toTimeString = function():String {
             var d:Date = this;
             return d.AS3::toTimeString();
-        }
+        };
+
         prototype.toLocaleString = function():String {
             var d:Date = this;
             return d.AS3::toLocaleString();
-        }
+        };
+
         prototype.toLocaleDateString = function():String {
             var d:Date = this;
             return d.AS3::toLocaleDateString();
-        }
+        };
+
         prototype.toLocaleTimeString = function():String {
             var d:Date = this;
             return d.AS3::toLocaleTimeString();
-        }
+        };
+
         prototype.toUTCString = function():String {
             var d:Date = this;
             return d.AS3::toUTCString();
-        }
+        };
+
         prototype.toJSON = function(k:String):* {
             var d:Date = this;
             return d.AS3::toString();
-        }
+        };
+
         prototype.getUTCFullYear = function():Number {
             var d:Date = this;
             return d.AS3::getUTCFullYear();
-        }
+        };
+
         prototype.getUTCMonth = function():Number {
             var d:Date = this;
             return d.AS3::getUTCMonth();
-        }
+        };
+
         prototype.getUTCDate = function():Number {
             var d:Date = this;
             return d.AS3::getUTCDate();
-        }
+        };
+
         prototype.getUTCDay = function():Number {
             var d:Date = this;
             return d.AS3::getUTCDay();
-        }
+        };
+
         prototype.getUTCHours = function():Number {
             var d:Date = this;
             return d.AS3::getUTCHours();
-        }
+        };
+
         prototype.getUTCMinutes = function():Number {
             var d:Date = this;
             return d.AS3::getUTCMinutes();
-        }
+        };
+
         prototype.getUTCSeconds = function():Number {
             var d:Date = this;
             return d.AS3::getUTCSeconds();
-        }
+        };
+
         prototype.getUTCMilliseconds = function():Number {
             var d:Date = this;
             return d.AS3::getUTCMilliseconds();
-        }
+        };
+
         prototype.getFullYear = function():Number {
             var d:Date = this;
             return d.AS3::getFullYear();
-        }
+        };
+
         prototype.getMonth = function():Number {
             var d:Date = this;
             return d.AS3::getMonth();
-        }
+        };
+
         prototype.getDate = function():Number {
             var d:Date = this;
             return d.AS3::getDate();
-        }
+        };
+
         prototype.getDay = function():Number {
             var d:Date = this;
             return d.AS3::getDay();
-        }
+        };
+
         prototype.getHours = function():Number {
             var d:Date = this;
             return d.AS3::getHours();
-        }
+        };
+
         prototype.getMinutes = function():Number {
             var d:Date = this;
             return d.AS3::getMinutes();
-        }
+        };
+
         prototype.getSeconds = function():Number {
             var d:Date = this;
             return d.AS3::getSeconds();
-        }
+        };
+
         prototype.getMilliseconds = function():Number {
             var d:Date = this;
             return d.AS3::getMilliseconds();
-        }
+        };
+
         prototype.getTimezoneOffset = function():Number {
             var d:Date = this;
             return d.AS3::getTimezoneOffset();
-        }
+        };
+
         prototype.getTime = function():Number {
             var d:Date = this;
             return d.AS3::getTime();
-        }
+        };
+
         prototype.setTime = function(t:* = undefined):Number {
             var d:Date = this;
             return d.AS3::setTime(t);
-        }
+        };
+
         prototype.setFullYear = function(year:* = undefined, month:* = undefined, day:* = undefined):Number {
             var d:Date = this;
             return d._setFullYear(arguments);
-        }
+        };
+
         prototype.setMonth = function(month:* = undefined, day:* = undefined):Number {
             var d:Date = this;
             return d._setMonth(arguments);
-        }
+        };
+
         prototype.setDate = function(day:* = undefined):Number {
             var d:Date = this;
             return d._setDate(day);
-        }
+        };
+
         prototype.setHours = function(hour:* = undefined, min:* = undefined, sec:* = undefined, ms:* = undefined):Number {
             var d:Date = this;
             return d._setHours(arguments);
-        }
+        };
+
         prototype.setMinutes = function(min:* = undefined, sec:* = undefined, ms:* = undefined):Number {
             var d:Date = this;
             return d._setMinutes(arguments);
-        }
+        };
+
         prototype.setSeconds = function(sec:* = undefined, ms:* = undefined):Number {
             var d:Date = this;
             return d._setSeconds(arguments);
-        }
+        };
+
         prototype.setMilliseconds = function(ms:* = undefined):Number {
             var d:Date = this;
             return d._setMilliseconds(arguments);
-        }
+        };
+
         prototype.setUTCFullYear = function(year:* = undefined, month:* = undefined, day:* = undefined):Number {
             var d:Date = this;
             return d._setUTCFullYear(arguments);
-        }
+        };
+
         prototype.setUTCMonth = function(month:* = undefined, day:* = undefined):Number {
             var d:Date = this;
             return d._setUTCMonth(arguments);
-        }
+        };
+
         prototype.setUTCDate = function(day:* = undefined):Number {
             var d:Date = this;
             return d._setUTCDate(arguments);
-        }
+        };
+
         prototype.setUTCHours = function(hour:* = undefined, min:* = undefined, sec:* = undefined, ms:* = undefined):Number {
             var d:Date = this;
             return d._setUTCHours(arguments);
-        }
+        };
+
         prototype.setUTCMinutes = function(min:* = undefined, sec:* = undefined, ms:* = undefined):Number {
             var d:Date = this;
             return d._setUTCMinutes(arguments);
-        }
+        };
+
         prototype.setUTCSeconds = function(sec:* = undefined, ms:* = undefined):Number {
             var d:Date = this;
             return d._setUTCSeconds(arguments);
-        }
+        };
+
         prototype.setUTCMilliseconds = function(ms:* = undefined):Number {
             var d:Date = this;
             return d._setUTCMilliseconds(arguments);
-        }
+        };
 
         prototype.setPropertyIsEnumerable("valueOf", false);
         prototype.setPropertyIsEnumerable("toString", false);
@@ -216,7 +256,6 @@ package {
         prototype.setPropertyIsEnumerable("setUTCSeconds", false);
         prototype.setPropertyIsEnumerable("setUTCMilliseconds", false);
 
-
         public function Date(year:* = undefined, month:* = undefined, day:* = undefined, hours:* = undefined, minutes:* = undefined, seconds:* = undefined, ms:* = undefined) {
             this.init(arguments);
         }
@@ -224,7 +263,7 @@ package {
 
         public static native function parse(date:*):Number;
 
-        public static native function UTC(year:*, month:*, date:* = 1, hour:* = 0, minute:* = 0, second:* = 0, millisecond:* = 0, ... rest):Number;
+        public static native function UTC(year:*, month:*, date:* = 1, hour:* = 0, minute:* = 0, second:* = 0, millisecond:* = 0, ...rest):Number;
 
         AS3 function valueOf():Number {
             return this.AS3::getTime();
@@ -338,7 +377,6 @@ package {
         AS3 function setUTCMilliseconds(ms:* = undefined):Number {
             return _setUTCMilliseconds(arguments);
         }
-
 
         public function get fullYear():Number {
             return this.AS3::getFullYear();

@@ -3,31 +3,26 @@
 // by https://github.com/golfinq/ActionScript_Event_Builder
 // It won't be regenerated in the future, so feel free to edit and/or fix
 
-package flash.media
-{
-    public class AVTagData
-    {
+package flash.media {
+    public class AVTagData {
         // Data in the tag.
-        private var _data: String;
+        private var _data:String;
 
         // The timestamp of the tag data
-        private var _localTime: Number;
+        private var _localTime:Number;
 
         public function AVTagData(
-          init_data:String,
-          init_localTime:Number)
-        {
+                init_data:String,
+                init_localTime:Number) {
             _data = init_data;
             _localTime = init_localTime;
         }
 
-        public function get data() : String
-        {
+        public function get data():String {
             return this._data;
         }
 
-        public function get localTime() : Number
-        {
+        public function get localTime():Number {
             return this._localTime;
         }
     }

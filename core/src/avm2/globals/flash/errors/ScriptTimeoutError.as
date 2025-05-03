@@ -3,18 +3,14 @@
 // by https://github.com/golfinq/ActionScript_Event_Builder
 // It won't be regenerated in the future, so feel free to edit and/or fix
 
-package flash.errors
-{
+package flash.errors {
 
-    public dynamic class ScriptTimeoutError extends Error
-    {
+    public dynamic class ScriptTimeoutError extends Error {
         prototype.name = "ScriptTimeoutError";
 
-        public function ScriptTimeoutError(message:String = "", id:int = 0)
-        {
+        public function ScriptTimeoutError(message:String = "", id:int = 0) {
             super(message, id);
         }
 
     }
 }
-

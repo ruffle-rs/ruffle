@@ -3,18 +3,15 @@
 // by https://github.com/golfinq/ActionScript_Event_Builder
 // It won't be regenerated in the future, so feel free to edit and/or fix
 
-package flash.display3D
-{
-    
+package flash.display3D {
+
     [API("674")]
-    public final class Context3DProgramType
-    {
+    public final class Context3DProgramType {
         // A fragment (or pixel) program.
         public static const FRAGMENT:String = "fragment";
-        
+
         // A vertex program.
         public static const VERTEX:String = "vertex";
-        
-        
+
     }
 }

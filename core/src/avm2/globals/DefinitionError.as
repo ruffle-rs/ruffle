@@ -3,14 +3,11 @@
 // by https://github.com/golfinq/ActionScript_Event_Builder
 // It won't be regenerated in the future, so feel free to edit and/or fix
 
-package
-{
-    public dynamic class DefinitionError extends Error
-    {
+package {
+    public dynamic class DefinitionError extends Error {
         prototype.name = "DefinitionError";
 
-        public function DefinitionError(message:String = "", id:int = 0)
-        {
+        public function DefinitionError(message:String = "", id:int = 0) {
             super(message, id);
             this.name = prototype.name;
         }
@@ -18,4 +15,3 @@ package
         public static const length:int = 1;
     }
 }
-

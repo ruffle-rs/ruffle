@@ -5,10 +5,10 @@ package flash.net {
 
     public class URLLoader extends EventDispatcher {
         [Ruffle(NativeAccessible)]
-        public var data: *;
+        public var data:*;
 
         [Ruffle(NativeAccessible)]
-        public var dataFormat: String = "text";
+        public var dataFormat:String = "text";
 
         public function URLLoader(request:URLRequest = null) {
             if (request != null) {
@@ -27,7 +27,7 @@ package flash.net {
         // FIXME - this should be a normal property for consistency with Flash
         public function get bytesLoaded():uint {
             // TODO - update this as the download progresses
-            return this.bytesTotal
+            return this.bytesTotal;
         }
         public native function load(request:URLRequest):void;
 

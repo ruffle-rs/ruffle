@@ -3,12 +3,10 @@
 // by https://github.com/golfinq/ActionScript_Event_Builder
 // It won't be regenerated in the future, so feel free to edit and/or fix
 
-package flash.display3D
-{
+package flash.display3D {
 
     [API("674")]
-    public final class Context3DVertexBufferFormat
-    {
+    public final class Context3DVertexBufferFormat {
         public static const BYTES_4:String = "bytes4";
 
         public static const FLOAT_1:String = "float1";

@@ -3,12 +3,10 @@
 // by https://github.com/golfinq/ActionScript_Event_Builder
 // It won't be regenerated in the future, so feel free to edit and/or fix
 
-package flash.media
-{
+package flash.media {
 
     [API("674")]
-    public final class H264Level
-    {
+    public final class H264Level {
         // Constant for H.264 level 1.
         public static const LEVEL_1:String = "1";
 

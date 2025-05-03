@@ -39,7 +39,7 @@ package flash.display {
         public native function scroll(x:int, y:int):void;
         public native function lock():void;
         public native function hitTest(firstPoint:Point, firstAlphaThreshold:uint, secondObject:Object, secondBitmapDataPoint:Point = null, secondAlphaThreshold:uint = 1):Boolean;
-        public function histogram(rect:Rectangle = null): Vector.<Vector.<Number>> {
+        public function histogram(rect:Rectangle = null):Vector.<Vector.<Number>> {
             if (!rect) {
                 rect = this.rect;
             }

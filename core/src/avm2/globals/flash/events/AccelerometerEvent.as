@@ -2,11 +2,9 @@
 // https://help.adobe.com/en_US/FlashPlatform/reference/actionscript/3/flash/events/AccelerometerEvent.html
 // by https://github.com/golfinq/ActionScript_Event_Builder
 // It won't be regenerated in the future, so feel free to edit and/or fix
-package flash.events
-{
+package flash.events {
 
-    public class AccelerometerEvent extends Event
-    {
+    public class AccelerometerEvent extends Event {
         // Defines the value of the type property of a AccelerometerEvent event object.
         public static const UPDATE:String = "update";
 
@@ -18,13 +16,12 @@ package flash.events
 
         // Acceleration along the y-axis, measured in Gs.
         public var accelerationY:Number;
-        
+
         // Acceleration along the z-axis, measured in Gs.
         public var accelerationZ:Number;
 
         public function AccelerometerEvent(type:String, bubbles:Boolean = false, cancelable:Boolean = false, timestamp:Number = 0,
-            accelerationX:Number = 0, accelerationY:Number = 0, accelerationZ:Number = 0)
-        {
+                accelerationX:Number = 0, accelerationY:Number = 0, accelerationZ:Number = 0) {
             super(type, bubbles, cancelable);
             this.timestamp = timestamp;
             this.accelerationX = accelerationX;
@@ -33,18 +30,13 @@ package flash.events
         }
 
         // Creates a copy of an AccelerometerEvent object and sets the value of each property to match that of the original.
-        override public function clone():Event
-        {
+        override public function clone():Event {
             return new AccelerometerEvent(this.type, this.bubbles, this.cancelable, this.timestamp, this.accelerationX, this.accelerationY, this.accelerationZ);
         }
 
         // Returns a string that contains all the properties of the AccelerometerEvent object.
-        override public function toString():String
-        {
+        override public function toString():String {
             return this.formatToString("AccelerometerEvent", "type", "bubbles", "cancelable", "eventPhase", "timestamp", "accelerationX", "accelerationY", "accelerationZ");
         }
     }
 }
-
-
-

@@ -3,11 +3,9 @@
 // by https://github.com/golfinq/ActionScript_Event_Builder
 // It won't be regenerated in the future, so feel free to edit and/or fix
 
-package flash.display3D
-{
+package flash.display3D {
 
-    public final class Context3DCompareMode
-    {
+    public final class Context3DCompareMode {
         // The comparison always evaluates as true.
         public static const ALWAYS:String = "always";
 

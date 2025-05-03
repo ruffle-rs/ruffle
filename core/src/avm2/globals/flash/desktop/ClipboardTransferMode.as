@@ -3,11 +3,9 @@
 // by https://github.com/golfinq/ActionScript_Event_Builder
 // It won't be regenerated in the future, so feel free to edit and/or fix
 
-package flash.desktop
-{
+package flash.desktop {
 
-    public class ClipboardTransferMode
-    {
+    public class ClipboardTransferMode {
         // The Clipboard object should only return a copy.
         public static const CLONE_ONLY:String = "cloneOnly";
 

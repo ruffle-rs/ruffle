@@ -3,11 +3,9 @@
 // by https://github.com/golfinq/ActionScript_Event_Builder
 // It won't be regenerated in the future, so feel free to edit and/or fix
 
-package flash.security
-{
+package flash.security {
 
-    public final class CertificateStatus
-    {
+    public final class CertificateStatus {
         // The certificate is outside its valid period.
         public static const EXPIRED:String = "expired";
 

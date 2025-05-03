@@ -26,21 +26,23 @@ package flash.display {
         public native function removeChild(child:DisplayObject):DisplayObject;
         public native function removeChildAt(index:int):DisplayObject;
 
-        [API("674")] // AIR 3.0, FP 11, SWF 13
+        [API("674")]
+        // AIR 3.0, FP 11, SWF 13
         public native function removeChildren(beginIndex:int = 0, endIndex:int = 0x7fffffff):void;
 
         public native function setChildIndex(child:DisplayObject, index:int):void;
         public native function swapChildren(child1:DisplayObject, child2:DisplayObject):void;
         public native function swapChildrenAt(index1:int, index2:int):void;
 
-        [API("690")] // AIR 3.8, FP 11.8, SWF 21
+        [API("690")]
+        // AIR 3.8, FP 11.8, SWF 21
         public native function stopAllMovieClips():void;
 
         public native function getObjectsUnderPoint(point:Point):Array;
         public native function areInaccessibleObjectsUnderPoint(point:Point):Boolean;
 
         public function get textSnapshot():TextSnapshot {
-            stub_getter("flash.display.DisplayObjectContainer", "textSnapshot")
+            stub_getter("flash.display.DisplayObjectContainer", "textSnapshot");
             return new TextSnapshot();
         }
     }

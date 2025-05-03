@@ -2,13 +2,13 @@ package flash.net {
     import flash.utils.escapeMultiByte;
     import flash.utils.unescapeMultiByte;
     public dynamic class URLVariables {
-        public function URLVariables(str: String = null) {
+        public function URLVariables(str:String = null) {
             if (str) {
                 this.decode(str);
             }
         }
 
-        public function decode(str: String) {
+        public function decode(str:String) {
             for each (var pair in str.AS3::split("&")) {
                 var splitIndex = pair.AS3::indexOf("=");
                 if (splitIndex === -1) {
@@ -27,11 +27,11 @@ package flash.net {
             }
         }
 
-        public function toString(): String {
-            var acc : String = ""
-            var sep :String = ""
+        public function toString():String {
+            var acc:String = "";
+            var sep:String = "";
             for (p in this) {
-                var pe : String = escapeMultiByte(p);
+                var pe:String = escapeMultiByte(p);
                 var val = this[p];
                 if (val is Array) {
                     for (i in val) {
@@ -47,7 +47,7 @@ package flash.net {
                 acc += pe;
                 acc += "=";
                 acc += escapeMultiByte(val);
-                sep="&";
+                sep = "&";
             }
             return acc;
         }

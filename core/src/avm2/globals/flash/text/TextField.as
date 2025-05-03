@@ -30,8 +30,8 @@ package flash.text {
 
         public native function get bottomScrollV():int;
 
-        public native function get condenseWhite():Boolean
-        public native function set condenseWhite(value:Boolean):void
+        public native function get condenseWhite():Boolean;
+        public native function set condenseWhite(value:Boolean):void;
 
         public native function get defaultTextFormat():TextFormat;
         public native function set defaultTextFormat(value:TextFormat):void;
@@ -54,8 +54,8 @@ package flash.text {
         public native function get maxChars():int;
         public native function set maxChars(value:int):void;
 
-        public native function get mouseWheelEnabled():Boolean
-        public native function set mouseWheelEnabled(value:Boolean):void
+        public native function get mouseWheelEnabled():Boolean;
+        public native function set mouseWheelEnabled(value:Boolean):void;
 
         public native function get multiline():Boolean;
         public native function set multiline(value:Boolean):void;
@@ -114,10 +114,10 @@ package flash.text {
 
         public native function get numLines():int;
 
-        public native function get caretIndex(): int;
+        public native function get caretIndex():int;
 
-        public native function get selectionBeginIndex(): int;
-        public native function get selectionEndIndex(): int;
+        public native function get selectionBeginIndex():int;
+        public native function get selectionEndIndex():int;
 
         public native function appendText(text:String):void;
         public native function getLineMetrics(lineIndex:int):TextLineMetrics;

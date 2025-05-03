@@ -22,4 +22,3 @@ package flash.text.ime {
         function get verticalTextLayout():Boolean;
     }
 }
-

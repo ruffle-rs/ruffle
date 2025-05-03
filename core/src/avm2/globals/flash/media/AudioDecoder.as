@@ -3,12 +3,10 @@
 // by https://github.com/golfinq/ActionScript_Event_Builder
 // It won't be regenerated in the future, so feel free to edit and/or fix
 
-package flash.media
-{
+package flash.media {
 
     [API("674")]
-    public final class AudioDecoder
-    {
+    public final class AudioDecoder {
         // Dolby Digital Audio, which is also known as AC-3.
         public static const DOLBY_DIGITAL:String = "DolbyDigital";
 

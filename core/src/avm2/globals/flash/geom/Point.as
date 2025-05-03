@@ -70,7 +70,7 @@ package flash.geom {
         }
 
         public static function polar(len:Number, angle:Number):Point {
-            return new Point(len* Math.cos(angle), len * Math.sin(angle));
+            return new Point(len * Math.cos(angle), len * Math.sin(angle));
         }
     }
 }

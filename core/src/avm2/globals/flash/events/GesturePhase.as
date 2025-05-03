@@ -1,8 +1,6 @@
-package flash.events
-{
+package flash.events {
 
-    public class GesturePhase
-    {
+    public class GesturePhase {
         // A single value that encompasses all phases of simple gestures like two-finger-tap or swipe.
         public static const ALL:String = "all";
 

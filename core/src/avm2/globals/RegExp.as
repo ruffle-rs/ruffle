@@ -3,7 +3,7 @@ package {
     [Ruffle(CallHandler)]
     public dynamic class RegExp {
         public function RegExp(re:* = undefined, flags:* = undefined) {
-            this.init(re, flags)
+            this.init(re, flags);
         }
 
         private native function init(re:*, flags:*):void;
@@ -22,15 +22,15 @@ package {
 
         prototype.exec = function(str:String = ""):Object {
             return this.AS3::exec(str);
-        }
+        };
 
         prototype.test = function(str:String = ""):Boolean {
             return this.AS3::test(str);
-        }
+        };
 
         prototype.toString = function():String {
             // Note: This function is not generic and will throw for non-regexps.
-            var regexp: RegExp = this;
+            var regexp:RegExp = this;
 
             /*
              * ECMA-262 Edition 5.1 - RegExp.prototype.toString():
@@ -57,7 +57,7 @@ package {
                 string += "x";
             }
             return string;
-        }
+        };
 
         prototype.setPropertyIsEnumerable("exec", false);
         prototype.setPropertyIsEnumerable("test", false);

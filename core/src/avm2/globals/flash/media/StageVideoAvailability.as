@@ -3,12 +3,10 @@
 // by https://github.com/golfinq/ActionScript_Event_Builder
 // It won't be regenerated in the future, so feel free to edit and/or fix
 
-package flash.media
-{
+package flash.media {
 
     [API("670")]
-    public final class StageVideoAvailability
-    {
+    public final class StageVideoAvailability {
         // Stage video is currently available.
         public static const AVAILABLE:String = "available";
 

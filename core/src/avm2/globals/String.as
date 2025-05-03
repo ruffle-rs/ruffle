@@ -2,7 +2,7 @@ package {
     [Ruffle(CustomConstructor)]
     [Ruffle(CallHandler)]
     public final class String {
-         {
+        {
             prototype.charAt = function(index:Number = 0):String {
                 var s:String = this;
                 return s.AS3::charAt(index);
@@ -13,7 +13,7 @@ package {
                 return s.AS3::charCodeAt(index);
             };
 
-            prototype.concat = function(... args):String {
+            prototype.concat = function(...args):String {
                 var s:String = this;
                 return s.AS3::concat.apply(s, args);
             };
@@ -60,7 +60,7 @@ package {
 
             prototype.substr = function(start:Number = 0, len:Number = 2147483647.0):String {
                 var s:String = this;
-                return s.AS3::substr(start,len);
+                return s.AS3::substr(start, len);
             };
 
             prototype.substring = function(start:Number = 0, end:Number = 2147483647.0):String {
@@ -89,11 +89,11 @@ package {
             };
 
             prototype.toString = function():String {
-                if(this === String.prototype) {
+                if (this === String.prototype) {
                     return "";
                 }
 
-                if(!(this is String)) {
+                if (!(this is String)) {
                     throw new TypeError("Error #1004: Method String.prototype.toString was invoked on an incompatible object.", 1004);
                 }
 
@@ -101,11 +101,11 @@ package {
             };
 
             prototype.valueOf = function():* {
-                if(this === String.prototype) {
+                if (this === String.prototype) {
                     return "";
                 }
 
-                if(!(this is String)) {
+                if (!(this is String)) {
                     throw new TypeError("Error #1004: Method String.prototype.valueOf was invoked on an incompatible object.", 1004);
                 }
 
@@ -138,9 +138,9 @@ package {
             // this AS-defined method does nothing
         }
 
-        AS3 static native function fromCharCode(... rest):String;
+        AS3 static native function fromCharCode(...rest):String;
 
-        public static native function fromCharCode(... rest):String;
+        public static native function fromCharCode(...rest):String;
 
         // Instance methods
         public native function get length():int;
@@ -149,7 +149,7 @@ package {
 
         AS3 native function charCodeAt(index:Number = 0):Number;
 
-        AS3 native function concat(... rest):String;
+        AS3 native function concat(...rest):String;
 
         AS3 native function indexOf(str:String = "undefined", index:Number = 0):int;
 
@@ -176,23 +176,23 @@ package {
 
         AS3 native function substring(start:Number = 0, end:Number = 2147483647.0):String;
 
-        AS3 function toLocaleLowerCase() : String {
+        AS3 function toLocaleLowerCase():String {
             return this.toLowerCase();
         }
 
-        AS3 function toLocaleUpperCase() : String {
+        AS3 function toLocaleUpperCase():String {
             return this.toUpperCase();
         }
 
-        AS3 native function toLowerCase() : String;
+        AS3 native function toLowerCase():String;
 
-        AS3 native function toUpperCase() : String;
+        AS3 native function toUpperCase():String;
 
-        AS3 function toString() : String {
+        AS3 function toString():String {
             return this;
         }
 
-        AS3 function valueOf() : String {
+        AS3 function valueOf():String {
             return this;
         }
 

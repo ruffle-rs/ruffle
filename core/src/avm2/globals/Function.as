@@ -9,7 +9,7 @@ package {
             // this AS-defined method does nothing
         }
 
-        public native function get length() : int;
+        public native function get length():int;
 
         public native function get prototype():*;
         public native function set prototype(proto:*):*;
@@ -19,7 +19,8 @@ package {
 
         [Ruffle(NativeCallable)]
         private static function createDummyFunction():Function {
-            return function() { };
+            return function() {
+            };
         }
 
         public static const length:int = 1;

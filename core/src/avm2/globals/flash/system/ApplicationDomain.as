@@ -6,7 +6,7 @@ package flash.system {
         public static native function get currentDomain():ApplicationDomain;
 
         public function ApplicationDomain(parentDomain:ApplicationDomain = null) {
-            this.init(parentDomain)
+            this.init(parentDomain);
         }
 
         private native function init(parentDomain:ApplicationDomain):void;

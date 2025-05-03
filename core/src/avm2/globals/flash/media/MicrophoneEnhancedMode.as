@@ -3,12 +3,10 @@
 // by https://github.com/golfinq/ActionScript_Event_Builder
 // It won't be regenerated in the future, so feel free to edit and/or fix
 
-package flash.media
-{
+package flash.media {
 
     [API("672")]
-    public final class MicrophoneEnhancedMode
-    {
+    public final class MicrophoneEnhancedMode {
         // Use this mode to allow both parties to talk at the same time.
         public static const FULL_DUPLEX:String = "fullDuplex";
 

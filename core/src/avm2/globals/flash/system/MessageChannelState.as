@@ -3,12 +3,10 @@
 // by https://github.com/golfinq/ActionScript_Event_Builder
 // It won't be regenerated in the future, so feel free to edit and/or fix
 
-package flash.system
-{
+package flash.system {
 
     [API("682")]
-    public final class MessageChannelState
-    {
+    public final class MessageChannelState {
         // This state indicates that the message channel has been closed and doesn't have any more messages to deliver.
         public static const CLOSED:String = "closed";
 

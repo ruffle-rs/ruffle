@@ -3,11 +3,9 @@
 // by https://github.com/golfinq/ActionScript_Event_Builder
 // It won't be regenerated in the future, so feel free to edit and/or fix
 
-package flash.net
-{
+package flash.net {
 
-    public final class NetGroupSendResult
-    {
+    public final class NetGroupSendResult {
         // Indicates an error occurred (such as no permission) when using a Directed Routing method.
         public static const ERROR:String = "error";
 

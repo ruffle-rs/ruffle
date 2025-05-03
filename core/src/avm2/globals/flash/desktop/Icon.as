@@ -3,16 +3,15 @@
 // by https://github.com/golfinq/ActionScript_Event_Builder
 // It won't be regenerated in the future, so feel free to edit and/or fix
 
-package flash.desktop
-{
-  import flash.events.EventDispatcher;
-  [API("661")]
-  public class Icon extends EventDispatcher
-  {
+package flash.desktop {
+    import flash.events.EventDispatcher;
+    [API("661")]
+    public class Icon extends EventDispatcher {
 
-    // The icon image as an array of BitmapData objects of different sizes.
-    public var bitmaps:Array;
+        // The icon image as an array of BitmapData objects of different sizes.
+        public var bitmaps:Array;
 
-    function Icon() {}
-  }
+        function Icon() {
+        }
+    }
 }

@@ -20,7 +20,7 @@ package {
         prototype.toString = function():String {
             var self:QName = this;
             return self.AS3::toString();
-        }
+        };
 
         prototype.setPropertyIsEnumerable("toString", false);
     }

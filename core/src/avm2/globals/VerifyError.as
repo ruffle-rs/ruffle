@@ -3,14 +3,11 @@
 // by https://github.com/golfinq/ActionScript_Event_Builder
 // It won't be regenerated in the future, so feel free to edit and/or fix
 
-package
-{
-    public dynamic class VerifyError extends Error
-    {
+package {
+    public dynamic class VerifyError extends Error {
         prototype.name = "VerifyError";
 
-        public function VerifyError(message:String = "", id:int = 0)
-        {
+        public function VerifyError(message:String = "", id:int = 0) {
             super(message, id);
             this.name = prototype.name;
         }

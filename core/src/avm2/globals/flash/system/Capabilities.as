@@ -1,20 +1,20 @@
 package flash.system {
     import __ruffle__.stub_getter;
     public final class Capabilities {
-        public native static function get os(): String;
-        public native static function get playerType(): String;
-        public native static function get version(): String;
+        public native static function get os():String;
+        public native static function get playerType():String;
+        public native static function get version():String;
         public native static function get screenResolutionX():Number;
         public native static function get screenResolutionY():Number;
         public native static function get pixelAspectRatio():Number;
         public native static function get screenDPI():Number;
-        public native static function get language(): String;
-        public static function get manufacturer(): String {
+        public native static function get language():String;
+        public static function get manufacturer():String {
             stub_getter("flash.system.Capabilities", "manufacturer");
-            return "Adobe Windows"
+            return "Adobe Windows";
         }
-        public static function get isDebugger(): Boolean {
-            return false
+        public static function get isDebugger():Boolean {
+            return false;
         }
     }
 }

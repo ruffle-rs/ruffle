@@ -3,11 +3,9 @@
 // by https://github.com/golfinq/ActionScript_Event_Builder
 // It won't be regenerated in the future, so feel free to edit and/or fix
 
-package flash.text.engine
-{
+package flash.text.engine {
     [API("662")]
-    public final class RenderingMode
-    {
+    public final class RenderingMode {
         // Sets rendering mode to CFF (Compact Font Format).
         public static const CFF:String = "cff";
 

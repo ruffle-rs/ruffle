@@ -6,21 +6,18 @@ package flash.events {
         public var bytesLoaded:Number;
         public var bytesTotal:Number;
 
-        public function ProgressEvent(type:String, bubbles:Boolean = false, cancelable:Boolean = false, bytesLoaded:Number = 0, bytesTotal:Number = 0)
-        {
-            super(type,bubbles,cancelable);
+        public function ProgressEvent(type:String, bubbles:Boolean = false, cancelable:Boolean = false, bytesLoaded:Number = 0, bytesTotal:Number = 0) {
+            super(type, bubbles, cancelable);
             this.bytesLoaded = bytesLoaded;
             this.bytesTotal = bytesTotal;
         }
 
-        override public function clone() : Event
-        {
-            return new ProgressEvent(this.type,this.bubbles,this.cancelable,this.bytesLoaded,this.bytesTotal);
+        override public function clone():Event {
+            return new ProgressEvent(this.type, this.bubbles, this.cancelable, this.bytesLoaded, this.bytesTotal);
         }
 
-        override public function toString() : String
-        {
-            return this.formatToString("ProgressEvent","type","bubbles","cancelable","eventPhase","bytesLoaded","bytesTotal");
+        override public function toString():String {
+            return this.formatToString("ProgressEvent", "type", "bubbles", "cancelable", "eventPhase", "bytesLoaded", "bytesTotal");
         }
     }
 }

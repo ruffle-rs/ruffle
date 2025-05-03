@@ -4,30 +4,30 @@ package avmplus {
     public native function getQualifiedClassName(value:*):String;
     internal native function describeTypeJSON(o:*, flags:uint):Object;
 
-    public const HIDE_NSURI_METHODS:uint    = 0x0001;
-    public const INCLUDE_BASES:uint         = 0x0002;
-    public const INCLUDE_INTERFACES:uint    = 0x0004;
-    public const INCLUDE_VARIABLES:uint     = 0x0008;
-    public const INCLUDE_ACCESSORS:uint     = 0x0010;
-    public const INCLUDE_METHODS:uint       = 0x0020;
-    public const INCLUDE_METADATA:uint      = 0x0040;
-    public const INCLUDE_CONSTRUCTOR:uint   = 0x0080;
-    public const INCLUDE_TRAITS:uint        = 0x0100;
-    public const USE_ITRAITS:uint           = 0x0200;
-    public const HIDE_OBJECT:uint           = 0x0400;
+    public const HIDE_NSURI_METHODS:uint = 0x0001;
+    public const INCLUDE_BASES:uint = 0x0002;
+    public const INCLUDE_INTERFACES:uint = 0x0004;
+    public const INCLUDE_VARIABLES:uint = 0x0008;
+    public const INCLUDE_ACCESSORS:uint = 0x0010;
+    public const INCLUDE_METHODS:uint = 0x0020;
+    public const INCLUDE_METADATA:uint = 0x0040;
+    public const INCLUDE_CONSTRUCTOR:uint = 0x0080;
+    public const INCLUDE_TRAITS:uint = 0x0100;
+    public const USE_ITRAITS:uint = 0x0200;
+    public const HIDE_OBJECT:uint = 0x0400;
 
-    public const FLASH10_FLAGS:uint =   INCLUDE_BASES |
-                                        INCLUDE_INTERFACES |
-                                        INCLUDE_VARIABLES |
-                                        INCLUDE_ACCESSORS |
-                                        INCLUDE_METHODS |
-                                        INCLUDE_METADATA |
-                                        INCLUDE_CONSTRUCTOR |
-                                        INCLUDE_TRAITS |
-                                        HIDE_NSURI_METHODS |
-                                        HIDE_OBJECT;
+    public const FLASH10_FLAGS:uint = INCLUDE_BASES |
+    INCLUDE_INTERFACES |
+    INCLUDE_VARIABLES |
+    INCLUDE_ACCESSORS |
+    INCLUDE_METHODS |
+    INCLUDE_METADATA |
+    INCLUDE_CONSTRUCTOR |
+    INCLUDE_TRAITS |
+    HIDE_NSURI_METHODS |
+    HIDE_OBJECT;
 
-    internal function copyParams(params: Object, xml: XML) {
+    internal function copyParams(params:Object, xml:XML) {
         for (var i in params) {
             var param = params[i];
             var elem = <parameter />;
@@ -38,7 +38,7 @@ package avmplus {
         }
     }
 
-    internal function copyMetadata(metadata: Array, xml: XML) {
+    internal function copyMetadata(metadata:Array, xml:XML) {
         for each (var md in metadata) {
             var data = <metadata />;
             data.@name = md.name;
@@ -52,16 +52,16 @@ package avmplus {
         }
     }
 
-    internal function copyUriAndMetadata(data: Object, xml: XML) {
+    internal function copyUriAndMetadata(data:Object, xml:XML) {
         if (data.uri) {
             xml.@uri = data.uri;
         }
         if (data.metadata) {
-            copyMetadata(data.metadata, xml)
+            copyMetadata(data.metadata, xml);
         }
     }
 
-    internal function copyTraits(traits: Object, xml: XML) {
+    internal function copyTraits(traits:Object, xml:XML) {
         for each (var base in traits.bases) {
             var elem = <extendsClass />;
             elem.@type = base;
@@ -75,7 +75,7 @@ package avmplus {
         if (traits.constructor) {
             var constructor = <constructor />;
             copyParams(traits.constructor, constructor);
-            xml.AS3::appendChild(constructor)
+            xml.AS3::appendChild(constructor);
         }
 
         for each (var variable in traits.variables) {
@@ -110,7 +110,7 @@ package avmplus {
         copyMetadata(traits.metadata, xml);
     }
 
-    public function describeType(value: *, flags: uint):XML {
+    public function describeType(value:*, flags:uint):XML {
         var json = describeTypeJSON(value, flags);
         var xml = <type />;
         xml.@name = json.name;

@@ -3,12 +3,10 @@
 // by https://github.com/golfinq/ActionScript_Event_Builder
 // It won't be regenerated in the future, so feel free to edit and/or fix
 
-package flash.display3D
-{
+package flash.display3D {
 
     [API("674")]
-    public final class Context3DTextureFormat
-    {
+    public final class Context3DTextureFormat {
         public static const BGRA:String = "bgra";
 
         // 16 bit, bgra packed as 4:4:4:4

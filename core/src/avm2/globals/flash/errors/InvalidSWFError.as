@@ -3,18 +3,14 @@
 // by https://github.com/golfinq/ActionScript_Event_Builder
 // It won't be regenerated in the future, so feel free to edit and/or fix
 
-package flash.errors
-{
+package flash.errors {
 
-    public dynamic class InvalidSWFError extends Error
-    {
+    public dynamic class InvalidSWFError extends Error {
         prototype.name = "InvalidSWFError";
 
-        public function InvalidSWFError(message:String = "", id:int = 0)
-        {
+        public function InvalidSWFError(message:String = "", id:int = 0) {
             super(message, id);
         }
 
     }
 }
-

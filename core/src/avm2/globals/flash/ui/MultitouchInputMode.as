@@ -3,12 +3,10 @@
 // by https://github.com/golfinq/ActionScript_Event_Builder
 // It won't be regenerated in the future, so feel free to edit and/or fix
 
-package flash.ui
-{
+package flash.ui {
 
-    public final class MultitouchInputMode
-    {
-        // Specifies that TransformGestureEvent, PressAndTapGestureEvent, and GestureEvent events are dispatched for the related user interaction supported by the current environment, 
+    public final class MultitouchInputMode {
+        // Specifies that TransformGestureEvent, PressAndTapGestureEvent, and GestureEvent events are dispatched for the related user interaction supported by the current environment,
         // and other touch events (such as a simple tap) are interpreted as mouse events.
         public static const GESTURE:String = "gesture";
 

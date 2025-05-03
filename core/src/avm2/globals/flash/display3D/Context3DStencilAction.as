@@ -3,12 +3,10 @@
 // by https://github.com/golfinq/ActionScript_Event_Builder
 // It won't be regenerated in the future, so feel free to edit and/or fix
 
-package flash.display3D
-{
+package flash.display3D {
 
     [API("674")]
-    public final class Context3DStencilAction
-    {
+    public final class Context3DStencilAction {
         // Decrement the stencil buffer value, clamping at 0, the minimum value.
         public static const DECREMENT_SATURATE:String = "decrementSaturate";
 

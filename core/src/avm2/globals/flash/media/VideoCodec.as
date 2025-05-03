@@ -3,12 +3,10 @@
 // by https://github.com/golfinq/ActionScript_Event_Builder
 // It won't be regenerated in the future, so feel free to edit and/or fix
 
-package flash.media
-{
+package flash.media {
 
     [API("674")]
-    public final class VideoCodec
-    {
+    public final class VideoCodec {
         // Constant value indicating that H.264/AVC codec is used for compressing video.
         public static const H264AVC:String = "H264Avc";
 

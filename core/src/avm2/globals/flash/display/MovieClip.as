@@ -1,6 +1,7 @@
 package flash.display {
     public dynamic class MovieClip extends Sprite {
-        public function MovieClip() {}
+        public function MovieClip() {
+        }
 
         public native function get currentFrame():int;
         public native function get currentFrameLabel():String;

@@ -2,14 +2,13 @@ package flash.media {
     import flash.events.EventDispatcher;
     import flash.utils.ByteArray;
     import flash.net.URLRequest;
-    
+
     [Ruffle(InstanceAllocator)]
     public class Sound extends EventDispatcher {
         public function Sound(stream:URLRequest = null, context:SoundLoaderContext = null) {
-            this.init(stream, context)
+            this.init(stream, context);
         }
         private native function init(stream:URLRequest, context:SoundLoaderContext);
-
 
         public native function get bytesLoaded():uint;
         public native function get bytesTotal():int;
@@ -28,6 +27,6 @@ package flash.media {
         [API("674")]
         public native function loadCompressedDataFromByteArray(bytes:ByteArray, bytesLength:uint):void;
         [API("674")]
-        public native function loadPCMFromByteArray(bytes:ByteArray, samples:uint, format:String = "float", stereo:Boolean = true, sampleRate:Number = 44100.0):void
+        public native function loadPCMFromByteArray(bytes:ByteArray, samples:uint, format:String = "float", stereo:Boolean = true, sampleRate:Number = 44100.0):void;
     }
 }

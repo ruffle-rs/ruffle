@@ -12,7 +12,7 @@ package flash.display {
     public class Loader extends DisplayObjectContainer {
 
         [Ruffle(NativeAccessible)]
-        private var _contentLoaderInfo: LoaderInfo;
+        private var _contentLoaderInfo:LoaderInfo;
 
         public function get contentLoaderInfo():LoaderInfo {
             return this._contentLoaderInfo;
@@ -22,9 +22,9 @@ package flash.display {
             return this._contentLoaderInfo.content;
         }
 
-        public native function load(request: URLRequest, context: LoaderContext = null):void;
+        public native function load(request:URLRequest, context:LoaderContext = null):void;
 
-        public native function loadBytes(data: ByteArray, context: LoaderContext = null):void;
+        public native function loadBytes(data:ByteArray, context:LoaderContext = null):void;
 
         public native function unload():void;
 
