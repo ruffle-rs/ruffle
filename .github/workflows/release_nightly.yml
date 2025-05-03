@@ -469,7 +469,7 @@ jobs:
         run: npm run sign-firefox
 
   build-web-demo-and-selfhosted:
-    name: Build web demo and selfhosted package with docs
+    name: Build web demo and selfhosted package with docs, and release assets for dual-wasm extensions
     needs: create-nightly-release
     if: needs.create-nightly-release.outputs.is_active == 'true'
     runs-on: ubuntu-24.04
@@ -540,6 +540,26 @@ jobs:
         working-directory: web
         shell: bash -l {0}
         run: npm run build:dual-wasm-repro
+
+      - name: Upload generic extension
+        run: |
+          tag_name="${{ needs.create-nightly-release.outputs.tag_name }}"
+          package_file="${{ needs.create-nightly-release.outputs.package_prefix }}-web-extension-dual-wasm.zip"
+          cp "./web/packages/extension/dist/ruffle_extension.zip" "$package_file"
+          gh release upload "$tag_name" "$package_file"
+          rm "$package_file"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload Firefox extension (unsigned)
+        run: |
+          tag_name="${{ needs.create-nightly-release.outputs.tag_name }}"
+          package_file="${{ needs.create-nightly-release.outputs.package_prefix }}-web-extension-firefox-dual-wasm-unsigned.xpi"
+          cp "./web/packages/extension/dist/firefox_unsigned.xpi" "$package_file"
+          gh release upload "$tag_name" "$package_file"
+          rm "$package_file"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Build web docs
         working-directory: web
