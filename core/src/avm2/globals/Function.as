@@ -4,6 +4,26 @@ package {
     public final dynamic class Function {
         private static native function _initFunctionClass():void;
 
+        public function Function() {
+            // The Function constructor is implemented natively:
+            // this AS-defined method does nothing
+        }
+
+        public native function get length() : int;
+
+        public native function get prototype():*;
+        public native function set prototype(proto:*):*;
+
+        AS3 native function apply(receiver:* = void 0, args:* = void 0):*;
+        AS3 native function call(receiver:* = void 0, ...rest):*;
+
+        [Ruffle(NativeCallable)]
+        private static function createDummyFunction():Function {
+            return function() { };
+        }
+
+        public static const length:int = 1;
+
         {
             _initFunctionClass();
 
@@ -33,25 +53,5 @@ package {
             prototype.setPropertyIsEnumerable("toString", false);
             prototype.setPropertyIsEnumerable("toLocaleString", false);
         }
-
-        public function Function() {
-            // The Function constructor is implemented natively:
-            // this AS-defined method does nothing
-        }
-
-        public native function get length() : int;
-
-        public native function get prototype():*;
-        public native function set prototype(proto:*):*;
-
-        AS3 native function apply(receiver:* = void 0, args:* = void 0):*;
-        AS3 native function call(receiver:* = void 0, ...rest):*;
-
-        [Ruffle(NativeCallable)]
-        private static function createDummyFunction():Function {
-            return function() { };
-        }
-
-        public static const length:int = 1;
     }
 }

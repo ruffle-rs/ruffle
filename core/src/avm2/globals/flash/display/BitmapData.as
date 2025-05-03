@@ -65,37 +65,28 @@ package flash.display {
             return result;
         }
         public native function unlock(changeRect:Rectangle = null):void;
-        public native function copyPixels(
-            sourceBitmapData:BitmapData, sourceRect:Rectangle, destPoint:Point, alphaBitmapData:BitmapData = null, alphaPoint:Point = null, mergeAlpha:Boolean = false
-        ):void;
-        public native function draw(
-            source:IBitmapDrawable, matrix:Matrix = null, colorTransform:ColorTransform = null, blendMode:String = null, clipRect:Rectangle = null, smoothing:Boolean = false
-        ):void;
+        public native function copyPixels(sourceBitmapData:BitmapData, sourceRect:Rectangle, destPoint:Point,
+                alphaBitmapData:BitmapData = null, alphaPoint:Point = null, mergeAlpha:Boolean = false):void;
+        public native function draw(source:IBitmapDrawable, matrix:Matrix = null, colorTransform:ColorTransform = null,
+                blendMode:String = null, clipRect:Rectangle = null, smoothing:Boolean = false):void;
         [API("680")]
-        public native function drawWithQuality(
-            source:IBitmapDrawable, matrix:Matrix = null, colorTransform:ColorTransform = null, blendMode:String = null, clipRect:Rectangle = null, smoothing:Boolean = false, quality:String = null
-        ):void;
+        public native function drawWithQuality(source:IBitmapDrawable, matrix:Matrix = null, colorTransform:ColorTransform = null,
+                blendMode:String = null, clipRect:Rectangle = null, smoothing:Boolean = false, quality:String = null):void;
         public native function fillRect(rect:Rectangle, color:uint):void;
         public native function dispose():void;
         public native function applyFilter(sourceBitmapData:BitmapData, sourceRect:Rectangle, destPoint:Point, filter:BitmapFilter):void;
         public native function clone():BitmapData;
-        public native function paletteMap(
-            sourceBitmapData:BitmapData, sourceRect:Rectangle, destPoint:Point, redArray:Array = null, greenArray:Array = null, blueArray:Array = null, alphaArray:Array = null
-        ):void;
-        public native function perlinNoise(
-            baseX:Number, baseY:Number, numOctaves:uint, randomSeed:int, stitch:Boolean, fractalNoise:Boolean, channelOptions:uint = 7, grayScale:Boolean = false, offsets:Array = null
-        ):void;
-        public native function threshold(
-            sourceBitmapData:BitmapData, sourceRect:Rectangle, destPoint:Point, operation:String, threshold:uint, color:uint = 0, mask:uint = 0xFFFFFFFF, copySource:Boolean = false
-        ):uint;
+        public native function paletteMap(sourceBitmapData:BitmapData, sourceRect:Rectangle, destPoint:Point,
+                redArray:Array = null, greenArray:Array = null, blueArray:Array = null, alphaArray:Array = null):void;
+        public native function perlinNoise(baseX:Number, baseY:Number, numOctaves:uint, randomSeed:int, stitch:Boolean,
+                fractalNoise:Boolean, channelOptions:uint = 7, grayScale:Boolean = false, offsets:Array = null):void;
+        public native function threshold(sourceBitmapData:BitmapData, sourceRect:Rectangle, destPoint:Point, operation:String,
+                threshold:uint, color:uint = 0, mask:uint = 0xFFFFFFFF, copySource:Boolean = false):uint;
         public native function compare(otherBitmapData:BitmapData):Object;
-        public native function pixelDissolve(
-            sourceBitmapData:BitmapData, sourceRect:Rectangle, destPoint:Point, randomSeed:int = 0, numPixels:int = 0,
-            fillColor:uint = 0
-        ):int;
-        public native function merge(
-            sourceBitmapData:BitmapData, sourceRect:Rectangle, destPoint:Point, redMultiplier:uint, greenMultiplier:uint, blueMultiplier:uint, alphaMultiplier:uint
-        ):void;
+        public native function pixelDissolve(sourceBitmapData:BitmapData, sourceRect:Rectangle, destPoint:Point,
+                randomSeed:int = 0, numPixels:int = 0, fillColor:uint = 0):int;
+        public native function merge(sourceBitmapData:BitmapData, sourceRect:Rectangle, destPoint:Point, redMultiplier:uint,
+                greenMultiplier:uint, blueMultiplier:uint, alphaMultiplier:uint):void;
         public function generateFilterRect(sourceRect:Rectangle, filter:BitmapFilter):Rectangle {
             // Flash always reports that a ShaderFilter affects the entire BitmapData, ignoring sourceRect.
             if (filter is ShaderFilter) {

@@ -32,12 +32,14 @@ package {
             // Note: This function is not generic and will throw for non-regexps.
             var regexp: RegExp = this;
 
-            // ECMA-262 Edition 5.1 - RegExp.prototype.toString():
-            //  Return the String value formed by concatenating the Strings "/",
-            //  the String value of the source property of this RegExp object, and "/";
-            //  plus "g" if the global property is true,
-            //  "i" if the ignoreCase property is true,
-            //  and "m" if the multiline property is true.
+            /*
+             * ECMA-262 Edition 5.1 - RegExp.prototype.toString():
+             *  Return the String value formed by concatenating the Strings "/",
+             *  the String value of the source property of this RegExp object, and "/";
+             *  plus "g" if the global property is true,
+             *  "i" if the ignoreCase property is true,
+             *  and "m" if the multiline property is true.
+             */
             var string = "/" + regexp.source + "/";
             if (regexp.global) {
                 string += "g";

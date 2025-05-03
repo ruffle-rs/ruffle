@@ -79,7 +79,7 @@ package avmplus {
         }
 
         for each (var variable in traits.variables) {
-            var variableXML = (variable.access == "readonly") ? <constant /> : <variable />;
+            var variableXML = (variable.access == "readonly") ? (<constant />) : (<variable />);
             variableXML.@name = variable.name;
             variableXML.@type = variable.type;
             copyUriAndMetadata(variable, variableXML);
