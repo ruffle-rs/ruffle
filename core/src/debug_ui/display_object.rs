@@ -4,6 +4,7 @@ use ruffle_render::blend::ExtendedBlendMode;
 pub use search::DisplayObjectSearchWindow;
 
 use crate::avm2::object::TObject as _;
+use crate::bitmap::bitmap_data::DirtyState;
 use crate::context::UpdateContext;
 use crate::debug_ui::handle::{AVM1ObjectHandle, AVM2ObjectHandle, DisplayObjectHandle};
 use crate::debug_ui::movie::open_movie_button;
@@ -754,6 +755,20 @@ impl DisplayObjectWindow {
                 } else {
                     ui.label("No");
                 }
+                ui.end_row();
+
+                ui.label("Dirty State");
+                match bitmap_data.dirty_state() {
+                    DirtyState::Clean => ui.label("Clean"),
+                    DirtyState::CpuModified(region) => ui.label(format!(
+                        "CPU Modified ({},{} to {},{})",
+                        region.x_min, region.y_min, region.x_max, region.y_max
+                    )),
+                    DirtyState::GpuModified(_, region) => ui.label(format!(
+                        "GPU Modified ({},{} to {},{})",
+                        region.x_min, region.y_min, region.x_max, region.y_max
+                    )),
+                };
                 ui.end_row();
             });
 

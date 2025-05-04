@@ -235,7 +235,7 @@ pub struct BitmapData<'gc> {
 }
 
 #[derive(Clone, Debug)]
-enum DirtyState {
+pub enum DirtyState {
     // Both the CPU and GPU pixels are up to date. We do not need to wait for any syncs to complete
     Clean,
 
@@ -637,6 +637,10 @@ impl<'gc> BitmapData<'gc> {
 
     pub fn transparency(&self) -> bool {
         self.transparency
+    }
+
+    pub fn dirty_state(&self) -> &DirtyState {
+        &self.dirty_state
     }
 
     pub fn set_gpu_dirty(
