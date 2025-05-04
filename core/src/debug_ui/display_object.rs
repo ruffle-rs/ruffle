@@ -726,27 +726,62 @@ impl DisplayObjectWindow {
         context: &mut UpdateContext<'gc>,
         object: Bitmap<'gc>,
     ) {
-        let bitmap_data = object.bitmap_data(context.renderer);
-        let bitmap_data = bitmap_data.read();
+        Grid::new(ui.id().with("bitmap"))
+            .num_columns(2)
+            .show(ui, |ui| {
+                let bitmap_data = object.bitmap_data(context.renderer);
+                let bitmap_data = bitmap_data.read();
 
-        if bitmap_data.width() == 0 || bitmap_data.height() == 0 {
-            ui.weak("(no pixels)");
-            return;
-        }
+                ui.label("Width");
+                ui.label(format!("{} px", bitmap_data.width()));
+                ui.end_row();
 
-        let mut egui_texture = bitmap_data.egui_texture.borrow_mut();
-        let texture = egui_texture.get_or_insert_with(|| {
-            let image = egui::ColorImage::from_rgba_premultiplied(
-                [bitmap_data.width() as usize, bitmap_data.height() as usize],
-                &bitmap_data.pixels_rgba(),
-            );
-            ui.ctx().load_texture(
-                format!("bitmap-{:?}", object.as_ptr()),
-                image,
-                Default::default(),
-            )
-        });
-        ui.image((texture.id(), texture.size_vec2()));
+                ui.label("Height");
+                ui.label(format!("{} px", bitmap_data.height()));
+                ui.end_row();
+
+                ui.label("Transparency");
+                if bitmap_data.transparency() {
+                    ui.label("Yes");
+                } else {
+                    ui.label("No");
+                }
+                ui.end_row();
+
+                ui.label("Disposed");
+                if bitmap_data.disposed() {
+                    ui.label("Yes");
+                } else {
+                    ui.label("No");
+                }
+                ui.end_row();
+            });
+
+        CollapsingHeader::new("Preview")
+            .id_salt(ui.id().with("bitmap-preview"))
+            .show(ui, |ui| {
+                let bitmap_data = object.bitmap_data(context.renderer);
+                let bitmap_data = bitmap_data.read();
+
+                if bitmap_data.width() == 0 || bitmap_data.height() == 0 {
+                    ui.weak("(no pixels)");
+                    return;
+                }
+
+                let mut egui_texture = bitmap_data.egui_texture.borrow_mut();
+                let texture = egui_texture.get_or_insert_with(|| {
+                    let image = egui::ColorImage::from_rgba_premultiplied(
+                        [bitmap_data.width() as usize, bitmap_data.height() as usize],
+                        &bitmap_data.pixels_rgba(),
+                    );
+                    ui.ctx().load_texture(
+                        format!("bitmap-{:?}", object.as_ptr()),
+                        image,
+                        Default::default(),
+                    )
+                });
+                ui.image((texture.id(), texture.size_vec2()));
+            });
     }
 
     pub fn show_movieclip<'gc>(
