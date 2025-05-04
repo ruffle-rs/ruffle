@@ -728,6 +728,12 @@ impl DisplayObjectWindow {
     ) {
         let bitmap_data = object.bitmap_data(context.renderer);
         let bitmap_data = bitmap_data.read();
+
+        if bitmap_data.width() == 0 || bitmap_data.height() == 0 {
+            ui.weak("(no pixels)");
+            return;
+        }
+
         let mut egui_texture = bitmap_data.egui_texture.borrow_mut();
         let texture = egui_texture.get_or_insert_with(|| {
             let image = egui::ColorImage::from_rgba_premultiplied(
