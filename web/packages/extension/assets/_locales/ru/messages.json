@@ -26,6 +26,12 @@
     "settings_log_level_info": {
         "message": "Информация"
     },
+    "settings_log_level_debug": {
+        "message": "Отлаживать"
+    },
+    "settings_log_level_trace": {
+        "message": "Отслеживать"
+    },
     "settings_max_execution_duration": {
         "message": "Максимальная допустимая длительность выполнения ActionScript (в секундах)"
     },

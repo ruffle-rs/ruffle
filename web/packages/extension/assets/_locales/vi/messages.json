@@ -24,7 +24,13 @@
         "message": "Hiển thị lỗi và cảnh báo"
     },
     "settings_log_level_info": {
-        "message": "Hiển thị lỗi, cảnh báo và thông tin chính"
+        "message": "Hiển thị lỗi, cảnh báo và thông báo chính"
+    },
+    "settings_log_level_debug": {
+        "message": "Hiển thị tất cả thông tin hữu ích cho việc gỡ lỗi"
+    },
+    "settings_log_level_trace": {
+        "message": "Hiển thị chi tiết tất cả thông tin gỡ lỗi"
     },
     "settings_max_execution_duration": {
         "message": "Thời gian tối đa cho ActionScript thực thi và phản hồi (tính bằng giây)"
