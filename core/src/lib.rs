@@ -49,6 +49,7 @@ mod system_properties;
 pub mod tag_utils;
 pub mod timer;
 mod types;
+pub mod utils;
 mod vminterface;
 mod xml;
 

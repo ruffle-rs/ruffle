@@ -4,6 +4,7 @@ use crate::avm2::activation::Activation;
 use crate::avm2::object::script_object::ScriptObjectData;
 use crate::avm2::object::{ClassObject, Object, ObjectPtr, TObject};
 use crate::avm2::Error;
+use crate::utils::HasPrefixField;
 use core::fmt;
 use gc_arena::barrier::unlock;
 use gc_arena::lock::Lock;
@@ -60,7 +61,7 @@ impl<'gc> Stage3DObject<'gc> {
     }
 }
 
-#[derive(Clone, Collect)]
+#[derive(Clone, Collect, HasPrefixField)]
 #[collect(no_drop)]
 #[repr(C, align(8))]
 pub struct Stage3DObjectData<'gc> {
@@ -73,17 +74,9 @@ pub struct Stage3DObjectData<'gc> {
     visible: Cell<bool>,
 }
 
-const _: () = assert!(std::mem::offset_of!(Stage3DObjectData, base) == 0);
-const _: () =
-    assert!(std::mem::align_of::<Stage3DObjectData>() == std::mem::align_of::<ScriptObjectData>());
-
 impl<'gc> TObject<'gc> for Stage3DObject<'gc> {
     fn gc_base(&self) -> Gc<'gc, ScriptObjectData<'gc>> {
-        // SAFETY: Object data is repr(C), and a compile-time assert ensures
-        // that the ScriptObjectData stays at offset 0 of the struct- so the
-        // layouts are compatible
-
-        unsafe { Gc::cast(self.0) }
+        HasPrefixField::as_prefix_gc(self.0)
     }
 
     fn as_ptr(&self) -> *const ObjectPtr {

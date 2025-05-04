@@ -7,6 +7,7 @@ use crate::avm2::{Avm2, Domain, Error};
 use crate::context::UpdateContext;
 use crate::local_connection::{LocalConnectionHandle, LocalConnections};
 use crate::string::AvmString;
+use crate::utils::HasPrefixField;
 use core::fmt;
 use flash_lso::types::Value as AmfValue;
 use gc_arena::barrier::unlock;
@@ -51,7 +52,7 @@ impl fmt::Debug for LocalConnectionObject<'_> {
     }
 }
 
-#[derive(Collect)]
+#[derive(Collect, HasPrefixField)]
 #[collect(no_drop)]
 #[repr(C, align(8))]
 pub struct LocalConnectionObjectData<'gc> {
@@ -62,11 +63,6 @@ pub struct LocalConnectionObjectData<'gc> {
 
     client: Lock<Option<Object<'gc>>>,
 }
-
-const _: () = assert!(std::mem::offset_of!(LocalConnectionObjectData, base) == 0);
-const _: () = assert!(
-    std::mem::align_of::<LocalConnectionObjectData>() == std::mem::align_of::<ScriptObjectData>()
-);
 
 impl<'gc> LocalConnectionObject<'gc> {
     pub fn is_connected(&self) -> bool {
@@ -163,11 +159,7 @@ impl<'gc> LocalConnectionObject<'gc> {
 
 impl<'gc> TObject<'gc> for LocalConnectionObject<'gc> {
     fn gc_base(&self) -> Gc<'gc, ScriptObjectData<'gc>> {
-        // SAFETY: Object data is repr(C), and a compile-time assert ensures
-        // that the ScriptObjectData stays at offset 0 of the struct- so the
-        // layouts are compatible
-
-        unsafe { Gc::cast(self.0) }
+        HasPrefixField::as_prefix_gc(self.0)
     }
 
     fn as_ptr(&self) -> *const ObjectPtr {

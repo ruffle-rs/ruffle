@@ -5,6 +5,7 @@ use crate::avm2::object::script_object::ScriptObjectData;
 use crate::avm2::object::{ClassObject, Object, ObjectPtr, TObject};
 use crate::avm2::Error;
 use crate::bitmap::bitmap_data::BitmapDataWrapper;
+use crate::utils::HasPrefixField;
 use core::fmt;
 use gc_arena::barrier::unlock;
 use gc_arena::{lock::Lock, Collect, Gc, GcWeak, Mutation};
@@ -45,7 +46,7 @@ impl fmt::Debug for BitmapDataObject<'_> {
     }
 }
 
-#[derive(Clone, Collect)]
+#[derive(Clone, Collect, HasPrefixField)]
 #[collect(no_drop)]
 #[repr(C, align(8))]
 pub struct BitmapDataObjectData<'gc> {
@@ -54,11 +55,6 @@ pub struct BitmapDataObjectData<'gc> {
 
     bitmap_data: Lock<BitmapDataWrapper<'gc>>,
 }
-
-const _: () = assert!(std::mem::offset_of!(BitmapDataObjectData, base) == 0);
-const _: () = assert!(
-    std::mem::align_of::<BitmapDataObjectData>() == std::mem::align_of::<ScriptObjectData>()
-);
 
 impl<'gc> BitmapDataObject<'gc> {
     // Constructs a BitmapData object from a BitmapDataWrapper.
@@ -101,11 +97,7 @@ impl<'gc> BitmapDataObject<'gc> {
 
 impl<'gc> TObject<'gc> for BitmapDataObject<'gc> {
     fn gc_base(&self) -> Gc<'gc, ScriptObjectData<'gc>> {
-        // SAFETY: Object data is repr(C), and a compile-time assert ensures
-        // that the ScriptObjectData stays at offset 0 of the struct- so the
-        // layouts are compatible
-
-        unsafe { Gc::cast(self.0) }
+        HasPrefixField::as_prefix_gc(self.0)
     }
 
     fn as_ptr(&self) -> *const ObjectPtr {

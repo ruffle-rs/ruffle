@@ -7,6 +7,7 @@ use crate::avm2::object::{Object, ObjectPtr, TObject};
 use crate::avm2::value::Value;
 use crate::avm2::{Error, Multiname, Namespace};
 use crate::string::AvmString;
+use crate::utils::HasPrefixField;
 use gc_arena::barrier::unlock;
 use gc_arena::{
     lock::{Lock, RefLock},
@@ -347,7 +348,7 @@ impl<'gc> XmlListObject<'gc> {
     }
 }
 
-#[derive(Clone, Collect)]
+#[derive(Clone, Collect, HasPrefixField)]
 #[collect(no_drop)]
 #[repr(C, align(8))]
 pub struct XmlListObjectData<'gc> {
@@ -366,10 +367,6 @@ pub struct XmlListObjectData<'gc> {
 
     target_dirty: Cell<bool>,
 }
-
-const _: () = assert!(std::mem::offset_of!(XmlListObjectData, base) == 0);
-const _: () =
-    assert!(std::mem::align_of::<XmlListObjectData>() == std::mem::align_of::<ScriptObjectData>());
 
 /// Holds either an `E4XNode` or an `XmlObject`. This can be converted
 /// in-place to an `XmlObject` via `get_or_create_xml`.
@@ -477,11 +474,7 @@ impl<'gc> From<XmlObject<'gc>> for XmlOrXmlListObject<'gc> {
 
 impl<'gc> TObject<'gc> for XmlListObject<'gc> {
     fn gc_base(&self) -> Gc<'gc, ScriptObjectData<'gc>> {
-        // SAFETY: Object data is repr(C), and a compile-time assert ensures
-        // that the ScriptObjectData stays at offset 0 of the struct- so the
-        // layouts are compatible
-
-        unsafe { Gc::cast(self.0) }
+        HasPrefixField::as_prefix_gc(self.0)
     }
 
     fn as_ptr(&self) -> *const ObjectPtr {

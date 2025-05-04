@@ -8,6 +8,7 @@ use crate::avm2::value::Value;
 use crate::avm2::Error;
 use crate::avm2::Multiname;
 use crate::string::AvmString;
+use crate::utils::HasPrefixField;
 use core::fmt;
 use gc_arena::barrier::unlock;
 use gc_arena::{lock::RefLock, Collect, Gc, GcWeak, Mutation};
@@ -47,7 +48,7 @@ impl fmt::Debug for ArrayObject<'_> {
     }
 }
 
-#[derive(Collect, Clone)]
+#[derive(Collect, Clone, HasPrefixField)]
 #[collect(no_drop)]
 #[repr(C, align(8))]
 pub struct ArrayObjectData<'gc> {
@@ -57,10 +58,6 @@ pub struct ArrayObjectData<'gc> {
     /// Array-structured properties
     array: RefLock<ArrayStorage<'gc>>,
 }
-
-const _: () = assert!(std::mem::offset_of!(ArrayObjectData, base) == 0);
-const _: () =
-    assert!(std::mem::align_of::<ArrayObjectData>() == std::mem::align_of::<ScriptObjectData>());
 
 impl<'gc> ArrayObject<'gc> {
     /// Construct an empty array.
@@ -98,11 +95,7 @@ impl<'gc> ArrayObject<'gc> {
 
 impl<'gc> TObject<'gc> for ArrayObject<'gc> {
     fn gc_base(&self) -> Gc<'gc, ScriptObjectData<'gc>> {
-        // SAFETY: Object data is repr(C), and a compile-time assert ensures
-        // that the ScriptObjectData stays at offset 0 of the struct- so the
-        // layouts are compatible
-
-        unsafe { Gc::cast(self.0) }
+        HasPrefixField::as_prefix_gc(self.0)
     }
 
     fn as_ptr(&self) -> *const ObjectPtr {

@@ -9,6 +9,7 @@ use crate::avm2::Error;
 use crate::avm2::Multiname;
 use crate::avm2::Namespace;
 use crate::string::StringContext;
+use crate::utils::HasPrefixField;
 use core::fmt;
 use gc_arena::barrier::unlock;
 use gc_arena::{lock::RefLock, Collect, Gc, GcWeak, Mutation};
@@ -32,7 +33,7 @@ impl fmt::Debug for QNameObject<'_> {
     }
 }
 
-#[derive(Collect, Clone)]
+#[derive(Collect, Clone, HasPrefixField)]
 #[collect(no_drop)]
 #[repr(C, align(8))]
 pub struct QNameObjectData<'gc> {
@@ -42,10 +43,6 @@ pub struct QNameObjectData<'gc> {
     /// The Multiname this object is associated with.
     name: RefLock<Multiname<'gc>>,
 }
-
-const _: () = assert!(std::mem::offset_of!(QNameObjectData, base) == 0);
-const _: () =
-    assert!(std::mem::align_of::<QNameObjectData>() == std::mem::align_of::<ScriptObjectData>());
 
 impl<'gc> QNameObject<'gc> {
     pub fn new_empty(activation: &mut Activation<'_, 'gc>) -> Self {
@@ -130,11 +127,7 @@ impl<'gc> QNameObject<'gc> {
 
 impl<'gc> TObject<'gc> for QNameObject<'gc> {
     fn gc_base(&self) -> Gc<'gc, ScriptObjectData<'gc>> {
-        // SAFETY: Object data is repr(C), and a compile-time assert ensures
-        // that the ScriptObjectData stays at offset 0 of the struct- so the
-        // layouts are compatible
-
-        unsafe { Gc::cast(self.0) }
+        HasPrefixField::as_prefix_gc(self.0)
     }
 
     fn as_ptr(&self) -> *const ObjectPtr {
