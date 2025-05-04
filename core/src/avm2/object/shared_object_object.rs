@@ -5,6 +5,7 @@ use crate::avm2::error::argument_error;
 use crate::avm2::object::script_object::ScriptObjectData;
 use crate::avm2::object::{ClassObject, Object, ObjectPtr, ScriptObject, TObject};
 use crate::avm2::Error;
+use crate::utils::HasPrefixField;
 use gc_arena::barrier::unlock;
 use gc_arena::{lock::Lock, Collect, Gc, GcWeak};
 use std::fmt::Debug;
@@ -31,7 +32,7 @@ pub struct SharedObjectObject<'gc>(pub Gc<'gc, SharedObjectObjectData<'gc>>);
 #[collect(no_drop)]
 pub struct SharedObjectObjectWeak<'gc>(pub GcWeak<'gc, SharedObjectObjectData<'gc>>);
 
-#[derive(Clone, Collect)]
+#[derive(Clone, Collect, HasPrefixField)]
 #[collect(no_drop)]
 #[repr(C, align(8))]
 pub struct SharedObjectObjectData<'gc> {
@@ -44,11 +45,6 @@ pub struct SharedObjectObjectData<'gc> {
     /// The name of this SharedObject.
     name: String,
 }
-
-const _: () = assert!(std::mem::offset_of!(SharedObjectObjectData, base) == 0);
-const _: () = assert!(
-    std::mem::align_of::<SharedObjectObjectData>() == std::mem::align_of::<ScriptObjectData>()
-);
 
 impl<'gc> SharedObjectObject<'gc> {
     pub fn from_data_and_name(
@@ -91,11 +87,7 @@ impl<'gc> SharedObjectObject<'gc> {
 
 impl<'gc> TObject<'gc> for SharedObjectObject<'gc> {
     fn gc_base(&self) -> Gc<'gc, ScriptObjectData<'gc>> {
-        // SAFETY: Object data is repr(C), and a compile-time assert ensures
-        // that the ScriptObjectData stays at offset 0 of the struct- so the
-        // layouts are compatible
-
-        unsafe { Gc::cast(self.0) }
+        HasPrefixField::as_prefix_gc(self.0)
     }
 
     fn as_ptr(&self) -> *const ObjectPtr {

@@ -2,6 +2,7 @@ use crate::avm2::object::script_object::ScriptObjectData;
 use crate::avm2::object::{ClassObject, Object, ObjectPtr, TObject};
 use crate::avm2::{Activation, Error};
 use crate::backend::ui::FileDialogResult;
+use crate::utils::HasPrefixField;
 use gc_arena::GcWeak;
 use gc_arena::{Collect, Gc};
 use std::cell::{Cell, Ref, RefCell};
@@ -34,11 +35,7 @@ pub struct FileReferenceObjectWeak<'gc>(pub GcWeak<'gc, FileReferenceObjectData<
 
 impl<'gc> TObject<'gc> for FileReferenceObject<'gc> {
     fn gc_base(&self) -> Gc<'gc, ScriptObjectData<'gc>> {
-        // SAFETY: Object data is repr(C), and a compile-time assert ensures
-        // that the ScriptObjectData stays at offset 0 of the struct- so the
-        // layouts are compatible
-
-        unsafe { Gc::cast(self.0) }
+        HasPrefixField::as_prefix_gc(self.0)
     }
 
     fn as_ptr(&self) -> *const ObjectPtr {
@@ -75,7 +72,7 @@ pub enum FileReference {
     FileDialogResult(Box<dyn FileDialogResult>),
 }
 
-#[derive(Collect)]
+#[derive(Collect, HasPrefixField)]
 #[collect(no_drop)]
 #[repr(C, align(8))]
 pub struct FileReferenceObjectData<'gc> {
@@ -86,11 +83,6 @@ pub struct FileReferenceObjectData<'gc> {
 
     loaded: Cell<bool>,
 }
-
-const _: () = assert!(std::mem::offset_of!(FileReferenceObjectData, base) == 0);
-const _: () = assert!(
-    std::mem::align_of::<FileReferenceObjectData>() == std::mem::align_of::<ScriptObjectData>()
-);
 
 impl fmt::Debug for FileReferenceObject<'_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {

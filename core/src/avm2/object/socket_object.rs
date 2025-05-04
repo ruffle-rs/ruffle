@@ -4,6 +4,7 @@ use crate::avm2::object::script_object::ScriptObjectData;
 use crate::avm2::object::{ClassObject, Object, ObjectPtr, TObject};
 use crate::avm2::Activation;
 use crate::socket::SocketHandle;
+use crate::utils::HasPrefixField;
 use gc_arena::GcWeak;
 use gc_arena::{Collect, Gc};
 use std::cell::{Cell, RefCell, RefMut};
@@ -42,11 +43,7 @@ pub struct SocketObjectWeak<'gc>(pub GcWeak<'gc, SocketObjectData<'gc>>);
 
 impl<'gc> TObject<'gc> for SocketObject<'gc> {
     fn gc_base(&self) -> Gc<'gc, ScriptObjectData<'gc>> {
-        // SAFETY: Object data is repr(C), and a compile-time assert ensures
-        // that the ScriptObjectData stays at offset 0 of the struct- so the
-        // layouts are compatible
-
-        unsafe { Gc::cast(self.0) }
+        HasPrefixField::as_prefix_gc(self.0)
     }
 
     fn as_ptr(&self) -> *const ObjectPtr {
@@ -196,7 +193,7 @@ macro_rules! impl_read{
 impl_write!(write_float f32, write_double f64, write_int i32, write_unsigned_int u32, write_short i16, write_unsigned_short u16);
 impl_read!(read_float 4; f32, read_double 8; f64, read_int 4; i32, read_unsigned_int 4; u32, read_short 2; i16, read_unsigned_short 2; u16, read_byte 1; i8, read_unsigned_byte 1; u8);
 
-#[derive(Collect)]
+#[derive(Collect, HasPrefixField)]
 #[collect(no_drop)]
 #[repr(C, align(8))]
 pub struct SocketObjectData<'gc> {
@@ -213,10 +210,6 @@ pub struct SocketObjectData<'gc> {
     read_buffer: RefCell<Vec<u8>>,
     write_buffer: RefCell<Vec<u8>>,
 }
-
-const _: () = assert!(std::mem::offset_of!(SocketObjectData, base) == 0);
-const _: () =
-    assert!(std::mem::align_of::<SocketObjectData>() == std::mem::align_of::<ScriptObjectData>());
 
 impl fmt::Debug for SocketObject<'_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {

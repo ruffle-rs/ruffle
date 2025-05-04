@@ -5,6 +5,7 @@ use crate::avm2::domain::Domain;
 use crate::avm2::object::script_object::ScriptObjectData;
 use crate::avm2::object::{ClassObject, Object, ObjectPtr, TObject};
 use crate::avm2::Error;
+use crate::utils::HasPrefixField;
 use core::fmt;
 use gc_arena::barrier::unlock;
 use gc_arena::{lock::Lock, Collect, Gc, GcWeak, Mutation};
@@ -43,7 +44,7 @@ impl fmt::Debug for DomainObject<'_> {
     }
 }
 
-#[derive(Clone, Collect)]
+#[derive(Clone, Collect, HasPrefixField)]
 #[collect(no_drop)]
 #[repr(C, align(8))]
 pub struct DomainObjectData<'gc> {
@@ -53,10 +54,6 @@ pub struct DomainObjectData<'gc> {
     /// The domain this object holds
     domain: Lock<Domain<'gc>>,
 }
-
-const _: () = assert!(std::mem::offset_of!(DomainObjectData, base) == 0);
-const _: () =
-    assert!(std::mem::align_of::<DomainObjectData>() == std::mem::align_of::<ScriptObjectData>());
 
 impl<'gc> DomainObject<'gc> {
     /// Create a new object for a given domain.
@@ -90,11 +87,7 @@ impl<'gc> DomainObject<'gc> {
 
 impl<'gc> TObject<'gc> for DomainObject<'gc> {
     fn gc_base(&self) -> Gc<'gc, ScriptObjectData<'gc>> {
-        // SAFETY: Object data is repr(C), and a compile-time assert ensures
-        // that the ScriptObjectData stays at offset 0 of the struct- so the
-        // layouts are compatible
-
-        unsafe { Gc::cast(self.0) }
+        HasPrefixField::as_prefix_gc(self.0)
     }
 
     fn as_ptr(&self) -> *const ObjectPtr {

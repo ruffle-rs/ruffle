@@ -6,6 +6,7 @@ use crate::avm2::value::Value;
 use crate::avm2::Error;
 use crate::avm2::Multiname;
 use crate::character::Character;
+use crate::utils::HasPrefixField;
 use core::fmt;
 use gc_arena::{Collect, Gc, GcWeak};
 use std::cell::{Ref, RefCell, RefMut};
@@ -66,7 +67,7 @@ impl fmt::Debug for ByteArrayObject<'_> {
     }
 }
 
-#[derive(Clone, Collect)]
+#[derive(Clone, Collect, HasPrefixField)]
 #[collect(no_drop)]
 #[repr(C, align(8))]
 pub struct ByteArrayObjectData<'gc> {
@@ -75,11 +76,6 @@ pub struct ByteArrayObjectData<'gc> {
 
     storage: RefCell<ByteArrayStorage>,
 }
-
-const _: () = assert!(std::mem::offset_of!(ByteArrayObjectData, base) == 0);
-const _: () = assert!(
-    std::mem::align_of::<ByteArrayObjectData>() == std::mem::align_of::<ScriptObjectData>()
-);
 
 impl<'gc> ByteArrayObject<'gc> {
     pub fn from_storage(
@@ -109,11 +105,7 @@ impl<'gc> ByteArrayObject<'gc> {
 
 impl<'gc> TObject<'gc> for ByteArrayObject<'gc> {
     fn gc_base(&self) -> Gc<'gc, ScriptObjectData<'gc>> {
-        // SAFETY: Object data is repr(C), and a compile-time assert ensures
-        // that the ScriptObjectData stays at offset 0 of the struct- so the
-        // layouts are compatible
-
-        unsafe { Gc::cast(self.0) }
+        HasPrefixField::as_prefix_gc(self.0)
     }
 
     fn as_ptr(&self) -> *const ObjectPtr {

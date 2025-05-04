@@ -8,6 +8,7 @@ use crate::avm2::object::{ClassObject, Object, ObjectPtr, TObject};
 use crate::avm2::value::Value;
 use crate::avm2::Error;
 use crate::string::{WStr, WString};
+use crate::utils::HasPrefixField;
 use core::fmt;
 use gc_arena::{Collect, Gc, GcWeak};
 use std::fmt::Debug;
@@ -48,7 +49,7 @@ impl fmt::Debug for ErrorObject<'_> {
     }
 }
 
-#[derive(Clone, Collect)]
+#[derive(Clone, Collect, HasPrefixField)]
 #[collect(no_drop)]
 #[repr(C, align(8))]
 pub struct ErrorObjectData<'gc> {
@@ -57,10 +58,6 @@ pub struct ErrorObjectData<'gc> {
 
     call_stack: CallStack<'gc>,
 }
-
-const _: () = assert!(std::mem::offset_of!(ErrorObjectData, base) == 0);
-const _: () =
-    assert!(std::mem::align_of::<ErrorObjectData>() == std::mem::align_of::<ScriptObjectData>());
 
 impl<'gc> ErrorObject<'gc> {
     pub fn display(&self) -> WString {
@@ -104,11 +101,7 @@ impl<'gc> ErrorObject<'gc> {
 
 impl<'gc> TObject<'gc> for ErrorObject<'gc> {
     fn gc_base(&self) -> Gc<'gc, ScriptObjectData<'gc>> {
-        // SAFETY: Object data is repr(C), and a compile-time assert ensures
-        // that the ScriptObjectData stays at offset 0 of the struct- so the
-        // layouts are compatible
-
-        unsafe { Gc::cast(self.0) }
+        HasPrefixField::as_prefix_gc(self.0)
     }
 
     fn as_ptr(&self) -> *const ObjectPtr {

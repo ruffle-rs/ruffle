@@ -4,6 +4,7 @@ use crate::avm2::activation::Activation;
 use crate::avm2::object::script_object::ScriptObjectData;
 use crate::avm2::object::{Object, ObjectPtr, TObject};
 use crate::avm2::Error;
+use crate::utils::HasPrefixField;
 use gc_arena::{Collect, Gc, GcWeak};
 use ruffle_render::backend::VertexBuffer;
 use std::rc::Rc;
@@ -56,7 +57,7 @@ impl<'gc> VertexBuffer3DObject<'gc> {
     }
 }
 
-#[derive(Collect)]
+#[derive(Collect, HasPrefixField)]
 #[collect(no_drop)]
 #[repr(C, align(8))]
 pub struct VertexBuffer3DObjectData<'gc> {
@@ -74,18 +75,9 @@ pub struct VertexBuffer3DObjectData<'gc> {
     data32_per_vertex: u8,
 }
 
-const _: () = assert!(std::mem::offset_of!(VertexBuffer3DObjectData, base) == 0);
-const _: () = assert!(
-    std::mem::align_of::<VertexBuffer3DObjectData>() == std::mem::align_of::<ScriptObjectData>()
-);
-
 impl<'gc> TObject<'gc> for VertexBuffer3DObject<'gc> {
     fn gc_base(&self) -> Gc<'gc, ScriptObjectData<'gc>> {
-        // SAFETY: Object data is repr(C), and a compile-time assert ensures
-        // that the ScriptObjectData stays at offset 0 of the struct- so the
-        // layouts are compatible
-
-        unsafe { Gc::cast(self.0) }
+        HasPrefixField::as_prefix_gc(self.0)
     }
 
     fn as_ptr(&self) -> *const ObjectPtr {

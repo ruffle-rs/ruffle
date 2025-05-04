@@ -4,6 +4,7 @@ use crate::avm2::activation::Activation;
 use crate::avm2::object::script_object::ScriptObjectData;
 use crate::avm2::object::{Object, ObjectPtr, TObject};
 use crate::avm2::Error;
+use crate::utils::HasPrefixField;
 use gc_arena::{Collect, Gc, GcWeak};
 use ruffle_render::backend::{Context3DTextureFormat, Texture};
 use std::rc::Rc;
@@ -55,7 +56,7 @@ impl<'gc> TextureObject<'gc> {
     }
 }
 
-#[derive(Collect)]
+#[derive(Collect, HasPrefixField)]
 #[collect(no_drop)]
 #[repr(C, align(8))]
 pub struct TextureObjectData<'gc> {
@@ -71,17 +72,9 @@ pub struct TextureObjectData<'gc> {
     handle: Rc<dyn Texture>,
 }
 
-const _: () = assert!(std::mem::offset_of!(TextureObjectData, base) == 0);
-const _: () =
-    assert!(std::mem::align_of::<TextureObjectData>() == std::mem::align_of::<ScriptObjectData>());
-
 impl<'gc> TObject<'gc> for TextureObject<'gc> {
     fn gc_base(&self) -> Gc<'gc, ScriptObjectData<'gc>> {
-        // SAFETY: Object data is repr(C), and a compile-time assert ensures
-        // that the ScriptObjectData stays at offset 0 of the struct- so the
-        // layouts are compatible
-
-        unsafe { Gc::cast(self.0) }
+        HasPrefixField::as_prefix_gc(self.0)
     }
 
     fn as_ptr(&self) -> *const ObjectPtr {

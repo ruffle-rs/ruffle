@@ -11,6 +11,7 @@ use crate::display_object::TDisplayObject;
 use crate::display_object::{DisplayObject, InteractiveObject, TInteractiveObject};
 use crate::events::{KeyCode, MouseButton};
 use crate::string::AvmString;
+use crate::utils::HasPrefixField;
 use gc_arena::barrier::unlock;
 use gc_arena::{lock::RefLock, Collect, Gc, GcWeak, Mutation};
 use ruffle_macros::istr;
@@ -42,7 +43,7 @@ pub struct EventObject<'gc>(pub Gc<'gc, EventObjectData<'gc>>);
 #[collect(no_drop)]
 pub struct EventObjectWeak<'gc>(pub GcWeak<'gc, EventObjectData<'gc>>);
 
-#[derive(Clone, Collect)]
+#[derive(Clone, Collect, HasPrefixField)]
 #[collect(no_drop)]
 #[repr(C, align(8))]
 pub struct EventObjectData<'gc> {
@@ -52,10 +53,6 @@ pub struct EventObjectData<'gc> {
     /// The event this object holds.
     event: RefLock<Event<'gc>>,
 }
-
-const _: () = assert!(std::mem::offset_of!(EventObjectData, base) == 0);
-const _: () =
-    assert!(std::mem::align_of::<EventObjectData>() == std::mem::align_of::<ScriptObjectData>());
 
 impl<'gc> EventObject<'gc> {
     /// Create a bare Event instance while skipping the usual `construct()` pipeline.
@@ -368,11 +365,7 @@ impl<'gc> EventObject<'gc> {
 
 impl<'gc> TObject<'gc> for EventObject<'gc> {
     fn gc_base(&self) -> Gc<'gc, ScriptObjectData<'gc>> {
-        // SAFETY: Object data is repr(C), and a compile-time assert ensures
-        // that the ScriptObjectData stays at offset 0 of the struct- so the
-        // layouts are compatible
-
-        unsafe { Gc::cast(self.0) }
+        HasPrefixField::as_prefix_gc(self.0)
     }
 
     fn as_ptr(&self) -> *const ObjectPtr {

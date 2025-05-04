@@ -11,6 +11,7 @@ use crate::backend::audio::{AudioManager, SoundHandle};
 use crate::context::UpdateContext;
 use crate::display_object::SoundTransform;
 use crate::string::AvmString;
+use crate::utils::HasPrefixField;
 use core::fmt;
 use gc_arena::barrier::unlock;
 use gc_arena::{
@@ -61,7 +62,7 @@ impl fmt::Debug for SoundObject<'_> {
     }
 }
 
-#[derive(Collect)]
+#[derive(Collect, HasPrefixField)]
 #[collect(no_drop)]
 #[repr(C, align(8))]
 pub struct SoundObjectData<'gc> {
@@ -77,10 +78,6 @@ pub struct SoundObjectData<'gc> {
     /// ID3Info Object
     id3: Lock<Option<Object<'gc>>>,
 }
-
-const _: () = assert!(std::mem::offset_of!(SoundObjectData, base) == 0);
-const _: () =
-    assert!(std::mem::align_of::<SoundObjectData>() == std::mem::align_of::<ScriptObjectData>());
 
 #[derive(Collect)]
 #[collect(no_drop)]
@@ -307,11 +304,7 @@ fn play_queued<'gc>(
 
 impl<'gc> TObject<'gc> for SoundObject<'gc> {
     fn gc_base(&self) -> Gc<'gc, ScriptObjectData<'gc>> {
-        // SAFETY: Object data is repr(C), and a compile-time assert ensures
-        // that the ScriptObjectData stays at offset 0 of the struct- so the
-        // layouts are compatible
-
-        unsafe { Gc::cast(self.0) }
+        HasPrefixField::as_prefix_gc(self.0)
     }
 
     fn as_ptr(&self) -> *const ObjectPtr {

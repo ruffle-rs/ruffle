@@ -5,6 +5,7 @@ use crate::avm2::object::script_object::ScriptObjectData;
 use crate::avm2::object::{ClassObject, Object, ObjectPtr, TObject};
 use crate::avm2::regexp::RegExp;
 use crate::avm2::Error;
+use crate::utils::HasPrefixField;
 use core::fmt;
 use gc_arena::barrier::unlock;
 use gc_arena::{lock::RefLock, Collect, Gc, GcWeak, Mutation};
@@ -44,7 +45,7 @@ impl fmt::Debug for RegExpObject<'_> {
     }
 }
 
-#[derive(Clone, Collect)]
+#[derive(Clone, Collect, HasPrefixField)]
 #[collect(no_drop)]
 #[repr(C, align(8))]
 pub struct RegExpObjectData<'gc> {
@@ -53,10 +54,6 @@ pub struct RegExpObjectData<'gc> {
 
     regexp: RefLock<RegExp<'gc>>,
 }
-
-const _: () = assert!(std::mem::offset_of!(RegExpObjectData, base) == 0);
-const _: () =
-    assert!(std::mem::align_of::<RegExpObjectData>() == std::mem::align_of::<ScriptObjectData>());
 
 impl<'gc> RegExpObject<'gc> {
     pub fn from_regexp(
@@ -83,11 +80,7 @@ impl<'gc> RegExpObject<'gc> {
 
 impl<'gc> TObject<'gc> for RegExpObject<'gc> {
     fn gc_base(&self) -> Gc<'gc, ScriptObjectData<'gc>> {
-        // SAFETY: Object data is repr(C), and a compile-time assert ensures
-        // that the ScriptObjectData stays at offset 0 of the struct- so the
-        // layouts are compatible
-
-        unsafe { Gc::cast(self.0) }
+        HasPrefixField::as_prefix_gc(self.0)
     }
 
     fn as_ptr(&self) -> *const ObjectPtr {

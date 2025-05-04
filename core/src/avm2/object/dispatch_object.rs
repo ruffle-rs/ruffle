@@ -4,6 +4,7 @@ use crate::avm2::activation::Activation;
 use crate::avm2::events::DispatchList;
 use crate::avm2::object::script_object::ScriptObjectData;
 use crate::avm2::object::{Object, ObjectPtr, TObject};
+use crate::utils::HasPrefixField;
 use core::fmt;
 use gc_arena::barrier::unlock;
 use gc_arena::{lock::RefLock, Collect, Gc, GcWeak, Mutation};
@@ -50,7 +51,7 @@ impl fmt::Debug for DispatchObject<'_> {
     }
 }
 
-#[derive(Clone, Collect)]
+#[derive(Clone, Collect, HasPrefixField)]
 #[collect(no_drop)]
 #[repr(C, align(8))]
 pub struct DispatchObjectData<'gc> {
@@ -60,10 +61,6 @@ pub struct DispatchObjectData<'gc> {
     /// The dispatch list this object holds.
     dispatch: RefLock<DispatchList<'gc>>,
 }
-
-const _: () = assert!(std::mem::offset_of!(DispatchObjectData, base) == 0);
-const _: () =
-    assert!(std::mem::align_of::<DispatchObjectData>() == std::mem::align_of::<ScriptObjectData>());
 
 impl<'gc> DispatchObject<'gc> {
     /// Construct an empty dispatch list.
@@ -83,11 +80,7 @@ impl<'gc> DispatchObject<'gc> {
 
 impl<'gc> TObject<'gc> for DispatchObject<'gc> {
     fn gc_base(&self) -> Gc<'gc, ScriptObjectData<'gc>> {
-        // SAFETY: Object data is repr(C), and a compile-time assert ensures
-        // that the ScriptObjectData stays at offset 0 of the struct- so the
-        // layouts are compatible
-
-        unsafe { Gc::cast(self.0) }
+        HasPrefixField::as_prefix_gc(self.0)
     }
 
     fn as_ptr(&self) -> *const ObjectPtr {

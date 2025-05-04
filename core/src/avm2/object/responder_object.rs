@@ -3,6 +3,7 @@ use crate::avm2::object::{ClassObject, FunctionObject, Object, ObjectPtr, TObjec
 use crate::avm2::{Activation, Error};
 use crate::context::UpdateContext;
 use crate::net_connection::ResponderCallback;
+use crate::utils::HasPrefixField;
 use flash_lso::types::Value as AMFValue;
 use gc_arena::barrier::unlock;
 use gc_arena::{lock::Lock, Collect, Gc, GcWeak, Mutation};
@@ -36,11 +37,7 @@ pub struct ResponderObjectWeak<'gc>(pub GcWeak<'gc, ResponderObjectData<'gc>>);
 
 impl<'gc> TObject<'gc> for ResponderObject<'gc> {
     fn gc_base(&self) -> Gc<'gc, ScriptObjectData<'gc>> {
-        // SAFETY: Object data is repr(C), and a compile-time assert ensures
-        // that the ScriptObjectData stays at offset 0 of the struct- so the
-        // layouts are compatible
-
-        unsafe { Gc::cast(self.0) }
+        HasPrefixField::as_prefix_gc(self.0)
     }
 
     fn as_ptr(&self) -> *const ObjectPtr {
@@ -93,7 +90,7 @@ impl<'gc> ResponderObject<'gc> {
     }
 }
 
-#[derive(Collect)]
+#[derive(Collect, HasPrefixField)]
 #[collect(no_drop)]
 #[repr(C, align(8))]
 pub struct ResponderObjectData<'gc> {
@@ -106,11 +103,6 @@ pub struct ResponderObjectData<'gc> {
     /// Method to call with status info (likely errors)
     status: Lock<Option<FunctionObject<'gc>>>,
 }
-
-const _: () = assert!(std::mem::offset_of!(ResponderObjectData, base) == 0);
-const _: () = assert!(
-    std::mem::align_of::<ResponderObjectData>() == std::mem::align_of::<ScriptObjectData>()
-);
 
 impl fmt::Debug for ResponderObject<'_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
