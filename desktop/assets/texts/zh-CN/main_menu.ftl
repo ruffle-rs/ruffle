@@ -33,6 +33,7 @@ bookmarks-menu-add = 添加...
 bookmarks-menu-manage = 管理书签...
 debug-menu = 调试工具
 debug-menu-open-stage = 查看舞台信息
+debug-menu-open-root-movie-clip = 查看根影片剪辑
 debug-menu-open-movie = 查看影片
 debug-menu-open-movie-list = 显示已知影片
 debug-menu-open-domain-list = 显示域

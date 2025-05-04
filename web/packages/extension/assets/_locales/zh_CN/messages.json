@@ -26,6 +26,12 @@
     "settings_log_level_info": {
         "message": "信息"
     },
+    "settings_log_level_debug": {
+        "message": "调试"
+    },
+    "settings_log_level_trace": {
+        "message": "跟踪"
+    },
     "settings_max_execution_duration": {
         "message": "允许的 ActionScript 执行时间上限(秒)"
     },
