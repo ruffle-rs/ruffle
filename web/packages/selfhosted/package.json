@@ -22,7 +22,7 @@
         "ruffle-core": "^0.1.0"
     },
     "devDependencies": {
-        "@types/chai": "^5.2.1",
+        "@types/chai": "^5.2.2",
         "@types/chai-html": "^3.0.0",
         "json5": "^2.2.3",
         "ts-node": "^10.9.2",
