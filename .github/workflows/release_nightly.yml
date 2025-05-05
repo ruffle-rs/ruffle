@@ -541,7 +541,8 @@ jobs:
         shell: bash -l {0}
         run: npm run build:dual-wasm-repro
 
-      - name: Upload generic extension
+      # NOTE: This is done here because the job that builds the extensions for publication doesn't have the vanilla (MVP) WASM modules, but for the selfhosted package we build them both
+      - name: Upload dual-wasm generic extension
         run: |
           tag_name="${{ needs.create-nightly-release.outputs.tag_name }}"
           package_file="${{ needs.create-nightly-release.outputs.package_prefix }}-web-extension-dual-wasm.zip"
@@ -551,7 +552,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Upload Firefox extension (unsigned)
+      - name: Upload dual-wasm Firefox extension (unsigned)
         run: |
           tag_name="${{ needs.create-nightly-release.outputs.tag_name }}"
           package_file="${{ needs.create-nightly-release.outputs.package_prefix }}-web-extension-firefox-dual-wasm-unsigned.xpi"
