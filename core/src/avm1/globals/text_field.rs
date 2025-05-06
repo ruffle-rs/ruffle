@@ -150,12 +150,12 @@ fn get_new_text_format<'gc>(
 
 fn set_new_text_format<'gc>(
     text_field: EditText<'gc>,
-    activation: &mut Activation<'_, 'gc>,
+    _activation: &mut Activation<'_, 'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let [Value::Object(text_format), ..] = args {
         if let NativeObject::TextFormat(text_format) = text_format.native() {
-            text_field.set_new_text_format(text_format.borrow().clone(), activation.context);
+            text_field.set_new_text_format(text_format.borrow().clone());
         }
     }
 
@@ -355,7 +355,7 @@ pub fn set_text_color<'gc>(
         text_format.clone(),
         activation.context,
     );
-    this.set_new_text_format(text_format, activation.context);
+    this.set_new_text_format(text_format);
     Ok(())
 }
 
@@ -863,16 +863,16 @@ fn set_restrict<'gc>(
 ) -> Result<(), Error<'gc>> {
     match value {
         Value::Undefined | Value::Null => {
-            this.set_restrict(None, activation.context);
+            this.set_restrict(None);
         }
         _ => {
             let text = value.coerce_to_string(activation)?;
             if text.is_empty() {
                 // According to docs, an empty string means that you cannot enter any character,
                 // but according to reality, an empty string is equivalent to null in AVM1.
-                this.set_restrict(None, activation.context);
+                this.set_restrict(None);
             } else {
-                this.set_restrict(Some(&text), activation.context);
+                this.set_restrict(Some(&text));
             }
         }
     };

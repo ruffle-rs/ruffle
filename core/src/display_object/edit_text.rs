@@ -38,7 +38,7 @@ use ruffle_render::commands::CommandHandler;
 use ruffle_render::quality::StageQuality;
 use ruffle_render::transform::Transform;
 use ruffle_wstr::WStrToUtf8;
-use std::cell::{Cell, Ref, RefMut};
+use std::cell::{Cell, Ref, RefCell, RefMut};
 use std::collections::VecDeque;
 use std::sync::Arc;
 use swf::ColorTransform;
@@ -94,8 +94,7 @@ pub struct EditTextData<'gc> {
     ///
     /// It is lowered further into layout boxes, which are used for actual
     /// rendering.
-    #[collect(require_static)]
-    text_spans: FormatSpans,
+    text_spans: RefCell<FormatSpans>,
 
     /// The color of the background fill. Only applied when has_border and has_background.
     background_color: Cell<Color>,
@@ -177,8 +176,7 @@ pub struct EditTextData<'gc> {
     is_fte: Cell<bool>,
 
     /// Restrict what characters the user may input.
-    #[collect(require_static)]
-    restrict: EditTextRestrict,
+    restrict: RefCell<EditTextRestrict>,
 
     /// Information related to the last click event inside this text field.
     last_click: Cell<Option<ClickEventData>>,
@@ -190,11 +188,9 @@ pub struct EditTextData<'gc> {
     ///
     /// It is used only when a style sheet is available
     /// in order to preserve styles.
-    #[collect(require_static)]
-    original_html_text: Option<WString>,
+    original_html_text: RefCell<Option<WString>>,
 
-    #[collect(require_static)]
-    ime_data: Option<ImeData>,
+    ime_data: RefCell<Option<ImeData>>,
 }
 
 impl EditTextData<'_> {
@@ -222,21 +218,22 @@ impl EditTextData<'_> {
         }
     }
 
-    fn parse_html(&mut self, text: &WStr) {
-        let default_format = self.text_spans.default_format().clone();
-        self.text_spans = FormatSpans::from_html(
+    fn parse_html(&self, text: &WStr) {
+        let default_format = self.text_spans.borrow().default_format().clone();
+        self.text_spans.replace(FormatSpans::from_html(
             text,
             default_format,
             self.style_sheet.style_sheet(),
             self.flags.get().contains(EditTextFlag::MULTILINE),
             self.flags.get().contains(EditTextFlag::CONDENSE_WHITE),
             self.shared.swf.version(),
-        );
-        self.original_html_text = if self.style_sheet.is_some() {
-            Some(text.to_owned())
-        } else {
-            None
-        };
+        ));
+        self.original_html_text
+            .replace(if self.style_sheet.is_some() {
+                Some(text.to_owned())
+            } else {
+                None
+            });
     }
 }
 
@@ -335,7 +332,7 @@ impl<'gc> EditText<'gc> {
             context.gc(),
             EditTextData {
                 base: InteractiveObjectBase::default(),
-                text_spans,
+                text_spans: RefCell::new(text_spans),
                 shared: Gc::new(
                     context.gc(),
                     EditTextShared {
@@ -364,12 +361,12 @@ impl<'gc> EditText<'gc> {
                 max_chars: Cell::new(swf_tag.max_length().unwrap_or_default() as i32),
                 mouse_wheel_enabled: Cell::new(true),
                 is_fte: Cell::new(false),
-                restrict: EditTextRestrict::allow_all(),
+                restrict: RefCell::new(EditTextRestrict::allow_all()),
                 last_click: Cell::new(None),
                 layout_debug_boxes_flags: Cell::new(LayoutDebugBoxesFlag::empty()),
                 style_sheet: EditTextStyleSheet::None,
-                original_html_text: None,
-                ime_data: None,
+                original_html_text: RefCell::new(None),
+                ime_data: RefCell::new(None),
                 avm1_text_field_bindings: Vec::new(),
             },
         ));
@@ -454,7 +451,7 @@ impl<'gc> EditText<'gc> {
     }
 
     pub fn text(self) -> WString {
-        self.0.read().text_spans.text().into()
+        self.0.read().text_spans.borrow().text().into()
     }
 
     pub fn set_text(self, text: &WStr, context: &mut UpdateContext<'gc>) {
@@ -465,13 +462,15 @@ impl<'gc> EditText<'gc> {
             return;
         }
 
-        let mut edit_text = self.0.write(context.gc());
+        let edit_text = self.0.read();
         if edit_text.style_sheet.is_some() {
             // When CSS is set, text will always be treated as HTML.
             edit_text.parse_html(text);
         } else {
-            let default_format = edit_text.text_spans.default_format().clone();
-            edit_text.text_spans = FormatSpans::from_text(text.into(), default_format);
+            let default_format = edit_text.text_spans.borrow().default_format().clone();
+            edit_text
+                .text_spans
+                .replace(FormatSpans::from_text(text.into(), default_format));
         }
         drop(edit_text);
 
@@ -482,11 +481,12 @@ impl<'gc> EditText<'gc> {
         if self.is_effectively_html() {
             let text = self.0.read();
 
-            if let Some(ref html) = text.original_html_text {
-                return html.clone();
+            if let Some(html) = text.original_html_text.borrow().clone() {
+                return html;
             }
 
-            text.text_spans.to_html()
+            let html = text.text_spans.borrow().to_html();
+            html
         } else {
             // Non-HTML text fields always return plain text.
             self.text()
@@ -513,20 +513,20 @@ impl<'gc> EditText<'gc> {
     }
 
     pub fn text_length(self) -> usize {
-        self.0.read().text_spans.text().len()
+        self.0.read().text_spans.borrow().text().len()
     }
 
     pub fn new_text_format(self) -> TextFormat {
-        self.0.read().text_spans.default_format().clone()
+        self.0.read().text_spans.borrow().default_format().clone()
     }
 
-    pub fn set_new_text_format(self, tf: TextFormat, context: &mut UpdateContext<'gc>) {
-        self.0.write(context.gc()).text_spans.set_default_format(tf);
+    pub fn set_new_text_format(self, tf: TextFormat) {
+        self.0.read().text_spans.borrow_mut().set_default_format(tf);
     }
 
     pub fn text_format(self, from: usize, to: usize) -> TextFormat {
         // TODO: Convert to byte indices
-        self.0.read().text_spans.get_text_format(from, to)
+        self.0.read().text_spans.borrow().get_text_format(from, to)
     }
 
     pub fn set_text_format(
@@ -538,8 +538,9 @@ impl<'gc> EditText<'gc> {
     ) {
         // TODO: Convert to byte indices
         self.0
-            .write(context.gc())
+            .read()
             .text_spans
+            .borrow_mut()
             .set_text_format(from, to, &tf);
         self.relayout(context);
     }
@@ -578,11 +579,11 @@ impl<'gc> EditText<'gc> {
     }
 
     pub fn restrict(self) -> Option<WString> {
-        return self.0.read().restrict.value().map(Into::into);
+        return self.0.read().restrict.borrow().value().map(Into::into);
     }
 
-    pub fn set_restrict(self, text: Option<&WStr>, context: &mut UpdateContext<'gc>) {
-        self.0.write(context.gc()).restrict = EditTextRestrict::from(text);
+    pub fn set_restrict(self, text: Option<&WStr>) {
+        self.0.read().restrict.replace(EditTextRestrict::from(text));
     }
 
     pub fn set_multiline(self, is_multiline: bool, context: &mut UpdateContext<'gc>) {
@@ -752,10 +753,10 @@ impl<'gc> EditText<'gc> {
         text.style_sheet = style_sheet;
 
         if text.style_sheet.is_none() {
-            text.original_html_text = None;
+            text.original_html_text.replace(None);
         }
 
-        if let Some(html) = text.original_html_text.clone() {
+        if let Some(html) = text.original_html_text.borrow().clone() {
             text.parse_html(&html);
         }
         drop(text);
@@ -811,8 +812,9 @@ impl<'gc> EditText<'gc> {
         context: &mut UpdateContext<'gc>,
     ) {
         self.0
-            .write(context.gc())
+            .read()
             .text_spans
+            .borrow_mut()
             .replace_text(from, to, text);
         self.relayout(context);
     }
@@ -882,12 +884,13 @@ impl<'gc> EditText<'gc> {
         let movie = edit_text.shared.swf.clone();
         let padding = Self::GUTTER * 2;
 
+        let mut text_spans = edit_text.text_spans.borrow_mut();
         if edit_text.flags.get().contains(EditTextFlag::PASSWORD) {
             // If the text is a password, hide the text
-            edit_text.text_spans.hide_text();
-        } else if edit_text.text_spans.has_displayed_text() {
+            text_spans.hide_text();
+        } else if text_spans.has_displayed_text() {
             // If it is not a password and has displayed text, we can clear the displayed text
-            edit_text.text_spans.clear_displayed_text();
+            text_spans.clear_displayed_text();
         }
 
         // Determine the internal width available for content layout.
@@ -898,7 +901,7 @@ impl<'gc> EditText<'gc> {
         };
 
         let new_layout = html::lower_from_text_spans(
-            &edit_text.text_spans,
+            &text_spans,
             context,
             movie,
             content_width,
@@ -906,6 +909,7 @@ impl<'gc> EditText<'gc> {
             is_word_wrap,
             edit_text.font_type(),
         );
+        drop(text_spans);
 
         edit_text.layout = new_layout;
         // reset scroll
@@ -1236,7 +1240,7 @@ impl<'gc> EditText<'gc> {
 
         let caret = if let LayoutContent::Text { start, end, .. } = &lbox.content() {
             if let Some(visible_selection) = visible_selection {
-                let text_len = edit_text.text_spans.text().len();
+                let text_len = edit_text.text_spans.borrow().text().len();
                 if visible_selection.is_caret()
                     && !edit_text.flags.get().contains(EditTextFlag::READ_ONLY)
                     && visible_selection.start() >= *start
@@ -1265,7 +1269,7 @@ impl<'gc> EditText<'gc> {
         // Instead, we embed an SWF version of Noto Sans to use as the "device font", and render
         // it the same as any other SWF outline text.
         if let Some((text, _tf, font, params, color)) =
-            lbox.as_renderable_text(edit_text.text_spans.displayed_text())
+            lbox.as_renderable_text(edit_text.text_spans.borrow().displayed_text())
         {
             let baseline = font.get_baseline_for_height(params.height());
             let descent = font.get_descent_for_height(params.height());
@@ -1465,7 +1469,7 @@ impl<'gc> EditText<'gc> {
         let text = self.0.read();
         let old_selection = text.selection.get();
         if let Some(mut selection) = selection {
-            selection.clamp(text.text_spans.text().len());
+            selection.clamp(text.text_spans.borrow().text().len());
             text.selection.set(Some(selection));
         } else {
             text.selection.set(None);
@@ -1502,7 +1506,7 @@ impl<'gc> EditText<'gc> {
         }
     }
 
-    pub fn spans(&self) -> Ref<FormatSpans> {
+    pub fn spans(&self) -> Ref<'_, RefCell<FormatSpans>> {
         Ref::map(self.0.read(), |r| &r.text_spans)
     }
 
@@ -1587,7 +1591,7 @@ impl<'gc> EditText<'gc> {
             let local_position = matrix * position;
 
             if let Some((text, _tf, font, params, color)) =
-                layout_box.as_renderable_text(text.text_spans.text())
+                layout_box.as_renderable_text(text.text_spans.borrow().text())
             {
                 let mut result = 0;
                 let baseline_adjustment =
@@ -1624,7 +1628,7 @@ impl<'gc> EditText<'gc> {
         if max_chars == 0 {
             usize::MAX
         } else {
-            let text_len = read.text_spans.text().len() as i32;
+            let text_len = read.text_spans.borrow().text().len() as i32;
             let selection_len = if let Some(selection) = self.selection() {
                 (selection.end() - selection.start()) as i32
             } else {
@@ -1841,11 +1845,11 @@ impl<'gc> EditText<'gc> {
 
                 self.replace_text(old_ime_start, old_ime_end, &text, context);
 
-                self.0.write(context.gc()).ime_data = Some(ImeData {
+                self.0.read().ime_data.replace(Some(ImeData {
                     ime_start: old_ime_start,
                     ime_end: old_ime_start + text.len(),
                     text: text_utf8,
-                });
+                }));
 
                 let new_selection = cursor.map(|(from, to)| {
                     TextSelection::for_range(old_ime_start + from, old_ime_start + to)
@@ -1857,40 +1861,39 @@ impl<'gc> EditText<'gc> {
     }
 
     fn ensure_ime_started(self, context: &mut UpdateContext<'gc>) -> ImeData {
-        if let Some(ime_data) = self.0.read().ime_data.clone() {
+        if let Some(ime_data) = self.0.read().ime_data.borrow().clone() {
             return ime_data;
         }
 
-        let selection = self
-            .selection()
-            .unwrap_or_else(|| TextSelection::for_position(self.0.read().text_spans.text().len()));
+        let selection = self.selection().unwrap_or_else(|| {
+            TextSelection::for_position(self.0.read().text_spans.borrow().text().len())
+        });
         self.replace_text(selection.start(), selection.end(), WStr::empty(), context);
 
-        let mut write = self.0.write(context.gc());
         let ime_data = ImeData {
             ime_start: selection.start(),
             ime_end: selection.start(),
             text: String::new(),
         };
-        write.ime_data = Some(ime_data.clone());
+        self.0.read().ime_data.replace(Some(ime_data.clone()));
         ime_data
     }
 
     fn ensure_ime_finished(self, context: &mut UpdateContext<'gc>) {
         let Some(ImeData {
             ime_start, ime_end, ..
-        }) = self.0.read().ime_data
+        }) = *self.0.read().ime_data.borrow()
         else {
             return;
         };
 
         self.replace_text(ime_start, ime_end, WStr::empty(), context);
         self.set_selection(Some(TextSelection::for_position(ime_start)), context.gc());
-        self.0.write(context.gc()).ime_data = None;
+        self.0.read().ime_data.take();
     }
 
     fn ensure_ime_committed(self, context: &mut UpdateContext<'gc>) {
-        let Some(ImeData { text, .. }) = self.0.read().ime_data.clone() else {
+        let Some(ImeData { text, .. }) = self.0.read().ime_data.borrow().clone() else {
             return;
         };
 
@@ -2037,7 +2040,7 @@ impl<'gc> EditText<'gc> {
             return;
         };
 
-        let filtered_text = self.0.read().restrict.filter_allowed(&text);
+        let filtered_text = self.0.read().restrict.borrow().filter_allowed(&text);
 
         if let Avm2Value::Object(target) = self.object2() {
             let character_string = AvmString::new(context.gc(), text);
@@ -2260,7 +2263,8 @@ impl<'gc> EditText<'gc> {
     pub fn line_text(self, line: usize) -> Option<WString> {
         let read = self.0.read();
         let line = read.layout.lines().get(line)?;
-        let line_text = read.text_spans.text().slice(line.text_range())?;
+        let text_spans = read.text_spans.borrow();
+        let line_text = text_spans.text().slice(line.text_range())?;
         Some(WString::from_wstr(line_text))
     }
 
@@ -2995,13 +2999,10 @@ impl<'gc> TInteractiveObject<'gc> for EditText<'gc> {
             if let Some(position) = self.screen_position_to_index(*context.mouse_position) {
                 self.handle_click(index, position, context);
 
-                if let Some((span_index, _)) =
-                    self.0.read().text_spans.resolve_position_as_span(position)
-                {
-                    link_to_open = self
-                        .0
-                        .read()
-                        .text_spans
+                let read = self.0.read();
+                let text_spans = read.text_spans.borrow();
+                if let Some((span_index, _)) = text_spans.resolve_position_as_span(position) {
+                    link_to_open = text_spans
                         .span(span_index)
                         .map(|s| (s.url.clone(), s.target.clone()));
                 }
