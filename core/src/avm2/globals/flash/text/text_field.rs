@@ -312,7 +312,7 @@ pub fn get_default_text_format<'gc>(
 }
 
 pub fn set_default_text_format<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    _activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -326,7 +326,7 @@ pub fn set_default_text_format<'gc>(
 
         if let Some(new_text_format) = new_text_format {
             if let Some(new_text_format) = new_text_format.as_text_format() {
-                this.set_new_text_format(new_text_format.clone(), activation.context);
+                this.set_new_text_format(new_text_format.clone());
             }
         }
     }
@@ -616,7 +616,7 @@ pub fn set_text_color<'gc>(
             desired_format.clone(),
             activation.context,
         );
-        this.set_new_text_format(desired_format, activation.context);
+        this.set_new_text_format(desired_format);
     }
 
     Ok(Value::Undefined)
@@ -1547,10 +1547,7 @@ pub fn set_restrict<'gc>(
         .as_display_object()
         .and_then(|this| this.as_edit_text())
     {
-        this.set_restrict(
-            args.try_get_string(activation, 0)?.as_deref(),
-            activation.context,
-        );
+        this.set_restrict(args.try_get_string(activation, 0)?.as_deref());
     }
     Ok(Value::Undefined)
 }
@@ -1598,6 +1595,7 @@ pub fn get_text_runs<'gc>(
 
     let array = this
         .spans()
+        .borrow()
         .iter_spans()
         .filter(|(start, end, _, _)| {
             // Flash never returns empty spans here, but we currently require

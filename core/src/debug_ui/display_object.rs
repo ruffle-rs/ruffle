@@ -514,7 +514,7 @@ impl DisplayObjectWindow {
                         } else {
                             None
                         };
-                        object.set_restrict(new_restrict, context);
+                        object.set_restrict(new_restrict);
                     }
 
                     if let Some(original_restrict) = restrict {
@@ -522,7 +522,7 @@ impl DisplayObjectWindow {
                         let mut restrict = original_restrict.clone();
                         ui.text_edit_singleline(&mut restrict);
                         if restrict != original_restrict {
-                            object.set_restrict(Some(&WString::from_utf8(&restrict)), context);
+                            object.set_restrict(Some(&WString::from_utf8(&restrict)));
                         }
                     } else {
                         ui.weak("Disabled");
@@ -544,7 +544,7 @@ impl DisplayObjectWindow {
 
                 ui.label("Default Text Format");
                 ui.horizontal(|ui| {
-                    show_text_format_hover(ui, object.spans().default_format());
+                    show_text_format_hover(ui, object.spans().borrow().default_format());
                 });
                 ui.end_row();
 
@@ -615,7 +615,7 @@ impl DisplayObjectWindow {
                         ui.label("Text");
                         ui.end_row();
 
-                        for (start, end, text, format) in object.spans().iter_spans() {
+                        for (start, end, text, format) in object.spans().borrow().iter_spans() {
                             ui.label(format!("{}–{} ({})", start, end, format.span_length));
 
                             ui.horizontal(|ui| {
