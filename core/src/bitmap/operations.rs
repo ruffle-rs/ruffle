@@ -494,6 +494,9 @@ pub fn color_transform<'gc>(
         return;
     }
 
+    // Clamp both min and max coordinates to target size to enforce invariants
+    let x_min = x_min.min(target.width());
+    let y_min = y_min.min(target.height());
     let x_max = x_max.min(target.width());
     let y_max = y_max.min(target.height());
 
