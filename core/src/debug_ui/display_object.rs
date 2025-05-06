@@ -544,7 +544,7 @@ impl DisplayObjectWindow {
 
                 ui.label("Default Text Format");
                 ui.horizontal(|ui| {
-                    show_text_format_hover(ui, object.spans().borrow().default_format());
+                    show_text_format_hover(ui, object.spans().default_format());
                 });
                 ui.end_row();
 
@@ -615,7 +615,7 @@ impl DisplayObjectWindow {
                         ui.label("Text");
                         ui.end_row();
 
-                        for (start, end, text, format) in object.spans().borrow().iter_spans() {
+                        for (start, end, text, format) in object.spans().iter_spans() {
                             ui.label(format!("{}–{} ({})", start, end, format.span_length));
 
                             ui.horizontal(|ui| {

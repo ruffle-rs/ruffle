@@ -1595,7 +1595,6 @@ pub fn get_text_runs<'gc>(
 
     let array = this
         .spans()
-        .borrow()
         .iter_spans()
         .filter(|(start, end, _, _)| {
             // Flash never returns empty spans here, but we currently require

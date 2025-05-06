@@ -32,7 +32,8 @@ use crate::vminterface::{AvmObject, Instantiator};
 use chrono::DateTime;
 use chrono::Utc;
 use core::fmt;
-use gc_arena::{Collect, Gc, GcCell, Mutation};
+use gc_arena::barrier::unlock;
+use gc_arena::{Collect, Gc, Lock, Mutation, RefLock};
 use ruffle_macros::istr;
 use ruffle_render::commands::CommandHandler;
 use ruffle_render::quality::StageQuality;
@@ -67,12 +68,12 @@ pub enum AutoSizeMode {
 /// (SWF19 DefineEditText pp. 171-174)
 #[derive(Clone, Collect, Copy)]
 #[collect(no_drop)]
-pub struct EditText<'gc>(GcCell<'gc, EditTextData<'gc>>);
+pub struct EditText<'gc>(Gc<'gc, EditTextData<'gc>>);
 
 impl fmt::Debug for EditText<'_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct("EditText")
-            .field("ptr", &self.0.as_ptr())
+            .field("ptr", &Gc::as_ptr(self.0))
             .finish()
     }
 }
@@ -81,7 +82,7 @@ impl fmt::Debug for EditText<'_> {
 #[collect(no_drop)]
 pub struct EditTextData<'gc> {
     /// DisplayObject and InteractiveObject common properties.
-    base: InteractiveObjectBase<'gc>,
+    base: RefLock<InteractiveObjectBase<'gc>>,
 
     /// Data shared among all instances of this `EditText`.
     shared: Gc<'gc, EditTextShared>,
@@ -108,7 +109,7 @@ pub struct EditTextData<'gc> {
     autosize: Cell<AutoSizeMode>,
 
     /// The calculated layout.
-    layout: Layout<'gc>,
+    layout: RefLock<Layout<'gc>>,
 
     /// The current intrinsic bounds of the text field.
     bounds: Cell<Rectangle<Twips>>,
@@ -121,19 +122,19 @@ pub struct EditTextData<'gc> {
     autosize_lazy_bounds: Cell<Option<Rectangle<Twips>>>,
 
     /// The AVM1 object handle
-    object: Option<AvmObject<'gc>>,
+    object: Lock<Option<AvmObject<'gc>>>,
 
     /// The variable path that this text field is bound to (AVM1 only).
-    variable: Option<AvmString<'gc>>,
+    variable: Lock<Option<AvmString<'gc>>>,
 
     /// The (AVM1) display object that the variable binding is bound to.
-    bound_display_object: Option<DisplayObject<'gc>>,
+    bound_display_object: Lock<Option<DisplayObject<'gc>>>,
 
     /// Other AVM1 text fields bound to *this* text field.
-    avm1_text_field_bindings: Vec<Avm1TextFieldBinding<'gc>>,
+    avm1_text_field_bindings: RefLock<Vec<Avm1TextFieldBinding<'gc>>>,
 
     /// The AVM2 class of this button. If None, it is flash.text.TextField.
-    class: Option<Avm2ClassObject<'gc>>,
+    class: Lock<Option<Avm2ClassObject<'gc>>>,
 
     /// The selected portion of the text, or None if the text is not selected.
     /// Note: Selections work differently in AVM1, AVM2, and Ruffle.
@@ -182,7 +183,7 @@ pub struct EditTextData<'gc> {
     last_click: Cell<Option<ClickEventData>>,
 
     /// Style sheet used when parsing HTML.
-    style_sheet: EditTextStyleSheet<'gc>,
+    style_sheet: Lock<EditTextStyleSheet<'gc>>,
 
     /// Original HTML text before parsing.
     ///
@@ -196,7 +197,8 @@ pub struct EditTextData<'gc> {
 impl EditTextData<'_> {
     fn vertical_scroll_offset(&self) -> Twips {
         if self.scroll.get() > 1 {
-            let lines = self.layout.lines();
+            let layout = self.layout.borrow();
+            let lines = layout.lines();
 
             if let Some(line_data) = lines.get(self.scroll.get() - 1) {
                 line_data.offset_y()
@@ -223,13 +225,13 @@ impl EditTextData<'_> {
         self.text_spans.replace(FormatSpans::from_html(
             text,
             default_format,
-            self.style_sheet.style_sheet(),
+            self.style_sheet.get().style_sheet(),
             self.flags.get().contains(EditTextFlag::MULTILINE),
             self.flags.get().contains(EditTextFlag::CONDENSE_WHITE),
             self.shared.swf.version(),
         ));
         self.original_html_text
-            .replace(if self.style_sheet.is_some() {
+            .replace(if self.style_sheet.get().is_some() {
                 Some(text.to_owned())
             } else {
                 None
@@ -311,6 +313,7 @@ impl<'gc> EditText<'gc> {
         } else {
             None
         };
+        let variable = variable.map(|s| context.strings.intern_wstr(s).into());
 
         // We match the flags from the DefineEditText SWF tag.
         let mut flags = EditTextFlag::from_bits_truncate(swf_tag.flags().bits());
@@ -328,10 +331,10 @@ impl<'gc> EditText<'gc> {
             None
         };
 
-        let et = EditText(GcCell::new(
+        let et = EditText(Gc::new(
             context.gc(),
             EditTextData {
-                base: InteractiveObjectBase::default(),
+                base: RefLock::new(InteractiveObjectBase::default()),
                 text_spans: RefCell::new(text_spans),
                 shared: Gc::new(
                     context.gc(),
@@ -346,14 +349,14 @@ impl<'gc> EditText<'gc> {
                 flags: Cell::new(flags),
                 background_color: Cell::new(Color::WHITE),
                 border_color: Cell::new(Color::BLACK),
-                object: None,
-                layout,
+                object: Lock::new(None),
+                layout: RefLock::new(layout),
                 bounds: Cell::new(*swf_tag.bounds()),
                 autosize_lazy_bounds: Cell::new(None),
                 autosize: Cell::new(autosize),
-                variable: variable.map(|s| context.strings.intern_wstr(s).into()),
-                bound_display_object: None,
-                class: None,
+                variable: Lock::new(variable),
+                bound_display_object: Lock::new(None),
+                class: Lock::new(None),
                 selection: Cell::new(selection),
                 render_settings: Default::default(),
                 hscroll: Cell::new(0.0),
@@ -364,10 +367,10 @@ impl<'gc> EditText<'gc> {
                 restrict: RefCell::new(EditTextRestrict::allow_all()),
                 last_click: Cell::new(None),
                 layout_debug_boxes_flags: Cell::new(LayoutDebugBoxesFlag::empty()),
-                style_sheet: EditTextStyleSheet::None,
+                style_sheet: Lock::new(EditTextStyleSheet::None),
                 original_html_text: RefCell::new(None),
                 ime_data: RefCell::new(None),
-                avm1_text_field_bindings: Vec::new(),
+                avm1_text_field_bindings: RefLock::new(Vec::new()),
             },
         ));
 
@@ -429,29 +432,29 @@ impl<'gc> EditText<'gc> {
     }
 
     fn contains_flag(self, flag: EditTextFlag) -> bool {
-        self.0.read().flags.get().contains(flag)
+        self.0.flags.get().contains(flag)
     }
 
     fn set_flag(self, flag: EditTextFlag, value: bool) {
-        let mut flags = self.0.read().flags.get();
+        let mut flags = self.0.flags.get();
         flags.set(flag, value);
-        self.0.read().flags.set(flags);
+        self.0.flags.set(flags);
     }
 
     fn bounds_x_offset(self) -> Twips {
         let scale_x = self.base().scale_x().unit();
-        let offset = self.0.read().bounds.get().x_min.to_pixels();
+        let offset = self.0.bounds.get().x_min.to_pixels();
         Twips::from_pixels(scale_x * offset)
     }
 
     fn bounds_y_offset(self) -> Twips {
         let scale_y = self.base().scale_y().unit();
-        let offset = self.0.read().bounds.get().y_min.to_pixels();
+        let offset = self.0.bounds.get().y_min.to_pixels();
         Twips::from_pixels(scale_y * offset)
     }
 
     pub fn text(self) -> WString {
-        self.0.read().text_spans.borrow().text().into()
+        self.0.text_spans.borrow().text().into()
     }
 
     pub fn set_text(self, text: &WStr, context: &mut UpdateContext<'gc>) {
@@ -462,31 +465,26 @@ impl<'gc> EditText<'gc> {
             return;
         }
 
-        let edit_text = self.0.read();
-        if edit_text.style_sheet.is_some() {
+        if self.0.style_sheet.get().is_some() {
             // When CSS is set, text will always be treated as HTML.
-            edit_text.parse_html(text);
+            self.0.parse_html(text);
         } else {
-            let default_format = edit_text.text_spans.borrow().default_format().clone();
-            edit_text
+            let default_format = self.0.text_spans.borrow().default_format().clone();
+            self.0
                 .text_spans
                 .replace(FormatSpans::from_text(text.into(), default_format));
         }
-        drop(edit_text);
 
         self.relayout(context);
     }
 
     pub fn html_text(self) -> WString {
         if self.is_effectively_html() {
-            let text = self.0.read();
-
-            if let Some(html) = text.original_html_text.borrow().clone() {
+            if let Some(html) = self.0.original_html_text.borrow().clone() {
                 return html;
             }
 
-            let html = text.text_spans.borrow().to_html();
-            html
+            self.0.text_spans.borrow().to_html()
         } else {
             // Non-HTML text fields always return plain text.
             self.text()
@@ -505,7 +503,7 @@ impl<'gc> EditText<'gc> {
         }
 
         if self.is_effectively_html() {
-            self.0.write(context.gc()).parse_html(text);
+            self.0.parse_html(text);
             self.relayout(context);
         } else {
             self.set_text(text, context);
@@ -513,20 +511,20 @@ impl<'gc> EditText<'gc> {
     }
 
     pub fn text_length(self) -> usize {
-        self.0.read().text_spans.borrow().text().len()
+        self.0.text_spans.borrow().text().len()
     }
 
     pub fn new_text_format(self) -> TextFormat {
-        self.0.read().text_spans.borrow().default_format().clone()
+        self.0.text_spans.borrow().default_format().clone()
     }
 
     pub fn set_new_text_format(self, tf: TextFormat) {
-        self.0.read().text_spans.borrow_mut().set_default_format(tf);
+        self.0.text_spans.borrow_mut().set_default_format(tf);
     }
 
     pub fn text_format(self, from: usize, to: usize) -> TextFormat {
         // TODO: Convert to byte indices
-        self.0.read().text_spans.borrow().get_text_format(from, to)
+        self.0.text_spans.borrow().get_text_format(from, to)
     }
 
     pub fn set_text_format(
@@ -538,7 +536,6 @@ impl<'gc> EditText<'gc> {
     ) {
         // TODO: Convert to byte indices
         self.0
-            .read()
             .text_spans
             .borrow_mut()
             .set_text_format(from, to, &tf);
@@ -558,11 +555,11 @@ impl<'gc> EditText<'gc> {
     }
 
     pub fn is_mouse_wheel_enabled(self) -> bool {
-        self.0.read().mouse_wheel_enabled.get()
+        self.0.mouse_wheel_enabled.get()
     }
 
     pub fn set_mouse_wheel_enabled(self, is_enabled: bool) {
-        self.0.read().mouse_wheel_enabled.set(is_enabled);
+        self.0.mouse_wheel_enabled.set(is_enabled);
     }
 
     pub fn is_multiline(self) -> bool {
@@ -579,11 +576,11 @@ impl<'gc> EditText<'gc> {
     }
 
     pub fn restrict(self) -> Option<WString> {
-        return self.0.read().restrict.borrow().value().map(Into::into);
+        return self.0.restrict.borrow().value().map(Into::into);
     }
 
     pub fn set_restrict(self, text: Option<&WStr>) {
-        self.0.read().restrict.replace(EditTextRestrict::from(text));
+        self.0.restrict.replace(EditTextRestrict::from(text));
     }
 
     pub fn set_multiline(self, is_multiline: bool, context: &mut UpdateContext<'gc>) {
@@ -609,11 +606,11 @@ impl<'gc> EditText<'gc> {
     }
 
     pub fn autosize(self) -> AutoSizeMode {
-        self.0.read().autosize.get()
+        self.0.autosize.get()
     }
 
     pub fn set_autosize(self, asm: AutoSizeMode, context: &mut UpdateContext<'gc>) {
-        self.0.read().autosize.set(asm);
+        self.0.autosize.set(asm);
         self.relayout(context);
     }
 
@@ -627,14 +624,11 @@ impl<'gc> EditText<'gc> {
     }
 
     pub fn background_color(self) -> Color {
-        self.0.read().background_color.get()
+        self.0.background_color.get()
     }
 
     pub fn set_background_color(self, gc_context: &Mutation<'gc>, background_color: Color) {
-        self.0
-            .write(gc_context)
-            .background_color
-            .set(background_color);
+        self.0.background_color.set(background_color);
         self.invalidate_cached_bitmap(gc_context);
     }
 
@@ -648,11 +642,11 @@ impl<'gc> EditText<'gc> {
     }
 
     pub fn border_color(self) -> Color {
-        self.0.read().border_color.get()
+        self.0.border_color.get()
     }
 
     pub fn set_border_color(self, gc_context: &Mutation<'gc>, border_color: Color) {
-        self.0.read().border_color.set(border_color);
+        self.0.border_color.set(border_color);
         self.invalidate_cached_bitmap(gc_context);
     }
 
@@ -682,7 +676,7 @@ impl<'gc> EditText<'gc> {
     }
 
     pub fn font_type(self) -> FontType {
-        self.0.read().font_type()
+        self.0.font_type()
     }
 
     pub fn is_html(self) -> bool {
@@ -690,7 +684,7 @@ impl<'gc> EditText<'gc> {
     }
 
     pub fn is_effectively_html(self) -> bool {
-        self.contains_flag(EditTextFlag::HTML) || self.0.read().style_sheet.is_some()
+        self.contains_flag(EditTextFlag::HTML) || self.0.style_sheet.get().is_some()
     }
 
     pub fn set_is_html(self, is_html: bool) {
@@ -698,11 +692,11 @@ impl<'gc> EditText<'gc> {
     }
 
     pub fn style_sheet(self) -> Option<StyleSheet<'gc>> {
-        self.0.read().style_sheet.style_sheet()
+        self.0.style_sheet.get().style_sheet()
     }
 
     pub fn style_sheet_avm1(self) -> Option<Avm1Object<'gc>> {
-        if let EditTextStyleSheet::Avm1(object) = self.0.read().style_sheet {
+        if let EditTextStyleSheet::Avm1(object) = self.0.style_sheet.get() {
             Some(object)
         } else {
             None
@@ -710,7 +704,7 @@ impl<'gc> EditText<'gc> {
     }
 
     pub fn style_sheet_avm2(self) -> Option<Avm2StyleSheetObject<'gc>> {
-        if let EditTextStyleSheet::Avm2(style_sheet_object) = self.0.read().style_sheet {
+        if let EditTextStyleSheet::Avm2(style_sheet_object) = self.0.style_sheet.get() {
             Some(style_sheet_object)
         } else {
             None
@@ -749,59 +743,66 @@ impl<'gc> EditText<'gc> {
         context: &mut UpdateContext<'gc>,
         style_sheet: EditTextStyleSheet<'gc>,
     ) {
-        let mut text = self.0.write(context.gc());
-        text.style_sheet = style_sheet;
+        unlock!(Gc::write(context.gc(), self.0), EditTextData, style_sheet).set(style_sheet);
 
-        if text.style_sheet.is_none() {
-            text.original_html_text.replace(None);
+        if self.0.style_sheet.get().is_none() {
+            self.0.original_html_text.take();
         }
 
-        if let Some(html) = text.original_html_text.borrow().clone() {
-            text.parse_html(&html);
+        let original_html_text = self.0.original_html_text.borrow().clone();
+        if let Some(html) = original_html_text {
+            self.0.parse_html(&html);
         }
-        drop(text);
         self.relayout(context);
     }
 
     pub fn is_fte(self) -> bool {
-        self.0.read().is_fte.get()
+        self.0.is_fte.get()
     }
 
     pub fn set_is_fte(self, is_fte: bool) {
-        self.0.read().is_fte.set(is_fte);
+        self.0.is_fte.set(is_fte);
     }
 
     pub fn layout_debug_boxes_flag(self, flag: LayoutDebugBoxesFlag) -> bool {
-        self.0.read().layout_debug_boxes_flags.get().contains(flag)
+        self.0.layout_debug_boxes_flags.get().contains(flag)
     }
 
     pub fn set_layout_debug_boxes_flag(self, flag: LayoutDebugBoxesFlag, value: bool) {
-        let mut flags = self.0.read().layout_debug_boxes_flags.get();
+        let mut flags = self.0.layout_debug_boxes_flags.get();
         flags.set(flag, value);
-        self.0.read().layout_debug_boxes_flags.set(flags);
+        self.0.layout_debug_boxes_flags.set(flags);
+    }
+
+    fn set_object(self, value: Option<AvmObject<'gc>>, mc: &Mutation<'gc>) {
+        unlock!(Gc::write(mc, self.0), EditTextData, object).set(value);
+    }
+
+    fn set_bound_display_object(self, value: Option<DisplayObject<'gc>>, mc: &Mutation<'gc>) {
+        unlock!(Gc::write(mc, self.0), EditTextData, bound_display_object).set(value);
     }
 
     /// Returns the matrix for transforming from layout
     /// coordinate space into this object's local space.
-    fn layout_to_local_matrix(self, data: &EditTextData) -> Matrix {
-        let bounds = data.bounds.get();
+    fn layout_to_local_matrix(self) -> Matrix {
+        let bounds = self.0.bounds.get();
         Matrix::translate(
-            bounds.x_min + Self::GUTTER - Twips::from_pixels(data.hscroll.get()),
-            bounds.y_min + Self::GUTTER - data.vertical_scroll_offset(),
+            bounds.x_min + Self::GUTTER - Twips::from_pixels(self.0.hscroll.get()),
+            bounds.y_min + Self::GUTTER - self.0.vertical_scroll_offset(),
         )
     }
 
     /// Returns the matrix for transforming from this object's
     /// local space into its layout coordinate space.
-    fn local_to_layout_matrix(self, data: &EditTextData) -> Matrix {
+    fn local_to_layout_matrix(self) -> Matrix {
         // layout_to_local contains only a translation,
         // no need to inverse the matrix generically.
-        let Matrix { tx, ty, .. } = self.layout_to_local_matrix(data);
+        let Matrix { tx, ty, .. } = self.layout_to_local_matrix();
         Matrix::translate(-tx, -ty)
     }
 
-    fn local_to_layout(self, data: &EditTextData, local: Point<Twips>) -> Point<Twips> {
-        self.local_to_layout_matrix(data) * local
+    fn local_to_layout(self, local: Point<Twips>) -> Point<Twips> {
+        self.local_to_layout_matrix() * local
     }
 
     pub fn replace_text(
@@ -811,11 +812,7 @@ impl<'gc> EditText<'gc> {
         text: &WStr,
         context: &mut UpdateContext<'gc>,
     ) {
-        self.0
-            .read()
-            .text_spans
-            .borrow_mut()
-            .replace_text(from, to, text);
+        self.0.text_spans.borrow_mut().replace_text(from, to, text);
         self.relayout(context);
     }
 
@@ -839,7 +836,7 @@ impl<'gc> EditText<'gc> {
 
     /// Returns the variable that this text field is bound to.
     pub fn variable(self) -> Option<AvmString<'gc>> {
-        self.0.read().variable
+        self.0.variable.get()
     }
 
     pub fn set_variable(
@@ -848,7 +845,7 @@ impl<'gc> EditText<'gc> {
         activation: &mut Avm1Activation<'_, 'gc>,
     ) {
         // Clear previous binding.
-        if let Some(dobj) = self.0.write(activation.gc()).bound_display_object.take() {
+        if let Some(dobj) = self.0.bound_display_object.take() {
             Avm1TextFieldBinding::clear_binding(dobj, self, activation.gc());
         } else {
             activation
@@ -858,16 +855,10 @@ impl<'gc> EditText<'gc> {
         }
 
         // Setup new binding.
-        let text = self
-            .0
-            .read()
-            .shared
-            .initial_text
-            .clone()
-            .unwrap_or_default();
+        let text = self.0.shared.initial_text.clone().unwrap_or_default();
         self.set_text(&text, activation.context);
 
-        self.0.write(activation.gc()).variable = variable;
+        unlock!(Gc::write(activation.gc(), self.0), EditTextData, variable).set(variable);
         self.try_bind_text_field_variable(activation, true);
     }
 
@@ -878,14 +869,13 @@ impl<'gc> EditText<'gc> {
     /// have already been calculated and applied to HTML trees lowered into the
     /// text-span representation.
     pub fn relayout(self, context: &mut UpdateContext<'gc>) {
-        let mut edit_text = self.0.write(context.gc());
-        let autosize = edit_text.autosize.get();
-        let is_word_wrap = edit_text.flags.get().contains(EditTextFlag::WORD_WRAP);
-        let movie = edit_text.shared.swf.clone();
+        let autosize = self.0.autosize.get();
+        let is_word_wrap = self.0.flags.get().contains(EditTextFlag::WORD_WRAP);
+        let movie = self.0.shared.swf.clone();
         let padding = Self::GUTTER * 2;
 
-        let mut text_spans = edit_text.text_spans.borrow_mut();
-        if edit_text.flags.get().contains(EditTextFlag::PASSWORD) {
+        let mut text_spans = self.0.text_spans.borrow_mut();
+        if self.0.flags.get().contains(EditTextFlag::PASSWORD) {
             // If the text is a password, hide the text
             text_spans.hide_text();
         } else if text_spans.has_displayed_text() {
@@ -895,7 +885,7 @@ impl<'gc> EditText<'gc> {
 
         // Determine the internal width available for content layout.
         let content_width = if autosize == AutoSizeMode::None || is_word_wrap {
-            Some(edit_text.bounds.get().width() - padding)
+            Some(self.0.bounds.get().width() - padding)
         } else {
             None
         };
@@ -905,25 +895,25 @@ impl<'gc> EditText<'gc> {
             context,
             movie,
             content_width,
-            !edit_text.flags.get().contains(EditTextFlag::READ_ONLY),
+            !self.0.flags.get().contains(EditTextFlag::READ_ONLY),
             is_word_wrap,
-            edit_text.font_type(),
+            self.0.font_type(),
         );
         drop(text_spans);
 
-        edit_text.layout = new_layout;
+        unlock!(Gc::write(context.gc(), self.0), EditTextData, layout).replace(new_layout);
         // reset scroll
-        edit_text.hscroll.set(0.0);
-        edit_text.scroll.set(1);
+        self.0.hscroll.set(0.0);
+        self.0.scroll.set(1);
 
-        let text_size = edit_text.layout.text_size();
+        let text_size = self.0.layout.borrow().text_size();
 
-        let mut autosize_bounds = edit_text.bounds.get();
+        let mut autosize_bounds = self.0.bounds.get();
         if autosize != AutoSizeMode::None {
             if !is_word_wrap {
                 // The edit text's bounds needs to have the padding baked in.
                 let mut width = text_size.width() + padding;
-                if !edit_text.flags.get().contains(EditTextFlag::READ_ONLY) {
+                if !self.0.flags.get().contains(EditTextFlag::READ_ONLY) {
                     // When the field is editable, FP adds 2.5px to add some
                     // space to place the caret.
                     width += Twips::from_pixels(2.5);
@@ -942,8 +932,7 @@ impl<'gc> EditText<'gc> {
             let height = text_size.height() + padding;
             autosize_bounds.set_height(height);
         }
-        edit_text.autosize_lazy_bounds.set(Some(autosize_bounds));
-        drop(edit_text);
+        self.0.autosize_lazy_bounds.set(Some(autosize_bounds));
         self.invalidate_cached_bitmap(context.gc());
     }
 
@@ -969,9 +958,8 @@ impl<'gc> EditText<'gc> {
     /// trace(text.x);
     /// ```
     pub fn apply_autosize_bounds(self) {
-        let edit_text: Ref<'_, EditTextData<'gc>> = self.0.read();
-        if let Some(bounds) = edit_text.autosize_lazy_bounds.take() {
-            edit_text.bounds.set(bounds);
+        if let Some(bounds) = self.0.autosize_lazy_bounds.take() {
+            self.0.bounds.set(bounds);
             // Note: We do not have to invalidate cache here.
             //   Cache has already been invalidated on relayout, and
             //   we will apply this anyway before render.
@@ -982,23 +970,22 @@ impl<'gc> EditText<'gc> {
     ///
     /// The returned tuple should be interpreted as width, then height.
     pub fn measure_text(self, _context: &mut UpdateContext<'gc>) -> (Twips, Twips) {
-        let text_size = self.0.read().layout.text_size();
+        let text_size = self.0.layout.borrow().text_size();
         (text_size.width(), text_size.height())
     }
 
     /// How far the text can be scrolled right, in pixels.
     pub fn maxhscroll(self) -> f64 {
-        let edit_text = self.0.read();
-
         // word-wrapped text can't be scrolled
-        if edit_text.flags.get().contains(EditTextFlag::WORD_WRAP) {
+        if self.0.flags.get().contains(EditTextFlag::WORD_WRAP) {
             return 0.0;
         }
 
-        let mut text_width = edit_text.layout.text_size().width();
-        let window_width = (edit_text.bounds.get().width() - Self::GUTTER * 2).max(Twips::ZERO);
+        let layout = self.0.layout.borrow();
+        let mut text_width = layout.text_size().width();
+        let window_width = (self.0.bounds.get().width() - Self::GUTTER * 2).max(Twips::ZERO);
 
-        if !edit_text.flags.get().contains(EditTextFlag::READ_ONLY) {
+        if !self.0.flags.get().contains(EditTextFlag::READ_ONLY) {
             // input fields get extra space at the end
             text_width += window_width / 4;
         }
@@ -1014,16 +1001,15 @@ impl<'gc> EditText<'gc> {
         // FIXME [KJ] The following logic is yet inaccurate
         //   for some input fields and negative leading.
         //   Might be related to text height calculation.
-        let edit_text = self.0.read();
-
-        let lines = edit_text.layout.lines();
+        let layout = self.0.layout.borrow();
+        let lines = layout.lines();
 
         if lines.is_empty() {
             return 1;
         }
 
-        let text_height = edit_text.layout.text_size().height();
-        let window_height = edit_text.bounds.get().height() - Self::GUTTER * 2;
+        let text_height = layout.text_size().height();
+        let window_height = self.0.bounds.get().height() - Self::GUTTER * 2;
 
         // That's the y coordinate where the fully scrolled window begins.
         // We have to find a line that's below this coordinate.
@@ -1041,18 +1027,17 @@ impl<'gc> EditText<'gc> {
 
     /// The lowest visible line of text
     pub fn bottom_scroll(self) -> usize {
-        let edit_text = self.0.read();
-
-        let lines = edit_text.layout.lines();
+        let layout = self.0.layout.borrow();
+        let lines = layout.lines();
 
         if lines.is_empty() {
             return 1;
         }
 
         let scroll_offset = lines
-            .get(edit_text.scroll.get() - 1)
+            .get(self.0.scroll.get() - 1)
             .map_or(Twips::ZERO, |l| l.offset_y());
-        let target = edit_text.bounds.get().height() + scroll_offset - Self::GUTTER * 2;
+        let target = self.0.bounds.get().height() + scroll_offset - Self::GUTTER * 2;
 
         // TODO Use binary search here
         // Line before first line with extent greater than bounds.height() + line "scroll"'s offset
@@ -1066,11 +1051,11 @@ impl<'gc> EditText<'gc> {
     }
 
     /// Returns the selection, but takes into account whether the selection should be rendered.
-    fn visible_selection(self, edit_text: &EditTextData<'gc>) -> Option<TextSelection> {
-        let selection = edit_text.selection.get()?;
+    fn visible_selection(self) -> Option<TextSelection> {
+        let selection = self.0.selection.get()?;
         #[allow(clippy::collapsible_else_if)]
         if selection.is_caret() {
-            if self.has_focus() && !edit_text.flags.get().contains(EditTextFlag::READ_ONLY) {
+            if self.has_focus() && !self.0.flags.get().contains(EditTextFlag::READ_ONLY) {
                 Some(selection)
             } else {
                 None
@@ -1115,32 +1100,28 @@ impl<'gc> EditText<'gc> {
     /// Render lines according to the given procedure.
     ///
     /// This skips invisible lines.
-    fn render_lines<F>(self, context: &mut RenderContext<'_, 'gc>, layout: &Layout<'gc>, f: F)
+    fn render_lines<F>(self, context: &mut RenderContext<'_, 'gc>, f: F)
     where
         F: Fn(&mut RenderContext<'_, 'gc>, &LayoutLine<'gc>),
     {
         // Skip lines that are off-screen.
         let lines_to_skip = self.scroll().saturating_sub(1);
-        for line in layout.lines().iter().skip(lines_to_skip) {
+        for line in self.0.layout.borrow().lines().iter().skip(lines_to_skip) {
             f(context, line);
         }
     }
 
     /// Render the visible text along with selection and the caret.
-    fn render_text(self, context: &mut RenderContext<'_, 'gc>, edit_text: &EditTextData<'gc>) {
-        self.render_selection_background(context, edit_text);
-        self.render_lines(context, &edit_text.layout, |context, line| {
+    fn render_text(self, context: &mut RenderContext<'_, 'gc>) {
+        self.render_selection_background(context);
+        self.render_lines(context, |context, line| {
             self.render_layout_line(context, line);
         });
     }
 
     /// Render the black selection background.
-    fn render_selection_background(
-        self,
-        context: &mut RenderContext<'_, 'gc>,
-        edit_text: &EditTextData<'gc>,
-    ) {
-        let Some(selection) = self.visible_selection(edit_text) else {
+    fn render_selection_background(self, context: &mut RenderContext<'_, 'gc>) {
+        let Some(selection) = self.visible_selection() else {
             return;
         };
         if selection.is_caret() {
@@ -1149,7 +1130,7 @@ impl<'gc> EditText<'gc> {
 
         let (start, end) = (selection.start(), selection.end());
 
-        self.render_lines(context, &edit_text.layout, |context, line| {
+        self.render_lines(context, |context, line| {
             self.render_selection_background_for_line(context, line, start, end)
         });
     }
@@ -1216,8 +1197,6 @@ impl<'gc> EditText<'gc> {
     fn render_layout_box(self, context: &mut RenderContext<'_, 'gc>, lbox: &LayoutBox<'gc>) {
         let origin = lbox.bounds().origin();
 
-        let edit_text = self.0.read();
-
         // If text's top is under the textbox's bottom, skip drawing.
         // TODO: FP actually skips drawing a line as soon as its bottom is under the textbox;
         //   Current logic is conservative for safety (and even of this I'm not 100% sure).
@@ -1225,8 +1204,8 @@ impl<'gc> EditText<'gc> {
         // [KJ] FP always displays the first visible line (sometimes masked, sometimes sticking out of bounds),
         //      culls any other line which is not fully visible; masking is always used for left/right bounds
         // TODO: also cull text that's simply out of screen, just like we cull whole DOs in render_self().
-        if origin.y() + Self::GUTTER - edit_text.vertical_scroll_offset()
-            > edit_text.bounds.get().height()
+        if origin.y() + Self::GUTTER - self.0.vertical_scroll_offset()
+            > self.0.bounds.get().height()
         {
             return;
         }
@@ -1236,13 +1215,13 @@ impl<'gc> EditText<'gc> {
             ..Default::default()
         });
 
-        let visible_selection = self.visible_selection(&edit_text);
+        let visible_selection = self.visible_selection();
 
         let caret = if let LayoutContent::Text { start, end, .. } = &lbox.content() {
             if let Some(visible_selection) = visible_selection {
-                let text_len = edit_text.text_spans.borrow().text().len();
+                let text_len = self.0.text_spans.borrow().text().len();
                 if visible_selection.is_caret()
-                    && !edit_text.flags.get().contains(EditTextFlag::READ_ONLY)
+                    && !self.0.flags.get().contains(EditTextFlag::READ_ONLY)
                     && visible_selection.start() >= *start
                     && (visible_selection.end() < *end || *end == text_len)
                     && !visible_selection.blinks_now()
@@ -1269,7 +1248,7 @@ impl<'gc> EditText<'gc> {
         // Instead, we embed an SWF version of Noto Sans to use as the "device font", and render
         // it the same as any other SWF outline text.
         if let Some((text, _tf, font, params, color)) =
-            lbox.as_renderable_text(edit_text.text_spans.borrow().displayed_text())
+            lbox.as_renderable_text(self.0.text_spans.borrow().displayed_text())
         {
             let baseline = font.get_baseline_for_height(params.height());
             let descent = font.get_descent_for_height(params.height());
@@ -1361,7 +1340,7 @@ impl<'gc> EditText<'gc> {
         };
 
         // Any previous binding should have been cleared.
-        debug_assert!(self.0.read().bound_display_object.is_none());
+        debug_assert!(self.0.bound_display_object.get().is_none());
 
         let Some(mut parent) = self.avm1_parent() else {
             return false;
@@ -1410,7 +1389,7 @@ impl<'gc> EditText<'gc> {
                     }
 
                     if let Some(dobj) = object.as_display_object() {
-                        self.0.write(activation.gc()).bound_display_object = Some(dobj);
+                        self.set_bound_display_object(Some(dobj), activation.gc());
                         let binding = Avm1TextFieldBinding {
                             text_field: self,
                             variable_name: property,
@@ -1428,7 +1407,7 @@ impl<'gc> EditText<'gc> {
     /// Does not change the unbound text field list.
     /// Caller is responsible for adding this text field to the unbound list, if necessary.
     pub fn clear_bound_display_object(self, context: &mut UpdateContext<'gc>) {
-        self.0.write(context.gc()).bound_display_object = None;
+        self.set_bound_display_object(None, context.gc());
     }
 
     /// Propagates a text change to the bound display object.
@@ -1462,21 +1441,19 @@ impl<'gc> EditText<'gc> {
     }
 
     pub fn selection(self) -> Option<TextSelection> {
-        self.0.read().selection.get()
+        self.0.selection.get()
     }
 
     pub fn set_selection(self, selection: Option<TextSelection>, gc_context: &Mutation<'gc>) {
-        let text = self.0.read();
-        let old_selection = text.selection.get();
+        let old_selection = self.0.selection.get();
         if let Some(mut selection) = selection {
-            selection.clamp(text.text_spans.borrow().text().len());
-            text.selection.set(Some(selection));
+            selection.clamp(self.0.text_spans.borrow().text().len());
+            self.0.selection.set(Some(selection));
         } else {
-            text.selection.set(None);
+            self.0.selection.set(None);
         }
 
-        if old_selection != text.selection.get() {
-            drop(text);
+        if old_selection != self.0.selection.get() {
             self.invalidate_cached_bitmap(gc_context);
         }
     }
@@ -1500,35 +1477,35 @@ impl<'gc> EditText<'gc> {
     }
 
     pub fn reset_selection_blinking(self) {
-        if let Some(mut selection) = self.0.read().selection.get() {
+        if let Some(mut selection) = self.0.selection.get() {
             selection.reset_blinking();
-            self.0.read().selection.set(Some(selection));
+            self.0.selection.set(Some(selection));
         }
     }
 
-    pub fn spans(&self) -> Ref<'_, RefCell<FormatSpans>> {
-        Ref::map(self.0.read(), |r| &r.text_spans)
+    pub fn spans(&self) -> Ref<'_, FormatSpans> {
+        self.0.text_spans.borrow()
     }
 
     pub fn render_settings(self) -> TextRenderSettings {
-        self.0.read().render_settings.get()
+        self.0.render_settings.get()
     }
 
     pub fn set_render_settings(self, settings: TextRenderSettings) {
-        self.0.read().render_settings.set(settings)
+        self.0.render_settings.set(settings)
     }
 
     pub fn hscroll(self) -> f64 {
-        self.0.read().hscroll.get()
+        self.0.hscroll.get()
     }
 
     pub fn set_hscroll(self, hscroll: f64, context: &mut UpdateContext<'gc>) {
-        self.0.read().hscroll.set(hscroll);
+        self.0.hscroll.set(hscroll);
         self.invalidate_cached_bitmap(context.gc());
     }
 
     pub fn scroll(self) -> usize {
-        self.0.read().scroll.get()
+        self.0.scroll.get()
     }
 
     pub fn set_scroll(self, scroll: f64, context: &mut UpdateContext<'gc>) {
@@ -1541,16 +1518,16 @@ impl<'gc> EditText<'gc> {
             scroll as usize
         };
         let clamped = scroll_lines.clamp(1, self.maxscroll());
-        self.0.read().scroll.set(clamped);
+        self.0.scroll.set(clamped);
         self.invalidate_cached_bitmap(context.gc());
     }
 
     pub fn max_chars(self) -> i32 {
-        self.0.read().max_chars.get()
+        self.0.max_chars.get()
     }
 
     pub fn set_max_chars(self, value: i32) {
-        self.0.read().max_chars.set(value);
+        self.0.max_chars.set(value);
     }
 
     /// Map the position on the screen to caret index.
@@ -1559,18 +1536,17 @@ impl<'gc> EditText<'gc> {
     /// It implements the Flash Player's behavior of placing a caret.
     /// Characters are divided in half, the last line is extended, etc.
     pub fn screen_position_to_index(self, position: Point<Twips>) -> Option<usize> {
-        let text = self.0.read();
         let position = self.global_to_local(position)?;
-        let position = self.local_to_layout(&text, position);
+        let position = self.local_to_layout(position);
 
         // TODO We can use binary search for both y and x here
 
         // First determine which line of text is the closest match to the Y position...
-        let line_index = text
-            .layout
+        let layout = self.0.layout.borrow();
+        let line_index = layout
             .find_line_index_by_y(position.y)
             .unwrap_or_else(|i| i);
-        let line = text.layout.lines().get(line_index)?;
+        let line = layout.lines().get(line_index)?;
 
         // ...then find the box within that line that is the closest match to the X position.
         let mut closest_layout_box: Option<&LayoutBox<'gc>> = None;
@@ -1591,7 +1567,7 @@ impl<'gc> EditText<'gc> {
             let local_position = matrix * position;
 
             if let Some((text, _tf, font, params, color)) =
-                layout_box.as_renderable_text(text.text_spans.borrow().text())
+                layout_box.as_renderable_text(self.0.text_spans.borrow().text())
             {
                 let mut result = 0;
                 let baseline_adjustment =
@@ -1623,12 +1599,11 @@ impl<'gc> EditText<'gc> {
     /// The number of characters that currently can be inserted, considering `TextField.maxChars`
     /// constraint, current text length, and current text selection length.
     fn available_chars(self) -> usize {
-        let read = self.0.read();
-        let max_chars = read.max_chars.get();
+        let max_chars = self.0.max_chars.get();
         if max_chars == 0 {
             usize::MAX
         } else {
-            let text_len = read.text_spans.borrow().text().len() as i32;
+            let text_len = self.0.text_spans.borrow().text().len() as i32;
             let selection_len = if let Some(selection) = self.selection() {
                 (selection.end() - selection.start()) as i32
             } else {
@@ -1845,7 +1820,7 @@ impl<'gc> EditText<'gc> {
 
                 self.replace_text(old_ime_start, old_ime_end, &text, context);
 
-                self.0.read().ime_data.replace(Some(ImeData {
+                self.0.ime_data.replace(Some(ImeData {
                     ime_start: old_ime_start,
                     ime_end: old_ime_start + text.len(),
                     text: text_utf8,
@@ -1861,12 +1836,12 @@ impl<'gc> EditText<'gc> {
     }
 
     fn ensure_ime_started(self, context: &mut UpdateContext<'gc>) -> ImeData {
-        if let Some(ime_data) = self.0.read().ime_data.borrow().clone() {
+        if let Some(ime_data) = self.0.ime_data.borrow().clone() {
             return ime_data;
         }
 
         let selection = self.selection().unwrap_or_else(|| {
-            TextSelection::for_position(self.0.read().text_spans.borrow().text().len())
+            TextSelection::for_position(self.0.text_spans.borrow().text().len())
         });
         self.replace_text(selection.start(), selection.end(), WStr::empty(), context);
 
@@ -1875,25 +1850,25 @@ impl<'gc> EditText<'gc> {
             ime_end: selection.start(),
             text: String::new(),
         };
-        self.0.read().ime_data.replace(Some(ime_data.clone()));
+        self.0.ime_data.replace(Some(ime_data.clone()));
         ime_data
     }
 
     fn ensure_ime_finished(self, context: &mut UpdateContext<'gc>) {
         let Some(ImeData {
             ime_start, ime_end, ..
-        }) = *self.0.read().ime_data.borrow()
+        }) = *self.0.ime_data.borrow()
         else {
             return;
         };
 
         self.replace_text(ime_start, ime_end, WStr::empty(), context);
         self.set_selection(Some(TextSelection::for_position(ime_start)), context.gc());
-        self.0.read().ime_data.take();
+        self.0.ime_data.take();
     }
 
     fn ensure_ime_committed(self, context: &mut UpdateContext<'gc>) {
-        let Some(ImeData { text, .. }) = self.0.read().ime_data.borrow().clone() else {
+        let Some(ImeData { text, .. }) = self.0.ime_data.borrow().clone() else {
             return;
         };
 
@@ -2040,7 +2015,7 @@ impl<'gc> EditText<'gc> {
             return;
         };
 
-        let filtered_text = self.0.read().restrict.borrow().filter_allowed(&text);
+        let filtered_text = self.0.restrict.borrow().filter_allowed(&text);
 
         if let Avm2Value::Object(target) = self.object2() {
             let character_string = AvmString::new(context.gc(), text);
@@ -2132,17 +2107,15 @@ impl<'gc> EditText<'gc> {
 
     /// Construct the text field's AVM1 representation.
     fn construct_as_avm1_object(self, context: &mut UpdateContext<'gc>, run_frame: bool) {
-        let mut text = self.0.write(context.gc());
-        if text.object.is_none() {
+        if self.0.object.get().is_none() {
             let object = Avm1Object::new_with_native(
                 &context.strings,
                 Some(context.avm1.prototypes().text_field),
                 Avm1NativeObject::EditText(self),
             );
 
-            text.object = Some(object.into());
+            self.set_object(Some(object.into()), context.gc());
         }
-        drop(text);
 
         Avm1::run_with_stack_frame_for_display_object(self.into(), context, |activation| {
             // If this text field has a variable set, initialize text field binding.
@@ -2168,8 +2141,8 @@ impl<'gc> EditText<'gc> {
     ) {
         let class_object = self
             .0
-            .read()
             .class
+            .get()
             .unwrap_or_else(|| context.avm2.classes().textfield);
 
         let mut activation = Avm2Activation::from_nothing(context);
@@ -2181,8 +2154,7 @@ impl<'gc> EditText<'gc> {
         ) {
             Ok(object) => {
                 let object: Avm2Object<'gc> = object.into();
-
-                self.0.write(activation.gc()).object = Some(object.into());
+                self.set_object(Some(object.into()), context.gc());
             }
             Err(e) => tracing::error!(
                 "Got error when constructing AVM2 side of dynamic text field: {}",
@@ -2193,7 +2165,7 @@ impl<'gc> EditText<'gc> {
 
     /// Count the number of lines in the text box's layout.
     pub fn layout_lines(self) -> usize {
-        self.0.read().layout.lines().len()
+        self.0.layout.borrow().lines().len()
     }
 
     /// Calculate the layout metrics.
@@ -2201,7 +2173,7 @@ impl<'gc> EditText<'gc> {
     /// Returns `None` if there is not enough data
     /// about the layout to calculate metrics with.
     pub fn layout_metrics(self) -> Option<LayoutMetrics> {
-        let layout = &self.0.read().layout;
+        let layout = &self.0.layout.borrow();
 
         let boxes = layout.boxes_iter();
         let union_bounds = layout.bounds();
@@ -2242,7 +2214,7 @@ impl<'gc> EditText<'gc> {
     }
 
     pub fn line_metrics(self, line: usize) -> Option<LayoutMetrics> {
-        let layout = &self.0.read().layout;
+        let layout = &self.0.layout.borrow();
         let line = layout.lines().get(line)?;
         let bounds = line.bounds();
 
@@ -2257,20 +2229,20 @@ impl<'gc> EditText<'gc> {
     }
 
     pub fn line_length(self, line: usize) -> Option<usize> {
-        Some(self.0.read().layout.lines().get(line)?.len())
+        Some(self.0.layout.borrow().lines().get(line)?.len())
     }
 
     pub fn line_text(self, line: usize) -> Option<WString> {
-        let read = self.0.read();
-        let line = read.layout.lines().get(line)?;
-        let text_spans = read.text_spans.borrow();
+        let layout = self.0.layout.borrow();
+        let line = layout.lines().get(line)?;
+        let text_spans = self.0.text_spans.borrow();
         let line_text = text_spans.text().slice(line.text_range())?;
         Some(WString::from_wstr(line_text))
     }
 
     pub fn line_offset(self, line: usize) -> Option<usize> {
-        let read = self.0.read();
-        let line = read.layout.lines().get(line)?;
+        let layout = self.0.layout.borrow();
+        let line = layout.lines().get(line)?;
         let first_box = line.boxes_iter().next()?;
         Some(first_box.start())
     }
@@ -2281,19 +2253,18 @@ impl<'gc> EditText<'gc> {
     /// with the exception that positions below the last line will
     /// return the index of the last line.
     pub fn line_index_at_point(self, position: Point<Twips>) -> Option<usize> {
-        let edit_text = self.0.read();
-
         // Check bounds
-        let bounds = edit_text.bounds.get().grow(-Self::GUTTER);
+        let bounds = self.0.bounds.get().grow(-Self::GUTTER);
         if !bounds.contains(position) {
             return None;
         }
 
-        let position = self.local_to_layout(&edit_text, position);
+        let position = self.local_to_layout(position);
 
         Some(
-            edit_text
+            self.0
                 .layout
+                .borrow()
                 .find_line_index_by_y(position.y)
                 .unwrap_or_else(|i| i),
         )
@@ -2311,8 +2282,8 @@ impl<'gc> EditText<'gc> {
     pub fn char_index_at_point(self, position: Point<Twips>) -> Option<usize> {
         let line_index = self.line_index_at_point(position)?;
 
-        let edit_text = self.0.read();
-        let line = &edit_text.layout.lines()[line_index];
+        let layout = self.0.layout.borrow();
+        let line = &layout.lines()[line_index];
 
         // KJ: It's a bug in FP, it doesn't take into account horizontal
         // scroll, but it does take into account vertical scroll.
@@ -2343,7 +2314,7 @@ impl<'gc> EditText<'gc> {
     }
 
     pub fn line_index_of_char(self, index: usize) -> Option<usize> {
-        self.0.read().layout.find_line_index_by_position(index)
+        self.0.layout.borrow().find_line_index_by_position(index)
     }
 
     pub fn paragraph_start_index_at(self, mut index: usize) -> Option<usize> {
@@ -2386,8 +2357,7 @@ impl<'gc> EditText<'gc> {
     }
 
     pub fn char_bounds(self, index: usize) -> Option<Rectangle<Twips>> {
-        let edit_text = self.0.read();
-        let bounds = edit_text.layout.char_bounds(index)?;
+        let bounds = self.0.layout.borrow().char_bounds(index)?;
         let padding = Self::GUTTER;
         let bounds = Matrix::translate(padding, padding) * bounds;
         Some(bounds)
@@ -2445,14 +2415,13 @@ impl<'gc> EditText<'gc> {
     }
 
     fn is_link_at(self, point: Point<Twips>) -> bool {
-        let text = self.0.read();
         let Some(mut position) = self.global_to_local(point) else {
             return false;
         };
-        position.x += Self::GUTTER + Twips::from_pixels(text.hscroll.get());
-        position.y += Self::GUTTER + text.vertical_scroll_offset();
+        position.x += Self::GUTTER + Twips::from_pixels(self.0.hscroll.get());
+        position.y += Self::GUTTER + self.0.vertical_scroll_offset();
 
-        text.layout.boxes_iter().any(|layout| {
+        self.0.layout.borrow().boxes_iter().any(|layout| {
             layout.is_link()
                 && layout
                     .bounds()
@@ -2470,7 +2439,7 @@ impl<'gc> EditText<'gc> {
             click_index,
         };
         let selection_mode = this_click.selection_mode();
-        self.0.read().last_click.set(Some(this_click));
+        self.0.last_click.set(Some(this_click));
 
         // Update selection
         let selection = self.calculate_selection_at(position, selection_mode);
@@ -2484,7 +2453,6 @@ impl<'gc> EditText<'gc> {
 
         let Some((last_position, selection_mode)) = self
             .0
-            .read()
             .last_click
             .get()
             .map(|last_click| (last_click.position, last_click.selection_mode()))
@@ -2502,33 +2470,34 @@ impl<'gc> EditText<'gc> {
     }
 
     pub fn set_avm2_class(self, mc: &Mutation<'gc>, class: Avm2ClassObject<'gc>) {
-        self.0.write(mc).class = Some(class);
+        unlock!(Gc::write(mc, self.0), EditTextData, class).set(Some(class));
     }
 }
 
 impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
     fn base(&self) -> Ref<DisplayObjectBase<'gc>> {
-        Ref::map(self.0.read(), |r| &r.base.base)
+        Ref::map(self.0.base.borrow(), |r| &r.base)
     }
 
     fn base_mut<'a>(&'a self, mc: &Mutation<'gc>) -> RefMut<'a, DisplayObjectBase<'gc>> {
-        RefMut::map(self.0.write(mc), |w| &mut w.base.base)
+        let base_mut = unlock!(Gc::write(mc, self.0), EditTextData, base).borrow_mut();
+        RefMut::map(base_mut, |w| &mut w.base)
     }
 
     fn instantiate(&self, gc_context: &Mutation<'gc>) -> DisplayObject<'gc> {
-        Self(GcCell::new(gc_context, self.0.read().clone())).into()
+        Self(Gc::new(gc_context, self.0.as_ref().clone())).into()
     }
 
     fn as_ptr(&self) -> *const DisplayObjectPtr {
-        self.0.as_ptr() as *const DisplayObjectPtr
+        Gc::as_ptr(self.0) as *const DisplayObjectPtr
     }
 
     fn id(&self) -> CharacterId {
-        self.0.read().shared.id
+        self.0.shared.id
     }
 
     fn movie(&self) -> Arc<SwfMovie> {
-        self.0.read().shared.swf.clone()
+        self.0.shared.swf.clone()
     }
 
     /// Construct objects placed on this frame.
@@ -2568,8 +2537,8 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
 
     fn object(&self) -> Avm1Value<'gc> {
         self.0
-            .read()
             .object
+            .get()
             .and_then(|o| o.as_avm1_object())
             .map(Avm1Value::from)
             .unwrap_or(Avm1Value::Undefined)
@@ -2577,21 +2546,21 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
 
     fn object2(&self) -> Avm2Value<'gc> {
         self.0
-            .read()
             .object
+            .get()
             .and_then(|o| o.as_avm2_object())
             .map(Avm2Value::from)
             .unwrap_or(Avm2Value::Null)
     }
 
     fn set_object2(&self, context: &mut UpdateContext<'gc>, to: Avm2Object<'gc>) {
-        self.0.write(context.gc()).object = Some(to.into());
+        self.set_object(Some(to.into()), context.gc());
     }
 
     fn self_bounds(&self) -> Rectangle<Twips> {
         self.apply_autosize_bounds();
 
-        self.0.read().bounds.get()
+        self.0.bounds.get()
     }
 
     fn pixel_bounds(&self) -> Rectangle<Twips> {
@@ -2599,9 +2568,9 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
         // It's a bit hacky, but it seems that pixelBounds are
         // an exception to the rule that lazy autosize bounds
         // are applied when reading anything related to bounds.
-        let old = self.0.read().autosize_lazy_bounds.take();
+        let old = self.0.autosize_lazy_bounds.take();
         let bounds = self.world_bounds();
-        self.0.read().autosize_lazy_bounds.set(old);
+        self.0.autosize_lazy_bounds.set(old);
         bounds
     }
 
@@ -2633,48 +2602,38 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
     fn width(&self) -> f64 {
         self.apply_autosize_bounds();
 
-        let edit_text = self.0.read();
-        let bounds = edit_text.bounds.get();
-        (edit_text.base.base.transform.matrix * bounds)
-            .width()
-            .to_pixels()
+        let bounds = self.0.bounds.get();
+        (self.base().transform.matrix * bounds).width().to_pixels()
     }
 
     fn set_width(&self, context: &mut UpdateContext<'gc>, value: f64) {
         self.apply_autosize_bounds();
 
-        let edit_text = self.0.read();
-        let bounds = &edit_text.bounds;
+        let bounds = &self.0.bounds;
         bounds.set(bounds.get().with_width(Twips::from_pixels(value)));
-        edit_text.base.base.set_transformed_by_script(true);
-        drop(edit_text);
+        self.base().set_transformed_by_script(true);
         self.relayout(context);
     }
 
     fn height(&self) -> f64 {
         self.apply_autosize_bounds();
 
-        let edit_text = self.0.read();
-        let bounds = edit_text.bounds.get();
-        (edit_text.base.base.transform.matrix * bounds)
-            .height()
-            .to_pixels()
+        let bounds = self.0.bounds.get();
+        (self.base().transform.matrix * bounds).height().to_pixels()
     }
 
     fn set_height(&self, context: &mut UpdateContext<'gc>, value: f64) {
         self.apply_autosize_bounds();
 
-        let edit_text = self.0.read();
-        let bounds = &edit_text.bounds;
+        let bounds = &self.0.bounds;
         bounds.set(bounds.get().with_height(Twips::from_pixels(value)));
-        edit_text.base.base.set_transformed_by_script(true);
-        drop(edit_text);
+        self.base().set_transformed_by_script(true);
         self.relayout(context);
     }
 
-    fn set_matrix(&self, gc_context: &Mutation<'gc>, matrix: Matrix) {
-        self.0.write(gc_context).base.base.set_matrix(matrix);
-        self.invalidate_cached_bitmap(gc_context);
+    fn set_matrix(&self, mc: &Mutation<'gc>, matrix: Matrix) {
+        self.base_mut(mc).set_matrix(matrix);
+        self.invalidate_cached_bitmap(mc);
     }
 
     fn render_self(&self, context: &mut RenderContext<'_, 'gc>) {
@@ -2696,37 +2655,31 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
             return;
         }
 
-        let edit_text = self.0.read();
-
-        if edit_text
+        if self
+            .0
             .flags
             .get()
             .intersects(EditTextFlag::BORDER | EditTextFlag::HAS_BACKGROUND)
         {
-            let background_color = Some(edit_text.background_color.get())
-                .filter(|_| edit_text.flags.get().contains(EditTextFlag::HAS_BACKGROUND));
-            let border_color = Some(edit_text.border_color.get())
-                .filter(|_| edit_text.flags.get().contains(EditTextFlag::BORDER));
+            let background_color = Some(self.0.background_color.get())
+                .filter(|_| self.0.flags.get().contains(EditTextFlag::HAS_BACKGROUND));
+            let border_color = Some(self.0.border_color.get())
+                .filter(|_| self.0.flags.get().contains(EditTextFlag::BORDER));
 
             if self.is_device_font() {
                 self.draw_device_text_box(
                     context,
-                    edit_text.bounds.get(),
+                    self.0.bounds.get(),
                     background_color,
                     border_color,
                 );
             } else {
-                self.draw_text_box(
-                    context,
-                    edit_text.bounds.get(),
-                    background_color,
-                    border_color,
-                );
+                self.draw_text_box(context, self.0.bounds.get(), background_color, border_color);
             }
         }
 
         context.commands.push_mask();
-        let mask = Matrix::create_box_from_rectangle(&edit_text.bounds.get());
+        let mask = Matrix::create_box_from_rectangle(&self.0.bounds.get());
         context.commands.draw_rect(
             Color::WHITE,
             context.transform_stack.transform().matrix * mask,
@@ -2734,16 +2687,16 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
         context.commands.activate_mask();
 
         context.transform_stack.push(&Transform {
-            matrix: self.layout_to_local_matrix(&edit_text),
+            matrix: self.layout_to_local_matrix(),
             ..Default::default()
         });
 
-        self.render_text(context, &edit_text);
+        self.render_text(context);
 
         self.render_debug_boxes(
             context,
-            edit_text.layout_debug_boxes_flags.get(),
-            &edit_text.layout,
+            self.0.layout_debug_boxes_flags.get(),
+            &self.0.layout.borrow(),
         );
 
         context.transform_stack.pop();
@@ -2770,7 +2723,7 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
         }
 
         // Unbind any display objects bound to this text.
-        if let Some(dobj) = self.0.write(context.gc()).bound_display_object.take() {
+        if let Some(dobj) = self.0.bound_display_object.take() {
             Avm1TextFieldBinding::clear_binding(dobj, *self, context.gc());
         }
 
@@ -2787,21 +2740,29 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
     }
 
     fn avm1_text_field_bindings(&self) -> Option<Ref<'_, [Avm1TextFieldBinding<'gc>]>> {
-        let read = self.0.read();
-        read.object
+        self.0
+            .object
+            .get()
             .and_then(|o| o.as_avm1_object())
-            .map(|_| Ref::map(read, |r| &*r.avm1_text_field_bindings))
+            .map(|_| Ref::map(self.0.avm1_text_field_bindings.borrow(), |r| &r[..]))
     }
 
     fn avm1_text_field_bindings_mut(
         &self,
         mc: &Mutation<'gc>,
     ) -> Option<RefMut<'_, Vec<Avm1TextFieldBinding<'gc>>>> {
-        let write = self.0.write(mc);
-        write
+        self.0
             .object
+            .get()
             .and_then(|o| o.as_avm1_object())
-            .map(|_| RefMut::map(write, |w| &mut w.avm1_text_field_bindings))
+            .map(|_| {
+                unlock!(
+                    Gc::write(mc, self.0),
+                    EditTextData,
+                    avm1_text_field_bindings
+                )
+                .borrow_mut()
+            })
     }
 }
 
@@ -2948,11 +2909,11 @@ impl<'gc> EditText<'gc> {
 
 impl<'gc> TInteractiveObject<'gc> for EditText<'gc> {
     fn raw_interactive(&self) -> Ref<InteractiveObjectBase<'gc>> {
-        Ref::map(self.0.read(), |r| &r.base)
+        self.0.base.borrow()
     }
 
     fn raw_interactive_mut(&self, mc: &Mutation<'gc>) -> RefMut<InteractiveObjectBase<'gc>> {
-        RefMut::map(self.0.write(mc), |w| &mut w.base)
+        unlock!(Gc::write(mc, self.0), EditTextData, base).borrow_mut()
     }
 
     fn as_displayobject(self) -> DisplayObject<'gc> {
@@ -2999,10 +2960,16 @@ impl<'gc> TInteractiveObject<'gc> for EditText<'gc> {
             if let Some(position) = self.screen_position_to_index(*context.mouse_position) {
                 self.handle_click(index, position, context);
 
-                let read = self.0.read();
-                let text_spans = read.text_spans.borrow();
-                if let Some((span_index, _)) = text_spans.resolve_position_as_span(position) {
-                    link_to_open = text_spans
+                if let Some((span_index, _)) = self
+                    .0
+                    .text_spans
+                    .borrow()
+                    .resolve_position_as_span(position)
+                {
+                    link_to_open = self
+                        .0
+                        .text_spans
+                        .borrow()
                         .span(span_index)
                         .map(|s| (s.url.clone(), s.target.clone()));
                 }
