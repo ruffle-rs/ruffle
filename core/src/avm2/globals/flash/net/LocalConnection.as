@@ -3,7 +3,6 @@ package flash.net {
     import flash.events.StatusEvent;
     import flash.utils.setTimeout;
     import __ruffle__.stub_method;
-    import __ruffle__.stub_getter;
 
     [Ruffle(InstanceAllocator)]
     public class LocalConnection extends EventDispatcher {

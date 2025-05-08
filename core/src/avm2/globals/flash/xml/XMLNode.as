@@ -1,14 +1,9 @@
-package flash.xml
-{
-
-    import __ruffle__.stub_getter;
-    import __ruffle__.stub_method;
-
+package flash.xml {
     import flash.xml.XMLNode;
     import flash.xml.XMLNodeType;
 
     public class XMLNode {
-        internal var _children: Array = [];
+        internal var _children:Array = [];
 
         public var nodeType:uint;
 
@@ -27,7 +22,7 @@ package flash.xml
         public var previousSibling:XMLNode = null;
         public var nextSibling:XMLNode = null;
 
-        public function XMLNode(type: uint, input: String) {
+        public function XMLNode(type:uint, input:String) {
             nodeType = type;
             if (type == XMLNodeType.ELEMENT_NODE) {
                 nodeName = input;
@@ -36,15 +31,15 @@ package flash.xml
             }
         }
 
-        public function get childNodes(): Array {
+        public function get childNodes():Array {
             return _children;
         }
 
-        public function hasChildNodes(): Boolean {
+        public function hasChildNodes():Boolean {
             return _children.length > 0;
         }
 
-        public function cloneNode(deep: Boolean): XMLNode {
+        public function cloneNode(deep:Boolean):XMLNode {
             var clone = new XMLNode(nodeType, nodeType == XMLNodeType.ELEMENT_NODE
                                               ? nodeName : nodeValue);
             for (var key in attributes) {
@@ -60,7 +55,7 @@ package flash.xml
             return clone;
         }
 
-        public function removeNode(): void {
+        public function removeNode():void {
             if (parentNode) {
                 if (parentNode.firstChild === this) {
                     parentNode.firstChild = nextSibling;
@@ -89,7 +84,7 @@ package flash.xml
             nextSibling = null;
         }
 
-        public function insertBefore(node: XMLNode, before: XMLNode = null): void {
+        public function insertBefore(node:XMLNode, before:XMLNode = null):void {
             if (before == null) {
                 appendChild(node);
                 return;
@@ -116,7 +111,7 @@ package flash.xml
             node.parentNode = this;
         }
 
-        public function appendChild(node: XMLNode): void {
+        public function appendChild(node:XMLNode):void {
             if (node.parentNode === this) {
                 return;
             }
@@ -134,7 +129,7 @@ package flash.xml
             _children.push(node);
         }
 
-        public function getNamespaceForPrefix(prefix: String): String {
+        public function getNamespaceForPrefix(prefix:String):String {
             for (var attr in attributes) {
                 if (attr.indexOf("xmlns:") != 0) {
                     continue;
@@ -151,7 +146,7 @@ package flash.xml
             return null;
         }
 
-        public function getPrefixForNamespace(ns: String): String {
+        public function getPrefixForNamespace(ns:String):String {
             for (var attr in attributes) {
                 if (attr.indexOf("xmlns:") != 0) {
                     continue;
@@ -168,7 +163,7 @@ package flash.xml
             return null;
         }
 
-        public function get localName(): String {
+        public function get localName():String {
             if (nodeName == null) {
                 return null;
             }
@@ -180,7 +175,7 @@ package flash.xml
             }
         }
 
-        public function get prefix(): String {
+        public function get prefix():String {
             if (nodeName == null) {
                 return null;
             }
@@ -192,7 +187,7 @@ package flash.xml
             }
         }
 
-        public function get namespaceURI(): String {
+        public function get namespaceURI():String {
             if (prefix) {
                 return getNamespaceForPrefix(prefix);
             }
@@ -209,7 +204,7 @@ package flash.xml
             return null;
         }
 
-        public function toString(): String {
+        public function toString():String {
             if (nodeType != XMLNodeType.ELEMENT_NODE) {
                 return _escapeXML(nodeValue);
             }
@@ -240,9 +235,9 @@ package flash.xml
             return result;
         }
 
-        private native static function _escapeXML(text: String): String;
+        private native static function _escapeXML(text:String):String;
 
-        internal function clear(): void {
+        internal function clear():void {
             _children = [];
 
             attributes = {};
@@ -257,4 +252,3 @@ package flash.xml
         }
     }
 }
-

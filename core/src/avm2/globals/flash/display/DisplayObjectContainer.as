@@ -8,6 +8,7 @@ package flash.display {
     import flash.display.DisplayObject;
     import flash.display.InteractiveObject;
     import flash.text.TextSnapshot;
+    import __ruffle__.stub_getter;
 
     [Ruffle(Abstract)]
     public class DisplayObjectContainer extends InteractiveObject {
