@@ -438,9 +438,12 @@ impl RuffleInstanceBuilder {
         index: u32,
         player: &mut Player,
     ) {
+        // TODO A font may have multiple full names, what then?
         let full_name = face
             .names()
             .into_iter()
+            // Currently only unicode names are supported
+            .filter(|name| name.is_unicode())
             .find(|name| name.name_id == ttf_parser::name_id::FULL_NAME)
             .and_then(|name| name.to_string());
 
