@@ -3040,17 +3040,16 @@ fn run_mouse_pick<'gc>(
                     .mouse_pick_avm2(context, *context.mouse_position, require_button_mode)
                     .combine_with_parent(context.stage.into());
 
-                match pick {
-                    Avm2MousePick::Hit(target) => {
-                        if target == context.stage.into() {
-                            // The caller does not expect the stage to be the target, instead return
-                            // None. We can end up here because the root objects of stages and
-                            // loaders do not accept hit events. (handled by combine_with_parent)
-                            return None;
-                        }
-                        Some(target)
+                if let Avm2MousePick::Hit(target) = pick {
+                    if target == context.stage.into() {
+                        // The caller does not expect the stage to be the target, instead return
+                        // None. We can end up here because the root objects of stages and
+                        // loaders do not accept hit events. (handled by combine_with_parent)
+                        return None;
                     }
-                    _ => None,
+                    Some(target)
+                } else {
+                    None
                 }
             } else {
                 l.mouse_pick_avm1(context, *context.mouse_position, require_button_mode)
