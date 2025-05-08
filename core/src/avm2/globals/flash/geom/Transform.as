@@ -4,7 +4,6 @@ package flash.geom {
     import flash.geom.PerspectiveProjection;
     import __ruffle__.stub_getter;
     import __ruffle__.stub_method;
-    import __ruffle__.stub_setter;
 
     public class Transform {
         [Ruffle(NativeAccessible)]

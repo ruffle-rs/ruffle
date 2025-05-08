@@ -1,7 +1,6 @@
 package flash.net {
     import flash.events.EventDispatcher;
     import flash.errors.IOError;
-    import __ruffle__.stub_method;
 
     [Ruffle(InstanceAllocator)]
     public class NetConnection extends EventDispatcher {
@@ -13,13 +12,12 @@ package flash.net {
         public var maxPeerConnections:uint = 8;
         public var proxyType:String = "none";
 
-
-        public native function connect(command:String, ... arguments):void;
+        public native function connect(command:String, ...arguments):void;
 
         public native function addHeader(operation:String, mustUnderstand:Boolean = false, param:Object = null):void;
 
-        public native function call(command:String, responder:Responder, ... arguments):void;
-        
+        public native function call(command:String, responder:Responder, ...arguments):void;
+
         public native function close():void;
 
         public native function get connected():Boolean;
