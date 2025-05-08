@@ -1,4 +1,4 @@
-use gc_arena::Gc;
+use gc_arena::{Collect, Gc};
 
 pub use ruffle_macros::HasPrefixField;
 
@@ -33,4 +33,13 @@ pub unsafe trait HasPrefixField<Inner>: Sized {
         // SAFETY: The above asserts guarantee that the layouts are compatible.
         unsafe { Gc::cast(gc) }
     }
+}
+
+/// A `u8` which is always zero. Useful to artificially introduce niches into a struct.
+#[derive(Copy, Clone, Collect, Default, Eq, PartialEq, Ord, PartialOrd, Hash)]
+#[collect(require_static)]
+#[repr(u8)]
+pub enum ZeroU8 {
+    #[default]
+    Zero = 0,
 }

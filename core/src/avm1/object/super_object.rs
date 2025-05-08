@@ -8,7 +8,7 @@ use crate::avm1::function::ExecutionReason;
 use crate::avm1::object::{search_prototype, ExecutionName};
 use crate::avm1::{NativeObject, Object, Value};
 use crate::string::AvmString;
-use gc_arena::{Collect, Gc};
+use gc_arena::Collect;
 use ruffle_macros::istr;
 
 /// Implementation of the `super` object in AS2.
@@ -18,44 +18,47 @@ use ruffle_macros::istr;
 /// with its parent class.
 #[derive(Copy, Clone, Collect)]
 #[collect(no_drop)]
-pub struct SuperObject<'gc>(Gc<'gc, SuperObjectData<'gc>>);
-
-impl fmt::Debug for SuperObject<'_> {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        f.debug_struct("SuperObject")
-            .field("ptr", &Gc::as_ptr(self.0))
-            .finish()
-    }
-}
-
-#[derive(Clone, Collect)]
-#[collect(no_drop)]
-pub struct SuperObjectData<'gc> {
+pub struct SuperObject<'gc> {
     /// The object present as `this` throughout the superchain.
     this: Object<'gc>,
 
     /// The prototype depth of the currently-executing method.
     depth: u8,
+
+    /// Adds a niche, so that enums contaning this type can use it for their discriminant.
+    _niche: crate::utils::ZeroU8,
+}
+
+impl fmt::Debug for SuperObject<'_> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        f.debug_struct("SuperObject")
+            .field("this", &self.this)
+            .field("depth", &self.depth)
+            .finish()
+    }
 }
 
 impl<'gc> SuperObject<'gc> {
     /// Construct a `super` for an incoming stack frame.
-    pub fn new(activation: &mut Activation<'_, 'gc>, this: Object<'gc>, depth: u8) -> Self {
-        Self(Gc::new(activation.gc(), SuperObjectData { this, depth }))
+    pub fn new(this: Object<'gc>, depth: u8) -> Self {
+        Self {
+            this,
+            depth,
+            _niche: Default::default(),
+        }
     }
 
     pub fn this(&self) -> Object<'gc> {
-        self.0.this
+        self.this
     }
 
     pub fn depth(&self) -> u8 {
-        self.0.depth
+        self.depth
     }
 
     pub(super) fn base_proto(&self, activation: &mut Activation<'_, 'gc>) -> Object<'gc> {
-        let depth = self.0.depth;
-        let mut proto = self.0.this;
-        for _ in 0..depth {
+        let mut proto = self.this();
+        for _ in 0..self.depth() {
             proto = proto.proto(activation).coerce_to_object(activation);
         }
         proto
@@ -83,8 +86,8 @@ impl<'gc> SuperObject<'gc> {
         constr.as_constructor().exec(
             name.into(),
             activation,
-            self.0.this.into(),
-            self.0.depth + 1,
+            self.this().into(),
+            self.depth() + 1,
             args,
             ExecutionReason::FunctionCall,
             constructor,
@@ -98,7 +101,7 @@ impl<'gc> SuperObject<'gc> {
         activation: &mut Activation<'_, 'gc>,
         reason: ExecutionReason,
     ) -> Result<Value<'gc>, Error<'gc>> {
-        let this = self.0.this;
+        let this = self.this();
         let (method, depth) =
             match search_prototype(self.proto(activation), name, activation, this, false)? {
                 Some((Value::Object(method), depth)) => (method, depth),
@@ -110,7 +113,7 @@ impl<'gc> SuperObject<'gc> {
                 ExecutionName::Dynamic(name),
                 activation,
                 this.into(),
-                self.0.depth + depth + 1,
+                self.depth() + depth + 1,
                 args,
                 reason,
                 method,
