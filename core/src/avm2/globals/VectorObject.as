@@ -147,8 +147,10 @@ package __AS3__.vec {
 
         public native function set fixed(isFixed:Boolean):*;
 
+        [Ruffle(FastCall)]
         public native function get length():uint;
 
+        [Ruffle(FastCall)]
         public native function set length(length:uint):*;
 
         AS3 native function concat(... rest):Vector$object;
@@ -170,7 +172,7 @@ package __AS3__.vec {
 
         AS3 native function map(callback:Function, receiver:Object = null):*;
 
-        AS3 native function pop():Object;
+        AS3 native function pop():*;
 
         AS3 native function push(... rest):uint;
 
@@ -179,7 +181,7 @@ package __AS3__.vec {
 
         AS3 native function reverse():Vector$object;
 
-        AS3 native function shift():Object;
+        AS3 native function shift():*;
 
         AS3 native function slice(start:Number = 0, end:Number = 2147483647):Vector$object;
 

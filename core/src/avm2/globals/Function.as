@@ -41,7 +41,9 @@ package {
 
         public native function get length() : int;
 
+        [Ruffle(FastCall)]
         public native function get prototype():*;
+        [Ruffle(FastCall)]
         public native function set prototype(proto:*):*;
 
         AS3 native function apply(receiver:* = void 0, args:* = void 0):*;

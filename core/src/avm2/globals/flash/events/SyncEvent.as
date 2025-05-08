@@ -9,14 +9,20 @@ package flash.events
     {
         public static const SYNC:String = "sync"; // Defines the value of the type property of a sync event object.
 
-        public var changeList: Array; // An array of objects; each object contains properties that describe the changed members of a remote shared object.
+        private var _changeList: Array; // An array of objects; each object contains properties that describe the changed members of a remote shared object.
 
         public function SyncEvent(type:String, bubbles:Boolean = false, cancelable:Boolean = false, changeList:Array = null)
         {
             super(type,bubbles,cancelable);
             this.changeList = changeList;
         }
-        
+
+        public function get changeList():Array {
+            return this._changeList;
+        }
+        public function set changeList(value:Array):void {
+            this._changeList = value;
+        }
 
         //  Creates a copy of the SyncEvent object and sets the value of each property to match that of the original.
         override public function clone():Event

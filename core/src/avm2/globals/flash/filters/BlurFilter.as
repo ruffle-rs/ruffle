@@ -1,4 +1,4 @@
-﻿package flash.filters {
+package flash.filters {
     public final class BlurFilter extends BitmapFilter {
         [Ruffle(NativeAccessible)]
         public var blurX: Number;

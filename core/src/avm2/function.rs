@@ -182,7 +182,7 @@ pub fn exec<'gc>(
     callee: Value<'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let ret = match method.method_kind() {
-        MethodKind::Native(native_method) => {
+        MethodKind::Native { native_method, .. } => {
             let arguments = &arguments.to_slice(activation);
 
             let caller_domain = activation.caller_domain();
@@ -201,6 +201,7 @@ pub fn exec<'gc>(
             }
 
             let signature = &*method.resolved_param_config();
+            let return_type = method.resolved_return_type();
 
             // Check for too many arguments
             if arguments.len() > signature.len() && !method.is_variadic() && !method.is_unchecked()
@@ -231,9 +232,17 @@ pub fn exec<'gc>(
                 .context
                 .avm2
                 .push_call(activation.gc(), method, bound_class);
-            native_method(&mut activation, receiver, &arguments)
+
+            let result = native_method(&mut activation, receiver, &arguments);
+            result.and_then(|v| {
+                if let Some(return_type) = return_type {
+                    v.coerce_to_type(&mut activation, return_type)
+                } else {
+                    Ok(v)
+                }
+            })
         }
-        MethodKind::Bytecode(_) => {
+        MethodKind::Bytecode { .. } => {
             // This used to be a one step called Activation::from_method,
             // but avoiding moving an Activation around helps perf
             let mut activation = Activation::from_nothing(activation.context);

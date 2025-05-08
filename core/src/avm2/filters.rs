@@ -703,43 +703,43 @@ fn avm2_to_gradient_filter<'gc>(
 ) -> Result<GradientFilter, Error<'gc>> {
     #[allow(clippy::assertions_on_constants)]
     {
-        assert!(gradient_bevel_filter_slots::ANGLE == gradient_glow_filter_slots::ANGLE);
-        assert!(gradient_bevel_filter_slots::BLUR_X == gradient_glow_filter_slots::BLUR_X);
-        assert!(gradient_bevel_filter_slots::BLUR_Y == gradient_glow_filter_slots::BLUR_Y);
-        assert!(gradient_bevel_filter_slots::DISTANCE == gradient_glow_filter_slots::DISTANCE);
-        assert!(gradient_bevel_filter_slots::KNOCKOUT == gradient_glow_filter_slots::KNOCKOUT);
-        assert!(gradient_bevel_filter_slots::QUALITY == gradient_glow_filter_slots::QUALITY);
-        assert!(gradient_bevel_filter_slots::STRENGTH == gradient_glow_filter_slots::STRENGTH);
-        assert!(gradient_bevel_filter_slots::TYPE == gradient_glow_filter_slots::TYPE);
+        assert!(gradient_bevel_filter_slots::_ANGLE == gradient_glow_filter_slots::_ANGLE);
+        assert!(gradient_bevel_filter_slots::_BLUR_X == gradient_glow_filter_slots::_BLUR_X);
+        assert!(gradient_bevel_filter_slots::_BLUR_Y == gradient_glow_filter_slots::_BLUR_Y);
+        assert!(gradient_bevel_filter_slots::_DISTANCE == gradient_glow_filter_slots::_DISTANCE);
+        assert!(gradient_bevel_filter_slots::_KNOCKOUT == gradient_glow_filter_slots::_KNOCKOUT);
+        assert!(gradient_bevel_filter_slots::_QUALITY == gradient_glow_filter_slots::_QUALITY);
+        assert!(gradient_bevel_filter_slots::_STRENGTH == gradient_glow_filter_slots::_STRENGTH);
+        assert!(gradient_bevel_filter_slots::_TYPE == gradient_glow_filter_slots::_TYPE);
 
-        assert!(gradient_bevel_filter_slots::COLORS == gradient_glow_filter_slots::COLORS);
-        assert!(gradient_bevel_filter_slots::ALPHAS == gradient_glow_filter_slots::ALPHAS);
-        assert!(gradient_bevel_filter_slots::RATIOS == gradient_glow_filter_slots::RATIOS);
+        assert!(gradient_bevel_filter_slots::_COLORS == gradient_glow_filter_slots::_COLORS);
+        assert!(gradient_bevel_filter_slots::_ALPHAS == gradient_glow_filter_slots::_ALPHAS);
+        assert!(gradient_bevel_filter_slots::_RATIOS == gradient_glow_filter_slots::_RATIOS);
     }
 
     let angle = object
-        .get_slot(gradient_bevel_filter_slots::ANGLE)
+        .get_slot(gradient_bevel_filter_slots::_ANGLE)
         .coerce_to_number(activation)?;
     let blur_x = object
-        .get_slot(gradient_bevel_filter_slots::BLUR_X)
+        .get_slot(gradient_bevel_filter_slots::_BLUR_X)
         .coerce_to_number(activation)?;
     let blur_y = object
-        .get_slot(gradient_bevel_filter_slots::BLUR_Y)
+        .get_slot(gradient_bevel_filter_slots::_BLUR_Y)
         .coerce_to_number(activation)?;
     let distance = object
-        .get_slot(gradient_bevel_filter_slots::DISTANCE)
+        .get_slot(gradient_bevel_filter_slots::_DISTANCE)
         .coerce_to_number(activation)?;
     let knockout = object
-        .get_slot(gradient_bevel_filter_slots::KNOCKOUT)
+        .get_slot(gradient_bevel_filter_slots::_KNOCKOUT)
         .coerce_to_boolean();
     let quality = object
-        .get_slot(gradient_bevel_filter_slots::QUALITY)
+        .get_slot(gradient_bevel_filter_slots::_QUALITY)
         .coerce_to_u32(activation)?;
     let strength = object
-        .get_slot(gradient_bevel_filter_slots::STRENGTH)
+        .get_slot(gradient_bevel_filter_slots::_STRENGTH)
         .coerce_to_number(activation)?;
     let bevel_type = object
-        .get_slot(gradient_bevel_filter_slots::TYPE)
+        .get_slot(gradient_bevel_filter_slots::_TYPE)
         .coerce_to_string(activation)?;
     let colors = get_gradient_colors(activation, object)?;
     let mut flags = GradientFilterFlags::COMPOSITE_SOURCE;
@@ -875,17 +875,17 @@ fn get_gradient_colors<'gc>(
 ) -> Result<Vec<GradientRecord>, Error<'gc>> {
     let mut colors = vec![];
     if let Some(colors_object) = object
-        .get_slot(gradient_bevel_filter_slots::COLORS)
+        .get_slot(gradient_bevel_filter_slots::_COLORS)
         .as_object()
     {
         if let Some(colors_array) = colors_object.as_array_storage() {
             if let Some(alphas_object) = object
-                .get_slot(gradient_bevel_filter_slots::ALPHAS)
+                .get_slot(gradient_bevel_filter_slots::_ALPHAS)
                 .as_object()
             {
                 if let Some(alphas_array) = alphas_object.as_array_storage() {
                     if let Some(ratios_object) = object
-                        .get_slot(gradient_bevel_filter_slots::RATIOS)
+                        .get_slot(gradient_bevel_filter_slots::_RATIOS)
                         .as_object()
                     {
                         if let Some(ratios_array) = ratios_object.as_array_storage() {

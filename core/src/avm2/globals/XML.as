@@ -64,7 +64,11 @@ package {
         AS3 native function normalize(): XML;
         AS3 native function parent():*;
         AS3 native function text():XMLList;
+
+        [Ruffle(FastCall)]
         AS3 native function toString():String;
+
+        [Ruffle(FastCall)]
         AS3 native function toXMLString():String;
 
         AS3 native function attributes():XMLList;
@@ -129,6 +133,7 @@ package {
         [Ruffle(NativeCallable)]
         AS3 native function insertChildBefore(child1:*, child2:*):*;
 
+        [Ruffle(FastCall)]
         [Ruffle(NativeCallable)]
         AS3 native function localName():Object;
 

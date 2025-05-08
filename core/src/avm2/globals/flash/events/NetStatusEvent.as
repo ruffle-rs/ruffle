@@ -9,14 +9,20 @@ package flash.events
     {
         public static const NET_STATUS:String = "netStatus"; // Defines the value of the type property of a netStatus event object.
 
-        public var info: Object; // An object with properties that describe the object's status or error condition.
+        private var _info: Object; // An object with properties that describe the object's status or error condition.
 
         public function NetStatusEvent(type:String, bubbles:Boolean = false, cancelable:Boolean = false, info:Object = null)
         {
             super(type,bubbles,cancelable);
             this.info = info;
         }
-        
+
+        public function get info():Object {
+            return this._info;
+        }
+        public function set info(value:Object):void {
+            this._info = value;
+        }
 
         //  Creates a copy of the NetStatusEvent object and sets the value of each property to match that of the original.
         override public function clone():Event

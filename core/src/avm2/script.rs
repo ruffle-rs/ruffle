@@ -180,19 +180,9 @@ impl<'gc> TranslationUnit<'gc> {
             return Ok(*method);
         }
 
-        let is_global = read.domain.is_playerglobals_domain(activation.avm2());
         drop(read);
 
-        let mut native_method = None;
-
-        if is_global {
-            if let Some(native) = activation.avm2().native_method_table[method_index.0 as usize] {
-                native_method = Some(native);
-            }
-        }
-
-        let method =
-            Method::from_method_index(self, method_index, native_method, is_function, activation)?;
+        let method = Method::from_method_index(self, method_index, is_function, activation)?;
 
         self.0.write(activation.gc()).methods[method_index.0 as usize] = Some(method);
 
@@ -221,8 +211,8 @@ impl<'gc> TranslationUnit<'gc> {
             .c_class()
             .expect("Class::from_abc_index returns an i_class");
 
-        class.validate_class(activation)?;
-        c_class.validate_class(activation)?;
+        class.validate_class(activation, false)?;
+        c_class.validate_class(activation, false)?;
 
         class.init_vtable(activation.context)?;
         c_class.init_vtable(activation.context)?;
@@ -479,7 +469,7 @@ impl<'gc> Script<'gc> {
         // Now that we have the traits, create the global class for this script
         // and use it to initialize a vtable and global object.
 
-        let global_class = global_scope::create_class(activation, traits);
+        let global_class = global_scope::create_class(activation, traits)?;
 
         let scope = ScopeChain::new(domain);
         let object_class = activation.avm2().classes().object;

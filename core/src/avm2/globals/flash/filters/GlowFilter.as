@@ -1,4 +1,4 @@
-﻿package flash.filters {
+package flash.filters {
     public final class GlowFilter extends BitmapFilter {
         [Ruffle(NativeAccessible)]
         public var alpha: Number;

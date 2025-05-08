@@ -2,7 +2,7 @@ package flash.display {
 
     public final class GraphicsTrianglePath implements IGraphicsPath, IGraphicsData {
         [Ruffle(NativeAccessible)]
-        public var culling : String;
+        private var _culling : String;
 
         [Ruffle(NativeAccessible)]
         public var indices : Vector.<int>;
@@ -18,6 +18,14 @@ package flash.display {
             this.indices = indices;
             this.uvtData = uvtData;
             this.vertices = vertices;
+        }
+
+        public function get culling():String {
+            return this._culling;
+        }
+        public function set culling(value:String):void {
+            // TODO do validation
+            this._culling = value;
         }
     }
 

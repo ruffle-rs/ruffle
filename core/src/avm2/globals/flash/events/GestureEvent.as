@@ -4,36 +4,39 @@
 // It won't be regenerated in the future, so feel free to edit and/or fix
 package flash.events
 {
-    
+    [API("667")]
     public class GestureEvent extends Event
     {
         public static const GESTURE_TWO_FINGER_TAP:String = "gestureTwoFingerTap"; // Defines the value of the type property of a GESTURE_TWO_FINGER_TAP gesture event object.
 
         // A value from the GesturePhase class indicating the progress of the touch gesture.
-        public var phase: String;
+        private var _phase: String;
 
         // The horizontal coordinate at which the event occurred relative to the containing sprite.
         [Ruffle(NativeAccessible)]
-        public var localX: Number;
+        private var _localX: Number;
 
         // The vertical coordinate at which the event occurred relative to the containing sprite.
         [Ruffle(NativeAccessible)]
-        public var localY: Number;
+        private var _localY: Number;
 
         // On Windows or Linux, indicates whether the Ctrl key is active (true) or inactive (false).
-        public var ctrlKey: Boolean;
+        private var _ctrlKey: Boolean;
 
         // Indicates whether the Alt key is active (true) or inactive (false).
-        public var altKey: Boolean;
+        private var _altKey: Boolean;
 
         // Indicates whether the Shift key is active (true) or inactive (false).
-        public var shiftKey: Boolean;
+        private var _shiftKey: Boolean;
+
+        // On a Mac OS, the value of the commandKey property is the same value as the ctrlKey property. This property is always false on Windows or Linux.
+        private var _commandKey: Boolean;
 
         // Indicates whether the Control key is activated on Mac and whether the Ctrl key is activated on Windows or Linux.
-        public var controlKey: Boolean;
+        private var _controlKey: Boolean;
 
         public function GestureEvent(type:String, bubbles:Boolean = true, cancelable:Boolean = false, phase:String = null, localX:Number = 0,
-            localY:Number = 0, ctrlKey:Boolean = false, altKey:Boolean = false, shiftKey:Boolean = false, controlKey:Boolean = false)
+            localY:Number = 0, ctrlKey:Boolean = false, altKey:Boolean = false, shiftKey:Boolean = false, commandKey:Boolean = false, controlKey:Boolean = false)
         {
             super(type,bubbles,cancelable);
             this.phase = phase;
@@ -42,9 +45,71 @@ package flash.events
             this.ctrlKey = ctrlKey;
             this.altKey = altKey;
             this.shiftKey = shiftKey;
+            this.commandKey = commandKey;
             this.controlKey = controlKey;
         }
-        
+
+        public function get phase():String {
+            return this._phase;
+        }
+        public function set phase(value:String):void {
+            this._phase = value;
+        }
+
+        public function get localX():Number {
+            return this._localX;
+        }
+        public function set localX(value:Number):void {
+            this._localX = value;
+        }
+
+        public function get localY():Number {
+            return this._localY;
+        }
+        public function set localY(value:Number):void {
+            this._localY = value;
+        }
+
+        public function get ctrlKey():Boolean {
+            return this._ctrlKey;
+        }
+        public function set ctrlKey(value:Boolean):void {
+            this._ctrlKey = value;
+        }
+
+        public function get altKey():Boolean {
+            return this._altKey;
+        }
+        public function set altKey(value:Boolean):void {
+            this._altKey = value;
+        }
+
+        public function get shiftKey():Boolean {
+            return this._shiftKey;
+        }
+        public function set shiftKey(value:Boolean):void {
+            this._shiftKey = value;
+        }
+
+        // commandKey and controlKey are AIR-only
+
+        [API("668")]
+        public function get commandKey():Boolean {
+            return this._commandKey;
+        }
+        [API("668")]
+        public function set commandKey(value:Boolean):void {
+            this._commandKey = value;
+        }
+
+        [API("668")]
+        public function get controlKey():Boolean {
+            return this._controlKey;
+        }
+        [API("668")]
+        public function set controlKey(value:Boolean):void {
+            this._controlKey = value;
+        }
 
         // Creates a copy of the GestureEvent object and sets the value of each property to match that of the original.
         override public function clone():Event
@@ -55,7 +120,7 @@ package flash.events
         // Returns a string that contains all the properties of the GestureEvent object.
         override public function toString():String
         {
-            return this.formatToString("GestureEvent","type","bubbles","cancelable","eventPhase","phase","localX","localY","ctrlKey","altKey","shiftKey","commandKey","controlKey","stageX","stageY");
+            return this.formatToString("GestureEvent","type","bubbles","cancelable","phase","localX","localY","stageX","stageY","ctrlKey","altKey","shiftKey");
         }
 
         // The horizontal coordinate at which the event occurred in global Stage coordinates.

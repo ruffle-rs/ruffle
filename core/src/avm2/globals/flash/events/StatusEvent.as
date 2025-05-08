@@ -9,8 +9,8 @@ package flash.events
     {
         public static const STATUS:String = "status"; // Defines the value of the type property of a status event object.
 
-        public var code: String; // A description of the object's status.
-        public var level: String; // The category of the message, such as "status", "warning" or "error".
+        private var _code: String; // A description of the object's status.
+        private var _level: String; // The category of the message, such as "status", "warning" or "error".
 
         public function StatusEvent(type:String, bubbles:Boolean = false, cancelable:Boolean = false, code:String = "", level:String = "")
         {
@@ -18,7 +18,20 @@ package flash.events
             this.code = code;
             this.level = level;
         }
-        
+
+        public function get code():String {
+            return this._code;
+        }
+        public function set code(value:String):void {
+            this._code = value;
+        }
+
+        public function get level():String {
+            return this._level;
+        }
+        public function set level(value:String):void {
+            this._level = value;
+        }
 
         //  Creates a copy of the StatusEvent object and sets the value of each property to match that of the original.
         override public function clone():Event
