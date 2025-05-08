@@ -219,7 +219,7 @@ impl<'gc> Avm1Function<'gc> {
         // TODO: `super` should only be defined if this was a method call (depth > 0?)
         // `f[""]()` emits a CallMethod op, causing `this` to be undefined, but `super` is a function; what is it?
         let zuper = this.filter(|_| !suppress).map(|this| {
-            let zuper = NativeObject::Super(SuperObject::new(frame, this, depth));
+            let zuper = NativeObject::Super(SuperObject::new(this, depth));
             Object::new_with_native(frame.strings(), None, zuper).into()
         });
 
