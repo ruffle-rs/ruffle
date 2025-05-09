@@ -1,30 +1,28 @@
-package flash.security
-{
+package flash.security {
     [API("674")]
-    public final class X509Certificate
-    {
+    public final class X509Certificate {
         import flash.utils.ByteArray;
 
-        private var _encoded: ByteArray;
-        private var _issuer: X500DistinguishedName;
-        private var _issuerUniqueID: String;
-        private var _serialNumber: String;
-        private var _signatureAlgorithmOID: String;
-        private var _signatureAlgorithmParams: ByteArray;
-        private var _subject: X500DistinguishedName;
-        private var _subjectPublicKey: String;
-        private var _subjectPublicKeyAlgorithmOID: String;
-        private var _subjectUniqueID: String;
-        private var _validNotAfter: Date;
-        private var _validNotBefore: Date;
-        private var _version: uint;
+        private var _encoded:ByteArray;
+        private var _issuer:X500DistinguishedName;
+        private var _issuerUniqueID:String;
+        private var _serialNumber:String;
+        private var _signatureAlgorithmOID:String;
+        private var _signatureAlgorithmParams:ByteArray;
+        private var _subject:X500DistinguishedName;
+        private var _subjectPublicKey:String;
+        private var _subjectPublicKeyAlgorithmOID:String;
+        private var _subjectUniqueID:String;
+        private var _validNotAfter:Date;
+        private var _validNotBefore:Date;
+        private var _version:uint;
 
         public function X509Certificate() {}
 
         public function get encoded():ByteArray {
             return this._encoded;
         }
-        
+
         public function get issuer():X500DistinguishedName {
             return this._issuer;
         }
@@ -48,7 +46,7 @@ package flash.security
         public function get subject():X500DistinguishedName {
             return this._subject;
         }
-        
+
         public function get subjectPublicKey():String {
             return this._subjectPublicKey;
         }

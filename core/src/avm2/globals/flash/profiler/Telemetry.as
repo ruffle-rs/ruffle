@@ -10,7 +10,7 @@ package flash.profiler {
 
         public static function sendMetric(metric:String, value:*):void {}
         public static function sendSpanMetric(metric:String, startSpanMarker:Number, value:* = null):void {}
-        	
+
         public static function registerCommandHandler(commandName:String, handler:Function):Boolean {
             return false;
         }

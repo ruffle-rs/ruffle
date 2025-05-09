@@ -17,7 +17,7 @@ package flash.display3D {
         public native function createVertexBuffer(numVertices:int, data32PerVertex:int, bufferUsage:String = "staticDraw"):VertexBuffer3D;
         public native function configureBackBuffer(
             width:int, height:int, antiAlias:int, enableDepthAndStencil:Boolean = true, wantsBestResolution:Boolean = false, wantsBestResolutionOnBrowserZoom:Boolean = false
-            ):void;
+        ):void;
         public native function setVertexBufferAt(index:int, buffer:VertexBuffer3D, bufferOffset:int = 0, format:String = "float4"):void;
         public native function createProgram():Program3D;
         public native function setProgram(program:Program3D):void;

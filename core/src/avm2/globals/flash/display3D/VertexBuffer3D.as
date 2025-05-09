@@ -1,7 +1,7 @@
 package flash.display3D {
     import __ruffle__.stub_method;
     import flash.utils.ByteArray;
-    
+
     [Ruffle(InstanceAllocator)]
     [API("674")]
     public final class VertexBuffer3D {
