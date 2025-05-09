@@ -3,11 +3,11 @@ package flash.text.ime {
         public var converted:Boolean;
 
         public var relativeStart:int;
-        
+
         public var relativeEnd:int;
-        
+
         public var selected:Boolean;
-        
+
         public function CompositionAttributeRange(relativeStart:int, relativeEnd:int, selected:Boolean, converted:Boolean) {
             this.relativeStart = relativeStart;
             this.relativeEnd = relativeEnd;
@@ -16,4 +16,3 @@ package flash.text.ime {
         }
     }
 }
-

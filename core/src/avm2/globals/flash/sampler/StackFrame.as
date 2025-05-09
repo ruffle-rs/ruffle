@@ -5,9 +5,9 @@ package flash.sampler {
         public const file:String;
 
         public const line:uint;
-   
+
         public const scriptID:Number;
-      
+
         public function toString():String {
             if (this.file) {
                 return this.name + "()[" + this.file + ":" + this.line + "]";
@@ -17,4 +17,3 @@ package flash.sampler {
         }
     }
 }
-

@@ -1,38 +1,37 @@
 package flash.filters {
     public final class GlowFilter extends BitmapFilter {
         [Ruffle(NativeAccessible)]
-        public var alpha: Number;
+        public var alpha:Number;
 
         [Ruffle(NativeAccessible)]
-        public var blurX: Number;
+        public var blurX:Number;
 
         [Ruffle(NativeAccessible)]
-        public var blurY: Number;
+        public var blurY:Number;
 
         [Ruffle(NativeAccessible)]
-        public var color: uint;
+        public var color:uint;
 
         [Ruffle(NativeAccessible)]
-        public var inner: Boolean;
+        public var inner:Boolean;
 
         [Ruffle(NativeAccessible)]
-        public var knockout: Boolean;
+        public var knockout:Boolean;
 
         [Ruffle(NativeAccessible)]
-        public var quality: int;
+        public var quality:int;
 
         [Ruffle(NativeAccessible)]
-        public var strength: Number;
+        public var strength:Number;
 
-        public function GlowFilter(color: uint = 0xFF0000, 
-                                   alpha: Number = 1.0, 
-                                   blurX: Number = 6.0, 
-                                   blurY: Number = 6.0, 
-                                   strength: Number = 2, 
-                                   quality: int = 1, 
-                                   inner: Boolean = false, 
-                                   knockout: Boolean = false) 
-        {
+        public function GlowFilter(color:uint = 0xFF0000,
+                                   alpha:Number = 1.0,
+                                   blurX:Number = 6.0,
+                                   blurY:Number = 6.0,
+                                   strength:Number = 2,
+                                   quality:int = 1,
+                                   inner:Boolean = false,
+                                   knockout:Boolean = false)  {
             this.alpha = alpha;
             this.blurX = blurX;
             this.blurY = blurY;
@@ -43,7 +42,7 @@ package flash.filters {
             this.strength = strength;
         }
 
-        override public function clone(): BitmapFilter {
+        override public function clone():BitmapFilter {
             return new GlowFilter(this.color, this.alpha, this.blurX, this.blurY, this.strength, this.quality, this.inner, this.knockout);
         }
     }

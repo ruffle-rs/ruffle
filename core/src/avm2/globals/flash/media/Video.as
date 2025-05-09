@@ -1,19 +1,17 @@
-package flash.media
-{
+package flash.media {
     import __ruffle__.stub_method;
 
-    import flash.display.DisplayObject;
-    import flash.net.NetStream;
-    
-    [Ruffle(InstanceAllocator)]
-    public class Video extends DisplayObject
-    {
-        private var _deblocking: int;
-        private var _smoothing: Boolean;
-        private var _videoWidth: int;
-        private var _videoHeight: int;
+    import flash.display.DisplayObject
+    import flash.net.NetStream
 
-        public function Video(width: int = 320, height: int = 240) {
+    [Ruffle(InstanceAllocator)]
+    public class Video extends DisplayObject {
+        private var _deblocking:int;
+        private var _smoothing:Boolean;
+        private var _videoWidth:int;
+        private var _videoHeight:int;
+
+        public function Video(width:int = 320, height:int = 240) {
             if (width < 0 || height < 0) {
                 throw new RangeError("Error #2006: The supplied index is out of bounds.", 2006);
             }
@@ -22,7 +20,7 @@ package flash.media
             this.init(width, height);
         }
 
-        private native function init(width: int, height: int);
+        private native function init(width:int, height:int);
 
         public function get deblocking():int {
             return this._deblocking;
