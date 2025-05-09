@@ -39,7 +39,7 @@ struct common__VertexInput {
 /// Converts a color from linear to sRGB color space.
 fn common__linear_to_srgb(linear_: vec4<f32>) -> vec4<f32> {
     var rgb: vec3<f32> = linear_.rgb;
-    if( linear_.a > 0.0 ) {
+    if (linear_.a > 0.0) {
         rgb = rgb / linear_.a;
     }
     let a = 12.92 * rgb;
@@ -51,7 +51,7 @@ fn common__linear_to_srgb(linear_: vec4<f32>) -> vec4<f32> {
 /// Converts a color from sRGB to linear color space.
 fn common__srgb_to_linear(srgb: vec4<f32>) -> vec4<f32> {
     var rgb: vec3<f32> = srgb.rgb;
-    if( srgb.a > 0.0 ) {
+    if (srgb.a > 0.0) {
         rgb = rgb / srgb.a;
     }
     let a = rgb / 12.92;

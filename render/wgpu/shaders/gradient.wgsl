@@ -51,7 +51,6 @@ fn find_t(uv: vec2<f32>) -> f32 {
 
 @fragment
 fn main_fragment(in: VertexOutput) -> @location(0) vec4<f32> {
-
     // Calculate normalized `t` position in gradient, [0.0, 1.0] being the bounds of the ratios.
     var t: f32 = find_t(in.uv);
 
@@ -60,10 +59,10 @@ fn main_fragment(in: VertexOutput) -> @location(0) vec4<f32> {
         t = saturate(t);
     } else if (gradient.repeat == 2) {
         // Reflect
-        if( t < 0.0 ) {
+        if (t < 0.0) {
             t = -t;
         }
-        if ( (i32(t) & 1) == 0 ) {
+        if ((i32(t) & 1) == 0) {
             t = fract(t);
         } else {
             t = 1.0 - fract(t);
@@ -74,7 +73,7 @@ fn main_fragment(in: VertexOutput) -> @location(0) vec4<f32> {
     }
 
     var color = textureSample(texture, texture_sampler, vec2<f32>(t, 0.0));
-    if( gradient.interpolation != 0 ) {
+    if (gradient.interpolation != 0) {
         color = common__linear_to_srgb(color);
     }
     let out = saturate(color * transforms.mult_color + transforms.add_color);
