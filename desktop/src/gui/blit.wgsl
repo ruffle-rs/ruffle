@@ -8,7 +8,7 @@ struct VertexOutput {
 /// Converts a color from sRGB to linear color space.
 fn srgb_to_linear(srgb: vec4<f32>) -> vec4<f32> {
     var rgb: vec3<f32> = srgb.rgb;
-    if( srgb.a > 0.0 ) {
+    if (srgb.a > 0.0) {
         rgb = rgb / srgb.a;
     }
     let a = rgb / 12.92;
