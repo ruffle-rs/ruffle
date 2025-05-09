@@ -2,7 +2,7 @@ package flash.events {
 	[Ruffle(InstanceAllocator)]
 	public class Event {
 		public static const ACTIVATE:String = "activate";
-      
+
 		public static const ADDED:String = "added";
 
 		public static const ADDED_TO_STAGE:String = "addedToStage";

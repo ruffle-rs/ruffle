@@ -1,10 +1,8 @@
 
-package flash.events
-{
+package flash.events {
     import flash.display.InteractiveObject;
 
-    public class MouseEvent extends Event
-    {
+    public class MouseEvent extends Event {
         public static const CLICK:String = "click";
         public static const DOUBLE_CLICK:String = "doubleClick";
         public static const MOUSE_DOWN:String = "mouseDown";
@@ -31,36 +29,35 @@ package flash.events
         [API("678")]
         public static const CONTEXT_MENU:String = "contextMenu";
 
-        private var _isRelatedObjectInaccessible: Boolean;
-        private var _relatedObject: InteractiveObject;
+        private var _isRelatedObjectInaccessible:Boolean;
+        private var _relatedObject:InteractiveObject;
 
         [Ruffle(NativeAccessible)]
-        private var _localX: Number;
+        private var _localX:Number;
 
         [Ruffle(NativeAccessible)]
-        private var _localY: Number;
+        private var _localY:Number;
 
-        private var _delta: int;
-        private var _buttonDown: Boolean;
-        private var _altKey: Boolean;
-        private var _ctrlKey: Boolean;
-        private var _shiftKey: Boolean;
-        private var _movementX: Number;
-        private var _movementY: Number;
+        private var _delta:int;
+        private var _buttonDown:Boolean;
+        private var _altKey:Boolean;
+        private var _ctrlKey:Boolean;
+        private var _shiftKey:Boolean;
+        private var _movementX:Number;
+        private var _movementY:Number;
 
-        public function MouseEvent(type:String, 
-                                   bubbles:Boolean = true, 
-                                   cancelable:Boolean = false, 
-                                   localX:Number = 0/0, 
-                                   localY:Number = 0/0, 
-                                   relatedObject:InteractiveObject = null, 
-                                   ctrlKey:Boolean = false, 
-                                   altKey:Boolean = false, 
-                                   shiftKey:Boolean = false, 
-                                   buttonDown:Boolean = false, 
-                                   delta:int = 0)
-        {
-            super(type,bubbles,cancelable);
+        public function MouseEvent(type:String,
+                                   bubbles:Boolean = true,
+                                   cancelable:Boolean = false,
+                                   localX:Number = 0/0,
+                                   localY:Number = 0/0,
+                                   relatedObject:InteractiveObject = null,
+                                   ctrlKey:Boolean = false,
+                                   altKey:Boolean = false,
+                                   shiftKey:Boolean = false,
+                                   buttonDown:Boolean = false,
+                                   delta:int = 0) {
+            super(type, bubbles, cancelable);
             this.localX = localX;
             this.localY = localY;
             this.relatedObject = relatedObject;
@@ -74,15 +71,13 @@ package flash.events
             this.movementY = 0.0; // unimplemented
         }
 
-        override public function clone() : Event
-        {
+        override public function clone():Event {
             // note: movementX/Y not cloned
-            return new MouseEvent(this.type,this.bubbles,this.cancelable,this.localX,this.localY,this.relatedObject,this.ctrlKey,this.altKey,this.shiftKey,this.buttonDown,this.delta);
+            return new MouseEvent(this.type, this.bubbles, this.cancelable, this.localX, this.localY, this.relatedObject, this.ctrlKey, this.altKey, this.shiftKey, this.buttonDown, this.delta);
         }
 
-        override public function toString() : String
-        {
-            return this.formatToString("MouseEvent","type","bubbles","cancelable","eventPhase","localX","localY","stageX","stageY","relatedObject","ctrlKey","altKey","shiftKey","buttonDown","delta");
+        override public function toString():String {
+            return this.formatToString("MouseEvent", "type", "bubbles", "cancelable", "eventPhase", "localX", "localY", "stageX", "stageY", "relatedObject", "ctrlKey", "altKey", "shiftKey", "buttonDown", "delta");
         }
 
         public function get isRelatedObjectInaccessible():Boolean {
@@ -179,7 +174,7 @@ package flash.events
 
         public native function updateAfterEvent():void;
 
-        public native function get stageX() : Number;
-        public native function get stageY() : Number;
+        public native function get stageX():Number;
+        public native function get stageY():Number;
     }
 }
