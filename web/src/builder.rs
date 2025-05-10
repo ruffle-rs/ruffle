@@ -33,6 +33,14 @@ use tracing_wasm::{WASMLayer, WASMLayerConfigBuilder};
 use wasm_bindgen::prelude::*;
 use web_sys::{HtmlCanvasElement, HtmlElement};
 
+#[derive(Debug, Clone)]
+pub struct FontSource {
+    pub name: Option<String>,
+    pub bold: Option<bool>,
+    pub italic: Option<bool>,
+    pub data: Vec<u8>,
+}
+
 #[wasm_bindgen(inspectable)]
 #[derive(Debug, Clone)]
 pub struct RuffleInstanceBuilder {
@@ -62,7 +70,7 @@ pub struct RuffleInstanceBuilder {
     pub(crate) player_runtime: PlayerRuntime,
     pub(crate) volume: f32,
     pub(crate) default_fonts: HashMap<DefaultFont, Vec<String>>,
-    pub(crate) custom_fonts: Vec<(String, Vec<u8>)>,
+    pub(crate) custom_fonts: Vec<(String, FontSource)>,
     pub(crate) gamepad_button_mapping: HashMap<GamepadButton, KeyCode>,
     pub(crate) url_rewrite_rules: Vec<(RegExp, String)>,
 }
@@ -299,8 +307,23 @@ impl RuffleInstanceBuilder {
     }
 
     #[wasm_bindgen(js_name = "addFont")]
-    pub fn add_font(&mut self, font_name: String, data: Vec<u8>) {
-        self.custom_fonts.push((font_name, data))
+    pub fn add_font(
+        &mut self,
+        font_url: String,
+        font_name: Option<String>,
+        bold: Option<bool>,
+        italic: Option<bool>,
+        data: Vec<u8>,
+    ) {
+        self.custom_fonts.push((
+            font_url,
+            FontSource {
+                name: font_name,
+                bold,
+                italic,
+                data,
+            },
+        ));
     }
 
     #[wasm_bindgen(js_name = "setDefaultFont")]
@@ -357,20 +380,26 @@ impl RuffleInstanceBuilder {
 
 impl RuffleInstanceBuilder {
     pub fn setup_fonts(&self, player: &mut Player) {
-        for (font_name, bytes) in &self.custom_fonts {
-            let bytes_slice = &bytes[..];
+        for (font_name, font_source) in &self.custom_fonts {
+            let bytes_slice = &font_source.data[..];
             if let Ok(face) = ttf_parser::Face::parse(bytes_slice, 0) {
                 tracing::debug!("Loading font {font_name} as TTF/OTF/TTC/OTC font");
 
                 // Check if font collection
                 let number_of_fonts = ttf_parser::fonts_in_collection(bytes_slice).unwrap_or(1u32);
 
-                Self::register_ttf_face_by_name(font_name, bytes.clone(), face, 0, player);
+                Self::register_ttf_face_by_name(font_name, font_source.clone(), face, 0, player);
 
                 // Register all remaining fonts in the collection if it is a collection
                 for i in 1u32..number_of_fonts {
                     if let Ok(face) = ttf_parser::Face::parse(bytes_slice, i) {
-                        Self::register_ttf_face_by_name(font_name, bytes.clone(), face, i, player);
+                        Self::register_ttf_face_by_name(
+                            font_name,
+                            font_source.clone(),
+                            face,
+                            i,
+                            player,
+                        );
                     } else {
                         tracing::warn!(
                             "Failed to parse font {font_name} at index {i} in font collection"
@@ -379,7 +408,7 @@ impl RuffleInstanceBuilder {
                 }
             } else {
                 tracing::debug!("Loading font {font_name} as SWF font");
-                if let Ok(swf_stream) = swf::decompress_swf(&bytes[..]) {
+                if let Ok(swf_stream) = swf::decompress_swf(&font_source.data[..]) {
                     if let Ok(swf) = swf::parse_swf(&swf_stream) {
                         let encoding = swf::SwfStr::encoding_for_version(swf.header.version());
                         for tag in swf.tags {
@@ -433,16 +462,17 @@ impl RuffleInstanceBuilder {
     #[inline]
     fn register_ttf_face_by_name(
         url: &String,
-        bytes: Vec<u8>,
+        font_source: FontSource,
         face: ttf_parser::Face<'_>,
         index: u32,
         player: &mut Player,
     ) {
-        let full_name = face
-            .names()
-            .into_iter()
-            .find(|name| name.name_id == ttf_parser::name_id::FULL_NAME)
-            .and_then(|name| name.to_string());
+        let full_name = font_source.name.clone().or_else(|| {
+            face.names()
+                .into_iter()
+                .find(|name| name.name_id == ttf_parser::name_id::FULL_NAME)
+                .and_then(|name| name.to_string())
+        });
 
         let name = if let Some(full_name) = full_name {
             full_name
@@ -453,9 +483,9 @@ impl RuffleInstanceBuilder {
 
         player.register_device_font(FontDefinition::FontFile {
             name: name.to_string(),
-            is_bold: face.is_bold(),
-            is_italic: face.is_italic(),
-            data: bytes,
+            is_bold: font_source.bold.unwrap_or(face.is_bold()),
+            is_italic: font_source.italic.unwrap_or(face.is_italic()),
+            data: font_source.data,
             index,
         });
     }
