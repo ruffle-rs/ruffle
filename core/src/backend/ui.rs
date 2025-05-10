@@ -103,6 +103,12 @@ pub trait UiBackend: Any {
     /// then the font will simply be marked as not found - this may or may not fall back to another font.
     fn load_device_font(&self, query: &FontQuery, register: &mut dyn FnMut(FontDefinition));
 
+    fn sort_device_fonts(
+        &self,
+        query: &FontQuery,
+        register: &mut dyn FnMut(FontDefinition),
+    ) -> Vec<FontQuery>;
+
     /// Displays a file selection dialog, returning None if the dialog cannot be displayed
     /// (e.g because it is already open)
     /// * `filters` represents a list of filters to the possible file types that can be selected
@@ -178,6 +184,14 @@ impl UiBackend for NullUiBackend {
     fn display_unsupported_video(&self, _url: Url) {}
 
     fn load_device_font(&self, _query: &FontQuery, _register: &mut dyn FnMut(FontDefinition)) {}
+
+    fn sort_device_fonts(
+        &self,
+        _query: &FontQuery,
+        _register: &mut dyn FnMut(FontDefinition),
+    ) -> Vec<FontQuery> {
+        Vec::new()
+    }
 
     fn open_virtual_keyboard(&self) {}
 
