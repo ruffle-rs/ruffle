@@ -89,19 +89,13 @@ pub fn decompress_swf<'a, R: Read + 'a>(mut input: R) -> Result<SwfBuf> {
         Compression::None => Box::new(input),
         Compression::Zlib => {
             if version < 6 {
-                log::warn!(
-                    "zlib compressed SWF is version {} but minimum version is 6",
-                    version
-                );
+                log::warn!("zlib compressed SWF is version {version} but minimum version is 6");
             }
             make_zlib_reader(input)?
         }
         Compression::Lzma => {
             if version < 13 {
-                log::warn!(
-                    "LZMA compressed SWF is version {} but minimum version is 13",
-                    version
-                );
+                log::warn!("LZMA compressed SWF is version {version} but minimum version is 13");
             }
             // Uncompressed length includes the 4-byte header and 4-byte uncompressed length itself,
             // subtract it here.
@@ -112,7 +106,7 @@ pub fn decompress_swf<'a, R: Read + 'a>(mut input: R) -> Result<SwfBuf> {
     // Decompress the entire SWF.
     let mut data = Vec::with_capacity(uncompressed_len as usize);
     if let Err(e) = decompress_stream.read_to_end(&mut data) {
-        log::error!("Error decompressing SWF: {}", e);
+        log::error!("Error decompressing SWF: {e}");
     }
 
     // Some SWF streams may not be compressed correctly,
@@ -630,7 +624,7 @@ impl<'a> Reader<'a> {
             // But sometimes tools will export SWF tags that are larger than they should be.
             // TODO: It might be worthwhile to have a "strict mode" to determine
             // whether this should error or not.
-            log::warn!("Data remaining in buffer when parsing {:?}", tag_code);
+            log::warn!("Data remaining in buffer when parsing {tag_code:?}");
         }
 
         Ok(tag)

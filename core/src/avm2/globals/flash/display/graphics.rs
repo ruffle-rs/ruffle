@@ -1580,7 +1580,7 @@ fn handle_igraphics_data<'gc>(
     } else if class == activation.avm2().class_defs().graphicstrianglepath {
         handle_graphics_triangle_path(activation, drawing, obj)?;
     } else {
-        panic!("Unknown graphics data class {:?}", class);
+        panic!("Unknown graphics data class {class:?}");
     }
 
     Ok(())

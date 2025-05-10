@@ -90,7 +90,7 @@ impl OpenH264Codec {
                 "openh264-2.4.1-win64.dll",
                 "081b0c081480d177cbfddfbc90b1613640e702f875897b30d8de195cde73dd34",
             ),
-            (os, arch) => return Err(format!("Unsupported OS/arch: {}/{}", os, arch).into()),
+            (os, arch) => return Err(format!("Unsupported OS/arch: {os}/{arch}").into()),
         };
 
         Ok(OpenH264Data {
@@ -120,7 +120,7 @@ impl OpenH264Codec {
         // If the binary doesn't exist in the expected location, download it.
         if !filepath.is_file() {
             tracing::info!("Downloading OpenH264 library");
-            let url = format!("{}{}{}", URL_BASE, filename, URL_SUFFIX);
+            let url = format!("{URL_BASE}{filename}{URL_SUFFIX}");
             let response = reqwest::blocking::get(url)?;
             let mut bzip2_reader = BzDecoder::new(response);
 
@@ -353,7 +353,7 @@ impl VideoDecoder for H264Decoder {
 
             if ret != 0 {
                 return Err(Error::DecoderError(
-                    format!("Decoding failed with status code: {}", ret).into(),
+                    format!("Decoding failed with status code: {ret}").into(),
                 ));
             }
             if dest_buf_info.iBufferStatus != 1 {

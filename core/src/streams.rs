@@ -1339,7 +1339,7 @@ impl<'gc> NetStream<'gc> {
                 let root = context.stage.root_clip().expect("root");
                 let mut activation = Avm1Activation::from_nothing(
                     context,
-                    Avm1ActivationIdentifier::root(format!("[FLV {}]", avm_string_name)),
+                    Avm1ActivationIdentifier::root(format!("[FLV {avm_string_name}]")),
                     root,
                 );
 

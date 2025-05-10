@@ -1303,7 +1303,7 @@ fn create_bitmap_pattern(
         {
             Ok(Some(pattern)) => pattern,
             _ => {
-                log::warn!("Unable to create bitmap pattern for bitmap ID {}", id);
+                log::warn!("Unable to create bitmap pattern for bitmap ID {id}");
                 return None;
             }
         };
@@ -1314,7 +1314,7 @@ fn create_bitmap_pattern(
             smoothed: is_smoothed,
         })
     } else {
-        log::warn!("Couldn't fill shape with unknown bitmap {}", id);
+        log::warn!("Couldn't fill shape with unknown bitmap {id}");
         None
     }
 }

@@ -349,7 +349,7 @@ impl RuffleInstanceBuilder {
 
             let ruffle = RuffleHandle::new_internal(parent, js_player, copy)
                 .await
-                .map_err(|err| JsValue::from(format!("Error creating player: {}", err)))?;
+                .map_err(|err| JsValue::from(format!("Error creating player: {err}")))?;
             Ok(JsValue::from(ruffle))
         })
     }

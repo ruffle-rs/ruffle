@@ -317,7 +317,7 @@ impl<F: FutureSpawner + 'static, I: NavigatorInterface> NavigatorBackend
                 .is_ok()
         }
 
-        let addr = format!("{}:{}", host, port);
+        let addr = format!("{host}:{port}");
         let is_allowed = self.socket_allowed.contains(&addr);
         let socket_mode = self.socket_mode;
         let interface = self.interface.clone();
@@ -604,9 +604,7 @@ mod tests {
         let mut buffer = [0; 4096];
 
         let read = match server_socket.read(&mut buffer).await {
-            Err(e) => {
-                panic!("server read error: {}", e);
-            }
+            Err(e) => panic!("server read error: {e}"),
             Ok(read) => read,
         };
 

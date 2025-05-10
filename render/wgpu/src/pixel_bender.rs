@@ -291,7 +291,7 @@ pub(super) fn temporary_texture_format_for_channels(channels: u32) -> wgpu::Text
         2 => wgpu::TextureFormat::Rg32Float,
         3 => wgpu::TextureFormat::Rgba32Float,
         4 => wgpu::TextureFormat::Rgba32Float,
-        _ => panic!("Unsupported number of channels: {}", channels),
+        _ => panic!("Unsupported number of channels: {channels}"),
     }
 }
 

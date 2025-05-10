@@ -211,7 +211,7 @@ impl WebGlRenderBackend {
             if let Ok(max_samples) = gl2.get_parameter(Gl2::MAX_SAMPLES) {
                 let max_samples = max_samples.as_f64().unwrap_or(0.0) as u32;
                 if max_samples > 0 && max_samples < msaa_sample_count {
-                    log::info!("Device only supports {}xMSAA", max_samples);
+                    log::info!("Device only supports {max_samples}xMSAA");
                     msaa_sample_count = max_samples;
                 }
             }
@@ -266,7 +266,7 @@ impl WebGlRenderBackend {
                 .ok()
                 .and_then(|val| val.as_string())
                 .unwrap_or_else(|| "<unknown>".to_string());
-            log::info!("WebGL graphics driver: {}", driver_info);
+            log::info!("WebGL graphics driver: {driver_info}");
         }
 
         let color_vertex = Self::compile_shader(&gl, Gl::VERTEX_SHADER, COLOR_VERTEX_GLSL)?;
@@ -437,7 +437,7 @@ impl WebGlRenderBackend {
         if log::log_enabled!(log::Level::Error) {
             let log = gl.get_shader_info_log(&shader).unwrap_or_default();
             if !log.is_empty() {
-                log::error!("{}", log);
+                log::error!("{log}");
             }
         }
         Ok(shader)
@@ -1046,7 +1046,7 @@ impl RenderBackend for WebGlRenderBackend {
                 vao_ext: self.vao_ext.clone(),
             },
             Err(e) => {
-                log::error!("Couldn't register shape: {:?}", e);
+                log::error!("Couldn't register shape: {e:?}");
                 Mesh {
                     draws: vec![],
                     gl2: self.gl2.clone(),
@@ -1751,7 +1751,7 @@ impl ShaderProgram {
                 "Error linking shader program: {:?}",
                 gl.get_program_info_log(&program)
             );
-            log::error!("{}", msg);
+            log::error!("{msg}");
             return Err(Error::LinkingShaderProgram(msg));
         }
 

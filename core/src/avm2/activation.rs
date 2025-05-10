@@ -1593,8 +1593,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             return Err(Error::AvmError(type_error(
                 self,
                 &format!(
-                    "Error #1016: Descendants operator (..) not supported on type {}",
-                    class_name
+                    "Error #1016: Descendants operator (..) not supported on type {class_name}",
                 ),
                 1016,
             )?));
@@ -1908,10 +1907,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
 
             return Err(Error::AvmError(type_error(
                 self,
-                &format!(
-                    "Error #1123: Filter operator not supported on type {}.",
-                    class_name
-                ),
+                &format!("Error #1123: Filter operator not supported on type {class_name}."),
                 1123,
             )?));
         }

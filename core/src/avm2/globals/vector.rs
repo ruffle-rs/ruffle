@@ -202,8 +202,7 @@ pub fn concat<'gc>(
             return Err(Error::AvmError(type_error(
                 activation,
                 &format!(
-                    "Error #1034: Type Coercion failed: cannot convert {}@00000000000 to {}.",
-                    instance_of_class_name, base_vector_name,
+                    "Error #1034: Type Coercion failed: cannot convert {instance_of_class_name}@00000000000 to {base_vector_name}.",
                 ),
                 1034,
             )?));

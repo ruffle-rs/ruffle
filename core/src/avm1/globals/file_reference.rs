@@ -333,7 +333,7 @@ pub fn download<'gc>(
         // Create and spawn dialog
         let dialog = activation.context.ui.display_file_save_dialog(
             file_name,
-            format!("Select location for download from {}", domain),
+            format!("Select location for download from {domain}"),
         );
         let result = match dialog {
             Some(dialog) => {

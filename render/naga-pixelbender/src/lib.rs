@@ -257,7 +257,7 @@ impl ShaderBuilder<'_> {
             .map(|i| {
                 let var = module.global_variables.append(
                     GlobalVariable {
-                        name: Some(format!("sampler{}", i)),
+                        name: Some(format!("sampler{i}")),
                         space: naga::AddressSpace::Handle,
                         binding: Some(naga::ResourceBinding {
                             group: 0,
@@ -398,7 +398,7 @@ impl ShaderBuilder<'_> {
         let expected_dst_channels = match dst_param_type {
             PixelBenderTypeOpcode::TFloat4 => PixelBenderRegChannel::RGBA.as_slice(),
             PixelBenderTypeOpcode::TFloat3 => PixelBenderRegChannel::RGB.as_slice(),
-            _ => panic!("Invalid destination register type: {:?}", dst_param_type),
+            _ => panic!("Invalid destination register type: {dst_param_type:?}"),
         };
         assert_eq!(
             dst.channels, expected_dst_channels,
@@ -414,7 +414,7 @@ impl ShaderBuilder<'_> {
 
         let block = match builder.blocks.pop().unwrap() {
             BlockStackEntry::Normal(block) => block,
-            block => panic!("Unfinished if statement: {:?}", block),
+            block => panic!("Unfinished if statement: {block:?}"),
         };
 
         if !builder.blocks.is_empty() {
@@ -522,7 +522,7 @@ impl ShaderBuilder<'_> {
                     let index = *index as usize;
                     let global_var = self.module.global_variables.append(
                         GlobalVariable {
-                            name: Some(format!("texture{}", index)),
+                            name: Some(format!("texture{index}")),
                             space: AddressSpace::Handle,
                             binding: Some(ResourceBinding {
                                 group: 0,
@@ -1365,7 +1365,7 @@ impl ShaderBuilder<'_> {
                             });
                         }
                         BlockStackEntry::Normal(block) => {
-                            panic!("Eif opcode without matching 'if': {:?}", block)
+                            panic!("Eif opcode without matching 'if': {block:?}")
                         }
                     }
                 }
@@ -1808,7 +1808,7 @@ fn to_wgsl(module: &naga::Module) -> String {
     );
     let module_info = validator
         .validate(module)
-        .unwrap_or_else(|e| panic!("Validation failed: {:#?}", e));
+        .unwrap_or_else(|e| panic!("Validation failed: {e:#?}"));
 
     let mut writer =
         naga::back::wgsl::Writer::new(&mut out, naga::back::wgsl::WriterFlags::EXPLICIT_TYPES);

@@ -491,7 +491,7 @@ impl<'gc> TObject<'gc> for XmlObject<'gc> {
             let mc = activation.gc();
             self.delete_property_local(activation, &name)?;
             let Some(local_name) = name.local_name() else {
-                return Err(format!("Cannot set attribute {:?} without a local name", name).into());
+                return Err(format!("Cannot set attribute {name:?} without a local name").into());
             };
             let ns = name.explicit_namespace().map(E4XNamespace::new_uri);
             let new_attr = E4XNode::attribute(mc, ns, local_name, value, Some(self.node()));

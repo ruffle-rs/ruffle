@@ -105,12 +105,12 @@ impl NavigatorBackend for TestNavigatorBackend {
         // Log request.
         if let Some(log) = &self.log {
             log.avm_trace("Navigator::navigate_to_url:");
-            log.avm_trace(&format!("  URL: {}", url));
-            log.avm_trace(&format!("  Target: {}", target));
+            log.avm_trace(&format!("  URL: {url}"));
+            log.avm_trace(&format!("  Target: {target}"));
             if let Some((method, vars)) = vars_method {
-                log.avm_trace(&format!("  Method: {}", method));
+                log.avm_trace(&format!("  Method: {method}"));
                 for (key, value) in vars {
-                    log.avm_trace(&format!("  Param: {}={}", key, value));
+                    log.avm_trace(&format!("  Param: {key}={value}"));
                 }
             }
         }
@@ -166,11 +166,11 @@ impl NavigatorBackend for TestNavigatorBackend {
                 ))
             }
             if let Some((body, mime_type)) = request.body() {
-                log.avm_trace(&format!("  Mime-Type: {}", mime_type));
+                log.avm_trace(&format!("  Mime-Type: {mime_type}"));
                 if mime_type == "application/x-www-form-urlencoded" {
                     log.avm_trace(&format!("  Body: {}", String::from_utf8_lossy(body)));
                 } else {
-                    log.avm_trace(&format!("  Body: {:02X?}", body));
+                    log.avm_trace(&format!("  Body: {body:02X?}"));
                 }
             }
         }
@@ -280,7 +280,7 @@ impl NavigatorBackend for TestNavigatorBackend {
     ) {
         if let Some(log) = &self.log {
             log.avm_trace("Navigator::connect_socket");
-            log.avm_trace(&format!("    Host: {}; Port: {}", host, port));
+            log.avm_trace(&format!("    Host: {host}; Port: {port}"));
         }
 
         if let Some(events) = self.socket_events.clone() {
@@ -306,7 +306,7 @@ impl NavigatorBackend for TestNavigatorBackend {
                             match receiver.recv().await {
                                 Ok(val) => {
                                     if expected != val {
-                                        panic!("Received data did not match expected data\nExpected: {:?}\nActual: {:?}", expected, val);
+                                        panic!("Received data did not match expected data\nExpected: {expected:?}\nActual: {val:?}");
                                     }
                                 }
                                 Err(_) => panic!("Expected client to send data, but connection was closed instead"),

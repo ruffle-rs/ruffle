@@ -447,7 +447,7 @@ impl DisplayObjectWindow {
                         .suffix("px")
                         .range(RangeInclusive::new(0.0, max))
                         .ui(ui);
-                    ui.weak(format!("(max {}px)", max));
+                    ui.weak(format!("(max {max}px)"));
 
                     if hscroll != object.hscroll() {
                         object.set_hscroll(hscroll, context);
@@ -462,7 +462,7 @@ impl DisplayObjectWindow {
                     DragValue::new(&mut scroll)
                         .range(RangeInclusive::new(1, max))
                         .ui(ui);
-                    ui.weak(format!("(max {})", max));
+                    ui.weak(format!("(max {max})"));
 
                     if scroll != object.scroll() {
                         object.set_scroll(scroll as f64, context);
@@ -474,7 +474,7 @@ impl DisplayObjectWindow {
                 ui.horizontal(|ui| {
                     let mut autosize = object.autosize();
                     ComboBox::from_id_salt(ui.id().with("autosize"))
-                        .selected_text(format!("{:?}", autosize))
+                        .selected_text(format!("{autosize:?}"))
                         .show_ui(ui, |ui| {
                             for value in [
                                 AutoSizeMode::None,
@@ -482,7 +482,7 @@ impl DisplayObjectWindow {
                                 AutoSizeMode::Center,
                                 AutoSizeMode::Right,
                             ] {
-                                ui.selectable_value(&mut autosize, value, format!("{:?}", value));
+                                ui.selectable_value(&mut autosize, value, format!("{value:?}"));
                             }
                         });
                     if autosize != object.autosize() {
@@ -674,10 +674,10 @@ impl DisplayObjectWindow {
                     let original_state = object.state();
                     let mut state = original_state;
                     ComboBox::from_id_salt(ui.id().with("state"))
-                        .selected_text(format!("{:?}", state))
+                        .selected_text(format!("{state:?}"))
                         .show_ui(ui, |ui| {
                             for value in [ButtonState::Up, ButtonState::Over, ButtonState::Down] {
-                                ui.selectable_value(&mut state, value, format!("{:?}", value));
+                                ui.selectable_value(&mut state, value, format!("{value:?}"));
                             }
                         });
                     if state != original_state {
@@ -1040,7 +1040,7 @@ impl DisplayObjectWindow {
         } else {
             "automatic"
         };
-        CollapsingHeader::new(format!("Tab Order ({})", tab_order_suffix))
+        CollapsingHeader::new(format!("Tab Order ({tab_order_suffix})"))
             .id_salt(ui.id().with("tab_order"))
             .show(ui, |ui| {
                 Grid::new(ui.id().with("tab_order_grid"))
@@ -1250,7 +1250,7 @@ impl DisplayObjectWindow {
                 .id_salt(ui.id().with("filters"))
                 .show(ui, |ui| {
                     for filter in filters {
-                        ui.label(format!("{:?}", filter));
+                        ui.label(format!("{filter:?}"));
                     }
                 });
         }

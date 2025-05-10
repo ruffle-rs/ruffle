@@ -399,8 +399,7 @@ impl<'gc> ClassObject<'gc> {
             return Err(Error::AvmError(reference_error(
                 activation,
                 &format!(
-                    "Error #1070: Method {} not found on {}",
-                    qualified_multiname_name, qualified_class_name
+                    "Error #1070: Method {qualified_multiname_name} not found on {qualified_class_name}",
                 ),
                 1070,
             )?));
@@ -492,8 +491,7 @@ impl<'gc> ClassObject<'gc> {
                 }
             }
             Some(Property::Virtual { .. }) => Err(format!(
-                "Attempting to use get_super on non-getter property {:?}",
-                multiname
+                "Attempting to use get_super on non-getter property {multiname:?}",
             )
             .into()),
             Some(Property::Slot { .. } | Property::ConstSlot { .. }) => {

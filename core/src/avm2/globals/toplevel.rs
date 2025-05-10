@@ -218,7 +218,7 @@ fn encode_utf8_with_exclusions<'gc>(
             let mut encoded = String::new();
             // Each byte in the utf-8 encoding is encoded as a hex value
             for byte in utf8_bytes.bytes() {
-                write!(encoded, "%{x:02X}", x = byte).unwrap();
+                write!(encoded, "%{byte:02X}").unwrap();
             }
             output.push_str(&encoded);
         }
@@ -344,7 +344,7 @@ fn decode<'gc>(
         };
         if reserved_set.contains(decoded) {
             for byte in &bytes {
-                write!(output, "%{x:02X}", x = byte).unwrap();
+                write!(output, "%{byte:02X}").unwrap();
             }
         } else {
             output.push_utf8(decoded);
