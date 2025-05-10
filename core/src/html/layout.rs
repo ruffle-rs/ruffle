@@ -695,14 +695,18 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
                 }
             }
 
-            if let Some(font) = context.library.get_or_load_device_font(
-                font_name,
-                span.style.bold,
-                span.style.italic,
-                context.ui,
-                context.renderer,
-                context.gc_context,
-            ) {
+            if let Some(&font) = context
+                .library
+                .get_or_sort_device_fonts(
+                    font_name,
+                    span.style.bold,
+                    span.style.italic,
+                    context.ui,
+                    context.renderer,
+                    context.gc_context,
+                )
+                .first()
+            {
                 return font;
             }
         }
