@@ -152,6 +152,14 @@ impl UiBackend for TestUiBackend {
         }
     }
 
+    fn sort_device_fonts(
+        &self,
+        _query: &FontQuery,
+        _register: &mut dyn FnMut(FontDefinition),
+    ) -> Vec<FontQuery> {
+        Vec::new()
+    }
+
     fn display_file_open_dialog(&mut self, filters: Vec<FileFilter>) -> Option<DialogResultFuture> {
         Some(Box::pin(async move {
             // If filters has the magic debug-select-success filter, then return a fake file for testing

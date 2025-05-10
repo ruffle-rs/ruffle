@@ -433,6 +433,9 @@ pub struct Library<'gc> {
     /// If we've asked for a specific font, record it here and don't ask again.
     font_lookup_cache: FnvHashSet<FontQuery>,
 
+    /// Cached font sort queries.
+    font_sort_cache: FnvHashMap<FontQuery, Vec<Font<'gc>>>,
+
     /// The implementation names of each default font.
     default_font_names: FnvHashMap<DefaultFont, Vec<String>>,
 
@@ -467,6 +470,7 @@ impl<'gc> Library<'gc> {
             device_fonts: Default::default(),
             global_fonts: Default::default(),
             font_lookup_cache: Default::default(),
+            font_sort_cache: Default::default(),
             default_font_names: Default::default(),
             default_font_cache: Default::default(),
             avm2_class_registry: Default::default(),
@@ -588,6 +592,64 @@ impl<'gc> Library<'gc> {
 
         // Fallback: Try to find an existing font to re-use instead of giving up.
         self.device_fonts.find(&query)
+    }
+
+    fn sort_device_fonts(
+        &mut self,
+        query: &FontQuery,
+        ui: &dyn UiBackend,
+        renderer: &mut dyn RenderBackend,
+        gc_context: &Mutation<'gc>,
+    ) -> Vec<Font<'gc>> {
+        // First, ask the backend to sort the fonts for us.
+        let fonts = ui.sort_device_fonts(query, &mut |definition| {
+            self.register_device_font(gc_context, renderer, definition)
+        });
+
+        let fonts: Vec<Font<'gc>> = fonts
+            .iter()
+            .filter_map(|font_query| self.device_fonts.get(font_query))
+            .copied()
+            .collect();
+
+        if !fonts.is_empty() {
+            return fonts;
+        }
+
+        // When the backend failed (or doesn't support sorting fonts), fall back
+        // to loading one font only without sorting.
+        let font = self.get_or_load_device_font(
+            &query.name,
+            query.is_bold,
+            query.is_italic,
+            ui,
+            renderer,
+            gc_context,
+        );
+        font.map(|font| vec![font]).unwrap_or_default()
+    }
+
+    pub fn get_or_sort_device_fonts(
+        &mut self,
+        name: &str,
+        is_bold: bool,
+        is_italic: bool,
+        ui: &dyn UiBackend,
+        renderer: &mut dyn RenderBackend,
+        gc_context: &Mutation<'gc>,
+    ) -> Vec<Font<'gc>> {
+        // TODO We should be able to return a &Vec here, but (1) the borrow
+        //   checker is too strict and doesn't allow if branching, and
+        //   (2) there's no way to insert a value and get a reference to
+        //   it at the same time.
+        let query = FontQuery::new(FontType::Device, name.to_owned(), is_bold, is_italic);
+        if let Some(fonts) = self.font_sort_cache.get(&query) {
+            return fonts.clone();
+        }
+
+        let fonts = self.sort_device_fonts(&query, ui, renderer, gc_context);
+        self.font_sort_cache.insert(query, fonts.clone());
+        fonts
     }
 
     pub fn set_default_font(&mut self, font: DefaultFont, names: Vec<String>) {
