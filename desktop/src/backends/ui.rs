@@ -261,7 +261,7 @@ impl UiBackend for DesktopUiBackend {
 
         let open_url_mode = self.preferences.open_url_mode();
         if open_url_mode == OpenUrlMode::Confirm {
-            let message = format!("The SWF file wants to open the website {}", url);
+            let message = format!("The SWF file wants to open the website {url}");
             // TODO: Add a checkbox with a GUI toolkit
             let confirm = MessageDialog::new()
                 .set_title("Open website?")

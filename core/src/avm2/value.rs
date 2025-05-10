@@ -634,7 +634,7 @@ impl<'gc> Value<'gc> {
 
                 Err(Error::AvmError(type_error(
                     activation,
-                    &format!("Error #1050: Cannot convert {} to primitive.", class_name,),
+                    &format!("Error #1050: Cannot convert {class_name} to primitive."),
                     1050,
                 )?))
             }
@@ -653,7 +653,7 @@ impl<'gc> Value<'gc> {
 
                 Err(Error::AvmError(type_error(
                     activation,
-                    &format!("Error #1050: Cannot convert {} to primitive.", class_name,),
+                    &format!("Error #1050: Cannot convert {class_name} to primitive."),
                     1050,
                 )?))
             }
@@ -1494,7 +1494,7 @@ impl<'gc> Value<'gc> {
 
         Err(Error::AvmError(type_error(
             activation,
-            &format!("Error #1034: Type Coercion failed: cannot convert {debug_str} to {name}.",),
+            &format!("Error #1034: Type Coercion failed: cannot convert {debug_str} to {name}."),
             1034,
         )?))
     }

@@ -468,7 +468,7 @@ pub fn swap_children_at<'gc>(
                 // Flash error message: The supplied index is out of bounds.
                 return Err(Error::AvmError(range_error(
                     activation,
-                    &format!("Index {index0} is out of bounds",),
+                    &format!("Index {index0} is out of bounds"),
                     2006,
                 )?));
             }
@@ -477,7 +477,7 @@ pub fn swap_children_at<'gc>(
                 // Flash error message: The supplied index is out of bounds.
                 return Err(Error::AvmError(range_error(
                     activation,
-                    &format!("Index {index1} is out of bounds",),
+                    &format!("Index {index1} is out of bounds"),
                     2006,
                 )?));
             }

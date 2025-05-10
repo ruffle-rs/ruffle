@@ -331,7 +331,7 @@ impl<'a> Reader<'a> {
                     // We follow the lenient behavior in order to support more content (e.g. #8389
                     // doesn't work on newest Flash Player).
                     // TODO: Return an error if we ever add player version emulation.
-                    log::warn!("Invalid value type in ActionPush: {}", type_);
+                    log::warn!("Invalid value type in ActionPush: {type_}");
                     continue;
                 }
             };

@@ -164,7 +164,7 @@ fn resolve_multiname_ns<'a>(abc: &'a AbcFile, multiname: &Multiname) -> Cow<'a, 
                 .constant_pool
                 .namespace_sets
                 .get(actual_index)
-                .unwrap_or_else(|| panic!("Unknown namespace set constant {}", actual_index));
+                .unwrap_or_else(|| panic!("Unknown namespace set constant {actual_index}"));
 
             if ns_set.len() == 1 {
                 &abc.constant_pool.namespaces[ns_set[0].0 as usize - 1]

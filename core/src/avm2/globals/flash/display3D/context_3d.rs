@@ -383,7 +383,7 @@ pub fn set_program_constants_from_vector<'gc>(
         } else if &*program_type == b"fragment" {
             ProgramType::Fragment
         } else {
-            panic!("Unknown program type {:?}", program_type);
+            panic!("Unknown program type {program_type:?}");
         };
 
         let first_register = args.get_u32(activation, 1)?;

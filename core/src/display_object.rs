@@ -2550,7 +2550,7 @@ impl<'gc> DisplayObject<'gc> {
             DisplayObject::MovieClip(mc) => DisplayObjectWeak::MovieClip(mc.downgrade()),
             DisplayObject::LoaderDisplay(l) => DisplayObjectWeak::LoaderDisplay(l.downgrade()),
             DisplayObject::Bitmap(b) => DisplayObjectWeak::Bitmap(b.downgrade()),
-            _ => panic!("Downgrade not yet implemented for {:?}", self),
+            _ => panic!("Downgrade not yet implemented for {self:?}"),
         }
     }
 }

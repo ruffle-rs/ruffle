@@ -297,7 +297,7 @@ impl<'gc> Domain<'gc> {
             let type_class = self.get_defined_value_handling_vector(activation, type_name)?;
             if let Ok(res) = res {
                 let class = res.as_object().ok_or_else(|| {
-                    Error::RustError(format!("Vector type {:?} was not an object", res).into())
+                    Error::RustError(format!("Vector type {res:?} was not an object").into())
                 })?;
                 return class.apply(activation, &[type_class]).map(|obj| obj.into());
             }

@@ -54,7 +54,7 @@ impl<'gc> CallStack<'gc> {
                     // NOTE: We intentionally diverge from Flash Player's output
                     // here - everything with the [] brackets is extra information
                     // added by Ruffle
-                    output.push_utf8(&format!("global$init() [TU={}]", name));
+                    output.push_utf8(&format!("global$init() [TU={name}]"));
                 }
                 CallNode::Method { method, class } => display_function(output, *method, *class),
             }

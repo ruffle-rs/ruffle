@@ -381,7 +381,7 @@ impl ImageComparison {
                 max_difference
             ));
         } else {
-            println!("Image '{name}' succeeded: {outliers} outliers found, max difference {max_difference}",);
+            println!("Image '{name}' succeeded: {outliers} outliers found, max difference {max_difference}");
         }
 
         Ok(())

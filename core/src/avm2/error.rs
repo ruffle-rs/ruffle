@@ -30,8 +30,8 @@ impl Debug for Error<'_> {
         }
 
         match self {
-            Error::AvmError(error) => write!(f, "AvmError({:?})", error),
-            Error::RustError(error) => write!(f, "RustError({:?})", error),
+            Error::AvmError(error) => write!(f, "AvmError({error:?})"),
+            Error::RustError(error) => write!(f, "RustError({error:?})"),
         }
     }
 }
@@ -135,10 +135,7 @@ pub fn make_error_1002<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> 
 pub fn make_error_1003<'gc>(activation: &mut Activation<'_, 'gc>, radix: i32) -> Error<'gc> {
     let err = range_error(
         activation,
-        &format!(
-            "Error #1003: The radix argument must be between 2 and 36; got {}.",
-            radix
-        ),
+        &format!("Error #1003: The radix argument must be between 2 and 36; got {radix}."),
         1003,
     );
     match err {
@@ -179,7 +176,7 @@ pub fn make_error_1014<'gc>(
     kind: Error1014Type,
     class_name: AvmString<'gc>,
 ) -> Error<'gc> {
-    let message = &format!("Error #1014: Class {} could not be found.", class_name);
+    let message = &format!("Error #1014: Class {class_name} could not be found.");
     let err = match kind {
         Error1014Type::ReferenceError => reference_error(activation, message, 1014),
         Error1014Type::VerifyError => verify_error(activation, message, 1014),
@@ -209,7 +206,7 @@ pub fn make_error_1021<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> 
 pub fn make_error_1025<'gc>(activation: &mut Activation<'_, 'gc>, index: u32) -> Error<'gc> {
     let err = verify_error(
         activation,
-        &format!("Error #1025: An invalid register {} was accessed.", index),
+        &format!("Error #1025: An invalid register {index} was accessed."),
         1025,
     );
     match err {
@@ -223,7 +220,7 @@ pub fn make_error_1025<'gc>(activation: &mut Activation<'_, 'gc>, index: u32) ->
 pub fn make_error_1032<'gc>(activation: &mut Activation<'_, 'gc>, index: u32) -> Error<'gc> {
     let err = verify_error(
         activation,
-        &format!("Error #1032: Cpool index {} is out of range.", index),
+        &format!("Error #1032: Cpool index {index} is out of range."),
         1032,
     );
     match err {
@@ -249,10 +246,7 @@ pub fn make_error_1053<'gc>(
 ) -> Error<'gc> {
     let err = verify_error(
         activation,
-        &format!(
-            "Error #1053: Illegal override of {} in {}.",
-            trait_name, class_name
-        ),
+        &format!("Error #1053: Illegal override of {trait_name} in {class_name}."),
         1053,
     );
     match err {
@@ -372,7 +366,7 @@ pub fn make_error_1098<'gc>(
 ) -> Error<'gc> {
     let err = type_error(
         activation,
-        &format!("Error #1098: Illegal prefix {} for no namespace.", prefix),
+        &format!("Error #1098: Illegal prefix {prefix} for no namespace."),
         1098,
     );
     match err {
@@ -478,10 +472,7 @@ pub fn make_error_1506<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> 
 pub fn make_error_1508<'gc>(activation: &mut Activation<'_, 'gc>, param_name: &str) -> Error<'gc> {
     let err = argument_error(
         activation,
-        &format!(
-            "Error #1508: The value specified for argument {} is invalid.",
-            param_name
-        ),
+        &format!("Error #1508: The value specified for argument {param_name} is invalid."),
         1508,
     );
     match err {
@@ -533,7 +524,7 @@ pub fn make_error_2006<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> 
 pub fn make_error_2007<'gc>(activation: &mut Activation<'_, 'gc>, param_name: &str) -> Error<'gc> {
     let err = type_error(
         activation,
-        &format!("Error #2007: Parameter {} must be non-null.", param_name),
+        &format!("Error #2007: Parameter {param_name} must be non-null."),
         2007,
     );
     match err {
@@ -547,10 +538,7 @@ pub fn make_error_2007<'gc>(activation: &mut Activation<'_, 'gc>, param_name: &s
 pub fn make_error_2008<'gc>(activation: &mut Activation<'_, 'gc>, param_name: &str) -> Error<'gc> {
     let err = argument_error(
         activation,
-        &format!(
-            "Error #2008: Parameter {} must be one of the accepted values.",
-            param_name
-        ),
+        &format!("Error #2008: Parameter {param_name} must be one of the accepted values."),
         2008,
     );
     match err {
@@ -578,10 +566,7 @@ pub fn make_error_2025<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> 
 pub fn make_error_2027<'gc>(activation: &mut Activation<'_, 'gc>, value: i32) -> Error<'gc> {
     let err = range_error(
         activation,
-        &format!(
-            "Error #2027: Parameter tabIndex must be a non-negative number; got {}.",
-            value
-        ),
+        &format!("Error #2027: Parameter tabIndex must be a non-negative number; got {value}."),
         2027,
     );
     match err {
@@ -609,10 +594,7 @@ pub fn make_error_2037<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> 
 pub fn make_error_2085<'gc>(activation: &mut Activation<'_, 'gc>, param_name: &str) -> Error<'gc> {
     let err = argument_error(
         activation,
-        &format!(
-            "Error #2085: Parameter {} must be non-empty string.",
-            param_name
-        ),
+        &format!("Error #2085: Parameter {param_name} must be non-empty string."),
         2007,
     );
     match err {
@@ -827,8 +809,7 @@ pub fn make_mismatch_error<'gc>(
     return Err(Error::AvmError(argument_error(
         activation,
         &format!(
-            "Error #1063: Argument count mismatch on {function_name}. Expected {}, got {}.",
-            expected_num_params, passed_arg_count,
+            "Error #1063: Argument count mismatch on {function_name}. Expected {expected_num_params}, got {passed_arg_count}.",
         ),
         1063,
     )?));

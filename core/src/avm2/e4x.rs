@@ -447,11 +447,8 @@ impl<'gc> E4XNode<'gc> {
             Ok(data) => data,
             Err(_) => {
                 return Err(Error::RustError(
-                    format!(
-                        "Circular write in append_child with self={:?} child={:?}",
-                        self, child
-                    )
-                    .into(),
+                    format!("Circular write in append_child with self={self:?} child={child:?}")
+                        .into(),
                 ))
             }
         };
@@ -1017,7 +1014,7 @@ impl<'gc> E4XNode<'gc> {
             let error = if ns.is_empty() {
                 type_error(
                     activation,
-                    &format!("Error #1084: Element or attribute (\":{}\") does not match QName production: QName::=(NCName':')?NCName.", local_name),
+                    &format!("Error #1084: Element or attribute (\":{local_name}\") does not match QName production: QName::=(NCName':')?NCName."),
                     1084,
                 )
             } else {
@@ -1025,9 +1022,8 @@ impl<'gc> E4XNode<'gc> {
                 type_error(
                     activation,
                     &format!(
-                        "Error #1083: The prefix \"{}\" for element \"{}\" is not bound.",
+                        "Error #1083: The prefix \"{}\" for element \"{local_name}\" is not bound.",
                         String::from_utf8_lossy(&ns),
-                        local_name
                     ),
                     1083,
                 )

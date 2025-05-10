@@ -280,7 +280,7 @@ pub fn save<'gc>(
     // Create and spawn dialog
     let dialog = activation.context.ui.display_file_save_dialog(
         file_name.to_owned(),
-        format!("Select location to save the file {}", file_name),
+        format!("Select location to save the file {file_name}"),
     );
 
     match dialog {

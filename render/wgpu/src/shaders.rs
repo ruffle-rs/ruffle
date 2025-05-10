@@ -99,13 +99,13 @@ impl Shaders {
 fn make_shader(device: &wgpu::Device, name: &str, source: &str) -> wgpu::ShaderModule {
     let common = include_str!("../shaders/common.wgsl");
     device.create_shader_module(wgpu::ShaderModuleDescriptor {
-        label: create_debug_label!("Shader {}", name).as_deref(),
-        source: wgpu::ShaderSource::Wgsl(format!("{}\n{}", common, source).into()),
+        label: create_debug_label!("Shader {name}").as_deref(),
+        source: wgpu::ShaderSource::Wgsl(format!("{common}\n{source}").into()),
     })
 }
 fn make_filter_shader(device: &wgpu::Device, name: &str, source: &str) -> wgpu::ShaderModule {
     device.create_shader_module(wgpu::ShaderModuleDescriptor {
-        label: create_debug_label!("Shader {}", name).as_deref(),
-        source: wgpu::ShaderSource::Wgsl(format!("{}\n{}", SHADER_FILTER_COMMON, source).into()),
+        label: create_debug_label!("Shader {name}").as_deref(),
+        source: wgpu::ShaderSource::Wgsl(format!("{SHADER_FILTER_COMMON}\n{source}").into()),
     })
 }

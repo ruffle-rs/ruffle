@@ -3020,7 +3020,7 @@ impl<'gc> Loader<'gc> {
                                         Error::InvalidDomain(_) => {
                                             activation
                                                 .context
-                                                .avm_trace(&format!("Error opening URL '{}'", url));
+                                                .avm_trace(&format!("Error opening URL '{url}'"));
 
                                             as_broadcaster::broadcast_internal(
                                                 target_object,
@@ -3041,7 +3041,7 @@ impl<'gc> Loader<'gc> {
 
                                             activation
                                                 .context
-                                                .avm_trace(&format!("Error opening URL '{}'", url));
+                                                .avm_trace(&format!("Error opening URL '{url}'"));
 
                                             as_broadcaster::broadcast_internal(
                                                 target_object,
@@ -3075,7 +3075,7 @@ impl<'gc> Loader<'gc> {
 
                                             activation
                                                 .context
-                                                .avm_trace(&format!("Error opening URL '{}'", url));
+                                                .avm_trace(&format!("Error opening URL '{url}'"));
 
                                             as_broadcaster::broadcast_internal(
                                                 target_object,

@@ -580,7 +580,7 @@ fn to_wgsl(module: &naga::Module) -> String {
     let mut validator = Validator::new(ValidationFlags::all(), Capabilities::all());
     let module_info = validator
         .validate(module)
-        .unwrap_or_else(|e| panic!("Validation failed: {:#?}", e));
+        .unwrap_or_else(|e| panic!("Validation failed: {e:#?}"));
 
     let mut writer =
         naga::back::wgsl::Writer::new(&mut out, naga::back::wgsl::WriterFlags::EXPLICIT_TYPES);

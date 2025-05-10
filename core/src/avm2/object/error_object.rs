@@ -21,9 +21,11 @@ pub fn error_allocator<'gc>(
 ) -> Result<Object<'gc>, Error<'gc>> {
     let base = ScriptObjectData::new(class);
 
-    let call_stack = (enabled!(Level::INFO) || cfg!(feature = "avm_debug"))
-        .then(|| activation.avm2().call_stack().borrow().clone())
-        .unwrap_or_default();
+    let call_stack = if enabled!(Level::INFO) || cfg!(feature = "avm_debug") {
+        activation.avm2().call_stack().borrow().clone()
+    } else {
+        Default::default()
+    };
 
     Ok(ErrorObject(Gc::new(
         activation.gc(),

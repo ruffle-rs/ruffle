@@ -664,7 +664,7 @@ impl<'a> NagaBuilder<'a> {
         if self.temporary_registers[index].is_none() {
             let local = self.func.local_variables.append(
                 LocalVariable {
-                    name: Some(format!("temporary{}", index)),
+                    name: Some(format!("temporary{index}")),
                     ty: self.vec4f,
                     init: None,
                 },
@@ -730,7 +730,7 @@ impl<'a> NagaBuilder<'a> {
         if self.texture_bindings[index].is_none() {
             let global_var = self.module.global_variables.append(
                 GlobalVariable {
-                    name: Some(format!("texture{}", index)),
+                    name: Some(format!("texture{index}")),
                     space: AddressSpace::Handle,
                     binding: Some(ResourceBinding {
                         group: 0,
@@ -749,7 +749,7 @@ impl<'a> NagaBuilder<'a> {
 
             let sampler_var = self.module.global_variables.append(
                 GlobalVariable {
-                    name: Some(format!("sampler{}", index)),
+                    name: Some(format!("sampler{index}")),
                     space: naga::AddressSpace::Handle,
                     binding: Some(naga::ResourceBinding {
                         group: 0,
@@ -1149,7 +1149,7 @@ impl<'a> NagaBuilder<'a> {
 
                 let texture_id = sampler_field.reg_num;
                 if sampler_field.reg_type != RegisterType::Sampler {
-                    panic!("Invalid sample register type {:?}", sampler_field);
+                    panic!("Invalid sample register type {sampler_field:?}");
                 }
 
                 let coord = self.emit_source_field_load(source1, false)?;
@@ -1412,7 +1412,7 @@ impl<'a> NagaBuilder<'a> {
                         });
                     }
                     BlockStackEntry::Normal(block) => {
-                        panic!("Eif opcode without matching 'if': {:?}", block)
+                        panic!("Eif opcode without matching 'if': {block:?}")
                     }
                 }
             }
@@ -1651,7 +1651,7 @@ impl<'a> NagaBuilder<'a> {
 
         let block = match self.blocks.pop().unwrap() {
             BlockStackEntry::Normal(block) => block,
-            block => panic!("Unfinished if statement: {:?}", block),
+            block => panic!("Unfinished if statement: {block:?}"),
         };
 
         if !self.blocks.is_empty() {
