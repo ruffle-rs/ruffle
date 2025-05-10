@@ -5,7 +5,7 @@ use crate::character::Character;
 use std::borrow::Cow;
 
 use crate::display_object::{Bitmap, Graphic, MorphShape, Text};
-use crate::font::{Font, FontDescriptor, FontType};
+use crate::font::{Font, FontDescriptor, FontQuery, FontType};
 use crate::prelude::*;
 use crate::string::AvmString;
 use crate::tag_utils::SwfMovie;
@@ -431,7 +431,7 @@ pub struct Library<'gc> {
 
     /// A set of which fonts we've asked from the backend already, to help with negative caching.
     /// If we've asked for a specific font, record it here and don't ask again.
-    font_lookup_cache: FnvHashSet<(String, bool, bool)>,
+    font_lookup_cache: FnvHashSet<FontQuery>,
 
     /// The implementation names of each default font.
     default_font_names: FnvHashMap<DefaultFont, Vec<String>>,
@@ -508,8 +508,8 @@ impl<'gc> Library<'gc> {
         let mut result = vec![];
         // First try to find any exactly matching fonts.
         for name in self.default_font_names.entry(name).or_default().clone() {
-            if let Some(font) = self
-                .get_or_load_exact_device_font(&name, is_bold, is_italic, ui, renderer, gc_context)
+            let query = FontQuery::new(FontType::Device, name, is_bold, is_italic);
+            if let Some(font) = self.get_or_load_exact_device_font(&query, ui, renderer, gc_context)
             {
                 result.push(font);
                 break; // TODO: Return multiple fonts when it's needed.
@@ -519,10 +519,8 @@ impl<'gc> Library<'gc> {
         // Nothing found, try a compatible font.
         if result.is_empty() {
             for name in self.default_font_names.entry(name).or_default().clone() {
-                if let Some(font) =
-                    self.device_fonts
-                        .find(&name, FontType::Device, is_bold, is_italic)
-                {
+                let query = FontQuery::new(FontType::Device, name, is_bold, is_italic);
+                if let Some(font) = self.device_fonts.find(&query) {
                     result.push(font);
                     break; // TODO: Return multiple fonts when it's needed.
                 }
@@ -537,41 +535,34 @@ impl<'gc> Library<'gc> {
     /// Returns the device font exactly matching the requested options.
     fn get_or_load_exact_device_font(
         &mut self,
-        name: &str,
-        is_bold: bool,
-        is_italic: bool,
+        query: &FontQuery,
         ui: &dyn UiBackend,
         renderer: &mut dyn RenderBackend,
         gc_context: &Mutation<'gc>,
     ) -> Option<Font<'gc>> {
         // If we have the exact matching font already, use that
         // TODO: We should instead ask each font if it matches a given name. Partial matches are allowed, and fonts may have any amount of names.
-        if let Some(font) = self
-            .device_fonts
-            .get(name, FontType::Device, is_bold, is_italic)
-        {
+        if let Some(font) = self.device_fonts.get(query) {
             return Some(*font);
         }
 
         // We don't have this font already. Did we ask for it before?
-        let new_request = self
-            .font_lookup_cache
-            .insert((name.to_string(), is_bold, is_italic));
+        let new_request = self.font_lookup_cache.insert(query.clone());
         if new_request {
             // First time asking for this font, see if our backend can provide anything relevant
-            ui.load_device_font(name, is_bold, is_italic, &mut |definition| {
+            ui.load_device_font(query, &mut |definition| {
                 self.register_device_font(gc_context, renderer, definition)
             });
 
             // Check again. A backend may or may not have provided some new fonts,
             // and they may or may not be relevant to the one we're asking for.
-            if let Some(font) = self
-                .device_fonts
-                .get(name, FontType::Device, is_bold, is_italic)
-            {
+            if let Some(font) = self.device_fonts.get(query) {
                 return Some(*font);
             }
 
+            let name = &query.name;
+            let is_bold = query.is_bold;
+            let is_italic = query.is_italic;
             warn!("Unknown device font \"{name}\" (bold: {is_bold}, italic: {is_italic})");
         }
 
@@ -588,16 +579,15 @@ impl<'gc> Library<'gc> {
         renderer: &mut dyn RenderBackend,
         gc_context: &Mutation<'gc>,
     ) -> Option<Font<'gc>> {
+        let query = FontQuery::new(FontType::Device, name.to_owned(), is_bold, is_italic);
+
         // Try to find an exactly matching font.
-        if let Some(font) =
-            self.get_or_load_exact_device_font(name, is_bold, is_italic, ui, renderer, gc_context)
-        {
+        if let Some(font) = self.get_or_load_exact_device_font(&query, ui, renderer, gc_context) {
             return Some(font);
         }
 
         // Fallback: Try to find an existing font to re-use instead of giving up.
-        self.device_fonts
-            .find(name, FontType::Device, is_bold, is_italic)
+        self.device_fonts.find(&query)
     }
 
     pub fn set_default_font(&mut self, font: DefaultFont, names: Vec<String>) {
@@ -656,12 +646,13 @@ impl<'gc> Library<'gc> {
         is_italic: bool,
         movie: Option<Arc<SwfMovie>>,
     ) -> Option<Font<'gc>> {
-        if let Some(font) = self.global_fonts.find(name, font_type, is_bold, is_italic) {
+        let query = FontQuery::new(font_type, name.to_owned(), is_bold, is_italic);
+        if let Some(font) = self.global_fonts.find(&query) {
             return Some(font);
         }
         if let Some(movie) = movie {
             if let Some(library) = self.library_for_movie(movie) {
-                if let Some(font) = library.fonts.find(name, font_type, is_bold, is_italic) {
+                if let Some(font) = library.fonts.find(&query) {
                     return Some(font);
                 }
             }
@@ -690,59 +681,51 @@ impl<'gc> Library<'gc> {
 
 #[derive(Collect, Default)]
 #[collect(no_drop)]
-struct FontMap<'gc>(FnvHashMap<(FontType, String, bool, bool), Font<'gc>>);
+struct FontMap<'gc>(FnvHashMap<FontQuery, Font<'gc>>);
 
 impl<'gc> FontMap<'gc> {
     pub fn register(&mut self, font: Font<'gc>) {
         let descriptor = font.descriptor();
         self.0
-            .entry((
-                font.font_type(),
-                descriptor.lowercase_name().to_owned(),
-                descriptor.bold(),
-                descriptor.italic(),
-            ))
+            .entry(FontQuery::from_descriptor(font.font_type(), descriptor))
             .or_insert(font);
     }
 
-    pub fn get(
-        &self,
-        name: &str,
-        font_type: FontType,
-        is_bold: bool,
-        is_italic: bool,
-    ) -> Option<&Font<'gc>> {
-        self.0
-            .get(&(font_type, name.to_lowercase(), is_bold, is_italic))
+    pub fn get(&self, font_query: &FontQuery) -> Option<&Font<'gc>> {
+        self.0.get(font_query)
     }
 
-    pub fn find(
-        &self,
-        name: &str,
-        font_type: FontType,
-        is_bold: bool,
-        is_italic: bool,
-    ) -> Option<Font<'gc>> {
+    pub fn find(&self, font_query: &FontQuery) -> Option<Font<'gc>> {
         // The order here is specific, and tested in `tests/swfs/fonts/embed_matching/fallback_preferences`
 
         // Exact match
-        if let Some(font) = self.get(name, font_type, is_bold, is_italic) {
+        if let Some(font) = self.get(font_query) {
             return Some(*font);
         }
 
+        let is_italic = font_query.is_italic;
+        let is_bold = font_query.is_bold;
+
+        let mut fallback_query = font_query.clone();
         if is_italic ^ is_bold {
             // If one is set (but not both), then try upgrading to bold italic...
-            if let Some(font) = self.get(name, font_type, true, true) {
+            fallback_query.is_bold = true;
+            fallback_query.is_italic = true;
+            if let Some(font) = self.get(&fallback_query) {
                 return Some(*font);
             }
 
             // and then downgrading to regular
-            if let Some(font) = self.get(name, font_type, false, false) {
+            fallback_query.is_bold = false;
+            fallback_query.is_italic = false;
+            if let Some(font) = self.get(&fallback_query) {
                 return Some(*font);
             }
 
             // and then finally whichever one we don't have set
-            if let Some(font) = self.get(name, font_type, !is_bold, !is_italic) {
+            fallback_query.is_bold = !is_bold;
+            fallback_query.is_italic = !is_italic;
+            if let Some(font) = self.get(&fallback_query) {
                 return Some(*font);
             }
         } else {
@@ -750,24 +733,32 @@ impl<'gc> FontMap<'gc> {
 
             if is_italic && is_bold {
                 // Do we have regular? (unless we already looked for it)
-                if let Some(font) = self.get(name, font_type, false, false) {
+                fallback_query.is_bold = false;
+                fallback_query.is_italic = false;
+                if let Some(font) = self.get(&fallback_query) {
                     return Some(*font);
                 }
             }
 
             // Do we have bold?
-            if let Some(font) = self.get(name, font_type, true, false) {
+            fallback_query.is_bold = true;
+            fallback_query.is_italic = false;
+            if let Some(font) = self.get(&fallback_query) {
                 return Some(*font);
             }
 
             // Do we have italic?
-            if let Some(font) = self.get(name, font_type, false, true) {
+            fallback_query.is_bold = false;
+            fallback_query.is_italic = true;
+            if let Some(font) = self.get(&fallback_query) {
                 return Some(*font);
             }
 
             if !is_bold && !is_italic {
                 // Do we have bold italic? (unless we already looked for it)
-                if let Some(font) = self.get(name, font_type, true, true) {
+                fallback_query.is_bold = true;
+                fallback_query.is_italic = true;
+                if let Some(font) = self.get(&fallback_query) {
                     return Some(*font);
                 }
             }
