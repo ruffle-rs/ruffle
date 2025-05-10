@@ -343,6 +343,14 @@ impl UiBackend for DesktopUiBackend {
         }
     }
 
+    fn sort_device_fonts(
+        &self,
+        _query: &FontQuery,
+        _register: &mut dyn FnMut(FontDefinition),
+    ) -> Vec<FontQuery> {
+        Vec::new()
+    }
+
     // Unused on desktop
     fn open_virtual_keyboard(&self) {}
 
