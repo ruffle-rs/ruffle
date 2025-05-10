@@ -14,6 +14,7 @@ use ruffle_core::backend::ui::{
     DialogLoaderError, DialogResultFuture, FileDialogResult, FileFilter, FontDefinition,
     FullscreenError, LanguageIdentifier, MouseCursor, UiBackend,
 };
+use ruffle_core::FontQuery;
 use std::path::Path;
 use std::rc::Rc;
 use std::sync::Arc;
@@ -292,13 +293,11 @@ impl UiBackend for DesktopUiBackend {
         };
     }
 
-    fn load_device_font(
-        &self,
-        name: &str,
-        is_bold: bool,
-        is_italic: bool,
-        register: &mut dyn FnMut(FontDefinition),
-    ) {
+    fn load_device_font(&self, query: &FontQuery, register: &mut dyn FnMut(FontDefinition)) {
+        let name = &query.name;
+        let is_bold = query.is_bold;
+        let is_italic = query.is_italic;
+
         let query = fontdb::Query {
             families: &[Family::Name(name)],
             weight: if is_bold {
