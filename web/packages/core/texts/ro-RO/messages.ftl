@@ -13,6 +13,9 @@ ruffle-wiki = Vezi wikiul Ruffle
 view-error-details = Vezi detaliile erorii
 open-in-new-tab = Deschide într-o filă nouă
 click-to-unmute = Dă click pentru a dezmuți
+clipboard-message-copy = { " " } pentru copiere
+clipboard-message-cut = { " " } pentru decupare
+clipboard-message-paste = { " " } pentru lipire
 error-file-protocol =
     Se pare că rulezi Ruffle pe protocolul „file:”.
     Acesta nu funcționează, deoarece browserele blochează funcționarea multor funcții din motive de securitate.
