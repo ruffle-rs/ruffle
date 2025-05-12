@@ -153,7 +153,7 @@ pub fn get_child_at<'gc>(
         };
     }
 
-    Ok(Value::Undefined)
+    Ok(Value::Null)
 }
 
 /// Implements `DisplayObjectContainer.getChildByName`
@@ -176,7 +176,7 @@ pub fn get_child_by_name<'gc>(
         }
     }
 
-    Ok(Value::Undefined)
+    Ok(Value::Null)
 }
 
 /// Implements `DisplayObjectContainer.addChild`
@@ -203,7 +203,7 @@ pub fn add_child<'gc>(
         }
     }
 
-    Ok(Value::Undefined)
+    Ok(Value::Null)
 }
 
 /// Implements `DisplayObjectContainer.addChildAt`
@@ -227,7 +227,7 @@ pub fn add_child_at<'gc>(
         return Ok(child.object2());
     }
 
-    Ok(Value::Undefined)
+    Ok(Value::Null)
 }
 
 /// Implements `DisplayObjectContainer.removeChild`
@@ -250,7 +250,7 @@ pub fn remove_child<'gc>(
         return Ok(child.object2());
     }
 
-    Ok(Value::Undefined)
+    Ok(Value::Null)
 }
 
 /// Implements `DisplayObjectContainer.numChildren`
@@ -268,7 +268,7 @@ pub fn get_num_children<'gc>(
         return Ok(parent.num_children().into());
     }
 
-    Ok(Value::Undefined)
+    Ok(0.into())
 }
 
 /// Implements `DisplayObjectContainer.contains`
@@ -356,7 +356,7 @@ pub fn remove_child_at<'gc>(
         }
     }
 
-    Ok(Value::Undefined)
+    Ok(Value::Null)
 }
 
 /// Implements `DisplayObjectContainer.removeChildren`
@@ -634,7 +634,7 @@ pub fn get_mouse_children<'gc>(
     {
         return Ok(dobj.raw_container().mouse_children().into());
     }
-    Ok(Value::Undefined)
+    Ok(false.into())
 }
 
 pub fn set_mouse_children<'gc>(
@@ -669,7 +669,7 @@ pub fn get_tab_children<'gc>(
     {
         Ok(Value::Bool(obj.is_tab_children(activation.context)))
     } else {
-        Ok(Value::Undefined)
+        Ok(false.into())
     }
 }
 
