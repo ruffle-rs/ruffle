@@ -26,6 +26,12 @@
     "settings_log_level_info": {
         "message": "資訊"
     },
+    "settings_log_level_debug": {
+        "message": "除錯"
+    },
+    "settings_log_level_trace": {
+        "message": "Trace"
+    },
     "settings_max_execution_duration": {
         "message": "ActionScript執行時間(秒數)"
     },

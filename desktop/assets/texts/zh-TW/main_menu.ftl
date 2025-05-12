@@ -33,6 +33,7 @@ bookmarks-menu-add = 新增...
 bookmarks-menu-manage = 管理書籤...
 debug-menu = 除錯工具
 debug-menu-open-stage = 檢視背景資訊
+debug-menu-open-root-movie-clip = 顯示主MovieClip
 debug-menu-open-movie = 檢視動畫資訊
 debug-menu-open-movie-list = 檢視所有動畫資訊
 debug-menu-open-domain-list = 顯示網域

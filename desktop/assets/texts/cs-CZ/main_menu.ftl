@@ -33,6 +33,7 @@ bookmarks-menu-add = Přidat...
 bookmarks-menu-manage = Spravovat záložky...
 debug-menu = Nástroje k ladění
 debug-menu-open-stage = Zobrazit informace o scéně
+debug-menu-open-root-movie-clip = Zobrazit hlavní MovieClip
 debug-menu-open-movie = Zobrazit film
 debug-menu-open-movie-list = Zobrazit známé filmy
 debug-menu-open-domain-list = Zobrazit domény
