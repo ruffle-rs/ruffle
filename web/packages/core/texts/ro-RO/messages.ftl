@@ -13,6 +13,7 @@ ruffle-wiki = Vezi wikiul Ruffle
 view-error-details = Vezi detaliile erorii
 open-in-new-tab = Deschide într-o filă nouă
 click-to-unmute = Dă click pentru a dezmuți
+clipboard-message-title = Copierea și lipirea în Ruffle
 clipboard-message-copy = { " " } pentru copiere
 clipboard-message-cut = { " " } pentru decupare
 clipboard-message-paste = { " " } pentru lipire
