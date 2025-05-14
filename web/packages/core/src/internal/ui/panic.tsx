@@ -221,7 +221,8 @@ function createPanicError(error: Error | null): {
 
         if (
             message.includes("networkerror") ||
-            message.includes("failed to fetch")
+            message.includes("failed to fetch") ||
+            message.includes("load failed")
         ) {
             // Self hosted: Cannot load `.wasm` file - CORS issues
             return {
