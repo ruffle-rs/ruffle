@@ -10,6 +10,7 @@ update-ruffle = Actualizează Ruffle
 ruffle-demo = Demo web
 ruffle-desktop = Aplicație desktop
 ruffle-wiki = Vezi wikiul Ruffle
+enable-hardware-acceleration-link = Întrebări frecvente - Accelerarea hardware Chrome
 view-error-details = Vezi detaliile erorii
 open-in-new-tab = Deschide într-o filă nouă
 click-to-unmute = Dă click pentru a dezmuți
