@@ -58,7 +58,7 @@ jobs:
       fail-fast: false
       matrix:
         rust_version: [stable]
-        os: [ubuntu-24.04, windows-latest, macos-14]
+        os: [ubuntu-24.04, ubuntu-24.04-arm, windows-latest, macos-14]
         include:
           - rust_version: nightly
             os: ubuntu-24.04
@@ -188,7 +188,7 @@ jobs:
     strategy:
       matrix:
         rust_version: [stable]
-        os: [ubuntu-24.04, windows-latest, macos-14]
+        os: [ubuntu-24.04, ubuntu-24.04-arm, windows-latest, macos-14]
         include:
           - rust_version: nightly
             os: ubuntu-24.04
