@@ -228,6 +228,10 @@ pub struct UpdateContext<'gc> {
     pub post_frame_callbacks: &'gc mut Vec<PostFrameCallback<'gc>>,
 
     pub notification_sender: Option<&'gc Sender<PlayerNotification>>,
+
+    // Movie clips whose frame scripts were registered during frame script phase
+    // requires a seperate clean-up pass when running frame-scripts instead of executing them in place
+    pub frame_script_cleanup_queue: VecDeque<MovieClip<'gc>>,
 }
 
 impl<'gc> HasStringContext<'gc> for UpdateContext<'gc> {
