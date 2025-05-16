@@ -10,6 +10,7 @@ pub mod interactive_object;
 pub mod loader;
 pub mod loader_info;
 pub mod movie_clip;
+pub mod screen;
 pub mod shader_data;
 pub mod shader_job;
 pub mod shader_parameter;
