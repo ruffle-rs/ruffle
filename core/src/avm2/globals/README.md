@@ -125,3 +125,9 @@ when any of our ActionScript classes are changed.
 be implemented in `playerglobal`, since they are initialized in a special
 way. However, virtually all classes in the `flash` package are initialized
 in a 'normal' way, and are eligible for implementation in `playerglobal`.
+
+## Acknowledgments
+
+Some ActionScript files were originally generated with
+https://github.com/golfinq/ActionScript_Event_Builder based on the official AS3
+reference.
