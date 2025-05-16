@@ -51,6 +51,8 @@ rand = "0.8.5"
 thiserror.workspace = true
 async-channel.workspace = true
 unicode-bidi = "0.3.18"
+fontconfig = { git = "https://github.com/ruffle-rs/fontconfig-rs.git", rev = "6691e455cb2b1a50ec91b39ed4e9438ff4bcda3a", optional = true, features = ["dlopen"]}
+lazy_static = "1.5.0"
 
 [target.'cfg(target_os = "linux")'.dependencies]
 ashpd = "0.10.2"
@@ -63,7 +65,7 @@ embed-resource = "3"
 vergen = { version = "8.3.2", features = ["build", "git", "gitcl", "cargo"] }
 
 [features]
-default = ["software_video", "external_video", "lzma"]
+default = ["software_video", "external_video", "lzma", "fontconfig"]
 jpegxr = ["ruffle_core/jpegxr"]
 
 # core features
@@ -72,10 +74,10 @@ lzma = ["ruffle_core/lzma"]
 software_video = ["ruffle_video_software"]
 external_video = ["ruffle_video_external"]
 tracy = ["tracing-tracy", "ruffle_render_wgpu/profile-with-tracy"]
+fontconfig = ["dep:fontconfig"]
 
 # wgpu features
 render_debug_labels = ["ruffle_render_wgpu/render_debug_labels"]
 
 # sandboxing
 sandbox = []
-

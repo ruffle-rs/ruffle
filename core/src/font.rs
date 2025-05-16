@@ -14,6 +14,56 @@ use swf::FillStyle;
 
 pub use swf::TextGridFit;
 
+#[derive(Clone, Eq, Collect, Debug)]
+#[collect(require_static)]
+pub struct FontQuery {
+    pub font_type: FontType,
+    pub name: String,
+    pub lowercase_name: String,
+    pub is_bold: bool,
+    pub is_italic: bool,
+}
+
+impl FontQuery {
+    pub fn new(font_type: FontType, name: String, is_bold: bool, is_italic: bool) -> Self {
+        Self {
+            font_type,
+            lowercase_name: name.to_lowercase(),
+            name,
+            is_bold,
+            is_italic,
+        }
+    }
+
+    pub fn from_descriptor(font_type: FontType, descriptor: &FontDescriptor) -> Self {
+        Self {
+            font_type,
+            name: descriptor.name().to_owned(),
+            lowercase_name: descriptor.lowercase_name().to_owned(),
+            is_bold: descriptor.bold(),
+            is_italic: descriptor.italic(),
+        }
+    }
+}
+
+impl PartialEq for FontQuery {
+    fn eq(&self, other: &Self) -> bool {
+        self.font_type == other.font_type
+            && self.lowercase_name == other.lowercase_name
+            && self.is_bold == other.is_bold
+            && self.is_italic == other.is_italic
+    }
+}
+
+impl Hash for FontQuery {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        self.font_type.hash(state);
+        self.lowercase_name.hash(state);
+        self.is_bold.hash(state);
+        self.is_italic.hash(state);
+    }
+}
+
 #[derive(Debug, Copy, Clone, Eq, PartialEq, Hash)]
 pub enum DefaultFont {
     /// `_sans`, a Sans-Serif font (similar to Helvetica or Arial)
