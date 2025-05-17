@@ -1858,7 +1858,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         // The max value is clamped to the range [0, 2^31 - 1).
         let max = self.context.avm1.pop().coerce_to_f64(self)? as i32;
         let result = if max > 0 {
-            self.context.rng.gen_range(0..max)
+            self.context.rng.random_range(0..max)
         } else {
             0
         };
