@@ -219,27 +219,38 @@ pub fn exec<'gc>(
             .unwrap_or(&Value::Undefined)
             .coerce_to_string(activation)?;
 
-        let (storage, index) = match re.exec(text) {
-            Some(matched) => {
-                let substrings = matched
-                    .groups()
-                    .map(|range| range.map(|r| WString::from(&text[r])));
-
-                let storage = ArrayStorage::from_iter(substrings.map(|s| match s {
-                    None => Value::Undefined,
-                    Some(s) => AvmString::new(activation.gc(), s).into(),
-                }));
-
-                (storage, matched.start())
-            }
+        let matched = match re.exec(text) {
+            Some(matched) => matched,
             None => return Ok(Value::Null),
         };
 
+        let substrings = matched
+            .groups()
+            .map(|range| range.map(|r| WString::from(&text[r])));
+
+        let storage = ArrayStorage::from_iter(substrings.map(|s| match s {
+            None => Value::Undefined,
+            Some(s) => AvmString::new(activation.gc(), s).into(),
+        }));
+
         let object = ArrayObject::from_storage(activation, storage);
+
+        for (name, range) in matched.named_groups() {
+            let string = range.map_or_else(
+                || istr!(""),
+                |range| AvmString::new(activation.gc(), &text[range]),
+            );
+
+            object.set_string_property_local(
+                AvmString::new_utf8(activation.gc(), name),
+                string.into(),
+                activation,
+            )?;
+        }
 
         object.set_string_property_local(
             istr!("index"),
-            Value::Number(index as f64),
+            Value::Number(matched.start() as f64),
             activation,
         )?;
 

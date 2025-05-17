@@ -41,7 +41,7 @@ rand = { version = "0.8.5", features = ["std", "small_rng"], default-features = 
 serde = { workspace = true }
 serde_json = { version = "1.0", features = ["preserve_order"] }
 nellymoser-rs = { git = "https://github.com/ruffle-rs/nellymoser", rev = "073eb48d907201f46dea0c8feb4e8d9a1d92208c", optional = true }
-regress = "0.10"
+regress = { git = "https://github.com/ruffle-rs/regras3", rev = "5fcb02513c5ab4e00df4346459f5a8d0521d8fed" }
 flash-lso = { git = "https://github.com/ruffle-rs/rust-flash-lso", rev = "a5e938d9bb1909095f2340c2435867f6aae930b0" }
 lzma-rs = {version = "0.3.0", optional = true }
 dasp = { version = "0.11.0", features = ["interpolate", "interpolate-linear", "signal"], optional = true }
