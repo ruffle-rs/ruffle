@@ -2179,7 +2179,9 @@ impl<'gc> MovieClip<'gc> {
         callable: Option<Avm2Object<'gc>>,
         context: &mut UpdateContext<'gc>,
     ) {
-        let frame_scripts = &mut self.0.write(context.gc()).frame_scripts;
+        let mut write = self.0.write(context.gc());
+        let current_frame = write.current_frame;
+        let frame_scripts = &mut write.frame_scripts;
 
         let index = frame_id as usize;
         if let Some(callable) = callable {
@@ -2189,6 +2191,12 @@ impl<'gc> MovieClip<'gc> {
             frame_scripts[index] = Some(callable);
         } else if frame_scripts.len() > index {
             frame_scripts[index] = None;
+        }
+        if frame_id == current_frame {
+            // Ensure newly registered frame scripts are executed,
+            // even if the frame is repeated due to goto.
+            write.last_queued_script_frame = None;
+            write.queued_script_frame = Some(current_frame);
         }
     }
 
