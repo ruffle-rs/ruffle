@@ -743,11 +743,28 @@ pub fn hit_test_point<'gc>(
         let y = args.get_f64(activation, 1)?;
         let shape_flag = args.get_bool(2);
 
-        // Transform the coordinates from root to world space.
+        let avm_root = dobj.avm2_root();
+        let is_player_root = match avm_root {
+            // We can detect the root of the player by the fact that it doesn't have a loader.
+            Some(root) => root
+                .loader_info()
+                .as_ref()
+                .and_then(|loader_info| loader_info.as_loader_info_object())
+                .and_then(|loader_info_obj| loader_info_obj.loader())
+                .is_none(),
+            None => false,
+        };
+
         let local = Point::from_pixels(x, y);
-        let global = dobj
-            .avm2_root()
-            .map_or(local, |root| root.local_to_global(local));
+        let global = if is_player_root {
+            // If this root is the root of the player, match avm1 hitTest behavior and treat the
+            // input as root-relative coordinates (even if no longer a direct child of the stage)
+            avm_root.unwrap().local_to_global(local)
+        } else {
+            // Otherwise, the docs are truthful and the coordinates are relative to the stage
+            // (aka nothing for us to do)
+            local
+        };
 
         if shape_flag {
             if !dobj.is_on_stage(activation.context) {
