@@ -100,6 +100,7 @@ impl<'gc> RegExp<'gc> {
                     icase: self.flags.contains(RegExpFlags::IGNORE_CASE),
                     multiline: self.flags.contains(RegExpFlags::MULTILINE),
                     dot_all: self.flags.contains(RegExpFlags::DOTALL),
+                    extended: self.flags.contains(RegExpFlags::EXTENDED),
                     no_opt: false,
                     unicode: false,
                     unicode_sets: false,
