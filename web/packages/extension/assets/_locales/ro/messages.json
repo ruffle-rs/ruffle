@@ -88,5 +88,11 @@
     },
     "settings_saved": {
         "message": "Setări salvate"
+    },
+    "permissions_explanation": {
+        "message": "Extensia Ruffle funcționează cel mai bine când are posibilitatea să acceseze datele de pe toate site-urile web. Acest lucru îi permite să ruleze atunci când se încarcă pentru prima dată un site web, deoarece a convins site-urile web care detectează Flash Player să permită imediat rularea conținutului Flash. De asemenea, îi oferă posibilitatea de a încărca fișiere SWF în pagina internă a playerului din alte locații de pe web și îi permite să încarce automat link-uri SWF directe în pagina respectivă. Dacă nu acordați această permisiune, va trebui să activați Ruffle manual pe fiecare site web pe care doriți să îl utilizați, făcând clic pe pictograma extensiei și activând-o pentru site-ul web respectiv."
+    },
+    "swf_player_permissions": {
+        "message": "Trebuie să acordați permisiunea acestei origini URL pentru a încărca fișiere SWF de la aceasta."
     }
 }
