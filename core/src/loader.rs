@@ -392,7 +392,7 @@ impl<'gc> LoadManager<'gc> {
                             player.lock().unwrap().mutate_with_update_context(|uc| {
                                 let clip = MovieClip::new_import_assets(uc, movie, importer_movie);
 
-                                clip.set_cur_preload_frame(uc.gc(), 0);
+                                clip.set_cur_preload_frame(0);
                                 let mut execution_limit = ExecutionLimit::none();
 
                                 tracing::debug!("Preloading swf to run exports {:?}", url);
@@ -2483,7 +2483,7 @@ impl<'gc> Loader<'gc> {
 
                 // This sets the MovieClip image state correctly.
                 mc.set_current_frame(uc.gc(), 1);
-                mc.set_cur_preload_frame(uc.gc(), 2);
+                mc.set_cur_preload_frame(2);
             }
         }
 
@@ -2663,7 +2663,7 @@ impl<'gc> Loader<'gc> {
         let error_movie = SwfMovie::error_movie(swf_url);
         // This also sets total_frames correctly
         mc.replace_with_movie(uc, Some(Arc::new(error_movie)), true, None);
-        mc.set_cur_preload_frame(uc.gc(), 0);
+        mc.set_cur_preload_frame(0);
     }
 
     /// Event handler morally equivalent to `onLoad` on a movie clip.
