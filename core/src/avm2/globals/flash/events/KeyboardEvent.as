@@ -1,7 +1,5 @@
-package flash.events
-{
-    public class KeyboardEvent extends Event
-    {
+package flash.events {
+    public class KeyboardEvent extends Event {
         public static const KEY_DOWN:String = "keyDown";
         public static const KEY_UP:String = "keyUp";
         private var _charCode:uint;
@@ -13,19 +11,18 @@ package flash.events
         private var _controlKey:Boolean;
         private var _commandKey:Boolean;
 
-        public function KeyboardEvent(type:String, 
-                                      bubbles:Boolean = true, 
-                                      cancelable:Boolean = false, 
-                                      charCodeValue:uint = 0, 
-                                      keyCodeValue:uint = 0, 
-                                      keyLocationValue:uint = 0, 
-                                      ctrlKeyValue:Boolean = false, 
-                                      altKeyValue:Boolean = false, 
-                                      shiftKeyValue:Boolean = false, 
-                                      controlKeyValue:Boolean = false, 
-                                      commandKeyValue:Boolean = false)
-        {
-            super(type,bubbles,cancelable);
+        public function KeyboardEvent(type:String,
+                                      bubbles:Boolean = true,
+                                      cancelable:Boolean = false,
+                                      charCodeValue:uint = 0,
+                                      keyCodeValue:uint = 0,
+                                      keyLocationValue:uint = 0,
+                                      ctrlKeyValue:Boolean = false,
+                                      altKeyValue:Boolean = false,
+                                      shiftKeyValue:Boolean = false,
+                                      controlKeyValue:Boolean = false,
+                                      commandKeyValue:Boolean = false) {
+            super(type, bubbles, cancelable);
             this._charCode = charCodeValue;
             this._keyCode = keyCodeValue;
             this._keyLocation = keyLocationValue;
@@ -92,12 +89,11 @@ package flash.events
             this._commandKey = val;
         }
 
-        override public function clone() : Event
-        {
-            return new KeyboardEvent(this.type,this.bubbles,this.cancelable,this._charCode,this._keyCode,this._keyLocation,this._ctrlKey,this._altKey,this._shiftKey,this._controlKey,this._commandKey);
+        override public function clone():Event {
+            return new KeyboardEvent(this.type, this.bubbles, this.cancelable, this._charCode, this._keyCode, this._keyLocation, this._ctrlKey, this._altKey, this._shiftKey, this._controlKey, this._commandKey);
         }
 
-        override public function toString(): String {
+        override public function toString():String {
             return this.formatToString("KeyboardEvent", "type", "bubbles", "cancelable", "eventPhase", "charCode", "keyCode", "keyLocation", "ctrlKey", "altKey", "shiftKey");
         }
 

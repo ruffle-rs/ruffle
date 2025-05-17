@@ -16,7 +16,7 @@ package flash.display {
 
         [Ruffle(NativeAccessible)]
         private var _height:int;
-        
+
         public function ShaderJob(shader:Shader = null, target:Object = null, width:int = 0, height:int = 0) {
             this._shader = shader;
             this._target = target;
