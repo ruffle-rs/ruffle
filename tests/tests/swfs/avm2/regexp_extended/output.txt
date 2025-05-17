@@ -1,0 +1,48 @@
+URL: 
+match: ,,,,,,,,
+match["protocol"]: 
+match["host"]: 
+match["port"]: 
+match["path"]: 
+match["query"]: 
+
+URL: http://
+match: http://,http://,http://,,,,,,
+match["protocol"]: http://
+match["host"]: 
+match["port"]: 
+match["path"]: 
+match["query"]: 
+
+URL: http://example.org
+match: http://example.org,http://example.org,http://,example.org,,,,,
+match["protocol"]: http://
+match["host"]: example.org
+match["port"]: 
+match["path"]: 
+match["query"]: 
+
+URL: http://example.org/abc
+match: http://example.org/abc,http://example.org,http://,example.org,,,/abc,,
+match["protocol"]: http://
+match["host"]: example.org
+match["port"]: 
+match["path"]: /abc
+match["query"]: 
+
+URL: http://example.org:80/abc
+match: http://example.org:80/abc,http://example.org:80,http://,example.org,:80,80,/abc,,
+match["protocol"]: http://
+match["host"]: example.org
+match["port"]: 80
+match["path"]: /abc
+match["query"]: 
+
+URL: http://example.org/abc?hey
+match: http://example.org/abc?hey,http://example.org,http://,example.org,,,/abc,?hey,?hey
+match["protocol"]: http://
+match["host"]: example.org
+match["port"]: 
+match["path"]: /abc
+match["query"]: ?hey
+
