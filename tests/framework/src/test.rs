@@ -1,9 +1,11 @@
+use std::collections::HashMap;
+
 use crate::environment::Environment;
 use crate::options::TestOptions;
 use crate::runner::TestRunner;
 use crate::util::read_bytes;
 use anyhow::{anyhow, Result};
-use ruffle_core::tag_utils::SwfMovie;
+use ruffle_core::{tag_utils::SwfMovie, FontQuery, FontType};
 use ruffle_input_format::InputInjector;
 use ruffle_socket_format::SocketEvent;
 use vfs::VfsPath;
@@ -91,17 +93,41 @@ impl Test {
         })
     }
 
-    pub fn fonts(&self) -> Result<Vec<Font>> {
+    pub fn fonts(&self) -> Result<HashMap<FontQuery, Font>> {
         self.options
             .fonts
             .values()
             .map(|font| {
-                Ok(Font {
-                    bytes: read_bytes(&self.root_path.join(&font.path)?)?.to_vec(),
-                    family: font.family.to_owned(),
-                    bold: font.bold,
-                    italic: font.italic,
-                })
+                Ok((
+                    font.to_font_query(),
+                    Font {
+                        bytes: read_bytes(&self.root_path.join(&font.path)?)?.to_vec(),
+                        family: font.family.to_owned(),
+                        bold: font.bold,
+                        italic: font.italic,
+                    },
+                ))
+            })
+            .collect()
+    }
+
+    pub fn font_sorts(&self) -> HashMap<FontQuery, Vec<FontQuery>> {
+        self.options
+            .font_sorts
+            .values()
+            .map(|font_sort| {
+                let query = FontQuery::new(
+                    FontType::Device,
+                    font_sort.family.clone(),
+                    font_sort.bold,
+                    font_sort.italic,
+                );
+                let sort = font_sort
+                    .sort
+                    .iter()
+                    .filter_map(|name| Some(self.options.fonts.get(name)?.to_font_query()))
+                    .collect();
+                (query, sort)
             })
             .collect()
     }
