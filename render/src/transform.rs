@@ -6,6 +6,7 @@ use swf::ColorTransform;
 #[derive(Clone, Debug, Default)]
 pub struct Transform {
     pub matrix: Matrix,
+    pub tz: f64,
     pub color_transform: ColorTransform,
 }
 
@@ -20,9 +21,11 @@ impl TransformStack {
         let cur_transform = self.transform();
         let matrix = cur_transform.matrix * transform.matrix;
         let color_transform = cur_transform.color_transform * transform.color_transform;
+        let tz = cur_transform.tz + transform.tz;
         self.0.push(Transform {
             matrix,
             color_transform,
+            tz,
         });
     }
 
