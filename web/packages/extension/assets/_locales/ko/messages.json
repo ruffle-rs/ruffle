@@ -26,6 +26,12 @@
     "settings_log_level_info": {
         "message": "정보"
     },
+    "settings_log_level_debug": {
+        "message": "디버그"
+    },
+    "settings_log_level_trace": {
+        "message": "추적"
+    },
     "settings_max_execution_duration": {
         "message": "허용되는 최대 액션스크립트 실행 시간 (초)"
     },
