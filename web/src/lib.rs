@@ -38,9 +38,10 @@ use url::Url;
 use wasm_bindgen::convert::FromWasmAbi;
 use wasm_bindgen::prelude::*;
 use web_sys::{
-    AddEventListenerOptions, ClipboardEvent, Element, Event, EventTarget, FocusEvent,
+    AddEventListenerOptions, ClipboardEvent, Element, EventTarget, FocusEvent,
     Gamepad as WebGamepad, GamepadButton as WebGamepadButton, HtmlCanvasElement, HtmlElement,
-    KeyboardEvent, Node, PointerEvent, ShadowRoot, WebGlContextEvent, WheelEvent, Window,
+    KeyboardEvent, Node, PageTransitionEvent, PointerEvent, ShadowRoot, WebGlContextEvent,
+    WheelEvent, Window,
 };
 
 static RUFFLE_GLOBAL_PANIC: Once = Once::new();
@@ -134,7 +135,7 @@ struct RuffleInstance {
     key_down_callback: Option<JsCallback<KeyboardEvent>>,
     key_up_callback: Option<JsCallback<KeyboardEvent>>,
     paste_callback: Option<JsCallback<ClipboardEvent>>,
-    unload_callback: Option<JsCallback<Event>>,
+    pagehide_callback: Option<JsCallback<PageTransitionEvent>>,
     focusin_callback: Option<JsCallback<FocusEvent>>,
     focusout_callback: Option<JsCallback<FocusEvent>>,
     focus_on_press_callback: Option<JsCallback<PointerEvent>>,
@@ -503,7 +504,7 @@ impl RuffleHandle {
             key_down_callback: None,
             key_up_callback: None,
             paste_callback: None,
-            unload_callback: None,
+            pagehide_callback: None,
             focusin_callback: None,
             focusout_callback: None,
             focus_on_press_callback: None,
@@ -788,12 +789,17 @@ impl RuffleHandle {
                 },
             ));
 
-            instance.unload_callback =
-                Some(JsCallback::register(&window, "unload", false, move |_| {
+            // Create pagehide event handler.
+            instance.pagehide_callback = Some(JsCallback::register(
+                &window,
+                "pagehide",
+                false,
+                move |_js_event: PageTransitionEvent| {
                     let _ = ruffle.with_core_mut(|core| {
                         core.flush_shared_objects();
                     });
-                }));
+                },
+            ));
         })?;
 
         // Set initial timestamp and do initial tick to start animation loop.
