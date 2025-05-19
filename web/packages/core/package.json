@@ -28,7 +28,7 @@
         "autoprefixer": "^10.4.21",
         "cssnano": "^7.0.7",
         "cssnano-preset-advanced": "^7.0.7",
-        "mocha": "^11.2.2",
+        "mocha": "^11.4.0",
         "postcss": "^8.5.3",
         "postcss-nesting": "^13.0.1",
         "replace-in-file": "^8.3.0",
