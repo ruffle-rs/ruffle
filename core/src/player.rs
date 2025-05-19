@@ -366,6 +366,9 @@ pub struct Player {
     /// The first frame is frame 1.
     current_frame: Option<u16>,
 
+    /// The total number of frames in the main timeline, if available.
+    total_frames: Option<u16>,
+
     /// How Ruffle should load movies.
     load_behavior: LoadBehavior,
 
@@ -836,6 +839,25 @@ impl Player {
             } else {
                 mc.play();
             }
+        }
+    }
+    fn is_playing_root_movie(context: &mut UpdateContext<'_>) -> bool {
+        if let Some(mc) = context
+            .stage
+            .root_clip()
+            .and_then(|root| root.as_movie_clip())
+        {
+            return mc.playing();
+        }
+        false
+    }
+    fn goto_frame_root_movie(context: &mut UpdateContext<'_>, frame: u16) {
+        if let Some(mc) = context
+            .stage
+            .root_clip()
+            .and_then(|root| root.as_movie_clip())
+        {
+            mc.goto_frame(context, frame, true)
         }
     }
     fn rewind_root_movie(context: &mut UpdateContext<'_>) {
@@ -2023,6 +2045,34 @@ impl Player {
         self.current_frame
     }
 
+    pub fn total_frames(&self) -> Option<u16> {
+        self.total_frames
+    }
+
+    pub fn goto_frame(&mut self, frame: u16) {
+        self.mutate_with_update_context(|context| Self::goto_frame_root_movie(context, frame))
+    }
+
+    pub fn is_playing_movie(&mut self) -> bool {
+        self.mutate_with_update_context(|context| Self::is_playing_root_movie(context))
+    }
+
+    pub fn play_movie(&mut self) {
+        self.mutate_with_update_context(|context| {
+            if !Self::is_playing_root_movie(context) {
+                Self::toggle_play_root_movie(context);
+            }
+        })
+    }
+
+    pub fn stop_movie(&mut self) {
+        self.mutate_with_update_context(|context| {
+            if Self::is_playing_root_movie(context) {
+                Self::toggle_play_root_movie(context);
+            }
+        })
+    }
+
     pub fn audio(&self) -> &dyn AudioBackend {
         &*self.audio
     }
@@ -2262,6 +2312,13 @@ impl Player {
                 .root_clip()
                 .and_then(|root| root.as_movie_clip())
                 .map(|clip| clip.current_frame());
+            
+            this.total_frames = update_context
+                .stage
+                .root_clip()
+                .and_then(|root| root.as_movie_clip())
+                .map(|clip| clip.total_frames());
+
             ret
         })
     }
@@ -2864,6 +2921,7 @@ impl PlayerBuilder {
                 // SWF info
                 swf: fake_movie.clone(),
                 current_frame: None,
+                total_frames: None,
 
                 // Timing
                 frame_rate,

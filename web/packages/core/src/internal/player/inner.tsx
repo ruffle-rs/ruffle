@@ -2088,6 +2088,39 @@ export class InnerPlayer {
         // TODO: Move this to whatever function changes the ReadyState to Loaded when we have streaming support.
         this.element.dispatchEvent(new CustomEvent(InnerPlayer.LOADED_DATA));
     }
+
+    currentFrame() : number {
+        if (this.instance) {
+            return this.instance.current_frame()!;
+        }
+        return 1;
+    }
+
+    totalFrames() : number {
+        if (this.instance) {
+            return this.instance.total_frames()!;
+        }
+        return 0;
+    }
+
+    isPlayingMovie() : boolean {
+        if (this.instance) {
+            return this.instance.is_playing_movie()!;
+        }
+        return false;
+    }
+
+    playMovie() : void {
+        this.instance?.play_movie();
+    }
+
+    stopMovie() : void {
+        this.instance?.stop_movie();
+    }
+
+    gotoFrame(frame: number) : void {
+        this.instance?.goto_frame(frame);
+    }
 }
 
 /**

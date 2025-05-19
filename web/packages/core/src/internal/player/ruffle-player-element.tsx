@@ -165,6 +165,30 @@ export class RufflePlayerElement extends HTMLElement implements PlayerElement {
         }
     }
 
+    public CurrentFrame(): number {
+        return this.#inner.currentFrame() - 1;
+    }
+
+    public TotalFrames(): number {
+        return this.#inner.totalFrames();
+    }
+
+    public GotoFrame(frame: number) {
+        return this.#inner.gotoFrame(frame + 1);
+    }
+
+    public IsPlaying() : boolean {
+        return this.#inner.isPlayingMovie();
+    }
+
+    public Play() : void {
+        this.#inner.playMovie();
+    }
+
+    public StopPlay() : void {
+        this.#inner.stopMovie();
+    }
+
     get config(): URLLoadOptions | DataLoadOptions | object {
         return this.#inner.config;
     }

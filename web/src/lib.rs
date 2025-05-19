@@ -457,6 +457,30 @@ impl RuffleHandle {
     pub fn is_wasm_simd_used() -> bool {
         cfg!(target_feature = "simd128")
     }
+
+    pub fn current_frame(&self) -> Option<u16> {
+        self.with_core_mut(|core| core.current_frame()).unwrap_or_default()
+    }
+
+    pub fn total_frames(&self) -> Option<u16> {
+        self.with_core_mut(|core| core.total_frames()).unwrap_or_default()
+    }
+
+    pub fn is_playing_movie(&self) -> bool {
+        self.with_core_mut(|core| core.is_playing_movie()).unwrap_or_default()
+    }
+
+    pub fn goto_frame(&self, frame: u16) {
+        let _ = self.with_core_mut(|core| core.goto_frame(frame));
+    }
+
+    pub fn play_movie(&self) {
+        let _ = self.with_core_mut(|core| core.play_movie());
+    }
+
+    pub fn stop_movie(&self) {
+        let _ = self.with_core_mut(|core| core.stop_movie());
+    }
 }
 
 impl RuffleHandle {
