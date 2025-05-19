@@ -19,7 +19,7 @@ use crate::events::{
     ClipEvent, ClipEventResult, ImeCursorArea, ImeEvent, ImeNotification, ImePurpose,
     PlayerNotification, TextControlCode,
 };
-use crate::font::{FontType, Glyph, TextRenderSettings};
+use crate::font::{FontLike, FontType, Glyph, TextRenderSettings};
 use crate::html;
 use crate::html::StyleSheet;
 use crate::html::{
