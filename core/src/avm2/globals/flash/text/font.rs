@@ -11,7 +11,7 @@ use crate::string::AvmString;
 
 pub use crate::avm2::object::font_allocator;
 use crate::character::Character;
-use crate::font::{Font, FontType};
+use crate::font::{Font, FontLike, FontType};
 
 use ruffle_macros::istr;
 

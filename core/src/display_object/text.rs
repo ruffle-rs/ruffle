@@ -3,7 +3,7 @@ use crate::avm2::{
 };
 use crate::context::{RenderContext, UpdateContext};
 use crate::display_object::{DisplayObjectBase, DisplayObjectPtr};
-use crate::font::TextRenderSettings;
+use crate::font::{FontLike, TextRenderSettings};
 use crate::prelude::*;
 use crate::tag_utils::SwfMovie;
 use crate::utils::HasPrefixField;

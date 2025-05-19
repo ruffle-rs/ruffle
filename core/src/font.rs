@@ -439,6 +439,7 @@ struct FontData {
 
     /// The distance between the bottom of any one glyph and the top of
     /// another, in EM-square coordinates.
+    #[allow(dead_code)] // Web build falsely claims it's unused
     leading: i16,
 
     /// The identity of the font.
@@ -642,42 +643,81 @@ impl<'gc> Font<'gc> {
         true
     }
 
-    /// Returns whether this font contains kerning information.
-    pub fn has_kerning_info(&self) -> bool {
+    pub fn descriptor(&self) -> &FontDescriptor {
+        &self.0.descriptor
+    }
+
+    pub fn has_layout(&self) -> bool {
+        self.0.has_layout
+    }
+}
+
+impl FontLike for Font<'_> {
+    fn get_glyph_render_data(&self, c: char) -> Option<GlyphRenderData<'_>> {
+        self.get_glyph_for_char(c)
+            .map(|glyph| GlyphRenderData::new(glyph, *self))
+    }
+
+    fn has_kerning_info(&self) -> bool {
         self.0.glyphs.has_kerning_info()
     }
 
-    /// Given a pair of characters, applies the offset that should be applied
-    /// to the advance value between these two characters.
-    /// Returns 0 twips if no kerning offset exists between these two characters.
-    pub fn get_kerning_offset(&self, left: char, right: char) -> Twips {
+    fn get_kerning_offset(&self, left: char, right: char) -> Twips {
         self.0.glyphs.get_kerning_offset(left, right)
     }
 
-    /// Return the leading for this font at a given height.
-    pub fn get_leading_for_height(&self, height: Twips) -> Twips {
+    fn get_leading_for_height(&self, height: Twips) -> Twips {
         let scale = height.get() as f32 / self.scale();
 
         Twips::new((self.0.leading as f32 * scale) as i32)
     }
 
-    /// Get the baseline from the top of the glyph at a given height.
-    pub fn get_baseline_for_height(&self, height: Twips) -> Twips {
+    fn get_baseline_for_height(&self, height: Twips) -> Twips {
         let scale = height.get() as f32 / self.scale();
 
         Twips::new((self.0.ascent as f32 * scale) as i32)
     }
 
-    /// Get the descent from the baseline to the bottom of the glyph at a given height.
-    pub fn get_descent_for_height(&self, height: Twips) -> Twips {
+    fn get_descent_for_height(&self, height: Twips) -> Twips {
         let scale = height.get() as f32 / self.scale();
 
         Twips::new((self.0.descent as f32 * scale) as i32)
     }
 
-    pub fn scale(&self) -> f32 {
+    fn scale(&self) -> f32 {
         self.0.scale
     }
+
+    fn font_type(&self) -> FontType {
+        self.0.font_type
+    }
+}
+
+pub trait FontLike {
+    /// Returns data required to render a glyph.
+    fn get_glyph_render_data(&self, c: char) -> Option<GlyphRenderData<'_>>;
+
+    /// Returns whether this font contains kerning information.
+    fn has_kerning_info(&self) -> bool;
+
+    /// Given a pair of characters, applies the offset that should be applied
+    /// to the advance value between these two characters.
+    /// Returns 0 twips if no kerning offset exists between these two characters.
+    fn get_kerning_offset(&self, left: char, right: char) -> Twips;
+
+    /// Return the leading for this font at a given height.
+    #[allow(dead_code)] // TODO Do we need this method at all?
+    fn get_leading_for_height(&self, height: Twips) -> Twips;
+
+    /// Get the baseline from the top of the glyph at a given height.
+    fn get_baseline_for_height(&self, height: Twips) -> Twips;
+
+    /// Get the descent from the baseline to the bottom of the glyph at a given height.
+    fn get_descent_for_height(&self, height: Twips) -> Twips;
+
+    fn scale(&self) -> f32;
+
+    fn font_type(&self) -> FontType;
 
     /// Evaluate this font against a particular string on a glyph-by-glyph
     /// basis.
@@ -690,7 +730,7 @@ impl<'gc> Font<'gc> {
     ///
     /// It's guaranteed that this function will iterate over all characters
     /// from the text, irrespectively of whether they have a glyph or not.
-    pub fn evaluate<FGlyph>(
+    fn evaluate<FGlyph>(
         &self,
         text: &WStr, // TODO: take an `IntoIterator<Item=char>`, to not depend on string representation?
         mut transform: Transform,
@@ -700,10 +740,6 @@ impl<'gc> Font<'gc> {
         FGlyph: FnMut(usize, &Transform, &Glyph, Twips, Twips),
     {
         transform.matrix.ty += params.height;
-        let scale = params.height.get() as f32 / self.scale();
-
-        transform.matrix.a = scale;
-        transform.matrix.d = scale;
 
         // TODO [KJ] I'm not sure whether we should iterate over characters here or over code units.
         //   I suspect Flash Player does not support full UTF-16 when displaying and laying out text.
@@ -712,7 +748,9 @@ impl<'gc> Font<'gc> {
         let mut x = Twips::ZERO;
         while let Some((pos, c)) = char_indices.next() {
             let c = c.unwrap_or(char::REPLACEMENT_CHARACTER);
-            if let Some(glyph) = self.get_glyph_for_char(c) {
+            if let Some(render_data) = self.get_glyph_render_data(c) {
+                let glyph = render_data.glyph;
+                let scale = params.height.get() as f32 / render_data.scale;
                 let mut advance = glyph.advance();
                 if has_kerning_info && params.kerning {
                     let next_char = char_indices.peek().cloned().unwrap_or((0, Ok('\0'))).1;
@@ -733,6 +771,9 @@ impl<'gc> Font<'gc> {
                     Twips::new((advance.get() as f32 * scale) as i32) + params.letter_spacing
                 };
 
+                transform.matrix.a = scale;
+                transform.matrix.d = scale;
+
                 glyph_func(pos, &transform, glyph, twips_advance, x);
 
                 // Step horizontally.
@@ -747,7 +788,7 @@ impl<'gc> Font<'gc> {
     }
 
     /// Measure a particular string's width.
-    pub fn measure(&self, text: &WStr, params: EvalParameters) -> Twips {
+    fn measure(&self, text: &WStr, params: EvalParameters) -> Twips {
         let mut width = Twips::ZERO;
 
         self.evaluate(
@@ -778,7 +819,7 @@ impl<'gc> Font<'gc> {
     ///
     /// TODO: This function and, more generally, this entire file will need to
     /// be internationalized to implement AS3 `flash.text.engine`.
-    pub fn wrap_line(
+    fn wrap_line(
         &self,
         text: &WStr,
         params: EvalParameters,
@@ -847,18 +888,6 @@ impl<'gc> Font<'gc> {
         }
 
         None
-    }
-
-    pub fn descriptor(&self) -> &FontDescriptor {
-        &self.0.descriptor
-    }
-
-    pub fn font_type(&self) -> FontType {
-        self.0.font_type
-    }
-
-    pub fn has_layout(&self) -> bool {
-        self.0.has_layout
     }
 }
 
@@ -961,6 +990,20 @@ impl Glyph {
 
     pub fn character(&self) -> char {
         self.character
+    }
+}
+
+pub struct GlyphRenderData<'a> {
+    glyph: &'a Glyph,
+    scale: f32,
+}
+
+impl<'a> GlyphRenderData<'a> {
+    fn new(glyph: &'a Glyph, font: Font<'_>) -> Self {
+        Self {
+            glyph,
+            scale: font.scale(),
+        }
     }
 }
 
@@ -1231,7 +1274,7 @@ impl Default for TextRenderSettings {
 
 #[cfg(test)]
 mod tests {
-    use crate::font::{EvalParameters, Font, FontDescriptor, FontFileData, FontType};
+    use super::*;
     use crate::string::WStr;
     use flate2::read::DeflateDecoder;
     use gc_arena::{arena::rootless_mutate, Mutation};
