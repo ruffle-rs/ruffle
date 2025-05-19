@@ -56,7 +56,7 @@ cpal = "0.15.3"
 anyhow = "1.0"
 slotmap = "1.0.7"
 async-channel = "2.3.1"
-bitflags = "2.9.0"
+bitflags = "2.9.1"
 bytemuck = "1.23.0"
 chrono = { version = "0.4.41", default-features = false }
 enum-map = "2.7.3"
