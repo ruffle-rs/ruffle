@@ -2,7 +2,7 @@
 
 use crate::context::UpdateContext;
 use crate::drawing::Drawing;
-use crate::font::{EvalParameters, Font, FontType};
+use crate::font::{EvalParameters, Font, FontLike, FontType};
 use crate::html::dimensions::{BoxBounds, Position, Size};
 use crate::html::text_format::{FormatSpans, TextFormat, TextSpan};
 use crate::string::{utils as string_utils, WStr};

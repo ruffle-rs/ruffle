@@ -4,7 +4,7 @@ use crate::backend::audio::SoundHandle;
 use crate::character::Character;
 
 use crate::display_object::{Bitmap, Graphic, MorphShape, Text};
-use crate::font::{Font, FontDescriptor, FontQuery, FontType};
+use crate::font::{Font, FontDescriptor, FontLike, FontQuery, FontType};
 use crate::prelude::*;
 use crate::string::AvmString;
 use crate::tag_utils::SwfMovie;
