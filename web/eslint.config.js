@@ -41,8 +41,15 @@ export default tseslint.config(
         },
     },
     {
-        files: ["**/*.ts"],
+        files: ["**/*.ts", "**/*.tsx"],
         extends: tseslint.configs.strict,
+        languageOptions: {
+            parserOptions: {
+                ecmaFeatures: {
+                    jsx: true,
+                },
+            },
+        },
         rules: {
             "@typescript-eslint/no-non-null-assertion": "off",
             "@typescript-eslint/consistent-type-assertions": [

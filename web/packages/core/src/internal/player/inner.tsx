@@ -56,7 +56,15 @@ declare global {
         type?: string;
     }
     // See https://github.com/microsoft/TypeScript-DOM-lib-generator/issues/1615
-    type OrientationLockType = "any" | "landscape" | "landscape-primary" | "landscape-secondary" | "natural" | "portrait" | "portrait-primary" | "portrait-secondary";
+    type OrientationLockType =
+        | "any"
+        | "landscape"
+        | "landscape-primary"
+        | "landscape-secondary"
+        | "natural"
+        | "portrait"
+        | "portrait-primary"
+        | "portrait-secondary";
     interface ScreenOrientation extends EventTarget {
         lock(orientation: OrientationLockType): Promise<void>;
     }
@@ -338,7 +346,7 @@ export class InnerPlayer {
     }
 
     public callFSCommand(command: string, args: string): boolean {
-        if (this.onFSCommand.length == 0) {
+        if (this.onFSCommand.length === 0) {
             return false;
         }
         for (const handler of this.onFSCommand) {
@@ -533,7 +541,7 @@ export class InnerPlayer {
 
                 if (alignCSS) {
                     this.dynamicStyles.sheet.insertRule(
-                        `:host { ${alignCSS} }`
+                        `:host { ${alignCSS} }`,
                     );
                 }
             }
@@ -849,8 +857,14 @@ export class InnerPlayer {
      * If this player was already trying to use the canvas render, this method will panic.
      */
     protected async reloadWithCanvasRenderer(): Promise<void> {
-        if (this.loadedConfig && this.loadedConfig.preferredRenderer !== RenderBackend.Canvas) {
-            const combinedOptions = { ...this.loadedConfig, preferredRenderer: RenderBackend.Canvas};
+        if (
+            this.loadedConfig &&
+            this.loadedConfig.preferredRenderer !== RenderBackend.Canvas
+        ) {
+            const combinedOptions = {
+                ...this.loadedConfig,
+                preferredRenderer: RenderBackend.Canvas,
+            };
             await this.load(combinedOptions);
         } else if (this.loadedConfig) {
             this.panic(new Error(text("error-canvas-reload")));
@@ -858,7 +872,6 @@ export class InnerPlayer {
             throw new Error("Cannot reload if load wasn't first called");
         }
     }
-
 
     /**
      * Loads a specified movie into this player.
@@ -1073,19 +1086,30 @@ export class InnerPlayer {
      */
     private fullScreenChange(): void {
         // If fullScreenAspectRatio is specified, lock orientation in fullscreen mode if supported
-        if (this.isFullscreen && screen.orientation && typeof screen.orientation.lock === "function") {
+        if (
+            this.isFullscreen &&
+            screen.orientation &&
+            typeof screen.orientation.lock === "function"
+        ) {
             // TODO (danielhjacobs): If playerRuntime is "air", instead of just checking the loadedConfig fullScreenAspectRatio,
             // when Ruffle loads the fullScreenAspectRatio should be applied by `Stage.setAspectRatio`,
             // This code should check the current Stage aspect ratio, including if it was later changed.
             // Note: "any" is not documented as a supported embed attribute, but it is documented for `Stage.setAspectRatio`.
-            const fullScreenAspectRatio = this.loadedConfig?.fullScreenAspectRatio?.toLowerCase() ?? "";
-            if (["portrait", "landscape", "any"].includes(fullScreenAspectRatio)) {
-                screen.orientation.lock(fullScreenAspectRatio as OrientationLockType).catch(() => {});
+            const fullScreenAspectRatio =
+                this.loadedConfig?.fullScreenAspectRatio?.toLowerCase() ?? "";
+            if (
+                ["portrait", "landscape", "any"].includes(fullScreenAspectRatio)
+            ) {
+                screen.orientation
+                    .lock(fullScreenAspectRatio as OrientationLockType)
+                    .catch(() => {});
             }
         } else {
             try {
                 screen.orientation.unlock();
-            } catch { }
+            } catch {
+                // Ignored: not all browsers support orientation unlocking
+            }
         }
         this.instance?.set_fullscreen(this.isFullscreen);
     }
@@ -1128,24 +1152,27 @@ export class InnerPlayer {
                     );
                     if (confirmReload && this.loadedConfig) {
                         this.destroy();
-                        replace
-                            ? localStorage.setItem(solKey, b64SolData)
-                            : localStorage.removeItem(solKey);
+                        if (replace) {
+                            localStorage.setItem(solKey, b64SolData);
+                        } else {
+                            localStorage.removeItem(solKey);
+                        }
                         this.reload();
                         this.populateSaves();
                         this.saveManager.classList.add("hidden");
                     }
                     return;
                 }
-                replace
-                    ? localStorage.setItem(solKey, b64SolData)
-                    : localStorage.removeItem(solKey);
+                if (replace) {
+                    localStorage.setItem(solKey, b64SolData);
+                } else {
+                    localStorage.removeItem(solKey);
+                }
                 this.populateSaves();
                 this.saveManager.classList.add("hidden");
             }
         }
     }
-
 
     /**
      * Replace save from SOL file.
@@ -1186,7 +1213,7 @@ export class InnerPlayer {
             if (localStorage === null) {
                 return false;
             }
-        } catch (e: unknown) {
+        } catch (_e: unknown) {
             return false;
         }
         return Object.keys(localStorage).some((key) => {
@@ -1208,23 +1235,60 @@ export class InnerPlayer {
         }
     }
 
-    private SaveRow = ({rowKey, solName, solData}: {rowKey: string, solName: string, solData: string}) => {
+    private SaveRow = ({
+        rowKey,
+        solName,
+        solData,
+    }: {
+        rowKey: string;
+        solName: string;
+        solData: string;
+    }) => {
         return (
             <tr>
-                <td title={ rowKey }>{ solName }</td>
+                <td title={rowKey}>{solName}</td>
                 <td>
-                    <span class="save-option" id="download-save" title={ text("save-download") } onClick={() => saveFile(base64ToBlob(solData, "application/octet-stream"), solName + ".sol")}></span>
+                    <span
+                        class="save-option"
+                        id="download-save"
+                        title={text("save-download")}
+                        onClick={() =>
+                            saveFile(
+                                base64ToBlob(
+                                    solData,
+                                    "application/octet-stream",
+                                ),
+                                solName + ".sol",
+                            )
+                        }
+                    ></span>
                 </td>
                 <td>
-                    <input type="file" accept=".sol" class="replace-save" id={ "replace-save-" + rowKey } onChange={(ev) => this.replaceSOL(ev, rowKey)} />
-                    <label for={ "replace-save-" + rowKey } class="save-option" id="replace-save" title={ text("save-replace") }></label>
+                    <input
+                        type="file"
+                        accept=".sol"
+                        class="replace-save"
+                        id={"replace-save-" + rowKey}
+                        onChange={(ev) => this.replaceSOL(ev, rowKey)}
+                    />
+                    <label
+                        for={"replace-save-" + rowKey}
+                        class="save-option"
+                        id="replace-save"
+                        title={text("save-replace")}
+                    ></label>
                 </td>
                 <td>
-                    <span class="save-option" id="delete-save" title={ text("save-delete") } onClick={() => this.deleteSave(rowKey)}></span>
+                    <span
+                        class="save-option"
+                        id="delete-save"
+                        title={text("save-delete")}
+                        onClick={() => this.deleteSave(rowKey)}
+                    ></span>
                 </td>
             </tr>
         );
-    }
+    };
 
     /**
      * Puts the local save SOL file keys in a table.
@@ -1239,7 +1303,13 @@ export class InnerPlayer {
             const solName = key.split("/").pop();
             const solData = localStorage.getItem(key);
             if (solName && solData && isB64SOL(solData)) {
-                saveTable.appendChild(<this.SaveRow rowKey={key} solName={solName} solData={solData} />);
+                saveTable.appendChild(
+                    <this.SaveRow
+                        rowKey={key}
+                        solName={solName}
+                        solData={solData}
+                    />,
+                );
             }
         });
     }
@@ -1308,7 +1378,7 @@ export class InnerPlayer {
             } else {
                 console.error("SWF download failed");
             }
-        } catch (err) {
+        } catch (_err) {
             console.error("SWF download failed");
         }
     }
@@ -1655,9 +1725,7 @@ export class InnerPlayer {
         // Keep the entire context menu inside the viewport.
         const overflowX = Math.max(
             0,
-            event.clientX +
-                contextMenuRect.width -
-                viewportElement.clientWidth,
+            event.clientX + contextMenuRect.width - viewportElement.clientWidth,
         );
         const overflowY = Math.max(
             0,
@@ -1668,14 +1736,15 @@ export class InnerPlayer {
         const x = event.clientX - playerRect.x - overflowX;
         const y = event.clientY - playerRect.y - overflowY;
 
-        const isRtl = getComputedStyle(this.contextMenuElement).direction === 'rtl';
+        const isRtl =
+            getComputedStyle(this.contextMenuElement).direction === "rtl";
 
         this.contextMenuElement.style.top = `${y}px`;
         if (isRtl) {
             this.contextMenuElement.style.right = `${playerRect.width - x}px`;
-            this.contextMenuElement.style.left = '';
+            this.contextMenuElement.style.left = "";
         } else {
-            this.contextMenuElement.style.right = '';
+            this.contextMenuElement.style.right = "";
             this.contextMenuElement.style.left = `${x}px`;
         }
     }
@@ -1764,7 +1833,9 @@ export class InnerPlayer {
                         dataView.setUint16(8, 1, true);
                         const missingCharacters = window
                             .btoa(
-                                String.fromCharCode(...new Uint8Array(arrayBuffer)),
+                                String.fromCharCode(
+                                    ...new Uint8Array(arrayBuffer),
+                                ),
                             )
                             .slice(0, 13);
                         return `data:audio/wav;base64,UklGRisAAABXQVZFZm10IBAAAAABAAEA${missingCharacters}AgAZGF0YQcAAACAgICAgICAAAA=`;
@@ -1812,7 +1883,7 @@ export class InnerPlayer {
         return null;
     }
 
-    public callExternalInterface(name: string, args: any[]) {
+    public callExternalInterface(name: string, args: unknown[]) {
         return this.instance?.call_exposed_callback(name, args);
     }
 
@@ -2213,7 +2284,7 @@ export function isYoutubeFlashSource(filename: string | null): boolean {
             const url = new URL(filename, RUFFLE_ORIGIN);
             pathname = url.pathname;
             hostname = url.hostname;
-        } catch (err) {
+        } catch (_err) {
             // Some invalid filenames, like `///`, could raise a TypeError. Let's fail silently in this situation.
         }
         // See https://wiki.mozilla.org/QA/Youtube_Embedded_Rewrite
@@ -2253,7 +2324,7 @@ export function workaroundYoutubeMixedContent(
                 url.protocol = "https:";
                 elem.setAttribute(attr, url.toString());
             }
-        } catch (err) {
+        } catch (_err) {
             // Some invalid filenames, like `///`, could raise a TypeError. Let's fail silently in this situation.
         }
     }
@@ -2303,13 +2374,14 @@ function saveFile(blob: Blob, name: string): void {
  */
 function base64ToArray(bytesBase64: string): Uint8Array {
     const byteString = atob(bytesBase64);
-    return Uint8Array.from(byteString, char => char.charCodeAt(0));
+    return Uint8Array.from(byteString, (char) => char.charCodeAt(0));
 }
 
 /**
  * Create a new Blob of the given type from a base64-encoded string.
  *
- * @param bytesBase64 The base64-encoded string..
+ * @param bytesBase64 The base64-encoded string.
+ * @param mimeString The MIME type for the encoded string.
  * @returns The new Blob.
  */
 function base64ToBlob(bytesBase64: string, mimeString: string): Blob {
@@ -2328,7 +2400,7 @@ function isB64SOL(solData: string): boolean {
     try {
         const decodedData = atob(solData);
         return isSolData(decodedData);
-    } catch (e) {
+    } catch (_e) {
         return false;
     }
 }
@@ -2342,12 +2414,15 @@ function isB64SOL(solData: string): boolean {
  */
 function isSolData(data: string): boolean {
     return (
-       // First two bytes are a magic value (0x00 0xbf)
-       data.charCodeAt(0) === 0x00 && data.charCodeAt(1) === 0xbf &&
-       // Seventh through tenth bytes are another magic value (ASCII value of TCSO)
-       data.slice(6, 10) === "TCSO" &&
-       // Next six bytes are padding (0x00 0x04 0x00 0x00 0x00 0x00)
-       [0x00, 0x04, 0x00, 0x00, 0x00, 0x00].every((v, i) => data.charCodeAt(10 + i) === v)
+        // First two bytes are a magic value (0x00 0xbf)
+        data.charCodeAt(0) === 0x00 &&
+        data.charCodeAt(1) === 0xbf &&
+        // Seventh through tenth bytes are another magic value (ASCII value of TCSO)
+        data.slice(6, 10) === "TCSO" &&
+        // Next six bytes are padding (0x00 0x04 0x00 0x00 0x00 0x00)
+        [0x00, 0x04, 0x00, 0x00, 0x00, 0x00].every(
+            (v, i) => data.charCodeAt(10 + i) === v,
+        )
     );
 }
 
@@ -2410,21 +2485,27 @@ function detectBrowserDirection(): string {
     const browserLocale = new Intl.Locale(navigator.language);
 
     let textInfo = null;
-    if ('getTextInfo' in browserLocale &&
-        typeof browserLocale.getTextInfo === 'function') {
+    if (
+        "getTextInfo" in browserLocale &&
+        typeof browserLocale.getTextInfo === "function"
+    ) {
         textInfo = browserLocale.getTextInfo();
-    } else if ('textInfo' in browserLocale &&
-        typeof browserLocale.textInfo === 'object') {
+    } else if (
+        "textInfo" in browserLocale &&
+        typeof browserLocale.textInfo === "object"
+    ) {
         textInfo = browserLocale.textInfo;
     } else {
-        return 'ltr';
+        return "ltr";
     }
 
-    if (typeof textInfo === 'object' &&
-        'direction' in textInfo &&
-        typeof textInfo.direction === 'string') {
-        return textInfo.direction || 'ltr';
+    if (
+        typeof textInfo === "object" &&
+        "direction" in textInfo &&
+        typeof textInfo.direction === "string"
+    ) {
+        return textInfo.direction || "ltr";
     }
 
-    return 'ltr';
+    return "ltr";
 }
