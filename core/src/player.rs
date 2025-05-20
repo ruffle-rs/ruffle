@@ -2312,7 +2312,7 @@ impl Player {
                 .root_clip()
                 .and_then(|root| root.as_movie_clip())
                 .map(|clip| clip.current_frame());
-            
+
             this.total_frames = update_context
                 .stage
                 .root_clip()

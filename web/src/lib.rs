@@ -459,15 +459,18 @@ impl RuffleHandle {
     }
 
     pub fn current_frame(&self) -> Option<u16> {
-        self.with_core_mut(|core| core.current_frame()).unwrap_or_default()
+        self.with_core_mut(|core| core.current_frame())
+            .unwrap_or_default()
     }
 
     pub fn total_frames(&self) -> Option<u16> {
-        self.with_core_mut(|core| core.total_frames()).unwrap_or_default()
+        self.with_core_mut(|core| core.total_frames())
+            .unwrap_or_default()
     }
 
     pub fn is_playing_movie(&self) -> bool {
-        self.with_core_mut(|core| core.is_playing_movie()).unwrap_or_default()
+        self.with_core_mut(|core| core.is_playing_movie())
+            .unwrap_or_default()
     }
 
     pub fn goto_frame(&self, frame: u16) {
