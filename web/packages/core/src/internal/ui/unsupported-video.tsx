@@ -1,3 +1,6 @@
+/**
+ * @returns The HTMLElement that displays video with an unsupported codec
+ */
 export function UnsupportedVideo() {
     return (
         <div id="video-modal" class="modal hidden">

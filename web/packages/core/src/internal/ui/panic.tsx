@@ -25,6 +25,16 @@ interface PanicCreateReport {
 
 type PanicAction = PanicLink | PanicDetails | PanicCreateReport;
 
+/**
+ * @returns False or the HTMLElement containing the actions to take upon panic
+ *
+ * @param obj An object containing all the info to include in the panic element
+ * @param obj.action Which action to take
+ * @param obj.showDetails The function that shows the details that led to the panic
+ * @param obj.swfUrl The URL of the root SWF
+ * @param obj.errorArray An array of errors
+ * @param obj.errorText The text of the error message
+ */
 function createPanicAction({
     action,
     showDetails,
@@ -38,7 +48,7 @@ function createPanicAction({
     errorArray: ErrorArray;
     errorText: string;
 }) {
-    if (action.type == "show_details") {
+    if (action.type === "show_details") {
         const onClick = () => {
             showDetails();
             return false;
@@ -50,7 +60,7 @@ function createPanicAction({
                 </a>
             </li>
         );
-    } else if (action.type == "open_link") {
+    } else if (action.type === "open_link") {
         return (
             <li>
                 <a href={action.url} target="_top">
@@ -97,6 +107,9 @@ function createPanicAction({
     }
 }
 
+/**
+ * @returns A boolean indicating if the build is over 6 months old
+ */
 function isBuildOutdated(): boolean {
     const buildDate = new Date(buildInfo.buildDate);
     const monthsPrior = new Date();
@@ -149,6 +162,11 @@ export const CommonActions = {
     },
 };
 
+/**
+ * @returns An object containing the body of the error and the actions to take upon panic
+ *
+ * @param error The type of error that occurred
+ */
 function createPanicError(error: Error | null): {
     body: HTMLDivElement;
     actions: PanicAction[];
@@ -247,14 +265,15 @@ function createPanicError(error: Error | null): {
             };
         }
 
-        if (error.cause.name === "CompileError" && message.includes("bad type")) {
+        if (
+            error.cause.name === "CompileError" &&
+            message.includes("bad type")
+        ) {
             // Self hosted: User has a browser without support for necessary WebAssembly extensions
             return {
                 body: textAsParagraphs("error-wasm-unsupported-browser"),
                 actions: [
-                    CommonActions.openWiki(
-                        "#web",
-                    ),
+                    CommonActions.openWiki("#web"),
                     CommonActions.ShowDetails,
                 ],
             };
@@ -275,7 +294,7 @@ function createPanicError(error: Error | null): {
 
         if (
             (message.includes("could not download wasm module") ||
-            message.includes("webassembly compilation aborted")) &&
+                message.includes("webassembly compilation aborted")) &&
             error.cause.name === "TypeError"
         ) {
             // Usually a transient network error or botched deployment
@@ -355,6 +374,13 @@ function createPanicError(error: Error | null): {
     };
 }
 
+/**
+ *
+ * @param container The container in which to append the panic screen
+ * @param error The error that occurred
+ * @param errorArray An array of info about the error
+ * @param swfUrl The URL of the root SWF
+ */
 export function showPanicScreen(
     container: HTMLElement,
     error: Error | null,
@@ -362,7 +388,7 @@ export function showPanicScreen(
     swfUrl: URL | undefined,
 ) {
     const errorText = errorArray.join("");
-    let { body, actions } = createPanicError(error);
+    const { body, actions } = createPanicError(error);
 
     const panicBody = createRef<HTMLDivElement>();
     const showDetails = () => {
