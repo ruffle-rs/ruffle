@@ -68,7 +68,7 @@ error-wasm-disabled-on-edge =
     이는 필요한 ".wasm" 파일을 브라우저에서 로드할 수 있도록 허용합니다.
     이 문제가 지속될 경우 다른 브라우저를 사용해야 할 수 있습니다.
 error-wasm-unsupported-browser =
-    사용 중인 브라우저에서 Ruffle이 필요한 웹 어셈블리 확장을 지원하지 않습니다. 
+    사용 중인 브라우저에서 Ruffle이 필요한 웹 어셈블리 확장을 지원하지 않습니다.
     지원되는 브라우저로 전환하세요. 지원되는 브라우저 목록은 위키에서 확인할 수 있습니다.
 error-javascript-conflict =
     Ruffle이 초기화를 시도하는 동안 중대한 문제가 발생했습니다.
