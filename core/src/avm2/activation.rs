@@ -879,7 +879,11 @@ impl<'a, 'gc> Activation<'a, 'gc> {
 
                 // Return ops
                 Op::ReturnValue { return_type } => {
-                    return self.return_value(*return_type);
+                    let coerce_result = self.return_value(*return_type);
+                    match coerce_result {
+                        Ok(value) => return Ok(value),
+                        Err(error) => Err(error),
+                    }
                 }
                 Op::ReturnVoid { return_type } => {
                     return Ok(self.return_void(*return_type));
