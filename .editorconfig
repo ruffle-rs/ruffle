@@ -4,3 +4,11 @@ root = true
 end_of_line = lf
 insert_final_newline = true
 trim_trailing_whitespace = true
+
+# Somehow the binary .rgba file is failing the final newline check.
+[*.rgba]
+insert_final_newline = unset
+
+# Files generated from Crowdin may include trailing whitespace.
+[*.ftl]
+trim_trailing_whitespace = unset
