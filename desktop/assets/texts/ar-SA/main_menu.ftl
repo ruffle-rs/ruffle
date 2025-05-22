@@ -9,21 +9,21 @@
 # This is because some languages may use different wording for one or the other, especially with things like capitalisation.
 
 file-menu = ملف
-file-menu-open-quick = إفتح...
-file-menu-open-advanced = إستعراض متقدم...
+file-menu-open-quick = أفتح...
+file-menu-open-advanced = أستعراض متقدم...
 file-menu-close = أغلِق
 file-menu-reload = أعِد التحميل
 file-menu-recents = الملفات الحديثة
 file-menu-recents-empty = لا توجد ملفات مفتوحة مؤخراً
 file-menu-preferences = الإعدادات...
-file-menu-exit = إخرج
+file-menu-exit = اخرج
 controls-menu = عناصر التحكم
 controls-menu-suspend = علِّق
 controls-menu-resume = استأنِف
 controls-menu-step-once = تقدم خطوة واحدة
 controls-menu-volume = التحكم بالصوت
 help-menu = التعليمات
-help-menu-join-discord = إنضم لنا على الدسكورد
+help-menu-join-discord = انضم لنا على الدس كورد
 help-menu-report-a-bug = أبلغ عن خطأ...
 help-menu-sponsor-development = راعي التطوير...
 help-menu-translate-ruffle = ترجم رفل...
@@ -35,7 +35,7 @@ debug-menu = أدوات التصحيح
 debug-menu-open-stage = أعرض معلومات المرحلة
 debug-menu-open-movie = أعرض الفيلم
 debug-menu-open-movie-list = أظهر الأفلام المعروفة
-debug-menu-open-domain-list = أظهر النطاقات
-debug-menu-search-display-objects = إبحث عن عناصر العرض...
+debug-menu-open-domain-list = أظهر النطافات
+debug-menu-search-display-objects = ابحث عن عناصر العرض...
 view-menu = أعرض
-view-menu-fullscreen = إملأ الشاشة
+view-menu-fullscreen = املأ الشاشة
