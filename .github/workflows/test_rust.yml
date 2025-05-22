@@ -79,13 +79,6 @@ jobs:
           sudo apt-get update
           sudo apt install -y libasound2-dev mesa-vulkan-drivers libudev-dev
 
-      # Needed after: https://github.com/rust-lang/rust/pull/124129
-      # See also: https://github.com/dtolnay/linkme/issues/94
-      # Additionally: https://lld.llvm.org/ELF/start-stop-gc
-      - name: Disable linker start-stop-gc
-        if: runner.os == 'Linux'
-        run: echo RUSTFLAGS=${RUSTFLAGS}\ --cfg=web_sys_unstable_apis\ -Clink-args=-znostart-stop-gc >> $GITHUB_ENV
-
       - name: Enable image tests
         if: runner.os != 'macOS'
         shell: bash
