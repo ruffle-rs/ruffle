@@ -369,6 +369,8 @@ parse_array() {
 
 seen_names=()
 
+cargo attribution
+
 while IFS= read -r line || [[ -n "$line" ]]; do
     stripped=$(echo "$line" | sed 's/^[[:space:]]*//')
 
@@ -406,5 +408,7 @@ echo "" >> "$OUTPUT_FILE"
 
 append_license_files "$LICENSE_DIR"
 append_license_files "$LICENSE_DIR/exceptions"
+
+rm -r attribution
 
 echo "✅ Markdown written to $OUTPUT_FILE"
