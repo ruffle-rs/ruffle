@@ -1,7 +1,7 @@
 #!/bin/bash
 
 TOML_FILE="attribution/dependencies.toml"
-OUTPUT_FILE="dependencies.md"
+OUTPUT_FILE="LICENSE.md"
 LICENSE_DIR="attribution/licenses"
 
 cat <<'EOF' > "$OUTPUT_FILE"
