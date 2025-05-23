@@ -293,39 +293,14 @@ impl ImageComparison {
 
         let mut is_alpha_different = false;
 
-        let difference_data: Vec<u8> = expected_image
-            .as_raw()
-            .chunks_exact(4)
-            .zip(actual_image.as_raw().chunks_exact(4))
-            .flat_map(|(cmp_chunk, data_chunk)| {
-                if cmp_chunk[3] != data_chunk[3] {
-                    is_alpha_different = true;
-                }
+        let difference_data: Vec<u8> = Self::calculate_difference_data(
+            &actual_image,
+            &expected_image,
+            &mut is_alpha_different,
+        );
 
-                [
-                    calc_difference(cmp_chunk[0], data_chunk[0]),
-                    calc_difference(cmp_chunk[1], data_chunk[1]),
-                    calc_difference(cmp_chunk[2], data_chunk[2]),
-                    calc_difference(cmp_chunk[3], data_chunk[3]),
-                ]
-            })
-            .collect();
-
-        let outliers: usize = difference_data
-            .chunks_exact(4)
-            .map(|colors| {
-                (colors[0] > self.tolerance) as usize
-                    + (colors[1] > self.tolerance) as usize
-                    + (colors[2] > self.tolerance) as usize
-                    + (colors[3] > self.tolerance) as usize
-            })
-            .sum();
-
-        let max_difference = difference_data
-            .chunks_exact(4)
-            .map(|colors| colors[0].max(colors[1]).max(colors[2]).max(colors[3]))
-            .max()
-            .unwrap();
+        let outliers = Self::calculate_outliers(&difference_data, self.tolerance);
+        let max_difference = Self::calculate_max_difference(&difference_data);
 
         if outliers > self.max_outliers {
             save_actual_image()?;
@@ -389,6 +364,50 @@ impl ImageComparison {
         }
 
         Ok(())
+    }
+
+    fn calculate_difference_data(
+        actual_image: &image::RgbaImage,
+        expected_image: &image::RgbaImage,
+        is_alpha_different: &mut bool,
+    ) -> Vec<u8> {
+        expected_image
+            .as_raw()
+            .chunks_exact(4)
+            .zip(actual_image.as_raw().chunks_exact(4))
+            .flat_map(|(cmp_chunk, data_chunk)| {
+                if cmp_chunk[3] != data_chunk[3] {
+                    *is_alpha_different = true;
+                }
+
+                [
+                    calc_difference(cmp_chunk[0], data_chunk[0]),
+                    calc_difference(cmp_chunk[1], data_chunk[1]),
+                    calc_difference(cmp_chunk[2], data_chunk[2]),
+                    calc_difference(cmp_chunk[3], data_chunk[3]),
+                ]
+            })
+            .collect()
+    }
+
+    fn calculate_outliers(difference_data: &[u8], tolerance: u8) -> usize {
+        difference_data
+            .chunks_exact(4)
+            .map(|colors| {
+                (colors[0] > tolerance) as usize
+                    + (colors[1] > tolerance) as usize
+                    + (colors[2] > tolerance) as usize
+                    + (colors[3] > tolerance) as usize
+            })
+            .sum()
+    }
+
+    fn calculate_max_difference(difference_data: &[u8]) -> u8 {
+        difference_data
+            .chunks_exact(4)
+            .map(|colors| colors[0].max(colors[1]).max(colors[2]).max(colors[3]))
+            .max()
+            .unwrap()
     }
 }
 
