@@ -11,6 +11,7 @@ use ruffle_core::{PlayerBuilder, PlayerMode, PlayerRuntime, ViewportDimensions};
 use ruffle_render::backend::RenderBackend;
 use ruffle_render::quality::StageQuality;
 use serde::Deserialize;
+use std::borrow::Cow;
 use std::collections::{HashMap, HashSet};
 use std::time::Duration;
 use vfs::VfsPath;
@@ -243,8 +244,9 @@ impl PlayerOptions {
 #[derive(Deserialize, Default, Clone, Debug)]
 #[serde(default, deny_unknown_fields)]
 pub struct ImageComparison {
-    tolerance: u8,
-    max_outliers: usize,
+    tolerance: Option<u8>,
+    max_outliers: Option<usize>,
+    checks: Vec<ImageComparisonCheck>,
     pub trigger: ImageTrigger,
 }
 
@@ -253,6 +255,25 @@ fn calc_difference(lhs: u8, rhs: u8) -> u8 {
 }
 
 impl ImageComparison {
+    fn checks(&self) -> Result<Cow<[ImageComparisonCheck]>> {
+        let has_simple_check = self.tolerance.is_some() || self.max_outliers.is_some();
+        if has_simple_check && !self.checks.is_empty() {
+            return Err(anyhow!(
+                "Both simple and advanced checks are defined. \
+                Either remove 'tolerance' & 'max_outliers', or move it to 'checks'."
+            ));
+        }
+
+        if !self.checks.is_empty() {
+            Ok(Cow::Borrowed(&self.checks))
+        } else {
+            Ok(Cow::Owned(vec![ImageComparisonCheck {
+                tolerance: self.tolerance.unwrap_or_default(),
+                max_outliers: self.max_outliers.unwrap_or_default(),
+            }]))
+        }
+    }
+
     pub fn test(
         &self,
         name: &str,
@@ -299,10 +320,25 @@ impl ImageComparison {
             &mut is_alpha_different,
         );
 
-        let outliers = Self::calculate_outliers(&difference_data, self.tolerance);
-        let max_difference = Self::calculate_max_difference(&difference_data);
+        let checks = self
+            .checks()
+            .map_err(|err| anyhow!("Image '{name}' failed: {err}"))?;
 
-        if outliers > self.max_outliers {
+        let mut any_check_executed = false;
+        for (i, check) in checks.iter().enumerate() {
+            let check_name = format!("Image '{name}' check {i}");
+            let outliers = Self::calculate_outliers(&difference_data, check.tolerance);
+            let max_outliers = check.max_outliers;
+            let max_difference = Self::calculate_max_difference(&difference_data);
+
+            any_check_executed = true;
+            if outliers <= max_outliers {
+                println!("{check_name} succeeded: {outliers} outliers found, max difference {max_difference}");
+                continue;
+            }
+
+            // The image failed a check :(
+
             save_actual_image()?;
 
             let mut difference_color = Vec::with_capacity(
@@ -353,14 +389,14 @@ impl ImageComparison {
             }
 
             return Err(anyhow!(
-                "Image '{}' failed: Number of outliers ({}) is bigger than allowed limit of {}. Max difference is {}",
-                name,
-                outliers,
-                self.max_outliers,
-                max_difference
+                "{check_name} failed: \
+                Number of outliers ({outliers}) is bigger than allowed limit of {max_outliers}. \
+                Max difference is {max_difference}",
             ));
-        } else {
-            println!("Image '{name}' succeeded: {outliers} outliers found, max difference {max_difference}");
+        }
+
+        if !any_check_executed {
+            return Err(anyhow!("Image '{name}' failed: No checks executed.",));
         }
 
         Ok(())
@@ -409,6 +445,13 @@ impl ImageComparison {
             .max()
             .unwrap()
     }
+}
+
+#[derive(Deserialize, Default, Clone, Debug)]
+#[serde(default, deny_unknown_fields)]
+struct ImageComparisonCheck {
+    tolerance: u8,
+    max_outliers: usize,
 }
 
 #[derive(Clone, Deserialize)]
