@@ -628,6 +628,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "cfg-expr"
+version = "0.20.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e34e221e91c7eb5e8315b5c9cf1a61670938c0626451f954a51693ed44b37f45"
+dependencies = [
+ "smallvec",
+]
+
+[[package]]
 name = "cfg-if"
 version = "1.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4437,6 +4446,7 @@ dependencies = [
  "anyhow",
  "approx",
  "async-channel",
+ "cfg-expr",
  "chrono",
  "image",
  "percent-encoding",

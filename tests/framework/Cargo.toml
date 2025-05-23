@@ -29,6 +29,7 @@ anyhow = { workspace = true }
 async-channel = { workspace = true }
 vfs = "0.12.1"
 percent-encoding = "2.3.1"
+cfg-expr = "0.20.0"
 
 [features]
 jpegxr = ["ruffle_core/jpegxr"]

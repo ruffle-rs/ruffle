@@ -270,6 +270,7 @@ impl ImageComparison {
             Ok(Cow::Owned(vec![ImageComparisonCheck {
                 tolerance: self.tolerance.unwrap_or_default(),
                 max_outliers: self.max_outliers.unwrap_or_default(),
+                filter: None,
             }]))
         }
     }
@@ -327,6 +328,16 @@ impl ImageComparison {
         let mut any_check_executed = false;
         for (i, check) in checks.iter().enumerate() {
             let check_name = format!("Image '{name}' check {i}");
+            let filter_passed = check
+                .filter
+                .as_ref()
+                .map(|f| f.evaluate())
+                .unwrap_or(Ok(true))?;
+            if !filter_passed {
+                println!("{check_name} skipped: Filtered out.");
+                continue;
+            }
+
             let outliers = Self::calculate_outliers(&difference_data, check.tolerance);
             let max_outliers = check.max_outliers;
             let max_difference = Self::calculate_max_difference(&difference_data);
@@ -452,6 +463,8 @@ impl ImageComparison {
 struct ImageComparisonCheck {
     tolerance: u8,
     max_outliers: usize,
+
+    filter: Option<TestExpression>,
 }
 
 #[derive(Clone, Deserialize)]
@@ -477,4 +490,47 @@ pub struct FontOptions {
     pub path: String,
     pub bold: bool,
     pub italic: bool,
+}
+
+/// Test expression is a cfg-like expression that evaluates to a boolean
+/// and can be used in test configuration.
+///
+/// Currently the following variables are supported:
+/// * `os` --- refers to [`std::env::consts::OS`],
+/// * `arch` --- refers to [`std::env::consts::ARCH`],
+/// * `family` --- refers to [`std::env::consts::FAMILY`].
+///
+/// Example expression:
+///
+/// ```text
+/// not(os = "aarch64")
+/// ```
+#[derive(Deserialize, Clone, Debug)]
+struct TestExpression(String);
+
+impl TestExpression {
+    fn evaluate(&self) -> Result<bool> {
+        let cfg_parsed = cfg_expr::Expression::parse(&self.0)
+            .map_err(|err| anyhow!("Cannot parse expression:\n{err}"))?;
+        let mut unknown_pred = None;
+        let cfg_matches = cfg_parsed.eval(|pred| match pred {
+            cfg_expr::Predicate::KeyValue { key, val } if *key == "os" => {
+                *val == std::env::consts::OS
+            }
+            cfg_expr::Predicate::KeyValue { key, val } if *key == "arch" => {
+                *val == std::env::consts::ARCH
+            }
+            cfg_expr::Predicate::KeyValue { key, val } if *key == "family" => {
+                *val == std::env::consts::FAMILY
+            }
+            _ => {
+                unknown_pred = Some(format!("{pred:?}"));
+                false
+            }
+        });
+        if let Some(pred) = unknown_pred {
+            return Err(anyhow!("Unknown predicate used in expression: {pred}"));
+        }
+        Ok(cfg_matches)
+    }
 }
