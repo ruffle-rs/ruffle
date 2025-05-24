@@ -3,6 +3,7 @@ use clap::Parser;
 use image::RgbaImage;
 use indicatif::{ProgressBar, ProgressStyle};
 use rayon::prelude::*;
+use ruffle_core::focus_tracker::{TDisplayObject};
 use ruffle_core::limits::ExecutionLimit;
 use ruffle_core::tag_utils::SwfMovie;
 use ruffle_core::PlayerBuilder;
@@ -64,6 +65,11 @@ struct Opt {
     #[clap(flatten)]
     size: SizeOpt,
 
+    /// Automatically resume the root MovieClip if it becomes stopped.
+    /// Allows the bypassing of Click to Play buttons.
+    #[clap(long)]
+    autoplay: bool,
+
     /// Type of graphics backend to use. Not all options may be supported by your current system.
     /// Default will attempt to pick the most supported graphics backend.
     #[clap(long, short, default_value = "default")]
@@ -87,6 +93,7 @@ fn take_screenshot(
     skipframes: u32,
     progress: &Option<ProgressBar>,
     size: SizeOpt,
+    autoplay: bool,
 ) -> Result<Vec<RgbaImage>> {
     let movie = SwfMovie::from_path(swf_path, None).map_err(|e| anyhow!(e.to_string()))?;
 
@@ -124,9 +131,31 @@ fn take_screenshot(
             ));
         }
 
-        player.lock().unwrap().preload(&mut ExecutionLimit::none());
+        {
+            let mut player_guard = player.lock().unwrap();
 
-        player.lock().unwrap().run_frame();
+            if autoplay {
+                // Check and resume if suspended
+                if !player_guard.is_playing() {
+                    player_guard.set_is_playing(true);
+                }
+
+                // Also resume the root MovieClip if stopped
+                player_guard.mutate_with_update_context(|ctx| {
+                    if let Some(root_clip) = ctx.stage.root_clip() {
+                        if let Some(movie_clip) = root_clip.as_movie_clip() {
+                            if !movie_clip.playing() {
+                                movie_clip.play();
+                            }
+                        }
+                    }
+                });
+            }
+            
+            player_guard.preload(&mut ExecutionLimit::none());
+            player_guard.run_frame();
+        }
+
         if i >= skipframes {
             let image = || {
                 player.lock().unwrap().render();
@@ -223,6 +252,7 @@ fn capture_single_swf(descriptors: Arc<Descriptors>, opt: &Opt) -> Result<()> {
         opt.skipframes,
         &progress,
         opt.size,
+        opt.autoplay,
     )?;
 
     if let Some(progress) = &progress {
@@ -316,6 +346,7 @@ fn capture_multiple_swfs(descriptors: Arc<Descriptors>, opt: &Opt) -> Result<()>
             opt.skipframes,
             &progress,
             opt.size,
+            opt.autoplay,
         ) {
             let mut relative_path = file
                 .path()
