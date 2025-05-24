@@ -3,7 +3,7 @@ use clap::Parser;
 use image::RgbaImage;
 use indicatif::{ProgressBar, ProgressStyle};
 use rayon::prelude::*;
-use ruffle_core::focus_tracker::{TDisplayObject};
+use ruffle_core::focus_tracker::TDisplayObject;
 use ruffle_core::limits::ExecutionLimit;
 use ruffle_core::tag_utils::SwfMovie;
 use ruffle_core::PlayerBuilder;
@@ -151,7 +151,7 @@ fn take_screenshot(
                     }
                 });
             }
-            
+
             player_guard.preload(&mut ExecutionLimit::none());
             player_guard.run_frame();
         }
