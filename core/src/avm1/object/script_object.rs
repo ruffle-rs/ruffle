@@ -804,10 +804,9 @@ impl<'gc> Object<'gc> {
             // TODO(moulins): can `super` point to another `super`?
             NativeObject::Super(zuper) => zuper.this().set_native(mc, native),
             NativeObject::None => self.0.write(mc).native = native,
-            _ => {
-                // Trying to construct the same object twice (e.g. with `super()`) does nothing.
-                assert!(std::mem::discriminant(&old_native) == std::mem::discriminant(&native));
-            }
+            // Trying to construct the same object twice (e.g. with `super()`) does nothing, even
+            // with different `NativeObject` kinds.
+            _ => (),
         }
     }
 
