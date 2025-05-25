@@ -8,7 +8,7 @@ use crate::avm1::{ObjectPtr, Value};
 use crate::display_object::{DisplayObject, TDisplayObject as _};
 use crate::ecma_conversions::f64_to_wrapping_i32;
 use crate::string::{AvmString, StringContext};
-use core::fmt;
+use core::{fmt, mem};
 use gc_arena::{Collect, GcCell, GcWeakCell, Mutation};
 use ruffle_macros::istr;
 
@@ -804,10 +804,14 @@ impl<'gc> Object<'gc> {
             // TODO(moulins): can `super` point to another `super`?
             NativeObject::Super(zuper) => zuper.this().set_native(mc, native),
             NativeObject::None => self.0.write(mc).native = native,
-            _ => {
-                // Trying to construct the same object twice (e.g. with `super()`) does nothing.
-                assert!(std::mem::discriminant(&old_native) == std::mem::discriminant(&native));
-            }
+            // Trying to construct the same object twice (e.g. with `super()`) does nothing.
+            _ if mem::discriminant(&old_native) == mem::discriminant(&native) => (),
+            // FIXME: in FP, some native classes (e.g. Sound) appear to be constructible over
+            // display objects; we don't support this properly.
+            // See the `avm1/register_class_with_sound` test for an example.
+            _ => tracing::warn!(
+                "AVM1: tried to call set_native on an-already constructed native Object"
+            ),
         }
     }
 
