@@ -164,6 +164,15 @@ impl<'gc> MovieLibrary<'gc> {
     /// Registers an export name for a given character ID.
     /// This character will then be instantiable from AVM1.
     pub fn register_export(&mut self, id: CharacterId, export_name: AvmString<'gc>) {
+        let character_exists = self.contains_character(id);
+        debug_assert!(character_exists);
+        if !character_exists {
+            tracing::error!(
+                "Tried to register export '{export_name}' for a non-existent character {id}"
+            );
+            return;
+        }
+
         self.export_characters.insert(export_name, id, false);
     }
 
@@ -190,7 +199,9 @@ impl<'gc> MovieLibrary<'gc> {
         name: AvmString<'gc>,
     ) -> Option<(CharacterId, &Character<'gc>)> {
         if let Some(id) = self.export_characters.get(name, false) {
-            return Some((*id, self.characters.get(id).unwrap()));
+            if let Some(character) = self.characters.get(id) {
+                return Some((*id, character));
+            }
         }
         None
     }
