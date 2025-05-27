@@ -1100,7 +1100,7 @@ pub async fn request_adapter_and_device(
         compatible_surface: surface,
         force_fallback_adapter: false,
     }).await
-        .ok_or_else(|| {
+        .map_err(|_e| {
             let names = get_backend_names(backend);
             if names.is_empty() {
                 "Ruffle requires hardware acceleration, but no compatible graphics device was found (no backend provided?)".to_string()
@@ -1147,15 +1147,13 @@ async fn request_device(
     }
 
     adapter
-        .request_device(
-            &wgpu::DeviceDescriptor {
-                label: None,
-                required_features: features,
-                required_limits: limits,
-                memory_hints: Default::default(),
-            },
-            trace_path,
-        )
+        .request_device(&wgpu::DeviceDescriptor {
+            label: None,
+            required_features: features,
+            required_limits: limits,
+            memory_hints: Default::default(),
+            trace: wgpu::Trace::Off,
+        })
         .await
 }
 
