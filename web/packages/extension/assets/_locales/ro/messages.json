@@ -26,6 +26,12 @@
     "settings_log_level_info": {
         "message": "Informații"
     },
+    "settings_log_level_debug": {
+        "message": "Depanare"
+    },
+    "settings_log_level_trace": {
+        "message": "Urmărire"
+    },
     "settings_max_execution_duration": {
         "message": "Durată maximă permisă de execuție pentru ActionScript (în secunde)"
     },
@@ -80,6 +86,9 @@
     "action_reload": {
         "message": "Reîncarcă fila pentru a aplica modificările"
     },
+    "open_player_page": {
+        "message": "Deschideți playerul SWF"
+    },
     "open_settings_page": {
         "message": "Deschide pagina cu setări"
     },
@@ -94,6 +103,9 @@
     },
     "settings_saved": {
         "message": "Setări salvate"
+    },
+    "onboarding_page": {
+        "message": "Pagina de integrare"
     },
     "permissions_grant": {
         "message": "Îi acord lui Ruffle permisiunea de a accesa datele mele pe toate site-urile"
