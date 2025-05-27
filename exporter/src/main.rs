@@ -407,10 +407,6 @@ fn capture_multiple_swfs(descriptors: Arc<Descriptors>, opt: &Opt) -> Result<()>
     Ok(())
 }
 
-fn trace_path(_opt: &Opt) -> Option<&Path> {
-    None
-}
-
 fn main() -> Result<()> {
     let opt: Opt = Opt::parse();
     let instance = wgpu::Instance::new(&wgpu::InstanceDescriptor {
@@ -422,7 +418,6 @@ fn main() -> Result<()> {
         &instance,
         None,
         opt.power.into(),
-        trace_path(&opt),
     ))
     .map_err(|e| anyhow!(e.to_string()))?;
 

@@ -64,7 +64,6 @@ impl GuiController {
             &instance,
             Some(&surface),
             preferences.graphics_power_preference().into(),
-            preferences.cli.trace_path(),
         ))
         .map_err(|e| anyhow!(e.to_string()))?;
         let adapter_info = adapter.get_info();
