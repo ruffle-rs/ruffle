@@ -207,11 +207,11 @@ impl BookmarksDialog {
                             let response = row.response();
                             response.context_menu(|ui| {
                                 if ui.button(text(locale, "start")).clicked() {
-                                    ui.close_menu();
+                                    ui.close();
                                     action = Some(BookmarkAction::Start(bookmark.url.clone()))
                                 }
                                 if ui.button(text(locale, "remove")).clicked() {
-                                    ui.close_menu();
+                                    ui.close();
                                     action = Some(BookmarkAction::Remove(index));
                                 }
                             });

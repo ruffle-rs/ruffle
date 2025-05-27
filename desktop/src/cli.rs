@@ -296,10 +296,6 @@ fn parse_gamepad_button(mapping: &str) -> Result<(GamepadButton, KeyCode), Error
 }
 
 impl Opt {
-    pub fn trace_path(&self) -> Option<&Path> {
-        None
-    }
-
     pub fn parameters(&self) -> impl '_ + Iterator<Item = (String, String)> {
         self.parameters.iter().map(|parameter| {
             let mut split = parameter.splitn(2, '=');
