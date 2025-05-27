@@ -509,7 +509,7 @@ impl<'a> NagaBuilder<'a> {
                             location: 0,
                             interpolation: None,
                             sampling: None,
-                            second_blend_source: false,
+                            blend_src: None,
                         }),
                         offset: 0,
                     }],
@@ -532,7 +532,7 @@ impl<'a> NagaBuilder<'a> {
                         location: 0,
                         interpolation: None,
                         sampling: None,
-                        second_blend_source: false,
+                        blend_src: None,
                     }),
                 });
             }
@@ -644,7 +644,7 @@ impl<'a> NagaBuilder<'a> {
                     location: index as u32,
                     interpolation: None,
                     sampling: None,
-                    second_blend_source: false,
+                    blend_src: None,
                 }),
             });
 

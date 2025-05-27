@@ -3,7 +3,6 @@ use crate::layouts::BindLayouts;
 use crate::shaders::Shaders;
 use crate::{MaskState, PosColorVertex, PosVertex};
 use enum_map::{enum_map, Enum, EnumMap};
-use std::collections::HashMap;
 use wgpu::{vertex_attr_array, BlendState, PrimitiveTopology};
 
 pub const VERTEX_BUFFERS_DESCRIPTION_POS: [wgpu::VertexBufferLayout; 1] =
@@ -199,7 +198,7 @@ impl Pipelines {
             })],
             &VERTEX_BUFFERS_DESCRIPTION_POS,
             msaa_sample_count,
-            &[("late_saturate".to_owned(), 1.0)].into(),
+            &[("late_saturate", 1.0)],
             PrimitiveTopology::TriangleList,
         ));
 
@@ -227,7 +226,7 @@ impl Pipelines {
             })],
             &VERTEX_BUFFERS_DESCRIPTION_POS,
             msaa_sample_count,
-            &Default::default(),
+            &[],
             PrimitiveTopology::TriangleList,
         ));
 
@@ -253,7 +252,7 @@ fn create_pipeline_descriptor<'a>(
     color_target_state: &'a [Option<wgpu::ColorTargetState>],
     vertex_buffer_layout: &'a [wgpu::VertexBufferLayout<'a>],
     msaa_sample_count: u32,
-    fragment_constants: &'a HashMap<String, f64>,
+    fragment_constants: &'a [(&str, f64)],
     primitive_topology: PrimitiveTopology,
 ) -> wgpu::RenderPipelineDescriptor<'a> {
     wgpu::RenderPipelineDescriptor {
@@ -339,7 +338,7 @@ fn create_shape_pipeline(
             })],
             vertex_buffers_layout,
             msaa_sample_count,
-            &Default::default(),
+            &[],
             primitive_topology,
         ))
     };
@@ -358,7 +357,7 @@ fn create_shape_pipeline(
             })],
             vertex_buffers_layout,
             msaa_sample_count,
-            &Default::default(),
+            &[],
             primitive_topology,
         )),
         |mask_state| match mask_state {

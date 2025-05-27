@@ -34,7 +34,6 @@ use ruffle_render::tessellator::ShapeTessellator;
 use std::any::Any;
 use std::borrow::Cow;
 use std::cell::Cell;
-use std::path::Path;
 use std::sync::Arc;
 use swf::Color;
 use tracing::instrument;
@@ -77,7 +76,6 @@ impl WgpuRenderBackend<SwapChainTarget> {
             &instance,
             Some(&surface),
             wgpu::PowerPreference::HighPerformance,
-            None,
         )
         .await?;
         let descriptors = Descriptors::new(instance, adapter, device, queue);
@@ -94,7 +92,6 @@ impl WgpuRenderBackend<SwapChainTarget> {
         size: (u32, u32),
         backend: wgpu::Backends,
         power_preference: wgpu::PowerPreference,
-        trace_path: Option<&Path>,
     ) -> Result<Self, Error> {
         if wgpu::Backends::SECONDARY.contains(backend) {
             tracing::warn!(
@@ -112,7 +109,6 @@ impl WgpuRenderBackend<SwapChainTarget> {
             &instance,
             Some(&surface),
             power_preference,
-            trace_path,
         ))?;
         let descriptors = Descriptors::new(instance, adapter, device, queue);
         let target = SwapChainTarget::new(surface, &descriptors.adapter, size, &descriptors.device);
@@ -141,7 +137,6 @@ impl WgpuRenderBackend<crate::target::TextureTarget> {
         size: (u32, u32),
         backend: wgpu::Backends,
         power_preference: wgpu::PowerPreference,
-        trace_path: Option<&Path>,
     ) -> Result<Self, Error> {
         if wgpu::Backends::SECONDARY.contains(backend) {
             tracing::warn!(
@@ -158,7 +153,6 @@ impl WgpuRenderBackend<crate::target::TextureTarget> {
             &instance,
             None,
             power_preference,
-            trace_path,
         ))?;
         let descriptors = Descriptors::new(instance, adapter, device, queue);
         let target = crate::target::TextureTarget::new(&descriptors.device, size)?;
@@ -1093,14 +1087,13 @@ pub async fn request_adapter_and_device(
     instance: &wgpu::Instance,
     surface: Option<&wgpu::Surface<'static>>,
     power_preference: wgpu::PowerPreference,
-    trace_path: Option<&Path>,
 ) -> Result<(wgpu::Adapter, wgpu::Device, wgpu::Queue), Error> {
     let adapter = instance.request_adapter(&wgpu::RequestAdapterOptions {
         power_preference,
         compatible_surface: surface,
         force_fallback_adapter: false,
     }).await
-        .ok_or_else(|| {
+        .map_err(|_e| {
             let names = get_backend_names(backend);
             if names.is_empty() {
                 "Ruffle requires hardware acceleration, but no compatible graphics device was found (no backend provided?)".to_string()
@@ -1111,14 +1104,13 @@ pub async fn request_adapter_and_device(
             }
         })?;
 
-    let (device, queue) = request_device(&adapter, trace_path).await?;
+    let (device, queue) = request_device(&adapter).await?;
     Ok((adapter, device, queue))
 }
 
 // We try to request the highest limits we can get away with
 async fn request_device(
     adapter: &wgpu::Adapter,
-    trace_path: Option<&Path>,
 ) -> Result<(wgpu::Device, wgpu::Queue), wgpu::RequestDeviceError> {
     // We start off with the lowest limits we actually need - basically GL-ES 3.0
     let mut limits = wgpu::Limits::downlevel_webgl2_defaults();
@@ -1147,15 +1139,13 @@ async fn request_device(
     }
 
     adapter
-        .request_device(
-            &wgpu::DeviceDescriptor {
-                label: None,
-                required_features: features,
-                required_limits: limits,
-                memory_hints: Default::default(),
-            },
-            trace_path,
-        )
+        .request_device(&wgpu::DeviceDescriptor {
+            label: None,
+            required_features: features,
+            required_limits: limits,
+            memory_hints: Default::default(),
+            trace: wgpu::Trace::Off,
+        })
         .await
 }
 
