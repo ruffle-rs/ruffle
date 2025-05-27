@@ -141,11 +141,13 @@ pub fn capture_image<R, F: FnOnce(&[u8], u32) -> R>(
     buffer_slice.map_async(wgpu::MapMode::Read, move |result| {
         sender.send(result).unwrap();
     });
-    device.poll(
-        index
-            .map(wgpu::Maintain::WaitForSubmissionIndex)
-            .unwrap_or(wgpu::Maintain::Wait),
-    );
+    device
+        .poll(
+            index
+                .map(wgpu::PollType::WaitForSubmissionIndex)
+                .unwrap_or(wgpu::PollType::Wait),
+        )
+        .expect("Device must not fail to poll");
     let _ = receiver.recv().expect("MPSC channel must not fail");
     let map = buffer_slice.get_mapped_range();
     let result = with_rgba(&map, dimensions.padded_bytes_per_row);

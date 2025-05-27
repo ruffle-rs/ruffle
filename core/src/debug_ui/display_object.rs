@@ -894,7 +894,7 @@ impl DisplayObjectWindow {
                                 } else {
                                     for scene in &scenes {
                                         if ui.button(scene.name.to_string()).clicked() {
-                                            ui.close_menu();
+                                            ui.close();
                                             self.scroll_to_frame = Some(usize::from(scene.start));
                                         }
                                     }
@@ -911,7 +911,7 @@ impl DisplayObjectWindow {
                                 } else {
                                     for (name, frame) in labels {
                                         if ui.button(name.to_string()).clicked() {
-                                            ui.close_menu();
+                                            ui.close();
                                             self.scroll_to_frame = Some(usize::from(frame));
                                         }
                                     }
