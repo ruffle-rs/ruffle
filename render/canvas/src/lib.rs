@@ -613,9 +613,14 @@ impl CommandHandler for WebCanvasRenderBackend {
         self.set_transform(&transform.matrix);
         self.set_color_filter(&transform);
         let bitmap = as_bitmap_data(&bitmap);
-        let _ = self
-            .context
-            .draw_image_with_html_canvas_element(&bitmap.canvas, 0.0, 0.0);
+        let bitmap_canvas = &bitmap.canvas;
+
+        if bitmap_canvas.width() > 0 && bitmap_canvas.height() > 0 {
+            let _ = self
+                .context
+                .draw_image_with_html_canvas_element(bitmap_canvas, 0.0, 0.0);
+        }
+
         self.clear_color_filter();
     }
 
