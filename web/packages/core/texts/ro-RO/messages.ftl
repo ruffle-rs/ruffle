@@ -10,14 +10,21 @@ update-ruffle = Actualizează Ruffle
 ruffle-demo = Demo web
 ruffle-desktop = Aplicație desktop
 ruffle-wiki = Vezi wikiul Ruffle
+enable-hardware-acceleration = Se pare că accelerarea hardware este dezactivată. Deși Ruffle ar putea funcționa, va fi foarte lent. Puteți afla cum să activați accelerarea hardware accesând linkul de mai jos:
 enable-hardware-acceleration-link = Întrebări frecvente - Accelerarea hardware Chrome
 view-error-details = Vezi detaliile erorii
 open-in-new-tab = Deschide într-o filă nouă
 click-to-unmute = Dă click pentru a dezmuți
 clipboard-message-title = Copierea și lipirea în Ruffle
+clipboard-message-description =
+    { $variant ->
+       *[unsupported] Browserul dvs. nu acceptă accesul complet către clipboard,
+        [access-denied] Accesul la clipboard a fost refuzat,
+    } dar puteți oricând să utilizați aceste scurtături:
 clipboard-message-copy = { " " } pentru copiere
 clipboard-message-cut = { " " } pentru decupare
 clipboard-message-paste = { " " } pentru lipire
+error-canvas-reload = Nu se poate reîncărca utilizând rendererul canvas atunci când acesta este deja folosit.
 error-file-protocol =
     Se pare că rulezi Ruffle pe protocolul „file:”.
     Acesta nu funcționează, deoarece browserele blochează funcționarea multor funcții din motive de securitate.
