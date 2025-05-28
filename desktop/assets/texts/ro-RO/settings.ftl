@@ -1,4 +1,5 @@
 network-settings = Setări de rețea
+cookie = Utilizarea Cookie
 proxy = Proxy
 tcp-connections = Conexiuni TCP
 tcp-connections-allow = Permite
