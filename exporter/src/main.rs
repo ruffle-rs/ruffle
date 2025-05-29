@@ -7,6 +7,7 @@ use ruffle_core::focus_tracker::TDisplayObject;
 use ruffle_core::limits::ExecutionLimit;
 use ruffle_core::tag_utils::SwfMovie;
 use ruffle_core::PlayerBuilder;
+use ruffle_core::Player;
 use ruffle_render_wgpu::backend::{request_adapter_and_device, WgpuRenderBackend};
 use ruffle_render_wgpu::clap::{GraphicsBackend, PowerPreference};
 use ruffle_render_wgpu::descriptors::Descriptors;
@@ -18,6 +19,7 @@ use std::io::{self, Write};
 use std::panic::catch_unwind;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
+use std::sync::Mutex;
 use walkdir::{DirEntry, WalkDir};
 
 #[derive(Parser, Debug, Copy, Clone)]
@@ -170,7 +172,7 @@ fn take_screenshot(
     Ok(result)
 }
 
-fn force_root_clip_play(player: &ruffle_core::Player) {
+fn force_root_clip_play(player: &Arc<Mutex<Player>>) {
     let mut player_guard = player.lock().unwrap();
 
     // Check and resume if suspended
