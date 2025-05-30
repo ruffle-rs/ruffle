@@ -1,4 +1,5 @@
 network-settings = Setări de rețea
+custom-base-url = URL de bază personalizat
 cookie = Utilizarea Cookie
 proxy = Proxy
 tcp-connections = Conexiuni TCP
