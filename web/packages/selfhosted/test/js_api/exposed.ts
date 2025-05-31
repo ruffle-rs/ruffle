@@ -16,7 +16,13 @@ describe("Exposed RufflePlayer methods/properties", () => {
         }, player);
         expect(keys).to.have.members([
             // FlashAPI
+            "CurrentFrame",
+            "GotoFrame",
+            "IsPlaying",
             "PercentLoaded",
+            "Play",
+            "StopPlay",
+            "TotalFrames",
             // LegacyRuffleAPI
             "onFSCommand",
             "config",
