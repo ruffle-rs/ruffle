@@ -18,10 +18,14 @@ package {
 
     public native function isXMLName(string:* = undefined):Boolean;
 
+    [Ruffle(FastCall)]
     public native function isFinite(value:Number = undefined):Boolean;
+    [Ruffle(FastCall)]
     public native function isNaN(value:Number = undefined):Boolean;
 
+    [Ruffle(FastCall)]
     public native function parseFloat(number:String = "NaN"):Number;
+    [Ruffle(FastCall)]
     public native function parseInt(string:String = "NaN", base:int = 0):Number;
 
     public native function trace(... rest):void;

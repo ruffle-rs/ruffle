@@ -8,7 +8,7 @@ use crate::avm2::error::{
     make_error_1065, make_error_1127, make_error_1506, make_null_or_undefined_error, type_error,
 };
 use crate::avm2::function::FunctionArgs;
-use crate::avm2::method::{Method, ResolvedParamConfig};
+use crate::avm2::method::{Method, NativeMethodImpl, ResolvedParamConfig};
 use crate::avm2::object::{
     ArrayObject, ByteArrayObject, ClassObject, FunctionObject, NamespaceObject, ScriptObject,
     XmlListObject,
@@ -698,6 +698,11 @@ impl<'a, 'gc> Activation<'a, 'gc> {
                     num_args,
                     push_return_value,
                 } => self.op_call_method(*index, *num_args, *push_return_value),
+                Op::CallNative {
+                    method,
+                    num_args,
+                    push_return_value,
+                } => self.op_call_native(*method, *num_args, *push_return_value),
                 Op::CallProperty {
                     multiname,
                     num_args,
@@ -1081,6 +1086,29 @@ impl<'a, 'gc> Activation<'a, 'gc> {
 
         // Ensure all arguments are popped
         self.avm2().truncate_stack(stack_base - 1);
+
+        if push_return_value {
+            self.push_stack(value);
+        }
+
+        Ok(())
+    }
+
+    fn op_call_native(
+        &mut self,
+        method: NativeMethodImpl,
+        num_args: u32,
+        push_return_value: bool,
+    ) -> Result<(), Error<'gc>> {
+        let mut args_buf = [Value::Undefined; 2];
+        let args = &mut args_buf[..num_args as usize];
+        for arg in args.iter_mut().rev() {
+            *arg = self.pop_stack();
+        }
+
+        let receiver = self.pop_stack().null_check(self, None)?;
+
+        let value = method(self, receiver, args).expect("FastCall methods should not return Err");
 
         if push_return_value {
             self.push_stack(value);

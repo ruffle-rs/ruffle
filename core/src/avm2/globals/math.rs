@@ -10,15 +10,12 @@ use rand::Rng;
 macro_rules! wrap_std {
     ($name:ident, $std:expr) => {
         pub fn $name<'gc>(
-            activation: &mut Activation<'_, 'gc>,
+            _activation: &mut Activation<'_, 'gc>,
             _this: Value<'gc>,
             args: &[Value<'gc>],
         ) -> Result<Value<'gc>, Error<'gc>> {
-            if let Some(input) = args.get(0) {
-                Ok($std(input.coerce_to_number(activation)?).into())
-            } else {
-                Ok(f64::NAN.into())
-            }
+            let input = args[0].as_f64();
+            Ok($std(input).into())
         }
     };
 }
@@ -60,33 +57,26 @@ pub fn math_allocator<'gc>(
 }
 
 pub fn round<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    _activation: &mut Activation<'_, 'gc>,
     _this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(x) = args.get(0) {
-        let x = x.coerce_to_number(activation)?;
-        // Note that Flash Math.round always rounds toward infinity,
-        // unlike Rust f32::round which rounds away from zero.
-        let ret = (x + 0.5).floor();
-        return Ok(ret.into());
-    }
-    Ok(f64::NAN.into())
+    let x = args[0].as_f64();
+
+    // Note that Flash Math.round always rounds toward infinity,
+    // unlike Rust f32::round which rounds away from zero.
+    let ret = (x + 0.5).floor();
+    Ok(ret.into())
 }
 
 pub fn atan2<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    _activation: &mut Activation<'_, 'gc>,
     _this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let y = args
-        .get(0)
-        .unwrap_or(&Value::Undefined)
-        .coerce_to_number(activation)?;
-    let x = args
-        .get(1)
-        .unwrap_or(&Value::Undefined)
-        .coerce_to_number(activation)?;
+    let y = args[0].as_f64();
+    let x = args[1].as_f64();
+
     Ok(f64::atan2(y, x).into())
 }
 
@@ -125,18 +115,13 @@ pub fn min<'gc>(
 }
 
 pub fn pow<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    _activation: &mut Activation<'_, 'gc>,
     _this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let n = args
-        .get(0)
-        .unwrap_or(&Value::Undefined)
-        .coerce_to_number(activation)?;
-    let p = args
-        .get(1)
-        .unwrap_or(&Value::Undefined)
-        .coerce_to_number(activation)?;
+    let n = args[0].as_f64();
+    let p = args[1].as_f64();
+
     Ok(f64::powf(n, p).into())
 }
 

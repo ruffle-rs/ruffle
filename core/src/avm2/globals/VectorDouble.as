@@ -145,8 +145,10 @@ package __AS3__.vec {
 
         public native function set fixed(isFixed:Boolean):*;
 
+        [Ruffle(FastCall)]
         public native function get length():uint;
 
+        [Ruffle(FastCall)]
         public native function set length(length:uint):*;
 
         AS3 native function concat(... rest):Vector$double;

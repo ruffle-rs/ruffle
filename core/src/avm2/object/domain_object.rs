@@ -60,28 +60,16 @@ impl<'gc> DomainObject<'gc> {
     ///
     /// This function will call instance initializers. You do not need to do so
     /// yourself.
-    pub fn from_domain(
-        activation: &mut Activation<'_, 'gc>,
-        domain: Domain<'gc>,
-    ) -> Result<Object<'gc>, Error<'gc>> {
+    pub fn from_domain(activation: &mut Activation<'_, 'gc>, domain: Domain<'gc>) -> Self {
         let class = activation.avm2().classes().application_domain;
         let base = ScriptObjectData::new(class);
-        let this: Object<'gc> = DomainObject(Gc::new(
+        DomainObject(Gc::new(
             activation.gc(),
             DomainObjectData {
                 base,
                 domain: Lock::new(domain),
             },
         ))
-        .into();
-
-        // Note - we do *not* call the normal constructor, since that
-        // creates a new domain using the system domain as a parent.
-        class
-            .superclass_object()
-            .unwrap()
-            .call_init(this.into(), &[], activation)?;
-        Ok(this)
     }
 }
 
