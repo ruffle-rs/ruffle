@@ -2080,29 +2080,63 @@ export class InnerPlayer {
     /**
      * Show a dismissible message in front of the player.
      *
-     * @param message The message shown to the user.
+     * @param message The message shown to the user, which can be a string or element.
      */
-    public displayMessage(message: string): void {
-        const div = document.createElement("div");
-        div.id = "message-overlay";
-        const messageDiv = document.createElement("div");
-        messageDiv.className = "message";
-        const messageP = document.createElement("p");
-        messageP.textContent = message;
-        messageDiv.appendChild(messageP);
-        const buttonDiv = document.createElement("div");
-        const continueButton = document.createElement("button");
-        continueButton.id = "continue-btn";
-        continueButton.textContent = text("continue");
-        buttonDiv.appendChild(continueButton);
-        messageDiv.appendChild(buttonDiv);
-        div.appendChild(messageDiv);
-        this.container.prepend(div);
+    private displayMessageOrElement(message: string | HTMLDivElement): void {
+        const messageOverlay = (
+            <div id="message-overlay">
+                <div class="message">
+                    {message instanceof HTMLDivElement ? (
+                        message
+                    ) : (
+                        <p>{message}</p>
+                    )}
+                    <div>
+                        <button id="continue-btn">{text("continue")}</button>
+                    </div>
+                </div>
+            </div>
+        );
+
+        this.container.prepend(messageOverlay);
+
         (
             this.container.querySelector("#continue-btn") as HTMLButtonElement
         ).onclick = () => {
-            div.parentNode!.removeChild(div);
+            messageOverlay.parentNode!.removeChild(messageOverlay);
         };
+    }
+
+    /**
+     * Show a dismissible message in front of the player.
+     *
+     * @param message The message shown to the user.
+     */
+    public displayMessage(message: string): void {
+        this.displayMessageOrElement(message);
+    }
+
+    /**
+     * Inform the user that the browser restored the file from the back/forward cache.
+     */
+    protected displayRestoredFromBfcacheMessage(): void {
+        // Do not display the message if another one is already shown.
+        if (this.container.querySelector("#message-overlay") !== null) {
+            return;
+        }
+        const message = textAsParagraphs("message-restored-from-bfcache");
+        this.displayMessageOrElement(message);
+
+        // Remove the message element if it doesn't fit in the container, to avoid potential blocking situations.
+        const messageOverlay = this.container.querySelector(
+            "#message-overlay",
+        )! as HTMLElement;
+        if (
+            messageOverlay.scrollWidth > messageOverlay.offsetWidth ||
+            messageOverlay.scrollHeight > messageOverlay.offsetHeight
+        ) {
+            messageOverlay.parentNode!.removeChild(messageOverlay);
+        }
     }
 
     /**
