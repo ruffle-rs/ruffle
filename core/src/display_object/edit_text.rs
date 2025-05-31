@@ -1267,6 +1267,7 @@ impl<'gc> EditText<'gc> {
                             context.transform_stack.push(&Transform {
                                 matrix: transform.matrix,
                                 color_transform: ColorTransform::IDENTITY,
+                                perspective_projection: transform.perspective_projection,
                             });
                         } else {
                             context.transform_stack.push(transform);
