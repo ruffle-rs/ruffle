@@ -1,5 +1,5 @@
-use crate::backend::navigator::OwnedFuture;
 pub use crate::loader::Error as DialogLoaderError;
+use crate::{backend::navigator::OwnedFuture, font::FontQuery};
 use chrono::{DateTime, Utc};
 use fluent_templates::loader::langid;
 pub use fluent_templates::LanguageIdentifier;
@@ -101,13 +101,13 @@ pub trait UiBackend: Any {
     /// You may call `register` any amount of times with any amount of found device fonts.
     /// If you do not call `register` with any fonts that match the request,
     /// then the font will simply be marked as not found - this may or may not fall back to another font.
-    fn load_device_font(
+    fn load_device_font(&self, query: &FontQuery, register: &mut dyn FnMut(FontDefinition));
+
+    fn sort_device_fonts(
         &self,
-        name: &str,
-        is_bold: bool,
-        is_italic: bool,
+        query: &FontQuery,
         register: &mut dyn FnMut(FontDefinition),
-    );
+    ) -> Vec<FontQuery>;
 
     /// Displays a file selection dialog, returning None if the dialog cannot be displayed
     /// (e.g because it is already open)
@@ -183,13 +183,14 @@ impl UiBackend for NullUiBackend {
 
     fn display_unsupported_video(&self, _url: Url) {}
 
-    fn load_device_font(
+    fn load_device_font(&self, _query: &FontQuery, _register: &mut dyn FnMut(FontDefinition)) {}
+
+    fn sort_device_fonts(
         &self,
-        _name: &str,
-        _is_bold: bool,
-        _is_italic: bool,
+        _query: &FontQuery,
         _register: &mut dyn FnMut(FontDefinition),
-    ) {
+    ) -> Vec<FontQuery> {
+        Vec::new()
     }
 
     fn open_virtual_keyboard(&self) {}
