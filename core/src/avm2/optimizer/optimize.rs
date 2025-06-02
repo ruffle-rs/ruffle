@@ -1434,11 +1434,6 @@ fn abstract_interpret_ops<'gc>(
                                     .get_full_method(disp_id)
                                     .expect("Method should exist");
                                 let ClassBoundMethod { method, .. } = full_method;
-                                if !method.is_info_resolved() {
-                                    method.resolve_info(activation)?;
-                                }
-
-                                let declared_params = method.resolved_param_config();
 
                                 let mut result_op = Op::CallMethod {
                                     num_args: 1,
@@ -1448,26 +1443,14 @@ fn abstract_interpret_ops<'gc>(
 
                                 // We can further optimize calling FastCall setters into a
                                 // static native method call
-                                if let MethodKind::Native {
-                                    native_method,
-                                    fast_call: true,
-                                } = method.method_kind()
-                                {
-                                    if stack_value.class.is_some_and(|c| c.is_final()) {
-                                        if declared_params.len() == 1
-                                            && set_value.matches_type(
-                                                activation,
-                                                declared_params[0].param_type,
-                                            )
-                                        {
-                                            result_op = Op::CallNative {
-                                                method: *native_method,
-                                                num_args: 1,
-                                                push_return_value: false,
-                                            };
-                                        }
-                                    }
-                                }
+                                maybe_optimize_static_call(
+                                    activation,
+                                    &mut result_op,
+                                    method,
+                                    stack_value,
+                                    &[set_value], // passed args
+                                    false,        // push_return_value
+                                )?;
 
                                 optimize_op_to!(result_op);
                             }
@@ -1504,11 +1487,6 @@ fn abstract_interpret_ops<'gc>(
                                     .get_full_method(disp_id)
                                     .expect("Method should exist");
                                 let ClassBoundMethod { method, .. } = full_method;
-                                if !method.is_info_resolved() {
-                                    method.resolve_info(activation)?;
-                                }
-
-                                let declared_params = method.resolved_param_config();
 
                                 let mut result_op = Op::CallMethod {
                                     num_args: 1,
@@ -1518,26 +1496,14 @@ fn abstract_interpret_ops<'gc>(
 
                                 // We can further optimize calling FastCall setters into a
                                 // static native method call
-                                if let MethodKind::Native {
-                                    native_method,
-                                    fast_call: true,
-                                } = method.method_kind()
-                                {
-                                    if stack_value.class.is_some_and(|c| c.is_final()) {
-                                        if declared_params.len() == 1
-                                            && set_value.matches_type(
-                                                activation,
-                                                declared_params[0].param_type,
-                                            )
-                                        {
-                                            result_op = Op::CallNative {
-                                                method: *native_method,
-                                                num_args: 1,
-                                                push_return_value: false,
-                                            };
-                                        }
-                                    }
-                                }
+                                maybe_optimize_static_call(
+                                    activation,
+                                    &mut result_op,
+                                    method,
+                                    stack_value,
+                                    &[set_value], // passed args
+                                    false,        // push_return_value
+                                )?;
 
                                 optimize_op_to!(result_op);
                             }
@@ -1687,7 +1653,7 @@ fn abstract_interpret_ops<'gc>(
                         types,
                         multiname,
                         stack_value,
-                        args,
+                        &args,
                         true,
                     )?;
 
@@ -1726,7 +1692,7 @@ fn abstract_interpret_ops<'gc>(
                         types,
                         multiname,
                         stack_value,
-                        args,
+                        &args,
                         false,
                     )?;
 
@@ -1927,6 +1893,51 @@ fn abstract_interpret_ops<'gc>(
     Ok(())
 }
 
+// Optimize a dynamic-dispatch call (`callmethod`) to a static-dispatch call
+// (`callnative`, etc) if possible.
+fn maybe_optimize_static_call<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    result_op: &mut Op<'gc>,
+    speculated_method: Method<'gc>,
+    receiver: OptValue<'gc>,
+    passed_args: &[OptValue<'gc>],
+    push_return_value: bool,
+) -> Result<(), Error<'gc>> {
+    if !speculated_method.is_info_resolved() {
+        speculated_method.resolve_info(activation)?;
+    }
+
+    let declared_params = speculated_method.resolved_param_config();
+
+    if receiver.class.is_some_and(|c| c.is_final()) {
+        if let MethodKind::Native {
+            native_method,
+            fast_call: true,
+        } = speculated_method.method_kind()
+        {
+            if declared_params.len() == passed_args.len() {
+                let mut all_matches = true;
+                for (i, passed_arg) in passed_args.iter().enumerate() {
+                    let declared_param = &declared_params[i];
+                    if !passed_arg.matches_type(activation, declared_param.param_type) {
+                        all_matches = false;
+                    }
+                }
+
+                if all_matches {
+                    *result_op = Op::CallNative {
+                        method: *native_method,
+                        num_args: passed_args.len() as u32,
+                        push_return_value,
+                    };
+                }
+            }
+        }
+    }
+
+    Ok(())
+}
+
 // Optimize a `getproperty` of the given `multiname` on a value `stack_value`.
 // If optimization succeeds, the optimized version of the op and the value to
 // push to the stack will be returned; if it fails, the function returns `None`.
@@ -1955,12 +1966,6 @@ fn optimize_get_property<'gc>(
                     .get_full_method(disp_id)
                     .expect("Method should exist");
                 let ClassBoundMethod { method, .. } = full_method;
-                if !method.is_info_resolved() {
-                    method.resolve_info(activation)?;
-                }
-
-                let declared_params = method.resolved_param_config();
-                let return_type = method.resolved_return_type();
 
                 let mut result_op = Op::CallMethod {
                     num_args: 0,
@@ -1970,22 +1975,16 @@ fn optimize_get_property<'gc>(
 
                 // We can further optimize calling FastCall getters into a
                 // static native method call
-                if let MethodKind::Native {
-                    native_method,
-                    fast_call: true,
-                } = method.method_kind()
-                {
-                    if stack_value.class.is_some_and(|c| c.is_final()) {
-                        if declared_params.is_empty() {
-                            result_op = Op::CallNative {
-                                method: *native_method,
-                                num_args: 0,
-                                push_return_value: true,
-                            };
-                        }
-                    }
-                }
+                maybe_optimize_static_call(
+                    activation,
+                    &mut result_op,
+                    method,
+                    stack_value,
+                    &[],  // passed args
+                    true, // push_return_value
+                )?;
 
+                let return_type = method.resolved_return_type();
                 return Ok(Some((result_op, return_type)));
             }
             _ => {}
@@ -2004,7 +2003,7 @@ fn optimize_call_property<'gc>(
     types: &Types<'gc>,
     multiname: Gc<'gc, Multiname<'gc>>,
     stack_value: OptValue<'gc>,
-    passed_args: Vec<OptValue<'gc>>,
+    passed_args: &[OptValue<'gc>],
     push_return_value: bool,
 ) -> Result<Option<(Op<'gc>, Option<Class<'gc>>)>, Error<'gc>> {
     // Makes the code less readable
@@ -2019,12 +2018,6 @@ fn optimize_call_property<'gc>(
                     .get_full_method(disp_id)
                     .expect("Method should exist");
                 let ClassBoundMethod { method, .. } = full_method;
-                if !method.is_info_resolved() {
-                    method.resolve_info(activation)?;
-                }
-
-                let declared_params = method.resolved_param_config();
-                let return_type = method.resolved_return_type();
 
                 let mut result_op = Op::CallMethod {
                     num_args,
@@ -2036,32 +2029,16 @@ fn optimize_call_property<'gc>(
                 // and the provided arguments match the method's signature, we
                 // can further optimize the call to a static native method call
                 // and skip the argument coercion.
-                if let MethodKind::Native {
-                    native_method,
-                    fast_call: true,
-                } = method.method_kind()
-                {
-                    if stack_value.class.is_some_and(|c| c.is_final()) {
-                        if declared_params.len() == passed_args.len() {
-                            let mut all_matches = true;
-                            for (i, passed_arg) in passed_args.iter().enumerate() {
-                                let declared_param = &declared_params[i];
-                                if !passed_arg.matches_type(activation, declared_param.param_type) {
-                                    all_matches = false;
-                                }
-                            }
+                maybe_optimize_static_call(
+                    activation,
+                    &mut result_op,
+                    method,
+                    stack_value,
+                    passed_args,
+                    push_return_value,
+                )?;
 
-                            if all_matches {
-                                result_op = Op::CallNative {
-                                    method: *native_method,
-                                    num_args,
-                                    push_return_value,
-                                };
-                            }
-                        }
-                    }
-                }
-
+                let return_type = method.resolved_return_type();
                 return Ok(Some((result_op, return_type)));
             }
             Some(Property::Slot { slot_id }) | Some(Property::ConstSlot { slot_id }) => {
