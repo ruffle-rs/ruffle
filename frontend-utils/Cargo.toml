@@ -26,7 +26,7 @@ async-channel = { workspace = true }
 slotmap = { workspace = true }
 async-io = "2.4.1"
 futures-lite = "2.6.0"
-reqwest = { version = "0.12.12", default-features = false, features = [
+reqwest = { version = "0.12.19", default-features = false, features = [
     "rustls-tls",
     "cookies",
     "charset",
@@ -40,4 +40,4 @@ bytemuck = { workspace = true, optional = true }
 [dev-dependencies]
 tempfile = "3"
 tokio = { workspace = true, features = ["macros", "rt"] }
-macro_rules_attribute = "0.2.0"
+macro_rules_attribute = "0.2.2"
