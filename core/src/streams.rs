@@ -550,11 +550,9 @@ impl<'gc> NetStream<'gc> {
             source.offset.set(offset);
         }
 
-        if matches!(write.stream_type, Some(NetStreamType::F4v { .. })) {
+        if matches!(self.stream_type.get(), Some(NetStreamType::F4v { .. })) {
             todo!("Seeking in F4V streams");
         }
-
-        drop(write);
 
         if let Some(AvmObject::Avm2(_)) = self.0.avm_object.get() {
             self.trigger_status_event(
@@ -861,11 +859,11 @@ impl<'gc> NetStream<'gc> {
             | Some([_, _, _, _, b'm', b'o', b'o', b'v'])
             | Some([_, _, _, _, b'm', b'd', b'a', b't']) => {
                 println!("MP4 detected");
-                write.stream_type = Some(NetStreamType::F4v {
+                self.stream_type.set(Some(NetStreamType::F4v {
                     context: None,
                     video_stream: None,
                     frame_id: None,
-                });
+                }));
                 true
             }
             Some(magic) => {
