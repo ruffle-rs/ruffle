@@ -22,8 +22,7 @@ describe("URL Rewrite Rules", () => {
     it("rewrites URL of other1 to a relative one", async () => {
         const player = await browser.$("#objectElement");
 
-        await browser.execute((element) => {
-            const el = element as unknown as HTMLElement;
+        await browser.execute((el) => {
             el.focus();
             el.dispatchEvent(
                 new KeyboardEvent("keydown", {
@@ -43,8 +42,7 @@ describe("URL Rewrite Rules", () => {
     it("rewrites URL of other1 to an absolute one", async () => {
         const player = await browser.$("#objectElement");
 
-        await browser.execute((element) => {
-            const el = element as unknown as HTMLElement;
+        await browser.execute((el) => {
             el.focus();
             el.dispatchEvent(
                 new KeyboardEvent("keydown", {
@@ -64,8 +62,7 @@ describe("URL Rewrite Rules", () => {
     it("does not rewrite URL of other2", async () => {
         const player = await browser.$("#objectElement");
 
-        await browser.execute((element) => {
-            const el = element as unknown as HTMLElement;
+        await browser.execute((el) => {
             el.focus();
             el.dispatchEvent(
                 new KeyboardEvent("keydown", {
