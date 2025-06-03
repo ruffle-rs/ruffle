@@ -50,6 +50,9 @@ declare global {
         // Going to be redefined as part of a test
         redefinedMethod: () => string;
 
+        // isPlaying method defined by EI
+        isPlaying: () => string;
+
         ruffle<V extends keyof Player.APIVersions = 1>(
             version?: V,
         ): Player.APIVersions[V];
@@ -336,7 +339,7 @@ log called with 1 argument
         );
 
         const isPlayingResult = await browser.execute((player) => {
-            return (player as unknown as any).isPlaying();
+            return player.isPlaying();
         }, player);
         expect(isPlayingResult).to.eql("isPlaying from EI");
 
@@ -358,7 +361,7 @@ log called with 1 argument
         );
 
         let methodResult = await browser.execute((player) => {
-            return (player as unknown as any).redefinedMethod();
+            return player.redefinedMethod();
         }, player);
         expect(methodResult).to.eql("first definition");
 
@@ -376,7 +379,7 @@ log called with 1 argument
         );
 
         methodResult = await browser.execute((player) => {
-            return (player as unknown as any).redefinedMethod();
+            return player.redefinedMethod();
         }, player);
         expect(methodResult).to.eql("second definition");
 
