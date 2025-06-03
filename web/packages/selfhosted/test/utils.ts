@@ -213,15 +213,15 @@ export async function closeAllModals(
     browser: WebdriverIO.Browser,
     player: ChainablePromiseElement,
 ) {
+    const modals = await player.$$(".modal:not(.hidden)");
     await browser.execute(
-        (modals) => {
-            for (const modal of modals) {
-                const m = modal as unknown as HTMLElement;
+        ({ modals }) => {
+            for (const m of modals) {
                 const cl = m.querySelector(".close-modal")! as HTMLElement;
                 cl.click();
             }
         },
-        await player.$$(".modal:not(.hidden)"),
+        { modals },
     );
 }
 

@@ -23,39 +23,36 @@ interface RuffleTest {
 }
 
 declare global {
-    // eslint-disable-next-line @typescript-eslint/no-namespace
-    namespace WebdriverIO {
-        interface Element {
-            // ExternalInterface makes whatever functions exist "magically" - so let's just declare here for type's sake
+    interface HTMLElement {
+        // ExternalInterface makes whatever functions exist "magically" - so let's just declare here for type's sake
 
-            // Logs all arguments to trace
-            log: (...args: unknown[]) => void;
+        // Logs all arguments to trace
+        log: (...args: unknown[]) => void;
 
-            // Calls `ExternalInterface.call(name, ...args)` after a delay (to avoid reentrancy)
-            callMethodWithDelay: (name: string, ...args: unknown[]) => void;
+        // Calls `ExternalInterface.call(name, ...args)` after a delay (to avoid reentrancy)
+        callMethodWithDelay: (name: string, ...args: unknown[]) => void;
 
-            // Calls `ExternalInterface.call(name, ...args)` immediately (causing reentrancy)
-            callMethodImmediately: (name: string, ...args: unknown[]) => void;
+        // Calls `ExternalInterface.call(name, ...args)` immediately (causing reentrancy)
+        callMethodImmediately: (name: string, ...args: unknown[]) => void;
 
-            // Returns `value`
-            returnAValue: <T>(value: T) => T;
+        // Returns `value`
+        returnAValue: <T>(value: T) => T;
 
-            // Should return an exception...
-            throwAnException: () => void;
+        // Should return an exception...
+        throwAnException: () => void;
 
-            // Calls `ExternalInterface.marshallExceptions = value`
-            setMarshallExceptions: (value: boolean) => void;
+        // Calls `ExternalInterface.marshallExceptions = value`
+        setMarshallExceptions: (value: boolean) => void;
 
-            // Calls `ExternalInterface.addCallback(name, function() { return returnValue; })`
-            addAnotherCallback: (name: string, returnValue: unknown) => void;
+        // Calls `ExternalInterface.addCallback(name, function() { return returnValue; })`
+        addAnotherCallback: (name: string, returnValue: unknown) => void;
 
-            // Going to be redefined as part of a test
-            redefinedMethod: () => string;
+        // Going to be redefined as part of a test
+        redefinedMethod: () => string;
 
-            ruffle<V extends keyof Player.APIVersions = 1>(
-                version?: V,
-            ): Player.APIVersions[V];
-        }
+        ruffle<V extends keyof Player.APIVersions = 1>(
+            version?: V,
+        ): Player.APIVersions[V];
     }
 
     interface Window {
@@ -102,11 +99,9 @@ ExternalInterface.objectID: "flash_name"
                     return called;
                 },
                 log: function (...args: any[]) {
-                    (
-                        document.getElementById(
-                            "flash_id",
-                        ) as unknown as WebdriverIO.Element
-                    ).log(...args);
+                    (document.getElementById("flash_id") as HTMLElement).log(
+                        ...args,
+                    );
                 },
             };
         });
