@@ -15,12 +15,10 @@ async function setDirection(
     direction: string,
 ) {
     await browser.execute(
-        (element, direction) => {
-            const el = element as unknown as HTMLElement;
-            el.dir = direction;
+        ({ el, dir }: { el: HTMLElement; dir: string }) => {
+            el.dir = dir;
         },
-        element,
-        direction,
+        { el: element, dir: direction },
     );
 }
 
