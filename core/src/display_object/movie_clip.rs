@@ -185,13 +185,13 @@ pub struct MovieClipData<'gc> {
 
     /// List of tags queued up for the current frame.
     #[collect(require_static)]
-    queued_tags: HashMap<Depth, QueuedTagList>,
+    queued_tags: RefCell<HashMap<Depth, QueuedTagList>>,
 
     /// Attached audio (AVM1)
     attached_audio: Option<NetStream<'gc>>,
 
     // If this movie was loaded from ImportAssets(2), this will be the parent movie.
-    importer_movie: Option<Arc<SwfMovie>>,
+    importer_movie: RefCell<Option<Arc<SwfMovie>>>,
 
     avm1_text_field_bindings: Vec<Avm1TextFieldBinding<'gc>>,
 }
@@ -221,9 +221,9 @@ impl<'gc> MovieClipData<'gc> {
             queued_goto_frame: Cell::new(None),
             drop_target: None,
             hit_area: None,
-            queued_tags: HashMap::new(),
+            queued_tags: RefCell::new(HashMap::new()),
             attached_audio: None,
-            importer_movie: None,
+            importer_movie: RefCell::new(None),
             avm1_text_field_bindings: Vec::new(),
         }
     }
@@ -279,9 +279,9 @@ impl<'gc> MovieClip<'gc> {
         let loader_info = None;
         let shared = MovieClipShared::with_data(0, movie.into(), num_frames, loader_info);
 
-        let mut data = MovieClipData::new(shared, context.gc());
+        let data = MovieClipData::new(shared, context.gc());
         data.flags.set(MovieClipFlags::PLAYING);
-        data.importer_movie = Some(parent);
+        data.importer_movie.replace(Some(parent));
         MovieClip(GcCell::new(context.gc(), data))
     }
 
@@ -466,9 +466,11 @@ impl<'gc> MovieClip<'gc> {
                 TagCode::DefineText2 => shared.define_text(context, reader, 2),
                 TagCode::DoInitAction => self.do_init_action(context, reader, tag_len),
                 TagCode::DefineSceneAndFrameLabelData => shared.scene_and_frame_labels(reader),
-                TagCode::ExportAssets => {
-                    shared.export_assets(context, reader, self.0.read().importer_movie.as_ref())
-                }
+                TagCode::ExportAssets => shared.export_assets(
+                    context,
+                    reader,
+                    self.0.read().importer_movie.borrow().as_ref(),
+                ),
                 TagCode::FrameLabel => shared.frame_label(reader),
                 TagCode::JpegTables => shared.jpeg_tables(context, reader),
                 TagCode::ShowFrame => shared.show_frame(reader, tag_len),
@@ -503,7 +505,7 @@ impl<'gc> MovieClip<'gc> {
         };
         let is_finished = end_tag_found || result.is_err() || !result.unwrap_or_default();
 
-        if let Some(importer_movie) = &self.0.read().importer_movie {
+        if let Some(importer_movie) = self.0.read().importer_movie.borrow().as_ref() {
             shared.import_exports_of_importer(context, importer_movie);
         }
 
@@ -1180,22 +1182,22 @@ impl<'gc> MovieClip<'gc> {
                     self.remove_object(context, reader, 2)
                 }
                 TagCode::PlaceObject if run_display_actions && is_action_script_3 => {
-                    self.queue_place_object(context, reader, 1)
+                    self.queue_place_object(reader, 1)
                 }
                 TagCode::PlaceObject2 if run_display_actions && is_action_script_3 => {
-                    self.queue_place_object(context, reader, 2)
+                    self.queue_place_object(reader, 2)
                 }
                 TagCode::PlaceObject3 if run_display_actions && is_action_script_3 => {
-                    self.queue_place_object(context, reader, 3)
+                    self.queue_place_object(reader, 3)
                 }
                 TagCode::PlaceObject4 if run_display_actions && is_action_script_3 => {
-                    self.queue_place_object(context, reader, 4)
+                    self.queue_place_object(reader, 4)
                 }
                 TagCode::RemoveObject if run_display_actions && is_action_script_3 => {
-                    self.queue_remove_object(context, reader, 1)
+                    self.queue_remove_object(reader, 1)
                 }
                 TagCode::RemoveObject2 if run_display_actions && is_action_script_3 => {
-                    self.queue_remove_object(context, reader, 2)
+                    self.queue_remove_object(reader, 2)
                 }
                 TagCode::SetBackgroundColor => self.set_background_color(context, reader),
                 TagCode::StartSound if run_sounds => self.start_sound_1(context, reader),
@@ -1215,7 +1217,7 @@ impl<'gc> MovieClip<'gc> {
         // tag position updates. This ensures that code that runs gotos when a
         // display object is added or removed does not catch the movie clip in
         // an invalid state.
-        let remove_actions = self.unqueue_removes(context);
+        let remove_actions = self.unqueue_removes();
 
         for (_, tag) in remove_actions {
             let mut reader = data.read_from(tag.tag_start);
@@ -1441,26 +1443,24 @@ impl<'gc> MovieClip<'gc> {
         // Explicit gotos in the middle of an AS3 loop cancel the loop's queued
         // tags. The rest of the goto machinery can handle the side effects of
         // a half-executed loop.
-        let mut write = self.0.write(context.gc());
-        if write.loop_queued() {
-            write.queued_tags = HashMap::new();
+        let read = self.0.read();
+        if read.loop_queued() {
+            read.queued_tags.replace(HashMap::new());
         }
 
         if is_implicit {
-            write.set_loop_queued();
+            read.set_loop_queued();
         }
-        drop(write);
 
         // Step through the intermediate frames, and aggregate the deltas of each frame.
-        let mc = self.0.read();
-        let tag_stream_start = mc.shared.swf.as_ref().as_ptr() as u64;
-        let mut frame_pos = mc.tag_stream_pos.get();
-        let data = mc.shared.swf.clone();
+        let tag_stream_start = read.shared.swf.as_ref().as_ptr() as u64;
+        let mut frame_pos = read.tag_stream_pos.get();
+        let data = read.shared.swf.clone();
         let mut index = 0;
 
         // Sanity; let's make sure we don't seek way too far.
-        let clamped_frame = frame.min(max(mc.frames_loaded(), 0) as FrameNumber);
-        drop(mc);
+        let clamped_frame = frame.min(max(read.frames_loaded(), 0) as FrameNumber);
+        drop(read);
 
         let mut removed_frame_scripts: Vec<DisplayObject<'gc>> = vec![];
 
@@ -1558,13 +1558,13 @@ impl<'gc> MovieClip<'gc> {
                 //
                 // TODO: We can only queue *new* object placement, existing
                 // objects still get updated too early.
-                let mut write = self.0.write(context.gc());
+                let read = self.0.read();
                 let new_tag = QueuedTag {
                     tag_type: QueuedTagAction::Place(params.version),
                     tag_start: params.tag_start,
                 };
-                let bucket = write
-                    .queued_tags
+                let mut queued_tags = read.queued_tags.borrow_mut();
+                let bucket = queued_tags
                     .entry(params.place_object.depth as Depth)
                     .or_insert_with(|| QueuedTagList::None);
 
@@ -2024,10 +2024,11 @@ impl<'gc> MovieClip<'gc> {
     }
 
     /// Remove all `PlaceObject` tags off the internal tag queue.
-    fn unqueue_adds(&self, context: &mut UpdateContext<'gc>) -> Vec<(Depth, QueuedTag)> {
-        let mut write = self.0.write(context.gc());
-        let mut unqueued: Vec<_> = write
+    fn unqueue_adds(&self) -> Vec<(Depth, QueuedTag)> {
+        let read = self.0.read();
+        let mut unqueued: Vec<_> = read
             .queued_tags
+            .borrow_mut()
             .iter_mut()
             .filter_map(|(d, b)| b.unqueue_add().map(|b| (*d, b)))
             .collect();
@@ -2035,8 +2036,11 @@ impl<'gc> MovieClip<'gc> {
         unqueued.sort_by(|(_, t1), (_, t2)| t1.tag_start.cmp(&t2.tag_start));
 
         for (depth, _tag) in unqueued.iter() {
-            if matches!(write.queued_tags.get(depth), Some(QueuedTagList::None)) {
-                write.queued_tags.remove(depth);
+            if matches!(
+                read.queued_tags.borrow().get(depth),
+                Some(QueuedTagList::None)
+            ) {
+                read.queued_tags.borrow_mut().remove(depth);
             }
         }
 
@@ -2044,10 +2048,11 @@ impl<'gc> MovieClip<'gc> {
     }
 
     /// Remove all `RemoveObject` tags off the internal tag queue.
-    fn unqueue_removes(&self, context: &mut UpdateContext<'gc>) -> Vec<(Depth, QueuedTag)> {
-        let mut write = self.0.write(context.gc());
-        let mut unqueued: Vec<_> = write
+    fn unqueue_removes(&self) -> Vec<(Depth, QueuedTag)> {
+        let read = self.0.read();
+        let mut unqueued: Vec<_> = read
             .queued_tags
+            .borrow_mut()
             .iter_mut()
             .filter_map(|(d, b)| b.unqueue_remove().map(|b| (*d, b)))
             .collect();
@@ -2055,8 +2060,11 @@ impl<'gc> MovieClip<'gc> {
         unqueued.sort_by(|(_, t1), (_, t2)| t1.tag_start.cmp(&t2.tag_start));
 
         for (depth, _tag) in unqueued.iter() {
-            if matches!(write.queued_tags.get(depth), Some(QueuedTagList::None)) {
-                write.queued_tags.remove(depth);
+            if matches!(
+                read.queued_tags.borrow().get(depth),
+                Some(QueuedTagList::None)
+            ) {
+                read.queued_tags.borrow_mut().remove(depth);
             }
         }
 
@@ -2292,7 +2300,7 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
             // Note that this is NOT when constructors run; that happens later
             // after tags have executed.
             let data = self.0.read().shared.swf.clone();
-            let place_actions = self.unqueue_adds(context);
+            let place_actions = self.unqueue_adds();
 
             for (_, tag) in place_actions {
                 let mut reader = data.read_from(tag.tag_start);
@@ -4237,15 +4245,9 @@ impl<'gc, 'a> MovieClip<'gc> {
         Ok(())
     }
 
-    fn queue_place_object(
-        self,
-        context: &mut UpdateContext<'gc>,
-        reader: &mut SwfStream<'a>,
-        version: u8,
-    ) -> Result<(), Error> {
-        let mut write = self.0.write(context.gc());
-        let tag_start =
-            reader.get_ref().as_ptr() as u64 - write.shared.swf.as_ref().as_ptr() as u64;
+    fn queue_place_object(self, reader: &mut SwfStream<'a>, version: u8) -> Result<(), Error> {
+        let read = self.0.read();
+        let tag_start = reader.get_ref().as_ptr() as u64 - read.shared.swf.as_ref().as_ptr() as u64;
         let place_object = if version == 1 {
             reader.read_place_object()
         } else {
@@ -4256,8 +4258,8 @@ impl<'gc, 'a> MovieClip<'gc> {
             tag_type: QueuedTagAction::Place(version),
             tag_start,
         };
-        let bucket = write
-            .queued_tags
+        let mut queued_tags = read.queued_tags.borrow_mut();
+        let bucket = queued_tags
             .entry(place_object.depth as Depth)
             .or_insert_with(|| QueuedTagList::None);
 
@@ -4324,15 +4326,9 @@ impl<'gc, 'a> MovieClip<'gc> {
     }
 
     #[inline]
-    fn queue_remove_object(
-        self,
-        context: &mut UpdateContext<'gc>,
-        reader: &mut SwfStream<'a>,
-        version: u8,
-    ) -> Result<(), Error> {
-        let mut write = self.0.write(context.gc());
-        let tag_start =
-            reader.get_ref().as_ptr() as u64 - write.shared.swf.as_ref().as_ptr() as u64;
+    fn queue_remove_object(self, reader: &mut SwfStream<'a>, version: u8) -> Result<(), Error> {
+        let read = self.0.read();
+        let tag_start = reader.get_ref().as_ptr() as u64 - read.shared.swf.as_ref().as_ptr() as u64;
         let remove_object = if version == 1 {
             reader.read_remove_object_1()
         } else {
@@ -4343,8 +4339,8 @@ impl<'gc, 'a> MovieClip<'gc> {
             tag_type: QueuedTagAction::Remove(version),
             tag_start,
         };
-        let bucket = write
-            .queued_tags
+        let mut queued_tags = read.queued_tags.borrow_mut();
+        let bucket = queued_tags
             .entry(remove_object.depth as Depth)
             .or_insert_with(|| QueuedTagList::None);
 
