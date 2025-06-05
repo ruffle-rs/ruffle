@@ -194,9 +194,15 @@ impl<'gc> ScriptObjectWrapper<'gc> {
         activation: &mut Activation<'_, 'gc>,
     ) -> Result<Value<'gc>, Error<'gc>> {
         if !multiname.contains_public_namespace() {
+            let error_code = if multiname.has_multiple_ns() {
+                error::ReferenceErrorCode::InvalidNsRead
+            } else {
+                error::ReferenceErrorCode::InvalidRead
+            };
+
             return Err(error::make_reference_error(
                 activation,
-                error::ReferenceErrorCode::InvalidRead,
+                error_code,
                 multiname,
                 self.instance_class(),
             ));
