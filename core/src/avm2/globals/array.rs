@@ -261,7 +261,7 @@ impl<'gc> ArrayIter<'gc> {
             let val = if let Some(storage) = self.array_object.as_vector_storage() {
                 // Special case for Vector- it throws an error if trying to access
                 // an element that was removed
-                val.ok_or_else(|| make_error_1125(activation, i as usize, storage.length()))?
+                val.ok_or_else(|| make_error_1125(activation, i as f64, storage.length()))?
             } else {
                 val.unwrap_or(Value::Undefined)
             };
@@ -290,7 +290,7 @@ impl<'gc> ArrayIter<'gc> {
             let val = if let Some(storage) = self.array_object.as_vector_storage() {
                 // Special case for Vector- it throws an error if trying to access
                 // an element that was removed
-                val.ok_or_else(|| make_error_1125(activation, i as usize, storage.length()))?
+                val.ok_or_else(|| make_error_1125(activation, i as f64, storage.length()))?
             } else {
                 val.unwrap_or(Value::Undefined)
             };

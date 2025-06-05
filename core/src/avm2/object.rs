@@ -715,6 +715,11 @@ pub trait TObject<'gc>: 'gc + Collect<'gc> + Debug + Into<Object<'gc>> + Clone +
         None
     }
 
+    /// Unwrap this object as a vector.
+    fn as_vector_object(&self) -> Option<VectorObject<'gc>> {
+        None
+    }
+
     /// Unwrap this object as vector storage.
     fn as_vector_storage(&self) -> Option<Ref<VectorStorage<'gc>>> {
         None
