@@ -2484,7 +2484,7 @@ impl<'gc> Loader<'gc> {
                 mc.replace_at_depth(uc, dobj, 1);
 
                 // This sets the MovieClip image state correctly.
-                mc.set_current_frame(uc.gc(), 1);
+                mc.set_current_frame(1);
                 mc.set_cur_preload_frame(2);
             }
         }
