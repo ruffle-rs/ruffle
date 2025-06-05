@@ -1333,6 +1333,11 @@ impl<'a, 'gc> Activation<'a, 'gc> {
                                 array.set(name_int as usize, value);
 
                                 return Ok(());
+                            } else if let Some(vector) = object.as_vector_object() {
+                                let _ = self.pop_stack();
+                                let _ = self.pop_stack();
+
+                                return vector.set_index_property(self, name_int as usize, value);
                             }
                         }
                     }
