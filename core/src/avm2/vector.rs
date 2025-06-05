@@ -170,7 +170,7 @@ impl<'gc> VectorStorage<'gc> {
         if let Some(val) = self.get_optional(pos) {
             Ok(val)
         } else {
-            Err(make_error_1125(activation, pos, self.length()))
+            Err(make_error_1125(activation, pos as f64, self.length()))
         }
     }
 
@@ -202,7 +202,7 @@ impl<'gc> VectorStorage<'gc> {
             *v = value;
             Ok(())
         } else {
-            Err(make_error_1125(activation, pos, self.length()))
+            Err(make_error_1125(activation, pos as f64, self.length()))
         }
     }
 
@@ -345,7 +345,7 @@ impl<'gc> VectorStorage<'gc> {
         };
 
         if position >= self.storage.len() {
-            Err(make_error_1125(activation, position, self.length()))
+            Err(make_error_1125(activation, position as f64, self.length()))
         } else {
             Ok(self.storage.remove(position))
         }
