@@ -71,6 +71,7 @@ pub enum ReferenceErrorCode {
     InvalidRead = 1069,
     WriteToReadOnly = 1074,
     ReadFromWriteOnly = 1077,
+    InvalidNsRead = 1081,
     InvalidDelete = 1120,
 }
 
@@ -102,6 +103,9 @@ pub fn make_reference_error<'gc>(
         ),
         ReferenceErrorCode::ReadFromWriteOnly => format!(
             "Error #1077: Illegal read of write-only property {qualified_name} on {class_name}.",
+        ),
+        ReferenceErrorCode::InvalidNsRead => format!(
+            "Error #1081: Property {qualified_name} not found on {class_name} and there is no default value.",
         ),
         ReferenceErrorCode::InvalidDelete => format!(
             "Error #1120: Cannot delete property {qualified_name} on {class_name}.",
