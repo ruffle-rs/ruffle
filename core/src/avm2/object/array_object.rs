@@ -84,6 +84,12 @@ impl<'gc> ArrayObject<'gc> {
         ))
     }
 
+    fn set_element(self, mc: &Mutation<'gc>, index: usize, value: Value<'gc>) {
+        unlock!(Gc::write(mc, self.0), ArrayObjectData, array)
+            .borrow_mut()
+            .set(index, value);
+    }
+
     pub fn array_storage(&self) -> Ref<ArrayStorage<'gc>> {
         self.0.array.borrow()
     }
@@ -107,7 +113,7 @@ impl<'gc> TObject<'gc> for ArrayObject<'gc> {
         name: &Multiname<'gc>,
         activation: &mut Activation<'_, 'gc>,
     ) -> Result<Value<'gc>, Error<'gc>> {
-        if name.contains_public_namespace() {
+        if name.valid_dynamic_name() {
             if let Some(name) = name.local_name() {
                 if let Ok(index) = name.parse::<usize>() {
                     if let Some(result) = self.get_index_property(index) {
@@ -124,6 +130,17 @@ impl<'gc> TObject<'gc> for ArrayObject<'gc> {
         self.0.array.borrow().get(index)
     }
 
+    fn set_index_property(
+        self,
+        activation: &mut Activation<'_, 'gc>,
+        index: usize,
+        value: Value<'gc>,
+    ) -> Option<Result<(), Error<'gc>>> {
+        self.set_element(activation.gc(), index, value);
+
+        Some(Ok(()))
+    }
+
     fn set_property_local(
         self,
         name: &Multiname<'gc>,
@@ -132,12 +149,10 @@ impl<'gc> TObject<'gc> for ArrayObject<'gc> {
     ) -> Result<(), Error<'gc>> {
         let mc = activation.gc();
 
-        if name.contains_public_namespace() {
+        if name.valid_dynamic_name() {
             if let Some(name) = name.local_name() {
                 if let Ok(index) = name.parse::<usize>() {
-                    unlock!(Gc::write(mc, self.0), ArrayObjectData, array)
-                        .borrow_mut()
-                        .set(index, value);
+                    self.set_element(mc, index, value);
 
                     return Ok(());
                 }
@@ -155,12 +170,10 @@ impl<'gc> TObject<'gc> for ArrayObject<'gc> {
     ) -> Result<(), Error<'gc>> {
         let mc = activation.gc();
 
-        if name.contains_public_namespace() {
+        if name.valid_dynamic_name() {
             if let Some(name) = name.local_name() {
                 if let Ok(index) = name.parse::<usize>() {
-                    unlock!(Gc::write(mc, self.0), ArrayObjectData, array)
-                        .borrow_mut()
-                        .set(index, value);
+                    self.set_element(mc, index, value);
 
                     return Ok(());
                 }
@@ -177,7 +190,7 @@ impl<'gc> TObject<'gc> for ArrayObject<'gc> {
     ) -> Result<bool, Error<'gc>> {
         let mc = activation.gc();
 
-        if name.contains_public_namespace() {
+        if name.valid_dynamic_name() {
             if let Some(name) = name.local_name() {
                 if let Ok(index) = name.parse::<usize>() {
                     unlock!(Gc::write(mc, self.0), ArrayObjectData, array)
@@ -193,7 +206,7 @@ impl<'gc> TObject<'gc> for ArrayObject<'gc> {
     }
 
     fn has_own_property(self, name: &Multiname<'gc>) -> bool {
-        if name.contains_public_namespace() {
+        if name.valid_dynamic_name() {
             if let Some(name) = name.local_name() {
                 if let Ok(index) = name.parse::<usize>() {
                     return self.0.array.borrow().get(index).is_some();

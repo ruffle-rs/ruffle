@@ -98,6 +98,20 @@ impl<'gc> ByteArrayObject<'gc> {
         Ok(instance)
     }
 
+    fn set_element(
+        self,
+        activation: &mut Activation<'_, 'gc>,
+        index: usize,
+        value: Value<'gc>,
+    ) -> Result<(), Error<'gc>> {
+        self.0
+            .storage
+            .borrow_mut()
+            .set(index, value.coerce_to_u32(activation)? as u8);
+
+        Ok(())
+    }
+
     pub fn storage(&self) -> Ref<ByteArrayStorage> {
         self.0.storage.borrow()
     }
@@ -117,7 +131,7 @@ impl<'gc> TObject<'gc> for ByteArrayObject<'gc> {
         name: &Multiname<'gc>,
         activation: &mut Activation<'_, 'gc>,
     ) -> Result<Value<'gc>, Error<'gc>> {
-        if name.contains_public_namespace() {
+        if name.valid_dynamic_name() {
             if let Some(name) = name.local_name() {
                 if let Ok(index) = name.parse::<usize>() {
                     return Ok(self.get_index_property(index).unwrap());
@@ -139,21 +153,26 @@ impl<'gc> TObject<'gc> for ByteArrayObject<'gc> {
         )
     }
 
+    fn set_index_property(
+        self,
+        activation: &mut Activation<'_, 'gc>,
+        index: usize,
+        value: Value<'gc>,
+    ) -> Option<Result<(), Error<'gc>>> {
+        // ByteArrays never forward to base even for out-of-bounds access.
+        Some(self.set_element(activation, index, value))
+    }
+
     fn set_property_local(
         self,
         name: &Multiname<'gc>,
         value: Value<'gc>,
         activation: &mut Activation<'_, 'gc>,
     ) -> Result<(), Error<'gc>> {
-        if name.contains_public_namespace() {
+        if name.valid_dynamic_name() {
             if let Some(name) = name.local_name() {
                 if let Ok(index) = name.parse::<usize>() {
-                    self.0
-                        .storage
-                        .borrow_mut()
-                        .set(index, value.coerce_to_u32(activation)? as u8);
-
-                    return Ok(());
+                    return self.set_element(activation, index, value);
                 }
             }
         }
@@ -167,15 +186,10 @@ impl<'gc> TObject<'gc> for ByteArrayObject<'gc> {
         value: Value<'gc>,
         activation: &mut Activation<'_, 'gc>,
     ) -> Result<(), Error<'gc>> {
-        if name.contains_public_namespace() {
+        if name.valid_dynamic_name() {
             if let Some(name) = name.local_name() {
                 if let Ok(index) = name.parse::<usize>() {
-                    self.0
-                        .storage
-                        .borrow_mut()
-                        .set(index, value.coerce_to_u32(activation)? as u8);
-
-                    return Ok(());
+                    return self.set_element(activation, index, value);
                 }
             }
         }
@@ -188,7 +202,7 @@ impl<'gc> TObject<'gc> for ByteArrayObject<'gc> {
         activation: &mut Activation<'_, 'gc>,
         name: &Multiname<'gc>,
     ) -> Result<bool, Error<'gc>> {
-        if name.contains_public_namespace() {
+        if name.valid_dynamic_name() {
             if let Some(name) = name.local_name() {
                 if let Ok(index) = name.parse::<usize>() {
                     self.0.storage.borrow_mut().delete(index);
@@ -201,7 +215,7 @@ impl<'gc> TObject<'gc> for ByteArrayObject<'gc> {
     }
 
     fn has_own_property(self, name: &Multiname<'gc>) -> bool {
-        if name.contains_public_namespace() {
+        if name.valid_dynamic_name() {
             if let Some(name) = name.local_name() {
                 if let Ok(index) = name.parse::<usize>() {
                     return self.0.storage.borrow().get(index).is_some();
