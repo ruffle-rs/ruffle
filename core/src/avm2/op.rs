@@ -150,7 +150,21 @@ pub enum Op<'gc> {
     GetOuterScope {
         index: usize,
     },
-    GetProperty {
+
+    // The GetProperty op is specialized into three different ops depending on the multiname.
+    //  - If the multiname is fully static, the verifier emits GetPropertyStatic.
+    //  - If the multiname has a lazy name, a static namespace, contains the
+    //    the public namespace, and is not an attribute multiname, the verifier
+    //    emits GetPropertyFast.
+    //  - If neither condition is met (i.e. the multiname has a lazy namespace),
+    //    the verifier emits GetPropertySlow.
+    GetPropertyStatic {
+        multiname: Gc<'gc, Multiname<'gc>>,
+    },
+    GetPropertyFast {
+        multiname: Gc<'gc, Multiname<'gc>>,
+    },
+    GetPropertySlow {
         multiname: Gc<'gc, Multiname<'gc>>,
     },
     GetScopeObject {
@@ -279,7 +293,15 @@ pub enum Op<'gc> {
     SetLocal {
         index: u32,
     },
-    SetProperty {
+
+    // See the comments on the GetProperty op
+    SetPropertyStatic {
+        multiname: Gc<'gc, Multiname<'gc>>,
+    },
+    SetPropertyFast {
+        multiname: Gc<'gc, Multiname<'gc>>,
+    },
+    SetPropertySlow {
         multiname: Gc<'gc, Multiname<'gc>>,
     },
     SetSlot {

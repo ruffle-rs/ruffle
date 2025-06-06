@@ -226,7 +226,7 @@ impl<'gc> ScriptObjectWrapper<'gc> {
         value: Value<'gc>,
         activation: &mut Activation<'_, 'gc>,
     ) -> Result<(), Error<'gc>> {
-        if self.is_sealed() || !multiname.contains_public_namespace() {
+        if self.is_sealed() || !multiname.valid_dynamic_name() {
             return Err(error::make_reference_error(
                 activation,
                 error::ReferenceErrorCode::InvalidWrite,
@@ -262,7 +262,7 @@ impl<'gc> ScriptObjectWrapper<'gc> {
     }
 
     pub fn delete_property_local(&self, mc: &Mutation<'gc>, multiname: &Multiname<'gc>) -> bool {
-        if !multiname.contains_public_namespace() {
+        if !multiname.valid_dynamic_name() {
             return false;
         }
         if let Some(name) = multiname.local_name() {
@@ -304,7 +304,7 @@ impl<'gc> ScriptObjectWrapper<'gc> {
     }
 
     pub fn has_own_dynamic_property(&self, name: &Multiname<'gc>) -> bool {
-        if name.contains_public_namespace() {
+        if name.valid_dynamic_name() {
             if let Some(name) = name.local_name() {
                 let key = maybe_int_property(name);
                 return self.values().as_hashmap().get(&key).is_some();
@@ -426,7 +426,7 @@ pub fn get_dynamic_property<'gc>(
     prototype: Option<Object<'gc>>,
     instance_class: Class<'gc>,
 ) -> Result<Option<Value<'gc>>, Error<'gc>> {
-    if !multiname.contains_public_namespace() {
+    if !multiname.valid_dynamic_name() {
         let error_code = if multiname.has_multiple_ns() {
             error::ReferenceErrorCode::InvalidNsRead
         } else {
