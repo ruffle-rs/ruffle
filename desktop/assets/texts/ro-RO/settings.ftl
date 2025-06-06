@@ -8,6 +8,10 @@ tcp-connections-ask = Întreabă
 quality = Calitate
 letterbox-fullscreen = Numai ecran complet
 align-force = Forțează
+scale-mode-noscale-tooltip =
+    Afișează filmul la dimensiunea lui originală, fără zoom.
+    
+    Corespunde cu StageScaleMode.NO_SCALE
 scale-mode-showall-tooltip =
     Mărește filmul pentru a umple fereastra cât mai mult posibil, dar fără a decupa, menținând raportul de aspect.
     
@@ -21,6 +25,7 @@ scale-mode-noborder-tooltip =
     
     Corespunde cu StageScaleMode.NO_BORDER
 scale-mode-force = Forțează
+scale-mode-force-tooltip = Previne modificarea modului de scalare de către film, blocând la setarea selectată.
 player-version = Versiunea playerului
 custom-framerate = Frecvență de cadre personalizată
 custom-framerate-suffix = { " " } fps
