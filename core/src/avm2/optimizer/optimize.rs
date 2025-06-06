@@ -1381,30 +1381,36 @@ fn abstract_interpret_ops<'gc>(
                 stack.pop(activation)?;
                 stack.pop(activation)?;
             }
-            Op::GetProperty { multiname } => {
-                stack.pop_for_multiname(activation, multiname)?;
+            Op::GetPropertyStatic { multiname } => {
+                // Verifier only emits this op when the multiname is static
+                assert!(!multiname.has_lazy_component());
 
                 let stack_value = stack.pop(activation)?;
+                let opt_result = optimize_get_property(activation, multiname, stack_value)?;
 
-                if !multiname.has_lazy_component() {
-                    let opt_result = optimize_get_property(activation, multiname, stack_value)?;
+                if let Some((new_op, return_type)) = opt_result {
+                    optimize_op_to!(new_op);
 
-                    if let Some((new_op, return_type)) = opt_result {
-                        optimize_op_to!(new_op);
-
-                        if let Some(return_type) = return_type {
-                            stack.push_class(activation, return_type)?;
-                        } else {
-                            stack.push_any(activation)?;
-                        }
+                    if let Some(return_type) = return_type {
+                        stack.push_class(activation, return_type)?;
                     } else {
                         stack.push_any(activation)?;
                     }
                 } else {
-                    // `stack_pop_multiname` handled lazy
-
                     stack.push_any(activation)?;
                 }
+            }
+            Op::GetPropertyFast { multiname } | Op::GetPropertySlow { multiname } => {
+                // Verifier only emits these ops when the multiname is lazy
+                assert!(multiname.has_lazy_component());
+
+                stack.pop_for_multiname(activation, multiname)?;
+
+                let _stack_value = stack.pop(activation)?;
+
+                // `stack_pop_multiname` handled lazy
+
+                stack.push_any(activation)?;
             }
             Op::InitProperty { multiname } => {
                 let set_value = stack.pop(activation)?;
@@ -1460,57 +1466,68 @@ fn abstract_interpret_ops<'gc>(
                 }
                 // `stack_pop_multiname` handled lazy
             }
-            Op::SetProperty { multiname } => {
+            Op::SetPropertyStatic { multiname } => {
+                // Verifier only emits this op when the multiname is static
+                assert!(!multiname.has_lazy_component());
+
                 let set_value = stack.pop(activation)?;
 
-                stack.pop_for_multiname(activation, multiname)?;
                 let stack_value = stack.pop(activation)?;
-                if !multiname.has_lazy_component() {
-                    if let Some(vtable) = stack_value.vtable() {
-                        match vtable.get_trait(&multiname) {
-                            Some(Property::Slot { slot_id }) => {
-                                // If the set value's type is the same as the type of the slot,
-                                // a SetSlotNoCoerce can be emitted. Otherwise, emit a SetSlot.
-                                let mut value_class = vtable.slot_classes()[slot_id as usize];
-                                let resolved_value_class = value_class.get_class(activation)?;
+                if let Some(vtable) = stack_value.vtable() {
+                    match vtable.get_trait(&multiname) {
+                        Some(Property::Slot { slot_id }) => {
+                            // If the set value's type is the same as the type of the slot,
+                            // a SetSlotNoCoerce can be emitted. Otherwise, emit a SetSlot.
+                            let mut value_class = vtable.slot_classes()[slot_id as usize];
+                            let resolved_value_class = value_class.get_class(activation)?;
 
-                                if set_value.matches_type(activation, resolved_value_class) {
-                                    optimize_op_to!(Op::SetSlotNoCoerce { index: slot_id });
-                                } else {
-                                    optimize_op_to!(Op::SetSlot { index: slot_id });
-                                }
+                            if set_value.matches_type(activation, resolved_value_class) {
+                                optimize_op_to!(Op::SetSlotNoCoerce { index: slot_id });
+                            } else {
+                                optimize_op_to!(Op::SetSlot { index: slot_id });
                             }
-                            Some(Property::Virtual {
-                                set: Some(disp_id), ..
-                            }) => {
-                                let full_method = vtable
-                                    .get_full_method(disp_id)
-                                    .expect("Method should exist");
-                                let ClassBoundMethod { method, .. } = full_method;
-
-                                let mut result_op = Op::CallMethod {
-                                    num_args: 1,
-                                    index: disp_id,
-                                    push_return_value: false,
-                                };
-
-                                // We can further optimize calling FastCall setters into a
-                                // static native method call
-                                maybe_optimize_static_call(
-                                    activation,
-                                    &mut result_op,
-                                    method,
-                                    stack_value,
-                                    &[set_value], // passed args
-                                    false,        // push_return_value
-                                )?;
-
-                                optimize_op_to!(result_op);
-                            }
-                            _ => {}
                         }
+                        Some(Property::Virtual {
+                            set: Some(disp_id), ..
+                        }) => {
+                            let full_method = vtable
+                                .get_full_method(disp_id)
+                                .expect("Method should exist");
+                            let ClassBoundMethod { method, .. } = full_method;
+
+                            let mut result_op = Op::CallMethod {
+                                num_args: 1,
+                                index: disp_id,
+                                push_return_value: false,
+                            };
+
+                            // We can further optimize calling FastCall setters into a
+                            // static native method call
+                            maybe_optimize_static_call(
+                                activation,
+                                &mut result_op,
+                                method,
+                                stack_value,
+                                &[set_value], // passed args
+                                false,        // push_return_value
+                            )?;
+
+                            optimize_op_to!(result_op);
+                        }
+                        _ => {}
                     }
                 }
+                // `stack_pop_multiname` handled lazy
+            }
+            Op::SetPropertyFast { multiname } | Op::SetPropertySlow { multiname } => {
+                // Verifier only emits these ops when the multiname is lazy
+                assert!(multiname.has_lazy_component());
+                let _set_value = stack.pop(activation)?;
+
+                stack.pop_for_multiname(activation, multiname)?;
+
+                let _stack_value = stack.pop(activation)?;
+
                 // `stack_pop_multiname` handled lazy
             }
             Op::DeleteProperty { multiname } => {

@@ -920,12 +920,40 @@ fn translate_op<'gc>(
         AbcOp::GetProperty { index } => {
             let multiname = pool_multiname(activation, translation_unit, index)?;
 
-            Op::GetProperty { multiname }
+            if !multiname.has_lazy_component() {
+                Op::GetPropertyStatic { multiname }
+            } else if multiname.has_lazy_name() && !multiname.has_lazy_ns() {
+                // The fast-path path usually doesn't activate when the public
+                // namespace isn't included in the multiname's namespace set.
+                // However, it does still activate when this Activation is
+                // running in interpreter mode
+                if multiname.valid_dynamic_name() || activation.is_interpreter() {
+                    Op::GetPropertyFast { multiname }
+                } else {
+                    Op::GetPropertySlow { multiname }
+                }
+            } else {
+                Op::GetPropertySlow { multiname }
+            }
         }
         AbcOp::SetProperty { index } => {
             let multiname = pool_multiname(activation, translation_unit, index)?;
 
-            Op::SetProperty { multiname }
+            if !multiname.has_lazy_component() {
+                Op::SetPropertyStatic { multiname }
+            } else if multiname.has_lazy_name() && !multiname.has_lazy_ns() {
+                // The fast-path path usually doesn't activate when the public
+                // namespace isn't included in the multiname's namespace set.
+                // However, it does still activate when this Activation is
+                // running in interpreter mode
+                if multiname.valid_dynamic_name() || activation.is_interpreter() {
+                    Op::SetPropertyFast { multiname }
+                } else {
+                    Op::SetPropertySlow { multiname }
+                }
+            } else {
+                Op::SetPropertySlow { multiname }
+            }
         }
         AbcOp::InitProperty { index } => {
             let multiname = pool_multiname(activation, translation_unit, index)?;
@@ -990,10 +1018,10 @@ fn translate_op<'gc>(
         AbcOp::GetLex { index } => {
             let multiname = pool_multiname(activation, translation_unit, index)?;
 
-            // GetLex is split into two ops
+            // GetLex is split into two ops; multiname is guaranteed static
             return Ok((
                 Op::FindPropStrict { multiname },
-                Some(Op::GetProperty { multiname }),
+                Some(Op::GetPropertyStatic { multiname }),
             ));
         }
         AbcOp::GetDescendants { index } => {

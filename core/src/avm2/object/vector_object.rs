@@ -86,7 +86,7 @@ impl<'gc> VectorObject<'gc> {
         Ok(object)
     }
 
-    pub fn set_index_property(
+    fn set_element(
         self,
         activation: &mut Activation<'_, 'gc>,
         index: usize,
@@ -123,7 +123,7 @@ impl<'gc> TObject<'gc> for VectorObject<'gc> {
         name: &Multiname<'gc>,
         activation: &mut Activation<'_, 'gc>,
     ) -> Result<Value<'gc>, Error<'gc>> {
-        if name.contains_public_namespace() {
+        if name.valid_dynamic_name() {
             if let Some(local_name) = name.local_name() {
                 if let Ok(index) = local_name.parse::<f64>() {
                     let u32_index = index as u32;
@@ -174,19 +174,28 @@ impl<'gc> TObject<'gc> for VectorObject<'gc> {
         self.0.vector.borrow().get_optional(index)
     }
 
+    fn set_index_property(
+        self,
+        activation: &mut Activation<'_, 'gc>,
+        index: usize,
+        value: Value<'gc>,
+    ) -> Option<Result<(), Error<'gc>>> {
+        Some(self.set_element(activation, index, value))
+    }
+
     fn set_property_local(
         self,
         name: &Multiname<'gc>,
         value: Value<'gc>,
         activation: &mut Activation<'_, 'gc>,
     ) -> Result<(), Error<'gc>> {
-        if name.contains_public_namespace() {
+        if name.valid_dynamic_name() {
             if let Some(local_name) = name.local_name() {
                 if let Ok(index) = local_name.parse::<f64>() {
                     let u32_index = index as u32;
 
                     if u32_index as f64 == index {
-                        return self.set_index_property(activation, u32_index as usize, value);
+                        return self.set_element(activation, u32_index as usize, value);
                     } else if activation.caller_movie_or_root().version() >= 11 {
                         let storage_len = self.0.vector.borrow().length();
                         return Err(make_error_1125(activation, index, storage_len));
@@ -217,13 +226,13 @@ impl<'gc> TObject<'gc> for VectorObject<'gc> {
         value: Value<'gc>,
         activation: &mut Activation<'_, 'gc>,
     ) -> Result<(), Error<'gc>> {
-        if name.contains_public_namespace() {
+        if name.valid_dynamic_name() {
             if let Some(local_name) = name.local_name() {
                 if let Ok(index) = local_name.parse::<f64>() {
                     let u32_index = index as u32;
 
                     if u32_index as f64 == index {
-                        return self.set_index_property(activation, u32_index as usize, value);
+                        return self.set_element(activation, u32_index as usize, value);
                     } else if activation.caller_movie_or_root().version() >= 11 {
                         let storage_len = self.0.vector.borrow().length();
                         return Err(make_error_1125(activation, index, storage_len));
@@ -255,18 +264,19 @@ impl<'gc> TObject<'gc> for VectorObject<'gc> {
     ) -> Result<bool, Error<'gc>> {
         let mc = activation.gc();
 
-        if name.contains_public_namespace()
-            && name.local_name().is_some()
-            && name.local_name().unwrap().parse::<usize>().is_ok()
-        {
-            return Ok(true);
+        if name.valid_dynamic_name() {
+            if let Some(local_name) = name.local_name() {
+                if local_name.parse::<usize>().is_ok() {
+                    return Ok(true);
+                }
+            }
         }
 
         Ok(self.base().delete_property_local(mc, name))
     }
 
     fn has_own_property(self, name: &Multiname<'gc>) -> bool {
-        if name.contains_public_namespace() {
+        if name.valid_dynamic_name() {
             if let Some(name) = name.local_name() {
                 if let Ok(index) = name.parse::<f64>() {
                     let u32_index = index as u32;
