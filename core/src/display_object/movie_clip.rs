@@ -151,16 +151,16 @@ impl<'gc> MovieClipWeak<'gc> {
 pub struct MovieClipData<'gc> {
     base: InteractiveObjectBase<'gc>,
     shared: Gc<'gc, MovieClipShared<'gc>>,
-    tag_stream_pos: u64,
-    current_frame: FrameNumber,
+    tag_stream_pos: Cell<u64>,
+    current_frame: Cell<FrameNumber>,
     #[collect(require_static)]
-    audio_stream: Option<SoundInstanceHandle>,
+    audio_stream: Cell<Option<SoundInstanceHandle>>,
     container: ChildContainer<'gc>,
     object: Option<AvmObject<'gc>>,
     #[collect(require_static)]
     clip_event_handlers: Vec<ClipEventHandler>,
     #[collect(require_static)]
-    clip_event_flags: ClipEventFlag,
+    clip_event_flags: Cell<ClipEventFlag>,
     frame_scripts: Vec<Option<Avm2Object<'gc>>>,
     flags: Cell<MovieClipFlags>,
     /// This is lazily allocated on demand, to make `MovieClipData` smaller in the common case.
@@ -177,20 +177,20 @@ pub struct MovieClipData<'gc> {
     /// Force enable button mode, which causes all mouse-related events to
     /// trigger on this clip rather than any input-eligible children.
     button_mode: Cell<bool>,
-    last_queued_script_frame: Option<FrameNumber>,
-    queued_script_frame: Option<FrameNumber>,
-    queued_goto_frame: Option<FrameNumber>,
+    last_queued_script_frame: Cell<Option<FrameNumber>>,
+    queued_script_frame: Cell<Option<FrameNumber>>,
+    queued_goto_frame: Cell<Option<FrameNumber>>,
     drop_target: Option<DisplayObject<'gc>>,
 
     /// List of tags queued up for the current frame.
     #[collect(require_static)]
-    queued_tags: HashMap<Depth, QueuedTagList>,
+    queued_tags: RefCell<HashMap<Depth, QueuedTagList>>,
 
     /// Attached audio (AVM1)
     attached_audio: Option<NetStream<'gc>>,
 
     // If this movie was loaded from ImportAssets(2), this will be the parent movie.
-    importer_movie: Option<Arc<SwfMovie>>,
+    importer_movie: RefCell<Option<Arc<SwfMovie>>>,
 
     avm1_text_field_bindings: Vec<Avm1TextFieldBinding<'gc>>,
 }
@@ -201,27 +201,27 @@ impl<'gc> MovieClipData<'gc> {
         Self {
             base: Default::default(),
             shared: Gc::new(mc, shared),
-            tag_stream_pos: 0,
-            current_frame: 0,
-            audio_stream: None,
+            tag_stream_pos: Cell::new(0),
+            current_frame: Cell::new(0),
+            audio_stream: Cell::new(None),
             container: ChildContainer::new(movie),
             object: None,
             clip_event_handlers: Vec::new(),
-            clip_event_flags: ClipEventFlag::empty(),
+            clip_event_flags: Cell::new(ClipEventFlag::empty()),
             frame_scripts: Vec::new(),
             flags: Cell::new(MovieClipFlags::empty()),
             drawing: None,
             avm2_enabled: Cell::new(true),
             avm2_use_hand_cursor: Cell::new(true),
             button_mode: Cell::new(false),
-            last_queued_script_frame: None,
-            queued_script_frame: None,
-            queued_goto_frame: None,
+            last_queued_script_frame: Cell::new(None),
+            queued_script_frame: Cell::new(None),
+            queued_goto_frame: Cell::new(None),
             drop_target: None,
             hit_area: None,
-            queued_tags: HashMap::new(),
+            queued_tags: RefCell::new(HashMap::new()),
             attached_audio: None,
-            importer_movie: None,
+            importer_movie: RefCell::new(None),
             avm1_text_field_bindings: Vec::new(),
         }
     }
@@ -277,9 +277,9 @@ impl<'gc> MovieClip<'gc> {
         let loader_info = None;
         let shared = MovieClipShared::with_data(0, movie.into(), num_frames, loader_info);
 
-        let mut data = MovieClipData::new(shared, context.gc());
+        let data = MovieClipData::new(shared, context.gc());
         data.flags.set(MovieClipFlags::PLAYING);
-        data.importer_movie = Some(parent);
+        data.importer_movie.replace(Some(parent));
         MovieClip(GcCell::new(context.gc(), data))
     }
 
@@ -353,11 +353,11 @@ impl<'gc> MovieClip<'gc> {
                 loader_info.map(|l| l.into()),
             ),
         );
-        mc.tag_stream_pos = 0;
+        mc.tag_stream_pos.set(0);
         mc.flags.set(MovieClipFlags::PLAYING);
         mc.base.base.set_is_root(is_root);
-        mc.current_frame = 0;
-        mc.audio_stream = None;
+        mc.current_frame.set(0);
+        mc.audio_stream.set(None);
         mc.container = ChildContainer::new(movie);
         drop(mc);
     }
@@ -464,9 +464,11 @@ impl<'gc> MovieClip<'gc> {
                 TagCode::DefineText2 => shared.define_text(context, reader, 2),
                 TagCode::DoInitAction => self.do_init_action(context, reader, tag_len),
                 TagCode::DefineSceneAndFrameLabelData => shared.scene_and_frame_labels(reader),
-                TagCode::ExportAssets => {
-                    shared.export_assets(context, reader, self.0.read().importer_movie.as_ref())
-                }
+                TagCode::ExportAssets => shared.export_assets(
+                    context,
+                    reader,
+                    self.0.read().importer_movie.borrow().as_ref(),
+                ),
                 TagCode::FrameLabel => shared.frame_label(reader),
                 TagCode::JpegTables => shared.jpeg_tables(context, reader),
                 TagCode::ShowFrame => shared.show_frame(reader, tag_len),
@@ -501,7 +503,7 @@ impl<'gc> MovieClip<'gc> {
         };
         let is_finished = end_tag_found || result.is_err() || !result.unwrap_or_default();
 
-        if let Some(importer_movie) = &self.0.read().importer_movie {
+        if let Some(importer_movie) = self.0.read().importer_movie.borrow().as_ref() {
             shared.import_exports_of_importer(context, importer_movie);
         }
 
@@ -709,13 +711,13 @@ impl<'gc> MovieClip<'gc> {
             {
                 // AVM2 does not allow a clip to see while it is executing a frame script.
                 // The goto is instead queued and run once the frame script is completed.
-                self.0.write(context.gc()).queued_goto_frame = Some(frame);
+                self.0.read().queued_goto_frame.set(Some(frame));
             } else {
                 self.run_goto(context, frame, false);
             }
         } else if self.movie().is_action_script_3() {
             // Despite not running, the goto still overwrites the currently enqueued frame.
-            self.0.write(context.gc()).queued_goto_frame = None;
+            self.0.read().queued_goto_frame.set(None);
             // Pretend we actually did a goto, but don't do anything.
             run_inner_goto_frame(context, &[], self);
         }
@@ -908,8 +910,8 @@ impl<'gc> MovieClip<'gc> {
     }
 
     /// This sets the current frame of this MovieClip to a given number.
-    pub fn set_current_frame(self, gc_context: &Mutation<'gc>, current_frame: FrameNumber) {
-        self.0.write(gc_context).current_frame = current_frame;
+    pub fn set_current_frame(self, current_frame: FrameNumber) {
+        self.0.read().current_frame.set(current_frame);
     }
 
     pub fn frames_loaded(self) -> i32 {
@@ -1130,16 +1132,16 @@ impl<'gc> MovieClip<'gc> {
         let next_frame = self.determine_next_frame();
         match next_frame {
             NextFrame::Next => {
-                let mut write = self.0.write(context.gc());
-                if (write.current_frame + 1)
-                    >= write.shared.preload_progress.cur_preload_frame.get()
+                let read = self.0.read();
+                if (read.current_frame.get() + 1)
+                    >= read.shared.preload_progress.cur_preload_frame.get()
                 {
                     return;
                 }
 
                 // AS3 removals need to happen before frame advance (see below)
                 if !is_action_script_3 {
-                    write.current_frame += 1
+                    read.increment_current_frame();
                 }
             }
             NextFrame::First => return self.run_goto(context, 1, true),
@@ -1149,7 +1151,7 @@ impl<'gc> MovieClip<'gc> {
         let mc = self.0.read();
         let tag_stream_start = mc.shared.swf.as_ref().as_ptr() as u64;
         let data = mc.shared.swf.clone();
-        let mut reader = data.read_from(mc.tag_stream_pos);
+        let mut reader = data.read_from(mc.tag_stream_pos.get());
         drop(mc);
 
         let tag_callback = |reader: &mut SwfStream<'_>, tag_code, tag_len| {
@@ -1174,22 +1176,22 @@ impl<'gc> MovieClip<'gc> {
                     self.remove_object(context, reader, 2)
                 }
                 TagCode::PlaceObject if run_display_actions && is_action_script_3 => {
-                    self.queue_place_object(context, reader, 1)
+                    self.queue_place_object(reader, 1)
                 }
                 TagCode::PlaceObject2 if run_display_actions && is_action_script_3 => {
-                    self.queue_place_object(context, reader, 2)
+                    self.queue_place_object(reader, 2)
                 }
                 TagCode::PlaceObject3 if run_display_actions && is_action_script_3 => {
-                    self.queue_place_object(context, reader, 3)
+                    self.queue_place_object(reader, 3)
                 }
                 TagCode::PlaceObject4 if run_display_actions && is_action_script_3 => {
-                    self.queue_place_object(context, reader, 4)
+                    self.queue_place_object(reader, 4)
                 }
                 TagCode::RemoveObject if run_display_actions && is_action_script_3 => {
-                    self.queue_remove_object(context, reader, 1)
+                    self.queue_remove_object(reader, 1)
                 }
                 TagCode::RemoveObject2 if run_display_actions && is_action_script_3 => {
-                    self.queue_remove_object(context, reader, 2)
+                    self.queue_remove_object(reader, 2)
                 }
                 TagCode::SetBackgroundColor => self.set_background_color(context, reader),
                 TagCode::StartSound if run_sounds => self.start_sound_1(context, reader),
@@ -1201,7 +1203,7 @@ impl<'gc> MovieClip<'gc> {
             Ok(ControlFlow::Continue)
         };
         let _ = tag_utils::decode_tags(&mut reader, tag_callback);
-        if let Err(e) = self.run_abc_and_symbol_tags(context, self.0.read().current_frame) {
+        if let Err(e) = self.run_abc_and_symbol_tags(context, self.0.read().current_frame.get()) {
             tracing::error!("Error running abc/symbol in frame: {e:?}");
         }
 
@@ -1209,7 +1211,7 @@ impl<'gc> MovieClip<'gc> {
         // tag position updates. This ensures that code that runs gotos when a
         // display object is added or removed does not catch the movie clip in
         // an invalid state.
-        let remove_actions = self.unqueue_removes(context);
+        let remove_actions = self.unqueue_removes();
 
         for (_, tag) in remove_actions {
             let mut reader = data.read_from(tag.tag_start);
@@ -1225,27 +1227,28 @@ impl<'gc> MovieClip<'gc> {
 
         // It is now safe to update the tag position and frame number.
         // TODO: Determine if explicit gotos override these or not.
-        let mut write = self.0.write(context.gc());
+        let read = self.0.read();
 
-        write.tag_stream_pos = reader.get_ref().as_ptr() as u64 - tag_stream_start;
+        read.tag_stream_pos
+            .set(reader.get_ref().as_ptr() as u64 - tag_stream_start);
 
         // Check if our audio track has finished playing.
-        if let Some(audio_stream) = write.audio_stream {
+        if let Some(audio_stream) = read.audio_stream.get() {
             if !context.is_sound_playing(audio_stream) {
-                write.audio_stream = None;
+                read.audio_stream.set(None);
             }
         }
 
         if matches!(next_frame, NextFrame::Next) && is_action_script_3 {
-            write.current_frame += 1;
+            read.increment_current_frame();
         }
 
-        write.queued_script_frame = Some(write.current_frame);
-        if write.last_queued_script_frame != Some(write.current_frame) {
+        read.queued_script_frame.set(Some(read.current_frame.get()));
+        if read.last_queued_script_frame.get() != Some(read.current_frame.get()) {
             // We explicitly clear this variable since AS3 may later GOTO back
             // to the already-ran frame. Since the frame number *has* changed
             // in the meantime, it should absolutely run again.
-            write.last_queued_script_frame = None;
+            read.last_queued_script_frame.set(None);
         }
     }
 
@@ -1330,27 +1333,27 @@ impl<'gc> MovieClip<'gc> {
         let read = self.0.read();
 
         assert_eq!(
-            Some(read.tag_stream_pos),
+            Some(read.tag_stream_pos.get()),
             read.shared_cell()
                 .tag_frame_boundaries
-                .get(&read.current_frame)
+                .get(&read.current_frame.get())
                 .map(|(_start, end)| *end), // Yes, this is correct, at least for AVM1.
             "[{:?}] Gotos must start from the correct tag position for frame {}",
             read.base.base.name,
-            read.current_frame
+            read.current_frame.get()
         );
     }
 
     #[cfg(not(feature = "timeline_debug"))]
-    fn assert_expected_tag_end(self, _context: &mut UpdateContext<'gc>, _hit_target_frame: bool) {}
+    fn assert_expected_tag_end(self, _hit_target_frame: bool) {}
 
     #[cfg(feature = "timeline_debug")]
-    fn assert_expected_tag_end(self, context: &mut UpdateContext<'gc>, hit_target_frame: bool) {
+    fn assert_expected_tag_end(self, hit_target_frame: bool) {
         let read = self.0.read();
         let tag_frame_end = read
             .shared_cell()
             .tag_frame_boundaries
-            .get(&read.current_frame)
+            .get(&read.current_frame.get())
             .map(|(_start, end)| *end);
 
         // Gotos that do *not* hit their target frame will not update their tag
@@ -1362,18 +1365,18 @@ impl<'gc> MovieClip<'gc> {
             let read = self.0.read();
 
             assert_eq!(
-                Some(read.tag_stream_pos),
+                Some(read.tag_stream_pos.get()),
                 tag_frame_end,
                 "[{:?}] Gotos must end at the correct tag position for frame {}",
                 read.base.base.name,
-                read.current_frame
+                read.current_frame.get()
             );
         } else {
             // Of course, the target frame desync absolutely will break our
             // other asserts, so fix them up here.
             drop(read);
             if let Some(end) = tag_frame_end {
-                self.0.write(context.gc()).tag_stream_pos = end;
+                self.0.read().tag_stream_pos.set(end);
             }
         }
     }
@@ -1421,8 +1424,8 @@ impl<'gc> MovieClip<'gc> {
             // Because we can only step forward, we have to start at frame 1
             // when rewinding. We don't actually remove children yet because
             // otherwise AS3 can observe byproducts of the rewinding process.
-            self.0.write(context.gc()).tag_stream_pos = 0;
-            self.0.write(context.gc()).current_frame = 0;
+            self.0.read().tag_stream_pos.set(0);
+            self.0.read().current_frame.set(0);
 
             true
         } else {
@@ -1434,32 +1437,30 @@ impl<'gc> MovieClip<'gc> {
         // Explicit gotos in the middle of an AS3 loop cancel the loop's queued
         // tags. The rest of the goto machinery can handle the side effects of
         // a half-executed loop.
-        let mut write = self.0.write(context.gc());
-        if write.loop_queued() {
-            write.queued_tags = HashMap::new();
+        let read = self.0.read();
+        if read.loop_queued() {
+            read.queued_tags.replace(HashMap::new());
         }
 
         if is_implicit {
-            write.set_loop_queued();
+            read.set_loop_queued();
         }
-        drop(write);
 
         // Step through the intermediate frames, and aggregate the deltas of each frame.
-        let mc = self.0.read();
-        let tag_stream_start = mc.shared.swf.as_ref().as_ptr() as u64;
-        let mut frame_pos = mc.tag_stream_pos;
-        let data = mc.shared.swf.clone();
+        let tag_stream_start = read.shared.swf.as_ref().as_ptr() as u64;
+        let mut frame_pos = read.tag_stream_pos.get();
+        let data = read.shared.swf.clone();
         let mut index = 0;
 
         // Sanity; let's make sure we don't seek way too far.
-        let clamped_frame = frame.min(max(mc.frames_loaded(), 0) as FrameNumber);
-        drop(mc);
+        let clamped_frame = frame.min(max(read.frames_loaded(), 0) as FrameNumber);
+        drop(read);
 
         let mut removed_frame_scripts: Vec<DisplayObject<'gc>> = vec![];
 
         let mut reader = data.read_from(frame_pos);
         while self.current_frame() < clamped_frame && !reader.get_ref().is_empty() {
-            self.0.write(context.gc()).current_frame += 1;
+            self.0.read().increment_current_frame();
             frame_pos = reader.get_ref().as_ptr() as u64 - tag_stream_start;
 
             let tag_callback = |reader: &mut _, tag_code, _tag_len| {
@@ -1513,7 +1514,7 @@ impl<'gc> MovieClip<'gc> {
                 tracing::error!("Error running abc/symbols in goto: {e:?}");
             }
         }
-        let hit_target_frame = self.0.read().current_frame == frame;
+        let hit_target_frame = self.0.read().current_frame.get() == frame;
 
         if is_rewind {
             // Remove all display objects that were created after the
@@ -1551,13 +1552,13 @@ impl<'gc> MovieClip<'gc> {
                 //
                 // TODO: We can only queue *new* object placement, existing
                 // objects still get updated too early.
-                let mut write = self.0.write(context.gc());
+                let read = self.0.read();
                 let new_tag = QueuedTag {
                     tag_type: QueuedTagAction::Place(params.version),
                     tag_start: params.tag_start,
                 };
-                let bucket = write
-                    .queued_tags
+                let mut queued_tags = read.queued_tags.borrow_mut();
+                let bucket = queued_tags
                     .entry(params.place_object.depth as Depth)
                     .or_insert_with(|| QueuedTagList::None);
 
@@ -1619,8 +1620,8 @@ impl<'gc> MovieClip<'gc> {
         // Note that this only happens if the frame exists and is loaded;
         // e.g. gotoAndStop(9999) displays the final frame, but actions don't run!
         if hit_target_frame {
-            self.0.write(context.gc()).current_frame -= 1;
-            self.0.write(context.gc()).tag_stream_pos = frame_pos;
+            self.0.read().decrement_current_frame();
+            self.0.read().tag_stream_pos.set(frame_pos);
             // If we changed frames, then trigger any sounds in our target frame.
             // However, if we executed a 'no-op goto' (start and end frames are the same),
             // then do *not* run sounds. Some SWFS (e.g. 'This is the only level too')
@@ -1632,7 +1633,7 @@ impl<'gc> MovieClip<'gc> {
                 self.movie().is_action_script_3(),
             );
         } else {
-            self.0.write(context.gc()).current_frame = clamped_frame;
+            self.0.read().current_frame.set(clamped_frame);
         }
 
         // Finally, run frames for children that are placed on this frame.
@@ -1651,7 +1652,7 @@ impl<'gc> MovieClip<'gc> {
             run_inner_goto_frame(context, &removed_frame_scripts, self);
         }
 
-        self.assert_expected_tag_end(context, hit_target_frame);
+        self.assert_expected_tag_end(hit_target_frame);
     }
 
     fn construct_as_avm1_object(
@@ -1735,7 +1736,7 @@ impl<'gc> MovieClip<'gc> {
 
             let mut events = Vec::new();
 
-            for event_handler in self.0.write(context.gc()).clip_event_handlers().iter() {
+            for event_handler in self.0.read().clip_event_handlers().iter() {
                 if event_handler.events.contains(ClipEventFlag::INITIALIZE) {
                     context.action_queue.queue_action(
                         self.into(),
@@ -1891,7 +1892,7 @@ impl<'gc> MovieClip<'gc> {
             //
             // We also have to reset the frame number as this emits AS3 events.
             let to_frame = self.current_frame();
-            self.0.write(context.gc()).current_frame = from_frame;
+            self.0.read().current_frame.set(from_frame);
 
             let child = self.child_by_depth(depth);
             if let Some(child) = child {
@@ -1904,7 +1905,7 @@ impl<'gc> MovieClip<'gc> {
                 removed_frame_scripts.push(child);
             }
 
-            self.0.write(context.gc()).current_frame = to_frame;
+            self.0.read().current_frame.set(to_frame);
         }
         Ok(())
     }
@@ -1984,6 +1985,7 @@ impl<'gc> MovieClip<'gc> {
                 .0
                 .read()
                 .clip_event_flags
+                .get()
                 .intersects(ClipEvent::BUTTON_EVENT_FLAGS)
         {
             true
@@ -2012,10 +2014,11 @@ impl<'gc> MovieClip<'gc> {
     }
 
     /// Remove all `PlaceObject` tags off the internal tag queue.
-    fn unqueue_adds(&self, context: &mut UpdateContext<'gc>) -> Vec<(Depth, QueuedTag)> {
-        let mut write = self.0.write(context.gc());
-        let mut unqueued: Vec<_> = write
+    fn unqueue_adds(&self) -> Vec<(Depth, QueuedTag)> {
+        let read = self.0.read();
+        let mut unqueued: Vec<_> = read
             .queued_tags
+            .borrow_mut()
             .iter_mut()
             .filter_map(|(d, b)| b.unqueue_add().map(|b| (*d, b)))
             .collect();
@@ -2023,8 +2026,11 @@ impl<'gc> MovieClip<'gc> {
         unqueued.sort_by(|(_, t1), (_, t2)| t1.tag_start.cmp(&t2.tag_start));
 
         for (depth, _tag) in unqueued.iter() {
-            if matches!(write.queued_tags.get(depth), Some(QueuedTagList::None)) {
-                write.queued_tags.remove(depth);
+            if matches!(
+                read.queued_tags.borrow().get(depth),
+                Some(QueuedTagList::None)
+            ) {
+                read.queued_tags.borrow_mut().remove(depth);
             }
         }
 
@@ -2032,10 +2038,11 @@ impl<'gc> MovieClip<'gc> {
     }
 
     /// Remove all `RemoveObject` tags off the internal tag queue.
-    fn unqueue_removes(&self, context: &mut UpdateContext<'gc>) -> Vec<(Depth, QueuedTag)> {
-        let mut write = self.0.write(context.gc());
-        let mut unqueued: Vec<_> = write
+    fn unqueue_removes(&self) -> Vec<(Depth, QueuedTag)> {
+        let read = self.0.read();
+        let mut unqueued: Vec<_> = read
             .queued_tags
+            .borrow_mut()
             .iter_mut()
             .filter_map(|(d, b)| b.unqueue_remove().map(|b| (*d, b)))
             .collect();
@@ -2043,8 +2050,11 @@ impl<'gc> MovieClip<'gc> {
         unqueued.sort_by(|(_, t1), (_, t2)| t1.tag_start.cmp(&t2.tag_start));
 
         for (depth, _tag) in unqueued.iter() {
-            if matches!(write.queued_tags.get(depth), Some(QueuedTagList::None)) {
-                write.queued_tags.remove(depth);
+            if matches!(
+                read.queued_tags.borrow().get(depth),
+                Some(QueuedTagList::None)
+            ) {
+                read.queued_tags.borrow_mut().remove(depth);
             }
         }
 
@@ -2210,7 +2220,7 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
             // Note that this is NOT when constructors run; that happens later
             // after tags have executed.
             let data = self.0.read().shared.swf.clone();
-            let place_actions = self.unqueue_adds(context);
+            let place_actions = self.unqueue_adds();
 
             for (_, tag) in place_actions {
                 let mut reader = data.read_from(tag.tag_start);
@@ -2290,30 +2300,30 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
     }
 
     fn run_frame_scripts(self, context: &mut UpdateContext<'gc>) {
-        let mut write = self.0.write(context.gc());
-        let avm2_object = write.object.and_then(|o| o.as_avm2_object());
+        let mut read: Ref<'_, MovieClipData<'gc>> = self.0.read();
+        let avm2_object = read.object.and_then(|o| o.as_avm2_object());
 
         if let Some(avm2_object) = avm2_object {
-            if let Some(frame_id) = write.queued_script_frame {
+            if let Some(frame_id) = read.queued_script_frame.get() {
                 // If we are already executing frame scripts, then we shouldn't
                 // run frame scripts recursively. This is because AVM2 can run
                 // gotos, which will both queue and run frame scripts for the
                 // whole movie again. If a goto is attempting to queue frame
                 // scripts on us AGAIN, we should allow the current stack to
                 // wind down before handling that.
-                if !write.contains_flag(MovieClipFlags::EXECUTING_AVM2_FRAME_SCRIPT) {
+                if !read.contains_flag(MovieClipFlags::EXECUTING_AVM2_FRAME_SCRIPT) {
                     let is_fresh_frame =
-                        write.queued_script_frame != write.last_queued_script_frame;
+                        read.queued_script_frame.get() != read.last_queued_script_frame.get();
 
                     if is_fresh_frame {
                         if let Some(Some(callable)) =
-                            write.frame_scripts.get(frame_id as usize).cloned()
+                            read.frame_scripts.get(frame_id as usize).cloned()
                         {
-                            write.last_queued_script_frame = Some(frame_id);
-                            write.queued_script_frame = None;
-                            write.set_flag(MovieClipFlags::EXECUTING_AVM2_FRAME_SCRIPT, true);
+                            read.last_queued_script_frame.set(Some(frame_id));
+                            read.queued_script_frame.set(None);
+                            read.set_flag(MovieClipFlags::EXECUTING_AVM2_FRAME_SCRIPT, true);
 
-                            drop(write);
+                            drop(read);
 
                             let movie = self.movie();
                             let domain = context
@@ -2334,17 +2344,17 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
                                     e
                                 );
                             }
-                            write = self.0.write(context.gc());
+                            read = self.0.read();
 
-                            write.set_flag(MovieClipFlags::EXECUTING_AVM2_FRAME_SCRIPT, false);
+                            read.set_flag(MovieClipFlags::EXECUTING_AVM2_FRAME_SCRIPT, false);
                         }
                     }
                 }
             }
         }
 
-        let goto_frame = write.queued_goto_frame.take();
-        drop(write);
+        let goto_frame = read.queued_goto_frame.take();
+        drop(read);
         if let Some(frame) = goto_frame {
             self.run_goto(context, frame, false);
         }
@@ -3000,7 +3010,17 @@ impl<'gc> MovieClipData<'gc> {
     }
 
     fn current_frame(&self) -> FrameNumber {
-        self.current_frame
+        self.current_frame.get()
+    }
+
+    fn increment_current_frame(&self) {
+        let frame = self.current_frame.get();
+        self.current_frame.set(frame + 1);
+    }
+
+    fn decrement_current_frame(&self) {
+        let frame = self.current_frame.get();
+        self.current_frame.set(frame - 1);
     }
 
     fn total_frames(&self) -> FrameNumber {
@@ -3100,7 +3120,7 @@ impl<'gc> MovieClipData<'gc> {
         for handler in &event_handlers {
             all_event_flags |= handler.events;
         }
-        self.clip_event_flags = all_event_flags;
+        self.clip_event_flags.set(all_event_flags);
         self.clip_event_handlers = event_handlers;
     }
 
@@ -4165,15 +4185,9 @@ impl<'gc, 'a> MovieClip<'gc> {
         Ok(())
     }
 
-    fn queue_place_object(
-        self,
-        context: &mut UpdateContext<'gc>,
-        reader: &mut SwfStream<'a>,
-        version: u8,
-    ) -> Result<(), Error> {
-        let mut write = self.0.write(context.gc());
-        let tag_start =
-            reader.get_ref().as_ptr() as u64 - write.shared.swf.as_ref().as_ptr() as u64;
+    fn queue_place_object(self, reader: &mut SwfStream<'a>, version: u8) -> Result<(), Error> {
+        let read = self.0.read();
+        let tag_start = reader.get_ref().as_ptr() as u64 - read.shared.swf.as_ref().as_ptr() as u64;
         let place_object = if version == 1 {
             reader.read_place_object()
         } else {
@@ -4184,8 +4198,8 @@ impl<'gc, 'a> MovieClip<'gc> {
             tag_type: QueuedTagAction::Place(version),
             tag_start,
         };
-        let bucket = write
-            .queued_tags
+        let mut queued_tags = read.queued_tags.borrow_mut();
+        let bucket = queued_tags
             .entry(place_object.depth as Depth)
             .or_insert_with(|| QueuedTagList::None);
 
@@ -4252,15 +4266,9 @@ impl<'gc, 'a> MovieClip<'gc> {
     }
 
     #[inline]
-    fn queue_remove_object(
-        self,
-        context: &mut UpdateContext<'gc>,
-        reader: &mut SwfStream<'a>,
-        version: u8,
-    ) -> Result<(), Error> {
-        let mut write = self.0.write(context.gc());
-        let tag_start =
-            reader.get_ref().as_ptr() as u64 - write.shared.swf.as_ref().as_ptr() as u64;
+    fn queue_remove_object(self, reader: &mut SwfStream<'a>, version: u8) -> Result<(), Error> {
+        let read = self.0.read();
+        let tag_start = reader.get_ref().as_ptr() as u64 - read.shared.swf.as_ref().as_ptr() as u64;
         let remove_object = if version == 1 {
             reader.read_remove_object_1()
         } else {
@@ -4271,8 +4279,8 @@ impl<'gc, 'a> MovieClip<'gc> {
             tag_type: QueuedTagAction::Remove(version),
             tag_start,
         };
-        let bucket = write
-            .queued_tags
+        let mut queued_tags = read.queued_tags.borrow_mut();
+        let bucket = queued_tags
             .entry(remove_object.depth as Depth)
             .or_insert_with(|| QueuedTagList::None);
 
@@ -4307,11 +4315,11 @@ impl<'gc, 'a> MovieClip<'gc> {
         let mc = self.0.read();
         let audio_stream = mc.playing().then(|| {
             let stream_info = &mc.shared_cell().audio_stream_info;
-            if let (Some(stream_info), None) = (stream_info, mc.audio_stream) {
+            if let (Some(stream_info), None) = (stream_info, mc.audio_stream.get()) {
                 let slice = mc
                     .shared
                     .swf
-                    .to_start_and_end(mc.tag_stream_pos as usize, mc.tag_stream_len());
+                    .to_start_and_end(mc.tag_stream_pos.get() as usize, mc.tag_stream_len());
                 Some(context.start_stream(self, mc.current_frame(), slice, stream_info))
             } else {
                 None
@@ -4320,7 +4328,7 @@ impl<'gc, 'a> MovieClip<'gc> {
 
         drop(mc);
         if let Some(stream) = audio_stream.flatten() {
-            self.0.write(context.gc()).audio_stream = stream;
+            self.0.read().audio_stream.set(stream);
         }
 
         Ok(())
