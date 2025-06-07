@@ -24,6 +24,7 @@ clipboard-message-description =
 clipboard-message-copy = { " " } kopyalamak için
 clipboard-message-cut = { " " } kesmek için
 clipboard-message-paste = { " " } yapıştırmak için
+error-canvas-reload = Tuval işleyici halihazırda kullanımdayken tuval oluşturucu yeniden yüklenemiyor.
 error-file-protocol =
     Görünüşe göre Ruffle'ı "dosya:" protokolünde çalıştırıyorsunuz.
     Tarayıcılar güvenlik nedenleriyle birçok özelliğin çalışmasını engellediğinden bu işe yaramaz.

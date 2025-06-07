@@ -31,4 +31,5 @@ gamemode-default-tooltip = GameMode yalnızca güç tercihi yüksek olarak ayarl
 # See for context https://wiki.archlinux.org/title/Input_method
 ime-enabled = Girdi yöntemi
 ime-enabled-experimental = (deneysel)
+ime-enabled-tooltip = Bir girdi yöntemi Çince, Japonca veya Korece gibi klavyede erişilebilir olmayan karakterlerin girdisinin yapılabilmesini sağlar.
 ime-enabled-default = Varsayılan
