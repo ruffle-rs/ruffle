@@ -86,6 +86,59 @@ impl<'gc> VectorObject<'gc> {
         Ok(object)
     }
 
+    // Given that a read-indexing operation wasn't successful, generate an error.
+    // Returns `None` if the read should fall back to the prototype chain.
+    #[inline(never)]
+    fn fail_read_error(
+        self,
+        activation: &mut Activation<'_, 'gc>,
+        name: &Multiname<'gc>,
+        index: f64,
+    ) -> Option<Error<'gc>> {
+        // TODO the error thrown sometimes depends on JIT behavior
+
+        if activation.caller_movie_or_root().version() >= 11 {
+            // When in >=SWFv11, a RangeError is always thrown.
+            let storage_len = self.0.vector.borrow().length();
+            Some(make_error_1125(activation, index, storage_len))
+        } else if index > 0.0 {
+            // Non-negative values throw a ReferenceError on SWFv10
+            Some(make_reference_error(
+                activation,
+                ReferenceErrorCode::InvalidRead,
+                name,
+                self.instance_class(),
+            ))
+        } else {
+            // Negative values fall back to the prototype chain on SWFv10
+            None
+        }
+    }
+
+    // Given that a write-indexing operation wasn't successful, generate an error.
+    #[inline(never)]
+    fn fail_write_error(
+        self,
+        activation: &mut Activation<'_, 'gc>,
+        name: &Multiname<'gc>,
+        index: f64,
+    ) -> Error<'gc> {
+        // TODO the error thrown sometimes depends on JIT behavior
+
+        if activation.caller_movie_or_root().version() >= 11 {
+            // When in >=SWFv11, a RangeError is always thrown.
+            let storage_len = self.0.vector.borrow().length();
+            make_error_1125(activation, index, storage_len)
+        } else {
+            make_reference_error(
+                activation,
+                ReferenceErrorCode::InvalidWrite,
+                name,
+                self.instance_class(),
+            )
+        }
+    }
+
     fn set_element(
         self,
         activation: &mut Activation<'_, 'gc>,
@@ -130,18 +183,8 @@ impl<'gc> TObject<'gc> for VectorObject<'gc> {
 
                     if u32_index as f64 == index {
                         return self.0.vector.borrow().get(u32_index as usize, activation);
-                    } else if activation.caller_movie_or_root().version() >= 11 {
-                        let storage_len = self.0.vector.borrow().length();
-                        return Err(make_error_1125(activation, index, storage_len));
-                    } else if index > 0.0 {
-                        // Negative values fall back to the prototype chain on
-                        // SWFv10; positive values throw an error
-                        return Err(make_reference_error(
-                            activation,
-                            ReferenceErrorCode::InvalidRead,
-                            name,
-                            self.instance_class(),
-                        ));
+                    } else if let Some(error) = self.fail_read_error(activation, name, index) {
+                        return Err(error);
                     }
                 }
             }
@@ -196,16 +239,8 @@ impl<'gc> TObject<'gc> for VectorObject<'gc> {
 
                     if u32_index as f64 == index {
                         return self.set_element(activation, u32_index as usize, value);
-                    } else if activation.caller_movie_or_root().version() >= 11 {
-                        let storage_len = self.0.vector.borrow().length();
-                        return Err(make_error_1125(activation, index, storage_len));
                     } else {
-                        return Err(make_reference_error(
-                            activation,
-                            ReferenceErrorCode::InvalidWrite,
-                            name,
-                            self.instance_class(),
-                        ));
+                        return Err(self.fail_write_error(activation, name, index));
                     }
                 }
             }
@@ -233,16 +268,8 @@ impl<'gc> TObject<'gc> for VectorObject<'gc> {
 
                     if u32_index as f64 == index {
                         return self.set_element(activation, u32_index as usize, value);
-                    } else if activation.caller_movie_or_root().version() >= 11 {
-                        let storage_len = self.0.vector.borrow().length();
-                        return Err(make_error_1125(activation, index, storage_len));
                     } else {
-                        return Err(make_reference_error(
-                            activation,
-                            ReferenceErrorCode::InvalidWrite,
-                            name,
-                            self.instance_class(),
-                        ));
+                        return Err(self.fail_write_error(activation, name, index));
                     }
                 }
             }
