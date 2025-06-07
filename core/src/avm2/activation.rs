@@ -77,6 +77,13 @@ pub struct Activation<'a, 'gc: 'a> {
     /// The index where the scope frame starts.
     scope_depth: usize,
 
+    /// In avmplus, some behavior differs slightly depending on whether the JIT
+    /// or the interpreter is used. Most methods are executed in JIT mode, but
+    /// in some cases interpreter mode is used instead: for example, script
+    /// initializers always execute in interpreter mode. We keep track of
+    /// whether the current method would be interpreted or JITted in this flag.
+    is_interpreter: bool,
+
     pub context: &'a mut UpdateContext<'gc>,
 }
 
@@ -118,6 +125,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             bound_class: None,
             stack_depth: context.avm2.stack.len(),
             scope_depth: context.avm2.scope_stack.len(),
+            is_interpreter: false,
             context,
         }
     }
@@ -141,6 +149,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             bound_class: None,
             stack_depth: context.avm2.stack.len(),
             scope_depth: context.avm2.scope_stack.len(),
+            is_interpreter: false,
             context,
         }
     }
@@ -168,6 +177,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             bound_class: Some(script.global_class()),
             stack_depth: context.avm2.stack.len(),
             scope_depth: context.avm2.scope_stack.len(),
+            is_interpreter: true, // Script initializers are always in interpreter mode
             context,
         };
 
@@ -369,6 +379,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         self.bound_class = bound_class;
         self.stack_depth = self.context.avm2.stack.len();
         self.scope_depth = self.context.avm2.scope_stack.len();
+        self.is_interpreter = false;
 
         // Resolve parameters and return type
         if !method.is_info_resolved() {
@@ -476,6 +487,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             bound_class,
             stack_depth: context.avm2.stack.len(),
             scope_depth: context.avm2.scope_stack.len(),
+            is_interpreter: false,
             context,
         }
     }
@@ -571,13 +583,13 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     }
 
     /// Pushes a value onto the operand stack.
-    #[inline]
+    #[inline(always)]
     pub fn push_stack(&mut self, value: impl Into<Value<'gc>>) {
         self.avm2().push(value.into());
     }
 
     /// Pops a value off the operand stack.
-    #[inline]
+    #[inline(always)]
     #[must_use]
     pub fn pop_stack(&mut self) -> Value<'gc> {
         self.avm2().pop()
@@ -722,8 +734,18 @@ impl<'a, 'gc> Activation<'a, 'gc> {
                     multiname,
                     num_args,
                 } => self.op_call_super(*multiname, *num_args),
-                Op::GetProperty { multiname } => self.op_get_property(*multiname),
-                Op::SetProperty { multiname } => self.op_set_property(*multiname),
+                Op::GetPropertyStatic { multiname } => self.op_get_property_static(*multiname),
+                Op::GetPropertyFast {
+                    multiname,
+                    allow_indexing,
+                } => self.op_get_property_fast(*multiname, *allow_indexing),
+                Op::GetPropertySlow { multiname } => self.op_get_property_slow(*multiname),
+                Op::SetPropertyStatic { multiname } => self.op_set_property_static(*multiname),
+                Op::SetPropertyFast {
+                    multiname,
+                    allow_indexing,
+                } => self.op_set_property_fast(*multiname, *allow_indexing),
+                Op::SetPropertySlow { multiname } => self.op_set_property_slow(*multiname),
                 Op::InitProperty { multiname } => self.op_init_property(*multiname),
                 Op::DeleteProperty { multiname } => self.op_delete_property(*multiname),
                 Op::GetSuper { multiname } => self.op_get_super(*multiname),
@@ -1239,31 +1261,39 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         }
     }
 
-    fn op_get_property(&mut self, multiname: Gc<'gc, Multiname<'gc>>) -> Result<(), Error<'gc>> {
+    fn op_get_property_static(
+        &mut self,
+        multiname: Gc<'gc, Multiname<'gc>>,
+    ) -> Result<(), Error<'gc>> {
         // default path for static names
-        if !multiname.has_lazy_component() {
-            let object = self.pop_stack().null_check(self, Some(&multiname))?;
+        let object = self.pop_stack().null_check(self, Some(&multiname))?;
 
-            let value = object.get_property(&multiname, self)?;
-            self.push_stack(value);
+        let value = object.get_property(&multiname, self)?;
+        self.push_stack(value);
 
-            return Ok(());
-        }
+        Ok(())
+    }
 
+    fn op_get_property_fast(
+        &mut self,
+        multiname: Gc<'gc, Multiname<'gc>>,
+        allow_indexing: bool,
+    ) -> Result<(), Error<'gc>> {
         // (fast) side path for dictionary/array-likes
-        // NOTE: FP behaves differently here when the public namespace isn't
-        // included in the multiname's namespace set
-        if multiname.has_lazy_name() && !multiname.has_lazy_ns() {
-            // `MultinameL` is the only form of multiname that allows fast-path
-            // or alternate-path lookups based on the local name *value*,
-            // rather than it's string representation.
 
-            let name_value = self.context.avm2.peek(0);
-            let object_value = self.context.avm2.peek(1);
+        // `MultinameL` is the only form of multiname that allows fast-path
+        // or alternate-path lookups based on the local name *value*,
+        // rather than it's string representation.
 
-            if let Value::Object(object) = object_value {
-                match name_value {
-                    Value::Integer(name_int) if name_int >= 0 => {
+        let name_value = self.context.avm2.peek(0);
+        let object_value = self.context.avm2.peek(1);
+
+        if let Value::Object(object) = object_value {
+            match name_value {
+                Value::Integer(name_int) if name_int >= 0 => {
+                    // This path doesn't activate when the public namespace
+                    // isn't included in the multiname's namespace set
+                    if allow_indexing || self.is_interpreter {
                         if let Some(value) = object.get_index_property(name_int as usize) {
                             let _ = self.pop_stack();
                             let _ = self.pop_stack();
@@ -1272,21 +1302,29 @@ impl<'a, 'gc> Activation<'a, 'gc> {
                             return Ok(());
                         }
                     }
-                    Value::Object(name_object) => {
-                        if let Some(dictionary) = object.as_dictionary_object() {
-                            let _ = self.pop_stack();
-                            let _ = self.pop_stack();
-                            let value = dictionary.get_property_by_object(name_object);
-                            self.push_stack(value);
-
-                            return Ok(());
-                        }
-                    }
-                    _ => {}
                 }
+                Value::Object(name_object) => {
+                    if let Some(dictionary) = object.as_dictionary_object() {
+                        let _ = self.pop_stack();
+                        let _ = self.pop_stack();
+                        let value = dictionary.get_property_by_object(name_object);
+                        self.push_stack(value);
+
+                        return Ok(());
+                    }
+                }
+                _ => {}
             }
         }
 
+        // If it wasn't actually a fast-path access, fall back to the slow version
+        self.op_get_property_slow(multiname)
+    }
+
+    fn op_get_property_slow(
+        &mut self,
+        multiname: Gc<'gc, Multiname<'gc>>,
+    ) -> Result<(), Error<'gc>> {
         // main path for dynamic names
         let multiname = multiname.fill_with_runtime_params(self)?;
         let object = self.pop_stack().null_check(self, Some(&multiname))?;
@@ -1297,54 +1335,80 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         Ok(())
     }
 
-    fn op_set_property(&mut self, multiname: Gc<'gc, Multiname<'gc>>) -> Result<(), Error<'gc>> {
+    fn op_set_property_static(
+        &mut self,
+        multiname: Gc<'gc, Multiname<'gc>>,
+    ) -> Result<(), Error<'gc>> {
+        // default path for static names
+
         let value = self.pop_stack();
 
-        // default path for static names
-        if !multiname.has_lazy_component() {
-            let object = self.pop_stack().null_check(self, Some(&multiname))?;
+        let object = self.pop_stack().null_check(self, Some(&multiname))?;
 
-            object.set_property(&multiname, value, self)?;
-            return Ok(());
-        }
+        object.set_property(&multiname, value, self)?;
 
-        // side path for dictionary/arrays (TODO)
-        // NOTE: FP behaves differently here when the public namespace isn't
-        // included in the multiname's namespace set
-        if multiname.has_lazy_name() && !multiname.has_lazy_ns() {
-            // `MultinameL` is the only form of multiname that allows fast-path
-            // or alternate-path lookups based on the local name *value*,
-            // rather than it's string representation.
+        Ok(())
+    }
 
-            let name_value = self.context.avm2.peek(0);
-            let object_value = self.context.avm2.peek(1);
+    fn op_set_property_fast(
+        &mut self,
+        multiname: Gc<'gc, Multiname<'gc>>,
+        allow_indexing: bool,
+    ) -> Result<(), Error<'gc>> {
+        // side path for dictionary/arrays
 
-            if let Value::Object(object) = object_value {
-                match name_value {
-                    Value::Integer(name_int) if name_int >= 0 => {
-                        if let Some(mut array) = object.as_array_storage_mut(self.gc()) {
+        let value = self.context.avm2.peek(0);
+
+        // `MultinameL` is the only form of multiname that allows fast-path
+        // or alternate-path lookups based on the local name *value*,
+        // rather than it's string representation.
+
+        let name_value = self.context.avm2.peek(1);
+        let object_value = self.context.avm2.peek(2);
+
+        if let Value::Object(object) = object_value {
+            match name_value {
+                Value::Integer(name_int) if name_int >= 0 => {
+                    // This path doesn't activate when the public namespace
+                    // isn't included in the multiname's namespace set
+                    if allow_indexing || self.is_interpreter {
+                        if let Some(result) =
+                            object.set_index_property(self, name_int as usize, value)
+                        {
                             let _ = self.pop_stack();
                             let _ = self.pop_stack();
-                            array.set(name_int as usize, value);
+                            let _ = self.pop_stack();
 
-                            return Ok(());
+                            return result;
                         }
                     }
-                    Value::Object(name_object) => {
-                        if let Some(dictionary) = object.as_dictionary_object() {
-                            let _ = self.pop_stack();
-                            let _ = self.pop_stack();
-                            dictionary.set_property_by_object(name_object, value, self.gc());
-
-                            return Ok(());
-                        }
-                    }
-                    _ => {}
                 }
+                Value::Object(name_object) => {
+                    if let Some(dictionary) = object.as_dictionary_object() {
+                        let _ = self.pop_stack();
+                        let _ = self.pop_stack();
+                        let _ = self.pop_stack();
+                        dictionary.set_property_by_object(name_object, value, self.gc());
+
+                        return Ok(());
+                    }
+                }
+                _ => {}
             }
         }
 
+        // If it wasn't actually a fast-path access, fall back to the slow version
+        self.op_set_property_slow(multiname)
+    }
+
+    fn op_set_property_slow(
+        &mut self,
+        multiname: Gc<'gc, Multiname<'gc>>,
+    ) -> Result<(), Error<'gc>> {
         // main path for dynamic names
+
+        let value = self.pop_stack();
+
         let multiname = multiname.fill_with_runtime_params(self)?;
         let object = self.pop_stack().null_check(self, Some(&multiname))?;
 
@@ -2307,14 +2371,13 @@ impl<'a, 'gc> Activation<'a, 'gc> {
 
     fn op_has_next(&mut self) -> Result<(), Error<'gc>> {
         let cur_index = self.pop_stack().coerce_to_i32(self)?;
+        let value = self.pop_stack();
 
         if cur_index < 0 {
             self.push_stack(0);
 
             return Ok(());
         }
-
-        let value = self.pop_stack();
 
         let object = match value {
             Value::Undefined | Value::Null => None,
@@ -2388,6 +2451,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
 
     fn op_next_name(&mut self) -> Result<(), Error<'gc>> {
         let cur_index = self.pop_stack().coerce_to_i32(self)?;
+        let value = self.pop_stack();
 
         if cur_index <= 0 {
             self.push_stack(Value::Null);
@@ -2395,7 +2459,6 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             return Ok(());
         }
 
-        let value = self.pop_stack();
         let object = match value.null_check(self, None)? {
             Value::Object(obj) => obj,
             value => value
@@ -2411,6 +2474,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
 
     fn op_next_value(&mut self) -> Result<(), Error<'gc>> {
         let cur_index = self.pop_stack().coerce_to_i32(self)?;
+        let value = self.pop_stack();
 
         if cur_index <= 0 {
             self.push_stack(Value::Undefined);
@@ -2418,7 +2482,6 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             return Ok(());
         }
 
-        let value = self.pop_stack();
         let object = match value.null_check(self, None)? {
             Value::Object(obj) => obj,
             value => value

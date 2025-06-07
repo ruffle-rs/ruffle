@@ -249,6 +249,17 @@ pub trait TObject<'gc>: 'gc + Collect<'gc> + Debug + Into<Object<'gc>> + Clone +
         None
     }
 
+    /// Purely an optimization for "array-like" access. This should return
+    /// `None` when the lookup needs to be forwarded to the base.
+    fn set_index_property(
+        self,
+        _activation: &mut Activation<'_, 'gc>,
+        _index: usize,
+        _value: Value<'gc>,
+    ) -> Option<Result<(), Error<'gc>>> {
+        None
+    }
+
     /// Set a local property of the object. The Multiname should always be public.
     ///
     /// This skips class field lookups and looks at:
@@ -712,6 +723,11 @@ pub trait TObject<'gc>: 'gc + Collect<'gc> + Debug + Into<Object<'gc>> + Clone +
 
     /// Unwrap this object as mutable array storage.
     fn as_array_storage_mut(&self, _mc: &Mutation<'gc>) -> Option<RefMut<ArrayStorage<'gc>>> {
+        None
+    }
+
+    /// Unwrap this object as a vector.
+    fn as_vector_object(&self) -> Option<VectorObject<'gc>> {
         None
     }
 
