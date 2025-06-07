@@ -2375,14 +2375,13 @@ impl<'a, 'gc> Activation<'a, 'gc> {
 
     fn op_has_next(&mut self) -> Result<(), Error<'gc>> {
         let cur_index = self.pop_stack().coerce_to_i32(self)?;
+        let value = self.pop_stack();
 
         if cur_index < 0 {
             self.push_stack(0);
 
             return Ok(());
         }
-
-        let value = self.pop_stack();
 
         let object = match value {
             Value::Undefined | Value::Null => None,
@@ -2456,6 +2455,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
 
     fn op_next_name(&mut self) -> Result<(), Error<'gc>> {
         let cur_index = self.pop_stack().coerce_to_i32(self)?;
+        let value = self.pop_stack();
 
         if cur_index <= 0 {
             self.push_stack(Value::Null);
@@ -2463,7 +2463,6 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             return Ok(());
         }
 
-        let value = self.pop_stack();
         let object = match value.null_check(self, None)? {
             Value::Object(obj) => obj,
             value => value
@@ -2479,6 +2478,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
 
     fn op_next_value(&mut self) -> Result<(), Error<'gc>> {
         let cur_index = self.pop_stack().coerce_to_i32(self)?;
+        let value = self.pop_stack();
 
         if cur_index <= 0 {
             self.push_stack(Value::Undefined);
@@ -2486,7 +2486,6 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             return Ok(());
         }
 
-        let value = self.pop_stack();
         let object = match value.null_check(self, None)? {
             Value::Object(obj) => obj,
             value => value
