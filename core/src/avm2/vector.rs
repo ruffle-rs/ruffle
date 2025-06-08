@@ -63,7 +63,7 @@ impl<'gc> VectorStorage<'gc> {
 
     pub fn check_fixed(&self, activation: &mut Activation<'_, 'gc>) -> Result<(), Error<'gc>> {
         if self.is_fixed {
-            return Err(Error::AvmError(range_error(
+            return Err(Error::avm_error(range_error(
                 activation,
                 "Error #1126: Cannot change the length of a fixed Vector.",
                 1126,

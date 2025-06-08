@@ -691,7 +691,7 @@ pub fn compress<'gc>(
         let algorithm = match algorithm.parse() {
             Ok(algorithm) => algorithm,
             Err(_) => {
-                return Err(Error::AvmError(crate::avm2::error::io_error(
+                return Err(Error::avm_error(crate::avm2::error::io_error(
                     activation,
                     "Error #2058: There was an error decompressing the data.",
                     2058,
@@ -721,7 +721,7 @@ pub fn uncompress<'gc>(
         let algorithm = match algorithm.parse() {
             Ok(algorithm) => algorithm,
             Err(_) => {
-                return Err(Error::AvmError(crate::avm2::error::io_error(
+                return Err(Error::avm_error(crate::avm2::error::io_error(
                     activation,
                     "Error #2058: There was an error decompressing the data.",
                     2058,
@@ -731,7 +731,7 @@ pub fn uncompress<'gc>(
         let buffer = match bytearray.decompress(algorithm) {
             Some(buffer) => buffer,
             None => {
-                return Err(Error::AvmError(crate::avm2::error::io_error(
+                return Err(Error::avm_error(crate::avm2::error::io_error(
                     activation,
                     "Error #2058: There was an error decompressing the data.",
                     2058,

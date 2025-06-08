@@ -33,7 +33,7 @@ fn validate_add_operation<'gc>(
         .expect("Parent must be a DisplayObjectContainer");
 
     if let DisplayObject::Stage(_) = proposed_child {
-        return Err(Error::AvmError(argument_error(
+        return Err(Error::avm_error(argument_error(
             activation,
             "Error #3783: A Stage object cannot be added as the child of another object.",
             3783,
@@ -41,7 +41,7 @@ fn validate_add_operation<'gc>(
     }
 
     if !proposed_child.movie().is_action_script_3() {
-        return Err(Error::AvmError(argument_error(
+        return Err(Error::avm_error(argument_error(
             activation,
             "Error #2180: It is illegal to move AVM1 content (AS1 or AS2) to a different part of the displayList when it has been loaded into AVM2 (AS3) content.",
             2180,
@@ -49,7 +49,7 @@ fn validate_add_operation<'gc>(
     }
 
     if DisplayObject::ptr_eq(proposed_child, new_parent) {
-        return Err(Error::AvmError(argument_error(
+        return Err(Error::avm_error(argument_error(
             activation,
             "Error #2024: An object cannot be added as a child of itself.",
             2024,
@@ -60,7 +60,7 @@ fn validate_add_operation<'gc>(
 
     while let Some(tp) = checking_parent {
         if DisplayObject::ptr_eq(tp, proposed_child) {
-            return Err(Error::AvmError(argument_error(
+            return Err(Error::avm_error(argument_error(
                 activation,
                 "Error #2150: An object cannot be added as a child to one of it's children (or children's children, etc.).",
                 2150,
@@ -72,7 +72,7 @@ fn validate_add_operation<'gc>(
 
     if proposed_index > ctr.num_children() {
         // Flash error message: The supplied index is out of bounds.
-        return Err(Error::AvmError(range_error(
+        return Err(Error::avm_error(range_error(
             activation,
             "Index position does not exist in the child list",
             2006,
@@ -145,7 +145,7 @@ pub fn get_child_at<'gc>(
             Ok(child.object2())
         } else {
             // Flash error message: The supplied index is out of bounds.
-            Err(Error::AvmError(range_error(
+            Err(Error::avm_error(range_error(
                 activation,
                 &format!("Display object container has no child with id {index}"),
                 2006,
@@ -336,7 +336,7 @@ pub fn remove_child_at<'gc>(
 
             if target_child >= ctr.num_children() as i32 || target_child < 0 {
                 // Flash error message: The supplied index is out of bounds.
-                return Err(Error::AvmError(range_error(
+                return Err(Error::avm_error(range_error(
                     activation,
                     &format!(
                         "{} does not exist in the child list (valid range is 0 to {})",
@@ -378,7 +378,7 @@ pub fn remove_children<'gc>(
 
             if (from >= ctr.num_children() as i32 || from < 0) && to != i32::MAX {
                 // Flash error message: The supplied index is out of bounds.
-                return Err(Error::AvmError(range_error(
+                return Err(Error::avm_error(range_error(
                     activation,
                     &format!(
                         "Starting position {} does not exist in the child list (valid range is 0 to {})",
@@ -391,7 +391,7 @@ pub fn remove_children<'gc>(
 
             if (to >= ctr.num_children() as i32 || to < 0) && to != i32::MAX {
                 // Flash error message: The supplied index is out of bounds.
-                return Err(Error::AvmError(range_error(
+                return Err(Error::avm_error(range_error(
                     activation,
                     &format!(
                         "Ending position {} does not exist in the child list (valid range is 0 to {})",
@@ -404,7 +404,7 @@ pub fn remove_children<'gc>(
 
             if from > to {
                 // Flash error message: The supplied index is out of bounds.
-                return Err(Error::AvmError(range_error(
+                return Err(Error::avm_error(range_error(
                     activation,
                     &format!("Range {from} to {to} is invalid"),
                     2006,
@@ -464,7 +464,7 @@ pub fn swap_children_at<'gc>(
 
             if index0 < 0 || index0 as usize >= bounds {
                 // Flash error message: The supplied index is out of bounds.
-                return Err(Error::AvmError(range_error(
+                return Err(Error::avm_error(range_error(
                     activation,
                     &format!("Index {index0} is out of bounds"),
                     2006,
@@ -473,7 +473,7 @@ pub fn swap_children_at<'gc>(
 
             if index1 < 0 || index1 as usize >= bounds {
                 // Flash error message: The supplied index is out of bounds.
-                return Err(Error::AvmError(range_error(
+                return Err(Error::avm_error(range_error(
                     activation,
                     &format!("Index {index1} is out of bounds"),
                     2006,

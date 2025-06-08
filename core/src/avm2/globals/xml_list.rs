@@ -66,7 +66,7 @@ pub fn init<'gc>(
             );
         }
         Err(e) => {
-            return Err(Error::RustError(
+            return Err(Error::rust_error(
                 format!("Failed to parse XML: {e:?}").into(),
             ))
         }

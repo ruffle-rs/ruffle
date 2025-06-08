@@ -4,7 +4,7 @@ pub fn avm1movie_allocator<'gc>(
     _class: ClassObject<'gc>,
     activation: &mut Activation<'_, 'gc>,
 ) -> Result<Object<'gc>, Error<'gc>> {
-    return Err(Error::AvmError(argument_error(
+    return Err(Error::avm_error(argument_error(
         activation,
         "Error #2012: AVM1Movie$ class cannot be instantiated.",
         2012,

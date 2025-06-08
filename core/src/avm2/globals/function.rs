@@ -36,7 +36,7 @@ pub fn function_constructor<'gc>(
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if !args.is_empty() {
-        return Err(Error::AvmError(eval_error(
+        return Err(Error::avm_error(eval_error(
             activation,
             "Error #1066: The form function('function body') is not supported.",
             1066,
@@ -119,7 +119,7 @@ pub fn apply<'gc>(
 
             resolved_args
         } else {
-            return Err(Error::AvmError(type_error(
+            return Err(Error::avm_error(type_error(
                 activation,
                 "Error #1116: second argument to Function.prototype.apply must be an array.",
                 1116,

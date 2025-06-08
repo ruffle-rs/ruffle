@@ -274,7 +274,7 @@ fn decode<'gc>(
 
     while let Some(c) = chars.next() {
         let Ok(c) = c else {
-            return Err(Error::AvmError(uri_error(
+            return Err(Error::avm_error(uri_error(
                 activation,
                 &format!("Error #1052: Invalid URI passed to {func_name} function."),
                 1052,
@@ -288,7 +288,7 @@ fn decode<'gc>(
 
         bytes.clear();
         let Some(byte) = handle_percent(&mut chars) else {
-            return Err(Error::AvmError(uri_error(
+            return Err(Error::avm_error(uri_error(
                 activation,
                 &format!("Error #1052: Invalid URI passed to {func_name} function."),
                 1052,
@@ -299,7 +299,7 @@ fn decode<'gc>(
             let n = byte.leading_ones();
 
             if n == 1 || n > 4 {
-                return Err(Error::AvmError(uri_error(
+                return Err(Error::avm_error(uri_error(
                     activation,
                     &format!("Error #1052: Invalid URI passed to {func_name} function."),
                     1052,
@@ -308,7 +308,7 @@ fn decode<'gc>(
 
             for _ in 1..n {
                 if chars.next() != Some(Ok('%')) {
-                    return Err(Error::AvmError(uri_error(
+                    return Err(Error::avm_error(uri_error(
                         activation,
                         &format!("Error #1052: Invalid URI passed to {func_name} function."),
                         1052,
@@ -316,7 +316,7 @@ fn decode<'gc>(
                 }; // consume %
 
                 let Some(byte) = handle_percent(&mut chars) else {
-                    return Err(Error::AvmError(uri_error(
+                    return Err(Error::avm_error(uri_error(
                         activation,
                         &format!("Error #1052: Invalid URI passed to {func_name} function."),
                         1052,
@@ -324,7 +324,7 @@ fn decode<'gc>(
                 };
 
                 if (byte & 0xC0) != 0x80 {
-                    return Err(Error::AvmError(uri_error(
+                    return Err(Error::avm_error(uri_error(
                         activation,
                         &format!("Error #1052: Invalid URI passed to {func_name} function."),
                         1052,
@@ -336,7 +336,7 @@ fn decode<'gc>(
         }
 
         let Ok(decoded) = std::str::from_utf8(&bytes) else {
-            return Err(Error::AvmError(uri_error(
+            return Err(Error::avm_error(uri_error(
                 activation,
                 &format!("Error #1052: Invalid URI passed to {func_name} function."),
                 1052,

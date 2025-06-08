@@ -409,7 +409,7 @@ pub fn goto_frame<'gc>(
                     //the requested frame exists within that scene.
                     let scene = args[1].coerce_to_string(activation)?;
                     if !mc.frame_exists_within_scene(&frame_or_label, &scene, activation.context) {
-                        return Err(Error::AvmError(argument_error(
+                        return Err(Error::avm_error(argument_error(
                             activation,
                             &format!("Error #2109: Frame label {frame_or_label} not found in scene {scene}."),
                             2109,
@@ -422,7 +422,7 @@ pub fn goto_frame<'gc>(
                 if activation.caller_movie_or_root().version() >= 11 {
                     frame.ok_or(
                         // TODO: Also include the scene in the error message, as done above
-                        Error::AvmError(argument_error(
+                        Error::avm_error(argument_error(
                             activation,
                             &format!("Error #2109: {frame_or_label} is not a valid frame label."),
                             2109,

@@ -168,7 +168,7 @@ impl FilterAvm2Ext for Filter {
             )?));
         }
 
-        Err(Error::AvmError(type_error(
+        Err(Error::avm_error(type_error(
             activation,
             &format!(
                 "Error #1034: Type Coercion failed: cannot convert {object:?} to flash.filters.BitmapFilter."
@@ -504,7 +504,7 @@ fn avm2_to_displacement_map_filter<'gc>(
         if let Some(bitmap) = bitmap.as_bitmap_data() {
             Some(bitmap.bitmap_handle(activation.gc(), activation.context.renderer))
         } else {
-            return Err(Error::AvmError(type_error(
+            return Err(Error::avm_error(type_error(
                 activation,
                 &format!(
                     "Error #1034: Type Coercion failed: cannot convert {bitmap:?} to flash.display.BitmapData."

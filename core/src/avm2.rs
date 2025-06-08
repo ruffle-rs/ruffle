@@ -579,7 +579,7 @@ impl<'gc> Avm2<'gc> {
                 // The class must extend DisplayObject to ensure that events
                 // can properly be dispatched to them
                 if !class.has_class_in_chain(activation.avm2().class_defs().display_object) {
-                    return Err(Error::AvmError(type_error(
+                    return Err(Error::avm_error(type_error(
                         activation,
                         &format!("Error #2022: Class {}$ must inherit from DisplayObject to link to a symbol.", name.to_qualified_name(activation.gc())),
                         2022,
@@ -592,7 +592,7 @@ impl<'gc> Avm2<'gc> {
             // ClassObject is going to be the class of the MC. Ensure it
             // subclasses Sprite.
             if !class.has_class_in_chain(activation.avm2().class_defs().sprite) {
-                return Err(Error::AvmError(type_error(
+                return Err(Error::avm_error(type_error(
                     activation,
                     &format!(
                         "Error #2023: Class {}$ must inherit from Sprite to link to the root.",

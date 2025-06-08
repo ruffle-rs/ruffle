@@ -257,7 +257,7 @@ pub fn save<'gc>(
     let data = match data {
         Value::Null | Value::Undefined => {
             // For some reason this isn't a proper error.
-            return Err(Error::AvmError(argument_error(activation, "data", 0)?));
+            return Err(Error::avm_error(argument_error(activation, "data", 0)?));
         }
         Value::Object(obj) => {
             if let Some(bytearray) = obj.as_bytearray() {
@@ -294,7 +294,7 @@ pub fn save<'gc>(
 
             activation.context.navigator.spawn_future(process);
         }
-        None => return Err(Error::AvmError(error(activation, "Error #2174: Only one download, upload, load or save operation can be active at a time on each FileReference.", 2174)?)),
+        None => return Err(Error::avm_error(error(activation, "Error #2174: Only one download, upload, load or save operation can be active at a time on each FileReference.", 2174)?)),
     }
 
     Ok(Value::Undefined)

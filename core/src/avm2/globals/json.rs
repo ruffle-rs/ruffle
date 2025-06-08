@@ -225,7 +225,7 @@ impl<'gc> AvmSerializer<'gc> {
             Value::String(s) => JsonValue::from(s.to_utf8_lossy().deref()),
             Value::Object(obj) => {
                 if self.obj_stack.contains(&obj) {
-                    return Err(Error::AvmError(type_error(
+                    return Err(Error::avm_error(type_error(
                         activation,
                         "Error #1129: Cyclic structure cannot be converted to JSON string.",
                         1129,
@@ -273,7 +273,7 @@ pub fn parse<'gc>(
     let parsed = if let Ok(parsed) = serde_json::from_str(&input.to_utf8_lossy()) {
         parsed
     } else {
-        return Err(Error::AvmError(syntax_error(
+        return Err(Error::avm_error(syntax_error(
             activation,
             "Error #1132: Invalid JSON parse input.",
             1132,
@@ -295,7 +295,7 @@ pub fn stringify<'gc>(
 
     // If the replacer is None, that means it was either undefined or null.
     if replacer.is_none() && !matches!(args.get_value(1), Value::Null) {
-        return Err(Error::AvmError(type_error(
+        return Err(Error::avm_error(type_error(
             activation,
             "Error #1131: Replacer argument to JSON stringifier must be an array or a two parameter function.",
             1131,
@@ -308,7 +308,7 @@ pub fn stringify<'gc>(
         } else if let Some(arr) = replacer.as_array_object() {
             Ok(Replacer::PropList(arr))
         } else {
-            Err(Error::AvmError(type_error(
+            Err(Error::avm_error(type_error(
                 activation,
                 "Error #1131: Replacer argument to JSON stringifier must be an array or a two parameter function.",
                 1131,

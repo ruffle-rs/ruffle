@@ -10,7 +10,7 @@ pub fn class_allocator<'gc>(
     _class: ClassObject<'gc>,
     activation: &mut Activation<'_, 'gc>,
 ) -> Result<Object<'gc>, Error<'gc>> {
-    Err(Error::AvmError(type_error(
+    Err(Error::avm_error(type_error(
         activation,
         "Error #1115: Class$ is not a constructor.",
         1115,

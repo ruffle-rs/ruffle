@@ -40,7 +40,7 @@ impl ByteArrayError {
                 "Error #2030: End of file was encountered.",
                 2030,
             ) {
-                Ok(e) => Error::AvmError(e),
+                Ok(e) => Error::avm_error(e),
                 Err(e) => e,
             },
             ByteArrayError::IndexOutOfBounds => make_error_2006(activation),

@@ -303,7 +303,7 @@ pub fn get_filters<'gc>(
 fn build_argument_type_error<'gc>(
     activation: &mut Activation<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
-    Err(Error::AvmError(crate::avm2::error::argument_error(
+    Err(Error::avm_error(crate::avm2::error::argument_error(
         activation,
         "Error #2005: Parameter 0 is of the incorrect type. Should be type Filter.",
         2005,
@@ -567,7 +567,7 @@ pub fn set_name<'gc>(
         let new_name = args.get_string(activation, 0)?;
 
         if dobj.instantiated_by_timeline() {
-            return Err(Error::AvmError(illegal_operation_error(
+            return Err(Error::avm_error(illegal_operation_error(
                 activation,
                 "Error #2078: The name property of a Timeline-placed object cannot be modified.",
                 2078,

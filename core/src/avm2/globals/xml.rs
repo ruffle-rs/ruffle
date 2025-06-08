@@ -41,7 +41,7 @@ pub fn init<'gc>(
             // an error, since E4XNode::parse would otherwise return an empty array
             // (which would be accepted)
             if xml_list.length() != 1 {
-                return Err(Error::AvmError(ill_formed_markup_err(activation)?));
+                return Err(Error::avm_error(ill_formed_markup_err(activation)?));
             }
         }
     }
@@ -95,7 +95,7 @@ pub fn init<'gc>(
             if let Some(element) = single_element_node {
                 *element
             } else {
-                return Err(Error::AvmError(ill_formed_markup_err(activation)?));
+                return Err(Error::avm_error(ill_formed_markup_err(activation)?));
             }
         }
     };
@@ -850,7 +850,7 @@ pub fn call_handler<'gc>(
                         .get_or_create_xml(activation)
                         .into());
                 }
-                return Err(Error::AvmError(ill_formed_markup_err(activation)?));
+                return Err(Error::avm_error(ill_formed_markup_err(activation)?));
             }
         }
     }
