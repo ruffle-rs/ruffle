@@ -292,7 +292,7 @@ pub fn load_compressed_data_from_byte_array<'gc>(
         bytes
     } else {
         // This is the error Flash throws
-        return Err(Error::AvmError(argument_error(
+        return Err(Error::avm_error(argument_error(
             activation,
             "Error #2084: The AMF encoding of the arguments cannot exceed 40K.",
             2084,
@@ -301,7 +301,7 @@ pub fn load_compressed_data_from_byte_array<'gc>(
 
     // FIXME - determine the actual error thrown by Flash Player
     let handle = activation.context.audio.register_mp3(bytes).map_err(|e| {
-        Error::RustError(format!("Failed to register sound from bytearray: {e:?}").into())
+        Error::rust_error(format!("Failed to register sound from bytearray: {e:?}").into())
     })?;
 
     let progress_evt =

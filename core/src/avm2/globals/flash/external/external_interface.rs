@@ -26,7 +26,7 @@ pub fn call<'gc>(
 
 fn check_available<'gc>(activation: &mut Activation<'_, 'gc>) -> Result<(), Error<'gc>> {
     if !activation.context.external_interface.available() {
-        return Err(Error::AvmError(error(
+        return Err(Error::avm_error(error(
             activation,
             "Error #2067: The ExternalInterface is not available in this container. ExternalInterface requires Internet Explorer ActiveX, Firefox, Mozilla 1.7.5 and greater, or other browsers that support NPRuntime.",
             2067,

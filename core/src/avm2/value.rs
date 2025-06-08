@@ -641,7 +641,7 @@ impl<'gc> Value<'gc> {
 
                 let class_name = self.instance_of_class_name(activation);
 
-                Err(Error::AvmError(type_error(
+                Err(Error::avm_error(type_error(
                     activation,
                     &format!("Error #1050: Cannot convert {class_name} to primitive."),
                     1050,
@@ -660,7 +660,7 @@ impl<'gc> Value<'gc> {
 
                 let class_name = self.instance_of_class_name(activation);
 
-                Err(Error::AvmError(type_error(
+                Err(Error::avm_error(type_error(
                     activation,
                     &format!("Error #1050: Cannot convert {class_name} to primitive."),
                     1050,
@@ -1175,7 +1175,7 @@ impl<'gc> Value<'gc> {
                     if let Some(value) = dynamic_lookup {
                         value.call(activation, *self, arguments)
                     } else {
-                        Err(Error::AvmError(type_error(
+                        Err(Error::avm_error(type_error(
                             activation,
                             "Error #1006: value is not a function.",
                             1006,
@@ -1371,7 +1371,7 @@ impl<'gc> Value<'gc> {
             Some(Object::FunctionObject(function_object)) => {
                 function_object.call(activation, receiver, args)
             }
-            _ => Err(Error::AvmError(type_error(
+            _ => Err(Error::avm_error(type_error(
                 activation,
                 "Error #1006: value is not a function.",
                 1006,
@@ -1400,7 +1400,7 @@ impl<'gc> Value<'gc> {
                     )
                 };
 
-                Err(Error::AvmError(error?))
+                Err(Error::avm_error(error?))
             }
         }
     }
@@ -1459,7 +1459,7 @@ impl<'gc> Value<'gc> {
 
         let debug_str = self.as_debug_string(activation)?;
 
-        Err(Error::AvmError(type_error(
+        Err(Error::avm_error(type_error(
             activation,
             &format!("Error #1034: Type Coercion failed: cannot convert {debug_str} to {name}."),
             1034,

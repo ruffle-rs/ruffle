@@ -25,7 +25,7 @@ pub fn init<'gc>(
             Some(Value::Undefined) => istr!(""),
             Some(Value::Object(Object::RegExpObject(o))) => {
                 if !matches!(args.get(1), Some(Value::Undefined)) {
-                    return Err(Error::AvmError(type_error(
+                    return Err(Error::avm_error(type_error(
                         activation,
                         "Error #1100: Cannot supply flags when constructing one RegExp from another.",
                         1100,

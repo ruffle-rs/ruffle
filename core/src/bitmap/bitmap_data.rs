@@ -454,7 +454,7 @@ mod wrapper {
             activation: &mut crate::avm2::Activation<'_, 'gc>,
         ) -> Result<(), crate::avm2::Error<'gc>> {
             if self.disposed() {
-                return Err(crate::avm2::Error::AvmError(
+                return Err(crate::avm2::Error::avm_error(
                     crate::avm2::error::argument_error(
                         activation,
                         "Error #2015: Invalid BitmapData.",

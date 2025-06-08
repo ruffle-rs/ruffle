@@ -29,7 +29,7 @@ pub fn create_index_buffer<'gc>(
         let num_indices = args.get_u32(activation, 0)?;
 
         if num_indices == 0 {
-            return Err(Error::AvmError(argument_error(
+            return Err(Error::avm_error(argument_error(
                 activation,
                 "Error #3671: Buffer has zero size.",
                 3671,
@@ -54,13 +54,13 @@ pub fn create_vertex_buffer<'gc>(
         let data_32_per_vertex = args.get_u32(activation, 1)?;
 
         if data_32_per_vertex > 64 {
-            return Err(Error::AvmError(argument_error(
+            return Err(Error::avm_error(argument_error(
                 activation,
                 "Error #3670: Buffer too big.",
                 3670,
             )?));
         } else if data_32_per_vertex == 0 {
-            return Err(Error::AvmError(argument_error(
+            return Err(Error::avm_error(argument_error(
                 activation,
                 "Error #3671: Buffer has zero size.",
                 3671,
@@ -97,7 +97,7 @@ pub fn configure_back_buffer<'gc>(
         }
 
         if width < 32 || width > 16384 {
-            return Err(Error::AvmError(error(
+            return Err(Error::avm_error(error(
                 activation,
                 if old_swf {
                     "Error #3669: Bad input size."
@@ -109,7 +109,7 @@ pub fn configure_back_buffer<'gc>(
         }
 
         if height < 32 || height > 16384 {
-            return Err(Error::AvmError(error(
+            return Err(Error::avm_error(error(
                 activation,
                 if old_swf {
                     "Error #3669: Bad input size."
@@ -179,7 +179,7 @@ pub fn set_vertex_buffer_at<'gc>(
             } else if &*format == b"bytes4" {
                 Context3DVertexBufferFormat::Bytes4
             } else {
-                return Err(Error::AvmError(argument_error(
+                return Err(Error::avm_error(argument_error(
                     activation,
                     "Error #2008: Parameter vertexStreamFormat must be one of the accepted values.",
                     2008,
@@ -656,7 +656,7 @@ pub fn set_render_to_texture<'gc>(
         }
     }
     if let Some((code, message)) = error {
-        return Err(Error::AvmError(argument_error(activation, message, code)?));
+        return Err(Error::avm_error(argument_error(activation, message, code)?));
     }
 
     if anti_alias != 0 {

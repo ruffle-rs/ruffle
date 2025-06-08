@@ -84,7 +84,7 @@ pub fn verify_method<'gc>(
     use swf::extensions::ReadSwfExt;
 
     if body.code.is_empty() {
-        return Err(Error::AvmError(verify_error(
+        return Err(Error::avm_error(verify_error(
             activation,
             "Error #1043: Invalid code_length=0.",
             1043,
@@ -121,14 +121,14 @@ pub fn verify_method<'gc>(
                 Ok(op) => op,
 
                 Err(AbcReadError::InvalidData(_)) => {
-                    return Err(Error::AvmError(verify_error(
+                    return Err(Error::avm_error(verify_error(
                         activation,
                         "Error #1011: Method contained illegal opcode.",
                         1011,
                     )?));
                 }
                 Err(AbcReadError::IoError(_)) => {
-                    return Err(Error::AvmError(verify_error(
+                    return Err(Error::avm_error(verify_error(
                         activation,
                         "Error #1020: Code cannot fall off the end of a method.",
                         1020,
@@ -760,7 +760,7 @@ fn translate_op<'gc>(
             } else if index_register >= max_locals {
                 return Err(make_error_1025(activation, index_register));
             } else if index_register == object_register {
-                return Err(Error::AvmError(verify_error(
+                return Err(Error::avm_error(verify_error(
                     activation,
                     "Error #1124: OP_hasnext2 requires object and index to be distinct registers.",
                     1124,
@@ -770,7 +770,7 @@ fn translate_op<'gc>(
 
         // Misc opcode verification
         AbcOp::CallMethod { index, .. } => {
-            return Err(Error::AvmError(if index == 0 {
+            return Err(Error::avm_error(if index == 0 {
                 verify_error(activation, "Error #1072: Disp_id 0 is illegal.", 1072)?
             } else {
                 verify_error(
@@ -786,7 +786,7 @@ fn translate_op<'gc>(
                 translation_unit.pool_maybe_uninitialized_multiname(activation, index)?;
 
             if multiname.has_lazy_component() {
-                return Err(Error::AvmError(verify_error(
+                return Err(Error::avm_error(verify_error(
                     activation,
                     "Error #1078: Illegal opcode/multiname combination.",
                     1078,
@@ -796,7 +796,7 @@ fn translate_op<'gc>(
 
         AbcOp::GetOuterScope { index } => {
             if activation.outer().get(index as usize).is_none() {
-                return Err(Error::AvmError(verify_error(
+                return Err(Error::avm_error(verify_error(
                     activation,
                     "Error #1019: Getscopeobject  is out of bounds.",
                     1019,
@@ -809,7 +809,7 @@ fn translate_op<'gc>(
         | AbcOp::GetGlobalSlot { index }
         | AbcOp::SetGlobalSlot { index } => {
             if index == 0 {
-                return Err(Error::AvmError(verify_error(
+                return Err(Error::avm_error(verify_error(
                     activation,
                     "Error #1026: Slot 0 exceeds slotCount",
                     1026,
@@ -1066,7 +1066,7 @@ fn translate_op<'gc>(
                 // This results in this VerifyError being thrown upon
                 // encountering any `newactivation` op in the bytecode.
 
-                return Err(Error::AvmError(verify_error(
+                return Err(Error::avm_error(verify_error(
                     activation,
                     "Error #1113: OP_newactivation used in method without NEED_ACTIVATION flag.",
                     1113,

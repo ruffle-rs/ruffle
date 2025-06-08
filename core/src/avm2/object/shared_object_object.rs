@@ -17,7 +17,7 @@ pub fn shared_object_allocator<'gc>(
 ) -> Result<Object<'gc>, Error<'gc>> {
     let class_name = class.inner_class_definition().name().local_name();
 
-    Err(Error::AvmError(argument_error(
+    Err(Error::avm_error(argument_error(
         activation,
         &format!("Error #2012: {class_name}$ class cannot be instantiated."),
         2012,

@@ -708,7 +708,7 @@ impl<'gc> Class<'gc> {
         if let Some(superclass) = superclass {
             // We have to make an exception for `c_class`es
             if superclass.is_final() && !self.is_c_class() {
-                return Err(Error::AvmError(verify_error(
+                return Err(Error::avm_error(verify_error(
                     activation,
                     &format!(
                         "Error #1103: Class {} cannot extend final base class.",
@@ -719,7 +719,7 @@ impl<'gc> Class<'gc> {
             }
 
             if superclass.is_interface() {
-                return Err(Error::AvmError(verify_error(
+                return Err(Error::avm_error(verify_error(
                     activation,
                     &format!(
                         "Error #1110: Class {} cannot extend {}.",
@@ -767,7 +767,7 @@ impl<'gc> Class<'gc> {
                                 (_, TraitKind::Class { .. }) => {
                                     if !allow_class_trait {
                                         // Class traits aren't allowed in a class (except `global` classes)
-                                        return Err(Error::AvmError(verify_error(
+                                        return Err(Error::avm_error(verify_error(
                                             activation,
                                             "Error #1059: ClassInfo is referenced before definition.",
                                             1059,
@@ -1018,7 +1018,7 @@ impl<'gc> Class<'gc> {
             // in activation traits
             if loaded_trait.as_method().is_some() {
                 // TODO: Is this the correct error?
-                return Err(Error::AvmError(verify_error(
+                return Err(Error::avm_error(verify_error(
                     activation,
                     "Error #1101: Cannot verify method with unknown scope.",
                     1101,

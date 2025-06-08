@@ -96,7 +96,7 @@ fn make_xml_error<'gc>(activation: &mut Activation<'_, 'gc>, err: XmlError) -> E
     };
 
     match error {
-        Ok(err) => Error::AvmError(err),
+        Ok(err) => Error::avm_error(err),
         Err(err) => err,
     }
 }
@@ -845,7 +845,7 @@ impl<'gc> E4XNode<'gc> {
                 Err(XmlError::IllFormed(IllFormedError::UnmatchedEndTag(_)))
                     if open_tags.is_empty() =>
                 {
-                    return Err(Error::AvmError(type_error(
+                    return Err(Error::avm_error(type_error(
                         activation,
                         "Error #1088: The markup in the document following the root element must be well-formed.",
                         1088,
@@ -1005,7 +1005,7 @@ impl<'gc> E4XNode<'gc> {
                 )
             };
             match error {
-                Ok(err) => Error::AvmError(err),
+                Ok(err) => Error::avm_error(err),
                 Err(err) => err,
             }
         }

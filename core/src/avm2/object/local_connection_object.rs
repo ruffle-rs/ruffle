@@ -137,8 +137,8 @@ impl<'gc> LocalConnectionObject<'gc> {
 
         let client = Value::from(self.client());
         if let Err(e) = client.call_public_property(method_name, &arguments, &mut activation) {
-            match e {
-                Error::AvmError(error) => {
+            match e.as_avm_error() {
+                Some(error) => {
                     let event_name = istr!("asyncError");
                     let async_error_event_cls = activation.avm2().classes().asyncerrorevent;
                     let event = EventObject::from_class_and_args(

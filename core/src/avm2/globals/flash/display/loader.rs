@@ -279,7 +279,7 @@ pub fn load_bytes<'gc>(
             default_domain,
         },
     ) {
-        return Err(Error::RustError(
+        return Err(Error::rust_error(
             format!("Error in Loader.loadBytes: {e:?}").into(),
         ));
     }

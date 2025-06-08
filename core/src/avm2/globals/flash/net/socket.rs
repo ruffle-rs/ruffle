@@ -816,7 +816,7 @@ fn invalid_socket_error<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc>
         "Error #2002: Operation attempted on invalid socket.",
         2002,
     ) {
-        Ok(err) => Error::AvmError(err),
+        Ok(err) => Error::avm_error(err),
         Err(e) => e,
     }
 }
@@ -827,7 +827,7 @@ fn invalid_port_number<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> 
         "Error #2003: Invalid socket port number specified.",
         2003,
     ) {
-        Ok(err) => Error::AvmError(err),
+        Ok(err) => Error::avm_error(err),
         Err(e) => e,
     }
 }

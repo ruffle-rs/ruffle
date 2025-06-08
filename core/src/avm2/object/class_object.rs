@@ -398,7 +398,7 @@ impl<'gc> ClassObject<'gc> {
                 .name()
                 .to_qualified_name_err_message(activation.gc());
 
-            return Err(Error::AvmError(reference_error(
+            return Err(Error::avm_error(reference_error(
                 activation,
                 &format!(
                     "Error #1070: Method {qualified_multiname_name} not found on {qualified_class_name}",
@@ -633,7 +633,7 @@ impl<'gc> ClassObject<'gc> {
         } else if arguments.len() == 1 {
             arguments[0].coerce_to_type(activation, self.inner_class_definition())
         } else {
-            Err(Error::AvmError(argument_error(
+            Err(Error::avm_error(argument_error(
                 activation,
                 &format!(
                     "Error #1112: Argument count mismatch on class coercion.  Expected 1, got {}.",
@@ -761,7 +761,7 @@ impl<'gc> TObject<'gc> for ClassObject<'gc> {
                 .name()
                 .to_qualified_name(activation.gc());
 
-            return Err(Error::AvmError(type_error(
+            return Err(Error::avm_error(type_error(
                 activation,
                 &format!(
                     "Error #1128: Incorrect number of type parameters for {}. Expected 1, got {}.",

@@ -272,7 +272,7 @@ impl<'gc> Stack<'gc> {
         value: OptValue<'gc>,
     ) -> Result<(), Error<'gc>> {
         if self.len() >= self.max_height() {
-            return Err(Error::AvmError(verify_error(
+            return Err(Error::avm_error(verify_error(
                 activation,
                 "Error #1023: Stack overflow occurred.",
                 1023,
@@ -286,7 +286,7 @@ impl<'gc> Stack<'gc> {
 
     fn pop(&mut self, activation: &mut Activation<'_, 'gc>) -> Result<OptValue<'gc>, Error<'gc>> {
         if self.0.is_empty() {
-            return Err(Error::AvmError(verify_error(
+            return Err(Error::avm_error(verify_error(
                 activation,
                 "Error #1024: Stack underflow occurred.",
                 1024,
@@ -355,7 +355,7 @@ impl<'gc> ScopeStack<'gc> {
         value: OptValue<'gc>,
     ) -> Result<(), Error<'gc>> {
         if self.len() >= self.max_height() {
-            return Err(Error::AvmError(verify_error(
+            return Err(Error::avm_error(verify_error(
                 activation,
                 "Error #1017: Scope stack overflow occurred.",
                 1017,
@@ -373,7 +373,7 @@ impl<'gc> ScopeStack<'gc> {
         value: OptValue<'gc>,
     ) -> Result<(), Error<'gc>> {
         if self.len() >= self.max_height() {
-            return Err(Error::AvmError(verify_error(
+            return Err(Error::avm_error(verify_error(
                 activation,
                 "Error #1017: Scope stack overflow occurred.",
                 1017,
@@ -387,7 +387,7 @@ impl<'gc> ScopeStack<'gc> {
 
     fn pop(&mut self, activation: &mut Activation<'_, 'gc>) -> Result<(), Error<'gc>> {
         if self.0.is_empty() {
-            return Err(Error::AvmError(verify_error(
+            return Err(Error::avm_error(verify_error(
                 activation,
                 "Error #1018: Scope stack underflow occurred.",
                 1018,
@@ -468,7 +468,7 @@ impl<'gc> AbstractState<'gc> {
 
         // Merge stack
         if self.stack.len() != other.stack.len() {
-            return Err(Error::AvmError(verify_error(
+            return Err(Error::avm_error(verify_error(
                 activation,
                 &format!(
                     "Error #1030: Stack depth is unbalanced. {} != {}.",
@@ -492,7 +492,7 @@ impl<'gc> AbstractState<'gc> {
 
         // Merge scope stack
         if self.scope_stack.len() != other.scope_stack.len() {
-            return Err(Error::AvmError(verify_error(
+            return Err(Error::avm_error(verify_error(
                 activation,
                 &format!(
                     "Error #1031: Scope depth is unbalanced. {} != {}.",
@@ -508,7 +508,7 @@ impl<'gc> AbstractState<'gc> {
             let other_scope = other.scope_stack.at(i);
 
             if our_scope.1 != other_scope.1 {
-                return Err(Error::AvmError(verify_error(
+                return Err(Error::avm_error(verify_error(
                     activation,
                     "Error #1068: Scope values cannot be reconciled.",
                     1068,
@@ -1169,7 +1169,7 @@ fn abstract_interpret_ops<'gc>(
             }
             Op::GetScopeObject { index } => {
                 if index >= scope_stack.len() {
-                    return Err(Error::AvmError(verify_error(
+                    return Err(Error::avm_error(verify_error(
                         activation,
                         "Error #1019: Getscopeobject  is out of bounds.",
                         1019,
@@ -1215,7 +1215,7 @@ fn abstract_interpret_ops<'gc>(
             Op::FindPropStrict { multiname } | Op::FindProperty { multiname } => {
                 let outer_scope = activation.outer();
                 if outer_scope.is_empty() && scope_stack.is_empty() {
-                    return Err(Error::AvmError(verify_error(
+                    return Err(Error::avm_error(verify_error(
                         activation,
                         "Error #1013: Cannot call OP_findproperty when scopeDepth is 0.",
                         1013,
@@ -1753,7 +1753,7 @@ fn abstract_interpret_ops<'gc>(
             Op::SetGlobalSlot { .. } => {
                 let outer_scope = activation.outer();
                 if outer_scope.is_empty() && scope_stack.is_empty() {
-                    return Err(Error::AvmError(verify_error(
+                    return Err(Error::avm_error(verify_error(
                         activation,
                         "Error #1019: Getscopeobject  is out of bounds.",
                         1019,

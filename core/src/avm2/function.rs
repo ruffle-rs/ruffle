@@ -205,7 +205,7 @@ pub fn exec<'gc>(
             // Check for too many arguments
             if arguments.len() > signature.len() && !method.is_variadic() && !method.is_unchecked()
             {
-                return Err(Error::AvmError(make_mismatch_error(
+                return Err(Error::avm_error(make_mismatch_error(
                     &mut activation,
                     method,
                     arguments.len(),

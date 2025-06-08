@@ -162,7 +162,7 @@ impl<'gc> Method<'gc> {
         let abc = txunit.abc();
 
         let Some(method) = abc.methods.get(method_index) else {
-            return Err(Error::AvmError(verify_error(
+            return Err(Error::avm_error(verify_error(
                 activation,
                 "Error #1027: Method_info exceeds method_count.",
                 1027,

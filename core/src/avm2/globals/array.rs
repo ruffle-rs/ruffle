@@ -27,7 +27,7 @@ pub fn array_initializer<'gc>(
         if args.len() == 1 {
             if let Some(expected_len) = args.get(0).filter(|v| v.is_number()).map(|v| v.as_f64()) {
                 if expected_len < 0.0 || expected_len.is_nan() || expected_len.fract() != 0.0 {
-                    return Err(Error::AvmError(range_error(
+                    return Err(Error::avm_error(range_error(
                         activation,
                         &format!(
                             "Error #1005: Array index is not a positive integer ({expected_len})"

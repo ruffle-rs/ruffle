@@ -89,7 +89,7 @@ pub fn connect<'gc>(
         if !local_connection.connect(activation, connection_name) {
             // This triggers both if this object is already connected, OR there's something else taking the name
             // (The error message is misleading, in that case!)
-            return Err(Error::AvmError(argument_error(
+            return Err(Error::avm_error(argument_error(
                 activation,
                 "Error #2082: Connect failed because the object is already connected.",
                 2082,
@@ -110,7 +110,7 @@ pub fn close<'gc>(
 
     if let Some(local_connection) = this.as_local_connection_object() {
         if !local_connection.is_connected() {
-            return Err(Error::AvmError(argument_error(
+            return Err(Error::avm_error(argument_error(
                 activation,
                 "Error #2083: Close failed because the object is not connected.",
                 2083,

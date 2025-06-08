@@ -1146,7 +1146,7 @@ pub fn abstract_class_allocator<'gc>(
 ) -> Result<Object<'gc>, Error<'gc>> {
     let class_name = class.instance_class().name().local_name();
 
-    return Err(Error::AvmError(error::argument_error(
+    return Err(Error::avm_error(error::argument_error(
         activation,
         &format!("Error #2012: {class_name} class cannot be instantiated."),
         2012,

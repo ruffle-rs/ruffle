@@ -138,7 +138,7 @@ pub fn init<'gc>(
         let fill_color = args.get_u32(activation, 3)?;
 
         if !is_size_valid(activation.context.swf.version(), width, height) {
-            return Err(Error::AvmError(argument_error(
+            return Err(Error::avm_error(argument_error(
                 activation,
                 "Error #2015: Invalid BitmapData.",
                 2015,
@@ -912,7 +912,7 @@ pub fn hit_test<'gc>(
                 )));
             } else {
                 // This is the error message Flash Player produces. Even though it's misleading.
-                return Err(Error::AvmError(argument_error(
+                return Err(Error::avm_error(argument_error(
                     activation,
                     "Parameter 0 is of the incorrect type. Should be type BitmapData.",
                     2005,
@@ -1434,7 +1434,7 @@ pub fn threshold<'gc>(
                     operation
                 } else {
                     // It's wrong but this is what Flash says.
-                    return Err(Error::AvmError(argument_error(
+                    return Err(Error::avm_error(argument_error(
                         activation,
                         "Parameter 0 is of the incorrect type. Should be type Operation.",
                         2005,
@@ -1575,7 +1575,7 @@ pub fn pixel_dissolve<'gc>(
 
         let num_pixels = args.get_i32(activation, 4)?;
         if num_pixels < 0 {
-            return Err(Error::AvmError(range_error(
+            return Err(Error::avm_error(range_error(
                 activation,
                 &format!("Error #2027: Parameter numPixels must be a non-negative number; got {num_pixels}."),
                 2027,

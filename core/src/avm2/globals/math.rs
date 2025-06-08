@@ -38,7 +38,7 @@ pub fn call_handler<'gc>(
     _this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    Err(Error::AvmError(type_error(
+    Err(Error::avm_error(type_error(
         activation,
         "Error #1075: Math is not a function.",
         1075,
@@ -49,7 +49,7 @@ pub fn math_allocator<'gc>(
     _class: ClassObject<'gc>,
     activation: &mut Activation<'_, 'gc>,
 ) -> Result<Object<'gc>, Error<'gc>> {
-    Err(Error::AvmError(type_error(
+    Err(Error::avm_error(type_error(
         activation,
         "Error #1076: Math is not a constructor.",
         1076,
