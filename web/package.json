@@ -27,7 +27,7 @@
         "eslint-plugin-react-hooks": "^5.2.0",
         "eslint-plugin-react-refresh": "^0.4.20",
         "globals": "^16.2.0",
-        "mocha": "^11.5.0",
+        "mocha": "^11.6.0",
         "prettier": "^3.5.3",
         "stylelint": "^16.20.0",
         "stylelint-config-standard": "^38.0.0",
@@ -36,7 +36,7 @@
         "tsx": "^4.19.4",
         "typedoc-plugin-mdn-links": "^5.0.2",
         "typescript": "^5.8.3",
-        "typescript-eslint": "^8.33.1",
+        "typescript-eslint": "^8.34.0",
         "webdriverio": "^9.2.2",
         "webpack": "^5.99.9",
         "webpack-cli": "^6.0.1"
