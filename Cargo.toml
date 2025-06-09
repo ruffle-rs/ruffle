@@ -51,16 +51,16 @@ tracing-subscriber = { version = "0.3.19", features = ["env-filter"] }
 naga = { version = "24.0.0", features = ["wgsl-out"] }
 wgpu = "24.0.5"
 egui = "0.31.1"
-clap = { version = "4.5.39", features = ["derive"] }
+clap = { version = "4.5.40", features = ["derive"] }
 cpal = "0.15.3"
 anyhow = "1.0"
 slotmap = "1.0.7"
 async-channel = "2.3.1"
 bitflags = "2.9.1"
-bytemuck = "1.23.0"
+bytemuck = "1.23.1"
 chrono = { version = "0.4.41", default-features = false }
 enum-map = "2.7.3"
-flate2 = "1.1.1"
+flate2 = "1.1.2"
 futures = "0.3.31"
 image = { version = "0.25.6", default-features = false }
 js-sys = "0.3.77"

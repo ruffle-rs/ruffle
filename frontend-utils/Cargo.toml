@@ -14,7 +14,7 @@ workspace = true
 cpal = ["dep:cpal", "dep:bytemuck"]
 
 [dependencies]
-toml_edit = { version = "0.22.24", features = ["parse"] }
+toml_edit = { version = "0.22.27", features = ["parse"] }
 url = { workspace = true }
 tracing = { workspace = true }
 thiserror = { workspace = true }
