@@ -13,7 +13,7 @@ workspace = true
 [dependencies]
 linkme = { version = "0.3", optional = true }
 byteorder = "1.5"
-bitstream-io = "4.1.0"
+bitstream-io = "4.2.0"
 flate2 = { workspace = true }
 fnv = "1.0.7"
 gc-arena = { package = "ruffle_gc_arena", path = "../ruffle_gc_arena" }
@@ -26,7 +26,7 @@ ruffle_macros = { path = "macros" }
 ruffle_wstr = { path = "../wstr" }
 swf = { path = "../swf" }
 bitflags = { workspace = true }
-smallvec = { version = "1.15.0", features = ["union"] }
+smallvec = { version = "1.15.1", features = ["union"] }
 num-traits = { workspace = true }
 num-derive = { workspace = true }
 quick-xml = "0.37.5"
@@ -64,7 +64,7 @@ enum-map = { workspace = true }
 ttf-parser = "0.25"
 num-bigint = "0.4"
 unic-segment = "0.9.0"
-id3 = "1.16.1"
+id3 = "1.16.3"
 either = "1.15.0"
 chardetng = "0.1.17"
 tracy-client = { version = "0.17.6", optional = true, default-features = false }
