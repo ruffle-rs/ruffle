@@ -1881,9 +1881,9 @@ mod tests {
         PixelBenderType, PixelBenderTypeOpcode,
     };
 
-    use crate::NagaModules;
-    use crate::to_wgsl;
     use super::ShaderBuilder;
+    use crate::to_wgsl;
+    use crate::NagaModules;
 
     #[test]
     fn step_opcode_test() {
