@@ -32,7 +32,7 @@ pub struct E4XNode<'gc>(GcCell<'gc, E4XNodeData<'gc>>);
 #[collect(no_drop)]
 pub struct E4XNodeData<'gc> {
     parent: Option<E4XNode<'gc>>,
-    namespace: Option<Box<E4XNamespace<'gc>>>,
+    namespace: Option<E4XNamespace<'gc>>,
     local_name: Option<AvmString<'gc>>,
     kind: E4XNodeKind<'gc>,
     notification: Option<FunctionObject<'gc>>,
@@ -197,7 +197,7 @@ impl<'gc> E4XNode<'gc> {
             mc,
             E4XNodeData {
                 parent,
-                namespace: namespace.map(Box::new),
+                namespace,
                 local_name: Some(name),
                 kind: E4XNodeKind::Element {
                     attributes: vec![],
@@ -220,7 +220,7 @@ impl<'gc> E4XNode<'gc> {
             mc,
             E4XNodeData {
                 parent,
-                namespace: namespace.map(Box::new),
+                namespace,
                 local_name: Some(name),
                 kind: E4XNodeKind::Attribute(value),
                 notification: None,
@@ -338,7 +338,7 @@ impl<'gc> E4XNode<'gc> {
             mc,
             E4XNodeData {
                 parent: None,
-                namespace: this.namespace.clone(),
+                namespace: this.namespace,
                 local_name: this.local_name,
                 kind,
                 notification: None,
@@ -1080,7 +1080,7 @@ impl<'gc> E4XNode<'gc> {
 
             let attribute_data = E4XNodeData {
                 parent: None,
-                namespace: namespace.map(Box::new),
+                namespace,
                 local_name: Some(name),
                 kind: E4XNodeKind::Attribute(value),
                 notification: None,
@@ -1111,7 +1111,7 @@ impl<'gc> E4XNode<'gc> {
 
         let data = E4XNodeData {
             parent: None,
-            namespace: namespace.map(Box::new),
+            namespace,
             local_name: Some(name),
             kind: E4XNodeKind::Element {
                 attributes: attribute_nodes,
@@ -1134,11 +1134,11 @@ impl<'gc> E4XNode<'gc> {
     }
 
     pub fn set_namespace(&self, namespace: Option<E4XNamespace<'gc>>, mc: &Mutation<'gc>) {
-        self.0.write(mc).namespace = namespace.map(Box::new);
+        self.0.write(mc).namespace = namespace;
     }
 
     pub fn namespace(&self) -> Option<E4XNamespace<'gc>> {
-        self.0.read().namespace.as_deref().copied()
+        self.0.read().namespace
     }
 
     pub fn set_local_name(&self, name: AvmString<'gc>, mc: &Mutation<'gc>) {
