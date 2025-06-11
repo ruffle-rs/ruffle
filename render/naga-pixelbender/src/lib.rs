@@ -1977,9 +1977,9 @@ mod tests {
 
         // Test 2: Verify WGSL generation and content
         let naga_modules = result.unwrap();
-        let wgsl = to_wgsl(&naga_modules.fragment);
+        let wgsl = crate::to_wgsl(&naga_modules.fragment);
 
-        println!("Generated WGSL:\n{}", wgsl); // Helpful for debugging
+        println!("Generated WGSL:\n{wgsl}"); // Helpful for debugging
 
         // Verify the Step opcode generates the expected WGSL patterns
         assert!(
