@@ -1881,7 +1881,6 @@ mod tests {
     };
 
     use super::ShaderBuilder;
-    use crate::to_wgsl;
 
     #[test]
     fn step_opcode_test() {
