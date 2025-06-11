@@ -646,9 +646,11 @@ fn read_op<R: Read>(
             } else {
                 let dst_reg = read_dst_reg(dst, mask)?;
                 let src_reg = read_src_reg(src, size)?;
-                shader
-                    .operations
-                    .push(Operation::Normal { opcode, dst: dst_reg, src: src_reg })
+                shader.operations.push(Operation::Normal {
+                    opcode,
+                    dst: dst_reg,
+                    src: src_reg,
+                })
             };
         }
         _ => {
