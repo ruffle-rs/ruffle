@@ -619,6 +619,38 @@ fn read_op<R: Read>(
                 dst: dst_reg,
             });
         }
+        Opcode::Step => {
+            let dst = data.read_u16::<LittleEndian>()?;
+            let mut mask = data.read_u8()?;
+            let size = (mask & 0x3) + 1;
+            // Note: Step is specifically defined for float values, matrix check might be irrelevant but kept for consistency.
+            let matrix = (mask >> 2) & 3;
+            let src = read_uint24(data)?;
+
+            assert_eq!(data.read_u8()?, 0, "Unexpected u8 for opcode {opcode:?}");
+            mask >>= 4;
+
+            if matrix != 0 {
+                assert_eq!(src >> 16, 0);
+                assert_eq!(size, 1);
+                let dst_reg = if mask == 0 {
+                    read_matrix_reg(dst, matrix)
+                } else {
+                    read_dst_reg(dst, mask)?
+                };
+                shader.operations.push(Operation::Normal {
+                    opcode,
+                    dst: dst_reg,
+                    src: read_matrix_reg(src as u16, matrix),
+                });
+            } else {
+                let dst_reg = read_dst_reg(dst, mask)?;
+                let src_reg = read_src_reg(src, size)?;
+                shader
+                    .operations
+                    .push(Operation::Normal { opcode, dst: dst_reg, src: src_reg })
+            };
+        }
         _ => {
             let dst = data.read_u16::<LittleEndian>()?;
             let mut mask = data.read_u8()?;

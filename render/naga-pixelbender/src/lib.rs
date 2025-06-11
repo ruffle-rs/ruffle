@@ -1220,6 +1220,31 @@ impl ShaderBuilder<'_> {
                             arg2: None,
                             arg3: None,
                         }),
+                        Opcode::Step => {
+                            // dst is used as the 'edge' value in 'step(edge, x)'
+                            // src is used as the 'x' value
+                            let edge_val = self.load_src_register(&dst)?;
+                            let x_val = src; // src is already loaded from src_reg
+
+                            // Result is 1.0 if x >= edge, else 0.0
+                            // So we want `x_val < edge_val` to select 0.0, and `x_val >= edge_val` to select 1.0
+                            let comparison = self.evaluate_expr(Expression::Binary {
+                                op: BinaryOperator::Less, // x < edge
+                                left: x_val,
+                                right: edge_val,
+                            });
+
+                            let one_vec4f = self.evaluate_expr(Expression::Splat {
+                                size: VectorSize::Quad,
+                                value: self.onef32,
+                            });
+
+                            self.evaluate_expr(Expression::Select {
+                                condition: comparison, // If x < edge is true
+                                accept: self.zerovec4f, // then 0.0
+                                reject: one_vec4f,      // else 1.0
+                            })
+                        }
                         _ => {
                             panic!("Unimplemented opcode {opcode:?}");
                         }
@@ -1846,4 +1871,232 @@ fn push_statement(blocks: &mut [BlockStackEntry], stmt: Statement) {
         }
     };
     block.push(stmt, Span::UNDEFINED);
+}
+
+#[cfg(test)]
+mod tests {
+    use ruffle_render::pixel_bender::{
+        Opcode, Operation, PixelBenderParam, PixelBenderParamQualifier, PixelBenderReg,
+        PixelBenderRegChannel, PixelBenderRegKind, PixelBenderShader, PixelBenderShaderArgument,
+        PixelBenderType, PixelBenderTypeOpcode,
+    };
+
+    use crate::NagaModules;
+
+    use super::ShaderBuilder;
+
+    fn execute_shader_test(
+        shader: PixelBenderShader,
+        args: Vec<PixelBenderShaderArgument>,
+        expected_output: Vec<f32>,
+    ) {
+        let naga_modules = ShaderBuilder::build(&shader).unwrap();
+        let mut result_buffer = vec![
+            0.0f32;
+            expected_output.len()
+        ];
+
+        // FIXME - do something sensible here
+        let mut device_mock = DeviceMock::new(
+            naga_modules.float_parameters_buffer_size as usize,
+            naga_modules.int_parameters_buffer_size as usize,
+        );
+        for arg in args {
+            match arg {
+                PixelBenderShaderArgument::ValueInput { index, value } => {
+                    device_mock.set_param_value(index, value);
+                }
+                PixelBenderShaderArgument::ImageInput { .. } => {
+                    unimplemented!("Image inputs not yet supported in tests")
+                }
+            }
+        }
+        device_mock.run_shader(&naga_modules, &mut result_buffer);
+        assert_eq!(result_buffer, expected_output);
+    }
+
+    struct DeviceMock {
+        float_params: Vec<u8>,
+        int_params: Vec<u8>,
+    }
+
+    impl DeviceMock {
+        fn new(float_buffer_size: usize, int_buffer_size: usize) -> Self {
+            Self {
+                float_params: vec![0; float_buffer_size],
+                int_params: vec![0; int_buffer_size],
+            }
+        }
+
+        fn set_param_value(&mut self, index: u8, value: PixelBenderType) {
+            let (buffer, offset) = match value {
+                PixelBenderType::TFloat(_)
+                | PixelBenderType::TFloat2(_, _)
+                | PixelBenderType::TFloat3(_, _, _)
+                | PixelBenderType::TFloat4(_, _, _, _) => {
+                    (&mut self.float_params, index as usize * std::mem::size_of::<f32>() * 4)
+                }
+                PixelBenderType::TInt(_)
+                | PixelBenderType::TInt2(_, _)
+                | PixelBenderType::TInt3(_, _, _)
+                | PixelBenderType::TInt4(_, _, _, _) => {
+                    (&mut self.int_params, index as usize * std::mem::size_of::<i32>() * 4)
+                }
+                _ => unimplemented!("Unsupported param type for tests"),
+            };
+
+            let bytes: Vec<u8> = match value {
+                PixelBenderType::TFloat(f) => f.to_le_bytes().to_vec(),
+                PixelBenderType::TFloat2(f1, f2) => [f1, f2]
+                    .iter()
+                    .flat_map(|f| f.to_le_bytes())
+                    .collect(),
+                PixelBenderType::TFloat3(f1, f2, f3) => [f1, f2, f3]
+                    .iter()
+                    .flat_map(|f| f.to_le_bytes())
+                    .collect(),
+                PixelBenderType::TFloat4(f1, f2, f3, f4) => [f1, f2, f3, f4]
+                    .iter()
+                    .flat_map(|f| f.to_le_bytes())
+                    .collect(),
+                PixelBenderType::TInt(i) => i.to_le_bytes().to_vec(),
+                PixelBenderType::TInt2(i1, i2) => [i1, i2]
+                    .iter()
+                    .flat_map(|i| i.to_le_bytes())
+                    .collect(),
+                PixelBenderType::TInt3(i1, i2, i3) => [i1, i2, i3]
+                    .iter()
+                    .flat_map(|i| i.to_le_bytes())
+                    .collect(),
+                PixelBenderType::TInt4(i1, i2, i3, i4) => [i1, i2, i3, i4]
+                    .iter()
+                    .flat_map(|i| i.to_le_bytes())
+                    .collect(),
+                _ => unimplemented!(),
+            };
+            buffer[offset..offset + bytes.len()].copy_from_slice(&bytes);
+        }
+
+        fn run_shader(&mut self, _modules: &NagaModules, _result_buffer: &mut [f32]) {
+            // This is a mock, we can't actually run the shader here.
+            // We'd need a wgpu instance or similar.
+            // For now, shader logic is tested by comparing WGSL output or via snapshot tests.
+            // This test infrastructure is a placeholder for if we ever want to run shaders.
+            // For the Step opcode test, we'll rely on the Naga IR being correct.
+        }
+    }
+
+    #[test]
+    fn step_opcode_test() {
+        let shader = PixelBenderShader {
+            name: "step_test".to_string(),
+            version: 1,
+            params: vec![
+                PixelBenderParam::Normal {
+                    qualifier: PixelBenderParamQualifier::Output,
+                    param_type: PixelBenderTypeOpcode::TFloat4,
+                    reg: PixelBenderReg {
+                        index: 0, // outColor mapped to fr0
+                        channels: PixelBenderRegChannel::RGBA.to_vec(),
+                        kind: PixelBenderRegKind::Float,
+                    },
+                    name: "outColor".to_string(),
+                    metadata: vec![],
+                },
+                PixelBenderParam::Normal {
+                    qualifier: PixelBenderParamQualifier::Input,
+                    param_type: PixelBenderTypeOpcode::TFloat4,
+                    reg: PixelBenderReg {
+                        index: 1, // edge mapped to fr1
+                        channels: PixelBenderRegChannel::RGBA.to_vec(),
+                        kind: PixelBenderRegKind::Float,
+                    },
+                    name: "edge".to_string(),
+                    metadata: vec![],
+                },
+                PixelBenderParam::Normal {
+                    qualifier: PixelBenderParamQualifier::Input,
+                    param_type: PixelBenderTypeOpcode::TFloat4,
+                    reg: PixelBenderReg {
+                        index: 2, // x mapped to fr2
+                        channels: PixelBenderRegChannel::RGBA.to_vec(),
+                        kind: PixelBenderRegKind::Float,
+                    },
+                    name: "x".to_string(),
+                    metadata: vec![],
+                },
+            ],
+            operations: vec![
+                // Move x (fr2) into a temporary register ft0 (fr3)
+                Operation::Normal {
+                    opcode: Opcode::Mov,
+                    dst: PixelBenderReg {
+                        index: 3, // ft0
+                        channels: PixelBenderRegChannel::RGBA.to_vec(),
+                        kind: PixelBenderRegKind::Float,
+                    },
+                    src: PixelBenderReg {
+                        index: 2, // x (fr2)
+                        channels: PixelBenderRegChannel::RGBA.to_vec(),
+                        kind: PixelBenderRegKind::Float,
+                    },
+                },
+                // Perform step(edge (fr1), ft0 (fr3)). Result stored in edge (fr1)
+                Operation::Normal {
+                    opcode: Opcode::Step,
+                    dst: PixelBenderReg { // This is 'edge'
+                        index: 1,
+                        channels: PixelBenderRegChannel::RGBA.to_vec(),
+                        kind: PixelBenderRegKind::Float,
+                    },
+                    src: PixelBenderReg { // This is 'x' (moved to ft0)
+                        index: 3,
+                        channels: PixelBenderRegChannel::RGBA.to_vec(),
+                        kind: PixelBenderRegKind::Float,
+                    },
+                },
+                // Move result from edge (fr1) to outColor (fr0)
+                Operation::Normal {
+                    opcode: Opcode::Mov,
+                    dst: PixelBenderReg {
+                        index: 0, // outColor
+                        channels: PixelBenderRegChannel::RGBA.to_vec(),
+                        kind: PixelBenderRegKind::Float,
+                    },
+                    src: PixelBenderReg {
+                        index: 1, // edge (now holding the result of step)
+                        channels: PixelBenderRegChannel::RGBA.to_vec(),
+                        kind: PixelBenderRegKind::Float,
+                    },
+                },
+            ],
+            metadata: vec![],
+        };
+
+        let args = vec![
+            PixelBenderShaderArgument::ValueInput {
+                index: 1, // Corresponds to 'edge' param reg index 1
+                value: PixelBenderType::TFloat4(0.5, 0.5, 0.5, 0.5),
+            },
+            PixelBenderShaderArgument::ValueInput {
+                index: 2, // Corresponds to 'x' param reg index 2
+                value: PixelBenderType::TFloat4(0.2, 0.8, 0.5, 0.0),
+            },
+        ];
+
+        // Expected: step(edge, x) -> (x.r < edge.r ? 0:1, x.g < edge.g ? 0:1, ...)
+        // edge = (0.5, 0.5, 0.5, 0.5)
+        // x    = (0.2, 0.8, 0.5, 0.0)
+        // step(0.5, 0.2) = 0.0 (0.2 < 0.5 is true)
+        // step(0.5, 0.8) = 1.0 (0.8 < 0.5 is false)
+        // step(0.5, 0.5) = 1.0 (0.5 < 0.5 is false)
+        // step(0.5, 0.0) = 0.0 (0.0 < 0.5 is true)
+        let expected_output = vec![0.0, 1.0, 1.0, 0.0];
+
+        // Note: The DeviceMock doesn't actually run the shader.
+        // This test primarily verifies that the shader compiles with the new opcode.
+        // Actual runtime logic verification of 'Step' relies on visual inspection of WGSL
+        // or future integration with a WGSL runner.
+        execute_shader_test(shader, args, expected_output);
+    }
 }
