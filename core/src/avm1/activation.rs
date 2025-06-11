@@ -16,14 +16,15 @@ use crate::string::{AvmString, HasStringContext, StringContext, SwfStrExt as _, 
 use crate::tag_utils::SwfSlice;
 use crate::vminterface::Instantiator;
 use crate::{avm_error, avm_warn};
-use gc_arena::{Gc, GcCell, Mutation};
+use gc_arena::{Gc, Mutation};
 use indexmap::IndexMap;
 use rand::Rng;
 use ruffle_macros::istr;
-use smallvec::SmallVec;
 use std::borrow::Cow;
+use std::cell::Cell;
 use std::cmp::min;
 use std::fmt;
+use std::rc::Rc;
 use swf::avm1::read::Reader;
 use swf::avm1::types::*;
 use url::form_urlencoded;
@@ -37,44 +38,6 @@ macro_rules! avm_debug {
             tracing::debug!($($arg)*)
         }
     )
-}
-
-/// Represents a particular register set.
-///
-/// This type exists primarily because SmallVec isn't garbage-collectable.
-#[derive(Clone)]
-pub struct RegisterSet<'gc>(SmallVec<[Value<'gc>; 8]>);
-
-unsafe impl<'gc> gc_arena::Collect<'gc> for RegisterSet<'gc> {
-    #[inline]
-    fn trace<C: gc_arena::collect::Trace<'gc>>(&self, cc: &mut C) {
-        for register in &self.0 {
-            cc.trace(register);
-        }
-    }
-}
-
-impl<'gc> RegisterSet<'gc> {
-    /// Create a new register set with a given number of specified registers.
-    ///
-    /// The given registers will be set to `undefined`.
-    pub fn new(num: u8) -> Self {
-        Self(smallvec![Value::Undefined; num as usize])
-    }
-
-    /// Return a reference to a given register, if it exists.
-    pub fn get(&self, num: u8) -> Option<&Value<'gc>> {
-        self.0.get(num as usize)
-    }
-
-    /// Return a mutable reference to a given register, if it exists.
-    pub fn get_mut(&mut self, num: u8) -> Option<&mut Value<'gc>> {
-        self.0.get_mut(num as usize)
-    }
-
-    pub fn len(&self) -> u8 {
-        self.0.len() as u8
-    }
 }
 
 #[derive(Clone)]
@@ -206,9 +169,9 @@ pub struct Activation<'a, 'gc: 'a> {
     /// Registers are numbered from 1; r0 does not exist. Therefore this vec,
     /// while nominally starting from zero, actually starts from r1.
     ///
-    /// Registers are stored in a `GcCell` so that rescopes (e.g. with) use the
+    /// Registers are stored in a `Rc` so that rescopes (e.g. with) use the
     /// same register set.
-    local_registers: Option<GcCell<'gc, RegisterSet<'gc>>>,
+    local_registers: Option<Rc<[Cell<Value<'gc>>]>>,
 
     /// The base clip of this stack frame.
     /// This will be the MovieClip that contains the bytecode.
@@ -301,7 +264,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             base_clip_unloaded: self.base_clip_unloaded,
             this: self.this,
             callee: self.callee,
-            local_registers: self.local_registers,
+            local_registers: self.local_registers.clone(),
         }
     }
 
@@ -2268,7 +2231,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
                     self.callee,
                 );
 
-                activation.local_registers = self.local_registers;
+                activation.local_registers = self.local_registers.clone();
 
                 match catch_vars {
                     CatchVar::Var(name) => {
@@ -3061,21 +3024,22 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     /// Returns true if this activation has a given local register ID.
     pub fn has_local_register(&self, id: u8) -> bool {
         self.local_registers
-            .map(|rs| id < rs.read().len())
+            .as_deref()
+            .map(|rs| usize::from(id) < rs.len())
             .unwrap_or(false)
     }
 
-    pub fn allocate_local_registers(&mut self, num: u8, mc: &Mutation<'gc>) {
+    pub fn allocate_local_registers(&mut self, num: u8) {
         self.local_registers = match num {
             0 => None,
-            num => Some(GcCell::new(mc, RegisterSet::new(num))),
+            num => Some((0..num).map(|_| Cell::new(Value::Undefined)).collect()),
         };
     }
 
     /// Retrieve a local register.
     pub fn local_register(&self, id: u8) -> Option<Value<'gc>> {
-        if let Some(local_registers) = self.local_registers {
-            local_registers.read().get(id).cloned()
+        if let Some(local_registers) = self.local_registers.as_deref() {
+            local_registers.get(usize::from(id)).map(Cell::get)
         } else {
             None
         }
@@ -3084,8 +3048,8 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     /// Set a local register.
     pub fn set_local_register(&mut self, id: u8, value: Value<'gc>) {
         if let Some(ref mut local_registers) = self.local_registers {
-            if let Some(r) = local_registers.write(self.context.gc()).get_mut(id) {
-                *r = value;
+            if let Some(r) = local_registers.get(usize::from(id)) {
+                r.set(value);
             }
         }
     }
