@@ -1985,15 +1985,15 @@ mod tests {
             wgsl.contains("select"),
             "Step opcode should generate select operation"
         );
-        assert!(wgsl.contains("1.0"), "Step should use 1.0 as true value");
+        assert!(wgsl.contains("1f"), "Step should use 1f as true value"); // Changed from "1.0" to "1f"
         assert!(
-            wgsl.contains("0.0") || wgsl.contains("vec4"),
-            "Step should use 0.0 as false value"
+            wgsl.contains("0f") || wgsl.contains("vec4"),
+            "Step should use 0f as false value"
         );
 
         // Verify we have the comparison operation (x < edge)
         assert!(
-            wgsl.contains("<") || wgsl.contains("Less"),
+            wgsl.contains("<"),
             "Step should generate less-than comparison"
         );
     }
