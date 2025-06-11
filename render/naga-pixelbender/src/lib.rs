@@ -1882,7 +1882,7 @@ mod tests {
     };
 
     use crate::NagaModules;
-
+    use crate::to_wgsl;
     use super::ShaderBuilder;
 
     #[test]
