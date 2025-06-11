@@ -432,7 +432,7 @@ impl<'gc> Executable<'gc> {
             Some(callee),
         );
 
-        frame.allocate_local_registers(af.register_count(), frame.gc());
+        frame.allocate_local_registers(af.register_count());
 
         let mut preload_r = 1;
         af.load_this(&mut frame, this, &mut preload_r);

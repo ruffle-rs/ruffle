@@ -10,9 +10,6 @@ mod display_object;
 pub use display_object::{StageAlign, StageDisplayState, StageScaleMode};
 
 #[macro_use]
-extern crate smallvec;
-
-#[macro_use]
 extern crate num_derive;
 
 #[macro_use]
