@@ -1240,7 +1240,7 @@ impl ShaderBuilder<'_> {
                             });
 
                             self.evaluate_expr(Expression::Select {
-                                condition: comparison, // If x < edge is true
+                                condition: comparison,  // If x < edge is true
                                 accept: self.zerovec4f, // then 0.0
                                 reject: one_vec4f,      // else 1.0
                             })
@@ -1971,21 +1971,33 @@ mod tests {
 
         // Test 1: Verify compilation succeeds
         let result = ShaderBuilder::build(&shader);
-        assert!(result.is_ok(), "Shader compilation failed: {:?}", result.err());
+        assert!(
+            result.is_ok(),
+            "Shader compilation failed: {:?}",
+            result.err()
+        );
 
         // Test 2: Verify WGSL generation and content
         let naga_modules = result.unwrap();
         let wgsl = to_wgsl(&naga_modules.fragment);
-        
+
         println!("Generated WGSL:\n{}", wgsl); // Helpful for debugging
-        
+
         // Verify the Step opcode generates the expected WGSL patterns
-        assert!(wgsl.contains("select"), "Step opcode should generate select operation");
+        assert!(
+            wgsl.contains("select"),
+            "Step opcode should generate select operation"
+        );
         assert!(wgsl.contains("1.0"), "Step should use 1.0 as true value");
-        assert!(wgsl.contains("0.0") || wgsl.contains("vec4"), "Step should use 0.0 as false value");
-        
+        assert!(
+            wgsl.contains("0.0") || wgsl.contains("vec4"),
+            "Step should use 0.0 as false value"
+        );
+
         // Verify we have the comparison operation (x < edge)
-        assert!(wgsl.contains("<") || wgsl.contains("Less"), "Step should generate less-than comparison");
-    }        
-        
+        assert!(
+            wgsl.contains("<") || wgsl.contains("Less"),
+            "Step should generate less-than comparison"
+        );
+    }
 }
