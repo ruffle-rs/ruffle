@@ -1877,13 +1877,11 @@ fn push_statement(blocks: &mut [BlockStackEntry], stmt: Statement) {
 mod tests {
     use ruffle_render::pixel_bender::{
         Opcode, Operation, PixelBenderParam, PixelBenderParamQualifier, PixelBenderReg,
-        PixelBenderRegChannel, PixelBenderRegKind, PixelBenderShader, PixelBenderShaderArgument,
-        PixelBenderType, PixelBenderTypeOpcode,
+        PixelBenderRegChannel, PixelBenderRegKind, PixelBenderShader, PixelBenderTypeOpcode,
     };
 
     use super::ShaderBuilder;
     use crate::to_wgsl;
-    use crate::NagaModules;
 
     #[test]
     fn step_opcode_test() {
