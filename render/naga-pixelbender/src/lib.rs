@@ -1887,85 +1887,105 @@ mod tests {
 
     #[test]
     fn step_opcode_test() {
-    let shader = PixelBenderShader {
-        name: "step_test".to_string(),
-        version: 1,
-        params: vec![
-            PixelBenderParam::Normal {
-                qualifier: PixelBenderParamQualifier::Output,
-                param_type: PixelBenderTypeOpcode::TFloat4,
-                reg: PixelBenderReg {
-                    index: 0,
-                    channels: PixelBenderRegChannel::RGBA.to_vec(),
-                    kind: PixelBenderRegKind::Float,
+        let shader = PixelBenderShader {
+            name: "step_test".to_string(),
+            version: 1,
+            params: vec![
+                PixelBenderParam::Normal {
+                    qualifier: PixelBenderParamQualifier::Output,
+                    param_type: PixelBenderTypeOpcode::TFloat4,
+                    reg: PixelBenderReg {
+                        index: 0,
+                        channels: PixelBenderRegChannel::RGBA.to_vec(),
+                        kind: PixelBenderRegKind::Float,
+                    },
+                    name: "outColor".to_string(),
+                    metadata: vec![],
                 },
-                name: "outColor".to_string(),
-                metadata: vec![],
-            },
-            PixelBenderParam::Normal {
-                qualifier: PixelBenderParamQualifier::Input,
-                param_type: PixelBenderTypeOpcode::TFloat4,
-                reg: PixelBenderReg {
-                    index: 1,
-                    channels: PixelBenderRegChannel::RGBA.to_vec(),
-                    kind: PixelBenderRegKind::Float,
+                PixelBenderParam::Normal {
+                    qualifier: PixelBenderParamQualifier::Input,
+                    param_type: PixelBenderTypeOpcode::TFloat4,
+                    reg: PixelBenderReg {
+                        index: 1,
+                        channels: PixelBenderRegChannel::RGBA.to_vec(),
+                        kind: PixelBenderRegKind::Float,
+                    },
+                    name: "edge".to_string(),
+                    metadata: vec![],
                 },
-                name: "edge".to_string(),
-                metadata: vec![],
-            },
-            PixelBenderParam::Normal {
-                qualifier: PixelBenderParamQualifier::Input,
-                param_type: PixelBenderTypeOpcode::TFloat4,
-                reg: PixelBenderReg {
-                    index: 2,
-                    channels: PixelBenderRegChannel::RGBA.to_vec(),
-                    kind: PixelBenderRegKind::Float,
+                PixelBenderParam::Normal {
+                    qualifier: PixelBenderParamQualifier::Input,
+                    param_type: PixelBenderTypeOpcode::TFloat4,
+                    reg: PixelBenderReg {
+                        index: 2,
+                        channels: PixelBenderRegChannel::RGBA.to_vec(),
+                        kind: PixelBenderRegKind::Float,
+                    },
+                    name: "x".to_string(),
+                    metadata: vec![],
                 },
-                name: "x".to_string(),
-                metadata: vec![],
-            },
-        ],
-        operations: vec![
-            Operation::Normal {
-                opcode: Opcode::Mov,
-                dst: PixelBenderReg {
-                    index: 3,
-                    channels: PixelBenderRegChannel::RGBA.to_vec(),
-                    kind: PixelBenderRegKind::Float,
+            ],
+            operations: vec![
+                Operation::Normal {
+                    opcode: Opcode::Mov,
+                    dst: PixelBenderReg {
+                        index: 3,
+                        channels: PixelBenderRegChannel::RGBA.to_vec(),
+                        kind: PixelBenderRegKind::Float,
+                    },
+                    src: PixelBenderReg {
+                        index: 2,
+                        channels: PixelBenderRegChannel::RGBA.to_vec(),
+                        kind: PixelBenderRegKind::Float,
+                    },
                 },
-                src: PixelBenderReg {
-                    index: 2,
-                    channels: PixelBenderRegChannel::RGBA.to_vec(),
-                    kind: PixelBenderRegKind::Float,
+                Operation::Normal {
+                    opcode: Opcode::Step,
+                    dst: PixelBenderReg {
+                        index: 1,
+                        channels: PixelBenderRegChannel::RGBA.to_vec(),
+                        kind: PixelBenderRegKind::Float,
+                    },
+                    src: PixelBenderReg {
+                        index: 3,
+                        channels: PixelBenderRegChannel::RGBA.to_vec(),
+                        kind: PixelBenderRegKind::Float,
+                    },
                 },
-            },
-            Operation::Normal {
-                opcode: Opcode::Step,
-                dst: PixelBenderReg {
-                    index: 1,
-                    channels: PixelBenderRegChannel::RGBA.to_vec(),
-                    kind: PixelBenderRegKind::Float,
+                Operation::Normal {
+                    opcode: Opcode::Mov,
+                    dst: PixelBenderReg {
+                        index: 0,
+                        channels: PixelBenderRegChannel::RGBA.to_vec(),
+                        kind: PixelBenderRegKind::Float,
+                    },
+                    src: PixelBenderReg {
+                        index: 1,
+                        channels: PixelBenderRegChannel::RGBA.to_vec(),
+                        kind: PixelBenderRegKind::Float,
+                    },
                 },
-                src: PixelBenderReg {
-                    index: 3,
-                    channels: PixelBenderRegChannel::RGBA.to_vec(),
-                    kind: PixelBenderRegKind::Float,
-                },
-            },
-            Operation::Normal {
-                opcode: Opcode::Mov,
-                dst: PixelBenderReg {
-                    index: 0,
-                    channels: PixelBenderRegChannel::RGBA.to_vec(),
-                    kind: PixelBenderRegKind::Float,
-                },
-                src: PixelBenderReg {
-                    index: 1,
-                    channels: PixelBenderRegChannel::RGBA.to_vec(),
-                    kind: PixelBenderRegKind::Float,
-                },
-            },
-        ],
-        metadata: vec![],
-    };
+            ],
+            metadata: vec![],
+        };
+
+        // Test 1: Verify compilation succeeds
+        let result = ShaderBuilder::build(&shader);
+        assert!(result.is_ok(), "Shader compilation failed: {:?}", result.err());
+
+        // Test 2: Verify WGSL generation and content
+        let naga_modules = result.unwrap();
+        let wgsl = to_wgsl(&naga_modules.fragment);
+        
+        println!("Generated WGSL:\n{}", wgsl); // Helpful for debugging
+        
+        // Verify the Step opcode generates the expected WGSL patterns
+        assert!(wgsl.contains("select"), "Step opcode should generate select operation");
+        assert!(wgsl.contains("1.0"), "Step should use 1.0 as true value");
+        assert!(wgsl.contains("0.0") || wgsl.contains("vec4"), "Step should use 0.0 as false value");
+        
+        // Verify we have the comparison operation (x < edge)
+        assert!(wgsl.contains("<") || wgsl.contains("Less"), "Step should generate less-than comparison");
+    }        
+        
 }
