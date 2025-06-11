@@ -2380,26 +2380,42 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     /// If a given register does not exist, this function yields
     /// Value::Undefined, which is also a valid register value.
     pub fn current_register(&self, id: u8) -> Value<'gc> {
-        if self.has_local_register(id) {
-            self.local_register(id).unwrap_or(Value::Undefined)
-        } else {
-            self.context
-                .avm1
-                .get_register(id as usize)
-                .cloned()
-                .unwrap_or(Value::Undefined)
+        let id = id as usize;
+        if let Some(local_registers) = &self.local_registers {
+            if let Some(reg) = local_registers.get(id) {
+                return reg.get();
+            }
         }
+
+        self.context
+            .avm1
+            .get_register(id)
+            .copied()
+            .unwrap_or(Value::Undefined)
     }
 
     /// Set a register to a given value.
     ///
     /// If a given register does not exist, this function does nothing.
     pub fn set_current_register(&mut self, id: u8, value: Value<'gc>) {
-        if self.has_local_register(id) {
-            self.set_local_register(id, value);
-        } else if let Some(v) = self.context.avm1.get_register_mut(id as usize) {
-            *v = value;
+        if !self.set_local_register(id, value) {
+            if let Some(reg) = self.context.avm1.get_register_mut(id as usize) {
+                *reg = value;
+            }
         }
+    }
+
+    /// Set a local register to a given value, and returns `true` if successful.
+    ///
+    /// If a given local register does not exist, this function does nothing.
+    pub fn set_local_register(&mut self, id: u8, value: Value<'gc>) -> bool {
+        if let Some(local_registers) = &self.local_registers {
+            if let Some(reg) = local_registers.get(id as usize) {
+                reg.set(value);
+                return true;
+            }
+        }
+        false
     }
 
     /// Convert the enumerable properties of an object into a set of form values.
@@ -3021,37 +3037,11 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         self.this
     }
 
-    /// Returns true if this activation has a given local register ID.
-    pub fn has_local_register(&self, id: u8) -> bool {
-        self.local_registers
-            .as_deref()
-            .map(|rs| usize::from(id) < rs.len())
-            .unwrap_or(false)
-    }
-
     pub fn allocate_local_registers(&mut self, num: u8) {
         self.local_registers = match num {
             0 => None,
             num => Some((0..num).map(|_| Cell::new(Value::Undefined)).collect()),
         };
-    }
-
-    /// Retrieve a local register.
-    pub fn local_register(&self, id: u8) -> Option<Value<'gc>> {
-        if let Some(local_registers) = self.local_registers.as_deref() {
-            local_registers.get(usize::from(id)).map(Cell::get)
-        } else {
-            None
-        }
-    }
-
-    /// Set a local register.
-    pub fn set_local_register(&mut self, id: u8, value: Value<'gc>) {
-        if let Some(ref mut local_registers) = self.local_registers {
-            if let Some(r) = local_registers.get(usize::from(id)) {
-                r.set(value);
-            }
-        }
     }
 
     pub fn constant_pool(&self) -> Gc<'gc, Vec<Value<'gc>>> {
