@@ -30,7 +30,7 @@ use crate::html::TextFormat;
 use crate::streams::NetStream;
 use crate::string::AvmString;
 use crate::xml::XmlNode;
-use gc_arena::{Collect, Gc, GcCell, Mutation};
+use gc_arena::{Collect, Gc, Mutation};
 use ruffle_macros::istr;
 use std::cell::{Cell, RefCell};
 use std::marker::PhantomData;
@@ -81,7 +81,7 @@ pub enum NativeObject<'gc> {
     ConvolutionFilter(ConvolutionFilter<'gc>),
     GradientBevelFilter(GradientFilter<'gc>),
     GradientGlowFilter(GradientFilter<'gc>),
-    ColorTransform(GcCell<'gc, ColorTransformObject>),
+    ColorTransform(Gc<'gc, ColorTransformObject>),
     Transform(TransformObject<'gc>),
     TextFormat(Gc<'gc, RefCell<TextFormat>>),
     NetStream(NetStream<'gc>),

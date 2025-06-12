@@ -126,10 +126,7 @@ fn method<'gc>(
             if let [value] = args {
                 // Set only occurs for an object with actual ColorTransform data.
                 if let Some(color_transform) = ColorTransformObject::cast(*value) {
-                    clip.set_color_transform(
-                        activation.gc(),
-                        color_transform.read().clone().into(),
-                    );
+                    clip.set_color_transform(activation.gc(), (*color_transform).clone().into());
                     clip.invalidate_cached_bitmap(activation.gc());
                     clip.set_transformed_by_script(true);
                 }
