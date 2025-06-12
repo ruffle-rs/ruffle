@@ -88,7 +88,7 @@ pub enum NativeObject<'gc> {
     BitmapData(BitmapDataWrapper<'gc>),
     Xml(Xml<'gc>),
     XmlNode(XmlNode<'gc>),
-    SharedObject(GcCell<'gc, SharedObject>),
+    SharedObject(Gc<'gc, RefCell<SharedObject>>),
     XmlSocket(XmlSocket<'gc>),
     FileReference(FileReferenceObject<'gc>),
     NetConnection(NetConnection<'gc>),
