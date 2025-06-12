@@ -9,7 +9,7 @@ use crate::display_object::{DisplayObject, TDisplayObject as _};
 use crate::ecma_conversions::f64_to_wrapping_i32;
 use crate::string::{AvmString, StringContext};
 use core::{fmt, mem};
-use gc_arena::{Collect, GcCell, GcWeakCell, Mutation};
+use gc_arena::{lock::RefLock, Collect, Gc, GcWeak, Mutation};
 use ruffle_macros::istr;
 
 use super::super_object::SuperObject;
@@ -53,11 +53,11 @@ impl<'gc> Watcher<'gc> {
 
 #[derive(Copy, Clone, Collect)]
 #[collect(no_drop)]
-pub struct Object<'gc>(GcCell<'gc, ObjectData<'gc>>);
+pub struct Object<'gc>(Gc<'gc, RefLock<ObjectData<'gc>>>);
 
 #[derive(Copy, Clone, Collect)]
 #[collect(no_drop)]
-pub struct ObjectWeak<'gc>(GcWeakCell<'gc, ObjectData<'gc>>);
+pub struct ObjectWeak<'gc>(GcWeak<'gc, RefLock<ObjectData<'gc>>>);
 
 impl<'gc> ObjectWeak<'gc> {
     pub fn upgrade(self, mc: &Mutation<'gc>) -> Option<Object<'gc>> {
@@ -68,7 +68,7 @@ impl<'gc> ObjectWeak<'gc> {
 impl fmt::Debug for ObjectWeak<'_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct("ObjectWeak")
-            .field("ptr", &self.0.as_ptr())
+            .field("ptr", &GcWeak::as_ptr(self.0))
             .finish()
     }
 }
@@ -85,25 +85,25 @@ struct ObjectData<'gc> {
 impl fmt::Debug for Object<'_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct("Object")
-            .field("ptr", &self.0.as_ptr())
+            .field("ptr", &Gc::as_ptr(self.0))
             .finish()
     }
 }
 
 impl<'gc> Object<'gc> {
     pub fn as_weak(self) -> ObjectWeak<'gc> {
-        ObjectWeak(GcCell::downgrade(self.0))
+        ObjectWeak(Gc::downgrade(self.0))
     }
 
     pub fn new(context: &StringContext<'gc>, proto: Option<Object<'gc>>) -> Self {
-        let object = Self(GcCell::new(
+        let object = Self(Gc::new(
             context.gc(),
-            ObjectData {
+            RefLock::new(ObjectData {
                 native: NativeObject::None,
                 properties: PropertyMap::new(),
                 interfaces: vec![],
                 watchers: PropertyMap::new(),
-            },
+            }),
         ));
         if let Some(proto) = proto {
             object.define_value(
@@ -128,14 +128,14 @@ impl<'gc> Object<'gc> {
 
     // Creates a Object, without assigning any __proto__ property.
     pub fn new_without_proto(gc_context: &Mutation<'gc>) -> Self {
-        Self(GcCell::new(
+        Self(Gc::new(
             gc_context,
-            ObjectData {
+            RefLock::new(ObjectData {
                 native: NativeObject::None,
                 properties: PropertyMap::new(),
                 interfaces: vec![],
                 watchers: PropertyMap::new(),
-            },
+            }),
         ))
     }
 
@@ -149,7 +149,7 @@ impl<'gc> Object<'gc> {
         activation: &mut Activation<'_, 'gc>,
     ) -> Value<'gc> {
         self.0
-            .read()
+            .borrow()
             .properties
             .get(name, activation.is_case_sensitive())
             .map_or(Value::Undefined, |property| property.data())
@@ -168,7 +168,7 @@ impl<'gc> Object<'gc> {
         // TODO: Call watchers.
         match self
             .0
-            .write(activation.gc())
+            .borrow_mut(activation.gc())
             .properties
             .entry(name, activation.is_case_sensitive())
         {
@@ -181,7 +181,7 @@ impl<'gc> Object<'gc> {
     // TODO: Make an iterator?
     pub fn own_properties(&self) -> Vec<(AvmString<'gc>, Value<'gc>)> {
         self.0
-            .read()
+            .borrow()
             .properties
             .iter()
             .filter_map(|(k, p)| {
@@ -210,7 +210,7 @@ impl<'gc> Object<'gc> {
         }
 
         let name = name.into();
-        let read = self.0.read();
+        let read = self.0.borrow();
 
         read.properties
             .get(name, activation.is_case_sensitive())
@@ -272,7 +272,7 @@ impl<'gc> Object<'gc> {
 
         let setter = match self
             .0
-            .write(activation.gc())
+            .borrow_mut(activation.gc())
             .properties
             .entry(name, activation.is_case_sensitive())
         {
@@ -367,7 +367,7 @@ impl<'gc> Object<'gc> {
         }
 
         self.0
-            .read()
+            .borrow()
             .properties
             .get(name, activation.is_case_sensitive())
             .filter(|property| property.allow_swf_version(activation.swf_version()))
@@ -386,7 +386,7 @@ impl<'gc> Object<'gc> {
         }
 
         self.0
-            .read()
+            .borrow()
             .properties
             .get(name, activation.is_case_sensitive())
             .filter(|property| property.allow_swf_version(activation.swf_version()))
@@ -405,7 +405,7 @@ impl<'gc> Object<'gc> {
 
         if let Entry::Occupied(mut entry) = self
             .0
-            .write(activation.gc())
+            .borrow_mut(activation.gc())
             .properties
             .entry(name, activation.is_case_sensitive())
         {
@@ -440,7 +440,7 @@ impl<'gc> Object<'gc> {
             return;
         }
 
-        match self.0.write(gc_context).properties.entry(name, false) {
+        match self.0.borrow_mut(gc_context).properties.entry(name, false) {
             Entry::Occupied(mut entry) => entry.get_mut().set_virtual(getter, setter),
             Entry::Vacant(entry) => entry.insert(Property::new_virtual(getter, setter, attributes)),
         }
@@ -471,7 +471,7 @@ impl<'gc> Object<'gc> {
 
         match self
             .0
-            .write(activation.gc())
+            .borrow_mut(activation.gc())
             .properties
             .entry(name, activation.is_case_sensitive())
         {
@@ -496,7 +496,7 @@ impl<'gc> Object<'gc> {
         let mut result = Ok(());
         let watcher = self
             .0
-            .read()
+            .borrow()
             .watchers
             .get(name, activation.is_case_sensitive())
             .cloned();
@@ -530,7 +530,7 @@ impl<'gc> Object<'gc> {
             return;
         }
 
-        self.0.write(activation.gc()).watchers.insert(
+        self.0.borrow_mut(activation.gc()).watchers.insert(
             name,
             Watcher::new(callback, user_data),
             activation.is_case_sensitive(),
@@ -549,7 +549,7 @@ impl<'gc> Object<'gc> {
         }
 
         self.0
-            .write(activation.gc())
+            .borrow_mut(activation.gc())
             .watchers
             .remove(name, activation.is_case_sensitive())
             .is_some()
@@ -578,7 +578,7 @@ impl<'gc> Object<'gc> {
             return;
         }
 
-        self.0.write(gc_context).properties.insert(
+        self.0.borrow_mut(gc_context).properties.insert(
             name.into(),
             Property::new_stored(value, attributes),
             true,
@@ -608,13 +608,18 @@ impl<'gc> Object<'gc> {
         match name {
             None => {
                 // Change *all* attributes.
-                for (_name, prop) in self.0.write(gc_context).properties.iter_mut() {
+                for (_name, prop) in self.0.borrow_mut(gc_context).properties.iter_mut() {
                     let new_atts = (prop.attributes() - clear_attributes) | set_attributes;
                     prop.set_attributes(new_atts);
                 }
             }
             Some(name) => {
-                if let Some(prop) = self.0.write(gc_context).properties.get_mut(name, false) {
+                if let Some(prop) = self
+                    .0
+                    .borrow_mut(gc_context)
+                    .properties
+                    .get_mut(name, false)
+                {
                     let new_atts = (prop.attributes() - clear_attributes) | set_attributes;
                     prop.set_attributes(new_atts);
                 }
@@ -675,7 +680,7 @@ impl<'gc> Object<'gc> {
 
         // Note that `hasOwnProperty` does NOT return true for display object properties.
         self.0
-            .read()
+            .borrow()
             .properties
             .contains_key(name, activation.is_case_sensitive())
     }
@@ -694,7 +699,7 @@ impl<'gc> Object<'gc> {
         }
 
         self.0
-            .read()
+            .borrow()
             .properties
             .get(name, activation.is_case_sensitive())
             .is_some_and(|property| {
@@ -715,7 +720,7 @@ impl<'gc> Object<'gc> {
         }
 
         self.0
-            .read()
+            .borrow()
             .properties
             .get(name, activation.is_case_sensitive())
             .is_some_and(|property| property.is_enumerable())
@@ -747,7 +752,7 @@ impl<'gc> Object<'gc> {
         );
 
         // Then our own keys.
-        let read = self.0.read();
+        let read = self.0.borrow();
         out_keys.extend(read.properties.iter().filter_map(move |(k, p)| {
             if include_hidden || p.is_enumerable() {
                 Some(k)
@@ -771,7 +776,7 @@ impl<'gc> Object<'gc> {
             return vec![];
         }
 
-        self.0.read().interfaces.clone()
+        self.0.borrow().interfaces.clone()
     }
 
     /// Set the interface list for this object. (Only useful for prototypes.)
@@ -781,15 +786,15 @@ impl<'gc> Object<'gc> {
             return;
         }
 
-        self.0.write(gc_context).interfaces = iface_list;
+        self.0.borrow_mut(gc_context).interfaces = iface_list;
     }
 
     pub(super) fn native_no_super(&self) -> NativeObject<'gc> {
-        self.0.read().native
+        self.0.borrow().native
     }
 
     pub fn native(&self) -> NativeObject<'gc> {
-        match self.0.read().native {
+        match self.0.borrow().native {
             // TODO(moulins): can `super` point to another `super`?
             NativeObject::Super(zuper) => zuper.this().native(),
             native => native,
@@ -799,11 +804,11 @@ impl<'gc> Object<'gc> {
     pub fn set_native(&self, mc: &Mutation<'gc>, native: NativeObject<'gc>) {
         assert!(!matches!(native, NativeObject::None));
 
-        let old_native = self.0.read().native;
+        let old_native = self.0.borrow().native;
         match old_native {
             // TODO(moulins): can `super` point to another `super`?
             NativeObject::Super(zuper) => zuper.this().set_native(mc, native),
-            NativeObject::None => self.0.write(mc).native = native,
+            NativeObject::None => self.0.borrow_mut(mc).native = native,
             // Trying to construct the same object twice (e.g. with `super()`) does nothing.
             _ if mem::discriminant(&old_native) == mem::discriminant(&native) => (),
             // FIXME: in FP, some native classes (e.g. Sound) appear to be constructible over
@@ -836,7 +841,7 @@ impl<'gc> Object<'gc> {
 
     /// Get the underlying stage object, if it exists, but doesn't follow `super` objects.
     pub fn as_display_object_no_super(&self) -> Option<DisplayObject<'gc>> {
-        self.0.read().native.as_display_object()
+        self.0.borrow().native.as_display_object()
     }
 
     /// Get the underlying display node for this object, if it exists.
