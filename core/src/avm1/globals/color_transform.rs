@@ -4,34 +4,37 @@ use crate::avm1::object::NativeObject;
 use crate::avm1::property_decl::{define_properties_on, Declaration};
 use crate::avm1::{Activation, Error, Object, Value};
 use crate::string::{AvmString, StringContext};
-use gc_arena::{Collect, GcCell};
+use gc_arena::{Collect, Gc};
 use ruffle_macros::istr;
+use std::cell::Cell;
 use swf::{ColorTransform, Fixed8};
 
 #[derive(Clone, Debug, Collect)]
 #[collect(require_static)]
 pub struct ColorTransformObject {
-    red_multiplier: f64,
-    green_multiplier: f64,
-    blue_multiplier: f64,
-    alpha_multiplier: f64,
-    red_offset: f64,
-    green_offset: f64,
-    blue_offset: f64,
-    alpha_offset: f64,
+    red_multiplier: Cell<f64>,
+    green_multiplier: Cell<f64>,
+    blue_multiplier: Cell<f64>,
+    alpha_multiplier: Cell<f64>,
+    red_offset: Cell<f64>,
+    green_offset: Cell<f64>,
+    blue_offset: Cell<f64>,
+    alpha_offset: Cell<f64>,
 }
 
 impl<'gc> ColorTransformObject {
-    pub const IDENTITY: Self = Self {
-        red_multiplier: 1.0,
-        green_multiplier: 1.0,
-        blue_multiplier: 1.0,
-        alpha_multiplier: 1.0,
-        red_offset: 0.0,
-        green_offset: 0.0,
-        blue_offset: 0.0,
-        alpha_offset: 0.0,
-    };
+    pub const fn identity() -> Self {
+        Self {
+            red_multiplier: Cell::new(1.0),
+            green_multiplier: Cell::new(1.0),
+            blue_multiplier: Cell::new(1.0),
+            alpha_multiplier: Cell::new(1.0),
+            red_offset: Cell::new(0.0),
+            green_offset: Cell::new(0.0),
+            blue_offset: Cell::new(0.0),
+            alpha_offset: Cell::new(0.0),
+        }
+    }
 
     pub fn construct(
         activation: &mut Activation<'_, 'gc>,
@@ -55,7 +58,7 @@ impl<'gc> ColorTransformObject {
         constructor.construct(activation, &args)
     }
 
-    pub fn cast(value: Value<'gc>) -> Option<GcCell<'gc, Self>> {
+    pub fn cast(value: Value<'gc>) -> Option<Gc<'gc, Self>> {
         if let Value::Object(object) = value {
             if let NativeObject::ColorTransform(color_transform) = object.native() {
                 return Some(color_transform);
@@ -68,14 +71,14 @@ impl<'gc> ColorTransformObject {
 impl From<ColorTransformObject> for ColorTransform {
     fn from(object: ColorTransformObject) -> Self {
         Self {
-            r_multiply: Fixed8::from_f64(object.red_multiplier),
-            g_multiply: Fixed8::from_f64(object.green_multiplier),
-            b_multiply: Fixed8::from_f64(object.blue_multiplier),
-            a_multiply: Fixed8::from_f64(object.alpha_multiplier),
-            r_add: object.red_offset as i16,
-            g_add: object.green_offset as i16,
-            b_add: object.blue_offset as i16,
-            a_add: object.alpha_offset as i16,
+            r_multiply: Fixed8::from_f64(object.red_multiplier.get()),
+            g_multiply: Fixed8::from_f64(object.green_multiplier.get()),
+            b_multiply: Fixed8::from_f64(object.blue_multiplier.get()),
+            a_multiply: Fixed8::from_f64(object.alpha_multiplier.get()),
+            r_add: object.red_offset.get() as i16,
+            g_add: object.green_offset.get() as i16,
+            b_add: object.blue_offset.get() as i16,
+            a_add: object.alpha_offset.get() as i16,
         }
     }
 }
@@ -108,28 +111,28 @@ pub fn constructor<'gc>(
             let [red_multiplier, green_multiplier, blue_multiplier, alpha_multiplier, red_offset, green_offset, blue_offset, alpha_offset] =
                 values;
             ColorTransformObject {
-                red_multiplier,
-                green_multiplier,
-                blue_multiplier,
-                alpha_multiplier,
-                red_offset,
-                green_offset,
-                blue_offset,
-                alpha_offset,
+                red_multiplier: Cell::new(red_multiplier),
+                green_multiplier: Cell::new(green_multiplier),
+                blue_multiplier: Cell::new(blue_multiplier),
+                alpha_multiplier: Cell::new(alpha_multiplier),
+                red_offset: Cell::new(red_offset),
+                green_offset: Cell::new(green_offset),
+                blue_offset: Cell::new(blue_offset),
+                alpha_offset: Cell::new(alpha_offset),
             }
         }
         [color_transform] => {
             if let Some(color_transform) = ColorTransformObject::cast(*color_transform) {
-                color_transform.read().clone()
+                (*color_transform).clone()
             } else {
-                ColorTransformObject::IDENTITY
+                ColorTransformObject::identity()
             }
         }
-        _ => ColorTransformObject::IDENTITY,
+        _ => ColorTransformObject::identity(),
     };
     this.set_native(
         activation.gc(),
-        NativeObject::ColorTransform(GcCell::new(activation.gc(), color_transform)),
+        NativeObject::ColorTransform(Gc::new(activation.gc(), color_transform)),
     );
     Ok(this.into())
 }
@@ -140,10 +143,9 @@ fn get_rgb<'gc>(
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(color_transform) = ColorTransformObject::cast(this.into()) {
-        let color_transform = color_transform.read();
-        let rgb = ((color_transform.red_offset as i32) << 16)
-            | ((color_transform.green_offset as i32) << 8)
-            | (color_transform.blue_offset as i32);
+        let rgb = ((color_transform.red_offset.get() as i32) << 16)
+            | ((color_transform.green_offset.get() as i32) << 8)
+            | (color_transform.blue_offset.get() as i32);
         Ok(rgb.into())
     } else {
         Ok(Value::Undefined)
@@ -159,13 +161,12 @@ fn set_rgb<'gc>(
         if let [rgb, ..] = args {
             let rgb = rgb.coerce_to_u32(activation)?;
             let [b, g, r, _] = rgb.to_le_bytes();
-            let mut color_transform = color_transform.write(activation.gc());
-            color_transform.red_multiplier = 0.0;
-            color_transform.green_multiplier = 0.0;
-            color_transform.blue_multiplier = 0.0;
-            color_transform.red_offset = r.into();
-            color_transform.green_offset = g.into();
-            color_transform.blue_offset = b.into();
+            color_transform.red_multiplier.set(0.0);
+            color_transform.green_multiplier.set(0.0);
+            color_transform.blue_multiplier.set(0.0);
+            color_transform.red_offset.set(r.into());
+            color_transform.green_offset.set(g.into());
+            color_transform.blue_offset.set(b.into());
         }
     }
 
@@ -181,7 +182,7 @@ macro_rules! color_transform_value_accessor {
                 _args: &[Value<'gc>],
             ) -> Result<Value<'gc>, Error<'gc>> {
                 if let Some(color_transform) = ColorTransformObject::cast(this.into()) {
-                    Ok(color_transform.read().$field.into())
+                    Ok(color_transform.$field.get().into())
                 } else {
                     Ok(Value::Undefined)
                 }
@@ -195,7 +196,7 @@ macro_rules! color_transform_value_accessor {
                 if let Some(color_transform) = ColorTransformObject::cast(this.into()) {
                     if let [value, ..] = args {
                         let value = value.coerce_to_f64(activation)?;
-                        color_transform.write(activation.gc()).$field = value;
+                        color_transform.$field.set(value);
                     }
                 }
                 Ok(Value::Undefined.into())
@@ -235,7 +236,7 @@ fn to_string<'gc>(
 }
 
 fn concat<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    _activation: &mut Activation<'_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -244,21 +245,32 @@ fn concat<'gc>(
             ColorTransformObject::cast(this.into()),
             ColorTransformObject::cast(*other),
         ) {
-            (Some(this), Some(other)) => (this, other.read().clone()),
+            (Some(this), Some(other)) => (this, other),
             _ => return Ok(Value::Undefined),
         };
 
-        let mut this = this.write(activation.gc());
-        *this = ColorTransformObject {
-            red_multiplier: other.red_multiplier * this.red_multiplier,
-            green_multiplier: other.green_multiplier * this.green_multiplier,
-            blue_multiplier: other.blue_multiplier * this.blue_multiplier,
-            alpha_multiplier: other.alpha_multiplier * this.alpha_multiplier,
-            red_offset: (other.red_offset * this.red_multiplier) + this.red_offset,
-            green_offset: (other.green_offset * this.green_multiplier) + this.green_offset,
-            blue_offset: (other.blue_offset * this.blue_multiplier) + this.blue_offset,
-            alpha_offset: (other.alpha_offset * this.alpha_multiplier) + this.alpha_offset,
-        };
+        // The offsets are set before the multipliers because the calculations
+        // for the offsets depend on the original value of the multipliers.
+        this.red_offset
+            .set((other.red_offset.get() * this.red_multiplier.get()) + this.red_offset.get());
+        this.green_offset.set(
+            (other.green_offset.get() * this.green_multiplier.get()) + this.green_offset.get(),
+        );
+        this.blue_offset
+            .set((other.blue_offset.get() * this.blue_multiplier.get()) + this.blue_offset.get());
+        this.alpha_offset.set(
+            (other.alpha_offset.get() * this.alpha_multiplier.get()) + this.alpha_offset.get(),
+        );
+
+        // Now we can set the multipliers.
+        this.red_multiplier
+            .set(other.red_multiplier.get() * this.red_multiplier.get());
+        this.green_multiplier
+            .set(other.green_multiplier.get() * this.green_multiplier.get());
+        this.blue_multiplier
+            .set(other.blue_multiplier.get() * this.blue_multiplier.get());
+        this.alpha_multiplier
+            .set(other.alpha_multiplier.get() * this.alpha_multiplier.get());
     }
 
     Ok(Value::Undefined)
