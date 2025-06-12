@@ -7,7 +7,7 @@ use crate::string::{AvmString, StringContext};
 use flash_lso::amf0::read::AMF0Decoder;
 use flash_lso::amf0::writer::{Amf0Writer, CacheKey, ObjWriter};
 use flash_lso::types::{Lso, ObjectId, Reference, Value as AmfValue};
-use gc_arena::{Collect, GcCell};
+use gc_arena::{Collect, Gc};
 use ruffle_macros::istr;
 use std::borrow::Cow;
 use std::collections::BTreeMap;
@@ -408,9 +408,7 @@ fn get_local<'gc>(
 
     // Set the internal name
     if let NativeObject::SharedObject(shared_object) = this.native() {
-        shared_object
-            .write(activation.gc())
-            .set_name(full_name.clone());
+        shared_object.borrow_mut().set_name(full_name.clone());
     }
 
     let mut data = Value::Undefined;
@@ -465,7 +463,7 @@ fn clear<'gc>(
     }
 
     if let NativeObject::SharedObject(shared_object) = this.native() {
-        let name = shared_object.read().name();
+        let name = shared_object.borrow().name();
         activation.context.storage.remove_key(&name);
     }
 
@@ -498,7 +496,7 @@ pub(crate) fn flush<'gc>(
     let NativeObject::SharedObject(shared_object) = this.native() else {
         return Ok(Value::Undefined);
     };
-    let name = shared_object.read().name();
+    let name = shared_object.borrow().name();
     let data = this
         .get(istr!("data"), activation)?
         .coerce_to_object(activation);
@@ -521,7 +519,7 @@ fn get_size<'gc>(
     let NativeObject::SharedObject(shared_object) = this.native() else {
         return Ok(Value::Undefined);
     };
-    let name = shared_object.read().name();
+    let name = shared_object.borrow().name();
     let data = this
         .get(istr!("data"), activation)?
         .coerce_to_object(activation);
@@ -578,7 +576,7 @@ fn constructor<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     this.set_native(
         activation.gc(),
-        NativeObject::SharedObject(GcCell::new(activation.gc(), Default::default())),
+        NativeObject::SharedObject(Gc::new(activation.gc(), Default::default())),
     );
     Ok(Value::Undefined)
 }
