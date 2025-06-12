@@ -40,7 +40,7 @@ pub fn constructor<'gc>(
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     let mc = activation.gc();
-    let mut node = if let [node_type, value, ..] = args {
+    let node = if let [node_type, value, ..] = args {
         let node_type = node_type.coerce_to_u8(activation)?;
         let node_value = value.coerce_to_string(activation)?;
         XmlNode::new(mc, node_type, Some(node_value))
@@ -58,7 +58,7 @@ fn append_child<'gc>(
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let (Some(mut xmlnode), Some(child_xmlnode)) = (
+    if let (Some(xmlnode), Some(child_xmlnode)) = (
         this.as_xml_node(),
         args.get(0)
             .and_then(|n| n.coerce_to_object(activation).as_xml_node()),
@@ -78,7 +78,7 @@ fn insert_before<'gc>(
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let (Some(mut xmlnode), Some(child_xmlnode), Some(insertpoint_xmlnode)) = (
+    if let (Some(xmlnode), Some(child_xmlnode), Some(insertpoint_xmlnode)) = (
         this.as_xml_node(),
         args.get(0)
             .and_then(|n| n.coerce_to_object(activation).as_xml_node()),
@@ -107,7 +107,7 @@ fn clone_node<'gc>(
             .map(|v| v.as_bool(activation.swf_version()))
             .unwrap_or(false),
     ) {
-        let mut clone_node = xmlnode.duplicate(activation.gc(), deep);
+        let clone_node = xmlnode.duplicate(activation.gc(), deep);
         return Ok(clone_node.script_object(activation).into());
     }
 
@@ -176,7 +176,7 @@ fn remove_node<'gc>(
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(mut node) = this.as_xml_node() {
+    if let Some(node) = this.as_xml_node() {
         let old_parent = node.parent();
         node.remove_node(activation.gc());
         if let Some(old_parent) = old_parent {
@@ -295,7 +295,7 @@ fn first_child<'gc>(
         return Ok(node
             .children()
             .next()
-            .map(|mut child| child.script_object(activation).into())
+            .map(|child| child.script_object(activation).into())
             .unwrap_or_else(|| Value::Null));
     }
 
@@ -311,7 +311,7 @@ fn last_child<'gc>(
         return Ok(node
             .children()
             .next_back()
-            .map(|mut child| child.script_object(activation).into())
+            .map(|child| child.script_object(activation).into())
             .unwrap_or_else(|| Value::Null));
     }
 
@@ -326,7 +326,7 @@ fn parent_node<'gc>(
     if let Some(node) = this.as_xml_node() {
         return Ok(node
             .parent()
-            .map(|mut parent| parent.script_object(activation).into())
+            .map(|parent| parent.script_object(activation).into())
             .unwrap_or_else(|| Value::Null));
     }
 
@@ -341,7 +341,7 @@ fn previous_sibling<'gc>(
     if let Some(node) = this.as_xml_node() {
         return Ok(node
             .prev_sibling()
-            .map(|mut prev| prev.script_object(activation).into())
+            .map(|prev| prev.script_object(activation).into())
             .unwrap_or_else(|| Value::Null));
     }
 
@@ -356,7 +356,7 @@ fn next_sibling<'gc>(
     if let Some(node) = this.as_xml_node() {
         return Ok(node
             .next_sibling()
-            .map(|mut next| next.script_object(activation).into())
+            .map(|next| next.script_object(activation).into())
             .unwrap_or_else(|| Value::Null));
     }
 
