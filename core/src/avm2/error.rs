@@ -429,7 +429,7 @@ pub fn make_error_1118<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> 
 #[cold]
 pub fn make_error_1125<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    index: usize,
+    index: f64,
     range: usize,
 ) -> Error<'gc> {
     let err = range_error(
