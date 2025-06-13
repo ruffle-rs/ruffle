@@ -272,7 +272,7 @@ impl<'gc> LoaderInfoObject<'gc> {
                     root.as_movie_clip()
                         .map(|mc| mc.loaded_bytes() as i32 >= mc.total_bytes())
                         .unwrap_or(true),
-                    movie.loader_url().is_some(),
+                    movie.url() != "file:///",
                 ),
                 _ => (false, false),
             };
