@@ -33,6 +33,7 @@
 			trace("loader.contentLoaderInfo.bytesTotal = " + loader.contentLoaderInfo.bytesTotal);
 			trace("loader.contentLoaderInfo.bytes = " + loader.contentLoaderInfo.bytes); 
 			trace("loader.contentLoaderInfo.url = " + this.urlPrefix(loader.contentLoaderInfo.url));
+			trace("loader.contentLoaderInfo.loaderURL = " + this.urlPrefix(loader.contentLoaderInfo.loaderURL));
 
 			var bytes = ByteArray(new loadableSwf);
 			
