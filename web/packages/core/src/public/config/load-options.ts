@@ -531,9 +531,9 @@ export interface BaseLoadOptions {
     /**
      * This is equivalent to Stage.quality.
      *
-     * @default "high"
+     * @default null
      */
-    quality?: string;
+    quality?: string | null;
 
     /**
      * This is equivalent to Stage.scaleMode.

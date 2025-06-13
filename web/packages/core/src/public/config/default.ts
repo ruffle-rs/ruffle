@@ -35,7 +35,7 @@ export const DEFAULT_CONFIG: Required<BaseLoadOptions> = {
     salign: "",
     fullScreenAspectRatio: "",
     forceAlign: false,
-    quality: "high",
+    quality: null,
     scale: "showAll",
     forceScale: false,
     frameRate: null,
