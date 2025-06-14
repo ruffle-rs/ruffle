@@ -107,7 +107,7 @@ package {
             trace("mat3D.rawData", mat3D.rawData);
 
             trace("// sprite3D: update mat3D");
-            mat3D.copyFrom(new Matrix3D(new <Number>[2,3,0,0,4,5,0,0,0,0,1,0,6,7,0,1])); // FIXME: z values shouldn't be zero (0) for test coverage. Unsupported now.
+            mat3D.copyFrom(new Matrix3D(new <Number>[2,3,0,0,4,5,0,0,0,0,1,0,6,7,8,1])); // FIXME: z values shouldn't be zero (0) for test coverage. Unsupported now.
             trace("sprite3D.transform.matrix", sprite3D.transform.matrix);
             trace("sprite3D.transform.matrix3D", sprite3D.transform.matrix3D);
             //// FIXME: mat3D update should be applied to transform.matrix3D immediately
@@ -223,7 +223,7 @@ package {
             var bd4 : BitmapData = new BitmapData(50, 50, false, 0x0000FF);
             var b4 : Bitmap = new Bitmap(bd4);
             m.identity();
-            m.appendTranslation(50, 50, 0);
+            m.appendTranslation(50, 50, 100);
             b4.transform.matrix3D = m.clone();
             s4.addChild(b4);
             addChild(s4);
@@ -237,7 +237,7 @@ package {
             m.identity();
             m.appendScale(2, 3, 1);
             m.appendRotation(30, Vector3D.Z_AXIS);
-            m.appendTranslation(50, 50, 0);
+            m.appendTranslation(50, 50, 100);
             b5.transform.matrix3D = m.clone();
             s5.addChild(b5);
             addChild(s5);
