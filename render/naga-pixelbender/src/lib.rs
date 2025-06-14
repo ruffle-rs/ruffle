@@ -1220,6 +1220,31 @@ impl ShaderBuilder<'_> {
                             arg2: None,
                             arg3: None,
                         }),
+                        Opcode::Step => {
+                            // dst is used as the 'edge' value in 'step(edge, x)'
+                            // src is used as the 'x' value
+                            let edge_val = self.load_src_register(&dst)?;
+                            let x_val = src; // src is already loaded from src_reg
+
+                            // Result is 1.0 if x >= edge, else 0.0
+                            // So we want `x_val < edge_val` to select 0.0, and `x_val >= edge_val` to select 1.0
+                            let comparison = self.evaluate_expr(Expression::Binary {
+                                op: BinaryOperator::Less, // x < edge
+                                left: x_val,
+                                right: edge_val,
+                            });
+
+                            let one_vec4f = self.evaluate_expr(Expression::Splat {
+                                size: VectorSize::Quad,
+                                value: self.onef32,
+                            });
+
+                            self.evaluate_expr(Expression::Select {
+                                condition: comparison,  // If x < edge is true
+                                accept: self.zerovec4f, // then 0.0
+                                reject: one_vec4f,      // else 1.0
+                            })
+                        }
                         _ => {
                             panic!("Unimplemented opcode {opcode:?}");
                         }
@@ -1846,4 +1871,130 @@ fn push_statement(blocks: &mut [BlockStackEntry], stmt: Statement) {
         }
     };
     block.push(stmt, Span::UNDEFINED);
+}
+
+#[cfg(test)]
+mod tests {
+    use ruffle_render::pixel_bender::{
+        Opcode, Operation, PixelBenderParam, PixelBenderParamQualifier, PixelBenderReg,
+        PixelBenderRegChannel, PixelBenderRegKind, PixelBenderShader, PixelBenderTypeOpcode,
+    };
+
+    use super::ShaderBuilder;
+
+    #[test]
+    fn step_opcode_test() {
+        let shader = PixelBenderShader {
+            name: "step_test".to_string(),
+            version: 1,
+            params: vec![
+                PixelBenderParam::Normal {
+                    qualifier: PixelBenderParamQualifier::Output,
+                    param_type: PixelBenderTypeOpcode::TFloat4,
+                    reg: PixelBenderReg {
+                        index: 0,
+                        channels: PixelBenderRegChannel::RGBA.to_vec(),
+                        kind: PixelBenderRegKind::Float,
+                    },
+                    name: "outColor".to_string(),
+                    metadata: vec![],
+                },
+                PixelBenderParam::Normal {
+                    qualifier: PixelBenderParamQualifier::Input,
+                    param_type: PixelBenderTypeOpcode::TFloat4,
+                    reg: PixelBenderReg {
+                        index: 1,
+                        channels: PixelBenderRegChannel::RGBA.to_vec(),
+                        kind: PixelBenderRegKind::Float,
+                    },
+                    name: "edge".to_string(),
+                    metadata: vec![],
+                },
+                PixelBenderParam::Normal {
+                    qualifier: PixelBenderParamQualifier::Input,
+                    param_type: PixelBenderTypeOpcode::TFloat4,
+                    reg: PixelBenderReg {
+                        index: 2,
+                        channels: PixelBenderRegChannel::RGBA.to_vec(),
+                        kind: PixelBenderRegKind::Float,
+                    },
+                    name: "x".to_string(),
+                    metadata: vec![],
+                },
+            ],
+            operations: vec![
+                Operation::Normal {
+                    opcode: Opcode::Mov,
+                    dst: PixelBenderReg {
+                        index: 3,
+                        channels: PixelBenderRegChannel::RGBA.to_vec(),
+                        kind: PixelBenderRegKind::Float,
+                    },
+                    src: PixelBenderReg {
+                        index: 2,
+                        channels: PixelBenderRegChannel::RGBA.to_vec(),
+                        kind: PixelBenderRegKind::Float,
+                    },
+                },
+                Operation::Normal {
+                    opcode: Opcode::Step,
+                    dst: PixelBenderReg {
+                        index: 1,
+                        channels: PixelBenderRegChannel::RGBA.to_vec(),
+                        kind: PixelBenderRegKind::Float,
+                    },
+                    src: PixelBenderReg {
+                        index: 3,
+                        channels: PixelBenderRegChannel::RGBA.to_vec(),
+                        kind: PixelBenderRegKind::Float,
+                    },
+                },
+                Operation::Normal {
+                    opcode: Opcode::Mov,
+                    dst: PixelBenderReg {
+                        index: 0,
+                        channels: PixelBenderRegChannel::RGBA.to_vec(),
+                        kind: PixelBenderRegKind::Float,
+                    },
+                    src: PixelBenderReg {
+                        index: 1,
+                        channels: PixelBenderRegChannel::RGBA.to_vec(),
+                        kind: PixelBenderRegKind::Float,
+                    },
+                },
+            ],
+            metadata: vec![],
+        };
+
+        // Test 1: Verify compilation succeeds
+        let result = ShaderBuilder::build(&shader);
+        assert!(
+            result.is_ok(),
+            "Shader compilation failed: {:?}",
+            result.err()
+        );
+
+        // Test 2: Verify WGSL generation and content
+        let naga_modules = result.unwrap();
+        let wgsl = crate::to_wgsl(&naga_modules.fragment);
+
+        println!("Generated WGSL:\n{wgsl}"); // Helpful for debugging
+
+        // Verify the Step opcode generates the expected WGSL patterns
+        assert!(
+            wgsl.contains("select"),
+            "Step opcode should generate select operation"
+        );
+        assert!(wgsl.contains("1f"), "Step should use 1f as true value"); // Changed from "1.0" to "1f"
+        assert!(
+            wgsl.contains("0f") || wgsl.contains("vec4"),
+            "Step should use 0f as false value"
+        );
+
+        // Verify we have the comparison operation (x < edge)
+        assert!(
+            wgsl.contains("<"),
+            "Step should generate less-than comparison"
+        );
+    }
 }
