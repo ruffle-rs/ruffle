@@ -1290,10 +1290,12 @@ impl<'gc> Loader<'gc> {
             mc.replace_with_movie(uc, None, false, None);
         }
 
+        let loader_url = Some(uc.swf.url().to_string());
+
         if replacing_root_movie {
             ContentType::sniff(&bytes).expect(ContentType::Swf)?;
 
-            let movie = SwfMovie::from_data(&bytes, "file:///".into(), None)?;
+            let movie = SwfMovie::from_data(&bytes, "file:///".into(), loader_url)?;
             avm2_stub_method_context!(
                 uc,
                 "flash.display.Loader",
@@ -1304,7 +1306,7 @@ impl<'gc> Loader<'gc> {
             return Ok(());
         }
 
-        Loader::movie_loader_data(handle, uc, &bytes, "file:///".into(), 0, false, None)
+        Loader::movie_loader_data(handle, uc, &bytes, "file:///".into(), 0, false, loader_url)
     }
 
     fn form_loader(
