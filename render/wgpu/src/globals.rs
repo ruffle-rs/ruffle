@@ -45,7 +45,7 @@ impl Globals {
 
         let projection_matrix = {
             // TODO: Here, just the fixed default value is used.
-            // This should support variable values derived for each display object.
+            // This should support .transform.perspectiveProjection of each display object.
             let field_of_view = 55.0;
 
             let focal_length = {
@@ -54,31 +54,41 @@ impl Globals {
                 f64::cos(rad) / f64::sin(rad)
             };
 
-            let perspective_projection = {
-                let mut m = Matrix3D::IDENTITY;
-                m.raw_data[0] = focal_length;
-                m.raw_data[5] = focal_length;
-                m.raw_data[10] = focal_length;
-                m.raw_data[11] = 1.0;
-                m.raw_data[14] = 0.0;
-                m.raw_data[15] = 0.0;
-                m
+            let perspective_projection = Matrix3D {
+                raw_data: [
+                    //
+                    focal_length,
+                    0.0,
+                    0.0,
+                    0.0,
+                    //
+                    0.0,
+                    focal_length,
+                    0.0,
+                    0.0,
+                    //
+                    0.0,
+                    0.0,
+                    1.0,
+                    1.0,
+                    //
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                ],
             };
+
+            // TODO: Consider PerspectiveProjection.projectionCenter.
+
             let move_coord = {
                 // AS3 places Viewpoint at (0, 0, -focalLength).
-
                 let mut m = Matrix3D::IDENTITY;
                 m.raw_data[14] = focal_length;
-                // TODO: Consider PerspectiveProjection.projectionCenter.
                 m
             };
-            let move_coord_back = {
-                let mut m = Matrix3D::IDENTITY;
-                m.raw_data[10] = 0.0;
-                // TODO: Consider PerspectiveProjection.projectionCenter.
-                m
-            };
-            move_coord_back * perspective_projection * move_coord
+
+            perspective_projection * move_coord
         };
 
         let matrix = projection_matrix * view_matrix;
