@@ -12,8 +12,8 @@ struct VertexOutput {
 
 @vertex
 fn main_vertex(in: common__VertexInput) -> VertexOutput {
-    let pos = common__globals.view_matrix * transforms.world_matrix * vec4<f32>(in.position.x, in.position.y, 1.0, 1.0);
-    let uv = vec2<f32>((pos.x + 1.0) / 2.0, -((pos.y - 1.0) / 2.0));
+    let pos = common__globals.view_matrix * transforms.world_matrix * vec4<f32>(in.position.x, in.position.y, 0.0, 1.0);
+    let uv = vec2<f32>(in.position.xy);
     return VertexOutput(pos, uv);
 }
 
