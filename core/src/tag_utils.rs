@@ -83,7 +83,7 @@ pub struct SwfMovie {
 
 impl SwfMovie {
     /// Construct an empty movie.
-    pub fn empty(swf_version: u8) -> Self {
+    pub fn empty(swf_version: u8, loader_url: Option<String>) -> Self {
         let url = "file:///".to_string();
         let header = HeaderExt::default_with_swf_version(swf_version);
 
@@ -93,7 +93,7 @@ impl SwfMovie {
             header,
             data: vec![],
             url,
-            loader_url: None,
+            loader_url,
             parameters: Vec::new(),
             encoding: swf::UTF_8,
             compressed_len: 0,
@@ -106,7 +106,11 @@ impl SwfMovie {
     /// This is used by `Loader` when firing an initial `progress` event:
     /// `LoaderInfo.bytesTotal` is set to the actual value, but no data is available,
     /// and `LoaderInfo.parameters` is empty.
-    pub fn fake_with_compressed_len(swf_version: u8, compressed_len: usize) -> Self {
+    pub fn fake_with_compressed_len(
+        swf_version: u8,
+        loader_url: Option<String>,
+        compressed_len: usize,
+    ) -> Self {
         let url = "file:///".to_string();
         let header = HeaderExt::default_with_swf_version(swf_version);
 
@@ -117,7 +121,7 @@ impl SwfMovie {
             compressed_len,
             data: Vec::new(),
             url,
-            loader_url: None,
+            loader_url,
             parameters: Vec::new(),
             encoding: swf::UTF_8,
             is_movie: false,
@@ -127,7 +131,11 @@ impl SwfMovie {
 
     /// Like `fake_with_compressed_len`, but uses actual data.
     /// This is used when loading a Bitmap to expose the underlying content
-    pub fn fake_with_compressed_data(swf_version: u8, compressed_data: Vec<u8>) -> Self {
+    pub fn fake_with_compressed_data(
+        swf_version: u8,
+        loader_url: Option<String>,
+        compressed_data: Vec<u8>,
+    ) -> Self {
         let url = "file:///".to_string();
         let header = HeaderExt::default_with_swf_version(swf_version);
 
@@ -138,7 +146,7 @@ impl SwfMovie {
             compressed_len: compressed_data.len(),
             data: compressed_data,
             url,
-            loader_url: None,
+            loader_url,
             parameters: Vec::new(),
             encoding: swf::UTF_8,
             is_movie: false,
