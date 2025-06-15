@@ -338,7 +338,7 @@ impl<'gc> MovieClip<'gc> {
         loader_info: Option<LoaderInfoObject<'gc>>,
     ) {
         let mut mc = self.0.write(context.gc());
-        let movie = movie.unwrap_or_else(|| Arc::new(SwfMovie::empty(mc.movie().version())));
+        let movie = movie.unwrap_or_else(|| Arc::new(SwfMovie::empty(mc.movie().version(), None)));
         let total_frames = movie.num_frames();
         assert_eq!(
             mc.shared.loader_info, None,
@@ -2142,7 +2142,7 @@ impl<'gc> MovieClip<'gc> {
             let parent_movie = parent_mc.movie();
             let parent_version = parent_movie.version();
             let parent_url = parent_movie.url();
-            let mut unloaded_movie = SwfMovie::empty(parent_version);
+            let mut unloaded_movie = SwfMovie::empty(parent_version, None);
             unloaded_movie.set_url(parent_url.to_string());
 
             Some(Arc::new(unloaded_movie))
