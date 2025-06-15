@@ -102,6 +102,11 @@ panic = "unwind"
 [profile.release]
 panic = "abort"
 
+[profile.release-small]
+inherits = "release"
+strip = true
+lto = true
+
 [profile.dev.package.h263-rs]
 opt-level = 3
 
