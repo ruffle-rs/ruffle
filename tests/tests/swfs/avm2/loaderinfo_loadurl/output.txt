@@ -1,0 +1,12 @@
+new Loader()
+loaderInfo.url = null
+loaderInfo.loaderURL = file:////test.swf
+Loader.load()
+loaderInfo.url = null
+loaderInfo.loaderURL = file:////test.swf
+Loader.unload()
+loaderInfo.url = null
+loaderInfo.loaderURL = file:////test.swf
+Loader.loadBytes()
+loaderInfo.url = null
+loaderInfo.loaderURL = file:////test.swf
