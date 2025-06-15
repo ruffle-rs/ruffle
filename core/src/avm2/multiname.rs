@@ -442,6 +442,11 @@ impl<'gc> Multiname<'gc> {
         ns_match && name_match
     }
 
+    /// Whether this multiname is valid for dynamic lookups, such as `array[3]`.
+    pub fn valid_dynamic_name(&self) -> bool {
+        self.contains_public_namespace() && !self.is_attribute()
+    }
+
     /// List the parameters that the selected class must match.
     pub fn param(&self) -> Option<Option<Gc<'gc, Multiname<'gc>>>> {
         self.param

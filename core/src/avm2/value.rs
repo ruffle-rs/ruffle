@@ -930,7 +930,7 @@ impl<'gc> Value<'gc> {
                 } else {
                     let instance_class = self.instance_class(activation);
 
-                    if !multiname.contains_public_namespace() {
+                    if !multiname.valid_dynamic_name() {
                         return Err(error::make_reference_error(
                             activation,
                             error::ReferenceErrorCode::InvalidRead,
@@ -1175,7 +1175,7 @@ impl<'gc> Value<'gc> {
                 } else {
                     let instance_class = self.instance_class(activation);
 
-                    if !multiname.contains_public_namespace() {
+                    if !multiname.valid_dynamic_name() {
                         return Err(error::make_reference_error(
                             activation,
                             error::ReferenceErrorCode::InvalidRead,
