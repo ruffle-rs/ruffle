@@ -239,7 +239,7 @@ impl ShaderBuilder<'_> {
                 location: 0,
                 interpolation: Some(naga::Interpolation::Perspective),
                 sampling: Some(naga::Sampling::Center),
-                second_blend_source: false,
+                blend_src: None,
             }),
         });
 
@@ -249,7 +249,7 @@ impl ShaderBuilder<'_> {
                 location: 0,
                 interpolation: None,
                 sampling: None,
-                second_blend_source: false,
+                blend_src: None,
             }),
         });
 
