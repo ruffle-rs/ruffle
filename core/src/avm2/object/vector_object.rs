@@ -1,11 +1,11 @@
 //! Vector storage object
 
 use crate::avm2::activation::Activation;
+use crate::avm2::error::{make_error_1125, make_reference_error, Error, ReferenceErrorCode};
 use crate::avm2::object::script_object::ScriptObjectData;
 use crate::avm2::object::{ClassObject, Object, ObjectPtr, TObject};
 use crate::avm2::value::Value;
 use crate::avm2::vector::VectorStorage;
-use crate::avm2::Error;
 use crate::avm2::Multiname;
 use crate::utils::HasPrefixField;
 use core::fmt;
@@ -85,6 +85,28 @@ impl<'gc> VectorObject<'gc> {
 
         Ok(object)
     }
+
+    pub fn set_index_property(
+        self,
+        activation: &mut Activation<'_, 'gc>,
+        index: usize,
+        value: Value<'gc>,
+    ) -> Result<(), Error<'gc>> {
+        let mc = activation.gc();
+
+        let type_of = self.0.vector.borrow().value_type_for_coercion(activation);
+        let value = match value.coerce_to_type(activation, type_of)? {
+            Value::Undefined => self.0.vector.borrow().default(activation),
+            Value::Null => self.0.vector.borrow().default(activation),
+            v => v,
+        };
+
+        unlock!(Gc::write(mc, self.0), VectorObjectData, vector)
+            .borrow_mut()
+            .set(index, value, activation)?;
+
+        Ok(())
+    }
 }
 
 impl<'gc> TObject<'gc> for VectorObject<'gc> {
@@ -102,14 +124,76 @@ impl<'gc> TObject<'gc> for VectorObject<'gc> {
         activation: &mut Activation<'_, 'gc>,
     ) -> Result<Value<'gc>, Error<'gc>> {
         if name.contains_public_namespace() {
-            if let Some(name) = name.local_name() {
-                if let Ok(index) = name.parse::<usize>() {
-                    return self.0.vector.borrow().get(index, activation);
+            if let Some(local_name) = name.local_name() {
+                if let Ok(index) = local_name.parse::<f64>() {
+                    let u32_index = index as u32;
+
+                    if u32_index as f64 == index {
+                        return self.0.vector.borrow().get(u32_index as usize, activation);
+                    } else if activation.caller_movie_or_root().version() >= 11 {
+                        let storage_len = self.0.vector.borrow().length();
+                        return Err(make_error_1125(activation, index, storage_len));
+                    } else if index > 0.0 {
+                        // Negative values fall back to the prototype chain on
+                        // SWFv10; positive values throw an error
+                        return Err(make_reference_error(
+                            activation,
+                            ReferenceErrorCode::InvalidRead,
+                            name,
+                            self.instance_class(),
+                        ));
+                    }
                 }
             }
         }
 
-        self.base().get_property_local(name, activation)
+        // This *would* just be a call to ScriptObject::get_property_local, but
+        // Vector classes specifically pretend to be sealed when the prototype
+        // lookup fails, so we have to copy all the logic to here
+        if !name.contains_public_namespace() {
+            let error_code = if name.has_multiple_ns() {
+                ReferenceErrorCode::InvalidNsRead
+            } else {
+                ReferenceErrorCode::InvalidRead
+            };
+
+            return Err(make_reference_error(
+                activation,
+                error_code,
+                name,
+                self.instance_class(),
+            ));
+        }
+
+        let Some(local_name) = name.local_name() else {
+            return Err(make_reference_error(
+                activation,
+                ReferenceErrorCode::InvalidRead,
+                name,
+                self.instance_class(),
+            ));
+        };
+
+        let key = crate::avm2::object::maybe_int_property(local_name);
+
+        // follow the prototype chain
+        let mut proto = self.proto();
+        while let Some(obj) = proto {
+            let obj = obj.base();
+            let values = obj.values();
+            let value = values.as_hashmap().get(&key);
+            if let Some(value) = value {
+                return Ok(value.value);
+            }
+            proto = obj.proto();
+        }
+
+        Err(make_reference_error(
+            activation,
+            ReferenceErrorCode::InvalidRead,
+            name,
+            self.instance_class(),
+        ))
     }
 
     fn get_index_property(self, index: usize) -> Option<Value<'gc>> {
@@ -122,28 +206,35 @@ impl<'gc> TObject<'gc> for VectorObject<'gc> {
         value: Value<'gc>,
         activation: &mut Activation<'_, 'gc>,
     ) -> Result<(), Error<'gc>> {
-        let mc = activation.gc();
-
         if name.contains_public_namespace() {
-            if let Some(name) = name.local_name() {
-                if let Ok(index) = name.parse::<usize>() {
-                    let type_of = self.0.vector.borrow().value_type_for_coercion(activation);
-                    let value = match value.coerce_to_type(activation, type_of)? {
-                        Value::Undefined => self.0.vector.borrow().default(activation),
-                        Value::Null => self.0.vector.borrow().default(activation),
-                        v => v,
-                    };
+            if let Some(local_name) = name.local_name() {
+                if let Ok(index) = local_name.parse::<f64>() {
+                    let u32_index = index as u32;
 
-                    unlock!(Gc::write(mc, self.0), VectorObjectData, vector)
-                        .borrow_mut()
-                        .set(index, value, activation)?;
-
-                    return Ok(());
+                    if u32_index as f64 == index {
+                        return self.set_index_property(activation, u32_index as usize, value);
+                    } else if activation.caller_movie_or_root().version() >= 11 {
+                        let storage_len = self.0.vector.borrow().length();
+                        return Err(make_error_1125(activation, index, storage_len));
+                    } else {
+                        return Err(make_reference_error(
+                            activation,
+                            ReferenceErrorCode::InvalidWrite,
+                            name,
+                            self.instance_class(),
+                        ));
+                    }
                 }
             }
         }
 
-        self.base().set_property_local(name, value, activation)
+        // No properties can be set on Vector classes
+        Err(make_reference_error(
+            activation,
+            ReferenceErrorCode::InvalidWrite,
+            name,
+            self.instance_class(),
+        ))
     }
 
     fn init_property_local(
@@ -152,28 +243,35 @@ impl<'gc> TObject<'gc> for VectorObject<'gc> {
         value: Value<'gc>,
         activation: &mut Activation<'_, 'gc>,
     ) -> Result<(), Error<'gc>> {
-        let mc = activation.gc();
-
         if name.contains_public_namespace() {
-            if let Some(name) = name.local_name() {
-                if let Ok(index) = name.parse::<usize>() {
-                    let type_of = self.0.vector.borrow().value_type_for_coercion(activation);
-                    let value = match value.coerce_to_type(activation, type_of)? {
-                        Value::Undefined => self.0.vector.borrow().default(activation),
-                        Value::Null => self.0.vector.borrow().default(activation),
-                        v => v,
-                    };
+            if let Some(local_name) = name.local_name() {
+                if let Ok(index) = local_name.parse::<f64>() {
+                    let u32_index = index as u32;
 
-                    unlock!(Gc::write(mc, self.0), VectorObjectData, vector)
-                        .borrow_mut()
-                        .set(index, value, activation)?;
-
-                    return Ok(());
+                    if u32_index as f64 == index {
+                        return self.set_index_property(activation, u32_index as usize, value);
+                    } else if activation.caller_movie_or_root().version() >= 11 {
+                        let storage_len = self.0.vector.borrow().length();
+                        return Err(make_error_1125(activation, index, storage_len));
+                    } else {
+                        return Err(make_reference_error(
+                            activation,
+                            ReferenceErrorCode::InvalidWrite,
+                            name,
+                            self.instance_class(),
+                        ));
+                    }
                 }
             }
         }
 
-        self.base().init_property_local(name, value, activation)
+        // No properties can be set on Vector classes
+        Err(make_reference_error(
+            activation,
+            ReferenceErrorCode::InvalidWrite,
+            name,
+            self.instance_class(),
+        ))
     }
 
     fn delete_property_local(
@@ -196,8 +294,17 @@ impl<'gc> TObject<'gc> for VectorObject<'gc> {
     fn has_own_property(self, name: &Multiname<'gc>) -> bool {
         if name.contains_public_namespace() {
             if let Some(name) = name.local_name() {
-                if let Ok(index) = name.parse::<usize>() {
-                    return self.0.vector.borrow().is_in_range(index);
+                if let Ok(index) = name.parse::<f64>() {
+                    let u32_index = index as u32;
+
+                    if u32_index as f64 == index {
+                        return self.0.vector.borrow().is_in_range(u32_index as usize);
+                    } else {
+                        // FIXME SWFv10 has different behavior; implementing it
+                        // will require having access to an `activation` so that
+                        // we can check `activation.caller_movie_or_root()`
+                        return false;
+                    }
                 }
             }
         }
@@ -230,6 +337,10 @@ impl<'gc> TObject<'gc> for VectorObject<'gc> {
         } else {
             Ok(Value::Null)
         }
+    }
+
+    fn as_vector_object(&self) -> Option<VectorObject<'gc>> {
+        Some(*self)
     }
 
     fn as_vector_storage(&self) -> Option<Ref<VectorStorage<'gc>>> {
