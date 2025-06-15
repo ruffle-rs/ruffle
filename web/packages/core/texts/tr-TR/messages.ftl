@@ -1,6 +1,9 @@
 message-cant-embed =
     Ruffle, bu sayfaya gömülü Flash'ı çalıştıramadı.
     Bu sorunu ortadan kaldırmak için dosyayı ayrı bir sekmede açmayı deneyebilirsiniz.
+message-restored-from-bfcache =
+    Tarayıcınız bu Flash içeriğini önceki bir oturumdan geri yükledi.
+    Sıfırdan başlamak için sayfayı yeniden yükleyin.
 panic-title = Bir şeyler yanlış gitti :(
 more-info = Daha fazla bilgi
 run-anyway = Yine de çalıştır
@@ -24,6 +27,7 @@ clipboard-message-description =
 clipboard-message-copy = { " " } kopyalamak için
 clipboard-message-cut = { " " } kesmek için
 clipboard-message-paste = { " " } yapıştırmak için
+error-canvas-reload = Tuval işleyici halihazırda kullanımdayken tuval oluşturucu yeniden yüklenemiyor.
 error-file-protocol =
     Görünüşe göre Ruffle'ı "dosya:" protokolünde çalıştırıyorsunuz.
     Tarayıcılar güvenlik nedenleriyle birçok özelliğin çalışmasını engellediğinden bu işe yaramaz.
