@@ -40,9 +40,10 @@ pub fn loader_allocator<'gc>(
     // Some LoaderInfo properties (such as 'bytesLoaded' and 'bytesTotal') are always
     // accessible, even before the 'init' event has fired. Using an empty movie gives
     // us the correct value (0) for them.
+    let movie = &activation.context.swf;
     let loader_info = LoaderInfoObject::not_yet_loaded(
         activation,
-        Arc::new(SwfMovie::empty(activation.context.swf.version())),
+        Arc::new(SwfMovie::empty(movie.version(), Some(movie.url().into()))),
         Some(loader),
         None,
         false,
@@ -87,15 +88,16 @@ pub fn load<'gc>(
     loader_info.unload(activation);
 
     // This is a dummy MovieClip, which will get overwritten in `Loader`
+    let movie = &activation.context.swf;
     let content = MovieClip::new(
-        Arc::new(SwfMovie::empty(activation.context.swf.version())),
+        Arc::new(SwfMovie::empty(movie.version(), Some(movie.url().into()))),
         activation.gc(),
     );
 
     // Update the LoaderStream - we still have a fake SwfMovie, but we now have the real target clip.
     loader_info.set_loader_stream(
         LoaderStream::NotYetLoaded(
-            Arc::new(SwfMovie::empty(activation.context.swf.version())),
+            Arc::new(SwfMovie::empty(movie.version(), Some(movie.url().into()))),
             Some(content.into()),
             false,
         ),
@@ -257,8 +259,9 @@ pub fn load_bytes<'gc>(
     loader_info.unload(activation);
 
     // This is a dummy MovieClip, which will get overwritten in `Loader`
+    let movie = &activation.context.swf;
     let content = MovieClip::new(
-        Arc::new(SwfMovie::empty(activation.context.swf.version())),
+        Arc::new(SwfMovie::empty(movie.version(), Some(movie.url().into()))),
         activation.gc(),
     );
 
