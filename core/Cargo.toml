@@ -49,7 +49,7 @@ symphonia = { version = "0.5.4", default-features = false, optional = true }
 enumset = "1.1.6"
 bytemuck = { workspace = true }
 clap = { workspace = true, optional=true }
-realfft = "3.4.0"
+realfft = "3.5.0"
 hashbrown = { version = "0.14.5", features = ["raw"] }
 scopeguard = "1.2.0"
 fluent-templates = "0.13.0"
