@@ -29,7 +29,7 @@ tracing = { workspace = true }
 tracing-subscriber = { workspace = true }
 tracing-appender = "0.2.3"
 winit = "0.30.11"
-webbrowser = "1.0.4"
+webbrowser = "1.0.5"
 url = { workspace = true }
 dirs = "6.0"
 rfd = { workspace = true }
