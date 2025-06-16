@@ -21,15 +21,15 @@
         "@types/chrome": "^0.0.326",
         "@types/common-tags": "^1.8.4",
         "@types/firefox-webext-browser": "^120.0.4",
-        "@types/jsonwebtoken": "^9.0.9",
+        "@types/jsonwebtoken": "^9.0.10",
         "archiver": "^7.0.1",
         "json5": "^2.2.3",
         "ts-loader": "^9.5.2",
         "typescript": "^5.8.3",
         "webpack-cli": "^6.0.1",
-        "axios": "^1.9.0",
+        "axios": "^1.10.0",
         "form-data": "^4.0.3",
         "jsonwebtoken": "^9.0.2",
-        "tsx": "^4.19.4"
+        "tsx": "^4.20.3"
     }
 }
