@@ -1,8 +1,8 @@
 use crate::external_interface::JavascriptInterface;
 use crate::navigator::{OpenUrlMode, WebNavigatorBackend};
 use crate::{
-    audio, log_adapter, storage, ui, JavascriptPlayer, RuffleHandle, SocketProxy,
-    RUFFLE_GLOBAL_PANIC,
+    audio, log_adapter, storage, ui, JavascriptPlayer, RuffleHandle, ScrollingBehavior,
+    SocketProxy, RUFFLE_GLOBAL_PANIC,
 };
 use js_sys::{Promise, RegExp};
 use ruffle_core::backend::audio::{AudioBackend, NullAudioBackend};
@@ -65,6 +65,7 @@ pub struct RuffleInstanceBuilder {
     pub(crate) custom_fonts: Vec<(String, Vec<u8>)>,
     pub(crate) gamepad_button_mapping: HashMap<GamepadButton, KeyCode>,
     pub(crate) url_rewrite_rules: Vec<(RegExp, String)>,
+    pub(crate) scrolling_behavior: ScrollingBehavior,
 }
 
 impl Default for RuffleInstanceBuilder {
@@ -103,6 +104,7 @@ impl Default for RuffleInstanceBuilder {
             custom_fonts: vec![],
             gamepad_button_mapping: HashMap::new(),
             url_rewrite_rules: vec![],
+            scrolling_behavior: ScrollingBehavior::Smart,
         }
     }
 }
@@ -334,6 +336,16 @@ impl RuffleInstanceBuilder {
     #[wasm_bindgen(js_name = "addUrlRewriteRule")]
     pub fn add_url_rewrite_rules(&mut self, regexp: RegExp, replacement: String) {
         self.url_rewrite_rules.push((regexp, replacement));
+    }
+
+    #[wasm_bindgen(js_name = "setScrollingBehavior")]
+    pub fn set_scrolling_behavior(&mut self, scrolling_behavior: String) {
+        self.scrolling_behavior = match scrolling_behavior.as_str() {
+            "always" => ScrollingBehavior::Always,
+            "never" => ScrollingBehavior::Never,
+            "smart" => ScrollingBehavior::Smart,
+            _ => return,
+        };
     }
 
     // TODO: This should be split into two methods that either load url or load data

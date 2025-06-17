@@ -264,6 +264,26 @@ export enum NetworkingAccessMode {
 }
 
 /**
+ * The behavior of scrolling the web page.
+ */
+export enum ScrollingBehavior {
+    /**
+     * Always scroll the page.
+     */
+    Always = "always",
+
+    /**
+     * Never scroll the page.
+     */
+    Never = "never",
+
+    /**
+     * Scroll the page only when the Flash content hasn't handled the scroll.
+     */
+    Smart = "smart",
+}
+
+/**
  * Represents a host, port and proxyUrl. Used when a SWF file tries to use a Socket.
  */
 export interface SocketProxy {
@@ -729,6 +749,15 @@ export interface BaseLoadOptions {
      * you can rewrite it to something else that works.
      */
     urlRewriteRules?: Array<[RegExp | string, string]>;
+
+    /**
+     * Set the scrolling behavior, i.e. how scrolling Flash content affects the web page.
+     *
+     * The original behavior in Flash Player differed across versions, browsers, and wmode settings.
+     *
+     * @default ScrollingBehavior.Smart
+     */
+    scrollingBehavior?: ScrollingBehavior;
 }
 
 /**
