@@ -9,6 +9,7 @@ import {
     PlayerRuntime,
     UnmuteOverlay,
     WindowMode,
+    ScrollingBehavior,
 } from "./load-options";
 
 export const DEFAULT_CONFIG: Required<BaseLoadOptions> = {
@@ -54,4 +55,5 @@ export const DEFAULT_CONFIG: Required<BaseLoadOptions> = {
     playerRuntime: PlayerRuntime.FlashPlayer,
     gamepadButtonMapping: {},
     urlRewriteRules: [],
+    scrollingBehavior: ScrollingBehavior.Smart,
 };

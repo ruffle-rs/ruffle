@@ -136,6 +136,10 @@ export function configureBuilder(
             }
         }
     }
+
+    if (isExplicit(config.scrollingBehavior)) {
+        builder.setScrollingBehavior(config.scrollingBehavior);
+    }
 }
 
 /**

@@ -228,6 +228,13 @@ struct MovieMetadata {
     uncompressed_len: i32,
 }
 
+#[derive(Debug, Clone, Copy)]
+pub enum ScrollingBehavior {
+    Always,
+    Never,
+    Smart,
+}
+
 #[wasm_bindgen]
 impl RuffleHandle {
     /// Stream an arbitrary movie file from (presumably) the Internet.
@@ -684,11 +691,26 @@ impl RuffleHandle {
                             _ => return,
                         };
                         let _ = instance.with_core_mut(|core| {
-                            if core.handle_event(PlayerEvent::MouseWheel { delta }) {
-                                js_event.prevent_default();
-                            }
-                            if core.should_prevent_scrolling() {
-                                js_event.prevent_default();
+                            let scroll_handled =
+                                core.handle_event(PlayerEvent::MouseWheel { delta });
+                            match config.scrolling_behavior {
+                                ScrollingBehavior::Always => {
+                                    // Do not prevent scrolling
+                                }
+                                ScrollingBehavior::Never => {
+                                    // Always prevent scrolling
+                                    js_event.prevent_default();
+                                }
+                                ScrollingBehavior::Smart => {
+                                    if scroll_handled {
+                                        // AVM2 logic
+                                        js_event.prevent_default();
+                                    }
+                                    if core.should_prevent_scrolling() {
+                                        // AVM1 logic
+                                        js_event.prevent_default();
+                                    }
+                                }
                             }
                         });
                     });
