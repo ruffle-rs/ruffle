@@ -1037,6 +1037,16 @@ impl ShaderBuilder<'_> {
                                 arg3: None,
                             })
                         }
+                        Opcode::Step => {
+                            let right = self.load_src_register(&dst)?;
+                            self.evaluate_expr(Expression::Math {
+                                fun: MathFunction::Step,
+                                arg: src,
+                                arg1: Some(right),
+                                arg2: None,
+                                arg3: None,
+                            })
+                        }
                         Opcode::Normalize => {
                             let src = self.load_src_register_with_padding(src_reg, false)?;
                             let res = self.evaluate_expr(Expression::Math {
