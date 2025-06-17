@@ -1,14 +1,13 @@
-use std::f64::consts::PI;
-
 use crate::avm2::error::argument_error;
-use crate::avm2::globals::flash::geom::transform::object_to_perspective_projection;
+use crate::avm2::globals::flash::geom::transform::{
+    matrix3d_to_object, object_to_perspective_projection,
+};
 use crate::avm2::globals::slots::flash_geom_perspective_projection as pp_slots;
 use crate::avm2::globals::slots::flash_geom_point as point_slots;
 use crate::avm2::{Activation, Error, Object, TObject, Value};
 use crate::avm2_stub_setter;
 use crate::display_object::TDisplayObject;
-
-const DEG2RAD: f64 = PI / 180.0;
+use ruffle_render::perspective_projection::PerspectiveProjection;
 
 fn get_width<'gc>(activation: &mut Activation<'_, 'gc>, this: Object<'gc>) -> f64 {
     let dobj = this
@@ -33,10 +32,9 @@ pub fn get_focal_length<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
-    let fov = object_to_perspective_projection(this, activation)?.field_of_view;
-
     let width = get_width(activation, this);
-    let focal_length = (width / 2.0) as f32 * f64::tan((PI - fov * DEG2RAD) / 2.0) as f32;
+    let focal_length =
+        object_to_perspective_projection(this, activation)?.focal_length(width as f32);
 
     Ok(focal_length.into())
 }
@@ -66,7 +64,7 @@ pub fn set_focal_length<'gc>(
     sync_from_display_object(activation, this)?;
 
     let width = get_width(activation, this);
-    let fov = f64::atan((width / 2.0) / focal_length) / DEG2RAD * 2.0;
+    let fov = PerspectiveProjection::from_focal_length(focal_length, width).field_of_view;
     this.set_slot(pp_slots::FOV, fov.into(), activation)?;
 
     sync_to_display_object(activation, this)?;
@@ -157,6 +155,19 @@ pub fn set_projection_center<'gc>(
     sync_to_display_object(activation, this)?;
 
     Ok(Value::Undefined)
+}
+
+pub fn to_matrix_3d<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    this: Value<'gc>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
+    let width = get_width(activation, this);
+    let matrix3d = object_to_perspective_projection(this, activation)?.to_matrix3d(width as f32);
+
+    matrix3d_to_object(matrix3d, activation)
 }
 
 fn sync_from_display_object<'gc>(
