@@ -22,7 +22,7 @@
         "cross-env": "^7.0.3",
         "eslint": "^9.29.0",
         "eslint-config-prettier": "^10.1.5",
-        "eslint-plugin-jsdoc": "^50.7.1",
+        "eslint-plugin-jsdoc": "^51.0.1",
         "eslint-plugin-prettier": "^5.4.1",
         "eslint-plugin-react-hooks": "^5.2.0",
         "eslint-plugin-react-refresh": "^0.4.20",
