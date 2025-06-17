@@ -28,14 +28,6 @@ package flash.geom {
 
         public native function set projectionCenter(value:Point);
 
-        public function toMatrix3D():Matrix3D {
-            var fl: Number = this.focalLength;
-            return new Matrix3D(new <Number>[
-                fl, 0, 0, 0,
-                0, fl, 0, 0,
-                0, 0, 1, 1,
-                0, 0, 0, 0
-            ]);
-        }
+        public native function toMatrix3D():Matrix3D;
     }
 }

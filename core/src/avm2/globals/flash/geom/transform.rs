@@ -211,7 +211,7 @@ pub fn color_transform_to_object<'gc>(
     Ok(object)
 }
 
-fn matrix3d_to_object<'gc>(
+pub fn matrix3d_to_object<'gc>(
     matrix: Matrix3D,
     activation: &mut Activation<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
