@@ -1530,7 +1530,8 @@ impl<'gc> EditText<'gc> {
         self.0.scroll.get()
     }
 
-    pub fn set_scroll(self, scroll: f64, context: &mut UpdateContext<'gc>) {
+    /// Returns `true` when scroll has been modified.
+    pub fn set_scroll(self, scroll: f64, context: &mut UpdateContext<'gc>) -> bool {
         // derived experimentally. Not exact: overflows somewhere above 767100486418432.9
         // Checked in SWF 6, AVM1. Same in AVM2.
         const SCROLL_OVERFLOW_LIMIT: f64 = 767100486418433.0;
@@ -1540,8 +1541,12 @@ impl<'gc> EditText<'gc> {
             scroll as usize
         };
         let clamped = scroll_lines.clamp(1, self.maxscroll());
-        self.0.scroll.set(clamped);
-        self.invalidate_cached_bitmap(context.gc());
+        if self.0.scroll.replace(clamped) == clamped {
+            false
+        } else {
+            self.invalidate_cached_bitmap(context.gc());
+            true
+        }
     }
 
     pub fn max_chars(self) -> i32 {
@@ -2970,9 +2975,9 @@ impl<'gc> TInteractiveObject<'gc> for EditText<'gc> {
         event: ClipEvent<'gc>,
     ) -> ClipEventResult {
         if let ClipEvent::MouseWheel { delta } = event {
-            if self.is_mouse_wheel_enabled() {
+            let scrolled = if self.is_mouse_wheel_enabled() {
                 let new_scroll = self.scroll() as f64 - delta.lines();
-                self.set_scroll(new_scroll, context);
+                let scrolled = self.set_scroll(new_scroll, context);
 
                 let mut activation = Avm1Activation::from_nothing(
                     context,
@@ -2980,8 +2985,16 @@ impl<'gc> TInteractiveObject<'gc> for EditText<'gc> {
                     self.into(),
                 );
                 self.on_scroller(&mut activation);
+                scrolled
+            } else {
+                false
+            };
+
+            if scrolled {
+                return ClipEventResult::Handled;
+            } else {
+                return ClipEventResult::NotHandled;
             }
-            return ClipEventResult::Handled;
         }
 
         if let ClipEvent::Press { index } = event {
