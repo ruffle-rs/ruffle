@@ -93,7 +93,7 @@ jobs:
       - name: Install cargo nextest
         uses: taiki-e/install-action@v2
         with:
-          tool: cargo-nextest
+          tool: cargo-nextest@0.9.99
 
       - name: Run tests
         shell: bash
