@@ -1267,8 +1267,7 @@ impl<'gc> MovieClip<'gc> {
         place_object: &swf::PlaceObject,
     ) -> Option<DisplayObject<'gc>> {
         if self.has_child_at_depth(depth) {
-            // Flash Player traces
-            //   Warning: Failed to place object at depth X.
+            context.avm_warning(&format!("Failed to place object at depth {depth}."));
             return None;
         }
 
