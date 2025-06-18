@@ -185,6 +185,8 @@ function createPanicError(error: Error | null): {
 
         if (
             window.location.origin === error.swfUrl?.origin ||
+            // The Internet Archive fetches from itself despite lies about the swfUrl
+            window.location.origin === "https://web.archive.org" ||
             // The extension's internal player page is not restricted by CORS
             window.location.protocol.includes("extension")
         ) {
