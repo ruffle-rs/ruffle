@@ -476,6 +476,10 @@ impl<'gc> UpdateContext<'gc> {
     pub fn avm_trace(&self, message: &str) {
         self.log.avm_trace(&message.replace('\r', "\n"));
     }
+
+    pub fn avm_warning(&self, message: &str) {
+        self.log.avm_warning(message);
+    }
 }
 
 /// A queued ActionScript call.
