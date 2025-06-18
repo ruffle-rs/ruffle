@@ -1266,6 +1266,12 @@ impl<'gc> MovieClip<'gc> {
         depth: Depth,
         place_object: &swf::PlaceObject,
     ) -> Option<DisplayObject<'gc>> {
+        if self.has_child_at_depth(depth) {
+            // Flash Player traces
+            //   Warning: Failed to place object at depth X.
+            return None;
+        }
+
         let movie = self.movie();
         let library = context.library.library_for_movie_mut(movie.clone());
         match library.instantiate_by_id(id, context.gc_context) {

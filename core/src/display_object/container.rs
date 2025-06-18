@@ -156,6 +156,11 @@ pub trait TDisplayObjectContainer<'gc>:
         self.raw_container().get_depth(depth)
     }
 
+    /// Checks if there's a child at a given depth.
+    fn has_child_at_depth(self, depth: Depth) -> bool {
+        self.raw_container().has_depth(depth)
+    }
+
     /// Get a child display object by its instance/timeline name.
     ///
     /// The `case_sensitive` parameter determines if we should consider
@@ -835,6 +840,11 @@ impl<'gc> ChildContainer<'gc> {
     /// Get a child at a given depth.
     fn get_depth(&self, depth: Depth) -> Option<DisplayObject<'gc>> {
         self.depth_list.get(&depth).copied()
+    }
+
+    /// Checks if there's a child at a given depth.
+    fn has_depth(&self, depth: Depth) -> bool {
+        self.depth_list.contains_key(&depth)
     }
 
     /// Get a child by it's instance/timeline name.
