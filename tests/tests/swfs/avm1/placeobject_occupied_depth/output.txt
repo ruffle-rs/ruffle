@@ -1,3 +1,5 @@
+Warning: Failed to place object at depth 1.
+Warning: Failed to place object at depth 1.
 Instantiated ID 3
 Frame 2
 Instantiated ID 4
