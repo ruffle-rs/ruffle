@@ -1220,7 +1220,7 @@ impl<'gc> Value<'gc> {
         // WeakKeyHashMap<Value, FunctionObject>, not on the Object
         if let Some(object) = self.as_object() {
             if let Some(bound_method) = object.get_bound_method(id) {
-                let arguments = &arguments.to_slice(activation);
+                let arguments = &arguments.to_slice();
                 return bound_method.call(activation, *self, arguments);
             }
         }
@@ -1251,7 +1251,7 @@ impl<'gc> Value<'gc> {
             object.install_bound_method(activation.gc(), id, bound_method);
         }
 
-        let arguments = &arguments.to_slice(activation);
+        let arguments = &arguments.to_slice();
         bound_method.call(activation, *self, arguments)
     }
 

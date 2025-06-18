@@ -17,6 +17,7 @@ use crate::avm2::object::{Object, TObject};
 use crate::avm2::op::{LookupSwitch, Op};
 use crate::avm2::scope::{search_scope_stack, Scope, ScopeChain};
 use crate::avm2::script::Script;
+use crate::avm2::stack::StackFrame;
 use crate::avm2::value::Value;
 use crate::avm2::Multiname;
 use crate::avm2::Namespace;
@@ -71,8 +72,8 @@ pub struct Activation<'a, 'gc: 'a> {
 
     bound_class: Option<Class<'gc>>,
 
-    /// The index where the stack frame starts.
-    stack_depth: usize,
+    /// The stack frame.
+    stack: StackFrame<'a, 'gc>,
 
     /// The index where the scope frame starts.
     scope_depth: usize,
@@ -123,7 +124,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             caller_movie: None,
             bound_superclass_object: None,
             bound_class: None,
-            stack_depth: context.avm2.stack.len(),
+            stack: StackFrame::empty(),
             scope_depth: context.avm2.scope_stack.len(),
             is_interpreter: false,
             context,
@@ -147,7 +148,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             caller_movie: None,
             bound_superclass_object: None,
             bound_class: None,
-            stack_depth: context.avm2.stack.len(),
+            stack: StackFrame::empty(),
             scope_depth: context.avm2.scope_stack.len(),
             is_interpreter: false,
             context,
@@ -159,6 +160,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     pub fn from_script(
         context: &'a mut UpdateContext<'gc>,
         script: Script<'gc>,
+        stack_frame: StackFrame<'a, 'gc>,
     ) -> Result<Self, Error<'gc>> {
         let (method, global_object, domain) = script.init();
 
@@ -175,7 +177,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             caller_movie: Some(script.translation_unit().movie()),
             bound_superclass_object: Some(context.avm2.classes().object), // The script global class extends Object
             bound_class: Some(script.global_class()),
-            stack_depth: context.avm2.stack.len(),
+            stack: stack_frame,
             scope_depth: context.avm2.scope_stack.len(),
             is_interpreter: true, // Script initializers are always in interpreter mode
             context,
@@ -298,14 +300,14 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         // in `init_from_method` ensures that we have at least `signature.len()`
         // arguments on the stack right now.
         for i in 0..signature.len() {
-            let arg = self.avm2().peek(signature.len() - i - 1);
+            let arg = self.stack.peek(signature.len() - i - 1);
             all_arguments.push(arg);
         }
 
         // We put all the non-variadic arguments into the Vec, but there
         // could have been more passed to the function. Add them now.
         for i in signature.len()..user_arguments.len() {
-            let arg = user_arguments.get_at(self, i);
+            let arg = user_arguments.get_at(i);
             all_arguments.push(arg);
         }
 
@@ -352,6 +354,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         outer: ScopeChain<'gc>,
         this: Value<'gc>,
         user_arguments: FunctionArgs<'_, 'gc>,
+        stack_frame: StackFrame<'a, 'gc>,
         bound_superclass_object: Option<ClassObject<'gc>>,
         bound_class: Option<Class<'gc>>,
         callee: Value<'gc>,
@@ -373,7 +376,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         self.caller_movie = Some(method.owner_movie());
         self.bound_superclass_object = bound_superclass_object;
         self.bound_class = bound_class;
-        self.stack_depth = self.context.avm2.stack.len();
+        self.stack = stack_frame;
         self.scope_depth = self.context.avm2.scope_stack.len();
         self.is_interpreter = false;
 
@@ -400,7 +403,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         // Statically verify all non-variadic, provided parameters.
         let static_arg_count = min(user_arguments.len(), signature.len());
         for (i, param_config) in signature.iter().enumerate().take(static_arg_count) {
-            let arg = user_arguments.get_at(self, i);
+            let arg = user_arguments.get_at(i);
 
             let coerced_arg = if let Some(param_class) = param_config.param_type {
                 arg.coerce_to_type(self, param_class)?
@@ -479,7 +482,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             caller_movie,
             bound_superclass_object,
             bound_class,
-            stack_depth: context.avm2.stack.len(),
+            stack: StackFrame::empty(),
             scope_depth: context.avm2.scope_stack.len(),
             is_interpreter: false,
             context,
@@ -503,19 +506,14 @@ impl<'a, 'gc> Activation<'a, 'gc> {
 
     /// Retrieve a local register.
     pub fn local_register(&mut self, id: u32) -> Value<'gc> {
-        let stack_depth = self.stack_depth;
-
         // Verification guarantees that this points to a local register
-        self.avm2().stack_at(stack_depth + id as usize)
+        self.stack.value_at(id as usize)
     }
 
     /// Set a local register.
     pub fn set_local_register(&mut self, id: u32, value: impl Into<Value<'gc>>) {
-        let stack_depth = self.stack_depth;
-
         // Verification guarantees that this is valid
-        self.avm2()
-            .set_stack_at(stack_depth + id as usize, value.into());
+        self.stack.set_value_at(id as usize, value.into());
     }
 
     /// Returns whether this Activation is running in "interpreter mode" as
@@ -585,22 +583,22 @@ impl<'a, 'gc> Activation<'a, 'gc> {
 
     /// Pushes a value onto the operand stack.
     #[inline(always)]
-    pub fn push_stack(&mut self, value: impl Into<Value<'gc>>) {
-        self.avm2().push(value.into());
+    pub fn push_stack(&self, value: impl Into<Value<'gc>>) {
+        self.stack.push(value.into());
     }
 
     /// Pops a value off the operand stack.
     #[inline(always)]
     #[must_use]
-    pub fn pop_stack(&mut self) -> Value<'gc> {
-        self.avm2().pop()
+    pub fn pop_stack(&self) -> Value<'gc> {
+        self.stack.pop()
     }
 
     /// Pops multiple values off the operand stack.
     #[inline]
     #[must_use]
-    pub fn pop_stack_args(&mut self, arg_count: u32) -> Vec<Value<'gc>> {
-        self.avm2().pop_args(arg_count)
+    pub fn pop_stack_args(&self, arg_count: u32) -> Vec<Value<'gc>> {
+        self.stack.pop_args(arg_count)
     }
 
     /// Pushes a scope onto the scope stack.
@@ -618,27 +616,19 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     /// Cleans up after this Activation. This removes stack and local entries,
     /// and clears the scope stack. This method must be called after an Activation
     /// created with `Activation::init_from_activation` or `Activation::from_script`
-    /// is done executing; otherwise, old values may accumulate on the stack
-    /// (and not get GC-ed).
+    /// is finished executing.
     #[inline]
     pub fn cleanup(&mut self) {
-        self.clear_stack_and_locals();
+        let stack = self.context.avm2.stack;
+        stack.dispose_stack_frame(&self.stack);
+
         self.clear_scope();
     }
 
     /// Clears the operand stack used by this activation.
     #[inline]
-    fn clear_stack(&mut self) {
-        let stack_depth = self.stack_depth;
-        let num_locals = self.num_locals;
-        self.avm2().truncate_stack(stack_depth + num_locals);
-    }
-
-    /// Clears the operand stack and locals used by this activation.
-    #[inline]
-    fn clear_stack_and_locals(&mut self) {
-        let stack_depth = self.stack_depth;
-        self.avm2().truncate_stack(stack_depth);
+    fn clear_stack(&self) {
+        self.stack.truncate(self.num_locals);
     }
 
     /// Clears the scope stack used by this activation.
@@ -1037,7 +1027,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     }
 
     fn op_dup(&mut self) -> Result<(), Error<'gc>> {
-        let value = self.avm2().peek(0);
+        let value = self.stack.peek(0);
         self.push_stack(value);
 
         Ok(())
@@ -1089,21 +1079,17 @@ impl<'a, 'gc> Activation<'a, 'gc> {
 
         // However, the optimizer can still generate it.
 
-        let stack_base = self.avm2().stack.len() - arg_count as usize;
+        let arg_count = arg_count as usize;
 
-        let args = FunctionArgs::OnAvmStack {
-            arg_count: arg_count as usize,
-            stack_base,
-        };
-        let receiver = self
-            .avm2()
-            .peek(arg_count as usize)
-            .null_check(self, None)?;
+        let stack_base = self.stack.len() - arg_count;
+
+        let args = self.stack.get_args(arg_count);
+        let receiver = self.stack.peek(arg_count).null_check(self, None)?;
 
         let value = receiver.call_method_with_args(index, args, self)?;
 
         // Ensure all arguments are popped
-        self.avm2().truncate_stack(stack_base - 1);
+        self.stack.truncate(stack_base - 1);
 
         if push_return_value {
             self.push_stack(value);
@@ -1280,8 +1266,8 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         // or alternate-path lookups based on the local name *value*,
         // rather than it's string representation.
 
-        let name_value = self.context.avm2.peek(0);
-        let object_value = self.context.avm2.peek(1);
+        let name_value = self.stack.peek(0);
+        let object_value = self.stack.peek(1);
 
         if let Value::Object(object) = object_value {
             match name_value {
@@ -1347,14 +1333,14 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     ) -> Result<(), Error<'gc>> {
         // side path for dictionary/arrays
 
-        let value = self.context.avm2.peek(0);
+        let value = self.stack.peek(0);
 
         // `MultinameL` is the only form of multiname that allows fast-path
         // or alternate-path lookups based on the local name *value*,
         // rather than it's string representation.
 
-        let name_value = self.context.avm2.peek(1);
-        let object_value = self.context.avm2.peek(2);
+        let name_value = self.stack.peek(1);
+        let object_value = self.stack.peek(2);
 
         if let Value::Object(object) = object_value {
             match name_value {
@@ -1431,8 +1417,8 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             // or alternate-path lookups based on the local name *value*,
             // rather than it's string representation.
 
-            let name_value = self.context.avm2.peek(0);
-            let object = self.context.avm2.peek(1);
+            let name_value = self.stack.peek(0);
+            let object = self.stack.peek(1);
             if let Some(name_object) = name_value.as_object() {
                 if let Some(dictionary) = object.as_object().and_then(|o| o.as_dictionary_object())
                 {
@@ -1448,7 +1434,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
 
         // main path for dynamic names
         if multiname.has_lazy_name() {
-            let name_value = self.context.avm2.peek(0);
+            let name_value = self.stack.peek(0);
             if matches!(name_value, Value::Object(Object::XmlListObject(_))) {
                 // ECMA-357 11.3.1 The delete Operator
                 // If the type of the operand is XMLList, then a TypeError exception is thrown.
