@@ -68,6 +68,14 @@ impl WgpuRenderBackend<SwapChainTarget> {
         };
         let instance = wgpu::Instance::new(&wgpu::InstanceDescriptor {
             backends,
+            backend_options: wgpu::BackendOptions {
+                gl: wgpu::GlBackendOptions {
+                    // See <https://github.com/gfx-rs/wgpu/releases/tag/v25.0.0>
+                    fence_behavior: wgpu::GlFenceBehavior::AutoFinish,
+                    ..Default::default()
+                },
+                ..Default::default()
+            },
             ..Default::default()
         });
         let surface = instance.create_surface(wgpu::SurfaceTarget::Canvas(canvas))?;
