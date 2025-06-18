@@ -116,7 +116,7 @@ pub use crate::avm2::object::responder_object::{
     responder_allocator, ResponderObject, ResponderObjectWeak,
 };
 pub use crate::avm2::object::script_object::{
-    maybe_int_property, scriptobject_allocator, ScriptObject, ScriptObjectData, ScriptObjectWeak,
+    get_dynamic_property, scriptobject_allocator, ScriptObject, ScriptObjectData, ScriptObjectWeak,
     ScriptObjectWrapper,
 };
 pub use crate::avm2::object::shader_data_object::{

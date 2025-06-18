@@ -147,53 +147,27 @@ impl<'gc> TObject<'gc> for VectorObject<'gc> {
             }
         }
 
-        // This *would* just be a call to ScriptObject::get_property_local, but
-        // Vector classes specifically pretend to be sealed when the prototype
-        // lookup fails, so we have to copy all the logic to here
-        if !name.contains_public_namespace() {
-            let error_code = if name.has_multiple_ns() {
-                ReferenceErrorCode::InvalidNsRead
-            } else {
-                ReferenceErrorCode::InvalidRead
-            };
+        // Now check the prototype...
 
-            return Err(make_reference_error(
-                activation,
-                error_code,
-                name,
-                self.instance_class(),
-            ));
-        }
+        let dynamic_lookup = crate::avm2::object::get_dynamic_property(
+            activation,
+            name,
+            None, // Vector objects have no local values
+            self.proto(),
+            self.instance_class(),
+        )?;
 
-        let Some(local_name) = name.local_name() else {
-            return Err(make_reference_error(
+        if let Some(value) = dynamic_lookup {
+            Ok(value)
+        } else {
+            // Despite being declared dynamic, Vector classes act as if sealed
+            Err(make_reference_error(
                 activation,
                 ReferenceErrorCode::InvalidRead,
                 name,
                 self.instance_class(),
-            ));
-        };
-
-        let key = crate::avm2::object::maybe_int_property(local_name);
-
-        // follow the prototype chain
-        let mut proto = self.proto();
-        while let Some(obj) = proto {
-            let obj = obj.base();
-            let values = obj.values();
-            let value = values.as_hashmap().get(&key);
-            if let Some(value) = value {
-                return Ok(value.value);
-            }
-            proto = obj.proto();
+            ))
         }
-
-        Err(make_reference_error(
-            activation,
-            ReferenceErrorCode::InvalidRead,
-            name,
-            self.instance_class(),
-        ))
     }
 
     fn get_index_property(self, index: usize) -> Option<Value<'gc>> {
