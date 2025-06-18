@@ -64,7 +64,8 @@ impl Hash for FontQuery {
     }
 }
 
-#[derive(Debug, Copy, Clone, Eq, PartialEq, Hash)]
+#[derive(Debug, Copy, Clone, Eq, PartialEq, Hash, Collect)]
+#[collect(require_static)]
 pub enum DefaultFont {
     /// `_sans`, a Sans-Serif font (similar to Helvetica or Arial)
     Sans,

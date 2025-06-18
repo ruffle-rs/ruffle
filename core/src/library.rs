@@ -416,10 +416,45 @@ impl ruffle_render::bitmap::BitmapSource for MovieLibrarySource<'_, '_> {
     }
 }
 
+struct MovieLibraries<'gc>(PtrWeakKeyHashMap<Weak<SwfMovie>, MovieLibrary<'gc>>);
+
+unsafe impl<'gc> Collect<'gc> for MovieLibraries<'gc> {
+    #[inline]
+    fn trace<C: Trace<'gc>>(&self, cc: &mut C) {
+        for (_, val) in self.0.iter() {
+            cc.trace(val);
+        }
+    }
+}
+
+impl<'gc> MovieLibraries<'gc> {
+    fn new() -> Self {
+        Self(PtrWeakKeyHashMap::new())
+    }
+
+    fn get(&self, key: &Arc<SwfMovie>) -> Option<&MovieLibrary<'gc>> {
+        self.0.get(key)
+    }
+
+    fn get_or_insert_mut(&mut self, movie: Arc<SwfMovie>) -> &mut MovieLibrary<'gc> {
+        // NOTE(Clippy): Cannot use or_default() here as PtrWeakKeyHashMap does not have such a method on its Entry API
+        #[allow(clippy::unwrap_or_default)]
+        self.0
+            .entry(movie.clone())
+            .or_insert_with(|| MovieLibrary::new(movie))
+    }
+
+    fn known_movies(&self) -> Vec<Arc<SwfMovie>> {
+        self.0.keys().collect()
+    }
+}
+
 /// Symbol library for multiple movies.
+#[derive(Collect)]
+#[collect(no_drop)]
 pub struct Library<'gc> {
     /// All the movie libraries.
-    movie_libraries: PtrWeakKeyHashMap<Weak<SwfMovie>, MovieLibrary<'gc>>,
+    movie_libraries: MovieLibraries<'gc>,
 
     /// A cache of seen device fonts.
     // TODO: Descriptors shouldn't be stored in fonts. Fonts should be a list that we iterate and ask "do you match". A font can have zero or many names.
@@ -447,29 +482,10 @@ pub struct Library<'gc> {
     avm2_class_registry: Avm2ClassRegistry<'gc>,
 }
 
-// TODO(moulins): use gc_arena::Static to avoid unsafe impl?
-unsafe impl<'gc> Collect<'gc> for Library<'gc> {
-    #[inline]
-    fn trace<C: Trace<'gc>>(&self, cc: &mut C) {
-        for (_, val) in self.movie_libraries.iter() {
-            cc.trace(val);
-        }
-        for (_, val) in self.font_sort_cache.iter() {
-            cc.trace(val);
-        }
-        for (_, val) in self.default_font_cache.iter() {
-            cc.trace(val);
-        }
-        cc.trace(&self.device_fonts);
-        cc.trace(&self.global_fonts);
-        cc.trace(&self.avm2_class_registry);
-    }
-}
-
 impl<'gc> Library<'gc> {
     pub fn empty() -> Self {
         Self {
-            movie_libraries: PtrWeakKeyHashMap::new(),
+            movie_libraries: MovieLibraries::new(),
             device_fonts: Default::default(),
             global_fonts: Default::default(),
             font_lookup_cache: Default::default(),
@@ -485,15 +501,11 @@ impl<'gc> Library<'gc> {
     }
 
     pub fn library_for_movie_mut(&mut self, movie: Arc<SwfMovie>) -> &mut MovieLibrary<'gc> {
-        // NOTE(Clippy): Cannot use or_default() here as PtrWeakKeyHashMap does not have such a method on its Entry API
-        #[allow(clippy::unwrap_or_default)]
-        self.movie_libraries
-            .entry(movie.clone())
-            .or_insert_with(|| MovieLibrary::new(movie))
+        self.movie_libraries.get_or_insert_mut(movie)
     }
 
     pub fn known_movies(&self) -> Vec<Arc<SwfMovie>> {
-        self.movie_libraries.keys().collect()
+        self.movie_libraries.known_movies()
     }
 
     /// Returns the default Font implementations behind the built in names (ie `_sans`)
