@@ -74,7 +74,7 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
     }
 }
 
-pub fn maybe_int_property(name: AvmString<'_>) -> DynamicKey<'_> {
+fn maybe_int_property(name: AvmString<'_>) -> DynamicKey<'_> {
     // TODO: this should use a custom implementation, not parse()
     // FP is much stricter here, only allowing pure natural numbers without sign or leading zeros
     if let Ok(val) = name.parse::<u32>() {
@@ -193,64 +193,30 @@ impl<'gc> ScriptObjectWrapper<'gc> {
         multiname: &Multiname<'gc>,
         activation: &mut Activation<'_, 'gc>,
     ) -> Result<Value<'gc>, Error<'gc>> {
-        if !multiname.contains_public_namespace() {
-            let error_code = if multiname.has_multiple_ns() {
-                error::ReferenceErrorCode::InvalidNsRead
-            } else {
-                error::ReferenceErrorCode::InvalidRead
-            };
+        let dynamic_lookup = get_dynamic_property(
+            activation,
+            multiname,
+            Some(&*self.values()),
+            self.proto(),
+            self.instance_class(),
+        )?;
 
-            return Err(error::make_reference_error(
-                activation,
-                error_code,
-                multiname,
-                self.instance_class(),
-            ));
-        }
-
-        let Some(local_name) = multiname.local_name() else {
-            // when can this happen?
-            return Err(error::make_reference_error(
-                activation,
-                error::ReferenceErrorCode::InvalidRead,
-                multiname,
-                self.instance_class(),
-            ));
-        };
-
-        // Unbelievably cursed special case in avmplus:
-        // https://github.com/adobe/avmplus/blob/858d034a3bd3a54d9b70909386435cf4aec81d21/core/ScriptObject.cpp#L195-L199
-        let key = maybe_int_property(local_name);
-        let values = self.values();
-        let value = values.as_hashmap().get(&key);
-        if let Some(value) = value {
-            return Ok(value.value);
-        }
-
-        // follow the prototype chain
-        let mut proto = self.proto();
-        while let Some(obj) = proto {
-            let obj = obj.base();
-            let values = obj.values();
-            let value = values.as_hashmap().get(&key);
-            if let Some(value) = value {
-                return Ok(value.value);
-            }
-            proto = obj.proto();
-        }
-
-        // Special case: Unresolvable properties on dynamic classes are treated
-        // as dynamic properties that have not yet been set, and yield
-        // `undefined`
-        if self.is_sealed() {
-            Err(error::make_reference_error(
-                activation,
-                error::ReferenceErrorCode::InvalidRead,
-                multiname,
-                self.instance_class(),
-            ))
+        if let Some(value) = dynamic_lookup {
+            Ok(value)
         } else {
-            Ok(Value::Undefined)
+            // Special case: Unresolvable properties on dynamic classes are treated
+            // as dynamic properties that have not yet been set, and yield
+            // `undefined`
+            if self.is_sealed() {
+                Err(error::make_reference_error(
+                    activation,
+                    error::ReferenceErrorCode::InvalidRead,
+                    multiname,
+                    self.instance_class(),
+                ))
+            } else {
+                Ok(Value::Undefined)
+            }
         }
     }
 
@@ -446,4 +412,67 @@ impl Debug for ScriptObject<'_> {
             .field("ptr", &Gc::as_ptr(self.0))
             .finish()
     }
+}
+
+/// General-purpose function for looking up dynamic properties on an object. This
+/// is used in `ScriptObject::get_property_local`, `Value::get_property`,
+/// `Value::call_property`, and `VectorObject::get_property_local`. This method
+/// returns `None` when the property is found on neither the local values nor
+/// the prototype.
+pub fn get_dynamic_property<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    multiname: &Multiname<'gc>,
+    local_values: Option<&DynamicMap<DynamicKey<'gc>, Value<'gc>>>,
+    prototype: Option<Object<'gc>>,
+    instance_class: Class<'gc>,
+) -> Result<Option<Value<'gc>>, Error<'gc>> {
+    if !multiname.contains_public_namespace() {
+        let error_code = if multiname.has_multiple_ns() {
+            error::ReferenceErrorCode::InvalidNsRead
+        } else {
+            error::ReferenceErrorCode::InvalidRead
+        };
+
+        return Err(error::make_reference_error(
+            activation,
+            error_code,
+            multiname,
+            instance_class,
+        ));
+    }
+
+    let Some(local_name) = multiname.local_name() else {
+        // when can this happen?
+        return Err(error::make_reference_error(
+            activation,
+            error::ReferenceErrorCode::InvalidRead,
+            multiname,
+            instance_class,
+        ));
+    };
+
+    // Unbelievably cursed special case in avmplus:
+    // https://github.com/adobe/avmplus/blob/858d034a3bd3a54d9b70909386435cf4aec81d21/core/ScriptObject.cpp#L195-L199
+    let key = maybe_int_property(local_name);
+
+    if let Some(values) = local_values {
+        let value = values.as_hashmap().get(&key);
+        if let Some(value) = value {
+            return Ok(Some(value.value));
+        }
+    }
+
+    // follow the prototype chain
+    let mut proto = prototype;
+    while let Some(obj) = proto {
+        let obj = obj.base();
+        let values = obj.values();
+        let value = values.as_hashmap().get(&key);
+        if let Some(value) = value {
+            return Ok(Some(value.value));
+        }
+        proto = obj.proto();
+    }
+
+    Ok(None)
 }

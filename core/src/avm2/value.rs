@@ -929,48 +929,27 @@ impl<'gc> Value<'gc> {
                     object.get_property_local(multiname, activation)
                 } else {
                     let instance_class = self.instance_class(activation);
+                    let proto = self.proto(activation);
 
-                    if !multiname.contains_public_namespace() {
-                        return Err(error::make_reference_error(
-                            activation,
-                            error::ReferenceErrorCode::InvalidRead,
-                            multiname,
-                            instance_class,
-                        ));
-                    }
-
-                    let Some(local_name) = multiname.local_name() else {
-                        // when can this happen?
-                        return Err(error::make_reference_error(
-                            activation,
-                            error::ReferenceErrorCode::InvalidRead,
-                            multiname,
-                            instance_class,
-                        ));
-                    };
-
-                    let key = crate::avm2::object::maybe_int_property(local_name);
-
-                    // `get_property` also checks prototype chain
-                    let mut proto = self.proto(activation);
-
-                    while let Some(obj) = proto {
-                        let obj = obj.base();
-                        let values = obj.values();
-                        let value = values.as_hashmap().get(&key);
-                        if let Some(value) = value {
-                            return Ok(value.value);
-                        }
-                        proto = obj.proto();
-                    }
-
-                    // Primitive classes are sealed
-                    Err(error::make_reference_error(
+                    let dynamic_lookup = crate::avm2::object::get_dynamic_property(
                         activation,
-                        error::ReferenceErrorCode::InvalidRead,
                         multiname,
+                        None, // primitives have no local values
+                        proto,
                         instance_class,
-                    ))
+                    )?;
+
+                    if let Some(value) = dynamic_lookup {
+                        Ok(value)
+                    } else {
+                        // Primitives are sealed
+                        Err(error::make_reference_error(
+                            activation,
+                            error::ReferenceErrorCode::InvalidRead,
+                            multiname,
+                            instance_class,
+                        ))
+                    }
                 }
             }
         }
@@ -1174,46 +1153,25 @@ impl<'gc> Value<'gc> {
                     object.call_property_local(multiname, arguments, activation)
                 } else {
                     let instance_class = self.instance_class(activation);
+                    let proto = self.proto(activation);
 
-                    if !multiname.contains_public_namespace() {
-                        return Err(error::make_reference_error(
-                            activation,
-                            error::ReferenceErrorCode::InvalidRead,
-                            multiname,
-                            instance_class,
-                        ));
-                    }
-
-                    let Some(local_name) = multiname.local_name() else {
-                        // when can this happen?
-                        return Err(error::make_reference_error(
-                            activation,
-                            error::ReferenceErrorCode::InvalidRead,
-                            multiname,
-                            instance_class,
-                        ));
-                    };
-
-                    let key = crate::avm2::object::maybe_int_property(local_name);
-
-                    // Check prototype chain
-                    let mut proto = self.proto(activation);
-
-                    while let Some(obj) = proto {
-                        let obj = obj.base();
-                        let values = obj.values();
-                        let value = values.as_hashmap().get(&key);
-                        if let Some(value) = value {
-                            return value.value.call(activation, *self, arguments);
-                        }
-                        proto = obj.proto();
-                    }
-
-                    Err(Error::AvmError(type_error(
+                    let dynamic_lookup = crate::avm2::object::get_dynamic_property(
                         activation,
-                        "Error #1006: value is not a function.",
-                        1006,
-                    )?))
+                        multiname,
+                        None, // primitives have no local values
+                        proto,
+                        instance_class,
+                    )?;
+
+                    if let Some(value) = dynamic_lookup {
+                        value.call(activation, *self, arguments)
+                    } else {
+                        Err(Error::AvmError(type_error(
+                            activation,
+                            "Error #1006: value is not a function.",
+                            1006,
+                        )?))
+                    }
                 }
             }
         }
