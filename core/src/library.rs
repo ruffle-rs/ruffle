@@ -454,6 +454,9 @@ unsafe impl<'gc> Collect<'gc> for Library<'gc> {
         for (_, val) in self.movie_libraries.iter() {
             cc.trace(val);
         }
+        for (_, val) in self.font_sort_cache.iter() {
+            cc.trace(val);
+        }
         for (_, val) in self.default_font_cache.iter() {
             cc.trace(val);
         }
