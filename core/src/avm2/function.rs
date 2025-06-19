@@ -61,7 +61,7 @@ impl<'gc> BoundMethod<'gc> {
     pub fn exec(
         &self,
         unbound_receiver: Value<'gc>,
-        arguments: &[Value<'gc>],
+        arguments: FunctionArgs<'_, 'gc>,
         activation: &mut Activation<'_, 'gc>,
         callee: Value<'gc>,
     ) -> Result<Value<'gc>, Error<'gc>> {
@@ -82,7 +82,7 @@ impl<'gc> BoundMethod<'gc> {
             receiver,
             self.bound_superclass,
             self.bound_class,
-            FunctionArgs::AsArgSlice { arguments },
+            arguments,
             activation,
             callee,
         )
