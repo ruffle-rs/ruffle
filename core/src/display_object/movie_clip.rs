@@ -3242,7 +3242,7 @@ impl<'gc, 'a> MovieClipShared<'gc> {
                 version: define_bits_lossless.version,
                 data: Cow::Owned(define_bits_lossless.data.into_owned()),
             }),
-            handle: RefCell::new(None),
+            handle: Default::default(),
             avm2_bitmapdata_class: GcCell::new(context.gc(), BitmapClass::NoSubclass),
         };
         self.library_mut(context)
@@ -3374,7 +3374,7 @@ impl<'gc, 'a> MovieClipShared<'gc> {
                     width,
                     height,
                 },
-                handle: RefCell::new(None),
+                handle: Default::default(),
                 avm2_bitmapdata_class: GcCell::new(mc, BitmapClass::NoSubclass),
             },
         );
@@ -3397,7 +3397,7 @@ impl<'gc, 'a> MovieClipShared<'gc> {
                 width,
                 height,
             },
-            handle: RefCell::new(None),
+            handle: Default::default(),
             avm2_bitmapdata_class: GcCell::new(context.gc(), BitmapClass::NoSubclass),
         };
         self.library_mut(context).register_character(id, bitmap);
@@ -3426,7 +3426,7 @@ impl<'gc, 'a> MovieClipShared<'gc> {
                 width,
                 height,
             },
-            handle: RefCell::new(None),
+            handle: Default::default(),
             avm2_bitmapdata_class: GcCell::new(context.gc(), BitmapClass::NoSubclass),
         };
         self.library_mut(context).register_character(id, bitmap);
