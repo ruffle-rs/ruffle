@@ -75,7 +75,7 @@ impl<'gc> Avm1Button<'gc> {
             Avm1ButtonData {
                 cell: RefLock::new(Avm1ButtonDataMut {
                     base: Default::default(),
-                    container: ChildContainer::new(source_movie.movie.clone()),
+                    container: ChildContainer::new(&source_movie.movie),
                     hit_area: BTreeMap::new(),
                     hit_bounds: Default::default(),
                     text_field_bindings: Vec::new(),

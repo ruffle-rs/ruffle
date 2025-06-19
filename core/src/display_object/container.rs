@@ -23,7 +23,6 @@ use std::collections::BTreeMap;
 use std::fmt::Debug;
 use std::ops::{Bound, RangeBounds};
 use std::rc::Rc;
-use std::sync::Arc;
 
 /// Dispatch the `removedFromStage` event on a child and all of it's
 /// grandchildren, recursively.
@@ -213,7 +212,7 @@ pub trait TDisplayObjectContainer<'gc>:
         child.set_depth(depth);
 
         if let Some(removed_child) = removed_child {
-            if !self.raw_container().movie().is_action_script_3() {
+            if !self.raw_container().is_action_script_3() {
                 removed_child.avm1_unload(context);
             }
             removed_child.set_parent(context, None);
@@ -281,7 +280,7 @@ pub trait TDisplayObjectContainer<'gc>:
 
         child.set_place_frame(0);
         child.set_parent(context, Some(this));
-        if !self.raw_container().movie().is_action_script_3() {
+        if !self.raw_container().is_action_script_3() {
             child.set_avm1_removed(false);
         }
 
@@ -318,7 +317,7 @@ pub trait TDisplayObjectContainer<'gc>:
         ));
 
         // Check if this child should have delayed removal (AVM1 only)
-        if !self.raw_container().movie().is_action_script_3() {
+        if !self.raw_container().is_action_script_3() {
             let should_delay_removal = {
                 let mut activation = Activation::from_nothing(
                     context,
@@ -366,7 +365,7 @@ pub trait TDisplayObjectContainer<'gc>:
             ChildContainer::remove_child_from_render_list(this, child, context);
 
         if removed_from_render_list {
-            if !self.raw_container().movie.is_action_script_3() {
+            if !self.raw_container().is_action_script_3() {
                 child.avm1_unload(context);
             } else if !matches!(child.object2(), Avm2Value::Null) {
                 //TODO: This is an awful, *awful* hack to deal with the fact
@@ -445,7 +444,7 @@ pub trait TDisplayObjectContainer<'gc>:
             let this: DisplayObjectContainer<'gc> = (*self).into();
             ChildContainer::remove_child_from_render_list(this, removed, context);
 
-            if !self.raw_container().movie.is_action_script_3() {
+            if !self.raw_container().is_action_script_3() {
                 removed.avm1_unload(context);
             } else if !matches!(removed.object2(), Avm2Value::Null) {
                 removed.set_parent(context, None);
@@ -490,9 +489,9 @@ pub trait TDisplayObjectContainer<'gc>:
     /// According to the AS2 documentation, it should affect only automatic tab ordering.
     /// However, that does not seem to be the case, as it also affects custom ordering.
     fn is_tab_children(&self, context: &mut UpdateContext<'gc>) -> bool {
-        let this: DisplayObject<'_> = (*self).into();
-        if this.movie().is_action_script_3() {
-            self.raw_container().tab_children
+        let container = self.raw_container();
+        if container.is_action_script_3() {
+            container.tab_children
         } else {
             self.is_tab_children_avm1(context)
         }
@@ -500,7 +499,7 @@ pub trait TDisplayObjectContainer<'gc>:
 
     fn set_tab_children(&self, context: &mut UpdateContext<'gc>, value: bool) {
         let this: DisplayObject<'_> = (*self).into();
-        if this.movie().is_action_script_3() {
+        if self.raw_container().is_action_script_3() {
             self.raw_container_mut(context.gc()).tab_children = value;
         } else {
             this.set_avm1_property(istr!(context, "tabChildren"), value.into(), context);
@@ -653,21 +652,21 @@ pub struct ChildContainer<'gc> {
 
     mouse_children: bool,
 
-    /// The movie this ChildContainer belongs to.
-    movie: Arc<SwfMovie>,
+    /// Specifies whether this container uses AVM1 or AVM2 semantics.
+    is_action_script_3: bool,
 
     /// Specifies whether children are present in the tab ordering.
     tab_children: bool,
 }
 
 impl<'gc> ChildContainer<'gc> {
-    pub fn new(movie: Arc<SwfMovie>) -> Self {
+    pub fn new(movie: &SwfMovie) -> Self {
         Self {
             render_list: Rc::new(Vec::new()),
             depth_list: BTreeMap::new(),
             has_pending_removals: false,
             mouse_children: true,
-            movie,
+            is_action_script_3: movie.is_action_script_3(),
             tab_children: true,
         }
     }
@@ -928,12 +927,8 @@ impl<'gc> ChildContainer<'gc> {
         self.mouse_children = mouse_children;
     }
 
-    pub fn movie(&self) -> Arc<SwfMovie> {
-        self.movie.clone()
-    }
-
-    pub fn set_movie(&mut self, movie: Arc<SwfMovie>) {
-        self.movie = movie;
+    pub fn is_action_script_3(&self) -> bool {
+        self.is_action_script_3
     }
 
     /// Insert a child at a given render list position.
