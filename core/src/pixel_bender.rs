@@ -1,7 +1,10 @@
 use ruffle_render::pixel_bender::{PixelBenderType, PixelBenderTypeOpcode};
 
 use crate::{
-    avm2::{Activation, ArrayObject, ArrayStorage, Error, TObject, Value},
+    avm2::{
+        error::{make_error_2004, Error2004Type},
+        Activation, ArrayObject, ArrayStorage, Error, TObject, Value,
+    },
     ecma_conversions::f64_to_wrapping_i32,
     string::AvmString,
 };
@@ -48,66 +51,88 @@ impl PixelBenderTypeExt for PixelBenderType {
             Value::Integer(i) => Ok(PixelBenderType::TInt(i as i16)),
             Value::Object(o) => {
                 if let Some(array) = o.as_array_storage() {
+                    let mut vals = array.iter();
+
+                    fn next_val<'gc>(
+                        activation: &mut Activation<'_, 'gc>,
+                        vals: &mut impl Iterator<Item = Option<Value<'gc>>>,
+                    ) -> Result<f64, Error<'gc>> {
+                        let Some(Some(val)) = vals.next() else {
+                            return Ok(0.0);
+                        };
+
+                        val.try_as_f64().ok_or_else(|| {
+                            make_error_2004(activation, Error2004Type::ArgumentError)
+                        })
+                    }
+
                     if is_float {
-                        let mut vals = array.iter().map(|val| {
-                            val.expect("Array with hole")
-                                .coerce_to_number(activation)
-                                .unwrap() as f32
-                        });
                         match kind {
-                            PixelBenderTypeOpcode::TFloat => {
-                                Ok(PixelBenderType::TFloat(vals.next().unwrap()))
-                            }
+                            PixelBenderTypeOpcode::TFloat => Ok(PixelBenderType::TFloat(
+                                //
+                                next_val(activation, &mut vals)? as f32,
+                            )),
                             PixelBenderTypeOpcode::TFloat2 => Ok(PixelBenderType::TFloat2(
-                                vals.next().unwrap(),
-                                vals.next().unwrap(),
+                                next_val(activation, &mut vals)? as f32,
+                                next_val(activation, &mut vals)? as f32,
                             )),
                             PixelBenderTypeOpcode::TFloat3 => Ok(PixelBenderType::TFloat3(
-                                vals.next().unwrap(),
-                                vals.next().unwrap(),
-                                vals.next().unwrap(),
+                                next_val(activation, &mut vals)? as f32,
+                                next_val(activation, &mut vals)? as f32,
+                                next_val(activation, &mut vals)? as f32,
                             )),
                             PixelBenderTypeOpcode::TFloat4 => Ok(PixelBenderType::TFloat4(
-                                vals.next().unwrap(),
-                                vals.next().unwrap(),
-                                vals.next().unwrap(),
-                                vals.next().unwrap(),
+                                next_val(activation, &mut vals)? as f32,
+                                next_val(activation, &mut vals)? as f32,
+                                next_val(activation, &mut vals)? as f32,
+                                next_val(activation, &mut vals)? as f32,
                             )),
                             PixelBenderTypeOpcode::TFloat2x2 => Ok(PixelBenderType::TFloat2x2(
-                                vals.collect::<Vec<_>>().try_into().unwrap(),
+                                // TODO use core::array::try_from_fn when it's stable
+                                (0..4)
+                                    .map(|_| next_val(activation, &mut vals).map(|v| v as f32))
+                                    .collect::<Result<Vec<f32>, Error<'gc>>>()?
+                                    .try_into()
+                                    .unwrap(),
                             )),
                             PixelBenderTypeOpcode::TFloat3x3 => Ok(PixelBenderType::TFloat3x3(
-                                vals.collect::<Vec<_>>().try_into().unwrap(),
+                                // TODO use core::array::try_from_fn when it's stable
+                                (0..9)
+                                    .map(|_| next_val(activation, &mut vals).map(|v| v as f32))
+                                    .collect::<Result<Vec<f32>, Error<'gc>>>()?
+                                    .try_into()
+                                    .unwrap(),
                             )),
                             PixelBenderTypeOpcode::TFloat4x4 => Ok(PixelBenderType::TFloat4x4(
-                                vals.collect::<Vec<_>>().try_into().unwrap(),
+                                // TODO use core::array::try_from_fn when it's stable
+                                (0..16)
+                                    .map(|_| next_val(activation, &mut vals).map(|v| v as f32))
+                                    .collect::<Result<Vec<f32>, Error<'gc>>>()?
+                                    .try_into()
+                                    .unwrap(),
                             )),
                             _ => unreachable!("Unexpected float kind {kind:?}"),
                         }
                     } else {
-                        let mut vals = array.iter().map(|val| {
-                            val.expect("Array with hole")
-                                .coerce_to_i32(activation)
-                                .unwrap() as i16
-                        });
                         match kind {
-                            PixelBenderTypeOpcode::TInt => {
-                                Ok(PixelBenderType::TInt(vals.next().unwrap()))
-                            }
+                            PixelBenderTypeOpcode::TInt => Ok(PixelBenderType::TInt(
+                                //
+                                next_val(activation, &mut vals)? as i16,
+                            )),
                             PixelBenderTypeOpcode::TInt2 => Ok(PixelBenderType::TInt2(
-                                vals.next().unwrap(),
-                                vals.next().unwrap(),
+                                next_val(activation, &mut vals)? as i16,
+                                next_val(activation, &mut vals)? as i16,
                             )),
                             PixelBenderTypeOpcode::TInt3 => Ok(PixelBenderType::TInt3(
-                                vals.next().unwrap(),
-                                vals.next().unwrap(),
-                                vals.next().unwrap(),
+                                next_val(activation, &mut vals)? as i16,
+                                next_val(activation, &mut vals)? as i16,
+                                next_val(activation, &mut vals)? as i16,
                             )),
                             PixelBenderTypeOpcode::TInt4 => Ok(PixelBenderType::TInt4(
-                                vals.next().unwrap(),
-                                vals.next().unwrap(),
-                                vals.next().unwrap(),
-                                vals.next().unwrap(),
+                                next_val(activation, &mut vals)? as i16,
+                                next_val(activation, &mut vals)? as i16,
+                                next_val(activation, &mut vals)? as i16,
+                                next_val(activation, &mut vals)? as i16,
                             )),
                             _ => unreachable!("Unexpected int kind {kind:?}"),
                         }
