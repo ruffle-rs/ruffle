@@ -495,13 +495,13 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     pub fn super_init(
         &mut self,
         receiver: Value<'gc>,
-        args: &[Value<'gc>],
+        args: FunctionArgs<'_, 'gc>,
     ) -> Result<Value<'gc>, Error<'gc>> {
         let bound_superclass_object = self
             .bound_superclass_object
             .expect("Superclass object is required to run super_init");
 
-        bound_superclass_object.call_init(receiver, args, self)
+        bound_superclass_object.call_init_with_args(receiver, args, self)
     }
 
     /// Retrieve a local register.
@@ -1119,11 +1119,11 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         multiname: Gc<'gc, Multiname<'gc>>,
         arg_count: u32,
     ) -> Result<(), Error<'gc>> {
-        let args = self.pop_stack_args(arg_count);
+        let args = self.stack.get_args(arg_count as usize);
         let multiname = multiname.fill_with_runtime_params(self)?;
         let receiver = self.pop_stack().null_check(self, Some(&multiname))?;
 
-        let value = receiver.call_property(&multiname, &args, self)?;
+        let value = receiver.call_property(&multiname, args, self)?;
 
         self.push_stack(value);
 
@@ -1151,11 +1151,11 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         multiname: Gc<'gc, Multiname<'gc>>,
         arg_count: u32,
     ) -> Result<(), Error<'gc>> {
-        let args = self.pop_stack_args(arg_count);
+        let args = self.stack.get_args(arg_count as usize);
         let multiname = multiname.fill_with_runtime_params(self)?;
         let receiver = self.pop_stack().null_check(self, Some(&multiname))?;
 
-        receiver.call_property(&multiname, &args, self)?;
+        receiver.call_property(&multiname, args, self)?;
 
         Ok(())
     }
@@ -1184,7 +1184,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         multiname: Gc<'gc, Multiname<'gc>>,
         arg_count: u32,
     ) -> Result<(), Error<'gc>> {
-        let args = self.pop_stack_args(arg_count);
+        let args = self.stack.get_args(arg_count as usize);
         let multiname = multiname.fill_with_runtime_params(self)?;
         let receiver = self
             .pop_stack()
@@ -1196,7 +1196,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             .bound_superclass_object()
             .expect("Expected a superclass when running callsuper");
 
-        let value = bound_superclass_object.call_super(&multiname, receiver, &args, self)?;
+        let value = bound_superclass_object.call_super(&multiname, receiver, args, self)?;
 
         self.push_stack(value);
 
@@ -1722,10 +1722,10 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     }
 
     fn op_construct(&mut self, arg_count: u32) -> Result<(), Error<'gc>> {
-        let args = self.pop_stack_args(arg_count);
+        let args = self.stack.get_args(arg_count as usize);
         let ctor = self.pop_stack();
 
-        let object = ctor.construct(self, &args)?;
+        let object = ctor.construct(self, args)?;
 
         self.push_stack(object);
 
@@ -1737,12 +1737,12 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         multiname: Gc<'gc, Multiname<'gc>>,
         arg_count: u32,
     ) -> Result<(), Error<'gc>> {
-        let args = self.pop_stack_args(arg_count);
+        let args = self.stack.get_args(arg_count as usize);
         let multiname = multiname.fill_with_runtime_params(self)?;
         let source = self.pop_stack().null_check(self, Some(&multiname))?;
 
         let ctor = source.get_property(&multiname, self)?;
-        let constructed_object = ctor.construct(self, &args)?;
+        let constructed_object = ctor.construct(self, args)?;
 
         self.push_stack(constructed_object);
 
@@ -1750,7 +1750,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     }
 
     fn op_construct_slot(&mut self, index: u32, arg_count: u32) -> Result<(), Error<'gc>> {
-        let args = self.pop_stack_args(arg_count);
+        let args = self.stack.get_args(arg_count as usize);
         let source = self
             .pop_stack()
             .null_check(self, None)?
@@ -1758,7 +1758,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             .expect("Cannot get_slot on primitive");
 
         let ctor = source.get_slot(index);
-        let constructed_object = ctor.construct(self, &args)?;
+        let constructed_object = ctor.construct(self, args)?;
 
         self.push_stack(constructed_object);
 
@@ -1766,10 +1766,10 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     }
 
     fn op_construct_super(&mut self, arg_count: u32) -> Result<(), Error<'gc>> {
-        let args = self.pop_stack_args(arg_count);
+        let args = self.stack.get_args(arg_count as usize);
         let receiver = self.pop_stack().null_check(self, None)?;
 
-        self.super_init(receiver, &args)?;
+        self.super_init(receiver, args)?;
 
         Ok(())
     }

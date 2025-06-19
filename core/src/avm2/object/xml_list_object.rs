@@ -2,6 +2,7 @@ use crate::avm2::activation::Activation;
 use crate::avm2::api_version::ApiVersion;
 use crate::avm2::e4x::{string_to_multiname, E4XNamespace, E4XNode, E4XNodeKind};
 use crate::avm2::error::make_error_1089;
+use crate::avm2::function::FunctionArgs;
 use crate::avm2::object::script_object::ScriptObjectData;
 use crate::avm2::object::{Object, ObjectPtr, TObject};
 use crate::avm2::value::Value;
@@ -599,7 +600,11 @@ impl<'gc> TObject<'gc> for XmlListObject<'gc> {
 
                     let child = children.first_mut().unwrap().get_or_create_xml(activation);
 
-                    return Value::from(child).call_property(multiname, arguments, activation);
+                    return Value::from(child).call_property(
+                        multiname,
+                        FunctionArgs::AsArgSlice { arguments },
+                        activation,
+                    );
                 }
             }
         }

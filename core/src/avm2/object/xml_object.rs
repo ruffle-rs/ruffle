@@ -3,6 +3,7 @@
 use crate::avm2::activation::Activation;
 use crate::avm2::e4x::{string_to_multiname, E4XNamespace, E4XNode, E4XNodeKind};
 use crate::avm2::error::make_error_1087;
+use crate::avm2::function::FunctionArgs;
 use crate::avm2::multiname::NamespaceSet;
 use crate::avm2::object::script_object::ScriptObjectData;
 use crate::avm2::object::{
@@ -366,7 +367,11 @@ impl<'gc> TObject<'gc> for XmlObject<'gc> {
                 if list.length() == 0 && this.node().has_simple_content() {
                     let receiver = Value::String(this.node().xml_to_string(activation));
 
-                    return receiver.call_property(multiname, arguments, activation);
+                    return receiver.call_property(
+                        multiname,
+                        FunctionArgs::AsArgSlice { arguments },
+                        activation,
+                    );
                 }
             }
         }
