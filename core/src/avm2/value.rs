@@ -545,13 +545,22 @@ impl<'gc> Value<'gc> {
     /// Get the numerical portion of the value, if it exists.
     ///
     /// This function performs no numerical coercion, nor are any methods called.
-    /// If the value is not numeric, this function will panic.
-    pub fn as_f64(&self) -> f64 {
-        match self {
+    /// If the value is not numeric, None is returned.
+    pub fn try_as_f64(&self) -> Option<f64> {
+        Some(match self {
             Value::Number(num) => *num,
             Value::Integer(num) => *num as f64,
-            _ => panic!("Expected Number or Integer"),
-        }
+            _ => return None,
+        })
+    }
+
+    /// Get the numerical portion of the value, if it exists.
+    ///
+    /// This function performs no numerical coercion, nor are any methods called.
+    /// If the value is not numeric, this function will panic.
+    pub fn as_f64(&self) -> f64 {
+        self.try_as_f64()
+            .unwrap_or_else(|| panic!("Expected Number or Integer"))
     }
 
     /// Like `as_number`, but for `i32`
