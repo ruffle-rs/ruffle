@@ -313,6 +313,11 @@ impl RuffleHandle {
         self.with_core(|core| core.is_playing()).unwrap_or_default()
     }
 
+    pub fn fetched_swf_url(&mut self) -> String {
+        self.with_core_mut(|core| core.fetched_swf_url())
+            .unwrap_or_default()
+    }
+
     pub fn has_focus(&self) -> bool {
         self.with_instance(|instance| instance.has_focus)
             .unwrap_or_default()

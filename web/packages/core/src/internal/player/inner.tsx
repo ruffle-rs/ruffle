@@ -1051,6 +1051,18 @@ export class InnerPlayer {
     }
 
     /**
+     * The actual fetched SWF URL.
+     *
+     * @returns The actual URL of the fetched SWF, including possible redirects and modifications
+     */
+    private get fetchedSwfUrl(): string {
+        if (this.instance) {
+            return this.instance.fetched_swf_url();
+        }
+        return "";
+    }
+
+    /**
      * Requests the browser to make this player fullscreen.
      *
      * This is not guaranteed to succeed, please check [[fullscreenEnabled]] first.
@@ -2070,9 +2082,15 @@ export class InnerPlayer {
         ) {
             this.addOpenInNewTabMessage(openInNewTab, this.swfUrl);
         } else {
+            let loadedSwfUrl = this.swfUrl;
+            try {
+                loadedSwfUrl = new URL(this.fetchedSwfUrl);
+            } catch (_e) {
+                // Do nothing
+            }
             const error = invalidSwf
-                ? new InvalidSwfError(this.swfUrl)
-                : new LoadSwfError(this.swfUrl);
+                ? new InvalidSwfError(loadedSwfUrl)
+                : new LoadSwfError(loadedSwfUrl);
             this.panic(error);
         }
     }

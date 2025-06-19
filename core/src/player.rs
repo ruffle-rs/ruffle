@@ -605,6 +605,14 @@ impl Player {
         }
     }
 
+    pub fn fetched_swf_url(&mut self) -> String {
+        let mut url = String::new();
+        self.mutate_with_update_context(|context| {
+            url = context.stage.movie().url().to_string();
+        });
+        url
+    }
+
     pub fn mouse_in_stage(&self) -> bool {
         self.mouse_in_stage
     }
