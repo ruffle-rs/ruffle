@@ -2,7 +2,7 @@
 
 use crate::avm2::activation::Activation;
 use crate::avm2::class::Class;
-use crate::avm2::function::BoundMethod;
+use crate::avm2::function::{BoundMethod, FunctionArgs};
 use crate::avm2::method::Method;
 use crate::avm2::object::script_object::{ScriptObject, ScriptObjectData};
 use crate::avm2::object::{ClassObject, Object, ObjectPtr, TObject};
@@ -93,14 +93,21 @@ impl<'gc> FunctionObject<'gc> {
     ) -> Result<Value<'gc>, Error<'gc>> {
         let exec = &self.0.exec;
 
-        exec.exec(receiver, arguments, activation, self.into())
+        exec.exec(
+            receiver,
+            FunctionArgs::AsArgSlice { arguments },
+            activation,
+            self.into(),
+        )
     }
 
     pub fn construct(
         self,
         activation: &mut Activation<'_, 'gc>,
-        arguments: &[Value<'gc>],
+        arguments: FunctionArgs<'_, 'gc>,
     ) -> Result<Object<'gc>, Error<'gc>> {
+        let arguments = &arguments.to_slice();
+
         let object_class = activation.avm2().classes().object;
 
         let prototype = if let Some(proto) = self.prototype() {
