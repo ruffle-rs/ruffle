@@ -1079,17 +1079,10 @@ impl<'a, 'gc> Activation<'a, 'gc> {
 
         // However, the optimizer can still generate it.
 
-        let arg_count = arg_count as usize;
-
-        let stack_base = self.stack.len() - arg_count;
-
-        let args = self.stack.get_args(arg_count);
-        let receiver = self.stack.peek(arg_count).null_check(self, None)?;
+        let args = self.stack.get_args(arg_count as usize);
+        let receiver = self.pop_stack().null_check(self, None)?;
 
         let value = receiver.call_method_with_args(index, args, self)?;
-
-        // Ensure all arguments are popped
-        self.stack.truncate(stack_base - 1);
 
         if push_return_value {
             self.push_stack(value);
@@ -1670,14 +1663,23 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     }
 
     fn op_get_slot(&mut self, index: u32) -> Result<(), Error<'gc>> {
-        let object = self
-            .pop_stack()
+        // `clone`ing the stack frame is free; it returns a reference to the
+        // original frame.
+        let stack_ref = self.stack.clone();
+        let stack_top = stack_ref.stack_top();
+
+        let object = stack_top
+            .get()
             .null_check(self, None)?
             .as_object()
             .expect("Cannot get_slot on primitive");
         let value = object.get_slot(index);
 
-        self.push_stack(value);
+        // We use `stack_top` instead of `pop_stack` and `push_stack` here
+        // because it allows us to skip the extra bounds checks and stack pointer
+        // changes. This is important here because getslot is one of the hottest
+        // ops in most SWFs.
+        stack_top.set(value);
 
         Ok(())
     }
