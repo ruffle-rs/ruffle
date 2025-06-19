@@ -1,4 +1,4 @@
-use std::cell::RefCell;
+use std::cell::OnceCell;
 
 use crate::backend::audio::SoundHandle;
 use crate::binary_data::BinaryData;
@@ -21,7 +21,7 @@ pub enum Character<'gc> {
         compressed: CompressedBitmap,
         /// A lazily constructed GPU handle, used when performing fills with this bitmap
         #[collect(require_static)]
-        handle: RefCell<Option<BitmapHandle>>,
+        handle: OnceCell<BitmapHandle>,
         /// The bitmap class set by `SymbolClass` - this is used when we instantaite
         /// a `Bitmap` displayobject.
         avm2_bitmapdata_class: GcCell<'gc, BitmapClass<'gc>>,

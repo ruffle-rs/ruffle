@@ -390,8 +390,9 @@ impl ruffle_render::bitmap::BitmapSource for MovieLibrarySource<'_, '_> {
         else {
             return None;
         };
-        let mut handle = handle.borrow_mut();
-        if let Some(handle) = &*handle {
+
+        // FIXME - use `OnceCell::get_or_try_init` when stabilized.
+        if let Some(handle) = handle.get() {
             return Some(handle.clone());
         }
         let decoded = match compressed.decode() {
@@ -409,7 +410,7 @@ impl ruffle_render::bitmap::BitmapSource for MovieLibrarySource<'_, '_> {
             }
         };
         // FIXME - do we ever want to release this handle, to avoid taking up GPU memory?
-        *handle = Some(new_handle.clone());
+        handle.set(new_handle.clone()).unwrap();
         Some(new_handle)
     }
 }
