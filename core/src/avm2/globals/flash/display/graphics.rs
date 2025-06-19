@@ -997,7 +997,7 @@ pub fn copy_from<'gc>(
             .as_drawing(activation.gc())
             .expect("Missing drawing for target");
 
-        target_drawing.copy_from(&source);
+        target_drawing.clone_from(&source);
     }
     Ok(Value::Undefined)
 }
