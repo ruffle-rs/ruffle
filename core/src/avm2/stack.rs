@@ -134,6 +134,11 @@ impl<'a, 'gc> StackFrame<'a, 'gc> {
     }
 
     #[inline(always)]
+    pub fn stack_top(&self) -> &Cell<Value<'gc>> {
+        &self.data[self.stack_pointer.get() - 1]
+    }
+
+    #[inline(always)]
     pub fn value_at(&self, index: usize) -> Value<'gc> {
         self.data[index].get()
     }
@@ -146,6 +151,8 @@ impl<'a, 'gc> StackFrame<'a, 'gc> {
     #[inline(always)]
     pub fn get_args(&self, num_args: usize) -> FunctionArgs<'a, 'gc> {
         let base = self.stack_pointer.get() - num_args;
+
+        self.stack_pointer.set(base);
 
         FunctionArgs::AsCellArgSlice {
             arguments: &self.data[base..base + num_args],
