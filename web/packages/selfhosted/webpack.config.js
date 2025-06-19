@@ -6,21 +6,8 @@ import TerserPlugin from "terser-webpack-plugin";
 function transformPackage(content) {
     const pkg = json5.parse(content);
 
-    const packageVersion = process.env.npm_package_version;
-
-    const versionChannel = process.env.CFG_RELEASE_CHANNEL || "local";
-
-    const buildDate = new Date()
-        .toISOString()
-        .substring(0, 10)
-        .replace(/-/g, ".");
-
-    // The npm registry requires the version to monotonically increase,
-    // so append the build date onto the end of the package version.
-    pkg.version =
-        versionChannel !== "stable"
-            ? `${packageVersion}-${versionChannel}.${buildDate}`
-            : packageVersion;
+    // Note: The npm registry requires the version to monotonically increase.
+    pkg.version = process.env.npm_package_version;
 
     return JSON.stringify(pkg);
 }
