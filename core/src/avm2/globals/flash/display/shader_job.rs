@@ -47,21 +47,23 @@ pub fn get_shader_args<'gc>(
         .params
         .iter()
         .enumerate()
-        .flat_map(|(index, param)| {
+        .filter(|(_, param)| {
+            !matches!(
+                param,
+                PixelBenderParam::Normal {
+                    qualifier: PixelBenderParamQualifier::Output,
+                    ..
+                }
+            )
+        })
+        .map(|(index, param)| {
             match param {
                 PixelBenderParam::Normal {
-                    qualifier,
-                    param_type,
-                    name,
-                    ..
+                    param_type, name, ..
                 } => {
-                    if matches!(qualifier, PixelBenderParamQualifier::Output) {
-                        return None;
-                    }
-
                     if name == OUT_COORD_NAME {
                         // Pass in a dummy value - this will be ignored in favor of the actual pixel coordinate
-                        return Some(PixelBenderShaderArgument::ValueInput {
+                        return Ok(PixelBenderShaderArgument::ValueInput {
                             index: index as u8,
                             value: PixelBenderType::TFloat2(f32::NAN, f32::NAN),
                         });
@@ -88,11 +90,9 @@ pub fn get_shader_args<'gc>(
                     }
 
                     let value = shader_param.get_slot(shader_parameter_slots::_VALUE);
+                    let pb_val = PixelBenderType::from_avm2_value(activation, value, param_type)?;
 
-                    let pb_val = PixelBenderType::from_avm2_value(activation, value, param_type)
-                        .expect("Failed to convert AVM2 value to PixelBenderType");
-
-                    Some(PixelBenderShaderArgument::ValueInput {
+                    Ok(PixelBenderShaderArgument::ValueInput {
                         index: index as u8,
                         value: pb_val,
                     })
@@ -169,7 +169,7 @@ pub fn get_shader_args<'gc>(
                         None
                     };
 
-                    Some(PixelBenderShaderArgument::ImageInput {
+                    Ok(PixelBenderShaderArgument::ImageInput {
                         index: *index,
                         channels: *channels,
                         name: name.clone(),
@@ -178,7 +178,7 @@ pub fn get_shader_args<'gc>(
                 }
             }
         })
-        .collect();
+        .collect::<Result<Vec<PixelBenderShaderArgument<'_>>, Error<'gc>>>()?;
     Ok((shader_handle.clone(), args))
 }
 
