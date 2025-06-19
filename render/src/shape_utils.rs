@@ -1193,7 +1193,7 @@ fn solve_cubic(a: f64, b: f64, c: f64, d: f64) -> SmallVec<[f64; 3]> {
 }
 
 /// Converts an SWF glyph into an SWF shape, for ease of use by rendering backends.
-pub fn swf_glyph_to_shape(glyph: &swf::Glyph) -> swf::Shape {
+pub fn swf_glyph_to_shape(glyph: swf::Glyph) -> swf::Shape {
     // Per SWF19 p.164, the FontBoundsTable can contain empty bounds for every glyph (reserved).
     // SWF19 says this is true through SWFv7, but it seems like it might be generally true?
     // In any case, we have to be sure to calculate the shape bounds ourselves to make a proper
@@ -1217,7 +1217,7 @@ pub fn swf_glyph_to_shape(glyph: &swf::Glyph) -> swf::Shape {
             })],
             line_styles: vec![],
         },
-        shape: glyph.shape_records.clone(),
+        shape: glyph.shape_records,
     }
 }
 
