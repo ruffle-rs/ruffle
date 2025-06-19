@@ -42,7 +42,8 @@
         "typescript-eslint": "^8.34.1",
         "webdriverio": "^9.2.2",
         "webpack": "^5.99.9",
-        "webpack-cli": "^6.0.1"
+        "webpack-cli": "^6.0.1",
+        "workspace-version": "^0.1.4"
     },
     "scripts": {
         "build": "npm run build --workspace=ruffle-core && npm run build --workspace=ruffle-demo --workspace=ruffle-extension --workspace=ruffle-selfhosted",
