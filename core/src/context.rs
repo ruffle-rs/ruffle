@@ -338,8 +338,8 @@ impl<'gc> UpdateContext<'gc> {
 
     /// Change the root movie.
     ///
-    /// This should only be called once, as it makes no attempt at removing
-    /// previous stage contents. If you need to load a new root movie, you
+    /// This should only be called once, as it makes no attempt at proper clean-up
+    /// of previous stage contents. If you need to load a new root movie, you
     /// should use `replace_root_movie`.
     pub fn set_root_movie(&mut self, movie: SwfMovie) {
         if !self.forced_frame_rate {

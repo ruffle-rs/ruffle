@@ -152,7 +152,7 @@ impl<'gc> Stage<'gc> {
             gc_context,
             StageData {
                 base: Default::default(),
-                child: RefLock::new(ChildContainer::new(movie.clone())),
+                child: RefLock::new(ChildContainer::new(&movie)),
                 background_color: Cell::new(None),
                 letterbox: Cell::new(Letterbox::Fullscreen),
                 // This is updated when we set the root movie
@@ -229,12 +229,9 @@ impl<'gc> Stage<'gc> {
     }
 
     pub fn set_movie(self, gc_context: &Mutation<'gc>, movie: Arc<SwfMovie>) {
-        self.0.movie.replace(movie.clone());
-
         // Stage is the only DO that has a fake movie set and then gets the real movie set.
-        unlock!(Gc::write(gc_context, self.0), StageData, child)
-            .borrow_mut()
-            .set_movie(movie);
+        *self.raw_container_mut(gc_context) = ChildContainer::new(&movie);
+        self.0.movie.replace(movie.clone());
     }
 
     pub fn set_loader_info(self, gc_context: &Mutation<'gc>, loader_info: Avm2Object<'gc>) {

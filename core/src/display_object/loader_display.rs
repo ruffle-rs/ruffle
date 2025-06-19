@@ -47,7 +47,7 @@ impl<'gc> LoaderDisplay<'gc> {
             activation.gc(),
             LoaderDisplayData {
                 base: RefLock::new(Default::default()),
-                container: RefLock::new(ChildContainer::new(movie.clone())),
+                container: RefLock::new(ChildContainer::new(&movie)),
                 avm2_object: Lock::new(None),
                 movie,
             },
