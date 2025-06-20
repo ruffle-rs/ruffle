@@ -2044,21 +2044,17 @@ export class InnerPlayer {
         }
         this.hideSplashScreen();
 
-        const div = document.createElement("div");
-        div.id = "message-overlay";
-        const innerDiv = document.createElement("div");
-        innerDiv.className = "message";
-        innerDiv.appendChild(textAsParagraphs("message-cant-embed"));
-
-        const buttonDiv = document.createElement("div");
-        const link = document.createElement("a");
-        link.innerText = text("open-in-new-tab");
-        link.onclick = () => openInNewTab(url);
-        buttonDiv.appendChild(link);
-
-        innerDiv.appendChild(buttonDiv);
-        div.appendChild(innerDiv);
-        this.container.prepend(div);
+        const newTabMessage = (
+            <div>
+                {textAsParagraphs("message-cant-embed")}
+                <div>
+                    <a href="#" onClick={() => openInNewTab(url)}>
+                        {text("open-in-new-tab")}
+                    </a>
+                </div>
+            </div>
+        ) as HTMLDivElement;
+        this.displayMessageOrElement(newTabMessage, true);
     }
 
     protected displayRootMovieDownloadFailedMessage(
@@ -2087,30 +2083,40 @@ export class InnerPlayer {
      * Show a dismissible message in front of the player.
      *
      * @param message The message shown to the user, which can be a string or element.
+     * @param omitContinueButton If true, the continue button will not be shown.
      */
-    private displayMessageOrElement(message: string | HTMLDivElement): void {
+    private displayMessageOrElement(
+        message: string | HTMLDivElement,
+        omitContinueButton?: boolean,
+    ): void {
+        const messageContent =
+            message instanceof HTMLDivElement ? message : <p>{message}</p>;
+
+        const continueButton = !omitContinueButton ? (
+            <div>
+                <button id="continue-btn">{text("continue")}</button>
+            </div>
+        ) : null;
+
         const messageOverlay = (
             <div id="message-overlay">
                 <div class="message">
-                    {message instanceof HTMLDivElement ? (
-                        message
-                    ) : (
-                        <p>{message}</p>
-                    )}
-                    <div>
-                        <button id="continue-btn">{text("continue")}</button>
-                    </div>
+                    {messageContent}
+                    {continueButton}
                 </div>
             </div>
         );
 
         this.container.prepend(messageOverlay);
 
-        (
-            this.container.querySelector("#continue-btn") as HTMLButtonElement
-        ).onclick = () => {
-            messageOverlay.parentNode!.removeChild(messageOverlay);
-        };
+        if (!omitContinueButton) {
+            const continueBtn = this.container.querySelector(
+                "#continue-btn",
+            ) as HTMLButtonElement;
+            continueBtn.onclick = () => {
+                messageOverlay.parentNode!.removeChild(messageOverlay);
+            };
+        }
     }
 
     /**
@@ -2153,13 +2159,14 @@ export class InnerPlayer {
     protected displayUnsupportedVideo(url: string): void {
         const videoHolder = this.videoModal.querySelector("#video-holder");
         if (videoHolder) {
-            const video = document.createElement("video");
-            video.addEventListener("contextmenu", (event) =>
-                event.stopPropagation(),
+            const video = (
+                <video
+                    src={url}
+                    autoplay={true}
+                    controls={true}
+                    onContextMenu={(event) => event.stopPropagation()}
+                />
             );
-            video.src = url;
-            video.autoplay = true;
-            video.controls = true;
             videoHolder.textContent = "";
             videoHolder.appendChild(video);
             this.videoModal.classList.remove("hidden");
