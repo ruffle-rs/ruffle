@@ -2061,18 +2061,29 @@ export class InnerPlayer {
         this.container.prepend(div);
     }
 
-    protected displayRootMovieDownloadFailedMessage(invalidSwf: boolean): void {
+    protected displayRootMovieDownloadFailedMessage(
+        invalidSwf: boolean,
+        fetchedSwfUrl: string,
+    ): void {
+        let realSwfUrl = this.swfUrl;
+        try {
+            realSwfUrl = new URL(fetchedSwfUrl);
+        } catch {
+            console.warn(
+                `Failed to create URL from fetch source, falling back to {this.swfUrl}`,
+            );
+        }
         const openInNewTab = this.loadedConfig?.openInNewTab;
         if (
             openInNewTab &&
-            this.swfUrl &&
-            window.location.origin !== this.swfUrl.origin
+            realSwfUrl &&
+            window.location.origin !== realSwfUrl.origin
         ) {
-            this.addOpenInNewTabMessage(openInNewTab, this.swfUrl);
+            this.addOpenInNewTabMessage(openInNewTab, realSwfUrl);
         } else {
             const error = invalidSwf
-                ? new InvalidSwfError(this.swfUrl)
-                : new LoadSwfError(this.swfUrl);
+                ? new InvalidSwfError(realSwfUrl)
+                : new LoadSwfError(realSwfUrl);
             this.panic(error);
         }
     }

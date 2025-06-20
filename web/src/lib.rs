@@ -166,7 +166,11 @@ extern "C" {
     fn panic(this: &JavascriptPlayer, error: &JsError);
 
     #[wasm_bindgen(method, js_name = "displayRootMovieDownloadFailedMessage")]
-    fn display_root_movie_download_failed_message(this: &JavascriptPlayer, invalid_swf: bool);
+    fn display_root_movie_download_failed_message(
+        this: &JavascriptPlayer,
+        invalid_swf: bool,
+        fetched_swf_url: String,
+    );
 
     #[wasm_bindgen(method, js_name = "displayRestoredFromBfcacheMessage")]
     fn display_restored_from_bfcache_message(this: &JavascriptPlayer);
@@ -280,7 +284,7 @@ impl RuffleHandle {
             SwfMovie::from_data(&swf_data.to_vec(), url.to_string(), None).map_err(|e| {
                 let _ = self.with_core_mut(|core| {
                     core.ui_mut()
-                        .display_root_movie_download_failed_message(true);
+                        .display_root_movie_download_failed_message(true, url.to_string());
                 });
                 format!("Error loading movie: {e}")
             })?;
