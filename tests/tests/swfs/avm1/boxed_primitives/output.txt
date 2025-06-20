@@ -1,3 +1,4 @@
+Warning: Reference to undeclared variable, 'Test'
 // Number(10)
 typeof = number, value = 10
 // new Number(42)

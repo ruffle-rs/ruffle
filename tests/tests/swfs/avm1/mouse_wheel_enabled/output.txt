@@ -1,2 +1,6 @@
+Warning: Reference to undeclared variable, 'myformat'
+Warning: Reference to undeclared variable, 'myformat'
+Warning: Reference to undeclared variable, 'mytext'
+Warning: Reference to undeclared variable, 'myformat'
 true
 false

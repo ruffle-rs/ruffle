@@ -17,6 +17,7 @@ string
 // self.foobar
 undefined
 // foobar
+Warning: Reference to undeclared variable, 'foobar'
 undefined
 // foobar
 foobar
