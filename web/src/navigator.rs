@@ -402,7 +402,7 @@ impl NavigatorBackend for WebNavigatorBackend {
             let redirected = response.redirected();
             if !response.ok() {
                 let error = Error::HttpNotOk(
-                    format!("HTTP status is not ok, got {}", response.status_text()),
+                    format!("Got {}", response.status_text()),
                     status,
                     redirected,
                     0,

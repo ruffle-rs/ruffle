@@ -258,7 +258,7 @@ impl<F: FutureSpawner + 'static, I: NavigatorInterface> NavigatorBackend
                 let redirected = *response.url() != processed_url;
                 if !response.status().is_success() {
                     let error = Error::HttpNotOk(
-                        format!("HTTP status is not ok, got {}", response.status()),
+                        format!("Got {}", response.status()),
                         status,
                         redirected,
                         response.content_length().unwrap_or_default(),

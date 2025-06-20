@@ -179,7 +179,7 @@ pub enum Error {
     #[error("Other Loader spawned as Movie unloader")]
     NotMovieUnloader,
 
-    #[error("HTTP Status is not OK: {0} redirected: {1}")]
+    #[error("HTTP Status is not OK: {0} status: {1} redirected: {2} length: {3}")]
     HttpNotOk(String, u16, bool, u64),
 
     /// The domain could not be resolved, either because it is invalid or a DNS error occurred
