@@ -353,7 +353,7 @@ impl Drawing {
         for path in &self.paths {
             match path {
                 DrawingPath::Fill(fill) => {
-                    if shape_utils::draw_command_fill_hit_test(&fill.commands, point) {
+                    if shape_utils::draw_command_fill_hit_test(&fill.commands, fill.rule, point) {
                         return true;
                     }
                 }
@@ -372,7 +372,7 @@ impl Drawing {
 
         // The pending fill will auto-close.
         if let Some(fill) = &self.current_fill {
-            if shape_utils::draw_command_fill_hit_test(&fill.commands, point) {
+            if shape_utils::draw_command_fill_hit_test(&fill.commands, fill.rule, point) {
                 return true;
             }
         }
