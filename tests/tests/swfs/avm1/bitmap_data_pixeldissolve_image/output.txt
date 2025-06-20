@@ -1,0 +1,1 @@
+Warning: Reference to undeclared variable, 'test'

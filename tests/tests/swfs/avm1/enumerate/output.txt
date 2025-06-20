@@ -3,6 +3,7 @@ abc
 def
 
 // this.obj (GetMember)
+Warning: [object Object] is not defined
 
 // myVar (GetVariable)
 abc
@@ -12,18 +13,25 @@ def
 ghi
 jkl
 // enumerate(undefined)
+Warning:  is not defined
 undefined
 // enumerate(null)
+Warning: null is not defined
 undefined
 // enumerate(10)
+Warning: 10 is not defined
 undefined
 // enumerate(10.0)
+Warning: 10 is not defined
 undefined
 // enumerate(false)
+Warning: false is not defined
 undefined
 // enumerate(true)
+Warning: true is not defined
 undefined
 // enumerate('Test string')
+Warning: Test string is not defined
 undefined
 // enumerate({'a': 1})
 ghi

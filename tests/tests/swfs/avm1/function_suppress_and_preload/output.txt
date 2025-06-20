@@ -1,3 +1,4 @@
+Warning: Reference to undeclared variable, 'Test'
 // base
 this: THIS
 super: [object Object]
@@ -7,21 +8,27 @@ reg 2: undefined
 reg 3: undefined
 // suppress
 this: _level0
+Warning: Reference to undeclared variable, 'super'
 super: undefined
+Warning: Reference to undeclared variable, 'arguments'
 arguments: undefined
 reg 1: undefined
 reg 2: undefined
 reg 3: undefined
 // preload
 this: _level0
+Warning: Reference to undeclared variable, 'super'
 super: undefined
+Warning: Reference to undeclared variable, 'arguments'
 arguments: undefined
 reg 1: THIS
 reg 2: 1,2
 reg 3: [object Object]
 // suppress_preload
 this: _level0
+Warning: Reference to undeclared variable, 'super'
 super: undefined
+Warning: Reference to undeclared variable, 'arguments'
 arguments: undefined
 reg 1: undefined
 reg 2: 1,2

@@ -1,9 +1,11 @@
 // RemoveSprite
 _level0.clip1
+Warning: Reference to undeclared variable, 'clip1'
 undefined
 // MovieClip.removeMovieClip
 2
 _level0.clip2
+Warning: Reference to undeclared variable, 'clip2'
 undefined
 // Trying to remove static clip
 _level0.clip
@@ -12,19 +14,24 @@ _level0.clip
 _level0.clip3
 _level0.clip3
 _level0.clip4
+Warning: Reference to undeclared variable, 'clip4'
 undefined
 _level0.clip5
 _level0.clip5
 
 // removeMovieClip(txt1)
+Warning: Reference to undeclared variable, 'txt1'
 undefined
 
 // removeMovieClip(button1)
+Warning: Reference to undeclared variable, 'button1'
 undefined
 
 // removeMovieClip.apply(txt2);
+Warning: Reference to undeclared variable, 'txt2'
 undefined
 
 // removeMovieClip.apply(button2);
+Warning: Reference to undeclared variable, 'button2'
 undefined
 

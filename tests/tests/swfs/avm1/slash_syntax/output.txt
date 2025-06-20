@@ -7,8 +7,10 @@ TEST
 // /clip1/../clip1/clip2/../clip2:val
 TEST
 // /invalid/INVALID:invalid = 20
+Warning: Reference to undeclared variable, '/invalid/INVALID:invalid'
 undefined
 // ../clip1/clip2/:val
 TEST
 // ../clip1/clip2//:val
+Warning: Reference to undeclared variable, '../clip1/clip2//:val'
 undefined

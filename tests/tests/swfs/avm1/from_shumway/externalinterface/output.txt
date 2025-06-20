@@ -1,4 +1,7 @@
+Warning: Reference to undeclared variable, 'ExternalInterface'
 available: undefined
+Warning: Reference to undeclared variable, 'ExternalInterface'
 after addCallback
+Warning: Reference to undeclared variable, 'ExternalInterface'
 call result: undefined
 after call

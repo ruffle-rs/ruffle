@@ -16,7 +16,9 @@ _level0.clipInstance2
 _level0.clipInstance2.clipChild
 _level0.clipInstance2
 _level0.clipInstance2.clipChild
+Warning: Reference to undeclared variable, 'clipInstance2.'
 undefined
+Warning: Reference to undeclared variable, '_level0.'
 undefined
 foo = _level0.clipInstance2
 _level0.clipInstance2
@@ -26,11 +28,25 @@ foo = _level0.clipInstance2.clipChild
 _level0.clipInstance2.clipChild
 _level0.clipInstance2.clipChild
 0
+Warning: Reference to undeclared variable, 'foo'
 undefined
+Warning: Reference to undeclared variable, 'foo'
 _level0
+Warning: Reference to undeclared variable, 'foo'
+Warning: Reference to undeclared variable, '_level0.clipInstance2undefined'
 undefined
+Warning: Reference to undeclared variable, 'foo'
+Warning: Reference to undeclared variable, '_level0.clipInstance2.clipChildundefined'
 undefined
+Warning: Reference to undeclared variable, 'foo'
+Warning: Reference to undeclared variable, 'clipInstance2undefined'
 undefined
+Warning: Reference to undeclared variable, 'foo'
+Warning: Reference to undeclared variable, 'clipInstance2.clipChildundefined'
 undefined
+Warning: Reference to undeclared variable, 'foo'
+Warning: Reference to undeclared variable, 'clipInstance2.undefined'
 undefined
+Warning: Reference to undeclared variable, 'foo'
+Warning: Reference to undeclared variable, '_level0.undefined'
 undefined

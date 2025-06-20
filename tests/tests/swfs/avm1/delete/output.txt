@@ -1,3 +1,4 @@
 x: thing
 x: thing
+Warning: Reference to undeclared variable, 'x'
 x: undefined

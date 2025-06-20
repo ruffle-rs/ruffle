@@ -40,11 +40,21 @@ true
 10
 10
 
+Warning: Reference to undeclared variable, 'clip2'
+Warning: 'clip2' has no property '_xscale'
+Warning: Reference to undeclared variable, 'clip2'
+Warning: 'clip2' has no property '_yscale'
 // clip.globalToLocal (no scaleX)
+Warning: Reference to undeclared variable, 'clip2'
 123
 234
 
+Warning: Reference to undeclared variable, 'clip2'
+Warning: 'clip2' has no property '_xscale'
+Warning: Reference to undeclared variable, 'clip2'
+Warning: 'clip2' has no property '_yscale'
 // clip.globalToLocal (no scaleY)
+Warning: Reference to undeclared variable, 'clip2'
 123
 234
 

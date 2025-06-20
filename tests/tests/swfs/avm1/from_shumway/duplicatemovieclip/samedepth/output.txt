@@ -3,4 +3,5 @@ _level0.test1
 undefined
 _level0.test2
 undefined
+Warning: Reference to undeclared variable, 'test1'
 undefined

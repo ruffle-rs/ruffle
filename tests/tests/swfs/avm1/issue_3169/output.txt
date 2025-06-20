@@ -1,2 +1,3 @@
+Warning: Reference to undeclared variable, 'Main'
 foo setter
 end

@@ -2,6 +2,8 @@
 ABCABC
 
 // var /ruffle/:def = 'DEF'
+Warning: Reference to undeclared variable, '/ruffle/:def'
+Warning: Reference to undeclared variable, '_root.ruffle.def'
 0
 
 _root.ruffle = {};
@@ -32,18 +34,26 @@ JKLJKL
 GHIGHI
 
 // var _root.v123 = '123'
+Warning: Reference to undeclared variable, '_root.v123'
+Warning: Reference to undeclared variable, '/:v123'
 0
 
 // Inside function -> with({})
 
 // var /:v456 = '456'
+Warning: Reference to undeclared variable, '/:v456'
+Warning: Reference to undeclared variable, '_root.v456'
 0
 
 // Inside function -> tellTarget(_root)
 // var /:v789 = '789'
+Warning: Reference to undeclared variable, '/:v789'
+Warning: Reference to undeclared variable, '_root.v789'
 0
 
 // Outside function - tracing all variables defined inside function
+Warning: Reference to undeclared variable, '/:v123'
+Warning: Reference to undeclared variable, '_root.v456'
 0
 
 // _root.hasOwnProperty('mno') - defined inside function

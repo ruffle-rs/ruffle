@@ -1,3 +1,4 @@
+Warning: Reference to undeclared variable, 'Test'
 // var str = hello world
 // str.substr(0, -1)
 hello worl
