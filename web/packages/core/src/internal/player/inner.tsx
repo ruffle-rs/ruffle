@@ -2063,27 +2063,22 @@ export class InnerPlayer {
 
     protected displayRootMovieDownloadFailedMessage(
         invalidSwf: boolean,
-        fetchedSwfUrl: string,
+        fetchError: string,
     ): void {
-        let realSwfUrl = this.swfUrl;
-        try {
-            realSwfUrl = new URL(fetchedSwfUrl);
-        } catch {
-            console.warn(
-                `Failed to create URL from fetch source, falling back to {this.swfUrl}`,
-            );
-        }
         const openInNewTab = this.loadedConfig?.openInNewTab;
         if (
             openInNewTab &&
-            realSwfUrl &&
-            window.location.origin !== realSwfUrl.origin
+            this.swfUrl &&
+            window.location.origin !== this.swfUrl.origin
         ) {
-            this.addOpenInNewTabMessage(openInNewTab, realSwfUrl);
+            this.addOpenInNewTabMessage(openInNewTab, this.swfUrl);
         } else {
+            const fetchStatusNotOk = fetchError.includes(
+                "HTTP Status is not OK:",
+            );
             const error = invalidSwf
-                ? new InvalidSwfError(realSwfUrl)
-                : new LoadSwfError(realSwfUrl);
+                ? new InvalidSwfError(this.swfUrl)
+                : new LoadSwfError(this.swfUrl, fetchStatusNotOk);
             this.panic(error);
         }
     }

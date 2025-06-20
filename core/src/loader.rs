@@ -1064,17 +1064,16 @@ impl<'gc> Loader<'gc> {
                     .lock()
                     .unwrap()
                     .ui()
-                    .display_root_movie_download_failed_message(false, error.url);
+                    .display_root_movie_download_failed_message(false, error.error.to_string());
                 error.error
             })?;
             let url = response.url().into_owned();
-            let cloned_url = url.clone();
-            let body = response.body().await.inspect_err(|_error| {
+            let body = response.body().await.inspect_err(|error| {
                 player
                     .lock()
                     .unwrap()
                     .ui()
-                    .display_root_movie_download_failed_message(true, cloned_url);
+                    .display_root_movie_download_failed_message(true, error.to_string());
             })?;
 
             // The spoofed root movie URL takes precedence over the actual URL.
@@ -1090,17 +1089,13 @@ impl<'gc> Loader<'gc> {
                 .map(|u| u.to_string())
                 .unwrap_or(swf_url);
 
-            let cloned_spoofed_or_swf_url = spoofed_or_swf_url.clone();
             let mut movie =
-                SwfMovie::from_data(&body, spoofed_or_swf_url, None).inspect_err(|_error| {
+                SwfMovie::from_data(&body, spoofed_or_swf_url, None).inspect_err(|error| {
                     player
                         .lock()
                         .unwrap()
                         .ui()
-                        .display_root_movie_download_failed_message(
-                            true,
-                            cloned_spoofed_or_swf_url,
-                        );
+                        .display_root_movie_download_failed_message(true, error.to_string());
                 })?;
             on_metadata(movie.header());
             movie.append_parameters(parameters);

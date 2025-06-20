@@ -185,6 +185,7 @@ function createPanicError(error: Error | null): {
 
         if (
             window.location.origin === error.swfUrl?.origin ||
+            error.statusNotOk ||
             // The extension's internal player page is not restricted by CORS
             window.location.protocol.includes("extension")
         ) {
