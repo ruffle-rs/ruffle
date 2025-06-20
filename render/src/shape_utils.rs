@@ -29,6 +29,23 @@ impl From<FillRule> for lyon::path::FillRule {
     }
 }
 
+impl FillRule {
+    pub fn from_flags(flags: swf::ShapeFlag) -> Self {
+        if flags.contains(swf::ShapeFlag::NON_ZERO_WINDING_RULE) {
+            Self::NonZero
+        } else {
+            Self::EvenOdd
+        }
+    }
+
+    pub fn hit_test(self, winding_number: i32) -> bool {
+        match self {
+            Self::EvenOdd => winding_number & 0b1 != 0,
+            Self::NonZero => winding_number != 0,
+        }
+    }
+}
+
 pub fn calculate_shape_bounds(shape_records: &[swf::ShapeRecord]) -> swf::Rectangle<Twips> {
     let mut bounds = swf::Rectangle {
         x_min: Twips::new(i32::MAX),
@@ -557,7 +574,7 @@ impl<'a> ShapeConverter<'a> {
  * For SWF shapes, edges with fillstyle1 use clockwise winding, and edges with fillstyle0 use CCW winding (flip them).
  * We ignore any edges with fills on both sides (interior edges).
  *
- * If the final winding number is odd, then the point is inside the shape (for default even-odd winding).
+ * The final winding number determines whether the point is inside the shape or not, according to the shape's fill rule.
  *
  * For strokes, we calculate the distance to the line segment or curve and compare it to the stroke width.
  * Note that Flash renders with a minimum stroke width of 1px (20 twips) that we must account for.
@@ -572,6 +589,7 @@ pub fn shape_hit_test(
     local_matrix: &Matrix,
 ) -> bool {
     let mut cursor = swf::Point::ZERO;
+    let fill_rule = FillRule::from_flags(shape.flags);
     let mut winding = 0;
 
     let mut has_fill_style0 = false;
@@ -587,7 +605,7 @@ pub fn shape_hit_test(
                 // New styles indicates a new layer;
                 // Check if the point is within the current layer, then reset winding.
                 if let Some(new_styles) = &style_change.new_styles {
-                    if winding & 0b1 != 0 {
+                    if fill_rule.hit_test(winding) {
                         return true;
                     }
                     line_styles = &new_styles.line_styles;
@@ -665,11 +683,15 @@ pub fn shape_hit_test(
             }
         }
     }
-    winding & 0b1 != 0
+    fill_rule.hit_test(winding)
 }
 
 /// Test whether the given point is contained within the paths specified by the draw commands.
-pub fn draw_command_fill_hit_test(commands: &[DrawCommand], test_point: swf::Point<Twips>) -> bool {
+pub fn draw_command_fill_hit_test(
+    commands: &[DrawCommand],
+    fill_rule: FillRule,
+    test_point: swf::Point<Twips>,
+) -> bool {
     let mut cursor = swf::Point::ZERO;
     let mut fill_start = swf::Point::ZERO;
     let mut winding = 0;
@@ -720,7 +742,7 @@ pub fn draw_command_fill_hit_test(commands: &[DrawCommand], test_point: swf::Poi
         winding += winding_number_line(test_point, cursor, fill_start);
     }
 
-    winding & 0b1 != 0
+    fill_rule.hit_test(winding)
 }
 
 /// Test whether the given point is contained within the strokes specified by the draw commands.
