@@ -85,7 +85,7 @@ pub trait UiBackend: Any {
     fn display_root_movie_download_failed_message(
         &self,
         _invalid_swf: bool,
-        _fetched_swf_url: String,
+        _fetched_error: String,
     );
 
     // Unused, but kept in case we need it later.
@@ -181,11 +181,7 @@ impl UiBackend for NullUiBackend {
         Ok(())
     }
 
-    fn display_root_movie_download_failed_message(
-        &self,
-        _invalid_swf: bool,
-        _fetched_swf_url: String,
-    ) {
+    fn display_root_movie_download_failed_message(&self, _invalid_swf: bool, _fetch_error: String) {
     }
 
     fn message(&self, _message: &str) {}

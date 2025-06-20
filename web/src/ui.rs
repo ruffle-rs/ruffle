@@ -290,13 +290,9 @@ impl UiBackend for WebUiBackend {
         }
     }
 
-    fn display_root_movie_download_failed_message(
-        &self,
-        invalid_swf: bool,
-        fetched_swf_url: String,
-    ) {
+    fn display_root_movie_download_failed_message(&self, invalid_swf: bool, fetch_error: String) {
         self.js_player
-            .display_root_movie_download_failed_message(invalid_swf, fetched_swf_url)
+            .display_root_movie_download_failed_message(invalid_swf, fetch_error)
     }
 
     fn message(&self, message: &str) {

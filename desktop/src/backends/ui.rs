@@ -227,11 +227,7 @@ impl UiBackend for DesktopUiBackend {
         Ok(())
     }
 
-    fn display_root_movie_download_failed_message(
-        &self,
-        _invalid_swf: bool,
-        _fetched_swf_url: String,
-    ) {
+    fn display_root_movie_download_failed_message(&self, _invalid_swf: bool, _fetch_error: String) {
         let _ = self
             .event_loop
             .send_event(RuffleEvent::OpenDialog(DialogDescriptor::ShowMessage(
