@@ -1,4 +1,5 @@
 50
 50
 0
+Warning: Reference to undeclared variable, 'clip'
 undefined
