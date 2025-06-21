@@ -8,6 +8,9 @@ on:
   # Allow for manual dispatch on GitHub
   workflow_dispatch:
 
+env:
+  RELEASE_SCRIPT: ./.github/scripts/release.py
+
 jobs:
   create-nightly-release:
     name: Create Nightly Release
@@ -16,8 +19,9 @@ jobs:
       is_active: ${{ steps.activity.outputs.is_active }}
       date: ${{ steps.current_time_underscores.outputs.formattedTime }}
       upload_url: ${{ steps.create_release.outputs.upload_url }}
-      package_prefix: ruffle-nightly-${{ steps.current_time_underscores.outputs.formattedTime }}
-      tag_name: nightly-${{ steps.current_time_dashes.outputs.formattedTime }}
+      package_prefix: ${{ steps.create_release.outputs.package_prefix }}
+      tag_name: ${{ steps.create_release.outputs.tag_name }}
+      version4: ${{ steps.version.outputs.version4 }}
 
     # Only run the scheduled workflows on the main repo.
     if: github.repository == 'ruffle-rs/ruffle' || github.event_name == 'repository_dispatch' || github.event_name == 'workflow_dispatch'
@@ -38,11 +42,47 @@ jobs:
           fi
           echo "is_active=$is_active" >> $GITHUB_OUTPUT
 
-      - name: Get current time with dashes
-        uses: josStorer/get-current-time@v2.1.2
-        id: current_time_dashes
+      - name: Install cargo-edit
+        uses: baptiste0928/cargo-install@v3
         with:
-          format: YYYY-MM-DD
+          crate: cargo-edit
+          version: '^0.12'
+
+      - name: Install cargo-get
+        uses: baptiste0928/cargo-install@v3
+        with:
+          crate: cargo-get
+          version: '^1.0'
+
+      - name: Bump version
+        if: steps.activity.outputs.is_active == 'true'
+        id: version
+        run: |
+          $RELEASE_SCRIPT bump
+          # Ensure newlines at the end of file
+          shopt -s globstar
+          sed -i -e '$a\' **/package.json
+
+      - name: Create release commit
+        if: steps.activity.outputs.is_active == 'true'
+        id: commit
+        run: |
+          # Print diff for debugging
+          git diff
+
+          # For nightly we do not want to commit those changes,
+          # save them and then apply when building
+          git diff > /tmp/nightly-release.patch
+
+          revision=$(git rev-parse HEAD)
+          echo "revision=$revision" | tee -a $GITHUB_OUTPUT
+
+      - name: Upload nightly release patch
+        uses: actions/upload-artifact@v4
+        if: steps.activity.outputs.is_active == 'true'
+        with:
+          name: nightly-release-patch
+          path: /tmp/nightly-release.patch
 
       - name: Get current time with underscores
         uses: josStorer/get-current-time@v2.1.2
@@ -53,12 +93,10 @@ jobs:
       - name: Create release
         if: steps.activity.outputs.is_active == 'true'
         id: create_release
-        run: |
-          tag_name="nightly-${{ steps.current_time_dashes.outputs.formattedTime }}"
-          release_name="Nightly ${{ steps.current_time_dashes.outputs.formattedTime }}"
-          gh release create "$tag_name" --title "$release_name" --generate-notes --prerelease
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          $RELEASE_SCRIPT release
 
   build:
     name: Build ${{ matrix.build_name }}
@@ -110,6 +148,15 @@ jobs:
       - name: Clone Ruffle repo
         uses: actions/checkout@v4
 
+      - name: Download nightly release patch
+        uses: actions/download-artifact@v4
+        with:
+          name: nightly-release-patch
+          path: /tmp
+
+      - name: Apply nightly release patch
+        run: git apply --verbose /tmp/nightly-release.patch
+
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable
         with:
@@ -123,11 +170,11 @@ jobs:
           sudo apt install -y libasound2-dev libudev-dev
 
       - name: Install WiX
+        if: runner.os == 'Windows'
         run: |
           dotnet tool install --global wix --version 5.0.2
           wix extension add -g WixToolset.UI.wixext/5.0.2
           wix extension add -g WixToolset.Util.wixext/5.0.2
-        if: runner.os == 'Windows'
 
       - name: Cargo build
         run: cargo build --locked --package ruffle_desktop --release ${{matrix.DESKTOP_FEATURES && '--features' }} ${{matrix.DESKTOP_FEATURES}} ${{ matrix.target && '--target' }} ${{ matrix.target }}
@@ -147,7 +194,7 @@ jobs:
           cd desktop/packages/windows/wix
           wix build ruffle.wxs -ext WixToolset.UI.wixext -ext WixToolset.Util.wixext -arch ${{ matrix.MSI_ARCH }} -o ../../../../package/setup.msi -pdbtype none
         env:
-          RUFFLE_VERSION: "0.1.0"
+          RUFFLE_VERSION: ${{ needs.create-nightly-release.outputs.version4 }}
           CARGO_BUILD_DIR: ../../../../target/${{ matrix.target }}/release
         if: runner.os == 'Windows'
 
@@ -336,6 +383,15 @@ jobs:
       - name: Clone Ruffle repo
         uses: actions/checkout@v4
 
+      - name: Download nightly release patch
+        uses: actions/download-artifact@master
+        with:
+          name: nightly-release-patch
+          path: /tmp
+
+      - name: Apply nightly release patch
+        run: git apply --verbose /tmp/nightly-release.patch
+
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable
         with:
@@ -374,7 +430,7 @@ jobs:
         working-directory: web
         env:
           CFG_RELEASE_CHANNEL: nightly
-          BUILD_ID: ${{ github.run_number }}
+          VERSION4: ${{ needs.create-nightly-release.outputs.version4 }}
           ENABLE_VERSION_SEAL: "true"
           FIREFOX_EXTENSION_ID: ${{ secrets.FIREFOX_EXTENSION_ID }} # Needed to inject into manifest.json
         run: npm run version-seal
@@ -382,7 +438,7 @@ jobs:
       - name: Build web
         env:
           CFG_RELEASE_CHANNEL: nightly
-          BUILD_ID: ${{ github.run_number }}
+          VERSION4: ${{ needs.create-nightly-release.outputs.version4 }}
           CARGO_FEATURES: jpegxr
           FIREFOX_EXTENSION_ID: ${{ secrets.FIREFOX_EXTENSION_ID }} # Needed to inject into manifest.json
           WASM_SOURCE: cargo_and_store
@@ -488,6 +544,15 @@ jobs:
       - name: Clone Ruffle repo
         uses: actions/checkout@v4
 
+      - name: Download nightly release patch
+        uses: actions/download-artifact@master
+        with:
+          name: nightly-release-patch
+          path: /tmp
+
+      - name: Apply nightly release patch
+        run: git apply --verbose /tmp/nightly-release.patch
+
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable
         with:
@@ -526,7 +591,7 @@ jobs:
         working-directory: web
         env:
           CFG_RELEASE_CHANNEL: nightly
-          BUILD_ID: ${{ github.run_number }}
+          VERSION4: ${{ needs.create-nightly-release.outputs.version4 }}
           ENABLE_VERSION_SEAL: "true"
           FIREFOX_EXTENSION_ID: ${{ secrets.FIREFOX_EXTENSION_ID }} # Needed to inject into manifest.json
         run: npm run version-seal
@@ -534,7 +599,7 @@ jobs:
       - name: Build web
         env:
           CFG_RELEASE_CHANNEL: nightly
-          BUILD_ID: ${{ github.run_number }}
+          VERSION4: ${{ needs.create-nightly-release.outputs.version4 }}
           # NOTE: In the future, we might want to enable some features (like `webgpu`) only in
           # the demo build, for limited testing (like a Chrome origin trial) on ruffle.rs.
           CARGO_FEATURES: jpegxr
