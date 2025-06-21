@@ -198,83 +198,6 @@ impl core::fmt::Debug for Class<'_> {
 }
 
 impl<'gc> Class<'gc> {
-    /// Create a new class.
-    ///
-    /// This function is primarily intended for use by native code to define
-    /// builtin classes. The absolute minimum necessary to define a class is
-    /// required here; further methods allow further changes to the class.
-    ///
-    /// Classes created in this way cannot have traits loaded from an ABC file
-    /// using `load_traits`.
-    pub fn new(
-        name: QName<'gc>,
-        super_class: Option<Class<'gc>>,
-        instance_init: Option<Method<'gc>>,
-        class_init: Option<Method<'gc>>,
-        class_i_class: Class<'gc>,
-        mc: &Mutation<'gc>,
-    ) -> Self {
-        let instance_allocator = super_class
-            .map(|c| c.instance_allocator())
-            .unwrap_or(Allocator(scriptobject_allocator));
-
-        let i_class = Class(GcCell::new(
-            mc,
-            ClassData {
-                name,
-                param: None,
-                super_class,
-                attributes: ClassAttributes::empty(),
-                protected_namespace: None,
-                direct_interfaces: Vec::new(),
-                all_interfaces: Vec::new(),
-                instance_allocator,
-                instance_init,
-                traits: Vec::new(),
-                vtable: VTable::empty(mc),
-                call_handler: None,
-                custom_constructor: None,
-                traits_loaded: false,
-                linked_class: ClassLink::Unlinked,
-                applications: FnvHashMap::default(),
-                class_objects: Vec::new(),
-            },
-        ));
-
-        let name_namespace = name.namespace();
-        let mut local_name_buf = WString::from(name.local_name().as_wstr());
-        local_name_buf.push_char('$');
-
-        let c_name = QName::new(name_namespace, AvmString::new(mc, local_name_buf));
-
-        let c_class = Class(GcCell::new(
-            mc,
-            ClassData {
-                name: c_name,
-                param: None,
-                super_class: Some(class_i_class),
-                attributes: ClassAttributes::FINAL,
-                protected_namespace: None,
-                direct_interfaces: Vec::new(),
-                all_interfaces: Vec::new(),
-                instance_allocator: Allocator(scriptobject_allocator),
-                instance_init: class_init,
-                traits: Vec::new(),
-                vtable: VTable::empty(mc),
-                call_handler: None,
-                custom_constructor: None,
-                traits_loaded: false,
-                linked_class: ClassLink::LinkToInstance(i_class),
-                applications: FnvHashMap::default(),
-                class_objects: Vec::new(),
-            },
-        ));
-
-        i_class.set_c_class(mc, c_class);
-
-        i_class
-    }
-
     /// Create an unlinked class from its name, superclass, and traits.
     pub fn custom_new(
         name: QName<'gc>,
@@ -329,54 +252,85 @@ impl<'gc> Class<'gc> {
         // This can only happen for non-builtin Vector types,
         // so let's create one here directly.
 
-        let object_vector_i_class = this_read
+        let object_vector_i_class = *this_read
             .applications
             .get(&None)
             .expect("Vector.<*> not initialized?");
+
+        drop(this_read);
 
         let object_vector_c_class = object_vector_i_class
             .c_class()
             .expect("T$ cannot be generic");
 
         let param = param.expect("Trying to create Vector<*>, which shouldn't happen here");
+
+        // FIXME - we should store a `Multiname` instead of a `QName`, and use the
+        // `params` field. For now, this is good enough to get tests passing
         let name = format!("Vector.<{}>", param.name().to_qualified_name(mc));
+        let name = QName::new(this.name().namespace(), AvmString::new_utf8(mc, name));
 
-        let new_class = Self::new(
-            // FIXME - we should store a `Multiname` instead of a `QName`, and use the
-            // `params` field. For now, this is good enough to get tests passing
-            QName::new(this.name().namespace(), AvmString::new_utf8(mc, name)),
-            Some(
-                context
-                    .avm2
-                    .classes()
-                    .object_vector
-                    .inner_class_definition(),
-            ),
-            object_vector_i_class.instance_init(),
-            object_vector_c_class.instance_init(),
-            context.avm2.class_defs().class,
+        let mut local_name_buf = WString::from(name.local_name().as_wstr());
+        local_name_buf.push_char('$');
+        let c_name = QName::new(name.namespace(), AvmString::new(mc, local_name_buf));
+
+        let i_class = Class(GcCell::new(
             mc,
-        );
+            ClassData {
+                name,
+                param: Some(Some(param)),
+                super_class: Some(object_vector_i_class),
+                attributes: ClassAttributes::empty(),
+                protected_namespace: None,
+                direct_interfaces: Vec::new(),
+                all_interfaces: Vec::new(),
+                instance_allocator: object_vector_i_class.instance_allocator(),
+                instance_init: object_vector_i_class.instance_init(),
+                traits: Vec::new(),
+                vtable: VTable::empty(mc),
+                call_handler: object_vector_i_class.call_handler(),
+                custom_constructor: None,
+                traits_loaded: true,
+                linked_class: ClassLink::Unlinked,
+                applications: FnvHashMap::default(),
+                class_objects: Vec::new(),
+            },
+        ));
 
-        new_class.set_param(mc, Some(Some(param)));
-        new_class.0.write(mc).call_handler = object_vector_i_class.call_handler();
+        let c_class = Class(GcCell::new(
+            mc,
+            ClassData {
+                name: c_name,
+                param: None,
+                super_class: Some(context.avm2.class_defs().class),
+                attributes: ClassAttributes::FINAL,
+                protected_namespace: None,
+                direct_interfaces: Vec::new(),
+                all_interfaces: Vec::new(),
+                instance_allocator: Allocator(scriptobject_allocator),
+                instance_init: object_vector_c_class.instance_init(),
+                traits: Vec::new(),
+                vtable: VTable::empty(mc),
+                call_handler: None,
+                custom_constructor: None,
+                traits_loaded: true,
+                linked_class: ClassLink::LinkToInstance(i_class),
+                applications: FnvHashMap::default(),
+                class_objects: Vec::new(),
+            },
+        ));
 
-        new_class.mark_traits_loaded(context.gc());
-        new_class
+        i_class.set_c_class(mc, c_class);
+        i_class
             .init_vtable(context)
             .expect("Vector class doesn't have any interfaces, so `init_vtable` cannot error");
 
-        let c_class = new_class.c_class().expect("Class::new returns an i_class");
-
-        c_class.mark_traits_loaded(context.gc());
         c_class
             .init_vtable(context)
             .expect("Vector$ class doesn't have any interfaces, so `init_vtable` cannot error");
 
-        drop(this_read);
-
-        this.0.write(mc).applications.insert(Some(param), new_class);
-        new_class
+        this.0.write(mc).applications.insert(Some(param), i_class);
+        i_class
     }
 
     /// Set the attributes of the class (sealed/final/interface status).
@@ -1193,10 +1147,6 @@ impl<'gc> Class<'gc> {
 
     pub fn protected_namespace(self) -> Option<Namespace<'gc>> {
         self.0.read().protected_namespace
-    }
-
-    pub fn mark_traits_loaded(self, mc: &Mutation<'gc>) {
-        self.0.write(mc).traits_loaded = true;
     }
 
     /// Return traits provided by this class.
