@@ -26,6 +26,9 @@
     "settings_log_level_info": {
         "message": "المعلومات"
     },
+    "settings_log_level_debug": {
+        "message": ""
+    },
     "settings_max_execution_duration": {
         "message": "الحد الأقصى المسموح به لتنفيذ ActionScript (من 1-32)"
     },
