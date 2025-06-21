@@ -43,6 +43,12 @@ struct SoundData<'gc> {
     /// Duration of the currently attached sound in milliseconds.
     duration: Cell<Option<u32>>,
 
+    /// Size of the loaded sound buffer in bytes.
+    bytes_loaded: Cell<Option<u32>>,
+
+    /// Total size of the sound in bytes.
+    bytes_total: Cell<Option<u32>>,
+
     /// Whether this sound is an external streaming MP3.
     /// This will be true if `Sound.loadSound` was called with `isStreaming` of `true`.
     /// A streaming sound can only have a single active instance.
@@ -70,6 +76,8 @@ impl<'gc> Sound<'gc> {
                 owner,
                 position: Cell::new(0),
                 duration: Cell::new(None),
+                bytes_loaded: Cell::new(None),
+                bytes_total: Cell::new(None),
                 is_streaming: Cell::new(false),
             },
         ))
@@ -109,6 +117,22 @@ impl<'gc> Sound<'gc> {
 
     pub fn set_position(self, position: u32) {
         self.0.position.set(position);
+    }
+
+    pub fn bytes_loaded(self) -> Option<u32> {
+        self.0.bytes_loaded.get()
+    }
+
+    pub fn set_bytes_loaded(self, bytes_loaded: Option<u32>) {
+        self.0.bytes_loaded.set(bytes_loaded);
+    }
+
+    pub fn bytes_total(self) -> Option<u32> {
+        self.0.bytes_total.get()
+    }
+
+    pub fn set_bytes_total(self, bytes_total: Option<u32>) {
+        self.0.bytes_total.set(bytes_total);
     }
 
     pub fn is_streaming(self) -> bool {
@@ -206,6 +230,9 @@ fn attach_sound<'gc>(
                     .get_sound_duration(*sound_handle)
                     .map(|d| d.round() as u32),
             );
+            let sound_size = activation.context.audio.get_sound_size(*sound_handle);
+            sound.set_bytes_loaded(sound_size);
+            sound.set_bytes_total(sound_size);
             sound.set_position(0);
         } else {
             avm_warn!(activation, "Sound.attachSound: Sound '{}' not found", name);
@@ -241,28 +268,32 @@ fn set_duration<'gc>(
 
 fn get_bytes_loaded<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    _this: Object<'gc>,
+    this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if activation.swf_version() >= 6 {
-        avm1_stub!(activation, "Sound", "getBytesLoaded");
-        Ok(1.into())
-    } else {
-        Ok(Value::Undefined)
+        if let NativeObject::Sound(sound) = this.native() {
+            return Ok(sound.bytes_loaded().map_or(Value::Undefined, |d| d.into()));
+        } else {
+            avm_warn!(activation, "Sound.getBytesLoaded: this is not a Sound");
+        }
     }
+    Ok(Value::Undefined)
 }
 
 fn get_bytes_total<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    _this: Object<'gc>,
+    this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if activation.swf_version() >= 6 {
-        avm1_stub!(activation, "Sound", "getBytesTotal");
-        Ok(1.into())
-    } else {
-        Ok(Value::Undefined)
+        if let NativeObject::Sound(sound) = this.native() {
+            return Ok(sound.bytes_total().map_or(Value::Undefined, |d| d.into()));
+        } else {
+            avm_warn!(activation, "Sound.getBytesTotal: this is not a Sound");
+        }
     }
+    Ok(Value::Undefined)
 }
 
 fn get_pan<'gc>(
@@ -354,6 +385,8 @@ fn load_sound<'gc>(
                 }
             }
             sound.set_is_streaming(is_streaming);
+            // When loadSound is called, getBytesLoaded starts to return 0
+            sound.set_bytes_loaded(Some(0));
             let future = activation.context.load_manager.load_sound_avm1(
                 activation.context.player.clone(),
                 this,
