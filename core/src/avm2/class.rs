@@ -18,7 +18,7 @@ use bitflags::bitflags;
 use fnv::FnvHashMap;
 use gc_arena::{Collect, GcCell, Mutation};
 
-use std::cell::Ref;
+use std::cell::{Ref, RefMut};
 use std::collections::HashSet;
 use std::fmt;
 use std::hash::{Hash, Hasher};
@@ -314,13 +314,13 @@ impl<'gc> Class<'gc> {
                 call_handler: None,
                 custom_constructor: None,
                 traits_loaded: true,
-                linked_class: ClassLink::LinkToInstance(i_class),
+                linked_class: ClassLink::Unlinked,
                 applications: FnvHashMap::default(),
                 class_objects: Vec::new(),
             },
         ));
 
-        i_class.set_c_class(mc, c_class);
+        i_class.link_with_c_class(mc, c_class);
         i_class
             .init_vtable(context)
             .expect("Vector class doesn't have any interfaces, so `init_vtable` cannot error");
@@ -377,8 +377,7 @@ impl<'gc> Class<'gc> {
             activation,
         )?;
 
-        i_class.set_c_class(mc, c_class);
-        c_class.set_i_class(mc, i_class);
+        i_class.link_with_c_class(mc, c_class);
 
         Ok(i_class)
     }
@@ -1218,12 +1217,6 @@ impl<'gc> Class<'gc> {
         }
     }
 
-    pub fn set_c_class(self, mc: &Mutation<'gc>, c_class: Class<'gc>) {
-        assert!(matches!(self.0.read().linked_class, ClassLink::Unlinked));
-
-        self.0.write(mc).linked_class = ClassLink::LinkToClass(c_class);
-    }
-
     pub fn is_c_class(self) -> bool {
         matches!(self.0.read().linked_class, ClassLink::LinkToInstance(_))
     }
@@ -1236,13 +1229,19 @@ impl<'gc> Class<'gc> {
         }
     }
 
-    pub fn set_i_class(self, mc: &Mutation<'gc>, i_class: Class<'gc>) {
-        assert!(matches!(self.0.read().linked_class, ClassLink::Unlinked));
-
-        self.0.write(mc).linked_class = ClassLink::LinkToInstance(i_class);
-    }
-
     pub fn is_i_class(self) -> bool {
         matches!(self.0.read().linked_class, ClassLink::LinkToClass(_))
+    }
+
+    pub fn link_with_c_class(self, mc: &Mutation<'gc>, c_class: Class<'gc>) {
+        let i_class = self;
+        let mut i_link = RefMut::map(i_class.0.write(mc), |c| &mut c.linked_class);
+        let mut c_link = RefMut::map(c_class.0.write(mc), |c| &mut c.linked_class);
+
+        assert!(matches!(&*i_link, ClassLink::Unlinked));
+        assert!(matches!(&*c_link, ClassLink::Unlinked));
+
+        *i_link = ClassLink::LinkToClass(c_class);
+        *c_link = ClassLink::LinkToInstance(i_class);
     }
 }
