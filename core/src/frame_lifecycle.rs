@@ -129,12 +129,7 @@ pub fn run_inner_goto_frame<'gc>(
             "goto",
             "with SWF 9 movie"
         );
-        // Note - this runs `construct_frame` at the wrong time - testing shows that
-        // clips in the target frame get constructed at some point *after* the
-        // call to `gotoAndStop/gotoAndPlay` returns. However, I suspect that this is related
-        // to the very odd framescript behavior in SWF 9 gotos (the *same* framescript can run twice
-        // in a row). For now, this is enough to get several games working.
-        initial_clip.construct_frame(context);
+
         // We skip the next `enter_frame` call, so that we will still run the framescripts
         // queued for our target frame.
         initial_clip.base().set_skip_next_enter_frame(true);
