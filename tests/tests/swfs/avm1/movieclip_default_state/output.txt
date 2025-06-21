@@ -1,3 +1,10 @@
+Warning: Reference to undeclared variable, 'mc._accProps'
+Warning: Reference to undeclared variable, 'mc.focusEnabled'
+Warning: Reference to undeclared variable, 'mc.hitArea'
+Warning: Reference to undeclared variable, 'mc.menu'
+Warning: Reference to undeclared variable, 'mc.tabChildren'
+Warning: Reference to undeclared variable, 'mc.tabEnabled'
+Warning: Reference to undeclared variable, 'mc.trackAsMenu'
 _accProps = undefined
 _alpha = 100
 _currentframe = 0
@@ -17,7 +24,7 @@ _totalframes = 1
 _visible = true
 _width = 0
 _x = 0
-_xmouse = 0
+_xmouse = -5.25
 _xscale = 100
 _y = 0
 _ymouse = 0
@@ -41,10 +48,10 @@ trackAsMenu = undefined
 transform.colorTransform = (redMultiplier=1, greenMultiplier=1, blueMultiplier=1, alphaMultiplier=1, redOffset=0, greenOffset=0, blueOffset=0, alphaOffset=0)
 transform.concatenatedColorTransform = (redMultiplier=1, greenMultiplier=1, blueMultiplier=1, alphaMultiplier=1, redOffset=0, greenOffset=0, blueOffset=0, alphaOffset=0)
 transform.matrix = (a=1, b=0, c=0, d=1, tx=0, ty=0)
-transform.concatenatedMatrix = (a=1, b=0, c=0, d=1, tx=0, ty=0)
-transform.pixelBounds = (x=0, y=0, w=0, h=0)
+transform.concatenatedMatrix = (a=1.14249992370605, b=0, c=0, d=1.14249992370605, tx=6, ty=0)
+transform.pixelBounds = (x=6, y=0, w=0, h=0)
 useHandCursor = true
-_url = /test.swf
+_url = movieclip_default_state/test.swf
 getBounds(this).xMin = 6710886.4
 getBounds(this).xMax = 6710886.4
 getBounds(this).yMin = 6710886.4

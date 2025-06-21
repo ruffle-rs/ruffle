@@ -3,4 +3,5 @@ Foo: [object Object]
 Foo.name: Foo
 Foo.self: [object Object]
 Foo.self.name: Foo
+Warning: Reference to undeclared variable, 'foo'
 Foo.self eq foo: false
