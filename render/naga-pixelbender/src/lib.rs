@@ -487,7 +487,11 @@ impl ShaderBuilder<'_> {
                             num_vec4fs += 1;
                             (float_offset, ParamKind::Float)
                         }
-                        PixelBenderTypeOpcode::TInt
+                        PixelBenderTypeOpcode::TBool
+                        | PixelBenderTypeOpcode::TBool2
+                        | PixelBenderTypeOpcode::TBool3
+                        | PixelBenderTypeOpcode::TBool4
+                        | PixelBenderTypeOpcode::TInt
                         | PixelBenderTypeOpcode::TInt2
                         | PixelBenderTypeOpcode::TInt3
                         | PixelBenderTypeOpcode::TInt4 => {

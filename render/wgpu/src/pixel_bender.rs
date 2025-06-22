@@ -588,6 +588,16 @@ pub(super) fn run_pixelbender_shader_impl(
                         FloatOrInt::Float(vec4_arr)
                     }
                     PixelBenderType::TFloat4x4(arr) => FloatOrInt::Float(arr.to_vec()),
+                    PixelBenderType::TBool(b1) => FloatOrInt::Int(vec![*b1 as i32, 0, 0, 0]),
+                    PixelBenderType::TBool2(b1, b2) => {
+                        FloatOrInt::Int(vec![*b1 as i32, *b2 as i32, 0, 0])
+                    }
+                    PixelBenderType::TBool3(b1, b2, b3) => {
+                        FloatOrInt::Int(vec![*b1 as i32, *b2 as i32, *b3 as i32, 0])
+                    }
+                    PixelBenderType::TBool4(b1, b2, b3, b4) => {
+                        FloatOrInt::Int(vec![*b1 as i32, *b2 as i32, *b3 as i32, *b4 as i32])
+                    }
                     _ => unreachable!("Unimplemented value {value:?}"),
                 };
 
