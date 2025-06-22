@@ -1215,6 +1215,16 @@ impl ShaderBuilder<'_> {
                             expr: src,
                             convert: Some(4),
                         }),
+                        Opcode::FloatToBool => self.evaluate_expr(Expression::As {
+                            kind: crate::ScalarKind::Bool,
+                            expr: src,
+                            convert: Some(4),
+                        }),
+                        Opcode::BoolToFloat => self.evaluate_expr(Expression::As {
+                            kind: crate::ScalarKind::Float,
+                            expr: src,
+                            convert: Some(4),
+                        }),
                         Opcode::CrossProduct => {
                             let src_val = self.load_src_register_with_padding(src_reg, false)?;
                             let dst_val = self.load_src_register_with_padding(&dst, false)?;
