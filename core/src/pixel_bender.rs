@@ -34,116 +34,127 @@ impl PixelBenderTypeExt for PixelBenderType {
     where
         Self: Sized,
     {
-        let is_float = matches!(
-            kind,
-            PixelBenderTypeOpcode::TFloat
-                | PixelBenderTypeOpcode::TFloat2
-                | PixelBenderTypeOpcode::TFloat3
-                | PixelBenderTypeOpcode::TFloat4
-                | PixelBenderTypeOpcode::TFloat2x2
-                | PixelBenderTypeOpcode::TFloat3x3
-                | PixelBenderTypeOpcode::TFloat4x4
-        );
+        fn next_val<'gc>(
+            activation: &mut Activation<'_, 'gc>,
+            vals: &mut impl Iterator<Item = Value<'gc>>,
+        ) -> Result<f64, Error<'gc>> {
+            let Some(val) = vals.next() else {
+                return Ok(0.0);
+            };
 
-        match value {
-            Value::String(s) => Ok(PixelBenderType::TString(s.to_string())),
-            Value::Number(n) => Ok(PixelBenderType::TFloat(n as f32)),
-            Value::Integer(i) => Ok(PixelBenderType::TInt(i as i16)),
-            Value::Object(o) => {
-                if let Some(array) = o.as_array_storage() {
-                    let mut vals = array.iter();
+            val.try_as_f64()
+                .ok_or_else(|| make_error_2004(activation, Error2004Type::ArgumentError))
+        }
 
-                    fn next_val<'gc>(
-                        activation: &mut Activation<'_, 'gc>,
-                        vals: &mut impl Iterator<Item = Option<Value<'gc>>>,
-                    ) -> Result<f64, Error<'gc>> {
-                        let Some(Some(val)) = vals.next() else {
-                            return Ok(0.0);
-                        };
+        let array_storage = match value {
+            Value::Object(ref o) => o.as_array_storage(),
+            Value::Null | Value::Undefined => None,
+            _ => unreachable!("value should be an array"),
+        };
 
-                        val.try_as_f64().ok_or_else(|| {
-                            make_error_2004(activation, Error2004Type::ArgumentError)
-                        })
-                    }
+        let mut vals: Box<dyn Iterator<Item = Value<'gc>>> = if let Some(ref array) = array_storage
+        {
+            Box::new(array.iter().map(|v| v.unwrap_or(Value::Integer(0))))
+        } else {
+            Box::new(std::iter::empty())
+        };
 
-                    if is_float {
-                        match kind {
-                            PixelBenderTypeOpcode::TFloat => Ok(PixelBenderType::TFloat(
-                                //
-                                next_val(activation, &mut vals)? as f32,
-                            )),
-                            PixelBenderTypeOpcode::TFloat2 => Ok(PixelBenderType::TFloat2(
-                                next_val(activation, &mut vals)? as f32,
-                                next_val(activation, &mut vals)? as f32,
-                            )),
-                            PixelBenderTypeOpcode::TFloat3 => Ok(PixelBenderType::TFloat3(
-                                next_val(activation, &mut vals)? as f32,
-                                next_val(activation, &mut vals)? as f32,
-                                next_val(activation, &mut vals)? as f32,
-                            )),
-                            PixelBenderTypeOpcode::TFloat4 => Ok(PixelBenderType::TFloat4(
-                                next_val(activation, &mut vals)? as f32,
-                                next_val(activation, &mut vals)? as f32,
-                                next_val(activation, &mut vals)? as f32,
-                                next_val(activation, &mut vals)? as f32,
-                            )),
-                            PixelBenderTypeOpcode::TFloat2x2 => Ok(PixelBenderType::TFloat2x2(
-                                // TODO use core::array::try_from_fn when it's stable
-                                (0..4)
-                                    .map(|_| next_val(activation, &mut vals).map(|v| v as f32))
-                                    .collect::<Result<Vec<f32>, Error<'gc>>>()?
-                                    .try_into()
-                                    .unwrap(),
-                            )),
-                            PixelBenderTypeOpcode::TFloat3x3 => Ok(PixelBenderType::TFloat3x3(
-                                // TODO use core::array::try_from_fn when it's stable
-                                (0..9)
-                                    .map(|_| next_val(activation, &mut vals).map(|v| v as f32))
-                                    .collect::<Result<Vec<f32>, Error<'gc>>>()?
-                                    .try_into()
-                                    .unwrap(),
-                            )),
-                            PixelBenderTypeOpcode::TFloat4x4 => Ok(PixelBenderType::TFloat4x4(
-                                // TODO use core::array::try_from_fn when it's stable
-                                (0..16)
-                                    .map(|_| next_val(activation, &mut vals).map(|v| v as f32))
-                                    .collect::<Result<Vec<f32>, Error<'gc>>>()?
-                                    .try_into()
-                                    .unwrap(),
-                            )),
-                            _ => unreachable!("Unexpected float kind {kind:?}"),
-                        }
-                    } else {
-                        match kind {
-                            PixelBenderTypeOpcode::TInt => Ok(PixelBenderType::TInt(
-                                //
-                                next_val(activation, &mut vals)? as i16,
-                            )),
-                            PixelBenderTypeOpcode::TInt2 => Ok(PixelBenderType::TInt2(
-                                next_val(activation, &mut vals)? as i16,
-                                next_val(activation, &mut vals)? as i16,
-                            )),
-                            PixelBenderTypeOpcode::TInt3 => Ok(PixelBenderType::TInt3(
-                                next_val(activation, &mut vals)? as i16,
-                                next_val(activation, &mut vals)? as i16,
-                                next_val(activation, &mut vals)? as i16,
-                            )),
-                            PixelBenderTypeOpcode::TInt4 => Ok(PixelBenderType::TInt4(
-                                next_val(activation, &mut vals)? as i16,
-                                next_val(activation, &mut vals)? as i16,
-                                next_val(activation, &mut vals)? as i16,
-                                next_val(activation, &mut vals)? as i16,
-                            )),
-                            _ => unreachable!("Unexpected int kind {kind:?}"),
-                        }
-                    }
-                } else {
-                    panic!("Unexpected object {o:?}")
-                }
+        match kind {
+            PixelBenderTypeOpcode::TFloat => Ok(PixelBenderType::TFloat(
+                //
+                next_val(activation, &mut vals)? as f32,
+            )),
+            PixelBenderTypeOpcode::TFloat2 => Ok(PixelBenderType::TFloat2(
+                next_val(activation, &mut vals)? as f32,
+                next_val(activation, &mut vals)? as f32,
+            )),
+            PixelBenderTypeOpcode::TFloat3 => Ok(PixelBenderType::TFloat3(
+                next_val(activation, &mut vals)? as f32,
+                next_val(activation, &mut vals)? as f32,
+                next_val(activation, &mut vals)? as f32,
+            )),
+            PixelBenderTypeOpcode::TFloat4 => Ok(PixelBenderType::TFloat4(
+                next_val(activation, &mut vals)? as f32,
+                next_val(activation, &mut vals)? as f32,
+                next_val(activation, &mut vals)? as f32,
+                next_val(activation, &mut vals)? as f32,
+            )),
+            PixelBenderTypeOpcode::TFloat2x2 => Ok(PixelBenderType::TFloat2x2(
+                // TODO use core::array::try_from_fn when it's stable
+                (0..4)
+                    .map(|_| next_val(activation, &mut vals).map(|v| v as f32))
+                    .collect::<Result<Vec<f32>, Error<'gc>>>()?
+                    .try_into()
+                    .unwrap(),
+            )),
+            PixelBenderTypeOpcode::TFloat3x3 => Ok(PixelBenderType::TFloat3x3(
+                // TODO use core::array::try_from_fn when it's stable
+                (0..9)
+                    .map(|_| next_val(activation, &mut vals).map(|v| v as f32))
+                    .collect::<Result<Vec<f32>, Error<'gc>>>()?
+                    .try_into()
+                    .unwrap(),
+            )),
+            PixelBenderTypeOpcode::TFloat4x4 => Ok(PixelBenderType::TFloat4x4(
+                // TODO use core::array::try_from_fn when it's stable
+                (0..16)
+                    .map(|_| next_val(activation, &mut vals).map(|v| v as f32))
+                    .collect::<Result<Vec<f32>, Error<'gc>>>()?
+                    .try_into()
+                    .unwrap(),
+            )),
+            PixelBenderTypeOpcode::TInt => Ok(PixelBenderType::TInt(
+                //
+                next_val(activation, &mut vals)? as i16,
+            )),
+            PixelBenderTypeOpcode::TInt2 => Ok(PixelBenderType::TInt2(
+                next_val(activation, &mut vals)? as i16,
+                next_val(activation, &mut vals)? as i16,
+            )),
+            PixelBenderTypeOpcode::TInt3 => Ok(PixelBenderType::TInt3(
+                next_val(activation, &mut vals)? as i16,
+                next_val(activation, &mut vals)? as i16,
+                next_val(activation, &mut vals)? as i16,
+            )),
+            PixelBenderTypeOpcode::TInt4 => Ok(PixelBenderType::TInt4(
+                next_val(activation, &mut vals)? as i16,
+                next_val(activation, &mut vals)? as i16,
+                next_val(activation, &mut vals)? as i16,
+                next_val(activation, &mut vals)? as i16,
+            )),
+            PixelBenderTypeOpcode::TString => Ok(PixelBenderType::TString(
+                vals.next()
+                    .and_then(|v| v.coerce_to_string(activation).ok())
+                    .map(|s| s.to_string())
+                    .unwrap_or_default(),
+            )),
+            // TODO [KJ] I haven't been able to set a boolean parameter to true.
+            //   Investigate whether there's any way to do this.
+            PixelBenderTypeOpcode::TBool => {
+                next_val(activation, &mut vals)?;
+                Ok(PixelBenderType::TBool(false))
             }
-            _ => panic!("Unexpected value {value:?}"),
+            PixelBenderTypeOpcode::TBool2 => {
+                next_val(activation, &mut vals)?;
+                next_val(activation, &mut vals)?;
+                Ok(PixelBenderType::TBool2(false, false))
+            }
+            PixelBenderTypeOpcode::TBool3 => {
+                next_val(activation, &mut vals)?;
+                next_val(activation, &mut vals)?;
+                next_val(activation, &mut vals)?;
+                Ok(PixelBenderType::TBool3(false, false, false))
+            }
+            PixelBenderTypeOpcode::TBool4 => {
+                next_val(activation, &mut vals)?;
+                next_val(activation, &mut vals)?;
+                next_val(activation, &mut vals)?;
+                next_val(activation, &mut vals)?;
+                Ok(PixelBenderType::TBool4(false, false, false, false))
+            }
         }
     }
+
     fn as_avm2_value<'gc>(
         &self,
         activation: &mut Activation<'_, 'gc>,
