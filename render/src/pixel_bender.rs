@@ -47,6 +47,10 @@ pub enum PixelBenderType {
     TInt3(i16, i16, i16) = 0xA,
     TInt4(i16, i16, i16, i16) = 0xB,
     TString(String) = 0xC,
+    TBool(bool) = 0xD,
+    TBool2(bool, bool) = 0xE,
+    TBool3(bool, bool, bool) = 0xF,
+    TBool4(bool, bool, bool, bool) = 0x10,
 }
 
 // FIXME - come up with a way to reduce duplication here
@@ -64,6 +68,10 @@ pub enum PixelBenderTypeOpcode {
     TInt3 = 0xA,
     TInt4 = 0xB,
     TString = 0xC,
+    TBool = 0xD,
+    TBool2 = 0xE,
+    TBool3 = 0xF,
+    TBool4 = 0x10,
 }
 
 #[derive(Debug, PartialEq, Copy, Clone)]
@@ -140,6 +148,10 @@ impl Display for PixelBenderTypeOpcode {
                 PixelBenderTypeOpcode::TInt3 => "int3",
                 PixelBenderTypeOpcode::TInt4 => "int4",
                 PixelBenderTypeOpcode::TString => "string",
+                PixelBenderTypeOpcode::TBool => "bool",
+                PixelBenderTypeOpcode::TBool2 => "bool2",
+                PixelBenderTypeOpcode::TBool3 => "bool3",
+                PixelBenderTypeOpcode::TBool4 => "bool4",
             }
         )
     }
@@ -726,6 +738,24 @@ fn read_value<R: Read>(
             data.read_i16::<LittleEndian>()?,
         )),
         PixelBenderTypeOpcode::TString => Ok(PixelBenderType::TString(read_string(data)?)),
+        PixelBenderTypeOpcode::TBool => Ok(PixelBenderType::TBool(
+            data.read_i16::<LittleEndian>()? != 0,
+        )),
+        PixelBenderTypeOpcode::TBool2 => Ok(PixelBenderType::TBool2(
+            data.read_i16::<LittleEndian>()? != 0,
+            data.read_i16::<LittleEndian>()? != 0,
+        )),
+        PixelBenderTypeOpcode::TBool3 => Ok(PixelBenderType::TBool3(
+            data.read_i16::<LittleEndian>()? != 0,
+            data.read_i16::<LittleEndian>()? != 0,
+            data.read_i16::<LittleEndian>()? != 0,
+        )),
+        PixelBenderTypeOpcode::TBool4 => Ok(PixelBenderType::TBool4(
+            data.read_i16::<LittleEndian>()? != 0,
+            data.read_i16::<LittleEndian>()? != 0,
+            data.read_i16::<LittleEndian>()? != 0,
+            data.read_i16::<LittleEndian>()? != 0,
+        )),
     }
 }
 

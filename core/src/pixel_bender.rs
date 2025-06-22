@@ -180,6 +180,21 @@ impl PixelBenderTypeExt for PixelBenderType {
             PixelBenderType::TInt4(i1, i2, i3, i4) => {
                 vec![(*i1).into(), (*i2).into(), (*i3).into(), (*i4).into()]
             }
+            PixelBenderType::TBool(b) => vec![(*b as i16).into()],
+            PixelBenderType::TBool2(b1, b2) => vec![(*b1 as i16).into(), (*b2 as i16).into()],
+            PixelBenderType::TBool3(b1, b2, b3) => vec![
+                (*b1 as i16).into(),
+                (*b2 as i16).into(),
+                (*b3 as i16).into(),
+            ],
+            PixelBenderType::TBool4(b1, b2, b3, b4) => {
+                vec![
+                    (*b1 as i16).into(),
+                    (*b2 as i16).into(),
+                    (*b3 as i16).into(),
+                    (*b4 as i16).into(),
+                ]
+            }
         };
         let storage = ArrayStorage::from_args(&vals);
         Ok(ArrayObject::from_storage(activation, storage).into())
