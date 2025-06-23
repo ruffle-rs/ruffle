@@ -14,7 +14,7 @@ workspace = true
 ruffle_wstr = { path = "../wstr" }
 swf = { path = "../swf"}
 tracing = { workspace = true }
-gif = "0.13.1"
+gif = "0.13.3"
 png = "0.17.16"
 flate2 = { workspace = true }
 smallvec = { version = "1.15.1", features = ["union"] }
@@ -38,7 +38,7 @@ version = "0.12.1"
 optional = true
 
 [dependencies.jpeg-decoder]
-version = "0.3.1"
+version = "0.3.2"
 default-features = false # can't use rayon on web
 
 [dev-dependencies]
