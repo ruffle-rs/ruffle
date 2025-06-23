@@ -128,30 +128,24 @@ impl PixelBenderTypeExt for PixelBenderType {
                     .map(|s| s.to_string())
                     .unwrap_or_default(),
             )),
-            // TODO [KJ] I haven't been able to set a boolean parameter to true.
-            //   Investigate whether there's any way to do this.
-            PixelBenderTypeOpcode::TBool => {
-                next_val(activation, &mut vals)?;
-                Ok(PixelBenderType::TBool(false))
-            }
-            PixelBenderTypeOpcode::TBool2 => {
-                next_val(activation, &mut vals)?;
-                next_val(activation, &mut vals)?;
-                Ok(PixelBenderType::TBool2(false, false))
-            }
-            PixelBenderTypeOpcode::TBool3 => {
-                next_val(activation, &mut vals)?;
-                next_val(activation, &mut vals)?;
-                next_val(activation, &mut vals)?;
-                Ok(PixelBenderType::TBool3(false, false, false))
-            }
-            PixelBenderTypeOpcode::TBool4 => {
-                next_val(activation, &mut vals)?;
-                next_val(activation, &mut vals)?;
-                next_val(activation, &mut vals)?;
-                next_val(activation, &mut vals)?;
-                Ok(PixelBenderType::TBool4(false, false, false, false))
-            }
+            PixelBenderTypeOpcode::TBool => Ok(PixelBenderType::TBool(
+                next_val(activation, &mut vals)? as i16 != 0,
+            )),
+            PixelBenderTypeOpcode::TBool2 => Ok(PixelBenderType::TBool2(
+                next_val(activation, &mut vals)? as i16 != 0,
+                next_val(activation, &mut vals)? as i16 != 0,
+            )),
+            PixelBenderTypeOpcode::TBool3 => Ok(PixelBenderType::TBool3(
+                next_val(activation, &mut vals)? as i16 != 0,
+                next_val(activation, &mut vals)? as i16 != 0,
+                next_val(activation, &mut vals)? as i16 != 0,
+            )),
+            PixelBenderTypeOpcode::TBool4 => Ok(PixelBenderType::TBool4(
+                next_val(activation, &mut vals)? as i16 != 0,
+                next_val(activation, &mut vals)? as i16 != 0,
+                next_val(activation, &mut vals)? as i16 != 0,
+                next_val(activation, &mut vals)? as i16 != 0,
+            )),
         }
     }
 
