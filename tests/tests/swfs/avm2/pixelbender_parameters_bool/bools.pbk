@@ -1,0 +1,46 @@
+<languageVersion : 1.0;>
+
+kernel bools
+<   namespace : "Ruffle Tests";
+    vendor : "Kamil Jarosz";
+    version : 1;
+>
+{
+    input image4 src;
+    output pixel4 dst;
+
+    parameter int selector
+    <
+        defaultValue:0;
+    >;
+
+    parameter bool pBool
+    <
+        defaultValue:true;
+    >;
+
+    parameter bool2 pBool2
+    <
+        defaultValue:bool2(false,true);
+    >;
+
+    void
+    evaluatePixel()
+    {
+        if (selector == 0) {
+            // pBool
+            if (pBool) {
+                dst = pixel4(0,pBool,0,1);
+            } else {
+                dst = pixel4(0,pBool,1,1);
+            }
+        } else if (selector == 1) {
+            // pBool2
+            if (pBool2[0]) {
+                dst = pixel4(pBool2[0],pBool2[1],0,1);
+            } else {
+                dst = pixel4(pBool2[0],pBool2[1],1,1);
+            }
+        }
+    }
+}
