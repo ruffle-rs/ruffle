@@ -1,0 +1,22 @@
+<languageVersion : 1.0;>
+
+kernel rsqrt
+<   namespace : "Ruffle Tests";
+    vendor : "Kamil Jarosz";
+    version : 1;
+>
+{
+    input image4 src;
+    output pixel4 dst;
+
+    parameter float inputValue
+    <
+        defaultValue:1.0;
+    >;
+
+    void
+    evaluatePixel()
+    {
+        dst = pixel4(1, inverseSqrt(inputValue), 0, 1);
+    }
+}
