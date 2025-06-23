@@ -1243,23 +1243,28 @@ impl ShaderBuilder<'_> {
                                 right: src,
                             })
                         }
-                        Opcode::FloatToInt => self.evaluate_expr(Expression::As {
-                            kind: crate::ScalarKind::Sint,
-                            expr: src,
-                            convert: Some(4),
+                        Opcode::FloatToInt => self.evaluate_expr(Expression::Math {
+                            fun: MathFunction::Round,
+                            arg: src,
+                            arg1: None,
+                            arg2: None,
+                            arg3: None,
                         }),
                         Opcode::IntToFloat => self.evaluate_expr(Expression::As {
                             kind: crate::ScalarKind::Float,
                             expr: src,
                             convert: Some(4),
                         }),
-                        Opcode::FloatToBool => self.evaluate_expr(Expression::As {
-                            kind: crate::ScalarKind::Bool,
-                            expr: src,
-                            convert: Some(4),
+                        Opcode::FloatToBool => self.evaluate_expr(Expression::Binary {
+                            op: BinaryOperator::NotEqual,
+                            left: src,
+                            right: self.zerovec4f,
                         }),
                         // [KJ] Seems that casting bool->float is broken in FP and always returns 0
                         Opcode::BoolToFloat => self.zerovec4f,
+                        // [KJ] Seems that IntToBool is a noop, because the value can be
+                        // observed differently through `if` and `select`.
+                        Opcode::IntToBool => src,
                         Opcode::CrossProduct => {
                             let src_val = self.load_src_register_with_padding(src_reg, false)?;
                             let dst_val = self.load_src_register_with_padding(&dst, false)?;
