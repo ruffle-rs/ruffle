@@ -45,6 +45,8 @@ pub struct ShaderBuilder<'a> {
     zeroi32: Handle<Expression>,
     // The value vec4f(0.0)
     zerovec4f: Handle<Expression>,
+    // The value vec4i(0)
+    zerovec4i: Handle<Expression>,
     // The value 1.0f32
     onef32: Handle<Expression>,
 
@@ -302,6 +304,15 @@ impl ShaderBuilder<'_> {
             },
         );
 
+        let zerovec4i = evaluate_expr(
+            &mut func,
+            &mut blocks,
+            Expression::Compose {
+                ty: vec4i,
+                components: vec![zeroi32, zeroi32, zeroi32, zeroi32],
+            },
+        );
+
         let temp_vec4f_local = func.local_variables.append(
             LocalVariable {
                 name: Some("temp_vec4f_local".to_string()),
@@ -328,6 +339,7 @@ impl ShaderBuilder<'_> {
             zerof32,
             zeroi32,
             zerovec4f,
+            zerovec4i,
             onef32,
             temp_vec4f_local,
             clamp_nearest: samplers[SAMPLER_CLAMP_NEAREST as usize],
@@ -1236,23 +1248,30 @@ impl ShaderBuilder<'_> {
                                 right: src,
                             })
                         }
-                        Opcode::FloatToInt => self.evaluate_expr(Expression::As {
-                            kind: crate::ScalarKind::Sint,
-                            expr: src,
-                            convert: Some(4),
+                        Opcode::FloatToInt => self.evaluate_expr(Expression::Math {
+                            fun: MathFunction::Round,
+                            arg: src,
+                            arg1: None,
+                            arg2: None,
+                            arg3: None,
                         }),
                         Opcode::IntToFloat => self.evaluate_expr(Expression::As {
                             kind: crate::ScalarKind::Float,
                             expr: src,
                             convert: Some(4),
                         }),
-                        Opcode::FloatToBool => self.evaluate_expr(Expression::As {
-                            kind: crate::ScalarKind::Bool,
-                            expr: src,
-                            convert: Some(4),
+                        Opcode::FloatToBool => self.evaluate_expr(Expression::Binary {
+                            op: BinaryOperator::NotEqual,
+                            left: src,
+                            right: self.zerovec4f,
                         }),
                         // [KJ] Seems that casting bool->float is broken in FP and always returns 0
                         Opcode::BoolToFloat => self.zerovec4f,
+                        Opcode::IntToBool => self.evaluate_expr(Expression::Binary {
+                            op: BinaryOperator::NotEqual,
+                            left: src,
+                            right: self.zerovec4i,
+                        }),
                         Opcode::CrossProduct => {
                             let src_val = self.load_src_register_with_padding(src_reg, false)?;
                             let dst_val = self.load_src_register_with_padding(&dst, false)?;
