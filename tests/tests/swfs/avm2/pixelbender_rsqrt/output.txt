@@ -1,0 +1,24 @@
+Input: 0
+Result: ffffff00
+=================
+Input: 1
+Result: ffffff00
+=================
+Input: 5
+Result: ffff7200
+=================
+Input: 9
+Result: ffff5500
+=================
+Input: 16
+Result: ffff4000
+=================
+Input: 256
+Result: ffff1000
+=================
+Input: -1
+Result: ffff0000
+=================
+Input: -16
+Result: ffff0000
+=================
