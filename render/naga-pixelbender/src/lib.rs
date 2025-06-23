@@ -884,7 +884,7 @@ impl ShaderBuilder<'_> {
                                 right: src,
                             })
                         }
-                        Opcode::Sub | Opcode::Add | Opcode::Mul => {
+                        Opcode::Sub | Opcode::Add | Opcode::Mul | Opcode::Div => {
                             // The destination is also used as the first operand: 'dst = dst <op> src'
                             let left = self.load_src_register(&dst)?;
 
@@ -892,6 +892,7 @@ impl ShaderBuilder<'_> {
                                 Opcode::Sub => BinaryOperator::Subtract,
                                 Opcode::Add => BinaryOperator::Add,
                                 Opcode::Mul => BinaryOperator::Multiply,
+                                Opcode::Div => BinaryOperator::Divide,
                                 _ => unreachable!(),
                             };
 
