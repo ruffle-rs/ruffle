@@ -1251,11 +1251,8 @@ impl ShaderBuilder<'_> {
                             expr: src,
                             convert: Some(4),
                         }),
-                        Opcode::BoolToFloat => self.evaluate_expr(Expression::As {
-                            kind: crate::ScalarKind::Float,
-                            expr: src,
-                            convert: Some(4),
-                        }),
+                        // [KJ] Seems that casting bool->float is broken in FP and always returns 0
+                        Opcode::BoolToFloat => self.zerovec4f,
                         Opcode::CrossProduct => {
                             let src_val = self.load_src_register_with_padding(src_reg, false)?;
                             let dst_val = self.load_src_register_with_padding(&dst, false)?;
