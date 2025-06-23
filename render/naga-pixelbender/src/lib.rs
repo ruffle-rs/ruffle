@@ -1166,6 +1166,17 @@ impl ShaderBuilder<'_> {
                             });
                             self.pad_result(res, src_reg.is_scalar())
                         }
+                        Opcode::RSqrt => {
+                            let src_val = self.load_src_register_with_padding(src_reg, false)?;
+                            let res = self.evaluate_expr(Expression::Math {
+                                fun: MathFunction::InverseSqrt,
+                                arg: src_val,
+                                arg1: None,
+                                arg2: None,
+                                arg3: None,
+                            });
+                            self.pad_result(res, src_reg.is_scalar())
+                        }
                         Opcode::Equal
                         | Opcode::NotEqual
                         | Opcode::LessThan
