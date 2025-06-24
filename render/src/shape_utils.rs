@@ -1015,9 +1015,8 @@ fn winding_number_curve(
     // However, there are two issues:
     // 1) Solving the quadratic needs to be numerically robust, particularly near the endpoints 0.0 and 1.0, and as the curve is tangent to the ray.
     //    We use the "Citardauq" method for improved numerical stability.
-    // 2) The convention for including/excluding endpoints needs to act similarly to lines, with the initial point included if the curve is "upward",
-    //    and the final point included if the curve is pointing "downward". This is complicated by the fact that the curve could be tangent to the ray
-    //    at the endpoint (this is still considered "upward" or "downward" depending on the slope at earlier t).
+    // 2) The convention for including/excluding endpoints needs to act similarly to lines, with the initial and final point included if the parabola is opening "upward",
+    //    This is complicated by the fact that the curve could be tangent to the ray at the endpoint.
     //    We solve this by splitting the curve into y-monotonic subcurves. This is helpful because
     //    a) each subcurve will have 1 intersection with the ray
     //    b) if the subcurve surrounds the ray, we know it has an intersection without having to check if t is in [0, 1]
@@ -1067,8 +1066,8 @@ fn winding_number_curve(
             a * t_extrema * t_extrema + b * t_extrema + c
         };
 
-        // First subcurve is moving upward, include initial point.
-        if is_t0_valid && y0 >= 0.0 && y_min < 0.0 {
+        // First subcurve is moving upward, include extrema point.
+        if is_t0_valid && y0 > 0.0 && y_min <= 0.0 {
             // If curve point is to the right of the ray origin (x > 0), the ray will hit it.
             // We don't have to check 0 <= t <= 1 check because we've already guaranteed that the subcurve
             // straddles the ray.
@@ -1078,8 +1077,8 @@ fn winding_number_curve(
             }
         }
 
-        // Second subcurve is moving downard, include final point.
-        if is_t1_valid && y_min < 0.0 && y2 >= 0.0 {
+        // Second subcurve is moving downard, include extrema point.
+        if is_t1_valid && y_min <= 0.0 && y2 > 0.0 {
             let x = x0 + bx * t1 + ax * t1 * t1;
             if x > 0.0 {
                 winding -= 1;
@@ -1093,16 +1092,16 @@ fn winding_number_curve(
             a * t_extrema * t_extrema + b * t_extrema + c
         };
 
-        // First subcurve is moving downward, include extrema point.
-        if is_t1_valid && y0 < 0.0 && y_max >= 0.0 {
+        // First subcurve is moving downward, include initial point.
+        if is_t1_valid && y0 <= 0.0 && y_max > 0.0 {
             let x = x0 + bx * t1 + ax * t1 * t1;
             if x > 0.0 {
                 winding -= 1;
             }
         }
 
-        // Second subcurve is moving upward, include extrema point.
-        if is_t0_valid && y_max >= 0.0 && y2 < 0.0 {
+        // Second subcurve is moving upward, include final point.
+        if is_t0_valid && y_max > 0.0 && y2 <= 0.0 {
             let x = x0 + bx * t0 + ax * t0 * t0;
             if x > 0.0 {
                 winding += 1;
