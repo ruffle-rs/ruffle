@@ -1,4 +1,5 @@
 use crate::avm2::bytearray::Endian;
+use crate::avm2::error::make_error_2162;
 use crate::avm2::globals::slots::{
     flash_display_shader as shader_slots, flash_display_shader_input as shader_input_slots,
     flash_display_shader_job as shader_job_slots,
@@ -233,6 +234,16 @@ pub fn start<'gc>(
             height: output_height,
         }
     };
+
+    match shader_handle.0.parsed_shader().output_channels() {
+        Some(3) | Some(4) => {}
+        channels => {
+            tracing::warn!(
+                "Unsupported number of shader output channels: {channels:?}, expected 3 or 4"
+            );
+            return Err(make_error_2162(activation));
+        }
+    }
 
     let output = activation
         .context
