@@ -25,8 +25,7 @@ use ruffle_render::commands::CommandList;
 use ruffle_render::error::Error as BitmapError;
 use ruffle_render::filters::Filter;
 use ruffle_render::pixel_bender::{
-    PixelBenderParam, PixelBenderParamQualifier, PixelBenderShader, PixelBenderShaderArgument,
-    PixelBenderShaderHandle,
+    PixelBenderShader, PixelBenderShaderArgument, PixelBenderShaderHandle,
 };
 use ruffle_render::quality::StageQuality;
 use ruffle_render::shape_utils::DistilledShape;
@@ -861,24 +860,11 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
         arguments: &[PixelBenderShaderArgument],
         target: &PixelBenderTarget,
     ) -> Result<PixelBenderOutput, BitmapError> {
-        let mut output_channels = None;
-
-        for param in &shader.0.parsed_shader().params {
-            if let PixelBenderParam::Normal {
-                qualifier: PixelBenderParamQualifier::Output,
-                reg,
-                ..
-            } = param
-            {
-                if output_channels.is_some() {
-                    panic!("Multiple output parameters");
-                }
-                output_channels = Some(reg.channels.len());
-                break;
-            }
-        }
-
-        let output_channels = output_channels.expect("No output parameter");
+        let output_channels = shader
+            .0
+            .parsed_shader()
+            .output_channels()
+            .expect("No output parameter");
         let has_padding = output_channels == 3;
 
         let texture_format =
