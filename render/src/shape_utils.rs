@@ -1483,4 +1483,30 @@ mod tests {
             1,
         );
     }
+
+    #[test]
+    fn test_winding_number_curve() {
+        fn test(
+            test_point: swf::Point<Twips>,
+            begin: swf::Point<Twips>,
+            control: swf::Point<Twips>,
+            anchor: swf::Point<Twips>,
+            expected: i32,
+        ) {
+            let result = winding_number_curve(test_point, begin, control, anchor);
+
+            assert_eq!(
+                expected, result,
+                "result (winding number curve) should match"
+            );
+        }
+
+        test(
+            swf::Point::new(Twips::new(10), Twips::new(10)),
+            swf::Point::new(Twips::new(20), Twips::new(10)),
+            swf::Point::new(Twips::new(30), Twips::new(10)),
+            swf::Point::new(Twips::new(30), Twips::new(20)),
+            -1,
+        );
+    }
 }
