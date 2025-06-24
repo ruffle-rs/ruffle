@@ -21,6 +21,7 @@ allow = [
     "OFL-1.1",
     "Ubuntu-font-1.0",
     "CDLA-Permissive-2.0",
+    "bzip2-1.0.6",
 ]
 
 # Some crates don't have (easily) machine readable licensing information,
