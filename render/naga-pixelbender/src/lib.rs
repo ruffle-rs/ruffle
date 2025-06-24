@@ -410,9 +410,26 @@ impl ShaderBuilder<'_> {
         // We've emitted all of the opcodes into the function body, so we can now load
         // from the destination register and return it from the function.
         let dst_load = builder.load_src_register(dst)?;
-        builder.push_statement(Statement::Return {
-            value: Some(dst_load),
-        });
+
+        // Set the alpha channel to 1 if the number of channels is <4.
+        let dst = if expected_dst_channels.len() < 4 {
+            let mut components = Vec::with_capacity(4);
+            for i in 0..3 {
+                components.push(builder.evaluate_expr(Expression::AccessIndex {
+                    base: dst_load,
+                    index: i as u32,
+                }));
+            }
+            components.push(builder.onef32);
+
+            builder.evaluate_expr(Expression::Compose {
+                ty: builder.vec4f,
+                components,
+            })
+        } else {
+            dst_load
+        };
+        builder.push_statement(Statement::Return { value: Some(dst) });
 
         let block = match builder.blocks.pop().unwrap() {
             BlockStackEntry::Normal(block) => block,
