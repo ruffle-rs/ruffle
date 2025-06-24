@@ -980,20 +980,29 @@ fn winding_number_line(
     let d1 = end - begin;
 
     // Adjust winding number if we are on the left side of the segment.
-    // An upward segment (-y) increments the winding number (including the initial endpoint).
-    // A downward segment (+y) decrements the winding number (including the final endpoint)
+    // A downward segment (+y) increments the winding number (including the initial endpoint).
+    // An upward segment (-y) decrements the winding number (including the final endpoint).
     // Perp-dot indicates which side of the segment the point is on.
-    if begin.y < test_point.y {
-        if end.y >= test_point.y
-            && (d1.dx.get() as i64) * (d0.dy.get() as i64)
-                > (d1.dy.get() as i64) * (d0.dx.get() as i64)
-        {
-            return 1;
+    if begin.y == end.y {
+        return 0;
+    }
+    if begin.y < end.y {
+        if ((begin.y)..(end.y)).contains(&test_point.y) {
+            if (d1.dx.get() as i64) * (d0.dy.get() as i64)
+                >= (d1.dy.get() as i64) * (d0.dx.get() as i64)
+            {
+                return 1;
+            }
         }
-    } else if end.y < test_point.y
-        && (d1.dx.get() as i64) * (d0.dy.get() as i64) < (d1.dy.get() as i64) * (d0.dx.get() as i64)
-    {
-        return -1;
+    }
+    if begin.y > end.y {
+        if ((end.y)..(begin.y)).contains(&test_point.y) {
+            if (d1.dx.get() as i64) * (d0.dy.get() as i64)
+                <= (d1.dy.get() as i64) * (d0.dx.get() as i64)
+            {
+                return -1;
+            }
+        }
     }
 
     0
