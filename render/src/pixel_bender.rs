@@ -333,6 +333,22 @@ pub struct PixelBenderShader {
     pub operations: Vec<Operation>,
 }
 
+impl PixelBenderShader {
+    pub fn output_channels(&self) -> Option<usize> {
+        for param in &self.params {
+            if let PixelBenderParam::Normal {
+                qualifier: PixelBenderParamQualifier::Output,
+                reg,
+                ..
+            } = param
+            {
+                return Some(reg.channels.len());
+            }
+        }
+        None
+    }
+}
+
 #[derive(Debug, PartialEq, Clone)]
 pub enum PixelBenderParam {
     Normal {
