@@ -86,6 +86,7 @@ pub enum PixelBenderRegChannel {
 }
 
 impl PixelBenderRegChannel {
+    pub const RG: [PixelBenderRegChannel; 2] = [PixelBenderRegChannel::R, PixelBenderRegChannel::G];
     pub const RGB: [PixelBenderRegChannel; 3] = [
         PixelBenderRegChannel::R,
         PixelBenderRegChannel::G,

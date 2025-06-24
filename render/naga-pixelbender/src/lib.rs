@@ -398,6 +398,8 @@ impl ShaderBuilder<'_> {
         let expected_dst_channels = match dst_param_type {
             PixelBenderTypeOpcode::TFloat4 => PixelBenderRegChannel::RGBA.as_slice(),
             PixelBenderTypeOpcode::TFloat3 => PixelBenderRegChannel::RGB.as_slice(),
+            PixelBenderTypeOpcode::TFloat2 => PixelBenderRegChannel::RG.as_slice(),
+            PixelBenderTypeOpcode::TFloat => [PixelBenderRegChannel::R].as_slice(),
             _ => panic!("Invalid destination register type: {dst_param_type:?}"),
         };
         assert_eq!(
