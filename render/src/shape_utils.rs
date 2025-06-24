@@ -1067,7 +1067,7 @@ fn winding_number_curve(
         };
 
         // First subcurve is moving upward, include extrema point.
-        if is_t0_valid && y0 > 0.0 && y_min <= 0.0 {
+        if is_t0_valid && (y_min..y0).contains(&0.0) {
             // If curve point is to the right of the ray origin (x > 0), the ray will hit it.
             // We don't have to check 0 <= t <= 1 check because we've already guaranteed that the subcurve
             // straddles the ray.
@@ -1078,7 +1078,7 @@ fn winding_number_curve(
         }
 
         // Second subcurve is moving downard, include extrema point.
-        if is_t1_valid && y_min <= 0.0 && y2 > 0.0 {
+        if is_t1_valid && (y_min..y2).contains(&0.0) {
             let x = x0 + bx * t1 + ax * t1 * t1;
             if x > 0.0 {
                 winding -= 1;
@@ -1093,7 +1093,7 @@ fn winding_number_curve(
         };
 
         // First subcurve is moving downward, include initial point.
-        if is_t1_valid && y0 <= 0.0 && y_max > 0.0 {
+        if is_t1_valid && (y0..y_max).contains(&0.0) {
             let x = x0 + bx * t1 + ax * t1 * t1;
             if x > 0.0 {
                 winding -= 1;
@@ -1101,7 +1101,7 @@ fn winding_number_curve(
         }
 
         // Second subcurve is moving upward, include final point.
-        if is_t0_valid && y_max > 0.0 && y2 <= 0.0 {
+        if is_t0_valid && (y2..y_max).contains(&0.0) {
             let x = x0 + bx * t0 + ax * t0 * t0;
             if x > 0.0 {
                 winding += 1;
