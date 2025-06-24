@@ -1138,11 +1138,11 @@ fn solve_quadratic(a: f64, b: f64, c: f64) -> (f64, f64) {
     // and the second root is where the root slopes downward.
     if b >= 0.0 {
         let root0 = (-b - disc) / (2.0 * a);
-        let root1 = c / (a * root0);
+        let root1 = (-b + disc) / (2.0 * a);
         (root0, root1)
     } else {
         let root0 = (-b + disc) / (2.0 * a);
-        let root1 = c / (a * root0);
+        let root1 = (-b - disc) / (2.0 * a);
         (root1, root0)
     }
 }
