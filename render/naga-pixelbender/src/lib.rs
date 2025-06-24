@@ -402,8 +402,8 @@ impl ShaderBuilder<'_> {
             PixelBenderTypeOpcode::TFloat => [PixelBenderRegChannel::R].as_slice(),
             _ => panic!("Invalid destination register type: {dst_param_type:?}"),
         };
-        assert_eq!(
-            dst.channels, expected_dst_channels,
+        assert!(
+            dst.channels.len() <= 4,
             "Invalid 'dest' parameter register {dst:?}"
         );
 
