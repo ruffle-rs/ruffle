@@ -28,6 +28,13 @@ def get_current_day_id():
     return f'{now.year - 2000}{day}'
 
 
+def get_tag_name():
+    now = datetime.now()
+    current_time_dashes = now.strftime('%Y-%m-%d')
+    tag_name = f'nightly-{current_time_dashes}'
+    return tag_name
+
+
 def github_output(variable, value):
     line = f'{variable}={value}'
     print(line)
@@ -94,6 +101,21 @@ def bump():
     github_output('version4', version4)
 
 
+def commit():
+    commit_message = f'Release {cargo_get_version()}'
+    run_command(['git', 'config', 'user.name', 'RuffleBuild'])
+    run_command(['git', 'config', 'user.email', 'ruffle@ruffle.rs'])
+    run_command(['git', 'add', '--update'])
+    run_command(['git', 'commit', '-m', commit_message])
+
+
+def tag_and_push():
+    tag_name = get_tag_name()
+    run_command(['git', 'tag', tag_name])
+    run_command(['git', 'push', 'origin', 'tag', tag_name])
+    github_output('tag_name', tag_name)
+
+
 def release():
     """
     Create a release of Ruffle on GitHub.
@@ -103,7 +125,7 @@ def release():
     current_time_dashes = now.strftime('%Y-%m-%d')
     current_time_underscores = now.strftime('%Y_%m_%d')
 
-    tag_name = f'nightly-{current_time_dashes}'
+    tag_name = get_tag_name()
     release_name = f'Nightly {current_time_dashes}'
     package_prefix = f'ruffle-nightly-{current_time_underscores}'
     release_options = ['--generate-notes', '--prerelease']
@@ -112,7 +134,7 @@ def release():
     run_command([
         'gh', 'release', 'create', tag_name,
         '--title', release_name,
-        '--target', release_commit,
+        '--verify-tag',
         *release_options])
 
     github_output('tag_name', tag_name)
@@ -124,6 +146,10 @@ def main():
     log(f'Running command {cmd}')
     if cmd == 'bump':
         bump()
+    elif cmd == 'commit':
+        commit()
+    elif cmd == 'tag-and-push':
+        tag_and_push()
     elif cmd == 'release':
         release()
 
