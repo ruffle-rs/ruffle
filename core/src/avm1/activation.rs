@@ -737,7 +737,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             avm_warn!(self, "Call: Invalid call");
         }
 
-        Ok(FrameControl::Continue)
+        self.continue_if_base_clip_exists()
     }
 
     fn action_call_function(&mut self) -> Result<FrameControl<'gc>, Error<'gc>> {
@@ -1836,6 +1836,14 @@ impl<'a, 'gc> Activation<'a, 'gc> {
 
         if let Some(target_clip) = target_clip {
             crate::avm1::globals::remove_display_object(target_clip, self);
+            if self.target_clip().is_some_and(|clip| clip.avm1_removed()) {
+                // Revert the target to the base clip, or `None` if the base was also removed
+                self.set_target_clip(Some(self.base_clip()));
+
+                let clip_obj = self.target_clip_or_root().object().coerce_to_object(self);
+
+                self.set_scope(Scope::new_target_scope(self.scope(), clip_obj, self.gc()));
+            }
         } else {
             avm_warn!(self, "RemoveSprite: Source is not a display object");
         }
