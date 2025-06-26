@@ -413,19 +413,16 @@ impl ShaderBuilder<'_> {
 
         // Set the alpha channel to 1 if the number of channels is <4.
         let dst = if expected_dst_channels.len() < 4 {
-            let mut components = Vec::with_capacity(4);
-            for i in 0..3 {
-                components.push(builder.evaluate_expr(Expression::AccessIndex {
-                    base: dst_load,
-                    index: i as u32,
-                }));
-            }
-            components.push(builder.onef32);
-
-            builder.evaluate_expr(Expression::Compose {
-                ty: builder.vec4f,
-                components,
-            })
+            let dst_register = builder.register_pointer(dst)?;
+            let dst_alpha = builder.evaluate_expr(Expression::AccessIndex {
+                base: dst_register,
+                index: 3,
+            });
+            builder.push_statement(Statement::Store {
+                pointer: dst_alpha,
+                value: builder.onef32,
+            });
+            builder.load_src_register(dst)?
         } else {
             dst_load
         };
