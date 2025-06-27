@@ -1821,21 +1821,11 @@ impl<'gc> MovieClip<'gc> {
         let class_object = self.0.shared.get().avm2_class.get();
         let class_object = class_object.unwrap_or_else(|| context.avm2.classes().movieclip);
 
-        let mut constr_thing = || {
-            let mut activation = Avm2Activation::from_nothing(context);
-            let object =
-                Avm2StageObject::for_display_object(&mut activation, display_object, class_object)?
-                    .into();
+        let mut activation = Avm2Activation::from_nothing(context);
+        let object =
+            Avm2StageObject::for_display_object(&mut activation, display_object, class_object);
 
-            Ok(object)
-        };
-        let result: Result<Avm2Object<'gc>, Avm2Error> = constr_thing();
-
-        if let Ok(object) = result {
-            self.set_object2(context, object);
-        } else if let Err(e) = result {
-            tracing::error!("Got {} when allocating AVM2 side of display object", e);
-        }
+        self.set_object2(context, object.into());
     }
 
     /// Construct the AVM2 side of this object.

@@ -44,16 +44,14 @@ impl<'gc> StageObject<'gc> {
         activation: &mut Activation<'_, 'gc>,
         display_object: DisplayObject<'gc>,
         class: ClassObject<'gc>,
-    ) -> Result<Self, Error<'gc>> {
-        let instance = Self(Gc::new(
+    ) -> Self {
+        Self(Gc::new(
             activation.gc(),
             StageObjectData {
                 base: ScriptObjectData::new(class),
                 display_object,
             },
-        ));
-
-        Ok(instance)
+        ))
     }
 
     /// Allocate and construct the AVM2 side of a display object intended to be
@@ -66,7 +64,7 @@ impl<'gc> StageObject<'gc> {
         display_object: DisplayObject<'gc>,
         class: ClassObject<'gc>,
     ) -> Result<Self, Error<'gc>> {
-        let this = Self::for_display_object(activation, display_object, class)?;
+        let this = Self::for_display_object(activation, display_object, class);
 
         class.call_init(this.into(), &[], activation)?;
 
@@ -81,7 +79,7 @@ impl<'gc> StageObject<'gc> {
         class: ClassObject<'gc>,
         args: &[Value<'gc>],
     ) -> Result<Self, Error<'gc>> {
-        let this = Self::for_display_object(activation, display_object, class)?;
+        let this = Self::for_display_object(activation, display_object, class);
 
         class.call_init(this.into(), args, activation)?;
 
