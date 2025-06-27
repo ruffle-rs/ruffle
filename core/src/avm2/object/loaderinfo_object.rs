@@ -117,7 +117,7 @@ impl<'gc> LoaderInfoObject<'gc> {
         let base = ScriptObjectData::new(class);
         let loaded_stream = LoaderStream::Swf(movie, root);
 
-        let this: Object<'gc> = LoaderInfoObject(Gc::new(
+        let object = LoaderInfoObject(Gc::new(
             activation.gc(),
             LoaderInfoObjectData {
                 base,
@@ -146,12 +146,9 @@ impl<'gc> LoaderInfoObject<'gc> {
                 expose_content: Cell::new(false),
                 errored: Cell::new(false),
             },
-        ))
-        .into();
+        ));
 
-        class.call_init(this.into(), &[], activation)?;
-
-        Ok(this)
+        Ok(object.into())
     }
 
     /// Create a loader info object that has not yet been loaded.
@@ -168,7 +165,7 @@ impl<'gc> LoaderInfoObject<'gc> {
         let class = activation.avm2().classes().loaderinfo;
         let base = ScriptObjectData::new(class);
 
-        let this: Object<'gc> = LoaderInfoObject(Gc::new(
+        let object = LoaderInfoObject(Gc::new(
             activation.gc(),
             LoaderInfoObjectData {
                 base,
@@ -197,12 +194,9 @@ impl<'gc> LoaderInfoObject<'gc> {
                 expose_content: Cell::new(false),
                 errored: Cell::new(false),
             },
-        ))
-        .into();
+        ));
 
-        class.call_init(this.into(), &[], activation)?;
-
-        Ok(this)
+        Ok(object.into())
     }
 
     pub fn loader(&self) -> Option<Object<'gc>> {
