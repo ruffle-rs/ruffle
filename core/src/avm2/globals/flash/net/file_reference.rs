@@ -21,7 +21,7 @@ pub fn get_creation_date<'gc>(
         FileReference::None => return Err(make_error_2037(activation)),
         FileReference::FileDialogResult(ref dialog_result) => {
             if let Some(time) = dialog_result.creation_time() {
-                DateObject::from_date_time(activation, time)?.into()
+                DateObject::from_date_time(activation, time).into()
             } else {
                 Value::Null
             }
@@ -66,7 +66,7 @@ pub fn get_modification_date<'gc>(
         FileReference::None => return Err(make_error_2037(activation)),
         FileReference::FileDialogResult(ref dialog_result) => {
             if let Some(time) = dialog_result.modification_time() {
-                DateObject::from_date_time(activation, time)?.into()
+                DateObject::from_date_time(activation, time).into()
             } else {
                 Value::Null
             }
