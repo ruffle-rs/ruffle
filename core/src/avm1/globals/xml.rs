@@ -4,11 +4,12 @@ use std::cell::Cell;
 
 use crate::avm1::function::{ExecutionReason, FunctionObject};
 use crate::avm1::property_decl::{define_properties_on, Declaration};
+use crate::avm1::xml::{XmlNode, ELEMENT_NODE, TEXT_NODE};
 use crate::avm1::{Activation, Attribute, Error, NativeObject, Object, Value};
 use crate::avm_warn;
 use crate::backend::navigator::Request;
 use crate::string::{AvmString, StringContext, WStr, WString};
-use crate::xml::{custom_unescape, XmlNode, ELEMENT_NODE, TEXT_NODE};
+use crate::xml::custom_unescape;
 use gc_arena::barrier::unlock;
 use gc_arena::lock::Lock;
 use gc_arena::{Collect, Gc};
