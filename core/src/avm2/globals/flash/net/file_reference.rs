@@ -44,7 +44,7 @@ pub fn get_data<'gc>(
         FileReference::FileDialogResult(ref dialog_result) if this.loaded() => {
             let bytes = dialog_result.contents();
             let storage = ByteArrayStorage::from_vec(bytes.to_vec());
-            ByteArrayObject::from_storage(activation, storage)?
+            ByteArrayObject::from_storage(activation, storage)
         }
         // Contrary to other getters `data` will return null instead of throwing.
         _ => return Ok(Value::Null),
