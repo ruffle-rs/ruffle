@@ -324,8 +324,7 @@ impl<'gc> LoaderInfoObject<'gc> {
         let cached_avm1movie = self.0.cached_avm1movie.get();
         if cached_avm1movie.is_none() {
             let class_object = activation.avm2().classes().avm1movie;
-            let object = StageObject::for_display_object(activation, obj, class_object)
-                .expect("for_display_object cannot return Err");
+            let object = StageObject::for_display_object(activation, obj, class_object);
 
             class_object
                 .call_init(object.into(), &[], activation)
