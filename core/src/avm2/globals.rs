@@ -791,10 +791,7 @@ pub fn init_native_system_classes(activation: &mut Activation<'_, '_>) {
 
 /// Loads classes from our custom 'playerglobal' (which are written in ActionScript)
 /// into the environment. See 'core/src/avm2/globals/README.md' for more information
-pub fn load_playerglobal<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    domain: Domain<'gc>,
-) -> Result<(), Error<'gc>> {
+pub fn load_playerglobal<'gc>(activation: &mut Activation<'_, 'gc>, domain: Domain<'gc>) {
     activation.avm2().native_method_table = native::NATIVE_METHOD_TABLE;
     activation.avm2().native_instance_allocator_table = native::NATIVE_INSTANCE_ALLOCATOR_TABLE;
     activation.avm2().native_call_handler_table = native::NATIVE_CALL_HANDLER_TABLE;
@@ -825,10 +822,9 @@ pub fn load_playerglobal<'gc>(
     let _ = tag_utils::decode_tags(&mut reader, tag_callback);
 
     // Domain memory must be initialized after playerglobals is loaded because it relies on ByteArray.
-    domain.init_default_domain_memory(activation)?;
+    domain.init_default_domain_memory(activation);
     activation
         .avm2()
         .stage_domain()
-        .init_default_domain_memory(activation)?;
-    Ok(())
+        .init_default_domain_memory(activation);
 }
