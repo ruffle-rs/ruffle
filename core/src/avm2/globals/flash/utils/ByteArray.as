@@ -4,8 +4,6 @@ package flash.utils {
 
     [Ruffle(InstanceAllocator)]
     public class ByteArray implements IDataInput2, IDataOutput2 {
-        private static var _defaultObjectEncoding:uint = 3;
-
         private var _shareable:Boolean = false;
 
         [API("684")]
@@ -20,13 +18,8 @@ package flash.utils {
             return this._shareable;
         }
 
-        public static function get defaultObjectEncoding():uint {
-            return _defaultObjectEncoding;
-        }
-
-        public static function set defaultObjectEncoding(encoding:uint):void {
-            _defaultObjectEncoding = encoding;
-        }
+        public static native function get defaultObjectEncoding():uint;
+        public static native function set defaultObjectEncoding(encoding:uint):void;
 
         public native function get bytesAvailable():uint;
 
@@ -43,7 +36,7 @@ package flash.utils {
         public native function set position(value:uint):void;
 
         public function ByteArray() {
-            this.objectEncoding = _defaultObjectEncoding;
+            // The bytearray's objectEncoding is set in the allocator
         }
 
         public native function clear():void;
