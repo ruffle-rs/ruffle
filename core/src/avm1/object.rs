@@ -21,6 +21,7 @@ use crate::avm1::globals::transform::TransformObject;
 use crate::avm1::globals::xml::Xml;
 use crate::avm1::globals::xml_socket::XmlSocket;
 use crate::avm1::object::super_object::SuperObject;
+use crate::avm1::xml::XmlNode;
 use crate::avm1::{Activation, Error, Value};
 use crate::bitmap::bitmap_data::BitmapDataWrapper;
 use crate::display_object::{
@@ -29,7 +30,6 @@ use crate::display_object::{
 use crate::html::TextFormat;
 use crate::streams::NetStream;
 use crate::string::AvmString;
-use crate::xml::XmlNode;
 use gc_arena::{Collect, Gc, Mutation};
 use ruffle_macros::istr;
 use std::cell::{Cell, RefCell};
