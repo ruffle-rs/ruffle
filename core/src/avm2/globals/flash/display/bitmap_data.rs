@@ -336,7 +336,7 @@ pub fn get_pixels<'gc>(
             &mut storage,
         )?;
 
-        let bytearray = ByteArrayObject::from_storage(activation, storage)?;
+        let bytearray = ByteArrayObject::from_storage(activation, storage);
         return Ok(bytearray.into());
     }
 

@@ -247,10 +247,10 @@ impl<'gc> Avm2<'gc> {
         }
     }
 
-    pub fn load_player_globals(context: &mut UpdateContext<'gc>) -> Result<(), Error<'gc>> {
+    pub fn load_player_globals(context: &mut UpdateContext<'gc>) {
         let globals = context.avm2.playerglobals_domain;
         let mut activation = Activation::from_domain(context, globals);
-        globals::load_playerglobal(&mut activation, globals)
+        globals::load_playerglobal(&mut activation, globals);
     }
 
     pub fn playerglobals_domain(&self) -> Domain<'gc> {
