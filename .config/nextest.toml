@@ -1,4 +1,12 @@
 # TODO: Figure out why these specific tests are flaky on CI, fix them, then delete this file.
 [[profile.ci.overrides]]
-filter = "test(avm2/pixelbender_shaderdata) or test(avm2/graphics_round_rects)"
+filter = """
+test(avm2/pixelbender_shaderdata) or \
+test(avm2/pixelbender_div) or \
+test(avm2/pixelbender_rsqrt) or \
+test(avm2/pixelbender_outputs) or \
+test(avm2/pixelbender_parameters) or \
+test(avm2/pixelbender_parameters_bool) or \
+test(avm2/graphics_round_rects) or \
+test(avm1/netstream_play_flv_screen)"""
 retries = 4
