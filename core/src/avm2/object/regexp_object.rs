@@ -55,29 +55,6 @@ pub struct RegExpObjectData<'gc> {
     regexp: RefLock<RegExp<'gc>>,
 }
 
-impl<'gc> RegExpObject<'gc> {
-    pub fn from_regexp(
-        activation: &mut Activation<'_, 'gc>,
-        regexp: RegExp<'gc>,
-    ) -> Result<Object<'gc>, Error<'gc>> {
-        let class = activation.avm2().classes().regexp;
-        let base = ScriptObjectData::new(class);
-
-        let this: Object<'gc> = RegExpObject(Gc::new(
-            activation.gc(),
-            RegExpObjectData {
-                base,
-                regexp: RefLock::new(regexp),
-            },
-        ))
-        .into();
-
-        class.call_init(this.into(), &[], activation)?;
-
-        Ok(this)
-    }
-}
-
 impl<'gc> TObject<'gc> for RegExpObject<'gc> {
     fn gc_base(&self) -> Gc<'gc, ScriptObjectData<'gc>> {
         HasPrefixField::as_prefix_gc(self.0)
