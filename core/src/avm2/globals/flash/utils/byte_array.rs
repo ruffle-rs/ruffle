@@ -18,6 +18,34 @@ use ruffle_wstr::WString;
 
 pub use crate::avm2::object::byte_array_allocator;
 
+pub fn get_default_object_encoding<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    _this: Value<'gc>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    let value = activation.avm2().default_bytearray_encoding as u8;
+
+    Ok(value.into())
+}
+
+pub fn set_default_object_encoding<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    _this: Value<'gc>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    let value = args.get_u32(0);
+
+    // Passing any value less than 3 results in AMF0 being used
+    let encoding = if value < 3 {
+        ObjectEncoding::Amf0
+    } else {
+        ObjectEncoding::Amf3
+    };
+    activation.avm2().default_bytearray_encoding = encoding;
+
+    Ok(Value::Undefined)
+}
+
 /// Writes a single byte to the bytearray
 pub fn write_byte<'gc>(
     activation: &mut Activation<'_, 'gc>,

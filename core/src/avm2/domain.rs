@@ -140,7 +140,7 @@ impl<'gc> Domain<'gc> {
     /// This function must not be called before the player globals have been
     /// fully allocated.
     pub fn movie_domain(activation: &mut Activation<'_, 'gc>, parent: Domain<'gc>) -> Domain<'gc> {
-        let domain_memory = Self::create_default_domain_memory(activation).unwrap();
+        let domain_memory = Self::create_default_domain_memory(activation);
         let this = Self(Gc::new(
             activation.gc(),
             DomainData {
@@ -401,11 +401,9 @@ impl<'gc> Domain<'gc> {
         Ok(())
     }
 
-    fn create_default_domain_memory(
-        activation: &mut Activation<'_, 'gc>,
-    ) -> Result<ByteArrayObject<'gc>, Error<'gc>> {
+    fn create_default_domain_memory(activation: &mut Activation<'_, 'gc>) -> ByteArrayObject<'gc> {
         let initial_data = vec![0; MIN_DOMAIN_MEMORY_LENGTH];
-        let storage = ByteArrayStorage::from_vec(initial_data);
+        let storage = ByteArrayStorage::from_vec(activation.context, initial_data);
         ByteArrayObject::from_storage(activation, storage)
     }
 
@@ -414,19 +412,14 @@ impl<'gc> Domain<'gc> {
     ///
     /// This function is only necessary to be called for domains created via
     /// `global_domain`. It will panic on already fully-initialized domains.
-    pub fn init_default_domain_memory(
-        self,
-        activation: &mut Activation<'_, 'gc>,
-    ) -> Result<(), Error<'gc>> {
-        let memory = Self::create_default_domain_memory(activation)?;
+    pub fn init_default_domain_memory(self, activation: &mut Activation<'_, 'gc>) {
+        let memory = Self::create_default_domain_memory(activation);
 
         let write = Gc::write(activation.gc(), self.0);
         match unlock!(write, DomainData, default_domain_memory).set(memory) {
             Ok(_) => unlock!(write, DomainData, domain_memory).set(Some(memory)),
             Err(_) => panic!("Already initialized domain memory!"),
         };
-
-        Ok(())
     }
 
     pub fn as_ptr(self) -> *const DomainPtr {
