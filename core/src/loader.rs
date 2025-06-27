@@ -1609,8 +1609,8 @@ impl<'gc> Loader<'gc> {
                         .expect("The dataFormat field is typed String");
 
                     let data_object = if &data_format == b"binary" {
-                        let storage = ByteArrayStorage::from_vec(body);
-                        let bytearray = ByteArrayObject::from_storage(activation, storage).unwrap();
+                        let storage = ByteArrayStorage::from_vec(activation.context, body);
+                        let bytearray = ByteArrayObject::from_storage(activation, storage);
 
                         Some(bytearray.into())
                     } else if &data_format == b"variables" {

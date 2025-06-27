@@ -2,6 +2,7 @@
 
 use std::rc::Rc;
 
+use crate::avm2::bytearray::ObjectEncoding;
 use crate::avm2::class::{AllocatorFn, CustomConstructorFn};
 use crate::avm2::e4x::XmlSettings;
 use crate::avm2::error::{
@@ -185,6 +186,8 @@ pub struct Avm2<'gc> {
     #[collect(require_static)]
     pub xml_settings: XmlSettings,
 
+    pub default_bytearray_encoding: ObjectEncoding,
+
     /// The api version of our root movie clip. Note - this is used as the
     /// api version for swfs loaded via `Loader`, overriding the api version
     /// specified in the loaded SWF. This is only used for API versioning (hiding
@@ -240,6 +243,7 @@ impl<'gc> Avm2<'gc> {
             class_to_alias_map: Default::default(),
 
             xml_settings: XmlSettings::new_default(),
+            default_bytearray_encoding: ObjectEncoding::Amf3,
 
             // Set the lowest version for now - this will be overridden when we set our movie
             root_api_version: ApiVersion::AllVersions,
@@ -251,10 +255,10 @@ impl<'gc> Avm2<'gc> {
         }
     }
 
-    pub fn load_player_globals(context: &mut UpdateContext<'gc>) -> Result<(), Error<'gc>> {
+    pub fn load_player_globals(context: &mut UpdateContext<'gc>) {
         let globals = context.avm2.playerglobals_domain;
         let mut activation = Activation::from_domain(context, globals);
-        globals::load_playerglobal(&mut activation, globals)
+        globals::load_playerglobal(&mut activation, globals);
     }
 
     pub fn playerglobals_domain(&self) -> Domain<'gc> {
