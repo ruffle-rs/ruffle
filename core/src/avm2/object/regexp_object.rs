@@ -56,27 +56,6 @@ pub struct RegExpObjectData<'gc> {
 }
 
 impl<'gc> RegExpObject<'gc> {
-    pub fn from_regexp(
-        activation: &mut Activation<'_, 'gc>,
-        regexp: RegExp<'gc>,
-    ) -> Result<Object<'gc>, Error<'gc>> {
-        let class = activation.avm2().classes().regexp;
-        let base = ScriptObjectData::new(class);
-
-        let this: Object<'gc> = RegExpObject(Gc::new(
-            activation.gc(),
-            RegExpObjectData {
-                base,
-                regexp: RefLock::new(regexp),
-            },
-        ))
-        .into();
-
-        class.call_init(this.into(), &[], activation)?;
-
-        Ok(this)
-    }
-
     pub fn regexp(self) -> Ref<'gc, RegExp<'gc>> {
         Gc::as_ref(self.0).regexp.borrow()
     }
