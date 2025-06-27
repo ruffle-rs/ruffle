@@ -3,7 +3,6 @@
 use crate::avm2::activation::Activation;
 use crate::avm2::object::script_object::ScriptObjectData;
 use crate::avm2::object::{ClassObject, Object, TObject};
-use crate::avm2::value::Value;
 use crate::avm2::Error;
 use crate::backend::audio::SoundInstanceHandle;
 use crate::context::UpdateContext;
@@ -75,12 +74,12 @@ pub enum SoundChannelData {
 }
 
 impl<'gc> SoundChannelObject<'gc> {
-    /// Convert a bare sound instance into it's object representation.
-    pub fn empty(activation: &mut Activation<'_, 'gc>) -> Result<Self, Error<'gc>> {
+    /// Create an empty SoundChannel instance.
+    pub fn empty(activation: &mut Activation<'_, 'gc>) -> Self {
         let class = activation.avm2().classes().soundchannel;
         let base = ScriptObjectData::new(class);
 
-        let sound_object = SoundChannelObject(Gc::new(
+        SoundChannelObject(Gc::new(
             activation.gc(),
             SoundChannelObjectData {
                 base,
@@ -90,11 +89,7 @@ impl<'gc> SoundChannelObject<'gc> {
                 }),
                 position: Cell::new(0.0),
             },
-        ));
-
-        class.call_init(Value::Object(sound_object.into()), &[], activation)?;
-
-        Ok(sound_object)
+        ))
     }
 
     /// Return the position of the playing sound in seconds.
