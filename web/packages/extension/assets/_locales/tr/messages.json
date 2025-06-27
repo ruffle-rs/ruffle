@@ -26,6 +26,12 @@
     "settings_log_level_info": {
         "message": "Bilgi"
     },
+    "settings_log_level_debug": {
+        "message": "Hata ayıklama"
+    },
+    "settings_log_level_trace": {
+        "message": "İzle"
+    },
     "settings_max_execution_duration": {
         "message": "İzin verilen maksimum ActionScript yürütme süresi (saniye olarak)"
     },

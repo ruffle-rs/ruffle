@@ -1,6 +1,9 @@
 message-cant-embed =
     Ruffle n'a pas été en mesure de lire le fichier Flash intégré dans cette page.
     Vous pouvez essayer d'ouvrir le fichier dans un onglet isolé, pour contourner le problème.
+message-restored-from-bfcache =
+    Votre navigateur a restauré ce contenu Flash d'une session antérieure.
+    Rechargez la page pour repartir de zéro.
 panic-title = Une erreur est survenue :(
 more-info = Plus d'infos
 run-anyway = Exécuter quand même
