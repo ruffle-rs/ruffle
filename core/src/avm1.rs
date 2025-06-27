@@ -22,6 +22,7 @@ mod property_map;
 mod runtime;
 mod scope;
 mod value;
+mod xml;
 
 pub use activation::{Activation, ActivationIdentifier};
 pub use debug::VariableDumper;
