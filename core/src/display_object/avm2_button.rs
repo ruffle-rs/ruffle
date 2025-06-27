@@ -464,10 +464,10 @@ impl<'gc> TDisplayObject<'gc> for Avm2Button<'gc> {
             if needs_avm2_construction {
                 let object_cell = unlock!(Gc::write(context.gc(), self.0), Avm2ButtonData, object);
                 let mut activation = Avm2Activation::from_nothing(context);
-                match Avm2StageObject::for_display_object(&mut activation, self.into(), class) {
-                    Ok(object) => object_cell.set(Some(object.into())),
-                    Err(e) => tracing::error!("Got {} when constructing AVM2 side of button", e),
-                };
+                let object =
+                    Avm2StageObject::for_display_object(&mut activation, self.into(), class);
+                object_cell.set(Some(object.into()));
+
                 if !self.placed_by_script() {
                     // This is run before we actually call the constructor - the un-constructed object
                     // is exposed to ActionScript via `parent.<childName>`.
