@@ -48,9 +48,7 @@ fn avm2_date_from_flv_date<'gc>(
 ) -> Avm2Value<'gc> {
     let date_time = DateTime::from_timestamp(unix_time as i64, 0).expect("invalid timestamp");
 
-    DateObject::from_date_time(activation, date_time)
-        .unwrap()
-        .into()
+    DateObject::from_date_time(activation, date_time).into()
 }
 
 pub trait FlvValueAvm2Ext<'gc> {
