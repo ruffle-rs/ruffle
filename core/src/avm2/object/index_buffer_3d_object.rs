@@ -3,7 +3,6 @@
 use crate::avm2::activation::Activation;
 use crate::avm2::object::script_object::ScriptObjectData;
 use crate::avm2::object::{Object, ObjectPtr, TObject};
-use crate::avm2::Error;
 use crate::utils::HasPrefixField;
 use gc_arena::{Collect, Gc, GcWeak};
 use ruffle_render::backend::IndexBuffer;
@@ -24,10 +23,10 @@ impl<'gc> IndexBuffer3DObject<'gc> {
         activation: &mut Activation<'_, 'gc>,
         context3d: Context3DObject<'gc>,
         handle: Box<dyn IndexBuffer>,
-    ) -> Result<Object<'gc>, Error<'gc>> {
+    ) -> Object<'gc> {
         let class = activation.avm2().classes().indexbuffer3d;
 
-        let this: Object<'gc> = IndexBuffer3DObject(Gc::new(
+        IndexBuffer3DObject(Gc::new(
             activation.gc(),
             IndexBuffer3DObjectData {
                 base: ScriptObjectData::new(class),
@@ -36,11 +35,7 @@ impl<'gc> IndexBuffer3DObject<'gc> {
                 count: Cell::new(0),
             },
         ))
-        .into();
-
-        class.call_init(this.into(), &[], activation)?;
-
-        Ok(this)
+        .into()
     }
 
     pub fn count(&self) -> usize {

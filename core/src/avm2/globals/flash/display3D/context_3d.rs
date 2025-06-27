@@ -36,7 +36,7 @@ pub fn create_index_buffer<'gc>(
             )?));
         }
 
-        return context.create_index_buffer(num_indices, activation);
+        return Ok(context.create_index_buffer(num_indices, activation));
     }
     Ok(Value::Undefined)
 }
@@ -67,12 +67,12 @@ pub fn create_vertex_buffer<'gc>(
             )?));
         }
 
-        return context.create_vertex_buffer(
+        return Ok(context.create_vertex_buffer(
             num_vertices,
             data_32_per_vertex as u8,
             BufferUsage::DynamicDraw,
             activation,
-        );
+        ));
     }
     Ok(Value::Undefined)
 }
@@ -206,7 +206,7 @@ pub fn create_program<'gc>(
     let this = this.as_object().unwrap();
 
     if let Some(context) = this.as_context_3d() {
-        return context.create_program(activation);
+        return Ok(context.create_program(activation));
     }
     Ok(Value::Undefined)
 }
