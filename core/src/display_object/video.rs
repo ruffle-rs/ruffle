@@ -1,10 +1,7 @@
 //! Video player display object
 
 use crate::avm1::{NativeObject as Avm1NativeObject, Object as Avm1Object, Value as Avm1Value};
-use crate::avm2::{
-    Activation as Avm2Activation, Object as Avm2Object, StageObject as Avm2StageObject,
-    Value as Avm2Value,
-};
+use crate::avm2::{Object as Avm2Object, StageObject as Avm2StageObject, Value as Avm2Value};
 use crate::context::{RenderContext, UpdateContext};
 use crate::display_object::{Avm1TextFieldBinding, DisplayObjectBase};
 use crate::prelude::*;
@@ -444,19 +441,10 @@ impl<'gc> TDisplayObject<'gc> for Video<'gc> {
     fn construct_frame(self, context: &mut UpdateContext<'gc>) {
         if self.movie().is_action_script_3() && matches!(self.object2(), Avm2Value::Null) {
             let video_constr = context.avm2.classes().video;
-            let mut activation = Avm2Activation::from_nothing(context);
-            let size = self.0.size.get();
-            match Avm2StageObject::for_display_object_childless_with_args(
-                &mut activation,
-                self.into(),
-                video_constr,
-                &[size.0.into(), size.1.into()],
-            ) {
-                Ok(object) => {
-                    self.set_object2(context, object.into());
-                }
-                Err(e) => tracing::error!("Got {} when constructing AVM2 side of video player", e),
-            }
+            let object =
+                Avm2StageObject::for_display_object(context.gc(), self.into(), video_constr);
+
+            self.set_object2(context, object.into());
 
             self.on_construction_complete(context);
         }
