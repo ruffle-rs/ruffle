@@ -337,18 +337,18 @@ impl<'gc> TDisplayObject<'gc> for Bitmap<'gc> {
         instantiated_by: Instantiator,
         run_frame: bool,
     ) {
+        let mc = context.gc();
+
         if self.movie().is_action_script_3() {
             if !instantiated_by.is_avm() {
-                let mut activation = Avm2Activation::from_nothing(context);
-
                 let bitmap_cls = self
                     .avm2_bitmap_class()
-                    .unwrap_or_else(|| activation.context.avm2.classes().bitmap);
+                    .unwrap_or_else(|| context.avm2.classes().bitmap);
                 let bitmapdata_cls = self
                     .avm2_bitmapdata_class()
-                    .unwrap_or_else(|| activation.context.avm2.classes().bitmapdata);
+                    .unwrap_or_else(|| context.avm2.classes().bitmapdata);
 
-                let mc = activation.gc();
+                let mut activation = Avm2Activation::from_nothing(context);
 
                 let bitmap = Avm2StageObject::for_display_object_childless(
                     &mut activation,
@@ -387,7 +387,7 @@ impl<'gc> TDisplayObject<'gc> for Bitmap<'gc> {
 
             self.on_construction_complete(context);
         } else {
-            context.avm1.add_to_exec_list(context.gc(), self.into());
+            context.avm1.add_to_exec_list(mc, self.into());
 
             if run_frame {
                 self.run_frame_avm1(context);

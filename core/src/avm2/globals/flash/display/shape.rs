@@ -14,7 +14,11 @@ pub fn shape_allocator<'gc>(
 ) -> Result<Object<'gc>, Error<'gc>> {
     let display_object = Graphic::empty(activation.context).into();
 
-    initialize_for_allocator(activation, display_object, class)
+    Ok(initialize_for_allocator(
+        activation.context,
+        display_object,
+        class,
+    ))
 }
 
 /// Implements `graphics`.
