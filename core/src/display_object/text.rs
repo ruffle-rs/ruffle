@@ -1,6 +1,4 @@
-use crate::avm2::{
-    Activation as Avm2Activation, Object as Avm2Object, StageObject as Avm2StageObject,
-};
+use crate::avm2::{Object as Avm2Object, StageObject as Avm2StageObject};
 use crate::context::{RenderContext, UpdateContext};
 use crate::display_object::DisplayObjectBase;
 use crate::font::{FontLike, TextRenderSettings};
@@ -264,21 +262,9 @@ impl<'gc> TDisplayObject<'gc> for Text<'gc> {
         _run_frame: bool,
     ) {
         if self.movie().is_action_script_3() {
-            let domain = context
-                .library
-                .library_for_movie(self.movie())
-                .unwrap()
-                .avm2_domain();
-            let mut activation = Avm2Activation::from_domain(context, domain);
-            let statictext = activation.avm2().classes().statictext;
-            match Avm2StageObject::for_display_object_childless(
-                &mut activation,
-                self.into(),
-                statictext,
-            ) {
-                Ok(object) => self.set_object2(context, object.into()),
-                Err(e) => tracing::error!("Got error when creating AVM2 side of Text: {}", e),
-            }
+            let statictext = context.avm2.classes().statictext;
+            let object = Avm2StageObject::for_display_object(context.gc(), self.into(), statictext);
+            self.set_object2(context, object.into());
 
             self.on_construction_complete(context);
         }
