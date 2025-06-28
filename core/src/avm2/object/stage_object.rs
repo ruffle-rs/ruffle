@@ -90,19 +90,17 @@ impl<'gc> StageObject<'gc> {
     pub fn graphics(
         activation: &mut Activation<'_, 'gc>,
         display_object: DisplayObject<'gc>,
-    ) -> Result<Self, Error<'gc>> {
+    ) -> Self {
+        // note: for Graphics, there's no need to call init.
+
         let class = activation.avm2().classes().graphics;
-        let this = Self(Gc::new(
+        Self(Gc::new(
             activation.gc(),
             StageObjectData {
                 base: ScriptObjectData::new(class),
                 display_object,
             },
-        ));
-
-        // note: for Graphics, there's no need to call init.
-
-        Ok(this)
+        ))
     }
 }
 

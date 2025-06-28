@@ -29,7 +29,7 @@ pub fn get_graphics<'gc>(
         // Lazily initialize the `Graphics` object in a hidden property.
         let graphics = match this.get_slot(slots::_GRAPHICS) {
             Value::Undefined | Value::Null => {
-                let graphics = Value::from(StageObject::graphics(activation, dobj)?);
+                let graphics = Value::from(StageObject::graphics(activation, dobj));
                 this.set_slot(slots::_GRAPHICS, graphics, activation)?;
                 graphics
             }
