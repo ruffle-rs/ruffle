@@ -51,7 +51,11 @@ pub fn simple_button_allocator<'gc>(
                 .instantiate_by_id(symbol, activation.context.gc_context);
 
             if let Some(child) = child {
-                return initialize_for_allocator(activation, child, orig_class);
+                return Ok(initialize_for_allocator(
+                    activation.context,
+                    child,
+                    orig_class,
+                ));
             } else {
                 return Err(make_error_2136(activation));
             }
