@@ -4,6 +4,7 @@ use crate::avm2::activation::Activation;
 use crate::avm2::object::script_object::ScriptObjectData;
 use crate::avm2::object::{ClassObject, Object, ObjectPtr, TObject};
 use crate::avm2::Error;
+use crate::context::UpdateContext;
 use crate::utils::HasPrefixField;
 use core::fmt;
 use gc_arena::barrier::unlock;
@@ -44,6 +45,19 @@ impl fmt::Debug for Stage3DObject<'_> {
 }
 
 impl<'gc> Stage3DObject<'gc> {
+    pub fn new(context: &mut UpdateContext<'gc>) -> Self {
+        let class = context.avm2.classes().stage3d;
+
+        Stage3DObject(Gc::new(
+            context.gc(),
+            Stage3DObjectData {
+                base: ScriptObjectData::new(class),
+                context3d: Lock::new(None),
+                visible: Cell::new(true),
+            },
+        ))
+    }
+
     pub fn context3d(self) -> Option<Object<'gc>> {
         self.0.context3d.get()
     }
