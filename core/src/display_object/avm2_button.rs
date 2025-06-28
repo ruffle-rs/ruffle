@@ -452,15 +452,13 @@ impl<'gc> TDisplayObject<'gc> for Avm2Button<'gc> {
         if self.0.needs_frame_construction.get() {
             if needs_avm2_construction {
                 let object_cell = unlock!(Gc::write(context.gc(), self.0), Avm2ButtonData, object);
-                let mut activation = Avm2Activation::from_nothing(context);
-                let object =
-                    Avm2StageObject::for_display_object(&mut activation, self.into(), class);
+                let object = Avm2StageObject::for_display_object(context.gc(), self.into(), class);
                 object_cell.set(Some(object.into()));
 
                 if !self.placed_by_script() {
                     // This is run before we actually call the constructor - the un-constructed object
                     // is exposed to ActionScript via `parent.<childName>`.
-                    self.set_on_parent_field(activation.context);
+                    self.set_on_parent_field(context);
                 }
             }
 

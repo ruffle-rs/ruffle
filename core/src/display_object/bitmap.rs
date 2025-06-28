@@ -317,8 +317,9 @@ impl<'gc> TDisplayObject<'gc> for Bitmap<'gc> {
         _run_frame: bool,
     ) {
         if self.movie().is_action_script_3() {
-            let mut activation = Avm2Activation::from_nothing(context);
             if !instantiated_by.is_avm() {
+                let mut activation = Avm2Activation::from_nothing(context);
+
                 let bitmap_cls = self
                     .avm2_bitmap_class()
                     .unwrap_or_else(|| activation.context.avm2.classes().bitmap);
@@ -339,12 +340,27 @@ impl<'gc> TDisplayObject<'gc> for Bitmap<'gc> {
                 // Use a dummy BitmapData when calling the constructor on the user subclass
                 // - the constructor should see an invalid BitmapData before calling 'super',
                 // even if it's linked to an image.
-                let bitmap_data_obj = Avm2BitmapDataObject::from_bitmap_data_internal(
-                    &mut activation,
+
+                let bitmap_data_obj = Avm2BitmapDataObject::from_bitmap_data_and_class(
+                    activation.gc(),
                     BitmapData::dummy(mc),
                     bitmapdata_cls,
-                )
-                .expect("can't throw from post_instantiation -_-");
+                );
+
+                // We call the custom BitmapData class with width and height...
+                // but, it always seems to be 1 in Flash Player when constructed
+                // from timeline? This will not actually cause us to create a
+                // BitmapData with dimensions (1, 1) - when the custom class
+                // makes a super() call, the BitmapData constructor will load
+                // in the real data from the linked SymbolClass.
+                let call_result = bitmapdata_cls.call_init(
+                    bitmap_data_obj.into(),
+                    &[1.into(), 1.into()],
+                    &mut activation,
+                );
+                if let Err(e) = call_result {
+                    tracing::error!("Got error when constructing AVM2 side of bitmap: {}", e);
+                }
 
                 self.set_bitmap_data(activation.context, bitmap_data_obj.get_bitmap_data());
             }
