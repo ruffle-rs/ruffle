@@ -1986,9 +1986,7 @@ impl<'gc> Loader<'gc> {
                 }
             }
             MovieLoaderVMData::Avm2 { loader_info, .. } => {
-                let activation = Avm2Activation::from_nothing(uc);
-
-                let open_evt = Avm2EventObject::bare_default_event(activation.context, "open");
+                let open_evt = Avm2EventObject::bare_default_event(uc, "open");
                 Avm2::dispatch_event(uc, open_evt, loader_info.into());
             }
         }
@@ -2787,27 +2785,13 @@ impl<'gc> Loader<'gc> {
                                 if !dialog_result.is_cancelled() {
                                     target_object.init_from_dialog_result(dialog_result);
 
-                                    let activation = Avm2Activation::from_nothing(uc);
-                                    let select_event = Avm2EventObject::bare_default_event(
-                                        activation.context,
-                                        "select",
-                                    );
-                                    Avm2::dispatch_event(
-                                        activation.context,
-                                        select_event,
-                                        target_object.into(),
-                                    );
+                                    let select_event =
+                                        Avm2EventObject::bare_default_event(uc, "select");
+                                    Avm2::dispatch_event(uc, select_event, target_object.into());
                                 } else {
-                                    let activation = Avm2Activation::from_nothing(uc);
-                                    let cancel_event = Avm2EventObject::bare_default_event(
-                                        activation.context,
-                                        "cancel",
-                                    );
-                                    Avm2::dispatch_event(
-                                        activation.context,
-                                        cancel_event,
-                                        target_object.into(),
-                                    );
+                                    let cancel_event =
+                                        Avm2EventObject::bare_default_event(uc, "cancel");
+                                    Avm2::dispatch_event(uc, cancel_event, target_object.into());
                                 }
                             }
                             Err(err) => {
@@ -2901,14 +2885,8 @@ impl<'gc> Loader<'gc> {
                                 target_object.into(),
                             );
                         } else {
-                            let activation = Avm2Activation::from_nothing(uc);
-                            let cancel_event =
-                                Avm2EventObject::bare_default_event(activation.context, "cancel");
-                            Avm2::dispatch_event(
-                                activation.context,
-                                cancel_event,
-                                target_object.into(),
-                            );
+                            let cancel_event = Avm2EventObject::bare_default_event(uc, "cancel");
+                            Avm2::dispatch_event(uc, cancel_event, target_object.into());
                         }
                     }
                     Err(err) => {
