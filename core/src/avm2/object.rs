@@ -810,6 +810,10 @@ pub trait TObject<'gc>: 'gc + Collect<'gc> + Debug + Into<Object<'gc>> + Clone +
         None
     }
 
+    fn as_bitmap_data_object(&self) -> Option<BitmapDataObject<'gc>> {
+        None
+    }
+
     fn as_bitmap_data(&self) -> Option<BitmapDataWrapper<'gc>> {
         None
     }
@@ -817,14 +821,6 @@ pub trait TObject<'gc>: 'gc + Collect<'gc> + Debug + Into<Object<'gc>> + Clone +
     fn as_shader_data(&self) -> Option<ShaderDataObject<'gc>> {
         None
     }
-
-    /// Initialize the bitmap data in this object, if it's capable of
-    /// supporting said data.
-    ///
-    /// This should only be called to initialize the association between an AVM
-    /// object and it's associated bitmap data. This association should not be
-    /// reinitialized later.
-    fn init_bitmap_data(&self, _mc: &Mutation<'gc>, _new_bitmap: BitmapDataWrapper<'gc>) {}
 
     /// Get this objects `DateObject`, if it has one.
     fn as_date_object(&self) -> Option<DateObject<'gc>> {

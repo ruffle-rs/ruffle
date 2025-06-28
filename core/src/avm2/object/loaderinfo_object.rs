@@ -324,7 +324,7 @@ impl<'gc> LoaderInfoObject<'gc> {
         let cached_avm1movie = self.0.cached_avm1movie.get();
         if cached_avm1movie.is_none() {
             let class_object = activation.avm2().classes().avm1movie;
-            let object = StageObject::for_display_object(activation, obj, class_object);
+            let object = StageObject::for_display_object(activation.gc(), obj, class_object);
 
             unlock!(
                 Gc::write(activation.gc(), self.0),

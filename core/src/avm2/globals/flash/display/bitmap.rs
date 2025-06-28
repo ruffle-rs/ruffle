@@ -20,7 +20,6 @@ pub fn bitmap_allocator<'gc>(
     activation: &mut Activation<'_, 'gc>,
 ) -> Result<Object<'gc>, Error<'gc>> {
     let bitmap_cls = activation.avm2().class_defs().bitmap;
-    let bitmapdata_cls = activation.context.avm2.classes().bitmapdata;
 
     let mut class_def = Some(class.inner_class_definition());
     let orig_class = class;
@@ -56,13 +55,12 @@ pub fn bitmap_allocator<'gc>(
                 .cloned()
             {
                 let new_bitmap_data = fill_bitmap_data_from_symbol(activation, &compressed);
-                let bitmap_data_obj = BitmapDataObject::from_bitmap_data_internal(
-                    activation,
+                let bitmap_data_obj = BitmapDataObject::from_bitmap_data(
+                    activation.context,
                     BitmapDataWrapper::dummy(activation.gc()),
-                    bitmapdata_cls,
-                )?;
+                );
                 bitmap_data_obj.init_bitmap_data(activation.gc(), new_bitmap_data);
-                new_bitmap_data.init_object2(activation.gc(), bitmap_data_obj);
+                new_bitmap_data.init_object2(activation.gc(), bitmap_data_obj.into());
 
                 let child = Bitmap::new_with_bitmap_data(
                     activation.gc(),

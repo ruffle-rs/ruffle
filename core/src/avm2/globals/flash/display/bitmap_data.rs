@@ -150,7 +150,9 @@ pub fn init<'gc>(
     };
 
     new_bitmap_data.init_object2(activation.gc(), this);
-    this.init_bitmap_data(activation.gc(), new_bitmap_data);
+
+    let this_bitmap_data = this.as_bitmap_data_object().unwrap();
+    this_bitmap_data.init_bitmap_data(activation.gc(), new_bitmap_data);
 
     Ok(Value::Undefined)
 }
@@ -1248,12 +1250,10 @@ pub fn clone<'gc>(
         if !bitmap_data.disposed() {
             let new_bitmap_data = bitmap_data.clone_data(activation.context.renderer);
 
-            let class = activation.avm2().classes().bitmapdata;
-            let new_bitmap_data_object = BitmapDataObject::from_bitmap_data_internal(
-                activation,
+            let new_bitmap_data_object = BitmapDataObject::from_bitmap_data(
+                activation.context,
                 BitmapDataWrapper::new(GcCell::new(activation.gc(), new_bitmap_data)),
-                class,
-            )?;
+            );
 
             return Ok(new_bitmap_data_object.into());
         }
@@ -1530,15 +1530,11 @@ pub fn compare<'gc>(
         this_bitmap_data,
         other_bitmap_data,
     ) {
-        Some(bitmap_data) => {
-            let class = activation.avm2().classes().bitmapdata;
-            Ok(BitmapDataObject::from_bitmap_data_internal(
-                activation,
-                BitmapDataWrapper::new(GcCell::new(activation.gc(), bitmap_data)),
-                class,
-            )?
-            .into())
-        }
+        Some(bitmap_data) => Ok(BitmapDataObject::from_bitmap_data(
+            activation.context,
+            BitmapDataWrapper::new(GcCell::new(activation.gc(), bitmap_data)),
+        )
+        .into()),
         None => Ok(EQUIVALENT.into()),
     }
 }

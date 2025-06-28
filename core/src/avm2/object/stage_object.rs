@@ -3,11 +3,10 @@
 use crate::avm2::activation::Activation;
 use crate::avm2::object::script_object::ScriptObjectData;
 use crate::avm2::object::{ClassObject, ObjectPtr, TObject};
-use crate::avm2::value::Value;
 use crate::avm2::Error;
 use crate::display_object::DisplayObject;
 use crate::utils::HasPrefixField;
-use gc_arena::{Collect, Gc, GcWeak};
+use gc_arena::{Collect, Gc, GcWeak, Mutation};
 use std::fmt::Debug;
 
 #[derive(Clone, Collect, Copy)]
@@ -41,12 +40,12 @@ impl<'gc> StageObject<'gc> {
     /// Display objects that do not need to use this flow should use
     /// `for_display_object_childless`.
     pub fn for_display_object(
-        activation: &mut Activation<'_, 'gc>,
+        mc: &Mutation<'gc>,
         display_object: DisplayObject<'gc>,
         class: ClassObject<'gc>,
     ) -> Self {
         Self(Gc::new(
-            activation.gc(),
+            mc,
             StageObjectData {
                 base: ScriptObjectData::new(class),
                 display_object,
@@ -64,24 +63,9 @@ impl<'gc> StageObject<'gc> {
         display_object: DisplayObject<'gc>,
         class: ClassObject<'gc>,
     ) -> Result<Self, Error<'gc>> {
-        let this = Self::for_display_object(activation, display_object, class);
+        let this = Self::for_display_object(activation.gc(), display_object, class);
 
         class.call_init(this.into(), &[], activation)?;
-
-        Ok(this)
-    }
-
-    /// Same as for_display_object_childless, but allows passing
-    /// constructor arguments.
-    pub fn for_display_object_childless_with_args(
-        activation: &mut Activation<'_, 'gc>,
-        display_object: DisplayObject<'gc>,
-        class: ClassObject<'gc>,
-        args: &[Value<'gc>],
-    ) -> Result<Self, Error<'gc>> {
-        let this = Self::for_display_object(activation, display_object, class);
-
-        class.call_init(this.into(), args, activation)?;
 
         Ok(this)
     }

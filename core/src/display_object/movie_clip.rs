@@ -1794,9 +1794,8 @@ impl<'gc> MovieClip<'gc> {
         let class_object = self.0.read().shared.avm2_class.get();
         let class_object = class_object.unwrap_or_else(|| context.avm2.classes().movieclip);
 
-        let mut activation = Avm2Activation::from_nothing(context);
         let object =
-            Avm2StageObject::for_display_object(&mut activation, display_object, class_object);
+            Avm2StageObject::for_display_object(context.gc(), display_object, class_object);
 
         self.set_object2(context, object.into());
     }
