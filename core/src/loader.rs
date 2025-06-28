@@ -2194,13 +2194,8 @@ impl<'gc> Loader<'gc> {
                 );
                 let bitmapdata_wrapper =
                     BitmapDataWrapper::new(GcCell::new(activation.gc(), bitmap_data));
-                let bitmapdata_class = activation.context.avm2.classes().bitmapdata;
-                let bitmapdata_avm2 = BitmapDataObject::from_bitmap_data_internal(
-                    &mut activation,
-                    bitmapdata_wrapper,
-                    bitmapdata_class,
-                )
-                .unwrap();
+                let bitmapdata_avm2 =
+                    BitmapDataObject::from_bitmap_data(activation.context, bitmapdata_wrapper);
 
                 let bitmap_avm2 = activation
                     .avm2()
