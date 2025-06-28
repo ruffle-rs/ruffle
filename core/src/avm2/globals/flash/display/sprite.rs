@@ -24,7 +24,11 @@ pub fn sprite_allocator<'gc>(
         if class == sprite_cls {
             let movie = activation.caller_movie_or_root();
             let display_object = MovieClip::new(movie, activation.gc()).into();
-            return initialize_for_allocator(activation, display_object, orig_class);
+            return Ok(initialize_for_allocator(
+                activation.context,
+                display_object,
+                orig_class,
+            ));
         }
 
         if let Some((movie, symbol)) = activation
@@ -40,7 +44,11 @@ pub fn sprite_allocator<'gc>(
                 .instantiate_by_id(symbol, activation.context.gc_context);
 
             if let Some(child) = child {
-                return initialize_for_allocator(activation, child, orig_class);
+                return Ok(initialize_for_allocator(
+                    activation.context,
+                    child,
+                    orig_class,
+                ));
             } else {
                 return Err(make_error_2136(activation));
             }
