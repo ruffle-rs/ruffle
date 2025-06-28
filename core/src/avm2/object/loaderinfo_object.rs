@@ -326,10 +326,6 @@ impl<'gc> LoaderInfoObject<'gc> {
             let class_object = activation.avm2().classes().avm1movie;
             let object = StageObject::for_display_object(activation, obj, class_object);
 
-            class_object
-                .call_init(object.into(), &[], activation)
-                .expect("Native init should succeed");
-
             unlock!(
                 Gc::write(activation.gc(), self.0),
                 LoaderInfoObjectData,
