@@ -35,7 +35,7 @@ pub fn initialize_for_allocator<'gc>(
     dobj: DisplayObject<'gc>,
     class: ClassObject<'gc>,
 ) -> Result<Object<'gc>, Error<'gc>> {
-    let obj: StageObject = StageObject::for_display_object(activation, dobj, class);
+    let obj: StageObject = StageObject::for_display_object(activation.gc(), dobj, class);
     dobj.set_placed_by_script(true);
     dobj.set_object2(activation.context, obj.into());
 
