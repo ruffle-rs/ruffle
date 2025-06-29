@@ -91,7 +91,7 @@ impl<'gc> Graphic<'gc> {
                 },
                 shape: Vec::new(),
             },
-            movie: context.swf.clone(),
+            movie: context.root_swf.clone(),
         };
 
         Graphic(Gc::new(

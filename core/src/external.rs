@@ -312,7 +312,7 @@ impl<'gc> Callback<'gc> {
 
                 let domain = context
                     .library
-                    .library_for_movie(context.swf.clone())
+                    .library_for_movie(context.root_swf.clone())
                     .unwrap()
                     .avm2_domain();
                 let mut activation = Avm2Activation::from_domain(context, domain);

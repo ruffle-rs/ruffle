@@ -296,7 +296,8 @@ pub fn get_child_allows_parent<'gc>(
                 // Only the root movie is LoaderStream::Swf but missing a loader.
                 // In that case, return true.
                 assert!(
-                    Arc::ptr_eq(root, activation.context.swf) && dobj.as_movie_clip().is_some()
+                    Arc::ptr_eq(root, activation.context.root_swf)
+                        && dobj.as_movie_clip().is_some()
                 );
                 Ok(true.into())
             }
@@ -337,7 +338,8 @@ pub fn get_parent_allows_child<'gc>(
             } else {
                 // See comment on childAllowsParent
                 assert!(
-                    Arc::ptr_eq(root, activation.context.swf) && dobj.as_movie_clip().is_some()
+                    Arc::ptr_eq(root, activation.context.root_swf)
+                        && dobj.as_movie_clip().is_some()
                 );
                 Ok(true.into())
             }

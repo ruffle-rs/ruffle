@@ -560,8 +560,8 @@ impl<'gc> NetStream<'gc> {
     /// available in the buffer.
     pub fn play(self, context: &mut UpdateContext<'gc>, name: Option<AvmString<'gc>>) {
         if let Some(name) = name {
-            let request = if let Ok(stream_url) =
-                Url::parse(context.swf.url()).and_then(|url| url.join(name.to_string().as_str()))
+            let request = if let Ok(stream_url) = Url::parse(context.root_swf.url())
+                .and_then(|url| url.join(name.to_string().as_str()))
             {
                 Request::get(stream_url.to_string())
             } else {
