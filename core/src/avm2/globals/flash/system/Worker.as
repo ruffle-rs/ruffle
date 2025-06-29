@@ -11,8 +11,6 @@ package flash.system {
         public static const isSupported:Boolean = false;
 
         private static var _current:Worker;
-
-        private static var dictionary: Dictionary = new Dictionary();
         
         public static function get current():Worker {
             if (!_current) {
