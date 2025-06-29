@@ -2,6 +2,7 @@ package flash.system {
 
     import flash.utils.ByteArray;
     import flash.system.Worker;
+    import __ruffle__.stub_method;
 
     [API("680")] // the docs say 682, that's wrong
     public final class WorkerDomain {
@@ -20,7 +21,7 @@ package flash.system {
 
         public function createWorker(swf:ByteArray, giveAppPrivileges:Boolean = false):Worker {
             stub_method("flash.system.WorkerDomain", "createWorker");
-            
+
             return new Worker();
         }
     }
