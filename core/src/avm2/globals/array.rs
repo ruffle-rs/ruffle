@@ -687,6 +687,45 @@ pub fn insert_at<'gc>(
     )
 }
 
+/// Implements `Array.isEmpty`
+pub fn is_empty<'gc>(
+    _activation: &mut Activation<'_, 'gc>,
+    this: Value<'gc>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
+    if let Some(array) = this.as_array_storage() {
+        return Ok((array.length() == 0).into());
+    }
+
+    Ok(Value::Undefined)
+}
+
+/// Implements `Array.includes`
+pub fn includes<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    this: Value<'gc>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
+    if let Some(array) = this.as_array_storage() {
+        let search_val = args.get_value(0);
+
+        for (i, val) in array.iter().enumerate() {
+            let val = resolve_array_hole(activation, this, i, val)?;
+            if val == search_val {
+                return Ok(i.into());
+            }
+        }
+
+        return Ok((-1).into());
+    }
+
+    Ok(Value::Undefined)
+}
+
 bitflags! {
     /// The array options that a given sort operation may use.
     ///
