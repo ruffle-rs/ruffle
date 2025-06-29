@@ -750,7 +750,6 @@ pub fn hit_test_point<'gc>(
             Some(root) => root
                 .loader_info()
                 .as_ref()
-                .and_then(|loader_info| loader_info.as_loader_info_object())
                 .and_then(|loader_info_obj| loader_info_obj.loader())
                 .is_none(),
             None => false,

@@ -389,10 +389,7 @@ impl<'gc> UpdateContext<'gc> {
         let stage_loader_info =
             LoaderInfoObject::not_yet_loaded(&mut activation, swf, None, Some(root), true)
                 .expect("Failed to construct Stage LoaderInfo");
-        stage_loader_info
-            .as_loader_info_object()
-            .unwrap()
-            .set_expose_content();
+        stage_loader_info.set_expose_content();
         activation
             .context
             .stage

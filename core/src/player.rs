@@ -1917,7 +1917,7 @@ impl Player {
                         root.compressed_total_bytes() as usize,
                     );
 
-                    Avm2::dispatch_event(context, progress_evt, loader_info);
+                    Avm2::dispatch_event(context, progress_evt, loader_info.into());
                 }
             }
 

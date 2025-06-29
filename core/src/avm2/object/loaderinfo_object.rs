@@ -106,51 +106,6 @@ pub struct LoaderInfoObjectData<'gc> {
 }
 
 impl<'gc> LoaderInfoObject<'gc> {
-    /// Box a movie into a loader info object.
-    pub fn from_movie(
-        activation: &mut Activation<'_, 'gc>,
-        movie: Arc<SwfMovie>,
-        root: DisplayObject<'gc>,
-        loader: Option<Object<'gc>>,
-    ) -> Result<Object<'gc>, Error<'gc>> {
-        let class = activation.avm2().classes().loaderinfo;
-        let base = ScriptObjectData::new(class);
-        let loaded_stream = LoaderStream::Swf(movie, root);
-
-        let object = LoaderInfoObject(Gc::new(
-            activation.gc(),
-            LoaderInfoObjectData {
-                base,
-                loaded_stream: RefLock::new(loaded_stream),
-                loader,
-                init_event_fired: Cell::new(false),
-                complete_event_fired: Cell::new(false),
-                shared_events: activation
-                    .context
-                    .avm2
-                    .classes()
-                    .eventdispatcher
-                    .construct(activation, &[])?
-                    .as_object()
-                    .unwrap(),
-                uncaught_error_events: activation
-                    .context
-                    .avm2
-                    .classes()
-                    .uncaughterrorevents
-                    .construct(activation, &[])?
-                    .as_object()
-                    .unwrap(),
-                cached_avm1movie: Lock::new(None),
-                content_type: Cell::new(ContentType::Swf),
-                expose_content: Cell::new(false),
-                errored: Cell::new(false),
-            },
-        ));
-
-        Ok(object.into())
-    }
-
     /// Create a loader info object that has not yet been loaded.
     ///
     /// Use `None` as the root clip to indicate that this is the stage's loader
@@ -161,7 +116,7 @@ impl<'gc> LoaderInfoObject<'gc> {
         loader: Option<Object<'gc>>,
         root_clip: Option<DisplayObject<'gc>>,
         is_stage: bool,
-    ) -> Result<Object<'gc>, Error<'gc>> {
+    ) -> Result<Self, Error<'gc>> {
         let class = activation.avm2().classes().loaderinfo;
         let base = ScriptObjectData::new(class);
 
@@ -196,7 +151,7 @@ impl<'gc> LoaderInfoObject<'gc> {
             },
         ));
 
-        Ok(object.into())
+        Ok(object)
     }
 
     pub fn loader(&self) -> Option<Object<'gc>> {

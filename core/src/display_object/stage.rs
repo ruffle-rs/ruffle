@@ -1,7 +1,7 @@
 //! Root stage impl
 
 use crate::avm1::Object as Avm1Object;
-use crate::avm2::object::{Stage3DObject, TObject};
+use crate::avm2::object::{LoaderInfoObject, Stage3DObject, TObject};
 use crate::avm2::{
     Activation as Avm2Activation, Avm2, EventObject as Avm2EventObject, Object as Avm2Object,
     StageObject as Avm2StageObject, Value as Avm2Value,
@@ -126,7 +126,7 @@ pub struct StageData<'gc> {
     avm2_object: Lock<Option<Avm2Object<'gc>>>,
 
     /// The AVM2 'LoaderInfo' object for this stage object
-    loader_info: Lock<Option<Avm2Object<'gc>>>,
+    loader_info: Lock<Option<LoaderInfoObject<'gc>>>,
 
     /// An array of AVM2 'Stage3D' instances
     stage3ds: RefLock<Vec<Avm2Object<'gc>>>,
@@ -233,7 +233,7 @@ impl<'gc> Stage<'gc> {
         self.0.movie.replace(movie.clone());
     }
 
-    pub fn set_loader_info(self, gc_context: &Mutation<'gc>, loader_info: Avm2Object<'gc>) {
+    pub fn set_loader_info(self, gc_context: &Mutation<'gc>, loader_info: LoaderInfoObject<'gc>) {
         unlock!(Gc::write(gc_context, self.0), StageData, loader_info).set(Some(loader_info));
     }
 
@@ -877,7 +877,7 @@ impl<'gc> TDisplayObject<'gc> for Stage<'gc> {
         }
     }
 
-    fn loader_info(self) -> Option<Avm2Object<'gc>> {
+    fn loader_info(self) -> Option<LoaderInfoObject<'gc>> {
         self.0.loader_info.get()
     }
 
