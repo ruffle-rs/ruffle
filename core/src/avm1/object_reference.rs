@@ -61,8 +61,8 @@ struct MovieClipReferenceData<'gc> {
     path: MovieClipPath<'gc>,
 
     /// A weak reference to the target stage object that `path` points to
-    /// This is used for fast-path resvoling when possible, as well as for re-generating `path` (in the case the target object is renamed)
-    /// If this is `None` then we have previously missed the cache, due to the target object being removed and re-created, causing us to fallback to the slow path resolution
+    /// This is used for fast-path resolving when possible, as well as for re-generating `path` (in the case the target object is renamed)
+    /// If this is `None` then we have previously missed the cache, due to the target object being removed and re-created, causing us to fall back to the slow path resolution
     cached_object: Lock<Option<ObjectWeak<'gc>>>,
 }
 
@@ -115,7 +115,7 @@ impl<'gc> MovieClipReference<'gc> {
     }
 
     /// Resolve this reference to an object
-    /// First tuple param indificates if this path came from the cache or not
+    /// First tuple param indicates if this path came from the cache or not
     pub fn resolve_reference(
         self,
         activation: &mut Activation<'_, 'gc>,
@@ -145,7 +145,7 @@ impl<'gc> MovieClipReference<'gc> {
         // We missed the cache, switch to always use the slow-path
         self.0.cached_object.take();
 
-        // Either the GcWeak ref is gone, or the clip can't be used (not on stage etc)
+        // Either the GcWeak ref is gone, or the clip can't be used (not on stage etc.)
         // Here we manually parse the path, in order to find the target display object
         // This is different to how paths resolve in activation in two ways:
         // 1: We only handle slash-paths to display objects, other path type and paths to variables are *not* valid here

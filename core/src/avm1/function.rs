@@ -1,21 +1,21 @@
 //! Code relating to executable functions + calling conventions.
 
+use super::NativeObject;
 use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
 use crate::avm1::object::super_object::SuperObject;
+use crate::avm1::object_reference::MovieClipReference;
 use crate::avm1::property::Attribute;
 use crate::avm1::scope::Scope;
 use crate::avm1::value::Value;
 use crate::avm1::{ArrayBuilder, Object};
-use crate::display_object::{DisplayObject, TDisplayObject};
+use crate::display_object::TDisplayObject;
 use crate::string::{AvmString, StringContext, SwfStrExt as _};
 use crate::tag_utils::SwfSlice;
 use gc_arena::{Collect, Gc, Mutation};
 use ruffle_macros::istr;
 use std::{borrow::Cow, fmt, num::NonZeroU8};
 use swf::{avm1::types::FunctionFlags, SwfStr};
-
-use super::NativeObject;
 
 /// Represents a function defined in Ruffle's code.
 pub type NativeFunction = for<'gc> fn(
@@ -64,7 +64,7 @@ pub struct Avm1Function<'gc> {
 
     /// The base movie clip that the function was defined on.
     /// This is the movie clip that contains the bytecode.
-    base_clip: DisplayObject<'gc>,
+    base_clip: MovieClipReference<'gc>,
 
     /// The flags that define the preloaded registers of the function.
     #[collect(require_static)]
@@ -80,7 +80,7 @@ impl<'gc> Avm1Function<'gc> {
         swf_function: swf::avm1::types::DefineFunction2,
         scope: Gc<'gc, Scope<'gc>>,
         constant_pool: Gc<'gc, Vec<Value<'gc>>>,
-        base_clip: DisplayObject<'gc>,
+        base_clip: MovieClipReference<'gc>,
     ) -> Self {
         let encoding = SwfStr::encoding_for_version(swf_version);
         let name = if swf_function.name.is_empty() {
@@ -360,14 +360,21 @@ impl<'gc> Executable<'gc> {
 
         let target = activation.target_clip_or_root();
         let is_closure = activation.swf_version() >= 6;
-        let base_clip =
-            if (is_closure || reason == ExecutionReason::Special) && !af.base_clip.avm1_removed() {
-                af.base_clip
-            } else {
-                this_obj
-                    .and_then(|this| this.as_display_object())
-                    .unwrap_or(target)
-            };
+        let base_clip = af.base_clip.coerce_to_object(activation);
+
+        let avm1_removed = base_clip
+            .and_then(|o| o.as_display_object())
+            .is_none_or(|d| d.avm1_removed());
+
+        let base_clip = if (is_closure || reason == ExecutionReason::Special) && !avm1_removed {
+            base_clip
+                .and_then(|d| d.as_display_object())
+                .unwrap_or(target)
+        } else {
+            this_obj
+                .and_then(|this| this.as_display_object())
+                .unwrap_or(target)
+        };
         let (swf_version, parent_scope) = if is_closure {
             // Function calls in a v6+ SWF are proper closures, and "close" over the scope that defined the function:
             // * Use the SWF version from the SWF that defined the function.
