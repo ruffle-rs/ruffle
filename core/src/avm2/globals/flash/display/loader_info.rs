@@ -554,7 +554,7 @@ pub fn get_parameters<'gc>(
         for (k, v) in parameters.iter() {
             let avm_k = AvmString::new_utf8(activation.gc(), k);
             let avm_v = AvmString::new_utf8(activation.gc(), v);
-            params_obj.set_string_property_local(avm_k, avm_v.into(), activation)?;
+            params_obj.set_dynamic_property(avm_k, avm_v.into(), activation.gc());
         }
 
         return Ok(params_obj.into());

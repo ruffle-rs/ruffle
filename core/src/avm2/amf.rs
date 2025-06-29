@@ -312,11 +312,20 @@ pub fn deserialize_value_impl<'gc>(
 
             // Now let's add each element as a property
             for element in elements {
-                array.set_string_property_local(
-                    AvmString::new_utf8(activation.gc(), element.name()),
-                    deserialize_value_impl(activation, element.value(), object_map)?,
-                    activation,
-                )?;
+                let name = element.name();
+                let value = deserialize_value_impl(activation, element.value(), object_map)?;
+
+                // If the name of the element was numerical, we set an element on
+                // the array instead of setting a dynamic property.
+                if let Ok(index) = name.parse::<usize>() {
+                    array.set_element(activation.gc(), index, value);
+                } else {
+                    array.set_dynamic_property(
+                        AvmString::new_utf8(activation.gc(), name),
+                        value,
+                        activation.gc(),
+                    );
+                }
             }
             array.into()
         }
@@ -461,7 +470,7 @@ pub fn deserialize_value_impl<'gc>(
                     dict_obj.set_property_by_object(key, value, activation.gc());
                 } else {
                     let key_string = key.coerce_to_string(activation)?;
-                    dict_obj.set_string_property_local(key_string, value, activation)?;
+                    dict_obj.set_dynamic_property(key_string, value, activation.gc());
                 }
             }
             dict_obj.into()
@@ -498,11 +507,11 @@ pub fn deserialize_lso<'gc>(
     let obj = ScriptObject::new_object(activation);
 
     for child in &lso.body {
-        obj.set_string_property_local(
+        obj.set_dynamic_property(
             AvmString::new_utf8(activation.gc(), &child.name),
             deserialize_value(activation, child.value())?,
-            activation,
-        )?;
+            activation.gc(),
+        );
     }
 
     Ok(obj)

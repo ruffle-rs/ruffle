@@ -60,7 +60,7 @@ pub fn describe_type_json<'gc>(
         activation.gc(),
     );
 
-    let traits = describe_internal_body(activation, used_class_def, flags)?;
+    let traits = describe_internal_body(activation, used_class_def, flags);
     if flags.contains(DescribeTypeFlags::INCLUDE_TRAITS) {
         object.set_dynamic_property(istr!("traits"), traits.into(), activation.gc());
     } else {
@@ -91,7 +91,7 @@ fn describe_internal_body<'gc>(
     activation: &mut Activation<'_, 'gc>,
     class_def: Class<'gc>,
     flags: DescribeTypeFlags,
-) -> Result<Object<'gc>, Error<'gc>> {
+) -> Object<'gc> {
     let mc = activation.gc();
 
     let traits = ScriptObject::new_object(activation);
@@ -232,7 +232,7 @@ fn describe_internal_body<'gc>(
                 if flags.contains(DescribeTypeFlags::INCLUDE_METADATA) {
                     let metadata_object = ArrayObject::empty(activation);
                     if let Some(metadata) = trait_metadata {
-                        write_metadata(metadata_object, &metadata, activation)?;
+                        write_metadata(metadata_object, &metadata, activation);
                     }
                     variable.set_dynamic_property(
                         istr!("metadata"),
@@ -295,7 +295,7 @@ fn describe_internal_body<'gc>(
                     activation.gc(),
                 );
 
-                let params = write_params(&method.method, activation)?;
+                let params = write_params(&method.method, activation);
                 method_obj.set_dynamic_property(
                     istr!("parameters"),
                     params.into(),
@@ -307,7 +307,7 @@ fn describe_internal_body<'gc>(
                 if flags.contains(DescribeTypeFlags::INCLUDE_METADATA) {
                     let metadata_object = ArrayObject::empty(activation);
                     if let Some(metadata) = trait_metadata {
-                        write_metadata(metadata_object, &metadata, activation)?;
+                        write_metadata(metadata_object, &metadata, activation);
                     }
                     method_obj.set_dynamic_property(
                         istr!("metadata"),
@@ -380,13 +380,13 @@ fn describe_internal_body<'gc>(
 
                 if let Some(get_disp_id) = get {
                     if let Some(metadata) = vtable.get_metadata_for_disp(get_disp_id) {
-                        write_metadata(metadata_object, &metadata, activation)?;
+                        write_metadata(metadata_object, &metadata, activation);
                     }
                 }
 
                 if let Some(set_disp_id) = set {
                     if let Some(metadata) = vtable.get_metadata_for_disp(set_disp_id) {
-                        write_metadata(metadata_object, &metadata, activation)?;
+                        write_metadata(metadata_object, &metadata, activation);
                     }
                 }
 
@@ -416,7 +416,7 @@ fn describe_internal_body<'gc>(
     if let Some(constructor) = constructor.filter(|c| {
         !c.signature().is_empty() && flags.contains(DescribeTypeFlags::INCLUDE_CONSTRUCTOR)
     }) {
-        let params = write_params(&constructor, activation)?;
+        let params = write_params(&constructor, activation);
         traits.set_dynamic_property(istr!("constructor"), params.into(), activation.gc());
     } else {
         // This is needed to override the normal 'constructor' property
@@ -437,7 +437,7 @@ fn describe_internal_body<'gc>(
         traits.set_dynamic_property(istr!("metadata"), Value::Null, activation.gc());
     }
 
-    Ok(traits)
+    traits
 }
 
 fn display_name<'gc>(
@@ -454,7 +454,7 @@ fn display_name<'gc>(
 fn write_params<'gc>(
     method: &Method<'gc>,
     activation: &mut Activation<'_, 'gc>,
-) -> Result<ArrayObject<'gc>, Error<'gc>> {
+) -> ArrayObject<'gc> {
     let params = ArrayObject::empty(activation);
     let mut params_array = params.array_storage_mut(activation.gc());
     for param in method.signature() {
@@ -465,20 +465,19 @@ fn write_params<'gc>(
         param_obj.set_dynamic_property(istr!("optional"), optional.into(), activation.gc());
         params_array.push(param_obj.into());
     }
-    Ok(params)
+    params
 }
 
 fn write_metadata<'gc>(
     metadata_object: ArrayObject<'gc>,
     trait_metadata: &[Metadata<'gc>],
     activation: &mut Activation<'_, 'gc>,
-) -> Result<(), Error<'gc>> {
+) {
     let mut metadata_array = metadata_object.array_storage_mut(activation.gc());
 
     for single_trait in trait_metadata.iter() {
-        metadata_array.push(single_trait.as_json_object(activation)?.into());
+        metadata_array.push(single_trait.as_json_object(activation).into());
     }
-    Ok(())
 }
 
 /// Like `Value::instance_class`, but supports Value::Null and Value::Undefined,

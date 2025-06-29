@@ -241,20 +241,20 @@ pub fn exec<'gc>(
                 |range| AvmString::new(activation.gc(), &text[range]),
             );
 
-            object.set_string_property_local(
+            object.set_dynamic_property(
                 AvmString::new_utf8(activation.gc(), name),
                 string.into(),
-                activation,
-            )?;
+                activation.gc(),
+            );
         }
 
-        object.set_string_property_local(
+        object.set_dynamic_property(
             istr!("index"),
             Value::Number(matched.start() as f64),
-            activation,
-        )?;
+            activation.gc(),
+        );
 
-        object.set_string_property_local(istr!("input"), text.into(), activation)?;
+        object.set_dynamic_property(istr!("input"), text.into(), activation.gc());
 
         return Ok(object.into());
     }
