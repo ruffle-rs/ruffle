@@ -52,7 +52,8 @@ struct Opt {
     #[clap(name = "output")]
     output_path: Option<PathBuf>,
 
-    /// Number of frames to capture per file
+    /// Number of frames to capture per file.
+    /// If set to 0, all frames in the SWF's main timeline will be captured
     #[clap(short = 'f', long = "frames", default_value = "1")]
     frames: u32,
 
@@ -123,7 +124,17 @@ fn take_screenshot(
         .build();
 
     let mut result = Vec::new();
-    let totalframes = frames + skipframes;
+    let totalframes = if frames == 0 {
+        player.lock().unwrap().mutate_with_update_context(|ctx| {
+            ctx.stage
+                .root_clip()
+                .and_then(|root_clip| root_clip.as_movie_clip())
+                .map(|movie_clip| movie_clip.total_frames() as u32)
+                .unwrap_or_else(|| 1)
+        })
+    } else {
+        frames + skipframes
+    };
 
     for i in 0..totalframes {
         if let Some(progress) = &progress {
@@ -278,9 +289,10 @@ fn capture_single_swf(descriptors: Arc<Descriptors>, opt: &Opt) -> Result<()> {
             image.save(&output)?;
         }
     } else {
+        let digits = frames.len().to_string().len();
         for (frame, image) in frames.iter().enumerate() {
             let mut path: PathBuf = (&output).into();
-            path.push(format!("{frame}.png"));
+            path.push(format!("{:0width$}.png", frame, width = digits));
             image.save(&path)?;
         }
     }
@@ -372,9 +384,10 @@ fn capture_multiple_swfs(descriptors: Arc<Descriptors>, opt: &Opt) -> Result<()>
                 relative_path.set_extension("");
                 parent.push(&relative_path);
                 let _ = create_dir_all(&parent);
+                let digits = frames.len().to_string().len();
                 for (frame, image) in frames.iter().enumerate() {
                     let mut destination = parent.clone();
-                    destination.push(format!("{frame}.png"));
+                    destination.push(format!("{:0width$}.png", frame, width = digits));
                     image.save(&destination)?;
                 }
             }
