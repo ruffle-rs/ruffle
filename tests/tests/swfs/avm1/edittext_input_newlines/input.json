@@ -1,10 +1,10 @@
 [
-    { "type": "TextInput", "codepoint": "a" },
-    { "type": "TextControl", "code": "Enter" },
-    { "type": "TextInput", "codepoint": "a" },
-    { "type": "KeyDown", "key": "Escape" },
-    { "type": "TextInput", "codepoint": "a" },
-    { "type": "TextControl", "code": "Enter" },
-    { "type": "TextInput", "codepoint": "a" },
-    { "type": "KeyDown", "key": "Escape" }
+  { "type": "TextInput", "codepoint": "a" },
+  { "type": "TextControl", "code": "Enter" },
+  { "type": "TextInput", "codepoint": "a" },
+  { "type": "KeyDown", "key": "Escape" },
+  { "type": "TextInput", "codepoint": "a" },
+  { "type": "TextControl", "code": "Enter" },
+  { "type": "TextInput", "codepoint": "a" },
+  { "type": "KeyDown", "key": "Escape" }
 ]
