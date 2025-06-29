@@ -2444,8 +2444,7 @@ impl<'gc> Loader<'gc> {
             let mut loader = loader_info
                 .loader()
                 .expect("Loader should be Some")
-                .as_display_object()
-                .unwrap()
+                .display_object()
                 .as_container()
                 .unwrap();
 

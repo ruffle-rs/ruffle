@@ -281,7 +281,7 @@ pub fn get_child_allows_parent<'gc>(
             avm2_stub_getter!(activation, "flash.display.LoaderInfo", "childAllowsParent");
 
             if let Some(loader) = loader_info.loader() {
-                let loader = loader.as_display_object().expect("Loader is a DO");
+                let loader = loader.display_object();
                 let parent_movie = loader.movie();
 
                 if let Ok(child_url) = Url::parse(root.url()) {
@@ -324,7 +324,7 @@ pub fn get_parent_allows_child<'gc>(
             avm2_stub_getter!(activation, "flash.display.LoaderInfo", "parentAllowsChild");
 
             if let Some(loader) = loader_info.loader() {
-                let loader = loader.as_display_object().expect("Loader is a DO");
+                let loader = loader.display_object();
                 let parent_movie = loader.movie();
 
                 if let Ok(child_url) = Url::parse(root.url()) {

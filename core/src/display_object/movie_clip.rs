@@ -8,7 +8,7 @@ use crate::avm2::script::Script;
 use crate::avm2::Activation as Avm2Activation;
 use crate::avm2::{
     Avm2, ClassObject as Avm2ClassObject, Error as Avm2Error, Object as Avm2Object,
-    QName as Avm2QName, StageObject as Avm2StageObject, TObject as Avm2TObject, Value as Avm2Value,
+    QName as Avm2QName, StageObject as Avm2StageObject, Value as Avm2Value,
 };
 use crate::backend::audio::{AudioManager, SoundInstanceHandle};
 use crate::backend::navigator::Request;
@@ -335,8 +335,8 @@ impl<'gc> MovieClip<'gc> {
         let mut mc = self.0.write(context.gc());
         let movie = movie.unwrap_or_else(|| Arc::new(SwfMovie::empty(mc.movie().version(), None)));
         let total_frames = movie.num_frames();
-        assert_eq!(
-            mc.shared.loader_info, None,
+        assert!(
+            mc.shared.loader_info.is_none(),
             "Called replace_movie on a clip with LoaderInfo set"
         );
 

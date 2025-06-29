@@ -86,6 +86,10 @@ impl<'gc> StageObject<'gc> {
             },
         ))
     }
+
+    pub fn display_object(self) -> DisplayObject<'gc> {
+        self.0.display_object
+    }
 }
 
 impl<'gc> TObject<'gc> for StageObject<'gc> {
