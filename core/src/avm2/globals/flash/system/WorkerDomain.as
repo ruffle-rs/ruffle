@@ -17,8 +17,6 @@ package flash.system {
             return _current;
         }
 
-        public function WorkerDomain() {}
-
         public function createWorker(swf:ByteArray, giveAppPrivileges:Boolean = false):Worker {
             stub_method("flash.system.WorkerDomain", "createWorker");
 

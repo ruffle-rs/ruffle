@@ -21,9 +21,6 @@ package flash.system {
             return _current;
         }
 
-        public function Worker() {
-        }
-
         public function createMessageChannel(received:Worker): MessageChannel {
             stub_method("flash.system.Worker", "createMessageChannel");
 
