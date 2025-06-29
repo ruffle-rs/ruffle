@@ -329,6 +329,24 @@ pub trait TObject<'gc>: 'gc + Collect<'gc> + Debug + Into<Object<'gc>> + Clone +
         result.call(activation, self_val, arguments)
     }
 
+    /// Set a dynamic property on this Object by name. This is like
+    /// `set_property_local`, but it skips dynamic-dispatch TObject logic
+    /// and always sets a dynamic property on the base ScriptObject.
+    #[no_dynamic]
+    fn set_dynamic_property(
+        self,
+        local_name: AvmString<'gc>,
+        value: Value<'gc>,
+        mc: &Mutation<'gc>,
+    ) {
+        use crate::avm2::object::script_object::maybe_int_property;
+
+        // See the comment in ScriptObjectWrapper::set_property_local
+        let key = maybe_int_property(local_name);
+
+        self.base().values_mut(mc).insert(key, value);
+    }
+
     /// Retrieve a slot by its index.
     #[no_dynamic]
     #[inline(always)]

@@ -38,33 +38,33 @@ pub fn describe_type_json<'gc>(
         .dollar_removed_name(activation.gc())
         .to_qualified_name(activation.gc());
 
-    object.set_string_property_local(istr!("name"), qualified_name.into(), activation)?;
+    object.set_dynamic_property(istr!("name"), qualified_name.into(), activation.gc());
 
-    object.set_string_property_local(
+    object.set_dynamic_property(
         istr!("isDynamic"),
         (!used_class_def.is_sealed()).into(),
-        activation,
-    )?;
-    object.set_string_property_local(
+        activation.gc(),
+    );
+    object.set_dynamic_property(
         istr!("isFinal"),
         used_class_def.is_final().into(),
-        activation,
-    )?;
-    object.set_string_property_local(
+        activation.gc(),
+    );
+    object.set_dynamic_property(
         istr!("isStatic"),
         value
             .as_object()
             .and_then(|o| o.as_class_object())
             .is_some()
             .into(),
-        activation,
-    )?;
+        activation.gc(),
+    );
 
     let traits = describe_internal_body(activation, used_class_def, flags)?;
     if flags.contains(DescribeTypeFlags::INCLUDE_TRAITS) {
-        object.set_string_property_local(istr!("traits"), traits.into(), activation)?;
+        object.set_dynamic_property(istr!("traits"), traits.into(), activation.gc());
     } else {
-        object.set_string_property_local(istr!("traits"), Value::Null, activation)?;
+        object.set_dynamic_property(istr!("traits"), Value::Null, activation.gc());
     }
 
     Ok(object.into())
@@ -103,33 +103,33 @@ fn describe_internal_body<'gc>(
     let methods = ArrayObject::empty(activation);
 
     if flags.contains(DescribeTypeFlags::INCLUDE_BASES) {
-        traits.set_string_property_local(istr!("bases"), bases.into(), activation)?;
+        traits.set_dynamic_property(istr!("bases"), bases.into(), activation.gc());
     } else {
-        traits.set_string_property_local(istr!("bases"), Value::Null, activation)?;
+        traits.set_dynamic_property(istr!("bases"), Value::Null, activation.gc());
     }
 
     if flags.contains(DescribeTypeFlags::INCLUDE_INTERFACES) {
-        traits.set_string_property_local(istr!("interfaces"), interfaces.into(), activation)?;
+        traits.set_dynamic_property(istr!("interfaces"), interfaces.into(), activation.gc());
     } else {
-        traits.set_string_property_local(istr!("interfaces"), Value::Null, activation)?;
+        traits.set_dynamic_property(istr!("interfaces"), Value::Null, activation.gc());
     }
 
     if flags.contains(DescribeTypeFlags::INCLUDE_VARIABLES) {
-        traits.set_string_property_local(istr!("variables"), variables.into(), activation)?;
+        traits.set_dynamic_property(istr!("variables"), variables.into(), activation.gc());
     } else {
-        traits.set_string_property_local(istr!("variables"), Value::Null, activation)?;
+        traits.set_dynamic_property(istr!("variables"), Value::Null, activation.gc());
     }
 
     if flags.contains(DescribeTypeFlags::INCLUDE_ACCESSORS) {
-        traits.set_string_property_local(istr!("accessors"), accessors.into(), activation)?;
+        traits.set_dynamic_property(istr!("accessors"), accessors.into(), activation.gc());
     } else {
-        traits.set_string_property_local(istr!("accessors"), Value::Null, activation)?;
+        traits.set_dynamic_property(istr!("accessors"), Value::Null, activation.gc());
     }
 
     if flags.contains(DescribeTypeFlags::INCLUDE_METHODS) {
-        traits.set_string_property_local(istr!("methods"), methods.into(), activation)?;
+        traits.set_dynamic_property(istr!("methods"), methods.into(), activation.gc());
     } else {
-        traits.set_string_property_local(istr!("methods"), Value::Null, activation)?;
+        traits.set_dynamic_property(istr!("methods"), Value::Null, activation.gc());
     }
 
     let mut bases_array = bases.array_storage_mut(mc);
@@ -214,31 +214,31 @@ fn describe_internal_body<'gc>(
                 let trait_metadata = vtable.get_metadata_for_slot(slot_id);
 
                 let variable = ScriptObject::new_object(activation);
-                variable.set_string_property_local(istr!("name"), prop_name.into(), activation)?;
-                variable.set_string_property_local(
+                variable.set_dynamic_property(istr!("name"), prop_name.into(), activation.gc());
+                variable.set_dynamic_property(
                     istr!("type"),
                     prop_class_name.into(),
-                    activation,
-                )?;
-                variable.set_string_property_local(istr!("access"), access.into(), activation)?;
-                variable.set_string_property_local(
+                    activation.gc(),
+                );
+                variable.set_dynamic_property(istr!("access"), access.into(), activation.gc());
+                variable.set_dynamic_property(
                     istr!("uri"),
                     uri.map_or(Value::Null, |u| u.into()),
-                    activation,
-                )?;
+                    activation.gc(),
+                );
 
-                variable.set_string_property_local(istr!("metadata"), Value::Null, activation)?;
+                variable.set_dynamic_property(istr!("metadata"), Value::Null, activation.gc());
 
                 if flags.contains(DescribeTypeFlags::INCLUDE_METADATA) {
                     let metadata_object = ArrayObject::empty(activation);
                     if let Some(metadata) = trait_metadata {
                         write_metadata(metadata_object, &metadata, activation)?;
                     }
-                    variable.set_string_property_local(
+                    variable.set_dynamic_property(
                         istr!("metadata"),
                         metadata_object.into(),
-                        activation,
-                    )?;
+                        activation.gc(),
+                    );
                 }
 
                 variables_array.push(variable.into());
@@ -277,47 +277,43 @@ fn describe_internal_body<'gc>(
 
                 let method_obj = ScriptObject::new_object(activation);
 
-                method_obj.set_string_property_local(
-                    istr!("name"),
-                    prop_name.into(),
-                    activation,
-                )?;
-                method_obj.set_string_property_local(
+                method_obj.set_dynamic_property(istr!("name"), prop_name.into(), activation.gc());
+                method_obj.set_dynamic_property(
                     istr!("returnType"),
                     return_type_name.into(),
-                    activation,
-                )?;
-                method_obj.set_string_property_local(
+                    activation.gc(),
+                );
+                method_obj.set_dynamic_property(
                     istr!("declaredBy"),
                     declared_by_name.into(),
-                    activation,
-                )?;
+                    activation.gc(),
+                );
 
-                method_obj.set_string_property_local(
+                method_obj.set_dynamic_property(
                     istr!("uri"),
                     uri.map_or(Value::Null, |u| u.into()),
-                    activation,
-                )?;
+                    activation.gc(),
+                );
 
                 let params = write_params(&method.method, activation)?;
-                method_obj.set_string_property_local(
+                method_obj.set_dynamic_property(
                     istr!("parameters"),
                     params.into(),
-                    activation,
-                )?;
+                    activation.gc(),
+                );
 
-                method_obj.set_string_property_local(istr!("metadata"), Value::Null, activation)?;
+                method_obj.set_dynamic_property(istr!("metadata"), Value::Null, activation.gc());
 
                 if flags.contains(DescribeTypeFlags::INCLUDE_METADATA) {
                     let metadata_object = ArrayObject::empty(activation);
                     if let Some(metadata) = trait_metadata {
                         write_metadata(metadata_object, &metadata, activation)?;
                     }
-                    method_obj.set_string_property_local(
+                    method_obj.set_dynamic_property(
                         istr!("metadata"),
                         metadata_object.into(),
-                        activation,
-                    )?;
+                        activation.gc(),
+                    );
                 }
                 methods_array.push(method_obj.into());
             }
@@ -362,31 +358,23 @@ fn describe_internal_body<'gc>(
                 let declared_by = defining_class.dollar_removed_name(mc).to_qualified_name(mc);
 
                 let accessor_obj = ScriptObject::new_object(activation);
-                accessor_obj.set_string_property_local(
-                    istr!("name"),
-                    prop_name.into(),
-                    activation,
-                )?;
-                accessor_obj.set_string_property_local(
-                    istr!("access"),
-                    access.into(),
-                    activation,
-                )?;
-                accessor_obj.set_string_property_local(
+                accessor_obj.set_dynamic_property(istr!("name"), prop_name.into(), activation.gc());
+                accessor_obj.set_dynamic_property(istr!("access"), access.into(), activation.gc());
+                accessor_obj.set_dynamic_property(
                     istr!("type"),
                     accessor_type.into(),
-                    activation,
-                )?;
-                accessor_obj.set_string_property_local(
+                    activation.gc(),
+                );
+                accessor_obj.set_dynamic_property(
                     istr!("declaredBy"),
                     declared_by.into(),
-                    activation,
-                )?;
-                accessor_obj.set_string_property_local(
+                    activation.gc(),
+                );
+                accessor_obj.set_dynamic_property(
                     istr!("uri"),
                     uri.map_or(Value::Null, |u| u.into()),
-                    activation,
-                )?;
+                    activation.gc(),
+                );
 
                 let metadata_object = ArrayObject::empty(activation);
 
@@ -405,17 +393,17 @@ fn describe_internal_body<'gc>(
                 if flags.contains(DescribeTypeFlags::INCLUDE_METADATA)
                     && metadata_object.array_storage().length() > 0
                 {
-                    accessor_obj.set_string_property_local(
+                    accessor_obj.set_dynamic_property(
                         istr!("metadata"),
                         metadata_object.into(),
-                        activation,
-                    )?;
+                        activation.gc(),
+                    );
                 } else {
-                    accessor_obj.set_string_property_local(
+                    accessor_obj.set_dynamic_property(
                         istr!("metadata"),
                         Value::Null,
-                        activation,
-                    )?;
+                        activation.gc(),
+                    );
                 }
 
                 accessors_array.push(accessor_obj.into());
@@ -429,10 +417,10 @@ fn describe_internal_body<'gc>(
         !c.signature().is_empty() && flags.contains(DescribeTypeFlags::INCLUDE_CONSTRUCTOR)
     }) {
         let params = write_params(&constructor, activation)?;
-        traits.set_string_property_local(istr!("constructor"), params.into(), activation)?;
+        traits.set_dynamic_property(istr!("constructor"), params.into(), activation.gc());
     } else {
         // This is needed to override the normal 'constructor' property
-        traits.set_string_property_local(istr!("constructor"), Value::Null, activation)?;
+        traits.set_dynamic_property(istr!("constructor"), Value::Null, activation.gc());
     }
 
     if flags.contains(DescribeTypeFlags::INCLUDE_METADATA) {
@@ -444,9 +432,9 @@ fn describe_internal_body<'gc>(
         );
 
         let metadata_object = ArrayObject::empty(activation);
-        traits.set_string_property_local(istr!("metadata"), metadata_object.into(), activation)?;
+        traits.set_dynamic_property(istr!("metadata"), metadata_object.into(), activation.gc());
     } else {
-        traits.set_string_property_local(istr!("metadata"), Value::Null, activation)?;
+        traits.set_dynamic_property(istr!("metadata"), Value::Null, activation.gc());
     }
 
     Ok(traits)
@@ -473,8 +461,8 @@ fn write_params<'gc>(
         let param_type_name = display_name(activation.strings(), param.param_type_name);
         let optional = param.default_value.is_some();
         let param_obj = ScriptObject::new_object(activation);
-        param_obj.set_string_property_local(istr!("type"), param_type_name.into(), activation)?;
-        param_obj.set_string_property_local(istr!("optional"), optional.into(), activation)?;
+        param_obj.set_dynamic_property(istr!("type"), param_type_name.into(), activation.gc());
+        param_obj.set_dynamic_property(istr!("optional"), optional.into(), activation.gc());
         params_array.push(param_obj.into());
     }
     Ok(params)
