@@ -10,6 +10,7 @@ use crate::display_object::TDisplayObject;
 use crate::loader::ContentType;
 use crate::string::AvmString;
 use crate::{avm2_stub_getter, avm2_stub_method};
+use std::sync::Arc;
 use swf::{write_swf, Compression};
 use url::Url;
 
@@ -275,22 +276,30 @@ pub fn get_child_allows_parent<'gc>(
         LoaderStream::NotYetLoaded(_, _, _) => {
             Err(Error::avm_error(error(activation, INSUFFICIENT, 2099)?))
         }
-        LoaderStream::Swf(root, _) => {
+        LoaderStream::Swf(root, dobj) => {
             // TODO: respect allowDomain() and polices.
             avm2_stub_getter!(activation, "flash.display.LoaderInfo", "childAllowsParent");
 
-            let loader = loader_info.loader().expect("Loader should be Some");
-            let loader = loader.as_display_object().expect("Loader is a DO");
-            let parent_movie = loader.movie();
+            if let Some(loader) = loader_info.loader() {
+                let loader = loader.as_display_object().expect("Loader is a DO");
+                let parent_movie = loader.movie();
 
-            if let Ok(child_url) = Url::parse(root.url()) {
-                if let Ok(parent_url) = Url::parse(parent_movie.url()) {
-                    if child_url.host() == parent_url.host() {
-                        return Ok(true.into());
+                if let Ok(child_url) = Url::parse(root.url()) {
+                    if let Ok(parent_url) = Url::parse(parent_movie.url()) {
+                        if child_url.host() == parent_url.host() {
+                            return Ok(true.into());
+                        }
                     }
                 }
+                Ok(false.into())
+            } else {
+                // Only the root movie is LoaderStream::Swf but missing a loader.
+                // In that case, return true.
+                assert!(
+                    Arc::ptr_eq(root, activation.context.swf) && dobj.as_movie_clip().is_some()
+                );
+                Ok(true.into())
             }
-            Ok(false.into())
         }
     }
 }
@@ -309,22 +318,29 @@ pub fn get_parent_allows_child<'gc>(
         LoaderStream::NotYetLoaded(_, _, _) => {
             Err(Error::avm_error(error(activation, INSUFFICIENT, 2099)?))
         }
-        LoaderStream::Swf(root, _) => {
+        LoaderStream::Swf(root, dobj) => {
             // TODO: respect allowDomain() and polices.
             avm2_stub_getter!(activation, "flash.display.LoaderInfo", "parentAllowsChild");
 
-            let loader = loader_info.loader().expect("Loader should be Some");
-            let loader = loader.as_display_object().expect("Loader is a DO");
-            let parent_movie = loader.movie();
+            if let Some(loader) = loader_info.loader() {
+                let loader = loader.as_display_object().expect("Loader is a DO");
+                let parent_movie = loader.movie();
 
-            if let Ok(child_url) = Url::parse(root.url()) {
-                if let Ok(parent_url) = Url::parse(parent_movie.url()) {
-                    if child_url.host() == parent_url.host() {
-                        return Ok(true.into());
+                if let Ok(child_url) = Url::parse(root.url()) {
+                    if let Ok(parent_url) = Url::parse(parent_movie.url()) {
+                        if child_url.host() == parent_url.host() {
+                            return Ok(true.into());
+                        }
                     }
                 }
+                Ok(false.into())
+            } else {
+                // See comment on childAllowsParent
+                assert!(
+                    Arc::ptr_eq(root, activation.context.swf) && dobj.as_movie_clip().is_some()
+                );
+                Ok(true.into())
             }
-            Ok(false.into())
         }
     }
 }
