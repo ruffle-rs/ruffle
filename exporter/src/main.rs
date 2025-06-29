@@ -129,8 +129,7 @@ fn take_screenshot(
             ctx.stage
                 .root_clip()
                 .and_then(|root_clip| root_clip.as_movie_clip())
-                .map(|movie_clip| movie_clip.total_frames() as u32)
-                .unwrap_or_else(|| 1)
+                .map_or(1, |movie_clip| movie_clip.total_frames() as u32)
         })
     } else {
         frames + skipframes
@@ -179,14 +178,27 @@ fn take_screenshot(
         if let Some(progress) = &progress {
             progress.inc(1);
         }
+
+        if is_root_movie_clip_at_end(&player) {
+            break;
+        }
     }
     Ok(result)
 }
 
-fn force_root_clip_play(player: &Arc<Mutex<Player>>) {
-    let mut player_guard = player.lock().unwrap();
+fn is_root_movie_clip_at_end(player: &Arc<Mutex<Player>>) -> bool {
+    player.lock().unwrap().mutate_with_update_context(|ctx| {
+        ctx.stage
+            .root_clip()
+            .and_then(|root_clip| root_clip.as_movie_clip())
+            .map_or(false, |movie_clip| {
+                movie_clip.current_frame() == movie_clip.total_frames()
+            })
+    })
+}
 
-    player_guard.mutate_with_update_context(|ctx| {
+fn force_root_clip_play(player: &Arc<Mutex<Player>>) {
+    player.lock().unwrap().mutate_with_update_context(|ctx| {
         if let Some(root_clip) = ctx.stage.root_clip() {
             if let Some(movie_clip) = root_clip.as_movie_clip() {
                 if !movie_clip.playing() && movie_clip.current_frame() < movie_clip.total_frames() {
