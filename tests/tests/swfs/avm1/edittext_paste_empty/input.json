@@ -1,9 +1,9 @@
 [
-    { "type": "SetClipboardText", "text": "test" },
-    { "type": "TextControl", "code": "Paste" },
-    { "type": "KeyDown", "key": "Escape" },
-    { "type": "SetClipboardText", "text": "" },
-    { "type": "TextControl", "code": "SelectAll" },
-    { "type": "TextControl", "code": "Paste" },
-    { "type": "KeyDown", "key": "Escape" }
+  { "type": "SetClipboardText", "text": "test" },
+  { "type": "TextControl", "code": "Paste" },
+  { "type": "KeyDown", "key": "Escape" },
+  { "type": "SetClipboardText", "text": "" },
+  { "type": "TextControl", "code": "SelectAll" },
+  { "type": "TextControl", "code": "Paste" },
+  { "type": "KeyDown", "key": "Escape" }
 ]
