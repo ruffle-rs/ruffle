@@ -13,7 +13,7 @@ package flash.system {
         }
 
         private static var _current:Worker;
-        
+
         public static function get current():Worker {
             stub_method("flash.system.Worker", "current");
 

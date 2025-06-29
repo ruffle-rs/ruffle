@@ -10,9 +10,9 @@ package flash.system {
         public static function get isSupported():Boolean {
             return false;
         }
-        
+
         private static var _current:WorkerDomain;
-        
+
         public static function get current():WorkerDomain {
             stub_getter("flash.system.WorkerDomain", "current");
 
