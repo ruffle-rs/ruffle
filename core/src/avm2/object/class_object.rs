@@ -260,9 +260,7 @@ impl<'gc> ClassObject<'gc> {
         let mc = activation.gc();
 
         unlock!(Gc::write(mc, self.0), ClassObjectData, prototype).set(Some(class_proto));
-        class_proto
-            .set_string_property_local(istr!("constructor"), self.into(), activation)
-            .expect("Prototype is a dynamic object");
+        class_proto.set_dynamic_property(istr!("constructor"), self.into(), mc);
         class_proto.set_local_property_is_enumerable(mc, istr!("constructor"), false);
     }
 

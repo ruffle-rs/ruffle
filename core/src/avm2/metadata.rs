@@ -74,35 +74,28 @@ impl<'gc> Metadata<'gc> {
     }
 
     // Converts the Metadata to an Object of the form used in avmplus:describeTypeJSON().
-    pub fn as_json_object(
-        &self,
-        activation: &mut Activation<'_, 'gc>,
-    ) -> Result<Object<'gc>, Error<'gc>> {
+    pub fn as_json_object(&self, activation: &mut Activation<'_, 'gc>) -> Object<'gc> {
         let object = ScriptObject::new_object(activation);
-        object.set_string_property_local(istr!("name"), self.name.into(), activation)?;
+        object.set_dynamic_property(istr!("name"), self.name.into(), activation.gc());
 
         let values = self
             .items
             .iter()
             .map(|item| {
                 let value_object = ScriptObject::new_object(activation);
-                value_object.set_string_property_local(
-                    istr!("key"),
-                    item.key.into(),
-                    activation,
-                )?;
-                value_object.set_string_property_local(
+                value_object.set_dynamic_property(istr!("key"), item.key.into(), activation.gc());
+                value_object.set_dynamic_property(
                     istr!("value"),
                     item.value.into(),
-                    activation,
-                )?;
-                Ok(Some(value_object.into()))
+                    activation.gc(),
+                );
+                Some(value_object.into())
             })
-            .collect::<Result<Vec<Option<Value<'gc>>>, Error<'gc>>>()?;
+            .collect::<Vec<Option<Value<'gc>>>>();
 
         let values_array =
             ArrayObject::from_storage(activation, ArrayStorage::from_storage(values));
-        object.set_string_property_local(istr!("value"), values_array.into(), activation)?;
-        Ok(object)
+        object.set_dynamic_property(istr!("value"), values_array.into(), activation.gc());
+        object
     }
 }
