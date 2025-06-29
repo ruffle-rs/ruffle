@@ -350,7 +350,7 @@ impl<'gc> LoaderInfoObject<'gc> {
 
     pub fn unload(&self, activation: &mut Activation<'_, 'gc>) {
         // Reset properties
-        let movie = &activation.context.swf;
+        let movie = &activation.context.root_swf;
         let empty_swf = Arc::new(SwfMovie::empty(movie.version(), Some(movie.url().into())));
         let loader_stream = LoaderStream::NotYetLoaded(empty_swf, None, false);
         self.set_loader_stream(loader_stream, activation.gc());

@@ -690,7 +690,7 @@ impl<'gc> Value<'gc> {
             Value::Number(n) => *n,
             Value::Integer(i) => *i as f64,
             Value::String(s) => {
-                let swf_version = activation.context.swf.version();
+                let swf_version = activation.context.root_swf.version();
                 string_to_f64(s, swf_version, true).unwrap_or_else(|| string_to_int(s, 0, true))
             }
             Value::Object(_) => self
@@ -1390,7 +1390,7 @@ impl<'gc> Value<'gc> {
                 function_object.construct(activation, args).map(Into::into)
             }
             _ => {
-                let error = if activation.context.swf.version() < 11 {
+                let error = if activation.context.root_swf.version() < 11 {
                     type_error(activation, "Error #1115: value is not a constructor.", 1115)
                 } else {
                     type_error(
