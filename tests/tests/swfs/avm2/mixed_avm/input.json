@@ -1,17 +1,17 @@
 [
-    {
-        "type": "Wait"
-    },
-    {
-        "type": "Wait"
-    },
-    {
-        "type": "MouseMove",
-        "pos": [10.0, 10.0]
-    },
-    {
-        "type": "MouseDown",
-        "pos": [10.0, 10.0],
-        "btn": "Left"
-    }
+  {
+    "type": "Wait"
+  },
+  {
+    "type": "Wait"
+  },
+  {
+    "type": "MouseMove",
+    "pos": [10.0, 10.0]
+  },
+  {
+    "type": "MouseDown",
+    "pos": [10.0, 10.0],
+    "btn": "Left"
+  }
 ]
