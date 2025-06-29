@@ -84,7 +84,7 @@ impl<'gc> ArrayObject<'gc> {
         ))
     }
 
-    fn set_element(self, mc: &Mutation<'gc>, index: usize, value: Value<'gc>) {
+    pub fn set_element(self, mc: &Mutation<'gc>, index: usize, value: Value<'gc>) {
         unlock!(Gc::write(mc, self.0), ArrayObjectData, array)
             .borrow_mut()
             .set(index, value);
