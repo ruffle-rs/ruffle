@@ -78,7 +78,7 @@ pub fn glue_tables_to_jpeg<'a>(
 
 /// Removes potential invalid JPEG data from SWF DefineBitsJPEG tags.
 /// These bytes need to be removed for the JPEG to decode properly.
-pub fn remove_invalid_jpeg_data(data: &[u8]) -> Cow<'_, [u8]> {
+pub fn remove_invalid_jpeg_data(data: &[u8]) -> Cow<[u8]> {
     // SWF19 errata p.138:
     // "Before version 8 of the SWF file format, SWF files could contain an erroneous header of 0xFF, 0xD9, 0xFF, 0xD8
     // before the JPEG SOI marker."
