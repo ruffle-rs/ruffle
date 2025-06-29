@@ -8,11 +8,15 @@ package flash.system {
 
     [API("682")]
     public final class Worker extends EventDispatcher {
-        public static const isSupported:Boolean = false;
+        public static function get isSupported():Boolean {
+            return false;
+        }
 
         private static var _current:Worker;
         
         public static function get current():Worker {
+            stub_method("flash.system.Worker", "current");
+
             if (!_current) {
                 _current = new Worker();
             }

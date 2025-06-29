@@ -1,8 +1,27 @@
 package flash.utils {
+
+    import __ruffle__.stub_getter;
+    import __ruffle__.stub_setter;
+
     [Ruffle(InstanceAllocator)]
     public class ByteArray implements IDataInput2, IDataOutput2 {
         private static var _defaultObjectEncoding:uint = 3;
-        public var shareable:Boolean = false;
+
+        private var _shareable:Boolean = false;
+
+        [API("684")]
+        public function set shareable(shareable: Boolean):void {
+            stub_setter("flash.utils.ByteArray", "shareable");
+
+            this._shareable = shareable;
+        }
+
+        [API("684")]
+        public function get shareable():Boolean {
+            stub_getter("flash.utils.ByteArray", "shareable");
+
+            return this._shareable;
+        }
 
         public static function get defaultObjectEncoding():uint {
             return _defaultObjectEncoding;

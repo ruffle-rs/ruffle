@@ -2,15 +2,20 @@ package flash.system {
 
     import flash.utils.ByteArray;
     import flash.system.Worker;
+    import __ruffle__.stub_getter;
     import __ruffle__.stub_method;
 
     [API("680")] // the docs say 682, that's wrong
     public final class WorkerDomain {
-        public static const isSupported:Boolean = false;
+        public static function get isSupported():Boolean {
+            return false;
+        }
         
         private static var _current:WorkerDomain;
         
         public static function get current():WorkerDomain {
+            stub_getter("flash.system.WorkerDomain", "current");
+
             if (!_current) {
                 _current = new WorkerDomain();
             }
