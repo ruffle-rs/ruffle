@@ -194,7 +194,6 @@ struct Frame {
 }
 
 /// Data shared between all instances of a morph shape.
-#[allow(dead_code)]
 #[derive(Collect)]
 #[collect(require_static)]
 pub struct MorphShapeShared {

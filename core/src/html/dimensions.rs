@@ -130,7 +130,6 @@ impl<T> From<(T, T)> for Size<T> {
     }
 }
 
-#[allow(dead_code)]
 impl<T> Size<T>
 where
     T: Copy,
@@ -204,7 +203,6 @@ where
     }
 }
 
-#[allow(dead_code)]
 impl<T> BoxBounds<T>
 where
     T: Add<T, Output = T> + Sub<T, Output = T> + Copy,
@@ -229,7 +227,6 @@ where
     }
 }
 
-#[allow(dead_code)]
 impl<T> BoxBounds<T>
 where
     T: Copy + std::cmp::PartialOrd,
@@ -242,7 +239,6 @@ where
     }
 }
 
-#[allow(dead_code)]
 impl<T> BoxBounds<T>
 where
     T: Copy,
@@ -285,7 +281,6 @@ where
     }
 }
 
-#[allow(dead_code)]
 impl<T> BoxBounds<T>
 where
     T: Add<T, Output = T> + Copy,

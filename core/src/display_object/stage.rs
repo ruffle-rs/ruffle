@@ -205,7 +205,6 @@ impl<'gc> Stage<'gc> {
             .unwrap_or(Matrix::ZERO)
     }
 
-    #[allow(dead_code)]
     pub fn view_matrix(self) -> Matrix {
         self.0.viewport_matrix.get()
     }

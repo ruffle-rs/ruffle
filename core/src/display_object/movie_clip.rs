@@ -629,7 +629,6 @@ impl<'gc> MovieClip<'gc> {
         Ok(None)
     }
 
-    #[allow(dead_code)]
     pub fn playing(self) -> bool {
         self.0.read().playing()
     }
@@ -894,7 +893,6 @@ impl<'gc> MovieClip<'gc> {
         self.0.read().total_frames()
     }
 
-    #[allow(dead_code)]
     pub fn has_frame_script(self, frame: FrameNumber) -> bool {
         self.0
             .read()
@@ -4468,7 +4466,6 @@ impl Default for PreloadProgress {
 }
 
 /// Data shared between all instances of a movie clip.
-#[allow(dead_code)]
 #[derive(Collect)]
 #[collect(no_drop)]
 struct MovieClipShared<'gc> {
