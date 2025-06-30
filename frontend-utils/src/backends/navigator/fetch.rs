@@ -25,7 +25,7 @@ pub struct Response {
 }
 
 impl SuccessResponse for Response {
-    fn url(&self) -> std::borrow::Cow<str> {
+    fn url(&self) -> std::borrow::Cow<'_, str> {
         std::borrow::Cow::Borrowed(&self.url)
     }
 

@@ -275,7 +275,7 @@ impl<'gc> Stage<'gc> {
         context.renderer.set_quality(quality);
     }
 
-    pub fn stage3ds(&self) -> Ref<Vec<Avm2Object<'gc>>> {
+    pub fn stage3ds(&self) -> Ref<'_, Vec<Avm2Object<'gc>>> {
         self.0.stage3ds.borrow()
     }
 
@@ -733,7 +733,7 @@ impl<'gc> Stage<'gc> {
 }
 
 impl<'gc> TDisplayObject<'gc> for Stage<'gc> {
-    fn base(&self) -> Ref<DisplayObjectBase<'gc>> {
+    fn base(&self) -> Ref<'_, DisplayObjectBase<'gc>> {
         Ref::map(self.0.base.borrow(), |r| &r.base)
     }
 
@@ -923,11 +923,11 @@ impl<'gc> TDisplayObjectContainer<'gc> for Stage<'gc> {
 }
 
 impl<'gc> TInteractiveObject<'gc> for Stage<'gc> {
-    fn raw_interactive(&self) -> Ref<InteractiveObjectBase<'gc>> {
+    fn raw_interactive(&self) -> Ref<'_, InteractiveObjectBase<'gc>> {
         self.0.base.borrow()
     }
 
-    fn raw_interactive_mut(&self, mc: &Mutation<'gc>) -> RefMut<InteractiveObjectBase<'gc>> {
+    fn raw_interactive_mut(&self, mc: &Mutation<'gc>) -> RefMut<'_, InteractiveObjectBase<'gc>> {
         unlock!(Gc::write(mc, self.0), StageData, base).borrow_mut()
     }
 

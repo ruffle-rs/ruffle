@@ -610,7 +610,7 @@ impl PreferencesDialog {
     }
 }
 
-fn graphics_backend_name(locale: &LanguageIdentifier, backend: GraphicsBackend) -> Cow<str> {
+fn graphics_backend_name(locale: &LanguageIdentifier, backend: GraphicsBackend) -> Cow<'_, str> {
     match backend {
         GraphicsBackend::Default => text(locale, "graphics-backend-default"),
         GraphicsBackend::Vulkan => Cow::Borrowed("Vulkan"),
@@ -620,7 +620,10 @@ fn graphics_backend_name(locale: &LanguageIdentifier, backend: GraphicsBackend) 
     }
 }
 
-fn graphics_power_name(locale: &LanguageIdentifier, power_preference: PowerPreference) -> Cow<str> {
+fn graphics_power_name(
+    locale: &LanguageIdentifier,
+    power_preference: PowerPreference,
+) -> Cow<'_, str> {
     match power_preference {
         PowerPreference::Low => text(locale, "graphics-power-low"),
         PowerPreference::High => text(locale, "graphics-power-high"),
@@ -636,7 +639,7 @@ fn language_name(language: &LanguageIdentifier) -> String {
 fn theme_preference_name(
     locale: &LanguageIdentifier,
     theme_preference: ThemePreference,
-) -> Cow<str> {
+) -> Cow<'_, str> {
     match theme_preference {
         ThemePreference::System => text(locale, "theme-system"),
         ThemePreference::Light => text(locale, "theme-light"),
@@ -647,7 +650,7 @@ fn theme_preference_name(
 fn gamemode_preference_name(
     locale: &LanguageIdentifier,
     gamemode_preference: GameModePreference,
-) -> Cow<str> {
+) -> Cow<'_, str> {
     match gamemode_preference {
         GameModePreference::Default => text(locale, "gamemode-default"),
         GameModePreference::On => text(locale, "enable"),
@@ -658,7 +661,7 @@ fn gamemode_preference_name(
 fn gamemode_preference_tooltip(
     locale: &LanguageIdentifier,
     gamemode_preference: GameModePreference,
-) -> Option<Cow<str>> {
+) -> Option<Cow<'_, str>> {
     Some(match gamemode_preference {
         GameModePreference::Default => text(locale, "gamemode-default-tooltip"),
         _ => return None,
@@ -668,7 +671,7 @@ fn gamemode_preference_tooltip(
 fn open_url_mode_preference_name(
     locale: &LanguageIdentifier,
     open_url_mode: OpenUrlMode,
-) -> Cow<str> {
+) -> Cow<'_, str> {
     match open_url_mode {
         OpenUrlMode::Allow => text(locale, "open-url-mode-allow"),
         OpenUrlMode::Confirm => text(locale, "open-url-mode-confirm"),
@@ -676,21 +679,21 @@ fn open_url_mode_preference_name(
     }
 }
 
-fn filename_pattern_name(locale: &LanguageIdentifier, pattern: FilenamePattern) -> Cow<str> {
+fn filename_pattern_name(locale: &LanguageIdentifier, pattern: FilenamePattern) -> Cow<'_, str> {
     match pattern {
         FilenamePattern::SingleFile => text(locale, "log-filename-pattern-single-file"),
         FilenamePattern::WithTimestamp => text(locale, "log-filename-pattern-with-timestamp"),
     }
 }
 
-fn storage_backend_name(locale: &LanguageIdentifier, backend: StorageBackend) -> Cow<str> {
+fn storage_backend_name(locale: &LanguageIdentifier, backend: StorageBackend) -> Cow<'_, str> {
     match backend {
         StorageBackend::Disk => text(locale, "storage-backend-disk"),
         StorageBackend::Memory => text(locale, "storage-backend-memory"),
     }
 }
 
-fn ime_enabled_name(locale: &LanguageIdentifier, ime_enabled: Option<bool>) -> Cow<str> {
+fn ime_enabled_name(locale: &LanguageIdentifier, ime_enabled: Option<bool>) -> Cow<'_, str> {
     match ime_enabled {
         None => text(locale, "ime-enabled-default"),
         Some(true) => text(locale, "enable"),

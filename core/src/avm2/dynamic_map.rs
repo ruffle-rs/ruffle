@@ -68,7 +68,7 @@ impl<K: Eq + PartialEq + Hash, V> DynamicMap<K, V> {
     pub fn entry(
         &mut self,
         key: K,
-    ) -> hashbrown::hash_map::Entry<K, DynamicProperty<V>, FnvBuildHasher> {
+    ) -> hashbrown::hash_map::Entry<'_, K, DynamicProperty<V>, FnvBuildHasher> {
         self.values.entry(key)
     }
 

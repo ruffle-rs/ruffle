@@ -1415,7 +1415,7 @@ impl FormatSpans {
     ///    character covered by the span, plus one)
     /// 3. The string contents of the text span
     /// 4. The formatting applied to the text span.
-    pub fn iter_spans(&self) -> TextSpanIter {
+    pub fn iter_spans(&self) -> TextSpanIter<'_> {
         TextSpanIter::for_format_spans(self)
     }
 

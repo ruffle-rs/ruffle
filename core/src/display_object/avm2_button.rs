@@ -411,7 +411,7 @@ impl<'gc> Avm2Button<'gc> {
 }
 
 impl<'gc> TDisplayObject<'gc> for Avm2Button<'gc> {
-    fn base(&self) -> Ref<DisplayObjectBase<'gc>> {
+    fn base(&self) -> Ref<'_, DisplayObjectBase<'gc>> {
         Ref::map(self.0.base.borrow(), |r| &r.base)
     }
 
@@ -693,11 +693,11 @@ impl<'gc> TDisplayObject<'gc> for Avm2Button<'gc> {
 }
 
 impl<'gc> TInteractiveObject<'gc> for Avm2Button<'gc> {
-    fn raw_interactive(&self) -> Ref<InteractiveObjectBase<'gc>> {
+    fn raw_interactive(&self) -> Ref<'_, InteractiveObjectBase<'gc>> {
         self.0.base.borrow()
     }
 
-    fn raw_interactive_mut(&self, mc: &Mutation<'gc>) -> RefMut<InteractiveObjectBase<'gc>> {
+    fn raw_interactive_mut(&self, mc: &Mutation<'gc>) -> RefMut<'_, InteractiveObjectBase<'gc>> {
         unlock!(Gc::write(mc, self.0), Avm2ButtonData, base).borrow_mut()
     }
 

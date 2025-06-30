@@ -125,9 +125,9 @@ impl Default for InteractiveObjectBase<'_> {
 pub trait TInteractiveObject<'gc>:
     'gc + Clone + Copy + Collect<'gc> + Debug + Into<InteractiveObject<'gc>>
 {
-    fn raw_interactive(&self) -> Ref<InteractiveObjectBase<'gc>>;
+    fn raw_interactive(&self) -> Ref<'_, InteractiveObjectBase<'gc>>;
 
-    fn raw_interactive_mut(&self, mc: &Mutation<'gc>) -> RefMut<InteractiveObjectBase<'gc>>;
+    fn raw_interactive_mut(&self, mc: &Mutation<'gc>) -> RefMut<'_, InteractiveObjectBase<'gc>>;
 
     fn as_displayobject(self) -> DisplayObject<'gc>;
 
