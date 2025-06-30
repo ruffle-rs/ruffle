@@ -20,7 +20,7 @@ jobs:
       date: ${{ steps.current_time_underscores.outputs.formattedTime }}
       upload_url: ${{ steps.create_release.outputs.upload_url }}
       package_prefix: ${{ steps.create_release.outputs.package_prefix }}
-      tag_name: ${{ steps.create_release.outputs.tag_name }}
+      tag_name: ${{ steps.commit.outputs.tag_name }}
       version4: ${{ steps.version.outputs.version4 }}
 
     # Only run the scheduled workflows on the main repo.
@@ -67,22 +67,8 @@ jobs:
         if: steps.activity.outputs.is_active == 'true'
         id: commit
         run: |
-          # Print diff for debugging
-          git diff
-
-          # For nightly we do not want to commit those changes,
-          # save them and then apply when building
-          git diff > /tmp/nightly-release.patch
-
-          revision=$(git rev-parse HEAD)
-          echo "revision=$revision" | tee -a $GITHUB_OUTPUT
-
-      - name: Upload nightly release patch
-        uses: actions/upload-artifact@v4
-        if: steps.activity.outputs.is_active == 'true'
-        with:
-          name: nightly-release-patch
-          path: /tmp/nightly-release.patch
+          $RELEASE_SCRIPT commit
+          $RELEASE_SCRIPT tag-and-push
 
       - name: Get current time with underscores
         uses: josStorer/get-current-time@v2.1.2
@@ -147,15 +133,8 @@ jobs:
     steps:
       - name: Clone Ruffle repo
         uses: actions/checkout@v4
-
-      - name: Download nightly release patch
-        uses: actions/download-artifact@v4
         with:
-          name: nightly-release-patch
-          path: /tmp
-
-      - name: Apply nightly release patch
-        run: git apply --verbose /tmp/nightly-release.patch
+          ref: ${{ needs.create-nightly-release.outputs.tag_name }}
 
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable
@@ -252,6 +231,8 @@ jobs:
     steps:
       - name: Clone Ruffle repo
         uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.create-nightly-release.outputs.tag_name }}
 
       - name: Download aarch64 binary
         uses: actions/download-artifact@v4
@@ -349,6 +330,8 @@ jobs:
     steps:
       - name: Clone Ruffle repo
         uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.create-nightly-release.outputs.tag_name }}
 
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable
@@ -382,15 +365,8 @@ jobs:
     steps:
       - name: Clone Ruffle repo
         uses: actions/checkout@v4
-
-      - name: Download nightly release patch
-        uses: actions/download-artifact@master
         with:
-          name: nightly-release-patch
-          path: /tmp
-
-      - name: Apply nightly release patch
-        run: git apply --verbose /tmp/nightly-release.patch
+          ref: ${{ needs.create-nightly-release.outputs.tag_name }}
 
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable
@@ -543,15 +519,8 @@ jobs:
     steps:
       - name: Clone Ruffle repo
         uses: actions/checkout@v4
-
-      - name: Download nightly release patch
-        uses: actions/download-artifact@master
         with:
-          name: nightly-release-patch
-          path: /tmp
-
-      - name: Apply nightly release patch
-        run: git apply --verbose /tmp/nightly-release.patch
+          ref: ${{ needs.create-nightly-release.outputs.tag_name }}
 
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable
@@ -731,6 +700,8 @@ jobs:
     if: github.repository == 'ruffle-rs/ruffle'
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.create-nightly-release.outputs.tag_name }}
 
       - name: Get current time with dashes
         uses: josStorer/get-current-time@v2.1.2
