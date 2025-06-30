@@ -127,7 +127,7 @@ impl<'gc> Domain<'gc> {
             },
         ));
 
-        this.init_default_domain_memory(activation);
+        this.init_default_domain_memory(activation.context);
 
         parent
             .0
@@ -386,13 +386,13 @@ impl<'gc> Domain<'gc> {
     /// This function is only necessary to be called for domains created via
     /// `global_domain`. It will do nothing on already fully-initialized
     /// domains.
-    pub fn init_default_domain_memory(self, activation: &mut Activation<'_, 'gc>) {
+    pub fn init_default_domain_memory(self, context: &mut UpdateContext<'gc>) {
         let initial_data = vec![0; MIN_DOMAIN_MEMORY_LENGTH];
         let storage = ByteArrayStorage::from_vec(initial_data);
 
-        let domain_memory = ByteArrayObject::from_storage(activation.context, storage);
+        let domain_memory = ByteArrayObject::from_storage(context, storage);
 
-        let mut write = self.0.write(activation.gc());
+        let mut write = self.0.write(context.gc());
 
         assert!(
             write.domain_memory.is_none(),
