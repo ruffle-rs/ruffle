@@ -114,9 +114,9 @@ impl<'gc> Domain<'gc> {
     ///
     /// This function must not be called before the player globals have been
     /// fully allocated.
-    pub fn movie_domain(activation: &mut Activation<'_, 'gc>, parent: Domain<'gc>) -> Domain<'gc> {
+    pub fn movie_domain(context: &mut UpdateContext<'gc>, parent: Domain<'gc>) -> Domain<'gc> {
         let this = Self(GcCell::new(
-            activation.gc(),
+            context.gc(),
             DomainData {
                 defs: PropertyMap::new(),
                 classes: PropertyMap::new(),
@@ -127,11 +127,11 @@ impl<'gc> Domain<'gc> {
             },
         ));
 
-        this.init_default_domain_memory(activation.context);
+        this.init_default_domain_memory(context);
 
         parent
             .0
-            .write(activation.gc())
+            .write(context.gc())
             .children
             .push(DomainWeak(GcCell::downgrade(this.0)));
 

@@ -27,7 +27,7 @@ pub fn init<'gc>(
             .as_application_domain()
             .expect("Invalid parent domain")
     };
-    let fresh_domain = Domain::movie_domain(activation, parent_domain);
+    let fresh_domain = Domain::movie_domain(activation.context, parent_domain);
     this.init_application_domain(activation.gc(), fresh_domain);
 
     Ok(Value::Undefined)

@@ -2041,7 +2041,7 @@ impl<'gc> Loader<'gc> {
                 .and_then(|o| o.as_application_domain())
                 .unwrap_or_else(|| {
                     let parent_domain = default_domain;
-                    Avm2Domain::movie_domain(&mut activation, parent_domain)
+                    Avm2Domain::movie_domain(activation.uc, parent_domain)
                 });
             domain
         } else {
