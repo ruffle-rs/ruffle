@@ -362,6 +362,74 @@ impl Context3DCompareMode {
     }
 }
 
+#[cfg(feature = "wgpu")]
+impl From<Context3DCompareMode> for wgpu::CompareFunction {
+    fn from(mode: Context3DCompareMode) -> Self {
+        match mode {
+            Context3DCompareMode::Never => wgpu::CompareFunction::Never,
+            Context3DCompareMode::Less => wgpu::CompareFunction::Less,
+            Context3DCompareMode::Equal => wgpu::CompareFunction::Equal,
+            Context3DCompareMode::LessEqual => wgpu::CompareFunction::LessEqual,
+            Context3DCompareMode::Greater => wgpu::CompareFunction::Greater,
+            Context3DCompareMode::NotEqual => wgpu::CompareFunction::NotEqual,
+            Context3DCompareMode::GreaterEqual => wgpu::CompareFunction::GreaterEqual,
+            Context3DCompareMode::Always => wgpu::CompareFunction::Always,
+        }
+    }
+}
+
+#[derive(Copy, Clone, Debug)]
+pub enum Context3DStencilAction {
+    DecrementSaturate,
+    DecrementWrap,
+    IncrementSaturate,
+    IncrementWrap,
+    Invert,
+    Keep,
+    Set,
+    Zero,
+}
+
+impl Context3DStencilAction {
+    pub fn from_wstr(s: &WStr) -> Option<Self> {
+        if s == b"decrementSaturate" {
+            Some(Context3DStencilAction::DecrementSaturate)
+        } else if s == b"decrementWrap" {
+            Some(Context3DStencilAction::DecrementWrap)
+        } else if s == b"incrementSaturate" {
+            Some(Context3DStencilAction::IncrementSaturate)
+        } else if s == b"incrementWrap" {
+            Some(Context3DStencilAction::IncrementWrap)
+        } else if s == b"invert" {
+            Some(Context3DStencilAction::Invert)
+        } else if s == b"keep" {
+            Some(Context3DStencilAction::Keep)
+        } else if s == b"set" {
+            Some(Context3DStencilAction::Set)
+        } else if s == b"zero" {
+            Some(Context3DStencilAction::Zero)
+        } else {
+            None
+        }
+    }
+}
+
+#[cfg(feature = "wgpu")]
+impl From<Context3DStencilAction> for wgpu::StencilOperation {
+    fn from(action: Context3DStencilAction) -> Self {
+        match action {
+            Context3DStencilAction::DecrementSaturate => wgpu::StencilOperation::DecrementClamp,
+            Context3DStencilAction::DecrementWrap => wgpu::StencilOperation::DecrementWrap,
+            Context3DStencilAction::IncrementSaturate => wgpu::StencilOperation::IncrementClamp,
+            Context3DStencilAction::IncrementWrap => wgpu::StencilOperation::IncrementWrap,
+            Context3DStencilAction::Invert => wgpu::StencilOperation::Invert,
+            Context3DStencilAction::Keep => wgpu::StencilOperation::Keep,
+            Context3DStencilAction::Set => wgpu::StencilOperation::Replace,
+            Context3DStencilAction::Zero => wgpu::StencilOperation::Zero,
+        }
+    }
+}
+
 #[derive(Copy, Clone, Debug)]
 pub enum Context3DWrapMode {
     Clamp,
@@ -516,6 +584,18 @@ pub enum Context3DCommand<'a> {
     },
     SetScissorRectangle {
         rect: Option<Rectangle<Twips>>,
+    },
+    SetStencilActions {
+        triangle_face: Context3DTriangleFace,
+        compare_mode: Context3DCompareMode,
+        action_on_both_pass: Context3DStencilAction,
+        action_on_depth_fail: Context3DStencilAction,
+        action_on_depth_pass_stencil_fail: Context3DStencilAction,
+    },
+    SetStencilReferenceValue {
+        reference_value: u32,
+        read_mask: u32,
+        write_mask: u32,
     },
 }
 
