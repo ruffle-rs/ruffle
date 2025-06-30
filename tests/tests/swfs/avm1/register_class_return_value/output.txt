@@ -1,3 +1,4 @@
+Warning: Reference to undeclared variable, 'Test'
 // not enough args
 false
 // too many args

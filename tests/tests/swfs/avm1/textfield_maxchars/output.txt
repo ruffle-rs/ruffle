@@ -1,3 +1,5 @@
+Warning: Reference to undeclared variable, 'test_field'
 12
+Warning: Reference to undeclared variable, 'test_field'
 undefined
 null

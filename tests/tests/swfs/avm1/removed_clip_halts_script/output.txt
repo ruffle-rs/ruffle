@@ -1,15 +1,20 @@
 clip 1
+Warning: Reference to undeclared variable, 'clip'
 clip 2
 clip 3
 clip 4
 done
 clip 5
 clip 5 OK
+Warning: bogus is not a function
 clip 6
 clip 6 OK
 clip 6 OK2
+Warning: f is not a function
 clip 7
 clip 7 OK
+Warning: Foo is not a function
 clip 8
 clip 8 OK
 clip 8 OK2
+Warning: f is not a function
