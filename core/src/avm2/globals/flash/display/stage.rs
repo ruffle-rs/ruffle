@@ -438,7 +438,7 @@ pub fn get_stage3ds<'gc>(
             false,
             Some(activation.avm2().classes().stage3d.inner_class_definition()),
         );
-        let stage3ds = VectorObject::from_vector(storage, activation)?;
+        let stage3ds = VectorObject::from_vector(storage, activation);
         return Ok(stage3ds.into());
     }
     Ok(Value::Undefined)

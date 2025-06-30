@@ -97,10 +97,31 @@ impl<'gc> ClassObject<'gc> {
         proto
     }
 
+    /// Construct a ClassObject, but don't run its class initializer. This is
+    /// exactly like `from_class`, but skips the initialization, making it
+    /// infallible.
+    fn from_class_without_init(
+        activation: &mut Activation<'_, 'gc>,
+        class: Class<'gc>,
+        superclass_object: Option<ClassObject<'gc>>,
+    ) -> Self {
+        let class_object = Self::from_class_partial(activation, class, superclass_object);
+        let class_proto = class_object.allocate_prototype(activation, superclass_object);
+
+        class_object.link_prototype(activation, class_proto);
+
+        let class_class_proto = activation.avm2().classes().class.prototype();
+        class_object.link_type(activation.gc(), class_class_proto);
+
+        class_object.into_finished_class(activation);
+
+        class_object
+    }
+
     /// Construct a class.
     ///
     /// This function returns the class constructor object, which should be
-    /// used in all cases where the type needs to be referred to. It's class
+    /// used in all cases where the type needs to be referred to. Its class
     /// initializer will be executed during this function call.
     ///
     /// `base_class` is allowed to be `None`, corresponding to a `null` value
@@ -127,15 +148,7 @@ impl<'gc> ClassObject<'gc> {
             return Ok(class_class);
         }
 
-        let class_object = Self::from_class_partial(activation, class, superclass_object);
-        let class_proto = class_object.allocate_prototype(activation, superclass_object);
-
-        class_object.link_prototype(activation, class_proto);
-
-        let class_class_proto = activation.avm2().classes().class.prototype();
-        class_object.link_type(activation.gc(), class_class_proto);
-
-        class_object.into_finished_class(activation);
+        let class_object = Self::from_class_without_init(activation, class, superclass_object);
 
         class_object.run_class_initializer(activation)?;
 
@@ -589,11 +602,11 @@ impl<'gc> ClassObject<'gc> {
         &self,
         activation: &mut Activation<'_, 'gc>,
         class_param: Option<Class<'gc>>,
-    ) -> Result<ClassObject<'gc>, Error<'gc>> {
+    ) -> ClassObject<'gc> {
         let self_class = self.inner_class_definition();
 
         if let Some(application) = self.0.applications.borrow().get(&class_param) {
-            return Ok(*application);
+            return *application;
         }
 
         // if it's not a known application, then it's not int/uint/Number/*,
@@ -608,7 +621,7 @@ impl<'gc> ClassObject<'gc> {
 
         let vector_star_cls = activation.avm2().classes().object_vector;
         let class_object =
-            Self::from_class(activation, parameterized_class, Some(vector_star_cls))?;
+            Self::from_class_without_init(activation, parameterized_class, Some(vector_star_cls));
 
         unlock!(
             Gc::write(activation.gc(), self.0),
@@ -618,7 +631,7 @@ impl<'gc> ClassObject<'gc> {
         .borrow_mut()
         .insert(class_param, class_object);
 
-        Ok(class_object)
+        class_object
     }
 
     pub fn call(
@@ -780,7 +793,7 @@ impl<'gc> TObject<'gc> for ClassObject<'gc> {
             ),
         };
 
-        self.parametrize(activation, class_param)
+        Ok(self.parametrize(activation, class_param))
     }
 }
 

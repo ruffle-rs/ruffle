@@ -136,7 +136,7 @@ pub fn get_qualified_definition_names<'gc>(
             Some(activation.avm2().class_defs().string),
         );
 
-        let name_vector = VectorObject::from_vector(storage, activation)?;
+        let name_vector = VectorObject::from_vector(storage, activation);
 
         return Ok(name_vector.into());
     }

@@ -98,7 +98,7 @@ pub fn call_handler<'gc>(
         new_storage.push(coerced_item, activation)?;
     }
 
-    Ok(VectorObject::from_vector(new_storage, activation)?.into())
+    Ok(VectorObject::from_vector(new_storage, activation).into())
 }
 
 /// `Vector.length` getter
@@ -232,7 +232,7 @@ pub fn concat<'gc>(
         }
     }
 
-    Ok(VectorObject::from_vector(new_vector_storage, activation)?.into())
+    Ok(VectorObject::from_vector(new_vector_storage, activation).into())
 }
 
 /// Implements `Vector.join`
@@ -340,7 +340,7 @@ pub fn filter<'gc>(
         }
     }
 
-    Ok(VectorObject::from_vector(new_storage, activation)?.into())
+    Ok(VectorObject::from_vector(new_storage, activation).into())
 }
 
 /// Implements `Vector.forEach`
@@ -448,7 +448,7 @@ pub fn map<'gc>(
         new_storage.push(coerced_item, activation)?;
     }
 
-    Ok(VectorObject::from_vector(new_storage, activation)?.into())
+    Ok(VectorObject::from_vector(new_storage, activation).into())
 }
 
 /// Implements `Vector.pop`
@@ -609,7 +609,7 @@ pub fn slice<'gc>(
             }
         }
 
-        let new_vector = VectorObject::from_vector(new_vs, activation)?;
+        let new_vector = VectorObject::from_vector(new_vs, activation);
 
         return Ok(new_vector.into());
     }
@@ -732,7 +732,7 @@ pub fn splice<'gc>(
 
         let new_vs =
             VectorStorage::from_values(vs.splice(start..end, to_coerce)?, false, value_type);
-        let new_vector = VectorObject::from_vector(new_vs, activation)?;
+        let new_vector = VectorObject::from_vector(new_vs, activation);
 
         return Ok(new_vector.into());
     }
