@@ -191,9 +191,7 @@ fn is_root_movie_clip_at_end(player: &Arc<Mutex<Player>>) -> bool {
         ctx.stage
             .root_clip()
             .and_then(|root_clip| root_clip.as_movie_clip())
-            .map_or(false, |movie_clip| {
-                movie_clip.current_frame() == movie_clip.total_frames()
-            })
+            .is_some_and(|movie_clip| movie_clip.current_frame() == movie_clip.total_frames())
     })
 }
 
@@ -298,7 +296,7 @@ fn capture_single_swf(descriptors: Arc<Descriptors>, opt: &Opt) -> Result<()> {
         let digits = frames.len().to_string().len();
         for (frame, image) in frames.iter().enumerate() {
             let mut path: PathBuf = (&output).into();
-            path.push(format!("{:0width$}.png", frame, width = digits));
+            path.push(format!("{frame:0digits$}.png"));
             image.save(&path)?;
         }
     }
@@ -393,7 +391,7 @@ fn capture_multiple_swfs(descriptors: Arc<Descriptors>, opt: &Opt) -> Result<()>
                 let digits = frames.len().to_string().len();
                 for (frame, image) in frames.iter().enumerate() {
                     let mut destination = parent.clone();
-                    destination.push(format!("{:0width$}.png", frame, width = digits));
+                    destination.push(format!("{frame:0digits$}.png"));
                     image.save(&destination)?;
                 }
             }
