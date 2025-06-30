@@ -1130,18 +1130,19 @@ pub trait TDisplayObject<'gc>:
 
     /// The `SCALE_ROTATION_CACHED` flag should only be set in SWFv5+.
     /// So scaling/rotation values always have to get recalculated from the matrix in SWFv4.
-    fn set_scale_rotation_cached(&self) {
+    fn set_scale_rotation_cached(self) {
         if self.swf_version() >= 5 {
             self.base().set_scale_rotation_cached(true);
         }
     }
 
-    fn id(&self) -> CharacterId;
-    fn depth(&self) -> Depth {
+    fn id(self) -> CharacterId;
+
+    fn depth(self) -> Depth {
         self.base().depth()
     }
 
-    fn set_depth(&self, depth: Depth) {
+    fn set_depth(self, depth: Depth) {
         self.base().set_depth(depth)
     }
 
@@ -1152,30 +1153,30 @@ pub trait TDisplayObject<'gc>:
     /// Implementors must override this method.
     /// Leaf DisplayObjects should return their bounds.
     /// Composite DisplayObjects that only contain children should return `&Default::default()`
-    fn self_bounds(&self) -> Rectangle<Twips>;
+    fn self_bounds(self) -> Rectangle<Twips>;
 
     /// The untransformed bounding box of this object including children.
-    fn bounds(&self) -> Rectangle<Twips> {
+    fn bounds(self) -> Rectangle<Twips> {
         self.bounds_with_transform(&Matrix::default())
     }
 
     /// The local bounding box of this object including children, in its parent's coordinate system.
-    fn local_bounds(&self) -> Rectangle<Twips> {
+    fn local_bounds(self) -> Rectangle<Twips> {
         self.bounds_with_transform(self.base().matrix())
     }
 
     /// The world bounding box of this object including children, relative to the stage.
-    fn world_bounds(&self) -> Rectangle<Twips> {
+    fn world_bounds(self) -> Rectangle<Twips> {
         self.bounds_with_transform(&self.local_to_global_matrix())
     }
 
     /// The world bounding box of this object, as reported by `Transform.pixelBounds`.
-    fn pixel_bounds(&self) -> Rectangle<Twips> {
+    fn pixel_bounds(self) -> Rectangle<Twips> {
         self.world_bounds()
     }
 
     /// Bounds used for drawing debug rects and picking objects.
-    fn debug_rect_bounds(&self) -> Rectangle<Twips> {
+    fn debug_rect_bounds(self) -> Rectangle<Twips> {
         // Make the rect at least as big as highlight bounds to ensure that anything
         // interactive is also highlighted even if not included in world bounds.
         let highlight_bounds = self
@@ -1189,7 +1190,7 @@ pub trait TDisplayObject<'gc>:
     /// This function recurses down and transforms the AABB each child before adding
     /// it to the bounding box. This gives a tighter AABB then if we simply transformed
     /// the overall AABB.
-    fn bounds_with_transform(&self, matrix: &Matrix) -> Rectangle<Twips> {
+    fn bounds_with_transform(self, matrix: &Matrix) -> Rectangle<Twips> {
         // A scroll rect completely overrides an object's bounds,
         // and can even grow the bounding box to be larger than the actual content
         if let Some(scroll_rect) = self.scroll_rect() {
@@ -1219,7 +1220,7 @@ pub trait TDisplayObject<'gc>:
     /// - It may be larger if filters are applied which will increase the size of what's shown
     /// - It does not respect scroll rects
     fn render_bounds_with_transform(
-        &self,
+        self,
         matrix: &Matrix,
         include_own_filters: bool,
         view_matrix: &Matrix,
@@ -1245,24 +1246,25 @@ pub trait TDisplayObject<'gc>:
         bounds
     }
 
-    fn place_frame(&self) -> u16 {
+    fn place_frame(self) -> u16 {
         self.base().place_frame()
     }
-    fn set_place_frame(&self, frame: u16) {
+
+    fn set_place_frame(self, frame: u16) {
         self.base().set_place_frame(frame)
     }
 
     /// Sets the matrix of this object.
     /// This does NOT invalidate the cache, as it's often used with other operations.
     /// It is the callers responsibility to do so.
-    fn set_matrix(&self, gc_context: &Mutation<'gc>, matrix: Matrix) {
+    fn set_matrix(self, gc_context: &Mutation<'gc>, matrix: Matrix) {
         self.base_mut(gc_context).set_matrix(matrix);
     }
 
     /// Sets the color transform of this object.
     /// This does NOT invalidate the cache, as it's often used with other operations.
     /// It is the callers responsibility to do so.
-    fn set_color_transform(&self, gc_context: &Mutation<'gc>, color_transform: ColorTransform) {
+    fn set_color_transform(self, gc_context: &Mutation<'gc>, color_transform: ColorTransform) {
         self.base_mut(gc_context)
             .set_color_transform(color_transform)
     }
@@ -1270,7 +1272,7 @@ pub trait TDisplayObject<'gc>:
     /// Sets the perspective projection of this object.
     /// This invalidates any ancestors cacheAsBitmap automatically.
     fn set_perspective_projection(
-        &self,
+        self,
         gc_context: &Mutation<'gc>,
         perspective_projection: Option<PerspectiveProjection>,
     ) {
@@ -1287,7 +1289,7 @@ pub trait TDisplayObject<'gc>:
     }
 
     /// Should only be used to implement 'Transform.concatenatedMatrix'
-    fn local_to_global_matrix_without_own_scroll_rect(&self) -> Matrix {
+    fn local_to_global_matrix_without_own_scroll_rect(self) -> Matrix {
         let mut node = self.parent();
         let mut matrix = *self.base().matrix();
         while let Some(display_object) = node {
@@ -1306,7 +1308,7 @@ pub trait TDisplayObject<'gc>:
     }
 
     /// Returns the matrix for transforming from this object's local space to global stage space.
-    fn local_to_global_matrix(&self) -> Matrix {
+    fn local_to_global_matrix(self) -> Matrix {
         let mut matrix = Matrix::IDENTITY;
         if let Some(rect) = self.scroll_rect() {
             matrix = Matrix::translate(-rect.x_min, -rect.y_min) * matrix;
@@ -1316,25 +1318,25 @@ pub trait TDisplayObject<'gc>:
 
     /// Returns the matrix for transforming from global stage to this object's local space.
     /// `None` is returned if the object has zero scale.
-    fn global_to_local_matrix(&self) -> Option<Matrix> {
+    fn global_to_local_matrix(self) -> Option<Matrix> {
         self.local_to_global_matrix().inverse()
     }
 
     /// Converts a local position to a global stage position
-    fn local_to_global(&self, local: Point<Twips>) -> Point<Twips> {
+    fn local_to_global(self, local: Point<Twips>) -> Point<Twips> {
         self.local_to_global_matrix() * local
     }
 
     /// Converts a local position on the stage to a local position on this display object
     /// Returns `None` if the object has zero scale.
-    fn global_to_local(&self, global: Point<Twips>) -> Option<Point<Twips>> {
+    fn global_to_local(self, global: Point<Twips>) -> Option<Point<Twips>> {
         self.global_to_local_matrix().map(|matrix| matrix * global)
     }
 
     /// Converts the mouse position on the stage to a local position on this display object.
     /// If the object has zero scale, then the stage `TWIPS_TO_PIXELS` matrix will be used.
     /// This matches Flash's behavior for `mouseX`/`mouseY` on an object with zero scale.
-    fn local_mouse_position(&self, context: &UpdateContext<'gc>) -> Point<Twips> {
+    fn local_mouse_position(self, context: &UpdateContext<'gc>) -> Point<Twips> {
         let stage = context.stage;
         let pixel_ratio = stage.view_matrix().a;
         let virtual_to_device = Matrix::scale(pixel_ratio, pixel_ratio);
@@ -1359,14 +1361,14 @@ pub trait TDisplayObject<'gc>:
 
     /// The `x` position in pixels of this display object in local space.
     /// Returned by the `_x`/`x` ActionScript properties.
-    fn x(&self) -> Twips {
+    fn x(self) -> Twips {
         self.base().x()
     }
 
     /// Sets the `x` position in pixels of this display object in local space.
     /// Set by the `_x`/`x` ActionScript properties.
     /// This invalidates any ancestors cacheAsBitmap automatically.
-    fn set_x(&self, gc_context: &Mutation<'gc>, x: Twips) {
+    fn set_x(self, gc_context: &Mutation<'gc>, x: Twips) {
         if self.base_mut(gc_context).set_x(x) {
             if let Some(parent) = self.parent() {
                 // Self-transform changes are automatically handled,
@@ -1378,14 +1380,14 @@ pub trait TDisplayObject<'gc>:
 
     /// The `y` position in pixels of this display object in local space.
     /// Returned by the `_y`/`y` ActionScript properties.
-    fn y(&self) -> Twips {
+    fn y(self) -> Twips {
         self.base().y()
     }
 
     /// Sets the `y` position in pixels of this display object in local space.
     /// Set by the `_y`/`y` ActionScript properties.
     /// This invalidates any ancestors cacheAsBitmap automatically.
-    fn set_y(&self, gc_context: &Mutation<'gc>, y: Twips) {
+    fn set_y(self, gc_context: &Mutation<'gc>, y: Twips) {
         if self.base_mut(gc_context).set_y(y) {
             if let Some(parent) = self.parent() {
                 // Self-transform changes are automatically handled,
@@ -1397,7 +1399,7 @@ pub trait TDisplayObject<'gc>:
 
     /// The rotation in degrees this display object in local space.
     /// Returned by the `_rotation`/`rotation` ActionScript properties.
-    fn rotation(&self) -> Degrees {
+    fn rotation(self) -> Degrees {
         let degrees = self.base().rotation();
         self.set_scale_rotation_cached();
         degrees
@@ -1406,7 +1408,7 @@ pub trait TDisplayObject<'gc>:
     /// Sets the rotation in degrees this display object in local space.
     /// Set by the `_rotation`/`rotation` ActionScript properties.
     /// This invalidates any ancestors cacheAsBitmap automatically.
-    fn set_rotation(&self, gc_context: &Mutation<'gc>, radians: Degrees) {
+    fn set_rotation(self, gc_context: &Mutation<'gc>, radians: Degrees) {
         if self.base_mut(gc_context).set_rotation(radians) {
             self.set_scale_rotation_cached();
             if let Some(parent) = self.parent() {
@@ -1419,7 +1421,7 @@ pub trait TDisplayObject<'gc>:
 
     /// The X axis scale for this display object in local space.
     /// Returned by the `_xscale`/`scaleX` ActionScript properties.
-    fn scale_x(&self) -> Percent {
+    fn scale_x(self) -> Percent {
         let percent = self.base().scale_x();
         self.set_scale_rotation_cached();
         percent
@@ -1428,7 +1430,7 @@ pub trait TDisplayObject<'gc>:
     /// Sets the X axis scale for this display object in local space.
     /// Set by the `_xscale`/`scaleX` ActionScript properties.
     /// This invalidates any ancestors cacheAsBitmap automatically.
-    fn set_scale_x(&self, gc_context: &Mutation<'gc>, value: Percent) {
+    fn set_scale_x(self, gc_context: &Mutation<'gc>, value: Percent) {
         if self.base_mut(gc_context).set_scale_x(value) {
             self.set_scale_rotation_cached();
             if let Some(parent) = self.parent() {
@@ -1441,7 +1443,7 @@ pub trait TDisplayObject<'gc>:
 
     /// The Y axis scale for this display object in local space.
     /// Returned by the `_yscale`/`scaleY` ActionScript properties.
-    fn scale_y(&self) -> Percent {
+    fn scale_y(self) -> Percent {
         let percent = self.base().scale_y();
         self.set_scale_rotation_cached();
         percent
@@ -1450,7 +1452,7 @@ pub trait TDisplayObject<'gc>:
     /// Sets the Y axis scale for this display object in local space.
     /// Returned by the `_yscale`/`scaleY` ActionScript properties.
     /// This invalidates any ancestors cacheAsBitmap automatically.
-    fn set_scale_y(&self, gc_context: &Mutation<'gc>, value: Percent) {
+    fn set_scale_y(self, gc_context: &Mutation<'gc>, value: Percent) {
         if self.base_mut(gc_context).set_scale_y(value) {
             self.set_scale_rotation_cached();
             if let Some(parent) = self.parent() {
@@ -1463,7 +1465,7 @@ pub trait TDisplayObject<'gc>:
 
     /// Gets the pixel width of the AABB containing this display object in local space.
     /// Returned by the ActionScript `_width`/`width` properties.
-    fn width(&self) -> f64 {
+    fn width(self) -> f64 {
         self.local_bounds().width().to_pixels()
     }
 
@@ -1471,7 +1473,7 @@ pub trait TDisplayObject<'gc>:
     /// The width is based on the AABB of the object.
     /// Set by the ActionScript `_width`/`width` properties.
     /// This does odd things on rotated clips to match the behavior of Flash.
-    fn set_width(&self, context: &mut UpdateContext<'gc>, value: f64) {
+    fn set_width(self, context: &mut UpdateContext<'gc>, value: f64) {
         let gc_context = context.gc();
         let object_bounds = self.bounds();
         let object_width = object_bounds.width().to_pixels();
@@ -1512,14 +1514,14 @@ pub trait TDisplayObject<'gc>:
 
     /// Gets the pixel height of the AABB containing this display object in local space.
     /// Returned by the ActionScript `_height`/`height` properties.
-    fn height(&self) -> f64 {
+    fn height(self) -> f64 {
         self.local_bounds().height().to_pixels()
     }
 
     /// Sets the pixel height of this display object in local space.
     /// Set by the ActionScript `_height`/`height` properties.
     /// This does odd things on rotated clips to match the behavior of Flash.
-    fn set_height(&self, context: &mut UpdateContext<'gc>, value: f64) {
+    fn set_height(self, context: &mut UpdateContext<'gc>, value: f64) {
         let gc_context = context.gc();
         let object_bounds = self.bounds();
         let object_width = object_bounds.width().to_pixels();
@@ -1561,7 +1563,7 @@ pub trait TDisplayObject<'gc>:
     /// The opacity of this display object.
     /// 1 is fully opaque.
     /// Returned by the `_alpha`/`alpha` ActionScript properties.
-    fn alpha(&self) -> f64 {
+    fn alpha(self) -> f64 {
         self.base().alpha()
     }
 
@@ -1569,7 +1571,7 @@ pub trait TDisplayObject<'gc>:
     /// 1 is fully opaque.
     /// Set by the `_alpha`/`alpha` ActionScript properties.
     /// This invalidates any cacheAsBitmap automatically.
-    fn set_alpha(&self, gc_context: &Mutation<'gc>, value: f64) {
+    fn set_alpha(self, gc_context: &Mutation<'gc>, value: f64) {
         if self.base_mut(gc_context).set_alpha(value) {
             if let Some(parent) = self.parent() {
                 // Self-transform changes are automatically handled
@@ -1578,25 +1580,26 @@ pub trait TDisplayObject<'gc>:
         }
     }
 
-    fn name(&self) -> Option<AvmString<'gc>> {
+    fn name(self) -> Option<AvmString<'gc>> {
         self.base().name()
     }
-    fn set_name(&self, gc_context: &Mutation<'gc>, name: AvmString<'gc>) {
+
+    fn set_name(self, gc_context: &Mutation<'gc>, name: AvmString<'gc>) {
         self.base_mut(gc_context).set_name(name)
     }
 
-    fn filters(&self) -> Vec<Filter> {
+    fn filters(self) -> Vec<Filter> {
         self.base().filters()
     }
 
-    fn set_filters(&self, gc_context: &Mutation<'gc>, filters: Vec<Filter>) {
+    fn set_filters(self, gc_context: &Mutation<'gc>, filters: Vec<Filter>) {
         if self.base_mut(gc_context).set_filters(filters) {
             self.invalidate_cached_bitmap(gc_context);
         }
     }
 
     /// Returns the dot-syntax path to this display object, e.g. `_level0.foo.clip`
-    fn path(&self) -> WString {
+    fn path(self) -> WString {
         if let Some(parent) = self.avm1_parent() {
             let mut path = parent.path();
             path.push_byte(b'.');
@@ -1611,7 +1614,7 @@ pub trait TDisplayObject<'gc>:
 
     /// Returns the Flash 4 slash-syntax path to this display object, e.g. `/foo/clip`.
     /// Returned by the `_target` property in AVM1.
-    fn slash_path(&self) -> WString {
+    fn slash_path(self) -> WString {
         fn build_slash_path(object: DisplayObject<'_>) -> WString {
             if let Some(parent) = object.avm1_parent() {
                 let mut path = build_slash_path(parent);
@@ -1633,17 +1636,18 @@ pub trait TDisplayObject<'gc>:
         }
 
         if self.avm1_parent().is_some() {
-            build_slash_path((*self).into())
+            build_slash_path(self.into())
         } else {
             // _target of _level0 should just be '/'.
             WString::from_unit(b'/'.into())
         }
     }
 
-    fn clip_depth(&self) -> Depth {
+    fn clip_depth(self) -> Depth {
         self.base().clip_depth()
     }
-    fn set_clip_depth(&self, depth: Depth) {
+
+    fn set_clip_depth(self, depth: Depth) {
         self.base().set_clip_depth(depth);
     }
 
@@ -1651,12 +1655,12 @@ pub trait TDisplayObject<'gc>:
     ///
     /// This version of the function merely exposes the display object parent,
     /// without any further filtering.
-    fn parent(&self) -> Option<DisplayObject<'gc>> {
+    fn parent(self) -> Option<DisplayObject<'gc>> {
         self.base().parent()
     }
 
     /// Set the parent of this display object.
-    fn set_parent(&self, context: &mut UpdateContext<'gc>, parent: Option<DisplayObject<'gc>>) {
+    fn set_parent(self, context: &mut UpdateContext<'gc>, parent: Option<DisplayObject<'gc>>) {
         let had_parent = self.parent().is_some();
         self.base_mut(context.gc())
             .set_parent_ignoring_orphan_list(parent);
@@ -1674,7 +1678,7 @@ pub trait TDisplayObject<'gc>:
 
     /// This method is called when the parent is removed.
     /// It may be overwritten to inject some implementation-specific behavior.
-    fn on_parent_removed(&self, _context: &mut UpdateContext<'gc>) {}
+    fn on_parent_removed(self, _context: &mut UpdateContext<'gc>) {}
 
     /// Retrieve the parent of this display object.
     ///
@@ -1682,7 +1686,7 @@ pub trait TDisplayObject<'gc>:
     /// seen in AVM1. Notably, it disallows access to the `Stage` and to
     /// non-AVM1 DisplayObjects; for an unfiltered concept of parent,
     /// use the `parent` method.
-    fn avm1_parent(&self) -> Option<DisplayObject<'gc>> {
+    fn avm1_parent(self) -> Option<DisplayObject<'gc>> {
         self.parent()
             .filter(|p| p.as_stage().is_none())
             .filter(|p| !p.movie().is_action_script_3())
@@ -1692,21 +1696,24 @@ pub trait TDisplayObject<'gc>:
     ///
     /// This version of the function implements the concept of parenthood as
     /// seen in AVM2. Notably, it disallows access to non-container parents.
-    fn avm2_parent(&self) -> Option<DisplayObject<'gc>> {
+    fn avm2_parent(self) -> Option<DisplayObject<'gc>> {
         self.parent().filter(|p| p.as_container().is_some())
     }
 
-    fn next_avm1_clip(&self) -> Option<DisplayObject<'gc>> {
+    fn next_avm1_clip(self) -> Option<DisplayObject<'gc>> {
         self.base().next_avm1_clip()
     }
-    fn set_next_avm1_clip(&self, gc_context: &Mutation<'gc>, node: Option<DisplayObject<'gc>>) {
+
+    fn set_next_avm1_clip(self, gc_context: &Mutation<'gc>, node: Option<DisplayObject<'gc>>) {
         self.base_mut(gc_context).set_next_avm1_clip(node);
     }
-    fn masker(&self) -> Option<DisplayObject<'gc>> {
+
+    fn masker(self) -> Option<DisplayObject<'gc>> {
         self.base().masker()
     }
+
     fn set_masker(
-        &self,
+        self,
         gc_context: &Mutation<'gc>,
         node: Option<DisplayObject<'gc>>,
         remove_old_link: bool,
@@ -1723,11 +1730,13 @@ pub trait TDisplayObject<'gc>:
         }
         self.base_mut(gc_context).set_masker(node);
     }
-    fn maskee(&self) -> Option<DisplayObject<'gc>> {
+
+    fn maskee(self) -> Option<DisplayObject<'gc>> {
         self.base().maskee()
     }
+
     fn set_maskee(
-        &self,
+        self,
         gc_context: &Mutation<'gc>,
         node: Option<DisplayObject<'gc>>,
         remove_old_link: bool,
@@ -1742,15 +1751,15 @@ pub trait TDisplayObject<'gc>:
         self.base_mut(gc_context).set_maskee(node);
     }
 
-    fn scroll_rect(&self) -> Option<Rectangle<Twips>> {
+    fn scroll_rect(self) -> Option<Rectangle<Twips>> {
         self.base().scroll_rect.get()
     }
 
-    fn next_scroll_rect(&self) -> Rectangle<Twips> {
+    fn next_scroll_rect(self) -> Rectangle<Twips> {
         self.base().next_scroll_rect.get()
     }
 
-    fn set_next_scroll_rect(&self, gc_context: &Mutation<'gc>, rectangle: Rectangle<Twips>) {
+    fn set_next_scroll_rect(self, gc_context: &Mutation<'gc>, rectangle: Rectangle<Twips>) {
         self.base().next_scroll_rect.set(rectangle);
 
         // Scroll rect is natively handled by cacheAsBitmap - don't invalidate self, only parents
@@ -1759,44 +1768,44 @@ pub trait TDisplayObject<'gc>:
         }
     }
 
-    fn scaling_grid(&self) -> Rectangle<Twips> {
+    fn scaling_grid(self) -> Rectangle<Twips> {
         self.base().scaling_grid.get()
     }
 
-    fn set_scaling_grid(&self, rect: Rectangle<Twips>) {
+    fn set_scaling_grid(self, rect: Rectangle<Twips>) {
         self.base().scaling_grid.set(rect);
     }
 
     /// Whether this object has been removed. Only applies to AVM1.
-    fn avm1_removed(&self) -> bool {
+    fn avm1_removed(self) -> bool {
         self.base().avm1_removed()
     }
 
     // Sets whether this object has been removed. Only applies to AVM1
-    fn set_avm1_removed(&self, value: bool) {
+    fn set_avm1_removed(self, value: bool) {
         self.base().set_avm1_removed(value)
     }
 
     /// Is this object waiting to be removed on the start of the next frame
-    fn avm1_pending_removal(&self) -> bool {
+    fn avm1_pending_removal(self) -> bool {
         self.base().avm1_pending_removal()
     }
 
-    fn set_avm1_pending_removal(&self, value: bool) {
+    fn set_avm1_pending_removal(self, value: bool) {
         self.base().set_avm1_pending_removal(value)
     }
 
     /// Whether this display object is visible.
     /// Invisible objects are not rendered, but otherwise continue to exist normally.
     /// Returned by the `_visible`/`visible` ActionScript properties.
-    fn visible(&self) -> bool {
+    fn visible(self) -> bool {
         self.base().visible()
     }
 
     /// Sets whether this display object will be visible.
     /// Invisible objects are not rendered, but otherwise continue to exist normally.
     /// Returned by the `_visible`/`visible` ActionScript properties.
-    fn set_visible(&self, context: &mut UpdateContext<'gc>, value: bool) {
+    fn set_visible(self, context: &mut UpdateContext<'gc>, value: bool) {
         if self.base().set_visible(value) {
             if let Some(parent) = self.parent() {
                 // We don't need to invalidate ourselves, we're just toggling if the bitmap is rendered.
@@ -1812,23 +1821,23 @@ pub trait TDisplayObject<'gc>:
         }
     }
 
-    fn meta_data(&self) -> Option<Avm2Object<'gc>> {
+    fn meta_data(self) -> Option<Avm2Object<'gc>> {
         self.base().meta_data()
     }
 
-    fn set_meta_data(&self, gc_context: &Mutation<'gc>, value: Avm2Object<'gc>) {
+    fn set_meta_data(self, gc_context: &Mutation<'gc>, value: Avm2Object<'gc>) {
         self.base_mut(gc_context).set_meta_data(value);
     }
 
     /// The blend mode used when rendering this display object.
     /// Values other than the default `BlendMode::Normal` implicitly cause cache-as-bitmap behavior.
-    fn blend_mode(&self) -> ExtendedBlendMode {
+    fn blend_mode(self) -> ExtendedBlendMode {
         self.base().blend_mode()
     }
 
     /// Sets the blend mode used when rendering this display object.
     /// Values other than the default `BlendMode::Normal` implicitly cause cache-as-bitmap behavior.
-    fn set_blend_mode(&self, gc_context: &Mutation<'gc>, value: ExtendedBlendMode) {
+    fn set_blend_mode(self, gc_context: &Mutation<'gc>, value: ExtendedBlendMode) {
         if self.base().set_blend_mode(value) {
             if let Some(parent) = self.parent() {
                 // We don't need to invalidate ourselves, we're just toggling how the bitmap is rendered.
@@ -1840,17 +1849,17 @@ pub trait TDisplayObject<'gc>:
         }
     }
 
-    fn blend_shader(&self) -> Option<PixelBenderShaderHandle> {
+    fn blend_shader(self) -> Option<PixelBenderShaderHandle> {
         self.base().blend_shader()
     }
 
-    fn set_blend_shader(&self, gc_context: &Mutation<'gc>, value: Option<PixelBenderShaderHandle>) {
+    fn set_blend_shader(self, gc_context: &Mutation<'gc>, value: Option<PixelBenderShaderHandle>) {
         self.base_mut(gc_context).set_blend_shader(value);
         self.set_blend_mode(gc_context, ExtendedBlendMode::Shader);
     }
 
     /// The opaque background color of this display object.
-    fn opaque_background(&self) -> Option<Color> {
+    fn opaque_background(self) -> Option<Color> {
         self.base().opaque_background()
     }
 
@@ -1858,25 +1867,25 @@ pub trait TDisplayObject<'gc>:
     /// The bounding box of the display object will be filled with the given color. This also
     /// triggers cache-as-bitmap behavior. Only solid backgrounds are supported; the alpha channel
     /// is ignored.
-    fn set_opaque_background(&self, gc_context: &Mutation<'gc>, value: Option<Color>) {
+    fn set_opaque_background(self, gc_context: &Mutation<'gc>, value: Option<Color>) {
         if self.base().set_opaque_background(value) {
             self.invalidate_cached_bitmap(gc_context);
         }
     }
 
     /// Whether this display object represents the root of loaded content.
-    fn is_root(&self) -> bool {
+    fn is_root(self) -> bool {
         self.base().is_root()
     }
 
     /// Sets whether this display object represents the root of loaded content.
-    fn set_is_root(&self, value: bool) {
+    fn set_is_root(self, value: bool) {
         self.base().set_is_root(value);
     }
 
     /// The sound transform for sounds played inside this display object.
     fn set_sound_transform(
-        &self,
+        self,
         context: &mut UpdateContext<'gc>,
         sound_transform: SoundTransform,
     ) {
@@ -1887,82 +1896,82 @@ pub trait TDisplayObject<'gc>:
 
     /// Whether this display object is used as the _root of itself and its children.
     /// Returned by the `_lockroot` ActionScript property.
-    fn lock_root(&self) -> bool {
+    fn lock_root(self) -> bool {
         self.base().lock_root()
     }
 
     /// Sets whether this display object is used as the _root of itself and its children.
     /// Returned by the `_lockroot` ActionScript property.
-    fn set_lock_root(&self, value: bool) {
+    fn set_lock_root(self, value: bool) {
         self.base().set_lock_root(value);
     }
 
     /// Whether this display object has been transformed by ActionScript.
     /// When this flag is set, changes from SWF `PlaceObject` tags are ignored.
-    fn transformed_by_script(&self) -> bool {
+    fn transformed_by_script(self) -> bool {
         self.base().transformed_by_script()
     }
 
     /// Sets whether this display object has been transformed by ActionScript.
     /// When this flag is set, changes from SWF `PlaceObject` tags are ignored.
-    fn set_transformed_by_script(&self, value: bool) {
+    fn set_transformed_by_script(self, value: bool) {
         self.base().set_transformed_by_script(value)
     }
 
     /// Whether this display object prefers to be cached into a bitmap rendering.
     /// This is the PlaceObject `cacheAsBitmap` flag - and may be overridden if filters are applied.
     /// Consider `is_bitmap_cached` for if a bitmap cache is actually in use.
-    fn is_bitmap_cached_preference(&self) -> bool {
+    fn is_bitmap_cached_preference(self) -> bool {
         self.base().is_bitmap_cached_preference()
     }
 
     /// Whether this display object is using a bitmap cache, whether by preference or necessity.
-    fn is_bitmap_cached(&self) -> bool {
+    fn is_bitmap_cached(self) -> bool {
         self.base().cache.is_some()
     }
 
     /// Explicitly sets the preference of this display object to be cached into a bitmap rendering.
     /// Note that the object will still be bitmap cached if a filter is active.
-    fn set_bitmap_cached_preference(&self, gc_context: &Mutation<'gc>, value: bool) {
+    fn set_bitmap_cached_preference(self, gc_context: &Mutation<'gc>, value: bool) {
         self.base_mut(gc_context)
             .set_bitmap_cached_preference(value)
     }
 
     /// Whether this display object has a scroll rectangle applied.
-    fn has_scroll_rect(&self) -> bool {
+    fn has_scroll_rect(self) -> bool {
         self.base().has_scroll_rect()
     }
 
     /// Sets whether this display object has a scroll rectangle applied.
-    fn set_has_scroll_rect(&self, value: bool) {
+    fn set_has_scroll_rect(self, value: bool) {
         self.base().set_has_scroll_rect(value)
     }
 
     /// Whether this display object has been created by ActionScript 3.
     /// When this flag is set, changes from SWF `RemoveObject` tags are
     /// ignored.
-    fn placed_by_script(&self) -> bool {
+    fn placed_by_script(self) -> bool {
         self.base().placed_by_script()
     }
 
     /// Sets whether this display object has been created by ActionScript 3.
     /// When this flag is set, changes from SWF `RemoveObject` tags are
     /// ignored.
-    fn set_placed_by_script(&self, value: bool) {
+    fn set_placed_by_script(self, value: bool) {
         self.base().set_placed_by_script(value)
     }
 
     /// Whether this display object has been instantiated by the timeline.
     /// When this flag is set, attempts to change the object's name from AVM2
     /// throw an exception.
-    fn instantiated_by_timeline(&self) -> bool {
+    fn instantiated_by_timeline(self) -> bool {
         self.base().instantiated_by_timeline()
     }
 
     /// Sets whether this display object has been instantiated by the timeline.
     /// When this flag is set, attempts to change the object's name from AVM2
     /// throw an exception.
-    fn set_instantiated_by_timeline(&self, value: bool) {
+    fn set_instantiated_by_timeline(self, value: bool) {
         self.base().set_instantiated_by_timeline(value);
     }
 
@@ -1971,7 +1980,7 @@ pub trait TDisplayObject<'gc>:
     ///
     /// When this flag is set, the object will attempt to set a dynamic property
     /// on the parent with the same name as itself.
-    fn has_explicit_name(&self) -> bool {
+    fn has_explicit_name(self) -> bool {
         self.base().has_explicit_name()
     }
 
@@ -1980,7 +1989,7 @@ pub trait TDisplayObject<'gc>:
     ///
     /// When this flag is set, the object will attempt to set a dynamic property
     /// on the parent with the same name as itself.
-    fn set_has_explicit_name(&self, value: bool) {
+    fn set_has_explicit_name(self, value: bool) {
         self.base().set_has_explicit_name(value);
     }
     fn state(&self) -> Option<ButtonState> {
@@ -1990,7 +1999,7 @@ pub trait TDisplayObject<'gc>:
     /// Run any start-of-frame actions for this display object.
     ///
     /// When fired on `Stage`, this also emits the AVM2 `enterFrame` broadcast.
-    fn enter_frame(&self, _context: &mut UpdateContext<'gc>) {}
+    fn enter_frame(self, _context: &mut UpdateContext<'gc>) {}
 
     /// Construct all display objects that the timeline indicates should exist
     /// this frame, and their children.
@@ -2001,7 +2010,7 @@ pub trait TDisplayObject<'gc>:
     /// 1. That the object itself has been allocated, if not constructed
     /// 2. That newly created children have been instantiated and are present
     ///    as properties on the class
-    fn construct_frame(&self, _context: &mut UpdateContext<'gc>) {}
+    fn construct_frame(self, _context: &mut UpdateContext<'gc>) {}
 
     /// To be called when an AVM2 display object has finished being constructed.
     ///
@@ -2020,7 +2029,7 @@ pub trait TDisplayObject<'gc>:
     /// placed on the render list, these steps have to be done by the child
     /// object to signal to its parent that it was added.
     #[inline(never)]
-    fn on_construction_complete(&self, context: &mut UpdateContext<'gc>) {
+    fn on_construction_complete(self, context: &mut UpdateContext<'gc>) {
         let placed_by_script = self.placed_by_script();
         self.fire_added_events(context);
         // Check `self.placed_by_script()` before we fire events, since those
@@ -2046,7 +2055,7 @@ pub trait TDisplayObject<'gc>:
         }
     }
 
-    fn fire_added_events(&self, context: &mut UpdateContext<'gc>) {
+    fn fire_added_events(self, context: &mut UpdateContext<'gc>) {
         if !self.placed_by_script() {
             // Since we construct AVM2 display objects after they are
             // allocated and placed on the render list, we have to emit all
@@ -2054,15 +2063,15 @@ pub trait TDisplayObject<'gc>:
             //
             // Children added to buttons by the timeline do not emit events.
             if self.parent().and_then(|p| p.as_avm2_button()).is_none() {
-                dispatch_added_event_only((*self).into(), context);
+                dispatch_added_event_only(self.into(), context);
                 if self.avm2_stage(context).is_some() {
-                    dispatch_added_to_stage_event_only((*self).into(), context);
+                    dispatch_added_to_stage_event_only(self.into(), context);
                 }
             }
         }
     }
 
-    fn set_on_parent_field(&self, context: &mut UpdateContext<'gc>) {
+    fn set_on_parent_field(self, context: &mut UpdateContext<'gc>) {
         //TODO: Don't report missing property errors.
         //TODO: Don't attempt to set properties if object was placed without a name.
         if self.has_explicit_name() {
@@ -2093,11 +2102,11 @@ pub trait TDisplayObject<'gc>:
     }
 
     /// Execute all other timeline actions on this object.
-    fn run_frame_avm1(&self, _context: &mut UpdateContext<'gc>) {}
+    fn run_frame_avm1(self, _context: &mut UpdateContext<'gc>) {}
 
     /// Emit a `frameConstructed` event on this DisplayObject and any children it
     /// may have.
-    fn frame_constructed(&self, context: &mut UpdateContext<'gc>) {
+    fn frame_constructed(self, context: &mut UpdateContext<'gc>) {
         let frame_constructed_evt =
             Avm2EventObject::bare_default_event(context, "frameConstructed");
         let dobject_constr = context.avm2.classes().display_object;
@@ -2114,7 +2123,7 @@ pub trait TDisplayObject<'gc>:
     }
 
     /// Emit an `exitFrame` broadcast event.
-    fn exit_frame(&self, context: &mut UpdateContext<'gc>) {
+    fn exit_frame(self, context: &mut UpdateContext<'gc>) {
         let exit_frame_evt = Avm2EventObject::bare_default_event(context, "exitFrame");
         let dobject_constr = context.avm2.classes().display_object;
         Avm2::broadcast_event(context, exit_frame_evt, dobject_constr);
@@ -2125,24 +2134,24 @@ pub trait TDisplayObject<'gc>:
     /// Called before the child is about to be rendered.
     /// Note that this happens even if the child is invisible
     /// (as long as the child is still on a render list)
-    fn pre_render(&self, _context: &mut RenderContext<'_, 'gc>) {
+    fn pre_render(self, _context: &mut RenderContext<'_, 'gc>) {
         let this = self.base();
         this.clear_invalidate_flag();
         this.scroll_rect
             .set(this.has_scroll_rect().then(|| this.next_scroll_rect.get()));
     }
 
-    fn render_self(&self, _context: &mut RenderContext<'_, 'gc>) {}
+    fn render_self(self, _context: &mut RenderContext<'_, 'gc>) {}
 
-    fn render(&self, context: &mut RenderContext<'_, 'gc>) {
-        render_base((*self).into(), context)
+    fn render(self, context: &mut RenderContext<'_, 'gc>) {
+        render_base(self.into(), context)
     }
 
     #[cfg(not(feature = "avm_debug"))]
-    fn display_render_tree(&self, _depth: usize) {}
+    fn display_render_tree(self, _depth: usize) {}
 
     #[cfg(feature = "avm_debug")]
-    fn display_render_tree(&self, depth: usize) {
+    fn display_render_tree(self, depth: usize) {
         let mut self_str = &*format!("{self:?}");
         if let Some(end_char) = self_str.find(|c: char| !c.is_ascii_alphanumeric()) {
             self_str = &self_str[..end_char];
@@ -2174,7 +2183,7 @@ pub trait TDisplayObject<'gc>:
         }
     }
 
-    fn avm1_unload(&self, context: &mut UpdateContext<'gc>) {
+    fn avm1_unload(self, context: &mut UpdateContext<'gc>) {
         // Unload children.
         if let Some(ctr) = self.as_container() {
             for child in ctr.iter_render_list() {
@@ -2189,7 +2198,7 @@ pub trait TDisplayObject<'gc>:
         }
 
         // Unregister any text field variable bindings, and replace them on the unbound list.
-        Avm1TextFieldBinding::unregister_bindings((*self).into(), context);
+        Avm1TextFieldBinding::unregister_bindings(self.into(), context);
 
         self.set_avm1_removed(true);
     }
@@ -2205,48 +2214,55 @@ pub trait TDisplayObject<'gc>:
         None
     }
 
-    fn as_stage(&self) -> Option<Stage<'gc>> {
+    fn as_stage(self) -> Option<Stage<'gc>> {
         None
     }
-    fn as_avm1_button(&self) -> Option<Avm1Button<'gc>> {
+
+    fn as_avm1_button(self) -> Option<Avm1Button<'gc>> {
         None
     }
-    fn as_avm2_button(&self) -> Option<Avm2Button<'gc>> {
+
+    fn as_avm2_button(self) -> Option<Avm2Button<'gc>> {
         None
     }
-    fn as_movie_clip(&self) -> Option<MovieClip<'gc>> {
+
+    fn as_movie_clip(self) -> Option<MovieClip<'gc>> {
         None
     }
-    fn as_edit_text(&self) -> Option<EditText<'gc>> {
+
+    fn as_edit_text(self) -> Option<EditText<'gc>> {
         None
     }
-    fn as_text(&self) -> Option<Text<'gc>> {
+
+    fn as_text(self) -> Option<Text<'gc>> {
         None
     }
-    fn as_morph_shape(&self) -> Option<MorphShape<'gc>> {
+
+    fn as_morph_shape(self) -> Option<MorphShape<'gc>> {
         None
     }
+
     fn as_container(self) -> Option<DisplayObjectContainer<'gc>> {
         None
     }
+
     fn as_video(self) -> Option<Video<'gc>> {
         None
     }
+
     fn as_drawing(&self, _gc_context: &Mutation<'gc>) -> Option<RefMut<'_, Drawing>> {
         None
     }
+
     fn as_bitmap(self) -> Option<Bitmap<'gc>> {
         None
     }
+
     fn as_interactive(self) -> Option<InteractiveObject<'gc>> {
         None
     }
 
-    fn apply_place_object(
-        &self,
-        context: &mut UpdateContext<'gc>,
-        place_object: &swf::PlaceObject,
-    ) {
+    fn apply_place_object(self, context: &mut UpdateContext<'gc>, place_object: &swf::PlaceObject) {
         // PlaceObject tags only apply if this object has not been dynamically moved by AS code.
         if !self.transformed_by_script() {
             if let Some(matrix) = place_object.matrix {
@@ -2302,34 +2318,34 @@ pub trait TDisplayObject<'gc>:
     }
 
     /// Called when this object should be replaced by a PlaceObject tag.
-    fn replace_with(&self, _context: &mut UpdateContext<'gc>, _id: CharacterId) {
+    fn replace_with(self, _context: &mut UpdateContext<'gc>, _id: CharacterId) {
         // Noop for most symbols; only shapes can replace their innards with another Graphic.
     }
 
-    fn object(&self) -> Avm1Value<'gc> {
+    fn object(self) -> Avm1Value<'gc> {
         Avm1Value::Undefined // TODO: Implement for every type and delete this fallback.
     }
 
-    fn object2(&self) -> Avm2Value<'gc> {
+    fn object2(self) -> Avm2Value<'gc> {
         Avm2Value::Undefined // TODO: See above. Also, unconstructed objects should return null.
     }
 
-    fn set_object2(&self, _context: &mut UpdateContext<'gc>, _to: Avm2Object<'gc>) {}
+    fn set_object2(self, _context: &mut UpdateContext<'gc>, _to: Avm2Object<'gc>) {}
 
     /// Tests if a given stage position point intersects with the world bounds of this object.
-    fn hit_test_bounds(&self, point: Point<Twips>) -> bool {
+    fn hit_test_bounds(self, point: Point<Twips>) -> bool {
         self.world_bounds().contains(point)
     }
 
     /// Tests if a given object's world bounds intersects with the world bounds
     /// of this object.
-    fn hit_test_object(&self, other: DisplayObject<'gc>) -> bool {
+    fn hit_test_object(self, other: DisplayObject<'gc>) -> bool {
         self.world_bounds().intersects(&other.world_bounds())
     }
 
     /// Tests if a given stage position point intersects within this object, considering the art.
     fn hit_test_shape(
-        &self,
+        self,
         _context: &mut UpdateContext<'gc>,
         point: Point<Twips>,
         options: HitTestOptions,
@@ -2340,7 +2356,7 @@ pub trait TDisplayObject<'gc>:
     }
 
     fn post_instantiation(
-        &self,
+        self,
         context: &mut UpdateContext<'gc>,
         _init_object: Option<Avm1Object<'gc>>,
         _instantiated_by: Instantiator,
@@ -2352,24 +2368,25 @@ pub trait TDisplayObject<'gc>:
     }
 
     /// Return the version of the SWF that created this movie clip.
-    fn swf_version(&self) -> u8 {
+    fn swf_version(self) -> u8 {
         self.movie().version()
     }
 
     /// Return the SWF that defines this display object.
-    fn movie(&self) -> Arc<SwfMovie>;
+    fn movie(self) -> Arc<SwfMovie>;
 
-    fn loader_info(&self) -> Option<Avm2Object<'gc>> {
+    fn loader_info(self) -> Option<Avm2Object<'gc>> {
         None
     }
 
-    fn instantiate(&self, gc_context: &Mutation<'gc>) -> DisplayObject<'gc>;
-    fn as_ptr(&self) -> *const DisplayObjectPtr;
+    fn instantiate(self, gc_context: &Mutation<'gc>) -> DisplayObject<'gc>;
+
+    fn as_ptr(self) -> *const DisplayObjectPtr;
 
     /// Whether this object can be used as a mask.
     /// If this returns false and this object is used as a mask, the mask will not be applied.
     /// This is used by movie clips to disable the mask when there are no children, for example.
-    fn allow_as_mask(&self) -> bool {
+    fn allow_as_mask(self) -> bool {
         true
     }
 
@@ -2377,8 +2394,8 @@ pub trait TDisplayObject<'gc>:
     ///
     /// This function implements the AVM1 concept of root clips. For the AVM2
     /// version, see `avm2_root`.
-    fn avm1_root(&self) -> DisplayObject<'gc> {
-        let mut root = (*self).into();
+    fn avm1_root(self) -> DisplayObject<'gc> {
+        let mut root = self.into();
         loop {
             if root.lock_root() {
                 break;
@@ -2398,8 +2415,8 @@ pub trait TDisplayObject<'gc>:
     }
 
     /// `avm1_root`, but disregards _lockroot
-    fn avm1_root_no_lock(&self) -> DisplayObject<'gc> {
-        let mut root = (*self).into();
+    fn avm1_root_no_lock(self) -> DisplayObject<'gc> {
+        let mut root = self.into();
         while let Some(parent) = root.avm1_parent() {
             if !parent.movie().is_action_script_3() {
                 root = parent;
@@ -2412,8 +2429,8 @@ pub trait TDisplayObject<'gc>:
     }
 
     /// Obtain the top-most Stage or LoaderDisplay object of the display tree hierarchy, for use in mixed AVM.
-    fn avm1_stage(&self) -> DisplayObject<'gc> {
-        let mut root = (*self).into();
+    fn avm1_stage(self) -> DisplayObject<'gc> {
+        let mut root = self.into();
         loop {
             if let Some(parent) = root.parent() {
                 if matches!(
@@ -2434,8 +2451,8 @@ pub trait TDisplayObject<'gc>:
     ///
     /// This function implements the AVM2 concept of root clips. For the AVM1
     /// version, see `avm1_root`.
-    fn avm2_root(&self) -> Option<DisplayObject<'gc>> {
-        let mut parent = Some((*self).into());
+    fn avm2_root(self) -> Option<DisplayObject<'gc>> {
+        let mut parent = Some(self.into());
         while let Some(p) = parent {
             if p.is_root() {
                 return parent;
@@ -2458,8 +2475,8 @@ pub trait TDisplayObject<'gc>:
     /// will fail to locate the current player's stage for objects that are not
     /// rooted to the DisplayObject hierarchy correctly. If you just want to
     /// access the current player's stage, grab it from the context.
-    fn avm2_stage(&self, _context: &UpdateContext<'gc>) -> Option<DisplayObject<'gc>> {
-        let mut parent = Some((*self).into());
+    fn avm2_stage(self, _context: &UpdateContext<'gc>) -> Option<DisplayObject<'gc>> {
+        let mut parent = Some(self.into());
         while let Some(p) = parent {
             if p.as_stage().is_some() {
                 return parent;
@@ -2485,7 +2502,7 @@ pub trait TDisplayObject<'gc>:
     }
 
     /// Assigns a default instance name `instanceN` to this object.
-    fn set_default_instance_name(&self, context: &mut UpdateContext<'gc>) {
+    fn set_default_instance_name(self, context: &mut UpdateContext<'gc>) {
         if self.base().name().is_none() {
             let name = format!("instance{}", *context.instance_counter);
             self.set_name(context.gc(), AvmString::new_utf8(context.gc(), name));
@@ -2497,7 +2514,7 @@ pub trait TDisplayObject<'gc>:
     ///
     /// The default root names change based on the AVM configuration of the
     /// clip; AVM2 clips get `rootN` while AVM1 clips get blank strings.
-    fn set_default_root_name(&self, context: &mut UpdateContext<'gc>) {
+    fn set_default_root_name(self, context: &mut UpdateContext<'gc>) {
         if self.movie().is_action_script_3() {
             let name = AvmString::new_utf8(context.gc(), format!("root{}", self.depth() + 1));
             self.set_name(context.gc(), name);
@@ -2508,7 +2525,7 @@ pub trait TDisplayObject<'gc>:
 
     /// Inform this object and its ancestors that it has visually changed and must be redrawn.
     /// If this object or any ancestor is marked as cacheAsBitmap, it will invalidate that cache.
-    fn invalidate_cached_bitmap(&self, mc: &Mutation<'gc>) {
+    fn invalidate_cached_bitmap(self, mc: &Mutation<'gc>) {
         if self.base_mut(mc).invalidate_cached_bitmap() {
             // Don't inform ancestors if we've already done so this frame
             if let Some(parent) = self.parent() {

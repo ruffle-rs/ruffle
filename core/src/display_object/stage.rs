@@ -741,21 +741,21 @@ impl<'gc> TDisplayObject<'gc> for Stage<'gc> {
         RefMut::map(base_mut, |w| &mut w.base)
     }
 
-    fn instantiate(&self, gc_context: &Mutation<'gc>) -> DisplayObject<'gc> {
+    fn instantiate(self, gc_context: &Mutation<'gc>) -> DisplayObject<'gc> {
         Self(Gc::new(gc_context, self.0.as_ref().clone())).into()
     }
 
-    fn as_ptr(&self) -> *const DisplayObjectPtr {
+    fn as_ptr(self) -> *const DisplayObjectPtr {
         Gc::as_ptr(self.0) as *const DisplayObjectPtr
     }
 
-    fn local_to_global_matrix(&self) -> Matrix {
+    fn local_to_global_matrix(self) -> Matrix {
         // The stage is in Stage coordinates by definition
         Default::default()
     }
 
     fn post_instantiation(
-        &self,
+        self,
         context: &mut UpdateContext<'gc>,
         _init_object: Option<Avm1Object<'gc>>,
         _instantiated_by: Instantiator,
@@ -770,7 +770,7 @@ impl<'gc> TDisplayObject<'gc> for Stage<'gc> {
         let mut activation = Avm2Activation::from_domain(context, global_domain);
         let avm2_stage = Avm2StageObject::for_display_object_childless(
             &mut activation,
-            (*self).into(),
+            self.into(),
             stage_constr,
         );
 
@@ -798,11 +798,11 @@ impl<'gc> TDisplayObject<'gc> for Stage<'gc> {
         }
     }
 
-    fn id(&self) -> CharacterId {
+    fn id(self) -> CharacterId {
         u16::MAX
     }
 
-    fn self_bounds(&self) -> Rectangle<Twips> {
+    fn self_bounds(self) -> Rectangle<Twips> {
         Default::default()
     }
 
@@ -814,15 +814,15 @@ impl<'gc> TDisplayObject<'gc> for Stage<'gc> {
         Some(self.into())
     }
 
-    fn as_stage(&self) -> Option<Stage<'gc>> {
-        Some(*self)
+    fn as_stage(self) -> Option<Stage<'gc>> {
+        Some(self)
     }
 
-    fn render_self(&self, context: &mut RenderContext<'_, 'gc>) {
+    fn render_self(self, context: &mut RenderContext<'_, 'gc>) {
         self.render_children(context);
     }
 
-    fn render(&self, context: &mut RenderContext<'_, 'gc>) {
+    fn render(self, context: &mut RenderContext<'_, 'gc>) {
         context.transform_stack.push(&Transform {
             matrix: self.0.viewport_matrix.get(),
             color_transform: Default::default(),
@@ -846,7 +846,7 @@ impl<'gc> TDisplayObject<'gc> for Stage<'gc> {
             }
         }
 
-        render_base((*self).into(), context);
+        render_base(self.into(), context);
 
         self.focus_tracker().render_highlight(context);
 
@@ -857,7 +857,7 @@ impl<'gc> TDisplayObject<'gc> for Stage<'gc> {
         context.transform_stack.pop();
     }
 
-    fn enter_frame(&self, context: &mut UpdateContext<'gc>) {
+    fn enter_frame(self, context: &mut UpdateContext<'gc>) {
         for child in self.iter_render_list() {
             child.enter_frame(context);
         }
@@ -867,13 +867,13 @@ impl<'gc> TDisplayObject<'gc> for Stage<'gc> {
         Avm2::broadcast_event(context, enter_frame_evt, dobject_constr);
     }
 
-    fn construct_frame(&self, context: &mut UpdateContext<'gc>) {
+    fn construct_frame(self, context: &mut UpdateContext<'gc>) {
         for child in self.iter_render_list() {
             child.construct_frame(context);
         }
     }
 
-    fn object2(&self) -> Avm2Value<'gc> {
+    fn object2(self) -> Avm2Value<'gc> {
         self.0
             .avm2_object
             .get()
@@ -882,7 +882,7 @@ impl<'gc> TDisplayObject<'gc> for Stage<'gc> {
     }
 
     fn set_perspective_projection(
-        &self,
+        self,
         gc_context: &Mutation<'gc>,
         mut perspective_projection: Option<PerspectiveProjection>,
     ) {
@@ -902,11 +902,11 @@ impl<'gc> TDisplayObject<'gc> for Stage<'gc> {
         }
     }
 
-    fn loader_info(&self) -> Option<Avm2Object<'gc>> {
+    fn loader_info(self) -> Option<Avm2Object<'gc>> {
         self.0.loader_info.get()
     }
 
-    fn movie(&self) -> Arc<SwfMovie> {
+    fn movie(self) -> Arc<SwfMovie> {
         self.0.movie.borrow().clone()
     }
 }
@@ -954,7 +954,7 @@ impl<'gc> TInteractiveObject<'gc> for Stage<'gc> {
         MouseCursor::Arrow
     }
 
-    fn is_highlightable(&self, _context: &mut UpdateContext<'gc>) -> bool {
+    fn is_highlightable(self, _context: &mut UpdateContext<'gc>) -> bool {
         // Stage cannot be highlighted.
         false
     }

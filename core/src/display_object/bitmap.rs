@@ -309,19 +309,19 @@ impl<'gc> TDisplayObject<'gc> for Bitmap<'gc> {
         unlock!(Gc::write(mc, self.0), BitmapGraphicData, base).borrow_mut()
     }
 
-    fn instantiate(&self, gc_context: &Mutation<'gc>) -> DisplayObject<'gc> {
+    fn instantiate(self, gc_context: &Mutation<'gc>) -> DisplayObject<'gc> {
         Self(Gc::new(gc_context, self.0.as_ref().clone())).into()
     }
 
-    fn as_ptr(&self) -> *const DisplayObjectPtr {
+    fn as_ptr(self) -> *const DisplayObjectPtr {
         Gc::as_ptr(self.0) as *const DisplayObjectPtr
     }
 
-    fn id(&self) -> CharacterId {
+    fn id(self) -> CharacterId {
         self.0.id
     }
 
-    fn self_bounds(&self) -> Rectangle<Twips> {
+    fn self_bounds(self) -> Rectangle<Twips> {
         Rectangle {
             x_min: Twips::ZERO,
             y_min: Twips::ZERO,
@@ -331,7 +331,7 @@ impl<'gc> TDisplayObject<'gc> for Bitmap<'gc> {
     }
 
     fn post_instantiation(
-        &self,
+        self,
         context: &mut UpdateContext<'gc>,
         _init_object: Option<avm1::Object<'gc>>,
         instantiated_by: Instantiator,
@@ -351,7 +351,7 @@ impl<'gc> TDisplayObject<'gc> for Bitmap<'gc> {
 
                 let bitmap = Avm2StageObject::for_display_object_childless(
                     &mut activation,
-                    (*self).into(),
+                    self.into(),
                     bitmap_cls,
                 )
                 .expect("can't throw from post_instantiation -_-");
@@ -375,7 +375,7 @@ impl<'gc> TDisplayObject<'gc> for Bitmap<'gc> {
 
             self.on_construction_complete(context);
         } else {
-            context.avm1.add_to_exec_list(context.gc(), (*self).into());
+            context.avm1.add_to_exec_list(context.gc(), self.into());
 
             if run_frame {
                 self.run_frame_avm1(context);
@@ -383,7 +383,7 @@ impl<'gc> TDisplayObject<'gc> for Bitmap<'gc> {
         }
     }
 
-    fn render_self(&self, context: &mut RenderContext<'_, 'gc>) {
+    fn render_self(self, context: &mut RenderContext<'_, 'gc>) {
         if !context.is_offscreen && !self.world_bounds().intersects(&context.stage.view_bounds()) {
             // Off-screen; culled
             return;
@@ -396,7 +396,7 @@ impl<'gc> TDisplayObject<'gc> for Bitmap<'gc> {
         );
     }
 
-    fn object2(&self) -> Avm2Value<'gc> {
+    fn object2(self) -> Avm2Value<'gc> {
         self.0
             .avm2_object
             .get()
@@ -404,7 +404,7 @@ impl<'gc> TDisplayObject<'gc> for Bitmap<'gc> {
             .unwrap_or(Avm2Value::Null)
     }
 
-    fn set_object2(&self, context: &mut UpdateContext<'gc>, to: Avm2Object<'gc>) {
+    fn set_object2(self, context: &mut UpdateContext<'gc>, to: Avm2Object<'gc>) {
         self.set_avm2_object(context.gc(), Some(to));
     }
 
@@ -412,7 +412,7 @@ impl<'gc> TDisplayObject<'gc> for Bitmap<'gc> {
         Some(self)
     }
 
-    fn movie(&self) -> Arc<SwfMovie> {
+    fn movie(self) -> Arc<SwfMovie> {
         self.0.movie.clone()
     }
 }
