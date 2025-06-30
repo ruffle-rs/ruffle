@@ -205,11 +205,11 @@ impl<'gc> Bitmap<'gc> {
     // Important - we read 'width' and 'height' from the cached
     // values on this object. See the definition of these fields
     // for more information
-    pub fn width(self) -> u16 {
+    pub fn bitmap_width(self) -> u16 {
         self.0.width.get() as u16
     }
 
-    pub fn height(self) -> u16 {
+    pub fn bitmap_height(self) -> u16 {
         self.0.height.get() as u16
     }
 
@@ -325,8 +325,8 @@ impl<'gc> TDisplayObject<'gc> for Bitmap<'gc> {
         Rectangle {
             x_min: Twips::ZERO,
             y_min: Twips::ZERO,
-            x_max: Twips::from_pixels(Bitmap::width(*self).into()),
-            y_max: Twips::from_pixels(Bitmap::height(*self).into()),
+            x_max: Twips::from_pixels(self.bitmap_width().into()),
+            y_max: Twips::from_pixels(self.bitmap_height().into()),
         }
     }
 
