@@ -1920,9 +1920,7 @@ fn maybe_optimize_static_call<'gc>(
     passed_args: &[OptValue<'gc>],
     push_return_value: bool,
 ) -> Result<(), Error<'gc>> {
-    if !speculated_method.is_info_resolved() {
-        speculated_method.resolve_info(activation)?;
-    }
+    speculated_method.resolve_info(activation)?;
 
     let declared_params = speculated_method.resolved_param_config();
 
