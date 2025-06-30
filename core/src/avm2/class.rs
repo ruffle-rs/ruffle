@@ -885,14 +885,10 @@ impl<'gc> Class<'gc> {
                                     found_match = true;
 
                                     let instance_method = instance_trait.as_method().unwrap();
-                                    if !instance_method.is_info_resolved() {
-                                        instance_method.resolve_info(activation)?;
-                                    }
+                                    instance_method.resolve_info(activation)?;
 
                                     let super_method = supertrait.as_method().unwrap();
-                                    if !super_method.is_info_resolved() {
-                                        super_method.resolve_info(activation)?;
-                                    }
+                                    super_method.resolve_info(activation)?;
 
                                     // Methods must have same return type
                                     let instance_return_type =

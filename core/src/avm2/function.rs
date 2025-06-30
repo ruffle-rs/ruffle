@@ -196,11 +196,9 @@ pub fn exec<'gc>(
                 caller_movie,
             );
 
-            if !method.is_info_resolved() {
-                method.resolve_info(&mut activation)?;
-            }
+            method.resolve_info(&mut activation)?;
 
-            let signature = &*method.resolved_param_config();
+            let signature = method.resolved_param_config();
 
             // Check for too many arguments
             if arguments.len() > signature.len() && !method.is_variadic() && !method.is_unchecked()
