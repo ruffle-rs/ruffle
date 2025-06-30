@@ -5,9 +5,9 @@ use ruffle_macros::istr;
 use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
 use crate::avm1::property_decl::{define_properties_on, Declaration};
+use crate::avm1::xml::{XmlNode, TEXT_NODE};
 use crate::avm1::{NativeObject, Object, Value};
 use crate::string::{AvmString, StringContext, WStr};
-use crate::xml::{XmlNode, TEXT_NODE};
 
 const PROTO_DECLS: &[Declaration] = declare_properties! {
     "localName" => property(local_name);

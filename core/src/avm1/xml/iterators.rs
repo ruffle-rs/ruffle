@@ -1,6 +1,6 @@
 //! Iterator types for XML trees
 
-use crate::xml::XmlNode;
+use crate::avm1::xml::XmlNode;
 
 /// Iterator that yields direct children of an XML node.
 pub struct ChildIter<'gc> {
