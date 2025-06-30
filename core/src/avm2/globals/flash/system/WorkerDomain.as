@@ -1,10 +1,31 @@
 package flash.system {
+
+    import flash.utils.ByteArray;
+    import flash.system.Worker;
+    import __ruffle__.stub_getter;
+    import __ruffle__.stub_method;
+
     [API("680")] // the docs say 682, that's wrong
     public final class WorkerDomain {
-        public static const isSupported:Boolean = false;
+        public static function get isSupported():Boolean {
+            return false;
+        }
 
-        public function WorkerDomain() {
-            throw new ArgumentError("Error #2012: WorkerDomain$ class cannot be instantiated.", 2012)
+        private static var _current:WorkerDomain;
+
+        public static function get current():WorkerDomain {
+            stub_getter("flash.system.WorkerDomain", "current");
+
+            if (!_current) {
+                _current = new WorkerDomain();
+            }
+            return _current;
+        }
+
+        public function createWorker(swf:ByteArray, giveAppPrivileges:Boolean = false):Worker {
+            stub_method("flash.system.WorkerDomain", "createWorker");
+
+            return new Worker();
         }
     }
 }
