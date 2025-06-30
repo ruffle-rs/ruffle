@@ -14,7 +14,6 @@ use tracing_wasm::WASMLayer;
 use wasm_bindgen::prelude::*;
 use web_sys::{AudioContext, AudioScheduledSourceNode};
 
-#[allow(dead_code)]
 pub struct WebAudioBackend {
     mixer: AudioMixer,
     context: AudioContext,

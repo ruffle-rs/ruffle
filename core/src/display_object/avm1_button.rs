@@ -663,7 +663,6 @@ impl<'gc> Avm1ButtonData<'gc> {
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Collect)]
 #[collect(require_static)]
-#[allow(dead_code)]
 pub enum ButtonState {
     Up,
     Over,

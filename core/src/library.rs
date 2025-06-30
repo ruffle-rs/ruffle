@@ -176,12 +176,10 @@ impl<'gc> MovieLibrary<'gc> {
         self.export_characters.insert(export_name, id, false);
     }
 
-    #[allow(dead_code)]
     pub fn characters(&self) -> &HashMap<CharacterId, Character<'gc>> {
         &self.characters
     }
 
-    #[allow(dead_code)]
     pub fn export_characters(&self) -> &PropertyMap<'gc, CharacterId> {
         &self.export_characters
     }

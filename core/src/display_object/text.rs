@@ -312,7 +312,6 @@ impl<'gc> TDisplayObject<'gc> for Text<'gc> {
 }
 
 /// Data shared between all instances of a text object.
-#[allow(dead_code)]
 #[derive(Debug, Clone, Collect)]
 #[collect(require_static)]
 struct TextShared {

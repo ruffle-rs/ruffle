@@ -277,7 +277,6 @@ impl<'gc> TDisplayObject<'gc> for Graphic<'gc> {
 }
 
 /// Data shared between all instances of a Graphic.
-#[allow(dead_code)]
 #[derive(Collect)]
 #[collect(require_static)]
 struct GraphicShared {

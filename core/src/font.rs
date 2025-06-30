@@ -123,16 +123,6 @@ pub struct EvalParameters {
 }
 
 impl EvalParameters {
-    /// Construct eval parameters from their individual parts.
-    #[allow(dead_code)]
-    fn from_parts(height: Twips, letter_spacing: Twips, kerning: bool) -> Self {
-        Self {
-            height,
-            letter_spacing,
-            kerning,
-        }
-    }
-
     /// Convert the formatting on a text span over to font evaluation
     /// parameters.
     pub fn from_span(span: &TextSpan) -> Self {
@@ -1223,6 +1213,19 @@ mod tests {
 
     const DEVICE_FONT: &[u8] = include_bytes!("../assets/notosans-regular.subset.ttf.gz");
 
+    /// Construct eval parameters from their individual parts.
+    fn eval_parameters_from_parts(
+        height: Twips,
+        letter_spacing: Twips,
+        kerning: bool,
+    ) -> EvalParameters {
+        EvalParameters {
+            height,
+            letter_spacing,
+            kerning,
+        }
+    }
+
     fn with_device_font<F>(callback: F)
     where
         F: for<'gc> FnOnce(&Mutation<'gc>, Font<'gc>),
@@ -1245,7 +1248,7 @@ mod tests {
     #[test]
     fn wrap_line_no_breakpoint() {
         with_device_font(|_mc, df| {
-            let params = EvalParameters::from_parts(Twips::from_pixels(12.0), Twips::ZERO, true);
+            let params = eval_parameters_from_parts(Twips::from_pixels(12.0), Twips::ZERO, true);
             let string = WStr::from_units(b"abcdefghijklmnopqrstuv");
             let breakpoint =
                 df.wrap_line(string, params, Twips::from_pixels(200.0), Twips::ZERO, true);
@@ -1257,7 +1260,7 @@ mod tests {
     #[test]
     fn wrap_line_breakpoint_every_word() {
         with_device_font(|_mc, df| {
-            let params = EvalParameters::from_parts(Twips::from_pixels(12.0), Twips::ZERO, true);
+            let params = eval_parameters_from_parts(Twips::from_pixels(12.0), Twips::ZERO, true);
             let string = WStr::from_units(b"abcd efgh ijkl mnop");
             let mut last_bp = 0;
             let breakpoint =
@@ -1306,7 +1309,7 @@ mod tests {
     #[test]
     fn wrap_line_breakpoint_no_room() {
         with_device_font(|_mc, df| {
-            let params = EvalParameters::from_parts(Twips::from_pixels(12.0), Twips::ZERO, true);
+            let params = eval_parameters_from_parts(Twips::from_pixels(12.0), Twips::ZERO, true);
             let string = WStr::from_units(b"abcd efgh ijkl mnop");
             let breakpoint = df.wrap_line(
                 string,
@@ -1323,7 +1326,7 @@ mod tests {
     #[test]
     fn wrap_line_breakpoint_irregular_sized_words() {
         with_device_font(|_mc, df| {
-            let params = EvalParameters::from_parts(Twips::from_pixels(12.0), Twips::ZERO, true);
+            let params = eval_parameters_from_parts(Twips::from_pixels(12.0), Twips::ZERO, true);
             let string = WStr::from_units(b"abcdi j kl mnop q rstuv");
             let mut last_bp = 0;
             let breakpoint =
