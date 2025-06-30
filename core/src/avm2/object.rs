@@ -232,31 +232,26 @@ pub trait TObject<'gc>: 'gc + Collect<'gc> + Debug + Into<Object<'gc>> + Clone +
         self.base().get_property_local(name, activation)
     }
 
-    /// Same as get_property_local, but constructs a public Multiname for you.
+    /// Get a dynamic property on this Object by name. This is like
+    /// `get_property_local`, but it skips dynamic-dispatch TObject logic
+    /// and always gets a dynamic property on the base ScriptObject. If the
+    /// property does not exist on the ScriptObject, this returns `None`.
     #[no_dynamic]
-    fn get_string_property_local(
-        self,
-        name: AvmString<'gc>,
-        activation: &mut Activation<'_, 'gc>,
-    ) -> Result<Value<'gc>, Error<'gc>> {
-        let name = Multiname::new(activation.avm2().namespaces.public_vm_internal(), name);
-        self.get_property_local(&name, activation)
+    fn get_dynamic_property(self, local_name: AvmString<'gc>) -> Option<Value<'gc>> {
+        use crate::avm2::object::script_object::maybe_int_property;
+
+        // See the comment in script_object::get_dynamic_property
+        let key = maybe_int_property(local_name);
+
+        let base = self.base();
+        let values = base.values();
+        let value = values.as_hashmap().get(&key);
+        value.map(|v| v.value)
     }
 
     /// Purely an optimization for "array-like" access. This should return
     /// `None` when the lookup needs to be forwarded to the base or throw.
     fn get_index_property(self, _index: usize) -> Option<Value<'gc>> {
-        None
-    }
-
-    /// Purely an optimization for "array-like" access. This should return
-    /// `None` when the lookup needs to be forwarded to the base.
-    fn set_index_property(
-        self,
-        _activation: &mut Activation<'_, 'gc>,
-        _index: usize,
-        _value: Value<'gc>,
-    ) -> Option<Result<(), Error<'gc>>> {
         None
     }
 
@@ -275,19 +270,33 @@ pub trait TObject<'gc>: 'gc + Collect<'gc> + Debug + Into<Object<'gc>> + Clone +
         base.set_property_local(name, value, activation)
     }
 
-    /// Same as set_property_local, but constructs a public Multiname for you.
-    /// TODO: this feels upside down, as in: we shouldn't need multinames/namespaces
-    /// by the time we reach dynamic properties.
-    /// But for now, this function is a smaller change to the core than a full refactor.
+    /// Set a dynamic property on this Object by name. This is like
+    /// `set_property_local`, but it skips dynamic-dispatch TObject logic
+    /// and always sets a dynamic property on the base ScriptObject.
     #[no_dynamic]
-    fn set_string_property_local(
+    fn set_dynamic_property(
         self,
-        name: impl Into<AvmString<'gc>>,
+        local_name: AvmString<'gc>,
         value: Value<'gc>,
-        activation: &mut Activation<'_, 'gc>,
-    ) -> Result<(), Error<'gc>> {
-        let name = Multiname::new(activation.avm2().namespaces.public_vm_internal(), name);
-        self.set_property_local(&name, value, activation)
+        mc: &Mutation<'gc>,
+    ) {
+        use crate::avm2::object::script_object::maybe_int_property;
+
+        // See the comment in ScriptObjectWrapper::set_property_local
+        let key = maybe_int_property(local_name);
+
+        self.base().values_mut(mc).insert(key, value);
+    }
+
+    /// Purely an optimization for "array-like" access. This should return
+    /// `None` when the lookup needs to be forwarded to the base.
+    fn set_index_property(
+        self,
+        _activation: &mut Activation<'_, 'gc>,
+        _index: usize,
+        _value: Value<'gc>,
+    ) -> Option<Result<(), Error<'gc>>> {
+        None
     }
 
     /// Init a local property of the object. The Multiname should always be public.
@@ -329,22 +338,30 @@ pub trait TObject<'gc>: 'gc + Collect<'gc> + Debug + Into<Object<'gc>> + Clone +
         result.call(activation, self_val, arguments)
     }
 
-    /// Set a dynamic property on this Object by name. This is like
-    /// `set_property_local`, but it skips dynamic-dispatch TObject logic
-    /// and always sets a dynamic property on the base ScriptObject.
-    #[no_dynamic]
-    fn set_dynamic_property(
+    /// Delete a property by QName, after multiname resolution and all other
+    /// considerations have been taken.
+    ///
+    /// This required method is only intended to be called by other TObject
+    /// methods.
+    fn delete_property_local(
         self,
-        local_name: AvmString<'gc>,
-        value: Value<'gc>,
-        mc: &Mutation<'gc>,
-    ) {
+        activation: &mut Activation<'_, 'gc>,
+        name: &Multiname<'gc>,
+    ) -> Result<bool, Error<'gc>> {
+        let base = self.base();
+
+        Ok(base.delete_property_local(activation.gc(), name))
+    }
+
+    /// Delete a dynamic property on this Object by name. This is like
+    /// `delete_property_local`, but it skips dynamic-dispatch TObject logic
+    /// and always tries to delete a dynamic property on the base ScriptObject.
+    #[no_dynamic]
+    fn delete_dynamic_property(self, name: AvmString<'gc>, mc: &Mutation<'gc>) {
         use crate::avm2::object::script_object::maybe_int_property;
 
-        // See the comment in ScriptObjectWrapper::set_property_local
-        let key = maybe_int_property(local_name);
-
-        self.base().values_mut(mc).insert(key, value);
+        let key = maybe_int_property(name);
+        self.base().values_mut(mc).remove(&key);
     }
 
     /// Retrieve a slot by its index.
@@ -425,32 +442,6 @@ pub trait TObject<'gc>: 'gc + Collect<'gc> + Debug + Into<Object<'gc>> + Clone +
     #[no_dynamic]
     fn has_trait(self, name: &Multiname<'gc>) -> bool {
         self.vtable().has_trait(name)
-    }
-
-    /// Delete a property by QName, after multiname resolution and all other
-    /// considerations have been taken.
-    ///
-    /// This required method is only intended to be called by other TObject
-    /// methods.
-    fn delete_property_local(
-        self,
-        activation: &mut Activation<'_, 'gc>,
-        name: &Multiname<'gc>,
-    ) -> Result<bool, Error<'gc>> {
-        let base = self.base();
-
-        Ok(base.delete_property_local(activation.gc(), name))
-    }
-
-    /// Same as delete_property_local, but constructs a public Multiname for you.
-    #[no_dynamic]
-    fn delete_string_property_local(
-        self,
-        name: impl Into<AvmString<'gc>>,
-        activation: &mut Activation<'_, 'gc>,
-    ) -> Result<bool, Error<'gc>> {
-        let name = Multiname::new(activation.avm2().namespaces.public_vm_internal(), name);
-        self.delete_property_local(activation, &name)
     }
 
     /// Retrieve the `__proto__` of a given object.
