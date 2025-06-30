@@ -169,22 +169,25 @@ pub struct ScriptObjectWrapper<'gc>(pub Gc<'gc, ScriptObjectData<'gc>>);
 
 impl<'gc> ScriptObjectWrapper<'gc> {
     /// Retrieve the values stored directly on this ScriptObjectData.
-    pub fn values(&self) -> Ref<DynamicMap<DynamicKey<'gc>, Value<'gc>>> {
+    pub fn values(&self) -> Ref<'_, DynamicMap<DynamicKey<'gc>, Value<'gc>>> {
         self.0.values.borrow()
     }
 
     pub fn values_mut(
         &self,
         mc: &Mutation<'gc>,
-    ) -> RefMut<DynamicMap<DynamicKey<'gc>, Value<'gc>>> {
+    ) -> RefMut<'_, DynamicMap<DynamicKey<'gc>, Value<'gc>>> {
         unlock!(Gc::write(mc, self.0), ScriptObjectData, values).borrow_mut()
     }
 
-    fn bound_methods(&self) -> Ref<Vec<Option<FunctionObject<'gc>>>> {
+    fn bound_methods(&self) -> Ref<'_, Vec<Option<FunctionObject<'gc>>>> {
         self.0.bound_methods.borrow()
     }
 
-    fn bound_methods_mut(&self, mc: &Mutation<'gc>) -> RefMut<Vec<Option<FunctionObject<'gc>>>> {
+    fn bound_methods_mut(
+        &self,
+        mc: &Mutation<'gc>,
+    ) -> RefMut<'_, Vec<Option<FunctionObject<'gc>>>> {
         unlock!(Gc::write(mc, self.0), ScriptObjectData, bound_methods).borrow_mut()
     }
 

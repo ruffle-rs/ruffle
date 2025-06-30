@@ -567,7 +567,7 @@ struct WebResponseWrapper {
 }
 
 impl SuccessResponse for WebResponseWrapper {
-    fn url(&self) -> Cow<str> {
+    fn url(&self) -> Cow<'_, str> {
         Cow::Owned(self.response.url())
     }
 

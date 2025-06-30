@@ -255,7 +255,7 @@ fn calc_difference(lhs: u8, rhs: u8) -> u8 {
 }
 
 impl ImageComparison {
-    fn checks(&self) -> Result<Cow<[ImageComparisonCheck]>> {
+    fn checks(&self) -> Result<Cow<'_, [ImageComparisonCheck]>> {
         let has_simple_check = self.tolerance.is_some() || self.max_outliers.is_some();
         if has_simple_check && !self.checks.is_empty() {
             return Err(anyhow!(

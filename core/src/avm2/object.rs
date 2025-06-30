@@ -704,16 +704,16 @@ pub trait TObject<'gc>: 'gc + Collect<'gc> + Debug + Into<Object<'gc>> + Clone +
     }
 
     /// Unwrap this object as array storage.
-    fn as_array_storage(&self) -> Option<Ref<ArrayStorage<'gc>>> {
+    fn as_array_storage(&self) -> Option<Ref<'_, ArrayStorage<'gc>>> {
         None
     }
 
     /// Unwrap this object as bytearray.
-    fn as_bytearray(&self) -> Option<Ref<ByteArrayStorage>> {
+    fn as_bytearray(&self) -> Option<Ref<'_, ByteArrayStorage>> {
         None
     }
 
-    fn as_bytearray_mut(&self) -> Option<RefMut<ByteArrayStorage>> {
+    fn as_bytearray_mut(&self) -> Option<RefMut<'_, ByteArrayStorage>> {
         None
     }
 
@@ -722,7 +722,7 @@ pub trait TObject<'gc>: 'gc + Collect<'gc> + Debug + Into<Object<'gc>> + Clone +
     }
 
     /// Unwrap this object as mutable array storage.
-    fn as_array_storage_mut(&self, _mc: &Mutation<'gc>) -> Option<RefMut<ArrayStorage<'gc>>> {
+    fn as_array_storage_mut(&self, _mc: &Mutation<'gc>) -> Option<RefMut<'_, ArrayStorage<'gc>>> {
         None
     }
 
@@ -732,12 +732,12 @@ pub trait TObject<'gc>: 'gc + Collect<'gc> + Debug + Into<Object<'gc>> + Clone +
     }
 
     /// Unwrap this object as vector storage.
-    fn as_vector_storage(&self) -> Option<Ref<VectorStorage<'gc>>> {
+    fn as_vector_storage(&self) -> Option<Ref<'_, VectorStorage<'gc>>> {
         None
     }
 
     /// Unwrap this object as mutable vector storage.
-    fn as_vector_storage_mut(&self, _mc: &Mutation<'gc>) -> Option<RefMut<VectorStorage<'gc>>> {
+    fn as_vector_storage_mut(&self, _mc: &Mutation<'gc>) -> Option<RefMut<'_, VectorStorage<'gc>>> {
         None
     }
 
@@ -761,22 +761,22 @@ pub trait TObject<'gc>: 'gc + Collect<'gc> + Debug + Into<Object<'gc>> + Clone +
     }
 
     /// Unwrap this object as an event.
-    fn as_event(&self) -> Option<Ref<Event<'gc>>> {
+    fn as_event(&self) -> Option<Ref<'_, Event<'gc>>> {
         None
     }
 
     /// Unwrap this object as a mutable event.
-    fn as_event_mut(&self, _mc: &Mutation<'gc>) -> Option<RefMut<Event<'gc>>> {
+    fn as_event_mut(&self, _mc: &Mutation<'gc>) -> Option<RefMut<'_, Event<'gc>>> {
         None
     }
 
     /// Unwrap this object as a list of event handlers.
-    fn as_dispatch(&self) -> Option<Ref<DispatchList<'gc>>> {
+    fn as_dispatch(&self) -> Option<Ref<'_, DispatchList<'gc>>> {
         None
     }
 
     /// Unwrap this object as a mutable list of event handlers.
-    fn as_dispatch_mut(&self, _mc: &Mutation<'gc>) -> Option<RefMut<DispatchList<'gc>>> {
+    fn as_dispatch_mut(&self, _mc: &Mutation<'gc>) -> Option<RefMut<'_, DispatchList<'gc>>> {
         None
     }
 
@@ -786,7 +786,7 @@ pub trait TObject<'gc>: 'gc + Collect<'gc> + Debug + Into<Object<'gc>> + Clone +
     }
 
     /// Unwrap this object as a regexp.
-    fn as_regexp(&self) -> Option<Ref<RegExp<'gc>>> {
+    fn as_regexp(&self) -> Option<Ref<'_, RegExp<'gc>>> {
         None
     }
 
@@ -796,7 +796,7 @@ pub trait TObject<'gc>: 'gc + Collect<'gc> + Debug + Into<Object<'gc>> + Clone +
     }
 
     /// Unwrap this object as a mutable regexp.
-    fn as_regexp_mut(&self, _mc: &Mutation<'gc>) -> Option<RefMut<RegExp<'gc>>> {
+    fn as_regexp_mut(&self, _mc: &Mutation<'gc>) -> Option<RefMut<'_, RegExp<'gc>>> {
         None
     }
 
@@ -837,12 +837,12 @@ pub trait TObject<'gc>: 'gc + Collect<'gc> + Debug + Into<Object<'gc>> + Clone +
     }
 
     /// Unwrap this object as a text format.
-    fn as_text_format(&self) -> Option<Ref<TextFormat>> {
+    fn as_text_format(&self) -> Option<Ref<'_, TextFormat>> {
         None
     }
 
     /// Unwrap this object as a mutable text format.
-    fn as_text_format_mut(&self) -> Option<RefMut<TextFormat>> {
+    fn as_text_format_mut(&self) -> Option<RefMut<'_, TextFormat>> {
         None
     }
 

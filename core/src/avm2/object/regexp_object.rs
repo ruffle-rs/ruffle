@@ -92,11 +92,11 @@ impl<'gc> TObject<'gc> for RegExpObject<'gc> {
         Some(*self)
     }
 
-    fn as_regexp(&self) -> Option<Ref<RegExp<'gc>>> {
+    fn as_regexp(&self) -> Option<Ref<'_, RegExp<'gc>>> {
         Some(self.0.regexp.borrow())
     }
 
-    fn as_regexp_mut(&self, mc: &Mutation<'gc>) -> Option<RefMut<RegExp<'gc>>> {
+    fn as_regexp_mut(&self, mc: &Mutation<'gc>) -> Option<RefMut<'_, RegExp<'gc>>> {
         Some(unlock!(Gc::write(mc, self.0), RegExpObjectData, regexp).borrow_mut())
     }
 }
