@@ -1,7 +1,5 @@
 //! `flash.system.ApplicationDomain` class
 
-use ruffle_macros::istr;
-
 use crate::avm2::activation::Activation;
 use crate::avm2::object::{DomainObject, Object, TObject, VectorObject};
 use crate::avm2::parameters::ParametersExt;
@@ -20,12 +18,12 @@ pub fn init<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
-    let parent_domain = if matches!(args[0], Value::Null) {
-        activation.avm2().playerglobals_domain()
-    } else {
-        args.get_object(activation, 0, "parentDomain")?
+    let parent_domain = if let Some(domain) = args.try_get_object(activation, 0) {
+        domain
             .as_application_domain()
             .expect("Invalid parent domain")
+    } else {
+        activation.avm2().playerglobals_domain()
     };
     let fresh_domain = Domain::movie_domain(activation.context, parent_domain);
     this.init_application_domain(activation.gc(), fresh_domain);
@@ -75,10 +73,7 @@ pub fn get_definition<'gc>(
     let this = this.as_object().unwrap();
 
     if let Some(appdomain) = this.as_application_domain() {
-        let name = match args.get(0) {
-            Some(arg) => arg.coerce_to_string(activation)?,
-            None => istr!(""),
-        };
+        let name = args.get_string(activation, 0)?;
         return appdomain.get_defined_value_handling_vector(activation, name);
     }
 
@@ -94,10 +89,7 @@ pub fn has_definition<'gc>(
     let this = this.as_object().unwrap();
 
     if let Some(appdomain) = this.as_application_domain() {
-        let name = match args.get(0) {
-            Some(arg) => arg.coerce_to_string(activation)?,
-            None => istr!(""),
-        };
+        let name = args.get_string(activation, 0)?;
 
         return Ok(appdomain
             .get_defined_value_handling_vector(activation, name)
