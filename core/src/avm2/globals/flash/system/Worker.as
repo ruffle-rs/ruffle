@@ -5,7 +5,8 @@ package flash.system {
     import flash.events.EventDispatcher;
     import flash.system.MessageChannel;
     import __ruffle__.stub_method;
-
+    
+    [Ruffle(Abstract)]
     [API("682")]
     public final class Worker extends EventDispatcher {
         public static function get isSupported():Boolean {
