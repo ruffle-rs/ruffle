@@ -1290,7 +1290,7 @@ impl<'gc> Loader<'gc> {
             mc.replace_with_movie(uc, None, false, None);
         }
 
-        let loader_url = Some(uc.swf.url().to_string());
+        let loader_url = Some(uc.root_swf.url().to_string());
 
         if replacing_root_movie {
             ContentType::sniff(&bytes).expect(ContentType::Swf)?;
@@ -1356,7 +1356,7 @@ impl<'gc> Loader<'gc> {
                     // Convert the text into UTF-8
                     utf8_string = encoding.decode(&body).0;
                     utf8_string.as_bytes()
-                } else if activation.context.swf.version() <= 5 {
+                } else if activation.context.root_swf.version() <= 5 {
                     utf8_string = WINDOWS_1252.decode(&body).0;
                     utf8_string.as_bytes()
                 } else {
@@ -2077,7 +2077,7 @@ impl<'gc> Loader<'gc> {
         if let MovieLoaderVMData::Avm2 { loader_info, .. } = vm_data {
             loader_info.set_content_type(sniffed_type);
             let fake_movie = Arc::new(SwfMovie::fake_with_compressed_len(
-                activation.context.swf.version(),
+                activation.context.root_swf.version(),
                 loader_url.clone(),
                 data.len(),
             ));
@@ -2215,7 +2215,7 @@ impl<'gc> Loader<'gc> {
 
                 if let MovieLoaderVMData::Avm2 { loader_info, .. } = vm_data {
                     let fake_movie = Arc::new(SwfMovie::fake_with_compressed_len(
-                        activation.context.swf.version(),
+                        activation.context.root_swf.version(),
                         loader_url.clone(),
                         data.len(),
                     ));
@@ -2230,7 +2230,7 @@ impl<'gc> Loader<'gc> {
 
                 if let MovieLoaderVMData::Avm2 { loader_info, .. } = vm_data {
                     let fake_movie = Arc::new(SwfMovie::fake_with_compressed_data(
-                        activation.context.swf.version(),
+                        activation.context.root_swf.version(),
                         loader_url,
                         data.to_vec(),
                     ));
@@ -2292,7 +2292,7 @@ impl<'gc> Loader<'gc> {
                     }
                     MovieLoaderVMData::Avm2 { loader_info, .. } => {
                         let fake_movie = Arc::new(SwfMovie::fake_with_compressed_len(
-                            activation.context.swf.version(),
+                            activation.context.root_swf.version(),
                             loader_url,
                             data.len(),
                         ));

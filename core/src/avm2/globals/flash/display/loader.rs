@@ -30,7 +30,8 @@ pub fn loader_allocator<'gc>(
 ) -> Result<Object<'gc>, Error<'gc>> {
     // Loader does not have an associated `Character` variant, and can never be
     // instantiated from the timeline.
-    let display_object = LoaderDisplay::empty(activation, activation.context.swf.clone()).into();
+    let display_object =
+        LoaderDisplay::empty(activation, activation.context.root_swf.clone()).into();
     let loader = initialize_for_allocator(activation, display_object, class)?;
 
     // Note that the initialization of `_contentLoaderInfo` is intentionally done here,
@@ -40,7 +41,7 @@ pub fn loader_allocator<'gc>(
     // Some LoaderInfo properties (such as 'bytesLoaded' and 'bytesTotal') are always
     // accessible, even before the 'init' event has fired. Using an empty movie gives
     // us the correct value (0) for them.
-    let movie = &activation.context.swf;
+    let movie = &activation.context.root_swf;
     let loader_info = LoaderInfoObject::not_yet_loaded(
         activation,
         Arc::new(SwfMovie::empty(movie.version(), Some(movie.url().into()))),
@@ -88,7 +89,7 @@ pub fn load<'gc>(
     loader_info.unload(activation);
 
     // This is a dummy MovieClip, which will get overwritten in `Loader`
-    let movie = &activation.context.swf;
+    let movie = &activation.context.root_swf;
     let content = MovieClip::new(
         Arc::new(SwfMovie::empty(movie.version(), Some(movie.url().into()))),
         activation.gc(),
@@ -259,7 +260,7 @@ pub fn load_bytes<'gc>(
     loader_info.unload(activation);
 
     // This is a dummy MovieClip, which will get overwritten in `Loader`
-    let movie = &activation.context.swf;
+    let movie = &activation.context.root_swf;
     let content = MovieClip::new(
         Arc::new(SwfMovie::empty(movie.version(), Some(movie.url().into()))),
         activation.gc(),

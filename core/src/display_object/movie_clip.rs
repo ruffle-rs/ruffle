@@ -564,7 +564,7 @@ impl<'gc> MovieClip<'gc> {
         context: &mut UpdateContext<'gc>,
         reader: &mut SwfStream<'_>,
     ) -> Result<Option<Script<'gc>>, Error> {
-        if !context.swf.is_action_script_3() {
+        if !context.root_swf.is_action_script_3() {
             tracing::warn!("DoABC tag with non-AVM2 root");
             return Ok(None);
         }
@@ -600,7 +600,7 @@ impl<'gc> MovieClip<'gc> {
         context: &mut UpdateContext<'gc>,
         reader: &mut SwfStream<'_>,
     ) -> Result<Option<Script<'gc>>, Error> {
-        if !context.swf.is_action_script_3() {
+        if !context.root_swf.is_action_script_3() {
             tracing::warn!("DoABC2 tag with non-AVM2 root");
             return Ok(None);
         }

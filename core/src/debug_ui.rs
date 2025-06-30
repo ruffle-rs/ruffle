@@ -115,7 +115,8 @@ impl DebugUi {
                     self.movies.insert(movie, Default::default());
                 }
                 Message::TrackTopLevelMovie => {
-                    self.movies.insert(context.swf.clone(), Default::default());
+                    self.movies
+                        .insert(context.root_swf.clone(), Default::default());
                 }
                 Message::TrackAVM1Object(object) => {
                     self.avm1_objects.insert(object, Default::default());

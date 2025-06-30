@@ -562,7 +562,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     /// Like `caller_movie()`, but returns the root movie if `caller_movie`
     /// is `None`. This matches what FP does in most cases.
     pub fn caller_movie_or_root(&self) -> Arc<SwfMovie> {
-        self.caller_movie().unwrap_or(self.context.swf.clone())
+        self.caller_movie().unwrap_or(self.context.root_swf.clone())
     }
 
     /// Returns the global scope of this activation.

@@ -2200,7 +2200,7 @@ impl Player {
             let mut update_context = UpdateContext {
                 player_version: this.player_version,
                 player_mode: this.player_mode,
-                swf: &mut this.swf,
+                root_swf: &mut this.swf,
                 library,
                 rng: &mut this.rng,
                 renderer: this.renderer.deref_mut(),

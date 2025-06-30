@@ -49,7 +49,7 @@ impl<'gc> LocalConnection<'gc> {
         }
 
         let connection_handle = activation.context.local_connections.connect(
-            &LocalConnections::get_domain(activation.context.swf.url()),
+            &LocalConnections::get_domain(activation.context.root_swf.url()),
             this,
             &name,
         );
@@ -202,7 +202,7 @@ pub fn send<'gc>(
     }
 
     activation.context.local_connections.send(
-        &LocalConnections::get_domain(activation.context.swf.url()),
+        &LocalConnections::get_domain(activation.context.root_swf.url()),
         this,
         *connection_name,
         *method_name,

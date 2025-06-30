@@ -137,7 +137,7 @@ pub fn init<'gc>(
         let transparency = args.get_bool(2);
         let fill_color = args.get_u32(activation, 3)?;
 
-        if !is_size_valid(activation.context.swf.version(), width, height) {
+        if !is_size_valid(activation.context.root_swf.version(), width, height) {
             return Err(Error::avm_error(argument_error(
                 activation,
                 "Error #2015: Invalid BitmapData.",
