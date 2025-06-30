@@ -72,27 +72,27 @@ impl<'gc> TDisplayObject<'gc> for LoaderDisplay<'gc> {
         RefMut::map(self.raw_interactive_mut(mc), |w| &mut w.base)
     }
 
-    fn instantiate(&self, gc_context: &Mutation<'gc>) -> DisplayObject<'gc> {
+    fn instantiate(self, gc_context: &Mutation<'gc>) -> DisplayObject<'gc> {
         Self(Gc::new(gc_context, self.0.as_ref().clone())).into()
     }
 
-    fn as_ptr(&self) -> *const DisplayObjectPtr {
+    fn as_ptr(self) -> *const DisplayObjectPtr {
         Gc::as_ptr(self.0) as *const DisplayObjectPtr
     }
 
-    fn id(&self) -> CharacterId {
+    fn id(self) -> CharacterId {
         u16::MAX
     }
 
-    fn render_self(&self, context: &mut RenderContext<'_, 'gc>) {
+    fn render_self(self, context: &mut RenderContext<'_, 'gc>) {
         self.render_children(context);
     }
 
-    fn self_bounds(&self) -> Rectangle<Twips> {
+    fn self_bounds(self) -> Rectangle<Twips> {
         Default::default()
     }
 
-    fn object2(&self) -> Avm2Value<'gc> {
+    fn object2(self) -> Avm2Value<'gc> {
         self.0
             .avm2_object
             .get()
@@ -100,7 +100,7 @@ impl<'gc> TDisplayObject<'gc> for LoaderDisplay<'gc> {
             .unwrap_or(Avm2Value::Null)
     }
 
-    fn set_object2(&self, context: &mut UpdateContext<'gc>, to: Avm2Object<'gc>) {
+    fn set_object2(self, context: &mut UpdateContext<'gc>, to: Avm2Object<'gc>) {
         let mc = context.gc();
         unlock!(Gc::write(mc, self.0), LoaderDisplayData, avm2_object).set(Some(to))
     }
@@ -113,7 +113,7 @@ impl<'gc> TDisplayObject<'gc> for LoaderDisplay<'gc> {
         Some(self.into())
     }
 
-    fn enter_frame(&self, context: &mut UpdateContext<'gc>) {
+    fn enter_frame(self, context: &mut UpdateContext<'gc>) {
         let skip_frame = self.base().should_skip_next_enter_frame();
         for child in self.iter_render_list() {
             // See MovieClip::enter_frame for an explanation of this.
@@ -125,19 +125,19 @@ impl<'gc> TDisplayObject<'gc> for LoaderDisplay<'gc> {
         self.base().set_skip_next_enter_frame(false);
     }
 
-    fn construct_frame(&self, context: &mut UpdateContext<'gc>) {
+    fn construct_frame(self, context: &mut UpdateContext<'gc>) {
         for child in self.iter_render_list() {
             child.construct_frame(context);
         }
     }
 
-    fn movie(&self) -> Arc<SwfMovie> {
+    fn movie(self) -> Arc<SwfMovie> {
         self.0.movie.clone()
     }
 
-    fn on_parent_removed(&self, context: &mut UpdateContext<'gc>) {
+    fn on_parent_removed(self, context: &mut UpdateContext<'gc>) {
         if self.movie().is_action_script_3() {
-            context.avm2.add_orphan_obj((*self).into())
+            context.avm2.add_orphan_obj(self.into())
         }
     }
 }
@@ -175,7 +175,7 @@ impl<'gc> TInteractiveObject<'gc> for LoaderDisplay<'gc> {
     }
 
     fn mouse_pick_avm1(
-        &self,
+        self,
         context: &mut UpdateContext<'gc>,
         point: Point<Twips>,
         require_button_mode: bool,
@@ -204,7 +204,7 @@ impl<'gc> TInteractiveObject<'gc> for LoaderDisplay<'gc> {
     }
 
     fn mouse_pick_avm2(
-        &self,
+        self,
         context: &mut UpdateContext<'gc>,
         point: Point<Twips>,
         require_button_mode: bool,
@@ -223,7 +223,7 @@ impl<'gc> TInteractiveObject<'gc> for LoaderDisplay<'gc> {
                 if int.as_displayobject().movie().is_action_script_3() {
                     return int
                         .mouse_pick_avm2(context, point, require_button_mode)
-                        .combine_with_parent((*self).into());
+                        .combine_with_parent(self.into());
                 } else {
                     let avm1_result = int.mouse_pick_avm1(context, point, require_button_mode);
                     if let Some(result) = avm1_result {
@@ -234,7 +234,7 @@ impl<'gc> TInteractiveObject<'gc> for LoaderDisplay<'gc> {
                 }
             } else if child.hit_test_shape(context, point, options) {
                 if self.mouse_enabled() {
-                    return Avm2MousePick::Hit((*self).into());
+                    return Avm2MousePick::Hit(self.into());
                 } else {
                     return Avm2MousePick::PropagateToParent;
                 }

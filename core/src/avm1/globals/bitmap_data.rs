@@ -1531,7 +1531,7 @@ fn load_bitmap<'gc>(
     let library = &*activation.context.library;
 
     let movie = <DisplayObject as crate::display_object::TDisplayObject>::movie(
-        &activation.target_clip_or_root(),
+        activation.target_clip_or_root(),
     );
 
     let character = library
