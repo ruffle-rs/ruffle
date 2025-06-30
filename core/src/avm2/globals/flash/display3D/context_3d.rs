@@ -293,18 +293,10 @@ pub fn set_culling<'gc>(
     if let Some(context) = this.as_context_3d() {
         let culling = args.get_string(activation, 0)?;
 
-        let culling = if &*culling == b"none" {
-            Context3DTriangleFace::None
-        } else if &*culling == b"back" {
-            Context3DTriangleFace::Back
-        } else if &*culling == b"front" {
-            Context3DTriangleFace::Front
-        } else if &*culling == b"frontAndBack" {
-            Context3DTriangleFace::FrontAndBack
-        } else {
+        let culling = Context3DTriangleFace::from_wstr(&culling).unwrap_or_else(|| {
             tracing::error!("Unknown culling {:?}", culling);
             Context3DTriangleFace::None
-        };
+        });
 
         context.set_culling(culling);
     }
@@ -694,45 +686,37 @@ pub fn set_stencil_actions<'gc>(
     let this = this.as_object().unwrap();
 
     if let Some(context) = this.as_context_3d() {
-        let triangle_face = args.get_string_non_null(activation, 0, "triangleFace")?;
+        let triangle_face = args.get_string(activation, 0)?;
 
-        let culling = if &*triangle_face == b"none" {
+        let triangle_face = Context3DTriangleFace::from_wstr(&triangle_face).unwrap_or_else(|| {
+            tracing::error!("Unknown triangle_face {:?}", triangle_face);
             Context3DTriangleFace::None
-        } else if &*triangle_face == b"back" {
-            Context3DTriangleFace::Back
-        } else if &*triangle_face == b"front" {
-            Context3DTriangleFace::Front
-        } else if &*triangle_face == b"frontAndBack" {
-            Context3DTriangleFace::FrontAndBack
-        } else {
-            tracing::error!("Unknown culling {:?}", triangle_face);
-            Context3DTriangleFace::None
-        };
+        });
 
         let compare_mode = args.get_string_non_null(activation, 1, "compareMode")?;
         let compare_mode = Context3DCompareMode::from_wstr(&compare_mode)
             .ok_or_else(|| make_error_2008(activation, "compareMode"))?;
 
-        let action_on_both_pass = args.get_string_non_null(activation, 2, "actionOnBothPass")?;
-        let action_on_both_pass = Context3DStencilAction::from_wstr(&action_on_both_pass)
+        let on_both_pass = args.get_string_non_null(activation, 2, "actionOnBothPass")?;
+        let on_both_pass = Context3DStencilAction::from_wstr(&on_both_pass)
             .ok_or_else(|| make_error_2008(activation, "actionOnBothPass"))?;
 
-        let action_on_depth_fail = args.get_string_non_null(activation, 3, "actionOnDepthFail")?;
-        let action_on_depth_fail = Context3DStencilAction::from_wstr(&action_on_depth_fail)
+        let on_depth_fail = args.get_string_non_null(activation, 3, "actionOnDepthFail")?;
+        let on_depth_fail = Context3DStencilAction::from_wstr(&on_depth_fail)
             .ok_or_else(|| make_error_2008(activation, "actionOnDepthFail"))?;
 
-        let action_on_depth_pass_stencil_fail =
+        let on_depth_pass_stencil_fail =
             args.get_string_non_null(activation, 4, "actionOnDepthPassStencilFail")?;
-        let action_on_depth_pass_stencil_fail =
-            Context3DStencilAction::from_wstr(&action_on_depth_pass_stencil_fail)
+        let on_depth_pass_stencil_fail =
+            Context3DStencilAction::from_wstr(&on_depth_pass_stencil_fail)
                 .ok_or_else(|| make_error_2008(activation, "actionOnDepthPassStencilFail"))?;
 
         context.set_stencil_actions(
-            culling,
+            triangle_face,
             compare_mode,
-            action_on_both_pass,
-            action_on_depth_fail,
-            action_on_depth_pass_stencil_fail,
+            on_both_pass,
+            on_depth_fail,
+            on_depth_pass_stencil_fail,
         );
     }
 

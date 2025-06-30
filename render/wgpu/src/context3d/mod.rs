@@ -1,6 +1,6 @@
 use ruffle_render::backend::{
-    Context3D, Context3DBlendFactor, Context3DCommand, Context3DCompareMode, Context3DProfile,
-    Context3DTextureFormat, Context3DVertexBufferFormat, IndexBuffer, ProgramType, VertexBuffer,
+    Context3D, Context3DBlendFactor, Context3DCommand, Context3DProfile, Context3DTextureFormat,
+    Context3DVertexBufferFormat, IndexBuffer, ProgramType, VertexBuffer,
 };
 use ruffle_render::bitmap::BitmapHandle;
 use ruffle_render::error::Error;
@@ -1194,16 +1194,16 @@ impl Context3D for WgpuContext3D {
             Context3DCommand::SetStencilActions {
                 triangle_face,
                 compare_mode,
-                action_on_both_pass,
-                action_on_depth_fail,
-                action_on_depth_pass_stencil_fail,
+                on_both_pass,
+                on_depth_fail,
+                on_depth_pass_stencil_fail,
             } => {
                 self.current_pipeline.update_stencil_actions(
                     triangle_face,
                     compare_mode,
-                    action_on_both_pass,
-                    action_on_depth_fail,
-                    action_on_depth_pass_stencil_fail,
+                    on_both_pass,
+                    on_depth_fail,
+                    on_depth_pass_stencil_fail,
                 );
             }
             Context3DCommand::SetStencilReferenceValue {

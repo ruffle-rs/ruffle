@@ -481,17 +481,17 @@ impl<'gc> Context3DObject<'gc> {
         &self,
         triangle_face: Context3DTriangleFace,
         compare_mode: Context3DCompareMode,
-        action_on_both_pass: Context3DStencilAction,
-        action_on_depth_fail: Context3DStencilAction,
-        action_on_depth_pass_stencil_fail: Context3DStencilAction,
+        on_both_pass: Context3DStencilAction,
+        on_depth_fail: Context3DStencilAction,
+        on_depth_pass_stencil_fail: Context3DStencilAction,
     ) {
         self.with_context_3d(|ctx| {
             ctx.process_command(Context3DCommand::SetStencilActions {
                 triangle_face,
                 compare_mode,
-                action_on_both_pass,
-                action_on_depth_fail,
-                action_on_depth_pass_stencil_fail,
+                on_both_pass,
+                on_depth_fail,
+                on_depth_pass_stencil_fail,
             })
         });
     }
