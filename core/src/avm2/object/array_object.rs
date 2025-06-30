@@ -90,11 +90,11 @@ impl<'gc> ArrayObject<'gc> {
             .set(index, value);
     }
 
-    pub fn array_storage(&self) -> Ref<ArrayStorage<'gc>> {
+    pub fn array_storage(&self) -> Ref<'_, ArrayStorage<'gc>> {
         self.0.array.borrow()
     }
 
-    pub fn array_storage_mut(&self, mc: &Mutation<'gc>) -> RefMut<ArrayStorage<'gc>> {
+    pub fn array_storage_mut(&self, mc: &Mutation<'gc>) -> RefMut<'_, ArrayStorage<'gc>> {
         unlock!(Gc::write(mc, self.0), ArrayObjectData, array).borrow_mut()
     }
 }
@@ -276,11 +276,11 @@ impl<'gc> TObject<'gc> for ArrayObject<'gc> {
         Some(*self)
     }
 
-    fn as_array_storage(&self) -> Option<Ref<ArrayStorage<'gc>>> {
+    fn as_array_storage(&self) -> Option<Ref<'_, ArrayStorage<'gc>>> {
         Some(self.0.array.borrow())
     }
 
-    fn as_array_storage_mut(&self, mc: &Mutation<'gc>) -> Option<RefMut<ArrayStorage<'gc>>> {
+    fn as_array_storage_mut(&self, mc: &Mutation<'gc>) -> Option<RefMut<'_, ArrayStorage<'gc>>> {
         Some(unlock!(Gc::write(mc, self.0), ArrayObjectData, array).borrow_mut())
     }
 }

@@ -1059,7 +1059,7 @@ impl<'gc> MovieClip<'gc> {
     }
 
     /// Gets the clip events for this MovieClip.
-    pub fn clip_actions(&self) -> Ref<[ClipEventHandler]> {
+    pub fn clip_actions(&self) -> Ref<'_, [ClipEventHandler]> {
         Ref::map(self.0.read(), |mc| mc.clip_event_handlers())
     }
 
@@ -2245,7 +2245,7 @@ impl<'gc> MovieClip<'gc> {
 }
 
 impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
-    fn base(&self) -> Ref<DisplayObjectBase<'gc>> {
+    fn base(&self) -> Ref<'_, DisplayObjectBase<'gc>> {
         Ref::map(self.0.read(), |r| &r.base.base)
     }
 
@@ -2654,11 +2654,11 @@ impl<'gc> TDisplayObjectContainer<'gc> for MovieClip<'gc> {
 }
 
 impl<'gc> TInteractiveObject<'gc> for MovieClip<'gc> {
-    fn raw_interactive(&self) -> Ref<InteractiveObjectBase<'gc>> {
+    fn raw_interactive(&self) -> Ref<'_, InteractiveObjectBase<'gc>> {
         Ref::map(self.0.read(), |r| &r.base)
     }
 
-    fn raw_interactive_mut(&self, mc: &Mutation<'gc>) -> RefMut<InteractiveObjectBase<'gc>> {
+    fn raw_interactive_mut(&self, mc: &Mutation<'gc>) -> RefMut<'_, InteractiveObjectBase<'gc>> {
         RefMut::map(self.0.write(mc), |w| &mut w.base)
     }
 

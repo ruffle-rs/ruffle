@@ -71,7 +71,7 @@ impl<'gc> QNameObject<'gc> {
         ))
     }
 
-    pub fn name(&self) -> Ref<Multiname<'gc>> {
+    pub fn name(&self) -> Ref<'_, Multiname<'gc>> {
         self.0.name.borrow()
     }
 

@@ -301,7 +301,7 @@ impl<'gc> Bitmap<'gc> {
 }
 
 impl<'gc> TDisplayObject<'gc> for Bitmap<'gc> {
-    fn base(&self) -> Ref<DisplayObjectBase<'gc>> {
+    fn base(&self) -> Ref<'_, DisplayObjectBase<'gc>> {
         self.0.base.borrow()
     }
 

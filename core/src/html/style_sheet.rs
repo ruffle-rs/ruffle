@@ -312,7 +312,7 @@ impl<'a> CssStream<'a> {
     }
 }
 
-pub fn transform_dashes_to_camel_case(input: &WStr) -> Cow<WStr> {
+pub fn transform_dashes_to_camel_case(input: &WStr) -> Cow<'_, WStr> {
     if !input.contains(b'-') {
         return Cow::Borrowed(input);
     }

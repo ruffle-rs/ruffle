@@ -335,7 +335,7 @@ impl<'gc> Domain<'gc> {
         self.0.write(mc).classes.insert(export_name, class);
     }
 
-    pub fn defs(&self) -> Ref<PropertyMap<'gc, Script<'gc>>> {
+    pub fn defs(&self) -> Ref<'_, PropertyMap<'gc, Script<'gc>>> {
         Ref::map(self.0.read(), |this| &this.defs)
     }
 

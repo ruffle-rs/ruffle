@@ -146,7 +146,7 @@ impl StubCollection {
         }
     }
 
-    pub fn iter(&self) -> Iter<Stub> {
+    pub fn iter(&self) -> Iter<'_, Stub> {
         self.inner.iter()
     }
 }

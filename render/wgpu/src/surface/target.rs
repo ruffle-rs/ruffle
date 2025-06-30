@@ -356,7 +356,7 @@ impl CommandTarget {
         get_whole_frame_bind_group(&self.whole_frame_bind_group, descriptors, self.size)
     }
 
-    pub fn color_attachments(&self) -> Option<wgpu::RenderPassColorAttachment> {
+    pub fn color_attachments(&self) -> Option<wgpu::RenderPassColorAttachment<'_>> {
         let mut load = wgpu::LoadOp::Load;
         if self.color_needs_clear.set(false).is_ok() {
             if let Some(clear_color) = self.render_target_mode.color() {
@@ -381,7 +381,7 @@ impl CommandTarget {
         &self,
         descriptors: &Descriptors,
         pool: &mut TexturePool,
-    ) -> Option<wgpu::RenderPassDepthStencilAttachment> {
+    ) -> Option<wgpu::RenderPassDepthStencilAttachment<'_>> {
         let new_buffer = self.depth.get().is_none();
         let stencil = self
             .depth

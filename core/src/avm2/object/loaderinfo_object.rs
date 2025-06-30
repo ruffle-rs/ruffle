@@ -297,7 +297,7 @@ impl<'gc> LoaderInfoObject<'gc> {
     }
 
     /// Unwrap this object's loader stream
-    pub fn loader_stream(&self) -> Ref<LoaderStream<'gc>> {
+    pub fn loader_stream(&self) -> Ref<'_, LoaderStream<'gc>> {
         self.0.loaded_stream.borrow()
     }
 

@@ -96,6 +96,3 @@ pub fn open_domain_button<'gc>(
         messages.push(Message::TrackDomain(DomainHandle::new(context, domain)));
     }
 }
-
-#[derive(Debug, Default)]
-pub struct DomainWindow {}

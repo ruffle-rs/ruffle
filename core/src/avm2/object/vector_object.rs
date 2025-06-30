@@ -354,11 +354,11 @@ impl<'gc> TObject<'gc> for VectorObject<'gc> {
         Some(*self)
     }
 
-    fn as_vector_storage(&self) -> Option<Ref<VectorStorage<'gc>>> {
+    fn as_vector_storage(&self) -> Option<Ref<'_, VectorStorage<'gc>>> {
         Some(self.0.vector.borrow())
     }
 
-    fn as_vector_storage_mut(&self, mc: &Mutation<'gc>) -> Option<RefMut<VectorStorage<'gc>>> {
+    fn as_vector_storage_mut(&self, mc: &Mutation<'gc>) -> Option<RefMut<'_, VectorStorage<'gc>>> {
         Some(unlock!(Gc::write(mc, self.0), VectorObjectData, vector).borrow_mut())
     }
 }

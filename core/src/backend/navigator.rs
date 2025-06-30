@@ -174,7 +174,7 @@ impl Request {
 /// A response to a successful fetch request.
 pub trait SuccessResponse {
     /// The final URL obtained after any redirects.
-    fn url(&self) -> Cow<str>;
+    fn url(&self) -> Cow<'_, str>;
 
     /// Retrieve the contents of the response body.
     ///
@@ -566,7 +566,7 @@ pub fn fetch_path<NavigatorType: NavigatorBackend>(
     }
 
     impl SuccessResponse for LocalResponse {
-        fn url(&self) -> Cow<str> {
+        fn url(&self) -> Cow<'_, str> {
             Cow::Borrowed(&self.url)
         }
 

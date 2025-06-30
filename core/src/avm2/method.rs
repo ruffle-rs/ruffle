@@ -285,7 +285,7 @@ impl<'gc> Method<'gc> {
         &self.0.signature
     }
 
-    pub fn resolved_param_config(&self) -> Ref<Vec<ResolvedParamConfig<'gc>>> {
+    pub fn resolved_param_config(&self) -> Ref<'_, Vec<ResolvedParamConfig<'gc>>> {
         let resolved_info = self.0.resolved_info.borrow();
 
         Ref::map(resolved_info, |b| &b.as_ref().unwrap().param_config)
@@ -303,7 +303,7 @@ impl<'gc> Method<'gc> {
         resolved_info.is_some()
     }
 
-    pub fn get_verified_info(&self) -> Ref<VerifiedMethodInfo<'gc>> {
+    pub fn get_verified_info(&self) -> Ref<'_, VerifiedMethodInfo<'gc>> {
         match &self.0.method_kind {
             MethodKind::Bytecode { verified_info } => {
                 Ref::map(verified_info.borrow(), |b| b.as_ref().unwrap())
