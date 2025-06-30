@@ -64,7 +64,7 @@ impl<'gc> LoaderDisplay<'gc> {
 }
 
 impl<'gc> TDisplayObject<'gc> for LoaderDisplay<'gc> {
-    fn base(&self) -> Ref<DisplayObjectBase<'gc>> {
+    fn base(&self) -> Ref<'_, DisplayObjectBase<'gc>> {
         Ref::map(self.raw_interactive(), |r| &r.base)
     }
 
@@ -143,11 +143,11 @@ impl<'gc> TDisplayObject<'gc> for LoaderDisplay<'gc> {
 }
 
 impl<'gc> TInteractiveObject<'gc> for LoaderDisplay<'gc> {
-    fn raw_interactive(&self) -> Ref<InteractiveObjectBase<'gc>> {
+    fn raw_interactive(&self) -> Ref<'_, InteractiveObjectBase<'gc>> {
         self.0.base.borrow()
     }
 
-    fn raw_interactive_mut(&self, mc: &Mutation<'gc>) -> RefMut<InteractiveObjectBase<'gc>> {
+    fn raw_interactive_mut(&self, mc: &Mutation<'gc>) -> RefMut<'_, InteractiveObjectBase<'gc>> {
         unlock!(Gc::write(mc, self.0), LoaderDisplayData, base).borrow_mut()
     }
 

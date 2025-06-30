@@ -5,6 +5,7 @@
 #[allow(non_camel_case_types)]
 #[allow(non_snake_case)]
 #[allow(dead_code)]
+#[allow(unpredictable_function_pointer_comparisons)]
 mod openh264_sys;
 
 #[cfg(feature = "openh264")]

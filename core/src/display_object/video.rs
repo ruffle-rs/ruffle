@@ -346,7 +346,7 @@ impl<'gc> Video<'gc> {
 }
 
 impl<'gc> TDisplayObject<'gc> for Video<'gc> {
-    fn base(&self) -> Ref<DisplayObjectBase<'gc>> {
+    fn base(&self) -> Ref<'_, DisplayObjectBase<'gc>> {
         self.0.base.borrow()
     }
 

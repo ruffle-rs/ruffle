@@ -1837,8 +1837,8 @@ pub fn pixel_dissolve<'gc>(
     }
 
     fn write_pixel(
-        write: &mut RefMut<BitmapData>,
-        different_source_than_target: &Option<Ref<BitmapData>>,
+        write: &mut RefMut<'_, BitmapData>,
+        different_source_than_target: &Option<Ref<'_, BitmapData>>,
         fill_color: u32,
         transparency: bool,
         base_point: (u32, u32),

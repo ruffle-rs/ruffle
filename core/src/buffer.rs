@@ -256,7 +256,7 @@ impl Slice {
         self.end
     }
 
-    pub fn data(&self) -> SliceRef {
+    pub fn data(&self) -> SliceRef<'_> {
         SliceRef {
             guard: self.buf.0.read().expect("unlock read"),
             start: self.start,

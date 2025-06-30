@@ -88,12 +88,12 @@ impl<'gc> TObject<'gc> for DispatchObject<'gc> {
     }
 
     /// Unwrap this object as a list of event handlers.
-    fn as_dispatch(&self) -> Option<Ref<DispatchList<'gc>>> {
+    fn as_dispatch(&self) -> Option<Ref<'_, DispatchList<'gc>>> {
         Some(self.0.dispatch.borrow())
     }
 
     /// Unwrap this object as a mutable list of event handlers.
-    fn as_dispatch_mut(&self, mc: &Mutation<'gc>) -> Option<RefMut<DispatchList<'gc>>> {
+    fn as_dispatch_mut(&self, mc: &Mutation<'gc>) -> Option<RefMut<'_, DispatchList<'gc>>> {
         Some(unlock!(Gc::write(mc, self.0), DispatchObjectData, dispatch).borrow_mut())
     }
 }

@@ -26,7 +26,7 @@ struct TestResponse {
 }
 
 impl SuccessResponse for TestResponse {
-    fn url(&self) -> Cow<str> {
+    fn url(&self) -> Cow<'_, str> {
         Cow::Borrowed(&self.url)
     }
 

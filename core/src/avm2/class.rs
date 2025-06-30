@@ -388,7 +388,7 @@ impl<'gc> Class<'gc> {
         self.0.write(mc).class_objects.push(class_object);
     }
 
-    pub fn class_objects(&self) -> Ref<Vec<ClassObject<'gc>>> {
+    pub fn class_objects(&self) -> Ref<'_, Vec<ClassObject<'gc>>> {
         Ref::map(self.0.read(), |c| &c.class_objects)
     }
 
@@ -1204,7 +1204,7 @@ impl<'gc> Class<'gc> {
     }
 
     /// Return traits provided by this class.
-    pub fn traits(&self) -> Ref<Vec<Trait<'gc>>> {
+    pub fn traits(&self) -> Ref<'_, Vec<Trait<'gc>>> {
         Ref::map(self.0.read(), |c| &c.traits)
     }
 
@@ -1233,11 +1233,11 @@ impl<'gc> Class<'gc> {
         self.0.read().call_handler
     }
 
-    pub fn direct_interfaces(&self) -> Ref<Vec<Class<'gc>>> {
+    pub fn direct_interfaces(&self) -> Ref<'_, Vec<Class<'gc>>> {
         Ref::map(self.0.read(), |c| &c.direct_interfaces)
     }
 
-    pub fn all_interfaces(&self) -> Ref<Vec<Class<'gc>>> {
+    pub fn all_interfaces(&self) -> Ref<'_, Vec<Class<'gc>>> {
         Ref::map(self.0.read(), |c| &c.all_interfaces)
     }
 

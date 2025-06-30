@@ -84,12 +84,12 @@ impl<'gc> TObject<'gc> for TextFormatObject<'gc> {
     }
 
     /// Unwrap this object as a text format.
-    fn as_text_format(&self) -> Option<Ref<TextFormat>> {
+    fn as_text_format(&self) -> Option<Ref<'_, TextFormat>> {
         Some(self.0.text_format.borrow())
     }
 
     /// Unwrap this object as a mutable text format.
-    fn as_text_format_mut(&self) -> Option<RefMut<TextFormat>> {
+    fn as_text_format_mut(&self) -> Option<RefMut<'_, TextFormat>> {
         Some(self.0.text_format.borrow_mut())
     }
 }
