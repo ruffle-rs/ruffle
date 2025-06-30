@@ -1610,7 +1610,7 @@ impl<'gc> Loader<'gc> {
 
                     let data_object = if &data_format == b"binary" {
                         let storage = ByteArrayStorage::from_vec(body);
-                        let bytearray = ByteArrayObject::from_storage(activation, storage);
+                        let bytearray = ByteArrayObject::from_storage(activation.context, storage);
 
                         Some(bytearray.into())
                     } else if &data_format == b"variables" {

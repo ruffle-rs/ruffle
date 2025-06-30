@@ -390,7 +390,7 @@ impl<'gc> Domain<'gc> {
         let initial_data = vec![0; MIN_DOMAIN_MEMORY_LENGTH];
         let storage = ByteArrayStorage::from_vec(initial_data);
 
-        let domain_memory = ByteArrayObject::from_storage(activation, storage);
+        let domain_memory = ByteArrayObject::from_storage(activation.context, storage);
 
         let mut write = self.0.write(activation.gc());
 
