@@ -635,8 +635,6 @@ impl CurrentPipeline {
         self.stencil_ref_value = reference_value;
         self.stencil_read_mask = read_mask;
         self.stencil_write_mask = write_mask;
-        // Note: We don't set dirty here because the reference value is set dynamically
-        // during render pass creation, not as part of the pipeline state
     }
 }
 
