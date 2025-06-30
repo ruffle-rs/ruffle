@@ -592,15 +592,15 @@ impl CurrentPipeline {
         &mut self,
         triangle_face: Context3DTriangleFace,
         compare_mode: Context3DCompareMode,
-        action_on_both_pass: Context3DStencilAction,
-        action_on_depth_fail: Context3DStencilAction,
-        action_on_depth_pass_stencil_fail: Context3DStencilAction,
+        on_both_pass: Context3DStencilAction,
+        on_depth_fail: Context3DStencilAction,
+        on_depth_pass_stencil_fail: Context3DStencilAction,
     ) {
         let stencil_state = wgpu::StencilFaceState {
             compare: compare_mode.into(),
-            fail_op: action_on_depth_pass_stencil_fail.into(),
-            depth_fail_op: action_on_depth_fail.into(),
-            pass_op: action_on_both_pass.into(),
+            fail_op: on_depth_pass_stencil_fail.into(),
+            depth_fail_op: on_depth_fail.into(),
+            pass_op: on_both_pass.into(),
         };
 
         match triangle_face {

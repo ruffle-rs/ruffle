@@ -296,6 +296,22 @@ pub enum Context3DTriangleFace {
     FrontAndBack,
 }
 
+impl Context3DTriangleFace {
+    pub fn from_wstr(s: &WStr) -> Option<Self> {
+        if s == b"none" {
+            Some(Context3DTriangleFace::None)
+        } else if s == b"back" {
+            Some(Context3DTriangleFace::Back)
+        } else if s == b"Front" {
+            Some(Context3DTriangleFace::Front)
+        } else if s == b"frontAndBack" {
+            Some(Context3DTriangleFace::FrontAndBack)
+        } else {
+            None
+        }
+    }
+}
+
 #[derive(Copy, Clone, Debug)]
 pub enum Context3DProfile {
     Baseline,
@@ -588,9 +604,9 @@ pub enum Context3DCommand<'a> {
     SetStencilActions {
         triangle_face: Context3DTriangleFace,
         compare_mode: Context3DCompareMode,
-        action_on_both_pass: Context3DStencilAction,
-        action_on_depth_fail: Context3DStencilAction,
-        action_on_depth_pass_stencil_fail: Context3DStencilAction,
+        on_both_pass: Context3DStencilAction,
+        on_depth_fail: Context3DStencilAction,
+        on_depth_pass_stencil_fail: Context3DStencilAction,
     },
     SetStencilReferenceValue {
         reference_value: u32,
