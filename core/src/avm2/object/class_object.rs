@@ -11,7 +11,7 @@ use crate::avm2::object::{Object, ObjectPtr, ScriptObject, TObject};
 use crate::avm2::property::Property;
 use crate::avm2::scope::{Scope, ScopeChain};
 use crate::avm2::value::Value;
-use crate::avm2::vtable::{ClassBoundMethod, VTable};
+use crate::avm2::vtable::VTable;
 use crate::avm2::Error;
 use crate::avm2::Multiname;
 use crate::avm2::QName;
@@ -409,19 +409,14 @@ impl<'gc> ClassObject<'gc> {
 
         if let Some(Property::Method { disp_id, .. }) = property {
             // todo: handle errors
-            let ClassBoundMethod {
-                class,
-                super_class_obj,
-                scope,
-                method,
-            } = self.instance_vtable().get_full_method(disp_id).unwrap();
+            let full_method = self.instance_vtable().get_full_method(disp_id).unwrap();
             let callee = FunctionObject::from_method(
                 activation,
-                method,
-                scope.expect("Scope should exist here"),
+                full_method.method,
+                full_method.scope(),
                 Some(receiver.into()),
-                super_class_obj,
-                Some(class),
+                full_method.super_class_obj,
+                Some(full_method.class),
             );
 
             callee.call(activation, receiver.into(), arguments)
@@ -470,19 +465,14 @@ impl<'gc> ClassObject<'gc> {
                 | Property::Method { disp_id },
             ) => {
                 // todo: handle errors
-                let ClassBoundMethod {
-                    class,
-                    super_class_obj,
-                    scope,
-                    method,
-                } = self.instance_vtable().get_full_method(disp_id).unwrap();
+                let full_method = self.instance_vtable().get_full_method(disp_id).unwrap();
                 let callee = FunctionObject::from_method(
                     activation,
-                    method,
-                    scope.expect("Scope should exist here"),
+                    full_method.method,
+                    full_method.scope(),
                     Some(receiver.into()),
-                    super_class_obj,
-                    Some(class),
+                    full_method.super_class_obj,
+                    Some(full_method.class),
                 );
 
                 // We call getters, but return the actual function object for normal methods
@@ -553,14 +543,9 @@ impl<'gc> ClassObject<'gc> {
                 set: Some(disp_id), ..
             }) => {
                 // todo: handle errors
-                let ClassBoundMethod {
-                    class,
-                    super_class_obj,
-                    scope,
-                    method,
-                } = self.instance_vtable().get_full_method(disp_id).unwrap();
+                let full_method = self.instance_vtable().get_full_method(disp_id).unwrap();
                 let callee =
-                    FunctionObject::from_method(activation, method, scope.expect("Scope should exist here"), Some(receiver.into()), super_class_obj, Some(class));
+                    FunctionObject::from_method(activation, full_method.method, full_method.scope(), Some(receiver.into()), full_method.super_class_obj, Some(full_method.class));
 
                 callee.call(activation, receiver.into(), &[value])?;
                 Ok(())

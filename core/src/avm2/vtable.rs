@@ -56,8 +56,14 @@ impl PartialEq for VTable<'_> {
 pub struct ClassBoundMethod<'gc> {
     pub class: Class<'gc>,
     pub super_class_obj: Option<ClassObject<'gc>>,
-    pub scope: Option<ScopeChain<'gc>>,
+    scope: Option<ScopeChain<'gc>>,
     pub method: Method<'gc>,
+}
+
+impl<'gc> ClassBoundMethod<'gc> {
+    pub fn scope(&self) -> ScopeChain<'gc> {
+        self.scope.expect("Scope should exists here")
+    }
 }
 
 impl<'gc> VTable<'gc> {

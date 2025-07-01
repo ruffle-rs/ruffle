@@ -6,7 +6,7 @@ use crate::avm2::optimizer::blocks::assemble_blocks;
 use crate::avm2::optimizer::peephole;
 use crate::avm2::property::Property;
 use crate::avm2::verify::Exception;
-use crate::avm2::vtable::{ClassBoundMethod, VTable};
+use crate::avm2::vtable::VTable;
 use crate::avm2::{Activation, Class, Error};
 
 use gc_arena::Gc;
@@ -1432,10 +1432,8 @@ fn abstract_interpret_ops<'gc>(
                             Some(Property::Virtual {
                                 set: Some(disp_id), ..
                             }) => {
-                                let full_method = vtable
-                                    .get_full_method(disp_id)
-                                    .expect("Method should exist");
-                                let ClassBoundMethod { method, .. } = full_method;
+                                let method =
+                                    vtable.get_method(disp_id).expect("Method should exist");
 
                                 let mut result_op = Op::CallMethod {
                                     num_args: 1,
@@ -1487,10 +1485,7 @@ fn abstract_interpret_ops<'gc>(
                         Some(Property::Virtual {
                             set: Some(disp_id), ..
                         }) => {
-                            let full_method = vtable
-                                .get_full_method(disp_id)
-                                .expect("Method should exist");
-                            let ClassBoundMethod { method, .. } = full_method;
+                            let method = vtable.get_method(disp_id).expect("Method should exist");
 
                             let mut result_op = Op::CallMethod {
                                 num_args: 1,
@@ -1975,10 +1970,7 @@ fn optimize_get_property<'gc>(
             Some(Property::Virtual {
                 get: Some(disp_id), ..
             }) => {
-                let full_method = vtable
-                    .get_full_method(disp_id)
-                    .expect("Method should exist");
-                let ClassBoundMethod { method, .. } = full_method;
+                let method = vtable.get_method(disp_id).expect("Method should exist");
 
                 let mut result_op = Op::CallMethod {
                     num_args: 0,
@@ -2027,10 +2019,7 @@ fn optimize_call_property<'gc>(
     if let Some(vtable) = stack_value.vtable() {
         match vtable.get_trait(&multiname) {
             Some(Property::Method { disp_id }) => {
-                let full_method = vtable
-                    .get_full_method(disp_id)
-                    .expect("Method should exist");
-                let ClassBoundMethod { method, .. } = full_method;
+                let method = vtable.get_method(disp_id).expect("Method should exist");
 
                 let mut result_op = Op::CallMethod {
                     num_args,

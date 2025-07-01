@@ -7,7 +7,7 @@ use crate::avm2::function::{exec, FunctionArgs};
 use crate::avm2::object::{NamespaceObject, Object, TObject};
 use crate::avm2::property::Property;
 use crate::avm2::script::TranslationUnit;
-use crate::avm2::vtable::{ClassBoundMethod, VTable};
+use crate::avm2::vtable::VTable;
 use crate::avm2::{Error, Multiname, Namespace};
 use crate::ecma_conversions::{f64_to_wrapping_i32, f64_to_wrapping_u32};
 use crate::string::{AvmAtom, AvmString, WStr};
@@ -1235,19 +1235,12 @@ impl<'gc> Value<'gc> {
 
         // Execute immediately if this method doesn't require binding
         if !full_method.method.needs_arguments_object() {
-            let ClassBoundMethod {
-                class,
-                super_class_obj,
-                scope,
-                method,
-            } = full_method;
-
             return exec(
-                method,
-                scope.expect("Scope should exist here"),
+                full_method.method,
+                full_method.scope(),
                 *self,
-                super_class_obj,
-                Some(class),
+                full_method.super_class_obj,
+                Some(full_method.class),
                 arguments,
                 activation,
                 *self, // Callee deliberately invalid.
