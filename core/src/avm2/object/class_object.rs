@@ -708,20 +708,8 @@ impl<'gc> ClassObject<'gc> {
             .map(|c| c.0)
     }
 
-    /// Attempts to obtain the name of this class.
-    /// If we are unable to read from a necessary `GcCell`,
-    /// the returned value will be some kind of error message.
-    ///
-    /// This should only be used in a debug context, where
-    /// we need infallible access to *something* to print
-    /// out.
-    pub fn debug_class_name(&self) -> Box<dyn Debug + 'gc> {
-        let class_name = self.inner_class_definition().try_name();
-
-        match class_name {
-            Ok(class_name) => Box::new(class_name),
-            Err(err) => Box::new(err),
-        }
+    pub fn name(&self) -> QName<'gc> {
+        self.inner_class_definition().name()
     }
 }
 
@@ -815,7 +803,7 @@ impl Hash for ClassObject<'_> {
 impl Debug for ClassObject<'_> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
         f.debug_struct("ClassObject")
-            .field("name", &self.debug_class_name())
+            .field("name", &self.name())
             .field("ptr", &Gc::as_ptr(self.0))
             .finish()
     }
