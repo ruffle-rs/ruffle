@@ -65,6 +65,7 @@ mod textformat_object;
 mod texture_object;
 mod vector_object;
 mod vertex_buffer_3d_object;
+mod worker_domain_object;
 mod worker_object;
 mod xml_list_object;
 mod xml_object;
@@ -151,6 +152,7 @@ pub use crate::avm2::object::vector_object::{vector_allocator, VectorObject, Vec
 pub use crate::avm2::object::vertex_buffer_3d_object::{
     VertexBuffer3DObject, VertexBuffer3DObjectWeak,
 };
+pub use crate::avm2::object::worker_domain_object::{WorkerDomainObject, WorkerDomainObjectWeak};
 pub use crate::avm2::object::worker_object::{WorkerObject, WorkerObjectWeak};
 pub use crate::avm2::object::xml_list_object::{
     xml_list_allocator, E4XOrXml, XmlListObject, XmlListObjectWeak,
@@ -207,6 +209,7 @@ use crate::font::Font;
         SoundTransformObject(SoundTransformObject<'gc>),
         StyleSheetObject(StyleSheetObject<'gc>),
         WorkerObject(WorkerObject<'gc>),
+        WorkerDomainObject(WorkerDomainObject<'gc>),
     }
 )]
 pub trait TObject<'gc>: 'gc + Collect<'gc> + Debug + Into<Object<'gc>> + Clone + Copy {
@@ -983,6 +986,7 @@ impl<'gc> Object<'gc> {
             Self::SoundTransformObject(o) => WeakObject::SoundTransformObject(SoundTransformObjectWeak(Gc::downgrade(o.0))),
             Self::StyleSheetObject(o) => WeakObject::StyleSheetObject(StyleSheetObjectWeak(Gc::downgrade(o.0))),
             Self::WorkerObject(o) => WeakObject::WorkerObject(WorkerObjectWeak(Gc::downgrade(o.0))),
+            Self::WorkerDomainObject(o) => WeakObject::WorkerDomainObject(WorkerDomainObjectWeak(Gc::downgrade(o.0))),
         }
     }
 }
@@ -1047,6 +1051,7 @@ pub enum WeakObject<'gc> {
     SoundTransformObject(SoundTransformObjectWeak<'gc>),
     StyleSheetObject(StyleSheetObjectWeak<'gc>),
     WorkerObject(WorkerObjectWeak<'gc>),
+    WorkerDomainObject(WorkerDomainObjectWeak<'gc>),
 }
 
 impl<'gc> WeakObject<'gc> {
@@ -1094,6 +1099,7 @@ impl<'gc> WeakObject<'gc> {
             Self::SoundTransformObject(o) => GcWeak::as_ptr(o.0) as *const ObjectPtr,
             Self::StyleSheetObject(o) => GcWeak::as_ptr(o.0) as *const ObjectPtr,
             Self::WorkerObject(o) => GcWeak::as_ptr(o.0) as *const ObjectPtr,
+            Self::WorkerDomainObject(o) => GcWeak::as_ptr(o.0) as *const ObjectPtr,
         }
     }
 
@@ -1141,6 +1147,7 @@ impl<'gc> WeakObject<'gc> {
             Self::SoundTransformObject(o) => SoundTransformObject(o.0.upgrade(mc)?).into(),
             Self::StyleSheetObject(o) => StyleSheetObject(o.0.upgrade(mc)?).into(),
             Self::WorkerObject(o) => WorkerObject(o.0.upgrade(mc)?).into(),
+            Self::WorkerDomainObject(o) => WorkerDomainObject(o.0.upgrade(mc)?).into(),
         })
     }
 }
