@@ -2152,7 +2152,7 @@ pub trait TDisplayObject<'gc>:
 
         let mut classname = "".to_string();
         if let Some(o) = self.object2().as_object() {
-            classname = format!("{:?}", o.base().debug_class_name());
+            classname = format!("{:?}", o.base().class_name());
         }
 
         println!(

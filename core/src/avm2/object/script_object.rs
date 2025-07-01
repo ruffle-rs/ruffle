@@ -7,7 +7,7 @@ use crate::avm2::error;
 use crate::avm2::object::{ClassObject, FunctionObject, Object, ObjectPtr, TObject};
 use crate::avm2::value::Value;
 use crate::avm2::vtable::VTable;
-use crate::avm2::{Error, Multiname};
+use crate::avm2::{Error, Multiname, QName};
 use crate::string::AvmString;
 use gc_arena::barrier::{unlock, Write};
 use gc_arena::{
@@ -403,15 +403,15 @@ impl<'gc> ScriptObjectWrapper<'gc> {
         unlock!(Gc::write(mc, self.0), ScriptObjectData, vtable).set(vtable);
     }
 
-    pub fn debug_class_name(&self) -> Box<dyn std::fmt::Debug + 'gc> {
-        Box::new(self.instance_class().debug_name())
+    pub fn class_name(&self) -> QName<'gc> {
+        self.instance_class().name()
     }
 }
 
 impl Debug for ScriptObject<'_> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
         f.debug_struct("ScriptObject")
-            .field("name", &ScriptObjectWrapper(self.0).debug_class_name())
+            .field("name", &ScriptObjectWrapper(self.0).class_name())
             .field("ptr", &Gc::as_ptr(self.0))
             .finish()
     }

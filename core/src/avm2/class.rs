@@ -1012,28 +1012,6 @@ impl<'gc> Class<'gc> {
         unlock!(Gc::write(mc, self.0), ClassData, name).set(name);
     }
 
-    // TODO(moulins): not necessary anymore
-    pub fn try_name(self) -> Result<QName<'gc>, std::cell::BorrowError> {
-        Ok(self.name())
-    }
-
-    /// Attempts to obtain the name of this class.
-    /// If we are unable to read from the necessary `GcCell`,
-    /// the returned value will be some kind of error message.
-    ///
-    /// This should only be used in a debug context, where
-    /// we need infallible access to *something* to print
-    /// out.
-    // TODO(moulins): not necessary anymore
-    pub fn debug_name(self) -> Box<dyn fmt::Debug + 'gc> {
-        let class_name = self.try_name();
-
-        match class_name {
-            Ok(class_name) => Box::new(class_name),
-            Err(err) => Box::new(err),
-        }
-    }
-
     pub fn param(self) -> Option<Option<Class<'gc>>> {
         self.0.param.get()
     }
