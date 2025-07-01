@@ -35,12 +35,12 @@ struct VTableData<'gc> {
 
     /// Stores the `PropertyClass` for each slot,
     /// indexed by `slot_id`
-    slot_classes: Vec<Lock<PropertyClass<'gc>>>,
+    slot_classes: Box<[Lock<PropertyClass<'gc>>]>,
 
     /// method_table is indexed by `disp_id`
-    method_table: Vec<ClassBoundMethod<'gc>>,
+    method_table: Box<[ClassBoundMethod<'gc>]>,
 
-    default_slots: Vec<Option<Value<'gc>>>,
+    default_slots: Box<[Option<Value<'gc>>]>,
 }
 
 impl PartialEq for VTable<'_> {
@@ -150,7 +150,8 @@ impl<'gc> VTable<'gc> {
         // Calling coerce modified `PropertyClass` to cache the class lookup,
         // so store the new value back in the vtable.
         if changed {
-            let slots = field!(Gc::write(activation.gc(), self.0), VTableData, slot_classes);
+            let write = Gc::write(activation.gc(), self.0);
+            let slots = field!(write, VTableData, slot_classes).as_deref();
             slots[slot_id].unlock().set(slot_class);
         }
         Ok(value)
@@ -181,12 +182,12 @@ impl<'gc> VTable<'gc> {
     }
 
     pub fn set_slot_class(self, mc: &Mutation<'gc>, slot_id: u32, value: PropertyClass<'gc>) {
-        let slots = field!(Gc::write(mc, self.0), VTableData, slot_classes);
+        let slots = field!(Gc::write(mc, self.0), VTableData, slot_classes).as_deref();
         slots[slot_id as usize].unlock().set(value);
     }
 
     pub fn replace_scopes_with(self, mc: &Mutation<'gc>, new_scope: ScopeChain<'gc>) {
-        let methods = field!(Gc::write(mc, self.0), VTableData, method_table);
+        let methods = field!(Gc::write(mc, self.0), VTableData, method_table).as_deref();
         for i in 0..methods.len() {
             unlock!(methods[i], ClassBoundMethod, scope).set(Some(new_scope));
         }
@@ -250,30 +251,20 @@ impl<'gc> VTable<'gc> {
         // so long-term it's still something we should verify.
         // (and it's far from the only verification check we lack anyway)
 
-        let mut vtable = VTableData {
-            scope,
-            protected_namespace: defining_class_def.protected_namespace(),
-            ..Default::default()
-        };
-
-        let VTableData {
-            resolved_traits,
-            slot_metadata_table,
-            disp_metadata_table,
-            method_table,
-            default_slots,
-            slot_classes,
-            ..
-        } = &mut vtable;
-        let resolved_traits = resolved_traits.get_mut();
+        let mut resolved_traits = PropertyMap::new();
+        let mut slot_metadata_table = HashMap::new();
+        let mut disp_metadata_table = HashMap::new();
+        let mut method_table = Vec::new();
+        let mut default_slots = Vec::new();
+        let mut slot_classes = Vec::new();
 
         if let Some(superclass_vtable) = superclass_vtable {
-            *resolved_traits = superclass_vtable.resolved_traits().clone();
-            *slot_metadata_table = superclass_vtable.0.slot_metadata_table.clone();
-            *disp_metadata_table = superclass_vtable.0.disp_metadata_table.clone();
-            *slot_classes = superclass_vtable.0.slot_classes.clone();
-            *method_table = superclass_vtable.0.method_table.clone();
-            *default_slots = superclass_vtable.0.default_slots.clone();
+            resolved_traits = superclass_vtable.resolved_traits().clone();
+            slot_metadata_table = superclass_vtable.0.slot_metadata_table.clone();
+            disp_metadata_table = superclass_vtable.0.disp_metadata_table.clone();
+            slot_classes.extend_from_slice(&superclass_vtable.0.slot_classes);
+            method_table.extend_from_slice(&superclass_vtable.0.method_table);
+            default_slots.extend_from_slice(&superclass_vtable.0.default_slots);
 
             if let Some(protected_namespace) = defining_class_def.protected_namespace() {
                 if let Some(super_protected_namespace) = superclass_vtable.0.protected_namespace {
@@ -463,7 +454,16 @@ impl<'gc> VTable<'gc> {
             }
         }
 
-        vtable
+        VTableData {
+            scope,
+            protected_namespace: defining_class_def.protected_namespace(),
+            resolved_traits: RefLock::new(resolved_traits),
+            slot_metadata_table,
+            disp_metadata_table,
+            method_table: method_table.into_boxed_slice(),
+            default_slots: default_slots.into_boxed_slice(),
+            slot_classes: slot_classes.into_boxed_slice(),
+        }
     }
 
     /// Retrieve a bound instance method suitable for use as a value.
