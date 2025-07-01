@@ -83,6 +83,26 @@ impl<'gc> VTable<'gc> {
         ))
     }
 
+    /// Builds a new vtable by calculating the flattened list of instance traits
+    /// that this class maintains.
+    pub fn new(
+        defining_class_def: Class<'gc>,
+        super_class_obj: Option<ClassObject<'gc>>,
+        scope: Option<ScopeChain<'gc>>,
+        superclass_vtable: Option<Self>,
+        mc: &Mutation<'gc>,
+    ) -> Self {
+        let this = VTable::empty(mc);
+        this.init_vtable(
+            defining_class_def,
+            super_class_obj,
+            scope,
+            superclass_vtable,
+            mc,
+        );
+        this
+    }
+
     pub fn resolved_traits(&self) -> Ref<'_, PropertyMap<'gc, Property>> {
         Ref::map(self.0.read(), |v| &v.resolved_traits)
     }
@@ -192,13 +212,8 @@ impl<'gc> VTable<'gc> {
         }
     }
 
-    /// Calculate the flattened list of instance traits that this class
-    /// maintains.
-    ///
-    /// This should be run during the class finalization step, before instances
-    /// are linked (as instances will further add traits to the list).
     #[allow(clippy::if_same_then_else)]
-    pub fn init_vtable(
+    fn init_vtable(
         self,
         defining_class_def: Class<'gc>,
         super_class_obj: Option<ClassObject<'gc>>,

@@ -74,7 +74,11 @@ pub struct ClassObjectData<'gc> {
     applications: RefLock<FnvHashMap<Option<Class<'gc>>, ClassObject<'gc>>>,
 
     /// VTable used for instances of this class.
-    instance_vtable: VTable<'gc>,
+    ///
+    /// Newly-created `ClassObject`s begin with a dummy vtable: the
+    /// `init_instance_vtable` method should be called to replace it with the
+    /// real vtable.
+    instance_vtable: Lock<VTable<'gc>>,
 }
 
 impl<'gc> ClassObject<'gc> {
@@ -180,7 +184,7 @@ impl<'gc> ClassObject<'gc> {
                 instance_scope: Lock::new(scope),
                 superclass_object,
                 applications: RefLock::new(Default::default()),
-                instance_vtable: VTable::empty(mc),
+                instance_vtable: Lock::new(c_class.vtable()),
             },
         ));
 
@@ -201,15 +205,18 @@ impl<'gc> ClassObject<'gc> {
     }
 
     fn init_instance_vtable(self, activation: &mut Activation<'_, 'gc>) {
+        let mc = activation.gc();
         let class = self.inner_class_definition();
 
-        self.instance_vtable().init_vtable(
+        let vtable = VTable::new(
             class,
             self.superclass_object(),
             Some(self.instance_scope()),
             self.superclass_object().map(|cls| cls.instance_vtable()),
-            activation.gc(),
+            mc,
         );
+
+        unlock!(Gc::write(mc, self.0), ClassObjectData, instance_vtable).set(vtable);
 
         self.link_interfaces(activation);
     }
@@ -239,8 +246,7 @@ impl<'gc> ClassObject<'gc> {
         let class_classobject = activation.avm2().classes().class;
 
         // class vtable == class traits + Class instance traits
-        let class_vtable = VTable::empty(activation.gc());
-        class_vtable.init_vtable(
+        let class_vtable = VTable::new(
             c_class,
             Some(class_classobject),
             Some(self.class_scope()),
@@ -269,6 +275,7 @@ impl<'gc> ClassObject<'gc> {
     /// time.
     fn link_interfaces(self, activation: &mut Activation<'_, 'gc>) {
         let class = self.inner_class_definition();
+        let vtable = self.instance_vtable();
 
         // FIXME - we should only be copying properties for newly-implemented
         // interfaces (i.e. those that were not already implemented by the superclass)
@@ -279,7 +286,7 @@ impl<'gc> ClassObject<'gc> {
             for interface_trait in interface.traits() {
                 if !interface_trait.name().namespace().is_public() {
                     let public_name = QName::new(internal_ns, interface_trait.name().local_name());
-                    self.instance_vtable().copy_property_for_interface(
+                    vtable.copy_property_for_interface(
                         activation.gc(),
                         public_name,
                         interface_trait.name(),
@@ -660,7 +667,7 @@ impl<'gc> ClassObject<'gc> {
     }
 
     pub fn instance_vtable(self) -> VTable<'gc> {
-        self.0.instance_vtable
+        self.0.instance_vtable.get()
     }
 
     pub fn inner_class_definition(self) -> Class<'gc> {

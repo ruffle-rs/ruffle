@@ -475,8 +475,7 @@ impl<'gc> Script<'gc> {
         let scope = ScopeChain::new(domain);
         let object_class = activation.avm2().classes().object;
 
-        let global_obj_vtable = VTable::empty(mc);
-        global_obj_vtable.init_vtable(
+        let global_obj_vtable = VTable::new(
             global_class,
             Some(object_class),
             Some(scope),
