@@ -197,6 +197,31 @@ impl core::fmt::Debug for Class<'_> {
     }
 }
 
+impl<'gc> ClassData<'gc> {
+    /// Create an unlinked & unloaded class.
+    fn empty(mc: &Mutation<'gc>, name: QName<'gc>) -> Self {
+        Self {
+            name,
+            param: None,
+            super_class: None,
+            attributes: ClassAttributes::empty(),
+            protected_namespace: None,
+            direct_interfaces: Vec::new(),
+            all_interfaces: Vec::new(),
+            instance_allocator: Allocator(scriptobject_allocator),
+            instance_init: None,
+            traits: Vec::new(),
+            vtable: VTable::empty(mc),
+            call_handler: None,
+            custom_constructor: None,
+            traits_loaded: false,
+            linked_class: ClassLink::Unlinked,
+            applications: FnvHashMap::default(),
+            class_objects: Vec::new(),
+        }
+    }
+}
+
 impl<'gc> Class<'gc> {
     /// Create an unlinked class from its name, superclass, and traits.
     pub fn custom_new(
@@ -205,28 +230,11 @@ impl<'gc> Class<'gc> {
         traits: Vec<Trait<'gc>>,
         mc: &Mutation<'gc>,
     ) -> Self {
-        Class(GcCell::new(
-            mc,
-            ClassData {
-                name,
-                param: None,
-                super_class,
-                attributes: ClassAttributes::empty(),
-                protected_namespace: None,
-                direct_interfaces: Vec::new(),
-                all_interfaces: Vec::new(),
-                instance_allocator: Allocator(scriptobject_allocator),
-                instance_init: None,
-                traits,
-                vtable: VTable::empty(mc),
-                call_handler: None,
-                custom_constructor: None,
-                traits_loaded: true,
-                linked_class: ClassLink::Unlinked,
-                applications: FnvHashMap::default(),
-                class_objects: Vec::new(),
-            },
-        ))
+        let mut class = ClassData::empty(mc, name);
+        class.super_class = super_class;
+        class.traits = traits;
+        class.traits_loaded = true;
+        Class(GcCell::new(mc, class))
     }
 
     pub fn add_application(self, mc: &Mutation<'gc>, param: Option<Class<'gc>>, cls: Class<'gc>) {
@@ -274,51 +282,21 @@ impl<'gc> Class<'gc> {
         local_name_buf.push_char('$');
         let c_name = QName::new(name.namespace(), AvmString::new(mc, local_name_buf));
 
-        let i_class = Class(GcCell::new(
-            mc,
-            ClassData {
-                name,
-                param: Some(Some(param)),
-                super_class: Some(object_vector_i_class),
-                attributes: ClassAttributes::empty(),
-                protected_namespace: None,
-                direct_interfaces: Vec::new(),
-                all_interfaces: Vec::new(),
-                instance_allocator: object_vector_i_class.instance_allocator(),
-                instance_init: object_vector_i_class.instance_init(),
-                traits: Vec::new(),
-                vtable: VTable::empty(mc),
-                call_handler: object_vector_i_class.call_handler(),
-                custom_constructor: None,
-                traits_loaded: true,
-                linked_class: ClassLink::Unlinked,
-                applications: FnvHashMap::default(),
-                class_objects: Vec::new(),
-            },
-        ));
+        let mut i_class = ClassData::empty(mc, name);
+        i_class.param = Some(Some(param));
+        i_class.super_class = Some(object_vector_i_class);
+        i_class.instance_allocator = object_vector_i_class.instance_allocator();
+        i_class.instance_init = object_vector_i_class.instance_init();
+        i_class.call_handler = object_vector_i_class.call_handler();
+        i_class.traits_loaded = true;
+        let i_class = Class(GcCell::new(mc, i_class));
 
-        let c_class = Class(GcCell::new(
-            mc,
-            ClassData {
-                name: c_name,
-                param: None,
-                super_class: Some(context.avm2.class_defs().class),
-                attributes: ClassAttributes::FINAL,
-                protected_namespace: None,
-                direct_interfaces: Vec::new(),
-                all_interfaces: Vec::new(),
-                instance_allocator: Allocator(scriptobject_allocator),
-                instance_init: object_vector_c_class.instance_init(),
-                traits: Vec::new(),
-                vtable: VTable::empty(mc),
-                call_handler: None,
-                custom_constructor: None,
-                traits_loaded: true,
-                linked_class: ClassLink::Unlinked,
-                applications: FnvHashMap::default(),
-                class_objects: Vec::new(),
-            },
-        ));
+        let mut c_class = ClassData::empty(mc, c_name);
+        c_class.super_class = Some(context.avm2.class_defs().class);
+        c_class.attributes = ClassAttributes::FINAL;
+        c_class.instance_init = object_vector_c_class.instance_init();
+        c_class.traits_loaded = true;
+        let c_class = Class(GcCell::new(mc, c_class));
 
         i_class.link_with_c_class(mc, c_class);
         i_class
@@ -474,28 +452,16 @@ impl<'gc> Class<'gc> {
             .or_else(|| super_class.map(|c| c.instance_allocator()))
             .unwrap_or(Allocator(scriptobject_allocator));
 
-        Ok(Class(GcCell::new(
-            activation.gc(),
-            ClassData {
-                name,
-                param: None,
-                super_class,
-                attributes,
-                protected_namespace,
-                direct_interfaces: interfaces,
-                all_interfaces: Vec::new(),
-                instance_allocator,
-                instance_init: Some(instance_init),
-                traits: Vec::new(),
-                vtable: VTable::empty(activation.gc()),
-                call_handler,
-                custom_constructor: custom_constructor.map(CustomConstructor),
-                traits_loaded: false,
-                linked_class: ClassLink::Unlinked,
-                applications: Default::default(),
-                class_objects: Vec::new(),
-            },
-        )))
+        let mut class = ClassData::empty(activation.gc(), name);
+        class.super_class = super_class;
+        class.attributes = attributes;
+        class.protected_namespace = protected_namespace;
+        class.direct_interfaces = interfaces;
+        class.instance_allocator = instance_allocator;
+        class.instance_init = Some(instance_init);
+        class.call_handler = call_handler;
+        class.custom_constructor = custom_constructor.map(CustomConstructor);
+        Ok(Class(GcCell::new(activation.gc(), class)))
     }
 
     /// Loads a c_class from a `TranslationUnit`, without loading its i_class.
@@ -537,28 +503,12 @@ impl<'gc> Class<'gc> {
             AvmString::new(activation.gc(), local_name_buf),
         );
 
-        Ok(Class(GcCell::new(
-            activation.gc(),
-            ClassData {
-                name: c_name,
-                param: None,
-                super_class: Some(class_class),
-                attributes: ClassAttributes::FINAL,
-                protected_namespace,
-                direct_interfaces: Vec::new(),
-                all_interfaces: Vec::new(),
-                instance_allocator: Allocator(scriptobject_allocator),
-                instance_init: Some(class_init),
-                traits: Vec::new(),
-                vtable: VTable::empty(activation.gc()),
-                call_handler: None,
-                custom_constructor: None,
-                traits_loaded: false,
-                linked_class: ClassLink::Unlinked,
-                applications: FnvHashMap::default(),
-                class_objects: Vec::new(),
-            },
-        )))
+        let mut class = ClassData::empty(activation.gc(), c_name);
+        class.super_class = Some(class_class);
+        class.attributes = ClassAttributes::FINAL;
+        class.protected_namespace = protected_namespace;
+        class.instance_init = Some(class_init);
+        Ok(Class(GcCell::new(activation.gc(), class)))
     }
 
     /// Finish the class-loading process by loading traits.
@@ -979,29 +929,11 @@ impl<'gc> Class<'gc> {
 
         let name = QName::new(activation.avm2().namespaces.public_all(), name);
 
-        let i_class = Class(GcCell::new(
-            activation.gc(),
-            ClassData {
-                name,
-                param: None,
-                super_class: None,
-                attributes: ClassAttributes::FINAL | ClassAttributes::SEALED,
-                protected_namespace: None,
-                direct_interfaces: Vec::new(),
-                all_interfaces: Vec::new(),
-                instance_allocator: Allocator(scriptobject_allocator),
-                instance_init: None,
-                traits,
-                vtable: VTable::empty(activation.gc()),
-                call_handler: None,
-                custom_constructor: None,
-                traits_loaded: true,
-                linked_class: ClassLink::Unlinked,
-                applications: Default::default(),
-                class_objects: Vec::new(),
-            },
-        ));
-
+        let mut i_class = ClassData::empty(activation.gc(), name);
+        i_class.attributes = ClassAttributes::FINAL | ClassAttributes::SEALED;
+        i_class.traits = traits;
+        i_class.traits_loaded = true;
+        let i_class = Class(GcCell::new(activation.gc(), i_class));
         i_class.init_vtable(activation.context)?;
 
         // We don't need to construct a c_class
@@ -1013,33 +945,13 @@ impl<'gc> Class<'gc> {
         activation: &mut Activation<'_, 'gc>,
         variable_name: QName<'gc>,
     ) -> Result<Class<'gc>, Error<'gc>> {
+        // Yes, the name of the class is the variable's name
+        let mut i_class = ClassData::empty(activation.gc(), variable_name);
+        i_class.attributes = ClassAttributes::FINAL | ClassAttributes::SEALED;
         // TODO make the slot typed
-        let traits = vec![Trait::from_const(variable_name, None, None)];
-
-        let i_class = Class(GcCell::new(
-            activation.gc(),
-            ClassData {
-                // Yes, the name of the class is the variable's name
-                name: variable_name,
-                param: None,
-                super_class: None,
-                attributes: ClassAttributes::FINAL | ClassAttributes::SEALED,
-                protected_namespace: None,
-                direct_interfaces: Vec::new(),
-                all_interfaces: Vec::new(),
-                instance_allocator: Allocator(scriptobject_allocator),
-                instance_init: None,
-                traits,
-                vtable: VTable::empty(activation.gc()),
-                call_handler: None,
-                custom_constructor: None,
-                traits_loaded: true,
-                linked_class: ClassLink::Unlinked,
-                applications: Default::default(),
-                class_objects: Vec::new(),
-            },
-        ));
-
+        i_class.traits = vec![Trait::from_const(variable_name, None, None)];
+        i_class.traits_loaded = true;
+        let i_class = Class(GcCell::new(activation.gc(), i_class));
         i_class.init_vtable(activation.context)?;
 
         // We don't need to construct a c_class
