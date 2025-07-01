@@ -171,12 +171,12 @@ impl<'gc> VTable<'gc> {
         Ref::map(self.0.read(), |v| &v.default_slots)
     }
 
-    pub fn slot_classes(&self) -> Ref<'_, Vec<PropertyClass<'gc>>> {
-        Ref::map(self.0.read(), |v| &v.slot_classes)
+    pub fn slot_class(self, slot_id: u32) -> Option<PropertyClass<'gc>> {
+        self.0.read().slot_classes.get(slot_id as usize).copied()
     }
 
-    pub fn set_slot_class(&self, mc: &Mutation<'gc>, index: usize, value: PropertyClass<'gc>) {
-        self.0.write(mc).slot_classes[index] = value;
+    pub fn set_slot_class(self, mc: &Mutation<'gc>, slot_id: u32, value: PropertyClass<'gc>) {
+        self.0.write(mc).slot_classes[slot_id as usize] = value;
     }
 
     pub fn replace_scopes_with(&self, mc: &Mutation<'gc>, new_scope: ScopeChain<'gc>) {
