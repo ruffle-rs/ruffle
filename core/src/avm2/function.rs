@@ -311,8 +311,7 @@ pub fn display_function<'gc>(
         } else {
             let mut method_trait = None;
 
-            let traits = bound_class.traits();
-            for t in &*traits {
+            for t in bound_class.traits() {
                 if t.as_method().is_some_and(|tm| tm == method) {
                     method_trait = Some(t);
                     break;
