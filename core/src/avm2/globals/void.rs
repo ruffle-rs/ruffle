@@ -13,7 +13,7 @@ pub fn create_class<'gc>(activation: &mut Activation<'_, 'gc>) -> Class<'gc> {
     );
     class.set_attributes(ClassAttributes::FINAL | ClassAttributes::SEALED);
     // The null class has no interfaces, so this can't fail.
-    class.link_interfaces(activation.context).unwrap();
+    class.init_vtable(activation.context).unwrap();
 
     class
 }
