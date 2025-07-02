@@ -476,7 +476,7 @@ pub trait TDisplayObjectContainer<'gc>:
         RenderIter::from_container(self.into())
     }
 
-    fn is_tab_children_avm1(&self, _context: &mut UpdateContext<'gc>) -> bool {
+    fn is_tab_children_avm1(self, _context: &mut UpdateContext<'gc>) -> bool {
         true
     }
 

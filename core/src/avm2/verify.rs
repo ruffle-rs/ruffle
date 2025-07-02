@@ -530,7 +530,7 @@ pub fn verify_method<'gc>(
         activation,
         method,
         &mut verified_code,
-        &resolved_param_config,
+        resolved_param_config,
         &new_exceptions,
         &jump_targets,
     )?;

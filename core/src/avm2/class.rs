@@ -16,9 +16,12 @@ use crate::context::UpdateContext;
 use crate::string::{AvmString, WString};
 use bitflags::bitflags;
 use fnv::FnvHashMap;
-use gc_arena::{Collect, GcCell, Mutation};
+use gc_arena::barrier::unlock;
+use gc_arena::lock::{OnceLock, RefLock};
+use gc_arena::{Collect, Gc, Lock, Mutation};
+use swf::avm2::types::Trait as AbcTrait;
 
-use std::cell::Ref;
+use std::cell::{Cell, Ref};
 use std::collections::HashSet;
 use std::fmt;
 use std::hash::{Hash, Hasher};
@@ -82,7 +85,7 @@ impl fmt::Debug for Allocator {
     }
 }
 
-#[derive(Clone, Collect)]
+#[derive(Copy, Clone, Collect)]
 #[collect(no_drop)]
 enum ClassLink<'gc> {
     Unlinked,
@@ -92,37 +95,36 @@ enum ClassLink<'gc> {
 
 #[derive(Collect, Clone, Copy)]
 #[collect(no_drop)]
-pub struct Class<'gc>(pub GcCell<'gc, ClassData<'gc>>);
+pub struct Class<'gc>(Gc<'gc, ClassData<'gc>>);
 
 /// A loaded ABC Class which can be used to construct objects with.
-#[derive(Clone, Collect)]
+#[derive(Collect)]
 #[collect(no_drop)]
 pub struct ClassData<'gc> {
     /// The name of the class.
-    name: QName<'gc>,
+    name: Lock<QName<'gc>>,
 
     /// The type parameter for this class (only supported for Vector)
-    param: Option<Option<Class<'gc>>>,
+    param: Lock<Option<Option<Class<'gc>>>>,
 
     /// This class's superclass, or None if it has no superclass
     super_class: Option<Class<'gc>>,
 
     /// Attributes of the given class.
-    #[collect(require_static)]
-    attributes: ClassAttributes,
+    attributes: Cell<ClassAttributes>,
 
     /// The namespace that protected traits of this class are stored into.
     protected_namespace: Option<Namespace<'gc>>,
 
     /// The list of interfaces this class directly implements. This does not include any
     /// superinterfaces, nor interfaces implemented by the superclass.
-    direct_interfaces: Vec<Class<'gc>>,
+    direct_interfaces: Box<[Class<'gc>]>,
 
     /// Interfaces implemented by this class, including interfaces
     /// from parent classes and superinterfaces (recursively).
     /// TODO - avoid cloning this when a subclass implements the
     /// same interface as its superclass.
-    all_interfaces: Vec<Class<'gc>>,
+    all_interfaces: OnceLock<Box<[Class<'gc>]>>,
 
     /// The instance allocator for this class. Defaults to the script object allocator
     /// if no allocator is provided.
@@ -140,7 +142,7 @@ pub struct ClassData<'gc> {
     /// These are accessed as normal instance properties; they should not be
     /// present on prototypes, but instead should shadow any prototype
     /// properties that would match.
-    traits: Vec<Trait<'gc>>,
+    traits: OnceLock<Box<[Trait<'gc>]>>,
 
     vtable: VTable<'gc>,
 
@@ -155,20 +157,23 @@ pub struct ClassData<'gc> {
     #[collect(require_static)]
     custom_constructor: Option<CustomConstructor>,
 
-    /// Whether or not this `Class` has loaded its traits or not.
-    traits_loaded: bool,
-
-    /// Maps a type parameter to the application of this class with that parameter.
-    ///
-    /// Only applicable if this class is generic.
-    applications: FnvHashMap<Option<Class<'gc>>, Class<'gc>>,
-
     /// The Class this Class is linked to. If this class represents instance info,
     /// this will be a ClassLink::LinkToClass. If this class represents class info,
     /// this will be a ClassLink::LinkToInstance. This must be one of the two,
     /// unless this class has not yet been fully initialized, in which case it will
     /// be set to ClassLink::Unlinked.
-    linked_class: ClassLink<'gc>,
+    linked_class: Lock<ClassLink<'gc>>,
+
+    cell: RefLock<ClassDataMut<'gc>>,
+}
+
+#[derive(Collect)]
+#[collect(no_drop)]
+struct ClassDataMut<'gc> {
+    /// Maps a type parameter to the application of this class with that parameter.
+    ///
+    /// Only applicable if this class is generic.
+    applications: FnvHashMap<Option<Class<'gc>>, Class<'gc>>,
 
     /// The ClassObjects for this class.
     /// In almost all cases, this will either be empty or have a single object.
@@ -179,7 +184,7 @@ pub struct ClassData<'gc> {
 
 impl PartialEq for Class<'_> {
     fn eq(&self, other: &Self) -> bool {
-        GcCell::ptr_eq(self.0, other.0)
+        Gc::ptr_eq(self.0, other.0)
     }
 }
 
@@ -187,7 +192,7 @@ impl Eq for Class<'_> {}
 
 impl Hash for Class<'_> {
     fn hash<H: Hasher>(&self, state: &mut H) {
-        self.0.as_ptr().hash(state);
+        Gc::as_ptr(self.0).hash(state);
     }
 }
 
@@ -197,117 +202,53 @@ impl core::fmt::Debug for Class<'_> {
     }
 }
 
+impl<'gc> ClassData<'gc> {
+    /// Create an unlinked & unloaded class.
+    fn empty(mc: &Mutation<'gc>, name: QName<'gc>) -> Self {
+        Self {
+            name: Lock::new(name),
+            param: Lock::new(None),
+            super_class: None,
+            attributes: Cell::new(ClassAttributes::empty()),
+            protected_namespace: None,
+            direct_interfaces: Box::default(),
+            all_interfaces: OnceLock::new(),
+            instance_allocator: Allocator(scriptobject_allocator),
+            instance_init: None,
+            traits: OnceLock::new(),
+            vtable: VTable::empty(mc),
+            call_handler: None,
+            custom_constructor: None,
+            linked_class: Lock::new(ClassLink::Unlinked),
+            cell: RefLock::new(ClassDataMut {
+                applications: FnvHashMap::default(),
+                class_objects: Vec::new(),
+            }),
+        }
+    }
+}
+
 impl<'gc> Class<'gc> {
-    /// Create a new class.
-    ///
-    /// This function is primarily intended for use by native code to define
-    /// builtin classes. The absolute minimum necessary to define a class is
-    /// required here; further methods allow further changes to the class.
-    ///
-    /// Classes created in this way cannot have traits loaded from an ABC file
-    /// using `load_traits`.
-    pub fn new(
-        name: QName<'gc>,
-        super_class: Option<Class<'gc>>,
-        instance_init: Option<Method<'gc>>,
-        class_init: Option<Method<'gc>>,
-        class_i_class: Class<'gc>,
-        mc: &Mutation<'gc>,
-    ) -> Self {
-        let instance_allocator = super_class
-            .map(|c| c.instance_allocator())
-            .unwrap_or(Allocator(scriptobject_allocator));
-
-        let i_class = Class(GcCell::new(
-            mc,
-            ClassData {
-                name,
-                param: None,
-                super_class,
-                attributes: ClassAttributes::empty(),
-                protected_namespace: None,
-                direct_interfaces: Vec::new(),
-                all_interfaces: Vec::new(),
-                instance_allocator,
-                instance_init,
-                traits: Vec::new(),
-                vtable: VTable::empty(mc),
-                call_handler: None,
-                custom_constructor: None,
-                traits_loaded: false,
-                linked_class: ClassLink::Unlinked,
-                applications: FnvHashMap::default(),
-                class_objects: Vec::new(),
-            },
-        ));
-
-        let name_namespace = name.namespace();
-        let mut local_name_buf = WString::from(name.local_name().as_wstr());
-        local_name_buf.push_char('$');
-
-        let c_name = QName::new(name_namespace, AvmString::new(mc, local_name_buf));
-
-        let c_class = Class(GcCell::new(
-            mc,
-            ClassData {
-                name: c_name,
-                param: None,
-                super_class: Some(class_i_class),
-                attributes: ClassAttributes::FINAL,
-                protected_namespace: None,
-                direct_interfaces: Vec::new(),
-                all_interfaces: Vec::new(),
-                instance_allocator: Allocator(scriptobject_allocator),
-                instance_init: class_init,
-                traits: Vec::new(),
-                vtable: VTable::empty(mc),
-                call_handler: None,
-                custom_constructor: None,
-                traits_loaded: false,
-                linked_class: ClassLink::LinkToInstance(i_class),
-                applications: FnvHashMap::default(),
-                class_objects: Vec::new(),
-            },
-        ));
-
-        i_class.set_c_class(mc, c_class);
-
-        i_class
+    pub fn as_ptr(self) -> *const () {
+        Gc::as_ptr(self.0).cast()
     }
 
     /// Create an unlinked class from its name, superclass, and traits.
     pub fn custom_new(
         name: QName<'gc>,
         super_class: Option<Class<'gc>>,
-        traits: Vec<Trait<'gc>>,
+        traits: Box<[Trait<'gc>]>,
         mc: &Mutation<'gc>,
     ) -> Self {
-        Class(GcCell::new(
-            mc,
-            ClassData {
-                name,
-                param: None,
-                super_class,
-                attributes: ClassAttributes::empty(),
-                protected_namespace: None,
-                direct_interfaces: Vec::new(),
-                all_interfaces: Vec::new(),
-                instance_allocator: Allocator(scriptobject_allocator),
-                instance_init: None,
-                traits,
-                vtable: VTable::empty(mc),
-                call_handler: None,
-                custom_constructor: None,
-                traits_loaded: true,
-                linked_class: ClassLink::Unlinked,
-                applications: FnvHashMap::default(),
-                class_objects: Vec::new(),
-            },
-        ))
+        let mut class = ClassData::empty(mc, name);
+        class.super_class = super_class;
+        class.traits = OnceLock::from(traits);
+        Class(Gc::new(mc, class))
     }
 
     pub fn add_application(self, mc: &Mutation<'gc>, param: Option<Class<'gc>>, cls: Class<'gc>) {
-        self.0.write(mc).applications.insert(param, cls);
+        let write = unlock!(Gc::write(mc, self.0), ClassData, cell);
+        write.borrow_mut().applications.insert(param, cls);
     }
 
     /// Apply type parameters to an existing class.
@@ -320,83 +261,83 @@ impl<'gc> Class<'gc> {
         param: Option<Class<'gc>>,
     ) -> Class<'gc> {
         let mc = context.gc();
-        let this_read = this.0.read();
 
-        if let Some(application) = this_read.applications.get(&param) {
+        let read = Gc::as_ref(this.0).cell.borrow();
+        if let Some(application) = read.applications.get(&param) {
             return *application;
         }
 
         // This can only happen for non-builtin Vector types,
         // so let's create one here directly.
 
-        let object_vector_i_class = this_read
+        let object_vector_i_class = *read
             .applications
             .get(&None)
             .expect("Vector.<*> not initialized?");
+        drop(read);
 
         let object_vector_c_class = object_vector_i_class
             .c_class()
             .expect("T$ cannot be generic");
 
         let param = param.expect("Trying to create Vector<*>, which shouldn't happen here");
+
+        // FIXME - we should store a `Multiname` instead of a `QName`, and use the
+        // `params` field. For now, this is good enough to get tests passing
         let name = format!("Vector.<{}>", param.name().to_qualified_name(mc));
+        let name = QName::new(this.name().namespace(), AvmString::new_utf8(mc, name));
 
-        let new_class = Self::new(
-            // FIXME - we should store a `Multiname` instead of a `QName`, and use the
-            // `params` field. For now, this is good enough to get tests passing
-            QName::new(this.name().namespace(), AvmString::new_utf8(mc, name)),
-            Some(
-                context
-                    .avm2
-                    .classes()
-                    .object_vector
-                    .inner_class_definition(),
-            ),
-            object_vector_i_class.instance_init(),
-            object_vector_c_class.instance_init(),
-            context.avm2.class_defs().class,
-            mc,
-        );
+        let mut local_name_buf = WString::from(name.local_name().as_wstr());
+        local_name_buf.push_char('$');
+        let c_name = QName::new(name.namespace(), AvmString::new(mc, local_name_buf));
 
-        new_class.set_param(mc, Some(Some(param)));
-        new_class.0.write(mc).call_handler = object_vector_i_class.call_handler();
+        let mut i_class = ClassData::empty(mc, name);
+        i_class.param = Lock::new(Some(Some(param)));
+        i_class.super_class = Some(object_vector_i_class);
+        i_class.instance_allocator = object_vector_i_class.instance_allocator();
+        i_class.instance_init = object_vector_i_class.instance_init();
+        i_class.call_handler = object_vector_i_class.call_handler();
+        i_class.traits = OnceLock::from(Box::default());
+        let i_class = Class(Gc::new(mc, i_class));
 
-        new_class.mark_traits_loaded(context.gc());
-        new_class
+        let mut c_class = ClassData::empty(mc, c_name);
+        c_class.super_class = Some(context.avm2.class_defs().class);
+        c_class.attributes = Cell::new(ClassAttributes::FINAL);
+        c_class.instance_init = object_vector_c_class.instance_init();
+        c_class.traits = OnceLock::from(Box::default());
+        let c_class = Class(Gc::new(mc, c_class));
+
+        i_class.link_with_c_class(mc, c_class);
+        i_class
             .init_vtable(context)
             .expect("Vector class doesn't have any interfaces, so `init_vtable` cannot error");
 
-        let c_class = new_class.c_class().expect("Class::new returns an i_class");
-
-        c_class.mark_traits_loaded(context.gc());
         c_class
             .init_vtable(context)
             .expect("Vector$ class doesn't have any interfaces, so `init_vtable` cannot error");
 
-        drop(this_read);
-
-        this.0.write(mc).applications.insert(Some(param), new_class);
-        new_class
+        let write = unlock!(Gc::write(mc, this.0), ClassData, cell);
+        write.borrow_mut().applications.insert(Some(param), i_class);
+        i_class
     }
 
     /// Set the attributes of the class (sealed/final/interface status).
-    pub fn set_attributes(self, mc: &Mutation<'gc>, attributes: ClassAttributes) {
-        self.0.write(mc).attributes = attributes;
+    pub fn set_attributes(self, attributes: ClassAttributes) {
+        self.0.attributes.set(attributes);
     }
 
     pub fn add_class_object(self, mc: &Mutation<'gc>, class_object: ClassObject<'gc>) {
-        self.0.write(mc).class_objects.push(class_object);
+        let write = unlock!(Gc::write(mc, self.0), ClassData, cell);
+        write.borrow_mut().class_objects.push(class_object);
     }
 
-    pub fn class_objects(&self) -> Ref<'_, Vec<ClassObject<'gc>>> {
-        Ref::map(self.0.read(), |c| &c.class_objects)
+    pub fn class_objects(&self) -> Ref<'_, [ClassObject<'gc>]> {
+        Ref::map(self.0.cell.borrow(), |c| &*c.class_objects)
     }
 
     pub fn class_object(self) -> Option<ClassObject<'gc>> {
-        let read = self.0.read();
-
-        if read.class_objects.len() == 1 {
-            Some(read.class_objects[0])
+        if let [obj] = *self.class_objects() {
+            Some(obj)
         } else {
             None
         }
@@ -423,8 +364,7 @@ impl<'gc> Class<'gc> {
             activation,
         )?;
 
-        i_class.set_c_class(mc, c_class);
-        c_class.set_i_class(mc, i_class);
+        i_class.link_with_c_class(mc, c_class);
 
         Ok(i_class)
     }
@@ -468,11 +408,12 @@ impl<'gc> Class<'gc> {
             None
         };
 
-        let mut interfaces = Vec::with_capacity(abc_instance.interfaces.len());
-        for interface_name in &abc_instance.interfaces {
-            let multiname = unit.pool_multiname_static(activation, *interface_name)?;
+        let interfaces = abc_instance
+            .interfaces
+            .iter()
+            .map(|interface_name| {
+                let multiname = unit.pool_multiname_static(activation, *interface_name)?;
 
-            interfaces.push(
                 activation
                     .domain()
                     .get_class(activation.context, &multiname)
@@ -482,9 +423,9 @@ impl<'gc> Class<'gc> {
                             Error1014Type::VerifyError,
                             multiname.to_qualified_name(activation.gc()),
                         )
-                    })?,
-            );
-        }
+                    })
+            })
+            .collect::<Result<_, _>>()?;
 
         let instance_init = unit.load_method(abc_instance.init_method, false, activation)?;
 
@@ -521,28 +462,16 @@ impl<'gc> Class<'gc> {
             .or_else(|| super_class.map(|c| c.instance_allocator()))
             .unwrap_or(Allocator(scriptobject_allocator));
 
-        Ok(Class(GcCell::new(
-            activation.gc(),
-            ClassData {
-                name,
-                param: None,
-                super_class,
-                attributes,
-                protected_namespace,
-                direct_interfaces: interfaces,
-                all_interfaces: Vec::new(),
-                instance_allocator,
-                instance_init: Some(instance_init),
-                traits: Vec::new(),
-                vtable: VTable::empty(activation.gc()),
-                call_handler,
-                custom_constructor: custom_constructor.map(CustomConstructor),
-                traits_loaded: false,
-                linked_class: ClassLink::Unlinked,
-                applications: Default::default(),
-                class_objects: Vec::new(),
-            },
-        )))
+        let mut class = ClassData::empty(activation.gc(), name);
+        class.super_class = super_class;
+        class.attributes = Cell::new(attributes);
+        class.protected_namespace = protected_namespace;
+        class.direct_interfaces = interfaces;
+        class.instance_allocator = instance_allocator;
+        class.instance_init = Some(instance_init);
+        class.call_handler = call_handler;
+        class.custom_constructor = custom_constructor.map(CustomConstructor);
+        Ok(Class(Gc::new(activation.gc(), class)))
     }
 
     /// Loads a c_class from a `TranslationUnit`, without loading its i_class.
@@ -584,28 +513,12 @@ impl<'gc> Class<'gc> {
             AvmString::new(activation.gc(), local_name_buf),
         );
 
-        Ok(Class(GcCell::new(
-            activation.gc(),
-            ClassData {
-                name: c_name,
-                param: None,
-                super_class: Some(class_class),
-                attributes: ClassAttributes::FINAL,
-                protected_namespace,
-                direct_interfaces: Vec::new(),
-                all_interfaces: Vec::new(),
-                instance_allocator: Allocator(scriptobject_allocator),
-                instance_init: Some(class_init),
-                traits: Vec::new(),
-                vtable: VTable::empty(activation.gc()),
-                call_handler: None,
-                custom_constructor: None,
-                traits_loaded: false,
-                linked_class: ClassLink::Unlinked,
-                applications: FnvHashMap::default(),
-                class_objects: Vec::new(),
-            },
-        )))
+        let mut class = ClassData::empty(activation.gc(), c_name);
+        class.super_class = Some(class_class);
+        class.attributes = Cell::new(ClassAttributes::FINAL);
+        class.protected_namespace = protected_namespace;
+        class.instance_init = Some(class_init);
+        Ok(Class(Gc::new(activation.gc(), class)))
     }
 
     /// Finish the class-loading process by loading traits.
@@ -620,17 +533,9 @@ impl<'gc> Class<'gc> {
         unit: TranslationUnit<'gc>,
         class_index: u32,
     ) -> Result<(), Error<'gc>> {
-        // We should only call `load_traits` on `i_class` Classes
-        // (if i_class() is None it means that the Class is an i_class)
-        assert!(self.i_class().is_none());
-
-        if self.0.read().traits_loaded {
-            return Ok(());
-        }
-
         let c_class = self
             .c_class()
-            .expect("Just checked that this class was an i_class");
+            .expect("Class::load_traits should only be called on `i_class`es");
 
         self.load_instance_traits(activation, unit, class_index)?;
         c_class.load_class_traits(activation, unit, class_index)?;
@@ -645,24 +550,13 @@ impl<'gc> Class<'gc> {
         unit: TranslationUnit<'gc>,
         class_index: u32,
     ) -> Result<(), Error<'gc>> {
-        let mut write = self.0.write(activation.gc());
-
-        write.traits_loaded = true;
-
         let abc = unit.abc();
 
         let abc_instance = abc
             .instances
             .get(class_index as usize)
             .ok_or("LoadError: Instance index not valid")?;
-
-        for abc_trait in abc_instance.traits.iter() {
-            write
-                .traits
-                .push(Trait::from_abc_trait(unit, abc_trait, activation)?);
-        }
-
-        Ok(())
+        self.load_abc_traits(activation, unit, &abc_instance.traits)
     }
 
     /// Loads traits for a c_class from the class traits declared in the ABC file.
@@ -672,22 +566,30 @@ impl<'gc> Class<'gc> {
         unit: TranslationUnit<'gc>,
         class_index: u32,
     ) -> Result<(), Error<'gc>> {
-        let mut write = self.0.write(activation.gc());
-
-        write.traits_loaded = true;
-
         let abc = unit.abc();
         let abc_class = abc
             .classes
             .get(class_index as usize)
             .ok_or("LoadError: Class index not valid")?;
+        self.load_abc_traits(activation, unit, &abc_class.traits)
+    }
 
-        for abc_trait in abc_class.traits.iter() {
-            write
-                .traits
-                .push(Trait::from_abc_trait(unit, abc_trait, activation)?);
+    fn load_abc_traits(
+        self,
+        activation: &mut Activation<'_, 'gc>,
+        unit: TranslationUnit<'gc>,
+        traits: &[AbcTrait],
+    ) -> Result<(), Error<'gc>> {
+        if self.0.traits.get().is_some() {
+            return Ok(());
         }
 
+        let traits = traits
+            .iter()
+            .map(|abc_traits| Trait::from_abc_trait(unit, abc_traits, activation))
+            .collect::<Result<_, _>>()?;
+        let write = Gc::write(activation.gc(), self.0);
+        let _ = unlock!(write, ClassData, traits).set(traits);
         Ok(())
     }
 
@@ -701,9 +603,8 @@ impl<'gc> Class<'gc> {
         activation: &mut Activation<'_, 'gc>,
         allow_class_trait: bool,
     ) -> Result<(), Error<'gc>> {
-        let read = self.0.read();
-
-        let superclass = read.super_class;
+        let mc = activation.gc();
+        let superclass = self.0.super_class;
 
         if let Some(superclass) = superclass {
             // We have to make an exception for `c_class`es
@@ -712,7 +613,7 @@ impl<'gc> Class<'gc> {
                     activation,
                     &format!(
                         "Error #1103: Class {} cannot extend final base class.",
-                        read.name.to_qualified_name(activation.gc())
+                        self.name().to_qualified_name(mc)
                     ),
                     1103,
                 )?));
@@ -723,17 +624,15 @@ impl<'gc> Class<'gc> {
                     activation,
                     &format!(
                         "Error #1110: Class {} cannot extend {}.",
-                        read.name.to_qualified_name(activation.gc()),
-                        superclass
-                            .name()
-                            .to_qualified_name_err_message(activation.gc())
+                        self.name().to_qualified_name(mc),
+                        superclass.name().to_qualified_name_err_message(mc)
                     ),
                     1110,
                 )?));
             }
 
-            for instance_trait in read.traits.iter() {
-                let is_protected = read.protected_namespace.is_some_and(|prot| {
+            for instance_trait in self.traits() {
+                let is_protected = self.0.protected_namespace.is_some_and(|prot| {
                     prot.exact_version_match(instance_trait.name().namespace())
                 });
 
@@ -741,7 +640,7 @@ impl<'gc> Class<'gc> {
                 let mut did_override = false;
 
                 while let Some(superclass) = current_superclass {
-                    for supertrait in &*superclass.traits() {
+                    for supertrait in superclass.traits() {
                         let super_name = supertrait.name();
                         let my_name = instance_trait.name();
 
@@ -783,8 +682,7 @@ impl<'gc> Class<'gc> {
                                         return Err(make_error_1053(
                                             activation,
                                             instance_trait.name().local_name(),
-                                            read.name
-                                                .to_qualified_name_err_message(activation.gc()),
+                                            self.name().to_qualified_name_err_message(mc),
                                         ));
                                     }
 
@@ -792,8 +690,7 @@ impl<'gc> Class<'gc> {
                                         return Err(make_error_1053(
                                             activation,
                                             instance_trait.name().local_name(),
-                                            read.name
-                                                .to_qualified_name_err_message(activation.gc()),
+                                            self.name().to_qualified_name_err_message(mc),
                                         ));
                                     }
                                 }
@@ -806,7 +703,7 @@ impl<'gc> Class<'gc> {
                                     return Err(make_error_1053(
                                         activation,
                                         instance_trait.name().local_name(),
-                                        read.name.to_qualified_name_err_message(activation.gc()),
+                                        self.name().to_qualified_name_err_message(mc),
                                     ));
                                 }
                             }
@@ -828,8 +725,7 @@ impl<'gc> Class<'gc> {
                     return Err(make_error_1053(
                         activation,
                         instance_trait.name().local_name(),
-                        read.name
-                            .to_qualified_name_err_message(activation.context.gc_context),
+                        self.name().to_qualified_name_err_message(mc),
                     ));
                 }
             }
@@ -845,13 +741,12 @@ impl<'gc> Class<'gc> {
         self,
         activation: &mut Activation<'_, 'gc>,
     ) -> Result<(), Error<'gc>> {
-        let read = self.0.read();
-
-        let superclass = read.super_class;
+        let mc = activation.gc();
+        let superclass = self.0.super_class;
 
         if let Some(superclass) = superclass {
-            for instance_trait in read.traits.iter() {
-                let is_protected = read.protected_namespace.is_some_and(|prot| {
+            for instance_trait in self.traits() {
+                let is_protected = self.0.protected_namespace.is_some_and(|prot| {
                     prot.exact_version_match(instance_trait.name().namespace())
                 });
 
@@ -859,7 +754,7 @@ impl<'gc> Class<'gc> {
                 let mut found_match = false;
 
                 while let Some(superclass) = current_superclass {
-                    for supertrait in &*superclass.traits() {
+                    for supertrait in superclass.traits() {
                         let super_name = supertrait.name();
                         let my_name = instance_trait.name();
 
@@ -885,14 +780,10 @@ impl<'gc> Class<'gc> {
                                     found_match = true;
 
                                     let instance_method = instance_trait.as_method().unwrap();
-                                    if !instance_method.is_info_resolved() {
-                                        instance_method.resolve_info(activation)?;
-                                    }
+                                    instance_method.resolve_info(activation)?;
 
                                     let super_method = supertrait.as_method().unwrap();
-                                    if !super_method.is_info_resolved() {
-                                        super_method.resolve_info(activation)?;
-                                    }
+                                    super_method.resolve_info(activation)?;
 
                                     // Methods must have same return type
                                     let instance_return_type =
@@ -903,9 +794,7 @@ impl<'gc> Class<'gc> {
                                         return Err(make_error_1053(
                                             activation,
                                             instance_trait.name().local_name(),
-                                            read.name.to_qualified_name_err_message(
-                                                activation.context.gc_context,
-                                            ),
+                                            self.name().to_qualified_name_err_message(mc),
                                         ));
                                     }
                                 }
@@ -931,22 +820,19 @@ impl<'gc> Class<'gc> {
     }
 
     pub fn init_vtable(self, context: &mut UpdateContext<'gc>) -> Result<(), Error<'gc>> {
-        let read = self.0.read();
-
-        if !read.traits_loaded {
+        if self.0.traits.get().is_none() {
             panic!(
                 "Attempted to initialize vtable on a class that did not have its traits loaded yet"
             );
         }
 
-        read.vtable.init_vtable(
+        self.0.vtable.init_vtable(
             self,
             None,
             None,
-            read.super_class.map(|c| c.vtable()),
+            self.0.super_class.map(|c| c.vtable()),
             context.gc(),
         );
-        drop(read);
 
         self.link_interfaces(context)?;
 
@@ -959,7 +845,7 @@ impl<'gc> Class<'gc> {
         let mut dedup = HashSet::new();
         let mut queue = vec![self];
         while let Some(cls) = queue.pop() {
-            for interface in &*cls.direct_interfaces() {
+            for interface in cls.direct_interfaces() {
                 if !interface.is_interface() {
                     return Err(format!(
                         "Class {:?} is not an interface and cannot be implemented by classes",
@@ -985,10 +871,10 @@ impl<'gc> Class<'gc> {
         // See the ignored test 'tests/tests/swfs/avm2/weird_superinterface_properties/'
         let ns = context.avm2.namespaces.public_vm_internal();
         for interface in &interfaces {
-            for interface_trait in &*interface.traits() {
+            for interface_trait in interface.traits() {
                 if !interface_trait.name().namespace().is_public() {
                     let public_name = QName::new(ns, interface_trait.name().local_name());
-                    self.0.read().vtable.copy_property_for_interface(
+                    self.0.vtable.copy_property_for_interface(
                         context.gc(),
                         public_name,
                         interface_trait.name(),
@@ -997,7 +883,9 @@ impl<'gc> Class<'gc> {
             }
         }
 
-        self.0.write(context.gc()).all_interfaces = interfaces;
+        unlock!(Gc::write(context.gc(), self.0), ClassData, all_interfaces)
+            .set(interfaces.into_boxed_slice())
+            .expect("Class interfaces were already linked");
 
         Ok(())
     }
@@ -1009,9 +897,8 @@ impl<'gc> Class<'gc> {
         body: &AbcMethodBody,
     ) -> Result<Class<'gc>, Error<'gc>> {
         let name = translation_unit.pool_string(method.name.as_u30(), activation.strings())?;
-        let mut traits = Vec::with_capacity(body.traits.len());
 
-        for trait_entry in body.traits.iter() {
+        let load_trait = |trait_entry| -> Result<Trait<'gc>, Error<'gc>> {
             let loaded_trait = Trait::from_abc_trait(translation_unit, trait_entry, activation)?;
 
             // Methods, getters, and setters are forbidden from appearing
@@ -1024,35 +911,21 @@ impl<'gc> Class<'gc> {
                     1101,
                 )?));
             }
+            Ok(loaded_trait)
+        };
 
-            traits.push(loaded_trait);
-        }
+        let traits: Box<[Trait<'gc>]> = body
+            .traits
+            .iter()
+            .map(load_trait)
+            .collect::<Result<_, _>>()?;
 
         let name = QName::new(activation.avm2().namespaces.public_all(), name);
 
-        let i_class = Class(GcCell::new(
-            activation.gc(),
-            ClassData {
-                name,
-                param: None,
-                super_class: None,
-                attributes: ClassAttributes::FINAL | ClassAttributes::SEALED,
-                protected_namespace: None,
-                direct_interfaces: Vec::new(),
-                all_interfaces: Vec::new(),
-                instance_allocator: Allocator(scriptobject_allocator),
-                instance_init: None,
-                traits,
-                vtable: VTable::empty(activation.gc()),
-                call_handler: None,
-                custom_constructor: None,
-                traits_loaded: true,
-                linked_class: ClassLink::Unlinked,
-                applications: Default::default(),
-                class_objects: Vec::new(),
-            },
-        ));
-
+        let mut i_class = ClassData::empty(activation.gc(), name);
+        i_class.attributes = Cell::new(ClassAttributes::FINAL | ClassAttributes::SEALED);
+        i_class.traits = OnceLock::from(traits);
+        let i_class = Class(Gc::new(activation.gc(), i_class));
         i_class.init_vtable(activation.context)?;
 
         // We don't need to construct a c_class
@@ -1064,33 +937,13 @@ impl<'gc> Class<'gc> {
         activation: &mut Activation<'_, 'gc>,
         variable_name: QName<'gc>,
     ) -> Result<Class<'gc>, Error<'gc>> {
+        // Yes, the name of the class is the variable's name
+        let mut i_class = ClassData::empty(activation.gc(), variable_name);
+        i_class.attributes = Cell::new(ClassAttributes::FINAL | ClassAttributes::SEALED);
         // TODO make the slot typed
-        let traits = vec![Trait::from_const(variable_name, None, None)];
-
-        let i_class = Class(GcCell::new(
-            activation.gc(),
-            ClassData {
-                // Yes, the name of the class is the variable's name
-                name: variable_name,
-                param: None,
-                super_class: None,
-                attributes: ClassAttributes::FINAL | ClassAttributes::SEALED,
-                protected_namespace: None,
-                direct_interfaces: Vec::new(),
-                all_interfaces: Vec::new(),
-                instance_allocator: Allocator(scriptobject_allocator),
-                instance_init: None,
-                traits,
-                vtable: VTable::empty(activation.gc()),
-                call_handler: None,
-                custom_constructor: None,
-                traits_loaded: true,
-                linked_class: ClassLink::Unlinked,
-                applications: Default::default(),
-                class_objects: Vec::new(),
-            },
-        ));
-
+        let traits: Box<[_]> = Box::new([Trait::from_const(variable_name, None, None)]);
+        i_class.traits = OnceLock::from(traits);
+        let i_class = Class(Gc::new(activation.gc(), i_class));
         i_class.init_vtable(activation.context)?;
 
         // We don't need to construct a c_class
@@ -1118,7 +971,7 @@ impl<'gc> Class<'gc> {
         // A `Class` stores all of the interfaces it implements, including
         // those from superinterfaces and superclasses (recursively).
         if test_class.is_interface() {
-            for interface in &*self.all_interfaces() {
+            for interface in self.all_interfaces() {
                 if *interface == test_class {
                     return true;
                 }
@@ -1129,11 +982,11 @@ impl<'gc> Class<'gc> {
     }
 
     pub fn vtable(self) -> VTable<'gc> {
-        self.0.read().vtable
+        self.0.vtable
     }
 
     pub fn dollar_removed_name(self, mc: &Mutation<'gc>) -> QName<'gc> {
-        let name = self.0.read().name;
+        let name = self.name();
 
         let namespace = name.namespace();
 
@@ -1152,60 +1005,36 @@ impl<'gc> Class<'gc> {
     }
 
     pub fn name(self) -> QName<'gc> {
-        self.0.read().name
+        self.0.name.get()
     }
 
     pub fn set_name(self, mc: &Mutation<'gc>, name: QName<'gc>) {
-        self.0.write(mc).name = name;
-    }
-
-    pub fn try_name(self) -> Result<QName<'gc>, std::cell::BorrowError> {
-        self.0.try_read().map(|r| r.name)
-    }
-
-    /// Attempts to obtain the name of this class.
-    /// If we are unable to read from the necessary `GcCell`,
-    /// the returned value will be some kind of error message.
-    ///
-    /// This should only be used in a debug context, where
-    /// we need infallible access to *something* to print
-    /// out.
-    pub fn debug_name(self) -> Box<dyn fmt::Debug + 'gc> {
-        let class_name = self.try_name();
-
-        match class_name {
-            Ok(class_name) => Box::new(class_name),
-            Err(err) => Box::new(err),
-        }
+        unlock!(Gc::write(mc, self.0), ClassData, name).set(name);
     }
 
     pub fn param(self) -> Option<Option<Class<'gc>>> {
-        self.0.read().param
+        self.0.param.get()
     }
 
     pub fn set_param(self, mc: &Mutation<'gc>, param: Option<Option<Class<'gc>>>) {
-        self.0.write(mc).param = param;
+        unlock!(Gc::write(mc, self.0), ClassData, param).set(param);
     }
 
     pub fn super_class(self) -> Option<Class<'gc>> {
-        self.0.read().super_class
+        self.0.super_class
     }
 
     pub fn super_class_name(self) -> Option<Multiname<'gc>> {
-        self.0.read().super_class.map(|c| c.name().into())
+        self.0.super_class.map(|c| c.name().into())
     }
 
     pub fn protected_namespace(self) -> Option<Namespace<'gc>> {
-        self.0.read().protected_namespace
-    }
-
-    pub fn mark_traits_loaded(self, mc: &Mutation<'gc>) {
-        self.0.write(mc).traits_loaded = true;
+        self.0.protected_namespace
     }
 
     /// Return traits provided by this class.
-    pub fn traits(&self) -> Ref<'_, Vec<Trait<'gc>>> {
-        Ref::map(self.0.read(), |c| &c.traits)
+    pub fn traits(&self) -> &[Trait<'gc>] {
+        self.0.traits.get().expect("Traits not yet initialized!")
     }
 
     /// Get this class's instance allocator.
@@ -1213,90 +1042,90 @@ impl<'gc> Class<'gc> {
     /// If `None`, then you should use the instance allocator of the superclass
     /// or allocate as a `ScriptObject` if no such class exists.
     pub fn instance_allocator(self) -> Allocator {
-        self.0.read().instance_allocator
+        self.0.instance_allocator
     }
 
     /// Get this class's custom constructor.
     ///
     /// If `None`, then this class should be constructed normally.
     pub fn custom_constructor(self) -> Option<CustomConstructor> {
-        self.0.read().custom_constructor
+        self.0.custom_constructor
     }
 
     /// Get this class's instance initializer.
     pub fn instance_init(self) -> Option<Method<'gc>> {
-        self.0.read().instance_init
+        self.0.instance_init
     }
 
     /// Get this class's call handler.
     pub fn call_handler(self) -> Option<NativeMethodImpl> {
-        self.0.read().call_handler
+        self.0.call_handler
     }
 
-    pub fn direct_interfaces(&self) -> Ref<'_, Vec<Class<'gc>>> {
-        Ref::map(self.0.read(), |c| &c.direct_interfaces)
+    pub fn direct_interfaces(&self) -> &[Class<'gc>] {
+        &self.0.direct_interfaces
     }
 
-    pub fn all_interfaces(&self) -> Ref<'_, Vec<Class<'gc>>> {
-        Ref::map(self.0.read(), |c| &c.all_interfaces)
+    pub fn all_interfaces(&self) -> &[Class<'gc>] {
+        self.0
+            .all_interfaces
+            .get()
+            .expect("Interfaces not yet initialized!")
     }
 
     /// Determine if this class is sealed (no dynamic properties)
     pub fn is_sealed(self) -> bool {
-        self.0.read().attributes.contains(ClassAttributes::SEALED)
+        self.0.attributes.get().contains(ClassAttributes::SEALED)
     }
 
     /// Determine if this class is final (cannot be subclassed)
     pub fn is_final(self) -> bool {
-        self.0.read().attributes.contains(ClassAttributes::FINAL)
+        self.0.attributes.get().contains(ClassAttributes::FINAL)
     }
 
     /// Determine if this class is an interface
     pub fn is_interface(self) -> bool {
-        self.0
-            .read()
-            .attributes
-            .contains(ClassAttributes::INTERFACE)
+        self.0.attributes.get().contains(ClassAttributes::INTERFACE)
     }
 
     /// Determine if this class is generic (can be specialized)
     pub fn is_generic(self) -> bool {
-        self.0.read().attributes.contains(ClassAttributes::GENERIC)
+        self.0.attributes.get().contains(ClassAttributes::GENERIC)
     }
 
     pub fn c_class(self) -> Option<Class<'gc>> {
-        if let ClassLink::LinkToClass(c_class) = self.0.read().linked_class {
+        if let ClassLink::LinkToClass(c_class) = self.0.linked_class.get() {
             Some(c_class)
         } else {
             None
         }
     }
 
-    pub fn set_c_class(self, mc: &Mutation<'gc>, c_class: Class<'gc>) {
-        assert!(matches!(self.0.read().linked_class, ClassLink::Unlinked));
-
-        self.0.write(mc).linked_class = ClassLink::LinkToClass(c_class);
-    }
-
     pub fn is_c_class(self) -> bool {
-        matches!(self.0.read().linked_class, ClassLink::LinkToInstance(_))
+        matches!(self.0.linked_class.get(), ClassLink::LinkToInstance(_))
     }
 
     pub fn i_class(self) -> Option<Class<'gc>> {
-        if let ClassLink::LinkToInstance(i_class) = self.0.read().linked_class {
+        if let ClassLink::LinkToInstance(i_class) = self.0.linked_class.get() {
             Some(i_class)
         } else {
             None
         }
     }
 
-    pub fn set_i_class(self, mc: &Mutation<'gc>, i_class: Class<'gc>) {
-        assert!(matches!(self.0.read().linked_class, ClassLink::Unlinked));
-
-        self.0.write(mc).linked_class = ClassLink::LinkToInstance(i_class);
+    pub fn is_i_class(self) -> bool {
+        matches!(self.0.linked_class.get(), ClassLink::LinkToClass(_))
     }
 
-    pub fn is_i_class(self) -> bool {
-        matches!(self.0.read().linked_class, ClassLink::LinkToClass(_))
+    pub fn link_with_c_class(self, mc: &Mutation<'gc>, c_class: Class<'gc>) {
+        let i_class = self;
+        let i_link = unlock!(Gc::write(mc, i_class.0), ClassData, linked_class);
+        let c_link = unlock!(Gc::write(mc, c_class.0), ClassData, linked_class);
+
+        assert!(matches!(i_link.get(), ClassLink::Unlinked));
+        assert!(matches!(c_link.get(), ClassLink::Unlinked));
+
+        i_link.set(ClassLink::LinkToClass(c_class));
+        c_link.set(ClassLink::LinkToInstance(i_class));
     }
 }

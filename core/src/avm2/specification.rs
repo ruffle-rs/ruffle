@@ -322,13 +322,13 @@ impl Definition {
 
         Self::fill_traits(
             activation.avm2(),
-            &c_class.traits(),
+            c_class.traits(),
             &mut definition.static_traits,
             stubs,
         );
         Self::fill_traits(
             activation.avm2(),
-            &i_class.traits(),
+            i_class.traits(),
             &mut definition.instance_traits,
             stubs,
         );

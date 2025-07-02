@@ -629,7 +629,6 @@ impl<'gc> MovieClip<'gc> {
         Ok(None)
     }
 
-    #[allow(dead_code)]
     pub fn playing(self) -> bool {
         self.0.read().playing()
     }
@@ -894,7 +893,6 @@ impl<'gc> MovieClip<'gc> {
         self.0.read().total_frames()
     }
 
-    #[allow(dead_code)]
     pub fn has_frame_script(self, frame: FrameNumber) -> bool {
         self.0
             .read()
@@ -2253,23 +2251,23 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
         RefMut::map(self.0.write(mc), |w| &mut w.base.base)
     }
 
-    fn instantiate(&self, gc_context: &Mutation<'gc>) -> DisplayObject<'gc> {
+    fn instantiate(self, gc_context: &Mutation<'gc>) -> DisplayObject<'gc> {
         Self(GcCell::new(gc_context, self.0.read().clone())).into()
     }
 
-    fn as_ptr(&self) -> *const DisplayObjectPtr {
+    fn as_ptr(self) -> *const DisplayObjectPtr {
         self.0.as_ptr() as *const DisplayObjectPtr
     }
 
-    fn id(&self) -> CharacterId {
+    fn id(self) -> CharacterId {
         self.0.read().id()
     }
 
-    fn movie(&self) -> Arc<SwfMovie> {
+    fn movie(self) -> Arc<SwfMovie> {
         self.0.read().movie()
     }
 
-    fn enter_frame(&self, context: &mut UpdateContext<'gc>) {
+    fn enter_frame(self, context: &mut UpdateContext<'gc>) {
         let skip_frame = self.base().should_skip_next_enter_frame();
         //Child removals from looping gotos appear to resolve in reverse order.
         for child in self.iter_render_list().rev() {
@@ -2322,7 +2320,7 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
     }
 
     /// Construct objects placed on this frame.
-    fn construct_frame(&self, context: &mut UpdateContext<'gc>) {
+    fn construct_frame(self, context: &mut UpdateContext<'gc>) {
         // AVM1 code expects to execute in line with timeline instructions, so
         // it's exempted from frame construction.
         if self.movie().is_action_script_3()
@@ -2330,7 +2328,7 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
         {
             let is_load_frame = !self.0.read().initialized();
             let needs_construction = if matches!(self.object2(), Avm2Value::Null) {
-                self.allocate_as_avm2_object(context, (*self).into());
+                self.allocate_as_avm2_object(context, self.into());
                 true
             } else {
                 false
@@ -2374,7 +2372,7 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
         read.has_pending_script.set(has_pending_script);
     }
 
-    fn run_frame_avm1(&self, context: &mut UpdateContext<'gc>) {
+    fn run_frame_avm1(self, context: &mut UpdateContext<'gc>) {
         if !self.movie().is_action_script_3() {
             // Run my load/enterFrame clip event.
             let is_load_frame = !self.0.read().contains_flag(MovieClipFlags::INITIALIZED);
@@ -2403,19 +2401,19 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
         }
     }
 
-    fn render_self(&self, context: &mut RenderContext<'_, 'gc>) {
+    fn render_self(self, context: &mut RenderContext<'_, 'gc>) {
         if let Some(drawing) = self.drawing() {
             drawing.render(context);
         }
         self.render_children(context);
     }
 
-    fn self_bounds(&self) -> Rectangle<Twips> {
+    fn self_bounds(self) -> Rectangle<Twips> {
         self.drawing().map(|d| d.self_bounds()).unwrap_or_default()
     }
 
     fn hit_test_shape(
-        &self,
+        self,
         context: &mut UpdateContext<'gc>,
         point: Point<Twips>,
         options: HitTestOptions,
@@ -2474,8 +2472,8 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
         false
     }
 
-    fn as_movie_clip(&self) -> Option<MovieClip<'gc>> {
-        Some(*self)
+    fn as_movie_clip(self) -> Option<MovieClip<'gc>> {
+        Some(self)
     }
 
     fn as_container(self) -> Option<DisplayObjectContainer<'gc>> {
@@ -2491,7 +2489,7 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
     }
 
     fn post_instantiation(
-        &self,
+        self,
         context: &mut UpdateContext<'gc>,
         init_object: Option<Avm1Object<'gc>>,
         instantiated_by: Instantiator,
@@ -2512,13 +2510,13 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
         self.set_default_instance_name(context);
 
         if !self.movie().is_action_script_3() {
-            context.avm1.add_to_exec_list(context.gc(), (*self).into());
+            context.avm1.add_to_exec_list(context.gc(), self.into());
 
             self.construct_as_avm1_object(context, init_object, instantiated_by, run_frame);
         }
     }
 
-    fn object(&self) -> Avm1Value<'gc> {
+    fn object(self) -> Avm1Value<'gc> {
         self.0
             .read()
             .object
@@ -2527,7 +2525,7 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
             .unwrap_or(Avm1Value::Undefined)
     }
 
-    fn object2(&self) -> Avm2Value<'gc> {
+    fn object2(self) -> Avm2Value<'gc> {
         self.0
             .read()
             .object
@@ -2536,15 +2534,15 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
             .unwrap_or(Avm2Value::Null)
     }
 
-    fn set_object2(&self, context: &mut UpdateContext<'gc>, to: Avm2Object<'gc>) {
+    fn set_object2(self, context: &mut UpdateContext<'gc>, to: Avm2Object<'gc>) {
         self.0.write(context.gc()).object = Some(to.into());
         if self.parent().is_none() {
-            context.avm2.add_orphan_obj((*self).into());
+            context.avm2.add_orphan_obj(self.into());
         }
     }
 
     fn set_perspective_projection(
-        &self,
+        self,
         gc_context: &Mutation<'gc>,
         mut perspective_projection: Option<PerspectiveProjection>,
     ) {
@@ -2571,13 +2569,13 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
         }
     }
 
-    fn on_parent_removed(&self, context: &mut UpdateContext<'gc>) {
+    fn on_parent_removed(self, context: &mut UpdateContext<'gc>) {
         if self.movie().is_action_script_3() {
-            context.avm2.add_orphan_obj((*self).into())
+            context.avm2.add_orphan_obj(self.into())
         }
     }
 
-    fn avm1_unload(&self, context: &mut UpdateContext<'gc>) {
+    fn avm1_unload(self, context: &mut UpdateContext<'gc>) {
         for child in self.iter_render_list() {
             child.avm1_unload(context);
         }
@@ -2589,7 +2587,7 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
         }
 
         // Unregister any text field variable bindings.
-        Avm1TextFieldBinding::unregister_bindings((*self).into(), context);
+        Avm1TextFieldBinding::unregister_bindings(self.into(), context);
 
         self.drop_focus(context);
 
@@ -2601,7 +2599,7 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
         if self.is_root() {
             context
                 .audio_manager
-                .stop_sounds_on_parent_and_children(context.audio, (*self).into());
+                .stop_sounds_on_parent_and_children(context.audio, self.into());
         }
 
         // If this clip is currently pending removal, then it unload event will have already been dispatched
@@ -2630,11 +2628,11 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
             .map(|_| RefMut::map(write, |w| &mut w.avm1_text_field_bindings))
     }
 
-    fn loader_info(&self) -> Option<Avm2Object<'gc>> {
+    fn loader_info(self) -> Option<Avm2Object<'gc>> {
         self.0.read().shared.loader_info
     }
 
-    fn allow_as_mask(&self) -> bool {
+    fn allow_as_mask(self) -> bool {
         !self.is_empty()
     }
 }
@@ -2648,7 +2646,7 @@ impl<'gc> TDisplayObjectContainer<'gc> for MovieClip<'gc> {
         RefMut::map(self.0.write(gc_context), |this| &mut this.container)
     }
 
-    fn is_tab_children_avm1(&self, context: &mut UpdateContext<'gc>) -> bool {
+    fn is_tab_children_avm1(self, context: &mut UpdateContext<'gc>) -> bool {
         self.get_avm1_boolean_property(istr!(context, "tabChildren"), context, |_| true)
     }
 }
@@ -2761,7 +2759,7 @@ impl<'gc> TInteractiveObject<'gc> for MovieClip<'gc> {
     }
 
     fn mouse_pick_avm1(
-        &self,
+        self,
         context: &mut UpdateContext<'gc>,
         point: Point<Twips>,
         require_button_mode: bool,
@@ -2772,7 +2770,7 @@ impl<'gc> TInteractiveObject<'gc> for MovieClip<'gc> {
         }
 
         if self.visible() {
-            let this: InteractiveObject<'gc> = (*self).into();
+            let this: InteractiveObject<'gc> = self.into();
             let local_matrix = self.global_to_local_matrix()?;
 
             if let Some(masker) = self.masker() {
@@ -2864,7 +2862,7 @@ impl<'gc> TInteractiveObject<'gc> for MovieClip<'gc> {
     }
 
     fn mouse_pick_avm2(
-        &self,
+        self,
         context: &mut UpdateContext<'gc>,
         point: Point<Twips>,
         require_button_mode: bool,
@@ -2875,7 +2873,7 @@ impl<'gc> TInteractiveObject<'gc> for MovieClip<'gc> {
         }
 
         if self.visible() {
-            let this: InteractiveObject<'gc> = (*self).into();
+            let this: InteractiveObject<'gc> = self.into();
             let Some(local_matrix) = self.global_to_local_matrix() else {
                 return Avm2MousePick::Miss;
             };
@@ -2980,7 +2978,7 @@ impl<'gc> TInteractiveObject<'gc> for MovieClip<'gc> {
 
                 match res {
                     Avm2MousePick::Hit(_) => {
-                        return res.combine_with_parent((*self).into());
+                        return res.combine_with_parent(self.into());
                     }
                     Avm2MousePick::PropagateToParent => {
                         found_propagate = Some(res);
@@ -2991,7 +2989,7 @@ impl<'gc> TInteractiveObject<'gc> for MovieClip<'gc> {
 
             // A 'propagated' event from a child seems to have lower 'priority' than anything else.
             if let Some(propagate) = found_propagate {
-                return propagate.combine_with_parent((*self).into());
+                return propagate.combine_with_parent(self.into());
             }
 
             // Check drawing, because this selects the current clip, it must have mouse enabled
@@ -3001,7 +2999,7 @@ impl<'gc> TInteractiveObject<'gc> for MovieClip<'gc> {
                 if let Some(drawing) = self.drawing() {
                     if drawing.hit_test(point, &local_matrix) {
                         return if self.mouse_enabled() {
-                            Avm2MousePick::Hit((*self).into())
+                            Avm2MousePick::Hit(self.into())
                         } else {
                             Avm2MousePick::PropagateToParent
                         };
@@ -3021,7 +3019,7 @@ impl<'gc> TInteractiveObject<'gc> for MovieClip<'gc> {
         }
     }
 
-    fn is_focusable(&self, context: &mut UpdateContext<'gc>) -> bool {
+    fn is_focusable(self, context: &mut UpdateContext<'gc>) -> bool {
         if self.is_root() {
             false
         } else if self.is_button_mode(context) {
@@ -3031,13 +3029,13 @@ impl<'gc> TInteractiveObject<'gc> for MovieClip<'gc> {
         }
     }
 
-    fn is_highlightable(&self, context: &mut UpdateContext<'gc>) -> bool {
+    fn is_highlightable(self, context: &mut UpdateContext<'gc>) -> bool {
         // Root movie clips are not highlightable.
         // This applies only to AVM2, as in AVM1 they are also not focusable.
         !self.is_root() && self.is_highlight_enabled(context)
     }
 
-    fn is_tabbable(&self, context: &mut UpdateContext<'gc>) -> bool {
+    fn is_tabbable(self, context: &mut UpdateContext<'gc>) -> bool {
         if self.is_root() {
             // Root movie clips are never tabbable.
             return false;
@@ -3045,7 +3043,7 @@ impl<'gc> TInteractiveObject<'gc> for MovieClip<'gc> {
         self.tab_enabled(context)
     }
 
-    fn tab_enabled_default(&self, context: &mut UpdateContext<'gc>) -> bool {
+    fn tab_enabled_default(self, context: &mut UpdateContext<'gc>) -> bool {
         if self.is_button_mode(context) {
             return true;
         }
@@ -3244,7 +3242,7 @@ impl<'gc, 'a> MovieClipShared<'gc> {
                 version: define_bits_lossless.version,
                 data: Cow::Owned(define_bits_lossless.data.into_owned()),
             }),
-            handle: RefCell::new(None),
+            handle: Default::default(),
             avm2_bitmapdata_class: GcCell::new(context.gc(), BitmapClass::NoSubclass),
         };
         self.library_mut(context)
@@ -3376,7 +3374,7 @@ impl<'gc, 'a> MovieClipShared<'gc> {
                     width,
                     height,
                 },
-                handle: RefCell::new(None),
+                handle: Default::default(),
                 avm2_bitmapdata_class: GcCell::new(mc, BitmapClass::NoSubclass),
             },
         );
@@ -3399,7 +3397,7 @@ impl<'gc, 'a> MovieClipShared<'gc> {
                 width,
                 height,
             },
-            handle: RefCell::new(None),
+            handle: Default::default(),
             avm2_bitmapdata_class: GcCell::new(context.gc(), BitmapClass::NoSubclass),
         };
         self.library_mut(context).register_character(id, bitmap);
@@ -3428,7 +3426,7 @@ impl<'gc, 'a> MovieClipShared<'gc> {
                 width,
                 height,
             },
-            handle: RefCell::new(None),
+            handle: Default::default(),
             avm2_bitmapdata_class: GcCell::new(context.gc(), BitmapClass::NoSubclass),
         };
         self.library_mut(context).register_character(id, bitmap);
@@ -4468,7 +4466,6 @@ impl Default for PreloadProgress {
 }
 
 /// Data shared between all instances of a movie clip.
-#[allow(dead_code)]
 #[derive(Collect)]
 #[collect(no_drop)]
 struct MovieClipShared<'gc> {

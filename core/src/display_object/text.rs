@@ -105,27 +105,27 @@ impl<'gc> TDisplayObject<'gc> for Text<'gc> {
         unlock!(Gc::write(mc, self.0), TextData, base).borrow_mut()
     }
 
-    fn instantiate(&self, gc_context: &Mutation<'gc>) -> DisplayObject<'gc> {
+    fn instantiate(self, gc_context: &Mutation<'gc>) -> DisplayObject<'gc> {
         Self(Gc::new(gc_context, self.0.as_ref().clone())).into()
     }
 
-    fn as_text(&self) -> Option<Text<'gc>> {
-        Some(*self)
+    fn as_text(self) -> Option<Text<'gc>> {
+        Some(self)
     }
 
-    fn as_ptr(&self) -> *const DisplayObjectPtr {
+    fn as_ptr(self) -> *const DisplayObjectPtr {
         Gc::as_ptr(self.0) as *const DisplayObjectPtr
     }
 
-    fn id(&self) -> CharacterId {
+    fn id(self) -> CharacterId {
         self.0.shared.get().id
     }
 
-    fn movie(&self) -> Arc<SwfMovie> {
+    fn movie(self) -> Arc<SwfMovie> {
         self.0.shared.get().swf.clone()
     }
 
-    fn replace_with(&self, context: &mut UpdateContext<'gc>, id: CharacterId) {
+    fn replace_with(self, context: &mut UpdateContext<'gc>, id: CharacterId) {
         if let Some(new_text) = context
             .library
             .library_for_movie_mut(self.movie())
@@ -138,11 +138,11 @@ impl<'gc> TDisplayObject<'gc> for Text<'gc> {
         self.invalidate_cached_bitmap(context.gc());
     }
 
-    fn run_frame_avm1(&self, _context: &mut UpdateContext) {
+    fn run_frame_avm1(self, _context: &mut UpdateContext) {
         // Noop
     }
 
-    fn render_self(&self, context: &mut RenderContext) {
+    fn render_self(self, context: &mut RenderContext) {
         let shared = self.0.shared.get();
         context.transform_stack.push(&Transform {
             matrix: shared.text_transform,
@@ -197,12 +197,12 @@ impl<'gc> TDisplayObject<'gc> for Text<'gc> {
         context.transform_stack.pop();
     }
 
-    fn self_bounds(&self) -> Rectangle<Twips> {
+    fn self_bounds(self) -> Rectangle<Twips> {
         self.0.shared.get().bounds
     }
 
     fn hit_test_shape(
-        &self,
+        self,
         context: &mut UpdateContext<'gc>,
         mut point: Point<Twips>,
         options: HitTestOptions,
@@ -270,7 +270,7 @@ impl<'gc> TDisplayObject<'gc> for Text<'gc> {
     }
 
     fn post_instantiation(
-        &self,
+        self,
         context: &mut UpdateContext<'gc>,
         _init_object: Option<crate::avm1::Object<'gc>>,
         _instantiated_by: Instantiator,
@@ -286,7 +286,7 @@ impl<'gc> TDisplayObject<'gc> for Text<'gc> {
             let statictext = activation.avm2().classes().statictext;
             match Avm2StageObject::for_display_object_childless(
                 &mut activation,
-                (*self).into(),
+                self.into(),
                 statictext,
             ) {
                 Ok(object) => self.set_object2(context, object.into()),
@@ -297,7 +297,7 @@ impl<'gc> TDisplayObject<'gc> for Text<'gc> {
         }
     }
 
-    fn object2(&self) -> Avm2Value<'gc> {
+    fn object2(self) -> Avm2Value<'gc> {
         self.0
             .avm2_object
             .get()
@@ -305,14 +305,13 @@ impl<'gc> TDisplayObject<'gc> for Text<'gc> {
             .unwrap_or(Avm2Value::Null)
     }
 
-    fn set_object2(&self, context: &mut UpdateContext<'gc>, to: Avm2Object<'gc>) {
+    fn set_object2(self, context: &mut UpdateContext<'gc>, to: Avm2Object<'gc>) {
         let mc = context.gc();
         unlock!(Gc::write(mc, self.0), TextData, avm2_object).set(Some(to));
     }
 }
 
 /// Data shared between all instances of a text object.
-#[allow(dead_code)]
 #[derive(Debug, Clone, Collect)]
 #[collect(require_static)]
 struct TextShared {

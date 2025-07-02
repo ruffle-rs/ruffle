@@ -153,7 +153,7 @@ fn describe_internal_body<'gc>(
     let super_vtable = class_def.super_class().map(|c| c.vtable());
 
     if flags.contains(DescribeTypeFlags::INCLUDE_INTERFACES) {
-        for interface in &*class_def.all_interfaces() {
+        for interface in class_def.all_interfaces() {
             let interface_name = interface.name().to_qualified_name(mc);
             interfaces_array.push(interface_name.into());
         }

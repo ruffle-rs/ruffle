@@ -130,19 +130,19 @@ impl<'gc> TDisplayObject<'gc> for Graphic<'gc> {
         unlock!(Gc::write(mc, self.0), GraphicData, base).borrow_mut()
     }
 
-    fn instantiate(&self, gc_context: &Mutation<'gc>) -> DisplayObject<'gc> {
+    fn instantiate(self, gc_context: &Mutation<'gc>) -> DisplayObject<'gc> {
         Self(Gc::new(gc_context, self.0.as_ref().clone())).into()
     }
 
-    fn as_ptr(&self) -> *const DisplayObjectPtr {
+    fn as_ptr(self) -> *const DisplayObjectPtr {
         Gc::as_ptr(self.0) as *const DisplayObjectPtr
     }
 
-    fn id(&self) -> CharacterId {
+    fn id(self) -> CharacterId {
         self.0.shared.get().id
     }
 
-    fn self_bounds(&self) -> Rectangle<Twips> {
+    fn self_bounds(self) -> Rectangle<Twips> {
         if let Some(drawing) = self.0.drawing.borrow().as_ref() {
             drawing.self_bounds()
         } else {
@@ -150,7 +150,7 @@ impl<'gc> TDisplayObject<'gc> for Graphic<'gc> {
         }
     }
 
-    fn construct_frame(&self, context: &mut UpdateContext<'gc>) {
+    fn construct_frame(self, context: &mut UpdateContext<'gc>) {
         if self.movie().is_action_script_3() && matches!(self.object2(), Avm2Value::Null) {
             let class_object = self
                 .0
@@ -162,7 +162,7 @@ impl<'gc> TDisplayObject<'gc> for Graphic<'gc> {
 
             match Avm2StageObject::for_display_object_childless(
                 &mut activation,
-                (*self).into(),
+                self.into(),
                 class_object,
             ) {
                 Ok(object) => self.set_object2(activation.context, object.into()),
@@ -175,7 +175,7 @@ impl<'gc> TDisplayObject<'gc> for Graphic<'gc> {
         }
     }
 
-    fn replace_with(&self, context: &mut UpdateContext<'gc>, id: CharacterId) {
+    fn replace_with(self, context: &mut UpdateContext<'gc>, id: CharacterId) {
         // Static assets like Graphics can replace themselves via a PlaceObject tag with PlaceObjectAction::Replace.
         // This does not create a new instance, but instead swaps out the underlying static data to point to the new art.
         if let Some(new_graphic) = context
@@ -190,11 +190,11 @@ impl<'gc> TDisplayObject<'gc> for Graphic<'gc> {
         self.invalidate_cached_bitmap(context.gc());
     }
 
-    fn run_frame_avm1(&self, _context: &mut UpdateContext) {
+    fn run_frame_avm1(self, _context: &mut UpdateContext) {
         // Noop
     }
 
-    fn render_self(&self, context: &mut RenderContext) {
+    fn render_self(self, context: &mut RenderContext) {
         if !context.is_offscreen && !self.world_bounds().intersects(&context.stage.view_bounds()) {
             // Off-screen; culled
             return;
@@ -210,7 +210,7 @@ impl<'gc> TDisplayObject<'gc> for Graphic<'gc> {
     }
 
     fn hit_test_shape(
-        &self,
+        self,
         _context: &mut UpdateContext<'gc>,
         point: Point<Twips>,
         options: HitTestOptions,
@@ -237,7 +237,7 @@ impl<'gc> TDisplayObject<'gc> for Graphic<'gc> {
     }
 
     fn post_instantiation(
-        &self,
+        self,
         context: &mut UpdateContext<'gc>,
         _init_object: Option<Avm1Object<'gc>>,
         _instantiated_by: Instantiator,
@@ -246,7 +246,7 @@ impl<'gc> TDisplayObject<'gc> for Graphic<'gc> {
         if self.movie().is_action_script_3() {
             self.set_default_instance_name(context);
         } else {
-            context.avm1.add_to_exec_list(context.gc(), (*self).into());
+            context.avm1.add_to_exec_list(context.gc(), self.into());
 
             if run_frame {
                 self.run_frame_avm1(context);
@@ -254,11 +254,11 @@ impl<'gc> TDisplayObject<'gc> for Graphic<'gc> {
         }
     }
 
-    fn movie(&self) -> Arc<SwfMovie> {
+    fn movie(self) -> Arc<SwfMovie> {
         self.0.shared.get().movie.clone()
     }
 
-    fn object2(&self) -> Avm2Value<'gc> {
+    fn object2(self) -> Avm2Value<'gc> {
         self.0
             .avm2_object
             .get()
@@ -266,7 +266,7 @@ impl<'gc> TDisplayObject<'gc> for Graphic<'gc> {
             .unwrap_or(Avm2Value::Null)
     }
 
-    fn set_object2(&self, context: &mut UpdateContext<'gc>, to: Avm2Object<'gc>) {
+    fn set_object2(self, context: &mut UpdateContext<'gc>, to: Avm2Object<'gc>) {
         let mc = context.gc();
         unlock!(Gc::write(mc, self.0), GraphicData, avm2_object).set(Some(to));
     }
@@ -277,7 +277,6 @@ impl<'gc> TDisplayObject<'gc> for Graphic<'gc> {
 }
 
 /// Data shared between all instances of a Graphic.
-#[allow(dead_code)]
 #[derive(Collect)]
 #[collect(require_static)]
 struct GraphicShared {
