@@ -302,7 +302,7 @@ impl Context3DTriangleFace {
             Some(Context3DTriangleFace::None)
         } else if s == b"back" {
             Some(Context3DTriangleFace::Back)
-        } else if s == b"Front" {
+        } else if s == b"front" {
             Some(Context3DTriangleFace::Front)
         } else if s == b"frontAndBack" {
             Some(Context3DTriangleFace::FrontAndBack)
