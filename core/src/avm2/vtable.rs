@@ -8,11 +8,11 @@ use crate::avm2::scope::ScopeChain;
 use crate::avm2::traits::{Trait, TraitKind};
 use crate::avm2::value::Value;
 use crate::avm2::{Class, Error, Multiname, Namespace, QName};
+use crate::context::UpdateContext;
 use crate::string::{AvmString, StringContext};
 use gc_arena::barrier::{field, unlock};
-use gc_arena::lock::{Lock, RefLock};
+use gc_arena::lock::Lock;
 use gc_arena::{Collect, Gc, Mutation};
-use std::cell::Ref;
 use std::collections::HashMap;
 
 #[derive(Collect, Clone, Copy)]
@@ -26,7 +26,7 @@ struct VTableData<'gc> {
 
     protected_namespace: Option<Namespace<'gc>>,
 
-    resolved_traits: RefLock<PropertyMap<'gc, Property>>,
+    resolved_traits: PropertyMap<'gc, Property>,
 
     /// Use hashmaps for the metadata tables because metadata will rarely be present on traits
     slot_metadata_table: HashMap<u32, Box<[Metadata<'gc>]>>,
@@ -90,8 +90,26 @@ impl<'gc> VTable<'gc> {
         VTable(Gc::new(mc, this))
     }
 
-    pub fn resolved_traits(self) -> Ref<'gc, PropertyMap<'gc, Property>> {
-        Gc::as_ref(self.0).resolved_traits.borrow()
+    /// Like `VTable::new`, but also copies properties from the defining class' interfaces.
+    pub fn new_with_interface_properties(
+        defining_class_def: Class<'gc>,
+        super_class_obj: Option<ClassObject<'gc>>,
+        scope: Option<ScopeChain<'gc>>,
+        superclass_vtable: Option<Self>,
+        context: &UpdateContext<'gc>,
+    ) -> Self {
+        let mut this = Self::init_vtable(
+            defining_class_def,
+            super_class_obj,
+            scope,
+            superclass_vtable,
+        );
+        Self::copy_interface_properties(&mut this, defining_class_def, context);
+        VTable(Gc::new(context.gc(), this))
+    }
+
+    pub fn resolved_traits(self) -> &'gc PropertyMap<'gc, Property> {
+        &Gc::as_ref(self.0).resolved_traits
     }
 
     pub fn get_metadata_for_slot(self, slot_id: u32) -> Option<&'gc [Metadata<'gc>]> {
@@ -457,12 +475,35 @@ impl<'gc> VTable<'gc> {
         VTableData {
             scope,
             protected_namespace: defining_class_def.protected_namespace(),
-            resolved_traits: RefLock::new(resolved_traits),
+            resolved_traits,
             slot_metadata_table,
             disp_metadata_table,
             method_table: method_table.into_boxed_slice(),
             default_slots: default_slots.into_boxed_slice(),
             slot_classes: slot_classes.into_boxed_slice(),
+        }
+    }
+
+    fn copy_interface_properties(
+        this: &mut VTableData<'gc>,
+        class: Class<'gc>,
+        context: &UpdateContext<'gc>,
+    ) {
+        // FIXME - we should only be copying properties for newly-implemented
+        // interfaces (i.e. those that were not already implemented by the superclass)
+        // Otherwise, our behavior diverges from Flash Player in certain cases.
+        // See the ignored test 'tests/tests/swfs/avm2/weird_superinterface_properties/'
+        let internal_ns = context.avm2.namespaces.public_vm_internal();
+        for interface in class.all_interfaces() {
+            for interface_trait in interface.traits() {
+                let interface_name = interface_trait.name();
+                if !interface_name.namespace().is_public() {
+                    let public_name = QName::new(internal_ns, interface_name.local_name());
+                    if let Some(prop) = this.resolved_traits.get(public_name).copied() {
+                        this.resolved_traits.insert(interface_name, prop);
+                    }
+                }
+            }
         }
     }
 
@@ -506,21 +547,6 @@ impl<'gc> VTable<'gc> {
             method.super_class_obj,
             Some(method.class),
         )
-    }
-
-    /// Install an existing trait under a new name, provided by interface.
-    /// This should only ever be called by `link_interfaces`.
-    pub fn copy_property_for_interface(
-        self,
-        mc: &Mutation<'gc>,
-        public_name: QName<'gc>,
-        interface_name: QName<'gc>,
-    ) {
-        let mut traits = unlock!(Gc::write(mc, self.0), VTableData, resolved_traits).borrow_mut();
-
-        if let Some(prop) = traits.get(public_name).cloned() {
-            traits.insert(interface_name, prop);
-        }
     }
 
     pub fn public_properties(self) -> Vec<(AvmString<'gc>, Property)> {

@@ -825,24 +825,28 @@ impl<'gc> Class<'gc> {
             panic!(
                 "Attempted to initialize vtable on a class that did not have its traits loaded yet"
             );
+        } else if self.0.all_interfaces.get().is_some() {
+            panic!("Attempted to initialize vtable twice");
         }
 
-        let vtable = VTable::new(
+        let write = Gc::write(context.gc(), self.0);
+
+        let interfaces = self.gather_interfaces()?;
+
+        // The order is important here, as the VTable constructor needs the full list of interfaces.
+        let _ = unlock!(write, ClassData, all_interfaces).set(interfaces);
+        let _ = unlock!(write, ClassData, vtable).set(VTable::new_with_interface_properties(
             self,
             None,
             None,
             self.0.super_class.map(|c| c.vtable()),
-            context.gc(),
-        );
-
-        let _ = unlock!(Gc::write(context.gc(), self.0), ClassData, vtable).set(vtable);
-
-        self.link_interfaces(context)?;
+            context,
+        ));
 
         Ok(())
     }
 
-    fn link_interfaces(self, context: &mut UpdateContext<'gc>) -> Result<(), Error<'gc>> {
+    fn gather_interfaces(self) -> Result<Box<[Class<'gc>]>, Error<'gc>> {
         let mut interfaces = Vec::with_capacity(self.direct_interfaces().len());
 
         let mut dedup = HashSet::new();
@@ -868,29 +872,7 @@ impl<'gc> Class<'gc> {
             }
         }
 
-        // FIXME - we should only be copying properties for newly-implemented
-        // interfaces (i.e. those that were not already implemented by the superclass)
-        // Otherwise, our behavior diverges from Flash Player in certain cases.
-        // See the ignored test 'tests/tests/swfs/avm2/weird_superinterface_properties/'
-        let ns = context.avm2.namespaces.public_vm_internal();
-        for interface in &interfaces {
-            for interface_trait in interface.traits() {
-                if !interface_trait.name().namespace().is_public() {
-                    let public_name = QName::new(ns, interface_trait.name().local_name());
-                    self.vtable().copy_property_for_interface(
-                        context.gc(),
-                        public_name,
-                        interface_trait.name(),
-                    );
-                }
-            }
-        }
-
-        unlock!(Gc::write(context.gc(), self.0), ClassData, all_interfaces)
-            .set(interfaces.into_boxed_slice())
-            .expect("Class interfaces were already linked");
-
-        Ok(())
+        Ok(interfaces.into_boxed_slice())
     }
 
     pub fn for_activation(

@@ -208,17 +208,15 @@ impl<'gc> ClassObject<'gc> {
         let mc = activation.gc();
         let class = self.inner_class_definition();
 
-        let vtable = VTable::new(
+        let vtable = VTable::new_with_interface_properties(
             class,
             self.superclass_object(),
             Some(self.instance_scope()),
             self.superclass_object().map(|cls| cls.instance_vtable()),
-            mc,
+            activation.context,
         );
 
         unlock!(Gc::write(mc, self.0), ClassObjectData, instance_vtable).set(vtable);
-
-        self.link_interfaces(activation);
     }
 
     /// Finish initialization of the class.
@@ -266,34 +264,6 @@ impl<'gc> ClassObject<'gc> {
             .set_string_property_local(istr!("constructor"), self.into(), activation)
             .expect("Prototype is a dynamic object");
         class_proto.set_local_property_is_enumerable(mc, istr!("constructor"), false);
-    }
-
-    /// Link this class to it's interfaces.
-    ///
-    /// This should be done after all instance traits has been resolved, as
-    /// instance traits will be resolved to their corresponding methods at this
-    /// time.
-    fn link_interfaces(self, activation: &mut Activation<'_, 'gc>) {
-        let class = self.inner_class_definition();
-        let vtable = self.instance_vtable();
-
-        // FIXME - we should only be copying properties for newly-implemented
-        // interfaces (i.e. those that were not already implemented by the superclass)
-        // Otherwise, our behavior diverges from Flash Player in certain cases.
-        // See the ignored test 'tests/tests/swfs/avm2/weird_superinterface_properties/'
-        let internal_ns = activation.avm2().namespaces.public_vm_internal();
-        for interface in class.all_interfaces() {
-            for interface_trait in interface.traits() {
-                if !interface_trait.name().namespace().is_public() {
-                    let public_name = QName::new(internal_ns, interface_trait.name().local_name());
-                    vtable.copy_property_for_interface(
-                        activation.gc(),
-                        public_name,
-                        interface_trait.name(),
-                    );
-                }
-            }
-        }
     }
 
     /// Manually set the type of this `Class`.
