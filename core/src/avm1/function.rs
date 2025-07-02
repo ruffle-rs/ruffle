@@ -369,7 +369,7 @@ impl<'gc> Executable<'gc> {
         let base_clip = if (is_closure || reason == ExecutionReason::Special) && !avm1_removed {
             base_clip
                 .and_then(|d| d.as_display_object())
-                .unwrap_or(target)
+                .expect("Somehow the base clip isn't an object or has no display object")
         } else {
             this_obj
                 .and_then(|this| this.as_display_object())
