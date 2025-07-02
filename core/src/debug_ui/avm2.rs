@@ -302,13 +302,12 @@ impl Avm2ObjectWindow {
         activation: &mut Activation<'_, 'gc>,
         ui: &mut Ui,
     ) {
-        let mut entries = Vec::<(String, Namespace<'gc>, Property)>::new();
-        // We can't access things whilst we iterate the vtable, so clone and sort it all here
-        let vtable = object.vtable();
-
-        for (name, ns, prop) in vtable.resolved_traits().iter() {
-            entries.push((name.to_string(), ns, *prop));
-        }
+        let mut entries: Vec<(Cow<'gc, str>, Namespace<'gc>, Property)> = object
+            .vtable()
+            .resolved_traits()
+            .iter()
+            .map(|(name, ns, prop)| (name.as_wstr().to_utf8_lossy(), ns, *prop))
+            .collect();
         entries.sort_by(|a, b| a.0.cmp(&b.0));
 
         ui.horizontal(|ui| {

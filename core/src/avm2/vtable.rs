@@ -549,15 +549,11 @@ impl<'gc> VTable<'gc> {
         )
     }
 
-    pub fn public_properties(self) -> Vec<(AvmString<'gc>, Property)> {
-        let mut props = Vec::new();
-
-        for (name, ns, prop) in self.resolved_traits().iter() {
-            if ns.is_public() {
-                props.push((name, *prop));
-            }
-        }
-        props
+    pub fn public_properties(self) -> impl Iterator<Item = (AvmString<'gc>, Property)> {
+        self.resolved_traits()
+            .iter()
+            .filter(|(_, ns, _)| ns.is_public())
+            .map(|(name, _, prop)| (name, *prop))
     }
 }
 
