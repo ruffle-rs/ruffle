@@ -204,7 +204,7 @@ impl<'gc> Avm1Button<'gc> {
         self.invalidate_cached_bitmap(context.gc());
     }
 
-    pub fn state(&self) -> Option<ButtonState> {
+    pub fn state(self) -> Option<ButtonState> {
         Some(self.0.state.get())
     }
 
@@ -252,25 +252,25 @@ impl<'gc> TDisplayObject<'gc> for Avm1Button<'gc> {
         RefMut::map(data.borrow_mut(), |w| &mut w.base.base)
     }
 
-    fn instantiate(&self, mc: &Mutation<'gc>) -> DisplayObject<'gc> {
+    fn instantiate(self, mc: &Mutation<'gc>) -> DisplayObject<'gc> {
         let data: &Avm1ButtonData = &self.0;
         Self(Gc::new(mc, data.clone())).into()
     }
 
-    fn as_ptr(&self) -> *const DisplayObjectPtr {
+    fn as_ptr(self) -> *const DisplayObjectPtr {
         Gc::as_ptr(self.0) as *const DisplayObjectPtr
     }
 
-    fn id(&self) -> CharacterId {
+    fn id(self) -> CharacterId {
         self.0.shared.id
     }
 
-    fn movie(&self) -> Arc<SwfMovie> {
+    fn movie(self) -> Arc<SwfMovie> {
         self.0.movie()
     }
 
     fn post_instantiation(
-        &self,
+        self,
         context: &mut UpdateContext<'gc>,
         _init_object: Option<Object<'gc>>,
         _instantiated_by: Instantiator,
@@ -279,14 +279,14 @@ impl<'gc> TDisplayObject<'gc> for Avm1Button<'gc> {
         self.set_default_instance_name(context);
 
         if !self.movie().is_action_script_3() {
-            context.avm1.add_to_exec_list(context.gc(), (*self).into());
+            context.avm1.add_to_exec_list(context.gc(), self.into());
         }
 
         if self.0.object.get().is_none() {
             let object = Object::new_with_native(
                 &context.strings,
                 Some(context.avm1.prototypes().button),
-                NativeObject::Button(*self),
+                NativeObject::Button(self),
             );
             let obj = unlock!(Gc::write(context.gc(), self.0), Avm1ButtonData, object);
             obj.set(Some(object));
@@ -297,8 +297,8 @@ impl<'gc> TDisplayObject<'gc> for Avm1Button<'gc> {
         }
     }
 
-    fn run_frame_avm1(&self, context: &mut UpdateContext<'gc>) {
-        let self_display_object = (*self).into();
+    fn run_frame_avm1(self, context: &mut UpdateContext<'gc>) {
+        let self_display_object = self.into();
         let initialized = self.0.initialized.get();
 
         // TODO: Move this to post_instantiation.
@@ -343,17 +343,17 @@ impl<'gc> TDisplayObject<'gc> for Avm1Button<'gc> {
         }
     }
 
-    fn render_self(&self, context: &mut RenderContext<'_, 'gc>) {
+    fn render_self(self, context: &mut RenderContext<'_, 'gc>) {
         self.render_children(context);
     }
 
-    fn self_bounds(&self) -> Rectangle<Twips> {
+    fn self_bounds(self) -> Rectangle<Twips> {
         // No inherent bounds; contains child DisplayObjects.
         Default::default()
     }
 
     fn hit_test_shape(
-        &self,
+        self,
         context: &mut UpdateContext<'gc>,
         point: Point<Twips>,
         options: HitTestOptions,
@@ -367,7 +367,7 @@ impl<'gc> TDisplayObject<'gc> for Avm1Button<'gc> {
         false
     }
 
-    fn object(&self) -> Value<'gc> {
+    fn object(self) -> Value<'gc> {
         self.0
             .object
             .get()
@@ -375,8 +375,8 @@ impl<'gc> TDisplayObject<'gc> for Avm1Button<'gc> {
             .unwrap_or(Value::Undefined)
     }
 
-    fn as_avm1_button(&self) -> Option<Self> {
-        Some(*self)
+    fn as_avm1_button(self) -> Option<Self> {
+        Some(self)
     }
 
     fn as_interactive(self) -> Option<InteractiveObject<'gc>> {
@@ -387,11 +387,11 @@ impl<'gc> TDisplayObject<'gc> for Avm1Button<'gc> {
         Some(self.into())
     }
 
-    fn allow_as_mask(&self) -> bool {
+    fn allow_as_mask(self) -> bool {
         !self.is_empty()
     }
 
-    fn avm1_unload(&self, context: &mut UpdateContext<'gc>) {
+    fn avm1_unload(self, context: &mut UpdateContext<'gc>) {
         for child in self.iter_render_list() {
             child.avm1_unload(context);
         }
@@ -575,7 +575,7 @@ impl<'gc> TInteractiveObject<'gc> for Avm1Button<'gc> {
     }
 
     fn mouse_pick_avm1(
-        &self,
+        self,
         context: &mut UpdateContext<'gc>,
         point: Point<Twips>,
         require_button_mode: bool,
@@ -593,7 +593,7 @@ impl<'gc> TInteractiveObject<'gc> for Avm1Button<'gc> {
 
             for child in self.0.cell.borrow().hit_area.values() {
                 if child.hit_test_shape(context, point, HitTestOptions::MOUSE_PICK) {
-                    return Some((*self).into());
+                    return Some(self.into());
                 }
             }
         }
@@ -601,7 +601,7 @@ impl<'gc> TInteractiveObject<'gc> for Avm1Button<'gc> {
     }
 
     fn mouse_pick_avm2(
-        &self,
+        self,
         _context: &mut UpdateContext<'gc>,
         _point: Point<Twips>,
         _require_button_mode: bool,
@@ -617,7 +617,7 @@ impl<'gc> TInteractiveObject<'gc> for Avm1Button<'gc> {
         }
     }
 
-    fn tab_enabled_default(&self, _context: &mut UpdateContext<'gc>) -> bool {
+    fn tab_enabled_default(self, _context: &mut UpdateContext<'gc>) -> bool {
         true
     }
 
@@ -663,7 +663,6 @@ impl<'gc> Avm1ButtonData<'gc> {
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Collect)]
 #[collect(require_static)]
-#[allow(dead_code)]
 pub enum ButtonState {
     Up,
     Over,

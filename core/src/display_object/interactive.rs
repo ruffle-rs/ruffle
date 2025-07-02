@@ -539,7 +539,7 @@ pub trait TInteractiveObject<'gc>:
     /// mouse events. As a result of this, the returned object will always be
     /// an `InteractiveObject`.
     fn mouse_pick_avm1(
-        &self,
+        self,
         _context: &mut UpdateContext<'gc>,
         _point: Point<Twips>,
         _require_button_mode: bool,
@@ -548,7 +548,7 @@ pub trait TInteractiveObject<'gc>:
     }
 
     fn mouse_pick_avm2(
-        &self,
+        self,
         _context: &mut UpdateContext<'gc>,
         _point: Point<Twips>,
         _require_button_mode: bool,
@@ -562,7 +562,7 @@ pub trait TInteractiveObject<'gc>:
     }
 
     /// Whether this object is focusable for keyboard input.
-    fn is_focusable(&self, _context: &mut UpdateContext<'gc>) -> bool {
+    fn is_focusable(self, _context: &mut UpdateContext<'gc>) -> bool {
         // By default, all interactive objects are focusable.
         true
     }
@@ -573,7 +573,7 @@ pub trait TInteractiveObject<'gc>:
     /// The default behavior is following:
     /// * in AVM1 objects cannot be focused by mouse,
     /// * in AVM2 objects can be focused by mouse when they are tab enabled.
-    fn is_focusable_by_mouse(&self, context: &mut UpdateContext<'gc>) -> bool {
+    fn is_focusable_by_mouse(self, context: &mut UpdateContext<'gc>) -> bool {
         let self_do = self.as_displayobject();
         self_do.movie().is_action_script_3() && self.tab_enabled(context)
     }
@@ -582,7 +582,7 @@ pub trait TInteractiveObject<'gc>:
     /// of being the currently focused object.
     /// This should only be called by the focus manager. To change a focus, go through that.
     fn on_focus_changed(
-        &self,
+        self,
         _context: &mut UpdateContext<'gc>,
         _focused: bool,
         _other: Option<InteractiveObject<'gc>>,
@@ -590,7 +590,7 @@ pub trait TInteractiveObject<'gc>:
     }
 
     /// If this object has focus, this method drops it.
-    fn drop_focus(&self, context: &mut UpdateContext<'gc>) {
+    fn drop_focus(self, context: &mut UpdateContext<'gc>) {
         if self.has_focus() {
             let tracker = context.focus_tracker;
             tracker.set(None, context);
@@ -598,7 +598,7 @@ pub trait TInteractiveObject<'gc>:
     }
 
     fn call_focus_handler(
-        &self,
+        self,
         context: &mut UpdateContext<'gc>,
         focused: bool,
         other: Option<InteractiveObject<'gc>>,
@@ -625,7 +625,7 @@ pub trait TInteractiveObject<'gc>:
     }
 
     /// Whether this object may be highlighted when focused.
-    fn is_highlightable(&self, context: &mut UpdateContext<'gc>) -> bool {
+    fn is_highlightable(self, context: &mut UpdateContext<'gc>) -> bool {
         self.is_highlight_enabled(context)
     }
 
@@ -633,7 +633,7 @@ pub trait TInteractiveObject<'gc>:
     ///
     /// Note: This value does not mean that a highlight should actually be rendered,
     /// for that see [`Self::is_highlightable()`].
-    fn is_highlight_enabled(&self, context: &mut UpdateContext<'gc>) -> bool {
+    fn is_highlight_enabled(self, context: &mut UpdateContext<'gc>) -> bool {
         if self.as_displayobject().movie().version() >= 6 {
             self.focus_rect()
                 .unwrap_or_else(|| context.stage.stage_focus_rect())
@@ -648,7 +648,7 @@ pub trait TInteractiveObject<'gc>:
     }
 
     /// Whether this object is included in tab ordering.
-    fn is_tabbable(&self, context: &mut UpdateContext<'gc>) -> bool {
+    fn is_tabbable(self, context: &mut UpdateContext<'gc>) -> bool {
         self.tab_enabled(context)
     }
 
@@ -656,7 +656,7 @@ pub trait TInteractiveObject<'gc>:
     ///
     /// Some objects may be excluded from tab ordering
     /// even if it's enabled, see [`Self::is_tabbable()`].
-    fn tab_enabled(&self, context: &mut UpdateContext<'gc>) -> bool {
+    fn tab_enabled(self, context: &mut UpdateContext<'gc>) -> bool {
         if self.as_displayobject().movie().is_action_script_3() {
             self.raw_interactive()
                 .tab_enabled
@@ -670,11 +670,11 @@ pub trait TInteractiveObject<'gc>:
         }
     }
 
-    fn tab_enabled_default(&self, _context: &mut UpdateContext<'gc>) -> bool {
+    fn tab_enabled_default(self, _context: &mut UpdateContext<'gc>) -> bool {
         false
     }
 
-    fn set_tab_enabled(&self, context: &mut UpdateContext<'gc>, value: bool) {
+    fn set_tab_enabled(self, context: &mut UpdateContext<'gc>, value: bool) {
         if self.as_displayobject().movie().is_action_script_3() {
             self.raw_interactive_mut(context.gc()).tab_enabled = Some(value)
         } else {
@@ -689,11 +689,11 @@ pub trait TInteractiveObject<'gc>:
     /// Used to customize tab ordering.
     /// When not `None`, a custom ordering is used, and
     /// objects are ordered according to this value.
-    fn tab_index(&self) -> Option<i32> {
+    fn tab_index(self) -> Option<i32> {
         self.raw_interactive().tab_index
     }
 
-    fn set_tab_index(&self, context: &mut UpdateContext<'gc>, value: Option<i32>) {
+    fn set_tab_index(self, context: &mut UpdateContext<'gc>, value: Option<i32>) {
         // tabIndex = -1 is always equivalent to unset tabIndex
         let value = if matches!(value, Some(-1)) {
             None
@@ -705,7 +705,7 @@ pub trait TInteractiveObject<'gc>:
 
     /// Whether event handlers (e.g. onKeyUp, onPress) should be fired for the given event.
     fn should_fire_event_handlers(
-        &self,
+        self,
         context: &mut UpdateContext<'gc>,
         event: ClipEvent,
     ) -> bool {

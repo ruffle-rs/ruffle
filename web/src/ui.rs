@@ -18,24 +18,6 @@ use web_sys::{
 use chrono::{DateTime, Utc};
 use js_sys::{Array, Uint8Array};
 
-#[allow(dead_code)]
-#[derive(Debug)]
-struct FullScreenError {
-    jsval: String,
-}
-
-impl std::fmt::Display for FullScreenError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.write_str(&self.jsval)
-    }
-}
-
-impl std::error::Error for FullScreenError {
-    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
-        None
-    }
-}
-
 pub struct WebFileDialogResult {
     canceled: bool,
     file_name: Option<String>,

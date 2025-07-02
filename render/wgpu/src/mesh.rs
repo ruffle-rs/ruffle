@@ -118,7 +118,6 @@ impl PendingDraw {
     }
 }
 
-#[allow(dead_code)]
 #[derive(Debug)]
 pub enum PendingDrawType {
     Color,
@@ -275,7 +274,6 @@ impl PendingDrawType {
     }
 }
 
-#[allow(dead_code)]
 #[derive(Debug)]
 pub enum DrawType {
     Color,

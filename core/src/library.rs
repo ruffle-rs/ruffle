@@ -176,12 +176,10 @@ impl<'gc> MovieLibrary<'gc> {
         self.export_characters.insert(export_name, id, false);
     }
 
-    #[allow(dead_code)]
     pub fn characters(&self) -> &HashMap<CharacterId, Character<'gc>> {
         &self.characters
     }
 
-    #[allow(dead_code)]
     pub fn export_characters(&self) -> &PropertyMap<'gc, CharacterId> {
         &self.export_characters
     }
@@ -392,8 +390,9 @@ impl ruffle_render::bitmap::BitmapSource for MovieLibrarySource<'_, '_> {
         else {
             return None;
         };
-        let mut handle = handle.borrow_mut();
-        if let Some(handle) = &*handle {
+
+        // FIXME - use `OnceCell::get_or_try_init` when stabilized.
+        if let Some(handle) = handle.get() {
             return Some(handle.clone());
         }
         let decoded = match compressed.decode() {
@@ -411,7 +410,7 @@ impl ruffle_render::bitmap::BitmapSource for MovieLibrarySource<'_, '_> {
             }
         };
         // FIXME - do we ever want to release this handle, to avoid taking up GPU memory?
-        *handle = Some(new_handle.clone());
+        handle.set(new_handle.clone()).unwrap();
         Some(new_handle)
     }
 }

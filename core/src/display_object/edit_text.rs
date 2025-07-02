@@ -2512,36 +2512,36 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
         RefMut::map(base_mut, |w| &mut w.base)
     }
 
-    fn instantiate(&self, gc_context: &Mutation<'gc>) -> DisplayObject<'gc> {
+    fn instantiate(self, gc_context: &Mutation<'gc>) -> DisplayObject<'gc> {
         Self(Gc::new(gc_context, self.0.as_ref().clone())).into()
     }
 
-    fn as_ptr(&self) -> *const DisplayObjectPtr {
+    fn as_ptr(self) -> *const DisplayObjectPtr {
         Gc::as_ptr(self.0) as *const DisplayObjectPtr
     }
 
-    fn id(&self) -> CharacterId {
+    fn id(self) -> CharacterId {
         self.0.shared.id
     }
 
-    fn movie(&self) -> Arc<SwfMovie> {
+    fn movie(self) -> Arc<SwfMovie> {
         self.0.shared.swf.clone()
     }
 
     /// Construct objects placed on this frame.
-    fn construct_frame(&self, context: &mut UpdateContext<'gc>) {
+    fn construct_frame(self, context: &mut UpdateContext<'gc>) {
         if self.movie().is_action_script_3() && matches!(self.object2(), Avm2Value::Null) {
-            self.construct_as_avm2_object(context, (*self).into());
+            self.construct_as_avm2_object(context, self.into());
             self.on_construction_complete(context);
         }
     }
 
-    fn run_frame_avm1(&self, _context: &mut UpdateContext) {
+    fn run_frame_avm1(self, _context: &mut UpdateContext) {
         // Noop
     }
 
-    fn as_edit_text(&self) -> Option<EditText<'gc>> {
-        Some(*self)
+    fn as_edit_text(self) -> Option<EditText<'gc>> {
+        Some(self)
     }
 
     fn as_interactive(self) -> Option<InteractiveObject<'gc>> {
@@ -2549,7 +2549,7 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
     }
 
     fn post_instantiation(
-        &self,
+        self,
         context: &mut UpdateContext<'gc>,
         _init_object: Option<Avm1Object<'gc>>,
         _instantiated_by: Instantiator,
@@ -2558,12 +2558,12 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
         self.set_default_instance_name(context);
 
         if !self.movie().is_action_script_3() {
-            context.avm1.add_to_exec_list(context.gc(), (*self).into());
+            context.avm1.add_to_exec_list(context.gc(), self.into());
             self.construct_as_avm1_object(context, run_frame);
         }
     }
 
-    fn object(&self) -> Avm1Value<'gc> {
+    fn object(self) -> Avm1Value<'gc> {
         self.0
             .object
             .get()
@@ -2572,7 +2572,7 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
             .unwrap_or(Avm1Value::Undefined)
     }
 
-    fn object2(&self) -> Avm2Value<'gc> {
+    fn object2(self) -> Avm2Value<'gc> {
         self.0
             .object
             .get()
@@ -2581,17 +2581,17 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
             .unwrap_or(Avm2Value::Null)
     }
 
-    fn set_object2(&self, context: &mut UpdateContext<'gc>, to: Avm2Object<'gc>) {
+    fn set_object2(self, context: &mut UpdateContext<'gc>, to: Avm2Object<'gc>) {
         self.set_object(Some(to.into()), context.gc());
     }
 
-    fn self_bounds(&self) -> Rectangle<Twips> {
+    fn self_bounds(self) -> Rectangle<Twips> {
         self.apply_autosize_bounds();
 
         self.0.bounds.get()
     }
 
-    fn pixel_bounds(&self) -> Rectangle<Twips> {
+    fn pixel_bounds(self) -> Rectangle<Twips> {
         // For pixel bounds we can't apply lazy autosize bounds.
         // It's a bit hacky, but it seems that pixelBounds are
         // an exception to the rule that lazy autosize bounds
@@ -2603,38 +2603,38 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
     }
 
     // The returned position x and y of a text field is offset by the text bounds.
-    fn x(&self) -> Twips {
+    fn x(self) -> Twips {
         self.apply_autosize_bounds();
         self.base().x() + self.bounds_x_offset()
     }
 
-    fn set_x(&self, gc_context: &Mutation<'gc>, x: Twips) {
+    fn set_x(self, gc_context: &Mutation<'gc>, x: Twips) {
         self.apply_autosize_bounds();
         let offset = self.bounds_x_offset();
         self.base_mut(gc_context).set_x(x - offset);
         self.invalidate_cached_bitmap(gc_context);
     }
 
-    fn y(&self) -> Twips {
+    fn y(self) -> Twips {
         self.apply_autosize_bounds();
         self.base().y() + self.bounds_y_offset()
     }
 
-    fn set_y(&self, gc_context: &Mutation<'gc>, y: Twips) {
+    fn set_y(self, gc_context: &Mutation<'gc>, y: Twips) {
         self.apply_autosize_bounds();
         let offset = self.bounds_y_offset();
         self.base_mut(gc_context).set_y(y - offset);
         self.invalidate_cached_bitmap(gc_context);
     }
 
-    fn width(&self) -> f64 {
+    fn width(self) -> f64 {
         self.apply_autosize_bounds();
 
         let bounds = self.0.bounds.get();
         (self.base().transform.matrix * bounds).width().to_pixels()
     }
 
-    fn set_width(&self, context: &mut UpdateContext<'gc>, value: f64) {
+    fn set_width(self, context: &mut UpdateContext<'gc>, value: f64) {
         self.apply_autosize_bounds();
 
         let bounds = &self.0.bounds;
@@ -2643,14 +2643,14 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
         self.relayout(context);
     }
 
-    fn height(&self) -> f64 {
+    fn height(self) -> f64 {
         self.apply_autosize_bounds();
 
         let bounds = self.0.bounds.get();
         (self.base().transform.matrix * bounds).height().to_pixels()
     }
 
-    fn set_height(&self, context: &mut UpdateContext<'gc>, value: f64) {
+    fn set_height(self, context: &mut UpdateContext<'gc>, value: f64) {
         self.apply_autosize_bounds();
 
         let bounds = &self.0.bounds;
@@ -2659,12 +2659,12 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
         self.relayout(context);
     }
 
-    fn set_matrix(&self, mc: &Mutation<'gc>, matrix: Matrix) {
+    fn set_matrix(self, mc: &Mutation<'gc>, matrix: Matrix) {
         self.base_mut(mc).set_matrix(matrix);
         self.invalidate_cached_bitmap(mc);
     }
 
-    fn render_self(&self, context: &mut RenderContext<'_, 'gc>) {
+    fn render_self(self, context: &mut RenderContext<'_, 'gc>) {
         self.apply_autosize_bounds();
 
         if !context.is_offscreen && !self.world_bounds().intersects(&context.stage.view_bounds()) {
@@ -2745,11 +2745,11 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
         }
     }
 
-    fn allow_as_mask(&self) -> bool {
+    fn allow_as_mask(self) -> bool {
         false
     }
 
-    fn avm1_unload(&self, context: &mut UpdateContext<'gc>) {
+    fn avm1_unload(self, context: &mut UpdateContext<'gc>) {
         self.drop_focus(context);
 
         if let Some(node) = self.maskee() {
@@ -2760,16 +2760,16 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
 
         // Unbind any display objects bound to this text.
         if let Some(dobj) = self.0.bound_display_object.take() {
-            Avm1TextFieldBinding::clear_binding(dobj, *self, context.gc());
+            Avm1TextFieldBinding::clear_binding(dobj, self, context.gc());
         }
 
         // Unregister any text fields that may be bound to *this* text field.
-        Avm1TextFieldBinding::unregister_bindings((*self).into(), context);
+        Avm1TextFieldBinding::unregister_bindings(self.into(), context);
 
         if self.variable().is_some() {
             context
                 .unbound_text_fields
-                .retain(|&text_field| !DisplayObject::ptr_eq(text_field.into(), (*self).into()));
+                .retain(|&text_field| !DisplayObject::ptr_eq(text_field.into(), self.into()));
         }
 
         self.set_avm1_removed(true);
@@ -3051,7 +3051,7 @@ impl<'gc> TInteractiveObject<'gc> for EditText<'gc> {
     }
 
     fn mouse_pick_avm1(
-        &self,
+        self,
         context: &mut UpdateContext<'gc>,
         point: Point<Twips>,
         _require_button_mode: bool,
@@ -3067,14 +3067,14 @@ impl<'gc> TInteractiveObject<'gc> for EditText<'gc> {
             && (self.is_selectable() || self.is_link_at(point))
             && self.hit_test_shape(context, point, HitTestOptions::MOUSE_PICK)
         {
-            Some((*self).into())
+            Some(self.into())
         } else {
             None
         }
     }
 
     fn mouse_pick_avm2(
-        &self,
+        self,
         context: &mut UpdateContext<'gc>,
         point: Point<Twips>,
         _require_button_mode: bool,
@@ -3093,7 +3093,7 @@ impl<'gc> TInteractiveObject<'gc> for EditText<'gc> {
             if self.mouse_enabled()
                 && (self.is_selectable() || self.is_link_at(point) || !self.was_static())
             {
-                Avm2MousePick::Hit((*self).into())
+                Avm2MousePick::Hit(self.into())
             } else {
                 Avm2MousePick::PropagateToParent
             }
@@ -3113,7 +3113,7 @@ impl<'gc> TInteractiveObject<'gc> for EditText<'gc> {
     }
 
     fn on_focus_changed(
-        &self,
+        self,
         context: &mut UpdateContext<'gc>,
         focused: bool,
         _other: Option<InteractiveObject<'gc>>,
@@ -3144,16 +3144,16 @@ impl<'gc> TInteractiveObject<'gc> for EditText<'gc> {
         }));
     }
 
-    fn is_focusable_by_mouse(&self, _context: &mut UpdateContext<'gc>) -> bool {
+    fn is_focusable_by_mouse(self, _context: &mut UpdateContext<'gc>) -> bool {
         self.movie().is_action_script_3() || self.is_editable() || self.is_selectable()
     }
 
-    fn is_highlightable(&self, _context: &mut UpdateContext<'gc>) -> bool {
+    fn is_highlightable(self, _context: &mut UpdateContext<'gc>) -> bool {
         // TextField is incapable of rendering a highlight.
         false
     }
 
-    fn is_tabbable(&self, context: &mut UpdateContext<'gc>) -> bool {
+    fn is_tabbable(self, context: &mut UpdateContext<'gc>) -> bool {
         if !self.is_editable() {
             // Non-editable text fields are never tabbable.
             return false;
@@ -3161,7 +3161,7 @@ impl<'gc> TInteractiveObject<'gc> for EditText<'gc> {
         self.tab_enabled(context)
     }
 
-    fn tab_enabled_default(&self, _context: &mut UpdateContext<'gc>) -> bool {
+    fn tab_enabled_default(self, _context: &mut UpdateContext<'gc>) -> bool {
         self.is_editable()
     }
 }
@@ -3218,7 +3218,8 @@ struct ClickEventData {
 
 impl ClickEventData {
     /// Selection mode that results from this click index.
-    fn selection_mode(&self) -> TextSelectionMode {
+    #[inline]
+    fn selection_mode(self) -> TextSelectionMode {
         TextSelectionMode::from_click_index(self.click_index)
     }
 }
@@ -3622,15 +3623,15 @@ enum EditTextStyleSheet<'gc> {
 }
 
 impl<'gc> EditTextStyleSheet<'gc> {
-    fn is_some(&self) -> bool {
+    fn is_some(self) -> bool {
         self.style_sheet().is_some()
     }
 
-    fn is_none(&self) -> bool {
+    fn is_none(self) -> bool {
         self.style_sheet().is_none()
     }
 
-    fn style_sheet(&self) -> Option<StyleSheet<'gc>> {
+    fn style_sheet(self) -> Option<StyleSheet<'gc>> {
         match self {
             EditTextStyleSheet::None => None,
             EditTextStyleSheet::Avm1(object) => {

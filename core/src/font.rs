@@ -123,16 +123,6 @@ pub struct EvalParameters {
 }
 
 impl EvalParameters {
-    /// Construct eval parameters from their individual parts.
-    #[allow(dead_code)]
-    fn from_parts(height: Twips, letter_spacing: Twips, kerning: bool) -> Self {
-        Self {
-            height,
-            letter_spacing,
-            kerning,
-        }
-    }
-
     /// Convert the formatting on a text span over to font evaluation
     /// parameters.
     pub fn from_span(span: &TextSpan) -> Self {
@@ -270,7 +260,6 @@ impl FontFace {
                             |a| Twips::new(a as i32),
                         );
                         Some(Glyph {
-                            shape_handle: Default::default(),
                             shape: GlyphShape::Drawing(Box::new(drawing)),
                             advance,
                             character,
@@ -279,7 +268,6 @@ impl FontFace {
                         let advance = Twips::new(face.glyph_hor_advance(glyph_id)? as i32);
                         // If we have advance, then this is either an image, SVG or simply missing (ie whitespace)
                         Some(Glyph {
-                            shape_handle: Default::default(),
                             shape: GlyphShape::None,
                             advance,
                             character,
@@ -495,9 +483,8 @@ impl<'gc> Font<'gc> {
                 code_point_to_glyph.insert(code, index);
 
                 let glyph = Glyph {
-                    shape_handle: None.into(),
                     advance: Twips::new(swf_glyph.advance.into()),
-                    shape: GlyphShape::Swf(RefCell::new(Box::new(SwfGlyphOrShape::Glyph(
+                    shape: GlyphShape::Swf(Box::new(RefCell::new(SwfGlyphOrShape::Glyph(
                         swf_glyph,
                     )))),
                     character,
@@ -852,17 +839,27 @@ impl<'gc> Font<'gc> {
 #[derive(Debug, Clone)]
 enum SwfGlyphOrShape {
     Glyph(swf::Glyph),
-    Shape(swf::Shape),
+    Shape {
+        shape: swf::Shape,
+        // Handle to registered shape, loaded lazily on first render of this glyph.
+        handle: Option<ShapeHandle>,
+    },
+    Poisoned,
 }
 
 impl SwfGlyphOrShape {
-    pub fn shape(&mut self) -> &mut swf::Shape {
-        if let SwfGlyphOrShape::Glyph(glyph) = self {
-            *self = SwfGlyphOrShape::Shape(ruffle_render::shape_utils::swf_glyph_to_shape(glyph));
+    fn shape(&mut self) -> (&mut swf::Shape, &mut Option<ShapeHandle>) {
+        if let Self::Glyph(_) = self {
+            if let Self::Glyph(glyph) = core::mem::replace(self, Self::Poisoned) {
+                *self = Self::Shape {
+                    shape: ruffle_render::shape_utils::swf_glyph_to_shape(glyph),
+                    handle: None,
+                };
+            }
         }
 
         match self {
-            SwfGlyphOrShape::Shape(shape) => shape,
+            SwfGlyphOrShape::Shape { shape, handle } => (shape, handle),
             _ => unreachable!(),
         }
     }
@@ -870,7 +867,7 @@ impl SwfGlyphOrShape {
 
 #[derive(Debug, Clone)]
 enum GlyphShape {
-    Swf(RefCell<Box<SwfGlyphOrShape>>),
+    Swf(Box<RefCell<SwfGlyphOrShape>>),
     Drawing(Box<Drawing>),
     None,
 }
@@ -880,7 +877,7 @@ impl GlyphShape {
         match self {
             GlyphShape::Swf(glyph) => {
                 let mut glyph = glyph.borrow_mut();
-                let shape = glyph.shape();
+                let (shape, _) = glyph.shape();
                 shape.shape_bounds.contains(point)
                     && ruffle_render::shape_utils::shape_hit_test(shape, point, local_matrix)
             }
@@ -893,7 +890,11 @@ impl GlyphShape {
         match self {
             GlyphShape::Swf(glyph) => {
                 let mut glyph = glyph.borrow_mut();
-                Some(renderer.register_shape((&*glyph.shape()).into(), &NullBitmapSource))
+                let (shape, handle) = glyph.shape();
+                handle.get_or_insert_with(|| {
+                    renderer.register_shape((&*shape).into(), &NullBitmapSource)
+                });
+                handle.clone()
             }
             GlyphShape::Drawing(drawing) => drawing.register_or_replace(renderer),
             GlyphShape::None => None,
@@ -903,11 +904,6 @@ impl GlyphShape {
 
 #[derive(Debug, Clone)]
 pub struct Glyph {
-    // Handle to registered shape.
-    // If None, it'll be loaded lazily on first render of this glyph.
-    // It's a double option; the outer one is "have we registered", the inner one is option because it may not exist
-    shape_handle: RefCell<Option<Option<ShapeHandle>>>,
-
     shape: GlyphShape,
     advance: Twips,
 
@@ -919,7 +915,6 @@ impl Glyph {
     /// Returns an empty glyph with zero advance.
     pub fn empty(character: char) -> Self {
         Self {
-            shape_handle: Default::default(),
             shape: GlyphShape::None,
             advance: Twips::ZERO,
             character,
@@ -927,10 +922,7 @@ impl Glyph {
     }
 
     pub fn shape_handle(&self, renderer: &mut dyn RenderBackend) -> Option<ShapeHandle> {
-        self.shape_handle
-            .borrow_mut()
-            .get_or_insert_with(|| self.shape.register(renderer))
-            .clone()
+        self.shape.register(renderer)
     }
 
     pub fn hit_test(&self, point: Point<Twips>, local_matrix: &Matrix) -> bool {
@@ -1223,6 +1215,19 @@ mod tests {
 
     const DEVICE_FONT: &[u8] = include_bytes!("../assets/notosans-regular.subset.ttf.gz");
 
+    /// Construct eval parameters from their individual parts.
+    fn eval_parameters_from_parts(
+        height: Twips,
+        letter_spacing: Twips,
+        kerning: bool,
+    ) -> EvalParameters {
+        EvalParameters {
+            height,
+            letter_spacing,
+            kerning,
+        }
+    }
+
     fn with_device_font<F>(callback: F)
     where
         F: for<'gc> FnOnce(&Mutation<'gc>, Font<'gc>),
@@ -1245,7 +1250,7 @@ mod tests {
     #[test]
     fn wrap_line_no_breakpoint() {
         with_device_font(|_mc, df| {
-            let params = EvalParameters::from_parts(Twips::from_pixels(12.0), Twips::ZERO, true);
+            let params = eval_parameters_from_parts(Twips::from_pixels(12.0), Twips::ZERO, true);
             let string = WStr::from_units(b"abcdefghijklmnopqrstuv");
             let breakpoint =
                 df.wrap_line(string, params, Twips::from_pixels(200.0), Twips::ZERO, true);
@@ -1257,7 +1262,7 @@ mod tests {
     #[test]
     fn wrap_line_breakpoint_every_word() {
         with_device_font(|_mc, df| {
-            let params = EvalParameters::from_parts(Twips::from_pixels(12.0), Twips::ZERO, true);
+            let params = eval_parameters_from_parts(Twips::from_pixels(12.0), Twips::ZERO, true);
             let string = WStr::from_units(b"abcd efgh ijkl mnop");
             let mut last_bp = 0;
             let breakpoint =
@@ -1306,7 +1311,7 @@ mod tests {
     #[test]
     fn wrap_line_breakpoint_no_room() {
         with_device_font(|_mc, df| {
-            let params = EvalParameters::from_parts(Twips::from_pixels(12.0), Twips::ZERO, true);
+            let params = eval_parameters_from_parts(Twips::from_pixels(12.0), Twips::ZERO, true);
             let string = WStr::from_units(b"abcd efgh ijkl mnop");
             let breakpoint = df.wrap_line(
                 string,
@@ -1323,7 +1328,7 @@ mod tests {
     #[test]
     fn wrap_line_breakpoint_irregular_sized_words() {
         with_device_font(|_mc, df| {
-            let params = EvalParameters::from_parts(Twips::from_pixels(12.0), Twips::ZERO, true);
+            let params = eval_parameters_from_parts(Twips::from_pixels(12.0), Twips::ZERO, true);
             let string = WStr::from_units(b"abcdi j kl mnop q rstuv");
             let mut last_bp = 0;
             let breakpoint =

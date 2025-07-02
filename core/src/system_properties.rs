@@ -4,7 +4,6 @@ use core::fmt;
 use fluent_templates::{langid, LanguageIdentifier};
 
 /// Available cpu architectures
-#[allow(dead_code)]
 pub enum CpuArchitecture {
     PowerPc,
     X86,
@@ -24,7 +23,6 @@ impl fmt::Display for CpuArchitecture {
 }
 
 /// The available host operating systems
-#[allow(dead_code)]
 pub enum OperatingSystem {
     WindowsXp,
     Windows2k,
@@ -54,7 +52,6 @@ impl fmt::Display for OperatingSystem {
 }
 
 /// The available player manufacturers
-#[allow(dead_code)]
 pub enum Manufacturer {
     Windows,
     Macintosh,
@@ -182,7 +179,6 @@ impl From<LanguageIdentifier> for Language {
 }
 
 /// The supported colors of the screen
-#[allow(dead_code)]
 pub enum ScreenColor {
     Color,
     Gray,
@@ -199,7 +195,6 @@ impl fmt::Display for ScreenColor {
     }
 }
 /// The type of the player
-#[allow(dead_code)]
 pub enum PlayerType {
     StandAlone,
     External,

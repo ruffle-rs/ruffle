@@ -439,7 +439,7 @@ impl<'gc> Script<'gc> {
         ));
 
         // Export script traits in domain now that the Script is created
-        for trait_ in &*created_script.global_class().traits() {
+        for trait_ in created_script.global_class().traits() {
             domain.export_definition(trait_.name(), created_script, activation.gc());
         }
 
@@ -455,15 +455,16 @@ impl<'gc> Script<'gc> {
     ) -> Result<Object<'gc>, Error<'gc>> {
         let mc = activation.gc();
 
-        let mut traits = Vec::new();
+        let traits: Box<[Trait<'_>]> = script
+            .traits
+            .iter()
+            .map(|abc_trait| Trait::from_abc_trait(unit, abc_trait, activation))
+            .collect::<Result<_, _>>()?;
 
-        for abc_trait in script.traits.iter() {
-            let newtrait = Trait::from_abc_trait(unit, abc_trait, activation)?;
+        for newtrait in &traits {
             if let TraitKind::Class { class, .. } = newtrait.kind() {
                 domain.export_class(newtrait.name(), *class, mc);
             }
-
-            traits.push(newtrait);
         }
 
         // Now that we have the traits, create the global class for this script

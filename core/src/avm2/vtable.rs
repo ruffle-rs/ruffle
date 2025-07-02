@@ -299,7 +299,7 @@ impl<'gc> VTable<'gc> {
             &mut write.slot_classes,
         );
 
-        for trait_data in &*defining_class_def.traits() {
+        for trait_data in defining_class_def.traits() {
             match trait_data.kind() {
                 TraitKind::Method { method, .. } => {
                     let entry = ClassBoundMethod {

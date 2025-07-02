@@ -354,11 +354,11 @@ impl<'gc> TDisplayObject<'gc> for Video<'gc> {
         unlock!(Gc::write(mc, self.0), VideoData, base).borrow_mut()
     }
 
-    fn instantiate(&self, gc_context: &Mutation<'gc>) -> DisplayObject<'gc> {
+    fn instantiate(self, gc_context: &Mutation<'gc>) -> DisplayObject<'gc> {
         Self(Gc::new(gc_context, self.0.as_ref().clone())).into()
     }
 
-    fn as_ptr(&self) -> *const DisplayObjectPtr {
+    fn as_ptr(self) -> *const DisplayObjectPtr {
         Gc::as_ptr(self.0) as *const DisplayObjectPtr
     }
 
@@ -367,14 +367,14 @@ impl<'gc> TDisplayObject<'gc> for Video<'gc> {
     }
 
     fn post_instantiation(
-        &self,
+        self,
         context: &mut UpdateContext<'gc>,
         _init_object: Option<Avm1Object<'gc>>,
         _instantiated_by: Instantiator,
         run_frame: bool,
     ) {
         if !self.movie().is_action_script_3() {
-            context.avm1.add_to_exec_list(context.gc(), (*self).into());
+            context.avm1.add_to_exec_list(context.gc(), self.into());
         }
 
         let movie = self.0.movie.clone();
@@ -447,7 +447,7 @@ impl<'gc> TDisplayObject<'gc> for Video<'gc> {
             let object = Avm1Object::new_with_native(
                 &context.strings,
                 Some(context.avm1.prototypes().video),
-                Avm1NativeObject::Video(*self),
+                Avm1NativeObject::Video(self),
             );
             self.set_object(context, object.into());
         }
@@ -459,14 +459,14 @@ impl<'gc> TDisplayObject<'gc> for Video<'gc> {
         }
     }
 
-    fn construct_frame(&self, context: &mut UpdateContext<'gc>) {
+    fn construct_frame(self, context: &mut UpdateContext<'gc>) {
         if self.movie().is_action_script_3() && matches!(self.object2(), Avm2Value::Null) {
             let video_constr = context.avm2.classes().video;
             let mut activation = Avm2Activation::from_nothing(context);
             let size = self.0.size.get();
             match Avm2StageObject::for_display_object_childless_with_args(
                 &mut activation,
-                (*self).into(),
+                self.into(),
                 video_constr,
                 &[size.0.into(), size.1.into()],
             ) {
@@ -480,7 +480,7 @@ impl<'gc> TDisplayObject<'gc> for Video<'gc> {
         }
     }
 
-    fn id(&self) -> CharacterId {
+    fn id(self) -> CharacterId {
         match self.0.source.get() {
             VideoSource::Swf(swf_source) => swf_source.streamdef.id,
             VideoSource::NetStream { .. } => 0,
@@ -488,7 +488,7 @@ impl<'gc> TDisplayObject<'gc> for Video<'gc> {
         }
     }
 
-    fn self_bounds(&self) -> Rectangle<Twips> {
+    fn self_bounds(self) -> Rectangle<Twips> {
         let (size_x, size_y) = self.0.size.get();
         Rectangle {
             x_min: Twips::ZERO,
@@ -498,7 +498,7 @@ impl<'gc> TDisplayObject<'gc> for Video<'gc> {
         }
     }
 
-    fn render(&self, context: &mut RenderContext) {
+    fn render(self, context: &mut RenderContext) {
         if !context.is_offscreen && !self.world_bounds().intersects(&context.stage.view_bounds()) {
             // Off-screen; culled
             return;
@@ -557,15 +557,15 @@ impl<'gc> TDisplayObject<'gc> for Video<'gc> {
         context.transform_stack.pop();
     }
 
-    fn set_object2(&self, context: &mut UpdateContext<'gc>, to: Avm2Object<'gc>) {
+    fn set_object2(self, context: &mut UpdateContext<'gc>, to: Avm2Object<'gc>) {
         self.set_object(context, to.into());
     }
 
-    fn movie(&self) -> Arc<SwfMovie> {
+    fn movie(self) -> Arc<SwfMovie> {
         self.0.movie.clone()
     }
 
-    fn object(&self) -> Avm1Value<'gc> {
+    fn object(self) -> Avm1Value<'gc> {
         self.0
             .object
             .get()
@@ -574,7 +574,7 @@ impl<'gc> TDisplayObject<'gc> for Video<'gc> {
             .unwrap_or(Avm1Value::Undefined)
     }
 
-    fn object2(&self) -> Avm2Value<'gc> {
+    fn object2(self) -> Avm2Value<'gc> {
         self.0
             .object
             .get()

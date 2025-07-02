@@ -779,10 +779,7 @@ fn setup_vector_class<'gc>(
 pub fn init_vector_class_defs(activation: &mut Activation<'_, '_>) {
     // Mark Vector as a generic class
     let generic_vector = activation.avm2().class_defs().generic_vector;
-    generic_vector.set_attributes(
-        activation.gc(),
-        ClassAttributes::GENERIC | ClassAttributes::FINAL,
-    );
+    generic_vector.set_attributes(ClassAttributes::GENERIC | ClassAttributes::FINAL);
 
     // Setup the four builtin vector classes
 

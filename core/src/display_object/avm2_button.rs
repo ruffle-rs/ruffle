@@ -420,24 +420,24 @@ impl<'gc> TDisplayObject<'gc> for Avm2Button<'gc> {
         RefMut::map(data.borrow_mut(), |w| &mut w.base)
     }
 
-    fn instantiate(&self, mc: &Mutation<'gc>) -> DisplayObject<'gc> {
+    fn instantiate(self, mc: &Mutation<'gc>) -> DisplayObject<'gc> {
         Self(Gc::new(mc, (*self.0).clone())).into()
     }
 
-    fn as_ptr(&self) -> *const DisplayObjectPtr {
+    fn as_ptr(self) -> *const DisplayObjectPtr {
         Gc::as_ptr(self.0) as *const DisplayObjectPtr
     }
 
-    fn id(&self) -> CharacterId {
+    fn id(self) -> CharacterId {
         self.0.shared.id
     }
 
-    fn movie(&self) -> Arc<SwfMovie> {
+    fn movie(self) -> Arc<SwfMovie> {
         self.0.shared.swf.clone()
     }
 
     fn post_instantiation(
-        &self,
+        self,
         context: &mut UpdateContext<'gc>,
         _init_object: Option<Avm1Object<'gc>>,
         _instantiated_by: Instantiator,
@@ -446,13 +446,13 @@ impl<'gc> TDisplayObject<'gc> for Avm2Button<'gc> {
         self.set_default_instance_name(context);
     }
 
-    fn enter_frame(&self, context: &mut UpdateContext<'gc>) {
+    fn enter_frame(self, context: &mut UpdateContext<'gc>) {
         for state in self.all_state_children(false) {
             state.enter_frame(context);
         }
     }
 
-    fn construct_frame(&self, context: &mut UpdateContext<'gc>) {
+    fn construct_frame(self, context: &mut UpdateContext<'gc>) {
         for state in self.all_state_children(false) {
             state.construct_frame(context);
         }
@@ -464,7 +464,7 @@ impl<'gc> TDisplayObject<'gc> for Avm2Button<'gc> {
             if needs_avm2_construction {
                 let object_cell = unlock!(Gc::write(context.gc(), self.0), Avm2ButtonData, object);
                 let mut activation = Avm2Activation::from_nothing(context);
-                match Avm2StageObject::for_display_object(&mut activation, (*self).into(), class) {
+                match Avm2StageObject::for_display_object(&mut activation, self.into(), class) {
                     Ok(object) => object_cell.set(Some(object.into())),
                     Err(e) => tracing::error!("Got {} when constructing AVM2 side of button", e),
                 };
@@ -526,12 +526,12 @@ impl<'gc> TDisplayObject<'gc> for Avm2Button<'gc> {
 
             // The `added` event for the state itself, as well as the `addedToStage` events, all see
             // the actual parent
-            dispatch_added_event((*self).into(), up_state, true, context);
+            dispatch_added_event(self.into(), up_state, true, context);
             if self.avm2_stage(context).is_some() {
                 // note: AFAIK we can only get here if we were created by timeline,
                 // which means that `self` can't have listeners set yet,
                 // but up_state can.
-                dispatch_added_to_stage_event((*self).into(), context);
+                dispatch_added_to_stage_event(self.into(), context);
             }
 
             if needs_avm2_construction {
@@ -568,7 +568,7 @@ impl<'gc> TDisplayObject<'gc> for Avm2Button<'gc> {
         }
     }
 
-    fn render_self(&self, context: &mut RenderContext<'_, 'gc>) {
+    fn render_self(self, context: &mut RenderContext<'_, 'gc>) {
         let current_state = self.get_state_child(self.0.state.get().into());
 
         if let Some(state) = current_state {
@@ -576,12 +576,12 @@ impl<'gc> TDisplayObject<'gc> for Avm2Button<'gc> {
         }
     }
 
-    fn self_bounds(&self) -> Rectangle<Twips> {
+    fn self_bounds(self) -> Rectangle<Twips> {
         // No inherent bounds; contains child DisplayObjects.
         Default::default()
     }
 
-    fn bounds_with_transform(&self, matrix: &Matrix) -> Rectangle<Twips> {
+    fn bounds_with_transform(self, matrix: &Matrix) -> Rectangle<Twips> {
         // A scroll rect completely overrides an object's bounds,
         // and can even grow the bounding box to be larger than the actual content
         if let Some(scroll_rect) = self.scroll_rect() {
@@ -608,7 +608,7 @@ impl<'gc> TDisplayObject<'gc> for Avm2Button<'gc> {
     }
 
     fn render_bounds_with_transform(
-        &self,
+        self,
         matrix: &Matrix,
         include_own_filters: bool,
         view_matrix: &Matrix,
@@ -632,7 +632,7 @@ impl<'gc> TDisplayObject<'gc> for Avm2Button<'gc> {
     }
 
     fn hit_test_shape(
-        &self,
+        self,
         context: &mut UpdateContext<'gc>,
         point: Point<Twips>,
         options: HitTestOptions,
@@ -660,7 +660,7 @@ impl<'gc> TDisplayObject<'gc> for Avm2Button<'gc> {
         false
     }
 
-    fn object2(&self) -> Avm2Value<'gc> {
+    fn object2(self) -> Avm2Value<'gc> {
         self.0
             .object
             .get()
@@ -668,20 +668,20 @@ impl<'gc> TDisplayObject<'gc> for Avm2Button<'gc> {
             .unwrap_or(Avm2Value::Null)
     }
 
-    fn set_object2(&self, context: &mut UpdateContext<'gc>, to: Avm2Object<'gc>) {
+    fn set_object2(self, context: &mut UpdateContext<'gc>, to: Avm2Object<'gc>) {
         let write = Gc::write(context.gc(), self.0);
         unlock!(write, Avm2ButtonData, object).set(Some(to));
     }
 
-    fn as_avm2_button(&self) -> Option<Self> {
-        Some(*self)
+    fn as_avm2_button(self) -> Option<Self> {
+        Some(self)
     }
 
     fn as_interactive(self) -> Option<InteractiveObject<'gc>> {
         Some(self.into())
     }
 
-    fn allow_as_mask(&self) -> bool {
+    fn allow_as_mask(self) -> bool {
         let current_state = self.get_state_child(self.0.state.get().into());
 
         if let Some(current_state) = current_state.and_then(|cs| cs.as_container()) {
@@ -770,7 +770,7 @@ impl<'gc> TInteractiveObject<'gc> for Avm2Button<'gc> {
     }
 
     fn mouse_pick_avm2(
-        &self,
+        self,
         context: &mut UpdateContext<'gc>,
         mut point: Point<Twips>,
         require_button_mode: bool,
@@ -786,7 +786,7 @@ impl<'gc> TInteractiveObject<'gc> for Avm2Button<'gc> {
                 match mouse_pick {
                     None | Some(Avm2MousePick::Miss) => {}
                     // Selecting a child of a button is equivalent to selecting the button itself
-                    _ => return Avm2MousePick::Hit((*self).into()),
+                    _ => return Avm2MousePick::Hit(self.into()),
                 };
             }
 
@@ -802,7 +802,7 @@ impl<'gc> TInteractiveObject<'gc> for Avm2Button<'gc> {
                     }
                 }
                 if hit_area.hit_test_shape(context, point, HitTestOptions::MOUSE_PICK) {
-                    return Avm2MousePick::Hit((*self).into());
+                    return Avm2MousePick::Hit(self.into());
                 }
             }
         }
@@ -818,7 +818,7 @@ impl<'gc> TInteractiveObject<'gc> for Avm2Button<'gc> {
         }
     }
 
-    fn tab_enabled_default(&self, _context: &mut UpdateContext<'gc>) -> bool {
+    fn tab_enabled_default(self, _context: &mut UpdateContext<'gc>) -> bool {
         true
     }
 

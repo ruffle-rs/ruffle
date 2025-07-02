@@ -181,8 +181,6 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             context,
         };
 
-        // Script initializers should only be run once
-        assert!(!method.is_info_resolved());
         // Resolve signature
         method.resolve_info(&mut created_activation)?;
 
@@ -382,14 +380,12 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         self.is_interpreter = false;
 
         // Resolve parameters and return type
-        if !method.is_info_resolved() {
-            method.resolve_info(self)?;
-        }
+        method.resolve_info(self)?;
 
         // Everything is now setup for the verifier to run
         method.verify(self)?;
 
-        let signature = &*method.resolved_param_config();
+        let signature = method.resolved_param_config();
 
         if user_arguments.len() > signature.len() && !has_rest_or_args && !method.is_unchecked() {
             return Err(Error::avm_error(make_mismatch_error(

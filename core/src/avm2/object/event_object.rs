@@ -389,7 +389,7 @@ impl Debug for EventObject<'_> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
         f.debug_struct("EventObject")
             .field("type", &self.0.event.borrow().event_type())
-            .field("class", &self.base().debug_class_name())
+            .field("class", &self.base().class_name())
             .field("ptr", &Gc::as_ptr(self.0))
             .finish()
     }

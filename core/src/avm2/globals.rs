@@ -429,11 +429,8 @@ pub fn init_early_classes<'gc>(
     class_c_class.init_vtable(activation.context)?;
 
     // Now we link the i_classes and c_classes with each other:
-    object_i_class.set_c_class(mc, object_c_class);
-    object_c_class.set_i_class(mc, object_i_class);
-
-    class_i_class.set_c_class(mc, class_c_class);
-    class_c_class.set_i_class(mc, class_i_class);
+    object_i_class.link_with_c_class(mc, object_c_class);
+    class_i_class.link_with_c_class(mc, class_c_class);
 
     // Set the classes on the TranslationUnit to prevent `TranslationUnit::load_class`
     // from creating duplicate classes for them

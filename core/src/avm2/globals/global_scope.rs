@@ -14,7 +14,7 @@ use ruffle_macros::istr;
 /// Construct `global`'s class.
 pub fn create_class<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    traits: Vec<Trait<'gc>>,
+    traits: Box<[Trait<'gc>]>,
 ) -> Result<Class<'gc>, Error<'gc>> {
     let mc = activation.gc();
     let class = Class::custom_new(
@@ -24,7 +24,7 @@ pub fn create_class<'gc>(
         mc,
     );
 
-    class.set_attributes(mc, ClassAttributes::FINAL);
+    class.set_attributes(ClassAttributes::FINAL);
 
     class.validate_class(activation, true)?;
     class.validate_signatures(activation)?;

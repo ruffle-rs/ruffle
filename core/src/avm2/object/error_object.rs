@@ -41,7 +41,7 @@ pub struct ErrorObjectWeak<'gc>(pub GcWeak<'gc, ErrorObjectData<'gc>>);
 impl fmt::Debug for ErrorObject<'_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct("ErrorObject")
-            .field("class", &self.debug_class_name())
+            .field("class", &self.base().class_name())
             .field("ptr", &Gc::as_ptr(self.0))
             .finish()
     }
@@ -90,10 +90,6 @@ impl<'gc> ErrorObject<'gc> {
 
     pub fn call_stack(&self) -> &CallStack<'gc> {
         &self.0.call_stack
-    }
-
-    fn debug_class_name(&self) -> Box<dyn Debug + 'gc> {
-        self.base().instance_class().debug_name()
     }
 }
 

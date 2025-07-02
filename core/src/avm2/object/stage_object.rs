@@ -125,7 +125,7 @@ impl<'gc> TObject<'gc> for StageObject<'gc> {
 impl Debug for StageObject<'_> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
         f.debug_struct("StageObject")
-            .field("name", &self.base().debug_class_name())
+            .field("name", &self.base().class_name())
             // .field("display_object", &self.0.display_object) TODO(moulins)
             .field("ptr", &Gc::as_ptr(self.0))
             .finish()

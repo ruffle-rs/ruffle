@@ -27,7 +27,6 @@ impl ResolveBuffer {
         }
     }
 
-    #[allow(dead_code)]
     pub fn new_manual(texture: wgpu::Texture) -> Self {
         Self {
             texture: PoolOrArcTexture::Manual((
@@ -104,7 +103,6 @@ impl FrameBuffer {
         }
     }
 
-    #[allow(dead_code)]
     pub fn new_manual(texture: wgpu::Texture, size: wgpu::Extent3d) -> Self {
         Self {
             texture: PoolOrArcTexture::Manual((

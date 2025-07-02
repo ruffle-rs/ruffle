@@ -275,8 +275,8 @@ impl<'gc> ClassObject<'gc> {
         // Otherwise, our behavior diverges from Flash Player in certain cases.
         // See the ignored test 'tests/tests/swfs/avm2/weird_superinterface_properties/'
         let internal_ns = activation.avm2().namespaces.public_vm_internal();
-        for interface in &*class.all_interfaces() {
-            for interface_trait in &*interface.traits() {
+        for interface in class.all_interfaces() {
+            for interface_trait in interface.traits() {
                 if !interface_trait.name().namespace().is_public() {
                     let public_name = QName::new(internal_ns, interface_trait.name().local_name());
                     self.instance_vtable().copy_property_for_interface(
@@ -708,20 +708,8 @@ impl<'gc> ClassObject<'gc> {
             .map(|c| c.0)
     }
 
-    /// Attempts to obtain the name of this class.
-    /// If we are unable to read from a necessary `GcCell`,
-    /// the returned value will be some kind of error message.
-    ///
-    /// This should only be used in a debug context, where
-    /// we need infallible access to *something* to print
-    /// out.
-    pub fn debug_class_name(&self) -> Box<dyn Debug + 'gc> {
-        let class_name = self.inner_class_definition().try_name();
-
-        match class_name {
-            Ok(class_name) => Box::new(class_name),
-            Err(err) => Box::new(err),
-        }
+    pub fn name(&self) -> QName<'gc> {
+        self.inner_class_definition().name()
     }
 }
 
@@ -815,7 +803,7 @@ impl Hash for ClassObject<'_> {
 impl Debug for ClassObject<'_> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
         f.debug_struct("ClassObject")
-            .field("name", &self.debug_class_name())
+            .field("name", &self.name())
             .field("ptr", &Gc::as_ptr(self.0))
             .finish()
     }

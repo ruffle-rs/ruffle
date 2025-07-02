@@ -277,7 +277,7 @@ impl Avm2ObjectWindow {
 
                 ui.label("Interfaces");
                 ui.vertical(|ui| {
-                    for interface in &*class.inner_class_definition().all_interfaces() {
+                    for interface in class.inner_class_definition().all_interfaces() {
                         ui.text_edit_singleline(
                             &mut interface
                                 .name()

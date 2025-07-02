@@ -96,7 +96,6 @@ pub struct BufferDimensions {
 }
 
 impl BufferDimensions {
-    #[allow(dead_code)]
     pub fn new(width: usize, height: usize, format: TextureFormat) -> Self {
         let bytes_per_pixel = format.block_copy_size(None).unwrap() as usize;
         let unpadded_bytes_per_row = width * bytes_per_pixel;

@@ -144,9 +144,9 @@ struct CanvasBitmap {
     smoothed: bool,
 }
 
-#[allow(dead_code)]
 #[derive(Debug)]
 struct BitmapData {
+    #[allow(dead_code)]
     image_data: ImageData,
     canvas: HtmlCanvasElement,
     context: CanvasRenderingContext2d,
