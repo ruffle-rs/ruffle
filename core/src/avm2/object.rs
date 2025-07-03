@@ -53,6 +53,7 @@ mod qname_object;
 mod regexp_object;
 mod responder_object;
 mod script_object;
+mod security_domain_object;
 mod shader_data_object;
 mod shared_object_object;
 mod socket_object;
@@ -124,6 +125,9 @@ pub use crate::avm2::object::responder_object::{
 pub use crate::avm2::object::script_object::{
     get_dynamic_property, scriptobject_allocator, ScriptObject, ScriptObjectData, ScriptObjectWeak,
     ScriptObjectWrapper,
+};
+pub use crate::avm2::object::security_domain_object::{
+    SecurityDomainObject, SecurityDomainObjectWeak,
 };
 pub use crate::avm2::object::shader_data_object::{
     shader_data_allocator, ShaderDataObject, ShaderDataObjectWeak,
@@ -213,6 +217,7 @@ use crate::font::Font;
         WorkerObject(WorkerObject<'gc>),
         WorkerDomainObject(WorkerDomainObject<'gc>),
         MessageChannelObject(MessageChannelObject<'gc>),
+        SecurityDomainObject(SecurityDomainObject<'gc>),
     }
 )]
 pub trait TObject<'gc>: 'gc + Collect<'gc> + Debug + Into<Object<'gc>> + Clone + Copy {
@@ -991,6 +996,7 @@ impl<'gc> Object<'gc> {
             Self::WorkerObject(o) => WeakObject::WorkerObject(WorkerObjectWeak(Gc::downgrade(o.0))),
             Self::WorkerDomainObject(o) => WeakObject::WorkerDomainObject(WorkerDomainObjectWeak(Gc::downgrade(o.0))),
             Self::MessageChannelObject(o) => WeakObject::MessageChannelObject(MessageChannelObjectWeak(Gc::downgrade(o.0))),
+            Self::SecurityDomainObject(o) => WeakObject::SecurityDomainObject(SecurityDomainObjectWeak(Gc::downgrade(o.0))),
         }
     }
 }
@@ -1057,6 +1063,7 @@ pub enum WeakObject<'gc> {
     WorkerObject(WorkerObjectWeak<'gc>),
     WorkerDomainObject(WorkerDomainObjectWeak<'gc>),
     MessageChannelObject(MessageChannelObjectWeak<'gc>),
+    SecurityDomainObject(SecurityDomainObjectWeak<'gc>),
 }
 
 impl<'gc> WeakObject<'gc> {
@@ -1106,6 +1113,7 @@ impl<'gc> WeakObject<'gc> {
             Self::WorkerObject(o) => GcWeak::as_ptr(o.0) as *const ObjectPtr,
             Self::WorkerDomainObject(o) => GcWeak::as_ptr(o.0) as *const ObjectPtr,
             Self::MessageChannelObject(o) => GcWeak::as_ptr(o.0) as *const ObjectPtr,
+            Self::SecurityDomainObject(o) => GcWeak::as_ptr(o.0) as *const ObjectPtr,
         }
     }
 
@@ -1155,6 +1163,7 @@ impl<'gc> WeakObject<'gc> {
             Self::WorkerObject(o) => WorkerObject(o.0.upgrade(mc)?).into(),
             Self::WorkerDomainObject(o) => WorkerDomainObject(o.0.upgrade(mc)?).into(),
             Self::MessageChannelObject(o) => MessageChannelObject(o.0.upgrade(mc)?).into(),
+            Self::SecurityDomainObject(o) => SecurityDomainObject(o.0.upgrade(mc)?).into(),
         })
     }
 }
