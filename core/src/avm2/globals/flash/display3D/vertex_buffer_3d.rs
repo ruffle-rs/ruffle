@@ -1,15 +1,8 @@
 use crate::avm2::activation::Activation;
-use crate::avm2::object::{ClassObject, TObject};
+use crate::avm2::object::TObject;
 use crate::avm2::parameters::ParametersExt;
+use crate::avm2::Error;
 use crate::avm2::Value;
-use crate::avm2::{Error, Object};
-
-pub fn vertex_buffer_3d_allocator<'gc>(
-    _class: ClassObject<'gc>,
-    _activation: &mut Activation<'_, 'gc>,
-) -> Result<Object<'gc>, Error<'gc>> {
-    panic!("This allocator should not be called!")
-}
 
 pub fn upload_from_byte_array<'gc>(
     activation: &mut Activation<'_, 'gc>,
