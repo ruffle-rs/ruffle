@@ -1311,7 +1311,7 @@ fn abstract_interpret_ops<'gc>(
                 }
             }
             Op::FindDef { .. } => {
-                // Avoid handling for now
+                // TODO look in the domain for a matching script
                 stack.push_any(activation)?;
             }
             Op::In => {
@@ -1533,10 +1533,13 @@ fn abstract_interpret_ops<'gc>(
                 // Arguments
                 stack.popn(activation, num_args)?;
 
-                stack.pop(activation)?;
-
-                // Avoid checking return value for now
-                stack.push_any(activation)?;
+                let constructed_value = stack.pop(activation)?;
+                if let Some(instance_class) = constructed_value.class.and_then(|c| c.i_class()) {
+                    // ConstructProp on a c_class will construct its i_class
+                    stack.push_class_not_null(activation, instance_class)?;
+                } else {
+                    stack.push_any(activation)?;
+                }
             }
             Op::ConstructSuper { num_args } => {
                 // Arguments
@@ -1617,7 +1620,6 @@ fn abstract_interpret_ops<'gc>(
 
                 stack.pop(activation)?;
 
-                // Avoid checking return value for now
                 stack.push_any(activation)?;
             }
             Op::CallPropLex {
@@ -1632,7 +1634,7 @@ fn abstract_interpret_ops<'gc>(
                 // Then receiver.
                 stack.pop(activation)?;
 
-                // Avoid checking return value for now
+                // TODO handle return type
                 stack.push_any(activation)?;
             }
             Op::CallStatic { num_args, .. } => {
@@ -1642,7 +1644,7 @@ fn abstract_interpret_ops<'gc>(
                 // Then receiver.
                 stack.pop(activation)?;
 
-                // Avoid checking return value for now
+                // TODO handle return type
                 stack.push_any(activation)?;
             }
             Op::CallProperty {
@@ -1717,7 +1719,7 @@ fn abstract_interpret_ops<'gc>(
                 // Receiver
                 stack.pop(activation)?;
 
-                // Avoid checking return value for now
+                // TODO use correct type when known
                 stack.push_any(activation)?;
             }
             Op::SetSuper { multiname } => {
@@ -1740,7 +1742,7 @@ fn abstract_interpret_ops<'gc>(
                 // Then receiver.
                 stack.pop(activation)?;
 
-                // Avoid checking return value for now
+                // TODO use correct type when known
                 stack.push_any(activation)?;
             }
             Op::SetGlobalSlot { .. } => {
@@ -1753,7 +1755,6 @@ fn abstract_interpret_ops<'gc>(
                     )?));
                 }
 
-                // Avoid handling for now
                 stack.pop(activation)?;
             }
             Op::NewActivation { activation_class } => {
