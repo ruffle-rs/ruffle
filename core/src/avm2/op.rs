@@ -70,7 +70,7 @@ pub enum Op<'gc> {
         num_args: u32,
     },
     CheckFilter,
-    Coerce {
+    CoerceNonPrimitive {
         class: Class<'gc>,
     },
     CoerceSwapPop {

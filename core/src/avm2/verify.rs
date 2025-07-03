@@ -1291,7 +1291,23 @@ fn translate_op<'gc>(
         AbcOp::Coerce { index } => {
             let class = lookup_class(activation, translation_unit, index)?;
 
-            Op::Coerce { class }
+            let class_defs = activation.avm2().class_defs();
+
+            if class == class_defs.int {
+                Op::CoerceI
+            } else if class == class_defs.uint {
+                Op::CoerceU
+            } else if class == class_defs.number {
+                Op::CoerceD
+            } else if class == class_defs.boolean {
+                Op::CoerceB
+            } else if class == class_defs.string {
+                Op::CoerceS
+            } else if class == class_defs.object {
+                Op::CoerceO
+            } else {
+                Op::CoerceNonPrimitive { class }
+            }
         }
         AbcOp::CheckFilter => Op::CheckFilter,
         AbcOp::Si8 => Op::Si8,

@@ -1434,19 +1434,39 @@ impl<'gc> Value<'gc> {
             return Ok(self.coerce_to_boolean().into());
         }
 
+        if class == activation.avm2().class_defs().string {
+            if matches!(self, Value::Undefined) || matches!(self, Value::Null) {
+                return Ok(Value::Null);
+            } else {
+                return Ok(self.coerce_to_string(activation)?.into());
+            }
+        }
+
+        if class == activation.avm2().class_defs().object {
+            if matches!(self, Value::Undefined) {
+                return Ok(Value::Null);
+            } else {
+                return Ok(*self);
+            }
+        }
+
+        self.coerce_to_non_primitive(activation, class)
+    }
+
+    /// Like coerce_to_type, but doesn't handle the special coercion rules for
+    /// coercion to the primitive classes `int`, `uint`, `number`, `boolean`,
+    /// `string`, and `object`. It does, however, handle the rules for coercing
+    /// to the `void` class.
+    pub fn coerce_to_non_primitive(
+        &self,
+        activation: &mut Activation<'_, 'gc>,
+        class: Class<'gc>,
+    ) -> Result<Value<'gc>, Error<'gc>> {
         if matches!(self, Value::Undefined) || matches!(self, Value::Null) {
             if class == activation.avm2().class_defs().void {
                 return Ok(Value::Undefined);
             }
             return Ok(Value::Null);
-        }
-
-        if class == activation.avm2().class_defs().string {
-            return Ok(self.coerce_to_string(activation)?.into());
-        }
-
-        if class == activation.avm2().class_defs().object {
-            return Ok(*self);
         }
 
         if let Some(object) = self.as_object() {

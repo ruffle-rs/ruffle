@@ -1134,18 +1134,15 @@ fn abstract_interpret_ops<'gc>(
                 }
                 stack.push(activation, new_value)?;
             }
-            Op::Coerce { class } => {
+            Op::CoerceNonPrimitive { class } => {
                 let stack_value = stack.pop(activation)?;
                 let mut new_value = OptValue::of_type(class);
 
                 if stack_value.is_null() {
                     // Coercing null to a non-primitive or void is a noop.
-                    if class != types.int
-                        && class != types.uint
-                        && class != types.number
-                        && class != types.boolean
-                        && class != types.void
-                    {
+                    // CoerceNonPrimitive isn't emitted when the class is
+                    // primitive, so we only need to cover the case of void.
+                    if class != types.void {
                         optimize_op_to!(Op::Nop);
                         new_value.null_state = NullState::IsNull;
                     }

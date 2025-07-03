@@ -849,7 +849,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
                 Op::DxnsLate => self.op_dxns_late(),
                 Op::EscXAttr => self.op_esc_xattr(),
                 Op::EscXElem => self.op_esc_elem(),
-                Op::Coerce { class } => self.op_coerce(*class),
+                Op::CoerceNonPrimitive { class } => self.op_coerce_non_primitive(*class),
                 Op::CoerceSwapPop { class } => self.op_coerce_swap_pop(*class),
                 Op::CheckFilter => self.op_check_filter(),
                 Op::Si8 => self.op_si8(),
@@ -2678,9 +2678,9 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     }
 
     /// Implements `Op::Coerce`
-    fn op_coerce(&mut self, class: Class<'gc>) -> Result<(), Error<'gc>> {
+    fn op_coerce_non_primitive(&mut self, class: Class<'gc>) -> Result<(), Error<'gc>> {
         let val = self.pop_stack();
-        let x = val.coerce_to_type(self, class)?;
+        let x = val.coerce_to_non_primitive(self, class)?;
 
         self.push_stack(x);
         Ok(())
