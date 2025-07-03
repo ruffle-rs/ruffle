@@ -2,7 +2,7 @@ use ruffle_wstr::WString;
 
 use crate::avm2::object::TObject;
 use crate::avm2::{Activation, AvmString, Class, Multiname, Value};
-use std::fmt::Debug;
+use std::fmt::{Debug, Display};
 use std::mem::size_of;
 
 use super::function::display_function;
@@ -564,6 +564,23 @@ pub fn make_error_2008<'gc>(activation: &mut Activation<'_, 'gc>, param_name: &s
         activation,
         &format!("Error #2008: Parameter {param_name} must be one of the accepted values."),
         2008,
+    );
+    match err {
+        Ok(err) => Error::avm_error(err),
+        Err(err) => err,
+    }
+}
+
+#[inline(never)]
+#[cold]
+pub fn make_error_2012<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    class_name: impl Display,
+) -> Error<'gc> {
+    let err = argument_error(
+        activation,
+        &format!("Error #2012: {class_name} class cannot be instantiated."),
+        2012,
     );
     match err {
         Ok(err) => Error::avm_error(err),
