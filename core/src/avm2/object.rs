@@ -43,6 +43,7 @@ mod function_object;
 mod index_buffer_3d_object;
 mod loaderinfo_object;
 mod local_connection_object;
+mod message_channel_object;
 mod namespace_object;
 mod net_connection_object;
 mod netstream_object;
@@ -65,6 +66,8 @@ mod textformat_object;
 mod texture_object;
 mod vector_object;
 mod vertex_buffer_3d_object;
+mod worker_domain_object;
+mod worker_object;
 mod xml_list_object;
 mod xml_object;
 
@@ -100,6 +103,9 @@ pub use crate::avm2::object::loaderinfo_object::{
 };
 pub use crate::avm2::object::local_connection_object::{
     local_connection_allocator, LocalConnectionObject, LocalConnectionObjectWeak,
+};
+pub use crate::avm2::object::message_channel_object::{
+    MessageChannelObject, MessageChannelObjectWeak,
 };
 pub use crate::avm2::object::namespace_object::{NamespaceObject, NamespaceObjectWeak};
 pub use crate::avm2::object::net_connection_object::{
@@ -150,6 +156,8 @@ pub use crate::avm2::object::vector_object::{vector_allocator, VectorObject, Vec
 pub use crate::avm2::object::vertex_buffer_3d_object::{
     VertexBuffer3DObject, VertexBuffer3DObjectWeak,
 };
+pub use crate::avm2::object::worker_domain_object::{WorkerDomainObject, WorkerDomainObjectWeak};
+pub use crate::avm2::object::worker_object::{WorkerObject, WorkerObjectWeak};
 pub use crate::avm2::object::xml_list_object::{
     xml_list_allocator, E4XOrXml, XmlListObject, XmlListObjectWeak,
 };
@@ -204,6 +212,9 @@ use crate::font::Font;
         SharedObjectObject(SharedObjectObject<'gc>),
         SoundTransformObject(SoundTransformObject<'gc>),
         StyleSheetObject(StyleSheetObject<'gc>),
+        WorkerObject(WorkerObject<'gc>),
+        WorkerDomainObject(WorkerDomainObject<'gc>),
+        MessageChannelObject(MessageChannelObject<'gc>),
     }
 )]
 pub trait TObject<'gc>: 'gc + Collect<'gc> + Debug + Into<Object<'gc>> + Clone + Copy {
@@ -979,6 +990,9 @@ impl<'gc> Object<'gc> {
             Self::SharedObjectObject(o) => WeakObject::SharedObjectObject(SharedObjectObjectWeak(Gc::downgrade(o.0))),
             Self::SoundTransformObject(o) => WeakObject::SoundTransformObject(SoundTransformObjectWeak(Gc::downgrade(o.0))),
             Self::StyleSheetObject(o) => WeakObject::StyleSheetObject(StyleSheetObjectWeak(Gc::downgrade(o.0))),
+            Self::WorkerObject(o) => WeakObject::WorkerObject(WorkerObjectWeak(Gc::downgrade(o.0))),
+            Self::WorkerDomainObject(o) => WeakObject::WorkerDomainObject(WorkerDomainObjectWeak(Gc::downgrade(o.0))),
+            Self::MessageChannelObject(o) => WeakObject::MessageChannelObject(MessageChannelObjectWeak(Gc::downgrade(o.0))),
         }
     }
 }
@@ -1042,6 +1056,9 @@ pub enum WeakObject<'gc> {
     SharedObjectObject(SharedObjectObjectWeak<'gc>),
     SoundTransformObject(SoundTransformObjectWeak<'gc>),
     StyleSheetObject(StyleSheetObjectWeak<'gc>),
+    WorkerObject(WorkerObjectWeak<'gc>),
+    WorkerDomainObject(WorkerDomainObjectWeak<'gc>),
+    MessageChannelObject(MessageChannelObjectWeak<'gc>),
 }
 
 impl<'gc> WeakObject<'gc> {
@@ -1088,6 +1105,9 @@ impl<'gc> WeakObject<'gc> {
             Self::SharedObjectObject(o) => GcWeak::as_ptr(o.0) as *const ObjectPtr,
             Self::SoundTransformObject(o) => GcWeak::as_ptr(o.0) as *const ObjectPtr,
             Self::StyleSheetObject(o) => GcWeak::as_ptr(o.0) as *const ObjectPtr,
+            Self::WorkerObject(o) => GcWeak::as_ptr(o.0) as *const ObjectPtr,
+            Self::WorkerDomainObject(o) => GcWeak::as_ptr(o.0) as *const ObjectPtr,
+            Self::MessageChannelObject(o) => GcWeak::as_ptr(o.0) as *const ObjectPtr,
         }
     }
 
@@ -1134,6 +1154,9 @@ impl<'gc> WeakObject<'gc> {
             Self::SharedObjectObject(o) => SharedObjectObject(o.0.upgrade(mc)?).into(),
             Self::SoundTransformObject(o) => SoundTransformObject(o.0.upgrade(mc)?).into(),
             Self::StyleSheetObject(o) => StyleSheetObject(o.0.upgrade(mc)?).into(),
+            Self::WorkerObject(o) => WorkerObject(o.0.upgrade(mc)?).into(),
+            Self::WorkerDomainObject(o) => WorkerDomainObject(o.0.upgrade(mc)?).into(),
+            Self::MessageChannelObject(o) => MessageChannelObject(o.0.upgrade(mc)?).into(),
         })
     }
 }
