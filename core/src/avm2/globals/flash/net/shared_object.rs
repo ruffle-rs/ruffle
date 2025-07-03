@@ -1,7 +1,6 @@
 //! `flash.net.SharedObject` builtin/prototype
 
 use crate::avm2::error::error;
-pub use crate::avm2::object::shared_object_allocator;
 use crate::avm2::object::{ScriptObject, SharedObjectObject, TObject};
 use crate::avm2::{Activation, Error, Object, Value};
 use crate::{avm2_stub_getter, avm2_stub_method, avm2_stub_setter};

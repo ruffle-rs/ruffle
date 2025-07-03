@@ -3,12 +3,8 @@ package flash.net {
 
     namespace ruffle = "__ruffle__";
 
-    [Ruffle(InstanceAllocator)]
+    [Ruffle(Abstract)]
     public class SharedObject extends EventDispatcher {
-        public function SharedObject() {
-            // Unreachable; the allocator always throws
-        }
-
         // NOTE: We currently always use AMF3 serialization.
         // If you implement the `defaultObjectEncoding` or `objectEncoding`,
         // you will need to adjust the serialization and deserialization code
