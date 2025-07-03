@@ -3,6 +3,7 @@ use crate::avm2::method::{Method, MethodKind, ResolvedParamConfig};
 use crate::avm2::multiname::Multiname;
 use crate::avm2::op::Op;
 use crate::avm2::optimizer::blocks::assemble_blocks;
+use crate::avm2::optimizer::nop_remover::remove_nops;
 use crate::avm2::optimizer::peephole;
 use crate::avm2::property::Property;
 use crate::avm2::verify::Exception;
@@ -543,8 +544,8 @@ pub fn optimize<'gc>(
     activation: &mut Activation<'_, 'gc>,
     method: Method<'gc>,
     code: &mut Vec<Op<'gc>>,
+    method_exceptions: &mut [Exception<'gc>],
     resolved_parameters: &[ResolvedParamConfig<'gc>],
-    method_exceptions: &[Exception<'gc>],
     jump_targets: &HashSet<usize>,
 ) -> Result<(), Error<'gc>> {
     // These make the code less readable
@@ -662,6 +663,8 @@ pub fn optimize<'gc>(
 
         peephole::postprocess_peephole(code_slice, jump_targets, !method_exceptions.is_empty());
     }
+
+    remove_nops(code, method_exceptions);
 
     Ok(())
 }
@@ -1854,11 +1857,11 @@ fn abstract_interpret_ops<'gc>(
                 for target in lookup_switch
                     .case_offsets
                     .iter()
-                    .chain(&[lookup_switch.default_offset])
+                    .chain(std::slice::from_ref(&lookup_switch.default_offset))
                 {
                     process_jump(
                         activation,
-                        *target,
+                        target.get(),
                         abstract_states,
                         &current_state,
                         op_index_to_block_index_table,

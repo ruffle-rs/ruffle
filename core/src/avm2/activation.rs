@@ -2650,13 +2650,14 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     fn lookup_switch(&mut self, lookup_switch: &LookupSwitch) -> usize {
         let index = self.pop_stack().as_i32();
 
-        let default_offset = lookup_switch.default_offset;
+        let default_offset = lookup_switch.default_offset.clone();
         let case_offsets = &lookup_switch.case_offsets;
 
         case_offsets
             .get(index as usize)
-            .copied()
+            .cloned()
             .unwrap_or(default_offset)
+            .get()
     }
 
     /// Implements `Op::Coerce`
