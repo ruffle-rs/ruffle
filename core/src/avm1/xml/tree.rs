@@ -1,10 +1,8 @@
 //! XML Tree structure
 
-use crate::avm1::Attribute;
-use crate::avm1::{Activation, NativeObject};
-use crate::avm1::{ArrayBuilder, Error, Object, Value};
+use crate::avm1::xml::iterators;
+use crate::avm1::{Activation, ArrayBuilder, Attribute, Error, NativeObject, Object, Value};
 use crate::string::{AvmString, StringContext, WStr, WString};
-use crate::xml;
 use gc_arena::barrier::unlock;
 use gc_arena::{
     lock::{Lock, RefLock},
@@ -12,11 +10,9 @@ use gc_arena::{
 };
 use quick_xml::escape::escape;
 use quick_xml::events::BytesStart;
-use regress::Regex;
 use ruffle_macros::istr;
 use std::cell::RefMut;
 use std::fmt;
-use std::sync::OnceLock;
 
 pub const ELEMENT_NODE: u8 = 1;
 pub const TEXT_NODE: u8 = 3;
@@ -28,7 +24,7 @@ pub struct XmlNode<'gc>(Gc<'gc, XmlNodeData<'gc>>);
 
 #[derive(Clone, Collect)]
 #[collect(no_drop)]
-pub struct XmlNodeData<'gc> {
+struct XmlNodeData<'gc> {
     /// The script object associated with this XML node, if any.
     script_object: Lock<Option<Object<'gc>>>,
 
@@ -96,7 +92,7 @@ impl<'gc> XmlNode<'gc> {
         let attributes = attributes?;
         for attribute in attributes.iter().rev() {
             let key = AvmString::new_utf8_bytes(activation.gc(), attribute.key.into_inner());
-            let value_str = custom_unescape(&attribute.value, decoder)?;
+            let value_str = crate::xml::custom_unescape(&attribute.value, decoder)?;
             let value = AvmString::new_utf8_bytes(activation.gc(), value_str.as_bytes());
 
             // Insert an attribute.
@@ -326,7 +322,7 @@ impl<'gc> XmlNode<'gc> {
 
     /// Returns an iterator that yields child nodes.
     pub fn children(self) -> impl DoubleEndedIterator<Item = XmlNode<'gc>> {
-        xml::iterators::ChildIter::for_node(self)
+        iterators::ChildIter::for_node(self)
     }
 
     /// Returns a mutable reference to child nodes.
@@ -336,7 +332,7 @@ impl<'gc> XmlNode<'gc> {
 
     /// Returns an iterator that yields ancestor nodes (including itself).
     pub fn ancestors(self) -> impl Iterator<Item = XmlNode<'gc>> {
-        xml::iterators::AnscIter::for_node(self)
+        iterators::AnscIter::for_node(self)
     }
 
     /// Get the already-instantiated script object from the current node.
@@ -556,43 +552,4 @@ impl fmt::Debug for XmlNode<'_> {
             .field("children", &self.0.children.borrow())
             .finish()
     }
-}
-
-static ENTITY_REGEX: OnceLock<Regex> = OnceLock::new();
-
-/// Handles flash-specific XML unescaping behavior.
-/// We accept all XML entities, and also accept standalone '&' without
-/// a corresponding ';'
-pub fn custom_unescape(
-    data: &[u8],
-    decoder: quick_xml::Decoder,
-) -> Result<String, quick_xml::Error> {
-    let input = decoder.decode(data)?;
-
-    let re = ENTITY_REGEX.get_or_init(|| Regex::new(r"&[^;]*;").unwrap());
-    let mut result = String::new();
-    let mut last_end = 0;
-
-    // Find all entities, and try to unescape them.
-    // Our regular expression will skip over '&' without a matching ';',
-    // which will preserve them as-is in the output
-    for cap in re.find_iter(&input) {
-        let start = cap.start();
-        let end = cap.end();
-        result.push_str(&input[last_end..start]);
-
-        let entity = &input[start..end];
-        // Unfortunately, we need to call this on each entity individually,
-        // since it bails out if *any* entities in the string lack a terminating ';'
-        match quick_xml::escape::unescape(entity) {
-            Ok(decoded) => result.push_str(&decoded),
-            // FIXME - check the actual error once https://github.com/tafia/quick-xml/pull/584 is merged
-            Err(_) => result.push_str(entity),
-        }
-
-        last_end = end;
-    }
-
-    result.push_str(&input[last_end..]);
-    Ok(result)
 }
