@@ -3,7 +3,7 @@ package flash.display
     import flash.geom.Matrix;
     import __ruffle__.stub_method;
 
-    // note: no need for an allocator, as it's never constructed from AS
+    [Ruffle(Abstract)]
     public final class Graphics
     {
         public function Graphics()

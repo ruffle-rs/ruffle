@@ -10,6 +10,7 @@ package flash.display3D {
     import __ruffle__.stub_getter;
 
     [API("674")]
+    [Ruffle(Abstract)]
     public final class Context3D extends EventDispatcher {
         public native function clear(red:Number = 0.0, green:Number = 0.0, blue:Number = 0.0, alpha:Number = 1.0, depth:Number = 1.0, stencil:uint = 0, mask:uint = 0xffffffff):void;
 

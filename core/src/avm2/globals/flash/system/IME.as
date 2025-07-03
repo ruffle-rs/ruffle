@@ -10,6 +10,7 @@ package flash.system
     import __ruffle__.stub_getter;
     import __ruffle__.stub_setter;
 
+    [Ruffle(Abstract)]
     public final class IME extends EventDispatcher
     {
         // The conversion mode of the current IME.
