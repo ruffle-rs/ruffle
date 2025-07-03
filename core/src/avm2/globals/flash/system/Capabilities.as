@@ -2,6 +2,7 @@ package flash.system {
     import __ruffle__.stub_getter;
     import __ruffle__.stub_method;
 
+    [Ruffle(Abstract)]
     public final class Capabilities {
         public static function get avHardwareDisable():Boolean {
             stub_getter("flash.system.Capabilities", "avHardwareDisable");
