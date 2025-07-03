@@ -1,6 +1,5 @@
 //! `flash.display` namespace
 
-pub mod avm1movie;
 pub mod bitmap;
 pub mod bitmap_data;
 pub mod display_object;
