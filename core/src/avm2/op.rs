@@ -6,6 +6,7 @@ use crate::avm2::script::Script;
 use crate::string::AvmAtom;
 
 use gc_arena::{Collect, Gc};
+use std::cell::Cell;
 use swf::avm2::types::{Index, Method};
 
 #[derive(Clone, Collect, Copy, Debug)]
@@ -386,11 +387,13 @@ impl Op<'_> {
     }
 }
 
+// This has interior mutability so that we can rewrite switch offsets from the
+// optimizer when we need to
 #[derive(Collect, Debug)]
 #[collect(require_static)]
 pub struct LookupSwitch {
-    pub default_offset: usize,
-    pub case_offsets: Box<[usize]>,
+    pub default_offset: Cell<usize>,
+    pub case_offsets: Box<[Cell<usize>]>,
 }
 
 #[cfg(target_pointer_width = "64")]
