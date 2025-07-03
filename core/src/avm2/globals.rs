@@ -172,6 +172,9 @@ pub struct SystemClasses<'gc> {
     pub id3info: ClassObject<'gc>,
     pub textrun: ClassObject<'gc>,
     pub sharedobject: ClassObject<'gc>,
+    pub worker: ClassObject<'gc>,
+    pub workerdomain: ClassObject<'gc>,
+    pub messagechannel: ClassObject<'gc>,
 }
 
 #[derive(Clone, Collect)]
@@ -335,6 +338,9 @@ impl<'gc> SystemClasses<'gc> {
             id3info: object,
             textrun: object,
             sharedobject: object,
+            worker: object,
+            workerdomain: object,
+            messagechannel: object,
         }
     }
 }
@@ -702,6 +708,9 @@ pub fn init_native_system_classes(activation: &mut Activation<'_, '_>) {
             ("flash.utils", "ByteArray", bytearray),
             ("flash.utils", "Dictionary", dictionary),
             ("flash.system", "ApplicationDomain", application_domain),
+            ("flash.system", "MessageChannel", messagechannel),
+            ("flash.system", "Worker", worker),
+            ("flash.system", "WorkerDomain", workerdomain),
             ("flash.text", "Font", font),
             ("flash.text", "StaticText", statictext),
             ("flash.text", "TextFormat", textformat),
