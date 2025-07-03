@@ -141,9 +141,7 @@ pub use crate::avm2::object::soundchannel_object::{
 pub use crate::avm2::object::soundtransform_object::{
     sound_transform_allocator, SoundTransformObject, SoundTransformObjectWeak,
 };
-pub use crate::avm2::object::stage3d_object::{
-    stage_3d_allocator, Stage3DObject, Stage3DObjectWeak,
-};
+pub use crate::avm2::object::stage3d_object::{Stage3DObject, Stage3DObjectWeak};
 pub use crate::avm2::object::stage_object::{StageObject, StageObjectWeak};
 pub use crate::avm2::object::stylesheet_object::{
     style_sheet_allocator, StyleSheetObject, StyleSheetObjectWeak,

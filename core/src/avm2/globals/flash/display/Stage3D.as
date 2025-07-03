@@ -6,8 +6,8 @@ package flash.display {
     import flash.utils.setTimeout;
     import __ruffle__.stub_setter;
 
-    [Ruffle(InstanceAllocator)]
     [API("674")]
+    [Ruffle(Abstract)]
     public class Stage3D extends EventDispatcher {
         public native function get context3D():Context3D;
         private native function requestContext3D_internal(context3DRenderMode:String, profiles:Vector.<String>):void;
