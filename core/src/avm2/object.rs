@@ -5,7 +5,7 @@ use crate::avm2::array::ArrayStorage;
 use crate::avm2::bytearray::ByteArrayStorage;
 use crate::avm2::class::Class;
 use crate::avm2::domain::Domain;
-use crate::avm2::error;
+use crate::avm2::error::{self, make_error_2012};
 use crate::avm2::events::{DispatchList, Event};
 use crate::avm2::property::Property;
 use crate::avm2::regexp::RegExp;
@@ -1166,10 +1166,5 @@ pub fn abstract_class_allocator<'gc>(
     activation: &mut Activation<'_, 'gc>,
 ) -> Result<Object<'gc>, Error<'gc>> {
     let class_name = class.instance_class().name().local_name();
-
-    return Err(Error::avm_error(error::argument_error(
-        activation,
-        &format!("Error #2012: {class_name} class cannot be instantiated."),
-        2012,
-    )?));
+    Err(make_error_2012(activation, class_name))
 }
