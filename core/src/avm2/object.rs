@@ -132,9 +132,7 @@ pub use crate::avm2::object::security_domain_object::{
 pub use crate::avm2::object::shader_data_object::{
     shader_data_allocator, ShaderDataObject, ShaderDataObjectWeak,
 };
-pub use crate::avm2::object::shared_object_object::{
-    shared_object_allocator, SharedObjectObject, SharedObjectObjectWeak,
-};
+pub use crate::avm2::object::shared_object_object::{SharedObjectObject, SharedObjectObjectWeak};
 pub use crate::avm2::object::socket_object::{socket_allocator, SocketObject, SocketObjectWeak};
 pub use crate::avm2::object::sound_object::{
     sound_allocator, QueuedPlay, SoundLoadingState, SoundObject, SoundObjectWeak,
