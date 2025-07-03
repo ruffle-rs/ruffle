@@ -4,8 +4,6 @@ use crate::avm2::parameters::ParametersExt;
 use crate::avm2::{Activation, Error, Value};
 use ruffle_render::backend::Context3DProfile;
 
-pub use crate::avm2::object::stage_3d_allocator;
-
 const PROFILES_HIGH_TO_LOW: &[(&[u8], Context3DProfile)] = [
     (
         b"standardExtended".as_slice(),
