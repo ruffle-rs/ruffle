@@ -312,6 +312,9 @@ include "flash/net/XMLSocket.as"
 include "flash/filesystem/File.as" // File extends FileReference
 
 include "flash/net/drm/AuthenticationMethod.as"
+include "flash/net/drm/DRMManager.as"
+include "flash/net/drm/DRMPlaybackTimeWindow.as"
+include "flash/net/drm/DRMVoucher.as"
 include "flash/net/drm/LoadVoucherSetting.as"
 
 include "flash/printing/PrintJob.as"
