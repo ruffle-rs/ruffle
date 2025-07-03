@@ -373,6 +373,17 @@ impl Op<'_> {
                 | Op::ReturnVoid { .. }
         )
     }
+
+    pub fn is_nop(&self) -> bool {
+        if cfg!(feature = "avm_debug") {
+            matches!(self, Op::Nop)
+        } else {
+            matches!(
+                self,
+                Op::Nop | Op::Debug { .. } | Op::DebugFile { .. } | Op::DebugLine { .. }
+            )
+        }
+    }
 }
 
 #[derive(Collect, Debug)]
