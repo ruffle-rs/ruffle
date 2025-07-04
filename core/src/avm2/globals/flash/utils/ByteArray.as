@@ -1,6 +1,5 @@
 package flash.utils {
 
-    import __ruffle__.stub_getter;
     import __ruffle__.stub_setter;
 
     [Ruffle(InstanceAllocator)]
@@ -18,8 +17,6 @@ package flash.utils {
 
         [API("684")]
         public function get shareable():Boolean {
-            stub_getter("flash.utils.ByteArray", "shareable");
-
             return this._shareable;
         }
 
