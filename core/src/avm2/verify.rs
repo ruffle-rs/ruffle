@@ -16,8 +16,8 @@ use std::cell::Cell;
 use std::collections::{HashMap, HashSet};
 use swf::avm2::read::Reader;
 use swf::avm2::types::{
-    Class as AbcClass, Index, MethodFlags as AbcMethodFlags, Multiname as AbcMultiname,
-    Namespace as AbcNamespace, Op as AbcOp,
+    Class as AbcClass, Index, Method as AbcMethod, MethodFlags as AbcMethodFlags,
+    Multiname as AbcMultiname, Namespace as AbcNamespace, Op as AbcOp,
 };
 use swf::error::Error as AbcReadError;
 
@@ -689,6 +689,15 @@ fn pool_namespace<'gc>(
     translation_unit.pool_namespace(activation, index)
 }
 
+fn pool_method<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    translation_unit: TranslationUnit<'gc>,
+    index: Index<AbcMethod>,
+    is_function: bool,
+) -> Result<Method<'gc>, Error<'gc>> {
+    translation_unit.load_method(index, is_function, activation)
+}
+
 fn lookup_class<'gc>(
     activation: &mut Activation<'_, 'gc>,
     translation_unit: TranslationUnit<'gc>,
@@ -882,7 +891,11 @@ fn translate_op<'gc>(
                 num_args,
             }
         }
-        AbcOp::CallStatic { index, num_args } => Op::CallStatic { index, num_args },
+        AbcOp::CallStatic { index, num_args } => {
+            let method = pool_method(activation, translation_unit, index, false)?;
+
+            Op::CallStatic { method, num_args }
+        }
         AbcOp::CallSuper { index, num_args } => {
             let multiname = pool_multiname(activation, translation_unit, index)?;
 
@@ -1066,7 +1079,11 @@ fn translate_op<'gc>(
             }
         }
         AbcOp::NewObject { num_args } => Op::NewObject { num_args },
-        AbcOp::NewFunction { index } => Op::NewFunction { index },
+        AbcOp::NewFunction { index } => {
+            let method = pool_method(activation, translation_unit, index, true)?;
+
+            Op::NewFunction { method }
+        }
         AbcOp::NewClass { index } => {
             let class = pool_class(activation, translation_unit, index)?;
             Op::NewClass { class }
