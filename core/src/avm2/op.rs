@@ -1,5 +1,5 @@
 use crate::avm2::class::Class;
-use crate::avm2::method::NativeMethodImpl;
+use crate::avm2::method::{Method, NativeMethodImpl};
 use crate::avm2::multiname::Multiname;
 use crate::avm2::namespace::Namespace;
 use crate::avm2::script::Script;
@@ -7,7 +7,6 @@ use crate::string::AvmAtom;
 
 use gc_arena::{Collect, Gc};
 use std::cell::Cell;
-use swf::avm2::types::{Index, Method};
 
 #[derive(Clone, Collect, Copy, Debug)]
 #[collect(no_drop)]
@@ -59,8 +58,7 @@ pub enum Op<'gc> {
         num_args: u32,
     },
     CallStatic {
-        #[collect(require_static)]
-        index: Index<Method>,
+        method: Method<'gc>,
 
         num_args: u32,
     },
@@ -244,8 +242,7 @@ pub enum Op<'gc> {
         class: Class<'gc>,
     },
     NewFunction {
-        #[collect(require_static)]
-        index: Index<Method>,
+        method: Method<'gc>,
     },
     NewObject {
         num_args: u32,
