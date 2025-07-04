@@ -6,7 +6,7 @@ package flash.system {
     import flash.system.MessageChannel;
     import __ruffle__.stub_getter;
     import __ruffle__.stub_method;
-    
+
     [Ruffle(Abstract)]
     [API("682")]
     public final class Worker extends EventDispatcher {
