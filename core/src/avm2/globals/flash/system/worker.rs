@@ -10,7 +10,7 @@ use crate::avm2_stub_method;
 /// Implements `Worker.createMessageChannel`
 pub fn create_message_channel<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Value<'gc>,
+    _this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     avm2_stub_method!(activation, "flash.system.Worker", "createMessageChannel");
