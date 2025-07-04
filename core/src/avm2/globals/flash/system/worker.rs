@@ -19,7 +19,7 @@ pub fn create_message_channel<'gc>(
 
     let message_channel = MessageChannelObject::new(activation);
 
-    Ok(Value::Object(message_channel.into()))
+    Ok(message_channel.into())
 }
 
 pub fn instantiate_internal<'gc>(
@@ -29,5 +29,5 @@ pub fn instantiate_internal<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let worker = WorkerObject::new(activation);
 
-    Ok(Value::Object(worker.into()))
+    Ok(worker.into())
 }

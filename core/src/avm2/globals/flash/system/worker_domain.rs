@@ -21,7 +21,7 @@ pub fn create_worker<'gc>(
 
         let worker = WorkerObject::new(activation);
 
-        return Ok(Value::Object(worker.into()));
+        return Ok(worker.into());
     }
 
     Ok(Value::Undefined)
@@ -34,5 +34,5 @@ pub fn instantiate_internal<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let worker_domain = WorkerDomainObject::new(activation);
 
-    Ok(Value::Object(worker_domain.into()))
+    Ok(worker_domain.into())
 }
