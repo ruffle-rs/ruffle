@@ -4,7 +4,7 @@ package __AS3__.vec {
     // FIXME: This class is supposed to be final, but then we can't create any
     // Vector.<T> (since they all extend this class)
     internal dynamic class Vector$object {
-         {
+        {
             prototype.concat = function(... rest):* {
                 var v:Vector$object = this;
                 return v.AS3::concat.apply(v, rest);
@@ -218,4 +218,3 @@ package __AS3__.vec {
         AS3 native function unshift(... rest):uint;
     }
 }
-

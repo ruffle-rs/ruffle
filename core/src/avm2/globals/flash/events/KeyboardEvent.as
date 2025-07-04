@@ -11,17 +11,19 @@ package flash.events {
         private var _controlKey:Boolean;
         private var _commandKey:Boolean;
 
-        public function KeyboardEvent(type:String,
-                                      bubbles:Boolean = true,
-                                      cancelable:Boolean = false,
-                                      charCodeValue:uint = 0,
-                                      keyCodeValue:uint = 0,
-                                      keyLocationValue:uint = 0,
-                                      ctrlKeyValue:Boolean = false,
-                                      altKeyValue:Boolean = false,
-                                      shiftKeyValue:Boolean = false,
-                                      controlKeyValue:Boolean = false,
-                                      commandKeyValue:Boolean = false) {
+        public function KeyboardEvent(
+            type:String,
+            bubbles:Boolean = true,
+            cancelable:Boolean = false,
+            charCodeValue:uint = 0,
+            keyCodeValue:uint = 0,
+            keyLocationValue:uint = 0,
+            ctrlKeyValue:Boolean = false,
+            altKeyValue:Boolean = false,
+            shiftKeyValue:Boolean = false,
+            controlKeyValue:Boolean = false,
+            commandKeyValue:Boolean = false
+        ) {
             super(type, bubbles, cancelable);
             this._charCode = charCodeValue;
             this._keyCode = keyCodeValue;
@@ -36,6 +38,7 @@ package flash.events {
         public function get charCode():uint {
             return this._charCode;
         }
+
         public function set charCode(val:uint) {
             this._charCode = val;
         }
@@ -43,6 +46,7 @@ package flash.events {
         public function get keyCode():uint {
             return this._keyCode;
         }
+
         public function set keyCode(val:uint) {
             this._keyCode = val;
         }
@@ -50,6 +54,7 @@ package flash.events {
         public function get keyLocation():uint {
             return this._keyLocation;
         }
+
         public function set keyLocation(val:uint):void {
             this._keyLocation = val;
         }
@@ -57,6 +62,7 @@ package flash.events {
         public function get ctrlKey():Boolean {
             return this._ctrlKey;
         }
+
         public function set ctrlKey(val:Boolean) {
             this._ctrlKey = val;
         }
@@ -64,6 +70,7 @@ package flash.events {
         public function get altKey():Boolean {
             return this._altKey;
         }
+
         public function set altKey(val:Boolean) {
             this._altKey = val;
         }
@@ -71,6 +78,7 @@ package flash.events {
         public function get shiftKey():Boolean {
             return this._shiftKey;
         }
+
         public function set shiftKey(val:Boolean) {
             this._shiftKey = val;
         }
@@ -78,6 +86,7 @@ package flash.events {
         public function get controlKey():Boolean {
             return this._controlKey;
         }
+
         public function set controlKey(val:Boolean) {
             this._controlKey = val;
         }
@@ -85,6 +94,7 @@ package flash.events {
         public function get commandKey():Boolean {
             return this._commandKey;
         }
+
         public function set commandKey(val:Boolean) {
             this._commandKey = val;
         }

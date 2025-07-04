@@ -2,7 +2,7 @@ package __AS3__.vec {
     [Ruffle(CallHandler)]
     [Ruffle(InstanceAllocator)]
     internal final dynamic class Vector$int {
-         {
+        {
             prototype.concat = function(... rest):* {
                 var v:Vector$int = this;
                 return v.AS3::concat.apply(v, rest);
@@ -199,4 +199,3 @@ package __AS3__.vec {
         AS3 native function unshift(... rest):uint;
     }
 }
-

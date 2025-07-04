@@ -12,12 +12,14 @@ package flash.events {
         private var _scaleY:Number;
         private var _velocity:Number;
 
-        public function TransformGestureEvent(type:String, bubbles:Boolean = true, cancelable:Boolean = false,
-                                              phase:String = null, localX:Number = 0, localY:Number = 0,
-                                              scaleX:Number = 1.0, scaleY:Number = 1.0,
-                                              rotation:Number = 0, offsetX:Number = 0, offsetY:Number = 0,
-                                              ctrlKey:Boolean = false, altKey:Boolean = false, shiftKey:Boolean = false,
-                                              controlKey:Boolean = false, velocity:Number = 0) {
+        public function TransformGestureEvent(
+            type:String, bubbles:Boolean = true, cancelable:Boolean = false,
+            phase:String = null, localX:Number = 0, localY:Number = 0,
+            scaleX:Number = 1.0, scaleY:Number = 1.0,
+            rotation:Number = 0, offsetX:Number = 0, offsetY:Number = 0,
+            ctrlKey:Boolean = false, altKey:Boolean = false, shiftKey:Boolean = false,
+            controlKey:Boolean = false, velocity:Number = 0
+        ) {
             super(type, bubbles, cancelable, phase, localX, localY, ctrlKey, altKey, shiftKey, controlKey);
             this._offsetX = offsetX
             this._offsetY = offsetY
@@ -28,10 +30,11 @@ package flash.events {
         }
 
         override public function clone():Event {
-            return new TransformGestureEvent(this.type, this.bubbles, this.cancelable, this.phase,
-                                             this.localX, this.localY, this.scaleX, this.scaleY, this.rotation,
-                                             this.offsetX, this.offsetY, this.ctrlKey, this.altKey, this.shiftKey,
-                                             this.controlKey, this.velocity);
+            return new TransformGestureEvent(
+                this.type, this.bubbles, this.cancelable, this.phase,
+                this.localX, this.localY, this.scaleX, this.scaleY, this.rotation,
+                this.offsetX, this.offsetY, this.ctrlKey, this.altKey, this.shiftKey,
+                this.controlKey, this.velocity);
         }
 
         override public function toString():String {

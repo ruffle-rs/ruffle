@@ -60,7 +60,7 @@ package flash.text.engine {
 
             var text = element.text;
             if (splitIndex < 0 || splitIndex >= text.length) {
-                 throw new RangeError("Error #2006: The supplied index is out of bounds.", 2006);
+                throw new RangeError("Error #2006: The supplied index is out of bounds.", 2006);
             }
 
             element.text = text.slice(0, splitIndex);

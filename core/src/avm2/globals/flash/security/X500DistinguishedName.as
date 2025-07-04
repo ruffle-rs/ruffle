@@ -37,11 +37,11 @@ package flash.security {
         public function toString():String {
             // TODO: figure out exact format
             return "C=" + this._countryName +
-                   ",S=" + this._stateOrProvinceName +
-                   ",L=" + this._localityName +
-                   ",O=" + this._organizationName +
-                   ",OU=" + this._organizationalUnitName +
-                   ",CN=" + this._commonName;
+                ",S=" + this._stateOrProvinceName +
+                ",L=" + this._localityName +
+                ",O=" + this._organizationName +
+                ",OU=" + this._organizationalUnitName +
+                ",CN=" + this._commonName;
         }
     }
 }

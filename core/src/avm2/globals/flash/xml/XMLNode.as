@@ -40,8 +40,7 @@ package flash.xml {
         }
 
         public function cloneNode(deep:Boolean):XMLNode {
-            var clone = new XMLNode(nodeType, nodeType == XMLNodeType.ELEMENT_NODE
-                                              ? nodeName : nodeValue);
+            var clone = new XMLNode(nodeType, nodeType == XMLNodeType.ELEMENT_NODE ? nodeName : nodeValue);
             for (var key in attributes) {
                 clone.attributes[key] = attributes[key];
             }
