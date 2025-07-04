@@ -17,15 +17,14 @@ package flash.system {
             stub_getter("flash.system.WorkerDomain", "current");
 
             if (!_current) {
-                _current = new WorkerDomain();
+                _current = instantiateInternal();
             }
+
             return _current;
         }
 
-        public function createWorker(swf:ByteArray, giveAppPrivileges:Boolean = false):Worker {
-            stub_method("flash.system.WorkerDomain", "createWorker");
+        public native function createWorker(swf:ByteArray, giveAppPrivileges:Boolean = false):Worker;
 
-            return new Worker();
-        }
+        private static native function instantiateInternal():WorkerDomain;
     }
 }

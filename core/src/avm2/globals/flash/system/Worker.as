@@ -4,6 +4,7 @@ package flash.system {
     import flash.events.Event;
     import flash.events.EventDispatcher;
     import flash.system.MessageChannel;
+    import __ruffle__.stub_getter;
     import __ruffle__.stub_method;
     
     [Ruffle(Abstract)]
@@ -16,19 +17,16 @@ package flash.system {
         private static var _current:Worker;
 
         public static function get current():Worker {
-            stub_method("flash.system.Worker", "current");
+            stub_getter("flash.system.Worker", "current");
 
             if (!_current) {
-                _current = new Worker();
+                _current = instantiateInternal();
             }
+
             return _current;
         }
 
-        public function createMessageChannel(received:Worker): MessageChannel {
-            stub_method("flash.system.Worker", "createMessageChannel");
-
-            return new MessageChannel();
-        }
+        public native function createMessageChannel(received:Worker):MessageChannel;
 
         public function setSharedProperty(key:String, value:*):void {
             stub_method("flash.system.Worker", "setSharedProperty");
@@ -43,5 +41,7 @@ package flash.system {
 
             stub_method("flash.system.Worker", "start");
         }
+
+        private static native function instantiateInternal():Worker;
     }
 }

@@ -5,6 +5,8 @@ pub mod application_domain;
 pub mod capabilities;
 pub mod security;
 pub mod system;
+pub mod worker;
+pub mod worker_domain;
 
 use crate::avm2::activation::Activation;
 use crate::avm2::parameters::ParametersExt;
