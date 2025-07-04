@@ -1313,9 +1313,17 @@ fn abstract_interpret_ops<'gc>(
                     stack.push_any(activation)?;
                 }
             }
-            Op::FindDef { .. } => {
-                // TODO look in the domain for a matching script
-                stack.push_any(activation)?;
+            Op::FindDef { multiname } => {
+                let domain = activation.domain();
+
+                if let Some((_, script)) = domain.get_defining_script(&multiname) {
+                    // See comment above for GetScriptGlobals optimization
+                    optimize_op_to!(Op::GetScriptGlobals { script });
+
+                    stack.push_class_not_null(activation, script.global_class())?;
+                } else {
+                    stack.push_any(activation)?;
+                }
             }
             Op::In => {
                 stack.pop(activation)?;
@@ -1672,21 +1680,6 @@ fn abstract_interpret_ops<'gc>(
 
                 stack.push_any(activation)?;
             }
-            Op::CallPropLex {
-                multiname,
-                num_args,
-            } => {
-                // Arguments
-                stack.popn(activation, num_args)?;
-
-                stack.pop_for_multiname(activation, multiname)?;
-
-                // Then receiver.
-                stack.pop(activation)?;
-
-                // TODO handle return type
-                stack.push_any(activation)?;
-            }
             Op::CallStatic { num_args, .. } => {
                 // Arguments
                 stack.popn(activation, num_args)?;
@@ -1698,6 +1691,10 @@ fn abstract_interpret_ops<'gc>(
                 stack.push_any(activation)?;
             }
             Op::CallProperty {
+                multiname,
+                num_args,
+            }
+            | Op::CallPropLex {
                 multiname,
                 num_args,
             } => {
