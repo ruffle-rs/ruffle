@@ -189,10 +189,11 @@ pub fn recursive_serialize<'gc>(
     if let Some(static_properties) = static_properties {
         let vtable = obj.vtable();
         // TODO: respect versioning
-        let mut props = vtable.public_properties();
         // Flash appears to use vtable iteration order, but we sort ours
         // to make our test output consistent.
-        props.sort_by_key(|(name, _)| name.to_utf8_lossy().to_string());
+        let mut props = vtable.public_properties().collect::<Vec<_>>();
+        props.sort_by_key(|(name, _)| *name);
+
         for (name, prop) in props {
             if let Property::Method { .. } = prop {
                 continue;

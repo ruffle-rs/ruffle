@@ -137,14 +137,15 @@ pub struct ClassData<'gc> {
     /// Must be called each time a new class instance is constructed.
     instance_init: Option<Method<'gc>>,
 
-    /// Traits for a given class.
+    /// Traits (and vtable) for a given class.
     ///
     /// These are accessed as normal instance properties; they should not be
     /// present on prototypes, but instead should shadow any prototype
     /// properties that would match.
     traits: OnceLock<Box<[Trait<'gc>]>>,
 
-    vtable: VTable<'gc>,
+    /// The class' vtable.
+    vtable: OnceLock<VTable<'gc>>,
 
     /// The customization point for `Class(args...)` without `new`
     /// If None, a simple coercion is done.
@@ -204,7 +205,7 @@ impl core::fmt::Debug for Class<'_> {
 
 impl<'gc> ClassData<'gc> {
     /// Create an unlinked & unloaded class.
-    fn empty(mc: &Mutation<'gc>, name: QName<'gc>) -> Self {
+    fn empty(name: QName<'gc>) -> Self {
         Self {
             name: Lock::new(name),
             param: Lock::new(None),
@@ -216,7 +217,7 @@ impl<'gc> ClassData<'gc> {
             instance_allocator: Allocator(scriptobject_allocator),
             instance_init: None,
             traits: OnceLock::new(),
-            vtable: VTable::empty(mc),
+            vtable: OnceLock::new(),
             call_handler: None,
             custom_constructor: None,
             linked_class: Lock::new(ClassLink::Unlinked),
@@ -240,7 +241,7 @@ impl<'gc> Class<'gc> {
         traits: Box<[Trait<'gc>]>,
         mc: &Mutation<'gc>,
     ) -> Self {
-        let mut class = ClassData::empty(mc, name);
+        let mut class = ClassData::empty(name);
         class.super_class = super_class;
         class.traits = OnceLock::from(traits);
         Class(Gc::new(mc, class))
@@ -291,7 +292,7 @@ impl<'gc> Class<'gc> {
         local_name_buf.push_char('$');
         let c_name = QName::new(name.namespace(), AvmString::new(mc, local_name_buf));
 
-        let mut i_class = ClassData::empty(mc, name);
+        let mut i_class = ClassData::empty(name);
         i_class.param = Lock::new(Some(Some(param)));
         i_class.super_class = Some(object_vector_i_class);
         i_class.instance_allocator = object_vector_i_class.instance_allocator();
@@ -300,7 +301,7 @@ impl<'gc> Class<'gc> {
         i_class.traits = OnceLock::from(Box::default());
         let i_class = Class(Gc::new(mc, i_class));
 
-        let mut c_class = ClassData::empty(mc, c_name);
+        let mut c_class = ClassData::empty(c_name);
         c_class.super_class = Some(context.avm2.class_defs().class);
         c_class.attributes = Cell::new(ClassAttributes::FINAL);
         c_class.instance_init = object_vector_c_class.instance_init();
@@ -462,7 +463,7 @@ impl<'gc> Class<'gc> {
             .or_else(|| super_class.map(|c| c.instance_allocator()))
             .unwrap_or(Allocator(scriptobject_allocator));
 
-        let mut class = ClassData::empty(activation.gc(), name);
+        let mut class = ClassData::empty(name);
         class.super_class = super_class;
         class.attributes = Cell::new(attributes);
         class.protected_namespace = protected_namespace;
@@ -513,7 +514,7 @@ impl<'gc> Class<'gc> {
             AvmString::new(activation.gc(), local_name_buf),
         );
 
-        let mut class = ClassData::empty(activation.gc(), c_name);
+        let mut class = ClassData::empty(c_name);
         class.super_class = Some(class_class);
         class.attributes = Cell::new(ClassAttributes::FINAL);
         class.protected_namespace = protected_namespace;
@@ -824,22 +825,28 @@ impl<'gc> Class<'gc> {
             panic!(
                 "Attempted to initialize vtable on a class that did not have its traits loaded yet"
             );
+        } else if self.0.all_interfaces.get().is_some() {
+            panic!("Attempted to initialize vtable twice");
         }
 
-        self.0.vtable.init_vtable(
+        let write = Gc::write(context.gc(), self.0);
+
+        let interfaces = self.gather_interfaces()?;
+
+        // The order is important here, as the VTable constructor needs the full list of interfaces.
+        let _ = unlock!(write, ClassData, all_interfaces).set(interfaces);
+        let _ = unlock!(write, ClassData, vtable).set(VTable::new_with_interface_properties(
             self,
             None,
             None,
             self.0.super_class.map(|c| c.vtable()),
-            context.gc(),
-        );
-
-        self.link_interfaces(context)?;
+            context,
+        ));
 
         Ok(())
     }
 
-    pub fn link_interfaces(self, context: &mut UpdateContext<'gc>) -> Result<(), Error<'gc>> {
+    fn gather_interfaces(self) -> Result<Box<[Class<'gc>]>, Error<'gc>> {
         let mut interfaces = Vec::with_capacity(self.direct_interfaces().len());
 
         let mut dedup = HashSet::new();
@@ -865,29 +872,7 @@ impl<'gc> Class<'gc> {
             }
         }
 
-        // FIXME - we should only be copying properties for newly-implemented
-        // interfaces (i.e. those that were not already implemented by the superclass)
-        // Otherwise, our behavior diverges from Flash Player in certain cases.
-        // See the ignored test 'tests/tests/swfs/avm2/weird_superinterface_properties/'
-        let ns = context.avm2.namespaces.public_vm_internal();
-        for interface in &interfaces {
-            for interface_trait in interface.traits() {
-                if !interface_trait.name().namespace().is_public() {
-                    let public_name = QName::new(ns, interface_trait.name().local_name());
-                    self.0.vtable.copy_property_for_interface(
-                        context.gc(),
-                        public_name,
-                        interface_trait.name(),
-                    );
-                }
-            }
-        }
-
-        unlock!(Gc::write(context.gc(), self.0), ClassData, all_interfaces)
-            .set(interfaces.into_boxed_slice())
-            .expect("Class interfaces were already linked");
-
-        Ok(())
+        Ok(interfaces.into_boxed_slice())
     }
 
     pub fn for_activation(
@@ -922,7 +907,7 @@ impl<'gc> Class<'gc> {
 
         let name = QName::new(activation.avm2().namespaces.public_all(), name);
 
-        let mut i_class = ClassData::empty(activation.gc(), name);
+        let mut i_class = ClassData::empty(name);
         i_class.attributes = Cell::new(ClassAttributes::FINAL | ClassAttributes::SEALED);
         i_class.traits = OnceLock::from(traits);
         let i_class = Class(Gc::new(activation.gc(), i_class));
@@ -938,7 +923,7 @@ impl<'gc> Class<'gc> {
         variable_name: QName<'gc>,
     ) -> Result<Class<'gc>, Error<'gc>> {
         // Yes, the name of the class is the variable's name
-        let mut i_class = ClassData::empty(activation.gc(), variable_name);
+        let mut i_class = ClassData::empty(variable_name);
         i_class.attributes = Cell::new(ClassAttributes::FINAL | ClassAttributes::SEALED);
         // TODO make the slot typed
         let traits: Box<[_]> = Box::new([Trait::from_const(variable_name, None, None)]);
@@ -982,7 +967,7 @@ impl<'gc> Class<'gc> {
     }
 
     pub fn vtable(self) -> VTable<'gc> {
-        self.0.vtable
+        *self.0.vtable.get().expect("VTable not yet initialized!")
     }
 
     pub fn dollar_removed_name(self, mc: &Mutation<'gc>) -> QName<'gc> {
