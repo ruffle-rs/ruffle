@@ -13,18 +13,14 @@ pub fn create_worker<'gc>(
     this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(_this) = this.as_object() {
-        avm2_stub_method!(activation, "flash.system.WorkerDomain", "createWorker");
+    avm2_stub_method!(activation, "flash.system.WorkerDomain", "createWorker");
 
-        let _swf = args.get_object(activation, 0, "swf")?;
-        let _give_app_privileges = args.get_bool(1);
+    let _swf = args.get_object(activation, 0, "swf")?;
+    let _give_app_privileges = args.get_bool(1);
 
-        let worker = WorkerObject::new(activation);
+    let worker = WorkerObject::new(activation);
 
-        return Ok(worker.into());
-    }
-
-    Ok(Value::Undefined)
+    Ok(worker.into())
 }
 
 pub fn instantiate_internal<'gc>(
