@@ -1,4 +1,5 @@
 package flash.net {
+    [Ruffle(Abstract)]
     public final class ObjectEncoding {
         public static const AMF0: uint = 0;
 

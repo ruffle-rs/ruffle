@@ -1,7 +1,7 @@
 //! Root stage impl
 
 use crate::avm1::Object as Avm1Object;
-use crate::avm2::object::TObject;
+use crate::avm2::object::{Stage3DObject, TObject};
 use crate::avm2::{
     Activation as Avm2Activation, Avm2, EventObject as Avm2EventObject, Object as Avm2Object,
     StageObject as Avm2StageObject, Value as Avm2Value,
@@ -777,17 +777,8 @@ impl<'gc> TDisplayObject<'gc> for Stage<'gc> {
         match avm2_stage {
             Ok(avm2_stage) => {
                 // Always create 4 Stage3D instances for now, which matches the flash projector behavior
-                let stage3ds: Vec<_> = (0..4)
-                    .map(|_| {
-                        activation
-                            .avm2()
-                            .classes()
-                            .stage3d
-                            .construct(&mut activation, &[])
-                            .expect("Failed to construct Stage3D")
-                            .as_object()
-                            .expect("Stage3D is an Object")
-                    })
+                let stage3ds: Vec<Avm2Object<'gc>> = (0..4)
+                    .map(|_| Stage3DObject::new(&mut activation).into())
                     .collect();
 
                 let write = Gc::write(activation.gc(), self.0);

@@ -1,4 +1,5 @@
 package flash.external {
+    [Ruffle(Abstract)]
     public final class ExternalInterface {
         public static native function get available():Boolean;
 
