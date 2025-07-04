@@ -19,7 +19,7 @@ pub fn create_message_channel<'gc>(
 
     let message_channel = MessageChannelObject::new(activation);
 
-    return Ok(Value::Object(message_channel.into()));
+    Ok(Value::Object(message_channel.into()))
 }
 
 pub fn instantiate_internal<'gc>(
