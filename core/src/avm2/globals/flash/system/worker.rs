@@ -13,17 +13,13 @@ pub fn create_message_channel<'gc>(
     this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(_this) = this.as_object() {
-        avm2_stub_method!(activation, "flash.system.Worker", "createMessageChannel");
+    avm2_stub_method!(activation, "flash.system.Worker", "createMessageChannel");
 
-        let _received = args.get_object(activation, 0, "received")?;
+    let _received = args.get_object(activation, 0, "received")?;
 
-        let message_channel = MessageChannelObject::new(activation);
+    let message_channel = MessageChannelObject::new(activation);
 
-        return Ok(Value::Object(message_channel.into()));
-    }
-
-    Ok(Value::Undefined)
+    return Ok(Value::Object(message_channel.into()));
 }
 
 pub fn instantiate_internal<'gc>(
