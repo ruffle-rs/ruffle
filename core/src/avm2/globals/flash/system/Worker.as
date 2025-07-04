@@ -7,8 +7,8 @@ package flash.system {
     import __ruffle__.stub_getter;
     import __ruffle__.stub_method;
 
-    [Ruffle(Abstract)]
     [API("682")]
+    [Ruffle(Abstract)]
     public final class Worker extends EventDispatcher {
         public static function get isSupported():Boolean {
             return false;
