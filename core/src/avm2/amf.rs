@@ -293,7 +293,7 @@ pub fn deserialize_value_impl<'gc>(
         AmfValue::Bool(b) => (*b).into(),
         AmfValue::ByteArray(bytes) => {
             let storage = ByteArrayStorage::from_vec(bytes.clone());
-            let bytearray = ByteArrayObject::from_storage(activation, storage)?;
+            let bytearray = ByteArrayObject::from_storage(activation.context, storage);
             bytearray.into()
         }
         AmfValue::ECMAArray(id, values, elements, _) => {
@@ -312,11 +312,20 @@ pub fn deserialize_value_impl<'gc>(
 
             // Now let's add each element as a property
             for element in elements {
-                array.set_string_property_local(
-                    AvmString::new_utf8(activation.gc(), element.name()),
-                    deserialize_value_impl(activation, element.value(), object_map)?,
-                    activation,
-                )?;
+                let name = element.name();
+                let value = deserialize_value_impl(activation, element.value(), object_map)?;
+
+                // If the name of the element was numerical, we set an element on
+                // the array instead of setting a dynamic property.
+                if let Ok(index) = name.parse::<usize>() {
+                    array.set_element(activation.gc(), index, value);
+                } else {
+                    array.set_dynamic_property(
+                        AvmString::new_utf8(activation.gc(), name),
+                        value,
+                        activation.gc(),
+                    );
+                }
             }
             array.into()
         }
@@ -385,7 +394,7 @@ pub fn deserialize_value_impl<'gc>(
                 *is_fixed,
                 Some(activation.avm2().class_defs().number),
             );
-            VectorObject::from_vector(storage, activation)?.into()
+            VectorObject::from_vector(storage, activation).into()
         }
         AmfValue::VectorUInt(vec, is_fixed) => {
             let storage = VectorStorage::from_values(
@@ -393,7 +402,7 @@ pub fn deserialize_value_impl<'gc>(
                 *is_fixed,
                 Some(activation.avm2().class_defs().uint),
             );
-            VectorObject::from_vector(storage, activation)?.into()
+            VectorObject::from_vector(storage, activation).into()
         }
         AmfValue::VectorInt(vec, is_fixed) => {
             let storage = VectorStorage::from_values(
@@ -401,7 +410,7 @@ pub fn deserialize_value_impl<'gc>(
                 *is_fixed,
                 Some(activation.avm2().class_defs().int),
             );
-            VectorObject::from_vector(storage, activation)?.into()
+            VectorObject::from_vector(storage, activation).into()
         }
         AmfValue::VectorObject(id, vec, ty_name, is_fixed) => {
             let name = AvmString::new_utf8(activation.gc(), ty_name);
@@ -414,8 +423,8 @@ pub fn deserialize_value_impl<'gc>(
                 Some(class.inner_class_definition()),
                 activation,
             );
-            let obj = VectorObject::from_vector(empty_storage, activation)?;
-            object_map.insert(*id, obj);
+            let obj = VectorObject::from_vector(empty_storage, activation);
+            object_map.insert(*id, obj.into());
 
             let new_values = vec
                 .iter()
@@ -433,8 +442,7 @@ pub fn deserialize_value_impl<'gc>(
                 .collect::<Result<Vec<_>, _>>()?;
 
             // Swap in the actual values
-            obj.as_vector_storage_mut(activation.gc())
-                .expect("Failed to get vector storage from VectorObject")
+            obj.vector_storage_mut(activation.gc())
                 .replace_storage(new_values);
 
             obj.into()
@@ -461,7 +469,7 @@ pub fn deserialize_value_impl<'gc>(
                     dict_obj.set_property_by_object(key, value, activation.gc());
                 } else {
                     let key_string = key.coerce_to_string(activation)?;
-                    dict_obj.set_string_property_local(key_string, value, activation)?;
+                    dict_obj.set_dynamic_property(key_string, value, activation.gc());
                 }
             }
             dict_obj.into()
@@ -498,11 +506,11 @@ pub fn deserialize_lso<'gc>(
     let obj = ScriptObject::new_object(activation);
 
     for child in &lso.body {
-        obj.set_string_property_local(
+        obj.set_dynamic_property(
             AvmString::new_utf8(activation.gc(), &child.name),
             deserialize_value(activation, child.value())?,
-            activation,
-        )?;
+            activation.gc(),
+        );
     }
 
     Ok(obj)

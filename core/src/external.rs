@@ -248,8 +248,7 @@ impl Value {
                 for (key, value) in values.into_iter() {
                     let key = AvmString::new_utf8(activation.gc(), key);
                     let value = value.into_avm2(activation);
-                    obj.set_string_property_local(key, value, activation)
-                        .unwrap();
+                    obj.set_dynamic_property(key, value, activation.gc());
                 }
                 Avm2Value::Object(obj)
             }

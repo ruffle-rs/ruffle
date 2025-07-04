@@ -37,10 +37,10 @@ impl<'gc> Context3DObject<'gc> {
         activation: &mut Activation<'_, 'gc>,
         context: Box<dyn Context3D>,
         stage3d: Stage3DObject<'gc>,
-    ) -> Result<Object<'gc>, Error<'gc>> {
+    ) -> Object<'gc> {
         let class = activation.avm2().classes().context3d;
 
-        let this: Object<'gc> = Context3DObject(Gc::new(
+        Context3DObject(Gc::new(
             activation.gc(),
             Context3DData {
                 base: ScriptObjectData::new(class),
@@ -48,11 +48,7 @@ impl<'gc> Context3DObject<'gc> {
                 stage3d,
             },
         ))
-        .into();
-
-        class.call_init(this.into(), &[], activation)?;
-
-        Ok(this)
+        .into()
     }
 
     pub fn stage3d(self) -> Stage3DObject<'gc> {
@@ -93,15 +89,15 @@ impl<'gc> Context3DObject<'gc> {
         &self,
         num_indices: u32,
         activation: &mut Activation<'_, 'gc>,
-    ) -> Result<Value<'gc>, Error<'gc>> {
+    ) -> Value<'gc> {
         let index_buffer = self
             .with_context_3d(|ctx| ctx.create_index_buffer(BufferUsage::StaticDraw, num_indices));
 
-        Ok(Value::Object(IndexBuffer3DObject::from_handle(
+        Value::Object(IndexBuffer3DObject::from_handle(
             activation,
             *self,
             index_buffer,
-        )?))
+        ))
     }
 
     #[allow(clippy::too_many_arguments)]
@@ -128,7 +124,7 @@ impl<'gc> Context3DObject<'gc> {
 
         Ok(Value::Object(TextureObject::from_handle(
             activation, *self, texture, format, class,
-        )?))
+        )))
     }
 
     pub fn create_vertex_buffer(
@@ -137,16 +133,17 @@ impl<'gc> Context3DObject<'gc> {
         data_32_per_vertex: u8,
         usage: BufferUsage,
         activation: &mut Activation<'_, 'gc>,
-    ) -> Result<Value<'gc>, Error<'gc>> {
+    ) -> Value<'gc> {
         let handle = self.with_context_3d(|ctx| {
             ctx.create_vertex_buffer(usage, num_vertices, data_32_per_vertex)
         });
-        Ok(Value::Object(VertexBuffer3DObject::from_handle(
+
+        Value::Object(VertexBuffer3DObject::from_handle(
             activation,
             *self,
             handle,
             data_32_per_vertex,
-        )?))
+        ))
     }
 
     pub fn upload_vertex_buffer_data(
@@ -197,13 +194,8 @@ impl<'gc> Context3DObject<'gc> {
         });
     }
 
-    pub fn create_program(
-        &self,
-        activation: &mut Activation<'_, 'gc>,
-    ) -> Result<Value<'gc>, Error<'gc>> {
-        Ok(Value::Object(Program3DObject::from_context(
-            activation, *self,
-        )?))
+    pub fn create_program(&self, activation: &mut Activation<'_, 'gc>) -> Value<'gc> {
+        Value::Object(Program3DObject::from_context(activation, *self))
     }
 
     pub fn upload_shaders(
@@ -453,7 +445,7 @@ impl<'gc> Context3DObject<'gc> {
 
         Ok(Value::Object(TextureObject::from_handle(
             activation, *self, texture, format, class,
-        )?))
+        )))
     }
 
     pub(crate) fn set_sampler_state_at(

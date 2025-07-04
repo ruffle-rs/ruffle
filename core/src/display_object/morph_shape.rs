@@ -1,6 +1,4 @@
-use crate::avm2::{
-    Activation as Avm2Activation, Object as Avm2Object, StageObject as Avm2StageObject,
-};
+use crate::avm2::{Object as Avm2Object, StageObject as Avm2StageObject};
 use crate::context::{RenderContext, UpdateContext};
 use crate::display_object::{DisplayObjectBase, DisplayObjectPtr};
 use crate::library::{Library, MovieLibrarySource};
@@ -126,12 +124,9 @@ impl<'gc> TDisplayObject<'gc> for MorphShape<'gc> {
     fn construct_frame(self, context: &mut UpdateContext<'gc>) {
         if self.movie().is_action_script_3() && matches!(self.object2(), Avm2Value::Null) {
             let class = context.avm2.classes().morphshape;
-            let mut activation = Avm2Activation::from_nothing(context);
-            match Avm2StageObject::for_display_object_childless(&mut activation, self.into(), class)
-            {
-                Ok(object) => self.set_object2(context, object.into()),
-                Err(e) => tracing::error!("Got {} when constructing AVM2 side of MorphShape", e),
-            };
+            let object = Avm2StageObject::for_display_object(context.gc(), self.into(), class);
+            self.set_object2(context, object.into());
+
             self.on_construction_complete(context);
         }
     }

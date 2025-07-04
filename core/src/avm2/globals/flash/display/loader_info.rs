@@ -281,7 +281,7 @@ pub fn get_child_allows_parent<'gc>(
             avm2_stub_getter!(activation, "flash.display.LoaderInfo", "childAllowsParent");
 
             if let Some(loader) = loader_info.loader() {
-                let loader = loader.as_display_object().expect("Loader is a DO");
+                let loader = loader.display_object();
                 let parent_movie = loader.movie();
 
                 if let Ok(child_url) = Url::parse(root.url()) {
@@ -324,7 +324,7 @@ pub fn get_parent_allows_child<'gc>(
             avm2_stub_getter!(activation, "flash.display.LoaderInfo", "parentAllowsChild");
 
             if let Some(loader) = loader_info.loader() {
-                let loader = loader.as_display_object().expect("Loader is a DO");
+                let loader = loader.display_object();
                 let parent_movie = loader.movie();
 
                 if let Ok(child_url) = Url::parse(root.url()) {
@@ -554,7 +554,7 @@ pub fn get_parameters<'gc>(
         for (k, v) in parameters.iter() {
             let avm_k = AvmString::new_utf8(activation.gc(), k);
             let avm_v = AvmString::new_utf8(activation.gc(), v);
-            params_obj.set_string_property_local(avm_k, avm_v.into(), activation)?;
+            params_obj.set_dynamic_property(avm_k, avm_v.into(), activation.gc());
         }
 
         return Ok(params_obj.into());

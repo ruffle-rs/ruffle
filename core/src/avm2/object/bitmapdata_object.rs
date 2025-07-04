@@ -5,6 +5,7 @@ use crate::avm2::object::script_object::ScriptObjectData;
 use crate::avm2::object::{ClassObject, Object, ObjectPtr, TObject};
 use crate::avm2::Error;
 use crate::bitmap::bitmap_data::BitmapDataWrapper;
+use crate::context::UpdateContext;
 use crate::utils::HasPrefixField;
 use core::fmt;
 use gc_arena::barrier::unlock;
@@ -66,32 +67,41 @@ impl<'gc> BitmapDataObject<'gc> {
     // (from ActionScript or from the timeline), or when we need
     // to produce a new BitmapData object from a `BitmapData` method
     // like `clone()`
-    pub fn from_bitmap_data_internal(
-        activation: &mut Activation<'_, 'gc>,
+    pub fn from_bitmap_data_and_class(
+        mc: &Mutation<'gc>,
         bitmap_data: BitmapDataWrapper<'gc>,
         class: ClassObject<'gc>,
-    ) -> Result<Object<'gc>, Error<'gc>> {
-        let instance: Object<'gc> = Self(Gc::new(
-            activation.gc(),
+    ) -> Self {
+        let instance = Self(Gc::new(
+            mc,
             BitmapDataObjectData {
                 base: ScriptObjectData::new(class),
                 bitmap_data: Lock::new(bitmap_data),
             },
-        ))
-        .into();
+        ));
 
-        bitmap_data.init_object2(activation.gc(), instance);
+        bitmap_data.init_object2(mc, instance.into());
 
-        // We call the custom BitmapData class with width and height...
-        // but, it always seems to be 1 in Flash Player when constructed from timeline?
-        // This will not actually cause us to create a BitmapData with dimensions (1, 1) -
-        // when the custom class makes a super() call, the BitmapData constructor will
-        // load in the real data from the linked SymbolClass.
-        if class != activation.avm2().classes().bitmapdata {
-            class.call_init(instance.into(), &[1.into(), 1.into()], activation)?;
-        }
+        instance
+    }
 
-        Ok(instance)
+    /// Construct a BitmapData for a given BitmapDataWrapper. The resulting
+    /// object will have the BitmapData class.
+    pub fn from_bitmap_data(
+        context: &mut UpdateContext<'gc>,
+        bitmap_data: BitmapDataWrapper<'gc>,
+    ) -> Self {
+        let bitmapdata_class = context.avm2.classes().bitmapdata;
+
+        Self::from_bitmap_data_and_class(context.gc(), bitmap_data, bitmapdata_class)
+    }
+
+    pub fn bitmap_data(&self) -> BitmapDataWrapper<'gc> {
+        self.0.bitmap_data.get()
+    }
+
+    pub fn init_bitmap_data(&self, mc: &Mutation<'gc>, new_bitmap: BitmapDataWrapper<'gc>) {
+        unlock!(Gc::write(mc, self.0), BitmapDataObjectData, bitmap_data).set(new_bitmap);
     }
 }
 
@@ -104,13 +114,11 @@ impl<'gc> TObject<'gc> for BitmapDataObject<'gc> {
         Gc::as_ptr(self.0) as *const ObjectPtr
     }
 
-    fn as_bitmap_data(&self) -> Option<BitmapDataWrapper<'gc>> {
-        Some(self.0.bitmap_data.get())
+    fn as_bitmap_data_object(&self) -> Option<BitmapDataObject<'gc>> {
+        Some(*self)
     }
 
-    /// Initialize the bitmap data in this object, if it's capable of
-    /// supporting said data
-    fn init_bitmap_data(&self, mc: &Mutation<'gc>, new_bitmap: BitmapDataWrapper<'gc>) {
-        unlock!(Gc::write(mc, self.0), BitmapDataObjectData, bitmap_data).set(new_bitmap);
+    fn as_bitmap_data(&self) -> Option<BitmapDataWrapper<'gc>> {
+        Some(self.0.bitmap_data.get())
     }
 }

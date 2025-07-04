@@ -334,9 +334,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         {
             let string_callee = istr!(self, "callee");
 
-            args_object
-                .set_string_property_local(string_callee, callee, self)
-                .unwrap();
+            args_object.set_dynamic_property(string_callee, callee, self.gc());
             args_object.set_local_property_is_enumerable(self.gc(), string_callee, false);
         }
 
@@ -1811,7 +1809,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             let value = self.pop_stack();
             let name = self.pop_stack();
 
-            object.set_string_property_local(name.coerce_to_string(self)?, value, self)?;
+            object.set_dynamic_property(name.coerce_to_string(self)?, value, self.gc());
         }
 
         self.push_stack(object);

@@ -114,9 +114,9 @@ impl<'gc> Domain<'gc> {
     ///
     /// This function must not be called before the player globals have been
     /// fully allocated.
-    pub fn movie_domain(activation: &mut Activation<'_, 'gc>, parent: Domain<'gc>) -> Domain<'gc> {
+    pub fn movie_domain(context: &mut UpdateContext<'gc>, parent: Domain<'gc>) -> Domain<'gc> {
         let this = Self(GcCell::new(
-            activation.gc(),
+            context.gc(),
             DomainData {
                 defs: PropertyMap::new(),
                 classes: PropertyMap::new(),
@@ -127,11 +127,11 @@ impl<'gc> Domain<'gc> {
             },
         ));
 
-        this.init_default_domain_memory(activation).unwrap();
+        this.init_default_domain_memory(context);
 
         parent
             .0
-            .write(activation.gc())
+            .write(context.gc())
             .children
             .push(DomainWeak(GcCell::downgrade(this.0)));
 
@@ -386,16 +386,13 @@ impl<'gc> Domain<'gc> {
     /// This function is only necessary to be called for domains created via
     /// `global_domain`. It will do nothing on already fully-initialized
     /// domains.
-    pub fn init_default_domain_memory(
-        self,
-        activation: &mut Activation<'_, 'gc>,
-    ) -> Result<(), Error<'gc>> {
+    pub fn init_default_domain_memory(self, context: &mut UpdateContext<'gc>) {
         let initial_data = vec![0; MIN_DOMAIN_MEMORY_LENGTH];
         let storage = ByteArrayStorage::from_vec(initial_data);
 
-        let domain_memory = ByteArrayObject::from_storage(activation, storage)?;
+        let domain_memory = ByteArrayObject::from_storage(context, storage);
 
-        let mut write = self.0.write(activation.gc());
+        let mut write = self.0.write(context.gc());
 
         assert!(
             write.domain_memory.is_none(),
@@ -408,8 +405,6 @@ impl<'gc> Domain<'gc> {
 
         write.domain_memory = Some(domain_memory);
         write.default_domain_memory = Some(domain_memory);
-
-        Ok(())
     }
 
     pub fn as_ptr(self) -> *const DomainPtr {

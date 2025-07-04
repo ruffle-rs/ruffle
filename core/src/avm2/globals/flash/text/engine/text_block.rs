@@ -84,8 +84,7 @@ pub fn create_text_line<'gc>(
 
     apply_format(activation, display_object, text.as_wstr(), element_format)?;
 
-    let instance = initialize_for_allocator(activation, display_object.into(), class)?;
-    class.call_init(instance.into(), &[], activation)?;
+    let instance = initialize_for_allocator(activation.context, display_object.into(), class);
 
     instance.set_slot(line_slots::_TEXT_BLOCK, this.into(), activation)?;
 

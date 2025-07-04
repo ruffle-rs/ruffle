@@ -3,7 +3,7 @@
 use crate::avm2::activation::Activation;
 use crate::avm2::object::script_object::ScriptObjectData;
 use crate::avm2::object::{EventObject, Object, ObjectPtr, StageObject, TObject};
-use crate::avm2::{Avm2, Error, Value};
+use crate::avm2::{Avm2, Error};
 use crate::context::UpdateContext;
 use crate::display_object::{DisplayObject, TDisplayObject};
 use crate::loader::ContentType;
@@ -81,7 +81,7 @@ pub struct LoaderInfoObjectData<'gc> {
     /// The loaded stream that this gets its info from.
     loaded_stream: RefLock<LoaderStream<'gc>>,
 
-    loader: Option<Object<'gc>>,
+    loader: Option<StageObject<'gc>>,
 
     /// Whether or not we've fired our 'init' event
     init_event_fired: Cell<bool>,
@@ -106,54 +106,6 @@ pub struct LoaderInfoObjectData<'gc> {
 }
 
 impl<'gc> LoaderInfoObject<'gc> {
-    /// Box a movie into a loader info object.
-    pub fn from_movie(
-        activation: &mut Activation<'_, 'gc>,
-        movie: Arc<SwfMovie>,
-        root: DisplayObject<'gc>,
-        loader: Option<Object<'gc>>,
-    ) -> Result<Object<'gc>, Error<'gc>> {
-        let class = activation.avm2().classes().loaderinfo;
-        let base = ScriptObjectData::new(class);
-        let loaded_stream = LoaderStream::Swf(movie, root);
-
-        let this: Object<'gc> = LoaderInfoObject(Gc::new(
-            activation.gc(),
-            LoaderInfoObjectData {
-                base,
-                loaded_stream: RefLock::new(loaded_stream),
-                loader,
-                init_event_fired: Cell::new(false),
-                complete_event_fired: Cell::new(false),
-                shared_events: activation
-                    .context
-                    .avm2
-                    .classes()
-                    .eventdispatcher
-                    .construct(activation, &[])?
-                    .as_object()
-                    .unwrap(),
-                uncaught_error_events: activation
-                    .context
-                    .avm2
-                    .classes()
-                    .uncaughterrorevents
-                    .construct(activation, &[])?
-                    .as_object()
-                    .unwrap(),
-                cached_avm1movie: Lock::new(None),
-                content_type: Cell::new(ContentType::Swf),
-                expose_content: Cell::new(false),
-                errored: Cell::new(false),
-            },
-        ))
-        .into();
-
-        class.call_init(this.into(), &[], activation)?;
-
-        Ok(this)
-    }
-
     /// Create a loader info object that has not yet been loaded.
     ///
     /// Use `None` as the root clip to indicate that this is the stage's loader
@@ -161,14 +113,14 @@ impl<'gc> LoaderInfoObject<'gc> {
     pub fn not_yet_loaded(
         activation: &mut Activation<'_, 'gc>,
         movie: Arc<SwfMovie>,
-        loader: Option<Object<'gc>>,
+        loader: Option<StageObject<'gc>>,
         root_clip: Option<DisplayObject<'gc>>,
         is_stage: bool,
-    ) -> Result<Object<'gc>, Error<'gc>> {
+    ) -> Result<Self, Error<'gc>> {
         let class = activation.avm2().classes().loaderinfo;
         let base = ScriptObjectData::new(class);
 
-        let this: Object<'gc> = LoaderInfoObject(Gc::new(
+        let object = LoaderInfoObject(Gc::new(
             activation.gc(),
             LoaderInfoObjectData {
                 base,
@@ -197,15 +149,12 @@ impl<'gc> LoaderInfoObject<'gc> {
                 expose_content: Cell::new(false),
                 errored: Cell::new(false),
             },
-        ))
-        .into();
+        ));
 
-        class.call_init(this.into(), &[], activation)?;
-
-        Ok(this)
+        Ok(object)
     }
 
-    pub fn loader(&self) -> Option<Object<'gc>> {
+    pub fn loader(&self) -> Option<StageObject<'gc>> {
         self.0.loader
     }
 
@@ -330,12 +279,7 @@ impl<'gc> LoaderInfoObject<'gc> {
         let cached_avm1movie = self.0.cached_avm1movie.get();
         if cached_avm1movie.is_none() {
             let class_object = activation.avm2().classes().avm1movie;
-            let object = StageObject::for_display_object(activation, obj, class_object)
-                .expect("for_display_object cannot return Err");
-
-            class_object
-                .call_init(object.into(), &[], activation)
-                .expect("Native init should succeed");
+            let object = StageObject::for_display_object(activation.gc(), obj, class_object);
 
             unlock!(
                 Gc::write(activation.gc(), self.0),
@@ -366,7 +310,7 @@ impl<'gc> LoaderInfoObject<'gc> {
         // error if the loader hadn't loaded it.
         let _ = crate::avm2::globals::flash::display::display_object_container::remove_child_at(
             activation,
-            Value::Object(loader),
+            loader.into(),
             &[0.into()],
         );
     }

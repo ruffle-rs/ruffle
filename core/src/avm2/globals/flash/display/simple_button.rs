@@ -33,7 +33,7 @@ pub fn simple_button_allocator<'gc>(
             // [NA] Buttons specifically need to PO'd
             button.post_instantiation(activation.context, None, Instantiator::Avm2, false);
             let display_object = button.into();
-            let obj = StageObject::for_display_object(activation, display_object, orig_class)?;
+            let obj = StageObject::for_display_object(activation.gc(), display_object, orig_class);
             display_object.set_object2(activation.context, obj.into());
             return Ok(obj.into());
         }
@@ -51,7 +51,11 @@ pub fn simple_button_allocator<'gc>(
                 .instantiate_by_id(symbol, activation.context.gc_context);
 
             if let Some(child) = child {
-                return initialize_for_allocator(activation, child, orig_class);
+                return Ok(initialize_for_allocator(
+                    activation.context,
+                    child,
+                    orig_class,
+                ));
             } else {
                 return Err(make_error_2136(activation));
             }

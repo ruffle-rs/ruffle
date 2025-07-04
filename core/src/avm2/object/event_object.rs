@@ -236,9 +236,7 @@ impl<'gc> EventObject<'gc> {
             let key = AvmString::new_utf8(activation.gc(), key);
             let value = AvmString::new_utf8(activation.gc(), value);
 
-            info_object
-                .set_string_property_local(key, Value::String(value), activation)
-                .unwrap();
+            info_object.set_dynamic_property(key, Value::String(value), activation.gc());
         }
 
         let event_name = istr!("netStatus");

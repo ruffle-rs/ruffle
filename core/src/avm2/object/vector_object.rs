@@ -65,25 +65,19 @@ pub struct VectorObjectData<'gc> {
 
 impl<'gc> VectorObject<'gc> {
     /// Wrap an existing vector in an object.
-    pub fn from_vector(
-        vector: VectorStorage<'gc>,
-        activation: &mut Activation<'_, 'gc>,
-    ) -> Result<Object<'gc>, Error<'gc>> {
+    pub fn from_vector(vector: VectorStorage<'gc>, activation: &mut Activation<'_, 'gc>) -> Self {
         let value_type = vector.value_type();
         let vector_class = activation.avm2().classes().generic_vector;
 
-        let applied_class = vector_class.parametrize(activation, value_type)?;
+        let applied_class = vector_class.parametrize(activation, value_type);
 
-        let object: Object<'gc> = VectorObject(Gc::new(
+        VectorObject(Gc::new(
             activation.gc(),
             VectorObjectData {
                 base: ScriptObjectData::new(applied_class),
                 vector: RefLock::new(vector),
             },
         ))
-        .into();
-
-        Ok(object)
     }
 
     // Given that a read-indexing operation wasn't successful, generate an error.
@@ -159,6 +153,10 @@ impl<'gc> VectorObject<'gc> {
             .set(index, value, activation)?;
 
         Ok(())
+    }
+
+    pub fn vector_storage_mut(&self, mc: &Mutation<'gc>) -> RefMut<VectorStorage<'gc>> {
+        unlock!(Gc::write(mc, self.0), VectorObjectData, vector).borrow_mut()
     }
 }
 
@@ -359,6 +357,6 @@ impl<'gc> TObject<'gc> for VectorObject<'gc> {
     }
 
     fn as_vector_storage_mut(&self, mc: &Mutation<'gc>) -> Option<RefMut<'_, VectorStorage<'gc>>> {
-        Some(unlock!(Gc::write(mc, self.0), VectorObjectData, vector).borrow_mut())
+        Some(self.vector_storage_mut(mc))
     }
 }

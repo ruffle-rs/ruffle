@@ -16,7 +16,11 @@ pub fn video_allocator<'gc>(
         if target == video_class {
             let movie = activation.caller_movie_or_root();
             let new_do = Video::new(activation.gc(), movie, 0, 0, None);
-            return initialize_for_allocator(activation, new_do.into(), class);
+            return Ok(initialize_for_allocator(
+                activation.context,
+                new_do.into(),
+                class,
+            ));
         }
 
         if let Some((movie, symbol)) = activation
@@ -32,7 +36,7 @@ pub fn video_allocator<'gc>(
                 .instantiate_by_id(symbol, activation.context.gc_context);
 
             if let Some(child) = child {
-                return initialize_for_allocator(activation, child, class);
+                return Ok(initialize_for_allocator(activation.context, child, class));
             } else {
                 return Err(make_error_2136(activation));
             }

@@ -1,7 +1,7 @@
 //! Root stage impl
 
 use crate::avm1::Object as Avm1Object;
-use crate::avm2::object::TObject;
+use crate::avm2::object::{LoaderInfoObject, Stage3DObject, TObject};
 use crate::avm2::{
     Activation as Avm2Activation, Avm2, EventObject as Avm2EventObject, Object as Avm2Object,
     StageObject as Avm2StageObject, Value as Avm2Value,
@@ -126,7 +126,7 @@ pub struct StageData<'gc> {
     avm2_object: Lock<Option<Avm2Object<'gc>>>,
 
     /// The AVM2 'LoaderInfo' object for this stage object
-    loader_info: Lock<Option<Avm2Object<'gc>>>,
+    loader_info: Lock<Option<LoaderInfoObject<'gc>>>,
 
     /// An array of AVM2 'Stage3D' instances
     stage3ds: RefLock<Vec<Avm2Object<'gc>>>,
@@ -233,7 +233,7 @@ impl<'gc> Stage<'gc> {
         self.0.movie.replace(movie.clone());
     }
 
-    pub fn set_loader_info(self, gc_context: &Mutation<'gc>, loader_info: Avm2Object<'gc>) {
+    pub fn set_loader_info(self, gc_context: &Mutation<'gc>, loader_info: LoaderInfoObject<'gc>) {
         unlock!(Gc::write(gc_context, self.0), StageData, loader_info).set(Some(loader_info));
     }
 
@@ -762,40 +762,15 @@ impl<'gc> TDisplayObject<'gc> for Stage<'gc> {
         _run_frame: bool,
     ) {
         let stage_constr = context.avm2.classes().stage;
+        let avm2_stage =
+            Avm2StageObject::for_display_object(context.gc(), self.into(), stage_constr);
 
-        // TODO: Replace this when we have a convenience method for constructing AVM2 native objects.
-        // TODO: We should only do this if the movie is actually an AVM2 movie.
-        // This is necessary for EventDispatcher super-constructor to run.
-        let global_domain = context.avm2.stage_domain();
-        let mut activation = Avm2Activation::from_domain(context, global_domain);
-        let avm2_stage = Avm2StageObject::for_display_object_childless(
-            &mut activation,
-            self.into(),
-            stage_constr,
-        );
+        // Always create 4 Stage3D instances for now, which matches the flash projector behavior
+        let stage3ds: Vec<_> = (0..4).map(|_| Stage3DObject::new(context).into()).collect();
 
-        match avm2_stage {
-            Ok(avm2_stage) => {
-                // Always create 4 Stage3D instances for now, which matches the flash projector behavior
-                let stage3ds: Vec<_> = (0..4)
-                    .map(|_| {
-                        activation
-                            .avm2()
-                            .classes()
-                            .stage3d
-                            .construct(&mut activation, &[])
-                            .expect("Failed to construct Stage3D")
-                            .as_object()
-                            .expect("Stage3D is an Object")
-                    })
-                    .collect();
-
-                let write = Gc::write(activation.gc(), self.0);
-                unlock!(write, StageData, avm2_object).set(Some(avm2_stage.into()));
-                unlock!(write, StageData, stage3ds).replace(stage3ds);
-            }
-            Err(e) => tracing::error!("Unable to construct AVM2 Stage: {}", e),
-        }
+        let write = Gc::write(context.gc(), self.0);
+        unlock!(write, StageData, avm2_object).set(Some(avm2_stage.into()));
+        unlock!(write, StageData, stage3ds).replace(stage3ds);
     }
 
     fn id(self) -> CharacterId {
@@ -902,7 +877,7 @@ impl<'gc> TDisplayObject<'gc> for Stage<'gc> {
         }
     }
 
-    fn loader_info(self) -> Option<Avm2Object<'gc>> {
+    fn loader_info(self) -> Option<LoaderInfoObject<'gc>> {
         self.0.loader_info.get()
     }
 

@@ -220,7 +220,7 @@ pub fn matrix3d_to_object<'gc>(
     for (i, data) in matrix.raw_data.iter().enumerate() {
         raw_data_storage.set(i, Value::Number(*data), activation)?;
     }
-    let vector = VectorObject::from_vector(raw_data_storage, activation)?.into();
+    let vector = VectorObject::from_vector(raw_data_storage, activation).into();
     let object = activation
         .avm2()
         .classes()

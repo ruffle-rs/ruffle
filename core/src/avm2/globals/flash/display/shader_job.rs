@@ -70,10 +70,7 @@ pub fn get_shader_args<'gc>(
                         });
                     }
                     let shader_param = shader_data
-                        .get_string_property_local(
-                            AvmString::new_utf8(activation.gc(), name),
-                            activation,
-                        )
+                        .get_dynamic_property(AvmString::new_utf8(activation.gc(), name))
                         .expect("Missing normal property");
 
                     let shader_param = shader_param
@@ -104,10 +101,7 @@ pub fn get_shader_args<'gc>(
                     name,
                 } => {
                     let shader_input = shader_data
-                        .get_string_property_local(
-                            AvmString::new_utf8(activation.gc(), name),
-                            activation,
-                        )
+                        .get_dynamic_property(AvmString::new_utf8(activation.gc(), name))
                         .expect("Missing property")
                         .as_object()
                         .expect("Shader input is not an object");

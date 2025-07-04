@@ -179,7 +179,7 @@ pub fn play<'gc>(
             None
         };
 
-        let sound_channel = SoundChannelObject::empty(activation)?;
+        let sound_channel = SoundChannelObject::empty(activation);
 
         let queued_play = QueuedPlay {
             position,

@@ -32,7 +32,10 @@ pub fn loader_allocator<'gc>(
     // instantiated from the timeline.
     let display_object =
         LoaderDisplay::empty(activation, activation.context.root_swf.clone()).into();
-    let loader = initialize_for_allocator(activation, display_object, class)?;
+    let loader = initialize_for_allocator(activation.context, display_object, class);
+    let Object::StageObject(loader) = loader else {
+        unreachable!("initialize_for_allocator returns a StageObject");
+    };
 
     // Note that the initialization of `_contentLoaderInfo` is intentionally done here,
     // and not in the Loader constructor - subclasess of Loader can observe 'contentLoaderInfo'
@@ -54,7 +57,7 @@ pub fn loader_allocator<'gc>(
         loader_info.into(),
         activation,
     )?;
-    Ok(loader)
+    Ok(loader.into())
 }
 
 pub fn load<'gc>(

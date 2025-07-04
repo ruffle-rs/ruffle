@@ -1,6 +1,7 @@
 use crate::avm1::{
     ActivationIdentifier as Avm1ActivationIdentifier, Object as Avm1Object, Value as Avm1Value,
 };
+use crate::avm2::object::LoaderInfoObject;
 use crate::avm2::{
     Activation as Avm2Activation, Avm2, Error as Avm2Error, EventObject as Avm2EventObject,
     Multiname as Avm2Multiname, Object as Avm2Object, TObject as Avm2TObject, Value as Avm2Value,
@@ -2375,7 +2376,7 @@ pub trait TDisplayObject<'gc>:
     /// Return the SWF that defines this display object.
     fn movie(self) -> Arc<SwfMovie>;
 
-    fn loader_info(self) -> Option<Avm2Object<'gc>> {
+    fn loader_info(self) -> Option<LoaderInfoObject<'gc>> {
         None
     }
 
