@@ -46,17 +46,19 @@ package flash.events {
         private var _movementX:Number;
         private var _movementY:Number;
 
-        public function MouseEvent(type:String,
-                                   bubbles:Boolean = true,
-                                   cancelable:Boolean = false,
-                                   localX:Number = 0/0,
-                                   localY:Number = 0/0,
-                                   relatedObject:InteractiveObject = null,
-                                   ctrlKey:Boolean = false,
-                                   altKey:Boolean = false,
-                                   shiftKey:Boolean = false,
-                                   buttonDown:Boolean = false,
-                                   delta:int = 0) {
+        public function MouseEvent(
+            type:String,
+            bubbles:Boolean = true,
+            cancelable:Boolean = false,
+            localX:Number = 0/0,
+            localY:Number = 0/0,
+            relatedObject:InteractiveObject = null,
+            ctrlKey:Boolean = false,
+            altKey:Boolean = false,
+            shiftKey:Boolean = false,
+            buttonDown:Boolean = false,
+            delta:int = 0
+        ) {
             super(type, bubbles, cancelable);
             this.localX = localX;
             this.localY = localY;

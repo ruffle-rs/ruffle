@@ -24,14 +24,16 @@ package flash.geom {
         [Ruffle(NativeAccessible)]
         public var alphaOffset:Number;
 
-        public function ColorTransform(redMultiplier:Number = 1,
-                                       greenMultiplier:Number = 1,
-                                       blueMultiplier:Number = 1,
-                                       alphaMultiplier:Number = 1,
-                                       redOffset:Number = 0,
-                                       greenOffset:Number = 0,
-                                       blueOffset:Number = 0,
-                                       alphaOffset:Number = 0)  {
+        public function ColorTransform(
+            redMultiplier:Number = 1,
+            greenMultiplier:Number = 1,
+            blueMultiplier:Number = 1,
+            alphaMultiplier:Number = 1,
+            redOffset:Number = 0,
+            greenOffset:Number = 0,
+            blueOffset:Number = 0,
+            alphaOffset:Number = 0
+        ) {
             this.redMultiplier = redMultiplier;
             this.greenMultiplier = greenMultiplier;
             this.blueMultiplier = blueMultiplier;

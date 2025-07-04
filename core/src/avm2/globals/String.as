@@ -2,7 +2,7 @@ package {
     [Ruffle(CustomConstructor)]
     [Ruffle(CallHandler)]
     public final class String {
-         {
+        {
             prototype.charAt = function(index:Number = 0):String {
                 var s:String = this;
                 return s.AS3::charAt(index);
@@ -182,25 +182,25 @@ package {
         [Ruffle(FastCall)]
         AS3 native function substring(start:Number = 0, end:Number = 2147483647.0):String;
 
-        AS3 function toLocaleLowerCase() : String {
+        AS3 function toLocaleLowerCase():String {
             return this.toLowerCase();
         }
 
-        AS3 function toLocaleUpperCase() : String {
+        AS3 function toLocaleUpperCase():String {
             return this.toUpperCase();
         }
 
         [Ruffle(FastCall)]
-        AS3 native function toLowerCase() : String;
+        AS3 native function toLowerCase():String;
 
         [Ruffle(FastCall)]
-        AS3 native function toUpperCase() : String;
+        AS3 native function toUpperCase():String;
 
-        AS3 function toString() : String {
+        AS3 function toString():String {
             return this;
         }
 
-        AS3 function valueOf() : String {
+        AS3 function valueOf():String {
             return this;
         }
 
