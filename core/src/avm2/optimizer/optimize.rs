@@ -1680,15 +1680,19 @@ fn abstract_interpret_ops<'gc>(
 
                 stack.push_any(activation)?;
             }
-            Op::CallStatic { num_args, .. } => {
+            Op::CallStatic { method, num_args } => {
                 // Arguments
                 stack.popn(activation, num_args)?;
 
                 // Then receiver.
                 stack.pop(activation)?;
 
-                // TODO handle return type
-                stack.push_any(activation)?;
+                let return_type = method.resolved_return_type();
+                if let Some(return_type) = return_type {
+                    stack.push_class(activation, return_type)?;
+                } else {
+                    stack.push_any(activation)?;
+                }
             }
             Op::CallProperty {
                 multiname,
