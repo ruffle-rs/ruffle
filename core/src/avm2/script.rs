@@ -56,25 +56,25 @@ struct TranslationUnitData<'gc> {
     abc: Rc<AbcFile>,
 
     /// All classes loaded from the ABC's class list.
-    classes: Vec<Option<Class<'gc>>>,
+    classes: Box<[Option<Class<'gc>>]>,
 
     /// All methods loaded from the ABC's method list.
-    methods: Vec<Option<Method<'gc>>>,
+    methods: Box<[Option<Method<'gc>>]>,
 
     /// All scripts loaded from the ABC's scripts list.
-    scripts: Vec<Option<Script<'gc>>>,
+    scripts: Box<[Option<Script<'gc>>]>,
 
     /// All strings loaded from the ABC's strings list.
     /// They're lazy loaded and offset by 1, with the 0th element being always the empty string.
-    strings: Vec<Option<AvmAtom<'gc>>>,
+    strings: Box<[Option<AvmAtom<'gc>>]>,
 
     /// All namespaces loaded from the ABC's scripts list.
-    namespaces: Vec<Option<Namespace<'gc>>>,
+    namespaces: Box<[Option<Namespace<'gc>>]>,
 
     /// All multinames loaded from the ABC's multiname list
     /// Note that some of these may have a runtime (lazy) component.
     /// Make sure to check for that before using them.
-    multinames: Vec<Option<Gc<'gc, Multiname<'gc>>>>,
+    multinames: Box<[Option<Gc<'gc, Multiname<'gc>>>]>,
 
     /// The movie that this TranslationUnit was loaded from.
     movie: Arc<SwfMovie>,
@@ -90,28 +90,21 @@ impl<'gc> TranslationUnit<'gc> {
         movie: Arc<SwfMovie>,
         mc: &Mutation<'gc>,
     ) -> Self {
-        let classes = vec![None; abc.classes.len()];
-        let methods = vec![None; abc.methods.len()];
-        let scripts = vec![None; abc.scripts.len()];
-        let strings = vec![None; abc.constant_pool.strings.len() + 1];
-        let namespaces = vec![None; abc.constant_pool.namespaces.len() + 1];
-        let multinames = vec![None; abc.constant_pool.multinames.len() + 1];
+        use std::iter::repeat_n;
+        let this = TranslationUnitData {
+            domain,
+            name,
+            classes: repeat_n(OnceLock::new(), abc.classes.len()).collect(),
+            methods: repeat_n(OnceLock::new(), abc.methods.len()).collect(),
+            scripts: repeat_n(OnceLock::new(), abc.scripts.len()).collect(),
+            strings: repeat_n(OnceLock::new(), abc.constant_pool.strings.len() + 1).collect(),
+            namespaces: repeat_n(OnceLock::new(), abc.constant_pool.namespaces.len() + 1).collect(),
+            multinames: repeat_n(OnceLock::new(), abc.constant_pool.multinames.len() + 1).collect(),
+            movie,
+            abc: Rc::new(abc),
+        };
 
-        Self(GcCell::new(
-            mc,
-            TranslationUnitData {
-                domain,
-                name,
-                abc: Rc::new(abc),
-                classes,
-                methods,
-                scripts,
-                strings,
-                namespaces,
-                multinames,
-                movie,
-            },
-        ))
+        Self(Gc::new(mc, this))
     }
 
     pub fn load_classes(self, activation: &mut Activation<'_, 'gc>) -> Result<(), Error<'gc>> {
