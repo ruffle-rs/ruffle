@@ -1398,8 +1398,55 @@ fn abstract_interpret_ops<'gc>(
                     stack.push_any(activation)?;
                 }
             }
-            Op::GetPropertyFast { multiname } | Op::GetPropertySlow { multiname } => {
-                // Verifier only emits these ops when the multiname is lazy
+            Op::GetPropertyFast { multiname } => {
+                // Verifier only emits this op when the multiname is lazy
+                assert!(multiname.has_lazy_name() && !multiname.has_lazy_ns());
+
+                let mut stack_push_done = false;
+
+                let index = stack.pop(activation)?;
+                let stack_value = stack.pop(activation)?;
+
+                if let Some(param) = stack_value.class.and_then(|c| c.param()) {
+                    // This is a Vector class, if our index is numeric and the
+                    // multiname is valid for indexing then we know the type of
+                    // the result
+
+                    let index_numeric = index.class == Some(types.int)
+                        || index.class == Some(types.uint)
+                        || index.class == Some(types.number);
+
+                    // In non-JIT mode, GetPropertyFast can be emitted even when
+                    // the multiname isn't valid for indexing (see comment in
+                    // `verify::translate_op`), so we need to check here again
+                    let multiname_valid = multiname.valid_dynamic_name();
+
+                    if index_numeric && multiname_valid {
+                        if let Some(param) = param {
+                            // NOTE this is a bug in FP, in SWFv10 indexing
+                            // vectors with a numeric index is not actually
+                            // guaranteed to produce a result of the correct
+                            // type. For some reason, this special-case of
+                            // int/uint/number isn't version-gated.
+                            if param == types.int || param == types.uint || param == types.number {
+                                stack_push_done = true;
+                                stack.push_class(activation, param)?;
+                            } else if activation.caller_movie_or_root().version() >= 14 {
+                                // The general case, meanwhile, *is* correctly
+                                // version-gated.
+                                stack_push_done = true;
+                                stack.push_class(activation, param)?;
+                            }
+                        }
+                    }
+                }
+
+                if !stack_push_done {
+                    stack.push_any(activation)?;
+                }
+            }
+            Op::GetPropertySlow { multiname } => {
+                // Verifier only emits this op when the multiname is lazy
                 assert!(multiname.has_lazy_component());
 
                 stack.pop_for_multiname(activation, multiname)?;
