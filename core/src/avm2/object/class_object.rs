@@ -11,7 +11,7 @@ use crate::avm2::object::{Object, ObjectPtr, ScriptObject, TObject};
 use crate::avm2::property::Property;
 use crate::avm2::scope::{Scope, ScopeChain};
 use crate::avm2::value::Value;
-use crate::avm2::vtable::{ClassBoundMethod, VTable};
+use crate::avm2::vtable::VTable;
 use crate::avm2::Error;
 use crate::avm2::Multiname;
 use crate::avm2::QName;
@@ -74,7 +74,11 @@ pub struct ClassObjectData<'gc> {
     applications: RefLock<FnvHashMap<Option<Class<'gc>>, ClassObject<'gc>>>,
 
     /// VTable used for instances of this class.
-    instance_vtable: VTable<'gc>,
+    ///
+    /// Newly-created `ClassObject`s begin with a dummy vtable: the
+    /// `init_instance_vtable` method should be called to replace it with the
+    /// real vtable.
+    instance_vtable: Lock<VTable<'gc>>,
 }
 
 impl<'gc> ClassObject<'gc> {
@@ -180,7 +184,7 @@ impl<'gc> ClassObject<'gc> {
                 instance_scope: Lock::new(scope),
                 superclass_object,
                 applications: RefLock::new(Default::default()),
-                instance_vtable: VTable::empty(mc),
+                instance_vtable: Lock::new(c_class.vtable()),
             },
         ));
 
@@ -201,17 +205,18 @@ impl<'gc> ClassObject<'gc> {
     }
 
     fn init_instance_vtable(self, activation: &mut Activation<'_, 'gc>) {
+        let mc = activation.gc();
         let class = self.inner_class_definition();
 
-        self.instance_vtable().init_vtable(
+        let vtable = VTable::new_with_interface_properties(
             class,
             self.superclass_object(),
             Some(self.instance_scope()),
             self.superclass_object().map(|cls| cls.instance_vtable()),
-            activation.gc(),
+            activation.context,
         );
 
-        self.link_interfaces(activation);
+        unlock!(Gc::write(mc, self.0), ClassObjectData, instance_vtable).set(vtable);
     }
 
     /// Finish initialization of the class.
@@ -239,8 +244,7 @@ impl<'gc> ClassObject<'gc> {
         let class_classobject = activation.avm2().classes().class;
 
         // class vtable == class traits + Class instance traits
-        let class_vtable = VTable::empty(activation.gc());
-        class_vtable.init_vtable(
+        let class_vtable = VTable::new(
             c_class,
             Some(class_classobject),
             Some(self.class_scope()),
@@ -260,33 +264,6 @@ impl<'gc> ClassObject<'gc> {
             .set_string_property_local(istr!("constructor"), self.into(), activation)
             .expect("Prototype is a dynamic object");
         class_proto.set_local_property_is_enumerable(mc, istr!("constructor"), false);
-    }
-
-    /// Link this class to it's interfaces.
-    ///
-    /// This should be done after all instance traits has been resolved, as
-    /// instance traits will be resolved to their corresponding methods at this
-    /// time.
-    fn link_interfaces(self, activation: &mut Activation<'_, 'gc>) {
-        let class = self.inner_class_definition();
-
-        // FIXME - we should only be copying properties for newly-implemented
-        // interfaces (i.e. those that were not already implemented by the superclass)
-        // Otherwise, our behavior diverges from Flash Player in certain cases.
-        // See the ignored test 'tests/tests/swfs/avm2/weird_superinterface_properties/'
-        let internal_ns = activation.avm2().namespaces.public_vm_internal();
-        for interface in class.all_interfaces() {
-            for interface_trait in interface.traits() {
-                if !interface_trait.name().namespace().is_public() {
-                    let public_name = QName::new(internal_ns, interface_trait.name().local_name());
-                    self.instance_vtable().copy_property_for_interface(
-                        activation.gc(),
-                        public_name,
-                        interface_trait.name(),
-                    );
-                }
-            }
-        }
     }
 
     /// Manually set the type of this `Class`.
@@ -409,19 +386,14 @@ impl<'gc> ClassObject<'gc> {
 
         if let Some(Property::Method { disp_id, .. }) = property {
             // todo: handle errors
-            let ClassBoundMethod {
-                class,
-                super_class_obj,
-                scope,
-                method,
-            } = self.instance_vtable().get_full_method(disp_id).unwrap();
+            let full_method = self.instance_vtable().get_full_method(disp_id).unwrap();
             let callee = FunctionObject::from_method(
                 activation,
-                method,
-                scope.expect("Scope should exist here"),
+                full_method.method,
+                full_method.scope(),
                 Some(receiver.into()),
-                super_class_obj,
-                Some(class),
+                full_method.super_class_obj,
+                Some(full_method.class),
             );
 
             callee.call(activation, receiver.into(), arguments)
@@ -470,19 +442,14 @@ impl<'gc> ClassObject<'gc> {
                 | Property::Method { disp_id },
             ) => {
                 // todo: handle errors
-                let ClassBoundMethod {
-                    class,
-                    super_class_obj,
-                    scope,
-                    method,
-                } = self.instance_vtable().get_full_method(disp_id).unwrap();
+                let full_method = self.instance_vtable().get_full_method(disp_id).unwrap();
                 let callee = FunctionObject::from_method(
                     activation,
-                    method,
-                    scope.expect("Scope should exist here"),
+                    full_method.method,
+                    full_method.scope(),
                     Some(receiver.into()),
-                    super_class_obj,
-                    Some(class),
+                    full_method.super_class_obj,
+                    Some(full_method.class),
                 );
 
                 // We call getters, but return the actual function object for normal methods
@@ -553,14 +520,9 @@ impl<'gc> ClassObject<'gc> {
                 set: Some(disp_id), ..
             }) => {
                 // todo: handle errors
-                let ClassBoundMethod {
-                    class,
-                    super_class_obj,
-                    scope,
-                    method,
-                } = self.instance_vtable().get_full_method(disp_id).unwrap();
+                let full_method = self.instance_vtable().get_full_method(disp_id).unwrap();
                 let callee =
-                    FunctionObject::from_method(activation, method, scope.expect("Scope should exist here"), Some(receiver.into()), super_class_obj, Some(class));
+                    FunctionObject::from_method(activation, full_method.method, full_method.scope(), Some(receiver.into()), full_method.super_class_obj, Some(full_method.class));
 
                 callee.call(activation, receiver.into(), &[value])?;
                 Ok(())
@@ -675,7 +637,7 @@ impl<'gc> ClassObject<'gc> {
     }
 
     pub fn instance_vtable(self) -> VTable<'gc> {
-        self.0.instance_vtable
+        self.0.instance_vtable.get()
     }
 
     pub fn inner_class_definition(self) -> Class<'gc> {

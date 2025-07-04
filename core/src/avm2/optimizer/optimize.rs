@@ -6,7 +6,7 @@ use crate::avm2::optimizer::blocks::assemble_blocks;
 use crate::avm2::optimizer::peephole;
 use crate::avm2::property::Property;
 use crate::avm2::verify::Exception;
-use crate::avm2::vtable::{ClassBoundMethod, VTable};
+use crate::avm2::vtable::VTable;
 use crate::avm2::{Activation, Class, Error};
 
 use gc_arena::Gc;
@@ -1349,15 +1349,11 @@ fn abstract_interpret_ops<'gc>(
                 locals.set_any(object_register as usize);
             }
             Op::GetSlot { index: slot_id } => {
-                let slot_id = slot_id as usize;
-
                 let mut stack_push_done = false;
                 let stack_value = stack.pop(activation)?;
 
                 if let Some(vtable) = stack_value.vtable() {
-                    let slot_classes = vtable.slot_classes();
-                    let value_class = slot_classes.get(slot_id).copied();
-                    if let Some(mut value_class) = value_class {
+                    if let Some(mut value_class) = vtable.slot_class(slot_id) {
                         stack_push_done = true;
 
                         let resolved_value_class = value_class.get_class(activation)?;
@@ -1368,7 +1364,6 @@ fn abstract_interpret_ops<'gc>(
                             stack.push_any(activation)?;
                         }
 
-                        drop(slot_classes);
                         vtable.set_slot_class(activation.gc(), slot_id, value_class);
                     }
                 }
@@ -1424,7 +1419,8 @@ fn abstract_interpret_ops<'gc>(
                             | Some(Property::ConstSlot { slot_id }) => {
                                 // If the set value's type is the same as the type of the slot,
                                 // a SetSlotNoCoerce can be emitted. Otherwise, emit a SetSlot.
-                                let mut value_class = vtable.slot_classes()[slot_id as usize];
+                                let mut value_class =
+                                    vtable.slot_class(slot_id).expect("Slot should exist");
                                 let resolved_value_class = value_class.get_class(activation)?;
 
                                 if set_value.matches_type(activation, resolved_value_class) {
@@ -1436,10 +1432,8 @@ fn abstract_interpret_ops<'gc>(
                             Some(Property::Virtual {
                                 set: Some(disp_id), ..
                             }) => {
-                                let full_method = vtable
-                                    .get_full_method(disp_id)
-                                    .expect("Method should exist");
-                                let ClassBoundMethod { method, .. } = full_method;
+                                let method =
+                                    vtable.get_method(disp_id).expect("Method should exist");
 
                                 let mut result_op = Op::CallMethod {
                                     num_args: 1,
@@ -1478,7 +1472,8 @@ fn abstract_interpret_ops<'gc>(
                         Some(Property::Slot { slot_id }) => {
                             // If the set value's type is the same as the type of the slot,
                             // a SetSlotNoCoerce can be emitted. Otherwise, emit a SetSlot.
-                            let mut value_class = vtable.slot_classes()[slot_id as usize];
+                            let mut value_class =
+                                vtable.slot_class(slot_id).expect("Slot should exist");
                             let resolved_value_class = value_class.get_class(activation)?;
 
                             if set_value.matches_type(activation, resolved_value_class) {
@@ -1490,10 +1485,7 @@ fn abstract_interpret_ops<'gc>(
                         Some(Property::Virtual {
                             set: Some(disp_id), ..
                         }) => {
-                            let full_method = vtable
-                                .get_full_method(disp_id)
-                                .expect("Method should exist");
-                            let ClassBoundMethod { method, .. } = full_method;
+                            let method = vtable.get_method(disp_id).expect("Method should exist");
 
                             let mut result_op = Op::CallMethod {
                                 num_args: 1,
@@ -1596,7 +1588,8 @@ fn abstract_interpret_ops<'gc>(
                                     num_args
                                 });
 
-                                let mut value_class = vtable.slot_classes()[slot_id as usize];
+                                let mut value_class =
+                                    vtable.slot_class(slot_id).expect("Slot should exist");
                                 let resolved_value_class = value_class.get_class(activation)?;
 
                                 if let Some(slot_class) = resolved_value_class {
@@ -1967,20 +1960,17 @@ fn optimize_get_property<'gc>(
     if let Some(vtable) = stack_value.vtable() {
         match vtable.get_trait(&multiname) {
             Some(Property::Slot { slot_id }) | Some(Property::ConstSlot { slot_id }) => {
-                let mut value_class = vtable.slot_classes()[slot_id as usize];
+                let mut value_class = vtable.slot_class(slot_id).expect("Slot should exist");
                 let resolved_value_class = value_class.get_class(activation)?;
 
-                vtable.set_slot_class(activation.gc(), slot_id as usize, value_class);
+                vtable.set_slot_class(activation.gc(), slot_id, value_class);
 
                 return Ok(Some((Op::GetSlot { index: slot_id }, resolved_value_class)));
             }
             Some(Property::Virtual {
                 get: Some(disp_id), ..
             }) => {
-                let full_method = vtable
-                    .get_full_method(disp_id)
-                    .expect("Method should exist");
-                let ClassBoundMethod { method, .. } = full_method;
+                let method = vtable.get_method(disp_id).expect("Method should exist");
 
                 let mut result_op = Op::CallMethod {
                     num_args: 0,
@@ -2029,10 +2019,7 @@ fn optimize_call_property<'gc>(
     if let Some(vtable) = stack_value.vtable() {
         match vtable.get_trait(&multiname) {
             Some(Property::Method { disp_id }) => {
-                let full_method = vtable
-                    .get_full_method(disp_id)
-                    .expect("Method should exist");
-                let ClassBoundMethod { method, .. } = full_method;
+                let method = vtable.get_method(disp_id).expect("Method should exist");
 
                 let mut result_op = Op::CallMethod {
                     num_args,
@@ -2061,7 +2048,8 @@ fn optimize_call_property<'gc>(
                 if push_return_value {
                     if stack_value.not_null(activation) {
                         if num_args == 1 {
-                            let mut value_class = vtable.slot_classes()[slot_id as usize];
+                            let mut value_class =
+                                vtable.slot_class(slot_id).expect("Slot should exist");
                             let resolved_value_class = value_class.get_class(activation)?;
 
                             if let Some(slot_class) = resolved_value_class {
