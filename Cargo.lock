@@ -4508,6 +4508,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "ruffle_fs_tests_runner"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "libtest-mimic",
+ "regex",
+ "vfs",
+ "walkdir",
+]
+
+[[package]]
 name = "ruffle_gc_arena"
 version = "0.1.0"
 dependencies = [
@@ -5424,13 +5435,12 @@ dependencies = [
  "futures",
  "image",
  "libtest-mimic",
- "regex",
  "ruffle_core",
+ "ruffle_fs_tests_runner",
  "ruffle_render_wgpu",
  "ruffle_test_framework",
  "tracing",
  "tracing-subscriber",
- "walkdir",
 ]
 
 [[package]]
