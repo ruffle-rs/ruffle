@@ -608,10 +608,9 @@ impl<'gc> BitmapData<'gc> {
     pub fn dispose(&mut self) {
         self.width = 0;
         self.height = 0;
-        self.pixels.clear();
-        self.bitmap_handle = None;
-        // There's no longer a handle to update
-        self.dirty_state = DirtyState::Clean;
+        self.pixels = Vec::new(); // clear CPU memory
+        self.bitmap_handle = None; // clear GPU memory
+        self.dirty_state = DirtyState::Clean; // There's no longer a handle to update
         self.disposed = true;
     }
 
