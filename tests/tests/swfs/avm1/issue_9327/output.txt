@@ -1,2 +1,3 @@
+Warning: Reference to undeclared variable, 'Test'
 Misafirler kamera açamazlar lütfen üye olunuz.
 Misafirler kamera açamazlar lütfen üye olunuz.Misafirler kamera açamazlar lütfen üye olunuz.
