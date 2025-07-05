@@ -1,6 +1,9 @@
 message-cant-embed =
     Ruffle 無法執行本頁面內嵌的 Flash。
     您可以嘗試在單獨的標籤頁中開啟檔案，以避免此問題。
+message-restored-from-bfcache =
+    您的瀏覽器從之前的會話中還原了此 Flash 內容。
+    若要重新開始，請重新載入頁面。
 panic-title = 發生了某些錯誤 :(
 more-info = 更多資訊
 run-anyway = 直接執行
