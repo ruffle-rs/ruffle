@@ -29,6 +29,7 @@ members = [
     "video/external",
 
     "tests",
+    "tests/fs-tests-runner",
     "tests/input-format",
     "tests/socket-format",
     "tests/mocket",
@@ -78,6 +79,10 @@ tokio = "1.46.1"
 # Switching from the `async-std` to the `tokio` runtime, which we depend on anyway.
 rfd = { version = "0.15.4", default-features = false, features = ["tokio", "xdg-portal"] }
 memmap2 = "0.9.7"
+libtest-mimic = "0.8.1"
+regex = "1.11.1"
+toml = "0.8.23"
+vfs = "0.12.2"
 
 [workspace.lints.rust]
 # Clippy nightly often adds new/buggy lints that we want to ignore.
