@@ -2243,7 +2243,7 @@ impl<'gc> MovieClip<'gc> {
     }
 
     /// Mark this `MovieClip` as being originated from resolving the given `MovieClipReference`
-    pub fn get_original_reference(
+    pub fn set_original_reference(
         &self,
         context: &mut UpdateContext<'gc>,
         mcr: MovieClipReference<'gc>,

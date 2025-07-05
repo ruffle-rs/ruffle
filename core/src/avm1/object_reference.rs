@@ -181,7 +181,7 @@ impl<'gc> MovieClipReference<'gc> {
 
             // Track the original reference used to produce this clip, so we can get it back later
             if let NativeObject::MovieClip(mc) = obj.native() {
-                mc.get_original_reference(activation.context, self);
+                mc.set_original_reference(activation.context, self);
             }
 
             Some((false, obj, display_object))
