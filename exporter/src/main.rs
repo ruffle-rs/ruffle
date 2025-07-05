@@ -79,7 +79,7 @@ struct Opt {
     #[clap(name = "output")]
     output_path: Option<PathBuf>,
 
-    /// Number of frames to capture per file. Use 'all' to capture all frames."
+    /// Number of frames to capture per file. Use 'all' to capture all frames.
     #[clap(short = 'f', long = "frames", default_value = "1")]
     frames: FrameSelection,
 
