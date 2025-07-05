@@ -1,6 +1,5 @@
 package flash.system {
 
-    import flash.utils.Dictionary;
     import flash.events.Event;
     import flash.events.EventDispatcher;
     import flash.system.MessageChannel;
