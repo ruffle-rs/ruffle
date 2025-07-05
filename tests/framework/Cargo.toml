@@ -18,13 +18,13 @@ ruffle_socket_format = { path = "../socket-format" }
 ruffle_video_software = { path = "../../video/software", optional = true }
 ruffle_video_external = { path = "../../video/external", features = ["openh264"], optional = true }
 image = { workspace = true, features  = ["png"] }
-regex = "1.11.1"
+regex = { workspace = true }
 url = { workspace = true }
 chrono = { workspace = true }
 approx = "0.5.1"
 pretty_assertions = "1.4.1"
 serde = { workspace = true }
-toml = "0.8.23"
+toml = { workspace = true }
 anyhow = { workspace = true }
 async-channel = { workspace = true }
 vfs = { workspace = true }
