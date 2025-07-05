@@ -870,6 +870,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         let swf_version = self.swf_version();
         let func_data = parent_data.to_unbounded_subslice(action.actions);
         let constant_pool = self.constant_pool();
+        let bc = self.base_clip.object().coerce_to_object(self);
         let func = Avm1Function::from_swf_function(
             self.gc(),
             swf_version,
@@ -877,7 +878,8 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             action,
             self.scope(),
             constant_pool,
-            self.base_clip(),
+            // `base_clip` should always be a living `MovieClip` so this can't fail
+            MovieClipReference::try_from_stage_object(self, bc).unwrap(),
         );
         let name = func.name();
         let prototype = Object::new(
