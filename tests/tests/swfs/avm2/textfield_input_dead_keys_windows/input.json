@@ -1,18 +1,18 @@
 [
-    { "type": "KeyDown", "key": "LeftShift" },
-    { "type": "KeyDown", "key": { "Char": "\"" } },
-    { "type": "KeyUp", "key": { "Char": "\"" } },
-    { "type": "KeyUp", "key": "LeftShift" },
-    { "type": "KeyDown", "key": { "Char": "a" } },
-    { "type": "TextInput", "codepoint": "ä" },
-    { "type": "KeyUp", "key": { "Char": "a" } },
+  { "type": "KeyDown", "key": "LeftShift" },
+  { "type": "KeyDown", "key": { "Char": "\"" } },
+  { "type": "KeyUp", "key": { "Char": "\"" } },
+  { "type": "KeyUp", "key": "LeftShift" },
+  { "type": "KeyDown", "key": { "Char": "a" } },
+  { "type": "TextInput", "codepoint": "ä" },
+  { "type": "KeyUp", "key": { "Char": "a" } },
 
-    { "type": "KeyDown", "key": "LeftShift" },
-    { "type": "KeyDown", "key": { "Char": "\"" } },
-    { "type": "KeyUp", "key": { "Char": "\"" } },
-    { "type": "KeyUp", "key": "LeftShift" },
-    { "type": "KeyDown", "key": { "Char": "r" } },
-    { "type": "TextInput", "codepoint": "\"" },
-    { "type": "TextInput", "codepoint": "r" },
-    { "type": "KeyUp", "key": { "Char": "r" } }
+  { "type": "KeyDown", "key": "LeftShift" },
+  { "type": "KeyDown", "key": { "Char": "\"" } },
+  { "type": "KeyUp", "key": { "Char": "\"" } },
+  { "type": "KeyUp", "key": "LeftShift" },
+  { "type": "KeyDown", "key": { "Char": "r" } },
+  { "type": "TextInput", "codepoint": "\"" },
+  { "type": "TextInput", "codepoint": "r" },
+  { "type": "KeyUp", "key": { "Char": "r" } }
 ]
