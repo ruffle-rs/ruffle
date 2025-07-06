@@ -16,7 +16,9 @@ use crate::context::UpdateContext;
 use crate::string::{AvmAtom, AvmString, StringContext};
 use crate::tag_utils::SwfMovie;
 use crate::PlayerRuntime;
-use gc_arena::{Collect, Gc, GcCell, Mutation};
+use gc_arena::barrier::field;
+use gc_arena::lock::OnceLock;
+use gc_arena::{Collect, Gc, Mutation};
 use std::cell::Cell;
 use std::fmt::Debug;
 use std::rc::Rc;
@@ -28,7 +30,7 @@ use swf::avm2::types::{
 
 #[derive(Copy, Clone, Collect)]
 #[collect(no_drop)]
-pub struct TranslationUnit<'gc>(GcCell<'gc, TranslationUnitData<'gc>>);
+pub struct TranslationUnit<'gc>(Gc<'gc, TranslationUnitData<'gc>>);
 
 /// A loaded ABC file, with any loaded ABC items alongside it.
 ///
@@ -56,25 +58,25 @@ struct TranslationUnitData<'gc> {
     abc: Rc<AbcFile>,
 
     /// All classes loaded from the ABC's class list.
-    classes: Vec<Option<Class<'gc>>>,
+    classes: Box<[OnceLock<Class<'gc>>]>,
 
     /// All methods loaded from the ABC's method list.
-    methods: Vec<Option<Method<'gc>>>,
+    methods: Box<[OnceLock<Method<'gc>>]>,
 
     /// All scripts loaded from the ABC's scripts list.
-    scripts: Vec<Option<Script<'gc>>>,
+    scripts: Box<[OnceLock<Script<'gc>>]>,
 
     /// All strings loaded from the ABC's strings list.
     /// They're lazy loaded and offset by 1, with the 0th element being always the empty string.
-    strings: Vec<Option<AvmAtom<'gc>>>,
+    strings: Box<[OnceLock<AvmAtom<'gc>>]>,
 
     /// All namespaces loaded from the ABC's scripts list.
-    namespaces: Vec<Option<Namespace<'gc>>>,
+    namespaces: Box<[OnceLock<Namespace<'gc>>]>,
 
     /// All multinames loaded from the ABC's multiname list
     /// Note that some of these may have a runtime (lazy) component.
     /// Make sure to check for that before using them.
-    multinames: Vec<Option<Gc<'gc, Multiname<'gc>>>>,
+    multinames: Box<[OnceLock<Gc<'gc, Multiname<'gc>>>]>,
 
     /// The movie that this TranslationUnit was loaded from.
     movie: Arc<SwfMovie>,
@@ -90,35 +92,28 @@ impl<'gc> TranslationUnit<'gc> {
         movie: Arc<SwfMovie>,
         mc: &Mutation<'gc>,
     ) -> Self {
-        let classes = vec![None; abc.classes.len()];
-        let methods = vec![None; abc.methods.len()];
-        let scripts = vec![None; abc.scripts.len()];
-        let strings = vec![None; abc.constant_pool.strings.len() + 1];
-        let namespaces = vec![None; abc.constant_pool.namespaces.len() + 1];
-        let multinames = vec![None; abc.constant_pool.multinames.len() + 1];
+        use std::iter::repeat_n;
+        let this = TranslationUnitData {
+            domain,
+            name,
+            classes: repeat_n(OnceLock::new(), abc.classes.len()).collect(),
+            methods: repeat_n(OnceLock::new(), abc.methods.len()).collect(),
+            scripts: repeat_n(OnceLock::new(), abc.scripts.len()).collect(),
+            strings: repeat_n(OnceLock::new(), abc.constant_pool.strings.len() + 1).collect(),
+            namespaces: repeat_n(OnceLock::new(), abc.constant_pool.namespaces.len() + 1).collect(),
+            multinames: repeat_n(OnceLock::new(), abc.constant_pool.multinames.len() + 1).collect(),
+            movie,
+            abc: Rc::new(abc),
+        };
 
-        Self(GcCell::new(
-            mc,
-            TranslationUnitData {
-                domain,
-                name,
-                abc: Rc::new(abc),
-                classes,
-                methods,
-                scripts,
-                strings,
-                namespaces,
-                multinames,
-                movie,
-            },
-        ))
+        Self(Gc::new(mc, this))
     }
 
     pub fn load_classes(self, activation: &mut Activation<'_, 'gc>) -> Result<(), Error<'gc>> {
         // Classes must be loaded in the order they appear in the constant pool,
         // to ensure that superclasses are loaded before subclasses
 
-        let num_classes = self.0.read().classes.len();
+        let num_classes = self.0.classes.len();
         for i in 0..num_classes {
             let class = self.load_class(i as u32, activation)?;
 
@@ -135,25 +130,26 @@ impl<'gc> TranslationUnit<'gc> {
     /// Manually set a loaded class in this TranslationUnit. This is useful for
     /// early class setup.
     pub fn set_class(self, mc: &Mutation<'gc>, index: usize, class: Class<'gc>) {
-        self.0.write(mc).classes[index] = Some(class);
+        let classes = field!(Gc::write(mc, self.0), TranslationUnitData, classes).as_deref();
+        classes[index].unlock().set(class).unwrap();
     }
 
     pub fn domain(self) -> Domain<'gc> {
-        self.0.read().domain
+        self.0.domain
     }
 
     // Retrieve the name associated with the original `DoAbc2` tag
     pub fn name(self) -> Option<AvmString<'gc>> {
-        self.0.read().name
+        self.0.name
     }
 
     /// Retrieve the underlying `AbcFile` for this translation unit.
     pub fn abc(self) -> Rc<AbcFile> {
-        self.0.read().abc.clone()
+        self.0.abc.clone()
     }
 
     pub fn movie(self) -> Arc<SwfMovie> {
-        self.0.read().movie.clone()
+        self.0.movie.clone()
     }
 
     pub fn api_version(self, avm2: &Avm2<'gc>) -> ApiVersion {
@@ -175,17 +171,15 @@ impl<'gc> TranslationUnit<'gc> {
         is_function: bool,
         activation: &mut Activation<'_, 'gc>,
     ) -> Result<Method<'gc>, Error<'gc>> {
-        let read = self.0.read();
-        if let Some(Some(method)) = read.methods.get(method_index.0 as usize) {
+        let idx = method_index.0 as usize;
+        if let Some(method) = self.0.methods.get(idx).and_then(|m| m.get()) {
             return Ok(*method);
         }
 
-        drop(read);
-
+        let write = Gc::write(activation.gc(), self.0);
+        let methods = field!(write, TranslationUnitData, methods).as_deref();
         let method = Method::from_method_index(self, method_index, is_function, activation)?;
-
-        self.0.write(activation.gc()).methods[method_index.0 as usize] = Some(method);
-
+        methods[idx].unlock().set(method).unwrap();
         Ok(method)
     }
 
@@ -195,15 +189,15 @@ impl<'gc> TranslationUnit<'gc> {
         class_index: u32,
         activation: &mut Activation<'_, 'gc>,
     ) -> Result<Class<'gc>, Error<'gc>> {
-        let read = self.0.read();
-        if let Some(Some(class)) = read.classes.get(class_index as usize) {
+        let idx = class_index as usize;
+        if let Some(class) = self.0.classes.get(idx).and_then(|c| c.get()) {
             return Ok(*class);
         }
 
-        drop(read);
-
+        let write = Gc::write(activation.gc(), self.0);
+        let classes = field!(write, TranslationUnitData, classes).as_deref();
         let class = Class::from_abc_index(self, class_index, activation)?;
-        self.0.write(activation.gc()).classes[class_index as usize] = Some(class);
+        classes[idx].unlock().set(class).unwrap();
 
         class.load_traits(activation, self, class_index)?;
 
@@ -226,24 +220,21 @@ impl<'gc> TranslationUnit<'gc> {
         script_index: u32,
         activation: &mut Activation<'_, 'gc>,
     ) -> Result<Script<'gc>, Error<'gc>> {
-        let read = self.0.read();
-        if let Some(Some(scripts)) = read.scripts.get(script_index as usize) {
+        let idx = script_index as usize;
+        if let Some(scripts) = self.0.scripts.get(idx).and_then(|s| s.get()) {
             return Ok(*scripts);
         }
 
-        let domain = read.domain;
-
-        drop(read);
-
-        let script = Script::from_abc_index(self, script_index, domain, activation)?;
-        self.0.write(activation.gc()).scripts[script_index as usize] = Some(script);
-
+        let write = Gc::write(activation.gc(), self.0);
+        let scripts = field!(write, TranslationUnitData, scripts).as_deref();
+        let script = Script::from_abc_index(self, script_index, self.0.domain, activation)?;
+        scripts[idx].unlock().set(script).unwrap();
         Ok(script)
     }
 
     /// Gets a script in the ABC file by index.
     pub fn get_script(&self, index: usize) -> Option<Script<'gc>> {
-        self.0.read().scripts.get(index).copied().flatten()
+        self.0.scripts.get(index).and_then(|s| s.get()).copied()
     }
 
     /// Load a string from the ABC's constant pool.
@@ -275,25 +266,28 @@ impl<'gc> TranslationUnit<'gc> {
         string_index: u32,
         context: &mut StringContext<'gc>,
     ) -> Result<AvmAtom<'gc>, Error<'gc>> {
-        let mut write = self.0.write(context.gc());
-        if let Some(Some(atom)) = write.strings.get(string_index as usize) {
+        let idx = string_index as usize;
+        if let Some(atom) = self.0.strings.get(idx).and_then(|a| a.get()) {
             return Ok(*atom);
         }
 
         let raw = if string_index == 0 {
             &[]
         } else {
-            write
+            self.0
                 .abc
                 .constant_pool
                 .strings
-                .get(string_index as usize - 1)
+                .get(idx - 1)
                 .ok_or_else(|| format!("Unknown string constant {string_index}"))?
                 .as_slice()
         };
 
         let atom = context.intern_wstr(ruffle_wstr::from_utf8_bytes(raw));
-        write.strings[string_index as usize] = Some(atom);
+
+        let write = Gc::write(context.gc(), self.0);
+        let strings = field!(write, TranslationUnitData, strings).as_deref();
+        strings[idx].unlock().set(atom).unwrap();
         Ok(atom)
     }
 
@@ -306,17 +300,15 @@ impl<'gc> TranslationUnit<'gc> {
         activation: &mut Activation<'_, 'gc>,
         ns_index: Index<AbcNamespace>,
     ) -> Result<Namespace<'gc>, Error<'gc>> {
-        let mc = activation.gc();
-        let read = self.0.read();
-        if let Some(Some(namespace)) = read.namespaces.get(ns_index.0 as usize) {
+        let idx = ns_index.0 as usize;
+        if let Some(namespace) = self.0.namespaces.get(idx).and_then(|ns| ns.get()) {
             return Ok(*namespace);
         }
 
-        drop(read);
-
+        let write = Gc::write(activation.gc(), self.0);
+        let namespaces = field!(write, TranslationUnitData, namespaces).as_deref();
         let namespace = Namespace::from_abc_namespace(activation, self, ns_index)?;
-        self.0.write(mc).namespaces[ns_index.0 as usize] = Some(namespace);
-
+        namespaces[idx].unlock().set(namespace).unwrap();
         Ok(namespace)
     }
 
@@ -327,18 +319,16 @@ impl<'gc> TranslationUnit<'gc> {
         activation: &mut Activation<'_, 'gc>,
         multiname_index: Index<AbcMultiname>,
     ) -> Result<Gc<'gc, Multiname<'gc>>, Error<'gc>> {
-        let mc = activation.gc();
-        let read = self.0.read();
-        if let Some(Some(multiname)) = read.multinames.get(multiname_index.0 as usize) {
+        let idx = multiname_index.0 as usize;
+        if let Some(multiname) = self.0.multinames.get(idx).and_then(|mn| mn.get()) {
             return Ok(*multiname);
         }
 
-        drop(read);
-
+        let write = Gc::write(activation.gc(), self.0);
+        let multinames = field!(write, TranslationUnitData, multinames).as_deref();
         let multiname = Multiname::from_abc_index(activation, self, multiname_index)?;
-        let multiname = Gc::new(mc, multiname);
-        self.0.write(mc).multinames[multiname_index.0 as usize] = Some(multiname);
-
+        let multiname = Gc::new(activation.gc(), multiname);
+        multinames[idx].unlock().set(multiname).unwrap();
         Ok(multiname)
     }
 
