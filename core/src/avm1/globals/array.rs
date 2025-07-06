@@ -450,8 +450,8 @@ pub fn concat<'gc>(
         .map(|(index, value)| {
             if let Value::Object(object) = value {
                 match object.native() {
-                    // When calling Array.prototype.concat is called directly with the first argument being an object,
-                    // such as in avm1/from_shumway/array, the this value (i.e. index 0 in the iterator) will be NativeObject::None instead of NativeObject::Array
+                    // When Array.prototype.concat is called directly with the first argument being an object,
+                    // such as in the avm1/from_shumway/array test, the this value (i.e. index 0 in the iterator) will be NativeObject::None instead of NativeObject::Array
                     NativeObject::None if index == 0 => {
                         let length = object.length(activation)?;
 
@@ -475,16 +475,15 @@ pub fn concat<'gc>(
 
     let elements_iter = elements_intermediate
         .into_iter()
-        .map(|desc| {
+        // Resolve to an iterator of the final element list
+        .flat_map(|desc| {
             desc.map_either(
                 // Map the object and its length to an iterator of its elements
                 |(object, length)| (0..length).map(|index| object.get_element(activation, index)),
-                // Map the value itself to an iterator so that we can call .flatten()
+                // Map the value itself to an iterator
                 |&value| std::iter::once(value),
             )
-        })
-        // Resolve the nested iterators to produce an iterator of the final values of the new array
-        .flatten();
+        });
 
     Ok(ArrayBuilder::new(activation).with(elements_iter).into())
 }
