@@ -744,7 +744,7 @@ fn qsort<'gc>(
 
         loop {
             // Find an element greater than the pivot from the left.
-            while left <= high {
+            while left < right {
                 let (_, item) = &elements[left];
                 if compare_fn(activation, &pivot, item, options)?.is_le() {
                     break;
@@ -775,10 +775,10 @@ fn qsort<'gc>(
         elements.swap(low, right);
 
         // Push subarrays onto the stack for further sorting.
+        stack.push((right + 1, high));
         if right > 0 {
             stack.push((low, right - 1));
         }
-        stack.push((right + 1, high));
     }
 
     Ok(())
