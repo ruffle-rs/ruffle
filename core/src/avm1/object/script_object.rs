@@ -146,7 +146,7 @@ impl<'gc> Object<'gc> {
     pub(super) fn get_data(
         &self,
         name: AvmString<'gc>,
-        activation: &mut Activation<'_, 'gc>,
+        activation: &Activation<'_, 'gc>,
     ) -> Value<'gc> {
         self.0
             .borrow()
@@ -900,7 +900,7 @@ impl<'gc> Object<'gc> {
     }
 
     /// Gets a property of this object, as if it were an array.
-    pub fn get_element(&self, activation: &mut Activation<'_, 'gc>, index: i32) -> Value<'gc> {
+    pub fn get_element(&self, activation: &Activation<'_, 'gc>, index: i32) -> Value<'gc> {
         // TODO(moulins): can this special case be removed? (as `super` never has elements to delete)
         if self.as_super_object().is_some() {
             return Value::Undefined;

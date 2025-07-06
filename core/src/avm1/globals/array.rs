@@ -9,6 +9,7 @@ use crate::avm1::{Attribute, NativeObject, Object, Value};
 use crate::ecma_conversions::f64_to_wrapping_i32;
 use crate::string::{AvmString, StringContext};
 use bitflags::bitflags;
+use either::Either;
 use gc_arena::Mutation;
 use ruffle_macros::istr;
 use std::cmp::Ordering;
@@ -439,29 +440,53 @@ pub fn concat<'gc>(
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let mut elements = vec![];
-    for &value in [this.into()].iter().chain(args) {
-        let array_object = if let Value::Object(object) = value {
-            if let NativeObject::Array(_) = object.native() {
-                Some(object)
-            } else {
-                None
-            }
-        } else {
-            None
-        };
+    let this_value = this.into();
 
-        if let Some(array_object) = array_object {
-            let length = array_object.length(activation)?;
-            for i in 0..length {
-                let element = array_object.get_element(activation, i);
-                elements.push(element);
+    // Instead of having to allocate a Vec<Value<'_>> of every resulting value, we only create a Vec<Either> with one entry for each value -
+    // Either::Left with the object and its length (i.e. element count) or Either::Right with the value itself for non arrays
+    let elements_intermediate = std::iter::once(&this_value)
+        .chain(args)
+        .enumerate()
+        .map(|(index, value)| {
+            if let Value::Object(object) = value {
+                match object.native() {
+                    // When calling Array.prototype.concat is called directly with the first argument being an object,
+                    // such as in avm1/from_shumway/array, the this value (i.e. index 0 in the iterator) will be NativeObject::None instead of NativeObject::Array
+                    NativeObject::None if index == 0 => {
+                        let length = object.length(activation)?;
+
+                        // The object and the its element count
+                        return Ok(Either::Left((object, length)));
+                    }
+                    NativeObject::Array(()) => {
+                        let length = object.length(activation)?;
+
+                        // The object and the its element count
+                        return Ok(Either::Left((object, length)));
+                    }
+                    _ => {}
+                }
             }
-        } else {
-            elements.push(value);
-        }
-    }
-    Ok(ArrayBuilder::new(activation).with(elements).into())
+
+            // The value itself
+            Ok(Either::Right(value))
+        })
+        .collect::<Result<Vec<_>, Error<'gc>>>()?;
+
+    let elements_iter = elements_intermediate
+        .into_iter()
+        .map(|desc| {
+            desc.map_either(
+                // Map the object and its length to an iterator of its elements
+                |(object, length)| (0..length).map(|index| object.get_element(activation, index)),
+                // Map the value itself to an iterator so that we can call .flatten()
+                |&value| std::iter::once(value),
+            )
+        })
+        // Resolve the nested iterators to produce an iterator of the final values of the new array
+        .flatten();
+
+    Ok(ArrayBuilder::new(activation).with(elements_iter).into())
 }
 
 pub fn to_string<'gc>(
