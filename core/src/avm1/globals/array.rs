@@ -449,16 +449,10 @@ pub fn concat<'gc>(
         .enumerate()
         .map(|(index, value)| {
             if let Value::Object(object) = value {
-                match object.native() {
+                match (object.native(), index) {
                     // When Array.prototype.concat is called directly with the first argument being an object,
                     // such as in the avm1/from_shumway/array test, the this value (i.e. index 0 in the iterator) will be NativeObject::None instead of NativeObject::Array
-                    NativeObject::None if index == 0 => {
-                        let length = object.length(activation)?;
-
-                        // The object and the its element count
-                        return Ok(Either::Left((object, length)));
-                    }
-                    NativeObject::Array(()) => {
+                    (NativeObject::None, 0) | (NativeObject::Array(()), _) => {
                         let length = object.length(activation)?;
 
                         // The object and the its element count
