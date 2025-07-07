@@ -1,7 +1,7 @@
 package flash.display {
     import __ruffle__.stub_method;
 
-    [Ruffle(InstanceAllocator)]
+    [Ruffle(Abstract)]
     public class AVM1Movie extends DisplayObject {
         public function AVM1Movie() {
             // Should be inaccessible

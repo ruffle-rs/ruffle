@@ -1,4 +1,5 @@
 package flash.system {
+    [Ruffle(Abstract)]
     public final class System {
         import __ruffle__.stub_method;
         import __ruffle__.stub_getter;

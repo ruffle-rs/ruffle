@@ -266,6 +266,7 @@ include "flash/media/SoundChannel.as"
 include "flash/media/SoundLoaderContext.as"
 include "flash/media/SoundMixer.as"
 include "flash/media/SoundTransform.as"
+include "flash/media/StageVideo.as"
 include "flash/media/StageVideoAvailability.as"
 include "flash/media/StageVideoAvailabilityReason.as"
 include "flash/media/Video.as"
@@ -311,6 +312,9 @@ include "flash/net/XMLSocket.as"
 include "flash/filesystem/File.as" // File extends FileReference
 
 include "flash/net/drm/AuthenticationMethod.as"
+include "flash/net/drm/DRMManager.as"
+include "flash/net/drm/DRMPlaybackTimeWindow.as"
+include "flash/net/drm/DRMVoucher.as"
 include "flash/net/drm/LoadVoucherSetting.as"
 
 include "flash/printing/PrintJob.as"

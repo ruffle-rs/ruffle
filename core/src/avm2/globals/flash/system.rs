@@ -4,6 +4,7 @@
 pub mod application_domain;
 pub mod capabilities;
 pub mod security;
+pub mod security_domain;
 pub mod system;
 pub mod worker;
 pub mod worker_domain;

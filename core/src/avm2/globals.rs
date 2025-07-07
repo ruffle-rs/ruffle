@@ -175,6 +175,7 @@ pub struct SystemClasses<'gc> {
     pub worker: ClassObject<'gc>,
     pub workerdomain: ClassObject<'gc>,
     pub messagechannel: ClassObject<'gc>,
+    pub securitydomain: ClassObject<'gc>,
 }
 
 #[derive(Clone, Collect)]
@@ -341,6 +342,7 @@ impl<'gc> SystemClasses<'gc> {
             worker: object,
             workerdomain: object,
             messagechannel: object,
+            securitydomain: object,
         }
     }
 }
@@ -709,6 +711,7 @@ pub fn init_native_system_classes(activation: &mut Activation<'_, '_>) {
             ("flash.utils", "Dictionary", dictionary),
             ("flash.system", "ApplicationDomain", application_domain),
             ("flash.system", "MessageChannel", messagechannel),
+            ("flash.system", "SecurityDomain", securitydomain),
             ("flash.system", "Worker", worker),
             ("flash.system", "WorkerDomain", workerdomain),
             ("flash.text", "Font", font),

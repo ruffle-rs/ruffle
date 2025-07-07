@@ -5,7 +5,7 @@ use crate::avm2::array::ArrayStorage;
 use crate::avm2::bytearray::ByteArrayStorage;
 use crate::avm2::class::Class;
 use crate::avm2::domain::Domain;
-use crate::avm2::error;
+use crate::avm2::error::{self, make_error_2012};
 use crate::avm2::events::{DispatchList, Event};
 use crate::avm2::property::Property;
 use crate::avm2::regexp::RegExp;
@@ -53,6 +53,7 @@ mod qname_object;
 mod regexp_object;
 mod responder_object;
 mod script_object;
+mod security_domain_object;
 mod shader_data_object;
 mod shared_object_object;
 mod socket_object;
@@ -125,12 +126,13 @@ pub use crate::avm2::object::script_object::{
     get_dynamic_property, scriptobject_allocator, ScriptObject, ScriptObjectData, ScriptObjectWeak,
     ScriptObjectWrapper,
 };
+pub use crate::avm2::object::security_domain_object::{
+    SecurityDomainObject, SecurityDomainObjectWeak,
+};
 pub use crate::avm2::object::shader_data_object::{
     shader_data_allocator, ShaderDataObject, ShaderDataObjectWeak,
 };
-pub use crate::avm2::object::shared_object_object::{
-    shared_object_allocator, SharedObjectObject, SharedObjectObjectWeak,
-};
+pub use crate::avm2::object::shared_object_object::{SharedObjectObject, SharedObjectObjectWeak};
 pub use crate::avm2::object::socket_object::{socket_allocator, SocketObject, SocketObjectWeak};
 pub use crate::avm2::object::sound_object::{
     sound_allocator, QueuedPlay, SoundLoadingState, SoundObject, SoundObjectWeak,
@@ -141,9 +143,7 @@ pub use crate::avm2::object::soundchannel_object::{
 pub use crate::avm2::object::soundtransform_object::{
     sound_transform_allocator, SoundTransformObject, SoundTransformObjectWeak,
 };
-pub use crate::avm2::object::stage3d_object::{
-    stage_3d_allocator, Stage3DObject, Stage3DObjectWeak,
-};
+pub use crate::avm2::object::stage3d_object::{Stage3DObject, Stage3DObjectWeak};
 pub use crate::avm2::object::stage_object::{StageObject, StageObjectWeak};
 pub use crate::avm2::object::stylesheet_object::{
     style_sheet_allocator, StyleSheetObject, StyleSheetObjectWeak,
@@ -215,6 +215,7 @@ use crate::font::Font;
         WorkerObject(WorkerObject<'gc>),
         WorkerDomainObject(WorkerDomainObject<'gc>),
         MessageChannelObject(MessageChannelObject<'gc>),
+        SecurityDomainObject(SecurityDomainObject<'gc>),
     }
 )]
 pub trait TObject<'gc>: 'gc + Collect<'gc> + Debug + Into<Object<'gc>> + Clone + Copy {
@@ -993,6 +994,7 @@ impl<'gc> Object<'gc> {
             Self::WorkerObject(o) => WeakObject::WorkerObject(WorkerObjectWeak(Gc::downgrade(o.0))),
             Self::WorkerDomainObject(o) => WeakObject::WorkerDomainObject(WorkerDomainObjectWeak(Gc::downgrade(o.0))),
             Self::MessageChannelObject(o) => WeakObject::MessageChannelObject(MessageChannelObjectWeak(Gc::downgrade(o.0))),
+            Self::SecurityDomainObject(o) => WeakObject::SecurityDomainObject(SecurityDomainObjectWeak(Gc::downgrade(o.0))),
         }
     }
 }
@@ -1059,6 +1061,7 @@ pub enum WeakObject<'gc> {
     WorkerObject(WorkerObjectWeak<'gc>),
     WorkerDomainObject(WorkerDomainObjectWeak<'gc>),
     MessageChannelObject(MessageChannelObjectWeak<'gc>),
+    SecurityDomainObject(SecurityDomainObjectWeak<'gc>),
 }
 
 impl<'gc> WeakObject<'gc> {
@@ -1108,6 +1111,7 @@ impl<'gc> WeakObject<'gc> {
             Self::WorkerObject(o) => GcWeak::as_ptr(o.0) as *const ObjectPtr,
             Self::WorkerDomainObject(o) => GcWeak::as_ptr(o.0) as *const ObjectPtr,
             Self::MessageChannelObject(o) => GcWeak::as_ptr(o.0) as *const ObjectPtr,
+            Self::SecurityDomainObject(o) => GcWeak::as_ptr(o.0) as *const ObjectPtr,
         }
     }
 
@@ -1157,6 +1161,7 @@ impl<'gc> WeakObject<'gc> {
             Self::WorkerObject(o) => WorkerObject(o.0.upgrade(mc)?).into(),
             Self::WorkerDomainObject(o) => WorkerDomainObject(o.0.upgrade(mc)?).into(),
             Self::MessageChannelObject(o) => MessageChannelObject(o.0.upgrade(mc)?).into(),
+            Self::SecurityDomainObject(o) => SecurityDomainObject(o.0.upgrade(mc)?).into(),
         })
     }
 }
@@ -1168,10 +1173,5 @@ pub fn abstract_class_allocator<'gc>(
     activation: &mut Activation<'_, 'gc>,
 ) -> Result<Object<'gc>, Error<'gc>> {
     let class_name = class.instance_class().name().local_name();
-
-    return Err(Error::avm_error(error::argument_error(
-        activation,
-        &format!("Error #2012: {class_name} class cannot be instantiated."),
-        2012,
-    )?));
+    Err(make_error_2012(activation, class_name))
 }
