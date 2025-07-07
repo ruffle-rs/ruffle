@@ -9,8 +9,12 @@ use ruffle_render::shape_utils::{DrawCommand, FillRule};
 use ruffle_render::transform::Transform;
 use std::borrow::Cow;
 use std::cell::{OnceCell, RefCell};
+use std::collections::HashMap;
+use std::fs::File;
 use std::hash::{Hash, Hasher};
+use std::io::{Read, Seek};
 use swf::FillStyle;
+use thiserror::Error;
 use ttf_parser::{Face, GlyphId};
 
 pub use swf::TextGridFit;
@@ -105,6 +109,84 @@ fn round_to_pixel(t: Twips) -> Twips {
     Twips::from_pixels(t.to_pixels().round())
 }
 
+#[derive(Debug, Error)]
+pub enum FontError {
+    #[error("IO error: {0}")]
+    IoError(#[from] std::io::Error),
+
+    #[error("TTF parsing error: {0}")]
+    TtfError(#[from] ttf_parser::FaceParsingError),
+}
+
+#[derive(Debug)]
+pub enum FontSource {
+    Bytes(Cow<'static, [u8]>),
+    File(RefCell<File>),
+}
+
+impl FontSource {
+    pub fn from_bytes(bytes: Vec<u8>) -> Self {
+        Self::Bytes(Cow::Owned(bytes))
+    }
+
+    pub fn from_file(file: File) -> Self {
+        Self::File(RefCell::new(file))
+    }
+
+    fn read_bytes(&self) -> Result<Cow<[u8]>, FontError> {
+        match self {
+            FontSource::Bytes(bytes) => Ok(Cow::Borrowed(bytes.as_ref())),
+            FontSource::File(file) => {
+                let mut file = file.borrow_mut();
+                let mut data = Vec::new();
+                file.seek(std::io::SeekFrom::Start(0))
+                    .and_then(|_| file.read_to_end(&mut data))
+                    .map(|_| Cow::Owned(data))
+                    .map_err(FontError::IoError)
+            }
+        }
+    }
+
+    fn try_read_bytes(&self) -> Option<Cow<[u8]>> {
+        self.read_bytes()
+            .inspect_err(|err| tracing::error!("Failed reading font file: {err}"))
+            .ok()
+    }
+}
+
+struct LazyFace<'a> {
+    preload: bool,
+    source: &'a FontSource,
+    font_index: u32,
+    bytes: OnceCell<Option<Cow<'a, [u8]>>>,
+}
+
+impl<'a> LazyFace<'a> {
+    fn new(source: &'a FontSource, font_index: u32, preload: bool) -> Self {
+        Self {
+            preload,
+            source,
+            font_index,
+            bytes: OnceCell::new(),
+        }
+    }
+
+    fn face(&self) -> Option<Face> {
+        if !self.preload && cfg!(debug_assertions) {
+            panic!(
+                "Text should be preloaded! Make sure to preload text before \
+                operating on its glyphs, it will speed up execution."
+            );
+        }
+
+        if let Some(ref bytes) = self.bytes.get_or_init(|| self.source.try_read_bytes()) {
+            Face::parse(bytes, self.font_index).ok()
+        } else {
+            None
+        }
+    }
+}
+
 /// Parameters necessary to evaluate a font.
 #[derive(Copy, Clone, Debug)]
 pub struct EvalParameters {
@@ -189,7 +271,8 @@ impl ttf_parser::OutlineBuilder for GlyphToDrawing<'_> {
 /// Glyph from the same file. For this reason, glyphs are reused where possible.
 #[derive(Debug)]
 pub struct FontFace {
-    bytes: Cow<'static, [u8]>,
+    source: FontSource,
+    glyph_indices: RefCell<HashMap<char, Option<GlyphId>>>,
     glyphs: Vec<OnceCell<Option<Glyph>>>,
     font_index: u32,
 
@@ -201,11 +284,10 @@ pub struct FontFace {
 }
 
 impl FontFace {
-    pub fn new(
-        bytes: Cow<'static, [u8]>,
-        font_index: u32,
-    ) -> Result<Self, ttf_parser::FaceParsingError> {
+    pub fn new(source: FontSource, font_index: u32) -> Result<Self, FontError> {
         // TODO: Support font collections
+
+        let bytes = source.read_bytes()?;
 
         // We validate that the font is good here, so we can just `.expect()` it later
         let face = Face::parse(&bytes, font_index)?;
@@ -229,8 +311,9 @@ impl FontFace {
             .unwrap_or_default();
 
         Ok(Self {
-            bytes,
+            source,
             font_index,
+            glyph_indices: RefCell::new(HashMap::new()),
             glyphs,
             ascender,
             descender,
@@ -240,18 +323,54 @@ impl FontFace {
         })
     }
 
+    fn lazy_face(&self, preload: bool) -> LazyFace {
+        LazyFace::new(&self.source, self.font_index, preload)
+    }
+
+    fn glyph_index(&self, face: &LazyFace, character: char) -> Option<GlyphId> {
+        *self
+            .glyph_indices
+            .borrow_mut()
+            .entry(character)
+            .or_insert_with(|| face.face()?.glyph_index(character))
+    }
+
+    pub fn preload(&self, string: &WStr) {
+        let face = self.lazy_face(true);
+
+        let chars = || string.chars().flat_map(|ch| ch.ok());
+        for character in chars() {
+            self.get_or_load_glyph(&face, character);
+        }
+
+        if self.has_kerning_info() {
+            let mut last_char = None;
+            for next_char in chars() {
+                if let Some(last_char) = last_char {
+                    self.get_or_load_kerning_offset(&face, last_char, next_char);
+                }
+                last_char = Some(next_char);
+            }
+        }
+    }
+
     pub fn get_glyph(&self, character: char) -> Option<&Glyph> {
-        let face = Face::parse(&self.bytes, self.font_index)
-            .expect("Font was already checked to be valid");
-        if let Some(glyph_id) = face.glyph_index(character) {
+        let face = self.lazy_face(false);
+        self.get_or_load_glyph(&face, character)
+    }
+
+    fn get_or_load_glyph(&self, face: &LazyFace, character: char) -> Option<&Glyph> {
+        if let Some(glyph_id) = self.glyph_index(face, character) {
             return self.glyphs[glyph_id.0 as usize]
-                .get_or_init(|| self.load_glyph(&face, character, glyph_id))
+                .get_or_init(|| self.load_glyph(face, character, glyph_id))
                 .as_ref();
         }
         None
     }
 
-    fn load_glyph<'a>(&self, face: &Face<'a>, character: char, glyph_id: GlyphId) -> Option<Glyph> {
+    fn load_glyph(&self, face: &LazyFace, character: char, glyph_id: GlyphId) -> Option<Glyph> {
+        let face = face.face()?;
+
         let mut drawing = Drawing::new();
         // TTF uses NonZero
         drawing.new_fill(
@@ -286,12 +405,18 @@ impl FontFace {
     }
 
     pub fn get_kerning_offset(&self, left: char, right: char) -> Twips {
-        let face = Face::parse(&self.bytes, self.font_index)
-            .expect("Font was already checked to be valid");
+        let face = self.lazy_face(false);
+        self.get_or_load_kerning_offset(&face, left, right)
+    }
 
+    fn get_or_load_kerning_offset(&self, face: &LazyFace, left: char, right: char) -> Twips {
         if let (Some(left_glyph), Some(right_glyph)) =
-            (face.glyph_index(left), face.glyph_index(right))
+            (self.glyph_index(face, left), self.glyph_index(face, right))
         {
+            let Some(face) = face.face() else {
+                return Twips::ZERO;
+            };
+
             if let Some(kern) = face.tables().kern {
                 for subtable in kern.subtables {
                     if subtable.horizontal {
@@ -378,6 +503,14 @@ impl GlyphSource {
             GlyphSource::Empty => Twips::ZERO,
         }
     }
+
+    pub fn preload_for_string(&self, string: &WStr) {
+        match self {
+            GlyphSource::Memory { .. } => {}
+            GlyphSource::FontFace(face) => face.preload(string),
+            GlyphSource::Empty => {}
+        }
+    }
 }
 
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Collect, Hash)]
@@ -436,11 +569,11 @@ impl<'gc> Font<'gc> {
     pub fn from_font_file(
         gc_context: &Mutation<'gc>,
         descriptor: FontDescriptor,
-        bytes: Cow<'static, [u8]>,
+        source: FontSource,
         font_index: u32,
         font_type: FontType,
-    ) -> Result<Font<'gc>, ttf_parser::FaceParsingError> {
-        let face = FontFace::new(bytes, font_index)?;
+    ) -> Result<Font<'gc>, FontError> {
+        let face = FontFace::new(source, font_index)?;
 
         Ok(Font(Gc::new(
             gc_context,
@@ -541,7 +674,7 @@ impl<'gc> Font<'gc> {
         gc_context: &Mutation<'gc>,
         tag: swf::Font4,
         encoding: &'static swf::Encoding,
-    ) -> Result<Font<'gc>, ttf_parser::FaceParsingError> {
+    ) -> Result<Font<'gc>, FontError> {
         let name = tag.name.to_str_lossy(encoding);
         let descriptor = FontDescriptor::from_parts(&name, tag.is_bold, tag.is_italic);
 
@@ -549,7 +682,7 @@ impl<'gc> Font<'gc> {
             Font::from_font_file(
                 gc_context,
                 descriptor,
-                Cow::Owned(bytes.to_vec()),
+                FontSource::from_bytes(bytes.to_vec()),
                 0,
                 FontType::EmbeddedCFF,
             )
@@ -606,8 +739,14 @@ impl<'gc> Font<'gc> {
         self.0.glyphs.get_by_code_point(c)
     }
 
+    /// Preload glyphs for the given string.
+    pub fn preload_glyphs_for_string(&self, string: &WStr) {
+        self.0.glyphs.preload_for_string(string)
+    }
+
     /// Determine if this font contains all the glyphs within a given string.
     pub fn has_glyphs_for_str(&self, target_str: &WStr) -> bool {
+        self.preload_glyphs_for_string(target_str);
         for character in target_str.chars() {
             let c = character.unwrap_or(char::REPLACEMENT_CHARACTER);
             if self.get_glyph_for_char(c).is_none() {
@@ -686,6 +825,7 @@ impl<'gc> Font<'gc> {
         let mut char_indices = text.char_indices().peekable();
         let has_kerning_info = self.has_kerning_info();
         let mut x = Twips::ZERO;
+        self.preload_glyphs_for_string(text);
         while let Some((pos, c)) = char_indices.next() {
             let c = c.unwrap_or(char::REPLACEMENT_CHARACTER);
             if let Some(glyph) = self.get_glyph_for_char(c) {
@@ -1207,11 +1347,11 @@ impl Default for TextRenderSettings {
 
 #[cfg(test)]
 mod tests {
+    use super::FontSource;
     use crate::font::{EvalParameters, Font, FontDescriptor, FontType};
     use crate::string::WStr;
     use flate2::read::DeflateDecoder;
     use gc_arena::{arena::rootless_mutate, Mutation};
-    use std::borrow::Cow;
     use std::io::Read;
     use swf::Twips;
 
@@ -1242,9 +1382,14 @@ mod tests {
                 .expect("default font decompression must succeed");
 
             let descriptor = FontDescriptor::from_parts("Noto Sans", false, false);
-            let device_font =
-                Font::from_font_file(mc, descriptor, Cow::Owned(data), 0, FontType::Device)
-                    .unwrap();
+            let device_font = Font::from_font_file(
+                mc,
+                descriptor,
+                FontSource::from_bytes(data),
+                0,
+                FontType::Device,
+            )
+            .unwrap();
             callback(mc, device_font);
         })
     }

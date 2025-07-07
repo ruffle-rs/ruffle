@@ -2,7 +2,6 @@ use crate::avm1::{PropertyMap as Avm1PropertyMap, PropertyMap};
 use crate::avm2::{Class as Avm2Class, Domain as Avm2Domain};
 use crate::backend::audio::SoundHandle;
 use crate::character::Character;
-use std::borrow::Cow;
 
 use crate::display_object::{Bitmap, Graphic, MorphShape, Text};
 use crate::font::{Font, FontDescriptor, FontQuery, FontType};
@@ -691,17 +690,13 @@ impl<'gc> Library<'gc> {
                 name,
                 is_bold,
                 is_italic,
-                data,
+                source,
                 index,
             } => {
                 let descriptor = FontDescriptor::from_parts(&name, is_bold, is_italic);
-                if let Ok(font) = Font::from_font_file(
-                    gc_context,
-                    descriptor,
-                    Cow::Owned(data),
-                    index,
-                    FontType::Device,
-                ) {
+                if let Ok(font) =
+                    Font::from_font_file(gc_context, descriptor, source, index, FontType::Device)
+                {
                     let name = font.descriptor().name().to_owned();
                     info!("Loaded new device font \"{name}\" (bold: {is_bold}, italic: {is_italic}) from file");
                     self.device_fonts.register(font);

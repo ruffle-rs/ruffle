@@ -5,6 +5,7 @@ use swf::{CharacterId, Fixed8, HeaderExt, Rectangle, TagCode, Twips};
 use thiserror::Error;
 use url::Url;
 
+use crate::font::FontError;
 use crate::sandbox::SandboxType;
 
 #[derive(Error, Debug)]
@@ -16,7 +17,7 @@ pub enum Error {
     InvalidBitmap(#[from] ruffle_render::error::Error),
 
     #[error("Couldn't register font: {0}")]
-    InvalidFont(#[from] ttf_parser::FaceParsingError),
+    InvalidFont(#[from] FontError),
 
     #[error("Attempted to set symbol classes on movie without any")]
     NoSymbolClasses,
