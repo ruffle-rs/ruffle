@@ -156,12 +156,13 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     }
 
     /// Construct an activation for the execution of a particular script's
-    /// initializer method.
-    pub fn from_script(
-        context: &'a mut UpdateContext<'gc>,
+    /// initializer method. This is intended to be used immediately after
+    /// from_nothing(), to make it easier to clean up after the Activation runs.
+    pub fn init_from_script(
+        &mut self,
         script: Script<'gc>,
         stack_frame: StackFrame<'a, 'gc>,
-    ) -> Result<Self, Error<'gc>> {
+    ) -> Result<(), Error<'gc>> {
         let (method, global_object, domain) = script.init();
 
         let body = method
@@ -170,32 +171,29 @@ impl<'a, 'gc> Activation<'a, 'gc> {
 
         let num_locals = body.num_locals as usize;
 
-        let mut created_activation = Self {
-            num_locals,
-            outer: ScopeChain::new(domain),
-            caller_domain: Some(domain),
-            caller_movie: Some(script.translation_unit().movie()),
-            bound_superclass_object: Some(context.avm2.classes().object), // The script global class extends Object
-            bound_class: Some(script.global_class()),
-            stack: stack_frame,
-            scope_depth: context.avm2.scope_stack.len(),
-            is_interpreter: true, // Script initializers are always in interpreter mode
-            context,
-        };
+        self.num_locals = num_locals;
+        self.outer = ScopeChain::new(domain);
+        self.caller_domain = Some(domain);
+        self.caller_movie = Some(script.translation_unit().movie());
+        self.bound_superclass_object = Some(self.context.avm2.classes().object);
+        self.bound_class = Some(script.global_class());
+        self.stack = stack_frame;
+        self.scope_depth = self.context.avm2.scope_stack.len();
+        self.is_interpreter = true; // Script initializers are always in interpreter mode
 
         // Resolve signature
-        method.resolve_info(&mut created_activation)?;
+        method.resolve_info(self)?;
 
         // Run verifier for bytecode methods
-        method.verify(&mut created_activation)?;
+        method.verify(self)?;
 
         // Create locals- script init methods are run with no parameters passed
-        created_activation.push_stack(global_object);
+        self.push_stack(global_object);
         for _ in 0..num_locals - 1 {
-            created_activation.push_stack(Value::Undefined);
+            self.push_stack(Value::Undefined);
         }
 
-        Ok(created_activation)
+        Ok(())
     }
 
     /// Finds an object on either the current or outer scope of this activation by definition.
@@ -617,12 +615,15 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     /// and clears the scope stack. This method must be called after an Activation
     /// created with `Activation::init_from_activation` or `Activation::from_script`
     /// is finished executing.
+    ///
+    /// This function should take `mut self` instead of `&mut self`, but that
+    /// results in worse codegen (the entire Activation is moved).
     #[inline]
     pub fn cleanup(&mut self) {
-        let stack = self.context.avm2.stack;
-        stack.dispose_stack_frame(&self.stack);
-
         self.clear_scope();
+
+        let stack = self.context.avm2.stack;
+        stack.dispose_stack_frame(self.stack.copied());
     }
 
     /// Clears the operand stack used by this activation.
@@ -1663,10 +1664,8 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     }
 
     fn op_get_slot(&mut self, index: u32) -> Result<(), Error<'gc>> {
-        // `clone`ing the stack frame is free; it returns a reference to the
-        // original frame.
-        let stack_ref = self.stack.clone();
-        let stack_top = stack_ref.stack_top();
+        let stack_copy = self.stack.copied();
+        let stack_top = stack_copy.stack_top();
 
         let object = stack_top
             .get()

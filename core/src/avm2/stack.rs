@@ -45,7 +45,8 @@ impl<'gc> Stack<'gc> {
     }
 
     /// Returns a slice of stack data for the specified method, starting at the
-    /// current stack pointer.
+    /// current stack pointer. Stack frames obtained from this method must be
+    /// properly disposed of by using the `dispose_stack_frame` method.
     pub fn get_stack_frame(&self, method: Method<'gc>) -> StackFrame<'_, 'gc> {
         // First calculate the frame size
         let body = method
@@ -71,7 +72,7 @@ impl<'gc> Stack<'gc> {
         StackFrame::for_data(subslice)
     }
 
-    pub fn dispose_stack_frame(&self, stack_frame: &StackFrame<'_, 'gc>) {
+    pub fn dispose_stack_frame(&self, stack_frame: StackFrame<'_, 'gc>) {
         self.0
             .stack_pointer
             .set(self.0.stack_pointer.get() - stack_frame.data.len());
@@ -79,7 +80,9 @@ impl<'gc> Stack<'gc> {
 }
 
 unsafe impl<'gc> Collect<'gc> for StackData<'gc> {
-    // SAFETY: All values stored in StackData are unreachable when stack_pointer is 0
+    // SAFETY: The only way to access values on the stack is by using StackFrames
+    // obtained from get_stack_frame. StackFrame doesn't implement Collect, so
+    // StackFrames from before a collection can't be accessed after the collection.
     fn trace<C: Trace<'gc>>(&self, _cc: &mut C) {
         // There should be no values on the value stack when collection is triggered
         assert!(self.stack_pointer.get() == 0);
@@ -88,9 +91,6 @@ unsafe impl<'gc> Collect<'gc> for StackData<'gc> {
 
 /// A stack frame for a particular method. Despite its name, this stores both
 /// method locals and method stack.
-///
-/// NOTE: Clones of this struct will share the same slice of values on the AVM stack
-#[derive(Clone)]
 pub struct StackFrame<'a, 'gc> {
     data: &'a [Cell<Value<'gc>>],
     stack_pointer: Cell<usize>,
@@ -105,7 +105,7 @@ impl<'a, 'gc> StackFrame<'a, 'gc> {
         }
     }
 
-    pub fn for_data(data: &'a [Cell<Value<'gc>>]) -> StackFrame<'a, 'gc> {
+    fn for_data(data: &'a [Cell<Value<'gc>>]) -> StackFrame<'a, 'gc> {
         Self {
             data,
             stack_pointer: Cell::new(0),
@@ -174,5 +174,13 @@ impl<'a, 'gc> StackFrame<'a, 'gc> {
     /// Get the number of entries currently on the stack.
     pub fn len(&self) -> usize {
         self.stack_pointer.get()
+    }
+
+    /// Get a temporary copy of this StackFrame.
+    pub fn copied(&self) -> Self {
+        Self {
+            data: self.data,
+            stack_pointer: self.stack_pointer.clone(),
+        }
     }
 }
