@@ -2123,7 +2123,7 @@ impl<W: Write> Writer<W> {
                 writer.write_u16(layout.descent)?;
                 writer.write_i16(layout.leading)?;
                 for glyph in &font.glyphs {
-                    writer.write_i16(glyph.advance)?;
+                    writer.write_u16(glyph.advance)?;
                 }
                 for glyph in &font.glyphs {
                     writer.write_rectangle(
