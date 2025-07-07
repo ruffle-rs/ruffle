@@ -11,6 +11,7 @@ use std::borrow::Cow;
 use std::cell::{OnceCell, RefCell};
 use std::hash::{Hash, Hasher};
 use swf::FillStyle;
+use ttf_parser::{Face, GlyphId};
 
 pub use swf::TextGridFit;
 
@@ -207,7 +208,7 @@ impl FontFace {
         // TODO: Support font collections
 
         // We validate that the font is good here, so we can just `.expect()` it later
-        let face = ttf_parser::Face::parse(&bytes, font_index)?;
+        let face = Face::parse(&bytes, font_index)?;
 
         let ascender = face.ascender() as i32;
         let descender = -face.descender() as i32;
@@ -240,43 +241,44 @@ impl FontFace {
     }
 
     pub fn get_glyph(&self, character: char) -> Option<&Glyph> {
-        let face = ttf_parser::Face::parse(&self.bytes, self.font_index)
+        let face = Face::parse(&self.bytes, self.font_index)
             .expect("Font was already checked to be valid");
         if let Some(glyph_id) = face.glyph_index(character) {
             return self.glyphs[glyph_id.0 as usize]
-                .get_or_init(|| {
-                    let mut drawing = Drawing::new();
-                    // TTF uses NonZero
-                    drawing.new_fill(
-                        Some(FillStyle::Color(Color::WHITE)),
-                        Some(FillRule::NonZero),
-                    );
-                    if face
-                        .outline_glyph(glyph_id, &mut GlyphToDrawing(&mut drawing))
-                        .is_some()
-                    {
-                        let advance = face.glyph_hor_advance(glyph_id).map_or_else(
-                            || drawing.self_bounds().width(),
-                            |a| Twips::new(a as i32),
-                        );
-                        Some(Glyph {
-                            shape: GlyphShape::Drawing(Box::new(drawing)),
-                            advance,
-                            character,
-                        })
-                    } else {
-                        let advance = Twips::new(face.glyph_hor_advance(glyph_id)? as i32);
-                        // If we have advance, then this is either an image, SVG or simply missing (ie whitespace)
-                        Some(Glyph {
-                            shape: GlyphShape::None,
-                            advance,
-                            character,
-                        })
-                    }
-                })
+                .get_or_init(|| self.load_glyph(&face, character, glyph_id))
                 .as_ref();
         }
         None
+    }
+
+    fn load_glyph<'a>(&self, face: &Face<'a>, character: char, glyph_id: GlyphId) -> Option<Glyph> {
+        let mut drawing = Drawing::new();
+        // TTF uses NonZero
+        drawing.new_fill(
+            Some(FillStyle::Color(Color::WHITE)),
+            Some(FillRule::NonZero),
+        );
+        if face
+            .outline_glyph(glyph_id, &mut GlyphToDrawing(&mut drawing))
+            .is_some()
+        {
+            let advance = face
+                .glyph_hor_advance(glyph_id)
+                .map_or_else(|| drawing.self_bounds().width(), |a| Twips::new(a as i32));
+            Some(Glyph {
+                shape: GlyphShape::Drawing(Box::new(drawing)),
+                advance,
+                character,
+            })
+        } else {
+            let advance = Twips::new(face.glyph_hor_advance(glyph_id)? as i32);
+            // If we have advance, then this is either an image, SVG or simply missing (ie whitespace)
+            Some(Glyph {
+                shape: GlyphShape::None,
+                advance,
+                character,
+            })
+        }
     }
 
     pub fn has_kerning_info(&self) -> bool {
@@ -284,7 +286,7 @@ impl FontFace {
     }
 
     pub fn get_kerning_offset(&self, left: char, right: char) -> Twips {
-        let face = ttf_parser::Face::parse(&self.bytes, self.font_index)
+        let face = Face::parse(&self.bytes, self.font_index)
             .expect("Font was already checked to be valid");
 
         if let (Some(left_glyph), Some(right_glyph)) =
