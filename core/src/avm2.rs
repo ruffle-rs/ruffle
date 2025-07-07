@@ -302,17 +302,14 @@ impl<'gc> Avm2<'gc> {
         let stack = context.avm2.stack;
         let stack_frame = stack.get_stack_frame(method);
 
-        // The stack frame must be cloned so it can be referenced from the
-        // cleanup code below. Note that cloning the stack frame is free.
-        let init_result = Activation::from_script(context, script, stack_frame.clone());
-        let mut init_activation = match init_result {
-            Ok(activation) => activation,
-            Err(error) => {
-                // If the script initializer fails verification, we still need
-                // to properly dispose of the created stack frame.
-                context.avm2.stack.dispose_stack_frame(&stack_frame);
-                return Err(error);
-            }
+        let mut init_activation = Activation::from_nothing(context);
+
+        let init_result = init_activation.init_from_script(script, stack_frame);
+        if let Err(e) = init_result {
+            // If the script initializer fails verification, we still need
+            // to properly dispose of the created stack frame.
+            init_activation.cleanup();
+            return Err(e);
         };
 
         init_activation.avm2().push_global_init(mc, script);
