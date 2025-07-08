@@ -15,7 +15,7 @@ pub fn create_message_channel<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     avm2_stub_method!(activation, "flash.system.Worker", "createMessageChannel");
 
-    let _received = args.get_object(activation, 0, "received")?;
+    let _receiver = args.get_object(activation, 0, "receiver")?;
 
     let message_channel = MessageChannelObject::new(activation);
 
