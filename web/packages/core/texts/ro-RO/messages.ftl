@@ -1,6 +1,9 @@
 message-cant-embed =
     Ruffle nu a putut să ruleze Flash încorporat în această pagină.
     Poți încerca să deschizi fișierul într-o filă separată, pentru a evita această problemă.
+message-restored-from-bfcache =
+    Browserul dvs. a restaurat acest conținut Flash dintr-o sesiune anterioară.
+    Pentru a începe de la zero, reîncărcați pagina.
 panic-title = Ceva a mers prost :(
 more-info = Mai multe informații
 run-anyway = Rulează oricum
