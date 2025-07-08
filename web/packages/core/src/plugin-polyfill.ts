@@ -69,8 +69,8 @@ class RuffleMimeTypeArray implements MimeTypeArray {
 
     [name: string]: unknown;
 
-    [Symbol.iterator](): IterableIterator<MimeType> {
-        return this.#mimeTypes[Symbol.iterator]();
+    [Symbol.iterator](): ArrayIterator<MimeType> {
+        return this.#mimeTypes[Symbol.iterator]() as ArrayIterator<MimeType>;
     }
 
     get [Symbol.toStringTag](): string {
@@ -203,8 +203,8 @@ class RufflePluginArray implements PluginArray {
 
     [name: string]: unknown;
 
-    [Symbol.iterator](): IterableIterator<Plugin> {
-        return this.#plugins[Symbol.iterator]();
+    [Symbol.iterator](): ArrayIterator<Plugin> {
+        return this.#plugins[Symbol.iterator]() as ArrayIterator<Plugin>;
     }
 
     get [Symbol.toStringTag](): string {
