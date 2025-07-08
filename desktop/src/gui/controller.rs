@@ -75,12 +75,23 @@ impl GuiController {
             adapter_info.name,
             adapter_info.device_type
         );
-        let surface_format = surface
-            .get_capabilities(&adapter)
-            .formats
-            .first()
-            .cloned()
-            .expect("At least one format should be supported");
+        let preferred_formats = [
+            // by egui
+            wgpu::TextureFormat::Rgba8Unorm,
+            wgpu::TextureFormat::Bgra8Unorm,
+        ];
+        let supported_formats = surface.get_capabilities(&adapter).formats;
+        let surface_format = preferred_formats
+            .iter()
+            .find(|format| supported_formats.contains(format))
+            .copied()
+            .unwrap_or_else(|| {
+                supported_formats
+                    .first()
+                    .copied()
+                    .expect("At least one format should be supported")
+            });
+        tracing::info!("Using surface format {:?}", surface_format);
         let size = window.inner_size();
         surface.configure(
             &device,
