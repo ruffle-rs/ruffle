@@ -25,7 +25,7 @@ package flash.system {
             return _current;
         }
 
-        public native function createMessageChannel(received:Worker):MessageChannel;
+        public native function createMessageChannel(receiver:Worker):MessageChannel;
 
         public function setSharedProperty(key:String, value:*):void {
             stub_method("flash.system.Worker", "setSharedProperty");
