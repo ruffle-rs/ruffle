@@ -40,7 +40,6 @@ impl<'gc> TObject<'gc> for WorkerDomainObject<'gc> {
 }
 
 impl<'gc> WorkerDomainObject<'gc> {
-    #[allow(dead_code)]
     pub fn new(activation: &mut Activation<'_, 'gc>) -> Self {
         let class = activation.avm2().classes().workerdomain;
         let base = ScriptObjectData::new(class);
