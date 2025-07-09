@@ -446,15 +446,9 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             self.push_stack(args_object);
         }
 
-        // Locals not including the `this` value or arguments.
-        let mut extra_locals = num_locals - signature.len() - 1;
-        if has_rest_or_args {
-            extra_locals -= 1;
-        }
-
-        for _ in 0..extra_locals {
-            self.push_stack(Value::Undefined);
-        }
+        // `Stack::get_stack_frame` already initializes all values on the frame
+        // to undefined, so we just have to increase the stack pointer
+        self.reset_stack();
 
         Ok(())
     }
@@ -623,13 +617,18 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         self.clear_scope();
 
         let stack = self.context.avm2.stack;
-        stack.dispose_stack_frame(self.stack.copied());
+        stack.dispose_stack_frame(self.stack.take());
     }
 
     /// Clears the operand stack used by this activation.
+    ///
+    /// This is called `reset_stack` because it sets the stack pointer to the
+    /// first stack entry, which also makes it useful for initializing the stack.
     #[inline]
-    fn clear_stack(&self) {
-        self.stack.truncate(self.num_locals);
+    fn reset_stack(&self) {
+        // This sets the stack pointer to the first stack entry, which is right
+        // after all the entries for local registers
+        self.stack.set_stack_pointer(self.num_locals);
     }
 
     /// Clears the scope stack used by this activation.
@@ -942,7 +941,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
                     #[cfg(feature = "avm_debug")]
                     tracing::info!(target: "avm_caught", "Caught exception: {:?}", Error::avm_error(error));
 
-                    self.clear_stack();
+                    self.reset_stack();
                     self.push_stack(error);
 
                     self.clear_scope();
@@ -1664,8 +1663,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     }
 
     fn op_get_slot(&mut self, index: u32) -> Result<(), Error<'gc>> {
-        let stack_copy = self.stack.copied();
-        let stack_top = stack_copy.stack_top();
+        let stack_top = self.stack.stack_top();
 
         let object = stack_top
             .get()
