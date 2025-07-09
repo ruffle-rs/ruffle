@@ -98,9 +98,8 @@ pub struct StackFrame<'a, 'gc> {
 
 impl<'a, 'gc> StackFrame<'a, 'gc> {
     pub fn empty() -> StackFrame<'a, 'gc> {
-        // `Box::new([])` doesn't actually allocate
         Self {
-            data: Box::leak(Box::new([])),
+            data: &[],
             stack_pointer: Cell::new(0),
         }
     }
@@ -134,7 +133,7 @@ impl<'a, 'gc> StackFrame<'a, 'gc> {
     }
 
     #[inline(always)]
-    pub fn stack_top(&self) -> &Cell<Value<'gc>> {
+    pub fn stack_top(&self) -> &'a Cell<Value<'gc>> {
         &self.data[self.stack_pointer.get() - 1]
     }
 
@@ -167,7 +166,7 @@ impl<'a, 'gc> StackFrame<'a, 'gc> {
         args
     }
 
-    pub fn truncate(&self, size: usize) {
+    pub fn set_stack_pointer(&self, size: usize) {
         self.stack_pointer.set(size);
     }
 
@@ -176,11 +175,17 @@ impl<'a, 'gc> StackFrame<'a, 'gc> {
         self.stack_pointer.get()
     }
 
-    /// Get a temporary copy of this StackFrame.
-    pub fn copied(&self) -> Self {
-        Self {
+    /// Move out of this StackFrame, leaving it empty and creating a new StackFrame
+    /// that points to the same data as this one.
+    pub fn take(&mut self) -> Self {
+        let new_frame = Self {
             data: self.data,
             stack_pointer: self.stack_pointer.clone(),
-        }
+        };
+
+        self.data = &[];
+        self.stack_pointer = Cell::new(0);
+
+        new_frame
     }
 }
