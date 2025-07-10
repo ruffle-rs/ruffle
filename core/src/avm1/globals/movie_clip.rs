@@ -987,7 +987,7 @@ pub fn clone_sprite<'gc>(
     new_clip.set_matrix(context.gc(), *movie_clip.base().matrix());
     new_clip.set_color_transform(context.gc(), *movie_clip.base().color_transform());
 
-    new_clip.set_clip_event_handlers(context.gc(), movie_clip.clip_actions().to_vec());
+    new_clip.set_clip_event_handlers((&*movie_clip.clip_actions()).into());
 
     if let Some(drawing) = movie_clip.drawing().as_deref().cloned() {
         *new_clip.drawing_mut(context.gc()) = drawing;
