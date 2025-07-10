@@ -46,7 +46,7 @@ use ruffle_macros::istr;
 use ruffle_render::perspective_projection::PerspectiveProjection;
 use smallvec::SmallVec;
 use std::borrow::Cow;
-use std::cell::{Cell, Ref, RefCell, RefMut};
+use std::cell::{Cell, OnceCell, Ref, RefCell, RefMut};
 use std::cmp::max;
 use std::collections::HashMap;
 use std::sync::Arc;
@@ -165,7 +165,7 @@ pub struct MovieClipData<'gc> {
     flags: Cell<MovieClipFlags>,
     /// This is lazily allocated on demand, to make `MovieClipData` smaller in the common case.
     #[collect(require_static)]
-    drawing: RefCell<Option<Box<Drawing>>>,
+    drawing: OnceCell<Box<RefCell<Drawing>>>,
     avm2_enabled: Cell<bool>,
 
     /// Show a hand cursor when the clip is in button mode.
@@ -211,7 +211,7 @@ impl<'gc> MovieClipData<'gc> {
             clip_event_flags: Cell::new(ClipEventFlag::empty()),
             frame_scripts: RefLock::new(Vec::new()),
             flags: Cell::new(MovieClipFlags::empty()),
-            drawing: RefCell::new(None),
+            drawing: OnceCell::new(),
             avm2_enabled: Cell::new(true),
             avm2_use_hand_cursor: Cell::new(true),
             button_mode: Cell::new(false),
@@ -1945,13 +1945,11 @@ impl<'gc> MovieClip<'gc> {
     pub fn drawing_mut(&self, gc_context: &Mutation<'gc>) -> RefMut<'_, Drawing> {
         // We're about to change graphics, so invalidate on the next frame
         self.invalidate_cached_bitmap(gc_context);
-        RefMut::map(self.0.drawing.borrow_mut(), |drawing| {
-            &mut **drawing.get_or_insert_with(Default::default)
-        })
+        self.0.drawing.get_or_init(Default::default).borrow_mut()
     }
 
     pub fn drawing(&self) -> Option<Ref<'_, Drawing>> {
-        Ref::filter_map(self.0.drawing.borrow(), |d| d.as_deref()).ok()
+        self.0.drawing.get().map(|d| d.borrow())
     }
 
     pub fn is_button_mode(&self, context: &mut UpdateContext<'gc>) -> bool {
