@@ -9,7 +9,6 @@ use crate::avm1::{Attribute, NativeObject, Object, Value};
 use crate::ecma_conversions::f64_to_wrapping_i32;
 use crate::string::{AvmString, StringContext};
 use bitflags::bitflags;
-use either::Either;
 use gc_arena::Mutation;
 use ruffle_macros::istr;
 use std::cmp::Ordering;
@@ -442,12 +441,12 @@ pub fn concat<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this_value = this.into();
 
-    // Instead of having to allocate a Vec<Value<'_>> of every resulting value, we only create a Vec<Either> with one entry for each value -
-    // Either::Left with the object and its length (i.e. element count) or Either::Right with the value itself for non arrays
-    let elements_intermediate = std::iter::once(&this_value)
+    let mut elements = vec![];
+
+    std::iter::once(&this_value)
         .chain(args)
         .enumerate()
-        .map(|(index, value)| {
+        .try_for_each(|(index, value)| -> Result<(), Error<'gc>> {
             if let Value::Object(object) = value {
                 match (object.native(), index) {
                     // When Array.prototype.concat is called directly with the first argument being an object,
@@ -455,31 +454,23 @@ pub fn concat<'gc>(
                     (NativeObject::None, 0) | (NativeObject::Array(()), _) => {
                         let length = object.length(activation)?;
 
-                        // The object and the its element count
-                        return Ok(Either::Left((object, length)));
+                        let object_elements =
+                            (0..length).map(|index| object.get_element(activation, index));
+
+                        elements.extend(object_elements);
+
+                        return Ok(());
                     }
                     _ => {}
                 }
             }
 
-            // The value itself
-            Ok(Either::Right(value))
-        })
-        .collect::<Result<Vec<_>, Error<'gc>>>()?;
+            elements.push(value.clone());
 
-    let elements_iter = elements_intermediate
-        .into_iter()
-        // Resolve to an iterator of the final element list
-        .flat_map(|desc| {
-            desc.map_either(
-                // Map the object and its length to an iterator of its elements
-                |(object, length)| (0..length).map(|index| object.get_element(activation, index)),
-                // Map the value itself to an iterator
-                |&value| std::iter::once(value),
-            )
-        });
+            Ok(())
+        })?;
 
-    Ok(ArrayBuilder::new(activation).with(elements_iter).into())
+    Ok(ArrayBuilder::new(activation).with(elements).into())
 }
 
 pub fn to_string<'gc>(
