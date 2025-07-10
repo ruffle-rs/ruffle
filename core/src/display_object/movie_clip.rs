@@ -39,7 +39,7 @@ use crate::tag_utils::{self, ControlFlow, DecodeResult, Error, SwfMovie, SwfSlic
 use crate::vminterface::{AvmObject, Instantiator};
 use bitflags::bitflags;
 use core::fmt;
-use gc_arena::barrier::unlock;
+use gc_arena::barrier::{unlock, Write};
 use gc_arena::lock::{Lock, RefLock};
 use gc_arena::{Collect, Gc, GcCell, GcWeak, Mutation};
 use ruffle_macros::istr;
@@ -149,19 +149,17 @@ impl<'gc> MovieClipWeak<'gc> {
 #[derive(Clone, Collect)]
 #[collect(no_drop)]
 pub struct MovieClipData<'gc> {
-    base: RefLock<InteractiveObjectBase<'gc>>,
+    cell: RefLock<MovieClipDataMut<'gc>>,
     shared: Lock<Gc<'gc, MovieClipShared<'gc>>>,
     tag_stream_pos: Cell<u64>,
     current_frame: Cell<FrameNumber>,
     #[collect(require_static)]
     audio_stream: Cell<Option<SoundInstanceHandle>>,
-    container: RefLock<ChildContainer<'gc>>,
     object: Lock<Option<AvmObject<'gc>>>,
     #[collect(require_static)]
     clip_event_handlers: OnceCell<Box<[ClipEventHandler]>>,
     #[collect(require_static)]
     clip_event_flags: Cell<ClipEventFlag>,
-    frame_scripts: RefLock<Vec<Option<Avm2Object<'gc>>>>,
     flags: Cell<MovieClipFlags>,
     /// This is lazily allocated on demand, to make `MovieClipData` smaller in the common case.
     #[collect(require_static)]
@@ -183,33 +181,44 @@ pub struct MovieClipData<'gc> {
     queued_goto_frame: Cell<Option<FrameNumber>>,
     drop_target: Lock<Option<DisplayObject<'gc>>>,
 
-    /// List of tags queued up for the current frame.
-    #[collect(require_static)]
-    queued_tags: RefCell<HashMap<Depth, QueuedTagList>>,
-
     /// Attached audio (AVM1)
     attached_audio: Lock<Option<NetStream<'gc>>>,
 
     // If this movie was loaded from ImportAssets(2), this will be the parent movie.
     importer_movie: Option<Arc<SwfMovie>>,
+}
 
-    avm1_text_field_bindings: RefLock<Vec<Avm1TextFieldBinding<'gc>>>,
+#[derive(Clone, Collect)]
+#[collect(no_drop)]
+struct MovieClipDataMut<'gc> {
+    base: InteractiveObjectBase<'gc>,
+    container: ChildContainer<'gc>,
+    frame_scripts: Vec<Option<Avm2Object<'gc>>>,
+    avm1_text_field_bindings: Vec<Avm1TextFieldBinding<'gc>>,
+
+    /// List of tags queued up for the current frame.
+    #[collect(require_static)]
+    queued_tags: HashMap<Depth, QueuedTagList>,
 }
 
 impl<'gc> MovieClipData<'gc> {
     fn new(shared: MovieClipShared<'gc>, mc: &Mutation<'gc>) -> Self {
         let movie = shared.movie();
         Self {
-            base: Default::default(),
+            cell: RefLock::new(MovieClipDataMut {
+                base: Default::default(),
+                container: ChildContainer::new(&movie),
+                frame_scripts: Vec::new(),
+                avm1_text_field_bindings: Vec::new(),
+                queued_tags: HashMap::new(),
+            }),
             shared: Lock::new(Gc::new(mc, shared)),
             tag_stream_pos: Cell::new(0),
             current_frame: Cell::new(0),
             audio_stream: Cell::new(None),
-            container: RefLock::new(ChildContainer::new(&movie)),
             object: Lock::new(None),
             clip_event_handlers: OnceCell::new(),
             clip_event_flags: Cell::new(ClipEventFlag::empty()),
-            frame_scripts: RefLock::new(Vec::new()),
             flags: Cell::new(MovieClipFlags::empty()),
             drawing: OnceCell::new(),
             avm2_enabled: Cell::new(true),
@@ -221,16 +230,21 @@ impl<'gc> MovieClipData<'gc> {
             queued_goto_frame: Cell::new(None),
             drop_target: Lock::new(None),
             hit_area: Lock::new(None),
-            queued_tags: Default::default(),
             attached_audio: Lock::new(None),
             importer_movie: None,
-            avm1_text_field_bindings: Default::default(),
         }
     }
 
     #[inline(always)]
     fn shared_cell(&self) -> Ref<'gc, MovieClipSharedMut> {
         Gc::as_ref(self.shared.get()).cell.borrow()
+    }
+
+    #[inline(always)]
+    fn queued_tags_mut(&self) -> RefMut<'_, HashMap<Depth, QueuedTagList>> {
+        // SAFETY: We only give out mutable access to `'static` data.
+        let write = unsafe { Write::assume(&self.cell) }.unlock();
+        RefMut::map(write.borrow_mut(), |c| &mut c.queued_tags)
     }
 }
 
@@ -311,9 +325,9 @@ impl<'gc> MovieClip<'gc> {
             movie.num_frames(),
             loader_info.map(|l| l.0),
         );
-        let data = MovieClipData::new(shared, activation.gc());
+        let mut data = MovieClipData::new(shared, activation.gc());
         data.flags.set(MovieClipFlags::PLAYING);
-        data.base.borrow().base.set_is_root(true);
+        data.cell.get_mut().base.base.set_is_root(true);
 
         let mc = MovieClip(Gc::new(activation.gc(), data));
         if let Some((_, loader_info)) = loader_info {
@@ -347,11 +361,11 @@ impl<'gc> MovieClip<'gc> {
         );
 
         {
-            let base = mc.base.borrow();
-            base.base.reset_for_movie_load();
-            base.base.set_is_root(is_root);
+            let mut write = unlock!(mc, MovieClipData, cell).borrow_mut();
+            write.base.base.reset_for_movie_load();
+            write.base.base.set_is_root(is_root);
+            write.container = ChildContainer::new(&movie);
         }
-        unlock!(mc, MovieClipData, container).replace(ChildContainer::new(&movie));
         unlock!(mc, MovieClipData, shared).set(Gc::new(
             context.gc(),
             MovieClipShared::with_data(
@@ -884,12 +898,16 @@ impl<'gc> MovieClip<'gc> {
     }
 
     pub fn has_frame_script(self, frame: FrameNumber) -> bool {
+        self.frame_script(frame).is_some()
+    }
+
+    fn frame_script(self, frame: FrameNumber) -> Option<Avm2Object<'gc>> {
         self.0
-            .frame_scripts
+            .cell
             .borrow()
+            .frame_scripts
             .get(frame as usize)
-            .map(|v| v.is_some())
-            .unwrap_or_default()
+            .and_then(|&v| v)
     }
 
     /// This sets the current preload frame of this MovieClipto a given number (resulting
@@ -1425,7 +1443,7 @@ impl<'gc> MovieClip<'gc> {
         // tags. The rest of the goto machinery can handle the side effects of
         // a half-executed loop.
         if self.0.loop_queued() {
-            self.0.queued_tags.take();
+            self.0.queued_tags_mut().clear();
         }
 
         if is_implicit {
@@ -1536,7 +1554,7 @@ impl<'gc> MovieClip<'gc> {
                     tag_type: QueuedTagAction::Place(params.version),
                     tag_start: params.tag_start,
                 };
-                let mut queued_tags = self.0.queued_tags.borrow_mut();
+                let mut queued_tags = self.0.queued_tags_mut();
                 let bucket = queued_tags
                     .entry(params.place_object.depth as Depth)
                     .or_insert_with(|| QueuedTagList::None);
@@ -1823,7 +1841,10 @@ impl<'gc> MovieClip<'gc> {
     ) {
         let write = Gc::write(context.gc(), self.0);
         let current_frame = write.current_frame();
-        let mut frame_scripts = unlock!(write, MovieClipData, frame_scripts).borrow_mut();
+        let mut frame_scripts =
+            RefMut::map(unlock!(write, MovieClipData, cell).borrow_mut(), |r| {
+                &mut r.frame_scripts
+            });
 
         let index = frame_id as usize;
         if let Some(callable) = callable {
@@ -1997,7 +2018,7 @@ impl<'gc> MovieClip<'gc> {
     ) -> Vec<(Depth, QueuedTag)> {
         use std::collections::hash_map::Entry;
 
-        let mut queued_tags = self.0.queued_tags.borrow_mut();
+        let mut queued_tags = self.0.queued_tags_mut();
         let mut unqueued: Vec<_> = queued_tags
             .iter_mut()
             .filter_map(|(d, q)| filter(q).map(|q| (*d, q)))
@@ -2143,13 +2164,7 @@ impl<'gc> MovieClip<'gc> {
                     let is_fresh_frame = self.0.last_queued_script_frame.get() != Some(frame_id);
 
                     if is_fresh_frame {
-                        if let Some(Some(callable)) = self
-                            .0
-                            .frame_scripts
-                            .borrow()
-                            .get(frame_id as usize)
-                            .cloned()
-                        {
+                        if let Some(callable) = self.frame_script(frame_id) {
                             self.0.last_queued_script_frame.set(Some(frame_id));
                             self.0.has_pending_script.set(false);
                             self.0
@@ -2192,12 +2207,12 @@ impl<'gc> MovieClip<'gc> {
 
 impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
     fn base(&self) -> Ref<'_, DisplayObjectBase<'gc>> {
-        Ref::map(self.0.base.borrow(), |r| &r.base)
+        Ref::map(self.0.cell.borrow(), |r| &r.base.base)
     }
 
     fn base_mut<'a>(&'a self, mc: &Mutation<'gc>) -> RefMut<'a, DisplayObjectBase<'gc>> {
-        let base = unlock!(Gc::write(mc, self.0), MovieClipData, base);
-        RefMut::map(base.borrow_mut(), |r| &mut r.base)
+        let write = unlock!(Gc::write(mc, self.0), MovieClipData, cell);
+        RefMut::map(write.borrow_mut(), |r| &mut r.base.base)
     }
 
     fn instantiate(self, mc: &Mutation<'gc>) -> DisplayObject<'gc> {
@@ -2312,12 +2327,7 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
 
         // Check for frame-scripts before starting the frame-script phase,
         // to differentiate the pre-existing scripts from those introduced during frame-script phase.
-        let has_pending_script = self
-            .0
-            .frame_scripts
-            .borrow()
-            .get(self.0.current_frame.get() as usize)
-            .is_some();
+        let has_pending_script = self.has_frame_script(self.0.current_frame.get());
         self.0.has_pending_script.set(has_pending_script);
     }
 
@@ -2554,8 +2564,8 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
     fn avm1_text_field_bindings(&self) -> Option<Ref<'_, [Avm1TextFieldBinding<'gc>]>> {
         let obj = self.0.object.get().and_then(|o| o.as_avm1_object());
         obj.map(|_| {
-            let bindings = self.0.avm1_text_field_bindings.borrow();
-            Ref::map(bindings, |b| &**b)
+            let read = self.0.cell.borrow();
+            Ref::map(read, |r| r.avm1_text_field_bindings.as_slice())
         })
     }
 
@@ -2565,8 +2575,8 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
     ) -> Option<RefMut<'_, Vec<Avm1TextFieldBinding<'gc>>>> {
         let obj = self.0.object.get().and_then(|o| o.as_avm1_object());
         obj.map(|_| {
-            let write = Gc::write(mc, self.0);
-            unlock!(write, MovieClipData, avm1_text_field_bindings).borrow_mut()
+            let write = unlock!(Gc::write(mc, self.0), MovieClipData, cell);
+            RefMut::map(write.borrow_mut(), |r| &mut r.avm1_text_field_bindings)
         })
     }
 
@@ -2581,11 +2591,12 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
 
 impl<'gc> TDisplayObjectContainer<'gc> for MovieClip<'gc> {
     fn raw_container(&self) -> Ref<'_, ChildContainer<'gc>> {
-        self.0.container.borrow()
+        Ref::map(self.0.cell.borrow(), |r| &r.container)
     }
 
     fn raw_container_mut(&self, mc: &Mutation<'gc>) -> RefMut<'_, ChildContainer<'gc>> {
-        unlock!(Gc::write(mc, self.0), MovieClipData, container).borrow_mut()
+        let write = unlock!(Gc::write(mc, self.0), MovieClipData, cell);
+        RefMut::map(write.borrow_mut(), |r| &mut r.container)
     }
 
     fn is_tab_children_avm1(self, context: &mut UpdateContext<'gc>) -> bool {
@@ -2595,11 +2606,12 @@ impl<'gc> TDisplayObjectContainer<'gc> for MovieClip<'gc> {
 
 impl<'gc> TInteractiveObject<'gc> for MovieClip<'gc> {
     fn raw_interactive(&self) -> Ref<'_, InteractiveObjectBase<'gc>> {
-        self.0.base.borrow()
+        Ref::map(self.0.cell.borrow(), |r| &r.base)
     }
 
     fn raw_interactive_mut(&self, mc: &Mutation<'gc>) -> RefMut<'_, InteractiveObjectBase<'gc>> {
-        unlock!(Gc::write(mc, self.0), MovieClipData, base).borrow_mut()
+        let write = unlock!(Gc::write(mc, self.0), MovieClipData, cell);
+        RefMut::map(write.borrow_mut(), |r| &mut r.base)
     }
 
     fn as_displayobject(self) -> DisplayObject<'gc> {
@@ -4192,7 +4204,7 @@ impl<'gc, 'a> MovieClip<'gc> {
             tag_type: QueuedTagAction::Place(version),
             tag_start,
         };
-        let mut queued_tags = self.0.queued_tags.borrow_mut();
+        let mut queued_tags = self.0.queued_tags_mut();
         let bucket = queued_tags
             .entry(place_object.depth as Depth)
             .or_insert_with(|| QueuedTagList::None);
@@ -4274,7 +4286,7 @@ impl<'gc, 'a> MovieClip<'gc> {
             tag_type: QueuedTagAction::Remove(version),
             tag_start,
         };
-        let mut queued_tags = self.0.queued_tags.borrow_mut();
+        let mut queued_tags = self.0.queued_tags_mut();
         let bucket = queued_tags
             .entry(remove_object.depth as Depth)
             .or_insert_with(|| QueuedTagList::None);
