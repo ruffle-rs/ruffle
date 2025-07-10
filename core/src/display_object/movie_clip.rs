@@ -1213,7 +1213,7 @@ impl<'gc> MovieClip<'gc> {
         // tag position updates. This ensures that code that runs gotos when a
         // display object is added or removed does not catch the movie clip in
         // an invalid state.
-        let remove_actions = self.unqueue_removes();
+        let remove_actions = self.unqueue_filtered(|q| q.unqueue_remove());
 
         for (_, tag) in remove_actions {
             let mut reader = data.read_from(tag.tag_start);
@@ -2014,48 +2014,28 @@ impl<'gc> MovieClip<'gc> {
         }
     }
 
-    /// Remove all `PlaceObject` tags off the internal tag queue.
-    fn unqueue_adds(&self) -> Vec<(Depth, QueuedTag)> {
+    /// Remove all tags matching the given filter off the internal tag queue.
+    fn unqueue_filtered(
+        &self,
+        mut filter: impl FnMut(&mut QueuedTagList) -> Option<QueuedTag>,
+    ) -> Vec<(Depth, QueuedTag)> {
+        use std::collections::hash_map::Entry;
+
         let read = self.0.read();
-        let mut unqueued: Vec<_> = read
-            .queued_tags
-            .borrow_mut()
+        let mut queued_tags = read.queued_tags.borrow_mut();
+        let mut unqueued: Vec<_> = queued_tags
             .iter_mut()
-            .filter_map(|(d, b)| b.unqueue_add().map(|b| (*d, b)))
+            .filter_map(|(d, q)| filter(q).map(|q| (*d, q)))
             .collect();
 
-        unqueued.sort_by(|(_, t1), (_, t2)| t1.tag_start.cmp(&t2.tag_start));
+        unqueued.sort_by_key(|(_, t)| t.tag_start);
 
         for (depth, _tag) in unqueued.iter() {
-            if matches!(
-                read.queued_tags.borrow().get(depth),
-                Some(QueuedTagList::None)
-            ) {
-                read.queued_tags.borrow_mut().remove(depth);
-            }
-        }
-
-        unqueued
-    }
-
-    /// Remove all `RemoveObject` tags off the internal tag queue.
-    fn unqueue_removes(&self) -> Vec<(Depth, QueuedTag)> {
-        let read = self.0.read();
-        let mut unqueued: Vec<_> = read
-            .queued_tags
-            .borrow_mut()
-            .iter_mut()
-            .filter_map(|(d, b)| b.unqueue_remove().map(|b| (*d, b)))
-            .collect();
-
-        unqueued.sort_by(|(_, t1), (_, t2)| t1.tag_start.cmp(&t2.tag_start));
-
-        for (depth, _tag) in unqueued.iter() {
-            if matches!(
-                read.queued_tags.borrow().get(depth),
-                Some(QueuedTagList::None)
-            ) {
-                read.queued_tags.borrow_mut().remove(depth);
+            match queued_tags.entry(*depth) {
+                Entry::Occupied(e) if matches!(e.get(), QueuedTagList::None) => {
+                    e.remove();
+                }
+                _ => (),
             }
         }
 
@@ -2291,7 +2271,7 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
             // Note that this is NOT when constructors run; that happens later
             // after tags have executed.
             let data = self.0.read().shared.swf.clone();
-            let place_actions = self.unqueue_adds();
+            let place_actions = self.unqueue_filtered(|q| q.unqueue_add());
 
             for (_, tag) in place_actions {
                 let mut reader = data.read_from(tag.tag_start);
