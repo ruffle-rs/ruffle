@@ -191,7 +191,7 @@ pub struct MovieClipData<'gc> {
     attached_audio: Option<NetStream<'gc>>,
 
     // If this movie was loaded from ImportAssets(2), this will be the parent movie.
-    importer_movie: RefCell<Option<Arc<SwfMovie>>>,
+    importer_movie: Option<Arc<SwfMovie>>,
 
     avm1_text_field_bindings: Vec<Avm1TextFieldBinding<'gc>>,
 }
@@ -223,7 +223,7 @@ impl<'gc> MovieClipData<'gc> {
             hit_area: None,
             queued_tags: RefCell::new(HashMap::new()),
             attached_audio: None,
-            importer_movie: RefCell::new(None),
+            importer_movie: None,
             avm1_text_field_bindings: Vec::new(),
         }
     }
@@ -279,9 +279,9 @@ impl<'gc> MovieClip<'gc> {
         let loader_info = None;
         let shared = MovieClipShared::with_data(0, movie.into(), num_frames, loader_info);
 
-        let data = MovieClipData::new(shared, context.gc());
+        let mut data = MovieClipData::new(shared, context.gc());
         data.flags.set(MovieClipFlags::PLAYING);
-        data.importer_movie.replace(Some(parent));
+        data.importer_movie = Some(parent);
         MovieClip(GcCell::new(context.gc(), data))
     }
 
@@ -466,11 +466,9 @@ impl<'gc> MovieClip<'gc> {
                 TagCode::DefineText2 => shared.define_text(context, reader, 2),
                 TagCode::DoInitAction => self.do_init_action(context, reader, tag_len),
                 TagCode::DefineSceneAndFrameLabelData => shared.scene_and_frame_labels(reader),
-                TagCode::ExportAssets => shared.export_assets(
-                    context,
-                    reader,
-                    self.0.read().importer_movie.borrow().as_ref(),
-                ),
+                TagCode::ExportAssets => {
+                    shared.export_assets(context, reader, self.0.read().importer_movie.as_ref())
+                }
                 TagCode::FrameLabel => shared.frame_label(reader),
                 TagCode::JpegTables => shared.jpeg_tables(context, reader),
                 TagCode::ShowFrame => shared.show_frame(reader, tag_len),
@@ -505,7 +503,7 @@ impl<'gc> MovieClip<'gc> {
         };
         let is_finished = end_tag_found || result.is_err() || !result.unwrap_or_default();
 
-        if let Some(importer_movie) = self.0.read().importer_movie.borrow().as_ref() {
+        if let Some(importer_movie) = self.0.read().importer_movie.clone() {
             shared.import_exports_of_importer(context, importer_movie);
         }
 
@@ -3753,9 +3751,9 @@ impl<'gc, 'a> MovieClipShared<'gc> {
     fn import_exports_of_importer(
         &self,
         context: &mut UpdateContext<'gc>,
-        importer: &Arc<SwfMovie>,
+        importer: Arc<SwfMovie>,
     ) {
-        let Some(importer_library) = context.library.library_for_movie(importer.clone()) else {
+        let Some(importer_library) = context.library.library_for_movie(importer) else {
             return;
         };
 
