@@ -109,7 +109,7 @@ impl CompressedBitmap {
             },
         }
     }
-    pub fn decode(&self) -> Result<RenderBitmap, RenderError> {
+    pub fn decode(&self) -> Result<RenderBitmap<'static>, RenderError> {
         match self {
             CompressedBitmap::Jpeg {
                 data,

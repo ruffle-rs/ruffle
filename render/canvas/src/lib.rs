@@ -198,7 +198,7 @@ impl BitmapData {
         })
     }
 
-    fn update_pixels(&self, bitmap: Bitmap) -> Result<(), JsValue> {
+    fn update_pixels(&self, bitmap: Bitmap<'_>) -> Result<(), JsValue> {
         let bitmap = bitmap.to_rgba();
         let image_data =
             ImageData::new_with_u8_clamped_array(Clamped(bitmap.data()), bitmap.width())
@@ -530,7 +530,7 @@ impl RenderBackend for WebCanvasRenderBackend {
         commands.execute(self);
     }
 
-    fn register_bitmap(&mut self, bitmap: Bitmap) -> Result<BitmapHandle, Error> {
+    fn register_bitmap(&mut self, bitmap: Bitmap<'_>) -> Result<BitmapHandle, Error> {
         let bitmap_data = BitmapData::with_bitmap(bitmap).map_err(Error::JavascriptError)?;
         Ok(BitmapHandle(Arc::new(bitmap_data)))
     }
@@ -538,7 +538,7 @@ impl RenderBackend for WebCanvasRenderBackend {
     fn update_texture(
         &mut self,
         handle: &BitmapHandle,
-        bitmap: Bitmap,
+        bitmap: Bitmap<'_>,
         _region: PixelRegion,
     ) -> Result<(), Error> {
         let data = as_bitmap_data(handle);
