@@ -77,11 +77,11 @@ pub trait RenderBackend: Any {
 
     fn create_empty_texture(&mut self, width: u32, height: u32) -> Result<BitmapHandle, Error>;
 
-    fn register_bitmap(&mut self, bitmap: Bitmap) -> Result<BitmapHandle, Error>;
+    fn register_bitmap(&mut self, bitmap: Bitmap<'_>) -> Result<BitmapHandle, Error>;
     fn update_texture(
         &mut self,
         handle: &BitmapHandle,
-        bitmap: Bitmap,
+        bitmap: Bitmap<'_>,
         region: PixelRegion,
     ) -> Result<(), Error>;
 
