@@ -78,14 +78,14 @@ impl RenderBackend for NullRenderer {
         _cache_entries: Vec<BitmapCacheEntry>,
     ) {
     }
-    fn register_bitmap(&mut self, _bitmap: Bitmap) -> Result<BitmapHandle, Error> {
+    fn register_bitmap(&mut self, _bitmap: Bitmap<'_>) -> Result<BitmapHandle, Error> {
         Ok(BitmapHandle(Arc::new(NullBitmapHandle)))
     }
 
     fn update_texture(
         &mut self,
         _handle: &BitmapHandle,
-        _bitmap: Bitmap,
+        _bitmap: Bitmap<'_>,
         _region: PixelRegion,
     ) -> Result<(), Error> {
         Ok(())

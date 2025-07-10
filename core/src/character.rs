@@ -64,7 +64,9 @@ impl CompressedBitmap {
             },
         }
     }
-    pub fn decode(&self) -> Result<ruffle_render::bitmap::Bitmap, ruffle_render::error::Error> {
+    pub fn decode(
+        &self,
+    ) -> Result<ruffle_render::bitmap::Bitmap<'static>, ruffle_render::error::Error> {
         match self {
             CompressedBitmap::Jpeg {
                 data,

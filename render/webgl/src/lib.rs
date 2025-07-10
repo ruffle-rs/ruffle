@@ -1071,7 +1071,7 @@ impl RenderBackend for WebGlRenderBackend {
         self.end_frame();
     }
 
-    fn register_bitmap(&mut self, bitmap: Bitmap) -> Result<BitmapHandle, BitmapError> {
+    fn register_bitmap(&mut self, bitmap: Bitmap<'_>) -> Result<BitmapHandle, BitmapError> {
         let (format, bitmap) = match bitmap.format() {
             BitmapFormat::Rgb | BitmapFormat::Yuv420p => (Gl::RGB, bitmap.to_rgb()),
             BitmapFormat::Rgba | BitmapFormat::Yuva420p => (Gl::RGBA, bitmap.to_rgba()),
@@ -1118,7 +1118,7 @@ impl RenderBackend for WebGlRenderBackend {
     fn update_texture(
         &mut self,
         handle: &BitmapHandle,
-        bitmap: Bitmap,
+        bitmap: Bitmap<'_>,
         _region: PixelRegion,
     ) -> Result<(), BitmapError> {
         let texture = &as_registry_data(handle).texture;
