@@ -465,7 +465,7 @@ pub fn concat<'gc>(
                 }
             }
 
-            elements.push(value.clone());
+            elements.push(*value);
 
             Ok(())
         })?;
