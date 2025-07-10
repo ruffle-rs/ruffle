@@ -672,7 +672,7 @@ impl<'gc> MovieClip<'gc> {
     }
 
     pub fn stop(self, context: &mut UpdateContext<'gc>) {
-        self.0.write(context.gc()).stop(context)
+        self.0.read().stop(context)
     }
 
     /// Does this clip have a unload handler
@@ -1425,7 +1425,7 @@ impl<'gc> MovieClip<'gc> {
         // TODO: Move this to UpdateContext to avoid allocations.
         let mut goto_commands: Vec<GotoPlaceObject<'_>> = vec![];
 
-        self.0.write(context.gc()).stop_audio_stream(context);
+        self.0.read().stop_audio_stream(context);
 
         let is_rewind = if frame <= self.current_frame() {
             // Because we can only step forward, we have to start at frame 1
@@ -1471,47 +1471,37 @@ impl<'gc> MovieClip<'gc> {
             frame_pos = reader.get_ref().as_ptr() as u64 - tag_stream_start;
 
             let tag_callback = |reader: &mut _, tag_code, _tag_len| {
-                match tag_code {
-                    TagCode::PlaceObject => {
-                        index += 1;
-                        let mut mc = self.0.write(context.gc());
-                        mc.goto_place_object(reader, 1, &mut goto_commands, is_rewind, index)
-                    }
-                    TagCode::PlaceObject2 => {
-                        index += 1;
-                        let mut mc = self.0.write(context.gc());
-                        mc.goto_place_object(reader, 2, &mut goto_commands, is_rewind, index)
-                    }
-                    TagCode::PlaceObject3 => {
-                        index += 1;
-                        let mut mc = self.0.write(context.gc());
-                        mc.goto_place_object(reader, 3, &mut goto_commands, is_rewind, index)
-                    }
-                    TagCode::PlaceObject4 => {
-                        index += 1;
-                        let mut mc = self.0.write(context.gc());
-                        mc.goto_place_object(reader, 4, &mut goto_commands, is_rewind, index)
-                    }
-                    TagCode::RemoveObject => self.goto_remove_object(
-                        reader,
-                        1,
-                        context,
-                        &mut goto_commands,
-                        is_rewind,
-                        from_frame,
-                        &mut removed_frame_scripts,
-                    ),
-                    TagCode::RemoveObject2 => self.goto_remove_object(
-                        reader,
-                        2,
-                        context,
-                        &mut goto_commands,
-                        is_rewind,
-                        from_frame,
-                        &mut removed_frame_scripts,
-                    ),
+                enum Action {
+                    Place(u8),
+                    Remove(u8),
+                }
+
+                let action = match tag_code {
+                    TagCode::PlaceObject => Action::Place(1),
+                    TagCode::PlaceObject2 => Action::Place(2),
+                    TagCode::PlaceObject3 => Action::Place(3),
+                    TagCode::PlaceObject4 => Action::Place(4),
+                    TagCode::RemoveObject => Action::Remove(1),
+                    TagCode::RemoveObject2 => Action::Remove(2),
                     TagCode::ShowFrame => return Ok(ControlFlow::Exit),
-                    _ => Ok(()),
+                    _ => return Ok(ControlFlow::Continue),
+                };
+
+                match action {
+                    Action::Place(version) => {
+                        index += 1;
+                        let mc = self.0.read();
+                        mc.goto_place_object(reader, version, &mut goto_commands, is_rewind, index)
+                    }
+                    Action::Remove(version) => self.goto_remove_object(
+                        reader,
+                        version,
+                        context,
+                        &mut goto_commands,
+                        is_rewind,
+                        from_frame,
+                        &mut removed_frame_scripts,
+                    ),
                 }?;
 
                 Ok(ControlFlow::Continue)
@@ -2589,10 +2579,7 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
 
         self.drop_focus(context);
 
-        {
-            let mut mc = self.0.write(context.gc());
-            mc.stop_audio_stream(context);
-        }
+        self.0.read().stop_audio_stream(context);
 
         if self.is_root() {
             context
@@ -3127,7 +3114,7 @@ impl<'gc> MovieClipData<'gc> {
         }
     }
 
-    fn stop(&mut self, context: &mut UpdateContext<'gc>) {
+    fn stop(&self, context: &mut UpdateContext<'gc>) {
         self.set_playing(false);
         self.stop_audio_stream(context);
     }
@@ -3139,7 +3126,7 @@ impl<'gc> MovieClipData<'gc> {
     /// Handles a PlaceObject tag when running a goto action.
     #[inline]
     fn goto_place_object<'a>(
-        &mut self,
+        &self,
         reader: &mut SwfStream<'a>,
         version: u8,
         goto_commands: &mut Vec<GotoPlaceObject<'a>>,
@@ -3196,7 +3183,7 @@ impl<'gc> MovieClipData<'gc> {
     }
 
     /// Stops the audio stream if one is playing.
-    fn stop_audio_stream(&mut self, context: &mut UpdateContext<'gc>) {
+    fn stop_audio_stream(&self, context: &mut UpdateContext<'gc>) {
         if let Some(audio_stream) = self.audio_stream.take() {
             context.stop_sound(audio_stream);
         }
