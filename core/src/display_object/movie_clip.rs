@@ -158,7 +158,7 @@ pub struct MovieClipData<'gc> {
     container: RefLock<ChildContainer<'gc>>,
     object: Lock<Option<AvmObject<'gc>>>,
     #[collect(require_static)]
-    clip_event_handlers: RefCell<Box<[ClipEventHandler]>>,
+    clip_event_handlers: OnceCell<Box<[ClipEventHandler]>>,
     #[collect(require_static)]
     clip_event_flags: Cell<ClipEventFlag>,
     frame_scripts: RefLock<Vec<Option<Avm2Object<'gc>>>>,
@@ -207,7 +207,7 @@ impl<'gc> MovieClipData<'gc> {
             audio_stream: Cell::new(None),
             container: RefLock::new(ChildContainer::new(&movie)),
             object: Lock::new(None),
-            clip_event_handlers: Default::default(),
+            clip_event_handlers: OnceCell::new(),
             clip_event_flags: Cell::new(ClipEventFlag::empty()),
             frame_scripts: RefLock::new(Vec::new()),
             flags: Cell::new(MovieClipFlags::empty()),
@@ -677,9 +677,7 @@ impl<'gc> MovieClip<'gc> {
 
     /// Does this clip have a unload handler
     pub fn has_unload_handler(&self) -> bool {
-        self.0
-            .clip_event_handlers
-            .borrow()
+        self.clip_actions()
             .iter()
             .any(|handler| handler.events.contains(ClipEventFlag::UNLOAD))
     }
@@ -1042,20 +1040,27 @@ impl<'gc> MovieClip<'gc> {
     }
 
     /// Gets the clip events for this MovieClip.
-    pub fn clip_actions(&self) -> Ref<'_, [ClipEventHandler]> {
-        Ref::map(self.0.clip_event_handlers.borrow(), |r| &**r)
+    pub fn clip_actions(self) -> &'gc [ClipEventHandler] {
+        match Gc::as_ref(self.0).clip_event_handlers.get() {
+            Some(handlers) => handlers,
+            None => &[],
+        }
     }
 
     /// Sets the clip actions (a.k.a. clip events) for this MovieClip.
     /// Clip actions are created in the Flash IDE by using the `onEnterFrame`
     /// tag on a MovieClip instance.
-    pub fn set_clip_event_handlers(self, event_handlers: Box<[ClipEventHandler]>) {
+    pub fn init_clip_event_handlers(self, event_handlers: Box<[ClipEventHandler]>) {
+        if self.0.clip_event_handlers.get().is_some() {
+            panic!("Clip event handlers already initialized");
+        }
+
         let mut all_event_flags = ClipEventFlag::empty();
-        for handler in &event_handlers {
+        for handler in self.0.clip_event_handlers.get_or_init(|| event_handlers) {
             all_event_flags |= handler.events;
         }
+
         self.0.clip_event_flags.set(all_event_flags);
-        self.0.clip_event_handlers.replace(event_handlers);
     }
 
     /// Returns an iterator of AVM1 `DoAction` blocks on the given frame number.
@@ -1277,7 +1282,7 @@ impl<'gc> MovieClip<'gc> {
                         (&place_object.clip_actions, child.as_movie_clip())
                     {
                         // Convert from `swf::ClipAction` to Ruffle's `ClipEventHandler`.
-                        clip.set_clip_event_handlers(
+                        clip.init_clip_event_handlers(
                             clip_actions
                                 .iter()
                                 .cloned()
@@ -1712,7 +1717,7 @@ impl<'gc> MovieClip<'gc> {
 
             let mut events = Vec::new();
 
-            for event_handler in self.0.clip_event_handlers.borrow().iter() {
+            for event_handler in self.clip_actions().iter() {
                 if event_handler.events.contains(ClipEventFlag::INITIALIZE) {
                     context.action_queue.queue_action(
                         self.into(),
@@ -2649,9 +2654,7 @@ impl<'gc> TInteractiveObject<'gc> for MovieClip<'gc> {
             if swf_version >= 5 {
                 if let Some(flag) = event.flag() {
                     for event_handler in self
-                        .0
-                        .clip_event_handlers
-                        .borrow()
+                        .clip_actions()
                         .iter()
                         .filter(|handler| handler.events.contains(flag))
                     {
