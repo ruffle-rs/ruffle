@@ -1,0 +1,36 @@
+Input: -100
+Result: ffff0000
+=================
+Input: -5
+Result: ffff0000
+=================
+Input: -1
+Result: ffff0000
+=================
+Input: 0
+Result: ffff0000
+=================
+Input: 1
+Result: ffffff00
+=================
+Input: 2
+Result: ffff0000
+=================
+Input: 5
+Result: ffff0000
+=================
+Input: 100
+Result: ffff0000
+=================
+Input: 255
+Result: ffff0000
+=================
+Input: 256
+Result: ffff0000
+=================
+Input: 1000
+Result: ffff0000
+=================
+Input: -1000
+Result: ffff0000
+=================
