@@ -5,7 +5,7 @@ use ruffle_core::{
         DialogLoaderError, DialogResultFuture, FileDialogResult, FileFilter, FontDefinition,
         FullscreenError, LanguageIdentifier, MouseCursor, UiBackend, US_ENGLISH,
     },
-    FontQuery,
+    FontFileData, FontQuery,
 };
 use url::Url;
 
@@ -146,7 +146,7 @@ impl UiBackend for TestUiBackend {
                 name: name.to_owned(),
                 is_bold,
                 is_italic,
-                data: font.bytes.clone(),
+                data: FontFileData::new(font.bytes.clone()),
                 index: 0,
             });
             break;

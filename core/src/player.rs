@@ -2945,6 +2945,7 @@ impl PlayerBuilder {
 
         #[cfg(feature = "default_font")]
         {
+            use crate::font::FontFileData;
             use flate2::read::DeflateDecoder;
             use std::io::Read;
 
@@ -2958,7 +2959,7 @@ impl PlayerBuilder {
                 name: "Noto Sans".into(),
                 is_bold: false,
                 is_italic: false,
-                data,
+                data: FontFileData::new(data),
                 index: 0,
             });
 

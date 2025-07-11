@@ -14,7 +14,7 @@ use ruffle_core::backend::ui::{
     DialogLoaderError, DialogResultFuture, FileDialogResult, FileFilter, FontDefinition,
     FullscreenError, LanguageIdentifier, MouseCursor, UiBackend,
 };
-use ruffle_core::FontQuery;
+use ruffle_core::{FontFileData, FontQuery};
 use std::path::Path;
 use std::rc::Rc;
 use std::sync::Arc;
@@ -408,7 +408,7 @@ fn load_font_from_file(
             name,
             is_bold,
             is_italic,
-            data,
+            data: FontFileData::new(data),
             index,
         }),
         Err(e) => Err(anyhow!("Couldn't read font file at {path:?}: {e}")),
@@ -429,7 +429,7 @@ fn load_fontdb_font(name: String, face: &FaceInfo) -> Result<FontDefinition<'sta
                 name,
                 is_bold,
                 is_italic,
-                data: bin.as_ref().as_ref().to_vec(),
+                data: FontFileData::new_shared(bin.clone()),
                 index: face.index,
             })
         }

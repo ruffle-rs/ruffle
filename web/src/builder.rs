@@ -11,10 +11,10 @@ use ruffle_core::backend::ui::FontDefinition;
 use ruffle_core::compatibility_rules::CompatibilityRules;
 use ruffle_core::config::{Letterbox, NetworkingAccessMode};
 use ruffle_core::events::{GamepadButton, KeyCode};
-use ruffle_core::ttf_parser;
 use ruffle_core::{
     swf, Color, DefaultFont, Player, PlayerBuilder, PlayerRuntime, StageAlign, StageScaleMode,
 };
+use ruffle_core::{ttf_parser, FontFileData};
 use ruffle_render::backend::RenderBackend;
 use ruffle_render::quality::StageQuality;
 use ruffle_video_external::backend::ExternalVideoBackend;
@@ -418,7 +418,9 @@ impl RuffleInstanceBuilder {
                                             name: name.to_string(),
                                             is_bold: font.is_bold,
                                             is_italic: font.is_italic,
-                                            data: data.to_vec(),
+                                            // TODO remove when https://github.com/rust-lang/rust-clippy/issues/15252 is fixed
+                                            #[allow(clippy::unnecessary_to_owned)]
+                                            data: FontFileData::new(data.to_vec()),
                                             index: 0,
                                         })
                                     } else {
@@ -470,7 +472,7 @@ impl RuffleInstanceBuilder {
             name: name.to_string(),
             is_bold: face.is_bold(),
             is_italic: face.is_italic(),
-            data: bytes,
+            data: FontFileData::new(bytes),
             index,
         });
     }
