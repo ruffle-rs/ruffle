@@ -93,6 +93,7 @@ struct Opt {
 }
 
 /// Captures a screenshot. The resulting image uses straight alpha
+#[allow(clippy::too_many_arguments)]
 fn take_screenshot(
     descriptors: Arc<Descriptors>,
     swf_path: &Path,
