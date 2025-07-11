@@ -22,7 +22,7 @@ impl<'a> EncodedFrame<'a> {
 }
 
 /// A decoded frame of video. It can be in whichever format the decoder chooses.
-pub type DecodedFrame = Bitmap;
+pub type DecodedFrame = Bitmap<'static>;
 
 /// What dependencies a given video frame has on any previous frames.
 #[derive(Copy, Clone, Debug)]
