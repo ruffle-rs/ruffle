@@ -59,7 +59,7 @@ pub enum BitmapDataDrawError {
 
 impl Color {
     #[must_use]
-    pub fn argb(a: u8, r: u8, g: u8, b: u8) -> Self {
+    pub fn rgba(r: u8, g: u8, b: u8, a: u8) -> Self {
         Self { r, g, b, a }
     }
 
@@ -100,7 +100,7 @@ impl Color {
         let g = ((self.green() as u32 * a + 127) / 255) as u8;
         let b = ((self.blue() as u32 * a + 127) / 255) as u8;
 
-        Self::argb(old_alpha, r, g, b)
+        Self::rgba(r, g, b, old_alpha)
     }
 
     #[must_use]
@@ -143,12 +143,12 @@ impl Color {
         let g = unmultiply(self.green());
         let b = unmultiply(self.blue());
 
-        Self::argb(self.alpha(), r, g, b)
+        Self::rgba(r, g, b, self.alpha())
     }
 
     #[must_use]
     pub fn with_alpha(&self, alpha: u8) -> Self {
-        Self::argb(alpha, self.red(), self.green(), self.blue())
+        Self::rgba(self.red(), self.green(), self.blue(), alpha)
     }
 
     /// # Arguments
@@ -163,7 +163,7 @@ impl Color {
         let g = source.green() + ((self.green() as u16 * (255 - sa as u16)) / 255) as u8;
         let b = source.blue() + ((self.blue() as u16 * (255 - sa as u16)) / 255) as u8;
         let a = source.alpha() + ((self.alpha() as u16 * (255 - sa as u16)) / 255) as u8;
-        Self::argb(a, r, g, b)
+        Self::rgba(r, g, b, a)
     }
 
     fn slice_as_rgba(slice: &[Self]) -> &[u8] {
@@ -191,7 +191,7 @@ impl From<u32> for Color {
 
 impl From<swf::Color> for Color {
     fn from(c: swf::Color) -> Self {
-        Self::argb(c.a, c.r, c.g, c.b)
+        Self::rgba(c.r, c.g, c.b, c.a)
     }
 }
 
@@ -837,7 +837,7 @@ fn copy_pixels_to_bitmapdata(
                 255
             };
 
-            let nc = Color::argb(a, r, g, b);
+            let nc = Color::rgba(r, g, b, a);
 
             // Ignore the original color entirely - the blending (including alpha)
             // was done by the renderer when it wrote over the previous texture contents.

@@ -47,7 +47,7 @@ pub fn do_copy<'gc>(
                 .chunks_exact(4)
                 .map(|chunk| {
                     // The ByteArray is in BGRA format. FIXME - should this be premultiplied?
-                    Color::argb(chunk[3], chunk[2], chunk[1], chunk[0])
+                    Color::rgba(chunk[2], chunk[1], chunk[0], chunk[3])
                 })
                 .collect();
 
