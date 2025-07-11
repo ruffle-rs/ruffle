@@ -309,7 +309,7 @@ pub fn set_hit_area<'gc>(
         let object = args
             .try_get_object(activation, 0)
             .and_then(|hit_area| hit_area.as_display_object());
-        mc.set_hit_area(activation.context, object);
+        mc.set_hit_area(activation.gc(), object);
     }
 
     Ok(Value::Undefined)
