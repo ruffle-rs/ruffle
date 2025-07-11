@@ -152,7 +152,7 @@ impl<'gc> Context3DObject<'gc> {
     pub fn upload_vertex_buffer_data(
         &self,
         buffer: VertexBuffer3DObject<'gc>,
-        data: Vec<u8>,
+        data: &[u8],
         start_vertex: usize,
         data32_per_vertex: u8,
     ) {
@@ -169,7 +169,7 @@ impl<'gc> Context3DObject<'gc> {
     pub fn upload_index_buffer_data(
         &self,
         buffer: IndexBuffer3DObject<'gc>,
-        data: Vec<u8>,
+        data: &[u8],
         start_offset: usize,
     ) {
         let mut handle = buffer.handle();
