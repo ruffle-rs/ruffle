@@ -45,6 +45,8 @@ pub struct ShaderBuilder<'a> {
     zeroi32: Handle<Expression>,
     // The value vec4f(0.0)
     zerovec4f: Handle<Expression>,
+    // The value vec4i(0.0)
+    onevec4i: Handle<Expression>,
     // The value 1.0f32
     onef32: Handle<Expression>,
 
@@ -291,6 +293,10 @@ impl ShaderBuilder<'_> {
             .expressions
             .append(Expression::Literal(Literal::F32(1.0)), Span::UNDEFINED);
 
+        let onei32 = func
+            .expressions
+            .append(Expression::Literal(Literal::I32(1)), Span::UNDEFINED);
+
         let mut blocks = vec![BlockStackEntry::Normal(Block::new())];
 
         let zerovec4f = evaluate_expr(
@@ -299,6 +305,15 @@ impl ShaderBuilder<'_> {
             Expression::Compose {
                 ty: vec4f,
                 components: vec![zerof32, zerof32, zerof32, zerof32],
+            },
+        );
+
+        let onevec4i = evaluate_expr(
+            &mut func,
+            &mut blocks,
+            Expression::Compose {
+                ty: vec4i,
+                components: vec![onei32, onei32, onei32, onei32],
             },
         );
 
@@ -328,6 +343,7 @@ impl ShaderBuilder<'_> {
             zerof32,
             zeroi32,
             zerovec4f,
+            onevec4i,
             onef32,
             temp_vec4f_local,
             clamp_nearest: samplers[SAMPLER_CLAMP_NEAREST as usize],
@@ -1234,6 +1250,15 @@ impl ShaderBuilder<'_> {
                                 op: BinaryOperator::Modulo,
                                 left: dst_val,
                                 right: src,
+                            })
+                        }
+                        Opcode::IntToBool => {
+                            // Convert int to bool: Flash Player only returns true for exactly 1
+                            // All other values (including other non-zero values) return false
+                            self.evaluate_expr(Expression::Binary {
+                                op: BinaryOperator::Equal,
+                                left: src,
+                                right: self.onevec4i,
                             })
                         }
                         Opcode::FloatToInt => self.evaluate_expr(Expression::As {
