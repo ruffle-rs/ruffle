@@ -53,7 +53,9 @@ impl FromStr for FrameSelection {
         if s_lower == "all" {
             Ok(FrameSelection::All)
         } else if let Ok(n) = s.parse::<u32>() {
-            Ok(FrameSelection::Count(n))
+            let non_zero = NonZeroUsize::new(n as usize)
+                .ok_or_else(|| "Frame count must be greater than 0".to_string())?;
+            Ok(FrameSelection::Count(non_zero))
         } else {
             Err(format!("Invalid value for --frames: {s}"))
         }
@@ -153,7 +155,7 @@ fn take_screenshot(
                 .and_then(|root_clip| root_clip.as_movie_clip())
                 .map_or(1, |movie_clip| movie_clip.total_frames() as u32)
         }),
-        FrameSelection::Count(n) => n + skipframes,
+        FrameSelection::Count(n) => n.get() as u32 + skipframes,
     };
 
     for i in 0..totalframes {
@@ -259,19 +261,19 @@ fn capture_single_swf(descriptors: Arc<Descriptors>, opt: &Opt) -> Result<()> {
     let output = opt.output_path.clone().unwrap_or_else(|| {
         let mut result = PathBuf::new();
         result.set_file_name(opt.swf.file_stem().unwrap());
-        if matches!(opt.frames, FrameSelection::Count(1)) {
+        if matches!(opt.frames, FrameSelection::Count(n) if n.get() == 1) {
             result.set_extension("png");
         }
         result
     });
 
-    if !matches!(opt.frames, FrameSelection::Count(1)) {
+    if !matches!(opt.frames, FrameSelection::Count(n) if n.get() == 1) {
         let _ = create_dir_all(&output);
     }
 
     let progress = if !opt.silent {
         let progress = match opt.frames {
-            FrameSelection::Count(n) => ProgressBar::new(n as u64),
+            FrameSelection::Count(n) => ProgressBar::new(n.get() as u64),
             _ => ProgressBar::new_spinner(), // TODO Once we figure out a way to get framecount before calling take_screenshot, then this can be changed back to a progress bar when using --frames all
         };
         progress.set_style(
@@ -358,7 +360,7 @@ fn capture_multiple_swfs(descriptors: Arc<Descriptors>, opt: &Opt) -> Result<()>
 
     let progress = if !opt.silent {
         let progress = match opt.frames {
-            FrameSelection::Count(n) => ProgressBar::new((files.len() as u64) * (n as u64)),
+            FrameSelection::Count(n) => ProgressBar::new((files.len() as u64) * (n.get() as u64)),
             _ => ProgressBar::new(files.len() as u64),
         };
         progress.set_style(
@@ -423,7 +425,7 @@ fn capture_multiple_swfs(descriptors: Arc<Descriptors>, opt: &Opt) -> Result<()>
     })?;
 
     let message = match opt.frames {
-        FrameSelection::Count(1) => format!(
+        FrameSelection::Count(n) if n.get() == 1 => format!(
             "Saved first frame of {} files to {}",
             files.len(),
             output.to_string_lossy()
