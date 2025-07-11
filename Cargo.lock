@@ -4462,6 +4462,7 @@ dependencies = [
  "futures",
  "gilrs",
  "image",
+ "memmap2",
  "os_info",
  "rand",
  "rfd",
