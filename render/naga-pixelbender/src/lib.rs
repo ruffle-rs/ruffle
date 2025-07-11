@@ -45,7 +45,7 @@ pub struct ShaderBuilder<'a> {
     zeroi32: Handle<Expression>,
     // The value vec4f(0.0)
     zerovec4f: Handle<Expression>,
-    // The value vec4i(0.0)
+    // The value vec4i(1)
     onevec4i: Handle<Expression>,
     // The value 1.0f32
     onef32: Handle<Expression>,
@@ -1001,6 +1001,8 @@ impl ShaderBuilder<'_> {
                                 components: res_components,
                             })
                         }
+                        // Seems that logical not is broken in FP and always returns 0
+                        Opcode::LogicalNot => self.evaluate_expr(Expression::Splat { size: VectorSize::Quad, value: self.zeroi32 }),
                         Opcode::Floor => self.evaluate_expr(Expression::Math {
                             fun: MathFunction::Floor,
                             arg: src,
