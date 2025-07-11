@@ -444,14 +444,14 @@ pub enum Context3DCommand<'a> {
     UploadToIndexBuffer {
         buffer: &'a mut dyn IndexBuffer,
         start_offset: usize,
-        data: Vec<u8>,
+        data: &'a [u8],
     },
 
     UploadToVertexBuffer {
         buffer: Rc<dyn VertexBuffer>,
         start_vertex: usize,
         data32_per_vertex: u8,
-        data: Vec<u8>,
+        data: &'a [u8],
     },
 
     DrawTriangles {

@@ -718,7 +718,7 @@ impl Context3D for WgpuContext3D {
                     offset_bytes - (offset_bytes % COPY_BUFFER_ALIGNMENT as usize);
                 let rounded_up_length = align_copy_buffer_size(data.len());
 
-                buffer.data[offset_bytes..(offset_bytes + data.len())].copy_from_slice(&data);
+                buffer.data[offset_bytes..(offset_bytes + data.len())].copy_from_slice(data);
                 self.buffer_staging_belt
                     .write_buffer(
                         &mut self.buffer_command_encoder,
@@ -756,7 +756,7 @@ impl Context3D for WgpuContext3D {
                     NonZeroU64::new(data.len() as u64).unwrap(),
                     &self.descriptors.device,
                 )[..data.len()]
-                    .copy_from_slice(&data);
+                    .copy_from_slice(data);
             }
 
             Context3DCommand::SetRenderToTexture {
