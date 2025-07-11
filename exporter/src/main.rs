@@ -16,6 +16,7 @@ use ruffle_render_wgpu::wgpu;
 use std::any::Any;
 use std::fs::create_dir_all;
 use std::io::{self, Write};
+use std::num::NonZeroUsize;
 use std::panic::catch_unwind;
 use std::path::{Path, PathBuf};
 use std::str::FromStr;
