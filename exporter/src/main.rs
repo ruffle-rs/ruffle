@@ -41,8 +41,7 @@ struct SizeOpt {
 #[derive(Debug, Clone, Copy)]
 enum FrameSelection {
     All,
-    One,
-    Count(u32),
+    Count(NonZeroUsize),
 }
 
 impl FromStr for FrameSelection {
@@ -53,11 +52,7 @@ impl FromStr for FrameSelection {
         if s_lower == "all" {
             Ok(FrameSelection::All)
         } else if let Ok(n) = s.parse::<u32>() {
-            if n == 1 {
-                Ok(FrameSelection::One)
-            } else {
-                Ok(FrameSelection::Count(n))
-            }
+            Ok(FrameSelection::Count(n))
         } else {
             Err(format!("Invalid value for --frames: {s}"))
         }
@@ -119,7 +114,7 @@ struct Opt {
 fn take_screenshot(
     descriptors: Arc<Descriptors>,
     swf_path: &Path,
-    frames: FrameSelection,
+    frames: FrameSelection, // TODO Figure out a way to get framecount before calling take_screenshot, so that we can have accurate progress bars when using --frames all
     skipframes: u32,
     progress: &Option<ProgressBar>,
     size: SizeOpt,
@@ -157,7 +152,6 @@ fn take_screenshot(
                 .and_then(|root_clip| root_clip.as_movie_clip())
                 .map_or(1, |movie_clip| movie_clip.total_frames() as u32)
         }),
-        FrameSelection::One => 1 + skipframes,
         FrameSelection::Count(n) => n + skipframes,
     };
 
@@ -264,20 +258,20 @@ fn capture_single_swf(descriptors: Arc<Descriptors>, opt: &Opt) -> Result<()> {
     let output = opt.output_path.clone().unwrap_or_else(|| {
         let mut result = PathBuf::new();
         result.set_file_name(opt.swf.file_stem().unwrap());
-        if matches!(opt.frames, FrameSelection::One) {
+        if matches!(opt.frames, FrameSelection::Count(1)) {
             result.set_extension("png");
         }
         result
     });
 
-    if !matches!(opt.frames, FrameSelection::One) {
+    if !matches!(opt.frames, FrameSelection::Count(1)) {
         let _ = create_dir_all(&output);
     }
 
     let progress = if !opt.silent {
         let progress = match opt.frames {
             FrameSelection::Count(n) => ProgressBar::new(n as u64),
-            _ => ProgressBar::new_spinner(),
+            _ => ProgressBar::new_spinner(), // TODO Once we figure out a way to get framecount before calling take_screenshot, then this can be changed back to a progress bar when using --frames all
         };
         progress.set_style(
             ProgressStyle::with_template(
@@ -428,7 +422,7 @@ fn capture_multiple_swfs(descriptors: Arc<Descriptors>, opt: &Opt) -> Result<()>
     })?;
 
     let message = match opt.frames {
-        FrameSelection::One => format!(
+        FrameSelection::Count(1) => format!(
             "Saved first frame of {} files to {}",
             files.len(),
             output.to_string_lossy()
