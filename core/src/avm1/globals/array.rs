@@ -439,28 +439,37 @@ pub fn concat<'gc>(
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let mut elements = vec![];
-    for &value in [this.into()].iter().chain(args) {
-        let array_object = if let Value::Object(object) = value {
-            if let NativeObject::Array(_) = object.native() {
-                Some(object)
-            } else {
-                None
-            }
-        } else {
-            None
-        };
+    let this_value = this.into();
 
-        if let Some(array_object) = array_object {
-            let length = array_object.length(activation)?;
-            for i in 0..length {
-                let element = array_object.get_element(activation, i);
-                elements.push(element);
+    let mut elements = vec![];
+
+    std::iter::once(&this_value)
+        .chain(args)
+        .enumerate()
+        .try_for_each(|(index, value)| -> Result<(), Error<'gc>> {
+            if let Value::Object(object) = value {
+                match (object.native(), index) {
+                    // When Array.prototype.concat is called directly with the first argument being an object,
+                    // such as in the avm1/from_shumway/array test, the this value (i.e. index 0 in the iterator) will be NativeObject::None instead of NativeObject::Array
+                    (NativeObject::None, 0) | (NativeObject::Array(()), _) => {
+                        let length = object.length(activation)?;
+
+                        let object_elements =
+                            (0..length).map(|index| object.get_element(activation, index));
+
+                        elements.extend(object_elements);
+
+                        return Ok(());
+                    }
+                    _ => {}
+                }
             }
-        } else {
-            elements.push(value);
-        }
-    }
+
+            elements.push(*value);
+
+            Ok(())
+        })?;
+
     Ok(ArrayBuilder::new(activation).with(elements).into())
 }
 
