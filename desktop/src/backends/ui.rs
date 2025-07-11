@@ -15,6 +15,7 @@ use ruffle_core::backend::ui::{
     FullscreenError, LanguageIdentifier, MouseCursor, UiBackend,
 };
 use ruffle_core::{FontFileData, FontQuery};
+use std::fs::File;
 use std::path::Path;
 use std::rc::Rc;
 use std::sync::Arc;
@@ -403,16 +404,25 @@ fn load_font_from_file(
     is_bold: bool,
     is_italic: bool,
 ) -> Result<FontDefinition<'static>> {
-    match std::fs::read(path) {
-        Ok(data) => Ok(FontDefinition::FontFile {
-            name,
-            is_bold,
-            is_italic,
-            data: FontFileData::new(data),
-            index,
-        }),
-        Err(e) => Err(anyhow!("Couldn't read font file at {path:?}: {e}")),
-    }
+    let file = File::open(path).map_err(|e| anyhow!("Couldn't open font file at {path:?}: {e}"))?;
+
+    // SAFETY: We have to assume that the font file won't change.
+    // This assumption is realistic, as we're using system fonts only.
+    // However, we never store other references to this data, and we reparse
+    // the whole file each time we're accessing any font data.
+    // Realistically, when the underlying file or memory region changes,
+    // we can expect Ruffle to crash due to SIGBUS or errors when parsing.
+    let mmap = unsafe { memmap2::Mmap::map(&file) };
+
+    let mmap = mmap.map_err(|e| anyhow!("Failed to mmap font file at {path:?}: {e}"))?;
+    let data = FontFileData::new(mmap);
+    Ok(FontDefinition::FontFile {
+        name,
+        is_bold,
+        is_italic,
+        data,
+        index,
+    })
 }
 
 fn load_fontdb_font(name: String, face: &FaceInfo) -> Result<FontDefinition<'static>> {
