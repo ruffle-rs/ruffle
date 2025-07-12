@@ -45,6 +45,8 @@ pub struct ShaderBuilder<'a> {
     zeroi32: Handle<Expression>,
     // The value vec4f(0.0)
     zerovec4f: Handle<Expression>,
+    // The value vec4i(1)
+    onevec4i: Handle<Expression>,
     // The value 1.0f32
     onef32: Handle<Expression>,
 
@@ -291,6 +293,10 @@ impl ShaderBuilder<'_> {
             .expressions
             .append(Expression::Literal(Literal::F32(1.0)), Span::UNDEFINED);
 
+        let onei32 = func
+            .expressions
+            .append(Expression::Literal(Literal::I32(1)), Span::UNDEFINED);
+
         let mut blocks = vec![BlockStackEntry::Normal(Block::new())];
 
         let zerovec4f = evaluate_expr(
@@ -299,6 +305,15 @@ impl ShaderBuilder<'_> {
             Expression::Compose {
                 ty: vec4f,
                 components: vec![zerof32, zerof32, zerof32, zerof32],
+            },
+        );
+
+        let onevec4i = evaluate_expr(
+            &mut func,
+            &mut blocks,
+            Expression::Compose {
+                ty: vec4i,
+                components: vec![onei32, onei32, onei32, onei32],
             },
         );
 
@@ -328,6 +343,7 @@ impl ShaderBuilder<'_> {
             zerof32,
             zeroi32,
             zerovec4f,
+            onevec4i,
             onef32,
             temp_vec4f_local,
             clamp_nearest: samplers[SAMPLER_CLAMP_NEAREST as usize],
@@ -985,12 +1001,10 @@ impl ShaderBuilder<'_> {
                                 components: res_components,
                             })
                         }
-                        Opcode::Floor => self.evaluate_expr(Expression::Math {
-                            fun: MathFunction::Floor,
-                            arg: src,
-                            arg1: None,
-                            arg2: None,
-                            arg3: None,
+                        // Seems that logical not is broken in FP and always returns 0
+                        Opcode::LogicalNot => self.evaluate_expr(Expression::Splat {
+                            size: VectorSize::Quad,
+                            value: self.zeroi32,
                         }),
                         Opcode::Length => {
                             // Don't pad the result, as adding extra components changes the length
@@ -1041,30 +1055,18 @@ impl ShaderBuilder<'_> {
                             });
                             self.pad_result(res, src_reg.is_scalar())
                         }
-                        Opcode::Max => {
+                        Opcode::Max | Opcode::Min | Opcode::Step => {
                             let right = self.load_src_register(&dst)?;
+
+                            let fun = match opcode {
+                                Opcode::Max => MathFunction::Max,
+                                Opcode::Min => MathFunction::Min,
+                                Opcode::Step => MathFunction::Step,
+                                _ => unreachable!(),
+                            };
+
                             self.evaluate_expr(Expression::Math {
-                                fun: MathFunction::Max,
-                                arg: src,
-                                arg1: Some(right),
-                                arg2: None,
-                                arg3: None,
-                            })
-                        }
-                        Opcode::Min => {
-                            let right = self.load_src_register(&dst)?;
-                            self.evaluate_expr(Expression::Math {
-                                fun: MathFunction::Min,
-                                arg: src,
-                                arg1: Some(right),
-                                arg2: None,
-                                arg3: None,
-                            })
-                        }
-                        Opcode::Step => {
-                            let right = self.load_src_register(&dst)?;
-                            self.evaluate_expr(Expression::Math {
-                                fun: MathFunction::Step,
+                                fun,
                                 arg: src,
                                 arg1: Some(right),
                                 arg2: None,
@@ -1082,78 +1084,51 @@ impl ShaderBuilder<'_> {
                             });
                             self.pad_result(res, src_reg.is_scalar())
                         }
-                        Opcode::Exp => self.evaluate_expr(Expression::Math {
-                            fun: MathFunction::Exp,
-                            arg: src,
-                            arg1: None,
-                            arg2: None,
-                            arg3: None,
-                        }),
-                        Opcode::Pow => {
+                        Opcode::Atan2 | Opcode::Pow => {
                             let dst_val = self.load_src_register(&dst)?;
+
+                            let fun = match opcode {
+                                Opcode::Atan2 => MathFunction::Atan2,
+                                Opcode::Pow => MathFunction::Pow,
+                                _ => unreachable!(),
+                            };
+
                             self.evaluate_expr(Expression::Math {
-                                fun: MathFunction::Pow,
+                                fun,
                                 arg: dst_val,
                                 arg1: Some(src),
                                 arg2: None,
                                 arg3: None,
                             })
                         }
-                        Opcode::Abs => self.evaluate_expr(Expression::Math {
-                            fun: MathFunction::Abs,
-                            arg: src,
-                            arg1: None,
-                            arg2: None,
-                            arg3: None,
-                        }),
-                        Opcode::Sin => self.evaluate_expr(Expression::Math {
-                            fun: MathFunction::Sin,
-                            arg: src,
-                            arg1: None,
-                            arg2: None,
-                            arg3: None,
-                        }),
-                        Opcode::Asin => self.evaluate_expr(Expression::Math {
-                            fun: MathFunction::Asin,
-                            arg: src,
-                            arg1: None,
-                            arg2: None,
-                            arg3: None,
-                        }),
-                        Opcode::Cos => self.evaluate_expr(Expression::Math {
-                            fun: MathFunction::Cos,
-                            arg: src,
-                            arg1: None,
-                            arg2: None,
-                            arg3: None,
-                        }),
-                        Opcode::Acos => self.evaluate_expr(Expression::Math {
-                            fun: MathFunction::Acos,
-                            arg: src,
-                            arg1: None,
-                            arg2: None,
-                            arg3: None,
-                        }),
-                        Opcode::Tan => self.evaluate_expr(Expression::Math {
-                            fun: MathFunction::Tan,
-                            arg: src,
-                            arg1: None,
-                            arg2: None,
-                            arg3: None,
-                        }),
-                        Opcode::Atan => self.evaluate_expr(Expression::Math {
-                            fun: MathFunction::Atan,
-                            arg: src,
-                            arg1: None,
-                            arg2: None,
-                            arg3: None,
-                        }),
-                        Opcode::Atan2 => {
-                            let dst_val = self.load_src_register(&dst)?;
+                        Opcode::Abs
+                        | Opcode::Acos
+                        | Opcode::Asin
+                        | Opcode::Atan
+                        | Opcode::Cos
+                        | Opcode::Exp
+                        | Opcode::Floor
+                        | Opcode::Fract
+                        | Opcode::Sin
+                        | Opcode::Tan => {
+                            let fun = match opcode {
+                                Opcode::Abs => MathFunction::Abs,
+                                Opcode::Acos => MathFunction::Acos,
+                                Opcode::Asin => MathFunction::Asin,
+                                Opcode::Atan => MathFunction::Atan,
+                                Opcode::Cos => MathFunction::Cos,
+                                Opcode::Exp => MathFunction::Exp,
+                                Opcode::Floor => MathFunction::Floor,
+                                Opcode::Fract => MathFunction::Fract,
+                                Opcode::Sin => MathFunction::Sin,
+                                Opcode::Tan => MathFunction::Tan,
+                                _ => unreachable!(),
+                            };
+
                             self.evaluate_expr(Expression::Math {
-                                fun: MathFunction::Atan2,
-                                arg: dst_val,
-                                arg1: Some(src),
+                                fun,
+                                arg: src,
+                                arg1: None,
                                 arg2: None,
                                 arg3: None,
                             })
@@ -1236,6 +1211,15 @@ impl ShaderBuilder<'_> {
                                 right: src,
                             })
                         }
+                        Opcode::IntToBool => {
+                            // Convert int to bool: Flash Player only returns true for exactly 1
+                            // All other values (including other non-zero values) return false
+                            self.evaluate_expr(Expression::Binary {
+                                op: BinaryOperator::Equal,
+                                left: src,
+                                right: self.onevec4i,
+                            })
+                        }
                         Opcode::FloatToInt => self.evaluate_expr(Expression::As {
                             kind: crate::ScalarKind::Sint,
                             expr: src,
@@ -1265,13 +1249,6 @@ impl ShaderBuilder<'_> {
                             });
                             self.pad_result(res, src_reg.is_scalar())
                         }
-                        Opcode::Fract => self.evaluate_expr(Expression::Math {
-                            fun: MathFunction::Fract,
-                            arg: src,
-                            arg1: None,
-                            arg2: None,
-                            arg3: None,
-                        }),
                         _ => {
                             panic!("Unimplemented opcode {opcode:?}");
                         }
