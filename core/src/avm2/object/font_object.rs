@@ -22,7 +22,7 @@ pub fn font_allocator<'gc>(
     {
         if let Some(lib) = activation.context.library.library_for_movie(movie) {
             if let Some(Character::Font(font)) = lib.character_by_id(id) {
-                Some(*font)
+                Some(font)
             } else {
                 None
             }

@@ -49,7 +49,6 @@ pub fn bitmap_allocator<'gc>(
                 .library
                 .library_for_movie_mut(movie)
                 .character_by_id(symbol)
-                .cloned()
             {
                 let new_bitmap_data = fill_bitmap_data_from_symbol(activation, bitmap.compressed());
                 let bitmap_data_obj = BitmapDataObject::from_bitmap_data_internal(

@@ -3753,7 +3753,7 @@ impl<'gc, 'a> MovieClipShared<'gc> {
             .iter()
             .map(|(name, id)| {
                 let character = importer_library.character_by_id(*id).unwrap();
-                (name, (*id, character.clone()))
+                (name, (*id, character))
             })
             .collect::<HashMap<AvmString<'gc>, (CharacterId, Character<'gc>)>>();
 
@@ -3885,7 +3885,6 @@ impl<'gc, 'a> MovieClipShared<'gc> {
             if let Some(character) = self
                 .library(context)
                 .and_then(|l| l.character_by_id(export.id))
-                .cloned()
             {
                 Self::register_export(context, export.id, &name, self.movie());
                 tracing::debug!("register_export asset: {} (ID: {})", name, export.id);
@@ -4197,7 +4196,7 @@ impl<'gc, 'a> MovieClip<'gc> {
                                         .library
                                         .library_for_movie_mut(movie.clone());
 
-                                    let Some(&Character::Bitmap(bitmap)) =
+                                    let Some(Character::Bitmap(bitmap)) =
                                         library.character_by_id(id)
                                     else {
                                         unreachable!();

@@ -14,7 +14,7 @@ use ruffle_render::bitmap::{Bitmap as RenderBitmap, BitmapHandle, BitmapSize};
 use ruffle_render::error::Error as RenderError;
 use swf::DefineBitsLossless;
 
-#[derive(Clone, Collect, Debug)]
+#[derive(Copy, Clone, Collect, Debug)]
 #[collect(no_drop)]
 pub enum Character<'gc> {
     EditText(EditText<'gc>),

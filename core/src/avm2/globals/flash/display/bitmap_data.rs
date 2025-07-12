@@ -111,7 +111,6 @@ pub fn init<'gc>(
                 .library
                 .library_for_movie_mut(movie)
                 .character_by_id(chara_id)
-                .cloned()
         });
 
     let new_bitmap_data = if let Some(Character::Bitmap(bitmap)) = character {
