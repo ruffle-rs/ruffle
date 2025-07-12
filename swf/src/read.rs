@@ -2483,7 +2483,19 @@ impl<'a> Reader<'a> {
         })
     }
 
-    fn read_define_bits_jpeg_3(&mut self, version: u8) -> Result<DefineBitsJpeg3<'a>> {
+    pub fn read_define_bits(&mut self) -> Result<(CharacterId, &'a [u8])> {
+        let id = self.read_character_id()?;
+        let jpeg_data = self.read_slice_to_end();
+        Ok((id, jpeg_data))
+    }
+
+    pub fn read_define_bits_jpeg_2(&mut self) -> Result<(CharacterId, &'a [u8])> {
+        let id = self.read_character_id()?;
+        let jpeg_data = self.read_slice_to_end();
+        Ok((id, jpeg_data))
+    }
+
+    pub fn read_define_bits_jpeg_3(&mut self, version: u8) -> Result<DefineBitsJpeg3<'a>> {
         let id = self.read_character_id()?;
         let data_size = self.read_u32()? as usize;
         let deblocking = if version >= 4 {
