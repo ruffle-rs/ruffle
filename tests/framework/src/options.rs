@@ -7,7 +7,9 @@ use approx::relative_eq;
 use image::ImageFormat;
 use regex::Regex;
 use ruffle_core::tag_utils::SwfMovie;
-use ruffle_core::{PlayerBuilder, PlayerMode, PlayerRuntime, ViewportDimensions};
+use ruffle_core::{
+    FontQuery, FontType, PlayerBuilder, PlayerMode, PlayerRuntime, ViewportDimensions,
+};
 use ruffle_render::backend::RenderBackend;
 use ruffle_render::quality::StageQuality;
 use serde::Deserialize;
@@ -32,6 +34,7 @@ pub struct TestOptions {
     pub log_fetch: bool,
     pub required_features: RequiredFeatures,
     pub fonts: HashMap<String, FontOptions>,
+    pub font_sorts: HashMap<String, FontSortOptions>,
 }
 
 impl Default for TestOptions {
@@ -50,6 +53,7 @@ impl Default for TestOptions {
             log_fetch: false,
             required_features: RequiredFeatures::default(),
             fonts: Default::default(),
+            font_sorts: Default::default(),
         }
     }
 }
@@ -490,6 +494,26 @@ pub struct FontOptions {
     pub path: String,
     pub bold: bool,
     pub italic: bool,
+}
+
+impl FontOptions {
+    pub fn to_font_query(&self) -> FontQuery {
+        FontQuery::new(
+            FontType::Device,
+            self.family.clone(),
+            self.bold,
+            self.italic,
+        )
+    }
+}
+
+#[derive(Deserialize, Default, Clone)]
+#[serde(default, deny_unknown_fields)]
+pub struct FontSortOptions {
+    pub family: String,
+    pub bold: bool,
+    pub italic: bool,
+    pub sort: Vec<String>,
 }
 
 /// Test expression is a cfg-like expression that evaluates to a boolean
