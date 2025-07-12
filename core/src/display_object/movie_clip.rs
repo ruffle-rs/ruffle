@@ -3678,6 +3678,7 @@ impl<'gc, 'a> MovieClipShared<'gc> {
     ) -> Result<(), Error> {
         let tag_data = reader.read_define_binary_data()?;
         let binary_data = BinaryData::from_swf_tag(self.movie(), &tag_data);
+        let binary_data = Gc::new(context.gc(), binary_data);
         self.library_mut(context)
             .register_character(tag_data.id, Character::BinaryData(binary_data));
         Ok(())
