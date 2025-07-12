@@ -93,6 +93,7 @@
 // clip1, clip2, clip3
 _level0.clip1
 _level0.clip2
+Warning: Reference to undeclared variable, 'clip3'
 undefined
 // clip2._x
 75

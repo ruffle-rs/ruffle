@@ -2,9 +2,12 @@
 foo = 2, bar = 3, baz = 4, fizz = 5
 _root.o.foo = 2, _root.o.bar = undefined, _root.o.baz = undefined, _root.o.fizz = undefined
 // outside with(o)
+Warning: Reference to undeclared variable, 'foo'
 foo = undefined, bar = 3, baz = 4, fizz = 5
 o.foo = 2, o.bar = undefined, o.baz = undefined, o.fizz = undefined
 // outside test()
+Warning: Reference to undeclared variable, 'foo'
+Warning: Reference to undeclared variable, 'baz'
 foo = undefined, bar = 3, baz = undefined, fizz = 5
 o.foo = 2, o.bar = undefined, o.baz = undefined, o.fizz = undefined
 // inside with(o)
@@ -20,6 +23,7 @@ buzz = 10
 _root.o.buzz = undefined
 _root.p.buzz = undefined
 // outside test2()
+Warning: Reference to undeclared variable, 'buzz'
 buzz = undefined
 _root.o.buzz = undefined
 _root.p.buzz = undefined

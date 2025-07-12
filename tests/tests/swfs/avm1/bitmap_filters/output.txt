@@ -1,3 +1,4 @@
+Warning: Reference to undeclared variable, 'Test'
 // new BitmapFilter
 [object Object]
 // f.clone()

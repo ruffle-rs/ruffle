@@ -41,7 +41,6 @@ clip3
 // get('clip1/clip2.clip3')
 _level0.clip1.clip2.clip3
 // tellTarget('clip1/clip2.clip3') { trace(_name); }
-Target not found: Target="clip1/clip2.clip3" Base="_level0"
 undefined
 
 // get('clip1.clip2.clip3')
@@ -62,7 +61,6 @@ clip3
 // get('clip1:clip2/.clip3')
 _level0.clip1.clip2.clip3
 // tellTarget('clip1:clip2/.clip3') { trace(_name); }
-Target not found: Target="clip1:clip2/.clip3" Base="_level0"
 undefined
 
 // get('clip1:clip2/:clip3')
@@ -73,13 +71,11 @@ clip3
 // get('clip1.clip2/.clip3')
 _level0.clip1.clip2.clip3
 // tellTarget('clip1.clip2/.clip3') { trace(_name); }
-Target not found: Target="clip1.clip2/.clip3" Base="_level0"
 undefined
 
 // get('clip1/clip2.clip3')
 _level0.clip1.clip2.clip3
 // tellTarget('clip1/clip2.clip3') { trace(_name); }
-Target not found: Target="clip1/clip2.clip3" Base="_level0"
 undefined
 
 // get('clip1.clip2.clip3.clip4')
@@ -103,21 +99,20 @@ clip4 var
 clip4
 
 // get('/clip1.clip2.clip3.clip4')
+Warning: Reference to undeclared variable, '/clip1.clip2.clip3.clip4'
 undefined
 // tellTarget('/clip1.clip2.clip3.clip4') { trace(_name); }
-Target not found: Target="/clip1.clip2.clip3.clip4" Base="_level0"
 undefined
 
 // get('clip1/clip2.clip3:clip4')
+Warning: Reference to undeclared variable, 'clip1/clip2.clip3:clip4'
 undefined
 // tellTarget('clip1/clip2.clip3:clip4') { trace(_name); }
-Target not found: Target="clip1/clip2.clip3:clip4" Base="_level0"
 undefined
 
 // get('clip1/clip2:clip3.clip4')
 clip4 var
 // tellTarget('clip1/clip2:clip3.clip4') { trace(_name); }
-Target not found: Target="clip1/clip2:clip3.clip4" Base="_level0"
 undefined
 
 // get('clip1/clip2:clip3:clip4')
@@ -131,6 +126,7 @@ clip4 var
 clip4
 
 // get('clip1.clip2.clip3/:clip4/')
+Warning: Reference to undeclared variable, 'clip1.clip2.clip3/:clip4/'
 undefined
 // tellTarget('clip1.clip2.clip3/:clip4/') { trace(_name); }
 clip4
@@ -138,48 +134,52 @@ clip4
 // get('clip1.clip2.clip3/.clip4')
 clip4 var
 // tellTarget('clip1.clip2.clip3/.clip4') { trace(_name); }
-Target not found: Target="clip1.clip2.clip3/.clip4" Base="_level0"
 undefined
 
 // get('clip1.clip2.clip3/clip4')
+Warning: Reference to undeclared variable, 'clip1.clip2.clip3/clip4'
 undefined
 // tellTarget('clip1.clip2.clip3/clip4') { trace(_name); }
 clip4
 
 // get('clip1.clip2.clip3/clip4/')
+Warning: Reference to undeclared variable, 'clip1.clip2.clip3/clip4/'
 undefined
 // tellTarget('clip1.clip2.clip3/clip4/') { trace(_name); }
 clip4
 
 // get('clip1.clip2.clip3/clip4:')
+Warning: Reference to undeclared variable, 'clip1.clip2.clip3/clip4:'
 undefined
 // tellTarget('clip1.clip2.clip3/clip4:') { trace(_name); }
 clip4
 
 // get('clip1.clip2.clip3/clip4.')
+Warning: Reference to undeclared variable, 'clip1.clip2.clip3/clip4.'
 undefined
 // tellTarget('clip1.clip2.clip3/clip4.') { trace(_name); }
-Target not found: Target="clip1.clip2.clip3/clip4." Base="_level0"
 undefined
 
 // get('clip1.clip2.clip3/clip4..')
+Warning: Reference to undeclared variable, 'clip1.clip2.clip3/clip4..'
 undefined
 // tellTarget('clip1.clip2.clip3/clip4..') { trace(_name); }
-Target not found: Target="clip1.clip2.clip3/clip4.." Base="_level0"
 undefined
 
 // get('clip1.clip2.clip3/clip4::')
+Warning: Reference to undeclared variable, 'clip1.clip2.clip3/clip4::'
 undefined
 // tellTarget('clip1.clip2.clip3/clip4::') { trace(_name); }
-Target not found: Target="clip1.clip2.clip3/clip4::" Base="_level0"
 undefined
 
 // get('clip1/clip2/clip3/..')
+Warning: Reference to undeclared variable, 'clip1/clip2/clip3/..'
 undefined
 // tellTarget('clip1/clip2/clip3/..') { trace(_name); }
 clip2
 
 // get('clip1/clip2/../clip2/clip3')
+Warning: Reference to undeclared variable, 'clip1/clip2/../clip2/clip3'
 undefined
 // tellTarget('clip1/clip2/../clip2/clip3') { trace(_name); }
 clip3
@@ -195,16 +195,19 @@ _level0.clip1
 clip1
 
 // get('_root/clip1/clip2:..')
+Warning: Reference to undeclared variable, '_root/clip1/clip2:..'
 undefined
 // tellTarget('_root/clip1/clip2:..') { trace(_name); }
 clip1
 
 // get('_root/clip1:clip2:..')
+Warning: Reference to undeclared variable, '_root/clip1:clip2:..'
 undefined
 // tellTarget('_root/clip1:clip2:..') { trace(_name); }
 clip1
 
 // get('_root:clip1:clip2:_parent:../clip1/clip2')
+Warning: Reference to undeclared variable, '_root:clip1:clip2:_parent:../clip1/clip2'
 undefined
 // tellTarget('_root:clip1:clip2:_parent:../clip1/clip2') { trace(_name); }
 clip2
@@ -212,13 +215,12 @@ clip2
 // get('_root:clip1.clip2:_parent:../clip1.clip2')
 clip2 var
 // tellTarget('_root:clip1.clip2:_parent:../clip1.clip2') { trace(_name); }
-Target not found: Target="_root:clip1.clip2:_parent:../clip1.clip2" Base="_level0"
 undefined
 
 // get('_root/clip1:clip2:...')
+Warning: Reference to undeclared variable, '_root/clip1:clip2:...'
 undefined
 // tellTarget('_root/clip1:clip2:...') { trace(_name); }
-Target not found: Target="_root/clip1:clip2:..." Base="_level0"
 undefined
 
 // get('::::clip1.:::clip2/:::clip3:clip4')
@@ -232,6 +234,7 @@ clip4 var
 clip4
 
 // get('::::clip1.:::clip2/:::clip3:::clip4')
+Warning: Reference to undeclared variable, '::::clip1.:::clip2/:::clip3:::clip4'
 undefined
 // tellTarget('::::clip1.:::clip2/:::clip3:::clip4') { trace(_name); }
 clip4
@@ -239,56 +242,54 @@ clip4
 // get('_root:clip1:clip2/...clip2')
 clip2 var
 // tellTarget('_root:clip1:clip2/...clip2') { trace(_name); }
-Target not found: Target="_root:clip1:clip2/...clip2" Base="_level0"
 undefined
 
 // get('_root:clip1:clip2:...clip2')
 clip2 var
 // tellTarget('_root:clip1:clip2:...clip2') { trace(_name); }
-Target not found: Target="_root:clip1:clip2:...clip2" Base="_level0"
 undefined
 
 // get('_root:clip1:clip2...clip2')
+Warning: Reference to undeclared variable, '_root:clip1:clip2...clip2'
 undefined
 // tellTarget('_root:clip1:clip2...clip2') { trace(_name); }
-Target not found: Target="_root:clip1:clip2...clip2" Base="_level0"
 undefined
 
 // get('this.clip1.clip2')
 clip2 var
 // tellTarget('this.clip1.clip2') { trace(_name); }
-Target not found: Target="this.clip1.clip2" Base="_level0"
 undefined
 
 // get('this/clip1:clip2:clip3')
 _level0.clip1.clip2.clip3
 // tellTarget('this/clip1:clip2:clip3') { trace(_name); }
-Target not found: Target="this/clip1:clip2:clip3" Base="_level0"
 undefined
 
 // get('this/clip1')
 fake
 // tellTarget('this/clip1') { trace(_name); }
-Target not found: Target="this/clip1" Base="_level0"
 undefined
 
 // get(_root.clip1)
+Warning: Reference to undeclared variable, 'clip1 var'
 undefined
+Warning: Reference to undeclared variable, 'path'
 // tellTarget(undefined) { trace(_name); }
-Target not found: Target="clip1 var" Base="_level0"
 undefined
 
 // get(o)
 toString
 clip1 var
+Warning: Reference to undeclared variable, 'path'
 // tellTarget(undefined) { trace(_name); }
 toString
 clip1
 
 // get(null)
+Warning: Reference to undeclared variable, 'null'
 undefined
+Warning: Reference to undeclared variable, 'path'
 // tellTarget(undefined) { trace(_name); }
-Target not found: Target="null" Base="_level0"
 undefined
 
 // set('clip5/foo', 1)
