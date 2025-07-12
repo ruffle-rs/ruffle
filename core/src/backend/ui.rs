@@ -1,5 +1,8 @@
 pub use crate::loader::Error as DialogLoaderError;
-use crate::{backend::navigator::OwnedFuture, font::FontQuery};
+use crate::{
+    backend::navigator::OwnedFuture,
+    font::{FontQuery, FontSource},
+};
 use chrono::{DateTime, Utc};
 use fluent_templates::loader::langid;
 pub use fluent_templates::LanguageIdentifier;
@@ -18,7 +21,7 @@ pub enum FontDefinition<'a> {
         name: String,
         is_bold: bool,
         is_italic: bool,
-        data: Vec<u8>,
+        source: FontSource,
         index: u32,
     },
 }
