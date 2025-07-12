@@ -406,13 +406,11 @@ impl<'a> Reader<'a> {
                 Tag::DefineBinaryData(tag_reader.read_define_binary_data()?)
             }
             TagCode::DefineBits => {
-                let id = tag_reader.read_u16()?;
-                let jpeg_data = tag_reader.read_slice_to_end();
+                let (id, jpeg_data) = tag_reader.read_define_bits()?;
                 Tag::DefineBits { id, jpeg_data }
             }
             TagCode::DefineBitsJpeg2 => {
-                let id = tag_reader.read_u16()?;
-                let jpeg_data = tag_reader.read_slice_to_end();
+                let (id, jpeg_data) = tag_reader.read_define_bits_jpeg_2()?;
                 Tag::DefineBitsJpeg2 { id, jpeg_data }
             }
             TagCode::DefineBitsJpeg3 => {
@@ -2483,7 +2481,19 @@ impl<'a> Reader<'a> {
         })
     }
 
-    fn read_define_bits_jpeg_3(&mut self, version: u8) -> Result<DefineBitsJpeg3<'a>> {
+    pub fn read_define_bits(&mut self) -> Result<(CharacterId, &'a [u8])> {
+        let id = self.read_character_id()?;
+        let jpeg_data = self.read_slice_to_end();
+        Ok((id, jpeg_data))
+    }
+
+    pub fn read_define_bits_jpeg_2(&mut self) -> Result<(CharacterId, &'a [u8])> {
+        let id = self.read_character_id()?;
+        let jpeg_data = self.read_slice_to_end();
+        Ok((id, jpeg_data))
+    }
+
+    pub fn read_define_bits_jpeg_3(&mut self, version: u8) -> Result<DefineBitsJpeg3<'a>> {
         let id = self.read_character_id()?;
         let data_size = self.read_u32()? as usize;
         let deblocking = if version >= 4 {
