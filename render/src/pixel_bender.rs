@@ -4,6 +4,8 @@
 #[cfg(test)]
 mod tests;
 
+pub mod assembly;
+
 use byteorder::{BigEndian, LittleEndian, ReadBytesExt};
 use num_traits::FromPrimitive;
 use std::{
