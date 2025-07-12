@@ -12,6 +12,7 @@ use crate::avm2::globals::{
 use crate::avm2::method::{Method, NativeMethodImpl};
 use crate::avm2::scope::ScopeChain;
 use crate::avm2::script::{Script, TranslationUnit};
+use crate::avm2::stack::Stack;
 use crate::character::Character;
 use crate::context::UpdateContext;
 use crate::display_object::{DisplayObject, DisplayObjectWeak, MovieClip, TDisplayObject};
@@ -67,6 +68,7 @@ mod scope;
 pub mod script;
 #[cfg(feature = "known_stubs")]
 pub mod specification;
+mod stack;
 mod string;
 mod stubs;
 mod traits;
@@ -100,8 +102,6 @@ use self::scope::Scope;
 const BROADCAST_WHITELIST: [&[u8]; 4] =
     [b"enterFrame", b"exitFrame", b"frameConstructed", b"render"];
 
-const PREALLOCATED_STACK_SIZE: usize = 120000;
-
 /// The state of an AVM2 interpreter.
 #[derive(Collect)]
 #[collect(no_drop)]
@@ -114,7 +114,7 @@ pub struct Avm2<'gc> {
     pub player_runtime: PlayerRuntime,
 
     /// Values currently present on the operand stack.
-    stack: Vec<Value<'gc>>,
+    stack: Stack<'gc>,
 
     /// Scopes currently present of the scope stack.
     scope_stack: Vec<Scope<'gc>>,
@@ -212,7 +212,7 @@ impl<'gc> Avm2<'gc> {
         Self {
             player_version,
             player_runtime,
-            stack: Vec::with_capacity(PREALLOCATED_STACK_SIZE),
+            stack: Stack::new(mc),
             scope_stack: Vec::new(),
             call_stack: GcRefLock::new(mc, CallStack::new().into()),
             playerglobals_domain,
@@ -295,11 +295,23 @@ impl<'gc> Avm2<'gc> {
         script: Script<'gc>,
         context: &mut UpdateContext<'gc>,
     ) -> Result<(), Error<'gc>> {
-        let mut init_activation = Activation::from_script(context, script)?;
+        let mc = context.gc();
+        let (method, _, _) = script.init();
 
-        let mc = init_activation.gc();
+        // We must initialize the stack frame here so the lifetime works out
+        let stack = context.avm2.stack;
+        let stack_frame = stack.get_stack_frame(method);
 
-        let (method, _globals, _domain) = script.init();
+        let mut init_activation = Activation::from_nothing(context);
+
+        let init_result = init_activation.init_from_script(script, stack_frame);
+        if let Err(e) = init_result {
+            // If the script initializer fails verification, we still need
+            // to properly dispose of the created stack frame.
+            init_activation.cleanup();
+            return Err(e);
+        };
+
         init_activation.avm2().push_global_init(mc, script);
         let result = init_activation.run_actions(method);
         init_activation.avm2().pop_call(mc);
@@ -732,82 +744,6 @@ impl<'gc> Avm2<'gc> {
 
     pub fn call_stack(&self) -> GcRefLock<'gc, CallStack<'gc>> {
         self.call_stack
-    }
-
-    // See: https://doc.rust-lang.org/std/vec/struct.Vec.html#method.push_within_capacity
-    #[inline(always)]
-    fn push_internal(&mut self, value: Value<'gc>) {
-        let stack = &mut self.stack;
-
-        if stack.len() == stack.capacity() {
-            panic!("Native stack underflow");
-        }
-
-        unsafe {
-            let end = stack.as_mut_ptr().add(stack.len());
-            std::ptr::write(end, value);
-            stack.set_len(stack.len() + 1);
-        }
-    }
-
-    /// Push a value onto the operand stack.
-    #[inline(always)]
-    fn push(&mut self, value: Value<'gc>) {
-        avm_debug!(self, "Stack push {}: {value:?}", self.stack.len());
-
-        self.push_internal(value);
-    }
-
-    /// Retrieve the top-most value on the operand stack.
-    #[inline(always)]
-    fn pop(&mut self) -> Value<'gc> {
-        let value = self.stack.pop().expect("Native stack underflow");
-
-        avm_debug!(self, "Stack pop {}: {value:?}", self.stack.len());
-
-        value
-    }
-
-    /// Peek the n-th value from the end of the operand stack.
-    #[inline(always)]
-    fn peek(&self, index: usize) -> Value<'gc> {
-        let value = self.stack[self.stack.len() - index - 1];
-
-        avm_debug!(self, "Stack peek {}: {value:?}", self.stack.len());
-
-        value
-    }
-
-    #[inline(always)]
-    fn stack_at(&self, index: usize) -> Value<'gc> {
-        let value = self.stack[index];
-
-        avm_debug!(self, "Stack peek {}: {value:?}", index);
-
-        value
-    }
-
-    #[inline(always)]
-    fn set_stack_at(&mut self, index: usize, value: Value<'gc>) {
-        avm_debug!(self, "Stack poke {}: {value:?}", index);
-
-        self.stack[index] = value;
-    }
-
-    fn pop_args(&mut self, arg_count: u32) -> Vec<Value<'gc>> {
-        let mut args = vec![Value::Undefined; arg_count as usize];
-        for arg in args.iter_mut().rev() {
-            *arg = self.pop();
-        }
-        args
-    }
-
-    fn stack_slice(&mut self, start: usize, len: usize) -> &[Value<'gc>] {
-        &self.stack[start..start + len]
-    }
-
-    fn truncate_stack(&mut self, size: usize) {
-        self.stack.truncate(size);
     }
 
     fn push_scope(&mut self, scope: Scope<'gc>) {
