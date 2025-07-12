@@ -1,6 +1,9 @@
 message-cant-embed =
     Ruffleはこのページに埋め込まれた Flash を実行できませんでした。
     別のタブでファイルを開くことで、この問題を解決できるかもしれません。
+message-restored-from-bfcache =
+    ブラウザは、前回のセッションからFlashコンテンツを復元しました。
+    最初から開始するには、ページを再読み込みしてください。
 panic-title = エラーが発生しました :(
 more-info = 詳細情報
 run-anyway = とにかく実行する
