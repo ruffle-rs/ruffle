@@ -3,6 +3,7 @@ use crate::avm2::method::{Method, MethodKind, ResolvedParamConfig};
 use crate::avm2::multiname::Multiname;
 use crate::avm2::op::Op;
 use crate::avm2::optimizer::blocks::assemble_blocks;
+use crate::avm2::optimizer::nop_remover::remove_nops;
 use crate::avm2::optimizer::peephole;
 use crate::avm2::property::Property;
 use crate::avm2::verify::Exception;
@@ -543,8 +544,8 @@ pub fn optimize<'gc>(
     activation: &mut Activation<'_, 'gc>,
     method: Method<'gc>,
     code: &mut Vec<Op<'gc>>,
+    method_exceptions: &mut [Exception<'gc>],
     resolved_parameters: &[ResolvedParamConfig<'gc>],
-    method_exceptions: &[Exception<'gc>],
     jump_targets: &HashSet<usize>,
 ) -> Result<(), Error<'gc>> {
     // These make the code less readable
@@ -662,6 +663,8 @@ pub fn optimize<'gc>(
 
         peephole::postprocess_peephole(code_slice, jump_targets, !method_exceptions.is_empty());
     }
+
+    remove_nops(code, method_exceptions);
 
     Ok(())
 }
@@ -1131,18 +1134,15 @@ fn abstract_interpret_ops<'gc>(
                 }
                 stack.push(activation, new_value)?;
             }
-            Op::Coerce { class } => {
+            Op::CoerceNonPrimitive { class } => {
                 let stack_value = stack.pop(activation)?;
                 let mut new_value = OptValue::of_type(class);
 
                 if stack_value.is_null() {
                     // Coercing null to a non-primitive or void is a noop.
-                    if class != types.int
-                        && class != types.uint
-                        && class != types.number
-                        && class != types.boolean
-                        && class != types.void
-                    {
+                    // CoerceNonPrimitive isn't emitted when the class is
+                    // primitive, so we only need to cover the case of void.
+                    if class != types.void {
                         optimize_op_to!(Op::Nop);
                         new_value.null_state = NullState::IsNull;
                     }
@@ -1310,9 +1310,17 @@ fn abstract_interpret_ops<'gc>(
                     stack.push_any(activation)?;
                 }
             }
-            Op::FindDef { .. } => {
-                // Avoid handling for now
-                stack.push_any(activation)?;
+            Op::FindDef { multiname } => {
+                let domain = activation.domain();
+
+                if let Some((_, script)) = domain.get_defining_script(&multiname) {
+                    // See comment above for GetScriptGlobals optimization
+                    optimize_op_to!(Op::GetScriptGlobals { script });
+
+                    stack.push_class_not_null(activation, script.global_class())?;
+                } else {
+                    stack.push_any(activation)?;
+                }
             }
             Op::In => {
                 stack.pop(activation)?;
@@ -1395,8 +1403,55 @@ fn abstract_interpret_ops<'gc>(
                     stack.push_any(activation)?;
                 }
             }
-            Op::GetPropertyFast { multiname } | Op::GetPropertySlow { multiname } => {
-                // Verifier only emits these ops when the multiname is lazy
+            Op::GetPropertyFast { multiname } => {
+                // Verifier only emits this op when the multiname is lazy
+                assert!(multiname.has_lazy_name() && !multiname.has_lazy_ns());
+
+                let mut stack_push_done = false;
+
+                let index = stack.pop(activation)?;
+                let stack_value = stack.pop(activation)?;
+
+                if let Some(param) = stack_value.class.and_then(|c| c.param()) {
+                    // This is a Vector class, if our index is numeric and the
+                    // multiname is valid for indexing then we know the type of
+                    // the result
+
+                    let index_numeric = index.class == Some(types.int)
+                        || index.class == Some(types.uint)
+                        || index.class == Some(types.number);
+
+                    // In non-JIT mode, GetPropertyFast can be emitted even when
+                    // the multiname isn't valid for indexing (see comment in
+                    // `verify::translate_op`), so we need to check here again
+                    let multiname_valid = multiname.valid_dynamic_name();
+
+                    if index_numeric && multiname_valid {
+                        if let Some(param) = param {
+                            // NOTE this is a bug in FP, in SWFv10 indexing
+                            // vectors with a numeric index is not actually
+                            // guaranteed to produce a result of the correct
+                            // type. For some reason, this special-case of
+                            // int/uint/number isn't version-gated.
+                            if param == types.int || param == types.uint || param == types.number {
+                                stack_push_done = true;
+                                stack.push_class(activation, param)?;
+                            } else if activation.caller_movie_or_root().version() >= 14 {
+                                // The case general, meanwhile, *is* correctly
+                                // version-gated.
+                                stack_push_done = true;
+                                stack.push_class(activation, param)?;
+                            }
+                        }
+                    }
+                }
+
+                if !stack_push_done {
+                    stack.push_any(activation)?;
+                }
+            }
+            Op::GetPropertySlow { multiname } => {
+                // Verifier only emits this op when the multiname is lazy
                 assert!(multiname.has_lazy_component());
 
                 stack.pop_for_multiname(activation, multiname)?;
@@ -1533,10 +1588,13 @@ fn abstract_interpret_ops<'gc>(
                 // Arguments
                 stack.popn(activation, num_args)?;
 
-                stack.pop(activation)?;
-
-                // Avoid checking return value for now
-                stack.push_any(activation)?;
+                let constructed_value = stack.pop(activation)?;
+                if let Some(instance_class) = constructed_value.class.and_then(|c| c.i_class()) {
+                    // ConstructProp on a c_class will construct its i_class
+                    stack.push_class_not_null(activation, instance_class)?;
+                } else {
+                    stack.push_any(activation)?;
+                }
             }
             Op::ConstructSuper { num_args } => {
                 // Arguments
@@ -1617,35 +1675,27 @@ fn abstract_interpret_ops<'gc>(
 
                 stack.pop(activation)?;
 
-                // Avoid checking return value for now
                 stack.push_any(activation)?;
             }
-            Op::CallPropLex {
-                multiname,
-                num_args,
-            } => {
-                // Arguments
-                stack.popn(activation, num_args)?;
-
-                stack.pop_for_multiname(activation, multiname)?;
-
-                // Then receiver.
-                stack.pop(activation)?;
-
-                // Avoid checking return value for now
-                stack.push_any(activation)?;
-            }
-            Op::CallStatic { num_args, .. } => {
+            Op::CallStatic { method, num_args } => {
                 // Arguments
                 stack.popn(activation, num_args)?;
 
                 // Then receiver.
                 stack.pop(activation)?;
 
-                // Avoid checking return value for now
-                stack.push_any(activation)?;
+                let return_type = method.resolved_return_type();
+                if let Some(return_type) = return_type {
+                    stack.push_class(activation, return_type)?;
+                } else {
+                    stack.push_any(activation)?;
+                }
             }
             Op::CallProperty {
+                multiname,
+                num_args,
+            }
+            | Op::CallPropLex {
                 multiname,
                 num_args,
             } => {
@@ -1717,7 +1767,7 @@ fn abstract_interpret_ops<'gc>(
                 // Receiver
                 stack.pop(activation)?;
 
-                // Avoid checking return value for now
+                // TODO use correct type when known
                 stack.push_any(activation)?;
             }
             Op::SetSuper { multiname } => {
@@ -1740,7 +1790,7 @@ fn abstract_interpret_ops<'gc>(
                 // Then receiver.
                 stack.pop(activation)?;
 
-                // Avoid checking return value for now
+                // TODO use correct type when known
                 stack.push_any(activation)?;
             }
             Op::SetGlobalSlot { .. } => {
@@ -1753,7 +1803,6 @@ fn abstract_interpret_ops<'gc>(
                     )?));
                 }
 
-                // Avoid handling for now
                 stack.pop(activation)?;
             }
             Op::NewActivation { activation_class } => {
@@ -1853,11 +1902,11 @@ fn abstract_interpret_ops<'gc>(
                 for target in lookup_switch
                     .case_offsets
                     .iter()
-                    .chain(&[lookup_switch.default_offset])
+                    .chain(std::slice::from_ref(&lookup_switch.default_offset))
                 {
                     process_jump(
                         activation,
-                        *target,
+                        target.get(),
                         abstract_states,
                         &current_state,
                         op_index_to_block_index_table,
