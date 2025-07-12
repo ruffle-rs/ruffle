@@ -6,7 +6,7 @@ use crate::display_object::{
     Avm1Button, Avm2Button, BitmapClass, EditText, Graphic, MorphShape, MovieClip, Text, Video,
 };
 use crate::font::Font;
-use gc_arena::{Collect, GcCell};
+use gc_arena::{Collect, Gc, GcCell};
 use ruffle_render::bitmap::{BitmapHandle, BitmapSize};
 use swf::DefineBitsLossless;
 
@@ -33,7 +33,7 @@ pub enum Character<'gc> {
     Text(Text<'gc>),
     Sound(#[collect(require_static)] SoundHandle),
     Video(Video<'gc>),
-    BinaryData(BinaryData),
+    BinaryData(Gc<'gc, BinaryData>),
 }
 
 /// Holds a bitmap from an SWF tag, plus the decoded width/height.
