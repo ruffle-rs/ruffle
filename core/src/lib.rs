@@ -24,6 +24,7 @@ pub mod context_menu;
 mod drawing;
 mod ecma_conversions;
 pub mod events;
+pub mod flags;
 pub mod focus_tracker;
 mod font;
 mod frame_lifecycle;

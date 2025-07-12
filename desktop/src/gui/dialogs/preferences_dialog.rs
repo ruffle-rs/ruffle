@@ -4,13 +4,22 @@ use crate::log::FilenamePattern;
 use crate::preferences::{storage::StorageBackend, GlobalPreferences};
 use cpal::traits::{DeviceTrait, HostTrait};
 use egui::{Align2, Button, Checkbox, ComboBox, DragValue, Grid, Ui, Widget, Window};
+use egui_extras::{Column, TableBuilder};
+use ruffle_core::flags::CompatibilityFlags;
 use ruffle_render_wgpu::clap::{GraphicsBackend, PowerPreference};
 use std::borrow::Cow;
 use unic_langid::LanguageIdentifier;
 
+#[derive(PartialEq, Eq, Clone, Copy, Debug)]
+enum PreferencesDialogPanel {
+    General,
+    CompatibilityFlags,
+}
+
 pub struct PreferencesDialog {
     available_backends: wgpu::Backends,
     preferences: GlobalPreferences,
+    open_panel: PreferencesDialogPanel,
 
     graphics_backend: GraphicsBackend,
     graphics_backend_readonly: bool,
@@ -54,6 +63,10 @@ pub struct PreferencesDialog {
 
     ime_enabled: Option<bool>,
     ime_enabled_changed: bool,
+
+    compatibility_flags: CompatibilityFlags,
+    compatibility_flags_cli: CompatibilityFlags,
+    compatibility_flags_changed: bool,
 }
 
 impl PreferencesDialog {
@@ -115,14 +128,18 @@ impl PreferencesDialog {
             ime_enabled: preferences.ime_enabled(),
             ime_enabled_changed: false,
 
+            compatibility_flags: preferences.flags(),
+            compatibility_flags_cli: preferences.cli.compatibility_flags.clone(),
+            compatibility_flags_changed: false,
+
             preferences,
+            open_panel: PreferencesDialogPanel::General,
         }
     }
 
     pub fn show(&mut self, locale: &LanguageIdentifier, egui_ctx: &egui::Context) -> bool {
         let mut keep_open = true;
         let mut should_close = false;
-        let locked_text = text(locale, "preference-locked-by-cli");
 
         Window::new(text(locale, "preferences-dialog"))
             .open(&mut keep_open)
@@ -130,55 +147,189 @@ impl PreferencesDialog {
             .collapsible(false)
             .resizable(false)
             .show(egui_ctx, |ui| {
-                ui.vertical_centered_justified(|ui| {
-                    Grid::new("preferences-dialog-graphics")
-                        .num_columns(2)
-                        .striped(true)
-                        .show(ui, |ui| {
-                            self.show_graphics_preferences(locale, &locked_text, ui);
+                self.show_top_panel(locale, ui);
 
-                            if cfg!(target_os = "linux") {
-                                self.show_gamemode_preferences(locale, &locked_text, ui);
-                            }
+                ui.separator();
 
-                            self.show_open_url_mode_preferences(locale, &locked_text, ui);
-
-                            self.show_ime_preferences(locale, ui);
-
-                            self.show_language_preferences(locale, ui);
-
-                            self.show_theme_preferences(locale, ui);
-
-                            self.show_audio_preferences(locale, ui);
-
-                            self.show_video_preferences(egui_ctx, locale, ui);
-
-                            self.show_log_preferences(locale, ui);
-
-                            self.show_storage_preferences(locale, &locked_text, ui);
-
-                            self.show_misc_preferences(locale, ui);
-                        });
-
-                    if self.restart_required() {
-                        ui.colored_label(
-                            ui.style().visuals.error_fg_color,
-                            "A restart is required to apply the selected changes",
-                        );
+                match self.open_panel {
+                    PreferencesDialogPanel::General => {
+                        self.show_general_preferences(locale, egui_ctx, ui);
                     }
+                    PreferencesDialogPanel::CompatibilityFlags => {
+                        self.show_compatibility_flags(locale, ui);
+                    }
+                }
 
-                    ui.horizontal(|ui| {
-                        ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
-                            if Button::new(text(locale, "save")).ui(ui).clicked() {
-                                self.save();
-                                should_close = true;
-                            }
-                        })
-                    });
-                });
+                ui.separator();
+
+                if !self.show_bottom_panel(locale, ui) {
+                    should_close = true;
+                }
             });
 
         keep_open && !should_close
+    }
+
+    fn show_top_panel(&mut self, locale: &LanguageIdentifier, ui: &mut Ui) {
+        ui.horizontal(|ui| {
+            ui.selectable_value(
+                &mut self.open_panel,
+                PreferencesDialogPanel::General,
+                text(locale, "preferences-panel-general"),
+            );
+            ui.selectable_value(
+                &mut self.open_panel,
+                PreferencesDialogPanel::CompatibilityFlags,
+                text(locale, "preferences-panel-compatibility-flags"),
+            );
+        });
+    }
+
+    fn show_general_preferences(
+        &mut self,
+        locale: &LanguageIdentifier,
+        egui_ctx: &egui::Context,
+        ui: &mut Ui,
+    ) {
+        let locked_text = text(locale, "preference-locked-by-cli");
+
+        ui.vertical_centered_justified(|ui| {
+            Grid::new("preferences-dialog-graphics")
+                .num_columns(2)
+                .striped(true)
+                .show(ui, |ui| {
+                    self.show_graphics_preferences(locale, &locked_text, ui);
+
+                    if cfg!(target_os = "linux") {
+                        self.show_gamemode_preferences(locale, &locked_text, ui);
+                    }
+
+                    self.show_open_url_mode_preferences(locale, &locked_text, ui);
+
+                    self.show_ime_preferences(locale, ui);
+
+                    self.show_language_preferences(locale, ui);
+
+                    self.show_theme_preferences(locale, ui);
+
+                    self.show_audio_preferences(locale, ui);
+
+                    self.show_video_preferences(egui_ctx, locale, ui);
+
+                    self.show_log_preferences(locale, ui);
+
+                    self.show_storage_preferences(locale, &locked_text, ui);
+
+                    self.show_misc_preferences(locale, ui);
+                });
+        });
+    }
+
+    fn show_compatibility_flags(&mut self, locale: &LanguageIdentifier, ui: &mut Ui) {
+        let locked_text: &str = &text(locale, "preference-locked-by-cli");
+
+        ui.vertical_centered_justified(|ui| {
+            TableBuilder::new(ui)
+                .striped(true)
+                .resizable(false)
+                .cell_layout(egui::Layout::left_to_right(egui::Align::LEFT))
+                .column(Column::exact(12.0))
+                .column(Column::auto())
+                .column(Column::remainder().resizable(true))
+                .column(Column::auto())
+                .column(Column::auto())
+                .header(20.0, |mut header| {
+                    header.col(|_| {});
+                    header.col(|ui| {
+                        ui.strong(text(locale, "preferences-panel-flag-id"));
+                    });
+                    header.col(|ui| {
+                        ui.strong(text(locale, "preferences-panel-flag-description"));
+                    });
+                    header.col(|ui| {
+                        ui.strong(text(locale, "preferences-panel-flag-enabled"));
+                    });
+                    header.col(|ui| {
+                        ui.strong(text(locale, "preferences-panel-flag-fp"))
+                            .on_hover_text_at_pointer(text(
+                                locale,
+                                "preferences-panel-flag-fp-tooltip",
+                            ));
+                    });
+                })
+                .body(|mut body| {
+                    for &flag in CompatibilityFlags::all_flags() {
+                        let def = flag.definition();
+                        body.row(18.0, |mut row| {
+                            row.col(|ui| {
+                                if self.compatibility_flags_cli.enabled(flag).is_ok() {
+                                    ui.label("🔒").on_hover_text_at_pointer(locked_text);
+                                } else if self.compatibility_flags.enabled(flag).is_ok() {
+                                    ui.label("⚠").on_hover_text_at_pointer(text(
+                                        locale,
+                                        "preferences-panel-flag-overridden",
+                                    ));
+                                }
+                            });
+                            row.col(|ui| {
+                                ui.label(def.id);
+                            });
+                            row.col(|ui| {
+                                ui.label(def.name(locale))
+                                    .on_hover_text_at_pointer(def.description(locale));
+                            });
+                            row.col(|ui| {
+                                if let Ok(mut cli_value) =
+                                    self.compatibility_flags_cli.enabled(flag)
+                                {
+                                    ui.add_enabled_ui(false, |ui| {
+                                        ui.checkbox(&mut cli_value, "");
+                                    });
+                                } else {
+                                    let orig_value = self
+                                        .compatibility_flags
+                                        .enabled(flag)
+                                        .unwrap_or_else(|default| default);
+                                    let mut value = orig_value;
+                                    ui.checkbox(&mut value, "");
+                                    if value != orig_value {
+                                        self.compatibility_flags.set(flag, value);
+                                        self.compatibility_flags_changed = true;
+                                    }
+                                }
+                            });
+                            row.col(|ui| {
+                                ui.add_enabled_ui(false, |ui| {
+                                    let mut value = flag.definition().flash_player_value;
+                                    ui.checkbox(&mut value, "");
+                                });
+                            });
+                        });
+                    }
+                });
+        });
+    }
+
+    fn show_bottom_panel(&mut self, locale: &LanguageIdentifier, ui: &mut Ui) -> bool {
+        let mut should_close = false;
+        ui.vertical_centered_justified(|ui| {
+            if self.restart_required() {
+                ui.colored_label(
+                    ui.style().visuals.error_fg_color,
+                    "A restart is required to apply the selected changes",
+                );
+            }
+
+            ui.horizontal(|ui| {
+                ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
+                    if Button::new(text(locale, "save")).ui(ui).clicked() {
+                        self.save();
+                        should_close = true;
+                    }
+                })
+            });
+        });
+        !should_close
     }
 
     fn restart_required(&self) -> bool {
@@ -602,6 +753,9 @@ impl PreferencesDialog {
             }
             if self.ime_enabled_changed {
                 preferences.set_ime_enabled(self.ime_enabled);
+            }
+            if self.compatibility_flags_changed {
+                preferences.set_compatibility_flags(self.compatibility_flags.clone());
             }
         }) {
             // [NA] TODO: Better error handling... everywhere in desktop, really

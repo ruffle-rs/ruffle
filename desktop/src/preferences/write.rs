@@ -3,6 +3,7 @@ use crate::gui::ThemePreference;
 use crate::log::FilenamePattern;
 use crate::preferences::storage::StorageBackend;
 use crate::preferences::{GlobalPreferencesWatchers, SavedGlobalPreferences};
+use ruffle_core::flags::CompatibilityFlags;
 use ruffle_frontend_utils::parse::DocumentHolder;
 use ruffle_render_wgpu::clap::{GraphicsBackend, PowerPreference};
 use toml_edit::value;
@@ -141,6 +142,19 @@ impl<'a> PreferencesWriter<'a> {
             }
             values.ime_enabled = ime_enabled;
         });
+    }
+
+    pub fn set_compatibility_flags(&mut self, flags: CompatibilityFlags) {
+        self.0
+            .edit(|values: &mut SavedGlobalPreferences, toml_document| {
+                let flags_string = flags.to_string();
+                if !flags_string.is_empty() {
+                    toml_document["compatibility_flags"] = value(flags_string);
+                } else {
+                    toml_document.remove("compatibility_flags");
+                }
+                values.compatibility_flags = flags;
+            });
     }
 }
 
@@ -355,6 +369,40 @@ mod tests {
             "ime.enabled = false",
             |writer| writer.set_ime_enabled(None),
             "",
+        );
+    }
+
+    #[test]
+    #[allow(clippy::unwrap_used)]
+    fn set_compatibility_flags() {
+        test(
+            "flags = 6\n",
+            |writer| writer.set_compatibility_flags(CompatibilityFlags::empty()),
+            "",
+        );
+        test(
+            "flags = \"TabSkip\"",
+            |writer| {
+                writer.set_compatibility_flags("-TabSkip".parse::<CompatibilityFlags>().unwrap())
+            },
+            "flags = \"-TabSkip\"\n",
+        );
+    }
+
+    #[test]
+    #[allow(clippy::unwrap_used)]
+    fn set_compatibility_flags_unknown() {
+        test(
+            "compatibility_flags = 6\n",
+            |writer| writer.set_compatibility_flags(CompatibilityFlags::empty()),
+            "",
+        );
+        test(
+            "compatibility_flags = \"TabSkip,UnknownFlag\"",
+            |writer| {
+                writer.set_compatibility_flags("-TabSkip".parse::<CompatibilityFlags>().unwrap())
+            },
+            "compatibility_flags = \"-TabSkip\"\n",
         );
     }
 }
