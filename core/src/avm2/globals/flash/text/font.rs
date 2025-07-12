@@ -157,7 +157,7 @@ pub fn register_font<'gc>(
         {
             if let Some(lib) = activation.context.library.library_for_movie(movie) {
                 if let Some(Character::Font(font)) = lib.character_by_id(id) {
-                    activation.context.library.register_global_font(*font);
+                    activation.context.library.register_global_font(font);
                     return Ok(Value::Undefined);
                 }
             }
