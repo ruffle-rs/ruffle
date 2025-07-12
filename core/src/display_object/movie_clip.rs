@@ -3293,8 +3293,7 @@ impl<'gc, 'a> MovieClipShared<'gc> {
     ) -> Result<(), Error> {
         let mc = context.gc();
         let library = self.library_mut(context);
-        let id = reader.read_u16()?;
-        let jpeg_data = reader.read_slice_to_end();
+        let (id, jpeg_data) = reader.read_define_bits()?;
         let jpeg_tables = library.jpeg_tables();
         let jpeg_data =
             ruffle_render::utils::glue_tables_to_jpeg(jpeg_data, jpeg_tables).into_owned();
@@ -3321,12 +3320,11 @@ impl<'gc, 'a> MovieClipShared<'gc> {
         context: &mut UpdateContext<'gc>,
         reader: &mut SwfStream<'a>,
     ) -> Result<(), Error> {
-        let id = reader.read_u16()?;
-        let jpeg_data = reader.read_slice_to_end();
+        let (id, jpeg_data) = reader.read_define_bits_jpeg_2()?;
         let (width, height) = ruffle_render::utils::decode_define_bits_jpeg_dimensions(jpeg_data)?;
         let bitmap = Character::Bitmap {
             compressed: CompressedBitmap::Jpeg {
-                data: jpeg_data.to_vec(),
+                data: jpeg_data.to_owned(),
                 alpha: None,
                 width,
                 height,
@@ -3345,25 +3343,20 @@ impl<'gc, 'a> MovieClipShared<'gc> {
         reader: &mut SwfStream<'a>,
         version: u8,
     ) -> Result<(), Error> {
-        let id = reader.read_u16()?;
-        let jpeg_len = reader.read_u32()? as usize;
-        if version == 4 {
-            let _deblocking = reader.read_u16()?;
-        }
-        let jpeg_data = reader.read_slice(jpeg_len)?;
-        let alpha_data = reader.read_slice_to_end();
-        let (width, height) = ruffle_render::utils::decode_define_bits_jpeg_dimensions(jpeg_data)?;
+        let jpeg = reader.read_define_bits_jpeg_3(version)?;
+        let (width, height) = ruffle_render::utils::decode_define_bits_jpeg_dimensions(jpeg.data)?;
         let bitmap = Character::Bitmap {
             compressed: CompressedBitmap::Jpeg {
-                data: jpeg_data.to_owned(),
-                alpha: Some(alpha_data.to_owned()),
+                data: jpeg.data.to_owned(),
+                alpha: Some(jpeg.alpha_data.to_owned()),
                 width,
                 height,
             },
             handle: Default::default(),
             avm2_bitmapdata_class: GcCell::new(context.gc(), BitmapClass::NoSubclass),
         };
-        self.library_mut(context).register_character(id, bitmap);
+        self.library_mut(context)
+            .register_character(jpeg.id, bitmap);
         Ok(())
     }
 
