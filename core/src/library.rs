@@ -188,17 +188,17 @@ impl<'gc> MovieLibrary<'gc> {
         self.characters.contains_key(&id)
     }
 
-    pub fn character_by_id(&self, id: CharacterId) -> Option<&Character<'gc>> {
-        self.characters.get(&id)
+    pub fn character_by_id(&self, id: CharacterId) -> Option<Character<'gc>> {
+        self.characters.get(&id).copied()
     }
 
     pub fn character_by_export_name(
         &self,
         name: AvmString<'gc>,
-    ) -> Option<(CharacterId, &Character<'gc>)> {
+    ) -> Option<(CharacterId, Character<'gc>)> {
         if let Some(id) = self.export_characters.get(name, false) {
             if let Some(character) = self.characters.get(id) {
-                return Some((*id, character));
+                return Some((*id, *character));
             }
         }
         None
@@ -219,7 +219,7 @@ impl<'gc> MovieLibrary<'gc> {
         id: CharacterId,
         mc: &Mutation<'gc>,
     ) -> Option<DisplayObject<'gc>> {
-        if let Some(character) = self.characters.get(&id) {
+        if let Some(&character) = self.characters.get(&id) {
             self.instantiate_display_object(id, character, mc)
         } else {
             tracing::error!("Tried to instantiate non-registered character ID {}", id);
@@ -250,18 +250,15 @@ impl<'gc> MovieLibrary<'gc> {
     fn instantiate_display_object(
         &self,
         id: CharacterId,
-        character: &Character<'gc>,
+        character: Character<'gc>,
         mc: &Mutation<'gc>,
     ) -> Option<DisplayObject<'gc>> {
         match character {
-            Character::Bitmap {
-                compressed,
-                avm2_bitmapdata_class,
-                handle: _,
-            } => {
-                let bitmap = compressed.decode().unwrap();
+            Character::Bitmap(bitmap) => {
+                let avm2_class = bitmap.avm2_class();
+                let bitmap = bitmap.compressed().decode().unwrap();
                 let bitmap = Bitmap::new(mc, id, bitmap, self.swf.clone());
-                bitmap.set_avm2_bitmapdata_class(mc, *avm2_bitmapdata_class.read());
+                bitmap.set_avm2_bitmapdata_class(mc, avm2_class);
                 Some(bitmap.instantiate(mc))
             }
             Character::EditText(edit_text) => Some(edit_text.instantiate(mc)),
@@ -374,44 +371,25 @@ pub struct MovieLibrarySource<'a, 'gc> {
 
 impl ruffle_render::bitmap::BitmapSource for MovieLibrarySource<'_, '_> {
     fn bitmap_size(&self, id: u16) -> Option<ruffle_render::bitmap::BitmapSize> {
-        if let Some(Character::Bitmap { compressed, .. }) = self.library.characters.get(&id) {
-            Some(compressed.size())
+        if let Some(Character::Bitmap(bitmap)) = self.library.characters.get(&id) {
+            Some(bitmap.compressed().size())
         } else {
             None
         }
     }
 
     fn bitmap_handle(&self, id: u16, backend: &mut dyn RenderBackend) -> Option<BitmapHandle> {
-        let Some(Character::Bitmap {
-            compressed,
-            handle,
-            avm2_bitmapdata_class: _,
-        }) = self.library.characters.get(&id)
-        else {
+        let Some(Character::Bitmap(bitmap)) = self.library.characters.get(&id) else {
             return None;
         };
 
-        // FIXME - use `OnceCell::get_or_try_init` when stabilized.
-        if let Some(handle) = handle.get() {
-            return Some(handle.clone());
+        match bitmap.bitmap_handle(backend) {
+            Ok(handle) => Some(handle),
+            Err(e) => {
+                tracing::error!("Failed to register bitmap character {id}: {e}");
+                None
+            }
         }
-        let decoded = match compressed.decode() {
-            Ok(decoded) => decoded,
-            Err(e) => {
-                tracing::error!("Failed to decode bitmap character {id:?}: {e:?}");
-                return None;
-            }
-        };
-        let new_handle = match backend.register_bitmap(decoded) {
-            Ok(handle) => handle,
-            Err(e) => {
-                tracing::error!("Failed to register bitmap character {id:?}: {e:?}");
-                return None;
-            }
-        };
-        // FIXME - do we ever want to release this handle, to avoid taking up GPU memory?
-        handle.set(new_handle.clone()).unwrap();
-        Some(new_handle)
     }
 }
 

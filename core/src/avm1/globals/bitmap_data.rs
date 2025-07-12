@@ -1538,10 +1538,10 @@ fn load_bitmap<'gc>(
         .library_for_movie(movie)
         .and_then(|l| l.character_by_export_name(name));
 
-    let Some((_id, Character::Bitmap { compressed, .. })) = character else {
+    let Some((_id, Character::Bitmap(bitmap))) = character else {
         return Ok(Value::Undefined);
     };
-    let bitmap = compressed.decode().unwrap();
+    let bitmap = bitmap.compressed().decode().unwrap();
 
     let transparency = true;
     let bitmap_data = BitmapData::new_with_pixels(

@@ -14,7 +14,7 @@ use crate::backend::audio::{AudioManager, SoundInstanceHandle};
 use crate::backend::navigator::Request;
 use crate::backend::ui::MouseCursor;
 use crate::binary_data::BinaryData;
-use crate::character::{Character, CompressedBitmap};
+use crate::character::{BitmapCharacter, Character, CompressedBitmap};
 use crate::context::{ActionType, RenderContext, UpdateContext};
 use crate::display_object::container::{dispatch_removed_event, ChildContainer};
 use crate::display_object::interactive::{
@@ -3233,20 +3233,19 @@ impl<'gc, 'a> MovieClipShared<'gc> {
         version: u8,
     ) -> Result<(), Error> {
         let define_bits_lossless = reader.read_define_bits_lossless(version)?;
-        let bitmap = Character::Bitmap {
-            compressed: CompressedBitmap::Lossless(DefineBitsLossless {
+        let bitmap = Gc::new(
+            context.gc(),
+            BitmapCharacter::new(CompressedBitmap::Lossless(DefineBitsLossless {
                 id: define_bits_lossless.id,
                 format: define_bits_lossless.format,
                 width: define_bits_lossless.width,
                 height: define_bits_lossless.height,
                 version: define_bits_lossless.version,
                 data: Cow::Owned(define_bits_lossless.data.into_owned()),
-            }),
-            handle: Default::default(),
-            avm2_bitmapdata_class: GcCell::new(context.gc(), BitmapClass::NoSubclass),
-        };
+            })),
+        );
         self.library_mut(context)
-            .register_character(define_bits_lossless.id, bitmap);
+            .register_character(define_bits_lossless.id, Character::Bitmap(bitmap));
         Ok(())
     }
 
@@ -3359,25 +3358,21 @@ impl<'gc, 'a> MovieClipShared<'gc> {
     ) -> Result<(), Error> {
         let mc = context.gc();
         let library = self.library_mut(context);
-        let id = reader.read_u16()?;
-        let jpeg_data = reader.read_slice_to_end();
+        let (id, jpeg_data) = reader.read_define_bits()?;
         let jpeg_tables = library.jpeg_tables();
         let jpeg_data =
             ruffle_render::utils::glue_tables_to_jpeg(jpeg_data, jpeg_tables).into_owned();
         let (width, height) = ruffle_render::utils::decode_define_bits_jpeg_dimensions(&jpeg_data)?;
-        library.register_character(
-            id,
-            Character::Bitmap {
-                compressed: CompressedBitmap::Jpeg {
-                    data: jpeg_data,
-                    alpha: None,
-                    width,
-                    height,
-                },
-                handle: Default::default(),
-                avm2_bitmapdata_class: GcCell::new(mc, BitmapClass::NoSubclass),
-            },
-        );
+        let bitmap = Character::Bitmap(Gc::new(
+            mc,
+            BitmapCharacter::new(CompressedBitmap::Jpeg {
+                data: jpeg_data,
+                alpha: None,
+                width,
+                height,
+            }),
+        ));
+        library.register_character(id, bitmap);
         Ok(())
     }
 
@@ -3387,19 +3382,17 @@ impl<'gc, 'a> MovieClipShared<'gc> {
         context: &mut UpdateContext<'gc>,
         reader: &mut SwfStream<'a>,
     ) -> Result<(), Error> {
-        let id = reader.read_u16()?;
-        let jpeg_data = reader.read_slice_to_end();
+        let (id, jpeg_data) = reader.read_define_bits_jpeg_2()?;
         let (width, height) = ruffle_render::utils::decode_define_bits_jpeg_dimensions(jpeg_data)?;
-        let bitmap = Character::Bitmap {
-            compressed: CompressedBitmap::Jpeg {
-                data: jpeg_data.to_vec(),
+        let bitmap = Character::Bitmap(Gc::new(
+            context.gc(),
+            BitmapCharacter::new(CompressedBitmap::Jpeg {
+                data: jpeg_data.to_owned(),
                 alpha: None,
                 width,
                 height,
-            },
-            handle: Default::default(),
-            avm2_bitmapdata_class: GcCell::new(context.gc(), BitmapClass::NoSubclass),
-        };
+            }),
+        ));
         self.library_mut(context).register_character(id, bitmap);
         Ok(())
     }
@@ -3411,25 +3404,20 @@ impl<'gc, 'a> MovieClipShared<'gc> {
         reader: &mut SwfStream<'a>,
         version: u8,
     ) -> Result<(), Error> {
-        let id = reader.read_u16()?;
-        let jpeg_len = reader.read_u32()? as usize;
-        if version == 4 {
-            let _deblocking = reader.read_u16()?;
-        }
-        let jpeg_data = reader.read_slice(jpeg_len)?;
-        let alpha_data = reader.read_slice_to_end();
-        let (width, height) = ruffle_render::utils::decode_define_bits_jpeg_dimensions(jpeg_data)?;
-        let bitmap = Character::Bitmap {
-            compressed: CompressedBitmap::Jpeg {
-                data: jpeg_data.to_owned(),
-                alpha: Some(alpha_data.to_owned()),
+        let jpeg = reader.read_define_bits_jpeg_3(version)?;
+        let (width, height) = ruffle_render::utils::decode_define_bits_jpeg_dimensions(jpeg.data)?;
+
+        let bitmap = Character::Bitmap(Gc::new(
+            context.gc(),
+            BitmapCharacter::new(CompressedBitmap::Jpeg {
+                data: jpeg.data.to_owned(),
+                alpha: Some(jpeg.alpha_data.to_owned()),
                 width,
                 height,
-            },
-            handle: Default::default(),
-            avm2_bitmapdata_class: GcCell::new(context.gc(), BitmapClass::NoSubclass),
-        };
-        self.library_mut(context).register_character(id, bitmap);
+            }),
+        ));
+        self.library_mut(context)
+            .register_character(jpeg.id, bitmap);
         Ok(())
     }
 
@@ -3744,6 +3732,7 @@ impl<'gc, 'a> MovieClipShared<'gc> {
     ) -> Result<(), Error> {
         let tag_data = reader.read_define_binary_data()?;
         let binary_data = BinaryData::from_swf_tag(self.movie(), &tag_data);
+        let binary_data = Gc::new(context.gc(), binary_data);
         self.library_mut(context)
             .register_character(tag_data.id, Character::BinaryData(binary_data));
         Ok(())
@@ -3764,7 +3753,7 @@ impl<'gc, 'a> MovieClipShared<'gc> {
             .iter()
             .map(|(name, id)| {
                 let character = importer_library.character_by_id(*id).unwrap();
-                (name, (*id, character.clone()))
+                (name, (*id, character))
             })
             .collect::<HashMap<AvmString<'gc>, (CharacterId, Character<'gc>)>>();
 
@@ -3896,7 +3885,6 @@ impl<'gc, 'a> MovieClipShared<'gc> {
             if let Some(character) = self
                 .library(context)
                 .and_then(|l| l.character_by_id(export.id))
-                .cloned()
             {
                 Self::register_export(context, export.id, &name, self.movie());
                 tracing::debug!("register_export asset: {} (ID: {})", name, export.id);
@@ -4208,15 +4196,16 @@ impl<'gc, 'a> MovieClip<'gc> {
                                         .library
                                         .library_for_movie_mut(movie.clone());
 
-                                    let Some(Character::Bitmap {
-                                        avm2_bitmapdata_class,
-                                        ..
-                                    }) = library.character_by_id(id)
+                                    let Some(Character::Bitmap(bitmap)) =
+                                        library.character_by_id(id)
                                     else {
                                         unreachable!();
                                     };
-                                    *avm2_bitmapdata_class.write(activation.context.gc_context) =
-                                        bitmap_class;
+                                    BitmapCharacter::set_avm2_class(
+                                        bitmap,
+                                        bitmap_class,
+                                        activation.gc(),
+                                    );
                                 } else {
                                     tracing::error!("Associated class {:?} for symbol {} must extend flash.display.Bitmap or BitmapData, does neither", class_object.inner_class_definition().name(), id);
                                 }

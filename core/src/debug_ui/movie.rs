@@ -125,7 +125,7 @@ impl MovieWindow {
                 sorted_keys.sort();
 
                 for id in sorted_keys {
-                    let character = characters
+                    let character = *characters
                         .get(&id)
                         .expect("Value must exist as we're iterating known keys");
 
@@ -256,7 +256,7 @@ pub fn open_movie_button(ui: &mut Ui, movie: &Arc<SwfMovie>, messages: &mut Vec<
     }
 }
 
-pub fn open_character_button(ui: &mut Ui, character: &Character) {
+pub fn open_character_button(ui: &mut Ui, character: Character) {
     let name = match character {
         Character::EditText(_) => "EditText",
         Character::Graphic(_) => "Graphic",
