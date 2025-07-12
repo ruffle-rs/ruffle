@@ -114,14 +114,9 @@ pub fn init<'gc>(
                 .cloned()
         });
 
-    let new_bitmap_data = if let Some(Character::Bitmap {
-        compressed,
-        avm2_bitmapdata_class: _,
-        handle: _,
-    }) = character
-    {
+    let new_bitmap_data = if let Some(Character::Bitmap(bitmap)) = character {
         // Instantiating BitmapData from an Animate-style bitmap asset
-        fill_bitmap_data_from_symbol(activation, &compressed)
+        fill_bitmap_data_from_symbol(activation, bitmap.compressed())
     } else {
         if character.is_some() {
             //TODO: Determine if mismatched symbols will still work as a

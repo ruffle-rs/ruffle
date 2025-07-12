@@ -253,14 +253,11 @@ impl<'gc> MovieLibrary<'gc> {
         mc: &Mutation<'gc>,
     ) -> Option<DisplayObject<'gc>> {
         match character {
-            Character::Bitmap {
-                compressed,
-                avm2_bitmapdata_class,
-                handle: _,
-            } => {
-                let bitmap = compressed.decode().unwrap();
+            Character::Bitmap(bitmap) => {
+                let avm2_class = bitmap.avm2_class();
+                let bitmap = bitmap.compressed().decode().unwrap();
                 let bitmap = Bitmap::new(mc, id, bitmap, self.swf.clone());
-                bitmap.set_avm2_bitmapdata_class(mc, *avm2_bitmapdata_class.read());
+                bitmap.set_avm2_bitmapdata_class(mc, avm2_class);
                 Some(bitmap.instantiate(mc))
             }
             Character::EditText(edit_text) => Some(edit_text.instantiate(mc)),
@@ -373,44 +370,25 @@ pub struct MovieLibrarySource<'a, 'gc> {
 
 impl ruffle_render::bitmap::BitmapSource for MovieLibrarySource<'_, '_> {
     fn bitmap_size(&self, id: u16) -> Option<ruffle_render::bitmap::BitmapSize> {
-        if let Some(Character::Bitmap { compressed, .. }) = self.library.characters.get(&id) {
-            Some(compressed.size())
+        if let Some(Character::Bitmap(bitmap)) = self.library.characters.get(&id) {
+            Some(bitmap.compressed().size())
         } else {
             None
         }
     }
 
     fn bitmap_handle(&self, id: u16, backend: &mut dyn RenderBackend) -> Option<BitmapHandle> {
-        let Some(Character::Bitmap {
-            compressed,
-            handle,
-            avm2_bitmapdata_class: _,
-        }) = self.library.characters.get(&id)
-        else {
+        let Some(Character::Bitmap(bitmap)) = self.library.characters.get(&id) else {
             return None;
         };
 
-        // FIXME - use `OnceCell::get_or_try_init` when stabilized.
-        if let Some(handle) = handle.get() {
-            return Some(handle.clone());
+        match bitmap.bitmap_handle(backend) {
+            Ok(handle) => Some(handle),
+            Err(e) => {
+                tracing::error!("Failed to register bitmap character {id}: {e}");
+                None
+            }
         }
-        let decoded = match compressed.decode() {
-            Ok(decoded) => decoded,
-            Err(e) => {
-                tracing::error!("Failed to decode bitmap character {id:?}: {e:?}");
-                return None;
-            }
-        };
-        let new_handle = match backend.register_bitmap(decoded) {
-            Ok(handle) => handle,
-            Err(e) => {
-                tracing::error!("Failed to register bitmap character {id:?}: {e:?}");
-                return None;
-            }
-        };
-        // FIXME - do we ever want to release this handle, to avoid taking up GPU memory?
-        handle.set(new_handle.clone()).unwrap();
-        Some(new_handle)
     }
 }
 
