@@ -455,12 +455,11 @@ pub fn last_index_of<'gc>(
     if let Some(array) = this.as_array_storage() {
         let search_val = args.get_value(0);
         let from = args.get_i32(activation, 1)?;
-        let len = array.length();
 
         let from_index = if from >= 0 {
             from as usize
         } else {
-            len.saturating_sub(-from as usize)
+            array.length().saturating_sub(-from as usize)
         };
 
         for (i, val) in array.iter().enumerate().rev() {
