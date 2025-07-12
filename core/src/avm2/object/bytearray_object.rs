@@ -26,7 +26,7 @@ pub fn byte_array_allocator<'gc>(
         if let Some(lib) = activation.context.library.library_for_movie(movie) {
             if let Some(Character::BinaryData(binary_data)) = lib.character_by_id(id) {
                 Some(ByteArrayStorage::from_vec(
-                    SwfSlice::as_ref(binary_data).to_vec(),
+                    SwfSlice::as_ref(&binary_data).to_vec(),
                 ))
             } else {
                 None

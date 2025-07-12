@@ -187,17 +187,17 @@ impl<'gc> MovieLibrary<'gc> {
         self.characters.contains_key(&id)
     }
 
-    pub fn character_by_id(&self, id: CharacterId) -> Option<&Character<'gc>> {
-        self.characters.get(&id)
+    pub fn character_by_id(&self, id: CharacterId) -> Option<Character<'gc>> {
+        self.characters.get(&id).copied()
     }
 
     pub fn character_by_export_name(
         &self,
         name: AvmString<'gc>,
-    ) -> Option<(CharacterId, &Character<'gc>)> {
+    ) -> Option<(CharacterId, Character<'gc>)> {
         if let Some(id) = self.export_characters.get(name, false) {
             if let Some(character) = self.characters.get(id) {
-                return Some((*id, character));
+                return Some((*id, *character));
             }
         }
         None
@@ -218,7 +218,7 @@ impl<'gc> MovieLibrary<'gc> {
         id: CharacterId,
         mc: &Mutation<'gc>,
     ) -> Option<DisplayObject<'gc>> {
-        if let Some(character) = self.characters.get(&id) {
+        if let Some(&character) = self.characters.get(&id) {
             self.instantiate_display_object(id, character, mc)
         } else {
             tracing::error!("Tried to instantiate non-registered character ID {}", id);
@@ -249,7 +249,7 @@ impl<'gc> MovieLibrary<'gc> {
     fn instantiate_display_object(
         &self,
         id: CharacterId,
-        character: &Character<'gc>,
+        character: Character<'gc>,
         mc: &Mutation<'gc>,
     ) -> Option<DisplayObject<'gc>> {
         match character {
