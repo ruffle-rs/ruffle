@@ -73,9 +73,10 @@ impl Test {
 
     fn socket_events(&self) -> Result<Option<Vec<SocketEvent>>> {
         Ok(if self.socket_path.is_file()? {
-            Some(SocketEvent::from_reader(
-                &read_bytes(&self.socket_path)?[..],
-            )?)
+            Some(
+                SocketEvent::from_reader(&read_bytes(&self.socket_path)?[..])
+                    .map_err(|e| anyhow!("Error reading {}: {e}", self.socket_path.as_str()))?,
+            )
         } else {
             None
         })
@@ -83,7 +84,8 @@ impl Test {
 
     fn input_injector(&self) -> Result<InputInjector> {
         Ok(if self.input_path.is_file()? {
-            InputInjector::from_reader(&read_bytes(&self.input_path)?[..])?
+            InputInjector::from_reader(&read_bytes(&self.input_path)?[..])
+                .map_err(|e| anyhow!("Error reading {}: {e}", self.input_path.as_str()))?
         } else {
             InputInjector::empty()
         })
