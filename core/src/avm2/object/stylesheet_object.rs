@@ -60,10 +60,6 @@ impl<'gc> TObject<'gc> for StyleSheetObject<'gc> {
     fn as_ptr(&self) -> *const ObjectPtr {
         Gc::as_ptr(self.0) as *const ObjectPtr
     }
-
-    fn as_style_sheet(&self) -> Option<StyleSheetObject<'gc>> {
-        Some(*self)
-    }
 }
 
 impl<'gc> StyleSheetObject<'gc> {

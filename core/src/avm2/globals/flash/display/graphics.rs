@@ -12,7 +12,7 @@ use crate::avm2::globals::slots::flash_display_graphics_path as graphics_path_sl
 use crate::avm2::globals::slots::flash_display_graphics_solid_fill as graphics_solid_fill_slots;
 use crate::avm2::globals::slots::flash_display_graphics_stroke as graphics_stroke_slots;
 use crate::avm2::globals::slots::flash_display_graphics_triangle_path as graphics_triangle_path_slots;
-use crate::avm2::object::{Object, TObject, VectorObject};
+use crate::avm2::object::{Object, TObject as _, VectorObject};
 use crate::avm2::parameters::ParametersExt;
 use crate::avm2::value::Value;
 use crate::avm2::vector::VectorStorage;

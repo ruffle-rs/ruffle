@@ -77,8 +77,4 @@ impl<'gc> TObject<'gc> for Stage3DObject<'gc> {
     fn as_ptr(&self) -> *const ObjectPtr {
         Gc::as_ptr(self.0) as *const ObjectPtr
     }
-
-    fn as_stage_3d(&self) -> Option<Stage3DObject<'gc>> {
-        Some(*self)
-    }
 }

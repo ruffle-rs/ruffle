@@ -56,6 +56,10 @@ impl<'gc> FontObject<'gc> {
         ))
         .into()
     }
+
+    pub fn font(self) -> Option<Font<'gc>> {
+        self.0.font
+    }
 }
 
 impl<'gc> TObject<'gc> for FontObject<'gc> {
@@ -65,10 +69,6 @@ impl<'gc> TObject<'gc> for FontObject<'gc> {
 
     fn as_ptr(&self) -> *const ObjectPtr {
         Gc::as_ptr(self.0) as *const ObjectPtr
-    }
-
-    fn as_font(&self) -> Option<Font<'gc>> {
-        self.0.font
     }
 }
 

@@ -3,7 +3,7 @@ use std::rc::Rc;
 use crate::avm2::activation::Activation;
 use crate::avm2::bytearray::{Endian, ObjectEncoding};
 use crate::avm2::error::make_error_2008;
-use crate::avm2::object::{Object, TObject};
+use crate::avm2::object::Object;
 use crate::avm2::parameters::ParametersExt;
 use crate::avm2::value::Value;
 use crate::avm2::Error;

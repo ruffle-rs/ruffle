@@ -1,4 +1,4 @@
-use crate::avm2::{Activation, Error, TObject, Value};
+use crate::avm2::{Activation, Error, Value};
 use crate::prelude::TDisplayObject;
 use crate::string::AvmString;
 

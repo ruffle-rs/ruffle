@@ -6,7 +6,7 @@ use crate::avm2::globals::slots::{
     flash_display_shader_parameter as shader_parameter_slots,
 };
 use crate::avm2::parameters::ParametersExt;
-use crate::avm2::{Activation, Error, Object, TObject, Value};
+use crate::avm2::{Activation, Error, Object, TObject as _, Value};
 use crate::pixel_bender::PixelBenderTypeExt;
 use crate::string::AvmString;
 

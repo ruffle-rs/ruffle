@@ -43,10 +43,6 @@ impl<'gc> TObject<'gc> for ResponderObject<'gc> {
     fn as_ptr(&self) -> *const ObjectPtr {
         Gc::as_ptr(self.0) as *const ObjectPtr
     }
-
-    fn as_responder(self) -> Option<ResponderObject<'gc>> {
-        Some(self)
-    }
 }
 
 impl<'gc> ResponderObject<'gc> {

@@ -7,7 +7,7 @@ use crate::avm2::globals::slots::flash_geom_transform as transform_slots;
 use crate::avm2::object::VectorObject;
 use crate::avm2::parameters::ParametersExt;
 use crate::avm2::vector::VectorStorage;
-use crate::avm2::{Activation, Error, Object, TObject, Value};
+use crate::avm2::{Activation, Error, Object, TObject as _, Value};
 use crate::display_object::TDisplayObject;
 use crate::prelude::{DisplayObject, Matrix, Twips};
 use crate::{avm2_stub_getter, avm2_stub_setter};

@@ -5,7 +5,7 @@ use crate::avm2::error::{io_error, make_error_2008, security_error};
 pub use crate::avm2::object::socket_allocator;
 use crate::avm2::parameters::ParametersExt;
 use crate::avm2::string::AvmString;
-use crate::avm2::{Activation, Error, TObject, Value};
+use crate::avm2::{Activation, Error, Value};
 use crate::context::UpdateContext;
 use encoding_rs::Encoding;
 use encoding_rs::UTF_8;

@@ -5,7 +5,7 @@ use crate::avm2::error::{argument_error, make_error_2037};
 use crate::avm2::globals::methods::flash_media_sound as sound_methods;
 use crate::avm2::globals::slots::flash_net_url_request as url_request_slots;
 use crate::avm2::object::{
-    EventObject, QueuedPlay, SoundChannelObject, SoundLoadingState, TObject,
+    EventObject, QueuedPlay, SoundChannelObject, SoundLoadingState, TObject as _,
 };
 use crate::avm2::parameters::ParametersExt;
 use crate::avm2::value::Value;

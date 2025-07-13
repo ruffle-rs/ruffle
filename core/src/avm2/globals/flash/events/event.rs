@@ -1,7 +1,6 @@
 //! `flash.events.Event` builtin/prototype
 
 use crate::avm2::activation::Activation;
-use crate::avm2::object::TObject;
 use crate::avm2::value::Value;
 use crate::avm2::Error;
 

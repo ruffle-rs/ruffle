@@ -106,6 +106,10 @@ impl<'gc> StageObject<'gc> {
 
         Ok(this)
     }
+
+    pub fn display_object(self) -> DisplayObject<'gc> {
+        self.0.display_object
+    }
 }
 
 impl<'gc> TObject<'gc> for StageObject<'gc> {
@@ -115,10 +119,6 @@ impl<'gc> TObject<'gc> for StageObject<'gc> {
 
     fn as_ptr(&self) -> *const ObjectPtr {
         Gc::as_ptr(self.0) as *const ObjectPtr
-    }
-
-    fn as_display_object(&self) -> Option<DisplayObject<'gc>> {
-        Some(self.0.display_object)
     }
 }
 

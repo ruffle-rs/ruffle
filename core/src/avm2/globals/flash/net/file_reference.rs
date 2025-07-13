@@ -2,7 +2,7 @@ use crate::avm2::bytearray::ByteArrayStorage;
 use crate::avm2::error::{argument_error, error, make_error_2037, make_error_2097};
 use crate::avm2::globals::slots::flash_net_file_filter as file_filter_slots;
 use crate::avm2::object::{ByteArrayObject, DateObject, FileReference};
-use crate::avm2::{Activation, Avm2, Error, EventObject, TObject, Value};
+use crate::avm2::{Activation, Avm2, Error, EventObject, TObject as _, Value};
 use crate::backend::ui::FileFilter;
 use crate::string::AvmString;
 

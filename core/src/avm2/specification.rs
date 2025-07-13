@@ -1,7 +1,7 @@
 use crate::avm2::dynamic_map::DynamicKey;
 use crate::avm2::function::BoundMethod;
 use crate::avm2::method::{Method, ParamConfig};
-use crate::avm2::object::TObject;
+use crate::avm2::object::TObject as _;
 use crate::avm2::traits::{Trait, TraitKind};
 use crate::avm2::{Activation, Avm2, ClassObject, QName, Value};
 use crate::context::UpdateContext;

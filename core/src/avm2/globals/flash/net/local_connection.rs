@@ -1,6 +1,5 @@
 use crate::avm2::amf::serialize_value;
 use crate::avm2::error::{argument_error, make_error_2004, make_error_2085, Error2004Type};
-use crate::avm2::object::TObject;
 use crate::avm2::parameters::ParametersExt;
 use crate::avm2::{Activation, Error, Value};
 use crate::string::AvmString;

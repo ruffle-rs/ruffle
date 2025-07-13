@@ -53,10 +53,6 @@ impl<'gc> TObject<'gc> for NetConnectionObject<'gc> {
     fn as_ptr(&self) -> *const ObjectPtr {
         Gc::as_ptr(self.0) as *const ObjectPtr
     }
-
-    fn as_net_connection(self) -> Option<NetConnectionObject<'gc>> {
-        Some(self)
-    }
 }
 
 impl NetConnectionObject<'_> {

@@ -208,8 +208,4 @@ impl<'gc> TObject<'gc> for SoundChannelObject<'gc> {
     fn as_ptr(&self) -> *const ObjectPtr {
         Gc::as_ptr(self.0) as *const ObjectPtr
     }
-
-    fn as_sound_channel(self) -> Option<SoundChannelObject<'gc>> {
-        Some(self)
-    }
 }

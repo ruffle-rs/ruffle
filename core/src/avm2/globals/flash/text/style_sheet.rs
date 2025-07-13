@@ -1,4 +1,4 @@
-use crate::avm2::object::{ScriptObject, TObject};
+use crate::avm2::object::{ScriptObject, TObject as _};
 use crate::avm2::parameters::ParametersExt;
 use crate::avm2::{Activation, Error, Value};
 use crate::html::{transform_dashes_to_camel_case, CssStream};

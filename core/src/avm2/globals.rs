@@ -2,7 +2,7 @@ use crate::avm2::activation::Activation;
 use crate::avm2::api_version::ApiVersion;
 use crate::avm2::class::Class;
 use crate::avm2::domain::Domain;
-use crate::avm2::object::{ClassObject, ScriptObject, TObject};
+use crate::avm2::object::{ClassObject, ScriptObject};
 use crate::avm2::scope::{Scope, ScopeChain};
 use crate::avm2::script::TranslationUnit;
 use crate::avm2::{Avm2, Error, Multiname, Namespace, QName};

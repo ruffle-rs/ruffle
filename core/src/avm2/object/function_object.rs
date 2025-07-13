@@ -158,8 +158,4 @@ impl<'gc> TObject<'gc> for FunctionObject<'gc> {
 
         AvmString::new_utf8(mc, format!("[object Function-{method_index}]"))
     }
-
-    fn as_function_object(&self) -> Option<FunctionObject<'gc>> {
-        Some(*self)
-    }
 }

@@ -2,7 +2,7 @@
 
 use crate::avm2::activation::Activation;
 use crate::avm2::error::type_error;
-use crate::avm2::object::{ClassObject, Object, TObject};
+use crate::avm2::object::{ClassObject, Object};
 use crate::avm2::value::Value;
 use crate::avm2::Error;
 

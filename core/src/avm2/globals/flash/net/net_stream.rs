@@ -1,6 +1,6 @@
 use crate::avm2::error::{make_error_2004, Error2004Type};
 use crate::avm2::parameters::ParametersExt;
-use crate::avm2::{Activation, Error, TObject, Value};
+use crate::avm2::{Activation, Error, Value};
 
 pub use crate::avm2::object::netstream_allocator as net_stream_allocator;
 

@@ -3,7 +3,7 @@
 use ruffle_macros::istr;
 
 use crate::avm2::activation::Activation;
-use crate::avm2::object::{DomainObject, Object, TObject, VectorObject};
+use crate::avm2::object::{DomainObject, Object, VectorObject};
 use crate::avm2::parameters::ParametersExt;
 use crate::avm2::value::Value;
 use crate::avm2::vector::VectorStorage;
@@ -27,8 +27,9 @@ pub fn init<'gc>(
             .as_application_domain()
             .expect("Invalid parent domain")
     };
+    let target_domain = this.as_domain_object().expect("Invalid target domain");
     let fresh_domain = Domain::movie_domain(activation, parent_domain);
-    this.init_application_domain(activation.gc(), fresh_domain);
+    target_domain.init_domain(activation.gc(), fresh_domain);
 
     Ok(Value::Undefined)
 }

@@ -1,7 +1,7 @@
 use crate::avm2::object::StyleSheetObject;
 use crate::avm2::property::Property;
 use crate::avm2::{
-    Activation, ArrayStorage, ClassObject, Error, Namespace, Object, TObject, Value,
+    Activation, ArrayStorage, ClassObject, Error, Namespace, Object, TObject as _, Value,
 };
 use crate::context::UpdateContext;
 use crate::debug_ui::display_object::open_display_object_button;

@@ -6,7 +6,7 @@ use swf::Twips;
 use crate::avm2::activation::Activation;
 use crate::avm2::error::{argument_error, make_error_2025, range_error};
 use crate::avm2::globals::slots::flash_geom_point as point_slots;
-use crate::avm2::object::TObject;
+use crate::avm2::object::TObject as _;
 use crate::avm2::parameters::ParametersExt;
 use crate::avm2::value::Value;
 use crate::avm2::{ArrayObject, ArrayStorage, Error};

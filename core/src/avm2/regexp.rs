@@ -5,7 +5,6 @@ use std::num::NonZero;
 
 use crate::avm2::activation::Activation;
 use crate::avm2::object::FunctionObject;
-use crate::avm2::object::TObject;
 use crate::avm2::Error;
 use crate::avm2::{ArrayObject, ArrayStorage, Value};
 use crate::string::WString;
@@ -283,7 +282,7 @@ impl<'gc> RegExp<'gc> {
             // we only hold onto a mutable lock on the regular expression
             // for a small window, because f might refer to the RegExp
             // (See https://github.com/ruffle-rs/ruffle/issues/17899)
-            let mut re = regexp.as_regexp_mut(activation.gc()).unwrap();
+            let mut re = regexp.regexp_mut(activation.gc());
             let global_flag = re.flags().contains(RegExpFlags::GLOBAL);
 
             (global_flag, re.find_utf16_match(*text, start))
@@ -315,8 +314,7 @@ impl<'gc> RegExp<'gc> {
             // the RegExp long enough to do our matching, so that
             // when we call f we don't have a lock
             m = regexp
-                .as_regexp_mut(activation.gc())
-                .unwrap()
+                .regexp_mut(activation.gc())
                 .find_utf16_match(*text, start);
         }
 

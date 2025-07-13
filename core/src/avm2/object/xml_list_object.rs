@@ -482,10 +482,6 @@ impl<'gc> TObject<'gc> for XmlListObject<'gc> {
         Gc::as_ptr(self.0) as *const ObjectPtr
     }
 
-    fn as_xml_list_object(&self) -> Option<Self> {
-        Some(*self)
-    }
-
     fn xml_descendants(
         &self,
         activation: &mut Activation<'_, 'gc>,

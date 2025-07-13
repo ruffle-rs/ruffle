@@ -3,7 +3,7 @@
 use crate::avm2::activation::Activation;
 use crate::avm2::globals::flash::display::bitmap_data::fill_bitmap_data_from_symbol;
 use crate::avm2::globals::flash::display::display_object::initialize_for_allocator;
-use crate::avm2::object::{BitmapDataObject, ClassObject, Object, TObject};
+use crate::avm2::object::{BitmapDataObject, ClassObject, Object};
 use crate::avm2::value::Value;
 use crate::avm2::Error;
 use ruffle_macros::istr;
@@ -57,7 +57,7 @@ pub fn bitmap_allocator<'gc>(
                     bitmapdata_cls,
                 )?;
                 bitmap_data_obj.init_bitmap_data(activation.gc(), new_bitmap_data);
-                new_bitmap_data.init_object2(activation.gc(), bitmap_data_obj);
+                new_bitmap_data.init_object2(activation.gc(), bitmap_data_obj.into());
 
                 let child = Bitmap::new_with_bitmap_data(
                     activation.gc(),

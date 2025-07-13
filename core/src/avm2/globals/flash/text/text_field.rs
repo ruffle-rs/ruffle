@@ -3,7 +3,7 @@
 use crate::avm2::activation::Activation;
 use crate::avm2::error::{make_error_2006, make_error_2008};
 use crate::avm2::globals::flash::display::display_object::initialize_for_allocator;
-use crate::avm2::object::{ClassObject, Object, TObject, TextFormatObject};
+use crate::avm2::object::{ClassObject, Object, TextFormatObject};
 use crate::avm2::parameters::ParametersExt;
 use crate::avm2::value::Value;
 use crate::avm2::{ArrayObject, ArrayStorage, Error};

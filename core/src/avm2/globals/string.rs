@@ -5,7 +5,6 @@ use std::num::NonZero;
 use ruffle_macros::istr;
 
 use crate::avm2::activation::Activation;
-use crate::avm2::object::TObject;
 use crate::avm2::parameters::ParametersExt;
 use crate::avm2::regexp::{RegExp, RegExpFlags};
 use crate::avm2::value::Value;

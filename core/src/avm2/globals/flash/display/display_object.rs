@@ -10,7 +10,7 @@ use crate::avm2::globals::flash::geom::transform::matrix_from_transform_object;
 use crate::avm2::globals::slots::flash_display_shader as shader_slots;
 use crate::avm2::globals::slots::flash_geom_point as point_slots;
 use crate::avm2::globals::slots::flash_geom_rectangle as rectangle_slots;
-use crate::avm2::object::{Object, TObject};
+use crate::avm2::object::{Object, TObject as _};
 use crate::avm2::parameters::ParametersExt;
 use crate::avm2::value::Value;
 use crate::avm2::StageObject;
@@ -322,25 +322,23 @@ pub fn set_filters<'gc>(
         let new_filters = args.try_get_object(activation, 0);
 
         if let Some(new_filters) = new_filters {
-            if let Some(filters_array) = new_filters.as_array_object() {
-                if let Some(filters_storage) = filters_array.as_array_storage() {
-                    let filter_class_object = activation.avm2().classes().bitmapfilter;
-                    let filter_class = filter_class_object.inner_class_definition();
-                    let mut filter_vec = Vec::with_capacity(filters_storage.length());
+            if let Some(filters_storage) = new_filters.as_array_storage() {
+                let filter_class_object = activation.avm2().classes().bitmapfilter;
+                let filter_class = filter_class_object.inner_class_definition();
+                let mut filter_vec = Vec::with_capacity(filters_storage.length());
 
-                    for filter in filters_storage.iter().flatten() {
-                        if !filter.is_of_type(activation, filter_class) {
-                            return build_argument_type_error(activation);
-                        }
-
-                        let filter_object = filter
-                            .as_object()
-                            .expect("BitmapFilter value should be Object");
-                        filter_vec.push(Filter::from_avm2_object(activation, filter_object)?);
+                for filter in filters_storage.iter().flatten() {
+                    if !filter.is_of_type(activation, filter_class) {
+                        return build_argument_type_error(activation);
                     }
 
-                    dobj.set_filters(activation.gc(), filter_vec);
+                    let filter_object = filter
+                        .as_object()
+                        .expect("BitmapFilter value should be Object");
+                    filter_vec.push(Filter::from_avm2_object(activation, filter_object)?);
                 }
+
+                dobj.set_filters(activation.gc(), filter_vec);
             }
         } else {
             dobj.set_filters(activation.gc(), vec![]);

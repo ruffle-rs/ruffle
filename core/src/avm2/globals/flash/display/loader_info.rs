@@ -3,7 +3,7 @@
 use crate::avm2::activation::Activation;
 use crate::avm2::bytearray::Endian;
 use crate::avm2::error::error;
-use crate::avm2::object::{DomainObject, LoaderStream, ScriptObject, TObject};
+use crate::avm2::object::{DomainObject, LoaderStream, ScriptObject, TObject as _};
 use crate::avm2::value::Value;
 use crate::avm2::Error;
 use crate::display_object::TDisplayObject;

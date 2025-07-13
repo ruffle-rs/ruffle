@@ -41,10 +41,6 @@ impl<'gc> TObject<'gc> for FileReferenceObject<'gc> {
     fn as_ptr(&self) -> *const ObjectPtr {
         Gc::as_ptr(self.0) as *const ObjectPtr
     }
-
-    fn as_file_reference(&self) -> Option<FileReferenceObject<'gc>> {
-        Some(*self)
-    }
 }
 
 impl FileReferenceObject<'_> {

@@ -1,7 +1,7 @@
 //! Root stage impl
 
 use crate::avm1::Object as Avm1Object;
-use crate::avm2::object::{Stage3DObject, TObject};
+use crate::avm2::object::Stage3DObject;
 use crate::avm2::{
     Activation as Avm2Activation, Avm2, EventObject as Avm2EventObject, Object as Avm2Object,
     StageObject as Avm2StageObject, Value as Avm2Value,

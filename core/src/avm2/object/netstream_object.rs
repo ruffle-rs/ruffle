@@ -42,6 +42,12 @@ pub struct NetStreamObjectData<'gc> {
     ns: NetStream<'gc>,
 }
 
+impl<'gc> NetStreamObject<'gc> {
+    pub fn netstream(self) -> NetStream<'gc> {
+        self.0.ns
+    }
+}
+
 impl<'gc> TObject<'gc> for NetStreamObject<'gc> {
     fn gc_base(&self) -> Gc<'gc, ScriptObjectData<'gc>> {
         HasPrefixField::as_prefix_gc(self.0)
@@ -49,10 +55,6 @@ impl<'gc> TObject<'gc> for NetStreamObject<'gc> {
 
     fn as_ptr(&self) -> *const ObjectPtr {
         Gc::as_ptr(self.0) as *const ObjectPtr
-    }
-
-    fn as_netstream(self) -> Option<NetStream<'gc>> {
-        Some(self.0.ns)
     }
 }
 
