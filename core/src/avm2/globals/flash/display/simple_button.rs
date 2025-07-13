@@ -3,7 +3,7 @@
 use crate::avm2::activation::Activation;
 use crate::avm2::error::{make_error_2136, Error};
 use crate::avm2::globals::flash::display::display_object::initialize_for_allocator;
-use crate::avm2::object::{ClassObject, Object, StageObject, TObject};
+use crate::avm2::object::{ClassObject, Object, StageObject};
 use crate::avm2::value::Value;
 use crate::display_object::{Avm2Button, ButtonTracking, TDisplayObject};
 use swf::ButtonState;

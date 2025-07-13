@@ -80,10 +80,6 @@ impl<'gc> TObject<'gc> for TextureObject<'gc> {
     fn as_ptr(&self) -> *const ObjectPtr {
         Gc::as_ptr(self.0) as *const ObjectPtr
     }
-
-    fn as_texture(&self) -> Option<TextureObject<'gc>> {
-        Some(*self)
-    }
 }
 
 impl std::fmt::Debug for TextureObject<'_> {

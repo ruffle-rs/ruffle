@@ -11,7 +11,7 @@ use crate::avm2::globals::slots::flash_filters_gradient_bevel_filter as gradient
 use crate::avm2::globals::slots::flash_filters_gradient_glow_filter as gradient_glow_filter_slots;
 use crate::avm2::globals::slots::flash_filters_shader_filter as shader_filter_slots;
 use crate::avm2::globals::slots::flash_geom_point as point_slots;
-use crate::avm2::object::{ArrayObject, ClassObject, Object, TObject};
+use crate::avm2::object::{ArrayObject, ClassObject, Object, TObject as _};
 use crate::avm2::{Activation, Error, Value};
 
 use gc_arena::{Collect, DynamicRoot, Gc, Rootable};

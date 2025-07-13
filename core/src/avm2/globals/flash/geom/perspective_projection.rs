@@ -4,7 +4,7 @@ use crate::avm2::globals::flash::geom::transform::{
 };
 use crate::avm2::globals::slots::flash_geom_perspective_projection as pp_slots;
 use crate::avm2::globals::slots::flash_geom_point as point_slots;
-use crate::avm2::{Activation, Error, Object, TObject, Value};
+use crate::avm2::{Activation, Error, Object, TObject as _, Value};
 use crate::avm2_stub_setter;
 use crate::display_object::TDisplayObject;
 use ruffle_render::perspective_projection::PerspectiveProjection;

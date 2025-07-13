@@ -2,7 +2,6 @@
 
 use crate::avm2::activation::Activation;
 use crate::avm2::error::make_error_2027;
-use crate::avm2::object::TObject;
 use crate::avm2::parameters::ParametersExt;
 use crate::avm2::value::Value;
 use crate::avm2::Error;

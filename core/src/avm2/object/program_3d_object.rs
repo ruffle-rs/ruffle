@@ -72,10 +72,6 @@ impl<'gc> TObject<'gc> for Program3DObject<'gc> {
     fn as_ptr(&self) -> *const ObjectPtr {
         Gc::as_ptr(self.0) as *const ObjectPtr
     }
-
-    fn as_program_3d(&self) -> Option<Program3DObject<'gc>> {
-        Some(*self)
-    }
 }
 
 impl std::fmt::Debug for Program3DObject<'_> {

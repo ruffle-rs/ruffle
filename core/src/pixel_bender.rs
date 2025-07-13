@@ -4,7 +4,7 @@ use ruffle_render::pixel_bender::{PixelBenderType, PixelBenderTypeOpcode};
 use crate::{
     avm2::{
         error::{make_error_2004, Error2004Type},
-        Activation, ArrayObject, ArrayStorage, Error, TObject, Value,
+        Activation, ArrayObject, ArrayStorage, Error, Value,
     },
     ecma_conversions::f64_to_wrapping_i32,
     string::AvmString,

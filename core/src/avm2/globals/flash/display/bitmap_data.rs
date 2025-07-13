@@ -96,6 +96,7 @@ pub fn init<'gc>(
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
+    let bitmap_data_obj = this.as_bitmap_data_object().unwrap();
 
     // We set the underlying BitmapData instance - we start out with a dummy BitmapDataWrapper,
     // which makes custom classes see a disposed BitmapData before they call super()
@@ -144,7 +145,7 @@ pub fn init<'gc>(
     };
 
     new_bitmap_data.init_object2(activation.gc(), this);
-    this.init_bitmap_data(activation.gc(), new_bitmap_data);
+    bitmap_data_obj.init_bitmap_data(activation.gc(), new_bitmap_data);
 
     Ok(Value::Undefined)
 }

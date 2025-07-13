@@ -352,11 +352,11 @@ impl<'gc> EventObject<'gc> {
         )
     }
 
-    pub fn event(&self) -> Ref<'_, Event<'gc>> {
-        self.0.event.borrow()
+    pub fn event(&self) -> Ref<'gc, Event<'gc>> {
+        Gc::as_ref(self.0).event.borrow()
     }
 
-    pub fn event_mut(&self, mc: &Mutation<'gc>) -> RefMut<'_, Event<'gc>> {
+    pub fn event_mut(self, mc: &Mutation<'gc>) -> RefMut<'gc, Event<'gc>> {
         unlock!(Gc::write(mc, self.0), EventObjectData, event).borrow_mut()
     }
 }
@@ -368,18 +368,6 @@ impl<'gc> TObject<'gc> for EventObject<'gc> {
 
     fn as_ptr(&self) -> *const ObjectPtr {
         Gc::as_ptr(self.0) as *const ObjectPtr
-    }
-
-    fn as_event_object(self) -> Option<EventObject<'gc>> {
-        Some(self)
-    }
-
-    fn as_event(&self) -> Option<Ref<'_, Event<'gc>>> {
-        Some(self.0.event.borrow())
-    }
-
-    fn as_event_mut(&self, mc: &Mutation<'gc>) -> Option<RefMut<'_, Event<'gc>>> {
-        Some(unlock!(Gc::write(mc, self.0), EventObjectData, event).borrow_mut())
     }
 }
 

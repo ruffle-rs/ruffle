@@ -1,4 +1,3 @@
-use crate::avm2::object::TObject;
 use crate::avm2::parameters::ParametersExt;
 use crate::avm2::Activation;
 use crate::avm2::Error;

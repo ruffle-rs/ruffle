@@ -308,7 +308,7 @@ pub fn deserialize_value_impl<'gc>(
                 arr.push(Some(deserialize_value_impl(activation, value, object_map)?));
             }
             array
-                .array_storage_mut(activation.gc())
+                .storage_mut(activation.gc())
                 .replace_dense_storage(arr);
 
             // Now let's add each element as a property
@@ -341,7 +341,7 @@ pub fn deserialize_value_impl<'gc>(
             }
 
             array
-                .array_storage_mut(activation.gc())
+                .storage_mut(activation.gc())
                 .replace_dense_storage(arr);
 
             array.into()

@@ -3,7 +3,7 @@
 use crate::avm1;
 use crate::avm2::{
     Activation as Avm2Activation, BitmapDataObject as Avm2BitmapDataObject,
-    ClassObject as Avm2ClassObject, Object as Avm2Object, StageObject as Avm2StageObject, TObject,
+    ClassObject as Avm2ClassObject, Object as Avm2Object, StageObject as Avm2StageObject,
     Value as Avm2Value,
 };
 use crate::bitmap::bitmap_data::{BitmapData, BitmapDataWrapper};
@@ -367,10 +367,7 @@ impl<'gc> TDisplayObject<'gc> for Bitmap<'gc> {
                 )
                 .expect("can't throw from post_instantiation -_-");
 
-                self.set_bitmap_data(
-                    activation.context,
-                    bitmap_data_obj.as_bitmap_data().unwrap(),
-                );
+                self.set_bitmap_data(activation.context, bitmap_data_obj.get_bitmap_data());
             }
 
             self.on_construction_complete(context);

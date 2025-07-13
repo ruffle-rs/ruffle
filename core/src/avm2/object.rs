@@ -711,193 +711,6 @@ pub trait TObject<'gc>: 'gc + Collect<'gc> + Debug + Into<Object<'gc>> + Clone +
         base.set_vtable(mc, vtable);
     }
 
-    /// Try to corece this object into a `ClassObject`.
-    fn as_class_object(&self) -> Option<ClassObject<'gc>> {
-        None
-    }
-
-    fn as_function_object(&self) -> Option<FunctionObject<'gc>> {
-        None
-    }
-
-    /// Unwrap this object's `Namespace`, if the object is a boxed namespace.
-    fn as_namespace(&self) -> Option<Namespace<'gc>> {
-        None
-    }
-
-    fn as_namespace_object(&self) -> Option<NamespaceObject<'gc>> {
-        None
-    }
-
-    /// Unwrap this object as a `QNameObject`
-    fn as_qname_object(self) -> Option<QNameObject<'gc>> {
-        None
-    }
-
-    fn as_loader_info_object(&self) -> Option<&LoaderInfoObject<'gc>> {
-        None
-    }
-
-    fn as_array_object(&self) -> Option<ArrayObject<'gc>> {
-        None
-    }
-
-    /// Unwrap this object as array storage.
-    fn as_array_storage(&self) -> Option<Ref<'_, ArrayStorage<'gc>>> {
-        None
-    }
-
-    /// Unwrap this object as bytearray.
-    fn as_bytearray(&self) -> Option<Ref<'_, ByteArrayStorage>> {
-        None
-    }
-
-    fn as_bytearray_mut(&self) -> Option<RefMut<'_, ByteArrayStorage>> {
-        None
-    }
-
-    fn as_bytearray_object(&self) -> Option<ByteArrayObject<'gc>> {
-        None
-    }
-
-    /// Unwrap this object as mutable array storage.
-    fn as_array_storage_mut(&self, _mc: &Mutation<'gc>) -> Option<RefMut<'_, ArrayStorage<'gc>>> {
-        None
-    }
-
-    /// Unwrap this object as a vector.
-    fn as_vector_object(&self) -> Option<VectorObject<'gc>> {
-        None
-    }
-
-    /// Unwrap this object as vector storage.
-    fn as_vector_storage(&self) -> Option<Ref<'_, VectorStorage<'gc>>> {
-        None
-    }
-
-    /// Unwrap this object as mutable vector storage.
-    fn as_vector_storage_mut(&self, _mc: &Mutation<'gc>) -> Option<RefMut<'_, VectorStorage<'gc>>> {
-        None
-    }
-
-    /// Get this object's `DisplayObject`, if it has one.
-    fn as_display_object(&self) -> Option<DisplayObject<'gc>> {
-        None
-    }
-
-    fn init_application_domain(&self, _mc: &Mutation<'gc>, _domain: Domain<'gc>) {
-        panic!("Tried to init an application domain on a non-ApplicationDomain object!")
-    }
-
-    /// Unwrap this object as an ApplicationDomain.
-    fn as_application_domain(&self) -> Option<Domain<'gc>> {
-        None
-    }
-
-    /// Unwrap this object as an event.
-    fn as_event_object(self) -> Option<EventObject<'gc>> {
-        None
-    }
-
-    /// Unwrap this object as an event.
-    fn as_event(&self) -> Option<Ref<'_, Event<'gc>>> {
-        None
-    }
-
-    /// Unwrap this object as a mutable event.
-    fn as_event_mut(&self, _mc: &Mutation<'gc>) -> Option<RefMut<'_, Event<'gc>>> {
-        None
-    }
-
-    /// Unwrap this object as a list of event handlers.
-    fn as_dispatch(&self) -> Option<Ref<'_, DispatchList<'gc>>> {
-        None
-    }
-
-    /// Unwrap this object as a mutable list of event handlers.
-    fn as_dispatch_mut(&self, _mc: &Mutation<'gc>) -> Option<RefMut<'_, DispatchList<'gc>>> {
-        None
-    }
-
-    /// Unwrap this object as a regexp.
-    fn as_regexp_object(&self) -> Option<RegExpObject<'gc>> {
-        None
-    }
-
-    /// Unwrap this object as a regexp.
-    fn as_regexp(&self) -> Option<Ref<'_, RegExp<'gc>>> {
-        None
-    }
-
-    /// Unwrap this object as a font.
-    fn as_font(&self) -> Option<Font<'gc>> {
-        None
-    }
-
-    /// Unwrap this object as a mutable regexp.
-    fn as_regexp_mut(&self, _mc: &Mutation<'gc>) -> Option<RefMut<'_, RegExp<'gc>>> {
-        None
-    }
-
-    /// Unwrap this object's sound handle.
-    fn as_sound_object(self) -> Option<SoundObject<'gc>> {
-        None
-    }
-
-    /// Unwrap this object's sound instance handle.
-    fn as_sound_channel(self) -> Option<SoundChannelObject<'gc>> {
-        None
-    }
-
-    fn as_bitmap_data(&self) -> Option<BitmapDataWrapper<'gc>> {
-        None
-    }
-
-    fn as_shader_data(&self) -> Option<ShaderDataObject<'gc>> {
-        None
-    }
-
-    /// Initialize the bitmap data in this object, if it's capable of
-    /// supporting said data.
-    ///
-    /// This should only be called to initialize the association between an AVM
-    /// object and it's associated bitmap data. This association should not be
-    /// reinitialized later.
-    fn init_bitmap_data(&self, _mc: &Mutation<'gc>, _new_bitmap: BitmapDataWrapper<'gc>) {}
-
-    /// Get this objects `DateObject`, if it has one.
-    fn as_date_object(&self) -> Option<DateObject<'gc>> {
-        None
-    }
-
-    /// Get this object as a `DictionaryObject`, if it is one.
-    fn as_dictionary_object(self) -> Option<DictionaryObject<'gc>> {
-        None
-    }
-
-    /// Unwrap this object as a text format.
-    fn as_text_format(&self) -> Option<Ref<'_, TextFormat>> {
-        None
-    }
-
-    /// Unwrap this object as a mutable text format.
-    fn as_text_format_mut(&self) -> Option<RefMut<'_, TextFormat>> {
-        None
-    }
-
-    /// Unwrap this object as an Error.
-    fn as_error_object(&self) -> Option<ErrorObject<'gc>> {
-        None
-    }
-
-    fn as_xml_object(&self) -> Option<XmlObject<'gc>> {
-        None
-    }
-
-    fn as_xml_list_object(&self) -> Option<XmlListObject<'gc>> {
-        None
-    }
-
     fn xml_descendants(
         &self,
         _activation: &mut Activation<'_, 'gc>,
@@ -905,69 +718,25 @@ pub trait TObject<'gc>: 'gc + Collect<'gc> + Debug + Into<Object<'gc>> + Clone +
     ) -> Option<XmlListObject<'gc>> {
         None
     }
-
-    fn as_context_3d(&self) -> Option<Context3DObject<'gc>> {
-        None
-    }
-
-    fn as_index_buffer(&self) -> Option<IndexBuffer3DObject<'gc>> {
-        None
-    }
-
-    fn as_vertex_buffer(&self) -> Option<VertexBuffer3DObject<'gc>> {
-        None
-    }
-
-    fn as_program_3d(&self) -> Option<Program3DObject<'gc>> {
-        None
-    }
-
-    fn as_stage_3d(&self) -> Option<Stage3DObject<'gc>> {
-        None
-    }
-
-    fn as_texture(&self) -> Option<TextureObject<'gc>> {
-        None
-    }
-
-    fn as_netstream(self) -> Option<NetStream<'gc>> {
-        None
-    }
-
-    fn as_responder(self) -> Option<ResponderObject<'gc>> {
-        None
-    }
-
-    fn as_net_connection(self) -> Option<NetConnectionObject<'gc>> {
-        None
-    }
-
-    fn as_socket(&self) -> Option<SocketObject<'gc>> {
-        None
-    }
-
-    fn as_local_connection_object(&self) -> Option<LocalConnectionObject<'gc>> {
-        None
-    }
-
-    fn as_file_reference(&self) -> Option<FileReferenceObject<'gc>> {
-        None
-    }
-
-    fn as_shared_object(&self) -> Option<SharedObjectObject<'gc>> {
-        None
-    }
-
-    fn as_sound_transform(&self) -> Option<SoundTransformObject<'gc>> {
-        None
-    }
-
-    fn as_style_sheet(&self) -> Option<StyleSheetObject<'gc>> {
-        None
-    }
 }
 
 pub enum ObjectPtr {}
+
+macro_rules! impl_downcast_methods {
+    ($(
+        $vis:vis fn $fn_name:ident for $variant:ident;
+    )*) => { $(
+        #[doc = concat!("Downcast this object as a `", stringify!($variant), "`.")]
+        #[inline(always)]
+        $vis fn $fn_name(self) -> Option<$variant<'gc>> {
+            if let Self::$variant(obj) = self {
+                Some(obj)
+            } else {
+                None
+            }
+        }
+    )* }
+}
 
 impl<'gc> Object<'gc> {
     pub fn ptr_eq<T: TObject<'gc>>(a: T, b: T) -> bool {
@@ -1023,6 +792,148 @@ impl<'gc> Object<'gc> {
             Self::MessageChannelObject(o) => WeakObject::MessageChannelObject(MessageChannelObjectWeak(Gc::downgrade(o.0))),
             Self::SecurityDomainObject(o) => WeakObject::SecurityDomainObject(SecurityDomainObjectWeak(Gc::downgrade(o.0))),
         }
+    }
+
+    impl_downcast_methods! {
+        pub fn as_class_object for ClassObject;
+        pub fn as_function_object for FunctionObject;
+        pub fn as_namespace_object for NamespaceObject;
+        pub fn as_qname_object for QNameObject;
+        pub fn as_loader_info_object for LoaderInfoObject;
+        pub fn as_array_object for ArrayObject;
+        pub fn as_bytearray_object for ByteArrayObject;
+        pub fn as_vector_object for VectorObject;
+        pub fn as_stage_object for StageObject;
+        pub fn as_domain_object for DomainObject;
+        pub fn as_event_object for EventObject;
+        pub fn as_dispatch_object for DispatchObject;
+        pub fn as_font_object for FontObject;
+        pub fn as_regexp_object for RegExpObject;
+        pub fn as_sound_object for SoundObject;
+        pub fn as_sound_channel for SoundChannelObject;
+        pub fn as_bitmap_data_object for BitmapDataObject;
+        pub fn as_shader_data for ShaderDataObject;
+        pub fn as_date_object for DateObject;
+        pub fn as_dictionary_object for DictionaryObject;
+        pub fn as_text_format_object for TextFormatObject;
+        pub fn as_error_object for ErrorObject;
+        pub fn as_xml_object for XmlObject;
+        pub fn as_xml_list_object for XmlListObject;
+        pub fn as_context_3d for Context3DObject;
+        pub fn as_index_buffer for IndexBuffer3DObject;
+        pub fn as_vertex_buffer for VertexBuffer3DObject;
+        pub fn as_program_3d for Program3DObject;
+        pub fn as_stage_3d for Stage3DObject;
+        pub fn as_texture for TextureObject;
+        pub fn as_netstream_object for NetStreamObject;
+        pub fn as_responder for ResponderObject;
+        pub fn as_net_connection for NetConnectionObject;
+        pub fn as_socket for SocketObject;
+        pub fn as_local_connection_object for LocalConnectionObject;
+        pub fn as_file_reference for FileReferenceObject;
+        pub fn as_shared_object for SharedObjectObject;
+        pub fn as_sound_transform for SoundTransformObject;
+        pub fn as_style_sheet for StyleSheetObject;
+    }
+
+    /// Unwrap this object's `Namespace`, if the object is a boxed namespace.
+    pub fn as_namespace(self) -> Option<Namespace<'gc>> {
+        self.as_namespace_object().map(|o| o.namespace())
+    }
+
+    /// Unwrap this object as array storage.
+    pub fn as_array_storage(&self) -> Option<Ref<'_, ArrayStorage<'gc>>> {
+        self.as_array_object().map(|o| o.storage())
+    }
+
+    /// Unwrap this object as mutable array storage.
+    pub fn as_array_storage_mut(
+        &self,
+        mc: &Mutation<'gc>,
+    ) -> Option<RefMut<'_, ArrayStorage<'gc>>> {
+        self.as_array_object().map(|o| o.storage_mut(mc))
+    }
+
+    /// Unwrap this object as byte array storage.
+    pub fn as_bytearray(&self) -> Option<Ref<'_, ByteArrayStorage>> {
+        self.as_bytearray_object().map(|o| o.storage())
+    }
+
+    /// Unwrap this object as mutable byte array storage.
+    pub fn as_bytearray_mut(&self) -> Option<RefMut<'_, ByteArrayStorage>> {
+        self.as_bytearray_object().map(|o| o.storage_mut())
+    }
+
+    /// Unwrap this object as vector storage.
+    pub fn as_vector_storage(&self) -> Option<Ref<'_, VectorStorage<'gc>>> {
+        self.as_vector_object().map(|o| o.storage())
+    }
+
+    /// Unwrap this object as mutable vector storage.
+    pub fn as_vector_storage_mut(
+        &self,
+        mc: &Mutation<'gc>,
+    ) -> Option<RefMut<'_, VectorStorage<'gc>>> {
+        self.as_vector_object().map(|o| o.storage_mut(mc))
+    }
+
+    /// Get this object's `DisplayObject`, if it has one.
+    pub fn as_display_object(self) -> Option<DisplayObject<'gc>> {
+        self.as_stage_object().map(|o| o.display_object())
+    }
+
+    /// Unwrap this object as an application domain.
+    pub fn as_application_domain(self) -> Option<Domain<'gc>> {
+        self.as_domain_object().map(|o| o.domain())
+    }
+
+    /// Unwrap this object as an event.
+    pub fn as_event(&self) -> Option<Ref<'_, Event<'gc>>> {
+        self.as_event_object().map(|o| o.event())
+    }
+
+    /// Unwrap this object as a mutable event.
+    pub fn as_event_mut(&self, mc: &Mutation<'gc>) -> Option<RefMut<'_, Event<'gc>>> {
+        self.as_event_object().map(|o| o.event_mut(mc))
+    }
+
+    /// Unwrap this object as a mutable list of event handlers.
+    pub fn as_dispatch_mut(&self, mc: &Mutation<'gc>) -> Option<RefMut<'_, DispatchList<'gc>>> {
+        self.as_dispatch_object().map(|o| o.dispatch_mut(mc))
+    }
+
+    /// Unwrap this object as a font.
+    pub fn as_font(&self) -> Option<Font<'gc>> {
+        self.as_font_object().and_then(|o| o.font())
+    }
+
+    /// Unwrap this object as a regexp.
+    pub fn as_regexp(&self) -> Option<Ref<'_, RegExp<'gc>>> {
+        self.as_regexp_object().map(|o| o.regexp())
+    }
+
+    /// Unwrap this object as a mutable regexp.
+    pub fn as_regexp_mut(&self, mc: &Mutation<'gc>) -> Option<RefMut<'_, RegExp<'gc>>> {
+        self.as_regexp_object().map(|o| o.regexp_mut(mc))
+    }
+
+    /// Unwrap this object as a bitmap data.
+    pub fn as_bitmap_data(&self) -> Option<BitmapDataWrapper<'gc>> {
+        self.as_bitmap_data_object().map(|o| o.get_bitmap_data())
+    }
+
+    /// Unwrap this object as a text format.
+    pub fn as_text_format(&self) -> Option<Ref<'_, TextFormat>> {
+        self.as_text_format_object().map(|o| o.text_format())
+    }
+
+    /// Unwrap this object as a mutable text format.
+    pub fn as_text_format_mut(&self) -> Option<RefMut<'_, TextFormat>> {
+        self.as_text_format_object().map(|o| o.text_format_mut())
+    }
+
+    pub fn as_netstream(self) -> Option<NetStream<'gc>> {
+        self.as_netstream_object().map(|o| o.netstream())
     }
 }
 

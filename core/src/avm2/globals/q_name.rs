@@ -4,7 +4,7 @@ use ruffle_macros::istr;
 
 use crate::avm2::activation::Activation;
 use crate::avm2::api_version::ApiVersion;
-use crate::avm2::object::{Object, QNameObject, TObject};
+use crate::avm2::object::{Object, QNameObject};
 use crate::avm2::value::Value;
 use crate::avm2::Error;
 use crate::avm2::Namespace;

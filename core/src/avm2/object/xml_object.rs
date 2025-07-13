@@ -295,10 +295,6 @@ impl<'gc> TObject<'gc> for XmlObject<'gc> {
         Gc::as_ptr(self.0) as *const ObjectPtr
     }
 
-    fn as_xml_object(&self) -> Option<Self> {
-        Some(*self)
-    }
-
     fn xml_descendants(
         &self,
         activation: &mut Activation<'_, 'gc>,
@@ -348,8 +344,6 @@ impl<'gc> TObject<'gc> for XmlObject<'gc> {
         arguments: &[Value<'gc>],
         activation: &mut Activation<'_, 'gc>,
     ) -> Result<Value<'gc>, Error<'gc>> {
-        let this = self.as_xml_object().unwrap();
-
         let method = Value::from(self.proto().expect("XMLList missing prototype"))
             .get_property(multiname, activation)?;
 
@@ -364,8 +358,8 @@ impl<'gc> TObject<'gc> for XmlObject<'gc> {
             // Compare to the very similar case in XMLListObject::call_property_local
             let prop = self.get_property_local(multiname, activation)?;
             if let Some(list) = prop.as_object().and_then(|obj| obj.as_xml_list_object()) {
-                if list.length() == 0 && this.node().has_simple_content() {
-                    let receiver = Value::String(this.node().xml_to_string(activation));
+                if list.length() == 0 && self.node().has_simple_content() {
+                    let receiver = Value::String(self.node().xml_to_string(activation));
 
                     return receiver.call_property(
                         multiname,

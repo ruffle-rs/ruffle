@@ -2690,11 +2690,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     fn op_si8(&mut self) -> Result<(), Error<'gc>> {
         let address = self.pop_stack().coerce_to_i32(self)?;
         let val = self.pop_stack().coerce_to_i32(self)? as i8;
-
-        let dm = self.domain_memory();
-        let mut dm = dm
-            .as_bytearray_mut()
-            .expect("Bytearray storage should exist");
+        let mut dm = self.domain_memory().storage_mut();
 
         let Ok(address) = usize::try_from(address) else {
             return Err(make_error_1506(self));
@@ -2713,11 +2709,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     fn op_si16(&mut self) -> Result<(), Error<'gc>> {
         let address = self.pop_stack().coerce_to_i32(self)?;
         let val = self.pop_stack().coerce_to_i32(self)? as i16;
-
-        let dm = self.domain_memory();
-        let mut dm = dm
-            .as_bytearray_mut()
-            .expect("Bytearray storage should exist");
+        let mut dm = self.domain_memory().storage_mut();
 
         let Ok(address) = usize::try_from(address) else {
             return Err(make_error_1506(self));
@@ -2735,11 +2727,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     fn op_si32(&mut self) -> Result<(), Error<'gc>> {
         let address = self.pop_stack().coerce_to_i32(self)?;
         let val = self.pop_stack().coerce_to_i32(self)?;
-
-        let dm = self.domain_memory();
-        let mut dm = dm
-            .as_bytearray_mut()
-            .expect("Bytearray storage should exist");
+        let mut dm = self.domain_memory().storage_mut();
 
         let Ok(address) = usize::try_from(address) else {
             return Err(make_error_1506(self));
@@ -2757,11 +2745,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     fn op_sf32(&mut self) -> Result<(), Error<'gc>> {
         let address = self.pop_stack().coerce_to_i32(self)?;
         let val = self.pop_stack().coerce_to_number(self)? as f32;
-
-        let dm = self.domain_memory();
-        let mut dm = dm
-            .as_bytearray_mut()
-            .expect("Bytearray storage should exist");
+        let mut dm = self.domain_memory().storage_mut();
 
         let Ok(address) = usize::try_from(address) else {
             return Err(make_error_1506(self));
@@ -2779,11 +2763,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     fn op_sf64(&mut self) -> Result<(), Error<'gc>> {
         let address = self.pop_stack().coerce_to_i32(self)?;
         let val = self.pop_stack().coerce_to_number(self)?;
-
-        let dm = self.domain_memory();
-        let mut dm = dm
-            .as_bytearray_mut()
-            .expect("Bytearray storage should exist");
+        let mut dm = self.domain_memory().storage_mut();
 
         let Ok(address) = usize::try_from(address) else {
             return Err(make_error_1506(self));
@@ -2800,9 +2780,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     /// Implements `Op::Li8`
     fn op_li8(&mut self) -> Result<(), Error<'gc>> {
         let address = self.pop_stack().coerce_to_u32(self)? as usize;
-
-        let dm = self.domain_memory();
-        let dm = dm.as_bytearray().expect("Bytearray storage should exist");
+        let dm = self.domain_memory().storage();
 
         let val = dm.get(address);
 
@@ -2818,9 +2796,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     /// Implements `Op::Li16`
     fn op_li16(&mut self) -> Result<(), Error<'gc>> {
         let address = self.pop_stack().coerce_to_u32(self)? as usize;
-
-        let dm = self.domain_memory();
-        let dm = dm.as_bytearray().expect("Bytearray storage should exist");
+        let dm = self.domain_memory().storage();
 
         if address > dm.len() - 2 {
             return Err(make_error_1506(self));
@@ -2835,9 +2811,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     /// Implements `Op::Li32`
     fn op_li32(&mut self) -> Result<(), Error<'gc>> {
         let address = self.pop_stack().coerce_to_u32(self)? as usize;
-
-        let dm = self.domain_memory();
-        let dm = dm.as_bytearray().expect("Bytearray storage should exist");
+        let dm = self.domain_memory().storage();
 
         if address > dm.len() - 4 {
             return Err(make_error_1506(self));
@@ -2851,9 +2825,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     /// Implements `Op::Lf32`
     fn op_lf32(&mut self) -> Result<(), Error<'gc>> {
         let address = self.pop_stack().coerce_to_u32(self)? as usize;
-
-        let dm = self.domain_memory();
-        let dm = dm.as_bytearray().expect("Bytearray storage should exist");
+        let dm = self.domain_memory().storage();
 
         if address > dm.len() - 4 {
             return Err(make_error_1506(self));
@@ -2868,9 +2840,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     /// Implements `Op::Lf64`
     fn op_lf64(&mut self) -> Result<(), Error<'gc>> {
         let address = self.pop_stack().coerce_to_u32(self)? as usize;
-
-        let dm = self.domain_memory();
-        let dm = dm.as_bytearray().expect("Bytearray storage should exist");
+        let dm = self.domain_memory().storage();
 
         if address > dm.len() - 8 {
             return Err(make_error_1506(self));

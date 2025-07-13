@@ -6,7 +6,7 @@ use crate::avm2::globals::flash::display::display_object::initialize_for_allocat
 use crate::avm2::globals::slots::{
     flash_display_sprite as sprite_slots, flash_geom_rectangle as rectangle_slots,
 };
-use crate::avm2::object::{ClassObject, Object, StageObject, TObject};
+use crate::avm2::object::{ClassObject, Object, StageObject, TObject as _};
 use crate::avm2::parameters::ParametersExt;
 use crate::avm2::value::Value;
 use crate::display_object::{MovieClip, SoundTransform, TDisplayObject};

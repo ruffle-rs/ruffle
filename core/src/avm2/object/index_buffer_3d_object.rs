@@ -82,10 +82,6 @@ impl<'gc> TObject<'gc> for IndexBuffer3DObject<'gc> {
     fn as_ptr(&self) -> *const ObjectPtr {
         Gc::as_ptr(self.0) as *const ObjectPtr
     }
-
-    fn as_index_buffer(&self) -> Option<IndexBuffer3DObject<'gc>> {
-        Some(*self)
-    }
 }
 
 impl std::fmt::Debug for IndexBuffer3DObject<'_> {

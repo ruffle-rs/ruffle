@@ -49,10 +49,6 @@ impl<'gc> TObject<'gc> for SocketObject<'gc> {
     fn as_ptr(&self) -> *const ObjectPtr {
         Gc::as_ptr(self.0) as *const ObjectPtr
     }
-
-    fn as_socket(&self) -> Option<SocketObject<'gc>> {
-        Some(*self)
-    }
 }
 
 impl<'gc> SocketObject<'gc> {

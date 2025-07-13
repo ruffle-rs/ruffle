@@ -1,7 +1,6 @@
 //! `flash.crypto` namespace
 
 use crate::avm2::error::{make_error_2004, Error2004Type};
-use crate::avm2::object::TObject;
 use crate::avm2::{Activation, Error, Value};
 use rand::{rngs::OsRng, TryRngCore};
 

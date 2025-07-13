@@ -2,7 +2,7 @@ use crate::avm2::class::Class;
 pub use crate::avm2::globals::flash::utils::get_qualified_class_name;
 use crate::avm2::metadata::Metadata;
 use crate::avm2::method::Method;
-use crate::avm2::object::{ArrayObject, ScriptObject, TObject};
+use crate::avm2::object::{ArrayObject, ScriptObject, TObject as _};
 use crate::avm2::parameters::ParametersExt;
 use crate::avm2::property::Property;
 use crate::avm2::{Activation, Error, Multiname, Namespace, Object, Value};
@@ -132,11 +132,11 @@ fn describe_internal_body<'gc>(
         traits.set_dynamic_property(istr!("methods"), Value::Null, activation.gc());
     }
 
-    let mut bases_array = bases.array_storage_mut(mc);
-    let mut interfaces_array = interfaces.array_storage_mut(mc);
-    let mut variables_array = variables.array_storage_mut(mc);
-    let mut accessors_array = accessors.array_storage_mut(mc);
-    let mut methods_array = methods.array_storage_mut(mc);
+    let mut bases_array = bases.storage_mut(mc);
+    let mut interfaces_array = interfaces.storage_mut(mc);
+    let mut variables_array = variables.storage_mut(mc);
+    let mut accessors_array = accessors.storage_mut(mc);
+    let mut methods_array = methods.storage_mut(mc);
 
     let superclass = class_def.super_class();
 
@@ -391,7 +391,7 @@ fn describe_internal_body<'gc>(
                 }
 
                 if flags.contains(DescribeTypeFlags::INCLUDE_METADATA)
-                    && metadata_object.array_storage().length() > 0
+                    && metadata_object.storage().length() > 0
                 {
                     accessor_obj.set_dynamic_property(
                         istr!("metadata"),
@@ -456,7 +456,7 @@ fn write_params<'gc>(
     activation: &mut Activation<'_, 'gc>,
 ) -> ArrayObject<'gc> {
     let params = ArrayObject::empty(activation);
-    let mut params_array = params.array_storage_mut(activation.gc());
+    let mut params_array = params.storage_mut(activation.gc());
     for param in method.signature() {
         let param_type_name = display_name(activation.strings(), param.param_type_name);
         let optional = param.default_value.is_some();
@@ -473,7 +473,7 @@ fn write_metadata<'gc>(
     trait_metadata: &[Metadata<'gc>],
     activation: &mut Activation<'_, 'gc>,
 ) {
-    let mut metadata_array = metadata_object.array_storage_mut(activation.gc());
+    let mut metadata_array = metadata_object.storage_mut(activation.gc());
 
     for single_trait in trait_metadata.iter() {
         metadata_array.push(single_trait.as_json_object(activation).into());

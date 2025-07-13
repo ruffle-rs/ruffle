@@ -134,10 +134,6 @@ impl<'gc> TObject<'gc> for QNameObject<'gc> {
         Gc::as_ptr(self.0) as *const ObjectPtr
     }
 
-    fn as_qname_object(self) -> Option<QNameObject<'gc>> {
-        Some(self)
-    }
-
     fn get_next_enumerant(
         self,
         last_index: u32,

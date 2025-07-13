@@ -165,8 +165,4 @@ impl<'gc> TObject<'gc> for LocalConnectionObject<'gc> {
     fn as_ptr(&self) -> *const ObjectPtr {
         Gc::as_ptr(self.0) as *const ObjectPtr
     }
-
-    fn as_local_connection_object(&self) -> Option<LocalConnectionObject<'gc>> {
-        Some(*self)
-    }
 }

@@ -71,8 +71,4 @@ impl<'gc> TObject<'gc> for ShaderDataObject<'gc> {
     fn as_ptr(&self) -> *const ObjectPtr {
         Gc::as_ptr(self.0) as *const ObjectPtr
     }
-
-    fn as_shader_data(&self) -> Option<ShaderDataObject<'gc>> {
-        Some(*self)
-    }
 }

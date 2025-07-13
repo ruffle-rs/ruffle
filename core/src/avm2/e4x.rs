@@ -1,6 +1,6 @@
 use crate::avm2::error::{make_error_1010, make_error_1085, make_error_1118, type_error};
 use crate::avm2::object::{E4XOrXml, FunctionObject, NamespaceObject};
-use crate::avm2::{Activation, Error, Multiname, TObject, Value};
+use crate::avm2::{Activation, Error, Multiname, Value};
 use crate::string::{AvmString, StringContext, WStr, WString};
 use crate::xml::custom_unescape;
 

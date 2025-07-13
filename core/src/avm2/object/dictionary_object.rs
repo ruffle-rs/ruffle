@@ -92,10 +92,6 @@ impl<'gc> TObject<'gc> for DictionaryObject<'gc> {
         Gc::as_ptr(self.0) as *const ObjectPtr
     }
 
-    fn as_dictionary_object(self) -> Option<DictionaryObject<'gc>> {
-        Some(self)
-    }
-
     // Calling `setPropertyIsEnumerable` on a `Dictionary` has no effect -
     // stringified properties are always enumerable.
     fn set_local_property_is_enumerable(

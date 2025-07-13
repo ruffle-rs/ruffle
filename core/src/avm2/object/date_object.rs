@@ -92,8 +92,4 @@ impl<'gc> TObject<'gc> for DateObject<'gc> {
     fn default_hint(&self) -> Hint {
         Hint::String
     }
-
-    fn as_date_object(&self) -> Option<DateObject<'gc>> {
-        Some(*self)
-    }
 }

@@ -83,10 +83,6 @@ impl<'gc> TObject<'gc> for VertexBuffer3DObject<'gc> {
     fn as_ptr(&self) -> *const ObjectPtr {
         Gc::as_ptr(self.0) as *const ObjectPtr
     }
-
-    fn as_vertex_buffer(&self) -> Option<VertexBuffer3DObject<'gc>> {
-        Some(*self)
-    }
 }
 
 impl std::fmt::Debug for VertexBuffer3DObject<'_> {

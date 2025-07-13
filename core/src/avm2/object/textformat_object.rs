@@ -72,6 +72,14 @@ impl<'gc> TextFormatObject<'gc> {
 
         Ok(this)
     }
+
+    pub fn text_format(&self) -> Ref<'gc, TextFormat> {
+        Gc::as_ref(self.0).text_format.borrow()
+    }
+
+    pub fn text_format_mut(&self) -> RefMut<'gc, TextFormat> {
+        Gc::as_ref(self.0).text_format.borrow_mut()
+    }
 }
 
 impl<'gc> TObject<'gc> for TextFormatObject<'gc> {
@@ -81,15 +89,5 @@ impl<'gc> TObject<'gc> for TextFormatObject<'gc> {
 
     fn as_ptr(&self) -> *const ObjectPtr {
         Gc::as_ptr(self.0) as *const ObjectPtr
-    }
-
-    /// Unwrap this object as a text format.
-    fn as_text_format(&self) -> Option<Ref<'_, TextFormat>> {
-        Some(self.0.text_format.borrow())
-    }
-
-    /// Unwrap this object as a mutable text format.
-    fn as_text_format_mut(&self) -> Option<RefMut<'_, TextFormat>> {
-        Some(self.0.text_format.borrow_mut())
     }
 }

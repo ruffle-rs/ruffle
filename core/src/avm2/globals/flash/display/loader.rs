@@ -10,7 +10,7 @@ use crate::avm2::globals::slots::flash_net_url_request as url_request_slots;
 use crate::avm2::globals::slots::flash_net_url_request_header as url_request_header_slots;
 use crate::avm2::object::LoaderInfoObject;
 use crate::avm2::object::LoaderStream;
-use crate::avm2::object::TObject;
+use crate::avm2::object::TObject as _;
 use crate::avm2::parameters::ParametersExt;
 use crate::avm2::value::Value;
 use crate::avm2::ClassObject;
@@ -114,7 +114,7 @@ pub fn load<'gc>(
         request,
         Some(url),
         MovieLoaderVMData::Avm2 {
-            loader_info: *loader_info,
+            loader_info,
             context,
             default_domain: activation
                 .caller_domain()
@@ -275,7 +275,7 @@ pub fn load_bytes<'gc>(
         content.into(),
         bytes,
         MovieLoaderVMData::Avm2 {
-            loader_info: *loader_info,
+            loader_info,
             context,
             default_domain,
         },

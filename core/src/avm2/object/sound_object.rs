@@ -291,8 +291,6 @@ fn play_queued<'gc>(
 
         queued
             .sound_channel
-            .as_sound_channel()
-            .unwrap()
             .set_sound_instance(activation, instance);
 
         activation
@@ -309,9 +307,5 @@ impl<'gc> TObject<'gc> for SoundObject<'gc> {
 
     fn as_ptr(&self) -> *const ObjectPtr {
         Gc::as_ptr(self.0) as *const ObjectPtr
-    }
-
-    fn as_sound_object(self) -> Option<SoundObject<'gc>> {
-        Some(self)
     }
 }

@@ -707,10 +707,6 @@ impl<'gc> TObject<'gc> for ClassObject<'gc> {
         AvmString::new_utf8(mc, format!("[class {class_name}]"))
     }
 
-    fn as_class_object(&self) -> Option<ClassObject<'gc>> {
-        Some(*self)
-    }
-
     fn apply(
         &self,
         activation: &mut Activation<'_, 'gc>,

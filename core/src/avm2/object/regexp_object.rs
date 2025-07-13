@@ -76,6 +76,14 @@ impl<'gc> RegExpObject<'gc> {
 
         Ok(this)
     }
+
+    pub fn regexp(self) -> Ref<'gc, RegExp<'gc>> {
+        Gc::as_ref(self.0).regexp.borrow()
+    }
+
+    pub fn regexp_mut(self, mc: &Mutation<'gc>) -> RefMut<'gc, RegExp<'gc>> {
+        unlock!(Gc::write(mc, self.0), RegExpObjectData, regexp).borrow_mut()
+    }
 }
 
 impl<'gc> TObject<'gc> for RegExpObject<'gc> {
@@ -85,18 +93,5 @@ impl<'gc> TObject<'gc> for RegExpObject<'gc> {
 
     fn as_ptr(&self) -> *const ObjectPtr {
         Gc::as_ptr(self.0) as *const ObjectPtr
-    }
-
-    /// Unwrap this object as a regexp.
-    fn as_regexp_object(&self) -> Option<RegExpObject<'gc>> {
-        Some(*self)
-    }
-
-    fn as_regexp(&self) -> Option<Ref<'_, RegExp<'gc>>> {
-        Some(self.0.regexp.borrow())
-    }
-
-    fn as_regexp_mut(&self, mc: &Mutation<'gc>) -> Option<RefMut<'_, RegExp<'gc>>> {
-        Some(unlock!(Gc::write(mc, self.0), RegExpObjectData, regexp).borrow_mut())
     }
 }

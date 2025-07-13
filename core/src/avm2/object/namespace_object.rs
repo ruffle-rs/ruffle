@@ -99,14 +99,6 @@ impl<'gc> TObject<'gc> for NamespaceObject<'gc> {
         Gc::as_ptr(self.0) as *const ObjectPtr
     }
 
-    fn as_namespace(&self) -> Option<Namespace<'gc>> {
-        Some(self.0.namespace)
-    }
-
-    fn as_namespace_object(&self) -> Option<Self> {
-        Some(*self)
-    }
-
     fn property_is_enumerable(&self, name: AvmString<'gc>) -> bool {
         &name == b"prefix" || &name == b"uri"
     }

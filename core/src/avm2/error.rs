@@ -1,6 +1,5 @@
 use ruffle_wstr::WString;
 
-use crate::avm2::object::TObject;
 use crate::avm2::{Activation, AvmString, Class, Multiname, Value};
 use std::fmt::{Debug, Display};
 use std::mem::size_of;

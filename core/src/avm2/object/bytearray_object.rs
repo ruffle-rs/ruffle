@@ -115,8 +115,12 @@ impl<'gc> ByteArrayObject<'gc> {
         Ok(())
     }
 
-    pub fn storage(&self) -> Ref<'_, ByteArrayStorage> {
-        self.0.storage.borrow()
+    pub fn storage(self) -> Ref<'gc, ByteArrayStorage> {
+        Gc::as_ref(self.0).storage.borrow()
+    }
+
+    pub fn storage_mut(self) -> RefMut<'gc, ByteArrayStorage> {
+        Gc::as_ref(self.0).storage.borrow_mut()
     }
 }
 
@@ -210,17 +214,5 @@ impl<'gc> TObject<'gc> for ByteArrayObject<'gc> {
         }
 
         self.base().has_own_property(name)
-    }
-
-    fn as_bytearray(&self) -> Option<Ref<'_, ByteArrayStorage>> {
-        Some(self.0.storage.borrow())
-    }
-
-    fn as_bytearray_mut(&self) -> Option<RefMut<'_, ByteArrayStorage>> {
-        Some(self.0.storage.borrow_mut())
-    }
-
-    fn as_bytearray_object(&self) -> Option<ByteArrayObject<'gc>> {
-        Some(*self)
     }
 }

@@ -166,6 +166,14 @@ impl<'gc> VectorObject<'gc> {
 
         Ok(())
     }
+
+    pub fn storage(self) -> Ref<'gc, VectorStorage<'gc>> {
+        Gc::as_ref(self.0).vector.borrow()
+    }
+
+    pub fn storage_mut(self, mc: &Mutation<'gc>) -> RefMut<'gc, VectorStorage<'gc>> {
+        unlock!(Gc::write(mc, self.0), VectorObjectData, vector).borrow_mut()
+    }
 }
 
 impl<'gc> TObject<'gc> for VectorObject<'gc> {
@@ -346,17 +354,5 @@ impl<'gc> TObject<'gc> for VectorObject<'gc> {
         } else {
             Ok(Value::Null)
         }
-    }
-
-    fn as_vector_object(&self) -> Option<VectorObject<'gc>> {
-        Some(*self)
-    }
-
-    fn as_vector_storage(&self) -> Option<Ref<'_, VectorStorage<'gc>>> {
-        Some(self.0.vector.borrow())
-    }
-
-    fn as_vector_storage_mut(&self, mc: &Mutation<'gc>) -> Option<RefMut<'_, VectorStorage<'gc>>> {
-        Some(unlock!(Gc::write(mc, self.0), VectorObjectData, vector).borrow_mut())
     }
 }

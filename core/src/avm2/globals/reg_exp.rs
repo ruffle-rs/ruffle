@@ -3,7 +3,7 @@
 use ruffle_macros::istr;
 
 use crate::avm2::error::type_error;
-use crate::avm2::object::{ArrayObject, Object, TObject};
+use crate::avm2::object::{ArrayObject, Object, TObject as _};
 use crate::avm2::regexp::RegExpFlags;
 use crate::avm2::value::Value;
 use crate::avm2::Error;
@@ -31,7 +31,7 @@ pub fn init<'gc>(
                         1100,
                     )?));
                 }
-                let other = o.as_regexp().unwrap();
+                let other = o.regexp();
                 regexp.set_source(other.source());
                 regexp.set_flags(other.flags());
                 return Ok(Value::Undefined);

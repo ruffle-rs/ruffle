@@ -101,8 +101,4 @@ impl<'gc> TObject<'gc> for ErrorObject<'gc> {
     fn as_ptr(&self) -> *const ObjectPtr {
         Gc::as_ptr(self.0) as *const ObjectPtr
     }
-
-    fn as_error_object(&self) -> Option<ErrorObject<'gc>> {
-        Some(*self)
-    }
 }

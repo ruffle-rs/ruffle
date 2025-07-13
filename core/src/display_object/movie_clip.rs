@@ -8,7 +8,7 @@ use crate::avm2::script::Script;
 use crate::avm2::Activation as Avm2Activation;
 use crate::avm2::{
     Avm2, ClassObject as Avm2ClassObject, Error as Avm2Error, Object as Avm2Object,
-    QName as Avm2QName, StageObject as Avm2StageObject, TObject as Avm2TObject, Value as Avm2Value,
+    QName as Avm2QName, StageObject as Avm2StageObject, Value as Avm2Value,
 };
 use crate::backend::audio::{AudioManager, SoundInstanceHandle};
 use crate::backend::navigator::Request;
@@ -309,7 +309,7 @@ impl<'gc> MovieClip<'gc> {
             let loader_info =
                 LoaderInfoObject::not_yet_loaded(activation, movie.clone(), None, None, false)
                     .expect("Failed to construct LoaderInfoObject");
-            let loader_info_obj = *loader_info.as_loader_info_object().unwrap();
+            let loader_info_obj = loader_info.as_loader_info_object().unwrap();
             loader_info_obj.set_expose_content();
             loader_info_obj.set_content_type(ContentType::Swf);
             Some((loader_info, loader_info_obj))

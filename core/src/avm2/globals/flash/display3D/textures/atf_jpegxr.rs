@@ -3,7 +3,6 @@ use crate::avm2::object::TextureObject;
 use crate::avm2::Activation;
 use crate::avm2::Error;
 use crate::avm2::Object;
-use crate::avm2::TObject;
 use crate::avm2_stub_method;
 use ruffle_render::atf::ATFTexture;
 use ruffle_render::atf::ATFTextureData;

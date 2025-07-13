@@ -70,17 +70,16 @@ impl<'gc> BitmapDataObject<'gc> {
         activation: &mut Activation<'_, 'gc>,
         bitmap_data: BitmapDataWrapper<'gc>,
         class: ClassObject<'gc>,
-    ) -> Result<Object<'gc>, Error<'gc>> {
-        let instance: Object<'gc> = Self(Gc::new(
+    ) -> Result<Self, Error<'gc>> {
+        let instance = Self(Gc::new(
             activation.gc(),
             BitmapDataObjectData {
                 base: ScriptObjectData::new(class),
                 bitmap_data: Lock::new(bitmap_data),
             },
-        ))
-        .into();
+        ));
 
-        bitmap_data.init_object2(activation.gc(), instance);
+        bitmap_data.init_object2(activation.gc(), instance.into());
 
         // We call the custom BitmapData class with width and height...
         // but, it always seems to be 1 in Flash Player when constructed from timeline?
@@ -93,24 +92,24 @@ impl<'gc> BitmapDataObject<'gc> {
 
         Ok(instance)
     }
+
+    pub fn get_bitmap_data(self) -> BitmapDataWrapper<'gc> {
+        self.0.bitmap_data.get()
+    }
+
+    /// This should only be called to initialize the association between an AVM
+    /// object and it's associated bitmap data. This association should not be
+    /// reinitialized later.
+    pub fn init_bitmap_data(self, mc: &Mutation<'gc>, new_bitmap: BitmapDataWrapper<'gc>) {
+        unlock!(Gc::write(mc, self.0), BitmapDataObjectData, bitmap_data).set(new_bitmap);
+    }
 }
 
 impl<'gc> TObject<'gc> for BitmapDataObject<'gc> {
     fn gc_base(&self) -> Gc<'gc, ScriptObjectData<'gc>> {
         HasPrefixField::as_prefix_gc(self.0)
     }
-
     fn as_ptr(&self) -> *const ObjectPtr {
         Gc::as_ptr(self.0) as *const ObjectPtr
-    }
-
-    fn as_bitmap_data(&self) -> Option<BitmapDataWrapper<'gc>> {
-        Some(self.0.bitmap_data.get())
-    }
-
-    /// Initialize the bitmap data in this object, if it's capable of
-    /// supporting said data
-    fn init_bitmap_data(&self, mc: &Mutation<'gc>, new_bitmap: BitmapDataWrapper<'gc>) {
-        unlock!(Gc::write(mc, self.0), BitmapDataObjectData, bitmap_data).set(new_bitmap);
     }
 }

@@ -500,10 +500,6 @@ impl<'gc> TObject<'gc> for Context3DObject<'gc> {
     fn as_ptr(&self) -> *const ObjectPtr {
         Gc::as_ptr(self.0) as *const ObjectPtr
     }
-
-    fn as_context_3d(&self) -> Option<Context3DObject<'gc>> {
-        Some(*self)
-    }
 }
 
 impl std::fmt::Debug for Context3DObject<'_> {

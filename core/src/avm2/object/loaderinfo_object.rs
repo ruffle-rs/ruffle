@@ -297,8 +297,8 @@ impl<'gc> LoaderInfoObject<'gc> {
     }
 
     /// Unwrap this object's loader stream
-    pub fn loader_stream(&self) -> Ref<'_, LoaderStream<'gc>> {
-        self.0.loaded_stream.borrow()
+    pub fn loader_stream(&self) -> Ref<'gc, LoaderStream<'gc>> {
+        Gc::as_ref(self.0).loaded_stream.borrow()
     }
 
     pub fn expose_content(&self) -> bool {
@@ -379,9 +379,5 @@ impl<'gc> TObject<'gc> for LoaderInfoObject<'gc> {
 
     fn as_ptr(&self) -> *const ObjectPtr {
         Gc::as_ptr(self.0) as *const ObjectPtr
-    }
-
-    fn as_loader_info_object(&self) -> Option<&LoaderInfoObject<'gc>> {
-        Some(self)
     }
 }

@@ -3,7 +3,6 @@ pub use crate::avm2::object::error_allocator;
 use crate::avm2::string::AvmString;
 use crate::avm2::value::Value;
 use crate::avm2::Error;
-use crate::avm2::TObject;
 use crate::PlayerMode;
 
 pub fn call_handler<'gc>(

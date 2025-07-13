@@ -4,7 +4,7 @@ use crate::avm2::activation::Activation;
 use crate::avm2::error::{eval_error, type_error};
 use crate::avm2::globals::array::resolve_array_hole;
 use crate::avm2::globals::methods::function as function_class_methods;
-use crate::avm2::object::{FunctionObject, TObject};
+use crate::avm2::object::FunctionObject;
 use crate::avm2::parameters::ParametersExt;
 use crate::avm2::value::Value;
 use crate::avm2::Error;
@@ -106,11 +106,7 @@ pub fn apply<'gc>(
     let arg_array = args.get_value(1);
     let resolved_args = if !matches!(arg_array, Value::Undefined | Value::Null) {
         if let Some(array_object) = arg_array.as_object().and_then(|o| o.as_array_object()) {
-            let arg_storage = array_object
-                .as_array_storage()
-                .unwrap()
-                .iter()
-                .collect::<Vec<_>>();
+            let arg_storage = array_object.storage().iter().collect::<Vec<_>>();
 
             let mut resolved_args = Vec::with_capacity(arg_storage.len());
             for (i, v) in arg_storage.iter().enumerate() {
