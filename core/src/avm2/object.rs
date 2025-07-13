@@ -747,57 +747,6 @@ impl<'gc> Object<'gc> {
         std::ptr::eq(a.as_ptr(), b.as_ptr())
     }
 
-    #[rustfmt::skip]
-    pub fn downgrade(&self) -> WeakObject<'gc> {
-        match self {
-            Self::ScriptObject(o) => WeakObject::ScriptObject(ScriptObjectWeak(Gc::downgrade(o.0))),
-            Self::FunctionObject(o) => WeakObject::FunctionObject(FunctionObjectWeak(Gc::downgrade(o.0))),
-            Self::NamespaceObject(o) => WeakObject::NamespaceObject(NamespaceObjectWeak(Gc::downgrade(o.0))),
-            Self::ArrayObject(o) => WeakObject::ArrayObject(ArrayObjectWeak(Gc::downgrade(o.0))),
-            Self::StageObject(o) => WeakObject::StageObject(StageObjectWeak(Gc::downgrade(o.0))),
-            Self::DomainObject(o) => WeakObject::DomainObject(DomainObjectWeak(Gc::downgrade(o.0))),
-            Self::EventObject(o) => WeakObject::EventObject(EventObjectWeak(Gc::downgrade(o.0))),
-            Self::DispatchObject(o) => WeakObject::DispatchObject(DispatchObjectWeak(Gc::downgrade(o.0))),
-            Self::XmlObject(o) => WeakObject::XmlObject(XmlObjectWeak(Gc::downgrade(o.0))),
-            Self::XmlListObject(o) => WeakObject::XmlListObject(XmlListObjectWeak(Gc::downgrade(o.0))),
-            Self::RegExpObject(o) => WeakObject::RegExpObject(RegExpObjectWeak(Gc::downgrade(o.0))),
-            Self::ByteArrayObject(o) => WeakObject::ByteArrayObject(ByteArrayObjectWeak(Gc::downgrade(o.0))),
-            Self::LoaderInfoObject(o) => WeakObject::LoaderInfoObject(LoaderInfoObjectWeak(Gc::downgrade(o.0))),
-            Self::ClassObject(o) => WeakObject::ClassObject(ClassObjectWeak(Gc::downgrade(o.0))),
-            Self::VectorObject(o) => WeakObject::VectorObject(VectorObjectWeak(Gc::downgrade(o.0))),
-            Self::SoundObject(o) => WeakObject::SoundObject(SoundObjectWeak(Gc::downgrade(o.0))),
-            Self::SoundChannelObject(o) => WeakObject::SoundChannelObject(SoundChannelObjectWeak(Gc::downgrade(o.0))),
-            Self::BitmapDataObject(o) => WeakObject::BitmapDataObject(BitmapDataObjectWeak(Gc::downgrade(o.0))),
-            Self::DateObject(o) => WeakObject::DateObject(DateObjectWeak(Gc::downgrade(o.0))),
-            Self::DictionaryObject(o) => WeakObject::DictionaryObject(DictionaryObjectWeak(Gc::downgrade(o.0))),
-            Self::QNameObject(o) => WeakObject::QNameObject(QNameObjectWeak(Gc::downgrade(o.0))),
-            Self::TextFormatObject(o) => WeakObject::TextFormatObject(TextFormatObjectWeak(Gc::downgrade(o.0))),
-            Self::ProxyObject(o) => WeakObject::ProxyObject(ProxyObjectWeak(Gc::downgrade(o.0))),
-            Self::ErrorObject(o) => WeakObject::ErrorObject(ErrorObjectWeak(Gc::downgrade(o.0))),
-            Self::Stage3DObject(o) => WeakObject::Stage3DObject(Stage3DObjectWeak(Gc::downgrade(o.0))),
-            Self::Context3DObject(o) => WeakObject::Context3DObject(Context3DObjectWeak(Gc::downgrade(o.0))),
-            Self::IndexBuffer3DObject(o) => WeakObject::IndexBuffer3DObject(IndexBuffer3DObjectWeak(Gc::downgrade(o.0))),
-            Self::VertexBuffer3DObject(o) => WeakObject::VertexBuffer3DObject(VertexBuffer3DObjectWeak(Gc::downgrade(o.0))),
-            Self::TextureObject(o) => WeakObject::TextureObject(TextureObjectWeak(Gc::downgrade(o.0))),
-            Self::Program3DObject(o) => WeakObject::Program3DObject(Program3DObjectWeak(Gc::downgrade(o.0))),
-            Self::NetStreamObject(o) => WeakObject::NetStreamObject(NetStreamObjectWeak(Gc::downgrade(o.0))),
-            Self::NetConnectionObject(o) => WeakObject::NetConnectionObject(NetConnectionObjectWeak(Gc::downgrade(o.0))),
-            Self::ResponderObject(o) => WeakObject::ResponderObject(ResponderObjectWeak(Gc::downgrade(o.0))),
-            Self::ShaderDataObject(o) => WeakObject::ShaderDataObject(ShaderDataObjectWeak(Gc::downgrade(o.0))),
-            Self::SocketObject(o) => WeakObject::SocketObject(SocketObjectWeak(Gc::downgrade(o.0))),
-            Self::FileReferenceObject(o) => WeakObject::FileReferenceObject(FileReferenceObjectWeak(Gc::downgrade(o.0))),
-            Self::FontObject(o) => WeakObject::FontObject(FontObjectWeak(Gc::downgrade(o.0))),
-            Self::LocalConnectionObject(o) => WeakObject::LocalConnectionObject(LocalConnectionObjectWeak(Gc::downgrade(o.0))),
-            Self::SharedObjectObject(o) => WeakObject::SharedObjectObject(SharedObjectObjectWeak(Gc::downgrade(o.0))),
-            Self::SoundTransformObject(o) => WeakObject::SoundTransformObject(SoundTransformObjectWeak(Gc::downgrade(o.0))),
-            Self::StyleSheetObject(o) => WeakObject::StyleSheetObject(StyleSheetObjectWeak(Gc::downgrade(o.0))),
-            Self::WorkerObject(o) => WeakObject::WorkerObject(WorkerObjectWeak(Gc::downgrade(o.0))),
-            Self::WorkerDomainObject(o) => WeakObject::WorkerDomainObject(WorkerDomainObjectWeak(Gc::downgrade(o.0))),
-            Self::MessageChannelObject(o) => WeakObject::MessageChannelObject(MessageChannelObjectWeak(Gc::downgrade(o.0))),
-            Self::SecurityDomainObject(o) => WeakObject::SecurityDomainObject(SecurityDomainObjectWeak(Gc::downgrade(o.0))),
-        }
-    }
-
     impl_downcast_methods! {
         pub fn as_class_object for ClassObject;
         pub fn as_function_object for FunctionObject;
@@ -955,156 +904,92 @@ impl Hash for Object<'_> {
     }
 }
 
-#[allow(clippy::enum_variant_names)]
-#[derive(Clone, Collect, Debug, Copy)]
-#[collect(no_drop)]
-pub enum WeakObject<'gc> {
-    ScriptObject(ScriptObjectWeak<'gc>),
-    FunctionObject(FunctionObjectWeak<'gc>),
-    NamespaceObject(NamespaceObjectWeak<'gc>),
-    ArrayObject(ArrayObjectWeak<'gc>),
-    StageObject(StageObjectWeak<'gc>),
-    DomainObject(DomainObjectWeak<'gc>),
-    EventObject(EventObjectWeak<'gc>),
-    DispatchObject(DispatchObjectWeak<'gc>),
-    XmlObject(XmlObjectWeak<'gc>),
-    XmlListObject(XmlListObjectWeak<'gc>),
-    RegExpObject(RegExpObjectWeak<'gc>),
-    ByteArrayObject(ByteArrayObjectWeak<'gc>),
-    LoaderInfoObject(LoaderInfoObjectWeak<'gc>),
-    ClassObject(ClassObjectWeak<'gc>),
-    VectorObject(VectorObjectWeak<'gc>),
-    SoundObject(SoundObjectWeak<'gc>),
-    SoundChannelObject(SoundChannelObjectWeak<'gc>),
-    BitmapDataObject(BitmapDataObjectWeak<'gc>),
-    DateObject(DateObjectWeak<'gc>),
-    DictionaryObject(DictionaryObjectWeak<'gc>),
-    QNameObject(QNameObjectWeak<'gc>),
-    TextFormatObject(TextFormatObjectWeak<'gc>),
-    ProxyObject(ProxyObjectWeak<'gc>),
-    ErrorObject(ErrorObjectWeak<'gc>),
-    Stage3DObject(Stage3DObjectWeak<'gc>),
-    Context3DObject(Context3DObjectWeak<'gc>),
-    IndexBuffer3DObject(IndexBuffer3DObjectWeak<'gc>),
-    VertexBuffer3DObject(VertexBuffer3DObjectWeak<'gc>),
-    TextureObject(TextureObjectWeak<'gc>),
-    Program3DObject(Program3DObjectWeak<'gc>),
-    NetStreamObject(NetStreamObjectWeak<'gc>),
-    NetConnectionObject(NetConnectionObjectWeak<'gc>),
-    ResponderObject(ResponderObjectWeak<'gc>),
-    ShaderDataObject(ShaderDataObjectWeak<'gc>),
-    SocketObject(SocketObjectWeak<'gc>),
-    FileReferenceObject(FileReferenceObjectWeak<'gc>),
-    FontObject(FontObjectWeak<'gc>),
-    LocalConnectionObject(LocalConnectionObjectWeak<'gc>),
-    SharedObjectObject(SharedObjectObjectWeak<'gc>),
-    SoundTransformObject(SoundTransformObjectWeak<'gc>),
-    StyleSheetObject(StyleSheetObjectWeak<'gc>),
-    WorkerObject(WorkerObjectWeak<'gc>),
-    WorkerDomainObject(WorkerDomainObjectWeak<'gc>),
-    MessageChannelObject(MessageChannelObjectWeak<'gc>),
-    SecurityDomainObject(SecurityDomainObjectWeak<'gc>),
-}
+macro_rules! define_weak_enum {
+    (
+        $(#[$attrs:meta])*
+        $vis:ident enum $weak_enum:ident<'gc> for $strong_enum:ident<'gc> {
+            $( $variant:ident($weak_ty:ident<'gc>) ),* $(,)?
+        }
+    ) => {
+        $(#[$attrs])*
+        $vis enum $weak_enum<'gc> {
+            $( $variant($weak_ty<'gc>), )*
+        }
 
-impl<'gc> WeakObject<'gc> {
-    pub fn as_ptr(self) -> *const ObjectPtr {
-        match self {
-            Self::ScriptObject(o) => GcWeak::as_ptr(o.0) as *const ObjectPtr,
-            Self::FunctionObject(o) => GcWeak::as_ptr(o.0) as *const ObjectPtr,
-            Self::NamespaceObject(o) => GcWeak::as_ptr(o.0) as *const ObjectPtr,
-            Self::ArrayObject(o) => GcWeak::as_ptr(o.0) as *const ObjectPtr,
-            Self::StageObject(o) => GcWeak::as_ptr(o.0) as *const ObjectPtr,
-            Self::DomainObject(o) => GcWeak::as_ptr(o.0) as *const ObjectPtr,
-            Self::EventObject(o) => GcWeak::as_ptr(o.0) as *const ObjectPtr,
-            Self::DispatchObject(o) => GcWeak::as_ptr(o.0) as *const ObjectPtr,
-            Self::XmlObject(o) => GcWeak::as_ptr(o.0) as *const ObjectPtr,
-            Self::XmlListObject(o) => GcWeak::as_ptr(o.0) as *const ObjectPtr,
-            Self::RegExpObject(o) => GcWeak::as_ptr(o.0) as *const ObjectPtr,
-            Self::ByteArrayObject(o) => GcWeak::as_ptr(o.0) as *const ObjectPtr,
-            Self::LoaderInfoObject(o) => GcWeak::as_ptr(o.0) as *const ObjectPtr,
-            Self::ClassObject(o) => GcWeak::as_ptr(o.0) as *const ObjectPtr,
-            Self::VectorObject(o) => GcWeak::as_ptr(o.0) as *const ObjectPtr,
-            Self::SoundObject(o) => GcWeak::as_ptr(o.0) as *const ObjectPtr,
-            Self::SoundChannelObject(o) => GcWeak::as_ptr(o.0) as *const ObjectPtr,
-            Self::BitmapDataObject(o) => GcWeak::as_ptr(o.0) as *const ObjectPtr,
-            Self::DateObject(o) => GcWeak::as_ptr(o.0) as *const ObjectPtr,
-            Self::DictionaryObject(o) => GcWeak::as_ptr(o.0) as *const ObjectPtr,
-            Self::QNameObject(o) => GcWeak::as_ptr(o.0) as *const ObjectPtr,
-            Self::TextFormatObject(o) => GcWeak::as_ptr(o.0) as *const ObjectPtr,
-            Self::ProxyObject(o) => GcWeak::as_ptr(o.0) as *const ObjectPtr,
-            Self::ErrorObject(o) => GcWeak::as_ptr(o.0) as *const ObjectPtr,
-            Self::Stage3DObject(o) => GcWeak::as_ptr(o.0) as *const ObjectPtr,
-            Self::Context3DObject(o) => GcWeak::as_ptr(o.0) as *const ObjectPtr,
-            Self::IndexBuffer3DObject(o) => GcWeak::as_ptr(o.0) as *const ObjectPtr,
-            Self::VertexBuffer3DObject(o) => GcWeak::as_ptr(o.0) as *const ObjectPtr,
-            Self::TextureObject(o) => GcWeak::as_ptr(o.0) as *const ObjectPtr,
-            Self::Program3DObject(o) => GcWeak::as_ptr(o.0) as *const ObjectPtr,
-            Self::NetStreamObject(o) => GcWeak::as_ptr(o.0) as *const ObjectPtr,
-            Self::NetConnectionObject(o) => GcWeak::as_ptr(o.0) as *const ObjectPtr,
-            Self::ResponderObject(o) => GcWeak::as_ptr(o.0) as *const ObjectPtr,
-            Self::ShaderDataObject(o) => GcWeak::as_ptr(o.0) as *const ObjectPtr,
-            Self::SocketObject(o) => GcWeak::as_ptr(o.0) as *const ObjectPtr,
-            Self::FileReferenceObject(o) => GcWeak::as_ptr(o.0) as *const ObjectPtr,
-            Self::FontObject(o) => GcWeak::as_ptr(o.0) as *const ObjectPtr,
-            Self::LocalConnectionObject(o) => GcWeak::as_ptr(o.0) as *const ObjectPtr,
-            Self::SharedObjectObject(o) => GcWeak::as_ptr(o.0) as *const ObjectPtr,
-            Self::SoundTransformObject(o) => GcWeak::as_ptr(o.0) as *const ObjectPtr,
-            Self::StyleSheetObject(o) => GcWeak::as_ptr(o.0) as *const ObjectPtr,
-            Self::WorkerObject(o) => GcWeak::as_ptr(o.0) as *const ObjectPtr,
-            Self::WorkerDomainObject(o) => GcWeak::as_ptr(o.0) as *const ObjectPtr,
-            Self::MessageChannelObject(o) => GcWeak::as_ptr(o.0) as *const ObjectPtr,
-            Self::SecurityDomainObject(o) => GcWeak::as_ptr(o.0) as *const ObjectPtr,
+        impl<'gc> $weak_enum<'gc> {
+            $vis fn as_ptr(self) -> *const ObjectPtr {
+                match self {
+                    $( Self::$variant(o) => GcWeak::as_ptr(o.0).cast(), )*
+                }
+            }
+
+            $vis fn upgrade(self, mc: &Mutation<'gc>) -> Option<$strong_enum<'gc>> {
+                match self {
+                    $( Self::$variant(o) => $strong_enum::$variant($variant(o.0.upgrade(mc)?)).into(), )*
+                }
+            }
+        }
+
+        impl<'gc> $strong_enum<'gc> {
+            $vis fn downgrade(self) -> $weak_enum<'gc> {
+                match self {
+                    $( Self::$variant(o) => $weak_enum::$variant($weak_ty(Gc::downgrade(o.0))), )*
+                }
+            }
         }
     }
+}
 
-    pub fn upgrade(self, mc: &Mutation<'gc>) -> Option<Object<'gc>> {
-        Some(match self {
-            Self::ScriptObject(o) => ScriptObject(o.0.upgrade(mc)?).into(),
-            Self::FunctionObject(o) => FunctionObject(o.0.upgrade(mc)?).into(),
-            Self::NamespaceObject(o) => NamespaceObject(o.0.upgrade(mc)?).into(),
-            Self::ArrayObject(o) => ArrayObject(o.0.upgrade(mc)?).into(),
-            Self::StageObject(o) => StageObject(o.0.upgrade(mc)?).into(),
-            Self::DomainObject(o) => DomainObject(o.0.upgrade(mc)?).into(),
-            Self::EventObject(o) => EventObject(o.0.upgrade(mc)?).into(),
-            Self::DispatchObject(o) => DispatchObject(o.0.upgrade(mc)?).into(),
-            Self::XmlObject(o) => XmlObject(o.0.upgrade(mc)?).into(),
-            Self::XmlListObject(o) => XmlListObject(o.0.upgrade(mc)?).into(),
-            Self::RegExpObject(o) => RegExpObject(o.0.upgrade(mc)?).into(),
-            Self::ByteArrayObject(o) => ByteArrayObject(o.0.upgrade(mc)?).into(),
-            Self::LoaderInfoObject(o) => LoaderInfoObject(o.0.upgrade(mc)?).into(),
-            Self::ClassObject(o) => ClassObject(o.0.upgrade(mc)?).into(),
-            Self::VectorObject(o) => VectorObject(o.0.upgrade(mc)?).into(),
-            Self::SoundObject(o) => SoundObject(o.0.upgrade(mc)?).into(),
-            Self::SoundChannelObject(o) => SoundChannelObject(o.0.upgrade(mc)?).into(),
-            Self::BitmapDataObject(o) => BitmapDataObject(o.0.upgrade(mc)?).into(),
-            Self::DateObject(o) => DateObject(o.0.upgrade(mc)?).into(),
-            Self::DictionaryObject(o) => DictionaryObject(o.0.upgrade(mc)?).into(),
-            Self::QNameObject(o) => QNameObject(o.0.upgrade(mc)?).into(),
-            Self::TextFormatObject(o) => TextFormatObject(o.0.upgrade(mc)?).into(),
-            Self::ProxyObject(o) => ProxyObject(o.0.upgrade(mc)?).into(),
-            Self::ErrorObject(o) => ErrorObject(o.0.upgrade(mc)?).into(),
-            Self::Stage3DObject(o) => Stage3DObject(o.0.upgrade(mc)?).into(),
-            Self::Context3DObject(o) => Context3DObject(o.0.upgrade(mc)?).into(),
-            Self::IndexBuffer3DObject(o) => IndexBuffer3DObject(o.0.upgrade(mc)?).into(),
-            Self::VertexBuffer3DObject(o) => VertexBuffer3DObject(o.0.upgrade(mc)?).into(),
-            Self::TextureObject(o) => TextureObject(o.0.upgrade(mc)?).into(),
-            Self::Program3DObject(o) => Program3DObject(o.0.upgrade(mc)?).into(),
-            Self::NetStreamObject(o) => NetStreamObject(o.0.upgrade(mc)?).into(),
-            Self::NetConnectionObject(o) => NetConnectionObject(o.0.upgrade(mc)?).into(),
-            Self::ResponderObject(o) => ResponderObject(o.0.upgrade(mc)?).into(),
-            Self::ShaderDataObject(o) => ShaderDataObject(o.0.upgrade(mc)?).into(),
-            Self::SocketObject(o) => SocketObject(o.0.upgrade(mc)?).into(),
-            Self::FileReferenceObject(o) => FileReferenceObject(o.0.upgrade(mc)?).into(),
-            Self::FontObject(o) => FontObject(o.0.upgrade(mc)?).into(),
-            Self::LocalConnectionObject(o) => LocalConnectionObject(o.0.upgrade(mc)?).into(),
-            Self::SharedObjectObject(o) => SharedObjectObject(o.0.upgrade(mc)?).into(),
-            Self::SoundTransformObject(o) => SoundTransformObject(o.0.upgrade(mc)?).into(),
-            Self::StyleSheetObject(o) => StyleSheetObject(o.0.upgrade(mc)?).into(),
-            Self::WorkerObject(o) => WorkerObject(o.0.upgrade(mc)?).into(),
-            Self::WorkerDomainObject(o) => WorkerDomainObject(o.0.upgrade(mc)?).into(),
-            Self::MessageChannelObject(o) => MessageChannelObject(o.0.upgrade(mc)?).into(),
-            Self::SecurityDomainObject(o) => SecurityDomainObject(o.0.upgrade(mc)?).into(),
-        })
+define_weak_enum! {
+    #[allow(clippy::enum_variant_names)]
+    #[derive(Clone, Collect, Debug, Copy)]
+    #[collect(no_drop)]
+    pub enum WeakObject<'gc> for Object<'gc> {
+        ScriptObject(ScriptObjectWeak<'gc>),
+        FunctionObject(FunctionObjectWeak<'gc>),
+        NamespaceObject(NamespaceObjectWeak<'gc>),
+        ArrayObject(ArrayObjectWeak<'gc>),
+        StageObject(StageObjectWeak<'gc>),
+        DomainObject(DomainObjectWeak<'gc>),
+        EventObject(EventObjectWeak<'gc>),
+        DispatchObject(DispatchObjectWeak<'gc>),
+        XmlObject(XmlObjectWeak<'gc>),
+        XmlListObject(XmlListObjectWeak<'gc>),
+        RegExpObject(RegExpObjectWeak<'gc>),
+        ByteArrayObject(ByteArrayObjectWeak<'gc>),
+        LoaderInfoObject(LoaderInfoObjectWeak<'gc>),
+        ClassObject(ClassObjectWeak<'gc>),
+        VectorObject(VectorObjectWeak<'gc>),
+        SoundObject(SoundObjectWeak<'gc>),
+        SoundChannelObject(SoundChannelObjectWeak<'gc>),
+        BitmapDataObject(BitmapDataObjectWeak<'gc>),
+        DateObject(DateObjectWeak<'gc>),
+        DictionaryObject(DictionaryObjectWeak<'gc>),
+        QNameObject(QNameObjectWeak<'gc>),
+        TextFormatObject(TextFormatObjectWeak<'gc>),
+        ProxyObject(ProxyObjectWeak<'gc>),
+        ErrorObject(ErrorObjectWeak<'gc>),
+        Stage3DObject(Stage3DObjectWeak<'gc>),
+        Context3DObject(Context3DObjectWeak<'gc>),
+        IndexBuffer3DObject(IndexBuffer3DObjectWeak<'gc>),
+        VertexBuffer3DObject(VertexBuffer3DObjectWeak<'gc>),
+        TextureObject(TextureObjectWeak<'gc>),
+        Program3DObject(Program3DObjectWeak<'gc>),
+        NetStreamObject(NetStreamObjectWeak<'gc>),
+        NetConnectionObject(NetConnectionObjectWeak<'gc>),
+        ResponderObject(ResponderObjectWeak<'gc>),
+        ShaderDataObject(ShaderDataObjectWeak<'gc>),
+        SocketObject(SocketObjectWeak<'gc>),
+        FileReferenceObject(FileReferenceObjectWeak<'gc>),
+        FontObject(FontObjectWeak<'gc>),
+        LocalConnectionObject(LocalConnectionObjectWeak<'gc>),
+        SharedObjectObject(SharedObjectObjectWeak<'gc>),
+        SoundTransformObject(SoundTransformObjectWeak<'gc>),
+        StyleSheetObject(StyleSheetObjectWeak<'gc>),
+        WorkerObject(WorkerObjectWeak<'gc>),
+        WorkerDomainObject(WorkerDomainObjectWeak<'gc>),
+        MessageChannelObject(MessageChannelObjectWeak<'gc>),
+        SecurityDomainObject(SecurityDomainObjectWeak<'gc>),
     }
 }
 
