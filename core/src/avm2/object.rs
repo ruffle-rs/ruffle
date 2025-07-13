@@ -674,8 +674,12 @@ pub trait TObject<'gc>: 'gc + Collect<'gc> + Debug + Into<Object<'gc>> + Clone +
         self.instance_class().has_class_in_chain(test_class)
     }
 
+    #[inline(always)]
+    #[no_dynamic]
     /// Get a raw pointer value for this object.
-    fn as_ptr(&self) -> *const ObjectPtr;
+    fn as_ptr(&self) -> *const ObjectPtr {
+        Gc::as_ptr(self.gc_base()).cast()
+    }
 
     /// Get this object's vtable, if it has one.
     /// Every object with class should have a vtable

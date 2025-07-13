@@ -1,7 +1,7 @@
 use crate::avm2::activation::Activation;
 use crate::avm2::bytearray::ByteArrayStorage;
 use crate::avm2::object::script_object::ScriptObjectData;
-use crate::avm2::object::{ArrayObject, ClassObject, Object, ObjectPtr, TObject};
+use crate::avm2::object::{ArrayObject, ClassObject, Object, TObject};
 use crate::avm2::value::Value;
 use crate::avm2::Error;
 use crate::avm2::Multiname;
@@ -127,10 +127,6 @@ impl<'gc> ByteArrayObject<'gc> {
 impl<'gc> TObject<'gc> for ByteArrayObject<'gc> {
     fn gc_base(&self) -> Gc<'gc, ScriptObjectData<'gc>> {
         HasPrefixField::as_prefix_gc(self.0)
-    }
-
-    fn as_ptr(&self) -> *const ObjectPtr {
-        Gc::as_ptr(self.0) as *const ObjectPtr
     }
 
     fn get_property_local(

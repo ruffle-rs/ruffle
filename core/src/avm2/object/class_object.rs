@@ -7,7 +7,7 @@ use crate::avm2::function::{exec, FunctionArgs};
 use crate::avm2::method::{Method, NativeMethodImpl};
 use crate::avm2::object::function_object::FunctionObject;
 use crate::avm2::object::script_object::ScriptObjectData;
-use crate::avm2::object::{Object, ObjectPtr, ScriptObject, TObject};
+use crate::avm2::object::{Object, ScriptObject, TObject};
 use crate::avm2::property::Property;
 use crate::avm2::scope::{Scope, ScopeChain};
 use crate::avm2::value::Value;
@@ -695,10 +695,6 @@ impl<'gc> ClassObject<'gc> {
 impl<'gc> TObject<'gc> for ClassObject<'gc> {
     fn gc_base(&self) -> Gc<'gc, ScriptObjectData<'gc>> {
         HasPrefixField::as_prefix_gc(self.0)
-    }
-
-    fn as_ptr(&self) -> *const ObjectPtr {
-        Gc::as_ptr(self.0) as *const ObjectPtr
     }
 
     fn to_string(&self, mc: &Mutation<'gc>) -> AvmString<'gc> {

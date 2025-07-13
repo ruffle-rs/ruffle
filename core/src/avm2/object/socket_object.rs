@@ -1,7 +1,7 @@
 use crate::avm2::bytearray::{ByteArrayError, Endian, ObjectEncoding};
 use crate::avm2::error::{make_error_2006, Error};
 use crate::avm2::object::script_object::ScriptObjectData;
-use crate::avm2::object::{ClassObject, Object, ObjectPtr, TObject};
+use crate::avm2::object::{ClassObject, Object, TObject};
 use crate::avm2::Activation;
 use crate::socket::SocketHandle;
 use crate::utils::HasPrefixField;
@@ -44,10 +44,6 @@ pub struct SocketObjectWeak<'gc>(pub GcWeak<'gc, SocketObjectData<'gc>>);
 impl<'gc> TObject<'gc> for SocketObject<'gc> {
     fn gc_base(&self) -> Gc<'gc, ScriptObjectData<'gc>> {
         HasPrefixField::as_prefix_gc(self.0)
-    }
-
-    fn as_ptr(&self) -> *const ObjectPtr {
-        Gc::as_ptr(self.0) as *const ObjectPtr
     }
 }
 
