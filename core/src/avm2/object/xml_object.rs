@@ -6,9 +6,7 @@ use crate::avm2::error::make_error_1087;
 use crate::avm2::function::FunctionArgs;
 use crate::avm2::multiname::NamespaceSet;
 use crate::avm2::object::script_object::ScriptObjectData;
-use crate::avm2::object::{
-    ClassObject, NamespaceObject, Object, ObjectPtr, TObject, XmlListObject,
-};
+use crate::avm2::object::{ClassObject, NamespaceObject, Object, TObject, XmlListObject};
 use crate::avm2::string::AvmString;
 use crate::avm2::value::Value;
 use crate::avm2::{Error, Multiname};
@@ -289,10 +287,6 @@ impl<'gc> XmlObject<'gc> {
 impl<'gc> TObject<'gc> for XmlObject<'gc> {
     fn gc_base(&self) -> Gc<'gc, ScriptObjectData<'gc>> {
         HasPrefixField::as_prefix_gc(self.0)
-    }
-
-    fn as_ptr(&self) -> *const ObjectPtr {
-        Gc::as_ptr(self.0) as *const ObjectPtr
     }
 
     fn xml_descendants(

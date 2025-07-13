@@ -3,7 +3,7 @@
 use crate::avm2::activation::Activation;
 use crate::avm2::events::Event;
 use crate::avm2::object::script_object::ScriptObjectData;
-use crate::avm2::object::{ClassObject, Object, ObjectPtr, ScriptObject, TObject};
+use crate::avm2::object::{ClassObject, Object, ScriptObject, TObject};
 use crate::avm2::value::Value;
 use crate::avm2::Error;
 use crate::context::UpdateContext;
@@ -364,10 +364,6 @@ impl<'gc> EventObject<'gc> {
 impl<'gc> TObject<'gc> for EventObject<'gc> {
     fn gc_base(&self) -> Gc<'gc, ScriptObjectData<'gc>> {
         HasPrefixField::as_prefix_gc(self.0)
-    }
-
-    fn as_ptr(&self) -> *const ObjectPtr {
-        Gc::as_ptr(self.0) as *const ObjectPtr
     }
 }
 

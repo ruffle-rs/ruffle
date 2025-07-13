@@ -3,7 +3,7 @@
 use crate::avm2::activation::Activation;
 use crate::avm2::globals::slots::flash_media_id3info as id3_slots;
 use crate::avm2::object::script_object::ScriptObjectData;
-use crate::avm2::object::{ClassObject, Object, ObjectPtr, TObject};
+use crate::avm2::object::{ClassObject, Object, TObject};
 use crate::avm2::Avm2;
 use crate::avm2::Error;
 use crate::avm2::EventObject;
@@ -303,9 +303,5 @@ fn play_queued<'gc>(
 impl<'gc> TObject<'gc> for SoundObject<'gc> {
     fn gc_base(&self) -> Gc<'gc, ScriptObjectData<'gc>> {
         HasPrefixField::as_prefix_gc(self.0)
-    }
-
-    fn as_ptr(&self) -> *const ObjectPtr {
-        Gc::as_ptr(self.0) as *const ObjectPtr
     }
 }

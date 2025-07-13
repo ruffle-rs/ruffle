@@ -2,7 +2,7 @@
 
 use crate::avm2::activation::Activation;
 use crate::avm2::object::script_object::ScriptObjectData;
-use crate::avm2::object::{Object, ObjectPtr, ScriptObject, TObject};
+use crate::avm2::object::{Object, ScriptObject, TObject};
 use crate::utils::HasPrefixField;
 use gc_arena::barrier::unlock;
 use gc_arena::{lock::Lock, Collect, Gc, GcWeak};
@@ -72,10 +72,6 @@ impl<'gc> SharedObjectObject<'gc> {
 impl<'gc> TObject<'gc> for SharedObjectObject<'gc> {
     fn gc_base(&self) -> Gc<'gc, ScriptObjectData<'gc>> {
         HasPrefixField::as_prefix_gc(self.0)
-    }
-
-    fn as_ptr(&self) -> *const ObjectPtr {
-        Gc::as_ptr(self.0) as *const ObjectPtr
     }
 }
 
