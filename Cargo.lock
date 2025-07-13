@@ -1643,6 +1643,21 @@ dependencies = [
 ]
 
 [[package]]
+name = "exporter_integration_tests"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "clap",
+ "exporter",
+ "image",
+ "libtest-mimic",
+ "ruffle_fs_tests_runner",
+ "serde",
+ "toml",
+ "vfs",
+]
+
+[[package]]
 name = "fastrand"
 version = "2.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
