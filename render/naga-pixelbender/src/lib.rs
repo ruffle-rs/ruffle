@@ -47,6 +47,8 @@ pub struct ShaderBuilder<'a> {
     zerovec4f: Handle<Expression>,
     // The value 1.0f32
     onef32: Handle<Expression>,
+    // The value 1i32
+    onei32: Handle<Expression>,
 
     // A temporary vec4f local variable.
     // Currently used during texture sampling.
@@ -287,6 +289,10 @@ impl ShaderBuilder<'_> {
             .expressions
             .append(Expression::Literal(Literal::F32(0.0)), Span::UNDEFINED);
 
+        let onei32 = func
+            .expressions
+            .append(Expression::Literal(Literal::I32(1)), Span::UNDEFINED);
+
         let onef32 = func
             .expressions
             .append(Expression::Literal(Literal::F32(1.0)), Span::UNDEFINED);
@@ -329,6 +335,7 @@ impl ShaderBuilder<'_> {
             zeroi32,
             zerovec4f,
             onef32,
+            onei32,
             temp_vec4f_local,
             clamp_nearest: samplers[SAMPLER_CLAMP_NEAREST as usize],
             clamp_linear: samplers[SAMPLER_CLAMP_LINEAR as usize],
@@ -1430,9 +1437,9 @@ impl ShaderBuilder<'_> {
                     let src1_expr = self.load_src_register(src1)?;
                     let src2_expr = self.load_src_register(src2)?;
 
-                    let expr_zero: Handle<Expression> = match condition.kind {
-                        PixelBenderRegKind::Float => self.zerof32,
-                        PixelBenderRegKind::Int => self.zeroi32,
+                    let expr_one: Handle<Expression> = match condition.kind {
+                        PixelBenderRegKind::Float => self.onef32,
+                        PixelBenderRegKind::Int => self.onei32,
                     };
                     if condition.channels.len() != 1 {
                         panic!("'Select' condition must be a scalar: {condition:?}");
@@ -1447,9 +1454,9 @@ impl ShaderBuilder<'_> {
                     });
 
                     let is_true = self.evaluate_expr(Expression::Binary {
-                        op: BinaryOperator::NotEqual,
+                        op: BinaryOperator::Equal,
                         left: first_component,
-                        right: expr_zero,
+                        right: expr_one,
                     });
 
                     let select_expr = self.evaluate_expr(Expression::Select {
