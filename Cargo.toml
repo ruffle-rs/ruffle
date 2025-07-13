@@ -10,7 +10,9 @@ members = [
     "web/packages/extension/safari",
     "wstr",
     "scanner",
+
     "exporter",
+    "exporter/integration_tests",
 
     "frontend-utils",
 
