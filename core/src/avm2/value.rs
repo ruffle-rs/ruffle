@@ -4,7 +4,7 @@ use crate::avm2::activation::Activation;
 use crate::avm2::error::{self};
 use crate::avm2::error::{make_error_1006, type_error};
 use crate::avm2::function::{exec, FunctionArgs};
-use crate::avm2::object::{FunctionObject, NamespaceObject, Object, TObject};
+use crate::avm2::object::{NamespaceObject, Object, TObject};
 use crate::avm2::property::Property;
 use crate::avm2::script::TranslationUnit;
 use crate::avm2::vtable::VTable;
@@ -821,18 +821,15 @@ impl<'gc> Value<'gc> {
     pub fn coerce_to_function(
         &self,
         activation: &mut Activation<'_, 'gc>,
-    ) -> Result<Option<FunctionObject<'gc>>, Error<'gc>> {
+    ) -> Result<Option<Value<'gc>>, Error<'gc>> {
         match self {
             Value::Null | Value::Undefined => Ok(None),
             _ => {
                 let function_class = activation.avm2().class_defs().function;
 
-                let fn_value = self.coerce_to_type(activation, function_class)?;
+                let value = self.coerce_to_type(activation, function_class)?;
 
-                match fn_value.as_object().and_then(|o| o.as_function_object()) {
-                    Some(function_object) => Ok(Some(function_object)),
-                    _ => unreachable!("Value should have been coerced to function"),
-                }
+                Ok(Some(value))
             }
         }
     }
