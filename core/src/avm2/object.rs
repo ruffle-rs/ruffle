@@ -247,7 +247,8 @@ pub trait TObject<'gc>: 'gc + Collect<'gc> + Debug + Into<Object<'gc>> + Clone +
     /// Get a dynamic property on this Object by name. This is like
     /// `get_property_local`, but it skips dynamic-dispatch TObject logic
     /// and always gets a dynamic property on the base ScriptObject. If the
-    /// property does not exist on the ScriptObject, this returns `None`.
+    /// object is sealed, or the dynamic property does not exist on the
+    /// ScriptObject, this returns `None`.
     #[no_dynamic]
     fn get_dynamic_property(self, local_name: AvmString<'gc>) -> Option<Value<'gc>> {
         use crate::avm2::object::script_object::maybe_int_property;
@@ -285,6 +286,14 @@ pub trait TObject<'gc>: 'gc + Collect<'gc> + Debug + Into<Object<'gc>> + Clone +
     /// Set a dynamic property on this Object by name. This is like
     /// `set_property_local`, but it skips dynamic-dispatch TObject logic
     /// and always sets a dynamic property on the base ScriptObject.
+    ///
+    /// Note that calling this method on a non-dynamic (sealed) object will
+    /// panic, as sealed objects cannot have dynamic properties set on them.
+    ///
+    /// Additionally, if the vtable of the object has the property `local_name`
+    /// in it, this method will still declare a dynamic property on the object
+    /// with the same name, so take care to only call this method on objects
+    /// that are known to not have the property `local_name` in their vtable.
     #[no_dynamic]
     fn set_dynamic_property(
         self,
@@ -294,10 +303,13 @@ pub trait TObject<'gc>: 'gc + Collect<'gc> + Debug + Into<Object<'gc>> + Clone +
     ) {
         use crate::avm2::object::script_object::maybe_int_property;
 
+        let base = self.base();
+        assert!(!base.is_sealed());
+
         // See the comment in ScriptObjectWrapper::set_property_local
         let key = maybe_int_property(local_name);
 
-        self.base().values_mut(mc).insert(key, value);
+        base.values_mut(mc).insert(key, value);
     }
 
     /// Purely an optimization for "array-like" access. This should return
@@ -368,12 +380,18 @@ pub trait TObject<'gc>: 'gc + Collect<'gc> + Debug + Into<Object<'gc>> + Clone +
     /// Delete a dynamic property on this Object by name. This is like
     /// `delete_property_local`, but it skips dynamic-dispatch TObject logic
     /// and always tries to delete a dynamic property on the base ScriptObject.
+    ///
+    /// This method will panic when called on a non-dynamic (sealed) object, as
+    /// sealed objects don't have dynamic properties to delete anyway.
     #[no_dynamic]
     fn delete_dynamic_property(self, name: AvmString<'gc>, mc: &Mutation<'gc>) {
         use crate::avm2::object::script_object::maybe_int_property;
 
+        let base = self.base();
+        assert!(!base.is_sealed());
+
         let key = maybe_int_property(name);
-        self.base().values_mut(mc).remove(&key);
+        base.values_mut(mc).remove(&key);
     }
 
     /// Retrieve a slot by its index.
