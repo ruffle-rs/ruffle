@@ -4,7 +4,7 @@ use crate::avm2::activation::Activation;
 use crate::avm2::error::{self};
 use crate::avm2::error::{make_error_1006, type_error};
 use crate::avm2::function::{exec, FunctionArgs};
-use crate::avm2::object::{NamespaceObject, Object, TObject};
+use crate::avm2::object::{FunctionObject, NamespaceObject, Object, TObject};
 use crate::avm2::property::Property;
 use crate::avm2::script::TranslationUnit;
 use crate::avm2::vtable::VTable;
@@ -818,6 +818,25 @@ impl<'gc> Value<'gc> {
         })
     }
 
+    pub fn coerce_to_function(
+        &self,
+        activation: &mut Activation<'_, 'gc>,
+    ) -> Result<Option<FunctionObject<'gc>>, Error<'gc>> {
+        match self {
+            Value::Null | Value::Undefined => Ok(None),
+            _ => {
+                let function_class = activation.avm2().class_defs().function;
+
+                let fn_value = self.coerce_to_type(activation, function_class)?;
+
+                match fn_value.as_object().and_then(|o| o.as_function_object()) {
+                    Some(function_object) => Ok(Some(function_object)),
+                    _ => unreachable!("Value should have been coerced to function"),
+                }
+            }
+        }
+    }
+
     /// Coerce the value to a literal value / debug string.
     ///
     /// This matches the string formatting that appears to be in use in "debug"
@@ -1361,26 +1380,6 @@ impl<'gc> Value<'gc> {
                 function_object.call(activation, receiver, args)
             }
             _ => Err(make_error_1006(activation)),
-        }
-    }
-
-    /// Same as `call`, but producing a 1034 error
-    pub fn coerce_and_call(
-        &self,
-        activation: &mut Activation<'_, 'gc>,
-        receiver: Value<'gc>,
-        args: &[Value<'gc>],
-    ) -> Result<Value<'gc>, Error<'gc>> {
-        let function_class = activation.avm2().class_defs().function;
-
-        let fn_value = self.coerce_to_type(activation, function_class)?;
-
-        match fn_value.as_object() {
-            Some(Object::ClassObject(class_object)) => class_object.call(activation, args),
-            Some(Object::FunctionObject(function_object)) => {
-                function_object.call(activation, receiver, args)
-            }
-            _ => unreachable!("Value should have been coerced to function"),
         }
     }
 

@@ -270,7 +270,9 @@ pub fn every<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
-    let callback = args.get_value(0);
+    let Some(callback) = args.get_value(0).coerce_to_function(activation)? else {
+        return Ok(false.into());
+    };
     let receiver = args.get_value(1);
     let mut iter = ArrayIter::new(activation, this)?;
 
@@ -295,13 +297,15 @@ pub fn some<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
-    let callback = args.get_value(0);
+    let Some(callback) = args.get_value(0).coerce_to_function(activation)? else {
+        return Ok(false.into());
+    };
     let receiver = args.get_value(1);
     let mut iter = ArrayIter::new(activation, this)?;
 
     while let Some((i, item)) = iter.next(activation)? {
         let result = callback
-            .coerce_and_call(activation, receiver, &[item, i.into(), this.into()])?
+            .call(activation, receiver, &[item, i.into(), this.into()])?
             .coerce_to_boolean();
 
         if result {
@@ -320,7 +324,9 @@ pub fn filter<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
-    let callback = args.get_value(0);
+    let Some(callback) = args.get_value(0).coerce_to_function(activation)? else {
+        return Ok(false.into());
+    };
     let receiver = args.get_value(1);
 
     let value_type = this
@@ -351,7 +357,9 @@ pub fn for_each<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
-    let callback = args.get_value(0);
+    let Some(callback) = args.get_value(0).coerce_to_function(activation)? else {
+        return Ok(false.into());
+    };
     let receiver = args.get_value(1);
     let mut iter = ArrayIter::new(activation, this)?;
 
