@@ -1,8 +1,8 @@
 //! AVM2 values
 
 use crate::avm2::activation::Activation;
-use crate::avm2::error;
-use crate::avm2::error::type_error;
+use crate::avm2::error::{self};
+use crate::avm2::error::{make_error_1006, type_error};
 use crate::avm2::function::{exec, FunctionArgs};
 use crate::avm2::object::{NamespaceObject, Object, TObject};
 use crate::avm2::property::Property;
@@ -1175,11 +1175,7 @@ impl<'gc> Value<'gc> {
                     if let Some(value) = dynamic_lookup {
                         value.call(activation, *self, arguments)
                     } else {
-                        Err(Error::avm_error(type_error(
-                            activation,
-                            "Error #1006: value is not a function.",
-                            1006,
-                        )?))
+                        Err(make_error_1006(activation))
                     }
                 }
             }
@@ -1364,11 +1360,27 @@ impl<'gc> Value<'gc> {
             Some(Object::FunctionObject(function_object)) => {
                 function_object.call(activation, receiver, args)
             }
-            _ => Err(Error::avm_error(type_error(
-                activation,
-                "Error #1006: value is not a function.",
-                1006,
-            )?)),
+            _ => Err(make_error_1006(activation)),
+        }
+    }
+
+    /// Same as `call`, but producing a 1034 error
+    pub fn coerce_and_call(
+        &self,
+        activation: &mut Activation<'_, 'gc>,
+        receiver: Value<'gc>,
+        args: &[Value<'gc>],
+    ) -> Result<Value<'gc>, Error<'gc>> {
+        let function_class = activation.avm2().class_defs().function;
+
+        let fn_value = self.coerce_to_type(activation, function_class)?;
+
+        match fn_value.as_object() {
+            Some(Object::ClassObject(class_object)) => class_object.call(activation, args),
+            Some(Object::FunctionObject(function_object)) => {
+                function_object.call(activation, receiver, args)
+            }
+            _ => unreachable!("Value should have been coerced to function"),
         }
     }
 

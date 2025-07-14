@@ -408,7 +408,7 @@ pub fn some<'gc>(
 
     while let Some((i, item)) = iter.next(activation)? {
         let result = callback
-            .call(activation, receiver, &[item, i.into(), this.into()])?
+            .coerce_and_call(activation, receiver, &[item, i.into(), this.into()])?
             .coerce_to_boolean();
 
         if result {
