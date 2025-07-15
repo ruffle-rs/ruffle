@@ -51,7 +51,7 @@ tracing-subscriber = { version = "0.3.19", features = ["env-filter"] }
 naga = { version = "25.0.1", features = ["wgsl-out"] }
 wgpu = "25.0.2"
 egui = { git = "https://github.com/emilk/egui.git", branch = "main" }
-clap = { version = "4.5.40", features = ["derive"] }
+clap = { version = "4.5.41", features = ["derive"] }
 cpal = "0.15.3"
 anyhow = "1.0"
 slotmap = "1.0.7"
@@ -76,8 +76,8 @@ wasm-bindgen = "=0.2.100"
 walkdir = "2.5.0"
 tokio = "1.46.1"
 # Switching from the `async-std` to the `tokio` runtime, which we depend on anyway.
-rfd = { version = "0.15.3", default-features = false, features = ["tokio", "xdg-portal"] }
-memmap2 = "0.9.5"
+rfd = { version = "0.15.4", default-features = false, features = ["tokio", "xdg-portal"] }
+memmap2 = "0.9.7"
 
 [workspace.lints.rust]
 # Clippy nightly often adds new/buggy lints that we want to ignore.
