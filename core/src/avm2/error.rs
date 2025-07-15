@@ -273,25 +273,6 @@ pub fn make_error_1033<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> 
     }
 }
 
-#[inline(never)]
-#[cold]
-pub fn make_error_1034<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    object: impl Debug,
-    class_name: impl Display,
-) -> Error<'gc> {
-    let err = type_error(
-        activation,
-        &format!("Error #1034: Type Coercion failed: cannot convert {object:?} to {class_name}."),
-        1034,
-    );
-
-    match err {
-        Ok(err) => Error::avm_error(err),
-        Err(err) => err,
-    }
-}
-
 pub fn make_error_1053<'gc>(
     activation: &mut Activation<'_, 'gc>,
     trait_name: AvmString<'gc>,

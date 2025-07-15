@@ -1,4 +1,4 @@
-use crate::avm2::error::{make_error_1034, make_error_2008};
+use crate::avm2::error::make_error_2008;
 use crate::avm2::globals::flash::display::shader_job::get_shader_args;
 use crate::avm2::globals::slots::flash_filters_bevel_filter as bevel_filter_slots;
 use crate::avm2::globals::slots::flash_filters_blur_filter as blur_filter_slots;
@@ -168,11 +168,7 @@ impl FilterAvm2Ext for Filter {
             )?));
         }
 
-        Err(make_error_1034(
-            activation,
-            object,
-            "flash.filters.BitmapFilter",
-        ))
+        unreachable!("{object:?} must be of type BitmapFilter")
     }
 
     fn as_avm2_object<'gc>(
@@ -498,15 +494,12 @@ fn avm2_to_displacement_map_filter<'gc>(
         .coerce_to_number(activation)?;
     let map_bitmap =
         if let Value::Object(bitmap) = object.get_slot(displacement_map_filter_slots::MAP_BITMAP) {
-            if let Some(bitmap) = bitmap.as_bitmap_data() {
-                Some(bitmap.bitmap_handle(activation.gc(), activation.context.renderer))
-            } else {
-                return Err(make_error_1034(
-                    activation,
-                    bitmap,
-                    "flash.display.BitmapData",
-                ));
-            }
+            Some(
+                bitmap
+                    .as_bitmap_data()
+                    .unwrap()
+                    .bitmap_handle(activation.gc(), activation.context.renderer),
+            )
         } else {
             None
         };
