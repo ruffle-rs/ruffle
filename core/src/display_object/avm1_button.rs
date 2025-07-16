@@ -295,14 +295,8 @@ impl<'gc> TDisplayObject<'gc> for Avm1Button<'gc> {
                 self.run_frame_avm1(context);
             }
         }
-    }
 
-    fn run_frame_avm1(self, context: &mut UpdateContext<'gc>) {
-        let self_display_object = self.into();
-        let initialized = self.0.initialized.get();
-
-        // TODO: Move this to post_instantiation.
-        if !initialized {
+        if !self.0.initialized.get() {
             let mut new_children = Vec::new();
 
             self.set_state(context, ButtonState::Up);
@@ -317,7 +311,7 @@ impl<'gc> TDisplayObject<'gc> for Avm1Button<'gc> {
                     {
                         Some(child) => {
                             child.set_matrix(context.gc(), record.matrix.into());
-                            child.set_parent(context, Some(self_display_object));
+                            child.set_parent(context, Some(self.into()));
                             child.set_depth(record.depth.into());
                             new_children.push((child, record.depth.into()));
                         }
@@ -341,6 +335,10 @@ impl<'gc> TDisplayObject<'gc> for Avm1Button<'gc> {
             }
             write.borrow_mut().hit_bounds = hit_bounds;
         }
+    }
+
+    fn run_frame_avm1(self, _context: &mut UpdateContext<'gc>) {
+        // Noop.
     }
 
     fn render_self(self, context: &mut RenderContext<'_, 'gc>) {
