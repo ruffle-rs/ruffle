@@ -374,8 +374,6 @@ impl<'gc> TDisplayObject<'gc> for Bitmap<'gc> {
             }
 
             self.on_construction_complete(context);
-        } else {
-            context.avm1.add_to_exec_list(context.gc(), self.into());
         }
     }
 

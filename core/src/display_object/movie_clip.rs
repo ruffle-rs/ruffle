@@ -187,6 +187,11 @@ pub struct MovieClipData<'gc> {
     /// Attached audio (AVM1)
     attached_audio: Lock<Option<NetStream<'gc>>>,
 
+    /// The next MovieClip in the AVM1 execution list.
+    ///
+    /// `None` in an AVM2 movie.
+    next_avm1_clip: Lock<Option<MovieClip<'gc>>>,
+
     // If this movie was loaded from ImportAssets(2), this will be the parent movie.
     importer_movie: Option<Arc<SwfMovie>>,
 }
@@ -230,6 +235,7 @@ impl<'gc> MovieClipData<'gc> {
             queued_tags: Default::default(),
             hit_area: Lock::new(None),
             attached_audio: Lock::new(None),
+            next_avm1_clip: Lock::new(None),
             importer_movie: None,
         }
     }
@@ -376,6 +382,14 @@ impl<'gc> MovieClip<'gc> {
 
     pub fn set_initialized(self) {
         self.0.set_initialized(true);
+    }
+
+    pub fn next_avm1_clip(&self) -> Option<MovieClip<'gc>> {
+        self.0.next_avm1_clip.get()
+    }
+
+    pub fn set_next_avm1_clip(&self, mc: &Mutation<'gc>, node: Option<MovieClip<'gc>>) {
+        unlock!(Gc::write(mc, self.0), MovieClipData, next_avm1_clip).set(node);
     }
 
     /// Tries to fire events from our `LoaderInfo` object if we're ready - returns
@@ -2458,7 +2472,7 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
         self.set_default_instance_name(context);
 
         if !self.movie().is_action_script_3() {
-            context.avm1.add_to_exec_list(context.gc(), self.into());
+            context.avm1.add_to_exec_list(context.gc(), self);
 
             self.construct_as_avm1_object(context, init_object, instantiated_by, run_frame);
         }
