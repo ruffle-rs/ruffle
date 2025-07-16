@@ -371,7 +371,7 @@ impl<'gc> TDisplayObject<'gc> for Video<'gc> {
         context: &mut UpdateContext<'gc>,
         _init_object: Option<Avm1Object<'gc>>,
         _instantiated_by: Instantiator,
-        run_frame: bool,
+        _run_frame: bool,
     ) {
         if !self.movie().is_action_script_3() {
             context.avm1.add_to_exec_list(context.gc(), self.into());
@@ -453,10 +453,6 @@ impl<'gc> TDisplayObject<'gc> for Video<'gc> {
         }
 
         self.seek(context, starting_seek);
-
-        if !self.movie().is_action_script_3() && run_frame {
-            self.run_frame_avm1(context);
-        }
     }
 
     fn construct_frame(self, context: &mut UpdateContext<'gc>) {

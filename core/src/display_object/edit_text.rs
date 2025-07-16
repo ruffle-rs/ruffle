@@ -2134,7 +2134,7 @@ impl<'gc> EditText<'gc> {
     }
 
     /// Construct the text field's AVM1 representation.
-    fn construct_as_avm1_object(self, context: &mut UpdateContext<'gc>, run_frame: bool) {
+    fn construct_as_avm1_object(self, context: &mut UpdateContext<'gc>, _run_frame: bool) {
         if self.0.object.get().is_none() {
             let object = Avm1Object::new_with_native(
                 &context.strings,
@@ -2155,10 +2155,6 @@ impl<'gc> EditText<'gc> {
 
             self.initialize_as_broadcaster(activation);
         });
-
-        if run_frame {
-            self.run_frame_avm1(context);
-        }
     }
 
     /// Construct the text field's AVM2 representation.
@@ -2534,10 +2530,6 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
             self.construct_as_avm2_object(context, self.into());
             self.on_construction_complete(context);
         }
-    }
-
-    fn run_frame_avm1(self, _context: &mut UpdateContext) {
-        // Noop
     }
 
     fn as_edit_text(self) -> Option<EditText<'gc>> {

@@ -335,7 +335,7 @@ impl<'gc> TDisplayObject<'gc> for Bitmap<'gc> {
         context: &mut UpdateContext<'gc>,
         _init_object: Option<avm1::Object<'gc>>,
         instantiated_by: Instantiator,
-        run_frame: bool,
+        _run_frame: bool,
     ) {
         if self.movie().is_action_script_3() {
             let mut activation = Avm2Activation::from_nothing(context);
@@ -376,10 +376,6 @@ impl<'gc> TDisplayObject<'gc> for Bitmap<'gc> {
             self.on_construction_complete(context);
         } else {
             context.avm1.add_to_exec_list(context.gc(), self.into());
-
-            if run_frame {
-                self.run_frame_avm1(context);
-            }
         }
     }
 

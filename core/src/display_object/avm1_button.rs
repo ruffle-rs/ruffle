@@ -193,7 +193,9 @@ impl<'gc> Avm1Button<'gc> {
         for (child, depth) in children {
             // Initialize new child.
             child.post_instantiation(context, None, Instantiator::Movie, false);
-            child.run_frame_avm1(context);
+            if let Some(clip) = child.as_movie_clip() {
+                clip.run_frame_avm1(context);
+            }
             let removed_child = self.replace_at_depth(context, child, depth.into());
             dispatch_added_event(self.into(), child, false, context);
             if let Some(removed_child) = removed_child {
@@ -274,7 +276,7 @@ impl<'gc> TDisplayObject<'gc> for Avm1Button<'gc> {
         context: &mut UpdateContext<'gc>,
         _init_object: Option<Object<'gc>>,
         _instantiated_by: Instantiator,
-        run_frame: bool,
+        _run_frame: bool,
     ) {
         self.set_default_instance_name(context);
 
@@ -290,10 +292,6 @@ impl<'gc> TDisplayObject<'gc> for Avm1Button<'gc> {
             );
             let obj = unlock!(Gc::write(context.gc(), self.0), Avm1ButtonData, object);
             obj.set(Some(object));
-
-            if run_frame {
-                self.run_frame_avm1(context);
-            }
         }
 
         if !self.0.initialized.get() {
@@ -335,10 +333,6 @@ impl<'gc> TDisplayObject<'gc> for Avm1Button<'gc> {
             }
             write.borrow_mut().hit_bounds = hit_bounds;
         }
-    }
-
-    fn run_frame_avm1(self, _context: &mut UpdateContext<'gc>) {
-        // Noop.
     }
 
     fn render_self(self, context: &mut RenderContext<'_, 'gc>) {
