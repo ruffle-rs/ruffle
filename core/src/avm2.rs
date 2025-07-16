@@ -119,6 +119,10 @@ pub struct Avm2<'gc> {
     /// Scopes currently present of the scope stack.
     scope_stack: Vec<Scope<'gc>>,
 
+    /// Default XML namespace stack for E4X operations.
+    /// The last element is the current default namespace.
+    default_xml_namespace_stack: Vec<AvmString<'gc>>,
+
     /// The current call stack of the player.
     call_stack: GcRefLock<'gc, CallStack<'gc>>,
 
@@ -214,6 +218,7 @@ impl<'gc> Avm2<'gc> {
             player_runtime,
             stack: Vec::with_capacity(PREALLOCATED_STACK_SIZE),
             scope_stack: Vec::new(),
+            default_xml_namespace_stack: Vec::new(),
             call_stack: GcRefLock::new(mc, CallStack::new().into()),
             playerglobals_domain,
             stage_domain,
@@ -816,6 +821,25 @@ impl<'gc> Avm2<'gc> {
 
     fn pop_scope(&mut self) {
         self.scope_stack.pop();
+    }
+
+    /// Push a default XML namespace onto the default XML namespace stack.
+    pub fn push_default_xml_namespace(&mut self, namespace: AvmString<'gc>) {
+        self.default_xml_namespace_stack.push(namespace);
+    }
+
+    /// Pop a default XML namespace from the default XML namespace stack.
+    pub fn pop_default_xml_namespace(&mut self) {
+        self.default_xml_namespace_stack.pop();
+    }
+
+    /// Get the current default XML namespace.
+    /// Returns an empty string if no default XML namespace is set.
+    pub fn current_default_xml_namespace(&self, strings: &StringContext<'gc>) -> AvmString<'gc> {
+        self.default_xml_namespace_stack
+            .last()
+            .copied()
+            .unwrap_or_else(|| AvmString::new_ascii_static(strings.gc(), b""))
     }
 
     #[cfg(feature = "avm_debug")]

@@ -92,7 +92,18 @@ pub fn q_name_constructor<'gc>(
 
         if &*local != b"*" {
             this.set_local_name(activation.gc(), local);
-            Some(activation.avm2().find_public_namespace())
+
+            // Use default XML namespace if set, otherwise use public namespace
+            let default_ns_uri = activation.default_xml_namespace();
+            if default_ns_uri.is_empty() {
+                Some(activation.avm2().find_public_namespace())
+            } else {
+                Some(Namespace::package(
+                    default_ns_uri,
+                    activation.avm2().root_api_version,
+                    activation.strings(),
+                ))
+            }
         } else {
             None
         }

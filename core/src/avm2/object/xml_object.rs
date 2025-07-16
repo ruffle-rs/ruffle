@@ -715,15 +715,18 @@ fn handle_input_multiname<'gc>(
             .local_name()
             .map(|name| string_to_multiname(activation, name))
         {
-            // Copy the namespaces from the previous name,
-            // but make sure to definitely include the public namespace.
-            if !new_name.is_any_namespace() {
-                let mut ns = Vec::new();
-                ns.extend(name.namespace_set());
-                if !name.contains_public_namespace() {
-                    ns.push(activation.avm2().namespaces.public_all());
+            let default_ns_uri = activation.default_xml_namespace();
+            if default_ns_uri.is_empty() || new_name.contains_public_namespace() {
+                // Copy the namespaces from the previous name,
+                // but make sure to definitely include the public namespace.
+                if !new_name.is_any_namespace() {
+                    let mut ns = Vec::new();
+                    ns.extend(name.namespace_set());
+                    if !name.contains_public_namespace() {
+                        ns.push(activation.avm2().namespaces.public_all());
+                    }
+                    new_name.set_ns(NamespaceSet::new(ns, activation.gc()));
                 }
-                new_name.set_ns(NamespaceSet::new(ns, activation.gc()));
             }
 
             return new_name;
