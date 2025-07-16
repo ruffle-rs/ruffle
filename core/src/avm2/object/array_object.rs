@@ -7,7 +7,7 @@ use crate::avm2::object::{ClassObject, Object, ObjectPtr, TObject};
 use crate::avm2::value::Value;
 use crate::avm2::Error;
 use crate::avm2::Multiname;
-use crate::string::AvmString;
+use crate::string::{AvmString, WStr};
 use crate::utils::HasPrefixField;
 use core::fmt;
 use gc_arena::barrier::unlock;
@@ -84,6 +84,11 @@ impl<'gc> ArrayObject<'gc> {
         ))
     }
 
+    pub fn as_array_index(local_name: &WStr) -> Option<usize> {
+        // TODO match avmplus
+        local_name.parse::<usize>().ok()
+    }
+
     pub fn set_element(self, mc: &Mutation<'gc>, index: usize, value: Value<'gc>) {
         unlock!(Gc::write(mc, self.0), ArrayObjectData, array)
             .borrow_mut()
@@ -115,7 +120,7 @@ impl<'gc> TObject<'gc> for ArrayObject<'gc> {
     ) -> Result<Value<'gc>, Error<'gc>> {
         if name.valid_dynamic_name() {
             if let Some(name) = name.local_name() {
-                if let Ok(index) = name.parse::<usize>() {
+                if let Some(index) = ArrayObject::as_array_index(&name) {
                     if let Some(result) = self.get_index_property(index) {
                         return Ok(result);
                     }
@@ -151,7 +156,7 @@ impl<'gc> TObject<'gc> for ArrayObject<'gc> {
 
         if name.valid_dynamic_name() {
             if let Some(name) = name.local_name() {
-                if let Ok(index) = name.parse::<usize>() {
+                if let Some(index) = ArrayObject::as_array_index(&name) {
                     self.set_element(mc, index, value);
 
                     return Ok(());
@@ -172,7 +177,7 @@ impl<'gc> TObject<'gc> for ArrayObject<'gc> {
 
         if name.valid_dynamic_name() {
             if let Some(name) = name.local_name() {
-                if let Ok(index) = name.parse::<usize>() {
+                if let Some(index) = ArrayObject::as_array_index(&name) {
                     self.set_element(mc, index, value);
 
                     return Ok(());
@@ -192,7 +197,7 @@ impl<'gc> TObject<'gc> for ArrayObject<'gc> {
 
         if name.valid_dynamic_name() {
             if let Some(name) = name.local_name() {
-                if let Ok(index) = name.parse::<usize>() {
+                if let Some(index) = ArrayObject::as_array_index(&name) {
                     unlock!(Gc::write(mc, self.0), ArrayObjectData, array)
                         .borrow_mut()
                         .delete(index);
@@ -208,7 +213,7 @@ impl<'gc> TObject<'gc> for ArrayObject<'gc> {
     fn has_own_property(self, name: &Multiname<'gc>) -> bool {
         if name.valid_dynamic_name() {
             if let Some(name) = name.local_name() {
-                if let Ok(index) = name.parse::<usize>() {
+                if let Some(index) = ArrayObject::as_array_index(&name) {
                     return self.0.array.borrow().get(index).is_some();
                 }
             }
