@@ -25,7 +25,7 @@
         "cross-env": "^7.0.3",
         "eslint": "^9.31.0",
         "eslint-config-prettier": "^10.1.5",
-        "eslint-plugin-jsdoc": "^51.3.4",
+        "eslint-plugin-jsdoc": "^51.4.1",
         "eslint-plugin-prettier": "^5.5.1",
         "eslint-plugin-react-hooks": "^5.2.0",
         "eslint-plugin-react-refresh": "^0.4.20",
@@ -41,7 +41,7 @@
         "typescript": "^5.8.3",
         "typescript-eslint": "^8.37.0",
         "webdriverio": "^9.2.2",
-        "webpack": "^5.100.1",
+        "webpack": "^5.100.2",
         "webpack-cli": "^6.0.1",
         "workspace-version": "^0.1.4"
     },
