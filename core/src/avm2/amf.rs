@@ -313,16 +313,16 @@ pub fn deserialize_value_impl<'gc>(
 
             // Now let's add each element as a property
             for element in elements {
-                let name = element.name();
+                let name = ruffle_wstr::from_utf8(element.name());
                 let value = deserialize_value_impl(activation, element.value(), object_map)?;
 
-                // If the name of the element was numerical, we set an element on
-                // the array instead of setting a dynamic property.
-                if let Ok(index) = name.parse::<usize>() {
+                // If the name of the element was a valid array index, we set an
+                // element on the array instead of setting a dynamic property.
+                if let Some(index) = ArrayObject::as_array_index(&name) {
                     array.set_element(activation.gc(), index, value);
                 } else {
                     array.set_dynamic_property(
-                        AvmString::new_utf8(activation.gc(), name),
+                        AvmString::new(activation.gc(), name),
                         value,
                         activation.gc(),
                     );
