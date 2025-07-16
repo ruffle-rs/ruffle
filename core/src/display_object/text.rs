@@ -138,10 +138,6 @@ impl<'gc> TDisplayObject<'gc> for Text<'gc> {
         self.invalidate_cached_bitmap(context.gc());
     }
 
-    fn run_frame_avm1(self, _context: &mut UpdateContext) {
-        // Noop
-    }
-
     fn render_self(self, context: &mut RenderContext) {
         let shared = self.0.shared.get();
         context.transform_stack.push(&Transform {

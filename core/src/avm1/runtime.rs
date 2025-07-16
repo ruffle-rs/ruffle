@@ -485,7 +485,9 @@ impl<'gc> Avm1<'gc> {
                 }
                 clip.set_next_avm1_clip(context.gc(), None);
             } else {
-                clip.run_frame_avm1(context);
+                if let Some(clip) = clip.as_movie_clip() {
+                    clip.run_frame_avm1(context);
+                }
                 prev = Some(clip);
             }
         }

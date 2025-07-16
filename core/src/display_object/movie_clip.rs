@@ -393,6 +393,26 @@ impl<'gc> MovieClip<'gc> {
         false
     }
 
+    /// Execute all other timeline actions on this object.
+    pub fn run_frame_avm1(self, context: &mut UpdateContext<'gc>) {
+        if !self.movie().is_action_script_3() {
+            // Run my load/enterFrame clip event.
+            let is_load_frame = !self.0.contains_flag(MovieClipFlags::INITIALIZED);
+            if is_load_frame {
+                self.event_dispatch(context, ClipEvent::Load);
+                self.0.set_initialized(true);
+            } else {
+                self.event_dispatch(context, ClipEvent::EnterFrame);
+            }
+
+            // Run my SWF tags.
+            // In AVM2, SWF tags are processed at enterFrame time.
+            if self.playing() {
+                self.run_frame_internal(context, true, true, false);
+            }
+        }
+    }
+
     /// Preload a chunk of the movie.
     ///
     /// A "chunk" is an implementor-chosen number of tags that are parsed
@@ -1308,8 +1328,10 @@ impl<'gc> MovieClip<'gc> {
                     // In AVM1, children are added in `run_frame` so this is necessary.
                     // In AVM2 we add them in `construct_frame` so calling this causes
                     // duplicate frames
-                    if !movie.is_action_script_3() {
-                        child.run_frame_avm1(context);
+                    if let Some(child) = child.as_movie_clip() {
+                        if !movie.is_action_script_3() {
+                            child.run_frame_avm1(context);
+                        }
                     }
                 }
 
@@ -2321,25 +2343,6 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
         // to differentiate the pre-existing scripts from those introduced during frame-script phase.
         let has_pending_script = self.has_frame_script(self.0.current_frame.get());
         self.0.has_pending_script.set(has_pending_script);
-    }
-
-    fn run_frame_avm1(self, context: &mut UpdateContext<'gc>) {
-        if !self.movie().is_action_script_3() {
-            // Run my load/enterFrame clip event.
-            let is_load_frame = !self.0.contains_flag(MovieClipFlags::INITIALIZED);
-            if is_load_frame {
-                self.event_dispatch(context, ClipEvent::Load);
-                self.0.set_initialized(true);
-            } else {
-                self.event_dispatch(context, ClipEvent::EnterFrame);
-            }
-
-            // Run my SWF tags.
-            // In AVM2, SWF tags are processed at enterFrame time.
-            if self.playing() {
-                self.run_frame_internal(context, true, true, false);
-            }
-        }
     }
 
     fn run_frame_scripts(self, context: &mut UpdateContext<'gc>) {

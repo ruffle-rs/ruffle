@@ -189,10 +189,6 @@ impl<'gc> TDisplayObject<'gc> for Graphic<'gc> {
         self.invalidate_cached_bitmap(context.gc());
     }
 
-    fn run_frame_avm1(self, _context: &mut UpdateContext) {
-        // Noop
-    }
-
     fn render_self(self, context: &mut RenderContext) {
         if !context.is_offscreen && !self.world_bounds().intersects(&context.stage.view_bounds()) {
             // Off-screen; culled
@@ -240,16 +236,12 @@ impl<'gc> TDisplayObject<'gc> for Graphic<'gc> {
         context: &mut UpdateContext<'gc>,
         _init_object: Option<Avm1Object<'gc>>,
         _instantiated_by: Instantiator,
-        run_frame: bool,
+        _run_frame: bool,
     ) {
         if self.movie().is_action_script_3() {
             self.set_default_instance_name(context);
         } else {
             context.avm1.add_to_exec_list(context.gc(), self.into());
-
-            if run_frame {
-                self.run_frame_avm1(context);
-            }
         }
     }
 

@@ -2101,9 +2101,6 @@ pub trait TDisplayObject<'gc>:
         }
     }
 
-    /// Execute all other timeline actions on this object.
-    fn run_frame_avm1(self, _context: &mut UpdateContext<'gc>) {}
-
     /// Emit a `frameConstructed` event on this DisplayObject and any children it
     /// may have.
     fn frame_constructed(self, context: &mut UpdateContext<'gc>) {
@@ -2357,14 +2354,12 @@ pub trait TDisplayObject<'gc>:
 
     fn post_instantiation(
         self,
-        context: &mut UpdateContext<'gc>,
+        _context: &mut UpdateContext<'gc>,
         _init_object: Option<Avm1Object<'gc>>,
         _instantiated_by: Instantiator,
-        run_frame: bool,
+        _run_frame: bool,
     ) {
-        if run_frame && !self.movie().is_action_script_3() {
-            self.run_frame_avm1(context);
-        }
+        // Noop.
     }
 
     /// Return the version of the SWF that created this movie clip.
