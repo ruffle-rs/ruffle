@@ -240,8 +240,6 @@ impl<'gc> TDisplayObject<'gc> for Graphic<'gc> {
     ) {
         if self.movie().is_action_script_3() {
             self.set_default_instance_name(context);
-        } else {
-            context.avm1.add_to_exec_list(context.gc(), self.into());
         }
     }
 

@@ -209,11 +209,6 @@ pub struct DisplayObjectBase<'gc> {
     scale_y: Cell<Percent>,
     skew: Cell<f64>,
 
-    /// The next display object in order of execution.
-    ///
-    /// `None` in an AVM2 movie.
-    next_avm1_clip: Option<DisplayObject<'gc>>,
-
     /// The sound transform of sounds playing via this display object.
     #[collect(require_static)]
     sound_transform: SoundTransform,
@@ -274,7 +269,6 @@ impl Default for DisplayObjectBase<'_> {
             scale_x: Cell::new(Percent::from_unit(1.0)),
             scale_y: Cell::new(Percent::from_unit(1.0)),
             skew: Cell::new(0.0),
-            next_avm1_clip: None,
             masker: None,
             maskee: None,
             meta_data: None,
@@ -585,14 +579,6 @@ impl<'gc> DisplayObjectBase<'gc> {
     /// properly handles 'orphan' movie clips
     fn set_parent_ignoring_orphan_list(&mut self, parent: Option<DisplayObject<'gc>>) {
         self.parent = parent;
-    }
-
-    fn next_avm1_clip(&self) -> Option<DisplayObject<'gc>> {
-        self.next_avm1_clip
-    }
-
-    fn set_next_avm1_clip(&mut self, node: Option<DisplayObject<'gc>>) {
-        self.next_avm1_clip = node;
     }
 
     fn avm1_removed(&self) -> bool {
@@ -1698,14 +1684,6 @@ pub trait TDisplayObject<'gc>:
     /// seen in AVM2. Notably, it disallows access to non-container parents.
     fn avm2_parent(self) -> Option<DisplayObject<'gc>> {
         self.parent().filter(|p| p.as_container().is_some())
-    }
-
-    fn next_avm1_clip(self) -> Option<DisplayObject<'gc>> {
-        self.base().next_avm1_clip()
-    }
-
-    fn set_next_avm1_clip(self, gc_context: &Mutation<'gc>, node: Option<DisplayObject<'gc>>) {
-        self.base_mut(gc_context).set_next_avm1_clip(node);
     }
 
     fn masker(self) -> Option<DisplayObject<'gc>> {

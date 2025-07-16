@@ -373,10 +373,6 @@ impl<'gc> TDisplayObject<'gc> for Video<'gc> {
         _instantiated_by: Instantiator,
         _run_frame: bool,
     ) {
-        if !self.movie().is_action_script_3() {
-            context.avm1.add_to_exec_list(context.gc(), self.into());
-        }
-
         let movie = self.0.movie.clone();
 
         let (stream, keyframes) = match self.0.source.get() {
