@@ -36,6 +36,82 @@ package {
         [API("680")]
         public static const LOG10E:Number = 0.4342944819032518;
 
+        // This is a hacky way to specify `-Infinity` as a default value.
+        private static const NegInfinity: Number = -1 / 0;
+        private static const PosInfinity: Number = 1 / 0;
+
+        [API("680")]
+        [Ruffle(FastCall)]
+        public static native function abs(x:Number):Number;
+
+        [API("680")]
+        [Ruffle(FastCall)]
+        public static native function acos(x:Number):Number;
+
+        [API("680")]
+        [Ruffle(FastCall)]
+        public static native function asin(x:Number):Number;
+
+        [API("680")]
+        [Ruffle(FastCall)]
+        public static native function atan(x:Number):Number;
+
+        [API("680")]
+        [Ruffle(FastCall)]
+        public static native function atan2(y:Number, x:Number):Number;
+
+        [API("680")]
+        [Ruffle(FastCall)]
+        public static native function ceil(x:Number):Number;
+
+        [API("680")]
+        [Ruffle(FastCall)]
+        public static native function cos(x:Number):Number;
+
+        [API("680")]
+        [Ruffle(FastCall)]
+        public static native function exp(x:Number):Number;
+
+        [API("680")]
+        [Ruffle(FastCall)]
+        public static native function floor(x:Number):Number;
+
+        [API("680")]
+        [Ruffle(FastCall)]
+        public static native function log(x:Number):Number;
+
+        [API("680")]
+        [Ruffle(FastCall)]
+        public static native function max(x:Number = NegInfinity, y:Number = NegInfinity, ...rest):Number;
+
+        [API("680")]
+        [Ruffle(FastCall)]
+        public static native function min(x:Number = PosInfinity, y:Number = PosInfinity, ...rest):Number;
+
+        [API("680")]
+        [Ruffle(FastCall)]
+        public static native function pow(x:Number, y:Number):Number;
+
+        [API("680")]
+        [Ruffle(FastCall)]
+        public static native function random():Number;
+
+        [API("680")]
+        [Ruffle(FastCall)]
+        public static native function round(x:Number):Number;
+
+        [API("680")]
+        [Ruffle(FastCall)]
+        public static native function sin(x:Number):Number;
+
+        [API("680")]
+        [Ruffle(FastCall)]
+        public static native function sqrt(x:Number):Number;
+
+        [API("680")]
+        [Ruffle(FastCall)]
+        public static native function tan(x:Number):Number;
+
         {
             prototype.toExponential = function(digits:* = 0):String {
                 var self:Number = this;
