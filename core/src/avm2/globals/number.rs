@@ -7,6 +7,8 @@ use crate::avm2::value::Value;
 use crate::avm2::{AvmString, Error};
 use ruffle_macros::istr;
 
+use crate::avm2::globals::math;
+
 pub fn number_constructor<'gc>(
     activation: &mut Activation<'_, 'gc>,
     args: &[Value<'gc>],
@@ -32,6 +34,25 @@ pub fn call_handler<'gc>(
         .coerce_to_number(activation)?
         .into())
 }
+
+macro_rules! define_math_functions {
+    ($($name:ident),* $(,)?) => {
+        $(
+            pub fn $name<'gc>(
+                activation: &mut Activation<'_, 'gc>,
+                this: Value<'gc>,
+                args: &[Value<'gc>],
+            ) -> Result<Value<'gc>, Error<'gc>> {
+                math::$name(activation, this, args)
+            }
+        )*
+    };
+}
+
+define_math_functions!(
+    abs, acos, asin, atan, atan2, ceil, cos, exp, floor, log, max, min, pow, random, round, sin,
+    sqrt, tan
+);
 
 /// Implements `Number.toExponential`
 pub fn to_exponential<'gc>(
