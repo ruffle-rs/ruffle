@@ -265,9 +265,11 @@ impl<'gc> ScriptObjectWrapper<'gc> {
     }
 
     pub fn delete_property_local(&self, mc: &Mutation<'gc>, multiname: &Multiname<'gc>) -> bool {
+        // TODO: FP behaves differently here in interpreter mode vs JIT mode
         if !multiname.valid_dynamic_name() {
             return false;
         }
+
         if let Some(name) = multiname.local_name() {
             let key = maybe_int_property(name);
             self.values_mut(mc).remove(&key);

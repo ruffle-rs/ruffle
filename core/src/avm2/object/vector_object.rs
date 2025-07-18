@@ -292,20 +292,12 @@ impl<'gc> TObject<'gc> for VectorObject<'gc> {
 
     fn delete_property_local(
         self,
-        activation: &mut Activation<'_, 'gc>,
-        name: &Multiname<'gc>,
+        _activation: &mut Activation<'_, 'gc>,
+        _name: &Multiname<'gc>,
     ) -> Result<bool, Error<'gc>> {
-        let mc = activation.gc();
-
-        if name.valid_dynamic_name() {
-            if let Some(local_name) = name.local_name() {
-                if local_name.parse::<usize>().is_ok() {
-                    return Ok(true);
-                }
-            }
-        }
-
-        Ok(self.base().delete_property_local(mc, name))
+        // FP doesn't allow deleting elements of vectors; `deleteproperty`
+        // operations will always return true
+        Ok(true)
     }
 
     fn has_own_property(self, name: &Multiname<'gc>) -> bool {
