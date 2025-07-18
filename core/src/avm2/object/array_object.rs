@@ -85,6 +85,9 @@ impl<'gc> ArrayObject<'gc> {
     }
 
     pub fn as_array_index(local_name: &WStr) -> Option<usize> {
+        // TODO: this should use a custom implementation instead of `parse()`,
+        // see `script_object::maybe_int_property`
+
         local_name
             .parse::<u32>()
             .ok()

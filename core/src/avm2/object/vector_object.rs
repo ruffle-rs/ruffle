@@ -7,6 +7,7 @@ use crate::avm2::object::{ClassObject, Object, ObjectPtr, TObject};
 use crate::avm2::value::Value;
 use crate::avm2::vector::VectorStorage;
 use crate::avm2::Multiname;
+use crate::string::WStr;
 use crate::utils::HasPrefixField;
 use core::fmt;
 use gc_arena::barrier::unlock;
@@ -84,6 +85,11 @@ impl<'gc> VectorObject<'gc> {
         .into();
 
         Ok(object)
+    }
+
+    fn as_vector_index(local_name: &WStr) -> Option<f64> {
+        // TODO: match avmplus's parsing more closely
+        local_name.parse::<f64>().ok()
     }
 
     // Given that a read-indexing operation wasn't successful, generate an error.
@@ -178,7 +184,7 @@ impl<'gc> TObject<'gc> for VectorObject<'gc> {
     ) -> Result<Value<'gc>, Error<'gc>> {
         if name.valid_dynamic_name() {
             if let Some(local_name) = name.local_name() {
-                if let Ok(index) = local_name.parse::<f64>() {
+                if let Some(index) = VectorObject::as_vector_index(&local_name) {
                     let u32_index = index as u32;
 
                     if u32_index as f64 == index {
@@ -234,7 +240,7 @@ impl<'gc> TObject<'gc> for VectorObject<'gc> {
     ) -> Result<(), Error<'gc>> {
         if name.valid_dynamic_name() {
             if let Some(local_name) = name.local_name() {
-                if let Ok(index) = local_name.parse::<f64>() {
+                if let Some(index) = VectorObject::as_vector_index(&local_name) {
                     let u32_index = index as u32;
 
                     if u32_index as f64 == index {
@@ -263,7 +269,7 @@ impl<'gc> TObject<'gc> for VectorObject<'gc> {
     ) -> Result<(), Error<'gc>> {
         if name.valid_dynamic_name() {
             if let Some(local_name) = name.local_name() {
-                if let Ok(index) = local_name.parse::<f64>() {
+                if let Some(index) = VectorObject::as_vector_index(&local_name) {
                     let u32_index = index as u32;
 
                     if u32_index as f64 == index {
@@ -305,7 +311,7 @@ impl<'gc> TObject<'gc> for VectorObject<'gc> {
     fn has_own_property(self, name: &Multiname<'gc>) -> bool {
         if name.valid_dynamic_name() {
             if let Some(name) = name.local_name() {
-                if let Ok(index) = name.parse::<f64>() {
+                if let Some(index) = VectorObject::as_vector_index(&name) {
                     let u32_index = index as u32;
 
                     if u32_index as f64 == index {
