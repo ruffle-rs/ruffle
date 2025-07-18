@@ -200,23 +200,6 @@ impl<'gc> TObject<'gc> for ByteArrayObject<'gc> {
         self.base().init_property_local(name, value, activation)
     }
 
-    fn delete_property_local(
-        self,
-        activation: &mut Activation<'_, 'gc>,
-        name: &Multiname<'gc>,
-    ) -> Result<bool, Error<'gc>> {
-        if name.valid_dynamic_name() {
-            if let Some(name) = name.local_name() {
-                if let Some(index) = ArrayObject::as_array_index(&name) {
-                    self.0.storage.borrow_mut().delete(index);
-                    return Ok(true);
-                }
-            }
-        }
-
-        Ok(self.base().delete_property_local(activation.gc(), name))
-    }
-
     fn has_own_property(self, name: &Multiname<'gc>) -> bool {
         if name.valid_dynamic_name() {
             if let Some(name) = name.local_name() {
