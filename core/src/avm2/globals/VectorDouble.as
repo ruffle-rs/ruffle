@@ -186,6 +186,8 @@ package __AS3__.vec {
             return _some(callback, receiver);
         }
 
+        private native function _some(callback:Function, receiver:Object):Boolean;
+
         AS3 native function sort(func:*):Vector$double;
 
         AS3 native function splice(start:Number, deleteLen:Number, ... rest):Vector$double;
@@ -199,7 +201,5 @@ package __AS3__.vec {
         }
 
         AS3 native function unshift(... rest):uint;
-
-        private native function _some(callback:Function, receiver:Object):Boolean;
     }
 }
