@@ -1,7 +1,7 @@
 use crate::avm2::activation::Activation;
 use crate::avm2::bytearray::ByteArrayStorage;
 use crate::avm2::object::script_object::ScriptObjectData;
-use crate::avm2::object::{ClassObject, Object, ObjectPtr, TObject};
+use crate::avm2::object::{ArrayObject, ClassObject, Object, ObjectPtr, TObject};
 use crate::avm2::value::Value;
 use crate::avm2::Error;
 use crate::avm2::Multiname;
@@ -136,7 +136,7 @@ impl<'gc> TObject<'gc> for ByteArrayObject<'gc> {
     ) -> Result<Value<'gc>, Error<'gc>> {
         if name.valid_dynamic_name() {
             if let Some(name) = name.local_name() {
-                if let Ok(index) = name.parse::<usize>() {
+                if let Some(index) = ArrayObject::as_array_index(&name) {
                     return Ok(self.get_index_property(index).unwrap());
                 }
             }
@@ -174,7 +174,7 @@ impl<'gc> TObject<'gc> for ByteArrayObject<'gc> {
     ) -> Result<(), Error<'gc>> {
         if name.valid_dynamic_name() {
             if let Some(name) = name.local_name() {
-                if let Ok(index) = name.parse::<usize>() {
+                if let Some(index) = ArrayObject::as_array_index(&name) {
                     return self.set_element(activation, index, value);
                 }
             }
@@ -191,7 +191,7 @@ impl<'gc> TObject<'gc> for ByteArrayObject<'gc> {
     ) -> Result<(), Error<'gc>> {
         if name.valid_dynamic_name() {
             if let Some(name) = name.local_name() {
-                if let Ok(index) = name.parse::<usize>() {
+                if let Some(index) = ArrayObject::as_array_index(&name) {
                     return self.set_element(activation, index, value);
                 }
             }
@@ -207,7 +207,7 @@ impl<'gc> TObject<'gc> for ByteArrayObject<'gc> {
     ) -> Result<bool, Error<'gc>> {
         if name.valid_dynamic_name() {
             if let Some(name) = name.local_name() {
-                if let Ok(index) = name.parse::<usize>() {
+                if let Some(index) = ArrayObject::as_array_index(&name) {
                     self.0.storage.borrow_mut().delete(index);
                     return Ok(true);
                 }
@@ -220,7 +220,7 @@ impl<'gc> TObject<'gc> for ByteArrayObject<'gc> {
     fn has_own_property(self, name: &Multiname<'gc>) -> bool {
         if name.valid_dynamic_name() {
             if let Some(name) = name.local_name() {
-                if let Ok(index) = name.parse::<usize>() {
+                if let Some(index) = ArrayObject::as_array_index(&name) {
                     return self.0.storage.borrow().get(index).is_some();
                 }
             }
