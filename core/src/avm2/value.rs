@@ -818,22 +818,6 @@ impl<'gc> Value<'gc> {
         })
     }
 
-    pub fn coerce_to_function(
-        &self,
-        activation: &mut Activation<'_, 'gc>,
-    ) -> Result<Option<Value<'gc>>, Error<'gc>> {
-        match self {
-            Value::Null | Value::Undefined => Ok(None),
-            _ => {
-                let function_class = activation.avm2().class_defs().function;
-
-                let value = self.coerce_to_type(activation, function_class)?;
-
-                Ok(Some(value))
-            }
-        }
-    }
-
     /// Coerce the value to a literal value / debug string.
     ///
     /// This matches the string formatting that appears to be in use in "debug"
