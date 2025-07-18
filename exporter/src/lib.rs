@@ -427,7 +427,10 @@ pub fn run_main(opt: Opt) -> Result<()> {
     if opt.swf.is_file() {
         capture_single_swf(descriptors, &opt)?;
     } else if !opt.swf.is_dir() {
-        return Err(anyhow!("Given path is not a file or directory."));
+        return Err(anyhow!(
+            "Not a file or directory: {}",
+            opt.swf.to_string_lossy()
+        ));
     } else if opt.output_path.is_some() {
         capture_multiple_swfs(descriptors, &opt)?;
     } else {
