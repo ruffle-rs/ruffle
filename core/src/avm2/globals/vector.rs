@@ -286,14 +286,19 @@ pub fn filter<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
-    let callback = args.get_value(0);
-    let receiver = args.get_value(1);
-
     let value_type = this
         .instance_class()
         .param()
         .expect("Receiver is parametrized vector"); // technically unreachable
+
     let mut new_storage = VectorStorage::new(0, false, value_type, activation);
+
+    let callback = match args.get_value(0) {
+        Value::Null => return Ok(VectorObject::from_vector(new_storage, activation)?.into()),
+        value => value,
+    };
+    let receiver = args.get_value(1);
+
     let mut iter = ArrayIter::new(activation, this)?;
 
     while let Some((i, item)) = iter.next(activation)? {

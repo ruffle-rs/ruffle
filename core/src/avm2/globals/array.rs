@@ -310,7 +310,10 @@ pub fn for_each<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
-    let callback = args.get_value(0);
+    let callback = match args.get_value(0) {
+        Value::Null => return Ok(Value::Undefined),
+        value => value,
+    };
     let receiver = args.get_value(1);
     let mut iter = ArrayIter::new(activation, this)?;
 
@@ -351,7 +354,10 @@ pub fn filter<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
-    let callback = args.get_value(0);
+    let callback = match args.get_value(0) {
+        Value::Null => return Ok(ArrayObject::empty(activation).into()),
+        value => value,
+    };
     let receiver = args.get_value(1);
     let mut new_array = ArrayStorage::new(0);
     let mut iter = ArrayIter::new(activation, this)?;
