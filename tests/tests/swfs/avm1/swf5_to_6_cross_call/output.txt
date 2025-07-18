@@ -19,7 +19,9 @@ clip.f():
 _root f():
  this: object
  _target: /
+Warning: Reference to undeclared variable, 'getDepth'
  getDepth: 
+Warning: Reference to undeclared variable, 'foo'
  foo: 
 
 root obj toString:
