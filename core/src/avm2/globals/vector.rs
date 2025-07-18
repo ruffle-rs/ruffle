@@ -263,20 +263,20 @@ pub fn join<'gc>(
 }
 
 macro_rules! delegate_method_to_array {
-    ($name:ident, $method:path) => {
-        pub fn $name<'gc>(
+    ($method:ident) => {
+        pub fn $method<'gc>(
             activation: &mut Activation<'_, 'gc>,
             this: Value<'gc>,
             args: &[Value<'gc>],
         ) -> Result<Value<'gc>, Error<'gc>> {
-            $method(activation, this, args)
+            super::array::$method(activation, this, args)
         }
     };
 }
 
-delegate_method_to_array!(every, super::array::every);
-delegate_method_to_array!(_some, super::array::_some);
-delegate_method_to_array!(for_each, super::array::for_each);
+delegate_method_to_array!(every);
+delegate_method_to_array!(_some);
+delegate_method_to_array!(for_each);
 
 /// Implements `Vector.filter`
 pub fn filter<'gc>(
