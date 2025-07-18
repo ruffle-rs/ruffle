@@ -17,8 +17,10 @@
     <name xml:lang="pl">Ruffle</name>
     <name xml:lang="pt-BR">Ruffle</name>
     <name xml:lang="pt-PT">Ruffle</name>
+    <name xml:lang="ro">Ruffle</name>
     <name xml:lang="ru">Ruffle</name>
     <name xml:lang="sk">Ruffle</name>
+    <name xml:lang="sv">Ruffle</name>
     <name xml:lang="tr">Ruffle</name>
     <name xml:lang="uk">Ruffle</name>
     <name xml:lang="vi">Ruffle</name>
@@ -39,6 +41,7 @@
     <summary xml:lang="pt-PT">Jogar jogos Flash e reproduzir filmes</summary>
     <summary xml:lang="ru">Проигрывайте Flash-игры и ролики</summary>
     <summary xml:lang="sk">Hrajte Flash hry a prehrajte filmy</summary>
+    <summary xml:lang="sv">Spela Flashspel &amp; filmer</summary>
     <summary xml:lang="tr">Flash oyunları &amp; filmleri oynat</summary>
     <summary xml:lang="uk">Відтворюйте Flash ігри та фільми</summary>
     <summary xml:lang="zh-CN">播放 Flash 游戏和动画</summary>
@@ -60,6 +63,7 @@
         <name xml:lang="pt-PT">A Equipa do Ruffle</name>
         <name xml:lang="ru">Команда Ruffle</name>
         <name xml:lang="sk">Ruffle Tím</name>
+        <name xml:lang="sv">Ruffle Teamet</name>
         <name xml:lang="tr">Ruffle ekibi</name>
         <name xml:lang="uk">Команда Ruffle</name>
         <name xml:lang="vi">Nhóm phát triển Ruffle</name>
@@ -176,6 +180,7 @@
         <keyword xml:lang="pt-PT">flash</keyword>
         <keyword xml:lang="ru">flash</keyword>
         <keyword xml:lang="sk">flash</keyword>
+        <keyword xml:lang="sv">flash</keyword>
         <keyword xml:lang="tr">flash</keyword>
         <keyword xml:lang="uk">flash</keyword>
         <keyword xml:lang="vi">flash</keyword>
@@ -198,6 +203,7 @@
         <keyword xml:lang="pt-PT">swf</keyword>
         <keyword xml:lang="ru">swf</keyword>
         <keyword xml:lang="sk">swf</keyword>
+        <keyword xml:lang="sv">swf</keyword>
         <keyword xml:lang="tr">swf</keyword>
         <keyword xml:lang="uk">swf</keyword>
         <keyword xml:lang="vi">swf</keyword>
@@ -221,6 +227,7 @@
         <keyword xml:lang="pt-PT">leitor</keyword>
         <keyword xml:lang="ru">прои́грыватель</keyword>
         <keyword xml:lang="sk">prehrávač</keyword>
+        <keyword xml:lang="sv">player</keyword>
         <keyword xml:lang="tr">oynatıcı</keyword>
         <keyword xml:lang="uk">програвач</keyword>
         <keyword xml:lang="vi">trình phát</keyword>
