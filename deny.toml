@@ -86,6 +86,7 @@ github = [
     "ruffle-rs",
     "kyren", # for `gc-arena`
     "emilk", # for `egui`
+    "mozilla", # for `mp4parse`
 ]
 
 [advisories]
