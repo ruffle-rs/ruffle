@@ -85,8 +85,11 @@ impl<'gc> ArrayObject<'gc> {
     }
 
     pub fn as_array_index(local_name: &WStr) -> Option<usize> {
-        // TODO match avmplus
-        local_name.parse::<usize>().ok()
+        local_name
+            .parse::<u32>()
+            .ok()
+            .filter(|i| *i != u32::MAX)
+            .map(|i| i as usize)
     }
 
     pub fn set_element(self, mc: &Mutation<'gc>, index: usize, value: Value<'gc>) {
@@ -271,8 +274,8 @@ impl<'gc> TObject<'gc> for ArrayObject<'gc> {
     }
 
     fn property_is_enumerable(&self, name: AvmString<'gc>) -> bool {
-        name.parse::<u32>()
-            .map(|index| index < self.0.array.borrow().length() as u32)
+        ArrayObject::as_array_index(&name)
+            .map(|index| index < self.0.array.borrow().length())
             .unwrap_or(false)
             || self.base().property_is_enumerable(name)
     }
