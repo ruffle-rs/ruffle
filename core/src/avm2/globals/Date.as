@@ -5,12 +5,16 @@ package {
         public static const length:int = 7;
 
         prototype.valueOf = function():* {
-            var d:Date = this;
-            return d.AS3::valueOf();
+            if (this is Date) {
+                return this.AS3::valueOf();
+            }
+            return NaN;
         }
         prototype.toString = function():String {
-            var d:Date = this;
-            return d.AS3::toString();
+            if (this is Date) {
+                return this.AS3::toString();
+            }
+            return "Invalid Date";
         }
         prototype.toDateString = function():String {
             var d:Date = this;
@@ -109,12 +113,16 @@ package {
             return d.AS3::getTimezoneOffset();
         }
         prototype.getTime = function():Number {
-            var d:Date = this;
-            return d.AS3::getTime();
+            if (this is Date) {
+                return this.AS3::getTime();
+            }
+            return NaN;
         }
         prototype.setTime = function(t:* = undefined):Number {
-            var d:Date = this;
-            return d.AS3::setTime(t);
+            if (this is Date) {
+                return this.AS3::setTime(t);
+            }
+            return Number(t);
         }
         prototype.setFullYear = function(year:* = undefined, month:* = undefined, day:* = undefined):Number {
             var d:Date = this;
