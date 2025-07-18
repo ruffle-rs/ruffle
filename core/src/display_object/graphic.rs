@@ -15,7 +15,7 @@ use gc_arena::barrier::unlock;
 use gc_arena::{Collect, Gc, Lock, Mutation, RefLock};
 use ruffle_render::backend::ShapeHandle;
 use ruffle_render::commands::CommandHandler;
-use std::cell::{Ref, RefCell, RefMut};
+use std::cell::{OnceCell, Ref, RefCell, RefMut};
 use std::sync::Arc;
 
 #[derive(Clone, Collect, Copy)]
@@ -38,7 +38,8 @@ pub struct GraphicData<'gc> {
     class: Lock<Option<Avm2ClassObject<'gc>>>,
     avm2_object: Lock<Option<Avm2Object<'gc>>>,
     /// This is lazily allocated on demand, to make `GraphicData` smaller in the common case.
-    drawing: RefCell<Option<Box<Drawing>>>,
+    #[collect(require_static)]
+    drawing: OnceCell<Box<RefCell<Drawing>>>,
 }
 
 impl<'gc> Graphic<'gc> {
@@ -68,7 +69,7 @@ impl<'gc> Graphic<'gc> {
                 shared: Lock::new(Gc::new(context.gc(), shared)),
                 class: Lock::new(None),
                 avm2_object: Lock::new(None),
-                drawing: RefCell::new(None),
+                drawing: OnceCell::new(),
             },
         ))
     }
@@ -101,15 +102,13 @@ impl<'gc> Graphic<'gc> {
                 shared: Lock::new(Gc::new(context.gc(), shared)),
                 class: Lock::new(None),
                 avm2_object: Lock::new(None),
-                drawing: RefCell::new(None),
+                drawing: OnceCell::new(),
             },
         ))
     }
 
     pub fn drawing_mut(&self) -> RefMut<'_, Drawing> {
-        RefMut::map(self.0.drawing.borrow_mut(), |drawing| {
-            &mut **drawing.get_or_insert_with(Default::default)
-        })
+        self.0.drawing.get_or_init(Default::default).borrow_mut()
     }
 
     pub fn set_avm2_class(self, mc: &Mutation<'gc>, class: Avm2ClassObject<'gc>) {
@@ -143,8 +142,8 @@ impl<'gc> TDisplayObject<'gc> for Graphic<'gc> {
     }
 
     fn self_bounds(self) -> Rectangle<Twips> {
-        if let Some(drawing) = self.0.drawing.borrow().as_ref() {
-            drawing.self_bounds()
+        if let Some(drawing) = self.0.drawing.get() {
+            drawing.borrow().self_bounds()
         } else {
             self.0.shared.get().bounds
         }
@@ -190,18 +189,14 @@ impl<'gc> TDisplayObject<'gc> for Graphic<'gc> {
         self.invalidate_cached_bitmap(context.gc());
     }
 
-    fn run_frame_avm1(self, _context: &mut UpdateContext) {
-        // Noop
-    }
-
     fn render_self(self, context: &mut RenderContext) {
         if !context.is_offscreen && !self.world_bounds().intersects(&context.stage.view_bounds()) {
             // Off-screen; culled
             return;
         }
 
-        if let Some(drawing) = &self.0.drawing.borrow().as_ref() {
-            drawing.render(context);
+        if let Some(drawing) = self.0.drawing.get() {
+            drawing.borrow().render(context);
         } else if let Some(render_handle) = self.0.shared.get().render_handle.clone() {
             context
                 .commands
@@ -223,8 +218,8 @@ impl<'gc> TDisplayObject<'gc> for Graphic<'gc> {
                 return false;
             };
             let point = local_matrix * point;
-            if let Some(drawing) = &self.0.drawing.borrow().as_ref() {
-                if drawing.hit_test(point, &local_matrix) {
+            if let Some(drawing) = self.0.drawing.get() {
+                if drawing.borrow().hit_test(point, &local_matrix) {
                     return true;
                 }
             } else {
@@ -241,16 +236,10 @@ impl<'gc> TDisplayObject<'gc> for Graphic<'gc> {
         context: &mut UpdateContext<'gc>,
         _init_object: Option<Avm1Object<'gc>>,
         _instantiated_by: Instantiator,
-        run_frame: bool,
+        _run_frame: bool,
     ) {
         if self.movie().is_action_script_3() {
             self.set_default_instance_name(context);
-        } else {
-            context.avm1.add_to_exec_list(context.gc(), self.into());
-
-            if run_frame {
-                self.run_frame_avm1(context);
-            }
         }
     }
 

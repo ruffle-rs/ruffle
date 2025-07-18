@@ -7,9 +7,9 @@ use ruffle_render::backend::null::NullBitmapSource;
 use ruffle_render::backend::{RenderBackend, ShapeHandle};
 use ruffle_render::shape_utils::{DrawCommand, FillRule};
 use ruffle_render::transform::Transform;
-use std::borrow::Cow;
 use std::cell::{OnceCell, RefCell};
 use std::hash::{Hash, Hasher};
+use std::sync::Arc;
 use swf::FillStyle;
 
 pub use swf::TextGridFit;
@@ -179,6 +179,33 @@ impl ttf_parser::OutlineBuilder for GlyphToDrawing<'_> {
     }
 }
 
+pub struct FontFileData(Arc<dyn AsRef<[u8]>>);
+
+impl FontFileData {
+    pub fn new(data: impl AsRef<[u8]> + 'static) -> Self {
+        Self(Arc::new(data))
+    }
+
+    pub fn new_shared(data: Arc<dyn AsRef<[u8]>>) -> Self {
+        Self(data)
+    }
+}
+
+impl std::ops::Deref for FontFileData {
+    type Target = [u8];
+
+    #[inline]
+    fn deref(&self) -> &[u8] {
+        self.0.as_ref().as_ref()
+    }
+}
+
+impl std::fmt::Debug for FontFileData {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_tuple("FontFileData").field(&"<data>").finish()
+    }
+}
+
 /// Represents a raw font file (ie .ttf).
 /// This should be shared and reused where possible, and it's reparsed every time a new glyph is required.
 ///
@@ -188,7 +215,7 @@ impl ttf_parser::OutlineBuilder for GlyphToDrawing<'_> {
 /// Glyph from the same file. For this reason, glyphs are reused where possible.
 #[derive(Debug)]
 pub struct FontFace {
-    bytes: Cow<'static, [u8]>,
+    data: FontFileData,
     glyphs: Vec<OnceCell<Option<Glyph>>>,
     font_index: u32,
 
@@ -200,14 +227,11 @@ pub struct FontFace {
 }
 
 impl FontFace {
-    pub fn new(
-        bytes: Cow<'static, [u8]>,
-        font_index: u32,
-    ) -> Result<Self, ttf_parser::FaceParsingError> {
+    pub fn new(data: FontFileData, font_index: u32) -> Result<Self, ttf_parser::FaceParsingError> {
         // TODO: Support font collections
 
         // We validate that the font is good here, so we can just `.expect()` it later
-        let face = ttf_parser::Face::parse(&bytes, font_index)?;
+        let face = ttf_parser::Face::parse(&data, font_index)?;
 
         let ascender = face.ascender() as i32;
         let descender = -face.descender() as i32;
@@ -228,7 +252,7 @@ impl FontFace {
             .unwrap_or_default();
 
         Ok(Self {
-            bytes,
+            data,
             font_index,
             glyphs,
             ascender,
@@ -240,7 +264,7 @@ impl FontFace {
     }
 
     pub fn get_glyph(&self, character: char) -> Option<&Glyph> {
-        let face = ttf_parser::Face::parse(&self.bytes, self.font_index)
+        let face = ttf_parser::Face::parse(&self.data, self.font_index)
             .expect("Font was already checked to be valid");
         if let Some(glyph_id) = face.glyph_index(character) {
             return self.glyphs[glyph_id.0 as usize]
@@ -284,7 +308,7 @@ impl FontFace {
     }
 
     pub fn get_kerning_offset(&self, left: char, right: char) -> Twips {
-        let face = ttf_parser::Face::parse(&self.bytes, self.font_index)
+        let face = ttf_parser::Face::parse(&self.data, self.font_index)
             .expect("Font was already checked to be valid");
 
         if let (Some(left_glyph), Some(right_glyph)) =
@@ -434,11 +458,11 @@ impl<'gc> Font<'gc> {
     pub fn from_font_file(
         gc_context: &Mutation<'gc>,
         descriptor: FontDescriptor,
-        bytes: Cow<'static, [u8]>,
+        data: FontFileData,
         font_index: u32,
         font_type: FontType,
     ) -> Result<Font<'gc>, ttf_parser::FaceParsingError> {
-        let face = FontFace::new(bytes, font_index)?;
+        let face = FontFace::new(data, font_index)?;
 
         Ok(Font(Gc::new(
             gc_context,
@@ -547,7 +571,9 @@ impl<'gc> Font<'gc> {
             Font::from_font_file(
                 gc_context,
                 descriptor,
-                Cow::Owned(bytes.to_vec()),
+                // TODO remove when https://github.com/rust-lang/rust-clippy/issues/15252 is fixed
+                #[allow(clippy::unnecessary_to_owned)]
+                FontFileData::new(bytes.to_vec()),
                 0,
                 FontType::EmbeddedCFF,
             )
@@ -1205,11 +1231,10 @@ impl Default for TextRenderSettings {
 
 #[cfg(test)]
 mod tests {
-    use crate::font::{EvalParameters, Font, FontDescriptor, FontType};
+    use crate::font::{EvalParameters, Font, FontDescriptor, FontFileData, FontType};
     use crate::string::WStr;
     use flate2::read::DeflateDecoder;
     use gc_arena::{arena::rootless_mutate, Mutation};
-    use std::borrow::Cow;
     use std::io::Read;
     use swf::Twips;
 
@@ -1241,7 +1266,7 @@ mod tests {
 
             let descriptor = FontDescriptor::from_parts("Noto Sans", false, false);
             let device_font =
-                Font::from_font_file(mc, descriptor, Cow::Owned(data), 0, FontType::Device)
+                Font::from_font_file(mc, descriptor, FontFileData::new(data), 0, FontType::Device)
                     .unwrap();
             callback(mc, device_font);
         })

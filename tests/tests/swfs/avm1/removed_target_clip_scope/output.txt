@@ -1,0 +1,35 @@
+base1 frame 1 start
+scope = /base1
+// Removing only target clip:
+scope = /target1
+// removeMovieClip(_root.target1);
+scope = /base1
+// call(2);
+base1 frame 2 start/end
+// Removing only base clip:
+scope = /target_fixed
+// removeMovieClip(this);
+scope = /target_fixed
+// Calling with a removed base clip:
+scope = /
+// call(2);
+root frame 2 start/end
+
+base2 frame 1 start
+scope = /base2
+// Removing base clip with target clip as its child:
+scope = /base2/target2
+// removeMovieClip(this);
+scope = /
+base2 frame 1 end
+
+base3 frame 1 start
+// Removing clip that is both base and target:
+assignment = unchanged
+// removeMovieClip(this);
+// assignment = "changed";
+assignment = changed
+_root.base3.assignment = undefined
+_root.assignment = changed
+_global.assignment = undefined
+base3 frame 1 end

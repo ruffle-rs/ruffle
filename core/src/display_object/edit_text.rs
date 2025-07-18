@@ -2134,7 +2134,7 @@ impl<'gc> EditText<'gc> {
     }
 
     /// Construct the text field's AVM1 representation.
-    fn construct_as_avm1_object(self, context: &mut UpdateContext<'gc>, run_frame: bool) {
+    fn construct_as_avm1_object(self, context: &mut UpdateContext<'gc>) {
         if self.0.object.get().is_none() {
             let object = Avm1Object::new_with_native(
                 &context.strings,
@@ -2155,10 +2155,6 @@ impl<'gc> EditText<'gc> {
 
             self.initialize_as_broadcaster(activation);
         });
-
-        if run_frame {
-            self.run_frame_avm1(context);
-        }
     }
 
     /// Construct the text field's AVM2 representation.
@@ -2536,10 +2532,6 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
         }
     }
 
-    fn run_frame_avm1(self, _context: &mut UpdateContext) {
-        // Noop
-    }
-
     fn as_edit_text(self) -> Option<EditText<'gc>> {
         Some(self)
     }
@@ -2553,13 +2545,12 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
         context: &mut UpdateContext<'gc>,
         _init_object: Option<Avm1Object<'gc>>,
         _instantiated_by: Instantiator,
-        run_frame: bool,
+        _run_frame: bool,
     ) {
         self.set_default_instance_name(context);
 
         if !self.movie().is_action_script_3() {
-            context.avm1.add_to_exec_list(context.gc(), self.into());
-            self.construct_as_avm1_object(context, run_frame);
+            self.construct_as_avm1_object(context);
         }
     }
 

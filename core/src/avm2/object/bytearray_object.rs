@@ -6,6 +6,7 @@ use crate::avm2::value::Value;
 use crate::avm2::Error;
 use crate::avm2::Multiname;
 use crate::character::Character;
+use crate::tag_utils::SwfSlice;
 use crate::utils::HasPrefixField;
 use core::fmt;
 use gc_arena::{Collect, Gc, GcWeak};
@@ -24,7 +25,9 @@ pub fn byte_array_allocator<'gc>(
     {
         if let Some(lib) = activation.context.library.library_for_movie(movie) {
             if let Some(Character::BinaryData(binary_data)) = lib.character_by_id(id) {
-                Some(ByteArrayStorage::from_vec(binary_data.as_ref().to_vec()))
+                Some(ByteArrayStorage::from_vec(
+                    SwfSlice::as_ref(&binary_data).to_vec(),
+                ))
             } else {
                 None
             }

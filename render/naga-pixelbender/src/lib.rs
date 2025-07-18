@@ -49,6 +49,8 @@ pub struct ShaderBuilder<'a> {
     onevec4i: Handle<Expression>,
     // The value 1.0f32
     onef32: Handle<Expression>,
+    // The value 1i32
+    onei32: Handle<Expression>,
 
     // A temporary vec4f local variable.
     // Currently used during texture sampling.
@@ -289,6 +291,10 @@ impl ShaderBuilder<'_> {
             .expressions
             .append(Expression::Literal(Literal::F32(0.0)), Span::UNDEFINED);
 
+        let onei32 = func
+            .expressions
+            .append(Expression::Literal(Literal::I32(1)), Span::UNDEFINED);
+
         let onef32 = func
             .expressions
             .append(Expression::Literal(Literal::F32(1.0)), Span::UNDEFINED);
@@ -345,6 +351,7 @@ impl ShaderBuilder<'_> {
             zerovec4f,
             onevec4i,
             onef32,
+            onei32,
             temp_vec4f_local,
             clamp_nearest: samplers[SAMPLER_CLAMP_NEAREST as usize],
             clamp_linear: samplers[SAMPLER_CLAMP_LINEAR as usize],
@@ -1211,32 +1218,28 @@ impl ShaderBuilder<'_> {
                                 right: src,
                             })
                         }
-                        Opcode::IntToBool => {
-                            // Convert int to bool: Flash Player only returns true for exactly 1
-                            // All other values (including other non-zero values) return false
-                            self.evaluate_expr(Expression::Binary {
-                                op: BinaryOperator::Equal,
-                                left: src,
-                                right: self.onevec4i,
-                            })
-                        }
-                        Opcode::FloatToInt => self.evaluate_expr(Expression::As {
-                            kind: crate::ScalarKind::Sint,
-                            expr: src,
-                            convert: Some(4),
+                        Opcode::FloatToInt => self.evaluate_expr(Expression::Math {
+                            fun: MathFunction::Round,
+                            arg: src,
+                            arg1: None,
+                            arg2: None,
+                            arg3: None,
                         }),
                         Opcode::IntToFloat => self.evaluate_expr(Expression::As {
                             kind: crate::ScalarKind::Float,
                             expr: src,
                             convert: Some(4),
                         }),
-                        Opcode::FloatToBool => self.evaluate_expr(Expression::As {
-                            kind: crate::ScalarKind::Bool,
-                            expr: src,
-                            convert: Some(4),
+                        Opcode::FloatToBool => self.evaluate_expr(Expression::Binary {
+                            op: BinaryOperator::NotEqual,
+                            left: src,
+                            right: self.zerovec4f,
                         }),
                         // [KJ] Seems that casting bool->float is broken in FP and always returns 0
                         Opcode::BoolToFloat => self.zerovec4f,
+                        // [KJ] Seems that IntToBool is a noop, because the value can be
+                        // observed differently through `if` and `select`.
+                        Opcode::IntToBool => src,
                         Opcode::CrossProduct => {
                             let src_val = self.load_src_register_with_padding(src_reg, false)?;
                             let dst_val = self.load_src_register_with_padding(&dst, false)?;
@@ -1407,9 +1410,9 @@ impl ShaderBuilder<'_> {
                     let src1_expr = self.load_src_register(src1)?;
                     let src2_expr = self.load_src_register(src2)?;
 
-                    let expr_zero: Handle<Expression> = match condition.kind {
-                        PixelBenderRegKind::Float => self.zerof32,
-                        PixelBenderRegKind::Int => self.zeroi32,
+                    let expr_one: Handle<Expression> = match condition.kind {
+                        PixelBenderRegKind::Float => self.onef32,
+                        PixelBenderRegKind::Int => self.onei32,
                     };
                     if condition.channels.len() != 1 {
                         panic!("'Select' condition must be a scalar: {condition:?}");
@@ -1424,9 +1427,9 @@ impl ShaderBuilder<'_> {
                     });
 
                     let is_true = self.evaluate_expr(Expression::Binary {
-                        op: BinaryOperator::NotEqual,
+                        op: BinaryOperator::Equal,
                         left: first_component,
-                        right: expr_zero,
+                        right: expr_one,
                     });
 
                     let select_expr = self.evaluate_expr(Expression::Select {

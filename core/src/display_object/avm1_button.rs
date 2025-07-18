@@ -193,7 +193,9 @@ impl<'gc> Avm1Button<'gc> {
         for (child, depth) in children {
             // Initialize new child.
             child.post_instantiation(context, None, Instantiator::Movie, false);
-            child.run_frame_avm1(context);
+            if let Some(clip) = child.as_movie_clip() {
+                clip.run_frame_avm1(context);
+            }
             let removed_child = self.replace_at_depth(context, child, depth.into());
             dispatch_added_event(self.into(), child, false, context);
             if let Some(removed_child) = removed_child {
@@ -274,13 +276,9 @@ impl<'gc> TDisplayObject<'gc> for Avm1Button<'gc> {
         context: &mut UpdateContext<'gc>,
         _init_object: Option<Object<'gc>>,
         _instantiated_by: Instantiator,
-        run_frame: bool,
+        _run_frame: bool,
     ) {
         self.set_default_instance_name(context);
-
-        if !self.movie().is_action_script_3() {
-            context.avm1.add_to_exec_list(context.gc(), self.into());
-        }
 
         if self.0.object.get().is_none() {
             let object = Object::new_with_native(
@@ -290,19 +288,9 @@ impl<'gc> TDisplayObject<'gc> for Avm1Button<'gc> {
             );
             let obj = unlock!(Gc::write(context.gc(), self.0), Avm1ButtonData, object);
             obj.set(Some(object));
-
-            if run_frame {
-                self.run_frame_avm1(context);
-            }
         }
-    }
 
-    fn run_frame_avm1(self, context: &mut UpdateContext<'gc>) {
-        let self_display_object = self.into();
-        let initialized = self.0.initialized.get();
-
-        // TODO: Move this to post_instantiation.
-        if !initialized {
+        if !self.0.initialized.get() {
             let mut new_children = Vec::new();
 
             self.set_state(context, ButtonState::Up);
@@ -317,7 +305,7 @@ impl<'gc> TDisplayObject<'gc> for Avm1Button<'gc> {
                     {
                         Some(child) => {
                             child.set_matrix(context.gc(), record.matrix.into());
-                            child.set_parent(context, Some(self_display_object));
+                            child.set_parent(context, Some(self.into()));
                             child.set_depth(record.depth.into());
                             new_children.push((child, record.depth.into()));
                         }

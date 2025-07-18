@@ -46,7 +46,7 @@ flash-lso = { git = "https://github.com/ruffle-rs/rust-flash-lso", rev = "998f47
 lzma-rs = {version = "0.3.0", optional = true }
 dasp = { version = "0.11.0", features = ["interpolate", "interpolate-linear", "signal"], optional = true }
 symphonia = { version = "0.5.4", default-features = false, optional = true }
-enumset = "1.1.6"
+enumset = "1.1.7"
 bytemuck = { workspace = true }
 clap = { workspace = true, optional=true }
 realfft = "3.5.0"

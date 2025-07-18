@@ -278,9 +278,10 @@ fn capture_single_swf(descriptors: Arc<Descriptors>, opt: &Opt) -> Result<()> {
             image.save(&output)?;
         }
     } else {
+        let digits = frames.len().to_string().len();
         for (frame, image) in frames.iter().enumerate() {
             let mut path: PathBuf = (&output).into();
-            path.push(format!("{frame}.png"));
+            path.push(format!("{frame:0digits$}.png"));
             image.save(&path)?;
         }
     }
@@ -372,9 +373,10 @@ fn capture_multiple_swfs(descriptors: Arc<Descriptors>, opt: &Opt) -> Result<()>
                 relative_path.set_extension("");
                 parent.push(&relative_path);
                 let _ = create_dir_all(&parent);
+                let digits = frames.len().to_string().len();
                 for (frame, image) in frames.iter().enumerate() {
                     let mut destination = parent.clone();
-                    destination.push(format!("{frame}.png"));
+                    destination.push(format!("{frame:0digits$}.png"));
                     image.save(&destination)?;
                 }
             }

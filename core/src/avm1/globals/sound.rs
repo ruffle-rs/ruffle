@@ -197,13 +197,13 @@ fn attach_sound<'gc>(
             .library_for_movie_mut(movie)
             .character_by_export_name(name)
         {
-            sound.set_sound(Some(*sound_handle));
+            sound.set_sound(Some(sound_handle));
             sound.set_is_streaming(false);
             sound.set_duration(
                 activation
                     .context
                     .audio
-                    .get_sound_duration(*sound_handle)
+                    .get_sound_duration(sound_handle)
                     .map(|d| d.round() as u32),
             );
             sound.set_position(0);
@@ -554,7 +554,6 @@ fn stop<'gc>(
                 .character_by_export_name(name)
             {
                 // Stop all sounds with the given name.
-                let sound = *sound;
                 activation.context.stop_sounds_with_handle(sound);
             } else {
                 avm_warn!(activation, "Sound.stop: Sound '{}' not found", name);

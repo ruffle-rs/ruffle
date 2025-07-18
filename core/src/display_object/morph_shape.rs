@@ -105,10 +105,6 @@ impl<'gc> TDisplayObject<'gc> for MorphShape<'gc> {
         self.invalidate_cached_bitmap(context.gc());
     }
 
-    fn run_frame_avm1(self, _context: &mut UpdateContext) {
-        // Noop
-    }
-
     fn object2(self) -> Avm2Value<'gc> {
         self.0
             .object
