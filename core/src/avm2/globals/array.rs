@@ -329,10 +329,7 @@ pub fn map<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
-    let callback = match args.get_value(0) {
-        Value::Null => return Ok(false.into()),
-        value => value,
-    };
+    let callback = args.get_value(0);
     let receiver = args.get_value(1);
     let mut new_array = ArrayStorage::new(0);
     let mut iter = ArrayIter::new(activation, this)?;
