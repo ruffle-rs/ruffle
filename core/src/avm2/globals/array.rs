@@ -403,7 +403,7 @@ pub fn every<'gc>(
     Ok(true.into())
 }
 
-pub fn _some<'gc>(
+pub fn some<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
     args: &[Value<'gc>],
