@@ -173,38 +173,40 @@ fn load_test(params: TestLoaderParams) -> Trial {
 }
 
 fn verify_dirs(actual_dir: &VfsPath, expected_dir: &VfsPath, input_dir: &VfsPath) -> Result<()> {
-    for expected_file in expected_dir
-        .walk_dir()
-        .map_err(|err| anyhow!("Error reading output directory: {err}"))?
-    {
-        let expected_file = expected_file?;
-        let actual_file = rebase_path(&expected_file, expected_dir, actual_dir)?;
+    if matches!(expected_dir.exists(), Ok(true)) {
+        for expected_file in expected_dir
+            .walk_dir()
+            .map_err(|err| anyhow!("Error reading output directory: {err}"))?
+        {
+            let expected_file = expected_file?;
+            let actual_file = rebase_path(&expected_file, expected_dir, actual_dir)?;
 
-        if expected_file.is_dir()? {
-            if !actual_file.is_dir()? {
-                return Err(anyhow!(
-                    "Expected {} to be a directory",
-                    actual_file.as_str()
-                ));
-            }
-        } else if !actual_file.is_file()? {
-            return Err(anyhow!("Expected {} to be a file", actual_file.as_str()));
-        } else {
-            let expected_content = read_bytes(&expected_file)?;
-            let actual_content = read_bytes(&actual_file)?;
-
-            if expected_file.as_str().ends_with(".png") {
-                if !images_equal(&expected_content, &actual_content)? {
+            if expected_file.is_dir()? {
+                if !actual_file.is_dir()? {
                     return Err(anyhow!(
-                        "Image {} is different than expected",
+                        "Expected {} to be a directory",
                         actual_file.as_str()
                     ));
                 }
-            } else if expected_content != actual_content {
-                return Err(anyhow!(
-                    "File {} has different content than expected",
-                    actual_file.as_str()
-                ));
+            } else if !actual_file.is_file()? {
+                return Err(anyhow!("Expected {} to be a file", actual_file.as_str()));
+            } else {
+                let expected_content = read_bytes(&expected_file)?;
+                let actual_content = read_bytes(&actual_file)?;
+
+                if expected_file.as_str().ends_with(".png") {
+                    if !images_equal(&expected_content, &actual_content)? {
+                        return Err(anyhow!(
+                            "Image {} is different than expected",
+                            actual_file.as_str()
+                        ));
+                    }
+                } else if expected_content != actual_content {
+                    return Err(anyhow!(
+                        "File {} has different content than expected",
+                        actual_file.as_str()
+                    ));
+                }
             }
         }
     }
