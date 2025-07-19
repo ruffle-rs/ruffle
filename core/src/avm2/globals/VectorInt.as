@@ -182,7 +182,11 @@ package __AS3__.vec {
 
         AS3 native function slice(start:Number = 0, end:Number = 2147483647):Vector$int;
 
-        AS3 native function some(callback:*, receiver:Object = null):Boolean;
+        AS3 function some(callback:*, receiver:Object = null):Boolean {
+            return _some(callback, receiver);
+        }
+
+        private native function _some(callback:Function, receiver:Object):Boolean;
 
         AS3 native function sort(func:*):Vector$int;
 

@@ -1,4 +1,4 @@
-use crate::avm2::error::{make_error_2008, type_error};
+use crate::avm2::error::make_error_2008;
 use crate::avm2::globals::flash::display::shader_job::get_shader_args;
 use crate::avm2::globals::slots::flash_filters_bevel_filter as bevel_filter_slots;
 use crate::avm2::globals::slots::flash_filters_blur_filter as blur_filter_slots;
@@ -168,13 +168,7 @@ impl FilterAvm2Ext for Filter {
             )?));
         }
 
-        Err(Error::avm_error(type_error(
-            activation,
-            &format!(
-                "Error #1034: Type Coercion failed: cannot convert {object:?} to flash.filters.BitmapFilter."
-            ),
-            1034,
-        )?))
+        unreachable!("{object:?} must be of type BitmapFilter")
     }
 
     fn as_avm2_object<'gc>(
@@ -498,23 +492,17 @@ fn avm2_to_displacement_map_filter<'gc>(
     let scale_y = object
         .get_slot(displacement_map_filter_slots::SCALE_Y)
         .coerce_to_number(activation)?;
-    let map_bitmap = if let Value::Object(bitmap) =
-        object.get_slot(displacement_map_filter_slots::MAP_BITMAP)
-    {
-        if let Some(bitmap) = bitmap.as_bitmap_data() {
-            Some(bitmap.bitmap_handle(activation.gc(), activation.context.renderer))
+    let map_bitmap =
+        if let Value::Object(bitmap) = object.get_slot(displacement_map_filter_slots::MAP_BITMAP) {
+            Some(
+                bitmap
+                    .as_bitmap_data()
+                    .unwrap()
+                    .bitmap_handle(activation.gc(), activation.context.renderer),
+            )
         } else {
-            return Err(Error::avm_error(type_error(
-                activation,
-                &format!(
-                    "Error #1034: Type Coercion failed: cannot convert {bitmap:?} to flash.display.BitmapData."
-                ),
-                1034,
-            )?));
-        }
-    } else {
-        None
-    };
+            None
+        };
     Ok(Filter::DisplacementMapFilter(DisplacementMapFilter {
         color: Color::from_rgb(color, (alpha * 255.0) as u8),
         component_x: component_x as u8,

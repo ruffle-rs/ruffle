@@ -262,55 +262,21 @@ pub fn join<'gc>(
     Ok(Value::Undefined)
 }
 
-/// Implements `Vector.every`
-pub fn every<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    this: Value<'gc>,
-    args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error<'gc>> {
-    let this = this.as_object().unwrap();
-
-    let callback = args.get_value(0);
-    let receiver = args.get_value(1);
-    let mut iter = ArrayIter::new(activation, this)?;
-
-    while let Some((i, item)) = iter.next(activation)? {
-        let result = callback
-            .call(activation, receiver, &[item, i.into(), this.into()])?
-            .coerce_to_boolean();
-
-        if !result {
-            return Ok(false.into());
+macro_rules! delegate_method_to_array {
+    ($method:ident) => {
+        pub fn $method<'gc>(
+            activation: &mut Activation<'_, 'gc>,
+            this: Value<'gc>,
+            args: &[Value<'gc>],
+        ) -> Result<Value<'gc>, Error<'gc>> {
+            super::array::$method(activation, this, args)
         }
-    }
-
-    Ok(true.into())
+    };
 }
 
-/// Implements `Vector.some`
-pub fn some<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    this: Value<'gc>,
-    args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error<'gc>> {
-    let this = this.as_object().unwrap();
-
-    let callback = args.get_value(0);
-    let receiver = args.get_value(1);
-    let mut iter = ArrayIter::new(activation, this)?;
-
-    while let Some((i, item)) = iter.next(activation)? {
-        let result = callback
-            .call(activation, receiver, &[item, i.into(), this.into()])?
-            .coerce_to_boolean();
-
-        if result {
-            return Ok(true.into());
-        }
-    }
-
-    Ok(false.into())
-}
+delegate_method_to_array!(every);
+delegate_method_to_array!(_some);
+delegate_method_to_array!(for_each);
 
 /// Implements `Vector.filter`
 pub fn filter<'gc>(
@@ -320,14 +286,19 @@ pub fn filter<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
-    let callback = args.get_value(0);
-    let receiver = args.get_value(1);
-
     let value_type = this
         .instance_class()
         .param()
         .expect("Receiver is parametrized vector"); // technically unreachable
+
     let mut new_storage = VectorStorage::new(0, false, value_type, activation);
+
+    let callback = match args.get_value(0) {
+        Value::Null => return Ok(VectorObject::from_vector(new_storage, activation)?.into()),
+        value => value,
+    };
+    let receiver = args.get_value(1);
+
     let mut iter = ArrayIter::new(activation, this)?;
 
     while let Some((i, item)) = iter.next(activation)? {
@@ -341,25 +312,6 @@ pub fn filter<'gc>(
     }
 
     Ok(VectorObject::from_vector(new_storage, activation)?.into())
-}
-
-/// Implements `Vector.forEach`
-pub fn for_each<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    this: Value<'gc>,
-    args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error<'gc>> {
-    let this = this.as_object().unwrap();
-
-    let callback = args.get_value(0);
-    let receiver = args.get_value(1);
-    let mut iter = ArrayIter::new(activation, this)?;
-
-    while let Some((i, item)) = iter.next(activation)? {
-        callback.call(activation, receiver, &[item, i.into(), this.into()])?;
-    }
-
-    Ok(Value::Undefined)
 }
 
 /// Implements `Vector.indexOf`

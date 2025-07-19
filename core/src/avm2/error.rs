@@ -170,6 +170,16 @@ pub fn make_error_1003<'gc>(activation: &mut Activation<'_, 'gc>, radix: i32) ->
 
 #[inline(never)]
 #[cold]
+pub fn make_error_1006<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
+    let err = type_error(activation, "Error #1006: value is not a function.", 1006);
+    match err {
+        Ok(err) => Error::avm_error(err),
+        Err(err) => err,
+    }
+}
+
+#[inline(never)]
+#[cold]
 pub fn make_error_1010<'gc>(
     activation: &mut Activation<'_, 'gc>,
     name: Option<&Multiname<'gc>>,

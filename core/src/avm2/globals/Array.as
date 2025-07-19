@@ -193,7 +193,11 @@ package {
 
         AS3 native function slice(start:* = 0, end:* = 4294967295):Array;
 
-        AS3 native function some(callback:Function, receiver:* = null):Boolean;
+        AS3 function some(callback:*, receiver:Object = null):Boolean {
+            return _some(callback, receiver);
+        }
+
+        private native function _some(callback:Function, receiver:Object):Boolean;
 
         AS3 native function sort(... rest):*;
 
