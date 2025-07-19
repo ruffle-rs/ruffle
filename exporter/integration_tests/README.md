@@ -13,6 +13,8 @@ args = []
 swf = "test.swf"
 # If set to true, the test will be ignored.
 ignore = false
+# If set, the test will expect exporter fails with the following error.
+expect_error = "..."
 # The directory with input files, i.e. files already residing
 # in the current working directory of exporter.
 input_dir = "input"
