@@ -4632,6 +4632,7 @@ dependencies = [
  "naga-pixelbender",
  "profiling",
  "ruffle_render",
+ "smallvec",
  "swf",
  "tracing",
  "web-sys",

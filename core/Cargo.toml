@@ -26,7 +26,7 @@ ruffle_macros = { path = "macros" }
 ruffle_wstr = { path = "../wstr" }
 swf = { path = "../swf" }
 bitflags = { workspace = true }
-smallvec = { version = "1.15.1", features = ["union"] }
+smallvec = { workspace = true }
 num-traits = { workspace = true }
 num-derive = { workspace = true }
 quick-xml = "0.37.5"
