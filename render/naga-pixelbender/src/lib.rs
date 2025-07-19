@@ -592,7 +592,7 @@ impl ShaderBuilder<'_> {
                         inner: TypeInner::Array {
                             base: self.vec4f,
                             size: ArraySize::Constant(NonZeroU32::new(num_vec4fs.max(1)).unwrap()),
-                            stride: std::mem::size_of::<[f32; 4]>() as u32
+                            stride: std::mem::size_of::<[f32; 4]>() as u32,
                         },
                     },
                     Span::UNDEFINED,

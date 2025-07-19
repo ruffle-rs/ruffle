@@ -557,7 +557,9 @@ pub(super) fn run_pixelbender_shader_impl(
 
                 let value_vec = match value {
                     PixelBenderType::TFloat(f1) => FloatOrInt::Float(smallvec![*f1, 0.0, 0.0, 0.0]),
-                    PixelBenderType::TFloat2(f1, f2) => FloatOrInt::Float(smallvec![*f1, *f2, 0.0, 0.0]),
+                    PixelBenderType::TFloat2(f1, f2) => {
+                        FloatOrInt::Float(smallvec![*f1, *f2, 0.0, 0.0])
+                    }
                     PixelBenderType::TFloat3(f1, f2, f3) => {
                         FloatOrInt::Float(smallvec![*f1, *f2, *f3, 0.0])
                     }
