@@ -787,7 +787,7 @@ impl DisplayObjectWindow {
                 let texture = egui_texture.get_or_insert_with(|| {
                     let image = egui::ColorImage::from_rgba_premultiplied(
                         [bitmap_data.width() as usize, bitmap_data.height() as usize],
-                        &bitmap_data.pixels_rgba(),
+                        bitmap_data.pixels_rgba(),
                     );
                     ui.ctx().load_texture(
                         format!("bitmap-{:?}", object.as_ptr()),

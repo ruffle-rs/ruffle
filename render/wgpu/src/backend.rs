@@ -609,7 +609,7 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
     }
 
     #[instrument(level = "debug", skip_all)]
-    fn register_bitmap(&mut self, bitmap: Bitmap) -> Result<BitmapHandle, BitmapError> {
+    fn register_bitmap(&mut self, bitmap: Bitmap<'_>) -> Result<BitmapHandle, BitmapError> {
         let mut bitmap = bitmap.to_rgba();
 
         self.clamp_bitmap(&mut bitmap);
@@ -668,7 +668,7 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
     fn update_texture(
         &mut self,
         handle: &BitmapHandle,
-        bitmap: Bitmap,
+        bitmap: Bitmap<'_>,
         mut region: PixelRegion,
     ) -> Result<(), BitmapError> {
         let texture = as_texture(handle);
