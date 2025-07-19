@@ -239,16 +239,29 @@ pub fn match_internal<'gc>(
         } else {
             let old = regexp.last_index();
             regexp.set_last_index(0);
-            if let Some(result) = regexp.exec(this) {
-                let substrings = result.groups().map(|range| &this[range.unwrap_or(0..0)]);
 
-                let mut storage = ArrayStorage::new(0);
-                for substring in substrings {
-                    storage.push(AvmString::new(activation.gc(), substring).into());
-                }
+            if let Some(result) = regexp.exec(this) {
+                let storage = result
+                    .groups()
+                    .map(|range| {
+                        range.map_or(Value::Undefined, |r| {
+                            Value::from(AvmString::new(activation.gc(), &this[r]))
+                        })
+                    })
+                    .collect();
+
                 regexp.set_last_index(old);
 
-                return Ok(ArrayObject::from_storage(activation, storage).into());
+                let array = ArrayObject::from_storage(activation, storage);
+
+                array.set_dynamic_property(
+                    istr!("index"),
+                    Value::Number(result.start() as f64),
+                    activation.gc(),
+                );
+                array.set_dynamic_property(istr!("input"), this.into(), activation.gc());
+
+                return Ok(array.into());
             } else {
                 regexp.set_last_index(old);
                 // If the pattern parameter is a String or a non-global regular expression
