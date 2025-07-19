@@ -1,0 +1,29 @@
+<languageVersion : 1.0;>
+
+kernel inttobool
+<   namespace : "Ruffle Tests";
+    vendor : "Ruffle Contributors";
+    version : 1;
+>
+{
+    input image4 src;
+    output pixel4 dst;
+
+    parameter int inputValue
+    <
+        defaultValue:0;
+    >;
+
+    void
+    evaluatePixel()
+    {
+        // Test IntToBool conversion
+        bool result = bool(inputValue);
+        
+        // Convert bool back to float for output (0.0 or 1.0)
+        float resultAsFloat = result ? 1.0 : 0.0;
+        
+        // Store result in green channel, blue channel always 0
+        dst = pixel4(1, resultAsFloat, 0, 1);
+    }
+}
