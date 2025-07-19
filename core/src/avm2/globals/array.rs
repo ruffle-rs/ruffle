@@ -384,7 +384,7 @@ pub fn every<'gc>(
     let this = this.as_object().unwrap();
 
     let callback = match args.get_value(0) {
-        Value::Null => return Ok(false.into()),
+        Value::Null => return Ok(true.into()),
         value => value,
     };
     let receiver = args.get_value(1);
