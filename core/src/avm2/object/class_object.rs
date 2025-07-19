@@ -316,6 +316,15 @@ impl<'gc> ClassObject<'gc> {
         arguments: &[Value<'gc>],
         activation: &mut Activation<'_, 'gc>,
     ) -> Result<Value<'gc>, Error<'gc>> {
+        self.call_init_with_args(receiver, FunctionArgs::AsArgSlice { arguments }, activation)
+    }
+
+    pub fn call_init_with_args(
+        self,
+        receiver: Value<'gc>,
+        arguments: FunctionArgs<'_, 'gc>,
+        activation: &mut Activation<'_, 'gc>,
+    ) -> Result<Value<'gc>, Error<'gc>> {
         let scope = self.0.instance_scope.get();
         let method = self.init_method();
         if let Some(method) = method {
@@ -325,7 +334,7 @@ impl<'gc> ClassObject<'gc> {
                 receiver,
                 self.superclass_object(),
                 Some(self.inner_class_definition()),
-                FunctionArgs::AsArgSlice { arguments },
+                arguments,
                 activation,
                 self.into(),
             )
@@ -362,7 +371,7 @@ impl<'gc> ClassObject<'gc> {
         self,
         multiname: &Multiname<'gc>,
         receiver: Object<'gc>,
-        arguments: &[Value<'gc>],
+        arguments: FunctionArgs<'_, 'gc>,
         activation: &mut Activation<'_, 'gc>,
     ) -> Result<Value<'gc>, Error<'gc>> {
         let property = self.instance_vtable().get_trait(multiname);
@@ -394,6 +403,7 @@ impl<'gc> ClassObject<'gc> {
                 Some(full_method.class),
             );
 
+            let arguments = &arguments.to_slice();
             callee.call(activation, receiver.into(), arguments)
         } else {
             Value::from(receiver).call_property(multiname, arguments, activation)
@@ -609,14 +619,23 @@ impl<'gc> ClassObject<'gc> {
         activation: &mut Activation<'_, 'gc>,
         arguments: &[Value<'gc>],
     ) -> Result<Value<'gc>, Error<'gc>> {
+        self.construct_with_args(activation, FunctionArgs::AsArgSlice { arguments })
+    }
+
+    pub fn construct_with_args(
+        self,
+        activation: &mut Activation<'_, 'gc>,
+        arguments: FunctionArgs<'_, 'gc>,
+    ) -> Result<Value<'gc>, Error<'gc>> {
         if let Some(custom_constructor) = self.custom_constructor() {
+            let arguments = &arguments.to_slice();
             custom_constructor(activation, arguments)
         } else {
             let instance_allocator = self.instance_allocator();
 
             let instance = instance_allocator(self, activation)?;
 
-            self.call_init(instance.into(), arguments, activation)?;
+            self.call_init_with_args(instance.into(), arguments, activation)?;
 
             Ok(instance.into())
         }

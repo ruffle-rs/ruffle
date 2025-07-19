@@ -10,6 +10,7 @@ use crate::avm2::Multiname;
 use crate::string::WString;
 use gc_arena::{Collect, Gc};
 use std::borrow::Cow;
+use std::cell::Cell;
 use std::fmt;
 
 /// Represents a bound method.
@@ -60,7 +61,7 @@ impl<'gc> BoundMethod<'gc> {
     pub fn exec(
         &self,
         unbound_receiver: Value<'gc>,
-        arguments: &[Value<'gc>],
+        arguments: FunctionArgs<'_, 'gc>,
         activation: &mut Activation<'_, 'gc>,
         callee: Value<'gc>,
     ) -> Result<Value<'gc>, Error<'gc>> {
@@ -81,7 +82,7 @@ impl<'gc> BoundMethod<'gc> {
             receiver,
             self.bound_superclass,
             self.bound_class,
-            FunctionArgs::AsArgSlice { arguments },
+            arguments,
             activation,
             callee,
         )
@@ -116,41 +117,30 @@ impl<'gc> BoundMethod<'gc> {
 
 #[derive(Clone, Copy)]
 pub enum FunctionArgs<'a, 'gc> {
-    OnAvmStack { arg_count: usize, stack_base: usize },
+    AsCellArgSlice { arguments: &'a [Cell<Value<'gc>>] },
     AsArgSlice { arguments: &'a [Value<'gc>] },
 }
 
 impl<'a, 'gc> FunctionArgs<'a, 'gc> {
-    pub fn to_slice(self, activation: &mut Activation<'_, 'gc>) -> Cow<'a, [Value<'gc>]> {
+    pub fn to_slice(self) -> Cow<'a, [Value<'gc>]> {
         match self {
-            FunctionArgs::OnAvmStack {
-                arg_count,
-                stack_base,
-            } => {
-                let args_slice = activation.avm2().stack_slice(stack_base, arg_count);
-                Cow::Owned(args_slice.to_vec())
+            FunctionArgs::AsCellArgSlice { arguments } => {
+                Cow::Owned(arguments.iter().map(|o| o.get()).collect::<Vec<_>>())
             }
             FunctionArgs::AsArgSlice { arguments } => Cow::Borrowed(arguments),
         }
     }
 
-    pub fn get_at(&self, activation: &mut Activation<'_, 'gc>, index: usize) -> Value<'gc> {
+    pub fn get_at(&self, index: usize) -> Value<'gc> {
         match self {
-            FunctionArgs::OnAvmStack {
-                arg_count,
-                stack_base,
-            } => {
-                assert!(index < *arg_count);
-
-                activation.avm2().stack_at(stack_base + index)
-            }
+            FunctionArgs::AsCellArgSlice { arguments } => arguments[index].get(),
             FunctionArgs::AsArgSlice { arguments } => arguments[index],
         }
     }
 
     pub fn len(&self) -> usize {
         match self {
-            FunctionArgs::OnAvmStack { arg_count, .. } => *arg_count,
+            FunctionArgs::AsCellArgSlice { arguments } => arguments.len(),
             FunctionArgs::AsArgSlice { arguments } => arguments.len(),
         }
     }
@@ -181,9 +171,11 @@ pub fn exec<'gc>(
     activation: &mut Activation<'_, 'gc>,
     callee: Value<'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let mc = activation.gc();
+
     let ret = match method.method_kind() {
         MethodKind::Native { native_method, .. } => {
-            let arguments = &arguments.to_slice(activation);
+            let arguments = &arguments.to_slice();
 
             let caller_domain = activation.caller_domain();
             let caller_movie = activation.caller_movie();
@@ -225,26 +217,33 @@ pub fn exec<'gc>(
                 span
             };
 
-            activation
-                .context
-                .avm2
-                .push_call(activation.gc(), method, bound_class);
+            activation.context.avm2.push_call(mc, method, bound_class);
 
             native_method(&mut activation, receiver, &arguments)
         }
         MethodKind::Bytecode { .. } => {
+            // We must initialize the stack frame here so the lifetime works out
+            let stack = activation.context.avm2.stack;
+            let stack_frame = stack.get_stack_frame(method);
+
             // This used to be a one step called Activation::from_method,
             // but avoiding moving an Activation around helps perf
             let mut activation = Activation::from_nothing(activation.context);
-            activation.init_from_method(
+            if let Err(e) = activation.init_from_method(
                 method,
                 scope,
                 receiver,
                 arguments,
+                stack_frame,
                 bound_superclass,
                 bound_class,
                 callee,
-            )?;
+            ) {
+                // If an error is thrown during verification or argument coercion,
+                // we still need to call cleanup to dispose of the stack frame
+                activation.cleanup();
+                return Err(e);
+            }
 
             #[cfg(feature = "tracy_avm")]
             let _span = {
@@ -262,10 +261,7 @@ pub fn exec<'gc>(
                 span
             };
 
-            activation
-                .context
-                .avm2
-                .push_call(activation.gc(), method, bound_class);
+            activation.context.avm2.push_call(mc, method, bound_class);
 
             let result = activation.run_actions(method);
 
@@ -274,7 +270,7 @@ pub fn exec<'gc>(
             result
         }
     };
-    activation.context.avm2.pop_call(activation.gc());
+    activation.context.avm2.pop_call(mc);
     ret
 }
 
