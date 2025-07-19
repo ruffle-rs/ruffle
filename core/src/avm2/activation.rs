@@ -77,6 +77,10 @@ pub struct Activation<'a, 'gc: 'a> {
     /// The index where the scope frame starts.
     scope_depth: usize,
 
+    /// The index where the default XML namespace frame starts.
+    /// Used to implement proper function-level scoping for default XML namespace.
+    default_xml_namespace_depth: usize,
+
     /// In avmplus, some behavior differs slightly depending on whether the JIT
     /// or the interpreter is used. Most methods are executed in "JIT mode", but
     /// in some cases "interpreter mode" is used instead: for example, script
@@ -125,6 +129,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             bound_class: None,
             stack_depth: context.avm2.stack.len(),
             scope_depth: context.avm2.scope_stack.len(),
+            default_xml_namespace_depth: context.avm2.default_xml_namespace_stack.len(),
             is_interpreter: false,
             context,
         }
@@ -149,6 +154,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             bound_class: None,
             stack_depth: context.avm2.stack.len(),
             scope_depth: context.avm2.scope_stack.len(),
+            default_xml_namespace_depth: context.avm2.default_xml_namespace_stack.len(),
             is_interpreter: false,
             context,
         }
@@ -177,7 +183,8 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             bound_class: Some(script.global_class()),
             stack_depth: context.avm2.stack.len(),
             scope_depth: context.avm2.scope_stack.len(),
-            is_interpreter: true, // Script initializers are always in interpreter mode
+            default_xml_namespace_depth: 0, // Scripts inherit global default XML namespace
+            is_interpreter: true,           // Script initializers are always in interpreter mode
             context,
         };
 
@@ -375,6 +382,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         self.bound_class = bound_class;
         self.stack_depth = self.context.avm2.stack.len();
         self.scope_depth = self.context.avm2.scope_stack.len();
+        self.default_xml_namespace_depth = self.context.avm2.default_xml_namespace_stack.len();
         self.is_interpreter = false;
 
         // Resolve parameters and return type
@@ -481,6 +489,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             bound_class,
             stack_depth: context.avm2.stack.len(),
             scope_depth: context.avm2.scope_stack.len(),
+            default_xml_namespace_depth: context.avm2.default_xml_namespace_stack.len(), // Builtin functions start with isolated scope
             is_interpreter: false,
             context,
         }
@@ -624,6 +633,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     pub fn cleanup(&mut self) {
         self.clear_stack_and_locals();
         self.clear_scope();
+        self.clear_default_xml_namespace();
     }
 
     /// Clears the operand stack used by this activation.
@@ -648,6 +658,15 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         self.avm2().scope_stack.truncate(scope_depth);
     }
 
+    /// Clears the default XML namespace stack used by this activation.
+    #[inline]
+    fn clear_default_xml_namespace(&mut self) {
+        let default_xml_namespace_depth = self.default_xml_namespace_depth;
+        self.avm2()
+            .default_xml_namespace_stack
+            .truncate(default_xml_namespace_depth);
+    }
+
     /// Get the superclass of the class that defined the currently-executing
     /// method, if it exists.
     ///
@@ -660,6 +679,14 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     /// Get the class that defined the currently-executing method, if it exists.
     pub fn bound_class(&self) -> Option<Class<'gc>> {
         self.bound_class
+    }
+
+    /// Get the current default XML namespace.
+    /// Returns an empty string if no default XML namespace is set.
+    pub fn default_xml_namespace(&self) -> AvmString<'gc> {
+        self.context
+            .avm2
+            .current_default_xml_namespace(self.strings_ref())
     }
 
     /// Retrieve a method entry from the current ABC file's method table.
@@ -843,7 +870,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
                 Op::BkptLine { line_num } => self.op_bkpt_line(*line_num),
                 Op::Timestamp => self.op_timestamp(),
                 Op::TypeOf => self.op_type_of(),
-                Op::Dxns { .. } => self.op_dxns(),
+                Op::Dxns { string } => self.op_dxns(*string),
                 Op::DxnsLate => self.op_dxns_late(),
                 Op::EscXAttr => self.op_esc_xattr(),
                 Op::EscXElem => self.op_esc_elem(),
@@ -2625,14 +2652,21 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     }
 
     /// Implements `Op::Dxns`
-    fn op_dxns(&mut self) -> Result<(), Error<'gc>> {
-        Err("Unimplemented opcode Dxns.".into())
+    fn op_dxns(&mut self, string: AvmAtom<'gc>) -> Result<(), Error<'gc>> {
+        let namespace_uri: AvmString<'gc> = string.into();
+        self.avm2().push_default_xml_namespace(namespace_uri);
+
+        Ok(())
     }
 
     /// Implements `Op::DxnsLate`
     fn op_dxns_late(&mut self) -> Result<(), Error<'gc>> {
-        let _ = self.pop_stack();
-        Err("Unimplemented opcode DxnsLate.".into())
+        let namespace_value = self.pop_stack();
+        let namespace_uri = namespace_value.coerce_to_string(self)?;
+
+        self.avm2().push_default_xml_namespace(namespace_uri);
+
+        Ok(())
     }
 
     /// Implements `Op::EscXAttr`

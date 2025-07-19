@@ -1,6 +1,6 @@
 use crate::avm2::error::{make_error_1010, make_error_1085, make_error_1118, type_error};
 use crate::avm2::object::{E4XOrXml, FunctionObject, NamespaceObject};
-use crate::avm2::{Activation, Error, Multiname, TObject, Value};
+use crate::avm2::{Activation, Error, Multiname, Namespace, TObject, Value};
 use crate::string::{AvmString, StringContext, WStr, WString};
 use crate::xml::custom_unescape;
 
@@ -1084,7 +1084,18 @@ impl<'gc> E4XNode<'gc> {
             ResolveResult::Unknown(ns) => {
                 return Err(make_unknown_ns_error(activation, ns, name));
             }
-            ResolveResult::Unbound => None,
+            ResolveResult::Unbound => {
+                // Use default XML namespace if available
+                let default_ns_uri = activation.default_xml_namespace();
+                if default_ns_uri.is_empty() {
+                    None
+                } else {
+                    Some(E4XNamespace {
+                        prefix: None,
+                        uri: default_ns_uri,
+                    })
+                }
+            }
         };
 
         let result = E4XNode(Gc::new(
@@ -1673,7 +1684,17 @@ pub fn string_to_multiname<'gc>(
     } else if &*name == b"*" {
         Multiname::any()
     } else {
-        Multiname::new(activation.avm2().namespaces.public_all(), name)
+        let default_ns_uri = activation.default_xml_namespace();
+        if default_ns_uri.is_empty() {
+            Multiname::new(activation.avm2().namespaces.public_all(), name)
+        } else {
+            let namespace = Namespace::package(
+                default_ns_uri,
+                activation.avm2().root_api_version,
+                activation.strings(),
+            );
+            Multiname::new(namespace, name)
+        }
     }
 }
 
