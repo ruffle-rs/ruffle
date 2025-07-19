@@ -275,8 +275,17 @@ macro_rules! delegate_method_to_array {
 }
 
 delegate_method_to_array!(every);
-delegate_method_to_array!(_some);
 delegate_method_to_array!(for_each);
+
+/// Implements `Vector.some`
+pub fn _some<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    this: Value<'gc>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    // Just use Array.some
+    crate::avm2::globals::array::some(activation, this, args)
+}
 
 /// Implements `Vector.filter`
 pub fn filter<'gc>(
