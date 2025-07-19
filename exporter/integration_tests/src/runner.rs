@@ -121,7 +121,7 @@ fn load_test(params: TestLoaderParams) -> Trial {
 
         // We need a global mutex for the current working directory,
         // as we don't want it being set concurrently.
-        let _cwd_guard = CWD_MUTEX.lock().unwrap();
+        let _cwd_guard = CWD_MUTEX.lock().unwrap_or_else(|e| e.into_inner());
         std::env::set_current_dir(&actual_dir_real)
             .map_err(|e| anyhow!("Failed to change working directory: {e}"))?;
 
