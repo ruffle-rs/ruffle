@@ -197,6 +197,8 @@ package {
             return _some(callback, receiver);
         }
 
+        private native function _some(callback:Function, receiver:Object):Boolean;
+
         AS3 native function sort(... rest):*;
 
         AS3 native function sortOn(fieldNames:*, options:* = 0, ... rest):*;
@@ -206,7 +208,5 @@ package {
         AS3 native function unshift(... rest):uint;
 
         public static const length:int = 1;
-
-        private native function _some(callback:Function, receiver:Object):Boolean;
     }
 }
