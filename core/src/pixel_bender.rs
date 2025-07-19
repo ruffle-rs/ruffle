@@ -1,3 +1,4 @@
+use either::Either;
 use ruffle_render::pixel_bender::{PixelBenderType, PixelBenderTypeOpcode};
 
 use crate::{
@@ -52,11 +53,10 @@ impl PixelBenderTypeExt for PixelBenderType {
             _ => unreachable!("value should be an array"),
         };
 
-        let mut vals: Box<dyn Iterator<Item = Value<'gc>>> = if let Some(ref array) = array_storage
-        {
-            Box::new(array.iter().map(|v| v.unwrap_or(Value::Integer(0))))
+        let mut vals = if let Some(ref array) = array_storage {
+            Either::Left(array.iter().map(|v| v.unwrap_or(Value::Integer(0))))
         } else {
-            Box::new(std::iter::empty())
+            Either::Right(std::iter::empty())
         };
 
         match kind {
