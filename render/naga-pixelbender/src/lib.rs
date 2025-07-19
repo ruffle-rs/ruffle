@@ -592,7 +592,7 @@ impl ShaderBuilder<'_> {
                         inner: TypeInner::Array {
                             base: self.vec4f,
                             size: ArraySize::Constant(NonZeroU32::new(num_vec4fs.max(1)).unwrap()),
-                            stride: std::mem::size_of::<f32>() as u32 * 4,
+                            stride: std::mem::size_of::<[f32; 4]>() as u32
                         },
                     },
                     Span::UNDEFINED,
@@ -616,7 +616,7 @@ impl ShaderBuilder<'_> {
                         inner: TypeInner::Array {
                             base: self.vec4i,
                             size: ArraySize::Constant(NonZeroU32::new(num_vec4is.max(1)).unwrap()),
-                            stride: std::mem::size_of::<i32>() as u32 * 4,
+                            stride: std::mem::size_of::<[i32; 4]>() as u32,
                         },
                     },
                     Span::UNDEFINED,
@@ -672,8 +672,8 @@ impl ShaderBuilder<'_> {
         }
 
         (
-            num_vec4fs.max(1) as u64 * 4 * std::mem::size_of::<f32>() as u64,
-            num_vec4is.max(1) as u64 * 4 * std::mem::size_of::<i32>() as u64,
+            num_vec4fs.max(1) as u64 * std::mem::size_of::<[f32; 4]>() as u64,
+            num_vec4is.max(1) as u64 * std::mem::size_of::<[i32; 4]>() as u64,
         )
     }
 
@@ -1694,6 +1694,7 @@ impl ShaderBuilder<'_> {
                     );
                 }
             }
+            return;
         }
 
         let dst_register = self.register_pointer(dst);
