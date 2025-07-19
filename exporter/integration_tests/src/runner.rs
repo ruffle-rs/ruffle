@@ -21,6 +21,7 @@ struct TestOptions {
     pub ignore: bool,
     pub input_dir: Option<String>,
     pub output_dir: Option<String>,
+    pub expect_error: Option<String>,
 }
 
 impl Default for TestOptions {
@@ -31,6 +32,7 @@ impl Default for TestOptions {
             ignore: false,
             input_dir: None,
             output_dir: None,
+            expect_error: None,
         }
     }
 }
@@ -132,7 +134,30 @@ fn load_test(params: TestLoaderParams) -> Trial {
         let opt = Opt::try_parse_from(&args)
             .map_err(|e| anyhow!("Error parsing args {:?}:\n{e}", &args))?;
 
-        run_main(opt).map_err(|e| anyhow!("Failed executing exporter:\n{e}"))?;
+        let result = run_main(opt);
+        match (result, &options.expect_error) {
+            (Ok(()), None) => {
+                // Works as expected!
+            }
+            (Ok(()), Some(_)) => {
+                return Err(
+                    anyhow!("Expected exporter to return an error, but it succeeded").into(),
+                );
+            }
+            (Err(actual), None) => {
+                return Err(anyhow!("Failed executing exporter:\n{actual}").into());
+            }
+            (Err(actual), Some(expected)) => {
+                let actual_string = actual.to_string();
+                if &actual_string != expected {
+                    return Err(anyhow!(
+                        "Unexpected error reported by exporter ({}):\n{actual_string}",
+                        actual_string.len()
+                    )
+                    .into());
+                }
+            }
+        }
 
         verify_dirs(&actual_dir, &output_dir, &input_dir)
             .map_err(|err| anyhow!("Failed to verify files: {err}"))?;
