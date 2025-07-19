@@ -255,31 +255,29 @@ impl ShaderBuilder<'_> {
             }),
         });
 
-        let samplers = (0..3)
-            .map(|i| {
-                let var = module.global_variables.append(
-                    GlobalVariable {
-                        name: Some(format!("sampler{i}")),
-                        space: naga::AddressSpace::Handle,
-                        binding: Some(naga::ResourceBinding {
-                            group: 0,
-                            binding: TEXTURE_SAMPLER_START_BIND_INDEX + i,
-                        }),
-                        ty: module.types.insert(
-                            Type {
-                                name: None,
-                                inner: TypeInner::Sampler { comparison: false },
-                            },
-                            Span::UNDEFINED,
-                        ),
-                        init: None,
-                    },
-                    Span::UNDEFINED,
-                );
-                func.expressions
-                    .append(Expression::GlobalVariable(var), Span::UNDEFINED)
-            })
-            .collect::<Vec<_>>();
+        let samplers: [Handle<Expression>; 3] = core::array::from_fn(|i| {
+            let var = module.global_variables.append(
+                GlobalVariable {
+                    name: Some(format!("sampler{i}")),
+                    space: naga::AddressSpace::Handle,
+                    binding: Some(naga::ResourceBinding {
+                        group: 0,
+                        binding: TEXTURE_SAMPLER_START_BIND_INDEX + i as u32,
+                    }),
+                    ty: module.types.insert(
+                        Type {
+                            name: None,
+                            inner: TypeInner::Sampler { comparison: false },
+                        },
+                        Span::UNDEFINED,
+                    ),
+                    init: None,
+                },
+                Span::UNDEFINED,
+            );
+            func.expressions
+                .append(Expression::GlobalVariable(var), Span::UNDEFINED)
+        });
 
         let zeroi32 = func
             .expressions
@@ -302,9 +300,9 @@ impl ShaderBuilder<'_> {
         let zerovec4f = evaluate_expr(
             &mut func,
             &mut blocks,
-            Expression::Compose {
-                ty: vec4f,
-                components: vec![zerof32, zerof32, zerof32, zerof32],
+            Expression::Splat {
+                size: VectorSize::Quad,
+                value: zerof32,
             },
         );
 
@@ -946,23 +944,21 @@ impl ShaderBuilder<'_> {
                             // However, Naga currently handles this incorrectly - see https://github.com/gfx-rs/naga/issues/1931
                             // For now, work around this by manually applying it component-wise.
 
-                            let source_components: Vec<_> = (0..4)
-                                .map(|index| {
+                            let source_components: [Handle<Expression>; 4] =
+                                core::array::from_fn(|index| {
                                     self.evaluate_expr(Expression::AccessIndex {
                                         base: left_bool,
-                                        index,
+                                        index: index as u32,
                                     })
-                                })
-                                .collect();
+                                });
 
-                            let dest_components: Vec<_> = (0..4)
-                                .map(|index| {
+                            let dest_components: [Handle<Expression>; 4] =
+                                core::array::from_fn(|index| {
                                     self.evaluate_expr(Expression::AccessIndex {
                                         base: right_bool,
-                                        index,
+                                        index: index as u32,
                                     })
-                                })
-                                .collect();
+                                });
 
                             let binary_op = match opcode {
                                 Opcode::LogicalOr => BinaryOperator::LogicalOr,
