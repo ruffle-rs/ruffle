@@ -84,7 +84,13 @@ fn load_test(params: TestLoaderParams) -> Trial {
     let descriptor_path = test_dir.join("test.toml").unwrap();
 
     let options = TestOptions::read(&descriptor_path)
-        .map_err(|e| anyhow!("Failed to parse {}: {e}", descriptor_path.as_str()))
+        .map_err(|e| {
+            anyhow!(
+                "Failed to parse {} in {}: {e}",
+                descriptor_path.as_str(),
+                test_dir_real.to_string_lossy()
+            )
+        })
         .expect("Failed to parse test descriptor");
     let ignore = options.ignore;
     let swf_path = test_dir
