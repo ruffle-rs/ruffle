@@ -1,12 +1,12 @@
 use crate::avm2::class::Class;
-use crate::avm2::method::NativeMethodImpl;
+use crate::avm2::method::{Method, NativeMethodImpl};
 use crate::avm2::multiname::Multiname;
 use crate::avm2::namespace::Namespace;
 use crate::avm2::script::Script;
 use crate::string::AvmAtom;
 
 use gc_arena::{Collect, Gc};
-use swf::avm2::types::{Index, Method};
+use std::cell::Cell;
 
 #[derive(Clone, Collect, Copy, Debug)]
 #[collect(no_drop)]
@@ -58,8 +58,7 @@ pub enum Op<'gc> {
         num_args: u32,
     },
     CallStatic {
-        #[collect(require_static)]
-        index: Index<Method>,
+        method: Method<'gc>,
 
         num_args: u32,
     },
@@ -69,7 +68,7 @@ pub enum Op<'gc> {
         num_args: u32,
     },
     CheckFilter,
-    Coerce {
+    CoerceNonPrimitive {
         class: Class<'gc>,
     },
     CoerceSwapPop {
@@ -243,8 +242,7 @@ pub enum Op<'gc> {
         class: Class<'gc>,
     },
     NewFunction {
-        #[collect(require_static)]
-        index: Index<Method>,
+        method: Method<'gc>,
     },
     NewObject {
         num_args: u32,
@@ -373,13 +371,26 @@ impl Op<'_> {
                 | Op::ReturnVoid { .. }
         )
     }
+
+    pub fn is_nop(&self) -> bool {
+        if cfg!(feature = "avm_debug") {
+            matches!(self, Op::Nop)
+        } else {
+            matches!(
+                self,
+                Op::Nop | Op::Debug { .. } | Op::DebugFile { .. } | Op::DebugLine { .. }
+            )
+        }
+    }
 }
 
+// This has interior mutability so that we can rewrite switch offsets from the
+// optimizer when we need to
 #[derive(Collect, Debug)]
 #[collect(require_static)]
 pub struct LookupSwitch {
-    pub default_offset: usize,
-    pub case_offsets: Box<[usize]>,
+    pub default_offset: Cell<usize>,
+    pub case_offsets: Box<[Cell<usize>]>,
 }
 
 #[cfg(target_pointer_width = "64")]

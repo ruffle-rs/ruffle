@@ -28,7 +28,7 @@ use gc_arena::Gc;
 use ruffle_macros::istr;
 use std::cmp::{min, Ordering};
 use std::sync::Arc;
-use swf::avm2::types::{Index, Method as AbcMethod, MethodFlags as AbcMethodFlags};
+use swf::avm2::types::MethodFlags as AbcMethodFlags;
 
 use super::error::make_mismatch_error;
 
@@ -662,18 +662,6 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         self.bound_class
     }
 
-    /// Retrieve a method entry from the current ABC file's method table.
-    fn table_method(
-        &mut self,
-        method: Method<'gc>,
-        index: Index<AbcMethod>,
-        is_function: bool,
-    ) -> Result<Method<'gc>, Error<'gc>> {
-        method
-            .translation_unit()
-            .load_method(index, is_function, self)
-    }
-
     pub fn run_actions(&mut self, method: Method<'gc>) -> Result<Value<'gc>, Error<'gc>> {
         // The method must be verified at this point
 
@@ -728,9 +716,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
                     multiname,
                     num_args,
                 } => self.op_call_prop_void(*multiname, *num_args),
-                Op::CallStatic { index, num_args } => {
-                    self.op_call_static(method, *index, *num_args)
-                }
+                Op::CallStatic { method, num_args } => self.op_call_static(*method, *num_args),
                 Op::CallSuper {
                     multiname,
                     num_args,
@@ -770,7 +756,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
                 Op::ConstructSuper { num_args } => self.op_construct_super(*num_args),
                 Op::NewActivation { activation_class } => self.op_new_activation(*activation_class),
                 Op::NewObject { num_args } => self.op_new_object(*num_args),
-                Op::NewFunction { index } => self.op_new_function(method, *index),
+                Op::NewFunction { method } => self.op_new_function(*method),
                 Op::NewClass { class } => self.op_new_class(*class),
                 Op::ApplyType { num_types } => self.op_apply_type(*num_types),
                 Op::NewArray { num_args } => self.op_new_array(*num_args),
@@ -847,7 +833,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
                 Op::DxnsLate => self.op_dxns_late(),
                 Op::EscXAttr => self.op_esc_xattr(),
                 Op::EscXElem => self.op_esc_elem(),
-                Op::Coerce { class } => self.op_coerce(*class),
+                Op::CoerceNonPrimitive { class } => self.op_coerce_non_primitive(*class),
                 Op::CoerceSwapPop { class } => self.op_coerce_swap_pop(*class),
                 Op::CheckFilter => self.op_check_filter(),
                 Op::Si8 => self.op_si8(),
@@ -1181,15 +1167,9 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         Ok(())
     }
 
-    fn op_call_static(
-        &mut self,
-        method: Method<'gc>,
-        index: Index<AbcMethod>,
-        arg_count: u32,
-    ) -> Result<(), Error<'gc>> {
+    fn op_call_static(&mut self, method: Method<'gc>, arg_count: u32) -> Result<(), Error<'gc>> {
         let args = self.pop_stack_args(arg_count);
         let receiver = self.pop_stack();
-        let method = self.table_method(method, index, false)?;
         // TODO: What scope should the function be executed with?
         let scope = self.create_scopechain();
         let function = FunctionObject::from_method(self, method, scope, None, None, None);
@@ -1817,15 +1797,10 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         Ok(())
     }
 
-    fn op_new_function(
-        &mut self,
-        method: Method<'gc>,
-        index: Index<AbcMethod>,
-    ) -> Result<(), Error<'gc>> {
-        let method_entry = self.table_method(method, index, true)?;
+    fn op_new_function(&mut self, method: Method<'gc>) -> Result<(), Error<'gc>> {
         let scope = self.create_scopechain();
 
-        let new_fn = FunctionObject::from_method(self, method_entry, scope, None, None, None);
+        let new_fn = FunctionObject::from_method(self, method, scope, None, None, None);
 
         self.push_stack(new_fn);
 
@@ -2665,19 +2640,20 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     fn lookup_switch(&mut self, lookup_switch: &LookupSwitch) -> usize {
         let index = self.pop_stack().as_i32();
 
-        let default_offset = lookup_switch.default_offset;
+        let default_offset = lookup_switch.default_offset.clone();
         let case_offsets = &lookup_switch.case_offsets;
 
         case_offsets
             .get(index as usize)
-            .copied()
+            .cloned()
             .unwrap_or(default_offset)
+            .get()
     }
 
     /// Implements `Op::Coerce`
-    fn op_coerce(&mut self, class: Class<'gc>) -> Result<(), Error<'gc>> {
+    fn op_coerce_non_primitive(&mut self, class: Class<'gc>) -> Result<(), Error<'gc>> {
         let val = self.pop_stack();
-        let x = val.coerce_to_type(self, class)?;
+        let x = val.coerce_to_non_primitive(self, class)?;
 
         self.push_stack(x);
         Ok(())

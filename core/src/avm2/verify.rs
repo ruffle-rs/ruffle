@@ -12,11 +12,12 @@ use crate::avm2::{Activation, Error, QName};
 use crate::string::{AvmAtom, AvmString};
 
 use gc_arena::{Collect, Gc};
+use std::cell::Cell;
 use std::collections::{HashMap, HashSet};
 use swf::avm2::read::Reader;
 use swf::avm2::types::{
-    Class as AbcClass, Index, MethodFlags as AbcMethodFlags, Multiname as AbcMultiname,
-    Namespace as AbcNamespace, Op as AbcOp,
+    Class as AbcClass, Index, Method as AbcMethod, MethodFlags as AbcMethodFlags,
+    Multiname as AbcMultiname, Namespace as AbcNamespace, Op as AbcOp,
 };
 use swf::error::Error as AbcReadError;
 
@@ -502,25 +503,16 @@ pub fn verify_method<'gc>(
                 jump_targets.insert(adjusted_result);
             }
             Op::LookupSwitch(lookup_switch) => {
-                let default_offset =
-                    adjust_jump_to_idx(i, lookup_switch.default_offset as i32, false)?;
+                for target in lookup_switch
+                    .case_offsets
+                    .iter()
+                    .chain(std::slice::from_ref(&lookup_switch.default_offset))
+                {
+                    let adjusted_target = adjust_jump_to_idx(i, target.get() as i32, false)?;
+                    target.set(adjusted_target);
 
-                jump_targets.insert(default_offset);
-
-                let mut case_offsets = Vec::with_capacity(lookup_switch.case_offsets.len());
-                for case in lookup_switch.case_offsets.iter() {
-                    let adjusted_case = adjust_jump_to_idx(i, *case as i32, false)?;
-                    case_offsets.push(adjusted_case);
-
-                    jump_targets.insert(adjusted_case);
+                    jump_targets.insert(adjusted_target);
                 }
-
-                let new_lookup_switch = LookupSwitch {
-                    default_offset,
-                    case_offsets: case_offsets.into_boxed_slice(),
-                };
-
-                *op = Op::LookupSwitch(Gc::new(mc, new_lookup_switch));
             }
             _ => {}
         }
@@ -530,8 +522,8 @@ pub fn verify_method<'gc>(
         activation,
         method,
         &mut verified_code,
+        &mut new_exceptions,
         resolved_param_config,
-        &new_exceptions,
         &jump_targets,
     )?;
 
@@ -695,6 +687,15 @@ fn pool_namespace<'gc>(
     index: Index<AbcNamespace>,
 ) -> Result<Namespace<'gc>, Error<'gc>> {
     translation_unit.pool_namespace(activation, index)
+}
+
+fn pool_method<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    translation_unit: TranslationUnit<'gc>,
+    index: Index<AbcMethod>,
+    is_function: bool,
+) -> Result<Method<'gc>, Error<'gc>> {
+    translation_unit.load_method(index, is_function, activation)
 }
 
 fn lookup_class<'gc>(
@@ -890,7 +891,11 @@ fn translate_op<'gc>(
                 num_args,
             }
         }
-        AbcOp::CallStatic { index, num_args } => Op::CallStatic { index, num_args },
+        AbcOp::CallStatic { index, num_args } => {
+            let method = pool_method(activation, translation_unit, index, false)?;
+
+            Op::CallStatic { method, num_args }
+        }
         AbcOp::CallSuper { index, num_args } => {
             let multiname = pool_multiname(activation, translation_unit, index)?;
 
@@ -1074,7 +1079,11 @@ fn translate_op<'gc>(
             }
         }
         AbcOp::NewObject { num_args } => Op::NewObject { num_args },
-        AbcOp::NewFunction { index } => Op::NewFunction { index },
+        AbcOp::NewFunction { index } => {
+            let method = pool_method(activation, translation_unit, index, true)?;
+
+            Op::NewFunction { method }
+        }
         AbcOp::NewClass { index } => {
             let class = pool_class(activation, translation_unit, index)?;
             Op::NewClass { class }
@@ -1286,11 +1295,11 @@ fn translate_op<'gc>(
         AbcOp::DxnsLate => Op::DxnsLate,
         AbcOp::LookupSwitch(lookup_switch) => {
             let created_lookup_switch = LookupSwitch {
-                default_offset: lookup_switch.default_offset as usize,
+                default_offset: Cell::new(lookup_switch.default_offset as usize),
                 case_offsets: lookup_switch
                     .case_offsets
                     .iter()
-                    .map(|o| *o as usize)
+                    .map(|o| Cell::new(*o as usize))
                     .collect(),
             };
 
@@ -1299,7 +1308,23 @@ fn translate_op<'gc>(
         AbcOp::Coerce { index } => {
             let class = lookup_class(activation, translation_unit, index)?;
 
-            Op::Coerce { class }
+            let class_defs = activation.avm2().class_defs();
+
+            if class == class_defs.int {
+                Op::CoerceI
+            } else if class == class_defs.uint {
+                Op::CoerceU
+            } else if class == class_defs.number {
+                Op::CoerceD
+            } else if class == class_defs.boolean {
+                Op::CoerceB
+            } else if class == class_defs.string {
+                Op::CoerceS
+            } else if class == class_defs.object {
+                Op::CoerceO
+            } else {
+                Op::CoerceNonPrimitive { class }
+            }
         }
         AbcOp::CheckFilter => Op::CheckFilter,
         AbcOp::Si8 => Op::Si8,

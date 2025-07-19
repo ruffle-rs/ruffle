@@ -78,6 +78,14 @@ pub fn postprocess_peephole(
                 last_op.set(Op::Nop);
                 current_op.set(Op::Nop);
             }
+            (
+                Some(last_op),
+                Some(Op::CoerceB),
+                Op::IfTrue { .. } | Op::IfFalse { .. } | Op::Not,
+            ) => {
+                // Remove CoerceB before IfTrue, IfFalse, and Not
+                last_op.set(Op::Nop);
+            }
             (_, _, Op::GetScopeObject { index: 0 }) => {
                 // Replace `getscopeobject 0` with `getlocal 0` if possible
                 if simple_scope_op_positions.is_some() && !sets_local_0 {
@@ -87,7 +95,13 @@ pub fn postprocess_peephole(
             _ => {}
         }
 
-        last_op = Some(current_op);
+        // Don't set last_op to the current_op if the current op does nothing.
+        // This allows us to peephole-optimize sequences such as
+        // `getlocal0`-`nop`-`pop`, as when the `pop` op is being processed,
+        // `last_op` will still be set to the `getlocal0`.
+        if !current_op.get().is_nop() {
+            last_op = Some(current_op);
+        }
     }
 
     // Gather some more information...
