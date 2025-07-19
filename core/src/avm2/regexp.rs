@@ -1,6 +1,7 @@
 //! RegExp Structure
 
 use std::borrow::Cow;
+use std::num::NonZero;
 
 use crate::avm2::activation::Activation;
 use crate::avm2::object::FunctionObject;
@@ -327,8 +328,10 @@ impl<'gc> RegExp<'gc> {
         &mut self,
         activation: &mut Activation<'_, 'gc>,
         text: AvmString<'gc>,
-        limit: usize,
+        limit: NonZero<usize>,
     ) -> ArrayObject<'gc> {
+        let limit = limit.get();
+
         let mut storage = ArrayStorage::new(0);
         // The empty regex is a special case which splits into characters.
         if self.source.is_empty() {

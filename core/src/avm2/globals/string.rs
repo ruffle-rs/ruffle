@@ -1,5 +1,7 @@
 //! `String` impl
 
+use std::num::NonZero;
+
 use ruffle_macros::istr;
 
 use crate::avm2::activation::Activation;
@@ -381,6 +383,10 @@ pub fn split<'gc>(
         limit => limit.coerce_to_u32(activation)? as usize,
     };
 
+    let Some(limit) = NonZero::new(limit) else {
+        return Ok(ArrayObject::empty(activation).into());
+    };
+
     if let Some(mut regexp) = delimiter
         .as_object()
         .as_ref()
@@ -396,12 +402,12 @@ pub fn split<'gc>(
         // e.g., split("foo", "") returns ["", "f", "o", "o", ""] in Rust but ["f, "o", "o"] in Flash.
         // Special case this to match Flash's behavior.
         this.iter()
-            .take(limit)
+            .take(limit.get())
             .map(|c| Value::from(activation.strings().make_char(c)))
             .collect()
     } else {
         this.split(&delimiter)
-            .take(limit)
+            .take(limit.get())
             .map(|c| Value::from(AvmString::new(activation.gc(), c)))
             .collect()
     };
