@@ -369,8 +369,7 @@ impl<'gc> Context3DObject<'gc> {
 
         self.with_context_3d(|ctx| {
             ctx.process_command(Context3DCommand::CopyBitmapToTexture {
-                // TODO: it'd be nice to avoid copying the pixels here.
-                source: source.pixels_rgba().to_owned(),
+                source: source.pixels_rgba(),
                 source_width: source.width(),
                 source_height: source.height(),
                 dest,
@@ -388,7 +387,7 @@ impl<'gc> Context3DObject<'gc> {
     ) {
         self.with_context_3d(|ctx| {
             ctx.process_command(Context3DCommand::CopyBitmapToTexture {
-                source,
+                source: &source,
                 source_width: dest.width(),
                 source_height: dest.height(),
                 dest,
