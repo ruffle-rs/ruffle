@@ -34,46 +34,48 @@ pub trait PixelBenderShaderImpl: Any + Debug {
     fn parsed_shader(&self) -> &PixelBenderShader;
 }
 
-#[repr(u8)]
-#[derive(Debug, Clone, PartialEq)]
-pub enum PixelBenderType {
-    TFloat(f32) = 0x1,
-    TFloat2(f32, f32) = 0x2,
-    TFloat3(f32, f32, f32) = 0x3,
-    TFloat4(f32, f32, f32, f32) = 0x4,
-    TFloat2x2([f32; 4]) = 0x5,
-    TFloat3x3([f32; 9]) = 0x6,
-    TFloat4x4([f32; 16]) = 0x7,
-    TInt(i16) = 0x8,
-    TInt2(i16, i16) = 0x9,
-    TInt3(i16, i16, i16) = 0xA,
-    TInt4(i16, i16, i16, i16) = 0xB,
-    TString(String) = 0xC,
-    TBool(bool) = 0xD,
-    TBool2(bool, bool) = 0xE,
-    TBool3(bool, bool, bool) = 0xF,
-    TBool4(bool, bool, bool, bool) = 0x10,
+macro_rules! pixel_bender_type_with_opcode {
+    (
+        pub enum $type_enum:ident : $opcode_enum:ident {
+            $( $name:ident($($data:tt)*) = $opcode:expr, )*
+        }
+    ) => {
+        #[repr(u8)]
+        #[derive(Debug, Clone, PartialEq)]
+        pub enum $type_enum {
+            $(
+                $name($($data)*) = $opcode,
+            )*
+        }
+
+        #[derive(num_derive::FromPrimitive, Debug, PartialEq, Clone, Copy)]
+        pub enum $opcode_enum {
+            $(
+                $name = $opcode,
+            )*
+        }
+    };
 }
 
-// FIXME - come up with a way to reduce duplication here
-#[derive(num_derive::FromPrimitive, Debug, PartialEq, Clone, Copy)]
-pub enum PixelBenderTypeOpcode {
-    TFloat = 0x1,
-    TFloat2 = 0x2,
-    TFloat3 = 0x3,
-    TFloat4 = 0x4,
-    TFloat2x2 = 0x5,
-    TFloat3x3 = 0x6,
-    TFloat4x4 = 0x7,
-    TInt = 0x8,
-    TInt2 = 0x9,
-    TInt3 = 0xA,
-    TInt4 = 0xB,
-    TString = 0xC,
-    TBool = 0xD,
-    TBool2 = 0xE,
-    TBool3 = 0xF,
-    TBool4 = 0x10,
+pixel_bender_type_with_opcode! {
+    pub enum PixelBenderType : PixelBenderTypeOpcode {
+        TFloat(f32) = 0x1,
+        TFloat2(f32, f32) = 0x2,
+        TFloat3(f32, f32, f32) = 0x3,
+        TFloat4(f32, f32, f32, f32) = 0x4,
+        TFloat2x2([f32; 4]) = 0x5,
+        TFloat3x3([f32; 9]) = 0x6,
+        TFloat4x4([f32; 16]) = 0x7,
+        TInt(i16) = 0x8,
+        TInt2(i16, i16) = 0x9,
+        TInt3(i16, i16, i16) = 0xA,
+        TInt4(i16, i16, i16, i16) = 0xB,
+        TString(String) = 0xC,
+        TBool(bool) = 0xD,
+        TBool2(bool, bool) = 0xE,
+        TBool3(bool, bool, bool) = 0xF,
+        TBool4(bool, bool, bool, bool) = 0x10,
+    }
 }
 
 #[derive(Debug, PartialEq, Copy, Clone)]
