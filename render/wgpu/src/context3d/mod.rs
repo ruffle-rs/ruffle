@@ -1016,7 +1016,7 @@ impl Context3D for WgpuContext3D {
                 let source = if (source_width * 4) % COPY_BYTES_PER_ROW_ALIGNMENT != 0
                     && matches!(dest.texture.format(), wgpu::TextureFormat::Rgba8Unorm)
                 {
-                    let padded = source
+                    let padded: Vec<u8> = source
                         .chunks_exact(source_width as usize * 4)
                         .flat_map(|row| {
                             let padding_len = COPY_BYTES_PER_ROW_ALIGNMENT as usize
@@ -1027,7 +1027,7 @@ impl Context3D for WgpuContext3D {
                         })
                         .collect();
 
-                    bytes_per_row = source.len() as u32 / source_height;
+                    bytes_per_row = padded.len() as u32 / source_height;
 
                     Cow::Owned(padded)
                 } else {
