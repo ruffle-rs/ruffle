@@ -360,20 +360,18 @@ impl<'gc> Executable<'gc> {
 
         let target = activation.target_clip_or_root();
         let is_closure = activation.swf_version() >= 6;
-        let base_clip = af.base_clip.coerce_to_object(activation);
 
-        let avm1_removed = base_clip
-            .and_then(|o| o.as_display_object())
-            .is_none_or(|d| d.avm1_removed());
+        let this_do = this_obj
+            .and_then(|this| this.as_display_object())
+            .unwrap_or(target);
 
-        let base_clip = if (is_closure || reason == ExecutionReason::Special) && !avm1_removed {
-            base_clip
-                .and_then(|d| d.as_display_object())
-                .expect("Somehow the base clip isn't an object or has no display object")
+        let base_clip = if is_closure || reason == ExecutionReason::Special {
+            af.base_clip
+                .resolve_reference(activation)
+                .map(|(_, _, dobj)| dobj)
+                .unwrap_or(this_do)
         } else {
-            this_obj
-                .and_then(|this| this.as_display_object())
-                .unwrap_or(target)
+            this_do
         };
         let (swf_version, parent_scope) = if is_closure {
             // Function calls in a v6+ SWF are proper closures, and "close" over the scope that defined the function:
