@@ -5,6 +5,7 @@ use ruffle_render::backend::{
 use ruffle_render::bitmap::BitmapHandle;
 use ruffle_render::error::Error;
 use std::any::Any;
+use std::borrow::Cow;
 use std::cell::Cell;
 use swf::{Rectangle, Twips};
 
@@ -992,7 +993,7 @@ impl Context3D for WgpuContext3D {
                 self.current_pipeline.set_culling(face);
             }
             Context3DCommand::CopyBitmapToTexture {
-                mut source,
+                source,
                 source_width,
                 source_height,
                 dest,
@@ -1012,10 +1013,10 @@ impl Context3D for WgpuContext3D {
                 let rows_per_image = source_height / dest_format.block_dimensions().1;
 
                 // Wgpu requires us to pad the image rows to a multiple of COPY_BYTES_PER_ROW_ALIGNMENT
-                if (source_width * 4) % COPY_BYTES_PER_ROW_ALIGNMENT != 0
+                let source = if (source_width * 4) % COPY_BYTES_PER_ROW_ALIGNMENT != 0
                     && matches!(dest.texture.format(), wgpu::TextureFormat::Rgba8Unorm)
                 {
-                    source = source
+                    let padded = source
                         .chunks_exact(source_width as usize * 4)
                         .flat_map(|row| {
                             let padding_len = COPY_BYTES_PER_ROW_ALIGNMENT as usize
@@ -1026,7 +1027,11 @@ impl Context3D for WgpuContext3D {
                         .collect();
 
                     bytes_per_row = source.len() as u32 / source_height;
-                }
+
+                    Cow::Owned(padded)
+                } else {
+                    Cow::Borrowed(source)
+                };
 
                 let texture_buffer = self.descriptors.device.create_buffer(&BufferDescriptor {
                     label: None,
