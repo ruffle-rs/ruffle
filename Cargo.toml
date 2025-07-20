@@ -85,7 +85,7 @@ libtest-mimic = "0.8.1"
 regex = "1.11.1"
 toml = "0.8.23"
 vfs = "0.12.2"
-smallvec = { version = "1.15.1", features = ["union"] }
+smallvec = { version = "1.15.1", features = ["const_new", "union"] }
 
 [workspace.lints.rust]
 # Clippy nightly often adds new/buggy lints that we want to ignore.
