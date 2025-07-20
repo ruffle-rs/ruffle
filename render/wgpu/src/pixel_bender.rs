@@ -14,6 +14,7 @@ use ruffle_render::{
     bitmap::BitmapHandle,
     pixel_bender::{PixelBenderParam, PixelBenderShader, PixelBenderShaderArgument},
 };
+use smallvec::{smallvec_inline, SmallVec};
 use wgpu::util::{DeviceExt, StagingBelt};
 use wgpu::{
     BindGroupEntry, BindingResource, BlendComponent, BufferDescriptor, BufferUsages,
@@ -541,8 +542,8 @@ pub(super) fn run_pixelbender_shader_impl(
 
                 #[derive(Debug)]
                 enum FloatOrInt {
-                    Float(Vec<f32>),
-                    Int(Vec<i32>),
+                    Float(SmallVec<[f32; 4]>),
+                    Int(SmallVec<[i32; 4]>),
                 }
 
                 impl FloatOrInt {
@@ -555,30 +556,36 @@ pub(super) fn run_pixelbender_shader_impl(
                 }
 
                 let value_vec = match value {
-                    PixelBenderType::TFloat(f1) => FloatOrInt::Float(vec![*f1, 0.0, 0.0, 0.0]),
-                    PixelBenderType::TFloat2(f1, f2) => FloatOrInt::Float(vec![*f1, *f2, 0.0, 0.0]),
+                    PixelBenderType::TFloat(f1) => {
+                        FloatOrInt::Float(smallvec_inline![*f1, 0.0, 0.0, 0.0])
+                    }
+                    PixelBenderType::TFloat2(f1, f2) => {
+                        FloatOrInt::Float(smallvec_inline![*f1, *f2, 0.0, 0.0])
+                    }
                     PixelBenderType::TFloat3(f1, f2, f3) => {
-                        FloatOrInt::Float(vec![*f1, *f2, *f3, 0.0])
+                        FloatOrInt::Float(smallvec_inline![*f1, *f2, *f3, 0.0])
                     }
                     PixelBenderType::TFloat4(f1, f2, f3, f4) => {
-                        FloatOrInt::Float(vec![*f1, *f2, *f3, *f4])
+                        FloatOrInt::Float(smallvec_inline![*f1, *f2, *f3, *f4])
                     }
-                    PixelBenderType::TInt(i1) => FloatOrInt::Int(vec![*i1 as i32, 0, 0, 0]),
+                    PixelBenderType::TInt(i1) => {
+                        FloatOrInt::Int(smallvec_inline![*i1 as i32, 0, 0, 0])
+                    }
                     PixelBenderType::TInt2(i1, i2) => {
-                        FloatOrInt::Int(vec![*i1 as i32, *i2 as i32, 0, 0])
+                        FloatOrInt::Int(smallvec_inline![*i1 as i32, *i2 as i32, 0, 0])
                     }
                     PixelBenderType::TInt3(i1, i2, i3) => {
-                        FloatOrInt::Int(vec![*i1 as i32, *i2 as i32, *i3 as i32, 0])
+                        FloatOrInt::Int(smallvec_inline![*i1 as i32, *i2 as i32, *i3 as i32, 0])
                     }
-                    PixelBenderType::TInt4(i1, i2, i3, i4) => {
-                        FloatOrInt::Int(vec![*i1 as i32, *i2 as i32, *i3 as i32, *i4 as i32])
-                    }
+                    PixelBenderType::TInt4(i1, i2, i3, i4) => FloatOrInt::Int(smallvec_inline![
+                        *i1 as i32, *i2 as i32, *i3 as i32, *i4 as i32
+                    ]),
                     // We treat the input as being in column-major order. Despite what the Flash docs claim,
                     // this seems to be what Flash Player does.
-                    PixelBenderType::TFloat2x2(arr) => FloatOrInt::Float(arr.to_vec()),
+                    PixelBenderType::TFloat2x2(arr) => FloatOrInt::Float(SmallVec::from(*arr)),
                     PixelBenderType::TFloat3x3(arr) => {
                         // Add a zero after every 3 values to created zero-padded vec4s
-                        let mut vec4_arr = Vec::with_capacity(16);
+                        let mut vec4_arr = SmallVec::with_capacity(16);
                         for (i, val) in arr.iter().enumerate() {
                             vec4_arr.push(*val);
                             if i % 3 == 2 {
@@ -587,17 +594,19 @@ pub(super) fn run_pixelbender_shader_impl(
                         }
                         FloatOrInt::Float(vec4_arr)
                     }
-                    PixelBenderType::TFloat4x4(arr) => FloatOrInt::Float(arr.to_vec()),
-                    PixelBenderType::TBool(b1) => FloatOrInt::Int(vec![*b1 as i32, 0, 0, 0]),
+                    PixelBenderType::TFloat4x4(arr) => FloatOrInt::Float(SmallVec::from_slice(arr)),
+                    PixelBenderType::TBool(b1) => {
+                        FloatOrInt::Int(smallvec_inline![*b1 as i32, 0, 0, 0])
+                    }
                     PixelBenderType::TBool2(b1, b2) => {
-                        FloatOrInt::Int(vec![*b1 as i32, *b2 as i32, 0, 0])
+                        FloatOrInt::Int(smallvec_inline![*b1 as i32, *b2 as i32, 0, 0])
                     }
                     PixelBenderType::TBool3(b1, b2, b3) => {
-                        FloatOrInt::Int(vec![*b1 as i32, *b2 as i32, *b3 as i32, 0])
+                        FloatOrInt::Int(smallvec_inline![*b1 as i32, *b2 as i32, *b3 as i32, 0])
                     }
-                    PixelBenderType::TBool4(b1, b2, b3, b4) => {
-                        FloatOrInt::Int(vec![*b1 as i32, *b2 as i32, *b3 as i32, *b4 as i32])
-                    }
+                    PixelBenderType::TBool4(b1, b2, b3, b4) => FloatOrInt::Int(smallvec_inline![
+                        *b1 as i32, *b2 as i32, *b3 as i32, *b4 as i32
+                    ]),
                     _ => unreachable!("Unimplemented value {value:?}"),
                 };
 
