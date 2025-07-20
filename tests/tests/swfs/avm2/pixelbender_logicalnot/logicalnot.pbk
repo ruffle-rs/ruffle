@@ -1,0 +1,32 @@
+<languageVersion : 1.0;>
+
+kernel logicalnot
+<   namespace : "Ruffle Tests";
+    vendor : "Ruffle Contributors";
+    version : 1;
+>
+{
+    output pixel4 dst;
+
+    parameter int inputValue
+    <
+        defaultValue:0;
+    >;
+
+    void
+    evaluatePixel()
+    {
+        // Test LogicalNot operation 
+        // Flash doesn't allow ! on int directly, so we need explicit conversion
+        int intValue = inputValue;
+        bool boolValue = bool(intValue);
+        bool result = !boolValue;
+        
+        // Convert bools to float for output using float() cast
+        float boolAsFloat = float(boolValue);
+        float resultAsFloat = float(result);
+        
+        // Store boolValue in red channel, result in green channel
+        dst = pixel4(boolAsFloat, resultAsFloat, 0, 1);
+    }
+}
