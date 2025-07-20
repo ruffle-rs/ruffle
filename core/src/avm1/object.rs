@@ -150,16 +150,7 @@ impl<'gc> Object<'gc> {
         name: impl Into<AvmString<'gc>>,
         activation: &mut Activation<'_, 'gc>,
     ) -> Result<Value<'gc>, Error<'gc>> {
-        // TODO: Extract logic to a `lookup` function.
-        let (this, proto) = if let Some(super_object) = self.as_super_object() {
-            (super_object.this(), super_object.proto(activation))
-        } else {
-            (self, Value::Object(self))
-        };
-        match search_prototype(proto, name.into(), activation, this, false)? {
-            Some((value, _depth)) => Ok(value),
-            None => Ok(Value::Undefined),
-        }
+        self.lookup(name, activation, false)
     }
 
     /// Retrieve a named property from the object, or its prototype.
@@ -168,13 +159,21 @@ impl<'gc> Object<'gc> {
         name: impl Into<AvmString<'gc>>,
         activation: &mut Activation<'_, 'gc>,
     ) -> Result<Value<'gc>, Error<'gc>> {
-        // TODO: Extract logic to a `lookup` function.
+        self.lookup(name, activation, true)
+    }
+
+    fn lookup(
+        self,
+        name: impl Into<AvmString<'gc>>,
+        activation: &mut Activation<'_, 'gc>,
+        is_slash_path: bool,
+    ) -> Result<Value<'gc>, Error<'gc>> {
         let (this, proto) = if let Some(super_object) = self.as_super_object() {
             (super_object.this(), super_object.proto(activation))
         } else {
             (self, Value::Object(self))
         };
-        match search_prototype(proto, name.into(), activation, this, true)? {
+        match search_prototype(proto, name.into(), activation, this, is_slash_path)? {
             Some((value, _depth)) => Ok(value),
             None => Ok(Value::Undefined),
         }
