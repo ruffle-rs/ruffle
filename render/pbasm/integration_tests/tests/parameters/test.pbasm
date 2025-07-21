@@ -1,0 +1,54 @@
+version 1i
+name "Test"
+
+param.in "param1", bool, i0.r
+
+param.in "param2", bool2, i0.rg
+
+param.in "param3", bool3, i0.rgb
+
+param.in "param4", bool4, i0.rgba
+
+param.in "param5", int, i0.r
+
+param.in "param6", int2, i0.rg
+
+param.in "param7", int3, i0.rgb
+
+param.in "param8", int4, i0.rgba
+
+param.in "param10", float, f0.r
+
+param.in "param11", float2, f0.rg
+
+param.in "param12", float3, f0.rgb
+
+param.in "param13", float4, f0.rgba
+
+param.out "param21", bool, i0.r
+
+param.out "param22", bool2, i0.rg
+
+param.out "param23", bool3, i0.rgb
+
+param.out "param24", bool4, i0.rgba
+
+param.out "param25", int, i0.r
+
+param.out "param26", int2, i0.rg
+
+param.out "param27", int3, i0.rgb
+
+param.out "param28", int4, i0.rgba
+
+param.out "param210", float, f0.r
+
+param.out "param211", float2, f0.rg
+
+param.out "param212", float3, f0.rgb
+
+param.out "param213", float4, f0.rgba
+
+param.tex "param_tex", 1i, 3i
+
+nop

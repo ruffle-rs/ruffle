@@ -20,6 +20,7 @@ members = [
     "render/canvas",
     "render/naga-agal",
     "render/pbasm",
+    "render/pbasm/integration_tests",
     "render/wgpu",
     "render/webgl",
 
