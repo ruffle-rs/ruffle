@@ -3920,6 +3920,20 @@ dependencies = [
 ]
 
 [[package]]
+name = "pixel_bender_assembly_tests"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "clap",
+ "libtest-mimic",
+ "pixel_bender",
+ "ruffle_fs_tests_runner",
+ "serde",
+ "toml",
+ "vfs",
+]
+
+[[package]]
 name = "pkg-config"
 version = "0.3.32"
 source = "registry+https://github.com/rust-lang/crates.io-index"

@@ -1,0 +1,57 @@
+version 1i
+name "Test"
+
+param.in "param1", float2x2, f1.m2
+
+param.in "param2", float3x3, f1.m3
+
+param.in "param2", float4x4, f1.m4
+
+mov     f1.m2, f0.m2
+mov     f1.m3, f0.m3
+mov     f1.m4, f0.m4
+mov     f1.rgba, f0.m2
+mov     f1.rgb, f0.m2
+mov     f1.rba, f0.m2
+mov     f1.rga, f0.m2
+mov     f1.rgb, f0.m2
+mov     f1.rg, f0.m2
+mov     f1.rb, f0.m2
+mov     f1.ra, f0.m2
+mov     f1.gb, f0.m2
+mov     f1.ga, f0.m2
+mov     f1.ba, f0.m2
+mov     f1.r, f0.m2
+mov     f1.g, f0.m2
+mov     f1.b, f0.m2
+mov     f1.a, f0.m2
+mov     f1.rgba, f0.m3
+mov     f1.rgb, f0.m3
+mov     f1.rba, f0.m3
+mov     f1.rga, f0.m3
+mov     f1.rgb, f0.m3
+mov     f1.rg, f0.m3
+mov     f1.rb, f0.m3
+mov     f1.ra, f0.m3
+mov     f1.gb, f0.m3
+mov     f1.ga, f0.m3
+mov     f1.ba, f0.m3
+mov     f1.r, f0.m3
+mov     f1.g, f0.m3
+mov     f1.b, f0.m3
+mov     f1.a, f0.m3
+mov     f1.rgba, f0.m4
+mov     f1.rgb, f0.m4
+mov     f1.rba, f0.m4
+mov     f1.rga, f0.m4
+mov     f1.rgb, f0.m4
+mov     f1.rg, f0.m4
+mov     f1.rb, f0.m4
+mov     f1.ra, f0.m4
+mov     f1.gb, f0.m4
+mov     f1.ga, f0.m4
+mov     f1.ba, f0.m4
+mov     f1.r, f0.m4
+mov     f1.g, f0.m4
+mov     f1.b, f0.m4
+mov     f1.a, f0.m4
