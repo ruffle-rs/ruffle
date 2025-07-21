@@ -1929,15 +1929,21 @@ impl<'a> Reader<'a> {
             None
         };
 
-        let action = match (flags.contains(PlaceFlag::MOVE), has_character_id) {
-            (true, false) => PlaceObjectAction::Modify,
-            (false, true) => {
+        let action = match (flags.contains(PlaceFlag::MOVE), has_character_id, has_class_name) {
+            (true, false, false) => PlaceObjectAction::Modify,
+            (false, true, false) => {
                 let id = self.read_u16()?;
                 PlaceObjectAction::Place(id)
             }
-            (true, true) => {
+            (false, false, true) => {
+                PlaceObjectAction::Place(65530)
+            }
+            (true, true, false) => {
                 let id = self.read_u16()?;
                 PlaceObjectAction::Replace(id)
+            }
+            (true, false, true) => {
+                PlaceObjectAction::Replace(65530)
             }
             _ => return Err(Error::invalid_data("Invalid PlaceObject type")),
         };

@@ -6,6 +6,7 @@ use crate::avm2::object::LoaderInfoObject;
 use crate::avm2::object::LoaderStream;
 use crate::avm2::script::Script;
 use crate::avm2::Activation as Avm2Activation;
+use crate::avm2::Multiname as Avm2Multiname;
 use crate::avm2::{
     Avm2, ClassObject as Avm2ClassObject, Error as Avm2Error, Object as Avm2Object,
     QName as Avm2QName, StageObject as Avm2StageObject, Value as Avm2Value,
@@ -1294,6 +1295,28 @@ impl<'gc> MovieClip<'gc> {
         if self.has_child_at_depth(depth) {
             context.avm_warning(&format!("Failed to place object at depth {depth}."));
             return None;
+        }
+
+        let mut id = id;
+
+        if id == 65530 {
+            let class_name = place_object.class_name.unwrap();
+            let class_name = AvmString::new_utf8_bytes(context.gc(), class_name.as_bytes());
+            println!("{:?}", class_name);
+            let class_name = Avm2Multiname::new(context.avm2.find_public_namespace(), class_name);
+
+            let class = {
+                let class = context.avm2.stage_domain().get_class(context, &class_name);
+                let class = class.unwrap();
+                class
+            };
+            let maybe_symbol = context
+                .library
+                .avm2_class_registry()
+                .class_symbol(class);
+            if let Some((movie, symbol)) = maybe_symbol {
+                id = symbol;
+            }
         }
 
         let movie = self.movie();
