@@ -4,6 +4,8 @@
 #[cfg(test)]
 mod tests;
 
+#[cfg(feature = "assembly")]
+pub mod assembly;
 pub mod disassembly;
 
 use byteorder::{BigEndian, LittleEndian, ReadBytesExt};
@@ -76,7 +78,7 @@ pub enum PixelBenderTypeOpcode {
     TBool4 = 0x10,
 }
 
-#[derive(Debug, PartialEq, Copy, Clone)]
+#[derive(Debug, PartialEq, Eq, Copy, Clone, PartialOrd, Ord)]
 pub enum PixelBenderRegChannel {
     R = 0,
     G = 1,
