@@ -3834,6 +3834,20 @@ dependencies = [
 ]
 
 [[package]]
+name = "pbasm_integration_tests"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "clap",
+ "libtest-mimic",
+ "pbasm",
+ "ruffle_fs_tests_runner",
+ "serde",
+ "toml",
+ "vfs",
+]
+
+[[package]]
 name = "percent-encoding"
 version = "2.3.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
