@@ -28,9 +28,9 @@ clap = { workspace = true, optional = true }
 h263-rs-yuv = { git = "https://github.com/ruffle-rs/h263-rs", rev = "b3f905511acc7b80861dac45fdc5ca913b6029e5"}
 num-traits = { workspace = true }
 num-derive = { workspace = true }
-byteorder = "1.5"
+byteorder = { workspace = true }
 wgpu = { workspace = true, optional = true }
-indexmap = "2.10.0"
+indexmap = { workspace = true }
 
 # This crate has a `compile_error!` on apple platforms
 [target.'cfg(not(target_vendor = "apple"))'.dependencies.renderdoc]
@@ -42,7 +42,7 @@ version = "0.3.2"
 default-features = false # can't use rayon on web
 
 [dev-dependencies]
-approx = "0.5.1"
+approx = { workspace = true }
 
 [features]
 default = []

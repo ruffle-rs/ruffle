@@ -21,14 +21,14 @@ image = { workspace = true, features  = ["png"] }
 regex = { workspace = true }
 url = { workspace = true }
 chrono = { workspace = true }
-approx = "0.5.1"
+approx = { workspace = true }
 pretty_assertions = "1.4.1"
 serde = { workspace = true }
 toml = { workspace = true }
 anyhow = { workspace = true }
 async-channel = { workspace = true }
 vfs = { workspace = true }
-percent-encoding = "2.3.1"
+percent-encoding = { workspace = true }
 cfg-expr = "0.20.1"
 
 [features]

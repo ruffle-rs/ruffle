@@ -86,6 +86,21 @@ regex = "1.11.1"
 toml = "0.8.23"
 vfs = "0.12.2"
 smallvec = { version = "1.15.1", features = ["const_new", "union"] }
+serde_json = "1.0.141"
+percent-encoding = "2.3.1"
+approx = "0.5.1"
+encoding_rs = "0.8.35"
+byteorder = "1.5"
+bitstream-io = "4.4.0"
+indicatif = "0.17"
+rayon = "1.10.0"
+sha2 = "0.10.9"
+indexmap = "2.10.0"
+fnv = "1.0.7"
+fluent-templates = "0.13.0"
+lzma-rs = "0.3.0"
+tempfile = "3.19.1"
+tracing-wasm = "0.2.1"
 
 [workspace.lints.rust]
 # Clippy nightly often adds new/buggy lints that we want to ignore.

@@ -17,9 +17,9 @@ log = { workspace = true }
 walkdir = { workspace = true }
 serde = { workspace = true, features = ["derive"] }
 csv = "1.3"
-indicatif = "0.17"
+indicatif = { workspace = true }
 path-slash = "0.2.1"
 swf = { path = "../swf" }
-rayon = "1.10.0"
+rayon = { workspace = true }
 crossbeam-channel = "0.5"
-sha2 = "0.10.9"
+sha2 = { workspace = true }
