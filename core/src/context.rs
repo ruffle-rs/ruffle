@@ -358,8 +358,7 @@ impl<'gc> UpdateContext<'gc> {
 
         if self.root_swf.is_action_script_3() {
             self.avm2.root_api_version =
-                ApiVersion::from_swf_version(self.root_swf.version(), self.avm2.player_runtime)
-                    .unwrap_or_else(|| panic!("Unknown SWF version {}", self.root_swf.version()));
+                ApiVersion::from_swf_version(self.root_swf.version(), self.avm2.player_runtime);
         }
 
         self.stage.set_movie_size(
