@@ -94,7 +94,7 @@ pixel_bender_type_with_opcode! {
     }
 }
 
-#[derive(Debug, PartialEq, Copy, Clone)]
+#[derive(Debug, PartialEq, Eq, Copy, Clone, PartialOrd, Ord)]
 pub enum PixelBenderRegChannel {
     R = 0,
     G = 1,
