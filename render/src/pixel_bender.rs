@@ -372,6 +372,7 @@ pub enum PixelBenderParam {
 pub struct PixelBenderMetadata {
     pub key: String,
     pub value: PixelBenderType,
+    pub is_meta2: bool,
 }
 
 /// Parses PixelBender bytecode
@@ -485,6 +486,7 @@ fn read_op<R: Read>(
             metadata.push(PixelBenderMetadata {
                 key: meta_key,
                 value: meta_value,
+                is_meta2: matches!(opcode, Opcode::PBJMeta2),
             });
         }
         Opcode::PBJParam => {
