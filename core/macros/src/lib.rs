@@ -2,7 +2,7 @@
 extern crate proc_macro;
 
 use proc_macro::TokenStream;
-use proc_macro2::TokenStream as TokenStream2;
+use proc_macro2::{Span, TokenStream as TokenStream2};
 use quote::{format_ident, quote};
 use syn::parse::{Parse, ParseStream};
 use syn::{
@@ -18,6 +18,9 @@ use syn::{
 /// This will auto-implement the trait for the enum, delegating all methods to the
 /// underlying type. Additionally, `From` will be implemented for all of the variants,
 /// so an underlying type can easily be converted into the enum.
+///
+/// Methods can be individually marked with `#[no_dynamic]`, which will exempt them from
+/// being dynamically dispatched, preventing implementors from overriding them.
 ///
 /// TODO: This isn't completely robust for all cases, but should be good enough
 /// for our usage.
@@ -62,6 +65,57 @@ pub fn enum_trait_object(args: TokenStream, item: TokenStream) -> TokenStream {
         "Trait and enum should have the same generic parameters"
     );
 
+    /// An hacky way to prevent accidental method overriding.
+    ///
+    /// We modify the method signature to include a 'dummy' lifetime, which doesn't
+    /// disrupt callers but forces implementors to mention a pub-in-private trait.
+    ///
+    /// This isn't fool-proof (an implementor in a submodule of the trait's module
+    /// can still manually write the modified signature), and the error messages
+    /// aren't great, but this is good enough for us.
+    struct NoOverrideModule {
+        mod_name: syn::Ident,
+        lt: syn::Lifetime,
+        contents: TokenStream2,
+    }
+
+    impl NoOverrideModule {
+        fn make(trait_name: &syn::Ident) -> Self {
+            let mod_name = syn::Ident::new(
+                &format!("__{trait_name}_do_not_override"),
+                Span::call_site(),
+            );
+            let lt = syn::Lifetime::new("'no_dyn", Span::call_site());
+            let contents = quote! {
+                #[automatically_derived]
+                #[doc(hidden)]
+                mod #mod_name {
+                    pub trait NoDyn<#lt> {}
+                    impl NoDyn<'_> for () {}
+                }
+            };
+            Self {
+                mod_name,
+                lt,
+                contents,
+            }
+        }
+
+        fn adjust_method(&self, method: &mut syn::TraitItemFn) {
+            let Self { mod_name, lt, .. } = self;
+            let generics = &mut method.sig.generics;
+            generics
+                .params
+                .insert(0, syn::LifetimeParam::new(lt.clone()).into());
+            generics
+                .make_where_clause()
+                .predicates
+                .push(parse_quote!((): #mod_name::NoDyn<#lt>));
+        }
+    }
+
+    let mut no_override: Option<NoOverrideModule> = None;
+
     // Implement each trait. This will match against each enum variant and delegate
     // to the underlying type.
     let trait_methods: Vec<_> = input_trait
@@ -89,6 +143,10 @@ pub fn enum_trait_object(args: TokenStream, item: TokenStream) -> TokenStream {
                 });
 
                 if is_no_dynamic {
+                    no_override
+                        .get_or_insert_with(|| NoOverrideModule::make(trait_name))
+                        .adjust_method(method);
+
                     // Don't create this method as a dynamic-dispatch method
                     return None;
                 }
@@ -162,7 +220,10 @@ pub fn enum_trait_object(args: TokenStream, item: TokenStream) -> TokenStream {
         })
         .collect();
 
+    let no_override = no_override.map(|s| s.contents).into_iter();
     let out = quote!(
+        #(#no_override)*
+
         #input_trait
 
         #enum_input
