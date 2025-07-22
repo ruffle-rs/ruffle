@@ -568,16 +568,17 @@ pub(super) fn run_pixelbender_shader_impl(
                     PixelBenderType::TFloat4(f1, f2, f3, f4) => {
                         FloatOrInt::Float(smallvec_inline![*f1, *f2, *f3, *f4])
                     }
-                    PixelBenderType::TInt(i1) => {
+                    PixelBenderType::TInt(i1) | PixelBenderType::TBool(i1) => {
                         FloatOrInt::Int(smallvec_inline![*i1 as i32, 0, 0, 0])
                     }
-                    PixelBenderType::TInt2(i1, i2) => {
+                    PixelBenderType::TInt2(i1, i2) | PixelBenderType::TBool2(i1, i2) => {
                         FloatOrInt::Int(smallvec_inline![*i1 as i32, *i2 as i32, 0, 0])
                     }
-                    PixelBenderType::TInt3(i1, i2, i3) => {
+                    PixelBenderType::TInt3(i1, i2, i3) | PixelBenderType::TBool3(i1, i2, i3) => {
                         FloatOrInt::Int(smallvec_inline![*i1 as i32, *i2 as i32, *i3 as i32, 0])
                     }
-                    PixelBenderType::TInt4(i1, i2, i3, i4) => FloatOrInt::Int(smallvec_inline![
+                    PixelBenderType::TInt4(i1, i2, i3, i4)
+                    | PixelBenderType::TBool4(i1, i2, i3, i4) => FloatOrInt::Int(smallvec_inline![
                         *i1 as i32, *i2 as i32, *i3 as i32, *i4 as i32
                     ]),
                     // We treat the input as being in column-major order. Despite what the Flash docs claim,
@@ -595,18 +596,6 @@ pub(super) fn run_pixelbender_shader_impl(
                         FloatOrInt::Float(vec4_arr)
                     }
                     PixelBenderType::TFloat4x4(arr) => FloatOrInt::Float(SmallVec::from_slice(arr)),
-                    PixelBenderType::TBool(b1) => {
-                        FloatOrInt::Int(smallvec_inline![*b1 as i32, 0, 0, 0])
-                    }
-                    PixelBenderType::TBool2(b1, b2) => {
-                        FloatOrInt::Int(smallvec_inline![*b1 as i32, *b2 as i32, 0, 0])
-                    }
-                    PixelBenderType::TBool3(b1, b2, b3) => {
-                        FloatOrInt::Int(smallvec_inline![*b1 as i32, *b2 as i32, *b3 as i32, 0])
-                    }
-                    PixelBenderType::TBool4(b1, b2, b3, b4) => FloatOrInt::Int(smallvec_inline![
-                        *b1 as i32, *b2 as i32, *b3 as i32, *b4 as i32
-                    ]),
                     _ => unreachable!("Unimplemented value {value:?}"),
                 };
 

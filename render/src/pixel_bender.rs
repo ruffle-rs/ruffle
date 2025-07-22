@@ -71,10 +71,12 @@ pixel_bender_type_with_opcode! {
         TInt3(i16, i16, i16) = 0xA,
         TInt4(i16, i16, i16, i16) = 0xB,
         TString(String) = 0xC,
-        TBool(bool) = 0xD,
-        TBool2(bool, bool) = 0xE,
-        TBool3(bool, bool, bool) = 0xF,
-        TBool4(bool, bool, bool, bool) = 0x10,
+        // NOTE: Boolean parameters are just ints, you can provide any int value
+        //   as a boolean and it will be passed as-is to the shader.
+        TBool(i16) = 0xD,
+        TBool2(i16, i16) = 0xE,
+        TBool3(i16, i16, i16) = 0xF,
+        TBool4(i16, i16, i16, i16) = 0x10,
     }
 }
 
@@ -759,23 +761,23 @@ fn read_value<R: Read>(
             data.read_i16::<LittleEndian>()?,
         )),
         PixelBenderTypeOpcode::TString => Ok(PixelBenderType::TString(read_string(data)?)),
-        PixelBenderTypeOpcode::TBool => Ok(PixelBenderType::TBool(
-            data.read_i16::<LittleEndian>()? != 0,
-        )),
+        PixelBenderTypeOpcode::TBool => {
+            Ok(PixelBenderType::TBool(data.read_i16::<LittleEndian>()?))
+        }
         PixelBenderTypeOpcode::TBool2 => Ok(PixelBenderType::TBool2(
-            data.read_i16::<LittleEndian>()? != 0,
-            data.read_i16::<LittleEndian>()? != 0,
+            data.read_i16::<LittleEndian>()?,
+            data.read_i16::<LittleEndian>()?,
         )),
         PixelBenderTypeOpcode::TBool3 => Ok(PixelBenderType::TBool3(
-            data.read_i16::<LittleEndian>()? != 0,
-            data.read_i16::<LittleEndian>()? != 0,
-            data.read_i16::<LittleEndian>()? != 0,
+            data.read_i16::<LittleEndian>()?,
+            data.read_i16::<LittleEndian>()?,
+            data.read_i16::<LittleEndian>()?,
         )),
         PixelBenderTypeOpcode::TBool4 => Ok(PixelBenderType::TBool4(
-            data.read_i16::<LittleEndian>()? != 0,
-            data.read_i16::<LittleEndian>()? != 0,
-            data.read_i16::<LittleEndian>()? != 0,
-            data.read_i16::<LittleEndian>()? != 0,
+            data.read_i16::<LittleEndian>()?,
+            data.read_i16::<LittleEndian>()?,
+            data.read_i16::<LittleEndian>()?,
+            data.read_i16::<LittleEndian>()?,
         )),
     }
 }
