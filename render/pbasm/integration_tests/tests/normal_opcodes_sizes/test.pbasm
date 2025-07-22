@@ -1,0 +1,7 @@
+version 1i
+name "Test"
+
+add     i1.r, i0.b
+add     i1.rg, i0.br
+add     i1.rgb, i0.rga
+add     i1.rgba, i0.abgr
