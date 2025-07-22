@@ -4,7 +4,7 @@ use super::api_version::ApiVersion;
 use crate::avm2::activation::Activation;
 use crate::avm2::class::Class;
 use crate::avm2::domain::Domain;
-use crate::avm2::error::{make_error_1107, Error};
+use crate::avm2::error::Error;
 use crate::avm2::globals::global_scope;
 use crate::avm2::method::Method;
 use crate::avm2::object::{Object, ScriptObject, TObject};
@@ -410,12 +410,7 @@ impl<'gc> Script<'gc> {
 
         let init = unit.load_method(script.init_method, false, activation)?;
 
-        // Script initializers cannot have parameters declared
-        if !init.signature().is_empty() {
-            return Err(make_error_1107(activation));
-        }
-
-        let globals = Script::create_globals_object(unit, script, domain, activation)?;
+        let globals = Script::create_globals_object(unit, script, domain, init, activation)?;
 
         let created_script = Self(Gc::new(
             activation.gc(),
@@ -441,6 +436,7 @@ impl<'gc> Script<'gc> {
         unit: TranslationUnit<'gc>,
         script: &AbcScript,
         domain: Domain<'gc>,
+        init_method: Method<'gc>,
         activation: &mut Activation<'_, 'gc>,
     ) -> Result<Object<'gc>, Error<'gc>> {
         let mc = activation.gc();
@@ -460,7 +456,7 @@ impl<'gc> Script<'gc> {
         // Now that we have the traits, create the global class for this script
         // and use it to initialize a vtable and global object.
 
-        let global_class = global_scope::create_class(activation, traits)?;
+        let global_class = global_scope::create_class(activation, init_method, traits)?;
 
         let scope = ScopeChain::new(domain);
         let object_class = activation.avm2().classes().object;

@@ -312,7 +312,9 @@ impl<'gc> Avm2<'gc> {
             return Err(e);
         };
 
-        init_activation.avm2().push_global_init(mc, script);
+        init_activation
+            .avm2()
+            .push_call(mc, method, Some(script.global_class()));
         let result = init_activation.run_actions(method);
         init_activation.avm2().pop_call(mc);
 
@@ -730,11 +732,6 @@ impl<'gc> Avm2<'gc> {
     /// Pushes an executable on the call stack
     pub fn push_call(&self, mc: &Mutation<'gc>, method: Method<'gc>, class: Option<Class<'gc>>) {
         self.call_stack.borrow_mut(mc).push(method, class)
-    }
-
-    /// Pushes script initializer (global init) on the call stack
-    pub fn push_global_init(&self, mc: &Mutation<'gc>, script: Script<'gc>) {
-        self.call_stack.borrow_mut(mc).push_global_init(script)
     }
 
     /// Pops an executable off the call stack

@@ -8,6 +8,7 @@ pub fn create_class<'gc>(activation: &mut Activation<'_, 'gc>) -> Class<'gc> {
     let class = Class::custom_new(
         QName::new(activation.avm2().namespaces.public_all(), istr!("void")),
         None,
+        None,
         Box::new([]),
         mc,
     );
