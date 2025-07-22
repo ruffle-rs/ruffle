@@ -15,8 +15,8 @@ use super::shader_parameter::make_shader_parameter;
 
 pub use crate::avm2::object::shader_data_allocator;
 
-/// Implements `ShaderData.init`, which is called from the constructor
-pub fn init<'gc>(
+/// Implements `ShaderData._setByteCode`, which is called from the constructor
+pub fn _set_byte_code<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
     args: &[Value<'gc>],
