@@ -107,6 +107,7 @@ root first frame end
 
 
 // attachMovie("a", c, getNextHighestDepth());
+Warning: Reference to undeclared variable, 'c'
 a constructor()
 
 // trace(this._name)

@@ -1,0 +1,1 @@
+Warning: Rectangle is not a function
