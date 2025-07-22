@@ -1,0 +1,26 @@
+version 1i
+name "bool_param"
+
+meta "namespace", string("Ruffle Tests")
+meta "vendor", string("Kamil Jarosz")
+meta "version", int(1i)
+
+param.out "dst", float4, f0.rgba
+
+param.in "intInput", int, i1.r
+param.in "boolInput", bool, i1.g
+
+ld      f2.r, 128f
+ld      f2.g, 3f
+
+i2f     f0.r, i1.r
+div     f0.r, f2.r
+
+i2f     f0.g, i1.g
+div     f0.g, f2.r
+
+i2f     f0.b, i1.g
+add     f0.b, f2.g
+div     f0.b, f2.r
+
+ld      f0.a, 1f
