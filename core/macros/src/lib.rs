@@ -121,10 +121,8 @@ pub fn enum_trait_object(args: TokenStream, item: TokenStream) -> TokenStream {
     let trait_methods: Vec<_> = input_trait
         .items
         .iter_mut()
-        .filter_map(|item| match item {
+        .map(|item| match item {
             TraitItem::Fn(ref mut method) => {
-                let method_name = &method.sig.ident;
-
                 let mut is_no_dynamic = false;
 
                 method.attrs.retain(|attr| match &attr.meta {
@@ -142,15 +140,6 @@ pub fn enum_trait_object(args: TokenStream, item: TokenStream) -> TokenStream {
                     _ => true,
                 });
 
-                if is_no_dynamic {
-                    no_override
-                        .get_or_insert_with(|| NoOverrideModule::make(trait_name))
-                        .adjust_method(method);
-
-                    // Don't create this method as a dynamic-dispatch method
-                    return None;
-                }
-
                 let params: Vec<_> = method
                     .sig
                     .inputs
@@ -158,38 +147,66 @@ pub fn enum_trait_object(args: TokenStream, item: TokenStream) -> TokenStream {
                     .filter_map(|arg| {
                         if let FnArg::Typed(arg) = arg {
                             if let Pat::Ident(i) = &*arg.pat {
-                                let arg_name = &i.ident;
-                                return Some(quote!(#arg_name,));
+                                return Some(i.ident.clone());
                             }
                         }
                         None
                     })
                     .collect();
 
-                let match_arms: Vec<_> = enum_input
-                    .variants
-                    .iter()
-                    .map(|variant| {
-                        let variant_name = &variant.ident;
-                        quote! {
-                            #enum_name::#variant_name(o) => o.#method_name(#(#params)*),
+                let method_block = if is_no_dynamic {
+                    no_override
+                        .get_or_insert_with(|| NoOverrideModule::make(trait_name))
+                        .adjust_method(method);
+
+                    let method_name = &method.sig.ident;
+                    let deref = if let Some(syn::Receiver {
+                        colon_token: None,
+                        reference,
+                        ..
+                    }) = method.sig.receiver()
+                    {
+                        reference.is_some().then(|| quote!(*))
+                    } else {
+                        panic!("#[no_dynamic] method `{method_name}` must take `self`, `&self`, or `&mut self`")
+                    };
+
+                    // Moves the provided default body to the enum's generated trait impl,
+                    // and replace it by an impl that delegates to the enum.
+                    method
+                        .default
+                        .replace(parse_quote!({
+                            let mut o: #enum_name<'_> = (#deref self).into();
+                            o.#method_name(#(#params),*)
+                        }))
+                        .expect("#[no_dynamic] method `{method_name}` must have a default body")
+                } else {
+                    let method_name = &method.sig.ident;
+                    let match_arms: Vec<_> = enum_input
+                        .variants
+                        .iter()
+                        .map(|variant| {
+                            let variant_name = &variant.ident;
+                            quote! {
+                                #enum_name::#variant_name(o) => o.#method_name(#(#params),*),
+                            }
+                        })
+                        .collect();
+
+                    parse_quote!({
+                        match self {
+                            #(#match_arms)*
                         }
                     })
-                    .collect();
+                };
 
-                let method_block = quote!({
-                    match self {
-                        #(#match_arms)*
-                    }
-                });
-
-                Some(ImplItem::Fn(ImplItemFn {
+                ImplItem::Fn(ImplItemFn {
                     attrs: method.attrs.clone(),
                     vis: Visibility::Inherited,
                     defaultness: None,
                     sig: method.sig.clone(),
-                    block: parse_quote!(#method_block),
-                }))
+                    block: method_block,
+                })
             }
             _ => panic!("Unsupported trait item: {item:?}"),
         })
