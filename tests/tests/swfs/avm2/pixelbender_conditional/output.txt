@@ -1,0 +1,138 @@
+if: 0 -> ff000000
+=================
+select: 0 -> ff000000
+=================
+if: 0.1 -> ff000000
+=================
+select: 0.1 -> ff000000
+=================
+if: 0.5 -> ff000000
+=================
+select: 0.5 -> ff000000
+=================
+if: 0.9 -> ff000000
+=================
+select: 0.9 -> ff000000
+=================
+if: 1 -> ff00ffff
+=================
+select: 1 -> ff00ffff
+=================
+if: 1.1 -> ff00ffff
+=================
+select: 1.1 -> ff00ffff
+=================
+if: 1.5 -> ff00ffff
+=================
+select: 1.5 -> ff00ffff
+=================
+if: 1.9 -> ff00ffff
+=================
+select: 1.9 -> ff00ffff
+=================
+if: 2 -> ff00ffff
+=================
+select: 2 -> ff000000
+=================
+if: 2.5 -> ff00ffff
+=================
+select: 2.5 -> ff000000
+=================
+if: -0.1 -> ff000000
+=================
+select: -0.1 -> ff000000
+=================
+if: -0.5 -> ff000000
+=================
+select: -0.5 -> ff000000
+=================
+if: -0.9 -> ff000000
+=================
+select: -0.9 -> ff000000
+=================
+if: -1 -> ff00ffff
+=================
+select: -1 -> ff000000
+=================
+if: -1.1 -> ff00ffff
+=================
+select: -1.1 -> ff000000
+=================
+if: -1.5 -> ff00ffff
+=================
+select: -1.5 -> ff000000
+=================
+if: -2 -> ff00ffff
+=================
+select: -2 -> ff000000
+=================
+if: -2.5 -> ff00ffff
+=================
+select: -2.5 -> ff000000
+=================
+if_wide: 0,0,0,0 -> ff000000
+=================
+select_wide: 0,0,0,0 -> ff000000
+=================
+if_wide: 1,0,0,0 -> ffffff00
+=================
+select_wide: 1,0,0,0 -> ffffff00
+=================
+if_wide: 0,1,0,0 -> ff000000
+=================
+select_wide: 0,1,0,0 -> ff000000
+=================
+if_wide: 0,0,1,0 -> ff000000
+=================
+select_wide: 0,0,1,0 -> ff000000
+=================
+if_wide: 0,0,0,1 -> ff0000ff
+=================
+select_wide: 0,0,0,1 -> ff0000ff
+=================
+if_wide: 2,0,0,0 -> ffffff00
+=================
+select_wide: 2,0,0,0 -> ff000000
+=================
+if_wide: 0,2,0,0 -> ff000000
+=================
+select_wide: 0,2,0,0 -> ff000000
+=================
+if_wide: 0,0,2,0 -> ff000000
+=================
+select_wide: 0,0,2,0 -> ff000000
+=================
+if_wide: 0,0,0,2 -> ff0000ff
+=================
+select_wide: 0,0,0,2 -> ff000000
+=================
+if_wide: 2,1,0,0 -> ffffff00
+=================
+select_wide: 2,1,0,0 -> ff000000
+=================
+if_wide: 0,2,1,0 -> ff000000
+=================
+select_wide: 0,2,1,0 -> ff000000
+=================
+if_wide: 0,0,2,1 -> ff0000ff
+=================
+select_wide: 0,0,2,1 -> ff0000ff
+=================
+if_wide: 1,0,0,2 -> ffffffff
+=================
+select_wide: 1,0,0,2 -> ffffff00
+=================
+Error compiling ShaderIfFloat
+ArgumentError: Error #2004: One of the parameters is invalid.
+	at flash.display::ShaderData/_setByteCode()
+	at flash.display::ShaderData()
+	at flash.display::Shader/set byteCode()
+	at flash.display::Shader()
+	at Test()
+Error compiling ShaderSelectFloat
+ArgumentError: Error #2004: One of the parameters is invalid.
+	at flash.display::ShaderData/_setByteCode()
+	at flash.display::ShaderData()
+	at flash.display::Shader/set byteCode()
+	at flash.display::Shader()
+	at Test()
