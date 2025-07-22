@@ -1,0 +1,25 @@
+version 1i
+name "conditional_select"
+
+meta "namespace", string("Ruffle Tests")
+meta "vendor", string("Kamil Jarosz")
+meta "version", int(1i)
+
+param.out "dst", float4, f0.rgba
+
+param.in "boolInput", bool, i1.g
+meta2 "defaultValue", bool(false)
+
+param.in "intInput", int, i1.b
+meta2 "defaultValue", int(0i)
+
+ld      f2.r, 1f
+ld      f2.g, 0f
+
+; bool
+select  f0.g, i1.g, f2.r, f2.g
+
+; int
+select  f0.b, i1.b, f2.r, f2.g
+
+ld      f0.a, 1f

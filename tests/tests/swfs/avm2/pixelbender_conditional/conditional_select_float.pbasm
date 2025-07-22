@@ -1,0 +1,17 @@
+version 1i
+name "conditional_select_float"
+
+meta "namespace", string("Ruffle Tests")
+meta "vendor", string("Kamil Jarosz")
+meta "version", int(1i)
+
+param.out "dst", float4, f0.rgba
+
+param.in "floatInput", float, f1.r
+meta2 "defaultValue", float(0f)
+
+ld      f2.r, 1f
+ld      f2.g, 0f
+
+select  f0.g, f1.r, f2.r, f2.g
+ld      f0.a, 1f
