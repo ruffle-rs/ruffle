@@ -355,18 +355,24 @@ pub struct PixelBenderShader {
 }
 
 impl PixelBenderShader {
-    pub fn output_channels(&self) -> Option<usize> {
+    pub fn output_reg(&self) -> Option<(&PixelBenderReg, PixelBenderTypeOpcode)> {
+        let mut channels = None;
         for param in &self.params {
             if let PixelBenderParam::Normal {
                 qualifier: PixelBenderParamQualifier::Output,
                 reg,
+                param_type,
                 ..
             } = param
             {
-                return Some(reg.channels.len());
+                channels = Some((reg, *param_type));
             }
         }
-        None
+        channels
+    }
+
+    pub fn output_channels(&self) -> Option<usize> {
+        self.output_reg().map(|(reg, _)| reg.channels.len())
     }
 }
 
