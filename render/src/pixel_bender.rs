@@ -14,6 +14,7 @@ use std::{
     io::Read,
     sync::Arc,
 };
+use thiserror::Error;
 
 use crate::{backend::RawTexture, bitmap::BitmapHandle};
 
@@ -33,6 +34,20 @@ impl PartialEq for PixelBenderShaderHandle {
 pub trait PixelBenderShaderImpl: Any + Debug {
     fn parsed_shader(&self) -> &PixelBenderShader;
 }
+
+#[derive(Debug, Error)]
+pub enum PixelBenderParsingError {
+    #[error("Invalid conditional register kind")]
+    InvalidConditionalKind,
+
+    #[error("IO error: {0}")]
+    IoError(#[from] std::io::Error),
+
+    #[error("UTF-8 error: {0}")]
+    Utf8Error(#[from] std::string::FromUtf8Error),
+}
+
+type Result<T> = core::result::Result<T, PixelBenderParsingError>;
 
 macro_rules! pixel_bender_type_with_opcode {
     (
@@ -379,7 +394,7 @@ pub struct PixelBenderMetadata {
 }
 
 /// Parses PixelBender bytecode
-pub fn parse_shader(mut data: &[u8]) -> Result<PixelBenderShader, Box<dyn std::error::Error>> {
+pub fn parse_shader(mut data: &[u8], validate: bool) -> Result<PixelBenderShader> {
     let mut shader = PixelBenderShader {
         name: String::new(),
         version: 0,
@@ -390,7 +405,7 @@ pub fn parse_shader(mut data: &[u8]) -> Result<PixelBenderShader, Box<dyn std::e
     let data = &mut data;
     let mut metadata = Vec::new();
     while !data.is_empty() {
-        read_op(data, &mut shader, &mut metadata)?;
+        read_op(data, validate, &mut shader, &mut metadata)?;
     }
     // Any metadata left in the vec is associated with our final parameter.
     apply_metadata(&mut shader, &mut metadata);
@@ -407,7 +422,7 @@ const CHANNELS: [PixelBenderRegChannel; 7] = [
     PixelBenderRegChannel::M4x4,
 ];
 
-fn read_src_reg(val: u32, size: u8) -> Result<PixelBenderReg, Box<dyn std::error::Error>> {
+fn read_src_reg(val: u32, size: u8) -> Result<PixelBenderReg> {
     let swizzle = val >> 16;
     let mut channels = Vec::new();
     for i in 0..size {
@@ -432,7 +447,7 @@ fn read_matrix_reg(val: u16, mask: u8) -> PixelBenderReg {
     read_reg(val, vec![CHANNELS[(mask + 3) as usize]])
 }
 
-fn read_dst_reg(val: u16, mask: u8) -> Result<PixelBenderReg, Box<dyn std::error::Error>> {
+fn read_dst_reg(val: u16, mask: u8) -> Result<PixelBenderReg> {
     let mut channels = Vec::new();
     if mask & 0x8 != 0 {
         channels.push(PixelBenderRegChannel::R);
@@ -467,9 +482,10 @@ fn read_reg(val: u16, channels: Vec<PixelBenderRegChannel>) -> PixelBenderReg {
 
 fn read_op<R: Read>(
     data: &mut R,
+    validate: bool,
     shader: &mut PixelBenderShader,
     metadata: &mut Vec<PixelBenderMetadata>,
-) -> Result<(), Box<dyn std::error::Error>> {
+) -> Result<()> {
     let raw = data.read_u8()?;
     let opcode = Opcode::from_u8(raw).expect("Unknown opcode");
     match opcode {
@@ -574,6 +590,11 @@ fn read_op<R: Read>(
             let src = read_uint24(data)?;
             assert_eq!(data.read_u8()?, 0);
             let src_reg = read_src_reg(src, 1)?;
+
+            if validate && src_reg.kind == PixelBenderRegKind::Float {
+                return Err(PixelBenderParsingError::InvalidConditionalKind);
+            }
+
             shader.operations.push(Operation::If { src: src_reg });
         }
         Opcode::Else => {
@@ -647,6 +668,10 @@ fn read_op<R: Read>(
             assert_eq!(data.read_u8()?, 0);
             let src_reg2 = read_src_reg(src2, 1)?;
 
+            if validate && condition_reg.kind == PixelBenderRegKind::Float {
+                return Err(PixelBenderParsingError::InvalidConditionalKind);
+            }
+
             shader.operations.push(Operation::Select {
                 condition: condition_reg,
                 src1: src_reg1,
@@ -689,7 +714,7 @@ fn read_op<R: Read>(
     Ok(())
 }
 
-fn read_string<R: Read>(data: &mut R) -> Result<String, Box<dyn std::error::Error>> {
+fn read_string<R: Read>(data: &mut R) -> Result<String> {
     let mut string = String::new();
     let mut b = data.read_u8()?;
     while b != 0 {
@@ -699,14 +724,11 @@ fn read_string<R: Read>(data: &mut R) -> Result<String, Box<dyn std::error::Erro
     Ok(string)
 }
 
-fn read_float<R: Read>(data: &mut R) -> Result<f32, Box<dyn std::error::Error>> {
+fn read_float<R: Read>(data: &mut R) -> Result<f32> {
     Ok(data.read_f32::<BigEndian>()?)
 }
 
-fn read_value<R: Read>(
-    data: &mut R,
-    opcode: PixelBenderTypeOpcode,
-) -> Result<PixelBenderType, Box<dyn std::error::Error>> {
+fn read_value<R: Read>(data: &mut R, opcode: PixelBenderTypeOpcode) -> Result<PixelBenderType> {
     match opcode {
         PixelBenderTypeOpcode::TFloat => Ok(PixelBenderType::TFloat(read_float(data)?)),
         PixelBenderTypeOpcode::TFloat2 => Ok(PixelBenderType::TFloat2(
@@ -782,7 +804,7 @@ fn read_value<R: Read>(
     }
 }
 
-fn read_uint24<R: Read>(data: &mut R) -> Result<u32, Box<dyn std::error::Error>> {
+fn read_uint24<R: Read>(data: &mut R) -> Result<u32> {
     let ch1 = data.read_u8()? as u32;
     let ch2 = data.read_u8()? as u32;
     let ch3 = data.read_u8()? as u32;
