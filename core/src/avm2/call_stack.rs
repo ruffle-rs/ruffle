@@ -4,16 +4,11 @@ use crate::avm2::method::Method;
 use crate::string::WString;
 use gc_arena::Collect;
 
-use super::script::Script;
-
-#[derive(Collect, Clone)]
+#[derive(Clone, Collect, Copy)]
 #[collect(no_drop)]
-pub enum CallNode<'gc> {
-    GlobalInit(Script<'gc>),
-    Method {
-        method: Method<'gc>,
-        class: Option<Class<'gc>>,
-    },
+pub struct CallNode<'gc> {
+    method: Method<'gc>,
+    class: Option<Class<'gc>>,
 }
 
 #[derive(Collect, Clone)]
@@ -28,11 +23,7 @@ impl<'gc> CallStack<'gc> {
     }
 
     pub fn push(&mut self, method: Method<'gc>, class: Option<Class<'gc>>) {
-        self.stack.push(CallNode::Method { method, class })
-    }
-
-    pub fn push_global_init(&mut self, script: Script<'gc>) {
-        self.stack.push(CallNode::GlobalInit(script))
+        self.stack.push(CallNode { method, class })
     }
 
     pub fn pop(&mut self) -> Option<CallNode<'gc>> {
@@ -42,21 +33,28 @@ impl<'gc> CallStack<'gc> {
     pub fn display(&self, output: &mut WString) {
         for call in self.stack.iter().rev() {
             output.push_utf8("\n\tat ");
-            match call {
-                CallNode::GlobalInit(script) => {
-                    let tunit = script.translation_unit();
-                    let name = if let Some(name) = tunit.name() {
-                        name.to_utf8_lossy().to_string()
-                    } else {
-                        "<No name>".to_string()
-                    };
 
-                    // NOTE: We intentionally diverge from Flash Player's output
-                    // here - everything with the [] brackets is extra information
-                    // added by Ruffle
-                    output.push_utf8(&format!("global$init() [TU={name}]"));
-                }
-                CallNode::Method { method, class } => display_function(output, *method, *class),
+            let is_global_init = call.class.is_some_and(|c| {
+                // If the class is a script `global` class and its instance
+                // initializer is this method, then this is a script initializer
+                c.is_script_traits() && c.instance_init() == Some(call.method)
+            });
+
+            // Special-case the printed message for script initializers
+            if is_global_init {
+                let tunit = call.method.translation_unit();
+                let name = if let Some(name) = tunit.name() {
+                    name.to_utf8_lossy().to_string()
+                } else {
+                    "<No name>".to_string()
+                };
+
+                // NOTE: We intentionally diverge from Flash Player's output
+                // here - everything with the [] brackets is extra information
+                // added by Ruffle
+                output.push_utf8(&format!("global$init() [TU={name}]"));
+            } else {
+                display_function(output, call.method, call.class);
             }
         }
     }

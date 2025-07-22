@@ -246,11 +246,13 @@ impl<'gc> Class<'gc> {
     pub fn custom_new(
         name: QName<'gc>,
         super_class: Option<Class<'gc>>,
+        instance_init: Option<Method<'gc>>,
         traits: Box<[Trait<'gc>]>,
         mc: &Mutation<'gc>,
     ) -> Self {
         let mut class = ClassData::empty(name);
         class.super_class = super_class;
+        class.instance_init = instance_init;
         class.traits = OnceLock::from(traits);
         Class(Gc::new(mc, class))
     }
