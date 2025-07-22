@@ -1,8 +1,9 @@
-use crate::avm2::activation::Activation;
+use crate::avm2::error::Error2004Type;
 use crate::avm2::object::TObject as _;
 use crate::avm2::parameters::ParametersExt;
 use crate::avm2::value::Value;
 use crate::avm2::Error;
+use crate::avm2::{activation::Activation, error::make_error_2004};
 use crate::pixel_bender::PixelBenderTypeExt;
 use crate::string::AvmString;
 
@@ -25,7 +26,10 @@ pub fn _set_byte_code<'gc>(
 
     let bytecode = args.get_object(activation, 0, "bytecode")?;
     let bytecode = bytecode.as_bytearray().unwrap();
-    let shader = parse_shader(bytecode.bytes()).expect("Failed to parse PixelBender");
+    let shader = parse_shader(bytecode.bytes(), true).map_err(|err| {
+        tracing::warn!("Failed to parse a Pixel Bender shader: {err}");
+        make_error_2004(activation, Error2004Type::ArgumentError)
+    })?;
 
     for meta in &shader.metadata {
         let name = AvmString::new_utf8(activation.gc(), &meta.key);
