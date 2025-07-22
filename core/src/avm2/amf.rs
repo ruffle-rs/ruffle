@@ -418,12 +418,8 @@ pub fn deserialize_value_impl<'gc>(
             let class = alias_to_class(activation, name)?;
 
             // Create an empty vector, as it has to exist in the map before reading children, in case they reference it
-            let empty_storage = VectorStorage::new(
-                0,
-                *is_fixed,
-                Some(class.inner_class_definition()),
-                activation,
-            );
+            let empty_storage =
+                VectorStorage::new(0, *is_fixed, Some(class.inner_class_definition()));
             let obj = VectorObject::from_vector(empty_storage, activation)?;
             object_map.insert(*id, obj);
 
