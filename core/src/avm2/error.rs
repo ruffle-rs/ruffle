@@ -627,6 +627,20 @@ pub fn make_error_2027<'gc>(activation: &mut Activation<'_, 'gc>, value: i32) ->
 
 #[inline(never)]
 #[cold]
+pub fn make_error_2030<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
+    let err = error(
+        activation,
+        "Error #2030: End of file was encountered.",
+        2030,
+    );
+    match err {
+        Ok(err) => Error::avm_error(err),
+        Err(err) => err,
+    }
+}
+
+#[inline(never)]
+#[cold]
 pub fn make_error_2037<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
     let err = error(
         activation,
