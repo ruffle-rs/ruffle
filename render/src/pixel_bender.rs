@@ -40,6 +40,9 @@ pub enum PixelBenderParsingError {
     #[error("Invalid conditional register kind")]
     InvalidConditionalKind,
 
+    #[error("Missing output parameter")]
+    MissingOutputParameter,
+
     #[error("IO error: {0}")]
     IoError(#[from] std::io::Error),
 
@@ -405,6 +408,11 @@ pub fn parse_shader(mut data: &[u8], validate: bool) -> Result<PixelBenderShader
     }
     // Any metadata left in the vec is associated with our final parameter.
     apply_metadata(&mut shader, &mut metadata);
+
+    if validate && shader.output_channels().is_none() {
+        return Err(PixelBenderParsingError::MissingOutputParameter);
+    }
+
     Ok(shader)
 }
 
