@@ -216,7 +216,7 @@ pub fn matrix3d_to_object<'gc>(
     activation: &mut Activation<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let number = activation.avm2().class_defs().number;
-    let mut raw_data_storage = VectorStorage::new(16, true, Some(number), activation);
+    let mut raw_data_storage = VectorStorage::new(16, true, Some(number));
     for (i, data) in matrix.raw_data.iter().enumerate() {
         raw_data_storage.set(i, Value::Number(*data), activation)?;
     }

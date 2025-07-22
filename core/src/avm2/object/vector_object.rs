@@ -30,7 +30,7 @@ pub fn vector_allocator<'gc>(
         activation.gc(),
         VectorObjectData {
             base,
-            vector: RefLock::new(VectorStorage::new(0, false, param_type, activation)),
+            vector: RefLock::new(VectorStorage::new(0, false, param_type)),
         },
     ))
     .into())
@@ -155,8 +155,8 @@ impl<'gc> VectorObject<'gc> {
 
         let type_of = self.0.vector.borrow().value_type_for_coercion(activation);
         let value = match value.coerce_to_type(activation, type_of)? {
-            Value::Undefined => self.0.vector.borrow().default(activation),
-            Value::Null => self.0.vector.borrow().default(activation),
+            Value::Undefined => self.0.vector.borrow().default(),
+            Value::Null => self.0.vector.borrow().default(),
             v => v,
         };
 

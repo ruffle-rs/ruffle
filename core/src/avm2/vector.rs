@@ -40,12 +40,7 @@ pub struct VectorStorage<'gc> {
 }
 
 impl<'gc> VectorStorage<'gc> {
-    pub fn new(
-        length: usize,
-        is_fixed: bool,
-        value_type: Option<Class<'gc>>,
-        activation: &mut Activation<'_, 'gc>,
-    ) -> Self {
+    pub fn new(length: usize, is_fixed: bool, value_type: Option<Class<'gc>>) -> Self {
         let storage = Vec::new();
 
         let mut self_vec = VectorStorage {
@@ -54,9 +49,7 @@ impl<'gc> VectorStorage<'gc> {
             value_type,
         };
 
-        self_vec
-            .storage
-            .resize(length, self_vec.default(activation));
+        self_vec.storage.resize(length, self_vec.default());
 
         self_vec
     }
@@ -110,19 +103,17 @@ impl<'gc> VectorStorage<'gc> {
         activation: &mut Activation<'_, 'gc>,
     ) -> Result<(), Error<'gc>> {
         self.check_fixed(activation)?;
-        self.storage.resize(new_length, self.default(activation));
+        self.storage.resize(new_length, self.default());
 
         Ok(())
     }
 
     /// Get the default value for this vector.
-    pub fn default(&self, activation: &mut Activation<'_, 'gc>) -> Value<'gc> {
+    pub fn default(&self) -> Value<'gc> {
         if let Some(value_type) = self.value_type {
-            if value_type == activation.avm2().class_defs().int
-                || value_type == activation.avm2().class_defs().uint
-            {
+            if value_type.is_builtin_int() || value_type.is_builtin_uint() {
                 Value::Integer(0)
-            } else if value_type == activation.avm2().class_defs().number {
+            } else if value_type.is_builtin_number() {
                 Value::Number(0.0)
             } else {
                 Value::Null
@@ -195,7 +186,7 @@ impl<'gc> VectorStorage<'gc> {
         activation: &mut Activation<'_, 'gc>,
     ) -> Result<(), Error<'gc>> {
         if !self.is_fixed && pos == self.length() {
-            self.storage.resize(pos + 1, self.default(activation));
+            self.storage.resize(pos + 1, self.default());
         }
 
         if let Some(v) = self.storage.get_mut(pos) {
@@ -234,11 +225,9 @@ impl<'gc> VectorStorage<'gc> {
         if let Some(v) = self.storage.pop() {
             Ok(v)
         } else if let Some(value_type) = self.value_type() {
-            if value_type == activation.avm2().class_defs().uint
-                || value_type == activation.avm2().class_defs().int
-            {
+            if value_type.is_builtin_int() || value_type.is_builtin_uint() {
                 Ok(Value::Integer(0))
-            } else if value_type == activation.avm2().class_defs().number {
+            } else if value_type.is_builtin_number() {
                 Ok(Value::Number(0.0))
             } else {
                 Ok(Value::Undefined)
@@ -280,11 +269,9 @@ impl<'gc> VectorStorage<'gc> {
         if !self.storage.is_empty() {
             Ok(self.storage.remove(0))
         } else if let Some(value_type) = self.value_type() {
-            if value_type == activation.avm2().class_defs().uint
-                || value_type == activation.avm2().class_defs().int
-            {
+            if value_type.is_builtin_int() || value_type.is_builtin_uint() {
                 Ok(Value::Integer(0))
-            } else if value_type == activation.avm2().class_defs().number {
+            } else if value_type.is_builtin_number() {
                 Ok(Value::Number(0.0))
             } else {
                 Ok(Value::Undefined)
