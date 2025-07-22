@@ -128,23 +128,23 @@ impl PixelBenderTypeExt for PixelBenderType {
                     .map(|s| s.to_string())
                     .unwrap_or_default(),
             )),
-            PixelBenderTypeOpcode::TBool => Ok(PixelBenderType::TBool(
-                next_val(activation, &mut vals)? as i16 != 0,
-            )),
+            PixelBenderTypeOpcode::TBool => Ok(PixelBenderType::TBool(next_val(
+                activation, &mut vals,
+            )? as i16)),
             PixelBenderTypeOpcode::TBool2 => Ok(PixelBenderType::TBool2(
-                next_val(activation, &mut vals)? as i16 != 0,
-                next_val(activation, &mut vals)? as i16 != 0,
+                next_val(activation, &mut vals)? as i16,
+                next_val(activation, &mut vals)? as i16,
             )),
             PixelBenderTypeOpcode::TBool3 => Ok(PixelBenderType::TBool3(
-                next_val(activation, &mut vals)? as i16 != 0,
-                next_val(activation, &mut vals)? as i16 != 0,
-                next_val(activation, &mut vals)? as i16 != 0,
+                next_val(activation, &mut vals)? as i16,
+                next_val(activation, &mut vals)? as i16,
+                next_val(activation, &mut vals)? as i16,
             )),
             PixelBenderTypeOpcode::TBool4 => Ok(PixelBenderType::TBool4(
-                next_val(activation, &mut vals)? as i16 != 0,
-                next_val(activation, &mut vals)? as i16 != 0,
-                next_val(activation, &mut vals)? as i16 != 0,
-                next_val(activation, &mut vals)? as i16 != 0,
+                next_val(activation, &mut vals)? as i16,
+                next_val(activation, &mut vals)? as i16,
+                next_val(activation, &mut vals)? as i16,
+                next_val(activation, &mut vals)? as i16,
             )),
         }
     }
@@ -180,26 +180,16 @@ impl PixelBenderTypeExt for PixelBenderType {
             PixelBenderType::TFloat2x2(floats) => floats.iter().map(cv).collect(),
             PixelBenderType::TFloat3x3(floats) => floats.iter().map(cv).collect(),
             PixelBenderType::TFloat4x4(floats) => floats.iter().map(cv).collect(),
-            PixelBenderType::TInt2(i1, i2) => vec![(*i1).into(), (*i2).into()],
-            PixelBenderType::TInt3(i1, i2, i3) => vec![(*i1).into(), (*i2).into(), (*i3).into()],
-            PixelBenderType::TInt4(i1, i2, i3, i4) => {
+            PixelBenderType::TInt2(i1, i2) | PixelBenderType::TBool2(i1, i2) => {
+                vec![(*i1).into(), (*i2).into()]
+            }
+            PixelBenderType::TInt3(i1, i2, i3) | PixelBenderType::TBool3(i1, i2, i3) => {
+                vec![(*i1).into(), (*i2).into(), (*i3).into()]
+            }
+            PixelBenderType::TInt4(i1, i2, i3, i4) | PixelBenderType::TBool4(i1, i2, i3, i4) => {
                 vec![(*i1).into(), (*i2).into(), (*i3).into(), (*i4).into()]
             }
-            PixelBenderType::TBool(b) => vec![(*b as i16).into()],
-            PixelBenderType::TBool2(b1, b2) => vec![(*b1 as i16).into(), (*b2 as i16).into()],
-            PixelBenderType::TBool3(b1, b2, b3) => vec![
-                (*b1 as i16).into(),
-                (*b2 as i16).into(),
-                (*b3 as i16).into(),
-            ],
-            PixelBenderType::TBool4(b1, b2, b3, b4) => {
-                vec![
-                    (*b1 as i16).into(),
-                    (*b2 as i16).into(),
-                    (*b3 as i16).into(),
-                    (*b4 as i16).into(),
-                ]
-            }
+            PixelBenderType::TBool(b) => vec![(*b).into()],
         };
         let storage = ArrayStorage::from_args(&vals);
         Ok(ArrayObject::from_storage(activation, storage).into())
