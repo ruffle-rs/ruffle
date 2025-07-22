@@ -650,10 +650,9 @@ pub trait TObject<'gc>: 'gc + Collect<'gc> + Debug + Into<Object<'gc>> + Clone +
                 Property::Slot { slot_id } | Property::ConstSlot { slot_id } => {
                     values.push((name, self.base().get_slot(slot_id)));
                 }
-                Property::Virtual { get: Some(get), .. } => values.push((
-                    name,
-                    Value::from((*self).into()).call_method(get, &[], activation)?,
-                )),
+                Property::Virtual { get: Some(get), .. } => {
+                    values.push((name, Value::from(*self).call_method(get, &[], activation)?))
+                }
                 _ => {}
             }
         }
