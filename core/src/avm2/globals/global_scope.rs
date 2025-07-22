@@ -5,7 +5,7 @@
 //! instance of.
 
 use crate::avm2::activation::Activation;
-use crate::avm2::class::{Class, ClassAttributes};
+use crate::avm2::class::{BuiltinType, Class, ClassAttributes};
 use crate::avm2::error::Error;
 use crate::avm2::traits::Trait;
 use crate::avm2::QName;
@@ -31,6 +31,8 @@ pub fn create_class<'gc>(
     class
         .init_vtable(activation.context)
         .expect("Native class's vtable should initialize");
+
+    class.mark_builtin_type(BuiltinType::ScriptTraits);
 
     Ok(class)
 }

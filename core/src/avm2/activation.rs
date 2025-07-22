@@ -365,7 +365,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         let has_rest_or_args = method.is_variadic();
 
         if let Some(bound_class) = bound_class {
-            assert!(this.is_of_type(self, bound_class));
+            assert!(this.is_of_type(bound_class));
         }
 
         self.num_locals = num_locals;
@@ -916,7 +916,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             if last_ip >= e.from_offset && last_ip < e.to_offset {
                 let matches = if let Some(target_class) = e.target_class {
                     // This ensures null and undefined don't match
-                    error.is_of_type(self, target_class)
+                    error.is_of_type(target_class)
                 } else {
                     // A typeless catch block (i.e. `catch(err:*) { ... }`) will
                     // always match.
@@ -1196,17 +1196,15 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     fn return_void(&mut self, return_type: Option<Class<'gc>>) -> Value<'gc> {
         // Manual coerce_to_type
 
-        let class_defs = self.avm2().class_defs();
-
         if let Some(return_type) = return_type {
-            if return_type == class_defs.void {
+            if return_type.is_builtin_void() {
                 Value::Undefined
-            } else if return_type == class_defs.int
-                || return_type == class_defs.uint
-                || return_type == class_defs.number
+            } else if return_type.is_builtin_int()
+                || return_type.is_builtin_uint()
+                || return_type.is_builtin_number()
             {
                 0.into()
-            } else if return_type == class_defs.boolean {
+            } else if return_type.is_builtin_boolean() {
                 false.into()
             } else {
                 Value::Null
@@ -1941,7 +1939,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         let xml_list = self.avm2().class_defs().xml_list;
         let value = self.pop_stack().null_check(self, None)?;
 
-        if value.is_of_type(self, xml) || value.is_of_type(self, xml_list) {
+        if value.is_of_type(xml) || value.is_of_type(xml_list) {
             self.push_stack(value);
         } else {
             let class_name = value.instance_of_class_name(self);
@@ -2443,7 +2441,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     fn op_is_type(&mut self, class: Class<'gc>) -> Result<(), Error<'gc>> {
         let value = self.pop_stack();
 
-        let is_instance_of = value.is_of_type(self, class);
+        let is_instance_of = value.is_of_type(class);
         self.push_stack(is_instance_of);
 
         Ok(())
@@ -2463,7 +2461,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         };
         let value = self.pop_stack();
 
-        let is_instance_of = value.is_of_type(self, type_object.inner_class_definition());
+        let is_instance_of = value.is_of_type(type_object.inner_class_definition());
         self.push_stack(is_instance_of);
 
         Ok(())
@@ -2472,7 +2470,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     fn op_as_type(&mut self, class: Class<'gc>) -> Result<(), Error<'gc>> {
         let value = self.pop_stack();
 
-        if value.is_of_type(self, class) {
+        if value.is_of_type(class) {
             self.push_stack(value);
         } else {
             self.push_stack(Value::Null);
@@ -2498,7 +2496,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             };
             let value = self.pop_stack();
 
-            if value.is_of_type(self, class.inner_class_definition()) {
+            if value.is_of_type(class.inner_class_definition()) {
                 self.push_stack(value);
             } else {
                 self.push_stack(Value::Null);

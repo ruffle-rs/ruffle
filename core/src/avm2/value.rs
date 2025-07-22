@@ -1413,34 +1413,34 @@ impl<'gc> Value<'gc> {
         activation: &mut Activation<'_, 'gc>,
         class: Class<'gc>,
     ) -> Result<Value<'gc>, Error<'gc>> {
-        if class == activation.avm2().class_defs().int {
+        if class.is_builtin_int() {
             return Ok(self.coerce_to_i32(activation)?.into());
         }
 
-        if class == activation.avm2().class_defs().uint {
+        if class.is_builtin_uint() {
             return Ok(self.coerce_to_u32(activation)?.into());
         }
 
-        if class == activation.avm2().class_defs().number {
+        if class.is_builtin_number() {
             return Ok(self.coerce_to_number(activation)?.into());
         }
 
-        if class == activation.avm2().class_defs().boolean {
+        if class.is_builtin_boolean() {
             return Ok(self.coerce_to_boolean().into());
         }
 
         if matches!(self, Value::Undefined) || matches!(self, Value::Null) {
-            if class == activation.avm2().class_defs().void {
+            if class.is_builtin_void() {
                 return Ok(Value::Undefined);
             }
             return Ok(Value::Null);
         }
 
-        if class == activation.avm2().class_defs().string {
+        if class.is_builtin_string() {
             return Ok(self.coerce_to_string(activation)?.into());
         }
 
-        if class == activation.avm2().class_defs().object {
+        if class.is_builtin_object() {
             return Ok(*self);
         }
 
@@ -1494,30 +1494,30 @@ impl<'gc> Value<'gc> {
     /// considered instances of all numeric types that can represent them. For
     /// example, 5 is simultaneously an instance of `int`, `uint`, and
     /// `Number`.
-    pub fn is_of_type(&self, activation: &mut Activation<'_, 'gc>, type_class: Class<'gc>) -> bool {
-        if type_class == activation.avm2().class_defs().number {
+    pub fn is_of_type(&self, type_class: Class<'gc>) -> bool {
+        if type_class.is_builtin_number() {
             return self.is_number();
         }
-        if type_class == activation.avm2().class_defs().uint {
+        if type_class.is_builtin_uint() {
             return self.is_u32();
         }
-        if type_class == activation.avm2().class_defs().int {
+        if type_class.is_builtin_int() {
             return self.is_i32();
         }
 
-        if type_class == activation.avm2().class_defs().void {
+        if type_class.is_builtin_void() {
             return matches!(self, Value::Undefined);
         }
 
-        if type_class == activation.avm2().class_defs().boolean {
+        if type_class.is_builtin_boolean() {
             return matches!(self, Value::Bool(_));
         }
 
-        if type_class == activation.avm2().class_defs().string {
+        if type_class.is_builtin_string() {
             return matches!(self, Value::String(_));
         }
 
-        if type_class == activation.avm2().class_defs().object {
+        if type_class.is_builtin_object() {
             return !matches!(self, Value::Undefined | Value::Null);
         }
 

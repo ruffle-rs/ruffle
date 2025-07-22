@@ -208,7 +208,7 @@ pub fn match_internal<'gc>(
     let pattern = args.get_value(0);
 
     let regexp_class = activation.avm2().classes().regexp;
-    let pattern = if pattern.is_of_type(activation, regexp_class.inner_class_definition()) {
+    let pattern = if pattern.is_of_type(regexp_class.inner_class_definition()) {
         pattern
     } else {
         let string = pattern.coerce_to_string(activation)?;
@@ -316,7 +316,7 @@ pub fn search<'gc>(
     let pattern = args.get_value(0);
 
     let regexp_class = activation.avm2().classes().regexp;
-    let pattern = if pattern.is_of_type(activation, regexp_class.inner_class_definition()) {
+    let pattern = if pattern.is_of_type(regexp_class.inner_class_definition()) {
         pattern
     } else {
         let string = pattern.coerce_to_string(activation)?;

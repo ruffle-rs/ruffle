@@ -192,7 +192,7 @@ pub fn concat<'gc>(
             .bound_class()
             .expect("Method call without bound class?");
 
-        if !arg.is_of_type(activation, my_base_vector_class) {
+        if !arg.is_of_type(my_base_vector_class) {
             let base_vector_name = my_base_vector_class
                 .name()
                 .to_qualified_name_err_message(activation.gc());

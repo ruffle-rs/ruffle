@@ -79,29 +79,23 @@ impl<'gc> OptValue<'gc> {
         matches!(self.null_state, NullState::IsNull)
     }
 
-    pub fn not_null(self, activation: &mut Activation<'_, 'gc>) -> bool {
+    pub fn not_null(self) -> bool {
         if matches!(self.null_state, NullState::NotNull) {
-            return true;
+            true
+        } else {
+            // Primitives are always not-null
+            self.class.is_some_and(|c| {
+                c.is_builtin_int()
+                    || c.is_builtin_uint()
+                    || c.is_builtin_number()
+                    || c.is_builtin_boolean()
+                    || c.is_builtin_void()
+            })
         }
-
-        let class_defs = activation.avm2().class_defs();
-
-        // Primitives are always not-null
-        self.class == Some(class_defs.int)
-            || self.class == Some(class_defs.uint)
-            || self.class == Some(class_defs.number)
-            || self.class == Some(class_defs.boolean)
-            || self.class == Some(class_defs.void)
     }
 
-    pub fn merged_with(
-        self,
-        activation: &mut Activation<'_, 'gc>,
-        other: OptValue<'gc>,
-    ) -> OptValue<'gc> {
+    pub fn merged_with(self, other: OptValue<'gc>) -> OptValue<'gc> {
         let mut created_value = OptValue::any();
-
-        let class_defs = activation.avm2().class_defs();
 
         // TODO: Also check common superclasses.
         if self.class == other.class {
@@ -110,11 +104,11 @@ impl<'gc> OptValue<'gc> {
             // If the other value is guaranteed to be null, we can just use our class.
             // Unless it's a primitive class.
             if let Some(self_class) = self.class {
-                if self_class != class_defs.int
-                    && self_class != class_defs.uint
-                    && self_class != class_defs.number
-                    && self_class != class_defs.boolean
-                    && self_class != class_defs.void
+                if !self_class.is_builtin_int()
+                    && !self_class.is_builtin_uint()
+                    && !self_class.is_builtin_number()
+                    && !self_class.is_builtin_boolean()
+                    && !self_class.is_builtin_void()
                 {
                     created_value.class = self.class;
                 }
@@ -122,11 +116,11 @@ impl<'gc> OptValue<'gc> {
         } else if matches!(self.null_state, NullState::IsNull) {
             // And vice-versa.
             if let Some(other_class) = other.class {
-                if other_class != class_defs.int
-                    && other_class != class_defs.uint
-                    && other_class != class_defs.number
-                    && other_class != class_defs.boolean
-                    && other_class != class_defs.void
+                if !other_class.is_builtin_int()
+                    && !other_class.is_builtin_uint()
+                    && !other_class.is_builtin_number()
+                    && !other_class.is_builtin_boolean()
+                    && !other_class.is_builtin_void()
                 {
                     created_value.class = other.class;
                 }
@@ -150,15 +144,9 @@ impl<'gc> OptValue<'gc> {
 
     // Check whether if this OptValue were stored in a slot of type `checked_type`,
     // whether it could be represented as-is, without any coercion.
-    pub fn matches_type(
-        self,
-        activation: &mut Activation<'_, 'gc>,
-        checked_type: Option<Class<'gc>>,
-    ) -> bool {
+    pub fn matches_type(self, checked_type: Option<Class<'gc>>) -> bool {
         // This makes the code less readable
         #![allow(clippy::if_same_then_else)]
-
-        let class_defs = activation.avm2().class_defs();
 
         if let Some(checked_class) = checked_type {
             if let Some(own_class) = self.class {
@@ -166,23 +154,23 @@ impl<'gc> OptValue<'gc> {
                 // the checked class is `Number` and our class is `int` or `uint`
                 if own_class.has_class_in_chain(checked_class) {
                     return true;
-                } else if (own_class == class_defs.int || own_class == class_defs.uint)
-                    && checked_class == class_defs.number
+                } else if (own_class.is_builtin_int() || own_class.is_builtin_uint())
+                    && checked_class.is_builtin_number()
                 {
                     return true;
                 }
             }
 
-            if checked_class == class_defs.int && self.contains_valid_integer {
+            if checked_class.is_builtin_int() && self.contains_valid_integer {
                 true
-            } else if checked_class == class_defs.uint && self.contains_valid_unsigned {
+            } else if checked_class.is_builtin_uint() && self.contains_valid_unsigned {
                 true
             } else {
-                let is_not_primitive_class = checked_class != class_defs.int
-                    && checked_class != class_defs.uint
-                    && checked_class != class_defs.number
-                    && checked_class != class_defs.boolean
-                    && checked_class != class_defs.void;
+                let is_not_primitive_class = !checked_class.is_builtin_int()
+                    && !checked_class.is_builtin_uint()
+                    && !checked_class.is_builtin_number()
+                    && !checked_class.is_builtin_boolean()
+                    && !checked_class.is_builtin_void();
 
                 // Null matches every class except the primitive classes
                 matches!(self.null_state, NullState::IsNull) && is_not_primitive_class
@@ -460,7 +448,7 @@ impl<'gc> AbstractState<'gc> {
             let our_local = self.locals.at(i);
             let other_local = other.locals.at(i);
 
-            let merged = our_local.merged_with(activation, other_local);
+            let merged = our_local.merged_with(other_local);
             self.locals.set(i, merged);
             if merged != our_local {
                 changed = true;
@@ -484,7 +472,7 @@ impl<'gc> AbstractState<'gc> {
             let our_entry = self.stack.at(i);
             let other_entry = other.stack.at(i);
 
-            let merged = our_entry.merged_with(activation, other_entry);
+            let merged = our_entry.merged_with(other_entry);
             self.stack.set(i, merged);
             if merged != our_entry {
                 changed = true;
@@ -516,7 +504,7 @@ impl<'gc> AbstractState<'gc> {
                 )?));
             }
 
-            let merged = our_scope.0.merged_with(activation, other_scope.0);
+            let merged = our_scope.0.merged_with(other_scope.0);
             self.scope_stack.set(i, merged, our_scope.1);
             if merged != our_scope.0 {
                 changed = true;
@@ -939,8 +927,8 @@ fn abstract_interpret_ops<'gc>(
                         || value2.class == Some(types.number))
                 {
                     stack.push_class(activation, types.number)?;
-                } else if (value1.class == Some(types.string) && value1.not_null(activation))
-                    || (value2.class == Some(types.string) && value2.not_null(activation))
+                } else if (value1.class == Some(types.string) && value1.not_null())
+                    || (value2.class == Some(types.string) && value2.not_null())
                 {
                     stack.push_class_not_null(activation, types.string)?;
                 } else {
@@ -1140,11 +1128,11 @@ fn abstract_interpret_ops<'gc>(
 
                 if stack_value.is_null() {
                     // Coercing null to a non-primitive or void is a noop.
-                    if class != types.int
-                        && class != types.uint
-                        && class != types.number
-                        && class != types.boolean
-                        && class != types.void
+                    if !class.is_builtin_int()
+                        && !class.is_builtin_uint()
+                        && !class.is_builtin_number()
+                        && !class.is_builtin_boolean()
+                        && !class.is_builtin_void()
                     {
                         optimize_op_to!(Op::Nop);
                         new_value.null_state = NullState::IsNull;
@@ -1420,9 +1408,9 @@ fn abstract_interpret_ops<'gc>(
                     // multiname is valid for indexing then we know the type of
                     // the result
 
-                    let index_numeric = index.class == Some(types.int)
-                        || index.class == Some(types.uint)
-                        || index.class == Some(types.number);
+                    let index_numeric = index.class.is_some_and(|c| {
+                        c.is_builtin_int() || c.is_builtin_uint() || c.is_builtin_number()
+                    });
 
                     // In non-JIT mode, GetPropertyFast can be emitted even when
                     // the multiname isn't valid for indexing (see comment in
@@ -1436,7 +1424,10 @@ fn abstract_interpret_ops<'gc>(
                             // guaranteed to produce a result of the correct
                             // type. For some reason, this special-case of
                             // int/uint/number isn't version-gated.
-                            if param == types.int || param == types.uint || param == types.number {
+                            if param.is_builtin_int()
+                                || param.is_builtin_uint()
+                                || param.is_builtin_number()
+                            {
                                 stack_push_done = true;
                                 stack.push_class(activation, param)?;
                             } else if activation.caller_movie_or_root().version() >= 14 {
@@ -1481,7 +1472,7 @@ fn abstract_interpret_ops<'gc>(
                                     vtable.slot_class(slot_id).expect("Slot should exist");
                                 let resolved_value_class = value_class.get_class(activation)?;
 
-                                if set_value.matches_type(activation, resolved_value_class) {
+                                if set_value.matches_type(resolved_value_class) {
                                     optimize_op_to!(Op::SetSlotNoCoerce { index: slot_id });
                                 } else {
                                     optimize_op_to!(Op::SetSlot { index: slot_id });
@@ -1534,7 +1525,7 @@ fn abstract_interpret_ops<'gc>(
                                 vtable.slot_class(slot_id).expect("Slot should exist");
                             let resolved_value_class = value_class.get_class(activation)?;
 
-                            if set_value.matches_type(activation, resolved_value_class) {
+                            if set_value.matches_type(resolved_value_class) {
                                 optimize_op_to!(Op::SetSlotNoCoerce { index: slot_id });
                             } else {
                                 optimize_op_to!(Op::SetSlot { index: slot_id });
@@ -1619,7 +1610,7 @@ fn abstract_interpret_ops<'gc>(
                         // When the receiver is null, this op can still throw an
                         // error, so let's ensure it's guaranteed nonnull before
                         // optimizing it
-                        if receiver.not_null(activation) {
+                        if receiver.not_null() {
                             optimize_op_to!(Op::Pop);
                         }
                     }
@@ -1854,7 +1845,7 @@ fn abstract_interpret_ops<'gc>(
             Op::ReturnValue { return_type } => {
                 let stack_value = stack.pop(activation)?;
 
-                if stack_value.matches_type(activation, return_type) {
+                if stack_value.matches_type(return_type) {
                     optimize_op_to!(Op::ReturnValue { return_type: None });
                 }
                 return Ok(());
@@ -1979,7 +1970,7 @@ fn maybe_optimize_static_call<'gc>(
                 let mut all_matches = true;
                 for (i, passed_arg) in passed_args.iter().enumerate() {
                     let declared_param = &declared_params[i];
-                    if !passed_arg.matches_type(activation, declared_param.param_type) {
+                    if !passed_arg.matches_type(declared_param.param_type) {
                         all_matches = false;
                     }
                 }
@@ -2098,7 +2089,7 @@ fn optimize_call_property<'gc>(
             Some(Property::Slot { slot_id }) | Some(Property::ConstSlot { slot_id }) => {
                 // Don't optimize this for `callpropvoid`
                 if push_return_value {
-                    if stack_value.not_null(activation) {
+                    if stack_value.not_null() {
                         if num_args == 1 {
                             let mut value_class =
                                 vtable.slot_class(slot_id).expect("Slot should exist");

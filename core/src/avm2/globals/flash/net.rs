@@ -55,7 +55,7 @@ fn parse_data<'gc>(
         .urlvariables
         .inner_class_definition();
 
-    if data.is_of_type(activation, urlvariables) {
+    if data.is_of_type(urlvariables) {
         let obj = data
             .as_object()
             .expect("URLVariables object should be Value::Object");
