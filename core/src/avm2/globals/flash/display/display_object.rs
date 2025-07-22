@@ -328,7 +328,7 @@ pub fn set_filters<'gc>(
                 let mut filter_vec = Vec::with_capacity(filters_storage.length());
 
                 for filter in filters_storage.iter().flatten() {
-                    if !filter.is_of_type(activation, filter_class) {
+                    if !filter.is_of_type(filter_class) {
                         return build_argument_type_error(activation);
                     }
 

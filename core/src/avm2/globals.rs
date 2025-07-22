@@ -1,6 +1,6 @@
 use crate::avm2::activation::Activation;
 use crate::avm2::api_version::ApiVersion;
-use crate::avm2::class::Class;
+use crate::avm2::class::{BuiltinType, Class};
 use crate::avm2::domain::Domain;
 use crate::avm2::object::{ClassObject, ScriptObject};
 use crate::avm2::scope::{Scope, ScopeChain};
@@ -630,6 +630,17 @@ pub fn init_builtin_system_class_defs(activation: &mut Activation<'_, '_>) {
             ("__AS3__.vec", "Vector", generic_vector),
         ]
     );
+
+    // Mark all the special builtin classes; see the documentation on
+    // `Class.builtin_type` for more information
+    let class_defs = activation.avm2().class_defs();
+    class_defs.int.mark_builtin_type(BuiltinType::Int);
+    class_defs.uint.mark_builtin_type(BuiltinType::Uint);
+    class_defs.number.mark_builtin_type(BuiltinType::Number);
+    class_defs.boolean.mark_builtin_type(BuiltinType::Boolean);
+    class_defs.object.mark_builtin_type(BuiltinType::Object);
+    class_defs.string.mark_builtin_type(BuiltinType::String);
+    class_defs.void.mark_builtin_type(BuiltinType::Void);
 
     crate::avm2::globals::vector::init_vector_class_defs(activation);
 }

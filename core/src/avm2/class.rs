@@ -165,6 +165,13 @@ pub struct ClassData<'gc> {
     /// be set to ClassLink::Unlinked.
     linked_class: Lock<ClassLink<'gc>>,
 
+    /// The special builtin class that this class represents. For example, this
+    /// is only set to `BuiltinType::Uint` for the builtin `uint` class.
+    /// This allows identifying builtin classes without having to compare them
+    /// against the classes stored in SystemClassDefs.
+    #[collect(require_static)]
+    builtin_type: Cell<Option<BuiltinType>>,
+
     cell: RefLock<ClassDataMut<'gc>>,
 }
 
@@ -221,6 +228,7 @@ impl<'gc> ClassData<'gc> {
             call_handler: None,
             custom_constructor: None,
             linked_class: Lock::new(ClassLink::Unlinked),
+            builtin_type: Cell::new(None),
             cell: RefLock::new(ClassDataMut {
                 applications: FnvHashMap::default(),
                 class_objects: Vec::new(),
@@ -1079,6 +1087,37 @@ impl<'gc> Class<'gc> {
         self.0.attributes.get().contains(ClassAttributes::GENERIC)
     }
 
+    pub fn is_builtin_int(self) -> bool {
+        matches!(self.0.builtin_type.get(), Some(BuiltinType::Int))
+    }
+    pub fn is_builtin_uint(self) -> bool {
+        matches!(self.0.builtin_type.get(), Some(BuiltinType::Uint))
+    }
+    pub fn is_builtin_number(self) -> bool {
+        matches!(self.0.builtin_type.get(), Some(BuiltinType::Number))
+    }
+    pub fn is_builtin_boolean(self) -> bool {
+        matches!(self.0.builtin_type.get(), Some(BuiltinType::Boolean))
+    }
+    pub fn is_builtin_object(self) -> bool {
+        matches!(self.0.builtin_type.get(), Some(BuiltinType::Object))
+    }
+    pub fn is_builtin_string(self) -> bool {
+        matches!(self.0.builtin_type.get(), Some(BuiltinType::String))
+    }
+    pub fn is_builtin_void(self) -> bool {
+        matches!(self.0.builtin_type.get(), Some(BuiltinType::Void))
+    }
+    pub fn is_script_traits(self) -> bool {
+        matches!(self.0.builtin_type.get(), Some(BuiltinType::ScriptTraits))
+    }
+
+    pub fn mark_builtin_type(self, builtin_type: BuiltinType) {
+        assert!(self.0.builtin_type.get().is_none());
+
+        self.0.builtin_type.set(Some(builtin_type));
+    }
+
     pub fn c_class(self) -> Option<Class<'gc>> {
         if let ClassLink::LinkToClass(c_class) = self.0.linked_class.get() {
             Some(c_class)
@@ -1114,4 +1153,20 @@ impl<'gc> Class<'gc> {
         i_link.set(ClassLink::LinkToClass(c_class));
         c_link.set(ClassLink::LinkToInstance(i_class));
     }
+}
+
+#[derive(Clone, Copy)]
+pub enum BuiltinType {
+    // `int`, `uint`, `Number`, `Boolean`, `Object`, `String`, `void` builtin
+    // classes
+    Int,
+    Uint,
+    Number,
+    Boolean,
+    Object,
+    String,
+    Void,
+
+    // Any script `global` class
+    ScriptTraits,
 }
