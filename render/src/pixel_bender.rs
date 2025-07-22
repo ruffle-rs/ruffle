@@ -152,10 +152,20 @@ pub enum PixelBenderRegKind {
     Int,
 }
 
-#[derive(num_derive::FromPrimitive, Debug, PartialEq, Clone, Copy)]
+#[derive(Debug, PartialEq, Clone, Copy)]
 pub enum PixelBenderParamQualifier {
     Input = 1,
     Output = 2,
+}
+
+impl PixelBenderParamQualifier {
+    pub fn from_u8(v: u8) -> Self {
+        if v == 2 {
+            Self::Output
+        } else {
+            Self::Input
+        }
+    }
 }
 
 impl Display for PixelBenderTypeOpcode {
@@ -568,8 +578,7 @@ fn read_op<R: Read>(
                 }
             };
 
-            let qualifier = PixelBenderParamQualifier::from_u8(qualifier)
-                .unwrap_or_else(|| panic!("Unexpected param qualifier {qualifier:?}"));
+            let qualifier = PixelBenderParamQualifier::from_u8(qualifier);
             apply_metadata(shader, metadata);
 
             shader.params.push(PixelBenderParam::Normal {
