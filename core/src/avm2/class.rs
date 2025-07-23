@@ -926,7 +926,8 @@ impl<'gc> Class<'gc> {
         let mut i_class = ClassData::empty(variable_name);
         i_class.attributes = Cell::new(ClassAttributes::FINAL | ClassAttributes::SEALED);
         // TODO make the slot typed
-        let traits: Box<[_]> = Box::new([Trait::from_const(variable_name, None, None)]);
+        let domain = activation.avm2().playerglobals_domain;
+        let traits: Box<[_]> = Box::new([Trait::from_const(variable_name, None, None, domain)]);
         i_class.traits = OnceLock::from(traits);
         let i_class = Class(Gc::new(activation.gc(), i_class));
         i_class.init_vtable(activation.context)?;

@@ -441,16 +441,16 @@ impl<'gc> VTable<'gc> {
 
                     let (new_prop, new_class) = match trait_data.kind() {
                         TraitKind::Slot {
-                            type_name, unit, ..
+                            type_name, domain, ..
                         } => (
                             Property::new_slot(new_slot_id),
-                            PropertyClass::name(*type_name, *unit),
+                            PropertyClass::name(*type_name, *domain),
                         ),
                         TraitKind::Const {
-                            type_name, unit, ..
+                            type_name, domain, ..
                         } => (
                             Property::new_const_slot(new_slot_id),
-                            PropertyClass::name(*type_name, *unit),
+                            PropertyClass::name(*type_name, *domain),
                         ),
                         TraitKind::Class { class, .. } => (
                             Property::new_const_slot(new_slot_id),
