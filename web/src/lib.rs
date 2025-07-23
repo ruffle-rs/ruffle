@@ -430,7 +430,11 @@ impl RuffleHandle {
     }
 
     // for js_bind
-    pub fn call_exposed_callback(&self, name: &str, #[expect(clippy::boxed_local)] args: Box<[JsValue]>) -> JsValue {
+    pub fn call_exposed_callback(
+        &self,
+        name: &str,
+        #[expect(clippy::boxed_local)] args: Box<[JsValue]>,
+    ) -> JsValue {
         let args: Vec<_> = args.iter().map(js_to_external_value).collect();
 
         // Re-entrant callbacks need to return through the hole that was punched through for them

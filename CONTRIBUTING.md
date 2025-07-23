@@ -163,7 +163,7 @@ cargo clippy --all --tests
 Specific warnings and clippy lints can be allowed when appropriate using attributes, such as:
 
 ```rs
-#[expect(clippy::float_cmp)]
+#[allow(clippy::float_cmp)]
 ```
 
 ## Test Guidelines
