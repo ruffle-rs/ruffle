@@ -181,8 +181,13 @@ pub fn locale_compare<'gc>(
 
     if activation.caller_movie_or_root().version() <= 11 {
         match other_value {
-            Value::Null | Value::Undefined if this.is_empty() => return Ok(Value::Integer(1)),
-            Value::Null | Value::Undefined => return Ok(Value::Integer(0)),
+            Value::Null | Value::Undefined => {
+                if this.is_empty() {
+                    return Ok(Value::Integer(1));
+                } else {
+                    return Ok(Value::Integer(0));
+                }
+            }
             _ => {}
         };
     }
