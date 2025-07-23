@@ -61,7 +61,7 @@ pub struct WebNavigatorBackend {
     player: Weak<Mutex<Player>>,
 }
 
-#[allow(clippy::too_many_arguments)]
+#[expect(clippy::too_many_arguments)]
 impl WebNavigatorBackend {
     pub fn new(
         allow_script_access: bool,
@@ -608,7 +608,7 @@ impl SuccessResponse for WebResponseWrapper {
         self.response.redirected()
     }
 
-    #[allow(clippy::await_holding_refcell_ref)]
+    #[expect(clippy::await_holding_refcell_ref)]
     fn next_chunk(&mut self) -> OwnedFuture<Option<Vec<u8>>, Error> {
         if self.body_stream.is_none() {
             let body = self.response.body();

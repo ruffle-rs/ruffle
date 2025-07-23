@@ -58,9 +58,9 @@ pub struct H264Decoder {
 
     // Simply keeping these objects alive, as they are used by the JS side.
     // See: https://rustwasm.github.io/wasm-bindgen/examples/closures.html
-    #[allow(dead_code)]
+    #[expect(dead_code)]
     output_callback: Closure<dyn Fn(VideoFrame)>,
-    #[allow(dead_code)]
+    #[expect(dead_code)]
     error_callback: Closure<dyn Fn(DomException)>,
 }
 

@@ -242,7 +242,7 @@ impl Pipelines {
     }
 }
 
-#[allow(clippy::too_many_arguments)]
+#[expect(clippy::too_many_arguments)]
 fn create_pipeline_descriptor<'a>(
     label: Option<&'a str>,
     vertex_shader: &'a wgpu::ShaderModule,
@@ -293,7 +293,7 @@ fn create_pipeline_descriptor<'a>(
     }
 }
 
-#[allow(clippy::too_many_arguments)]
+#[expect(clippy::too_many_arguments)]
 fn create_shape_pipeline(
     name: &str,
     device: &wgpu::Device,

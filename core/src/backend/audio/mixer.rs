@@ -169,7 +169,7 @@ struct Sound {
 struct SoundInstance {
     /// The handle the sound definition inside `sounds`.
     /// `None` if this is a stream sound.
-    #[allow(dead_code)]
+    #[expect(dead_code)]
     handle: Option<SoundHandle>,
 
     /// The audio stream. Call `next()` to yield sample frames.

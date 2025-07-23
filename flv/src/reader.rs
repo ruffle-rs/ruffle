@@ -132,7 +132,7 @@ impl Seek for FlvReader<'_> {
 }
 
 #[cfg(test)]
-#[allow(clippy::seek_from_current, clippy::seek_to_start_instead_of_rewind)]
+#[expect(clippy::seek_from_current)]
 mod tests {
     use crate::reader::FlvReader;
     use std::io::{Seek, SeekFrom};

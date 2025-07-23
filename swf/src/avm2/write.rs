@@ -109,7 +109,6 @@ impl<W: Write> Writer<W> {
         self.write_u32(n)
     }
 
-    #[allow(clippy::unusual_byte_groupings)]
     fn write_u32(&mut self, mut n: u32) -> Result<()> {
         loop {
             let byte = (n as u8) & 0x7f;
@@ -477,7 +476,6 @@ impl<W: Write> Writer<W> {
         Ok(())
     }
 
-    #[allow(clippy::unusual_byte_groupings)]
     fn write_trait(&mut self, t: &Trait) -> Result<()> {
         self.write_index(&t.name)?;
         let flags = if !t.metadata.is_empty() {

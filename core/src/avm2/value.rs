@@ -448,7 +448,6 @@ pub fn string_to_f64(mut s: &WStr, swf_version: u8, strict: bool) -> Option<f64>
     Some(result)
 }
 
-#[allow(clippy::needless_lifetimes)]
 pub fn abc_int<'gc>(
     translation_unit: TranslationUnit<'gc>,
     index: Index<i32>,
@@ -466,7 +465,6 @@ pub fn abc_int<'gc>(
         .ok_or_else(|| format!("Unknown int constant {}", index.0).into())
 }
 
-#[allow(clippy::needless_lifetimes)]
 pub fn abc_uint<'gc>(
     translation_unit: TranslationUnit<'gc>,
     index: Index<u32>,
@@ -484,7 +482,6 @@ pub fn abc_uint<'gc>(
         .ok_or_else(|| format!("Unknown uint constant {}", index.0).into())
 }
 
-#[allow(clippy::needless_lifetimes)]
 pub fn abc_double<'gc>(
     translation_unit: TranslationUnit<'gc>,
     index: Index<f64>,
@@ -1468,7 +1465,7 @@ impl<'gc> Value<'gc> {
 
     /// Determine if this value is a number representable as a u32 without loss
     /// of precision.
-    #[allow(clippy::float_cmp)]
+    #[expect(clippy::float_cmp)]
     pub fn is_u32(&self) -> bool {
         match self {
             Value::Number(n) => *n == (*n as u32 as f64),
@@ -1479,7 +1476,7 @@ impl<'gc> Value<'gc> {
 
     /// Determine if this value is a number representable as an i32 without
     /// loss of precision.
-    #[allow(clippy::float_cmp)]
+    #[expect(clippy::float_cmp)]
     pub fn is_i32(&self) -> bool {
         match self {
             Value::Number(n) => *n == (*n as i32 as f64),
@@ -1761,7 +1758,6 @@ impl<'gc> Value<'gc> {
     /// This abstract relational comparison algorithm is intended to match
     /// ECMA-262 3rd edition, section 11.8.5. It returns `true`, `false`, *or*
     /// `undefined` (to signal NaN), the latter of which we represent as `None`.
-    #[allow(clippy::float_cmp)]
     pub fn abstract_lt(
         &self,
         other: &Value<'gc>,

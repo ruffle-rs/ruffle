@@ -300,7 +300,6 @@ impl BlurFilter {
         }
     }
 
-    #[allow(clippy::too_many_arguments)]
     fn render_with_uniform_buffers(
         &self,
         descriptors: &Descriptors,

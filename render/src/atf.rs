@@ -93,7 +93,7 @@ impl ATFTexture {
 
         let mut face_mip_data = vec![vec![]; num_faces];
 
-        #[allow(clippy::needless_range_loop)]
+        #[expect(clippy::needless_range_loop)]
         for face in 0..num_faces {
             for _ in 0..mip_count {
                 let read_len = |bytes: &mut &[u8]| -> Result<u32, Box<dyn std::error::Error>> {

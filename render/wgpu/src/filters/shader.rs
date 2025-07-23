@@ -22,7 +22,6 @@ impl ShaderFilter {
         Self
     }
 
-    #[allow(clippy::too_many_arguments)]
     pub fn apply<'a>(
         &self,
         descriptors: &Descriptors,

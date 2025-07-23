@@ -355,7 +355,7 @@ impl Avm2ObjectWindow {
             });
     }
 
-    #[allow(clippy::too_many_arguments)]
+    #[expect(clippy::too_many_arguments)]
     fn show_property<'gc>(
         &mut self,
         object: Object<'gc>,

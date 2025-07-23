@@ -419,7 +419,7 @@ impl RuffleInstanceBuilder {
                                             is_bold: font.is_bold,
                                             is_italic: font.is_italic,
                                             // TODO remove when https://github.com/rust-lang/rust-clippy/issues/15252 is fixed
-                                            #[allow(clippy::unnecessary_to_owned)]
+                                            #[expect(clippy::unnecessary_to_owned)]
                                             data: FontFileData::new(data.to_vec()),
                                             index: 0,
                                         })

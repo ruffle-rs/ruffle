@@ -198,7 +198,6 @@ impl<'gc> Equivalent<PropertyName<'gc>> for CaseSensitive<&WStr> {
 #[collect(no_drop)]
 struct PropertyName<'gc>(AvmString<'gc>);
 
-#[allow(clippy::derive_hash_xor_eq)]
 impl Hash for PropertyName<'_> {
     fn hash<H: Hasher>(&self, state: &mut H) {
         swf_hash_string_ignore_case(self.0.as_ref(), state);

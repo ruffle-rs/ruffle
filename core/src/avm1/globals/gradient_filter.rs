@@ -80,7 +80,7 @@ impl From<swf::GradientFilter> for GradientFilterData {
 }
 
 impl Default for GradientFilterData {
-    #[allow(clippy::approx_constant)]
+    #[expect(clippy::approx_constant)]
     fn default() -> Self {
         Self {
             distance: Cell::new(4.0),
