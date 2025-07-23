@@ -28,6 +28,7 @@ use crate::html::{
 use crate::prelude::*;
 use crate::string::{utils as string_utils, AvmString, SwfStrExt as _, WStr, WString};
 use crate::tag_utils::SwfMovie;
+use crate::utils::HasPrefixField;
 use crate::vminterface::{AvmObject, Instantiator};
 use chrono::DateTime;
 use chrono::Utc;
@@ -79,48 +80,15 @@ impl fmt::Debug for EditText<'_> {
     }
 }
 
-#[derive(Clone, Collect)]
+#[derive(Clone, Collect, HasPrefixField)]
 #[collect(no_drop)]
+#[repr(C, align(8))]
 pub struct EditTextData<'gc> {
     /// DisplayObject and InteractiveObject common properties.
     base: RefLock<InteractiveObjectBase<'gc>>,
 
     /// Data shared among all instances of this `EditText`.
     shared: Gc<'gc, EditTextShared>,
-
-    /// The underlying text format spans of the `EditText`.
-    ///
-    /// This is generated from HTML (with optional CSS) or set directly, and
-    /// can be directly manipulated by ActionScript. It can also be raised to
-    /// an equivalent HTML representation, as long as no stylesheet is present.
-    ///
-    /// It is lowered further into layout boxes, which are used for actual
-    /// rendering.
-    text_spans: RefCell<FormatSpans>,
-
-    /// The color of the background fill. Only applied when has_border and has_background.
-    background_color: Cell<Color>,
-
-    /// The color of the border.
-    border_color: Cell<Color>,
-
-    /// Whether the width of the field should change in response to text
-    /// changes, and in what direction the added or removed width should
-    /// apply.
-    autosize: Cell<AutoSizeMode>,
-
-    /// The calculated layout.
-    layout: RefLock<Layout<'gc>>,
-
-    /// The current intrinsic bounds of the text field.
-    bounds: Cell<Rectangle<Twips>>,
-
-    /// Lazily calculated autosize bounds.
-    ///
-    /// When `None`, no new bounds should be applied.
-    /// When `Some`, new bounds resulting from autosize are
-    /// waiting to be applied, see [`EditText::apply_autosize_bounds`].
-    autosize_lazy_bounds: Cell<Option<Rectangle<Twips>>>,
 
     /// The AVM1 object handle
     object: Lock<Option<AvmObject<'gc>>>,
@@ -137,6 +105,42 @@ pub struct EditTextData<'gc> {
     /// The AVM2 class of this button. If None, it is flash.text.TextField.
     class: Lock<Option<Avm2ClassObject<'gc>>>,
 
+    /// The underlying text format spans of the `EditText`.
+    ///
+    /// This is generated from HTML (with optional CSS) or set directly, and
+    /// can be directly manipulated by ActionScript. It can also be raised to
+    /// an equivalent HTML representation, as long as no stylesheet is present.
+    ///
+    /// It is lowered further into layout boxes, which are used for actual
+    /// rendering.
+    text_spans: RefCell<FormatSpans>,
+
+    /// The calculated layout.
+    layout: RefLock<Layout<'gc>>,
+
+    /// Style sheet used when parsing HTML.
+    style_sheet: Lock<EditTextStyleSheet<'gc>>,
+
+    /// Restrict what characters the user may input.
+    restrict: RefCell<EditTextRestrict>,
+
+    /// Information related to the last click event inside this text field.
+    last_click: Cell<Option<ClickEventData>>,
+
+    /// Original HTML text before parsing.
+    ///
+    /// It is used only when a style sheet is available
+    /// in order to preserve styles.
+    original_html_text: RefCell<Option<WString>>,
+
+    ime_data: RefCell<Option<ImeData>>,
+
+    /// The color of the background fill. Only applied when has_border and has_background.
+    background_color: Cell<Color>,
+
+    /// The color of the border.
+    border_color: Cell<Color>,
+
     /// The selected portion of the text, or None if the text is not selected.
     /// Note: Selections work differently in AVM1, AVM2, and Ruffle.
     ///
@@ -145,6 +149,9 @@ pub struct EditTextData<'gc> {
     /// In Ruffle, every text field has its own optional selection. This hybrid approach means manually maintaining
     /// the invariants that selection is always None for an unfocused AVM1 field, and never None for an AVM2 field.
     selection: Cell<Option<TextSelection>>,
+
+    /// The current intrinsic bounds of the text field.
+    bounds: Cell<Rectangle<Twips>>,
 
     /// Which rendering engine this text field will use.
     render_settings: Cell<TextRenderSettings>,
@@ -158,6 +165,18 @@ pub struct EditTextData<'gc> {
     /// The limit of characters that can be manually input by the user.
     /// Doesn't affect script-triggered modifications.
     max_chars: Cell<i32>,
+
+    /// Lazily calculated autosize bounds.
+    ///
+    /// When `None`, no new bounds should be applied.
+    /// When `Some`, new bounds resulting from autosize are
+    /// waiting to be applied, see [`EditText::apply_autosize_bounds`].
+    autosize_lazy_bounds: Cell<Option<Rectangle<Twips>>>,
+
+    /// Whether the width of the field should change in response to text
+    /// changes, and in what direction the added or removed width should
+    /// apply.
+    autosize: Cell<AutoSizeMode>,
 
     /// Indicates if the text is scrollable using the mouse wheel.
     mouse_wheel_enabled: Cell<bool>,
@@ -176,23 +195,6 @@ pub struct EditTextData<'gc> {
     /// See <https://docs.ruffle.rs/en_US/FlashPlatform/reference/actionscript/3/flash/text/engine/package-detail.html>
     /// See <https://docs.ruffle.rs/en_US/as3/dev/WS9dd7ed846a005b294b857bfa122bd808ea6-8000.html>
     is_fte: Cell<bool>,
-
-    /// Restrict what characters the user may input.
-    restrict: RefCell<EditTextRestrict>,
-
-    /// Information related to the last click event inside this text field.
-    last_click: Cell<Option<ClickEventData>>,
-
-    /// Style sheet used when parsing HTML.
-    style_sheet: Lock<EditTextStyleSheet<'gc>>,
-
-    /// Original HTML text before parsing.
-    ///
-    /// It is used only when a style sheet is available
-    /// in order to preserve styles.
-    original_html_text: RefCell<Option<WString>>,
-
-    ime_data: RefCell<Option<ImeData>>,
 }
 
 impl EditTextData<'_> {
@@ -335,7 +337,7 @@ impl<'gc> EditText<'gc> {
         let et = EditText(Gc::new(
             context.gc(),
             EditTextData {
-                base: RefLock::new(InteractiveObjectBase::default()),
+                base: Default::default(),
                 text_spans: RefCell::new(text_spans),
                 shared: Gc::new(
                     context.gc(),
@@ -2500,12 +2502,11 @@ impl<'gc> EditText<'gc> {
 
 impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
     fn base(&self) -> Ref<'_, DisplayObjectBase<'gc>> {
-        Ref::map(self.0.base.borrow(), |r| &r.base)
+        Ref::map(self.raw_interactive(), |base| &base.base)
     }
 
     fn base_mut<'a>(&'a self, mc: &Mutation<'gc>) -> RefMut<'a, DisplayObjectBase<'gc>> {
-        let base_mut = unlock!(Gc::write(mc, self.0), EditTextData, base).borrow_mut();
-        RefMut::map(base_mut, |w| &mut w.base)
+        RefMut::map(self.raw_interactive_mut(mc), |base| &mut base.base)
     }
 
     fn instantiate(self, gc_context: &Mutation<'gc>) -> DisplayObject<'gc> {
@@ -2935,12 +2936,8 @@ impl<'gc> EditText<'gc> {
 }
 
 impl<'gc> TInteractiveObject<'gc> for EditText<'gc> {
-    fn raw_interactive(&self) -> Ref<'_, InteractiveObjectBase<'gc>> {
-        self.0.base.borrow()
-    }
-
-    fn raw_interactive_mut(&self, mc: &Mutation<'gc>) -> RefMut<'_, InteractiveObjectBase<'gc>> {
-        unlock!(Gc::write(mc, self.0), EditTextData, base).borrow_mut()
+    fn gc_raw_interactive(self) -> Gc<'gc, RefLock<InteractiveObjectBase<'gc>>> {
+        HasPrefixField::as_prefix_gc(self.0)
     }
 
     fn as_displayobject(self) -> DisplayObject<'gc> {

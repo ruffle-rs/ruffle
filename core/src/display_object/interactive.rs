@@ -19,7 +19,8 @@ use crate::display_object::{
 use crate::events::{ClipEvent, ClipEventResult, MouseButton};
 use crate::string::AvmString;
 use bitflags::bitflags;
-use gc_arena::{Collect, Mutation};
+use gc_arena::lock::RefLock;
+use gc_arena::{Collect, Gc, Mutation};
 use ruffle_macros::{enum_trait_object, istr};
 use std::cell::{Ref, RefMut};
 use std::fmt::Debug;
@@ -125,9 +126,19 @@ impl Default for InteractiveObjectBase<'_> {
 pub trait TInteractiveObject<'gc>:
     'gc + Clone + Copy + Collect<'gc> + Debug + Into<InteractiveObject<'gc>>
 {
-    fn raw_interactive(&self) -> Ref<'_, InteractiveObjectBase<'gc>>;
+    fn gc_raw_interactive(self) -> Gc<'gc, RefLock<InteractiveObjectBase<'gc>>>;
 
-    fn raw_interactive_mut(&self, mc: &Mutation<'gc>) -> RefMut<'_, InteractiveObjectBase<'gc>>;
+    #[inline(always)]
+    #[no_dynamic]
+    fn raw_interactive(&self) -> Ref<'_, InteractiveObjectBase<'gc>> {
+        self.gc_raw_interactive().borrow()
+    }
+
+    #[inline(always)]
+    #[no_dynamic]
+    fn raw_interactive_mut(&self, mc: &Mutation<'gc>) -> RefMut<'_, InteractiveObjectBase<'gc>> {
+        self.gc_raw_interactive().borrow_mut(mc)
+    }
 
     fn as_displayobject(self) -> DisplayObject<'gc>;
 
