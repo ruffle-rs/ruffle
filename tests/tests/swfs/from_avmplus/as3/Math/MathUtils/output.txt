@@ -1,0 +1,7 @@
+new Number('Infinity2') PASSED!
+new Number('41254121515122343e2') PASSED!
+Number with 308 decimal places PASSED!
+kFixedFraction write out significand PASSED!
+new Number(12.0).toString(2) PASSED!
+new Number(-1.0).toString(2) PASSED!
+new Number(0.5).toString(2) PASSED!
