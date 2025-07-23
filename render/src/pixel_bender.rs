@@ -587,7 +587,7 @@ fn read_op<R: Read>(
         }
         Opcode::If => {
             skip_padding(data, 3)?;
-            let src = read_uint24(data)?;
+            let src = data.read_u24::<LittleEndian>()?;
             skip_padding(data, 1)?;
             let src_reg = read_src_reg(src, 1);
 
@@ -628,7 +628,7 @@ fn read_op<R: Read>(
         Opcode::SampleNearest | Opcode::SampleLinear => {
             let dst = data.read_u16::<LittleEndian>()?;
             let mask = data.read_u8()?;
-            let src = read_uint24(data)?;
+            let src = data.read_u24::<LittleEndian>()?;
             let tf = data.read_u8()?;
 
             let dst_reg = read_dst_reg(dst, mask >> 4);
@@ -654,15 +654,15 @@ fn read_op<R: Read>(
             assert_eq!(mask & 0xF, 0);
             let dst_reg = read_dst_reg(dst, mask >> 4);
 
-            let condition = read_uint24(data)?;
+            let condition = data.read_u24::<LittleEndian>()?;
             skip_padding(data, 1)?;
             let condition_reg = read_src_reg(condition, 1);
 
-            let src1 = read_uint24(data)?;
+            let src1 = data.read_u24::<LittleEndian>()?;
             skip_padding(data, 1)?;
             let src_reg1 = read_src_reg(src1, 1);
 
-            let src2 = read_uint24(data)?;
+            let src2 = data.read_u24::<LittleEndian>()?;
             skip_padding(data, 1)?;
             let src_reg2 = read_src_reg(src2, 1);
 
@@ -682,7 +682,7 @@ fn read_op<R: Read>(
             let mut mask = data.read_u8()?;
             let size = (mask & 0x3) + 1;
             let matrix = (mask >> 2) & 3;
-            let src = read_uint24(data)?;
+            let src = data.read_u24::<LittleEndian>()?;
 
             skip_padding(data, 1)?;
             mask >>= 4;
@@ -800,13 +800,6 @@ fn read_value<R: Read>(data: &mut R, opcode: PixelBenderTypeOpcode) -> Result<Pi
             data.read_i16::<LittleEndian>()?,
         )),
     }
-}
-
-fn read_uint24<R: Read>(data: &mut R) -> Result<u32> {
-    let ch1 = data.read_u8()? as u32;
-    let ch2 = data.read_u8()? as u32;
-    let ch3 = data.read_u8()? as u32;
-    Ok(ch1 | (ch2 << 8) | (ch3 << 16))
 }
 
 fn skip_padding<R: Read>(data: &mut R, byte_count: u64) -> Result<()> {
