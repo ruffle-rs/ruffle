@@ -61,6 +61,29 @@ impl<'gc> DateObject<'gc> {
         Ok(instance)
     }
 
+    pub fn for_prototype(
+        activation: &mut Activation<'_, 'gc>,
+        date_class: ClassObject<'gc>,
+    ) -> Object<'gc> {
+        let object_class = activation.avm2().classes().object;
+        let base = ScriptObjectData::custom_new(
+            date_class.inner_class_definition(),
+            Some(object_class.prototype()),
+            date_class.instance_vtable(),
+        );
+
+        let instance: Object<'gc> = DateObject(Gc::new(
+            activation.gc(),
+            DateObjectData {
+                base,
+                date_time: Cell::new(None),
+            },
+        ))
+        .into();
+
+        instance
+    }
+
     pub fn date_time(self) -> Option<DateTime<Utc>> {
         self.0.date_time.get()
     }
