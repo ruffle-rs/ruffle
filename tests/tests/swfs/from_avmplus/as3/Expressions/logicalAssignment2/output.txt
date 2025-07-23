@@ -1,0 +1,4 @@
+(new C(1))[0] ||= new C(3) PASSED!
+(new C(1))[0] &&= new C(3) PASSED!
+v ||= new C(1))[0] ||= new C(3) PASSED!
+v &&= new C(1))[0] &&= new C(3) PASSED!
