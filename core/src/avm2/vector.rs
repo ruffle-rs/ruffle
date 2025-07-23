@@ -111,10 +111,8 @@ impl<'gc> VectorStorage<'gc> {
     /// Get the default value for this vector.
     pub fn default(&self) -> Value<'gc> {
         if let Some(value_type) = self.value_type {
-            if value_type.is_builtin_int() || value_type.is_builtin_uint() {
+            if value_type.is_builtin_numeric() {
                 Value::Integer(0)
-            } else if value_type.is_builtin_number() {
-                Value::Number(0.0)
             } else {
                 Value::Null
             }
@@ -225,10 +223,8 @@ impl<'gc> VectorStorage<'gc> {
         if let Some(v) = self.storage.pop() {
             Ok(v)
         } else if let Some(value_type) = self.value_type() {
-            if value_type.is_builtin_int() || value_type.is_builtin_uint() {
+            if value_type.is_builtin_numeric() {
                 Ok(Value::Integer(0))
-            } else if value_type.is_builtin_number() {
-                Ok(Value::Number(0.0))
             } else {
                 Ok(Value::Undefined)
             }
@@ -269,10 +265,8 @@ impl<'gc> VectorStorage<'gc> {
         if !self.storage.is_empty() {
             Ok(self.storage.remove(0))
         } else if let Some(value_type) = self.value_type() {
-            if value_type.is_builtin_int() || value_type.is_builtin_uint() {
+            if value_type.is_builtin_numeric() {
                 Ok(Value::Integer(0))
-            } else if value_type.is_builtin_number() {
-                Ok(Value::Number(0.0))
             } else {
                 Ok(Value::Undefined)
             }

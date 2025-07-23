@@ -1199,10 +1199,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         if let Some(return_type) = return_type {
             if return_type.is_builtin_void() {
                 Value::Undefined
-            } else if return_type.is_builtin_int()
-                || return_type.is_builtin_uint()
-                || return_type.is_builtin_number()
-            {
+            } else if return_type.is_builtin_numeric() {
                 0.into()
             } else if return_type.is_builtin_boolean() {
                 false.into()

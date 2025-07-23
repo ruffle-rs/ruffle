@@ -1089,6 +1089,23 @@ impl<'gc> Class<'gc> {
         self.0.attributes.get().contains(ClassAttributes::GENERIC)
     }
 
+    /// Whether this class is one of the numerical classes (`int`, `uint`, or
+    /// `Number`)
+    pub fn is_builtin_numeric(self) -> bool {
+        self.is_builtin_int() || self.is_builtin_uint() || self.is_builtin_number()
+    }
+
+    /// Whether this class is one of the non-null primitive classes (`int`,
+    /// `uint`, `Number`, `Boolean`, or `void`). These classes can never
+    /// represent a `null` value.
+    pub fn is_builtin_non_null(self) -> bool {
+        self.is_builtin_int()
+            || self.is_builtin_uint()
+            || self.is_builtin_number()
+            || self.is_builtin_boolean()
+            || self.is_builtin_void()
+    }
+
     pub fn is_builtin_int(self) -> bool {
         matches!(self.0.builtin_type.get(), Some(BuiltinType::Int))
     }
@@ -1101,14 +1118,14 @@ impl<'gc> Class<'gc> {
     pub fn is_builtin_boolean(self) -> bool {
         matches!(self.0.builtin_type.get(), Some(BuiltinType::Boolean))
     }
+    pub fn is_builtin_void(self) -> bool {
+        matches!(self.0.builtin_type.get(), Some(BuiltinType::Void))
+    }
     pub fn is_builtin_object(self) -> bool {
         matches!(self.0.builtin_type.get(), Some(BuiltinType::Object))
     }
     pub fn is_builtin_string(self) -> bool {
         matches!(self.0.builtin_type.get(), Some(BuiltinType::String))
-    }
-    pub fn is_builtin_void(self) -> bool {
-        matches!(self.0.builtin_type.get(), Some(BuiltinType::Void))
     }
     pub fn is_script_traits(self) -> bool {
         matches!(self.0.builtin_type.get(), Some(BuiltinType::ScriptTraits))
@@ -1157,17 +1174,21 @@ impl<'gc> Class<'gc> {
     }
 }
 
+// NOTE: The ordering of these variants is important; Int, Uint, and Number are
+// the first three, so that a "is numerical" check can simply check if the
+// enum tag is <=2, and Boolean and Void come right after, so that a "is null"
+// check can check if the enum tag is <=4.
 #[derive(Clone, Copy)]
 pub enum BuiltinType {
-    // `int`, `uint`, `Number`, `Boolean`, `Object`, `String`, `void` builtin
+    // `int`, `uint`, `Number`, `Boolean`, `void`, `Object`, `String` builtin
     // classes
     Int,
     Uint,
     Number,
     Boolean,
+    Void,
     Object,
     String,
-    Void,
 
     // Any script `global` class
     ScriptTraits,
