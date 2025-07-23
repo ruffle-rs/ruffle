@@ -84,13 +84,7 @@ impl<'gc> OptValue<'gc> {
             true
         } else {
             // Primitives are always not-null
-            self.class.is_some_and(|c| {
-                c.is_builtin_int()
-                    || c.is_builtin_uint()
-                    || c.is_builtin_number()
-                    || c.is_builtin_boolean()
-                    || c.is_builtin_void()
-            })
+            self.class.is_some_and(|c| c.is_builtin_non_null())
         }
     }
 
@@ -102,26 +96,16 @@ impl<'gc> OptValue<'gc> {
             created_value.class = self.class;
         } else if matches!(other.null_state, NullState::IsNull) {
             // If the other value is guaranteed to be null, we can just use our class.
-            // Unless it's a primitive class.
+            // Unless it's a non-null class.
             if let Some(self_class) = self.class {
-                if !self_class.is_builtin_int()
-                    && !self_class.is_builtin_uint()
-                    && !self_class.is_builtin_number()
-                    && !self_class.is_builtin_boolean()
-                    && !self_class.is_builtin_void()
-                {
+                if !self_class.is_builtin_non_null() {
                     created_value.class = self.class;
                 }
             }
         } else if matches!(self.null_state, NullState::IsNull) {
             // And vice-versa.
             if let Some(other_class) = other.class {
-                if !other_class.is_builtin_int()
-                    && !other_class.is_builtin_uint()
-                    && !other_class.is_builtin_number()
-                    && !other_class.is_builtin_boolean()
-                    && !other_class.is_builtin_void()
-                {
+                if !other_class.is_builtin_non_null() {
                     created_value.class = other.class;
                 }
             }
@@ -166,11 +150,7 @@ impl<'gc> OptValue<'gc> {
             } else if checked_class.is_builtin_uint() && self.contains_valid_unsigned {
                 true
             } else {
-                let is_not_primitive_class = !checked_class.is_builtin_int()
-                    && !checked_class.is_builtin_uint()
-                    && !checked_class.is_builtin_number()
-                    && !checked_class.is_builtin_boolean()
-                    && !checked_class.is_builtin_void();
+                let is_not_primitive_class = !checked_class.is_builtin_non_null();
 
                 // Null matches every class except the primitive classes
                 matches!(self.null_state, NullState::IsNull) && is_not_primitive_class
@@ -1127,13 +1107,9 @@ fn abstract_interpret_ops<'gc>(
                 let mut new_value = OptValue::of_type(class);
 
                 if stack_value.is_null() {
-                    // Coercing null to a non-primitive or void is a noop.
-                    if !class.is_builtin_int()
-                        && !class.is_builtin_uint()
-                        && !class.is_builtin_number()
-                        && !class.is_builtin_boolean()
-                        && !class.is_builtin_void()
-                    {
+                    // Coercing null to a class is a noop, as long as that class
+                    // isn't one of the special non-null classes.
+                    if !class.is_builtin_non_null() {
                         optimize_op_to!(Op::Nop);
                         new_value.null_state = NullState::IsNull;
                     }
@@ -1408,9 +1384,7 @@ fn abstract_interpret_ops<'gc>(
                     // multiname is valid for indexing then we know the type of
                     // the result
 
-                    let index_numeric = index.class.is_some_and(|c| {
-                        c.is_builtin_int() || c.is_builtin_uint() || c.is_builtin_number()
-                    });
+                    let index_numeric = index.class.is_some_and(|c| c.is_builtin_numeric());
 
                     // In non-JIT mode, GetPropertyFast can be emitted even when
                     // the multiname isn't valid for indexing (see comment in
