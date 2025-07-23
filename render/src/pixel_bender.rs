@@ -422,7 +422,7 @@ const CHANNELS: [PixelBenderRegChannel; 7] = [
     PixelBenderRegChannel::M4x4,
 ];
 
-fn read_src_reg(val: u32, size: u8) -> Result<PixelBenderReg> {
+fn read_src_reg(val: u32, size: u8) -> PixelBenderReg {
     let swizzle = val >> 16;
     let mut channels = Vec::new();
     for i in 0..size {
@@ -435,19 +435,19 @@ fn read_src_reg(val: u32, size: u8) -> Result<PixelBenderReg> {
         PixelBenderRegKind::Float
     };
 
-    Ok(PixelBenderReg {
+    PixelBenderReg {
         // Mask off the 0x8000 bit
         index: val & 0x7FFF,
         channels,
         kind,
-    })
+    }
 }
 
 fn read_matrix_reg(val: u16, mask: u8) -> PixelBenderReg {
     read_reg(val, vec![CHANNELS[(mask + 3) as usize]])
 }
 
-fn read_dst_reg(val: u16, mask: u8) -> Result<PixelBenderReg> {
+fn read_dst_reg(val: u16, mask: u8) -> PixelBenderReg {
     let mut channels = Vec::new();
     if mask & 0x8 != 0 {
         channels.push(PixelBenderRegChannel::R);
@@ -462,7 +462,7 @@ fn read_dst_reg(val: u16, mask: u8) -> Result<PixelBenderReg> {
         channels.push(PixelBenderRegChannel::A);
     }
 
-    Ok(read_reg(val, channels))
+    read_reg(val, channels)
 }
 
 fn read_reg(val: u16, channels: Vec<PixelBenderRegChannel>) -> PixelBenderReg {
@@ -548,7 +548,7 @@ fn read_op<R: Read>(
                 }
                 _ => {
                     assert_eq!(mask >> 4, 0);
-                    read_dst_reg(reg, mask)?
+                    read_dst_reg(reg, mask)
                 }
             };
 
@@ -589,7 +589,7 @@ fn read_op<R: Read>(
             assert_eq!(read_uint24(data)?, 0);
             let src = read_uint24(data)?;
             assert_eq!(data.read_u8()?, 0);
-            let src_reg = read_src_reg(src, 1)?;
+            let src_reg = read_src_reg(src, 1);
 
             if validate && src_reg.kind == PixelBenderRegKind::Float {
                 return Err(PixelBenderParsingError::InvalidConditionalKind);
@@ -611,7 +611,7 @@ fn read_op<R: Read>(
             let dst = data.read_u16::<LittleEndian>()?;
             let mask = data.read_u8()?;
             assert_eq!(mask & 0xF, 0);
-            let dst_reg = read_dst_reg(dst, mask >> 4)?;
+            let dst_reg = read_dst_reg(dst, mask >> 4);
             match dst_reg.kind {
                 PixelBenderRegKind::Float => {
                     let val = read_float(data)?;
@@ -633,8 +633,8 @@ fn read_op<R: Read>(
             let src = read_uint24(data)?;
             let tf = data.read_u8()?;
 
-            let dst_reg = read_dst_reg(dst, mask >> 4)?;
-            let src_reg = read_src_reg(src, 2)?;
+            let dst_reg = read_dst_reg(dst, mask >> 4);
+            let src_reg = read_src_reg(src, 2);
 
             match opcode {
                 Opcode::SampleNearest => shader.operations.push(Operation::SampleNearest {
@@ -654,19 +654,19 @@ fn read_op<R: Read>(
             let dst = data.read_u16::<LittleEndian>()?;
             let mask = data.read_u8()?;
             assert_eq!(mask & 0xF, 0);
-            let dst_reg = read_dst_reg(dst, mask >> 4)?;
+            let dst_reg = read_dst_reg(dst, mask >> 4);
 
             let condition = read_uint24(data)?;
             assert_eq!(data.read_u8()?, 0);
-            let condition_reg = read_src_reg(condition, 1)?;
+            let condition_reg = read_src_reg(condition, 1);
 
             let src1 = read_uint24(data)?;
             assert_eq!(data.read_u8()?, 0);
-            let src_reg1 = read_src_reg(src1, 1)?;
+            let src_reg1 = read_src_reg(src1, 1);
 
             let src2 = read_uint24(data)?;
             assert_eq!(data.read_u8()?, 0);
-            let src_reg2 = read_src_reg(src2, 1)?;
+            let src_reg2 = read_src_reg(src2, 1);
 
             if validate && condition_reg.kind == PixelBenderRegKind::Float {
                 return Err(PixelBenderParsingError::InvalidConditionalKind);
@@ -695,7 +695,7 @@ fn read_op<R: Read>(
                 let dst = if mask == 0 {
                     read_matrix_reg(dst, matrix)
                 } else {
-                    read_dst_reg(dst, mask)?
+                    read_dst_reg(dst, mask)
                 };
                 shader.operations.push(Operation::Normal {
                     opcode,
@@ -703,8 +703,8 @@ fn read_op<R: Read>(
                     src: read_matrix_reg(src as u16, matrix),
                 });
             } else {
-                let dst = read_dst_reg(dst, mask)?;
-                let src = read_src_reg(src, size)?;
+                let dst = read_dst_reg(dst, mask);
+                let src = read_src_reg(src, size);
                 shader
                     .operations
                     .push(Operation::Normal { opcode, dst, src })
