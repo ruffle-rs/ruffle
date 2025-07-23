@@ -189,6 +189,21 @@ fn get_arguments_array<'gc>(args: &[Value<'gc>]) -> Vec<Value<'gc>> {
         .collect()
 }
 
+pub fn init_custom_prototype<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    this: Value<'gc>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+    let this = this.as_class_object().unwrap();
+
+    let prototype_date_object = DateObject::for_prototype(activation, this);
+
+    this.link_prototype(activation, prototype_date_object);
+
+    Ok(Value::Undefined)
+}
+
 /// Implements `Date`'s instance constructor.
 pub fn init<'gc>(
     activation: &mut Activation<'_, 'gc>,

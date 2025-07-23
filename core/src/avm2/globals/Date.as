@@ -4,6 +4,10 @@ package {
     public dynamic class Date {
         public static const length:int = 7;
 
+        private static native function initCustomPrototype();
+
+        initCustomPrototype();
+
         prototype.valueOf = function():* {
             var d:Date = this;
             return d.AS3::valueOf();
