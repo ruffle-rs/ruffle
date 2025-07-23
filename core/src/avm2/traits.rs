@@ -2,6 +2,7 @@
 
 use crate::avm2::activation::Activation;
 use crate::avm2::class::Class;
+use crate::avm2::domain::Domain;
 use crate::avm2::metadata::Metadata;
 use crate::avm2::method::Method;
 use crate::avm2::script::TranslationUnit;
@@ -76,7 +77,7 @@ pub enum TraitKind<'gc> {
         slot_id: u32,
         type_name: Option<Gc<'gc, Multiname<'gc>>>,
         default_value: Value<'gc>,
-        unit: Option<TranslationUnit<'gc>>,
+        domain: Domain<'gc>,
     },
 
     /// A method on an object that can be called.
@@ -98,7 +99,7 @@ pub enum TraitKind<'gc> {
         slot_id: u32,
         type_name: Option<Gc<'gc, Multiname<'gc>>>,
         default_value: Value<'gc>,
-        unit: Option<TranslationUnit<'gc>>,
+        domain: Domain<'gc>,
     },
 }
 
@@ -107,6 +108,7 @@ impl<'gc> Trait<'gc> {
         name: QName<'gc>,
         type_name: Option<Gc<'gc, Multiname<'gc>>>,
         default_value: Option<Value<'gc>>,
+        domain: Domain<'gc>,
     ) -> Self {
         Trait {
             name,
@@ -115,7 +117,7 @@ impl<'gc> Trait<'gc> {
                 slot_id: 0,
                 default_value: default_value.unwrap_or_else(|| default_value_for_type(type_name)),
                 type_name,
-                unit: None,
+                domain,
             },
             metadata: None,
         }
@@ -144,7 +146,7 @@ impl<'gc> Trait<'gc> {
                         slot_id: *slot_id,
                         type_name,
                         default_value,
-                        unit: Some(unit),
+                        domain: unit.domain(),
                     },
                     metadata: Metadata::from_abc_index(activation, unit, &abc_trait.metadata)?,
                 }
@@ -200,7 +202,7 @@ impl<'gc> Trait<'gc> {
                         slot_id: *slot_id,
                         type_name,
                         default_value,
-                        unit: Some(unit),
+                        domain: unit.domain(),
                     },
                     metadata: Metadata::from_abc_index(activation, unit, &abc_trait.metadata)?,
                 }

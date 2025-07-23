@@ -1,9 +1,9 @@
 //! Property data structures
 
 use crate::avm2::Activation;
+use crate::avm2::Domain;
 use crate::avm2::Error;
 use crate::avm2::Multiname;
-use crate::avm2::TranslationUnit;
 use crate::avm2::Value;
 use crate::string::{AvmString, StringContext};
 use gc_arena::{Collect, Gc};
@@ -40,13 +40,13 @@ pub enum PropertyClass<'gc> {
     /// be distinguished from the `Object` class
     Any,
     Class(Class<'gc>),
-    Name(Gc<'gc, Multiname<'gc>>, Option<TranslationUnit<'gc>>),
+    Name(Gc<'gc, Multiname<'gc>>, Domain<'gc>),
 }
 
 impl<'gc> PropertyClass<'gc> {
-    pub fn name(name: Option<Gc<'gc, Multiname<'gc>>>, unit: Option<TranslationUnit<'gc>>) -> Self {
+    pub fn name(name: Option<Gc<'gc, Multiname<'gc>>>, domain: Domain<'gc>) -> Self {
         if let Some(name) = name {
-            PropertyClass::Name(name, unit)
+            PropertyClass::Name(name, domain)
         } else {
             PropertyClass::Any
         }
@@ -62,14 +62,10 @@ impl<'gc> PropertyClass<'gc> {
     ) -> Result<(Value<'gc>, bool), Error<'gc>> {
         let (class, changed) = match self {
             PropertyClass::Class(class) => (Some(*class), false),
-            PropertyClass::Name(name, unit) => {
+            PropertyClass::Name(name, domain) => {
                 // Note - we look up the class in the domain by name, which allows us to look up private classes.
                 // This also has the advantage of letting us coerce to a class while the `ClassObject`
                 // is still being constructed (since the `Class` will already exist in the domain).
-
-                // We should only be missing a translation unit when performing a lookup from playerglobals,
-                // so use that domain if we don't have a translation unit.
-                let domain = unit.map_or(activation.avm2().playerglobals_domain, |u| u.domain());
                 if let Some(class) = domain.get_class(activation.context, name) {
                     *self = PropertyClass::Class(class);
                     (Some(class), true)
@@ -97,8 +93,7 @@ impl<'gc> PropertyClass<'gc> {
     ) -> Result<Option<Class<'gc>>, Error<'gc>> {
         match self {
             PropertyClass::Class(class) => Ok(Some(*class)),
-            PropertyClass::Name(name, unit) => {
-                let domain = unit.map_or(activation.avm2().playerglobals_domain, |u| u.domain());
+            PropertyClass::Name(name, domain) => {
                 if let Some(class) = domain.get_class(activation.context, name) {
                     *self = PropertyClass::Class(class);
                     Ok(Some(class))
