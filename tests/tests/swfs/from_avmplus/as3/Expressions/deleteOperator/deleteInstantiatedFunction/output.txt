@@ -1,0 +1,4 @@
+object's function PASSED!
+call object's function PASSED!
+delete instantiated object's function PASSED!
+account.func PASSED!
