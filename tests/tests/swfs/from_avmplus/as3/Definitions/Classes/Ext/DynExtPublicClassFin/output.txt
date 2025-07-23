@@ -1,0 +1,24 @@
+*** Access final method from default method of sub class *** PASSED!
+DYNEXTDCLASS.testSubArray(arr) PASSED!
+*** Access final method from public method of sub class *** PASSED!
+DYNEXTDCLASS.pubSubSetArray(arr), DYNEXTDCLASS.pubSubGetArray() PASSED!
+*** Access final method from private method of sub class *** PASSED!
+DYNEXTDCLASS.testPrivSubArray(arr) PASSED!
+*** Access final method from final method of sub class *** PASSED!
+DYNEXTDCLASS.testFinSubArray(arr) PASSED!
+*** Access final method from public final method of sub class *** PASSED!
+DYNEXTDCLASS.pubFinSubSetArray(arr), DYNEXTDCLASS.pubFinSubGetArray() PASSED!
+*** Access final method from private final method of sub class *** PASSED!
+DYNEXTDCLASS.testPrivFinSubArray(arr) PASSED!
+*** Access final property from method in sub class *** PASSED!
+DYNEXTDCLASS.testSubDPArray(arr) PASSED!
+*** Access final property from public method in sub class *** PASSED!
+DYNEXTDCLASS.pubSubSetDPArray(arr), DYNEXTDCLASS.pubSubGetDPArray() PASSED!
+*** Access final property from private method in sub class *** PASSED!
+DYNEXTDCLASS.testPrivSubDPArray(arr) PASSED!
+*** Access final property from final method in sub class *** PASSED!
+DYNEXTDCLASS.testFinSubDPArray(arr) PASSED!
+*** Access final property from virtual method in sub class *** PASSED!
+DYNEXTDCLASS.testVirSubDPArray(arr) PASSED!
+*** Access final property from private virtual method in sub class *** PASSED!
+DYNEXTDCLASS.testPrivVirSubDPArray(arr) PASSED!

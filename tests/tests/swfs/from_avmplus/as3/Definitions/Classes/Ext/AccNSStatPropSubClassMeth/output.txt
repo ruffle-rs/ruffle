@@ -1,0 +1,6 @@
+*** Access the static property via base class *** PASSED!
+BaseClass.ns1::i = 12, BaseClass.ns1::i PASSED!
+*** Access the static property via sub class using unadorned property name *** PASSED!
+obj.getInt() PASSED!
+*** Access the static property via sub class using unadorned property name *** PASSED!
+obj.getBaseInt() PASSED!

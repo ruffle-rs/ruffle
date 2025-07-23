@@ -1,0 +1,8 @@
+Access default method from default method of sub class PASSED!
+Access default method from public method of sub class PASSED!
+Access default method from private method of sub class PASSED!
+Access default method from public method of sub class PASSED!
+Access default prooperty from method in sub class PASSED!
+Access default property from public method in sub class PASSED!
+Access default property from private method in sub class PASSED!
+Access default property from private method in sub class PASSED!
