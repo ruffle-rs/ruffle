@@ -1,0 +1,56 @@
+void 0 !== void 0 PASSED!
+null !== null PASSED!
+NaN !== NaN PASSED!
+NaN !== 0 PASSED!
+0 !== NaN PASSED!
+NaN !== Infinity PASSED!
+Infinity !== NaN PASSED!
+12345.6789 !== 12345.678900 PASSED!
+Number.MAX_VALUE !== Number.MAX_VALUE PASSED!
+Number.MIN_VALUE !== Number.MIN_VALUE PASSED!
+Number.POSITIVE_INFINITY !== Number.POSITIVE_INFINITY PASSED!
+Number.NEGATIVE_INFINITY !== Number.NEGATIVE_INFINITY PASSED!
+0 !== 0 PASSED!
+0 !== -0 PASSED!
+-0 !== 0 PASSED!
+-0 !== -0 PASSED!
+0.9 !== 1 PASSED!
+0.999999 !== 1 PASSED!
+0.9999999999 !== 1 PASSED!
+0.9999999999999 !== 1 PASSED!
+'hello' !== 'hello' PASSED!
+'helloWorld' !== 'hello' PASSED!
+true !== true PASSED!
+false !== false PASSED!
+true !== false PASSED!
+false !== true PASSED!
+var myobj1 = new MyObject(true); var myobj2 = myobj1; myobj1 !== myobj2 PASSED!
+new MyObject(true) !== new MyObject(true) PASSED!
+new Boolean(true) !== new Boolean(true) PASSED!
+new Boolean(false) !== new Boolean(false) PASSED!
+x = new MyObject(true); y = x; z = x; z !== y PASSED!
+x = new MyObject(false); y = x; z = x; z !== y PASSED!
+x = new Boolean(true); y = x; z = x; z !== y PASSED!
+x = new Boolean(false); y = x; z = x; z !== y PASSED!
+new String("string") !== new String("string") PASSED!
+new String("string") !== "string" PASSED!
+null !== void 0 PASSED!
+void 0 !== null PASSED!
+undefined !== 5.44 PASSED!
+null !== "fdsee3f"  PASSED!
+undefined !== an_undefined_var PASSED!
+var obj:Object; obj !== an_undefined_var PASSED!
+var nullobj:AObj; nullobj !== null  PASSED!
+1 !== '1' PASSED!
+255 !== '0xff' PASSED!
+0 !== '
+' PASSED!
+1e19 !== '1e19' PASSED!
+new Boolean(true) !== true PASSED!
+new MyObject(true) !== true PASSED!
+new Boolean(false) !== false PASSED!
+new MyObject(false) !== false PASSED!
+true !== new Boolean(true) PASSED!
+true !== new MyObject(true) PASSED!
+false !== new Boolean(false) PASSED!
+false !== new MyObject(false) PASSED!
