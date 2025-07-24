@@ -2,7 +2,7 @@ use crate::avm2::activation::Activation;
 use crate::avm2::class::Class;
 use crate::avm2::error::{make_mismatch_error, Error};
 use crate::avm2::method::{Method, MethodKind, ParamConfig};
-use crate::avm2::object::ClassObject;
+use crate::avm2::object::{ClassObject, FunctionObject};
 use crate::avm2::scope::ScopeChain;
 use crate::avm2::traits::TraitKind;
 use crate::avm2::value::Value;
@@ -63,7 +63,7 @@ impl<'gc> BoundMethod<'gc> {
         unbound_receiver: Value<'gc>,
         arguments: FunctionArgs<'_, 'gc>,
         activation: &mut Activation<'_, 'gc>,
-        callee: Value<'gc>,
+        callee: Option<FunctionObject<'gc>>,
     ) -> Result<Value<'gc>, Error<'gc>> {
         let receiver = if let Some(receiver) = self.bound_receiver {
             receiver
@@ -173,7 +173,7 @@ pub fn exec<'gc>(
     bound_class: Option<Class<'gc>>,
     arguments: FunctionArgs<'_, 'gc>,
     activation: &mut Activation<'_, 'gc>,
-    callee: Value<'gc>,
+    callee: Option<FunctionObject<'gc>>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let mc = activation.gc();
 
