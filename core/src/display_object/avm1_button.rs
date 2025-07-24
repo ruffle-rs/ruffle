@@ -16,7 +16,7 @@ use crate::tag_utils::{SwfMovie, SwfSlice};
 use crate::utils::HasPrefixField;
 use crate::vminterface::Instantiator;
 use core::fmt;
-use gc_arena::barrier::unlock;
+use gc_arena::barrier::{field, unlock};
 use gc_arena::lock::{Lock, RefLock};
 use gc_arena::{Collect, Gc, Mutation};
 use ruffle_macros::istr;
@@ -42,7 +42,7 @@ impl fmt::Debug for Avm1Button<'_> {
 #[collect(no_drop)]
 #[repr(C, align(8))]
 pub struct Avm1ButtonData<'gc> {
-    base: RefLock<InteractiveObjectBase<'gc>>,
+    base: InteractiveObjectBase<'gc>,
     cell: RefLock<Avm1ButtonDataMut<'gc>>,
     shared: Gc<'gc, ButtonShared>,
     object: Lock<Option<Object<'gc>>>,
@@ -248,11 +248,12 @@ impl<'gc> Avm1Button<'gc> {
 
 impl<'gc> TDisplayObject<'gc> for Avm1Button<'gc> {
     fn base(&self) -> Ref<'_, DisplayObjectBase<'gc>> {
-        Ref::map(self.raw_interactive(), |base| &base.base)
+        self.0.base.base()
     }
 
     fn base_mut<'a>(&'a self, mc: &Mutation<'gc>) -> RefMut<'a, DisplayObjectBase<'gc>> {
-        RefMut::map(self.raw_interactive_mut(mc), |base| &mut base.base)
+        let base = field!(Gc::write(mc, self.0), Avm1ButtonData, base);
+        InteractiveObjectBase::base_mut(base)
     }
 
     fn instantiate(self, mc: &Mutation<'gc>) -> DisplayObject<'gc> {
@@ -424,7 +425,7 @@ impl<'gc> TDisplayObjectContainer<'gc> for Avm1Button<'gc> {
 }
 
 impl<'gc> TInteractiveObject<'gc> for Avm1Button<'gc> {
-    fn gc_raw_interactive(self) -> Gc<'gc, RefLock<InteractiveObjectBase<'gc>>> {
+    fn raw_interactive(self) -> Gc<'gc, InteractiveObjectBase<'gc>> {
         HasPrefixField::as_prefix_gc(self.0)
     }
 
@@ -622,7 +623,7 @@ impl<'gc> Avm1ButtonData<'gc> {
         condition: ButtonActionCondition,
     ) -> ClipEventResult {
         let mut handled = ClipEventResult::NotHandled;
-        if let Some(parent) = self.base.borrow().base.parent {
+        if let Some(parent) = self.base.base().parent {
             for action in &self.shared.actions {
                 if action.conditions.matches(condition) {
                     // Note that AVM1 buttons run actions relative to their parent, not themselves.

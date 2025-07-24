@@ -22,7 +22,7 @@ use crate::tag_utils::SwfMovie;
 use crate::utils::HasPrefixField;
 use crate::vminterface::Instantiator;
 use bitflags::bitflags;
-use gc_arena::barrier::unlock;
+use gc_arena::barrier::{field, unlock};
 use gc_arena::{Collect, Gc, Lock, Mutation, RefLock};
 use ruffle_macros::istr;
 use ruffle_render::backend::ViewportDimensions;
@@ -58,7 +58,7 @@ pub struct StageData<'gc> {
     /// This particular base has additional constraints currently not
     /// expressible by the type system. Notably, this should never have a
     /// parent, as the stage does not respect it.
-    base: RefLock<InteractiveObjectBase<'gc>>,
+    base: InteractiveObjectBase<'gc>,
 
     /// The list of all children of the stage.
     ///
@@ -734,11 +734,12 @@ impl<'gc> Stage<'gc> {
 
 impl<'gc> TDisplayObject<'gc> for Stage<'gc> {
     fn base(&self) -> Ref<'_, DisplayObjectBase<'gc>> {
-        Ref::map(self.raw_interactive(), |base| &base.base)
+        self.0.base.base()
     }
 
     fn base_mut<'a>(&'a self, mc: &Mutation<'gc>) -> RefMut<'a, DisplayObjectBase<'gc>> {
-        RefMut::map(self.raw_interactive_mut(mc), |base| &mut base.base)
+        let base = field!(Gc::write(mc, self.0), StageData, base);
+        InteractiveObjectBase::base_mut(base)
     }
 
     fn instantiate(self, gc_context: &Mutation<'gc>) -> DisplayObject<'gc> {
@@ -913,7 +914,7 @@ impl<'gc> TDisplayObjectContainer<'gc> for Stage<'gc> {
 }
 
 impl<'gc> TInteractiveObject<'gc> for Stage<'gc> {
-    fn gc_raw_interactive(self) -> Gc<'gc, RefLock<InteractiveObjectBase<'gc>>> {
+    fn raw_interactive(self) -> Gc<'gc, InteractiveObjectBase<'gc>> {
         HasPrefixField::as_prefix_gc(self.0)
     }
 
