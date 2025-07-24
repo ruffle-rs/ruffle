@@ -60,7 +60,7 @@ pub fn display_object_initializer<'gc>(
     this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    activation.super_init(this, FunctionArgs::AsArgSlice { arguments: &[] })?;
+    activation.super_init(this, FunctionArgs::empty())?;
 
     let this = this.as_object().unwrap();
 

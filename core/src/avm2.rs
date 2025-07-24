@@ -5,11 +5,13 @@ use std::rc::Rc;
 use crate::avm2::class::{AllocatorFn, CustomConstructorFn};
 use crate::avm2::e4x::XmlSettings;
 use crate::avm2::error::{make_error_1014, make_error_1107, type_error, Error1014Type};
+use crate::avm2::function::{exec, FunctionArgs};
 use crate::avm2::globals::{
     init_builtin_system_class_defs, init_builtin_system_classes, init_native_system_classes,
     SystemClassDefs, SystemClasses,
 };
 use crate::avm2::method::{Method, NativeMethodImpl};
+use crate::avm2::object::FunctionObject;
 use crate::avm2::scope::ScopeChain;
 use crate::avm2::script::{Script, TranslationUnit};
 use crate::avm2::stack::Stack;
@@ -295,32 +297,43 @@ impl<'gc> Avm2<'gc> {
         script: Script<'gc>,
         context: &mut UpdateContext<'gc>,
     ) -> Result<(), Error<'gc>> {
-        let mc = context.gc();
-        let (method, _, _) = script.init();
+        // TODO can we skip creating this temporary Activation?
+        let mut activation = Activation::from_nothing(context);
 
-        // We must initialize the stack frame here so the lifetime works out
-        let stack = context.avm2.stack;
-        let stack_frame = stack.get_stack_frame(method);
+        let (method, global_object, domain) = script.init();
 
-        let mut init_activation = Activation::from_nothing(context);
+        let scope = ScopeChain::new(domain);
+        // Script `global` classes extend Object
+        let bound_superclass = Some(activation.avm2().classes().object);
+        let bound_class = Some(script.global_class());
 
-        let init_result = init_activation.init_from_script(script, stack_frame);
-        if let Err(e) = init_result {
-            // If the script initializer fails verification, we still need
-            // to properly dispose of the created stack frame.
-            init_activation.cleanup();
-            return Err(e);
+        let callee = if method.needs_arguments_object() {
+            FunctionObject::from_method(
+                &mut activation,
+                method,
+                scope,
+                Some(global_object.into()),
+                bound_superclass,
+                bound_class,
+            )
+            .into()
+        } else {
+            // Deliberately invalid, as the bytecode cannot access it
+            Value::Null
         };
 
-        init_activation
-            .avm2()
-            .push_call(mc, method, Some(script.global_class()));
-        let result = init_activation.run_actions(method);
-        init_activation.avm2().pop_call(mc);
+        exec(
+            method,
+            scope,
+            global_object.into(),
+            bound_superclass,
+            bound_class,
+            FunctionArgs::empty(),
+            &mut activation,
+            callee,
+        )?;
 
-        init_activation.cleanup();
-
-        result.map(|_| {})
+        Ok(())
     }
 
     fn orphan_objects_mut(&mut self) -> &mut Vec<DisplayObjectWeak<'gc>> {
