@@ -1,0 +1,40 @@
+Invalid JSON numerical input '-' PASSED!
+Invalid JSON numerical input '.' PASSED!
+valid JSON numerical input '1e' PASSED!
+Invalid JSON numerical input '1E' PASSED!
+Invalid JSON numerical input '1.e' PASSED!
+Invalid JSON numerical input '\' PASSED!
+Invalid JSON unicode '\u' PASSED!
+Invalid JSON unicode '\uG000' PASSED!
+Invalid JSON unicode '\u0G00' PASSED!
+Invalid JSON unicode '\u00G0' PASSED!
+Invalid JSON unicode '\u000G ' PASSED!
+Invalid JSON unicode '\u00bg' PASSED!
+Invalid escape character \z PASSED!
+JSON valid input: Escaped Quotes PASSED!
+JSON lowercase hex digits PASSED!
+JSON lowercase hex digits PASSED!
+JSON stringify undefined PASSED!
+JSON parse close to null 'nzll' PASSED!
+JSON parse close to null 'nuzl' PASSED!
+JSON parse close to null 'nulz' PASSED!
+JSON parse close to null 'tzue' PASSED!
+JSON parse close to null 'trze' PASSED!
+JSON parse close to null 'truz' PASSED!
+JSON parse close to null 'fzlse' PASSED!
+JSON parse close to null 'fazse' PASSED!
+JSON parse close to null 'falze' PASSED!
+JSON parse close to null 'falsz' PASSED!
+JSON parse invalid Array PASSED!
+JSON parse invalid Array PASSED!
+JSON parse invalid Array PASSED!
+JSON parse incomplete false PASSED!
+JSON parse incomplete true PASSED!
+JSON parse incomplete true PASSED!
+JSON parse null PASSED!
+JSON parse undefined PASSED!
+JSON parse undefined PASSED!
+JSON parse undefined PASSED!
+JSON parse, reviver is not a function PASSED!
+JSON parse, reviver throws error PASSED!
+JSON parse, reviver throws error PASSED!

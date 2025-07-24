@@ -1,0 +1,33 @@
+15.12.3-0-1: JSON.stringify must exist as a function PASSED!
+15.12.3-0-2: JSON.stringify must exist as a function taking 3 parameters PASSED!
+15.12.3-4-1: JSON.stringify ignores replacer aruguments that are not functions or arrays.. PASSED!
+15.12.3-5-a-i-1: JSON.stringify converts Number wrapper object space aruguments to Number values PASSED!
+15.12.3-5-b-i-1: JSON.stringify converts String wrapper object space aruguments to String values PASSED!
+15.12.3-6-a-1: JSON.stringify treats numeric space arguments greater than 10 the same as a  space argument of 10. PASSED!
+15.12.3-6-a-2: JSON.stringify truccates non-integer numeric space arguments to their integer part. PASSED!
+15.12.3-6-b-1: JSON.stringify treats numeric space arguments less than 1 (0.999999) the same as emptry string space argument. PASSED!
+15.12.3-6-b-2: JSON.stringify treats numeric space arguments less than 1 (0)the same as emptry string space argument. PASSED!
+15.12.3-6-b-3: JSON.stringify treats numeric space arguments less than 1 (-5) the same as empty string space argument. PASSED!
+15.12.3-6-b-4: JSON.stringify treats numeric space arguments (in the range 1..10) is equivalent to a string of spaces of that length. PASSED!
+15.12.3-7-a-1: JSON.stringify only uses the first 10 characters of a string space arguments. PASSED!
+15.12.3-8-a-1: JSON.stringify treats an empty string space argument the same as a missing space argument. PASSED!
+15.12.3-8-a-2: JSON.stringify treats an Boolean space argument the same as a missing space argument. PASSED!
+15.12.3-8-a-3: JSON.stringify treats an null space argument the same as a missing space argument. PASSED!
+15.12.3-8-a-4: JSON.stringify treats an Boolean wrapper space argument the same as a missing space argument. PASSED!
+15.12.3-8-a-5: JSON.stringify treats non-Number or String object space arguments the same as a missing space argument. PASSED!
+15.12.3-2-2-b-i-1: JSON.stringify converts string wrapper objects returned from a toJSON call to literal strings. PASSED!
+15.12.3-2-2-b-i-2: JSON.stringify converts Number wrapper objects returned from a toJSON call to literal Number. PASSED!
+15.12.3-2-2-b-i-3: JSON.stringify converts Boolean wrapper objects returned from a toJSON call to literal Boolean values. PASSED!
+15.12.3-2-3-a-1: JSON.stringify converts string wrapper objects returned from replacer functions to literal strings. PASSED!
+15.12.3-2-3-a-2: JSON.stringify converts Number wrapper objects returned from replacer functions to literal numbers. PASSED!
+15.12.3-2-3-a-3: JSON.stringify converts Boolean wrapper objects returned from replacer functions to literal numbers. PASSED!
+15.12.3-4-b-1: JSON.stringify replacer array has negative integer already converted to string. PASSED!
+15.12.3-4-b-2: JSON.stringify replacer array has negative integer not yet converted to string. PASSED!
+15.12.3-4-b-3: JSON.stringify replacer array has negative zero already converted to string. PASSED!
+15.12.3-4-b-4: JSON.stringify replacer array has negative zero not yet converted to string. PASSED!
+15.12.3-4-b-5: JSON.stringify replacer array has double already converted to string. PASSED!
+15.12.3-4-b-6: JSON.stringify replacer array has double not yet converted to string. PASSED!
+15.12.3-4-b-7: JSON.stringify replacer array has repeated entries. PASSED!
+15.12.3-4-b-8: JSON.stringify replacer array has non-string non-numberentries. PASSED!
+15.12.3-4-b-9: JSON.stringify replacer array has gaps. PASSED!
+15.12.3-4-b-10: JSON.stringify replacer array nesting of keys. PASSED!
