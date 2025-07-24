@@ -382,23 +382,7 @@ impl ShaderBuilder<'_> {
         let (float_parameters_buffer_size, int_parameters_buffer_size) = builder.add_arguments();
         builder.process_opcodes(wrapper_func, zeroed_out_of_range_expr);
 
-        let (dst, dst_param_type) = shader
-            .params
-            .iter()
-            .find_map(|p| {
-                if let PixelBenderParam::Normal {
-                    qualifier: PixelBenderParamQualifier::Output,
-                    reg,
-                    param_type,
-                    ..
-                } = p
-                {
-                    Some((reg, param_type))
-                } else {
-                    None
-                }
-            })
-            .expect("Missing destination register!");
+        let (dst, dst_param_type) = shader.output_reg().expect("Missing destination register!");
 
         let expected_dst_channels = match dst_param_type {
             PixelBenderTypeOpcode::TFloat4 => PixelBenderRegChannel::RGBA.as_slice(),

@@ -14,6 +14,7 @@ use std::{
     io::Read,
     sync::Arc,
 };
+use thiserror::Error;
 
 use crate::{backend::RawTexture, bitmap::BitmapHandle};
 
@@ -34,6 +35,23 @@ pub trait PixelBenderShaderImpl: Any + Debug {
     fn parsed_shader(&self) -> &PixelBenderShader;
 }
 
+#[derive(Debug, Error)]
+pub enum PixelBenderParsingError {
+    #[error("Invalid conditional register kind")]
+    InvalidConditionalKind,
+
+    #[error("Missing output parameter")]
+    MissingOutputParameter,
+
+    #[error("IO error: {0}")]
+    IoError(#[from] std::io::Error),
+
+    #[error("UTF-8 error: {0}")]
+    Utf8Error(#[from] std::string::FromUtf8Error),
+}
+
+type Result<T> = core::result::Result<T, PixelBenderParsingError>;
+
 #[repr(u8)]
 #[derive(Debug, Clone, PartialEq)]
 pub enum PixelBenderType {
@@ -49,10 +67,10 @@ pub enum PixelBenderType {
     TInt3(i16, i16, i16) = 0xA,
     TInt4(i16, i16, i16, i16) = 0xB,
     TString(String) = 0xC,
-    TBool(bool) = 0xD,
-    TBool2(bool, bool) = 0xE,
-    TBool3(bool, bool, bool) = 0xF,
-    TBool4(bool, bool, bool, bool) = 0x10,
+    TBool(i16) = 0xD,
+    TBool2(i16, i16) = 0xE,
+    TBool3(i16, i16, i16) = 0xF,
+    TBool4(i16, i16, i16, i16) = 0x10,
 }
 
 // FIXME - come up with a way to reduce duplication here
@@ -127,10 +145,20 @@ pub enum PixelBenderRegKind {
     Int,
 }
 
-#[derive(num_derive::FromPrimitive, Debug, PartialEq, Clone, Copy)]
+#[derive(Debug, PartialEq, Clone, Copy)]
 pub enum PixelBenderParamQualifier {
     Input = 1,
     Output = 2,
+}
+
+impl PixelBenderParamQualifier {
+    pub fn from_u8(v: u8) -> Self {
+        if v == 2 {
+            Self::Output
+        } else {
+            Self::Input
+        }
+    }
 }
 
 impl Display for PixelBenderTypeOpcode {
@@ -337,18 +365,24 @@ pub struct PixelBenderShader {
 }
 
 impl PixelBenderShader {
-    pub fn output_channels(&self) -> Option<usize> {
+    pub fn output_reg(&self) -> Option<(&PixelBenderReg, PixelBenderTypeOpcode)> {
+        let mut channels = None;
         for param in &self.params {
             if let PixelBenderParam::Normal {
                 qualifier: PixelBenderParamQualifier::Output,
                 reg,
+                param_type,
                 ..
             } = param
             {
-                return Some(reg.channels.len());
+                channels = Some((reg, *param_type));
             }
         }
-        None
+        channels
+    }
+
+    pub fn output_channels(&self) -> Option<usize> {
+        self.output_reg().map(|(reg, _)| reg.channels.len())
     }
 }
 
@@ -375,7 +409,7 @@ pub struct PixelBenderMetadata {
 }
 
 /// Parses PixelBender bytecode
-pub fn parse_shader(mut data: &[u8]) -> Result<PixelBenderShader, Box<dyn std::error::Error>> {
+pub fn parse_shader(mut data: &[u8], validate: bool) -> Result<PixelBenderShader> {
     let mut shader = PixelBenderShader {
         name: String::new(),
         version: 0,
@@ -386,10 +420,15 @@ pub fn parse_shader(mut data: &[u8]) -> Result<PixelBenderShader, Box<dyn std::e
     let data = &mut data;
     let mut metadata = Vec::new();
     while !data.is_empty() {
-        read_op(data, &mut shader, &mut metadata)?;
+        read_op(data, validate, &mut shader, &mut metadata)?;
     }
     // Any metadata left in the vec is associated with our final parameter.
     apply_metadata(&mut shader, &mut metadata);
+
+    if validate && shader.output_channels().is_none() {
+        return Err(PixelBenderParsingError::MissingOutputParameter);
+    }
+
     Ok(shader)
 }
 
@@ -403,7 +442,7 @@ const CHANNELS: [PixelBenderRegChannel; 7] = [
     PixelBenderRegChannel::M4x4,
 ];
 
-fn read_src_reg(val: u32, size: u8) -> Result<PixelBenderReg, Box<dyn std::error::Error>> {
+fn read_src_reg(val: u32, size: u8) -> Result<PixelBenderReg> {
     let swizzle = val >> 16;
     let mut channels = Vec::new();
     for i in 0..size {
@@ -428,7 +467,7 @@ fn read_matrix_reg(val: u16, mask: u8) -> PixelBenderReg {
     read_reg(val, vec![CHANNELS[(mask + 3) as usize]])
 }
 
-fn read_dst_reg(val: u16, mask: u8) -> Result<PixelBenderReg, Box<dyn std::error::Error>> {
+fn read_dst_reg(val: u16, mask: u8) -> Result<PixelBenderReg> {
     let mut channels = Vec::new();
     if mask & 0x8 != 0 {
         channels.push(PixelBenderRegChannel::R);
@@ -463,9 +502,10 @@ fn read_reg(val: u16, channels: Vec<PixelBenderRegChannel>) -> PixelBenderReg {
 
 fn read_op<R: Read>(
     data: &mut R,
+    validate: bool,
     shader: &mut PixelBenderShader,
     metadata: &mut Vec<PixelBenderMetadata>,
-) -> Result<(), Box<dyn std::error::Error>> {
+) -> Result<()> {
     let raw = data.read_u8()?;
     let opcode = Opcode::from_u8(raw).expect("Unknown opcode");
     match opcode {
@@ -532,8 +572,7 @@ fn read_op<R: Read>(
                 }
             };
 
-            let qualifier = PixelBenderParamQualifier::from_u8(qualifier)
-                .unwrap_or_else(|| panic!("Unexpected param qualifier {qualifier:?}"));
+            let qualifier = PixelBenderParamQualifier::from_u8(qualifier);
             apply_metadata(shader, metadata);
 
             shader.params.push(PixelBenderParam::Normal {
@@ -570,6 +609,11 @@ fn read_op<R: Read>(
             let src = read_uint24(data)?;
             assert_eq!(data.read_u8()?, 0);
             let src_reg = read_src_reg(src, 1)?;
+
+            if validate && src_reg.kind == PixelBenderRegKind::Float {
+                return Err(PixelBenderParsingError::InvalidConditionalKind);
+            }
+
             shader.operations.push(Operation::If { src: src_reg });
         }
         Opcode::Else => {
@@ -643,6 +687,10 @@ fn read_op<R: Read>(
             assert_eq!(data.read_u8()?, 0);
             let src_reg2 = read_src_reg(src2, 1)?;
 
+            if validate && condition_reg.kind == PixelBenderRegKind::Float {
+                return Err(PixelBenderParsingError::InvalidConditionalKind);
+            }
+
             shader.operations.push(Operation::Select {
                 condition: condition_reg,
                 src1: src_reg1,
@@ -685,7 +733,7 @@ fn read_op<R: Read>(
     Ok(())
 }
 
-fn read_string<R: Read>(data: &mut R) -> Result<String, Box<dyn std::error::Error>> {
+fn read_string<R: Read>(data: &mut R) -> Result<String> {
     let mut string = String::new();
     let mut b = data.read_u8()?;
     while b != 0 {
@@ -695,14 +743,11 @@ fn read_string<R: Read>(data: &mut R) -> Result<String, Box<dyn std::error::Erro
     Ok(string)
 }
 
-fn read_float<R: Read>(data: &mut R) -> Result<f32, Box<dyn std::error::Error>> {
+fn read_float<R: Read>(data: &mut R) -> Result<f32> {
     Ok(data.read_f32::<BigEndian>()?)
 }
 
-fn read_value<R: Read>(
-    data: &mut R,
-    opcode: PixelBenderTypeOpcode,
-) -> Result<PixelBenderType, Box<dyn std::error::Error>> {
+fn read_value<R: Read>(data: &mut R, opcode: PixelBenderTypeOpcode) -> Result<PixelBenderType> {
     match opcode {
         PixelBenderTypeOpcode::TFloat => Ok(PixelBenderType::TFloat(read_float(data)?)),
         PixelBenderTypeOpcode::TFloat2 => Ok(PixelBenderType::TFloat2(
@@ -757,28 +802,28 @@ fn read_value<R: Read>(
             data.read_i16::<LittleEndian>()?,
         )),
         PixelBenderTypeOpcode::TString => Ok(PixelBenderType::TString(read_string(data)?)),
-        PixelBenderTypeOpcode::TBool => Ok(PixelBenderType::TBool(
-            data.read_i16::<LittleEndian>()? != 0,
-        )),
+        PixelBenderTypeOpcode::TBool => {
+            Ok(PixelBenderType::TBool(data.read_i16::<LittleEndian>()?))
+        }
         PixelBenderTypeOpcode::TBool2 => Ok(PixelBenderType::TBool2(
-            data.read_i16::<LittleEndian>()? != 0,
-            data.read_i16::<LittleEndian>()? != 0,
+            data.read_i16::<LittleEndian>()?,
+            data.read_i16::<LittleEndian>()?,
         )),
         PixelBenderTypeOpcode::TBool3 => Ok(PixelBenderType::TBool3(
-            data.read_i16::<LittleEndian>()? != 0,
-            data.read_i16::<LittleEndian>()? != 0,
-            data.read_i16::<LittleEndian>()? != 0,
+            data.read_i16::<LittleEndian>()?,
+            data.read_i16::<LittleEndian>()?,
+            data.read_i16::<LittleEndian>()?,
         )),
         PixelBenderTypeOpcode::TBool4 => Ok(PixelBenderType::TBool4(
-            data.read_i16::<LittleEndian>()? != 0,
-            data.read_i16::<LittleEndian>()? != 0,
-            data.read_i16::<LittleEndian>()? != 0,
-            data.read_i16::<LittleEndian>()? != 0,
+            data.read_i16::<LittleEndian>()?,
+            data.read_i16::<LittleEndian>()?,
+            data.read_i16::<LittleEndian>()?,
+            data.read_i16::<LittleEndian>()?,
         )),
     }
 }
 
-fn read_uint24<R: Read>(data: &mut R) -> Result<u32, Box<dyn std::error::Error>> {
+fn read_uint24<R: Read>(data: &mut R) -> Result<u32> {
     let ch1 = data.read_u8()? as u32;
     let ch2 = data.read_u8()? as u32;
     let ch3 = data.read_u8()? as u32;

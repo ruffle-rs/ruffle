@@ -1,0 +1,7 @@
+version 1i
+name "param_qualifier2"
+
+param.out "dst", float4, f0.rgba
+param.in "src", float4, f1.rgba
+
+ld f0.a, 1f

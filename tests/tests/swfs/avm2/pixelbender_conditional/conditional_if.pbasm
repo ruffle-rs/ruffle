@@ -1,0 +1,30 @@
+version 1i
+name "conditional_if"
+
+meta "namespace", string("Ruffle Tests")
+meta "vendor", string("Kamil Jarosz")
+meta "version", int(1i)
+
+param.out "dst", float4, f0.rgba
+
+param.in "boolInput", bool, i1.g
+meta2 "defaultValue", bool(false)
+
+param.in "intInput", int, i1.b
+meta2 "defaultValue", int(0i)
+
+; bool
+.if     i1.g
+  ld    f0.g, 1f
+.else
+  ld    f0.g, 0f
+.endif
+
+; int
+.if     i1.b
+  ld    f0.b, 1f
+.else
+  ld    f0.b, 0f
+.endif
+
+ld      f0.a, 1f
