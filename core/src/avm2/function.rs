@@ -122,6 +122,10 @@ pub enum FunctionArgs<'a, 'gc> {
 }
 
 impl<'a, 'gc> FunctionArgs<'a, 'gc> {
+    pub fn empty() -> Self {
+        FunctionArgs::AsArgSlice { arguments: &[] }
+    }
+
     pub fn to_slice(self) -> Cow<'a, [Value<'gc>]> {
         match self {
             FunctionArgs::AsCellArgSlice { arguments } => {
