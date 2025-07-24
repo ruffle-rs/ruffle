@@ -187,7 +187,7 @@ fn set_tab_index<'gc>(
             }
             _ => Some(i32::MIN),
         };
-        this.set_tab_index(activation.context, value);
+        this.set_tab_index(value);
     }
     Ok(())
 }

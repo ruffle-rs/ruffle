@@ -158,7 +158,7 @@ pub trait TInteractiveObject<'gc>:
     }
 
     /// Set if the interactive object accepts user input.
-    fn set_mouse_enabled(self, _mc: &Mutation<'gc>, value: bool) {
+    fn set_mouse_enabled(self, value: bool) {
         self.raw_interactive()
             .set_flag(InteractiveObjectFlags::MOUSE_ENABLED, value)
     }
@@ -170,7 +170,7 @@ pub trait TInteractiveObject<'gc>:
     }
 
     // Set if the interactive object accepts double-click events.
-    fn set_double_click_enabled(self, _mc: &Mutation<'gc>, value: bool) {
+    fn set_double_click_enabled(self, value: bool) {
         self.raw_interactive()
             .set_flag(InteractiveObjectFlags::DOUBLE_CLICK_ENABLED, value)
     }
@@ -180,7 +180,7 @@ pub trait TInteractiveObject<'gc>:
             .contains_flag(InteractiveObjectFlags::HAS_FOCUS)
     }
 
-    fn set_has_focus(self, _mc: &Mutation<'gc>, value: bool) {
+    fn set_has_focus(self, value: bool) {
         self.raw_interactive()
             .set_flag(InteractiveObjectFlags::HAS_FOCUS, value)
     }
@@ -202,7 +202,7 @@ pub trait TInteractiveObject<'gc>:
 
     /// Set the boolean flag which determines whether objects display a glowing border
     /// when they have focus.
-    fn set_focus_rect(self, _mc: &Mutation<'gc>, value: Option<bool>) {
+    fn set_focus_rect(self, value: Option<bool>) {
         self.raw_interactive().focus_rect.set(value);
     }
 
@@ -708,7 +708,7 @@ pub trait TInteractiveObject<'gc>:
         self.raw_interactive().tab_index.get()
     }
 
-    fn set_tab_index(self, _context: &mut UpdateContext<'gc>, value: Option<i32>) {
+    fn set_tab_index(self, value: Option<i32>) {
         // tabIndex = -1 is always equivalent to unset tabIndex
         let value = if matches!(value, Some(-1)) {
             None
