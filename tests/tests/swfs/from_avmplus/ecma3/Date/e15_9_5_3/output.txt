@@ -1,0 +1,15 @@
+typeof (now.toDateString()) PASSED!
+Date.prototype.toDateString.length PASSED!
+(Date.parse(now.toDateString()) - (midnight(now)).valueOf()) == 0 PASSED!
+Date.parse(   +   givenDate   +   ).toDateString()) PASSED!
+Date.parse(   +   givenDate   +   ).toDateString()) PASSED!
+Date.parse(   +   givenDate   +   ).toDateString()) PASSED!
+Date.parse(   +   givenDate   +   ).toDateString()) PASSED!
+Date.parse(   +   givenDate   +   ).toDateString()) PASSED!
+Date.parse(   +   givenDate   +   ).toDateString()) PASSED!
+Date.parse(   +   givenDate   +   ).toDateString()) PASSED!
+Date.parse(   +   givenDate   +   ).toDateString()) PASSED!
+Date.parse(   +   givenDate   +   ).toDateString()) PASSED!
+Date.parse(   +   givenDate   +   ).toDateString()) PASSED!
+Date.parse(   +   givenDate   +   ).toDateString()) PASSED!
+Date.parse(   +   givenDate   +   ).toDateString()) PASSED!

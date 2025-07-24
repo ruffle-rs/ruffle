@@ -1,0 +1,90 @@
+new Date( 1969,11,31,15,59,59).getTime() PASSED!
+new Date( 1969,11,31,15,59,59).valueOf() PASSED!
+new Date( 1969,11,31,15,59,59).getUTCFullYear() PASSED!
+new Date( 1969,11,31,15,59,59).getUTCMonth() PASSED!
+new Date( 1969,11,31,15,59,59).getUTCDate() PASSED!
+new Date( 1969,11,31,15,59,59).getUTCDay() PASSED!
+new Date( 1969,11,31,15,59,59).getUTCHours() PASSED!
+new Date( 1969,11,31,15,59,59).getUTCMinutes() PASSED!
+new Date( 1969,11,31,15,59,59).getUTCSeconds() PASSED!
+new Date( 1969,11,31,15,59,59).getUTCMilliseconds() PASSED!
+new Date( 1969,11,31,15,59,59).getFullYear() PASSED!
+new Date( 1969,11,31,15,59,59).getMonth() PASSED!
+new Date( 1969,11,31,15,59,59).getDate() PASSED!
+new Date( 1969,11,31,15,59,59).getDay() PASSED!
+new Date( 1969,11,31,15,59,59).getHours() PASSED!
+new Date( 1969,11,31,15,59,59).getMinutes() PASSED!
+new Date( 1969,11,31,15,59,59).getSeconds() PASSED!
+new Date( 1969,11,31,15,59,59).getMilliseconds() PASSED!
+new Date( 1969,11,31,16,0,0).getTime() PASSED!
+new Date( 1969,11,31,16,0,0).valueOf() PASSED!
+new Date( 1969,11,31,16,0,0).getUTCFullYear() PASSED!
+new Date( 1969,11,31,16,0,0).getUTCMonth() PASSED!
+new Date( 1969,11,31,16,0,0).getUTCDate() PASSED!
+new Date( 1969,11,31,16,0,0).getUTCDay() PASSED!
+new Date( 1969,11,31,16,0,0).getUTCHours() PASSED!
+new Date( 1969,11,31,16,0,0).getUTCMinutes() PASSED!
+new Date( 1969,11,31,16,0,0).getUTCSeconds() PASSED!
+new Date( 1969,11,31,16,0,0).getUTCMilliseconds() PASSED!
+new Date( 1969,11,31,16,0,0).getFullYear() PASSED!
+new Date( 1969,11,31,16,0,0).getMonth() PASSED!
+new Date( 1969,11,31,16,0,0).getDate() PASSED!
+new Date( 1969,11,31,16,0,0).getDay() PASSED!
+new Date( 1969,11,31,16,0,0).getHours() PASSED!
+new Date( 1969,11,31,16,0,0).getMinutes() PASSED!
+new Date( 1969,11,31,16,0,0).getSeconds() PASSED!
+new Date( 1969,11,31,16,0,0).getMilliseconds() PASSED!
+new Date( 1969,11,31,23,59,59).getTime() PASSED!
+new Date( 1969,11,31,23,59,59).valueOf() PASSED!
+new Date( 1969,11,31,23,59,59).getUTCFullYear() PASSED!
+new Date( 1969,11,31,23,59,59).getUTCMonth() PASSED!
+new Date( 1969,11,31,23,59,59).getUTCDate() PASSED!
+new Date( 1969,11,31,23,59,59).getUTCDay() PASSED!
+new Date( 1969,11,31,23,59,59).getUTCHours() PASSED!
+new Date( 1969,11,31,23,59,59).getUTCMinutes() PASSED!
+new Date( 1969,11,31,23,59,59).getUTCSeconds() PASSED!
+new Date( 1969,11,31,23,59,59).getUTCMilliseconds() PASSED!
+new Date( 1969,11,31,23,59,59).getFullYear() PASSED!
+new Date( 1969,11,31,23,59,59).getMonth() PASSED!
+new Date( 1969,11,31,23,59,59).getDate() PASSED!
+new Date( 1969,11,31,23,59,59).getDay() PASSED!
+new Date( 1969,11,31,23,59,59).getHours() PASSED!
+new Date( 1969,11,31,23,59,59).getMinutes() PASSED!
+new Date( 1969,11,31,23,59,59).getSeconds() PASSED!
+new Date( 1969,11,31,23,59,59).getMilliseconds() PASSED!
+new Date( 1970, 0, 1, 0, 0, 0).getTime() PASSED!
+new Date( 1970, 0, 1, 0, 0, 0).valueOf() PASSED!
+new Date( 1970, 0, 1, 0, 0, 0).getUTCFullYear() PASSED!
+new Date( 1970, 0, 1, 0, 0, 0).getUTCMonth() PASSED!
+new Date( 1970, 0, 1, 0, 0, 0).getUTCDate() PASSED!
+new Date( 1970, 0, 1, 0, 0, 0).getUTCDay() PASSED!
+new Date( 1970, 0, 1, 0, 0, 0).getUTCHours() PASSED!
+new Date( 1970, 0, 1, 0, 0, 0).getUTCMinutes() PASSED!
+new Date( 1970, 0, 1, 0, 0, 0).getUTCSeconds() PASSED!
+new Date( 1970, 0, 1, 0, 0, 0).getUTCMilliseconds() PASSED!
+new Date( 1970, 0, 1, 0, 0, 0).getFullYear() PASSED!
+new Date( 1970, 0, 1, 0, 0, 0).getMonth() PASSED!
+new Date( 1970, 0, 1, 0, 0, 0).getDate() PASSED!
+new Date( 1970, 0, 1, 0, 0, 0).getDay() PASSED!
+new Date( 1970, 0, 1, 0, 0, 0).getHours() PASSED!
+new Date( 1970, 0, 1, 0, 0, 0).getMinutes() PASSED!
+new Date( 1970, 0, 1, 0, 0, 0).getSeconds() PASSED!
+new Date( 1970, 0, 1, 0, 0, 0).getMilliseconds() PASSED!
+new Date( 1969,11,31,16,0,0).getTime() PASSED!
+new Date( 1969,11,31,16,0,0).valueOf() PASSED!
+new Date( 1969,11,31,16,0,0).getUTCFullYear() PASSED!
+new Date( 1969,11,31,16,0,0).getUTCMonth() PASSED!
+new Date( 1969,11,31,16,0,0).getUTCDate() PASSED!
+new Date( 1969,11,31,16,0,0).getUTCDay() PASSED!
+new Date( 1969,11,31,16,0,0).getUTCHours() PASSED!
+new Date( 1969,11,31,16,0,0).getUTCMinutes() PASSED!
+new Date( 1969,11,31,16,0,0).getUTCSeconds() PASSED!
+new Date( 1969,11,31,16,0,0).getUTCMilliseconds() PASSED!
+new Date( 1969,11,31,16,0,0).getFullYear() PASSED!
+new Date( 1969,11,31,16,0,0).getMonth() PASSED!
+new Date( 1969,11,31,16,0,0).getDate() PASSED!
+new Date( 1969,11,31,16,0,0).getDay() PASSED!
+new Date( 1969,11,31,16,0,0).getHours() PASSED!
+new Date( 1969,11,31,16,0,0).getMinutes() PASSED!
+new Date( 1969,11,31,16,0,0).getSeconds() PASSED!
+new Date( 1969,11,31,16,0,0).getMilliseconds() PASSED!
