@@ -1247,7 +1247,7 @@ impl<'gc> Value<'gc> {
                 Some(full_method.class),
                 arguments,
                 activation,
-                *self, // Callee deliberately invalid.
+                None,
             );
         }
 
