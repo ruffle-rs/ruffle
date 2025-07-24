@@ -174,12 +174,12 @@ impl<'gc> FocusTracker<'gc> {
             self.update_highlight(context);
 
             if let Some(old) = old {
-                old.set_has_focus(context.gc(), false);
+                old.set_has_focus(false);
                 old.on_focus_changed(context, false, new);
                 old.call_focus_handler(context, false, new);
             }
             if let Some(new) = new {
-                new.set_has_focus(context.gc(), true);
+                new.set_has_focus(true);
                 new.on_focus_changed(context, true, old);
                 new.call_focus_handler(context, true, old);
             }

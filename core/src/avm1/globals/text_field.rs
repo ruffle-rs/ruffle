@@ -906,7 +906,7 @@ pub fn set_tab_index<'gc>(
                 Some(u32_value as i32)
             }
         };
-        this.set_tab_index(activation.context, value);
+        this.set_tab_index(value);
     }
     Ok(())
 }
