@@ -40,7 +40,7 @@ use crate::utils::HasPrefixField;
 use crate::vminterface::{AvmObject, Instantiator};
 use bitflags::bitflags;
 use core::fmt;
-use gc_arena::barrier::unlock;
+use gc_arena::barrier::{field, unlock};
 use gc_arena::lock::{Lock, RefLock};
 use gc_arena::{Collect, Gc, GcWeak, Mutation};
 use ruffle_macros::istr;
@@ -151,7 +151,7 @@ impl<'gc> MovieClipWeak<'gc> {
 #[collect(no_drop)]
 #[repr(C, align(8))]
 pub struct MovieClipData<'gc> {
-    base: RefLock<InteractiveObjectBase<'gc>>,
+    base: InteractiveObjectBase<'gc>,
     cell: RefLock<MovieClipDataMut<'gc>>,
     shared: Lock<Gc<'gc, MovieClipShared<'gc>>>,
 
@@ -333,9 +333,9 @@ impl<'gc> MovieClip<'gc> {
             movie.num_frames(),
             loader_info.map(|l| l.0),
         );
-        let mut data = MovieClipData::new(shared, activation.gc());
+        let data = MovieClipData::new(shared, activation.gc());
         data.flags.set(MovieClipFlags::PLAYING);
-        data.base.get_mut().base.set_is_root(true);
+        data.base.base().set_is_root(true);
 
         let mc = MovieClip(Gc::new(activation.gc(), data));
         if let Some((_, loader_info)) = loader_info {
@@ -369,10 +369,8 @@ impl<'gc> MovieClip<'gc> {
             "Called replace_movie on a clip with LoaderInfo set"
         );
 
-        let base = self.base();
-        base.reset_for_movie_load();
-        base.set_is_root(is_root);
-        drop(base);
+        write.base.base().reset_for_movie_load();
+        write.base.base().set_is_root(is_root);
 
         unlock!(write, MovieClipData, cell).borrow_mut().container = ChildContainer::new(&movie);
 
@@ -2246,11 +2244,12 @@ impl<'gc> MovieClip<'gc> {
 
 impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
     fn base(&self) -> Ref<'_, DisplayObjectBase<'gc>> {
-        Ref::map(self.raw_interactive(), |base| &base.base)
+        self.0.base.base()
     }
 
     fn base_mut<'a>(&'a self, mc: &Mutation<'gc>) -> RefMut<'a, DisplayObjectBase<'gc>> {
-        RefMut::map(self.raw_interactive_mut(mc), |base| &mut base.base)
+        let base = field!(Gc::write(mc, self.0), MovieClipData, base);
+        InteractiveObjectBase::base_mut(base)
     }
 
     fn instantiate(self, mc: &Mutation<'gc>) -> DisplayObject<'gc> {
@@ -2624,7 +2623,7 @@ impl<'gc> TDisplayObjectContainer<'gc> for MovieClip<'gc> {
 }
 
 impl<'gc> TInteractiveObject<'gc> for MovieClip<'gc> {
-    fn gc_raw_interactive(self) -> Gc<'gc, RefLock<InteractiveObjectBase<'gc>>> {
+    fn raw_interactive(self) -> Gc<'gc, InteractiveObjectBase<'gc>> {
         HasPrefixField::as_prefix_gc(self.0)
     }
 

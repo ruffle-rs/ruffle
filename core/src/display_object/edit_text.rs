@@ -33,7 +33,7 @@ use crate::vminterface::{AvmObject, Instantiator};
 use chrono::DateTime;
 use chrono::Utc;
 use core::fmt;
-use gc_arena::barrier::unlock;
+use gc_arena::barrier::{field, unlock};
 use gc_arena::{Collect, Gc, Lock, Mutation, RefLock};
 use ruffle_macros::istr;
 use ruffle_render::commands::Command as RenderCommand;
@@ -85,7 +85,7 @@ impl fmt::Debug for EditText<'_> {
 #[repr(C, align(8))]
 pub struct EditTextData<'gc> {
     /// DisplayObject and InteractiveObject common properties.
-    base: RefLock<InteractiveObjectBase<'gc>>,
+    base: InteractiveObjectBase<'gc>,
 
     /// Data shared among all instances of this `EditText`.
     shared: Gc<'gc, EditTextShared>,
@@ -2502,11 +2502,12 @@ impl<'gc> EditText<'gc> {
 
 impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
     fn base(&self) -> Ref<'_, DisplayObjectBase<'gc>> {
-        Ref::map(self.raw_interactive(), |base| &base.base)
+        self.0.base.base()
     }
 
     fn base_mut<'a>(&'a self, mc: &Mutation<'gc>) -> RefMut<'a, DisplayObjectBase<'gc>> {
-        RefMut::map(self.raw_interactive_mut(mc), |base| &mut base.base)
+        let base = field!(Gc::write(mc, self.0), EditTextData, base);
+        InteractiveObjectBase::base_mut(base)
     }
 
     fn instantiate(self, gc_context: &Mutation<'gc>) -> DisplayObject<'gc> {
@@ -2936,7 +2937,7 @@ impl<'gc> EditText<'gc> {
 }
 
 impl<'gc> TInteractiveObject<'gc> for EditText<'gc> {
-    fn gc_raw_interactive(self) -> Gc<'gc, RefLock<InteractiveObjectBase<'gc>>> {
+    fn raw_interactive(self) -> Gc<'gc, InteractiveObjectBase<'gc>> {
         HasPrefixField::as_prefix_gc(self.0)
     }
 

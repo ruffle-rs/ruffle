@@ -13,7 +13,7 @@ use crate::display_object::interactive::InteractiveObjectBase;
 use crate::tag_utils::SwfMovie;
 use crate::utils::HasPrefixField;
 use core::fmt;
-use gc_arena::barrier::unlock;
+use gc_arena::barrier::{field, unlock};
 use gc_arena::lock::{Lock, RefLock};
 use gc_arena::{Collect, Gc, GcWeak, Mutation};
 use std::cell::{Ref, RefMut};
@@ -37,7 +37,7 @@ impl fmt::Debug for LoaderDisplay<'_> {
 #[collect(no_drop)]
 #[repr(C, align(8))]
 pub struct LoaderDisplayData<'gc> {
-    base: RefLock<InteractiveObjectBase<'gc>>,
+    base: InteractiveObjectBase<'gc>,
     container: RefLock<ChildContainer<'gc>>,
     avm2_object: Lock<Option<Avm2Object<'gc>>>,
     movie: Arc<SwfMovie>,
@@ -67,11 +67,12 @@ impl<'gc> LoaderDisplay<'gc> {
 
 impl<'gc> TDisplayObject<'gc> for LoaderDisplay<'gc> {
     fn base(&self) -> Ref<'_, DisplayObjectBase<'gc>> {
-        Ref::map(self.raw_interactive(), |base| &base.base)
+        self.0.base.base()
     }
 
     fn base_mut<'a>(&'a self, mc: &Mutation<'gc>) -> RefMut<'a, DisplayObjectBase<'gc>> {
-        RefMut::map(self.raw_interactive_mut(mc), |base| &mut base.base)
+        let base = field!(Gc::write(mc, self.0), LoaderDisplayData, base);
+        InteractiveObjectBase::base_mut(base)
     }
 
     fn instantiate(self, gc_context: &Mutation<'gc>) -> DisplayObject<'gc> {
@@ -145,7 +146,7 @@ impl<'gc> TDisplayObject<'gc> for LoaderDisplay<'gc> {
 }
 
 impl<'gc> TInteractiveObject<'gc> for LoaderDisplay<'gc> {
-    fn gc_raw_interactive(self) -> Gc<'gc, RefLock<InteractiveObjectBase<'gc>>> {
+    fn raw_interactive(self) -> Gc<'gc, InteractiveObjectBase<'gc>> {
         HasPrefixField::as_prefix_gc(self.0)
     }
 
