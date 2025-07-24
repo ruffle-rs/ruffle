@@ -1,0 +1,7 @@
+md5_t.md5String('') PASSED!
+md5_t.md5String('a') PASSED!
+md5_t.md5String('abc') PASSED!
+md5_t.md5String('message digest') PASSED!
+md5_t.md5String('abcdefghijklmnopqrstuvwxyz') PASSED!
+md5_t.md5String('ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789') PASSED!
+md5_t.md5String('12345678901234567890123456789012345678901234567890123456789012345678901234567890') PASSED!

@@ -1,0 +1,3 @@
+ns_to_string(foons) PASSED!
+ns_to_string(null) PASSED!
+ns_to_string(void 0) PASSED!
