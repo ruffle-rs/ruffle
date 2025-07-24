@@ -1,0 +1,9 @@
+Object.constructor.prototype PASSED!
+Array.constructor.prototype PASSED!
+String.constructor.prototype PASSED!
+Boolean.constructor.prototype PASSED!
+Number.constructor.prototype PASSED!
+Date.constructor.prototype PASSED!
+getTestCases.constructor.prototype PASSED!
+Math.pow.constructor.prototype PASSED!
+String.prototype.indexOf.constructor.prototype PASSED!
