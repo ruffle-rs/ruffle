@@ -19,7 +19,7 @@ use crate::events::{
     ClipEvent, ClipEventResult, ImeCursorArea, ImeEvent, ImeNotification, ImePurpose,
     PlayerNotification, TextControlCode,
 };
-use crate::font::{FontType, Glyph, TextRenderSettings};
+use crate::font::{FontLike, FontType, Glyph, TextRenderSettings};
 use crate::html;
 use crate::html::StyleSheet;
 use crate::html::{
@@ -2202,17 +2202,21 @@ impl<'gc> EditText<'gc> {
         let boxes = layout.boxes_iter();
         let union_bounds = layout.bounds();
 
-        let mut first_font = None;
+        let mut first_font_set = None;
         let mut first_format = None;
         for layout_box in boxes {
             match layout_box.content() {
                 LayoutContent::Text {
-                    font, text_format, ..
+                    font_set,
+                    text_format,
+                    ..
                 }
                 | LayoutContent::Bullet {
-                    font, text_format, ..
+                    font_set,
+                    text_format,
+                    ..
                 } => {
-                    first_font = Some(font);
+                    first_font_set = Some(font_set);
                     first_format = Some(text_format);
                     break;
                 }
@@ -2220,11 +2224,11 @@ impl<'gc> EditText<'gc> {
             }
         }
 
-        let font = first_font?;
+        let font_set = first_font_set?;
         let text_format = first_format?;
         let size = Twips::from_pixels(text_format.size?);
-        let ascent = font.get_baseline_for_height(size);
-        let descent = font.get_descent_for_height(size);
+        let ascent = font_set.get_baseline_for_height(size);
+        let descent = font_set.get_descent_for_height(size);
         let leading = Twips::from_pixels(text_format.leading?);
 
         Some(LayoutMetrics {
