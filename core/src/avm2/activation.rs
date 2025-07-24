@@ -248,7 +248,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         method: Method<'gc>,
         signature: &[ResolvedParamConfig<'gc>],
         user_arguments: FunctionArgs<'_, 'gc>,
-        callee: Value<'gc>,
+        callee: Option<FunctionObject<'gc>>,
     ) -> ArrayObject<'gc> {
         let mut all_arguments = Vec::new();
 
@@ -293,6 +293,9 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             .contains(AbcMethodFlags::NEED_ARGUMENTS)
         {
             let string_callee = istr!(self, "callee");
+            let callee = callee
+                .expect("Should have a callee if the method is NEED_ARGUMENTS")
+                .into();
 
             args_object.set_dynamic_property(string_callee, callee, self.gc());
             args_object.set_local_property_is_enumerable(self.gc(), string_callee, false);
@@ -315,7 +318,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         stack_frame: StackFrame<'a, 'gc>,
         bound_superclass_object: Option<ClassObject<'gc>>,
         bound_class: Option<Class<'gc>>,
-        callee: Value<'gc>,
+        callee: Option<FunctionObject<'gc>>,
     ) -> Result<(), Error<'gc>> {
         let body = method
             .body()

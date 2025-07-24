@@ -307,19 +307,18 @@ impl<'gc> Avm2<'gc> {
         let bound_superclass = Some(activation.avm2().classes().object);
         let bound_class = Some(script.global_class());
 
+        // Provide a callee object if necessary
         let callee = if method.needs_arguments_object() {
-            FunctionObject::from_method(
+            Some(FunctionObject::from_method(
                 &mut activation,
                 method,
                 scope,
                 Some(global_object.into()),
                 bound_superclass,
                 bound_class,
-            )
-            .into()
+            ))
         } else {
-            // Deliberately invalid, as the bytecode cannot access it
-            Value::Null
+            None
         };
 
         exec(

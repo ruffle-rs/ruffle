@@ -97,7 +97,7 @@ impl<'gc> FunctionObject<'gc> {
             receiver,
             FunctionArgs::AsArgSlice { arguments },
             activation,
-            self.into(),
+            Some(self),
         )
     }
 
