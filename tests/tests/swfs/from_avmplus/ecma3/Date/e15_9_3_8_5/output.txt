@@ -1,0 +1,108 @@
+new Date(-2208988800000).getTime() PASSED!
+new Date(-2208988800000).valueOf() PASSED!
+new Date(-2208988800000).getUTCFullYear() PASSED!
+new Date(-2208988800000).getUTCMonth() PASSED!
+new Date(-2208988800000).getUTCDate() PASSED!
+new Date(-2208988800000).getUTCDay() PASSED!
+new Date(-2208988800000).getUTCHours() PASSED!
+new Date(-2208988800000).getUTCMinutes() PASSED!
+new Date(-2208988800000).getUTCSeconds() PASSED!
+new Date(-2208988800000).getUTCMilliseconds() PASSED!
+new Date(-2208988800000).getFullYear() PASSED!
+new Date(-2208988800000).getMonth() PASSED!
+new Date(-2208988800000).getDate() PASSED!
+new Date(-2208988800000).getDay() PASSED!
+new Date(-2208988800000).getHours() PASSED!
+new Date(-2208988800000).getMinutes() PASSED!
+new Date(-2208988800000).getSeconds() PASSED!
+new Date(-2208988800000).getMilliseconds() PASSED!
+new Date(-2208960000000).getTime() PASSED!
+new Date(-2208960000000).valueOf() PASSED!
+new Date(-2208960000000).getUTCFullYear() PASSED!
+new Date(-2208960000000).getUTCMonth() PASSED!
+new Date(-2208960000000).getUTCDate() PASSED!
+new Date(-2208960000000).getUTCDay() PASSED!
+new Date(-2208960000000).getUTCHours() PASSED!
+new Date(-2208960000000).getUTCMinutes() PASSED!
+new Date(-2208960000000).getUTCSeconds() PASSED!
+new Date(-2208960000000).getUTCMilliseconds() PASSED!
+new Date(-2208960000000).getFullYear() PASSED!
+new Date(-2208960000000).getMonth() PASSED!
+new Date(-2208960000000).getDate() PASSED!
+new Date(-2208960000000).getDay() PASSED!
+new Date(-2208960000000).getHours() PASSED!
+new Date(-2208960000000).getMinutes() PASSED!
+new Date(-2208960000000).getSeconds() PASSED!
+new Date(-2208960000000).getMilliseconds() PASSED!
+new Date(+(new Date(TIME_1900)).toString()+).getTime() PASSED!
+new Date(+(new Date(TIME_1900)).toString()+).valueOf() PASSED!
+new Date(+(new Date(TIME_1900)).toString()+).getUTCFullYear() PASSED!
+new Date(+(new Date(TIME_1900)).toString()+).getUTCMonth() PASSED!
+new Date(+(new Date(TIME_1900)).toString()+).getUTCDate() PASSED!
+new Date(+(new Date(TIME_1900)).toString()+).getUTCDay() PASSED!
+new Date(+(new Date(TIME_1900)).toString()+).getUTCHours() PASSED!
+new Date(+(new Date(TIME_1900)).toString()+).getUTCMinutes() PASSED!
+new Date(+(new Date(TIME_1900)).toString()+).getUTCSeconds() PASSED!
+new Date(+(new Date(TIME_1900)).toString()+).getUTCMilliseconds() PASSED!
+new Date(+(new Date(TIME_1900)).toString()+).getFullYear() PASSED!
+new Date(+(new Date(TIME_1900)).toString()+).getMonth() PASSED!
+new Date(+(new Date(TIME_1900)).toString()+).getDate() PASSED!
+new Date(+(new Date(TIME_1900)).toString()+).getDay() PASSED!
+new Date(+(new Date(TIME_1900)).toString()+).getHours() PASSED!
+new Date(+(new Date(TIME_1900)).toString()+).getMinutes() PASSED!
+new Date(+(new Date(TIME_1900)).toString()+).getSeconds() PASSED!
+new Date(+(new Date(TIME_1900)).toString()+).getMilliseconds() PASSED!
+new Date(+(new Date(PST_1900 )).toString()+).getTime() PASSED!
+new Date(+(new Date(PST_1900 )).toString()+).valueOf() PASSED!
+new Date(+(new Date(PST_1900 )).toString()+).getUTCFullYear() PASSED!
+new Date(+(new Date(PST_1900 )).toString()+).getUTCMonth() PASSED!
+new Date(+(new Date(PST_1900 )).toString()+).getUTCDate() PASSED!
+new Date(+(new Date(PST_1900 )).toString()+).getUTCDay() PASSED!
+new Date(+(new Date(PST_1900 )).toString()+).getUTCHours() PASSED!
+new Date(+(new Date(PST_1900 )).toString()+).getUTCMinutes() PASSED!
+new Date(+(new Date(PST_1900 )).toString()+).getUTCSeconds() PASSED!
+new Date(+(new Date(PST_1900 )).toString()+).getUTCMilliseconds() PASSED!
+new Date(+(new Date(PST_1900 )).toString()+).getFullYear() PASSED!
+new Date(+(new Date(PST_1900 )).toString()+).getMonth() PASSED!
+new Date(+(new Date(PST_1900 )).toString()+).getDate() PASSED!
+new Date(+(new Date(PST_1900 )).toString()+).getDay() PASSED!
+new Date(+(new Date(PST_1900 )).toString()+).getHours() PASSED!
+new Date(+(new Date(PST_1900 )).toString()+).getMinutes() PASSED!
+new Date(+(new Date(PST_1900 )).toString()+).getSeconds() PASSED!
+new Date(+(new Date(PST_1900 )).toString()+).getMilliseconds() PASSED!
+new Date("Mon Jan 1 00:00:00 1900 UTC").getTime() PASSED!
+new Date("Mon Jan 1 00:00:00 1900 UTC").valueOf() PASSED!
+new Date("Mon Jan 1 00:00:00 1900 UTC").getUTCFullYear() PASSED!
+new Date("Mon Jan 1 00:00:00 1900 UTC").getUTCMonth() PASSED!
+new Date("Mon Jan 1 00:00:00 1900 UTC").getUTCDate() PASSED!
+new Date("Mon Jan 1 00:00:00 1900 UTC").getUTCDay() PASSED!
+new Date("Mon Jan 1 00:00:00 1900 UTC").getUTCHours() PASSED!
+new Date("Mon Jan 1 00:00:00 1900 UTC").getUTCMinutes() PASSED!
+new Date("Mon Jan 1 00:00:00 1900 UTC").getUTCSeconds() PASSED!
+new Date("Mon Jan 1 00:00:00 1900 UTC").getUTCMilliseconds() PASSED!
+new Date("Mon Jan 1 00:00:00 1900 UTC").getFullYear() PASSED!
+new Date("Mon Jan 1 00:00:00 1900 UTC").getMonth() PASSED!
+new Date("Mon Jan 1 00:00:00 1900 UTC").getDate() PASSED!
+new Date("Mon Jan 1 00:00:00 1900 UTC").getDay() PASSED!
+new Date("Mon Jan 1 00:00:00 1900 UTC").getHours() PASSED!
+new Date("Mon Jan 1 00:00:00 1900 UTC").getMinutes() PASSED!
+new Date("Mon Jan 1 00:00:00 1900 UTC").getSeconds() PASSED!
+new Date("Mon Jan 1 00:00:00 1900 UTC").getMilliseconds() PASSED!
+new Date("Mon Jan 1 08:00:00 1900 UTC").getTime() PASSED!
+new Date("Mon Jan 1 08:00:00 1900 UTC").valueOf() PASSED!
+new Date("Mon Jan 1 08:00:00 1900 UTC").getUTCFullYear() PASSED!
+new Date("Mon Jan 1 08:00:00 1900 UTC").getUTCMonth() PASSED!
+new Date("Mon Jan 1 08:00:00 1900 UTC").getUTCDate() PASSED!
+new Date("Mon Jan 1 08:00:00 1900 UTC").getUTCDay() PASSED!
+new Date("Mon Jan 1 08:00:00 1900 UTC").getUTCHours() PASSED!
+new Date("Mon Jan 1 08:00:00 1900 UTC").getUTCMinutes() PASSED!
+new Date("Mon Jan 1 08:00:00 1900 UTC").getUTCSeconds() PASSED!
+new Date("Mon Jan 1 08:00:00 1900 UTC").getUTCMilliseconds() PASSED!
+new Date("Mon Jan 1 08:00:00 1900 UTC").getFullYear() PASSED!
+new Date("Mon Jan 1 08:00:00 1900 UTC").getMonth() PASSED!
+new Date("Mon Jan 1 08:00:00 1900 UTC").getDate() PASSED!
+new Date("Mon Jan 1 08:00:00 1900 UTC").getDay() PASSED!
+new Date("Mon Jan 1 08:00:00 1900 UTC").getHours() PASSED!
+new Date("Mon Jan 1 08:00:00 1900 UTC").getMinutes() PASSED!
+new Date("Mon Jan 1 08:00:00 1900 UTC").getSeconds() PASSED!
+new Date("Mon Jan 1 08:00:00 1900 UTC").getMilliseconds() PASSED!

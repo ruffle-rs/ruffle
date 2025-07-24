@@ -1,0 +1,33 @@
+new Date(t).getDate() t=Wed Jul 23 21:59:32 GMT-0700 2025 PASSED!
+new Date(t).getDate() t=Thu Jul 24 21:59:32 GMT-0700 2025 PASSED!
+new Date(t).getDate() t=Sat Jul 26 21:59:32 GMT-0700 2025 PASSED!
+new Date(t).getDate() t=Tue Jul 29 21:59:32 GMT-0700 2025 PASSED!
+new Date(t).getDate() t=Sat Aug 2 21:59:32 GMT-0700 2025 PASSED!
+new Date(t).getDate() t=Thu Aug 7 21:59:32 GMT-0700 2025 PASSED!
+new Date(t).getDate() t=Wed Aug 13 21:59:32 GMT-0700 2025 PASSED!
+new Date(t).getDate() t=Wed Aug 20 21:59:32 GMT-0700 2025 PASSED!
+new Date(t).getDate() t=Thu Aug 28 21:59:32 GMT-0700 2025 PASSED!
+new Date(t).getDate() t=Sat Sep 6 21:59:32 GMT-0700 2025 PASSED!
+new Date(t).getDate() t=Tue Sep 16 21:59:32 GMT-0700 2025 PASSED!
+new Date(t).getDate() t=Sat Sep 27 21:59:32 GMT-0700 2025 PASSED!
+new Date(t).getDate() t=Thu Oct 9 21:59:32 GMT-0700 2025 PASSED!
+new Date(t).getDate() t=Wed Oct 22 21:59:32 GMT-0700 2025 PASSED!
+new Date(t).getDate() t=Wed Nov 5 20:59:32 GMT-0800 2025 PASSED!
+new Date(t).getDate() t=Thu Nov 20 20:59:32 GMT-0800 2025 PASSED!
+new Date(t).getDate() t=Sat Dec 6 20:59:32 GMT-0800 2025 PASSED!
+new Date(t).getDate() t=Tue Dec 23 20:59:32 GMT-0800 2025 PASSED!
+new Date(t).getDate() t=Sat Jan 10 20:59:32 GMT-0800 2026 PASSED!
+new Date(t).getDate() t=Thu Jan 29 20:59:32 GMT-0800 2026 PASSED!
+new Date(t).getDate() t=Wed Feb 18 20:59:32 GMT-0800 2026 PASSED!
+new Date(t).getDate() t=Wed Mar 11 21:59:32 GMT-0700 2026 PASSED!
+new Date(t).getDate() t=Thu Apr 2 21:59:32 GMT-0700 2026 PASSED!
+new Date(t).getDate() t=Sat Apr 25 21:59:32 GMT-0700 2026 PASSED!
+new Date(t).getDate() t=Tue May 19 21:59:32 GMT-0700 2026 PASSED!
+new Date(t).getDate() t=Sat Jun 13 21:59:32 GMT-0700 2026 PASSED!
+new Date(t).getDate() t=Thu Jul 9 21:59:32 GMT-0700 2026 PASSED!
+new Date(t).getDate() t=Wed Aug 5 21:59:32 GMT-0700 2026 PASSED!
+new Date(t).getDate() t=Wed Sep 2 21:59:32 GMT-0700 2026 PASSED!
+new Date(t).getDate() t=Thu Oct 1 21:59:32 GMT-0700 2026 PASSED!
+new Date(t).getDate() t=Sat Oct 31 21:59:32 GMT-0700 2026 PASSED!
+(new Date(NaN)).getDate() PASSED!
+Date.prototype.getDate.length PASSED!

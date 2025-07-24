@@ -1,0 +1,2 @@
+(new Date(NaN)).getTimezoneOffset() PASSED!
+Date.prototype.getTimezoneOffset.length PASSED!
