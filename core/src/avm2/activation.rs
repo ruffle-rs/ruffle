@@ -156,47 +156,6 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         }
     }
 
-    /// Construct an activation for the execution of a particular script's
-    /// initializer method. This is intended to be used immediately after
-    /// from_nothing(), to make it easier to clean up after the Activation runs.
-    pub fn init_from_script(
-        &mut self,
-        script: Script<'gc>,
-        stack_frame: StackFrame<'a, 'gc>,
-    ) -> Result<(), Error<'gc>> {
-        let (method, global_object, domain) = script.init();
-
-        let body = method
-            .body()
-            .expect("Cannot execute method for script without body");
-
-        let num_locals = body.num_locals as usize;
-
-        self.num_locals = num_locals;
-        self.outer = ScopeChain::new(domain);
-        self.caller_domain = Some(domain);
-        self.caller_movie = Some(script.translation_unit().movie());
-        self.bound_superclass_object = Some(self.context.avm2.classes().object);
-        self.bound_class = Some(script.global_class());
-        self.stack = stack_frame;
-        self.scope_depth = self.context.avm2.scope_stack.len();
-        self.is_interpreter = true; // Script initializers are always in interpreter mode
-
-        // Resolve signature
-        method.resolve_info(self)?;
-
-        // Run verifier for bytecode methods
-        method.verify(self)?;
-
-        // Create locals- script init methods are run with no parameters passed
-        self.push_stack(global_object);
-        for _ in 0..num_locals - 1 {
-            self.push_stack(Value::Undefined);
-        }
-
-        Ok(())
-    }
-
     /// Finds an object on either the current or outer scope of this activation by definition.
     pub fn find_definition(
         &mut self,
