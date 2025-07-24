@@ -602,7 +602,7 @@ fn set_focus_rect<'gc>(
             Value::Undefined | Value::Null => None,
             _ => Some(val.as_bool(activation.swf_version())),
         };
-        obj.set_focus_rect(activation.gc(), val);
+        obj.set_focus_rect(val);
     }
     Ok(())
 }
