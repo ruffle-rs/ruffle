@@ -19,10 +19,11 @@ use crate::display_object::{
 use crate::events::{ClipEvent, ClipEventResult, MouseButton};
 use crate::string::AvmString;
 use bitflags::bitflags;
-use gc_arena::lock::RefLock;
+use gc_arena::barrier::{unlock, Write};
+use gc_arena::lock::{Lock, RefLock};
 use gc_arena::{Collect, Gc, Mutation};
 use ruffle_macros::{enum_trait_object, istr};
-use std::cell::{Ref, RefMut};
+use std::cell::{Cell, Ref, RefMut};
 use std::fmt::Debug;
 use swf::{Point, Rectangle, Twips};
 
@@ -83,31 +84,51 @@ bitflags! {
 #[derive(Collect, Clone)]
 #[collect(no_drop)]
 pub struct InteractiveObjectBase<'gc> {
-    pub base: DisplayObjectBase<'gc>,
+    pub base: RefLock<DisplayObjectBase<'gc>>,
     #[collect(require_static)]
-    flags: InteractiveObjectFlags,
-    context_menu: Avm2Value<'gc>,
+    flags: Cell<InteractiveObjectFlags>,
+    context_menu: Lock<Avm2Value<'gc>>,
 
     #[collect(require_static)]
-    tab_enabled: Option<bool>,
+    tab_enabled: Cell<Option<bool>>,
 
     #[collect(require_static)]
-    tab_index: Option<i32>,
+    tab_index: Cell<Option<i32>>,
 
     /// Specifies whether this object displays a yellow rectangle when focused.
-    focus_rect: Option<bool>,
+    focus_rect: Cell<Option<bool>>,
 }
 
 impl Default for InteractiveObjectBase<'_> {
     fn default() -> Self {
         Self {
             base: Default::default(),
-            flags: InteractiveObjectFlags::MOUSE_ENABLED,
-            context_menu: Avm2Value::Null,
-            tab_enabled: None,
-            tab_index: None,
-            focus_rect: None,
+            flags: Cell::new(InteractiveObjectFlags::MOUSE_ENABLED),
+            context_menu: Lock::new(Avm2Value::Null),
+            tab_enabled: Cell::new(None),
+            tab_index: Cell::new(None),
+            focus_rect: Cell::new(None),
         }
+    }
+}
+
+impl<'gc> InteractiveObjectBase<'gc> {
+    pub fn base(&self) -> Ref<'_, DisplayObjectBase<'gc>> {
+        self.base.borrow()
+    }
+
+    pub fn base_mut(this: &Write<Self>) -> RefMut<'_, DisplayObjectBase<'gc>> {
+        unlock!(this, Self, base).borrow_mut()
+    }
+
+    fn contains_flag(&self, flag: InteractiveObjectFlags) -> bool {
+        self.flags.get().contains(flag)
+    }
+
+    fn set_flag(&self, flag: InteractiveObjectFlags, value: bool) {
+        let mut flags = self.flags.get();
+        flags.set(flag, value);
+        self.flags.set(flags);
     }
 }
 
@@ -126,80 +147,63 @@ impl Default for InteractiveObjectBase<'_> {
 pub trait TInteractiveObject<'gc>:
     'gc + Clone + Copy + Collect<'gc> + Debug + Into<InteractiveObject<'gc>>
 {
-    fn gc_raw_interactive(self) -> Gc<'gc, RefLock<InteractiveObjectBase<'gc>>>;
-
-    #[inline(always)]
-    #[no_dynamic]
-    fn raw_interactive(&self) -> Ref<'_, InteractiveObjectBase<'gc>> {
-        self.gc_raw_interactive().borrow()
-    }
-
-    #[inline(always)]
-    #[no_dynamic]
-    fn raw_interactive_mut(&self, mc: &Mutation<'gc>) -> RefMut<'_, InteractiveObjectBase<'gc>> {
-        self.gc_raw_interactive().borrow_mut(mc)
-    }
+    fn raw_interactive(self) -> Gc<'gc, InteractiveObjectBase<'gc>>;
 
     fn as_displayobject(self) -> DisplayObject<'gc>;
 
     /// Check if the interactive object accepts user input.
     fn mouse_enabled(self) -> bool {
         self.raw_interactive()
-            .flags
-            .contains(InteractiveObjectFlags::MOUSE_ENABLED)
+            .contains_flag(InteractiveObjectFlags::MOUSE_ENABLED)
     }
 
     /// Set if the interactive object accepts user input.
-    fn set_mouse_enabled(self, mc: &Mutation<'gc>, value: bool) {
-        self.raw_interactive_mut(mc)
-            .flags
-            .set(InteractiveObjectFlags::MOUSE_ENABLED, value)
+    fn set_mouse_enabled(self, _mc: &Mutation<'gc>, value: bool) {
+        self.raw_interactive()
+            .set_flag(InteractiveObjectFlags::MOUSE_ENABLED, value)
     }
 
     /// Check if the interactive object accepts double-click events.
     fn double_click_enabled(self) -> bool {
         self.raw_interactive()
-            .flags
-            .contains(InteractiveObjectFlags::DOUBLE_CLICK_ENABLED)
+            .contains_flag(InteractiveObjectFlags::DOUBLE_CLICK_ENABLED)
     }
 
     // Set if the interactive object accepts double-click events.
-    fn set_double_click_enabled(self, mc: &Mutation<'gc>, value: bool) {
-        self.raw_interactive_mut(mc)
-            .flags
-            .set(InteractiveObjectFlags::DOUBLE_CLICK_ENABLED, value)
+    fn set_double_click_enabled(self, _mc: &Mutation<'gc>, value: bool) {
+        self.raw_interactive()
+            .set_flag(InteractiveObjectFlags::DOUBLE_CLICK_ENABLED, value)
     }
 
     fn has_focus(self) -> bool {
         self.raw_interactive()
-            .flags
-            .contains(InteractiveObjectFlags::HAS_FOCUS)
+            .contains_flag(InteractiveObjectFlags::HAS_FOCUS)
     }
 
-    fn set_has_focus(self, mc: &Mutation<'gc>, value: bool) {
-        self.raw_interactive_mut(mc)
-            .flags
-            .set(InteractiveObjectFlags::HAS_FOCUS, value)
+    fn set_has_focus(self, _mc: &Mutation<'gc>, value: bool) {
+        self.raw_interactive()
+            .set_flag(InteractiveObjectFlags::HAS_FOCUS, value)
     }
 
     fn context_menu(self) -> Avm2Value<'gc> {
-        self.raw_interactive().context_menu
+        self.raw_interactive().context_menu.get()
     }
 
     fn set_context_menu(self, mc: &Mutation<'gc>, value: Avm2Value<'gc>) {
-        self.raw_interactive_mut(mc).context_menu = value;
+        let write = Gc::write(mc, self.raw_interactive());
+        unlock!(write, InteractiveObjectBase, context_menu).set(value);
     }
 
     /// Get the boolean flag which determines whether objects display a glowing border
     /// when they have focus.
     fn focus_rect(self) -> Option<bool> {
-        self.raw_interactive().focus_rect
+        self.raw_interactive().focus_rect.get()
     }
 
     /// Set the boolean flag which determines whether objects display a glowing border
     /// when they have focus.
-    fn set_focus_rect(self, mc: &Mutation<'gc>, value: Option<bool>) {
-        self.raw_interactive_mut(mc).focus_rect = value;
+    fn set_focus_rect(self, _mc: &Mutation<'gc>, value: Option<bool>) {
+        self.raw_interactive().focus_rect.set(value);
     }
 
     /// Filter the incoming clip event.
@@ -331,8 +335,7 @@ pub trait TInteractiveObject<'gc>:
                 let is_double_click = index % 2 != 0;
                 let double_click_enabled = self
                     .raw_interactive()
-                    .flags
-                    .contains(InteractiveObjectFlags::DOUBLE_CLICK_ENABLED);
+                    .contains_flag(InteractiveObjectFlags::DOUBLE_CLICK_ENABLED);
 
                 if is_double_click && double_click_enabled {
                     let string_double_click = istr!("doubleClick");
@@ -671,6 +674,7 @@ pub trait TInteractiveObject<'gc>:
         if self.as_displayobject().movie().is_action_script_3() {
             self.raw_interactive()
                 .tab_enabled
+                .get()
                 .unwrap_or_else(|| self.tab_enabled_default(context))
         } else {
             self.as_displayobject().get_avm1_boolean_property(
@@ -687,7 +691,7 @@ pub trait TInteractiveObject<'gc>:
 
     fn set_tab_enabled(self, context: &mut UpdateContext<'gc>, value: bool) {
         if self.as_displayobject().movie().is_action_script_3() {
-            self.raw_interactive_mut(context.gc()).tab_enabled = Some(value)
+            self.raw_interactive().tab_enabled.set(Some(value))
         } else {
             self.as_displayobject().set_avm1_property(
                 istr!(context, "tabEnabled"),
@@ -701,17 +705,17 @@ pub trait TInteractiveObject<'gc>:
     /// When not `None`, a custom ordering is used, and
     /// objects are ordered according to this value.
     fn tab_index(self) -> Option<i32> {
-        self.raw_interactive().tab_index
+        self.raw_interactive().tab_index.get()
     }
 
-    fn set_tab_index(self, context: &mut UpdateContext<'gc>, value: Option<i32>) {
+    fn set_tab_index(self, _context: &mut UpdateContext<'gc>, value: Option<i32>) {
         // tabIndex = -1 is always equivalent to unset tabIndex
         let value = if matches!(value, Some(-1)) {
             None
         } else {
             value
         };
-        self.raw_interactive_mut(context.gc()).tab_index = value
+        self.raw_interactive().tab_index.set(value)
     }
 
     /// Whether event handlers (e.g. onKeyUp, onPress) should be fired for the given event.

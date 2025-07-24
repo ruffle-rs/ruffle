@@ -22,8 +22,8 @@ use crate::tag_utils::{SwfMovie, SwfSlice};
 use crate::utils::HasPrefixField;
 use crate::vminterface::Instantiator;
 use core::fmt;
-use gc_arena::barrier::unlock;
-use gc_arena::lock::{Lock, RefLock};
+use gc_arena::barrier::{field, unlock};
+use gc_arena::lock::Lock;
 use gc_arena::{Collect, Gc, Mutation};
 use ruffle_render::filters::Filter;
 use std::cell::{Cell, Ref, RefCell, RefMut};
@@ -45,7 +45,7 @@ impl fmt::Debug for Avm2Button<'_> {
 #[collect(no_drop)]
 #[repr(C, align(8))]
 pub struct Avm2ButtonData<'gc> {
-    base: RefLock<InteractiveObjectBase<'gc>>,
+    base: InteractiveObjectBase<'gc>,
 
     shared: Gc<'gc, ButtonShared>,
 
@@ -414,11 +414,12 @@ impl<'gc> Avm2Button<'gc> {
 
 impl<'gc> TDisplayObject<'gc> for Avm2Button<'gc> {
     fn base(&self) -> Ref<'_, DisplayObjectBase<'gc>> {
-        Ref::map(self.raw_interactive(), |base| &base.base)
+        self.0.base.base()
     }
 
     fn base_mut<'a>(&'a self, mc: &Mutation<'gc>) -> RefMut<'a, DisplayObjectBase<'gc>> {
-        RefMut::map(self.raw_interactive_mut(mc), |base| &mut base.base)
+        let base = field!(Gc::write(mc, self.0), Avm2ButtonData, base);
+        InteractiveObjectBase::base_mut(base)
     }
 
     fn instantiate(self, mc: &Mutation<'gc>) -> DisplayObject<'gc> {
@@ -694,7 +695,7 @@ impl<'gc> TDisplayObject<'gc> for Avm2Button<'gc> {
 }
 
 impl<'gc> TInteractiveObject<'gc> for Avm2Button<'gc> {
-    fn gc_raw_interactive(self) -> Gc<'gc, RefLock<InteractiveObjectBase<'gc>>> {
+    fn raw_interactive(self) -> Gc<'gc, InteractiveObjectBase<'gc>> {
         HasPrefixField::as_prefix_gc(self.0)
     }
 
