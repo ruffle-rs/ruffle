@@ -1,0 +1,21 @@
+Unicode \u00bb PASSED!
+Unicode \u00ab PASSED!
+Unicode \u00bf PASSED!
+Unicode \u00Ab PASSED!
+Unicode \u00bF PASSED!
+JSON parse true PASSED!
+JSON parse false PASSED!
+JSON parse null PASSED!
+JSON parse 0 PASSED!
+JSON parse 1 PASSED!
+JSON parse 2 PASSED!
+JSON parse 3 PASSED!
+JSON parse 4 PASSED!
+JSON parse 5 PASSED!
+JSON parse 6 PASSED!
+JSON parse 7 PASSED!
+JSON parse 8 PASSED!
+JSON parse 9 PASSED!
+JSON.stringify('') PASSED!
+JSON.stringify('
+\u0061') PASSED!

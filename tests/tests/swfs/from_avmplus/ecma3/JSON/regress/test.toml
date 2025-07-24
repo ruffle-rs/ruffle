@@ -1,0 +1,4 @@
+num_ticks = 1
+
+# Test overflows the stack
+ignore = true

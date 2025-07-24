@@ -1,0 +1,6 @@
+stringify an AS3 class with getters, transient properties FAILED! expected: {"getonly":"getonly_value","var1":"var1_value","var2":false} got: {"getonly":"getonly_value","transient1":"transient_value1","transientgetter":"transient getter","var1":"var1_value","var2":false}
+stringify an AS3 class PASSED!
+stringify an AS3 object with various methods PASSED!
+stringify an AS3 object with toJSON PASSED!
+stringify an AS3 object with toJSON PASSED!
+stringify an AS3 object with non-function toJSON PASSED!
