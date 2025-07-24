@@ -514,6 +514,8 @@ impl<'gc> Class<'gc> {
         };
 
         let class_init = unit.load_method(abc_class.init_method, false, activation)?;
+        // Class initializers are always run in "interpreter mode"
+        class_init.mark_as_interpreted();
 
         let name_namespace = name.namespace();
         let mut local_name_buf = WString::from(name.local_name().as_wstr());

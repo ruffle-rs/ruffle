@@ -83,6 +83,7 @@ pub struct Activation<'a, 'gc: 'a> {
     /// in some cases "interpreter mode" is used instead: for example, script
     /// initializers always execute in "interpreter mode". We keep track of
     /// whether the current method would be interpreted or JITted in this flag.
+    /// See `MethodData.is_interpreted` for more information.
     is_interpreter: bool,
 
     pub context: &'a mut UpdateContext<'gc>,
@@ -376,7 +377,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         self.bound_class = bound_class;
         self.stack = stack_frame;
         self.scope_depth = self.context.avm2.scope_stack.len();
-        self.is_interpreter = false;
+        self.is_interpreter = method.is_interpreted();
 
         // Resolve parameters and return type
         method.resolve_info(self)?;
