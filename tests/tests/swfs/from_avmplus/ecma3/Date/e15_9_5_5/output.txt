@@ -1,0 +1,15 @@
+typeof (now.toLocaleString()) PASSED!
+Date.prototype.toLocaleString.length PASSED!
+Math.abs(Date.parse(now.toLocaleString()) - now.valueOf()) < 1000 PASSED!
+Date.parse(   +   givenDate   +   ).toLocaleString()) PASSED!
+Date.parse(   +   givenDate   +   ).toLocaleString()) PASSED!
+Date.parse(   +   givenDate   +   ).toLocaleString()) PASSED!
+Date.parse(   +   givenDate   +   ).toLocaleString()) PASSED!
+Date.parse(   +   givenDate   +   ).toLocaleString()) PASSED!
+Date.parse(   +   givenDate   +   ).toLocaleString()) PASSED!
+Date.parse(   +   givenDate   +   ).toLocaleString()) PASSED!
+Date.parse(   +   givenDate   +   ).toLocaleString()) PASSED!
+Date.parse(   +   givenDate   +   ).toLocaleString()) PASSED!
+Date.parse(   +   givenDate   +   ).toLocaleString()) PASSED!
+Date.parse(   +   givenDate   +   ).toLocaleString()) PASSED!
+Date.parse(   +   givenDate   +   ).toLocaleString()) PASSED!

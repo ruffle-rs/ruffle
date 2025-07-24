@@ -1,0 +1,33 @@
+Sun Mar 8 12:00:00 GMT-0700 1998 new Date(t).getDate() PASSED!
+Mon Mar 9 12:00:00 GMT-0700 1998 new Date(t).getDate() PASSED!
+Wed Mar 11 12:00:00 GMT-0700 1998 new Date(t).getDate() PASSED!
+Sat Mar 14 12:00:00 GMT-0700 1998 new Date(t).getDate() PASSED!
+Wed Mar 18 12:00:00 GMT-0700 1998 new Date(t).getDate() PASSED!
+Mon Mar 23 12:00:00 GMT-0700 1998 new Date(t).getDate() PASSED!
+Sun Mar 29 12:00:00 GMT-0700 1998 new Date(t).getDate() PASSED!
+Sun Apr 5 12:00:00 GMT-0700 1998 new Date(t).getDate() PASSED!
+Mon Apr 13 12:00:00 GMT-0700 1998 new Date(t).getDate() PASSED!
+Wed Apr 22 12:00:00 GMT-0700 1998 new Date(t).getDate() PASSED!
+Sat May 2 12:00:00 GMT-0700 1998 new Date(t).getDate() PASSED!
+Wed May 13 12:00:00 GMT-0700 1998 new Date(t).getDate() PASSED!
+Mon May 25 12:00:00 GMT-0700 1998 new Date(t).getDate() PASSED!
+Sun Jun 7 12:00:00 GMT-0700 1998 new Date(t).getDate() PASSED!
+Sun Jun 21 12:00:00 GMT-0700 1998 new Date(t).getDate() PASSED!
+Mon Jul 6 12:00:00 GMT-0700 1998 new Date(t).getDate() PASSED!
+Wed Jul 22 12:00:00 GMT-0700 1998 new Date(t).getDate() PASSED!
+Sat Aug 8 12:00:00 GMT-0700 1998 new Date(t).getDate() PASSED!
+Wed Aug 26 12:00:00 GMT-0700 1998 new Date(t).getDate() PASSED!
+Mon Sep 14 12:00:00 GMT-0700 1998 new Date(t).getDate() PASSED!
+Sun Oct 4 12:00:00 GMT-0700 1998 new Date(t).getDate() PASSED!
+Sun Oct 25 12:00:00 GMT-0700 1998 new Date(t).getDate() PASSED!
+Mon Nov 16 11:00:00 GMT-0800 1998 new Date(t).getDate() PASSED!
+Wed Dec 9 11:00:00 GMT-0800 1998 new Date(t).getDate() PASSED!
+Sat Jan 2 11:00:00 GMT-0800 1999 new Date(t).getDate() PASSED!
+Wed Jan 27 11:00:00 GMT-0800 1999 new Date(t).getDate() PASSED!
+Mon Feb 22 11:00:00 GMT-0800 1999 new Date(t).getDate() PASSED!
+Sun Mar 21 12:00:00 GMT-0700 1999 new Date(t).getDate() PASSED!
+Sun Apr 18 12:00:00 GMT-0700 1999 new Date(t).getDate() PASSED!
+Mon May 17 12:00:00 GMT-0700 1999 new Date(t).getDate() PASSED!
+Wed Jun 16 12:00:00 GMT-0700 1999 new Date(t).getDate() PASSED!
+(new Date(NaN)).getDate() PASSED!
+Date.prototype.getDate.length PASSED!
