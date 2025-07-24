@@ -409,6 +409,8 @@ impl<'gc> Script<'gc> {
             .expect("Script index should be valid");
 
         let init = unit.load_method(script.init_method, false, activation)?;
+        // Script initializers are always run in "interpreter mode"
+        init.mark_as_interpreted();
 
         let globals = Script::create_globals_object(unit, script, domain, init, activation)?;
 
