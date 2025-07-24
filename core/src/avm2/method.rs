@@ -13,6 +13,7 @@ use gc_arena::barrier::{unlock, Write};
 use gc_arena::lock::OnceLock;
 use gc_arena::{Collect, Gc};
 use std::borrow::Cow;
+use std::cell::Cell;
 use std::rc::Rc;
 use std::sync::Arc;
 use swf::avm2::types::{
@@ -122,6 +123,12 @@ struct MethodData<'gc> {
     /// The resolved signature and return type.
     resolved_info: OnceLock<ResolvedMethodInfo<'gc>>,
 
+    /// Whether this method should be run in "interpreter mode" (as opposed to
+    /// "JIT mode"). Most methods run in "JIT mode", except for class
+    /// initializer and script initializer methods, which always run in
+    /// "interpreter mode". See `Activation.is_interpreter` for more information.
+    is_interpreted: Cell<bool>,
+
     /// Whether or not this method was declared as a free-standing function.
     ///
     /// A free-standing function corresponds to the `Function` trait type, and
@@ -218,6 +225,7 @@ impl<'gc> Method<'gc> {
                 signature,
                 return_type,
                 resolved_info: OnceLock::new(),
+                is_interpreted: Cell::new(false),
                 is_function,
                 is_unchecked: is_function && all_params_unchecked,
             },
@@ -360,6 +368,18 @@ impl<'gc> Method<'gc> {
 
     pub fn return_type(&self) -> Option<Gc<'gc, Multiname<'gc>>> {
         self.0.return_type
+    }
+
+    /// Whether this method should be run in "interpreter mode" (as opposed to
+    /// "JIT mode").
+    pub fn is_interpreted(self) -> bool {
+        self.0.is_interpreted.get()
+    }
+
+    /// Mark this method as one that should be run in "interpreter mode" (as
+    /// opposed to "JIT mode").
+    pub fn mark_as_interpreted(self) {
+        self.0.is_interpreted.set(true);
     }
 
     pub fn is_function(self) -> bool {
