@@ -4495,6 +4495,7 @@ dependencies = [
  "ruffle_render_wgpu",
  "ruffle_video_external",
  "ruffle_video_software",
+ "steamworks",
  "sys-locale",
  "thiserror 2.0.17",
  "tokio",
@@ -5236,6 +5237,24 @@ name = "static_assertions"
 version = "1.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a2eb9349b6444b326872e140eb1cf5e7c522154d69e7a0ffb0fb81c06b37543f"
+
+[[package]]
+name = "steamworks"
+version = "0.12.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "efa5de820b63330e5df107e9f1afde6205aeb74ab1488fc93ff5b9f256dd776d"
+dependencies = [
+ "bitflags 2.10.0",
+ "paste",
+ "steamworks-sys",
+ "thiserror 2.0.17",
+]
+
+[[package]]
+name = "steamworks-sys"
+version = "0.12.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9e8ebb529945aa36439c2e94d613d38509da09677f2aa0c7f4b3a9cd9057d529"
 
 [[package]]
 name = "strength_reduce"

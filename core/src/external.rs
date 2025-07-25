@@ -356,6 +356,8 @@ pub trait ExternalInterfaceProvider {
     fn on_callback_available(&self, name: &str);
 
     fn get_id(&self) -> Option<String>;
+
+    fn update(&self, _context: &mut UpdateContext<'_>) {}
 }
 
 pub struct NullExternalInterfaceProvider;
@@ -384,6 +386,10 @@ impl<'gc> ExternalInterface<'gc> {
 
     pub fn set_provider(&mut self, provider: Option<Box<dyn ExternalInterfaceProvider>>) {
         self.provider = provider.map(Rc::new);
+    }
+
+    pub fn get_provider(&self) -> Option<Rc<Box<dyn ExternalInterfaceProvider>>> {
+        self.provider.clone()
     }
 
     pub fn add_callback(&mut self, name: String, callback: Callback<'gc>) {

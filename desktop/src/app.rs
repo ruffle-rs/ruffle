@@ -370,6 +370,13 @@ impl MainWindow {
             if dt > 0 {
                 self.time = new_time;
                 if let Some(mut player) = self.player.get() {
+                    #[cfg(feature = "steamworks")]
+                    player.mutate_with_update_context(|ctx| {
+                        if let Some(provider) = ctx.external_interface.get_provider() {
+                            provider.update(ctx);
+                        }
+                    });
+
                     player.tick(dt as f64 / 1_000_000.0);
                     self.next_frame_time = Some(new_time + player.time_til_next_frame());
                 } else {
