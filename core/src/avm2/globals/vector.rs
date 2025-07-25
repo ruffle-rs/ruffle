@@ -4,8 +4,8 @@ use crate::avm2::activation::Activation;
 use crate::avm2::class::{Class, ClassAttributes};
 use crate::avm2::error::{argument_error, type_error};
 use crate::avm2::globals::array::{
-    compare_numeric, compare_string_case_insensitive, compare_string_case_sensitive, ArrayIter,
-    SortOptions,
+    compare_numeric_slow, compare_string_case_insensitive, compare_string_case_sensitive,
+    ArrayIter, SortOptions,
 };
 use crate::avm2::object::{ClassObject, Object, TObject as _, VectorObject};
 use crate::avm2::parameters::ParametersExt;
@@ -617,7 +617,7 @@ pub fn sort<'gc>(
                     Ok(Ordering::Equal)
                 }
             } else if options.contains(SortOptions::NUMERIC) {
-                compare_numeric(activation, a, b)
+                compare_numeric_slow(activation, a, b)
             } else if options.contains(SortOptions::CASE_INSENSITIVE) {
                 compare_string_case_insensitive(activation, a, b)
             } else {
