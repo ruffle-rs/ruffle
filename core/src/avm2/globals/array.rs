@@ -904,11 +904,44 @@ pub fn compare_string_case_insensitive<'gc>(
     Ok(string_a.cmp_ignore_case(&string_b))
 }
 
-pub fn compare_numeric<'gc>(
+/// Perform numeric comparison for sort, slow.
+///
+/// Use [`compare_numeric`] where possible, use this function only when you
+/// would have to check the SWF version anyway.
+pub fn compare_numeric_slow<'gc>(
     activation: &mut Activation<'_, 'gc>,
     a: Value<'gc>,
     b: Value<'gc>,
 ) -> Result<Ordering, Error<'gc>> {
+    if activation.caller_movie_or_root().version() < 11 {
+        compare_numeric::<true>(activation, a, b)
+    } else {
+        compare_numeric::<false>(activation, a, b)
+    }
+}
+
+/// Perform numeric comparison for sort, fast.
+///
+/// The value of `COMPAT` should be `true` when the SWF version is less than 11.
+pub fn compare_numeric<'gc, const COMPAT: bool>(
+    activation: &mut Activation<'_, 'gc>,
+    a: Value<'gc>,
+    b: Value<'gc>,
+) -> Result<Ordering, Error<'gc>> {
+    if COMPAT {
+        // See <https://bugzilla.mozilla.org/show_bug.cgi?id=524122>
+        // See <https://github.com/adobe/avmplus/blob/858d034a3bd3a54d9b70909386435cf4aec81d21/core/ArrayClass.cpp#L498>
+        if let (Value::Integer(a), Value::Integer(b)) = (a, b) {
+            // The following expression corresponds to atomFromIntptrValue,
+            // see <https://github.com/adobe-flash/avmplus/blob/master/core/atom-inlines.h#L82>
+            let a = (a << 3) | 6;
+            let b = (b << 3) | 6;
+            // for SWF<11, FP relies on the following overflow
+            let diff = a.wrapping_sub(b);
+            return Ok(diff.cmp(&0i32));
+        }
+    }
+
     let num_a = a.coerce_to_number(activation)?;
     let num_b = b.coerce_to_number(activation)?;
 
@@ -1052,7 +1085,11 @@ pub fn sort<'gc>(
             }),
         )?
     } else if options.contains(SortOptions::NUMERIC) {
-        sort_inner(activation, &mut values, options, compare_numeric)?
+        if activation.caller_movie_or_root().version() < 11 {
+            sort_inner(activation, &mut values, options, compare_numeric::<true>)?
+        } else {
+            sort_inner(activation, &mut values, options, compare_numeric::<false>)?
+        }
     } else if options.contains(SortOptions::CASE_INSENSITIVE) {
         sort_inner(
             activation,
@@ -1173,7 +1210,7 @@ pub fn sort_on<'gc>(
                 let b_field = b_object.get_public_property(*field_name, activation)?;
 
                 let ord = if options.contains(SortOptions::NUMERIC) {
-                    compare_numeric(activation, a_field, b_field)?
+                    compare_numeric_slow(activation, a_field, b_field)?
                 } else if options.contains(SortOptions::CASE_INSENSITIVE) {
                     compare_string_case_insensitive(activation, a_field, b_field)?
                 } else {
