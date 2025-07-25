@@ -1,4 +1,1 @@
 num_ticks = 1
-
-# Test crashes Ruffle :(
-ignore = true
