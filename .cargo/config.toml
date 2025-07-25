@@ -10,3 +10,8 @@ rustflags = [
 # Use the LLD linker, it should be faster than the default.
 # See: https://github.com/rust-lang/rust/issues/71520
 linker = "rust-lld.exe"
+
+[env]
+# Set the minimum stack size for tests to 8 MiB.
+# Otherwise some tests overflow the stack.
+RUST_MIN_STACK = "8388608"
