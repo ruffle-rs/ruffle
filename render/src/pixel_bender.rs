@@ -586,9 +586,9 @@ fn read_op<R: Read>(
             shader.version = data.read_i32::<LittleEndian>()?;
         }
         Opcode::If => {
-            assert_eq!(read_uint24(data)?, 0);
-            let src = read_uint24(data)?;
-            assert_eq!(data.read_u8()?, 0);
+            skip_padding(data, 3)?;
+            let src = data.read_u24::<LittleEndian>()?;
+            skip_padding(data, 1)?;
             let src_reg = read_src_reg(src, 1);
 
             if validate && src_reg.kind == PixelBenderRegKind::Float {
@@ -598,13 +598,11 @@ fn read_op<R: Read>(
             shader.operations.push(Operation::If { src: src_reg });
         }
         Opcode::Else => {
-            assert_eq!(data.read_u32::<LittleEndian>()?, 0);
-            assert_eq!(read_uint24(data)?, 0);
+            skip_padding(data, 7)?;
             shader.operations.push(Operation::Else);
         }
         Opcode::EndIf => {
-            assert_eq!(data.read_u32::<LittleEndian>()?, 0);
-            assert_eq!(read_uint24(data)?, 0);
+            skip_padding(data, 7)?;
             shader.operations.push(Operation::EndIf);
         }
         Opcode::LoadIntOrFloat => {
@@ -630,7 +628,7 @@ fn read_op<R: Read>(
         Opcode::SampleNearest | Opcode::SampleLinear => {
             let dst = data.read_u16::<LittleEndian>()?;
             let mask = data.read_u8()?;
-            let src = read_uint24(data)?;
+            let src = data.read_u24::<LittleEndian>()?;
             let tf = data.read_u8()?;
 
             let dst_reg = read_dst_reg(dst, mask >> 4);
@@ -656,16 +654,16 @@ fn read_op<R: Read>(
             assert_eq!(mask & 0xF, 0);
             let dst_reg = read_dst_reg(dst, mask >> 4);
 
-            let condition = read_uint24(data)?;
-            assert_eq!(data.read_u8()?, 0);
+            let condition = data.read_u24::<LittleEndian>()?;
+            skip_padding(data, 1)?;
             let condition_reg = read_src_reg(condition, 1);
 
-            let src1 = read_uint24(data)?;
-            assert_eq!(data.read_u8()?, 0);
+            let src1 = data.read_u24::<LittleEndian>()?;
+            skip_padding(data, 1)?;
             let src_reg1 = read_src_reg(src1, 1);
 
-            let src2 = read_uint24(data)?;
-            assert_eq!(data.read_u8()?, 0);
+            let src2 = data.read_u24::<LittleEndian>()?;
+            skip_padding(data, 1)?;
             let src_reg2 = read_src_reg(src2, 1);
 
             if validate && condition_reg.kind == PixelBenderRegKind::Float {
@@ -684,9 +682,9 @@ fn read_op<R: Read>(
             let mut mask = data.read_u8()?;
             let size = (mask & 0x3) + 1;
             let matrix = (mask >> 2) & 3;
-            let src = read_uint24(data)?;
+            let src = data.read_u24::<LittleEndian>()?;
 
-            assert_eq!(data.read_u8()?, 0, "Unexpected u8 for opcode {opcode:?}");
+            skip_padding(data, 1)?;
             mask >>= 4;
 
             if matrix != 0 {
@@ -804,11 +802,10 @@ fn read_value<R: Read>(data: &mut R, opcode: PixelBenderTypeOpcode) -> Result<Pi
     }
 }
 
-fn read_uint24<R: Read>(data: &mut R) -> Result<u32> {
-    let ch1 = data.read_u8()? as u32;
-    let ch2 = data.read_u8()? as u32;
-    let ch3 = data.read_u8()? as u32;
-    Ok(ch1 | (ch2 << 8) | (ch3 << 16))
+fn skip_padding<R: Read>(data: &mut R, byte_count: u64) -> Result<()> {
+    // Skip bytes without allocation and without needing Seek
+    std::io::copy(&mut data.by_ref().take(byte_count), &mut std::io::sink())?;
+    Ok(())
 }
 
 // The opcodes are laid out like this:

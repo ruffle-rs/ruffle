@@ -1,0 +1,16 @@
+version 1i
+name "padding_bytes"
+
+param.out "dst", float4, f0.rgba
+
+ld      i0.r, 1i
+ld      f1.r, 1f
+ld      f1.g, 0f
+.if     i0.r
+  ld    f0.r, 1f
+.else
+  ld    f0.r, 0f
+.endif
+select  f0.g, i0.r, f1.r, f1.g
+
+mov     f0.a, f1.r

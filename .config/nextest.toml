@@ -7,6 +7,7 @@ test(avm2/pixelbender_conversions) or \
 test(avm2/pixelbender_div) or \
 test(avm2/pixelbender_rsqrt) or \
 test(avm2/pixelbender_outputs) or \
+test(avm2/pixelbender_padding_bytes) or \
 test(avm2/pixelbender_parameters) or \
 test(avm2/pixelbender_parameters_bool) or \
 test(avm2/graphics_round_rects) or \
