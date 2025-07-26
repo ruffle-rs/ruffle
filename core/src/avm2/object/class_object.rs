@@ -327,7 +327,22 @@ impl<'gc> ClassObject<'gc> {
     ) -> Result<Value<'gc>, Error<'gc>> {
         let scope = self.0.instance_scope.get();
         let method = self.init_method();
+
         if let Some(method) = method {
+            // Provide a callee object if necessary
+            let callee = if method.needs_arguments_object() {
+                Some(FunctionObject::from_method(
+                    activation,
+                    method,
+                    scope,
+                    Some(receiver),
+                    self.superclass_object(),
+                    Some(self.inner_class_definition()),
+                ))
+            } else {
+                None
+            };
+
             exec(
                 method,
                 scope,
@@ -336,7 +351,7 @@ impl<'gc> ClassObject<'gc> {
                 Some(self.inner_class_definition()),
                 arguments,
                 activation,
-                self.into(),
+                callee,
             )
         } else {
             unreachable!("Cannot instantiate a class without an init method")
@@ -529,8 +544,14 @@ impl<'gc> ClassObject<'gc> {
             }) => {
                 // todo: handle errors
                 let full_method = self.instance_vtable().get_full_method(disp_id).unwrap();
-                let callee =
-                    FunctionObject::from_method(activation, full_method.method, full_method.scope(), Some(receiver.into()), full_method.super_class_obj, Some(full_method.class));
+                let callee = FunctionObject::from_method(
+                    activation,
+                    full_method.method,
+                    full_method.scope(),
+                    Some(receiver.into()),
+                    full_method.super_class_obj,
+                    Some(full_method.class),
+                );
 
                 callee.call(activation, receiver.into(), &[value])?;
                 Ok(())

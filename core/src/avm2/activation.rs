@@ -83,6 +83,7 @@ pub struct Activation<'a, 'gc: 'a> {
     /// in some cases "interpreter mode" is used instead: for example, script
     /// initializers always execute in "interpreter mode". We keep track of
     /// whether the current method would be interpreted or JITted in this flag.
+    /// See `MethodData.is_interpreted` for more information.
     is_interpreter: bool,
 
     pub context: &'a mut UpdateContext<'gc>,
@@ -153,47 +154,6 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             is_interpreter: false,
             context,
         }
-    }
-
-    /// Construct an activation for the execution of a particular script's
-    /// initializer method. This is intended to be used immediately after
-    /// from_nothing(), to make it easier to clean up after the Activation runs.
-    pub fn init_from_script(
-        &mut self,
-        script: Script<'gc>,
-        stack_frame: StackFrame<'a, 'gc>,
-    ) -> Result<(), Error<'gc>> {
-        let (method, global_object, domain) = script.init();
-
-        let body = method
-            .body()
-            .expect("Cannot execute method for script without body");
-
-        let num_locals = body.num_locals as usize;
-
-        self.num_locals = num_locals;
-        self.outer = ScopeChain::new(domain);
-        self.caller_domain = Some(domain);
-        self.caller_movie = Some(script.translation_unit().movie());
-        self.bound_superclass_object = Some(self.context.avm2.classes().object);
-        self.bound_class = Some(script.global_class());
-        self.stack = stack_frame;
-        self.scope_depth = self.context.avm2.scope_stack.len();
-        self.is_interpreter = true; // Script initializers are always in interpreter mode
-
-        // Resolve signature
-        method.resolve_info(self)?;
-
-        // Run verifier for bytecode methods
-        method.verify(self)?;
-
-        // Create locals- script init methods are run with no parameters passed
-        self.push_stack(global_object);
-        for _ in 0..num_locals - 1 {
-            self.push_stack(Value::Undefined);
-        }
-
-        Ok(())
     }
 
     /// Finds an object on either the current or outer scope of this activation by definition.
@@ -288,7 +248,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         method: Method<'gc>,
         signature: &[ResolvedParamConfig<'gc>],
         user_arguments: FunctionArgs<'_, 'gc>,
-        callee: Value<'gc>,
+        callee: Option<FunctionObject<'gc>>,
     ) -> ArrayObject<'gc> {
         let mut all_arguments = Vec::new();
 
@@ -333,6 +293,9 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             .contains(AbcMethodFlags::NEED_ARGUMENTS)
         {
             let string_callee = istr!(self, "callee");
+            let callee = callee
+                .expect("Should have a callee if the method is NEED_ARGUMENTS")
+                .into();
 
             args_object.set_dynamic_property(string_callee, callee, self.gc());
             args_object.set_local_property_is_enumerable(self.gc(), string_callee, false);
@@ -355,7 +318,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         stack_frame: StackFrame<'a, 'gc>,
         bound_superclass_object: Option<ClassObject<'gc>>,
         bound_class: Option<Class<'gc>>,
-        callee: Value<'gc>,
+        callee: Option<FunctionObject<'gc>>,
     ) -> Result<(), Error<'gc>> {
         let body = method
             .body()
@@ -376,7 +339,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         self.bound_class = bound_class;
         self.stack = stack_frame;
         self.scope_depth = self.context.avm2.scope_stack.len();
-        self.is_interpreter = false;
+        self.is_interpreter = method.is_interpreted();
 
         // Resolve parameters and return type
         method.resolve_info(self)?;
