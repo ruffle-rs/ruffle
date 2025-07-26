@@ -2,13 +2,13 @@
 
 use ruffle_macros::istr;
 
+use crate::avm2::activation::Activation;
 use crate::avm2::error::type_error;
 use crate::avm2::object::{ArrayObject, Object, TObject as _};
 use crate::avm2::regexp::RegExpFlags;
 use crate::avm2::value::Value;
 use crate::avm2::Error;
-use crate::avm2::{activation::Activation, array::ArrayStorage};
-use crate::string::{AvmString, WString};
+use crate::string::AvmString;
 
 pub use crate::avm2::object::reg_exp_allocator;
 
@@ -224,22 +224,21 @@ pub fn exec<'gc>(
             None => return Ok(Value::Null),
         };
 
-        let substrings = matched
+        let storage = matched
             .groups()
-            .map(|range| range.map(|r| WString::from(&text[r])));
-
-        let storage = ArrayStorage::from_iter(substrings.map(|s| match s {
-            None => Value::Undefined,
-            Some(s) => AvmString::new(activation.gc(), s).into(),
-        }));
+            .map(|range| {
+                range.map_or(Value::Undefined, |range| {
+                    activation.strings().substring(text, range).into()
+                })
+            })
+            .collect();
 
         let object = ArrayObject::from_storage(activation, storage);
 
         for (name, range) in matched.named_groups() {
-            let string = range.map_or_else(
-                || istr!(""),
-                |range| AvmString::new(activation.gc(), &text[range]),
-            );
+            let string = range.map_or(istr!(""), |range| {
+                activation.strings().substring(text, range)
+            });
 
             object.set_dynamic_property(
                 AvmString::new_utf8(activation.gc(), name),
