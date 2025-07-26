@@ -1,0 +1,36 @@
+15.12.1-1-0-1: The JSON lexical grammar treats whitespace as a token separator PASSED!
+15.12.1-1-0-2: <VT> is not valid JSON whitespace as specified by the production JSONWhitespace. PASSED!
+15.12.1-1-0-3: <FF> is not valid JSON whitespace as specified by the production JSONWhitespace. PASSED!
+15.12.1-1-0-4: <NBSP> is not valid JSON whitespace as specified by the production JSONWhitespace. PASSED!
+15.12.1-1-0-5: <ZWSPP> is not valid JSON whitespace as specified by the production JSONWhitespace. PASSED!
+15.12.1-1-0-6: <BOM> is not valid JSON whitespace as specified by the production JSONWhitespace. PASSED!
+15.12.1-1-0-7: other category z spaces are not valid JSON whitespace as specified by the production JSONWhitespace. PASSED!
+15.12.1-1-0-8: U+2028 and U+2029 are not valid JSON whitespace as specified by the production JSONWhitespace PASSED!
+15.12.1-1-0-9: Whitespace characters can appear before/after any JSONtoken PASSED!
+15.12.1-1-g1-1: The JSON lexical grammar treats <TAB> as a whitespace character PASSED!
+15.12.1-1-g1-1: <TAB> should produce a syntax error as whitespace results in two tokens PASSED!
+15.12.1-1-g1-2: The JSON lexical grammar treats <CR> as a whitespace character PASSED!
+15.12.1-1-g1-2: <CR> should produce a syntax error as whitespace results in two tokens PASSED!
+15.12.1-1-g1-3: The JSON lexical grammar treats <LF> as a whitespace character PASSED!
+15.12.1-1-g1-3: <LF> should produce a syntax error as whitespace results in two tokens PASSED!
+15.12.1-1-g1-4: The JSON lexical grammar treats <SP> as a whitespace character PASSED!
+15.12.1-1-g1-4: <SP> should produce a syntax error as whitespace results in two tokens PASSED!
+15.12.1-1-g2-1: JSONStrings can be written using double quotes PASSED!
+15.12.1-1-g2-2: JSONString may not be delimited by single quotes PASSED!
+15.12.1-1-g2-3: A JSONString may not be delimited by Uncode escaped quotes PASSED!
+15.12.1-1-g2-4: A JSONString must both begin and end with double quotes PASSED!
+15.12.1-1-g2-5: A JSONStrings can contain no JSONStringCharacters (Empty JSONStrings) PASSED!
+15.12.1-1-g4-1: The JSON lexical grammar does not allow a JSONStringCharacter to be any of the Unicode characters U+0000 thru U+0007 PASSED!
+15.12.1-1-g4-2: The JSON lexical grammar does not allow a JSONStringCharacter to be any of the Unicode characters U+0008 thru U+000F PASSED!
+15.12.1-1-g4-3: The JSON lexical grammar does not allow a JSONStringCharacter to be any of the Unicode characters U+0010 thru U+0017 PASSED!
+15.12.1-1-g4-4: The JSON lexical grammar does not allow a JSONStringCharacter to be any of the Unicode characters U+0018 thru U+001F PASSED!
+15.12.1.1-g5-1: The JSON lexical grammar allows Unicode escape sequences in a JSONString PASSED!
+15.12.1-1-g5-2: A JSONStringCharacter UnicodeEscape may not have fewer than 4 hex characters PASSED!
+15.12.1-1-g5-3: A JSONStringCharacter UnicodeEscape may not include any non=hex characters PASSED!
+15.12.1-1-g6-1: The JSON lexical grammer allows '/' as a JSONEscapeCharacter after '\' in a JSONString PASSED!
+15.12.1-1-g6-2: The JSON lexical grammer allows '' as a JSONEscapeCharacter after '\' in a JSONString PASSED!
+15.12.1-1-g6-3: The JSON lexical grammer allows 'b' as a JSONEscapeCharacter after '\' in a JSONString PASSED!
+15.12.1-1-g6-4: The JSON lexical grammer allows 'f' as a JSONEscapeCharacter after '\' in a JSONString PASSED!
+15.12.1-1-g6-5: The JSON lexical grammer allows 'n' as a JSONEscapeCharacter after '\' in a JSONString PASSED!
+15.12.1-1-g6-6: The JSON lexical grammer allows 'r' as a JSONEscapeCharacter after '\' in a JSONString PASSED!
+15.12.1-1-g6-7: The JSON lexical grammer allows 't' as a JSONEscapeCharacter after '\' in a JSONString PASSED!

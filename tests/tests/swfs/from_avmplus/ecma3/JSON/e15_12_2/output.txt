@@ -1,0 +1,12 @@
+15.12.2-0-1: JSON.parse must exist as a function PASSED!
+15.12.2.0-2: JSON.parse must exist as a function taking 2 parameters PASSED!
+15.12.2-2-1: JSON.parse - parsing an object where property name is a null character PASSED!
+15.12.2-2-2: JSON.parse - parsing an object where property name starts with a null character PASSED!
+15.12.2-2-3: JSON.parse - parsing an object where property name ends with a null character PASSED!
+15.12.2-2-4: JSON.parse - parsing an object where property name starts and ends with a null character PASSED!
+15.12.2-2-5: JSON.parse - parsing an object where property name middles with a null character PASSED!
+15.12.2-2-6: JSON.parse - parsing an object where property value is a null character PASSED!
+15.12.2-2-7: JSON.parse - parsing an object where property value starts with a null character PASSED!
+15.12.2-2-8: JSON.parse - parsing an object where property value ends with a null character PASSED!
+15.12.2-2-9: JSON.parse - parsing an object where property value starts and ends with a null character PASSED!
+15.12.2-2-10: JSON.parse - parsing an object where property value middles with a null character PASSED!
