@@ -47,29 +47,3 @@ impl DoubleEndedIterator for ChildIter<'_> {
         None
     }
 }
-
-/// Iterator that yields the ancestors of an XML node.
-pub struct AnscIter<'gc> {
-    next: Option<XmlNode<'gc>>,
-}
-
-impl<'gc> AnscIter<'gc> {
-    /// Construct a new `AnscIter` that lists the parents of an XML node (including itself).
-    pub fn for_node(node: XmlNode<'gc>) -> Self {
-        Self { next: Some(node) }
-    }
-}
-
-impl<'gc> Iterator for AnscIter<'gc> {
-    type Item = XmlNode<'gc>;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        let parent = self.next;
-
-        if let Some(parent) = parent {
-            self.next = parent.parent();
-        }
-
-        parent
-    }
-}
