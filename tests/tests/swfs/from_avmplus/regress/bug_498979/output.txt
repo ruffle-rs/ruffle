@@ -1,0 +1,1 @@
+Verify value when calling setter with * type PASSED!

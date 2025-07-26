@@ -1,0 +1,2 @@
+decodeURIComponent PASSED!
+decodeURI PASSED!
