@@ -13,9 +13,10 @@ use crate::events::{ClipEvent, ClipEventResult};
 use crate::prelude::*;
 use crate::string::AvmString;
 use crate::tag_utils::{SwfMovie, SwfSlice};
+use crate::utils::HasPrefixField;
 use crate::vminterface::Instantiator;
 use core::fmt;
-use gc_arena::barrier::unlock;
+use gc_arena::barrier::{field, unlock};
 use gc_arena::lock::{Lock, RefLock};
 use gc_arena::{Collect, Gc, Mutation};
 use ruffle_macros::istr;
@@ -37,21 +38,22 @@ impl fmt::Debug for Avm1Button<'_> {
     }
 }
 
-#[derive(Clone, Collect)]
+#[derive(Clone, Collect, HasPrefixField)]
 #[collect(no_drop)]
+#[repr(C, align(8))]
 pub struct Avm1ButtonData<'gc> {
+    base: InteractiveObjectBase<'gc>,
     cell: RefLock<Avm1ButtonDataMut<'gc>>,
     shared: Gc<'gc, ButtonShared>,
+    object: Lock<Option<Object<'gc>>>,
     state: Cell<ButtonState>,
     tracking: Cell<ButtonTracking>,
-    object: Lock<Option<Object<'gc>>>,
     initialized: Cell<bool>,
 }
 
 #[derive(Clone, Collect)]
 #[collect(no_drop)]
 struct Avm1ButtonDataMut<'gc> {
-    base: InteractiveObjectBase<'gc>,
     hit_area: BTreeMap<Depth, DisplayObject<'gc>>,
     #[collect(require_static)]
     hit_bounds: Rectangle<Twips>,
@@ -73,8 +75,8 @@ impl<'gc> Avm1Button<'gc> {
         Avm1Button(Gc::new(
             mc,
             Avm1ButtonData {
+                base: Default::default(),
                 cell: RefLock::new(Avm1ButtonDataMut {
-                    base: Default::default(),
                     container: ChildContainer::new(&source_movie.movie),
                     hit_area: BTreeMap::new(),
                     hit_bounds: Default::default(),
@@ -246,12 +248,12 @@ impl<'gc> Avm1Button<'gc> {
 
 impl<'gc> TDisplayObject<'gc> for Avm1Button<'gc> {
     fn base(&self) -> Ref<'_, DisplayObjectBase<'gc>> {
-        Ref::map(self.0.cell.borrow(), |r| &r.base.base)
+        self.0.base.base()
     }
 
     fn base_mut<'a>(&'a self, mc: &Mutation<'gc>) -> RefMut<'a, DisplayObjectBase<'gc>> {
-        let data = unlock!(Gc::write(mc, self.0), Avm1ButtonData, cell);
-        RefMut::map(data.borrow_mut(), |w| &mut w.base.base)
+        let base = field!(Gc::write(mc, self.0), Avm1ButtonData, base);
+        InteractiveObjectBase::base_mut(base)
     }
 
     fn instantiate(self, mc: &Mutation<'gc>) -> DisplayObject<'gc> {
@@ -423,13 +425,8 @@ impl<'gc> TDisplayObjectContainer<'gc> for Avm1Button<'gc> {
 }
 
 impl<'gc> TInteractiveObject<'gc> for Avm1Button<'gc> {
-    fn raw_interactive(&self) -> Ref<'_, InteractiveObjectBase<'gc>> {
-        Ref::map(self.0.cell.borrow(), |r| &r.base)
-    }
-
-    fn raw_interactive_mut(&self, mc: &Mutation<'gc>) -> RefMut<'_, InteractiveObjectBase<'gc>> {
-        let data = unlock!(Gc::write(mc, self.0), Avm1ButtonData, cell);
-        RefMut::map(data.borrow_mut(), |w| &mut w.base)
+    fn raw_interactive(self) -> Gc<'gc, InteractiveObjectBase<'gc>> {
+        HasPrefixField::as_prefix_gc(self.0)
     }
 
     fn as_displayobject(self) -> DisplayObject<'gc> {
@@ -626,7 +623,7 @@ impl<'gc> Avm1ButtonData<'gc> {
         condition: ButtonActionCondition,
     ) -> ClipEventResult {
         let mut handled = ClipEventResult::NotHandled;
-        if let Some(parent) = self.cell.borrow().base.base.parent {
+        if let Some(parent) = self.base.base().parent {
             for action in &self.shared.actions {
                 if action.conditions.matches(condition) {
                     // Note that AVM1 buttons run actions relative to their parent, not themselves.

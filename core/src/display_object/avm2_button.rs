@@ -19,10 +19,11 @@ use crate::events::{ClipEvent, ClipEventResult};
 use crate::frame_lifecycle::catchup_display_object_to_frame;
 use crate::prelude::*;
 use crate::tag_utils::{SwfMovie, SwfSlice};
+use crate::utils::HasPrefixField;
 use crate::vminterface::Instantiator;
 use core::fmt;
-use gc_arena::barrier::unlock;
-use gc_arena::lock::{Lock, RefLock};
+use gc_arena::barrier::{field, unlock};
+use gc_arena::lock::Lock;
 use gc_arena::{Collect, Gc, Mutation};
 use ruffle_render::filters::Filter;
 use std::cell::{Cell, Ref, RefCell, RefMut};
@@ -40,15 +41,13 @@ impl fmt::Debug for Avm2Button<'_> {
     }
 }
 
-#[derive(Clone, Collect)]
+#[derive(Clone, Collect, HasPrefixField)]
 #[collect(no_drop)]
+#[repr(C, align(8))]
 pub struct Avm2ButtonData<'gc> {
-    base: RefLock<InteractiveObjectBase<'gc>>,
+    base: InteractiveObjectBase<'gc>,
 
     shared: Gc<'gc, ButtonShared>,
-
-    /// The current button state to render.
-    state: Cell<ButtonState>,
 
     /// The display object tree to render when the button is in the UP state.
     up_state: Lock<Option<DisplayObject<'gc>>>,
@@ -62,9 +61,6 @@ pub struct Avm2ButtonData<'gc> {
     /// The display object tree to use for mouse hit checks.
     hit_area: Lock<Option<DisplayObject<'gc>>>,
 
-    /// The current tracking mode of this button.
-    tracking: Cell<ButtonTracking>,
-
     /// The class of this button.
     ///
     /// If not specified in `SymbolClass`, this will be
@@ -73,6 +69,12 @@ pub struct Avm2ButtonData<'gc> {
 
     /// The AVM2 representation of this button.
     object: Lock<Option<Avm2Object<'gc>>>,
+
+    /// The current button state to render.
+    state: Cell<ButtonState>,
+
+    /// The current tracking mode of this button.
+    tracking: Cell<ButtonTracking>,
 
     enabled: Cell<bool>,
     use_hand_cursor: Cell<bool>,
@@ -412,12 +414,12 @@ impl<'gc> Avm2Button<'gc> {
 
 impl<'gc> TDisplayObject<'gc> for Avm2Button<'gc> {
     fn base(&self) -> Ref<'_, DisplayObjectBase<'gc>> {
-        Ref::map(self.0.base.borrow(), |r| &r.base)
+        self.0.base.base()
     }
 
     fn base_mut<'a>(&'a self, mc: &Mutation<'gc>) -> RefMut<'a, DisplayObjectBase<'gc>> {
-        let data = unlock!(Gc::write(mc, self.0), Avm2ButtonData, base);
-        RefMut::map(data.borrow_mut(), |w| &mut w.base)
+        let base = field!(Gc::write(mc, self.0), Avm2ButtonData, base);
+        InteractiveObjectBase::base_mut(base)
     }
 
     fn instantiate(self, mc: &Mutation<'gc>) -> DisplayObject<'gc> {
@@ -693,12 +695,8 @@ impl<'gc> TDisplayObject<'gc> for Avm2Button<'gc> {
 }
 
 impl<'gc> TInteractiveObject<'gc> for Avm2Button<'gc> {
-    fn raw_interactive(&self) -> Ref<'_, InteractiveObjectBase<'gc>> {
-        self.0.base.borrow()
-    }
-
-    fn raw_interactive_mut(&self, mc: &Mutation<'gc>) -> RefMut<'_, InteractiveObjectBase<'gc>> {
-        unlock!(Gc::write(mc, self.0), Avm2ButtonData, base).borrow_mut()
+    fn raw_interactive(self) -> Gc<'gc, InteractiveObjectBase<'gc>> {
+        HasPrefixField::as_prefix_gc(self.0)
     }
 
     fn as_displayobject(self) -> DisplayObject<'gc> {

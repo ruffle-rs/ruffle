@@ -36,10 +36,11 @@ use crate::prelude::*;
 use crate::streams::NetStream;
 use crate::string::{AvmString, SwfStrExt as _, WStr, WString};
 use crate::tag_utils::{self, ControlFlow, DecodeResult, Error, SwfMovie, SwfSlice, SwfStream};
+use crate::utils::HasPrefixField;
 use crate::vminterface::{AvmObject, Instantiator};
 use bitflags::bitflags;
 use core::fmt;
-use gc_arena::barrier::unlock;
+use gc_arena::barrier::{field, unlock};
 use gc_arena::lock::{Lock, RefLock};
 use gc_arena::{Collect, Gc, GcWeak, Mutation};
 use ruffle_macros::istr;
@@ -146,40 +147,25 @@ impl<'gc> MovieClipWeak<'gc> {
     }
 }
 
-#[derive(Clone, Collect)]
+#[derive(Clone, Collect, HasPrefixField)]
 #[collect(no_drop)]
+#[repr(C, align(8))]
 pub struct MovieClipData<'gc> {
+    base: InteractiveObjectBase<'gc>,
     cell: RefLock<MovieClipDataMut<'gc>>,
     shared: Lock<Gc<'gc, MovieClipShared<'gc>>>,
-    tag_stream_pos: Cell<u64>,
-    current_frame: Cell<FrameNumber>,
-    #[collect(require_static)]
-    audio_stream: Cell<Option<SoundInstanceHandle>>,
-    object: Lock<Option<AvmObject<'gc>>>,
-    #[collect(require_static)]
-    clip_event_handlers: OnceCell<Box<[ClipEventHandler]>>,
-    #[collect(require_static)]
-    clip_event_flags: Cell<ClipEventFlag>,
-    flags: Cell<MovieClipFlags>,
-    /// This is lazily allocated on demand, to make `MovieClipData` smaller in the common case.
-    #[collect(require_static)]
-    drawing: OnceCell<Box<RefCell<Drawing>>>,
-    avm2_enabled: Cell<bool>,
 
-    /// Show a hand cursor when the clip is in button mode.
-    avm2_use_hand_cursor: Cell<bool>,
+    tag_stream_pos: Cell<u64>,
+
+    // If this movie was loaded from ImportAssets(2), this will be the parent movie.
+    importer_movie: Option<Arc<SwfMovie>>,
+
+    object: Lock<Option<AvmObject<'gc>>>,
+
+    drop_target: Lock<Option<DisplayObject<'gc>>>,
 
     /// A DisplayObject (doesn't need to be visible) to use for hit tests instead of this clip.
     hit_area: Lock<Option<DisplayObject<'gc>>>,
-
-    /// Force enable button mode, which causes all mouse-related events to
-    /// trigger on this clip rather than any input-eligible children.
-    button_mode: Cell<bool>,
-    last_queued_script_frame: Cell<Option<FrameNumber>>,
-    queued_script_frame: Cell<FrameNumber>,
-    has_pending_script: Cell<bool>,
-    queued_goto_frame: Cell<Option<FrameNumber>>,
-    drop_target: Lock<Option<DisplayObject<'gc>>>,
 
     /// List of tags queued up for the current frame.
     queued_tags: RefCell<HashMap<Depth, QueuedTagList>>,
@@ -192,14 +178,38 @@ pub struct MovieClipData<'gc> {
     /// `None` in an AVM2 movie.
     next_avm1_clip: Lock<Option<MovieClip<'gc>>>,
 
-    // If this movie was loaded from ImportAssets(2), this will be the parent movie.
-    importer_movie: Option<Arc<SwfMovie>>,
+    audio_stream: Cell<Option<SoundInstanceHandle>>,
+
+    #[collect(require_static)]
+    clip_event_handlers: OnceCell<Box<[ClipEventHandler]>>,
+    /// This is lazily allocated on demand, to make `MovieClipData` smaller in the common case.
+    #[collect(require_static)]
+    drawing: OnceCell<Box<RefCell<Drawing>>>,
+
+    last_queued_script_frame: Cell<Option<FrameNumber>>,
+    queued_script_frame: Cell<FrameNumber>,
+    queued_goto_frame: Cell<Option<FrameNumber>>,
+
+    current_frame: Cell<FrameNumber>,
+
+    flags: Cell<MovieClipFlags>,
+    clip_event_flags: Cell<ClipEventFlag>,
+
+    has_pending_script: Cell<bool>,
+
+    /// Force enable button mode, which causes all mouse-related events to
+    /// trigger on this clip rather than any input-eligible children.
+    button_mode: Cell<bool>,
+
+    avm2_enabled: Cell<bool>,
+
+    /// Show a hand cursor when the clip is in button mode.
+    avm2_use_hand_cursor: Cell<bool>,
 }
 
 #[derive(Clone, Collect)]
 #[collect(no_drop)]
 struct MovieClipDataMut<'gc> {
-    base: InteractiveObjectBase<'gc>,
     container: ChildContainer<'gc>,
     frame_scripts: Vec<Option<Avm2Object<'gc>>>,
     avm1_text_field_bindings: Vec<Avm1TextFieldBinding<'gc>>,
@@ -209,8 +219,8 @@ impl<'gc> MovieClipData<'gc> {
     fn new(shared: MovieClipShared<'gc>, mc: &Mutation<'gc>) -> Self {
         let movie = shared.movie();
         Self {
+            base: Default::default(),
             cell: RefLock::new(MovieClipDataMut {
-                base: Default::default(),
                 container: ChildContainer::new(&movie),
                 frame_scripts: Vec::new(),
                 avm1_text_field_bindings: Vec::new(),
@@ -323,9 +333,9 @@ impl<'gc> MovieClip<'gc> {
             movie.num_frames(),
             loader_info.map(|l| l.0),
         );
-        let mut data = MovieClipData::new(shared, activation.gc());
+        let data = MovieClipData::new(shared, activation.gc());
         data.flags.set(MovieClipFlags::PLAYING);
-        data.cell.get_mut().base.base.set_is_root(true);
+        data.base.base().set_is_root(true);
 
         let mc = MovieClip(Gc::new(activation.gc(), data));
         if let Some((_, loader_info)) = loader_info {
@@ -359,12 +369,11 @@ impl<'gc> MovieClip<'gc> {
             "Called replace_movie on a clip with LoaderInfo set"
         );
 
-        {
-            let mut write = unlock!(write, MovieClipData, cell).borrow_mut();
-            write.base.base.reset_for_movie_load();
-            write.base.base.set_is_root(is_root);
-            write.container = ChildContainer::new(&movie);
-        }
+        write.base.base().reset_for_movie_load();
+        write.base.base().set_is_root(is_root);
+
+        unlock!(write, MovieClipData, cell).borrow_mut().container = ChildContainer::new(&movie);
+
         unlock!(write, MovieClipData, shared).set(Gc::new(
             context.gc(),
             MovieClipShared::with_data(
@@ -2235,12 +2244,12 @@ impl<'gc> MovieClip<'gc> {
 
 impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
     fn base(&self) -> Ref<'_, DisplayObjectBase<'gc>> {
-        Ref::map(self.0.cell.borrow(), |r| &r.base.base)
+        self.0.base.base()
     }
 
     fn base_mut<'a>(&'a self, mc: &Mutation<'gc>) -> RefMut<'a, DisplayObjectBase<'gc>> {
-        let write = unlock!(Gc::write(mc, self.0), MovieClipData, cell);
-        RefMut::map(write.borrow_mut(), |r| &mut r.base.base)
+        let base = field!(Gc::write(mc, self.0), MovieClipData, base);
+        InteractiveObjectBase::base_mut(base)
     }
 
     fn instantiate(self, mc: &Mutation<'gc>) -> DisplayObject<'gc> {
@@ -2614,13 +2623,8 @@ impl<'gc> TDisplayObjectContainer<'gc> for MovieClip<'gc> {
 }
 
 impl<'gc> TInteractiveObject<'gc> for MovieClip<'gc> {
-    fn raw_interactive(&self) -> Ref<'_, InteractiveObjectBase<'gc>> {
-        Ref::map(self.0.cell.borrow(), |r| &r.base)
-    }
-
-    fn raw_interactive_mut(&self, mc: &Mutation<'gc>) -> RefMut<'_, InteractiveObjectBase<'gc>> {
-        let write = unlock!(Gc::write(mc, self.0), MovieClipData, cell);
-        RefMut::map(write.borrow_mut(), |r| &mut r.base)
+    fn raw_interactive(self) -> Gc<'gc, InteractiveObjectBase<'gc>> {
+        HasPrefixField::as_prefix_gc(self.0)
     }
 
     fn as_displayobject(self) -> DisplayObject<'gc> {

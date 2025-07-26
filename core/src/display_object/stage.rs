@@ -19,9 +19,10 @@ use crate::focus_tracker::FocusTracker;
 use crate::prelude::*;
 use crate::string::{FromWStr, WStr};
 use crate::tag_utils::SwfMovie;
+use crate::utils::HasPrefixField;
 use crate::vminterface::Instantiator;
 use bitflags::bitflags;
-use gc_arena::barrier::unlock;
+use gc_arena::barrier::{field, unlock};
 use gc_arena::{Collect, Gc, Lock, Mutation, RefLock};
 use ruffle_macros::istr;
 use ruffle_render::backend::ViewportDimensions;
@@ -48,20 +49,49 @@ impl fmt::Debug for Stage<'_> {
     }
 }
 
-#[derive(Clone, Collect)]
+#[derive(Clone, Collect, HasPrefixField)]
 #[collect(no_drop)]
+#[repr(C, align(8))]
 pub struct StageData<'gc> {
     /// Base properties for interactive display objects.
     ///
     /// This particular base has additional constraints currently not
     /// expressible by the type system. Notably, this should never have a
     /// parent, as the stage does not respect it.
-    base: RefLock<InteractiveObjectBase<'gc>>,
+    base: InteractiveObjectBase<'gc>,
 
     /// The list of all children of the stage.
     ///
     /// Stage children are exposed to AVM1 as `_level*n*` on all stage objects.
     child: RefLock<ChildContainer<'gc>>,
+
+    /// The AVM2 view of this stage object.
+    avm2_object: Lock<Option<Avm2Object<'gc>>>,
+
+    /// The AVM2 'LoaderInfo' object for this stage object
+    loader_info: Lock<Option<Avm2Object<'gc>>>,
+
+    /// An array of AVM2 'Stage3D' instances
+    stage3ds: RefLock<Vec<Avm2Object<'gc>>>,
+
+    /// A tracker for the current keyboard focused element
+    focus_tracker: FocusTracker<'gc>,
+
+    /// The swf that registered this stage
+    movie: RefCell<Arc<SwfMovie>>,
+
+    /// The dimensions of the SWF file.
+    movie_size: Cell<(u32, u32)>,
+
+    /// The final viewport transformation matrix applied
+    /// when rendering the stage. This includes the HiDPI scale factor,
+    /// and stage alignment translation. Neither of those are included
+    /// in the ActionScript-exposed `Stage.matrix` (which is always the
+    /// identity matrix unless explicitly set from ActionScript)
+    viewport_matrix: Cell<Matrix>,
+
+    /// The bounds of the current viewport in twips, used for culling.
+    view_bounds: Cell<Rectangle<Twips>>,
 
     /// The stage background.
     ///
@@ -70,9 +100,6 @@ pub struct StageData<'gc> {
 
     /// Determines how player content is resized to fit the stage.
     letterbox: Cell<Letterbox>,
-
-    /// The dimensions of the SWF file.
-    movie_size: Cell<(u32, u32)>,
 
     /// The quality settings of the stage.
     quality: Cell<StageQuality>,
@@ -108,9 +135,6 @@ pub struct StageData<'gc> {
     /// This setting is currently ignored in Ruffle.
     use_bitmap_downsampling: Cell<bool>,
 
-    /// The bounds of the current viewport in twips, used for culling.
-    view_bounds: Cell<Rectangle<Twips>>,
-
     /// The window mode of the viewport.
     ///
     /// Only used on web to control how the Flash content layers with other content on the page.
@@ -121,29 +145,6 @@ pub struct StageData<'gc> {
 
     /// Whether to show default context menu items
     show_menu: Cell<bool>,
-
-    /// The AVM2 view of this stage object.
-    avm2_object: Lock<Option<Avm2Object<'gc>>>,
-
-    /// The AVM2 'LoaderInfo' object for this stage object
-    loader_info: Lock<Option<Avm2Object<'gc>>>,
-
-    /// An array of AVM2 'Stage3D' instances
-    stage3ds: RefLock<Vec<Avm2Object<'gc>>>,
-
-    /// The swf that registered this stage
-    movie: RefCell<Arc<SwfMovie>>,
-
-    /// The final viewport transformation matrix applied
-    /// when rendering the stage. This includes the HiDPI scale factor,
-    /// and stage alignment translation. Neither of those are included
-    /// in the ActionScript-exposed `Stage.matrix` (which is always the
-    /// identity matrix unless explicitly set from ActionScript)
-    #[collect(require_static)]
-    viewport_matrix: Cell<Matrix>,
-
-    /// A tracker for the current keyboard focused element
-    focus_tracker: FocusTracker<'gc>,
 }
 
 impl<'gc> Stage<'gc> {
@@ -733,12 +734,12 @@ impl<'gc> Stage<'gc> {
 
 impl<'gc> TDisplayObject<'gc> for Stage<'gc> {
     fn base(&self) -> Ref<'_, DisplayObjectBase<'gc>> {
-        Ref::map(self.0.base.borrow(), |r| &r.base)
+        self.0.base.base()
     }
 
     fn base_mut<'a>(&'a self, mc: &Mutation<'gc>) -> RefMut<'a, DisplayObjectBase<'gc>> {
-        let base_mut = unlock!(Gc::write(mc, self.0), StageData, base).borrow_mut();
-        RefMut::map(base_mut, |w| &mut w.base)
+        let base = field!(Gc::write(mc, self.0), StageData, base);
+        InteractiveObjectBase::base_mut(base)
     }
 
     fn instantiate(self, gc_context: &Mutation<'gc>) -> DisplayObject<'gc> {
@@ -913,12 +914,8 @@ impl<'gc> TDisplayObjectContainer<'gc> for Stage<'gc> {
 }
 
 impl<'gc> TInteractiveObject<'gc> for Stage<'gc> {
-    fn raw_interactive(&self) -> Ref<'_, InteractiveObjectBase<'gc>> {
-        self.0.base.borrow()
-    }
-
-    fn raw_interactive_mut(&self, mc: &Mutation<'gc>) -> RefMut<'_, InteractiveObjectBase<'gc>> {
-        unlock!(Gc::write(mc, self.0), StageData, base).borrow_mut()
+    fn raw_interactive(self) -> Gc<'gc, InteractiveObjectBase<'gc>> {
+        HasPrefixField::as_prefix_gc(self.0)
     }
 
     fn as_displayobject(self) -> DisplayObject<'gc> {

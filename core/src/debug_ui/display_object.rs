@@ -219,7 +219,7 @@ impl DisplayObjectWindow {
                     let mut enabled = object.mouse_enabled();
                     Checkbox::new(&mut enabled, "Enabled").ui(ui);
                     if enabled != object.mouse_enabled() {
-                        object.set_mouse_enabled(context.gc(), enabled);
+                        object.set_mouse_enabled(enabled);
                     }
                 });
                 ui.end_row();
@@ -229,7 +229,7 @@ impl DisplayObjectWindow {
                     let mut enabled = object.double_click_enabled();
                     Checkbox::new(&mut enabled, "Enabled").ui(ui);
                     if enabled != object.double_click_enabled() {
-                        object.set_double_click_enabled(context.gc(), enabled);
+                        object.set_double_click_enabled(enabled);
                     }
                 });
                 ui.end_row();
@@ -251,9 +251,9 @@ impl DisplayObjectWindow {
                     Checkbox::without_text(&mut enabled).ui(ui);
                     if enabled != tab_index.is_some() {
                         if enabled {
-                            object.set_tab_index(context, Some(0));
+                            object.set_tab_index(Some(0));
                         } else {
-                            object.set_tab_index(context, None);
+                            object.set_tab_index(None);
                         }
                     }
 
@@ -261,7 +261,7 @@ impl DisplayObjectWindow {
                         let mut new_tab_index: usize = tab_index;
                         DragValue::new(&mut new_tab_index).ui(ui);
                         if new_tab_index != tab_index {
-                            object.set_tab_index(context, Some(new_tab_index as i32));
+                            object.set_tab_index(Some(new_tab_index as i32));
                         }
                     } else {
                         ui.label("None");
@@ -284,7 +284,7 @@ impl DisplayObjectWindow {
                         }
                     });
                 if new_focus_rect != focus_rect {
-                    object.set_focus_rect(context.gc(), new_focus_rect);
+                    object.set_focus_rect(new_focus_rect);
                 }
                 ui.end_row();
 

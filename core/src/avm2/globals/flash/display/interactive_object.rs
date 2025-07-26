@@ -27,7 +27,7 @@ pub fn get_mouse_enabled<'gc>(
 
 /// Implements `InteractiveObject.mouseEnabled`'s setter.
 pub fn set_mouse_enabled<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    _activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -38,7 +38,7 @@ pub fn set_mouse_enabled<'gc>(
         .and_then(|dobj| dobj.as_interactive())
     {
         let value = args.get_bool(0);
-        int.set_mouse_enabled(activation.gc(), value);
+        int.set_mouse_enabled(value);
     }
 
     Ok(Value::Undefined)
@@ -64,7 +64,7 @@ pub fn get_double_click_enabled<'gc>(
 
 /// Implements `InteractiveObject.doubleClickEnabled`'s setter.
 pub fn set_double_click_enabled<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    _activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -75,7 +75,7 @@ pub fn set_double_click_enabled<'gc>(
         .and_then(|dobj| dobj.as_interactive())
     {
         let value = args.get_bool(0);
-        int.set_double_click_enabled(activation.gc(), value);
+        int.set_double_click_enabled(value);
     }
 
     Ok(Value::Undefined)
@@ -181,7 +181,7 @@ pub fn set_tab_index<'gc>(
         if value < -1 {
             return Err(make_error_2027(activation, value));
         }
-        obj.set_tab_index(activation.context, Some(value));
+        obj.set_tab_index(Some(value));
     }
 
     Ok(Value::Undefined)
@@ -202,7 +202,7 @@ pub fn get_focus_rect<'gc>(
 }
 
 pub fn set_focus_rect<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    _activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -218,7 +218,7 @@ pub fn set_focus_rect<'gc>(
             // everything else sets focusRect to false
             _ => Some(false),
         };
-        obj.set_focus_rect(activation.gc(), value);
+        obj.set_focus_rect(value);
     }
 
     Ok(Value::Null)
