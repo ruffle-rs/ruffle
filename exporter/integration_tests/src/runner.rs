@@ -21,6 +21,7 @@ struct TestOptions {
     pub ignore: bool,
     pub input_dir: Option<String>,
     pub output_dir: Option<String>,
+    pub expect_error: Option<String>,
 }
 
 impl Default for TestOptions {
@@ -31,6 +32,7 @@ impl Default for TestOptions {
             ignore: false,
             input_dir: None,
             output_dir: None,
+            expect_error: None,
         }
     }
 }
@@ -84,7 +86,13 @@ fn load_test(params: TestLoaderParams) -> Trial {
     let descriptor_path = test_dir.join("test.toml").unwrap();
 
     let options = TestOptions::read(&descriptor_path)
-        .map_err(|e| anyhow!("Failed to parse {}: {e}", descriptor_path.as_str()))
+        .map_err(|e| {
+            anyhow!(
+                "Failed to parse {} in {}: {e}",
+                descriptor_path.as_str(),
+                test_dir_real.to_string_lossy()
+            )
+        })
         .expect("Failed to parse test descriptor");
     let ignore = options.ignore;
     let swf_path = test_dir
@@ -113,7 +121,7 @@ fn load_test(params: TestLoaderParams) -> Trial {
 
         // We need a global mutex for the current working directory,
         // as we don't want it being set concurrently.
-        let _cwd_guard = CWD_MUTEX.lock().unwrap();
+        let _cwd_guard = CWD_MUTEX.lock().unwrap_or_else(|e| e.into_inner());
         std::env::set_current_dir(&actual_dir_real)
             .map_err(|e| anyhow!("Failed to change working directory: {e}"))?;
 
@@ -126,7 +134,30 @@ fn load_test(params: TestLoaderParams) -> Trial {
         let opt = Opt::try_parse_from(&args)
             .map_err(|e| anyhow!("Error parsing args {:?}:\n{e}", &args))?;
 
-        run_main(opt).map_err(|e| anyhow!("Failed executing exporter:\n{e}"))?;
+        let result = run_main(opt);
+        match (result, &options.expect_error) {
+            (Ok(()), None) => {
+                // Works as expected!
+            }
+            (Ok(()), Some(_)) => {
+                return Err(
+                    anyhow!("Expected exporter to return an error, but it succeeded").into(),
+                );
+            }
+            (Err(actual), None) => {
+                return Err(anyhow!("Failed executing exporter:\n{actual}").into());
+            }
+            (Err(actual), Some(expected)) => {
+                let actual_string = actual.to_string();
+                if &actual_string != expected {
+                    return Err(anyhow!(
+                        "Unexpected error reported by exporter ({}):\n{actual_string}",
+                        actual_string.len()
+                    )
+                    .into());
+                }
+            }
+        }
 
         verify_dirs(&actual_dir, &output_dir, &input_dir)
             .map_err(|err| anyhow!("Failed to verify files: {err}"))?;
@@ -142,38 +173,40 @@ fn load_test(params: TestLoaderParams) -> Trial {
 }
 
 fn verify_dirs(actual_dir: &VfsPath, expected_dir: &VfsPath, input_dir: &VfsPath) -> Result<()> {
-    for expected_file in expected_dir
-        .walk_dir()
-        .map_err(|err| anyhow!("Error reading output directory: {err}"))?
-    {
-        let expected_file = expected_file?;
-        let actual_file = rebase_path(&expected_file, expected_dir, actual_dir)?;
+    if matches!(expected_dir.exists(), Ok(true)) {
+        for expected_file in expected_dir
+            .walk_dir()
+            .map_err(|err| anyhow!("Error reading output directory: {err}"))?
+        {
+            let expected_file = expected_file?;
+            let actual_file = rebase_path(&expected_file, expected_dir, actual_dir)?;
 
-        if expected_file.is_dir()? {
-            if !actual_file.is_dir()? {
-                return Err(anyhow!(
-                    "Expected {} to be a directory",
-                    actual_file.as_str()
-                ));
-            }
-        } else if !actual_file.is_file()? {
-            return Err(anyhow!("Expected {} to be a file", actual_file.as_str()));
-        } else {
-            let expected_content = read_bytes(&expected_file)?;
-            let actual_content = read_bytes(&actual_file)?;
-
-            if expected_file.as_str().ends_with(".png") {
-                if !images_equal(&expected_content, &actual_content)? {
+            if expected_file.is_dir()? {
+                if !actual_file.is_dir()? {
                     return Err(anyhow!(
-                        "Image {} is different than expected",
+                        "Expected {} to be a directory",
                         actual_file.as_str()
                     ));
                 }
-            } else if expected_content != actual_content {
-                return Err(anyhow!(
-                    "File {} has different content than expected",
-                    actual_file.as_str()
-                ));
+            } else if !actual_file.is_file()? {
+                return Err(anyhow!("Expected {} to be a file", actual_file.as_str()));
+            } else {
+                let expected_content = read_bytes(&expected_file)?;
+                let actual_content = read_bytes(&actual_file)?;
+
+                if expected_file.as_str().ends_with(".png") {
+                    if !images_equal(&expected_content, &actual_content)? {
+                        return Err(anyhow!(
+                            "Image {} is different than expected",
+                            actual_file.as_str()
+                        ));
+                    }
+                } else if expected_content != actual_content {
+                    return Err(anyhow!(
+                        "File {} has different content than expected",
+                        actual_file.as_str()
+                    ));
+                }
             }
         }
     }
