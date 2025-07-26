@@ -652,6 +652,17 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         self.bound_class
     }
 
+    /// Get the default XML namespace for this activation.
+    pub fn default_xml_namespace(&mut self) -> Option<Namespace<'gc>> {
+        // Get the default XML namespace by walking up the call stack
+        // This matches avmplus's MethodFrame::findDxns behavior
+        self.context
+            .avm2
+            .call_stack()
+            .borrow()
+            .find_default_xml_namespace(self)
+    }
+
     pub fn run_actions(&mut self, method: Method<'gc>) -> Result<Value<'gc>, Error<'gc>> {
         // The method must be verified at this point
 
@@ -819,7 +830,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
                 Op::BkptLine { line_num } => self.op_bkpt_line(*line_num),
                 Op::Timestamp => self.op_timestamp(),
                 Op::TypeOf => self.op_type_of(),
-                Op::Dxns { .. } => self.op_dxns(),
+                Op::Dxns { string } => self.op_dxns(*string),
                 Op::DxnsLate => self.op_dxns_late(),
                 Op::EscXAttr => self.op_esc_xattr(),
                 Op::EscXElem => self.op_esc_elem(),
@@ -2580,14 +2591,57 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     }
 
     /// Implements `Op::Dxns`
-    fn op_dxns(&mut self) -> Result<(), Error<'gc>> {
-        Err("Unimplemented opcode Dxns.".into())
+    fn op_dxns(&mut self, string: AvmAtom<'gc>) -> Result<(), Error<'gc>> {
+        // Convert the AvmAtom to an AvmString
+        let uri = AvmString::from(string);
+
+        // Create a namespace from the URI string
+        let namespace = Namespace::package(uri, self.avm2().root_api_version, self.strings());
+
+        // Set the default XML namespace for the current method frame
+        self.context
+            .avm2
+            .call_stack()
+            .borrow_mut(self.gc())
+            .set_default_xml_namespace(namespace);
+
+        Ok(())
     }
 
     /// Implements `Op::DxnsLate`
     fn op_dxns_late(&mut self) -> Result<(), Error<'gc>> {
-        let _ = self.pop_stack();
-        Err("Unimplemented opcode DxnsLate.".into())
+        let namespace_value = self.pop_stack();
+
+        // Convert the value to a namespace
+        let namespace = match namespace_value {
+            Value::Object(Object::NamespaceObject(ns)) => ns.namespace(),
+            Value::String(uri) => {
+                // Create a namespace from the URI string
+                Namespace::package(uri, self.avm2().root_api_version, self.strings())
+            }
+            Value::Undefined | Value::Null => {
+                // Empty namespace
+                Namespace::package(
+                    AvmString::new_utf8(self.gc(), ""),
+                    self.avm2().root_api_version,
+                    self.strings(),
+                )
+            }
+            _ => {
+                // Try to coerce to string and create namespace
+                let uri = namespace_value.coerce_to_string(self)?;
+                Namespace::package(uri, self.avm2().root_api_version, self.strings())
+            }
+        };
+
+        // Set the default XML namespace for the current method frame
+        self.context
+            .avm2
+            .call_stack()
+            .borrow_mut(self.gc())
+            .set_default_xml_namespace(namespace);
+
+        Ok(())
     }
 
     /// Implements `Op::EscXAttr`

@@ -3876,7 +3876,7 @@ checksum = "3d77244ce2d584cd84f6a15f86195b8c9b2a0dfbfd817c09e0464244091a58ed"
 dependencies = [
  "base64",
  "indexmap",
- "quick-xml",
+ "quick-xml 0.37.5 (registry+https://github.com/rust-lang/crates.io-index)",
  "serde",
  "time",
 ]
@@ -4045,6 +4045,14 @@ name = "quick-xml"
 version = "0.37.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "331e97a1af0bf59823e6eadffe373d7b27f485be8748f71471c662c1f269b7fb"
+dependencies = [
+ "memchr",
+]
+
+[[package]]
+name = "quick-xml"
+version = "0.37.5"
+source = "git+https://github.com/jarca0123/quick-xml.git?branch=ruffle#ce7a2ee078cd01876a2c1fd4d402d65f818254c5"
 dependencies = [
  "memchr",
 ]
@@ -4420,7 +4428,7 @@ dependencies = [
  "num-traits",
  "percent-encoding",
  "png",
- "quick-xml",
+ "quick-xml 0.37.5 (git+https://github.com/jarca0123/quick-xml.git?branch=ruffle)",
  "rand",
  "realfft",
  "regress",
@@ -6347,7 +6355,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "896fdafd5d28145fce7958917d69f2fd44469b1d4e861cb5961bcbeebc6d1484"
 dependencies = [
  "proc-macro2",
- "quick-xml",
+ "quick-xml 0.37.5 (registry+https://github.com/rust-lang/crates.io-index)",
  "quote",
 ]
 

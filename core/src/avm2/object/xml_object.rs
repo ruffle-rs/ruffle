@@ -14,6 +14,7 @@ use crate::utils::HasPrefixField;
 use core::fmt;
 use gc_arena::barrier::unlock;
 use gc_arena::{lock::Lock, Collect, Gc, GcWeak, Mutation};
+use ruffle_macros::istr;
 use ruffle_wstr::WString;
 
 use super::xml_list_object::{E4XOrXml, XmlOrXmlListObject};
@@ -295,7 +296,8 @@ impl<'gc> TObject<'gc> for XmlObject<'gc> {
         multiname: &Multiname<'gc>,
     ) -> Option<XmlListObject<'gc>> {
         let mut descendants = Vec::new();
-        self.0.node.get().descendants(multiname, &mut descendants);
+        let multiname = handle_input_multiname(multiname.clone(), activation);
+        self.0.node.get().descendants(&multiname, &mut descendants);
 
         let list = XmlListObject::new_with_children(activation, descendants, None, None);
         // NOTE: avmplus does not set a target property/object here, but if there was at least one child
@@ -382,6 +384,13 @@ impl<'gc> TObject<'gc> for XmlObject<'gc> {
     ) -> Result<bool, Error<'gc>> {
         let multiname = handle_input_multiname(name.clone(), activation);
         Ok(self.has_property(&multiname))
+    }
+
+    fn property_is_enumerable(&self, name: AvmString<'gc>) -> bool {
+        // XML objects only have the "0" property as enumerable
+        // This matches the avmplus implementation where XML_AS3_propertyIsEnumerable
+        // returns true only for the "0" property
+        &name == b"0"
     }
 
     fn has_own_property_string(
@@ -541,7 +550,13 @@ impl<'gc> TObject<'gc> for XmlObject<'gc> {
                 // 12.b.iii. Create a new XML object y with y.[[Name]] = name, y.[[Class]] = "element" and y.[[Parent]] = x
                 let node = E4XNode::element(
                     activation.gc(),
-                    name.explicit_namespace().map(E4XNamespace::new_uri),
+                    activation
+                        .default_xml_namespace()
+                        .map(|ns| E4XNamespace {
+                            prefix: None,
+                            uri: ns.as_uri_opt().unwrap_or_else(|| istr!("")),
+                        })
+                        .or_else(|| name.explicit_namespace().map(E4XNamespace::new_uri)),
                     name.local_name().unwrap(),
                     Some(self_node),
                 );
@@ -690,7 +705,7 @@ impl<'gc> TObject<'gc> for XmlObject<'gc> {
     }
 }
 
-fn handle_input_multiname<'gc>(
+pub fn handle_input_multiname<'gc>(
     name: Multiname<'gc>,
     activation: &mut Activation<'_, 'gc>,
 ) -> Multiname<'gc> {
@@ -699,29 +714,45 @@ fn handle_input_multiname<'gc>(
     // NOTE: It is very important the code within the if-statement is not run
     // when the passed name has the Any namespace. Otherwise, we run the risk of
     // creating a NamespaceSet::Multiple with an Any namespace in it.
-    if !name.has_explicit_namespace()
-        && !name.is_attribute()
-        && !name.is_any_name()
-        && !name.is_any_namespace()
-    {
-        if let Some(mut new_name) = name
-            .local_name()
-            .map(|name| string_to_multiname(activation, name))
-        {
-            // Copy the namespaces from the previous name,
-            // but make sure to definitely include the public namespace.
-            if !new_name.is_any_namespace() {
-                let mut ns = Vec::new();
-                ns.extend(name.namespace_set());
-                if !name.contains_public_namespace() {
-                    ns.push(activation.avm2().namespaces.public_all());
-                }
-                new_name.set_ns(NamespaceSet::new(ns, activation.gc()));
+    if !name.has_explicit_namespace() && !name.is_any_name() && !name.is_any_namespace() {
+        if let Some(local_name) = name.local_name() {
+            // Check if the original name was an attribute
+            let was_attribute = name.is_attribute() || local_name.starts_with(b'@');
+
+            let new_name = string_to_multiname(activation, local_name);
+
+            if new_name.is_any_namespace() {
+                // If the name is an Any namespace, we do not need to do anything
+                // since it will match everything anyway.
+                return new_name;
             }
 
-            return new_name;
+            // since we did not find a match for it in our namespace set
+            let default_namespace = activation
+                .default_xml_namespace()
+                .unwrap_or_else(|| activation.avm2().namespaces.public_all());
+
+            // Collect all Namespace variants from the original name
+            let mut new_namespaces: Vec<_> = name
+                .namespace_set()
+                .iter()
+                .filter(|ns| ns.is_namespace())
+                .cloned()
+                .collect();
+            // Add the default namespace if not already present
+            if !new_namespaces
+                .iter()
+                .any(|ns| ns.as_uri_opt() == default_namespace.as_uri_opt())
+            {
+                new_namespaces.push(default_namespace);
+            }
+            let mut result = new_name.clone();
+            let namespace_set = NamespaceSet::new(new_namespaces, activation.gc());
+            result.set_ns(namespace_set);
+            // Ensure the attribute flag is preserved
+            result.set_is_attribute(was_attribute);
+            return result;
         }
     }
-
     name
 }

@@ -349,6 +349,14 @@ impl<'gc> Method<'gc> {
             .intersects(AbcMethodFlags::NEED_ARGUMENTS | AbcMethodFlags::NEED_REST)
     }
 
+    /// Determine if this method has a local default XML namespace declaration.
+    ///
+    /// Methods with this flag should use the unnamed namespace (empty string)
+    /// as their default XML namespace rather than inheriting from the global scope.
+    pub fn sets_dxns(&self) -> bool {
+        self.method().flags.contains(AbcMethodFlags::SET_DXNS)
+    }
+
     /// Check if this method needs `arguments`.
     pub fn needs_arguments_object(&self) -> bool {
         self.method().flags.contains(AbcMethodFlags::NEED_ARGUMENTS)

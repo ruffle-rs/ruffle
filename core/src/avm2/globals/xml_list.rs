@@ -2,7 +2,7 @@
 
 pub use crate::avm2::object::xml_list_allocator;
 use crate::avm2::{
-    e4x::{name_to_multiname, simple_content_to_string, E4XNode, E4XNodeKind},
+    e4x::{name_to_multiname, simple_content_to_string, E4XNamespace, E4XNode, E4XNodeKind},
     error::make_error_1086,
     globals::methods::xml as xml_methods,
     multiname::Multiname,
@@ -40,7 +40,10 @@ pub fn init<'gc>(
     let ignore_comments = args.get_bool(1);
     let ignore_processing_instructions = args.get_bool(2);
     let ignore_whitespace = args.get_bool(3);
-
+    let default_namespace = activation.default_xml_namespace().map(|ns| E4XNamespace {
+        prefix: None,
+        uri: ns.as_uri(activation.strings()),
+    });
     if let Some(obj) = value.as_object() {
         if let Some(xml) = obj.as_xml_object() {
             // Note - we re-use the XML object that was passed in, which makes
@@ -52,12 +55,13 @@ pub fn init<'gc>(
         }
     }
 
-    match E4XNode::parse(
+    match E4XNode::parse_with_default_namespace(
         value,
         activation,
         ignore_comments,
         ignore_processing_instructions,
         ignore_whitespace,
+        default_namespace,
     ) {
         Ok(nodes) => {
             this.set_children(

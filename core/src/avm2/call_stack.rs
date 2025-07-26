@@ -1,6 +1,9 @@
+use crate::avm2::activation::Activation;
 use crate::avm2::class::Class;
 use crate::avm2::function::display_function;
 use crate::avm2::method::Method;
+use crate::avm2::AvmString;
+use crate::avm2::Namespace;
 use crate::string::WString;
 use gc_arena::Collect;
 
@@ -9,6 +12,8 @@ use gc_arena::Collect;
 pub struct CallNode<'gc> {
     method: Method<'gc>,
     class: Option<Class<'gc>>,
+    /// The default XML namespace for this method frame, if set.
+    default_xml_namespace: Option<Namespace<'gc>>,
 }
 
 #[derive(Collect, Clone)]
@@ -23,7 +28,11 @@ impl<'gc> CallStack<'gc> {
     }
 
     pub fn push(&mut self, method: Method<'gc>, class: Option<Class<'gc>>) {
-        self.stack.push(CallNode { method, class })
+        self.stack.push(CallNode {
+            method,
+            class,
+            default_xml_namespace: None,
+        });
     }
 
     pub fn pop(&mut self) -> Option<CallNode<'gc>> {
@@ -61,6 +70,41 @@ impl<'gc> CallStack<'gc> {
 
     pub fn is_empty(&self) -> bool {
         self.stack.is_empty()
+    }
+
+    /// Set the default XML namespace for the current method frame.
+    /// This is called by the DxnsLate opcode.
+    pub fn set_default_xml_namespace(&mut self, namespace: Namespace<'gc>) {
+        if let Some(call_node) = self.stack.last_mut() {
+            call_node.default_xml_namespace = Some(namespace);
+        }
+    }
+
+    /// Get the default XML namespace by walking up the call stack.
+    /// This matches avmplus's MethodFrame::findDxns behavior.
+    pub fn find_default_xml_namespace(
+        &self,
+        activation: &mut Activation<'_, 'gc>,
+    ) -> Option<Namespace<'gc>> {
+        // Walk backwards through the call stack (most recent first)
+        for call_node in self.stack.iter().rev() {
+            // If this frame has an explicit DXNS declaration, return it
+            if let Some(ns) = call_node.default_xml_namespace {
+                return Some(ns);
+            }
+
+            // If this method has the SET_DXNS flag, it means it has a local
+            // default xml namespace declaration, so the default should be the
+            // unnamed namespace (empty string) rather than inheriting from global scope
+            if call_node.method.sets_dxns() {
+                return Some(Namespace::package(
+                    AvmString::new_utf8(activation.gc(), ""),
+                    activation.avm2().root_api_version,
+                    activation.strings(),
+                ));
+            }
+        }
+        None
     }
 }
 

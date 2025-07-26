@@ -29,7 +29,7 @@ bitflags = { workspace = true }
 smallvec = { workspace = true }
 num-traits = { workspace = true }
 num-derive = { workspace = true }
-quick-xml = "0.37.5"
+quick-xml = { git = "https://github.com/jarca0123/quick-xml.git", branch = "ruffle" }
 url = { workspace = true }
 weak-table = "0.3.2"
 percent-encoding = { workspace = true }
