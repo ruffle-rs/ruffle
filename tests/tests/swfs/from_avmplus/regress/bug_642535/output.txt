@@ -1,0 +1,8 @@
+var x1:uint = 0xffffffff; x1 /= 3 PASSED!
+var x2:uint = 0xffffffff; x2 /= -3 PASSED!
+var y1:uint = 0xffffffff; y1 /= 32 PASSED!
+var y2:uint = 0xffffffff; y2 /= -32 PASSED!
+var z1:uint = 0xffffffff; z1 /= 0xffffffff PASSED!
+var z2:int = -1; z2 /= 0xffffffff PASSED!
+var w1:uint = 0xffffffff; w1 /= -2147483648 PASSED!
+var w2:int = -1; w2 /= -2147483648 PASSED!

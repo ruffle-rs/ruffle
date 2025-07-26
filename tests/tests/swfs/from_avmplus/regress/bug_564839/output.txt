@@ -1,0 +1,21 @@
+new Number 44 PASSED!
+new Number 4%00 PASSED!
+new Number 4%004 PASSED!
+new Number 4.2%00 PASSED!
+new Number 4%00.2 PASSED!
+new Number 4.%002 PASSED!
+new Number 4.2%00 PASSED!
+new Number 4e5%00 PASSED!
+new Number 4e%005 PASSED!
+new Number 4%00e5 PASSED!
+new Number 4.2e5%00 PASSED!
+new Number 4.2e%005 PASSED!
+new Number 4.2%00e5 PASSED!
+new Number 4.%002e5 PASSED!
+new Number 4%00.2e5 PASSED!
+parseInt 44%00 PASSED!
+parseInt 4%004 PASSED!
+parseInt 0x44%00 PASSED!
+parseInt 0x4%004 PASSED!
+parseInt 0x%0044 PASSED!
+parseInt 0%00x44 PASSED!
