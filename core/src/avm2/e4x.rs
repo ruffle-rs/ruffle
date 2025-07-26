@@ -22,7 +22,6 @@ use std::cell::{Ref, RefMut};
 use std::fmt::{self, Debug};
 
 mod is_xml_name;
-mod iterators;
 
 pub use is_xml_name::is_xml_name;
 
@@ -254,7 +253,7 @@ impl<'gc> E4XNode<'gc> {
 
     /// Returns an iterator that yields ancestor nodes (including itself).
     pub fn ancestors(self) -> impl Iterator<Item = E4XNode<'gc>> {
-        iterators::AnscIter::for_node(self)
+        core::iter::successors(Some(self), |node| node.parent())
     }
 
     pub fn equals(&self, other: &Self) -> bool {
