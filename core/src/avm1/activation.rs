@@ -2697,9 +2697,9 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             // We resolve it directly on the targeted object.
             let (path, var_name) = (&path[..separator], &path[separator + 1..]);
 
-            let mut current_scope = Some(self.scope());
-            while let Some(scope) = current_scope {
+            for scope in Scope::ancestors(self.scope()) {
                 let avm1_root = start.avm1_root();
+
                 if let Some(object) = self.resolve_target_path(
                     avm1_root,
                     *scope.locals(),
@@ -2709,7 +2709,6 @@ impl<'a, 'gc> Activation<'a, 'gc> {
                 )? {
                     return Ok(Some((object, var_name)));
                 }
-                current_scope = scope.parent();
             }
 
             return Ok(None);
@@ -2758,9 +2757,9 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             // We resolve it directly on the targeted object.
             let (path, var_name) = (&path[..separator], &path[separator + 1..]);
 
-            let mut current_scope = Some(self.scope());
-            while let Some(scope) = current_scope {
+            for scope in Scope::ancestors(self.scope()) {
                 let avm1_root = start.avm1_root();
+
                 if let Some(object) = self.resolve_target_path(
                     avm1_root,
                     *scope.locals(),
@@ -2773,7 +2772,6 @@ impl<'a, 'gc> Activation<'a, 'gc> {
                         return Ok(CallableValue::Callable(object, object.get(var_name, self)?));
                     }
                 }
-                current_scope = scope.parent();
             }
 
             return Ok(CallableValue::UnCallable(Value::Undefined));
@@ -2781,15 +2779,14 @@ impl<'a, 'gc> Activation<'a, 'gc> {
 
         // If it doesn't have a trailing variable, it can still be a slash path.
         if path.contains(b'/') {
-            let mut current_scope = Some(self.scope());
-            while let Some(scope) = current_scope {
+            for scope in Scope::ancestors(self.scope()) {
                 let avm1_root = start.avm1_root();
+
                 if let Some(object) =
                     self.resolve_target_path(avm1_root, *scope.locals(), &path, false, true)?
                 {
                     return Ok(CallableValue::UnCallable(object.into()));
                 }
-                current_scope = scope.parent();
             }
         }
 
@@ -2848,9 +2845,9 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             // We resolve it directly on the targeted object.
             let (path, var_name) = (&path[..sep], &path[sep + 1..]);
 
-            let mut current_scope = Some(self.scope());
-            while let Some(scope) = current_scope {
+            for scope in Scope::ancestors(self.scope()) {
                 let avm1_root = start.avm1_root();
+
                 if let Some(object) =
                     self.resolve_target_path(avm1_root, *scope.locals(), path, true, true)?
                 {
@@ -2858,7 +2855,6 @@ impl<'a, 'gc> Activation<'a, 'gc> {
                     object.set(var_name, value, self)?;
                     return Ok(());
                 }
-                current_scope = scope.parent();
             }
 
             return Ok(());
@@ -2977,8 +2973,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
 
     /// Whether this activation operates in a local scope.
     pub fn in_local_scope(&self) -> bool {
-        let mut current_scope = Some(self.scope);
-        while let Some(scope) = current_scope {
+        for scope in Scope::ancestors(self.scope) {
             match scope.class() {
                 scope::ScopeClass::Local => {
                     return true;
@@ -2988,8 +2983,8 @@ impl<'a, 'gc> Activation<'a, 'gc> {
                 }
                 _ => (),
             };
-            current_scope = scope.parent();
         }
+
         false
     }
 

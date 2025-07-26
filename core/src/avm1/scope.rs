@@ -111,6 +111,11 @@ impl<'gc> Scope<'gc> {
         self.parent
     }
 
+    /// Produces first the scope itself, then its ancestors
+    pub fn ancestors(scope: Gc<'gc, Scope<'gc>>) -> impl Iterator<Item = Gc<'gc, Scope<'gc>>> {
+        core::iter::successors(Some(scope), |scope| scope.parent())
+    }
+
     /// Returns the class.
     pub fn class(&self) -> ScopeClass {
         self.class
