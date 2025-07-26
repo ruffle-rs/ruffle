@@ -1,3 +1,5 @@
+#[cfg(feature = "steamworks")]
+use crate::backends::SteamWorksExternalInterfaceProvider;
 use crate::backends::{
     DesktopExternalInterfaceProvider, DesktopFSCommandProvider, DesktopNavigatorInterface,
     DesktopUiBackend,
@@ -284,6 +286,13 @@ impl ActivePlayer {
             builder = builder.with_external_interface(Box::new(DesktopExternalInterfaceProvider {
                 spoof_url: opt.player.spoof_url.clone(),
             }));
+        } else {
+            #[cfg(feature = "steamworks")]
+            {
+                builder = builder.with_external_interface(Box::new(
+                    SteamWorksExternalInterfaceProvider::default(),
+                ));
+            }
         }
 
         if !opt.gamepad_button_mapping.is_empty() {
