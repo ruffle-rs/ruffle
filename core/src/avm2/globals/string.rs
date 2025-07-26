@@ -8,8 +8,8 @@ use crate::avm2::activation::Activation;
 use crate::avm2::parameters::ParametersExt;
 use crate::avm2::regexp::{RegExp, RegExpFlags};
 use crate::avm2::value::Value;
-use crate::avm2::Error;
 use crate::avm2::{ArrayObject, ArrayStorage};
+use crate::avm2::{Error, TObject};
 use crate::string::{AvmString, WString};
 
 pub fn string_constructor<'gc>(
@@ -226,7 +226,7 @@ pub fn match_internal<'gc>(
                 if regexp.last_index() == last {
                     break;
                 }
-                storage.push(AvmString::new(activation.gc(), &this[result.range()]).into());
+                storage.push(activation.strings().substring(this, result.range()).into());
                 last = regexp.last_index();
             }
             regexp.set_last_index(0);
@@ -238,16 +238,25 @@ pub fn match_internal<'gc>(
         } else {
             let old = regexp.last_index();
             regexp.set_last_index(0);
-            if let Some(result) = regexp.exec(this) {
-                let substrings = result.groups().map(|range| &this[range.unwrap_or(0..0)]);
 
-                let mut storage = ArrayStorage::new(0);
-                for substring in substrings {
-                    storage.push(AvmString::new(activation.gc(), substring).into());
-                }
+            if let Some(result) = regexp.exec(this) {
+                let storage = result
+                    .groups()
+                    .map(|range| {
+                        range.map_or(Value::Undefined, |range| {
+                            activation.strings().substring(this, range).into()
+                        })
+                    })
+                    .collect();
+
                 regexp.set_last_index(old);
 
-                return Ok(ArrayObject::from_storage(activation, storage).into());
+                let array = ArrayObject::from_storage(activation, storage);
+
+                array.set_dynamic_property(istr!("index"), result.start().into(), activation.gc());
+                array.set_dynamic_property(istr!("input"), this.into(), activation.gc());
+
+                return Ok(array.into());
             } else {
                 regexp.set_last_index(old);
                 // If the pattern parameter is a String or a non-global regular expression

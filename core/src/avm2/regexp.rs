@@ -233,7 +233,7 @@ impl<'gc> RegExp<'gc> {
             let args = std::iter::once(Some(&m.range))
                 .chain((m.captures.iter()).map(|x| x.as_ref()))
                 .map(|o| match o {
-                    Some(r) => AvmString::new(activation.gc(), &txt[r.start..r.end]).into(),
+                    Some(r) => activation.strings().substring(*txt, r.clone()).into(),
                     None => istr!("").into(),
                 })
                 .chain(std::iter::once(m.range.start.into()))
@@ -345,12 +345,17 @@ impl<'gc> RegExp<'gc> {
             if m.range.end == start {
                 break;
             }
-            storage.push(AvmString::new(activation.gc(), &text[start..m.range.start]).into());
+            storage.push(
+                activation
+                    .strings()
+                    .substring(text, start..m.range.start)
+                    .into(),
+            );
             if storage.length() >= limit {
                 break;
             }
             for c in m.captures.iter().filter_map(Option::as_ref) {
-                storage.push(AvmString::new(activation.gc(), &text[c.start..c.end]).into());
+                storage.push(activation.strings().substring(text, c.clone()).into());
                 if storage.length() >= limit {
                     break; // Intentional bug to match Flash.
                            // Causes adding parts past limit.
