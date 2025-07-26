@@ -33,7 +33,10 @@ pub fn init<'gc>(
     let ignore_comments = args.get_bool(1);
     let ignore_processing_instructions = args.get_bool(2);
     let ignore_whitespace = args.get_bool(3);
-
+    let default_namespace = activation.default_xml_namespace().map(|ns| E4XNamespace {
+        prefix: None,
+        uri: ns.as_uri(activation.strings()),
+    });
     if let Some(obj) = value.as_object() {
         if let Some(xml_list) = obj.as_xml_list_object() {
             // Note - 'new XML(new XMLList())' throws an error, even though
@@ -46,12 +49,13 @@ pub fn init<'gc>(
         }
     }
 
-    let nodes = E4XNode::parse(
+    let nodes = E4XNode::parse_with_default_namespace(
         value,
         activation,
         ignore_comments,
         ignore_processing_instructions,
         ignore_whitespace,
+        default_namespace,
     )?;
 
     let node = match nodes.as_slice() {

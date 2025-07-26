@@ -92,7 +92,11 @@ pub fn q_name_constructor<'gc>(
 
         if &*local != b"*" {
             this.set_local_name(activation.gc(), local);
-            Some(activation.avm2().find_public_namespace())
+            Some(
+                activation
+                    .default_xml_namespace()
+                    .unwrap_or(activation.avm2().find_public_namespace()),
+            )
         } else {
             None
         }
