@@ -332,7 +332,7 @@ impl<'gc> XmlNode<'gc> {
 
     /// Returns an iterator that yields ancestor nodes (including itself).
     pub fn ancestors(self) -> impl Iterator<Item = XmlNode<'gc>> {
-        iterators::AnscIter::for_node(self)
+        core::iter::successors(Some(self), |node| node.parent())
     }
 
     /// Get the already-instantiated script object from the current node.
