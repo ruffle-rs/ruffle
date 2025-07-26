@@ -823,6 +823,7 @@ impl<'gc> TDisplayObject<'gc> for Stage<'gc> {
                 .base()
                 .perspective_projection()
                 .copied(),
+            tz: 0.0,
         });
 
         // All of our Stage3D instances get rendered *underneath* the main stage.
