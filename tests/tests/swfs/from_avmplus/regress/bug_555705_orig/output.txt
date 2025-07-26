@@ -1,0 +1,2 @@
+Hello, world!
+Bug 555705 - should not leak memory: PASSED!

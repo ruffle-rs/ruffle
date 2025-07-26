@@ -1,0 +1,5 @@
+uint(            -1  )++ PASSED!
+uint(             0  )++ PASSED!
+uint(uint.MAX_VALUE-1)++ PASSED!
+uint(uint.MAX_VALUE  )++ PASSED!
+uint(uint.MAX_VALUE+1)++ PASSED!

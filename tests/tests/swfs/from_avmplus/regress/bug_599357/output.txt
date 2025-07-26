@@ -1,0 +1,53 @@
+array[1+2] PASSED!
+array[1+ -2] PASSED!
+array[0x7fffffff+0x7fffffff] PASSED!
+array[0x7fffffff+ -0x7fffffff] PASSED!
+array[-0x7fffffff+ -0x7fffffff] PASSED!
+array[2+1], where 1 is const PASSED!
+array[2-1], where 1 is const PASSED!
+array[1+2], where 1 is const PASSED!
+array[1-2], where 1 is const PASSED!
+array[2-1] PASSED!
+array[0x80000000-0x80000000] PASSED!
+array[0x80000000+0x80000000] PASSED!
+vector[1+2] PASSED!
+vector[1+ -2] PASSED!
+vector[0x7fffffff+0x7fffffff] PASSED!
+vector[0x7fffffff+ -0x7fffffff] PASSED!
+vector[-0x7fffffff+ -0x7fffffff] PASSED!
+vector[2+1], where 1 is const PASSED!
+vector[2-1], where 1 is const PASSED!
+vector[1+2], where 1 is const PASSED!
+vector[1-2], where 1 is const PASSED!
+vector[2-1] PASSED!
+vector[0x80000000-0x80000000] PASSED!
+vector[0x80000000+0x80000000] PASSED!
+array[1], where 1 is a const stored in a Number var PASSED!
+array[1], where 1 is a int stored in a Number var PASSED!
+array[1], where 1 is a uint stored in a Number var PASSED!
+set array[1], where 1 is a const stored in a Number var PASSED!
+set array[1], where 1 is a int stored in a Number var PASSED!
+set array[1], where 1 is a uint stored in a Number var PASSED!
+set array[1+2] PASSED!
+set array[1+ -2] PASSED!
+set array[0x7fffffff+0x7fffffff] PASSED!
+set array[0x7fffffff+ -0x7fffffff] PASSED!
+set array[-0x7fffffff+ -0x7fffffff] PASSED!
+set array[2+1], where 1 is const PASSED!
+set array[1+2], where 1 is const PASSED!
+set array[2-1], where 1 is const PASSED!
+set array[1-2], where 1 is const PASSED!
+set array[2-1] PASSED!
+set array[-0x7fffffff- 0x7fffffff] PASSED!
+set vector[1+2] PASSED!
+set vector[1+ -2] PASSED!
+set vector[0x7fffffff+0x7fffffff] PASSED!
+set vector[0x7fffffff+ -0x7fffffff] PASSED!
+set vector[-0x7fffffff+ -0x7fffffff] PASSED!
+set vector[2+1], where 1 is const PASSED!
+set vector[2-1], where 1 is const PASSED!
+set vector[1+2], where 1 is const PASSED!
+set vector[1-2], where 1 is const PASSED!
+set vector[1-1], where 1 is const PASSED!
+set vector[2-1] PASSED!
+set vector[-0x7fffffff- 0x7fffffff] PASSED!

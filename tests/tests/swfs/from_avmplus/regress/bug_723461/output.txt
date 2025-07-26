@@ -1,0 +1,6 @@
+at 0 result string skips BOM PASSED!
+at 0 result subsequent reads correct PASSED!
+at 0 position updated correctly PASSED!
+at 10 result string skips BOM PASSED!
+at 10 result subsequent reads correct PASSED!
+at 10 position updated correctly PASSED!
