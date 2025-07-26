@@ -203,7 +203,7 @@ struct GcRootData<'gc> {
 #[collect(no_drop)]
 pub struct PostFrameCallback<'gc> {
     #[collect(require_static)]
-    #[allow(clippy::type_complexity)]
+    #[expect(clippy::type_complexity)]
     pub callback: Box<dyn for<'b> FnOnce(&mut UpdateContext<'b>, DisplayObject<'b>) + 'static>,
     pub data: DisplayObject<'gc>,
 }
@@ -211,7 +211,7 @@ pub struct PostFrameCallback<'gc> {
 impl<'gc> GcRootData<'gc> {
     /// Splits out parameters for creating an `UpdateContext`
     /// (because we can borrow fields of `self` independently)
-    #[allow(clippy::type_complexity)]
+    #[expect(clippy::type_complexity)]
     fn update_context_params(
         &mut self,
     ) -> (
@@ -289,7 +289,7 @@ pub struct Player {
 
     /// The runtime we're emulating (Flash Player or Adobe AIR).
     /// In Adobe AIR mode, additional classes are available
-    #[allow(unused)]
+    #[expect(unused)]
     player_runtime: PlayerRuntime,
 
     /// Whether we're emulating the release or the debug build.
@@ -2259,7 +2259,7 @@ impl Player {
             let ret = f(&mut update_context);
 
             // If we changed the framerate, let the audio handler now.
-            #[allow(clippy::float_cmp)]
+            #[expect(clippy::float_cmp)]
             if *update_context.frame_rate != prev_frame_rate {
                 update_context
                     .audio

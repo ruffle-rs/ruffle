@@ -160,7 +160,7 @@ impl<'a, 'gc> FunctionArgs<'a, 'gc> {
 ///
 /// It is the caller's responsibility to ensure that the `receiver` passed
 /// to this method is not Value::Null or Value::Undefined.
-#[allow(clippy::too_many_arguments)]
+#[expect(clippy::too_many_arguments)]
 pub fn exec<'gc>(
     method: Method<'gc>,
     scope: ScopeChain<'gc>,

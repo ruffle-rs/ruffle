@@ -1254,7 +1254,6 @@ pub fn parse_full_date<'gc>(
 }
 
 /// Implements the `parse` class method.
-#[allow(clippy::question_mark)]
 pub fn parse<'gc>(
     activation: &mut Activation<'_, 'gc>,
     _this: Value<'gc>,

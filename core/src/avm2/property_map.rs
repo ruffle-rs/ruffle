@@ -157,7 +157,6 @@ impl<'gc, V> PropertyMap<'gc, V> {
         }
     }
 
-    #[allow(dead_code)]
     pub fn remove(&mut self, name: QName<'gc>) -> Option<V> {
         let bucket = self.0.get_mut(&name.local_name());
 

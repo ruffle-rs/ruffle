@@ -57,7 +57,7 @@ pub struct ShaderBuilder<'a> {
     clamp_nearest: Handle<Expression>,
     clamp_linear: Handle<Expression>,
     // FIXME - implement the corresponding opcode 'Sample'
-    #[allow(dead_code)]
+    #[expect(dead_code)]
     clamp_bilinear: Handle<Expression>,
 
     textures: Vec<Option<Handle<Expression>>>,
@@ -1855,7 +1855,7 @@ impl ShaderBuilder<'_> {
     }
 }
 
-#[allow(dead_code)]
+#[expect(dead_code)]
 fn to_wgsl(module: &naga::Module) -> String {
     let mut out = String::new();
 

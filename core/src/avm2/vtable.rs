@@ -211,7 +211,6 @@ impl<'gc> VTable<'gc> {
         }
     }
 
-    #[allow(clippy::if_same_then_else)]
     fn init_vtable(
         defining_class_def: Class<'gc>,
         super_class_obj: Option<ClassObject<'gc>>,

@@ -25,9 +25,9 @@ pub enum CpalError {
 }
 
 pub struct CpalAudioBackend {
-    #[allow(dead_code)]
+    #[expect(dead_code)]
     device: cpal::Device,
-    #[allow(dead_code)]
+    #[expect(dead_code)]
     config: cpal::StreamConfig,
     stream: cpal::Stream,
     mixer: AudioMixer,

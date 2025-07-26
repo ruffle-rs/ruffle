@@ -11,7 +11,6 @@ impl Clamp for f64 {
     /// `(f64::NAN).clamp(min, max)` causes the code to propagate NaN rather
     /// than returning either `max` or `min`. Instead this function returns
     /// the smallest value from the numbers provided.
-    #[allow(clippy::manual_clamp)]
     fn clamp_also_nan(self, min: Self, max: Self) -> Self {
         self.max(min).min(max)
     }

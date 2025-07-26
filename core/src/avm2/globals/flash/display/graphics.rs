@@ -547,7 +547,7 @@ const UNIT_CIRCLE_POINTS: [(f64, f64); 5] = [
 ]; */
 
 /// Draw a roundrect.
-#[allow(clippy::too_many_arguments)]
+#[expect(clippy::too_many_arguments)]
 fn draw_round_rect_internal(
     draw: &mut Drawing,
     x: f64,

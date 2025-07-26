@@ -5,7 +5,7 @@ use std::num::NonZeroU8;
 
 pub struct Reader<'a> {
     input: &'a [u8],
-    #[allow(dead_code)]
+    #[expect(dead_code)]
     version: u8,
 }
 

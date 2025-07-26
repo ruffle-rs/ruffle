@@ -14,7 +14,7 @@ use gc_arena::Gc;
 use std::cell::Cell;
 use std::collections::{HashMap, HashSet};
 
-#[allow(clippy::enum_variant_names)]
+#[expect(clippy::enum_variant_names)]
 #[derive(Clone, Copy, Debug, PartialEq)]
 enum NullState {
     NotNull,

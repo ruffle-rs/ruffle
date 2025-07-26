@@ -8,7 +8,7 @@ use std::collections::{HashMap, HashSet};
 pub enum KeyCodeMappingType {
     // TODO Make this configurable, it's not
     //   yet possible to use this mapping type.
-    #[allow(dead_code)]
+    #[expect(dead_code)]
     Physical,
     Logical,
 }

@@ -65,7 +65,7 @@ impl Surface {
         }
     }
 
-    #[allow(clippy::too_many_arguments)]
+    #[expect(clippy::too_many_arguments)]
     #[instrument(level = "debug", skip_all)]
     pub fn draw_commands_and_copy_to<'frame, 'global: 'frame>(
         &mut self,
@@ -105,7 +105,7 @@ impl Surface {
         );
     }
 
-    #[allow(clippy::too_many_arguments)]
+    #[expect(clippy::too_many_arguments)]
     #[instrument(level = "debug", skip_all)]
     pub fn draw_commands<'frame, 'global: 'frame>(
         &mut self,

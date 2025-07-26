@@ -18,7 +18,6 @@ pub struct Namespace<'gc>(
 );
 
 /// Represents the name of a namespace.
-#[allow(clippy::enum_variant_names)]
 #[derive(Copy, Clone, Collect, Debug, PartialEq, Eq)]
 #[collect(no_drop)]
 enum NamespaceData<'gc> {

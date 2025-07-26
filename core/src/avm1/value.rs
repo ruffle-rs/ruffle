@@ -535,7 +535,7 @@ fn decimal_shift(mut value: f64, mut exp: i32) -> f64 {
 /// Exponential notation is used for numbers <= 1e-5 and >= 1e15.
 /// Rounding done with ties rounded away from zero.
 /// NAN returns `"NaN"`, and infinity returns `"Infinity"`.
-#[allow(clippy::approx_constant)]
+#[expect(clippy::approx_constant)]
 fn f64_to_string<'gc>(activation: &mut Activation<'_, 'gc>, mut n: f64) -> AvmString<'gc> {
     if n.is_nan() {
         istr!("NaN")
@@ -889,7 +889,7 @@ fn string_to_f64(mut s: &WStr, swf_version: u8) -> f64 {
 }
 
 #[cfg(test)]
-#[allow(clippy::unreadable_literal)] // Large numeric literals in tests
+#[expect(clippy::unreadable_literal)] // Large numeric literals in tests
 mod test {
     use crate::avm1::activation::Activation;
     use crate::avm1::error::Error;
@@ -956,7 +956,7 @@ mod test {
     }
 
     #[test]
-    #[allow(clippy::float_cmp)]
+    #[expect(clippy::float_cmp)]
     fn to_number_swf7() {
         with_avm(7, |activation, _this| -> Result<(), Error> {
             let t = Value::Bool(true);
@@ -978,7 +978,7 @@ mod test {
     }
 
     #[test]
-    #[allow(clippy::float_cmp)]
+    #[expect(clippy::float_cmp)]
     fn to_number_swf6() {
         with_avm(6, |activation, _this| -> Result<(), Error> {
             let t = Value::Bool(true);

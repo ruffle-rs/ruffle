@@ -13,7 +13,7 @@ use wgpu::util::StagingBelt;
 pub struct DropShadowFilter;
 
 impl DropShadowFilter {
-    #[allow(clippy::too_many_arguments)]
+    #[expect(clippy::too_many_arguments)]
     pub fn apply(
         descriptors: &Descriptors,
         texture_pool: &mut TexturePool,

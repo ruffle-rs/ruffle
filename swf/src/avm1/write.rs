@@ -7,7 +7,7 @@ use std::io::{Result, Write};
 
 pub struct Writer<W: Write> {
     output: W,
-    #[allow(dead_code)]
+    #[expect(dead_code)]
     version: u8,
 }
 

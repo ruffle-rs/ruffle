@@ -300,7 +300,7 @@ pub struct Bitmap {
     pub is_repeating: bool,
 }
 
-#[allow(clippy::many_single_char_names)]
+#[expect(clippy::many_single_char_names)]
 fn swf_to_gl_matrix(m: crate::matrix::Matrix) -> [[f32; 3]; 3] {
     let tx = m.tx.get() as f32;
     let ty = m.ty.get() as f32;
@@ -324,7 +324,7 @@ fn swf_to_gl_matrix(m: crate::matrix::Matrix) -> [[f32; 3]; 3] {
     [[a, d, 0.0], [b, e, 0.0], [c, f, 1.0]]
 }
 
-#[allow(clippy::many_single_char_names)]
+#[expect(clippy::many_single_char_names)]
 fn swf_bitmap_to_gl_matrix(
     m: crate::matrix::Matrix,
     bitmap_width: u32,
