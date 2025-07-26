@@ -1,0 +1,6 @@
+a[0] == 4 PASSED!
+a.length == 1 PASSED!
+a[0] == undefined PASSED!
+a.length == 1 PASSED!
+a[0] == undefined PASSED!
+a.length == 0 PASSED!
