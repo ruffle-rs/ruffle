@@ -1,0 +1,7 @@
+Error compiling ShaderEof
+Error: Error #2030: End of file was encountered.
+	at flash.display::ShaderData/_setByteCode()
+	at flash.display::ShaderData()
+	at flash.display::Shader/set byteCode()
+	at flash.display::Shader()
+	at Test()

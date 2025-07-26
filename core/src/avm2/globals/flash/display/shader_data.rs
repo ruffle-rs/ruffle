@@ -1,15 +1,16 @@
-use crate::avm2::error::Error2004Type;
+use crate::avm2::activation::Activation;
+use crate::avm2::error::{make_error_2004, make_error_2030, Error2004Type};
 use crate::avm2::object::TObject as _;
 use crate::avm2::parameters::ParametersExt;
 use crate::avm2::value::Value;
 use crate::avm2::Error;
-use crate::avm2::{activation::Activation, error::make_error_2004};
 use crate::pixel_bender::PixelBenderTypeExt;
 use crate::string::AvmString;
 
 use ruffle_macros::istr;
 use ruffle_render::pixel_bender::{
-    parse_shader, PixelBenderParam, PixelBenderParamQualifier, OUT_COORD_NAME,
+    parse_shader, PixelBenderParam, PixelBenderParamQualifier, PixelBenderParsingError,
+    OUT_COORD_NAME,
 };
 
 use super::shader_parameter::make_shader_parameter;
@@ -28,7 +29,10 @@ pub fn _set_byte_code<'gc>(
     let bytecode = bytecode.as_bytearray().unwrap();
     let shader = parse_shader(bytecode.bytes(), true).map_err(|err| {
         tracing::warn!("Failed to parse a Pixel Bender shader: {err}");
-        make_error_2004(activation, Error2004Type::ArgumentError)
+        match err {
+            PixelBenderParsingError::IoError(_) => make_error_2030(activation),
+            _ => make_error_2004(activation, Error2004Type::ArgumentError),
+        }
     })?;
 
     for meta in &shader.metadata {
