@@ -1,0 +1,2 @@
+bug 615544: unset variable in 'with' block  causes 'null/undefined inconsistency' PASSED!
+bug 615544: unset variable 'null/undefined' causes 'null/undefined inconsistency' PASSED!

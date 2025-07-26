@@ -1,0 +1,15 @@
+Bug 539328: describeType() omits interface methods FAILED! expected: <type name="IBar" base="Class" isDynamic="true" isFinal="true" isStatic="true">
+  <extendsClass type="Class"/>
+  <extendsClass type="Object"/>
+  <accessor name="prototype" access="readonly" type="*" declaredBy="Class"/>
+  <factory type="IBar">
+    <method name="i0" declaredBy="IBar" returnType="*" uri="IBar"/>
+  </factory>
+</type> got: <type name="::IBar" base="Class" isDynamic="true" isFinal="true" isStatic="true">
+  <extendsClass type="Class"/>
+  <extendsClass type="Object"/>
+  <accessor name="prototype" access="readonly" type="*" declaredBy="Class"/>
+  <factory type="::IBar">
+    <method name="i0" declaredBy="::IBar" returnType="*" uri="Test.as$34:IBar"/>
+  </factory>
+</type>
