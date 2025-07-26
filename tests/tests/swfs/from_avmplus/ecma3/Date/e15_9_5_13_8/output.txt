@@ -1,0 +1,2 @@
+(new Date(NaN)).getUTCDay() PASSED!
+Date.prototype.getUTCDay.length PASSED!

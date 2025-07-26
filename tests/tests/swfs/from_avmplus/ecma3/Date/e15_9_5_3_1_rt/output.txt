@@ -1,0 +1,1 @@
+var OBJ = new MyObject( new Date(0) ); OBJ.valueOf() PASSED!

@@ -1,0 +1,1 @@
+(new Date(1104537600000)).getUTCMilliseconds() PASSED!

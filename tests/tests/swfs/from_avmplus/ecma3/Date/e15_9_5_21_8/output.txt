@@ -1,0 +1,2 @@
+(new Date(NaN)).getUTCMilliseconds() PASSED!
+Date.prototype.getUTCMilliseconds.length PASSED!
