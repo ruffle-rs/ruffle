@@ -2401,6 +2401,10 @@ impl Player {
         })
     }
 
+    pub fn root_movie_url(&self) -> &str {
+        self.swf.url()
+    }
+
     pub fn spoofed_url(&self) -> Option<&str> {
         self.spoofed_url.as_deref()
     }
