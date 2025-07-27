@@ -48,7 +48,7 @@ pub fn start<'gc>(
         // once, and then stop immediately. This is handled by Timer.onUpdate
         let id = activation.context.timers.add_timer(
             TimerCallback::Avm2Callback {
-                closure: on_update,
+                closure: Some(on_update),
                 params: vec![],
             },
             delay,
