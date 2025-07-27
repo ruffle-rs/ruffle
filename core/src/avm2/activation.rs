@@ -6,6 +6,7 @@ use crate::avm2::domain::Domain;
 use crate::avm2::e4x::{escape_attribute_value, escape_element_value};
 use crate::avm2::error::{
     make_error_1065, make_error_1127, make_error_1506, make_null_or_undefined_error, type_error,
+    verify_error,
 };
 use crate::avm2::function::FunctionArgs;
 use crate::avm2::method::{Method, NativeMethodImpl, ResolvedParamConfig};
@@ -1752,15 +1753,48 @@ impl<'a, 'gc> Activation<'a, 'gc> {
 
     fn op_new_class(&mut self, class: Class<'gc>) -> Result<(), Error<'gc>> {
         let base_value = self.pop_stack();
-        let base_class = match base_value {
-            Value::Object(o) => match o.as_class_object() {
-                Some(cls) => Some(cls),
-                None => return Err("Base class for new class is not a class.".into()),
-            },
+
+        // When constructing the early classes `Object` and `Class` during globals
+        // initialization, we reuse the ClassObject already constructed in
+        // `globals::init_early_classes` so that we don't create duplicate
+        // ClassObjects for them. We do still run their class initializers now.
+        if class == self.avm2().class_defs().object {
+            let object_class = self.avm2().classes().object;
+            object_class.run_class_initializer(self)?;
+
+            self.push_stack(object_class);
+            return Ok(());
+        } else if class == self.avm2().class_defs().class {
+            let class_class = self.avm2().classes().class;
+            class_class.run_class_initializer(self)?;
+
+            self.push_stack(class_class);
+            return Ok(());
+        }
+
+        // Otherwise, go through the regular ClassObject construction logic
+
+        let class_class = self.avm2().class_defs().class;
+        let base_class = base_value.coerce_to_type(self, class_class)?;
+
+        let base_class = match base_class {
+            Value::Object(Object::ClassObject(c)) => Some(c),
             Value::Null => None,
-            _ => return Err("Base class for new class is not Object or null.".into()),
+            _ => unreachable!("Coercion to Class must return Class or null"),
         };
 
+        // Ensure the provided superclass matches the declared superclass
+        if base_class.is_none() && class.super_class().is_some() {
+            return Err(make_null_or_undefined_error(self, Value::Null, None));
+        } else if base_class.map(|c| c.inner_class_definition()) != class.super_class() {
+            return Err(Error::avm_error(verify_error(
+                self,
+                "Error #1108: The OP_newclass opcode was used with the incorrect base class.",
+                1108,
+            )?));
+        }
+
+        // Finally, actually construct the ClassObject
         let new_class = ClassObject::from_class(self, class, base_class)?;
 
         self.push_stack(new_class);
