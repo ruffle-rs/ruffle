@@ -106,11 +106,11 @@ pub fn apply<'gc>(
     let arg_array = args.get_value(1);
     let resolved_args = if !matches!(arg_array, Value::Undefined | Value::Null) {
         if let Some(array_object) = arg_array.as_object().and_then(|o| o.as_array_object()) {
-            let arg_storage = array_object.storage().iter().collect::<Vec<_>>();
+            let arg_storage = array_object.storage();
 
-            let mut resolved_args = Vec::with_capacity(arg_storage.len());
+            let mut resolved_args = Vec::with_capacity(arg_storage.length());
             for (i, v) in arg_storage.iter().enumerate() {
-                resolved_args.push(resolve_array_hole(activation, array_object.into(), i, *v)?);
+                resolved_args.push(resolve_array_hole(activation, array_object.into(), i, v)?);
             }
 
             resolved_args
