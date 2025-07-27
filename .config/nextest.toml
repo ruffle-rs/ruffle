@@ -5,6 +5,7 @@ test(avm2/pixelbender_shaderdata) or \
 test(avm2/pixelbender_conditional) or \
 test(avm2/pixelbender_conversions) or \
 test(avm2/pixelbender_div) or \
+test(avm2/pixelbender_eof) or \
 test(avm2/pixelbender_rsqrt) or \
 test(avm2/pixelbender_outputs) or \
 test(avm2/pixelbender_padding_bytes) or \
