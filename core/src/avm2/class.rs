@@ -1,7 +1,9 @@
 //! AVM2 classes
 
 use crate::avm2::activation::Activation;
-use crate::avm2::error::{make_error_1014, make_error_1053, verify_error, Error1014Type};
+use crate::avm2::error::{
+    make_error_1014, make_error_1053, make_error_1107, verify_error, Error1014Type,
+};
 use crate::avm2::method::{Method, NativeMethodImpl};
 use crate::avm2::object::{scriptobject_allocator, ClassObject, Object};
 use crate::avm2::script::TranslationUnit;
@@ -901,12 +903,7 @@ impl<'gc> Class<'gc> {
             // Methods, getters, and setters are forbidden from appearing
             // in activation traits
             if loaded_trait.as_method().is_some() {
-                // TODO: Is this the correct error?
-                return Err(Error::avm_error(verify_error(
-                    activation,
-                    "Error #1101: Cannot verify method with unknown scope.",
-                    1101,
-                )?));
+                return Err(make_error_1107(activation));
             }
             Ok(loaded_trait)
         };
