@@ -208,8 +208,8 @@ impl<'gc> TranslationUnit<'gc> {
         class.validate_class(activation, false)?;
         c_class.validate_class(activation, false)?;
 
-        class.init_vtable(activation.context)?;
-        c_class.init_vtable(activation.context)?;
+        class.init_vtable(activation)?;
+        c_class.init_vtable(activation)?;
 
         Ok(class)
     }
