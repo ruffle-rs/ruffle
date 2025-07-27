@@ -4,7 +4,7 @@ use ruffle_render::pixel_bender::{PixelBenderType, PixelBenderTypeOpcode};
 use crate::{
     avm2::{
         error::{make_error_2004, Error2004Type},
-        Activation, ArrayObject, ArrayStorage, Error, Value,
+        Activation, ArrayObject, ArrayStorage, Error, Object, Value,
     },
     ecma_conversions::f64_to_wrapping_i32,
     string::AvmString,
@@ -48,8 +48,8 @@ impl PixelBenderTypeExt for PixelBenderType {
         }
 
         let array_storage = match value {
-            Value::Object(ref o) => o.as_array_storage(),
-            Value::Null | Value::Undefined => None,
+            Value::Object(Object::ArrayObject(o)) => Some(o.storage()),
+            Value::Null => None,
             _ => unreachable!("value should be an array"),
         };
 
