@@ -31,9 +31,10 @@ pub fn create_class<'gc>(
 
     class.validate_class(activation, true)?;
     class.validate_signatures(activation)?;
-    class
-        .init_vtable(activation.context)
-        .expect("Native class's vtable should initialize");
+
+    // `global` classes have no interfaces, so use `init_vtable_with_interfaces`
+    // and pass an empty list
+    class.init_vtable_with_interfaces(activation.context, Box::new([]));
 
     class.mark_builtin_type(BuiltinType::ScriptTraits);
 

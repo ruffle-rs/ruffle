@@ -407,7 +407,7 @@ pub fn init_early_classes<'gc>(
     // Object's i_class has no superclass, so we load it first.
     let object_i_class = Class::instance_from_abc_index(tunit, OBJECT_IDX, activation)?;
     object_i_class.load_instance_traits(activation, tunit, OBJECT_IDX)?;
-    object_i_class.init_vtable(activation.context)?;
+    object_i_class.init_vtable(activation)?;
 
     // We're going to need the `Object` class registered in the domain for the
     // `Class` class to load. These will be overwritten when we properly load
@@ -420,7 +420,7 @@ pub fn init_early_classes<'gc>(
     // Now we can load `Class`'s `i_class`:
     let class_i_class = Class::instance_from_abc_index(tunit, CLASS_IDX, activation)?;
     class_i_class.load_instance_traits(activation, tunit, CLASS_IDX)?;
-    class_i_class.init_vtable(activation.context)?;
+    class_i_class.init_vtable(activation)?;
 
     // Register the `Class` class in the domain
     activation
@@ -430,11 +430,11 @@ pub fn init_early_classes<'gc>(
     // Now we can load the `c_class`es for `Object` and `Class` safely.
     let object_c_class = Class::class_from_abc_index(tunit, OBJECT_IDX, class_i_class, activation)?;
     object_c_class.load_class_traits(activation, tunit, OBJECT_IDX)?;
-    object_c_class.init_vtable(activation.context)?;
+    object_c_class.init_vtable(activation)?;
 
     let class_c_class = Class::class_from_abc_index(tunit, CLASS_IDX, class_i_class, activation)?;
     class_c_class.load_class_traits(activation, tunit, CLASS_IDX)?;
-    class_c_class.init_vtable(activation.context)?;
+    class_c_class.init_vtable(activation)?;
 
     // Now we link the i_classes and c_classes with each other:
     object_i_class.link_with_c_class(mc, object_c_class);
