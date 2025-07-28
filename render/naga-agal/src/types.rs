@@ -178,7 +178,7 @@ pub struct SamplerField {
     pub dimension: Dimension,
     pub special: Special,
     /// Texture level-of-detail (LOD) bias
-    #[allow(dead_code)]
+    #[expect(dead_code)]
     pub texture_lod_bias: i8,
     pub reg_num: u16,
     pub reg_type: RegisterType,

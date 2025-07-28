@@ -1897,7 +1897,7 @@ impl<'gc> MovieClip<'gc> {
 
     /// Handle a RemoveObject tag when running a goto action.
     #[inline]
-    #[allow(clippy::too_many_arguments)]
+    #[expect(clippy::too_many_arguments)]
     fn goto_remove_object<'a>(
         mut self,
         reader: &mut SwfStream<'a>,

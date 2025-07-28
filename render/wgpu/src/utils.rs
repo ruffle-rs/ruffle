@@ -195,7 +195,7 @@ pub fn supported_sample_count(
     sample_count
 }
 
-#[allow(clippy::too_many_arguments)]
+#[expect(clippy::too_many_arguments)]
 pub fn run_copy_pipeline(
     descriptors: &Descriptors,
     format: wgpu::TextureFormat,

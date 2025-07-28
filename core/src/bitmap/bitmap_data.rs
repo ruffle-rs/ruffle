@@ -411,7 +411,6 @@ mod wrapper {
         /// This should only be used when you will be overwriting the entire
         /// `pixels` vec without reading from it. Cancels any in-progress GPU -> CPU sync.
         /// This does not sync from cpu to gpu.
-        #[allow(clippy::type_complexity)]
         pub fn overwrite_cpu_pixels_from_gpu(
             &self,
             mc: &Mutation<'gc>,

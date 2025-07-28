@@ -414,7 +414,6 @@ impl<'gc> MovieLibraries<'gc> {
 
     fn get_or_insert_mut(&mut self, movie: Arc<SwfMovie>) -> &mut MovieLibrary<'gc> {
         // NOTE(Clippy): Cannot use or_default() here as PtrWeakKeyHashMap does not have such a method on its Entry API
-        #[allow(clippy::unwrap_or_default)]
         self.0
             .entry(movie.clone())
             .or_insert_with(|| MovieLibrary::new(movie))

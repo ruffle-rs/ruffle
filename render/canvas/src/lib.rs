@@ -146,7 +146,7 @@ struct CanvasBitmap {
 
 #[derive(Debug)]
 struct BitmapData {
-    #[allow(dead_code)]
+    #[expect(dead_code)]
     image_data: ImageData,
     canvas: HtmlCanvasElement,
     context: CanvasRenderingContext2d,
@@ -322,7 +322,6 @@ impl WebCanvasRenderBackend {
         Ok(renderer)
     }
 
-    #[allow(clippy::float_cmp)]
     #[inline]
     fn set_transform(&mut self, matrix: &Matrix) {
         self.context
@@ -337,7 +336,6 @@ impl WebCanvasRenderBackend {
             .warn_on_error();
     }
 
-    #[allow(clippy::float_cmp)]
     #[inline]
     fn set_color_filter(&self, transform: &Transform) {
         let color_transform = &transform.color_transform;

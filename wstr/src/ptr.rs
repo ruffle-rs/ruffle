@@ -108,7 +108,7 @@ impl WStrMetadata {
     }
 
     /// Returns the length of the described `WStr`. This is never greater than `WStr::MAX_LEN`.
-    #[allow(clippy::len_without_is_empty)]
+    #[expect(clippy::len_without_is_empty)]
     #[inline(always)]
     pub const fn len(self) -> usize {
         (self.0 & (WIDE_MASK - 1)) as usize

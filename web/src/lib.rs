@@ -429,8 +429,12 @@ impl RuffleHandle {
         // Instance is dropped at this point.
     }
 
-    #[allow(clippy::boxed_local)] // for js_bind
-    pub fn call_exposed_callback(&self, name: &str, args: Box<[JsValue]>) -> JsValue {
+    pub fn call_exposed_callback(
+        &self,
+        name: &str,
+        #[expect(clippy::boxed_local)] // for js_bind
+        args: Box<[JsValue]>,
+    ) -> JsValue {
         let args: Vec<_> = args.iter().map(js_to_external_value).collect();
 
         // Re-entrant callbacks need to return through the hole that was punched through for them
@@ -1234,7 +1238,7 @@ impl RuffleHandle {
 }
 
 impl RuffleInstance {
-    #[allow(dead_code)]
+    #[expect(dead_code)]
     fn with_core<F, O>(&self, f: F) -> Result<O, RuffleInstanceError>
     where
         F: FnOnce(&ruffle_core::Player) -> O,

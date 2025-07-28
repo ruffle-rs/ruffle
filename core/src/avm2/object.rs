@@ -167,7 +167,7 @@ use crate::font::Font;
 /// Represents an object that can be directly interacted with by the AVM2
 /// runtime.
 #[enum_trait_object(
-    #[allow(clippy::enum_variant_names)]
+    #[expect(clippy::enum_variant_names)]
     #[derive(Clone, Collect, Debug, Copy)]
     #[collect(no_drop)]
     pub enum Object<'gc> {
@@ -941,7 +941,7 @@ macro_rules! define_weak_enum {
 }
 
 define_weak_enum! {
-    #[allow(clippy::enum_variant_names)]
+    #[expect(clippy::enum_variant_names)]
     #[derive(Clone, Collect, Debug, Copy)]
     #[collect(no_drop)]
     pub enum WeakObject<'gc> for Object<'gc> {

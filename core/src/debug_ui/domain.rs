@@ -38,7 +38,7 @@ impl DomainListWindow {
         keep_open
     }
 
-    #[allow(clippy::only_used_in_recursion)]
+    #[expect(clippy::only_used_in_recursion)]
     pub fn show_domain<'gc>(
         &mut self,
         ui: &mut Ui,

@@ -40,7 +40,7 @@ pub fn read_bookmarks(input: &str) -> ParseDetails<Bookmarks> {
     }
 }
 
-#[allow(clippy::unwrap_used)]
+#[expect(clippy::unwrap_used)]
 #[cfg(test)]
 mod tests {
     use super::*;

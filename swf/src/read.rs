@@ -2588,7 +2588,7 @@ pub fn read_compression_type<R: Read>(mut input: R) -> Result<Compression> {
 }
 
 #[cfg(test)]
-#[allow(clippy::unusual_byte_groupings)]
+#[expect(clippy::unusual_byte_groupings)]
 pub mod tests {
     use super::*;
     use crate::test_data;

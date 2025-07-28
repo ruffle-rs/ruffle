@@ -506,7 +506,7 @@ impl<'gc> ClassObject<'gc> {
     ///
     /// This method corresponds directly to the AVM2 operation `setsuper`,
     /// with the caveat listed above about what object to call it on.
-    #[allow(unused_mut)]
+    #[expect(unused_mut)]
     pub fn set_super(
         self,
         multiname: &Multiname<'gc>,

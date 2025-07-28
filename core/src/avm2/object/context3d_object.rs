@@ -104,7 +104,7 @@ impl<'gc> Context3DObject<'gc> {
         )?))
     }
 
-    #[allow(clippy::too_many_arguments)]
+    #[expect(clippy::too_many_arguments)]
     pub fn create_texture(
         &self,
         width: u32,
@@ -320,7 +320,7 @@ impl<'gc> Context3DObject<'gc> {
         });
     }
 
-    #[allow(clippy::too_many_arguments)]
+    #[expect(clippy::too_many_arguments)]
     pub fn set_clear(
         &self,
         red: f64,

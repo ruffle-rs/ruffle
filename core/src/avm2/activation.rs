@@ -345,7 +345,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     /// method.
     /// NOTE: this is intended to be used immediately after from_nothing(),
     /// as a more efficient replacement for direct `Activation::from_method()`
-    #[allow(clippy::too_many_arguments)]
+    #[expect(clippy::too_many_arguments)]
     pub fn init_from_method(
         &mut self,
         method: Method<'gc>,

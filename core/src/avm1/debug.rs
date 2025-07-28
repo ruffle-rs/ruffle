@@ -3,7 +3,6 @@ use crate::avm1::{Object, ObjectPtr, Value};
 use crate::string::AvmString;
 use std::fmt::Write;
 
-#[allow(dead_code)]
 pub struct VariableDumper<'a> {
     objects: Vec<*const ObjectPtr>,
     depth: u32,
@@ -21,7 +20,7 @@ impl<'a> VariableDumper<'a> {
         }
     }
 
-    #[allow(dead_code)]
+    #[expect(dead_code)]
     pub fn dump<'gc>(
         value: &Value<'gc>,
         indent: &str,
