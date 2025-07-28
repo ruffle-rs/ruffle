@@ -4,7 +4,9 @@ use std::rc::Rc;
 
 use crate::avm2::class::{AllocatorFn, CustomConstructorFn};
 use crate::avm2::e4x::XmlSettings;
-use crate::avm2::error::{make_error_1014, make_error_1107, type_error, Error1014Type};
+use crate::avm2::error::{
+    make_error_1014, make_error_1107, type_error, verify_error, Error1014Type,
+};
 use crate::avm2::function::{exec, FunctionArgs};
 use crate::avm2::globals::{
     init_builtin_system_class_defs, init_builtin_system_classes, init_native_system_classes,
@@ -653,6 +655,14 @@ impl<'gc> Avm2<'gc> {
         // Make sure we have the correct domain for code that tries to access it
         // using `activation.domain()`
         activation.set_outer(ScopeChain::new(domain));
+
+        if abc.scripts.is_empty() {
+            return Err(Error::avm_error(verify_error(
+                &mut activation,
+                "Error #1047: No entry point was found.",
+                1047,
+            )?));
+        }
 
         let num_scripts = abc.scripts.len();
         let tunit = TranslationUnit::from_abc(abc, domain, name, movie, activation.gc());
