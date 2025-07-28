@@ -4,6 +4,7 @@ use crate::avm2::globals::flash::geom::transform::{
 };
 use crate::avm2::globals::slots::flash_geom_perspective_projection as pp_slots;
 use crate::avm2::globals::slots::flash_geom_point as point_slots;
+use crate::avm2::parameters::ParametersExt;
 use crate::avm2::{Activation, Error, Object, TObject as _, Value};
 use crate::avm2_stub_setter;
 use crate::display_object::TDisplayObject;
@@ -52,7 +53,7 @@ pub fn set_focal_length<'gc>(
     );
     let this = this.as_object().unwrap();
 
-    let focal_length = args.get(0).unwrap().coerce_to_number(activation)?;
+    let focal_length = args.get_f64(activation, 0)?;
     if focal_length <= 0.0 {
         return Err(Error::avm_error(argument_error(
             activation,
@@ -98,7 +99,7 @@ pub fn set_field_of_view<'gc>(
 
     let this = this.as_object().unwrap();
 
-    let fov = args.get(0).unwrap().coerce_to_number(activation)?;
+    let fov = args.get_f64(activation, 0)?;
     if fov <= 0.0 || 180.0 <= fov {
         return Err(Error::avm_error(argument_error(
             activation,
@@ -149,8 +150,8 @@ pub fn set_projection_center<'gc>(
 
     sync_from_display_object(activation, this)?;
 
-    let point = args.get(0).unwrap();
-    this.set_slot(pp_slots::CENTER, *point, activation)?;
+    let point = args.get_value(0);
+    this.set_slot(pp_slots::CENTER, point, activation)?;
 
     sync_to_display_object(activation, this)?;
 
