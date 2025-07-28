@@ -1286,10 +1286,10 @@ pub fn palette_map<'gc>(
         );
 
         let mut get_channel = |index: usize, shift: usize| -> Result<[u32; 256], Error<'gc>> {
-            let arg = args.get(index).unwrap_or(&Value::Null);
+            let arg = args.try_get_object(index);
             let mut array = [0_u32; 256];
             for (i, item) in array.iter_mut().enumerate() {
-                *item = if let Value::Object(arg) = arg {
+                *item = if let Some(arg) = arg {
                     arg.get_enumerant_value(i as u32, activation)?
                         .coerce_to_u32(activation)?
                 } else {

@@ -59,7 +59,7 @@ pub fn get_local<'gc>(
     movie_url.set_query(None);
     movie_url.set_fragment(None);
 
-    let secure = args.get(2).unwrap_or(&Value::Undefined).coerce_to_boolean();
+    let secure = args.get_bool(2);
 
     // Secure parameter disallows using the shared object from non-HTTPS.
     if secure && movie_url.scheme() != "https" {
