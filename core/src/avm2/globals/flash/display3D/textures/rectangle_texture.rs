@@ -37,7 +37,7 @@ pub fn upload_from_bitmap_data<'gc>(
                 0,
             );
         } else {
-            panic!("Invalid source: {:?}", args[0]);
+            unreachable!("Argument is BitmapData-typed");
         }
     }
     Ok(Value::Undefined)
