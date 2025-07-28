@@ -27,24 +27,28 @@ pub fn connect<'gc>(
         .as_net_connection()
         .expect("Must be NetConnection object");
 
-    if let Value::Null = args[0] {
-        NetConnections::connect_to_local(activation.context, connection);
-        return Ok(Value::Undefined);
-    }
+    let url = args.try_get_string(0);
 
-    let url = args.get_string(activation, 0);
-    if url.starts_with(WStr::from_units(b"http://"))
-        || url.starts_with(WStr::from_units(b"https://"))
-    {
-        // HTTP(S) is for Flash Remoting, which is just POST requests to the URL.
-        NetConnections::connect_to_flash_remoting(activation.context, connection, url.to_string());
+    if let Some(url) = url {
+        if url.starts_with(WStr::from_units(b"http://"))
+            || url.starts_with(WStr::from_units(b"https://"))
+        {
+            // HTTP(S) is for Flash Remoting, which is just POST requests to the URL.
+            NetConnections::connect_to_flash_remoting(
+                activation.context,
+                connection,
+                url.to_string(),
+            );
+        } else {
+            avm2_stub_method!(
+                activation,
+                "flash.net.NetConnection",
+                "connect",
+                "with non-null, non-http command"
+            );
+        }
     } else {
-        avm2_stub_method!(
-            activation,
-            "flash.net.NetConnection",
-            "connect",
-            "with non-null, non-http command"
-        );
+        NetConnections::connect_to_local(activation.context, connection);
     }
 
     Ok(Value::Undefined)
@@ -331,7 +335,7 @@ pub fn add_header<'gc>(
     // FIXME - do we re-use the same object reference table for all headers?
     let value = serialize_value(
         activation,
-        args[2],
+        args.get_value(2),
         AMFVersion::AMF0,
         &mut Default::default(),
     )
