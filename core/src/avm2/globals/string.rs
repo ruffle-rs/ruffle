@@ -56,7 +56,7 @@ pub fn char_at<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Value::String(s) = this {
         // This function takes Number, so if we use get_i32 instead of get_f64, the value may overflow.
-        let n = args.get_f64(activation, 0)?;
+        let n = args.get_f64(0);
 
         if n < 0.0 {
             return Ok(istr!("").into());
@@ -76,13 +76,13 @@ pub fn char_at<'gc>(
 
 /// Implements `String.charCodeAt`
 pub fn char_code_at<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    _activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Value::String(s) = this {
         // This function takes Number, so if we use coerce_to_i32 instead of coerce_to_number, the value may overflow.
-        let n = args.get_f64(activation, 0)?;
+        let n = args.get_f64(0);
 
         if n < 0.0 {
             return Ok(f64::NAN.into());
@@ -134,9 +134,9 @@ pub fn index_of<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.coerce_to_string(activation)?;
 
-    let pattern = args.get_string(activation, 0)?;
+    let pattern = args.get_string(activation, 0);
 
-    let start_index = args.get_i32(activation, 1)?.max(0) as usize;
+    let start_index = args.get_i32(1).max(0) as usize;
 
     this.slice(start_index..)
         .and_then(|s| s.find(&pattern))
@@ -152,9 +152,9 @@ pub fn last_index_of<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.coerce_to_string(activation)?;
 
-    let pattern = args.get_string(activation, 0)?;
+    let pattern = args.get_string(activation, 0);
 
-    let start_index = args.get_i32(activation, 1)?;
+    let start_index = args.get_i32(1);
 
     let start_index = match usize::try_from(start_index) {
         Ok(n) => n + pattern.len(),
@@ -375,10 +375,10 @@ pub fn slice<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.coerce_to_string(activation)?;
 
-    let start_index = args.get_f64(activation, 0)?;
+    let start_index = args.get_f64(0);
     let start_index = string_wrapping_index(start_index, this.len());
 
-    let end_index = args.get_f64(activation, 1)?;
+    let end_index = args.get_f64(1);
     let end_index = string_wrapping_index(end_index, this.len());
 
     if start_index < end_index {
@@ -446,10 +446,10 @@ pub fn substr<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.coerce_to_string(activation)?;
 
-    let start_index = args.get_f64(activation, 0)?;
+    let start_index = args.get_f64(0);
     let start_index = string_wrapping_index(start_index, this.len());
 
-    let len = args.get_f64(activation, 1)?;
+    let len = args.get_f64(1);
 
     let len = if len.is_nan() {
         0.0
@@ -489,10 +489,10 @@ pub fn substring<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.coerce_to_string(activation)?;
 
-    let start_index = args.get_f64(activation, 0)?;
+    let start_index = args.get_f64(0);
     let mut start_index = string_index(start_index, this.len());
 
-    let end_index = args.get_f64(activation, 1)?;
+    let end_index = args.get_f64(1);
     let mut end_index = string_index(end_index, this.len());
 
     if end_index < start_index {

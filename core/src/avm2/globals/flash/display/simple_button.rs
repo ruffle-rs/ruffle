@@ -73,30 +73,22 @@ pub fn init<'gc>(
         .as_display_object()
         .and_then(|this| this.as_avm2_button())
     {
-        let up_state = args
-            .try_get_object(activation, 0)
-            .and_then(|o| o.as_display_object());
+        let up_state = args.try_get_object(0).and_then(|o| o.as_display_object());
         if up_state.is_some() {
             new_do.set_state_child(activation.context, ButtonState::UP, up_state);
         }
 
-        let over_state = args
-            .try_get_object(activation, 1)
-            .and_then(|o| o.as_display_object());
+        let over_state = args.try_get_object(1).and_then(|o| o.as_display_object());
         if over_state.is_some() {
             new_do.set_state_child(activation.context, ButtonState::OVER, over_state);
         }
 
-        let down_state = args
-            .try_get_object(activation, 2)
-            .and_then(|o| o.as_display_object());
+        let down_state = args.try_get_object(2).and_then(|o| o.as_display_object());
         if down_state.is_some() {
             new_do.set_state_child(activation.context, ButtonState::DOWN, down_state);
         }
 
-        let hit_state = args
-            .try_get_object(activation, 3)
-            .and_then(|o| o.as_display_object());
+        let hit_state = args.try_get_object(3).and_then(|o| o.as_display_object());
         if hit_state.is_some() {
             new_do.set_state_child(activation.context, ButtonState::HIT_TEST, hit_state);
         }
@@ -144,7 +136,7 @@ pub fn set_down_state<'gc>(
         .and_then(|this| this.as_avm2_button())
     {
         let new_state = args
-            .try_get_object(activation, 0)
+            .try_get_object(0)
             .and_then(|val| val.as_display_object());
 
         btn.set_state_child(activation.context, ButtonState::DOWN, new_state);
@@ -187,7 +179,7 @@ pub fn set_over_state<'gc>(
         .and_then(|this| this.as_avm2_button())
     {
         let new_state = args
-            .try_get_object(activation, 0)
+            .try_get_object(0)
             .and_then(|val| val.as_display_object());
 
         btn.set_state_child(activation.context, ButtonState::OVER, new_state);
@@ -230,7 +222,7 @@ pub fn set_hit_test_state<'gc>(
         .and_then(|this| this.as_avm2_button())
     {
         let new_state = args
-            .try_get_object(activation, 0)
+            .try_get_object(0)
             .and_then(|val| val.as_display_object());
 
         btn.set_state_child(activation.context, ButtonState::HIT_TEST, new_state);
@@ -273,7 +265,7 @@ pub fn set_up_state<'gc>(
         .and_then(|this| this.as_avm2_button())
     {
         let new_state = args
-            .try_get_object(activation, 0)
+            .try_get_object(0)
             .and_then(|val| val.as_display_object());
 
         btn.set_state_child(activation.context, ButtonState::UP, new_state);

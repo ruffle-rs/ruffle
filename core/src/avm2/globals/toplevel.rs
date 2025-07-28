@@ -35,21 +35,21 @@ pub fn trace<'gc>(
 }
 
 pub fn is_finite<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    _activation: &mut Activation<'_, 'gc>,
     _this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let val = args.get_f64(activation, 0)?;
+    let val = args.get_f64(0);
 
     Ok(val.is_finite().into())
 }
 
 pub fn is_na_n<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    _activation: &mut Activation<'_, 'gc>,
     _this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let val = args.get_f64(activation, 0)?;
+    let val = args.get_f64(0);
 
     Ok(val.is_nan().into())
 }
@@ -59,8 +59,8 @@ pub fn parse_int<'gc>(
     _this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let string = args.get_string(activation, 0)?;
-    let radix = args.get_i32(activation, 1)?;
+    let string = args.get_string(activation, 0);
+    let radix = args.get_i32(1);
 
     let result = crate::avm2::value::string_to_int(&string, radix, false);
     Ok(result.into())
@@ -71,7 +71,7 @@ pub fn parse_float<'gc>(
     _this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let string = args.get_string(activation, 0)?;
+    let string = args.get_string(activation, 0);
     let swf_version = activation.context.root_swf.version();
 
     if let Some(result) = crate::avm2::value::string_to_f64(&string, swf_version, false) {
@@ -101,7 +101,7 @@ pub fn escape<'gc>(
     _this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let value = args.get_string(activation, 0)?;
+    let value = args.get_string(activation, 0);
 
     let mut output = WString::new();
 
@@ -130,7 +130,7 @@ pub fn unescape<'gc>(
     _this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let value = args.get_string(activation, 0)?;
+    let value = args.get_string(activation, 0);
 
     let mut output = WString::new();
     let mut index = 0;
@@ -199,7 +199,7 @@ fn encode_utf8_with_exclusions<'gc>(
     args: &[Value<'gc>],
     not_converted: &str,
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let input = args.get_string(activation, 0)?;
+    let input = args.get_string(activation, 0);
     let mut output = String::new();
 
     let input_string = match input.units() {
@@ -265,7 +265,7 @@ fn decode<'gc>(
     reserved_set: &str,
     func_name: &str,
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let value = args.get_string(activation, 0)?;
+    let value = args.get_string(activation, 0);
 
     let mut output = WString::new();
     let mut chars = value.chars();

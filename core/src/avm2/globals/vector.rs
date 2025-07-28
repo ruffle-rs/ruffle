@@ -37,7 +37,7 @@ pub fn instance_init<'gc>(
     let this = this.as_object().unwrap();
 
     if let Some(mut vector) = this.as_vector_storage_mut(activation.gc()) {
-        let length = args.get_u32(activation, 0)? as usize;
+        let length = args.get_u32(0) as usize;
         let is_fixed = args.get_bool(1);
 
         vector.resize(length, activation)?;
@@ -125,7 +125,7 @@ pub fn set_length<'gc>(
     let this = this.as_object().unwrap();
 
     if let Some(mut vector) = this.as_vector_storage_mut(activation.gc()) {
-        let new_length = args.get_u32(activation, 0)? as usize;
+        let new_length = args.get_u32(0) as usize;
 
         vector.resize(new_length, activation)?;
     }
@@ -243,7 +243,7 @@ pub fn join<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
-    let separator = args.get_string(activation, 0)?;
+    let separator = args.get_string(activation, 0);
 
     if let Some(vector) = this.as_vector_storage() {
         let mut accum = Vec::with_capacity(vector.length());
@@ -332,7 +332,7 @@ pub fn index_of<'gc>(
     let this = this.as_object().unwrap();
 
     let search_for = args.get_value(0);
-    let from_index = args.get_f64(activation, 1)?;
+    let from_index = args.get_f64(1);
 
     let from_index = if from_index < 0.0 {
         let length = this.as_vector_storage().unwrap().length() as i32;
@@ -362,7 +362,7 @@ pub fn last_index_of<'gc>(
     let this = this.as_object().unwrap();
 
     let search_for = args.get_value(0);
-    let from_index = args.get_f64(activation, 1)?;
+    let from_index = args.get_f64(1);
 
     let from_index = if from_index < 0.0 {
         let length = this.as_vector_storage().unwrap().length() as i32;
@@ -500,7 +500,7 @@ pub fn insert_at<'gc>(
     let this = this.as_object().unwrap();
 
     if let Some(mut vs) = this.as_vector_storage_mut(activation.gc()) {
-        let index = args.get_i32(activation, 0)?;
+        let index = args.get_i32(0);
 
         let value_type = vs.value_type_for_coercion(activation);
 
@@ -521,7 +521,7 @@ pub fn remove_at<'gc>(
     let this = this.as_object().unwrap();
 
     if let Some(mut vs) = this.as_vector_storage_mut(activation.gc()) {
-        let index = args.get_i32(activation, 0)?;
+        let index = args.get_i32(0);
 
         return vs.remove(index, activation);
     }
@@ -555,8 +555,8 @@ pub fn slice<'gc>(
     let this = this.as_object().unwrap();
 
     if let Some(vs) = this.as_vector_storage_mut(activation.gc()) {
-        let from = args.get_i32(activation, 0)?;
-        let to = args.get_i32(activation, 1)?;
+        let from = args.get_i32(0);
+        let to = args.get_i32(1);
         let value_type = vs.value_type();
 
         let from = vs.clamp_parameter_index(from);
@@ -668,8 +668,8 @@ pub fn splice<'gc>(
     let this = this.as_object().unwrap();
 
     if let Some(mut vs) = this.as_vector_storage_mut(activation.gc()) {
-        let start_len = args.get_i32(activation, 0)?;
-        let delete_len = args.get_i32(activation, 1)?;
+        let start_len = args.get_i32(0);
+        let delete_len = args.get_i32(1);
         let value_type = vs.value_type();
         let value_type_for_coercion = vs.value_type_for_coercion(activation);
 

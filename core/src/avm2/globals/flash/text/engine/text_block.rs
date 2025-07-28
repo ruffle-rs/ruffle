@@ -26,8 +26,8 @@ pub fn create_text_line<'gc>(
 
     avm2_stub_method!(activation, "flash.text.TextBlock", "createTextLine");
 
-    let previous_text_line = args.try_get_object(activation, 0);
-    let width = args.get_f64(activation, 1)?;
+    let previous_text_line = args.try_get_object(0);
+    let width = args.get_f64(1);
 
     let content = this.get_slot(block_slots::_CONTENT);
 

@@ -137,7 +137,7 @@ pub fn seek<'gc>(
     let this = this.as_object().unwrap();
 
     if let Some(ns) = this.as_netstream() {
-        let offset = args.get_f64(activation, 0)?;
+        let offset = args.get_f64(0);
         ns.seek(activation.context, offset * 1000.0, true);
     }
 

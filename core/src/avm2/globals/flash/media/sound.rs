@@ -47,7 +47,7 @@ pub fn init<'gc>(
         }
     }
 
-    if args.try_get_object(activation, 0).is_some() {
+    if args.try_get_object(0).is_some() {
         this.call_method(sound_methods::LOAD, args, activation)?;
     }
 
@@ -146,9 +146,9 @@ pub fn play<'gc>(
     let this = this.as_object().unwrap();
 
     if let Some(sound_object) = this.as_sound_object() {
-        let position = args.get_f64(activation, 0)?;
-        let num_loops = args.get_i32(activation, 1)?;
-        let sound_transform = args.try_get_object(activation, 2);
+        let position = args.get_f64(0);
+        let num_loops = args.get_i32(1);
+        let sound_transform = args.try_get_object(2);
 
         let in_sample = if position > 0.0 {
             Some((position / 1000.0 * 44100.0) as u32)
@@ -197,8 +197,8 @@ pub fn extract<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     avm2_stub_method!(activation, "flash.media.Sound", "extract");
 
-    let bytearray = args.try_get_object(activation, 0);
-    let length = args.get_f64(activation, 1)?;
+    let bytearray = args.try_get_object(0);
+    let length = args.get_f64(1);
 
     if let Some(bytearray) = bytearray {
         if let Some(mut bytearray) = bytearray.as_bytearray_mut() {
@@ -234,7 +234,7 @@ pub fn load<'gc>(
         return Err(make_error_2037(activation));
     }
 
-    let url_request = match args.try_get_object(activation, 0) {
+    let url_request = match args.try_get_object(0) {
         Some(request) => request,
         // FP ignores calls of `load(null)`
         None => return Ok(Value::Undefined),
@@ -245,7 +245,7 @@ pub fn load<'gc>(
         .coerce_to_string(activation)?;
 
     // TODO: context parameter currently unused.
-    let sound_context = args.try_get_object(activation, 1);
+    let sound_context = args.try_get_object(1);
     if sound_context.is_some() {
         avm2_stub_method!(activation, "flash.media.Sound", "load", "with context");
     }
@@ -276,7 +276,7 @@ pub fn load_compressed_data_from_byte_array<'gc>(
     }
 
     let bytearray = args.get_object(activation, 0, "bytes")?;
-    let bytes_length = args.get_u32(activation, 1)?;
+    let bytes_length = args.get_u32(1);
     let bytearray = bytearray.as_bytearray().unwrap();
 
     let bytes = if let Ok(bytes) = bytearray.read_bytes(bytes_length as usize) {

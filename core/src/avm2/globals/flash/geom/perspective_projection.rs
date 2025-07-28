@@ -53,7 +53,7 @@ pub fn set_focal_length<'gc>(
     );
     let this = this.as_object().unwrap();
 
-    let focal_length = args.get_f64(activation, 0)?;
+    let focal_length = args.get_f64(0);
     if focal_length <= 0.0 {
         return Err(Error::avm_error(argument_error(
             activation,
@@ -99,7 +99,7 @@ pub fn set_field_of_view<'gc>(
 
     let this = this.as_object().unwrap();
 
-    let fov = args.get_f64(activation, 0)?;
+    let fov = args.get_f64(0);
     if fov <= 0.0 || 180.0 <= fov {
         return Err(Error::avm_error(argument_error(
             activation,
