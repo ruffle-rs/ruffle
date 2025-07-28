@@ -1685,7 +1685,7 @@ pub fn string_to_multiname<'gc>(
 // TODO: figure out if this matters for us, maybe there are some edge cases
 pub fn name_to_multiname<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    name: &Value<'gc>,
+    name: Value<'gc>,
     force_attribute: bool,
 ) -> Result<Multiname<'gc>, Error<'gc>> {
     if matches!(name, Value::Undefined | Value::Null) {
