@@ -91,8 +91,8 @@ pub fn upload_from_bitmap_data<'gc>(
         let source_obj = args.get_object(activation, 0, "source")?;
 
         if let Some(source) = source_obj.as_bitmap_data() {
-            let side = args[1].coerce_to_u32(activation)?;
-            let mip_level = args[2].coerce_to_u32(activation)?;
+            let side = args.get_u32(1);
+            let mip_level = args.get_u32(2);
             if mip_level == 0 {
                 texture.context3d().copy_bitmapdata_to_texture(
                     source.sync(activation.context.renderer),
@@ -109,7 +109,7 @@ pub fn upload_from_bitmap_data<'gc>(
                 );
             }
         } else {
-            panic!("Invalid source: {:?}", args[0]);
+            unreachable!("Argument is BitmapData-typed");
         }
     }
     Ok(Value::Undefined)
