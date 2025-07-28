@@ -78,7 +78,7 @@ pub fn upload_compressed_texture_from_byte_array_internal<'gc>(
 
     let texture = this.as_texture().unwrap();
     let data = args.get_object(activation, 0, "data")?;
-    let byte_array_offset = args.get_u32(activation, 1)? as usize;
+    let byte_array_offset = args.get_u32(1) as usize;
 
     if !matches!(
         texture.original_format(),
@@ -107,8 +107,8 @@ pub fn upload_from_byte_array<'gc>(
 
     let texture = this.as_texture().unwrap();
     let data = args.get_object(activation, 0, "data")?;
-    let byte_array_offset = args.get_u32(activation, 1)?;
-    let mip_level = args.get_u32(activation, 2)?;
+    let byte_array_offset = args.get_u32(1);
+    let mip_level = args.get_u32(2);
 
     do_copy(activation, data, texture, byte_array_offset, 0, mip_level)?;
     Ok(Value::Undefined)

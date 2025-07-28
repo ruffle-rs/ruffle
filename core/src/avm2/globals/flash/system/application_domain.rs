@@ -154,7 +154,7 @@ pub fn set_domain_memory<'gc>(
     let this = this.as_object().unwrap();
 
     if let Some(appdomain) = this.as_application_domain() {
-        let obj = args.try_get_object(activation, 0);
+        let obj = args.try_get_object(0);
         if let Some(obj) = obj {
             appdomain.set_domain_memory(activation, Some(obj.as_bytearray_object().unwrap()))?;
         } else {

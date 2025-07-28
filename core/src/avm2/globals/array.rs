@@ -86,7 +86,7 @@ pub fn set_length<'gc>(
     let this = this.as_object().unwrap();
 
     if let Some(mut array) = this.as_array_storage_mut(activation.gc()) {
-        let size = args.get_u32(activation, 0)?;
+        let size = args.get_u32(0);
         array.set_length(size as usize);
     }
 
@@ -439,7 +439,7 @@ pub fn index_of<'gc>(
 
     if let Some(array) = this.as_array_storage() {
         let search_val = args.get_value(0);
-        let from = args.get_i32(activation, 1)?;
+        let from = args.get_i32(1);
 
         for (i, val) in array.iter().enumerate() {
             let val = resolve_array_hole(activation, this, i, val)?;
@@ -464,7 +464,7 @@ pub fn last_index_of<'gc>(
 
     if let Some(array) = this.as_array_storage() {
         let search_val = args.get_value(0);
-        let from = args.get_i32(activation, 1)?;
+        let from = args.get_i32(1);
 
         let from_index = if from >= 0 {
             from as usize
@@ -1037,7 +1037,7 @@ pub fn sort<'gc>(
     let (compare_fnc, options) = if args.len() > 1 {
         (
             Some(args.get_value(0)),
-            SortOptions::from_bits_truncate(args.get_u32(activation, 1)? as u8),
+            SortOptions::from_bits_truncate(args.get_u32(1) as u8),
         )
     } else {
         let arg = args.get(0).copied().unwrap_or(Value::Undefined);
@@ -1243,7 +1243,7 @@ pub fn remove_at<'gc>(
     let this = this.as_object().unwrap();
 
     if let Some(mut array) = this.as_array_storage_mut(activation.gc()) {
-        let index = args.get_i32(activation, 0)?;
+        let index = args.get_i32(0);
 
         return Ok(array.remove(index).unwrap_or(Value::Undefined));
     }

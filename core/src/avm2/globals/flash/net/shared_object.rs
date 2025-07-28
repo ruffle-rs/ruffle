@@ -86,7 +86,7 @@ pub fn get_local<'gc>(
         movie_url.host_str().unwrap_or_default()
     };
 
-    let local_path = &args.try_get_string(activation, 1)?;
+    let local_path = &args.try_get_string(1);
     let local_path = if let Some(local_path) = local_path {
         // Empty local path always fails.
         if local_path.is_empty() {

@@ -556,8 +556,7 @@ impl<'gc> Value<'gc> {
     /// This function performs no numerical coercion, nor are any methods called.
     /// If the value is not numeric, this function will panic.
     pub fn as_f64(&self) -> f64 {
-        self.try_as_f64()
-            .unwrap_or_else(|| panic!("Expected Number or Integer"))
+        self.try_as_f64().expect("Expected Number or Integer")
     }
 
     /// Like `as_number`, but for `i32`

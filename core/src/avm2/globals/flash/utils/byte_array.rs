@@ -27,7 +27,7 @@ pub fn write_byte<'gc>(
     let this = this.as_object().unwrap();
 
     if let Some(mut bytearray) = this.as_bytearray_mut() {
-        let byte = args.get_i32(activation, 0)?;
+        let byte = args.get_i32(0);
         bytearray
             .write_bytes(&[byte as u8])
             .map_err(|e| e.to_avm(activation))?;
@@ -45,8 +45,8 @@ pub fn write_bytes<'gc>(
     let this = this.as_object().unwrap();
 
     let bytearray = args.get_object(activation, 0, "bytes")?;
-    let offset = args.get_u32(activation, 1)? as usize;
-    let length = args.get_u32(activation, 2)? as usize;
+    let offset = args.get_u32(1) as usize;
+    let length = args.get_u32(2) as usize;
 
     if !Object::ptr_eq(this, bytearray) {
         // The ByteArray we are reading from is different than the ByteArray we are writing to,
@@ -97,8 +97,8 @@ pub fn read_bytes<'gc>(
     let this = this.as_object().unwrap();
 
     let bytearray = args.get_object(activation, 0, "bytes")?;
-    let offset = args.get_u32(activation, 1)? as usize;
-    let length = args.get_u32(activation, 2)? as usize;
+    let offset = args.get_u32(1) as usize;
+    let length = args.get_u32(2) as usize;
 
     if !Object::ptr_eq(this, bytearray) {
         if let Some(bytearray_read) = this.as_bytearray() {
@@ -143,7 +143,7 @@ pub fn write_utf<'gc>(
     let this = this.as_object().unwrap();
 
     if let Some(mut bytearray) = this.as_bytearray_mut() {
-        let utf_string = args.get_string(activation, 0)?;
+        let utf_string = args.get_string(activation, 0);
 
         // NOTE: there is a bug on old Flash Player (e.g. v11.3); if the string to
         // write ends with an unpaired high surrogate, the routine bails out and nothing
@@ -242,14 +242,14 @@ pub fn get_position<'gc>(
 }
 
 pub fn set_position<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    _activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
     if let Some(bytearray) = this.as_bytearray() {
-        let num = args.get_u32(activation, 0)?;
+        let num = args.get_u32(0);
         bytearray.set_position(num as usize);
     }
 
@@ -285,14 +285,14 @@ pub fn get_length<'gc>(
 }
 
 pub fn set_length<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    _activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
     if let Some(mut bytearray) = this.as_bytearray_mut() {
-        let len = args.get_u32(activation, 0)? as usize;
+        let len = args.get_u32(0) as usize;
         bytearray.set_length(len);
     }
 
@@ -324,7 +324,7 @@ pub fn set_endian<'gc>(
     let this = this.as_object().unwrap();
 
     if let Some(mut bytearray) = this.as_bytearray_mut() {
-        let endian = args.get_string(activation, 0)?;
+        let endian = args.get_string(activation, 0);
         if &endian == b"bigEndian" {
             bytearray.set_endian(Endian::Big);
         } else if &endian == b"littleEndian" {
@@ -481,7 +481,7 @@ pub fn read_utf_bytes<'gc>(
     let this = this.as_object().unwrap();
 
     if let Some(bytearray) = this.as_bytearray() {
-        let len = args.get_u32(activation, 0)?;
+        let len = args.get_u32(0);
         return Ok(AvmString::new_utf8_bytes(
             activation.gc(),
             bytearray
@@ -519,7 +519,7 @@ pub fn write_float<'gc>(
     let this = this.as_object().unwrap();
 
     if let Some(mut bytearray) = this.as_bytearray_mut() {
-        let num = args.get_f64(activation, 0)?;
+        let num = args.get_f64(0);
         bytearray
             .write_float(num as f32)
             .map_err(|e| e.to_avm(activation))?;
@@ -536,7 +536,7 @@ pub fn write_double<'gc>(
     let this = this.as_object().unwrap();
 
     if let Some(mut bytearray) = this.as_bytearray_mut() {
-        let num = args.get_f64(activation, 0)?;
+        let num = args.get_f64(0);
         bytearray
             .write_double(num)
             .map_err(|e| e.to_avm(activation))?;
@@ -570,7 +570,7 @@ pub fn write_int<'gc>(
     let this = this.as_object().unwrap();
 
     if let Some(mut bytearray) = this.as_bytearray_mut() {
-        let num = args.get_i32(activation, 0)?;
+        let num = args.get_i32(0);
         bytearray.write_int(num).map_err(|e| e.to_avm(activation))?;
     }
 
@@ -585,7 +585,7 @@ pub fn write_unsigned_int<'gc>(
     let this = this.as_object().unwrap();
 
     if let Some(mut bytearray) = this.as_bytearray_mut() {
-        let num = args.get_u32(activation, 0)?;
+        let num = args.get_u32(0);
         bytearray
             .write_unsigned_int(num)
             .map_err(|e| e.to_avm(activation))?;
@@ -602,7 +602,7 @@ pub fn write_short<'gc>(
     let this = this.as_object().unwrap();
 
     if let Some(mut bytearray) = this.as_bytearray_mut() {
-        let num = args.get_i32(activation, 0)?;
+        let num = args.get_i32(0);
         bytearray
             .write_short(num as i16)
             .map_err(|e| e.to_avm(activation))?;
@@ -619,8 +619,8 @@ pub fn write_multi_byte<'gc>(
     let this = this.as_object().unwrap();
 
     if let Some(mut bytearray) = this.as_bytearray_mut() {
-        let string = args.get_string(activation, 0)?;
-        let charset_label = args.get_string(activation, 1)?;
+        let string = args.get_string(activation, 0);
+        let charset_label = args.get_string(activation, 1);
         let encoder =
             Encoding::for_label(charset_label.to_utf8_lossy().as_bytes()).unwrap_or(UTF_8);
         let utf8 = string.to_utf8_lossy();
@@ -641,8 +641,8 @@ pub fn read_multi_byte<'gc>(
     let this = this.as_object().unwrap();
 
     if let Some(bytearray) = this.as_bytearray() {
-        let len = args.get_u32(activation, 0)?;
-        let charset_label = args.get_string(activation, 1)?;
+        let len = args.get_u32(0);
+        let charset_label = args.get_string(activation, 1);
         let mut bytes = bytearray
             .read_bytes(len as usize)
             .map_err(|e| e.to_avm(activation))?;
@@ -670,7 +670,7 @@ pub fn write_utf_bytes<'gc>(
     let this = this.as_object().unwrap();
 
     if let Some(mut bytearray) = this.as_bytearray_mut() {
-        let string = args.get_string(activation, 0)?;
+        let string = args.get_string(activation, 0);
         bytearray
             .write_bytes(string.to_utf8_lossy().as_bytes())
             .map_err(|e| e.to_avm(activation))?;
@@ -687,7 +687,7 @@ pub fn compress<'gc>(
     let this = this.as_object().unwrap();
 
     if let Some(mut bytearray) = this.as_bytearray_mut() {
-        let algorithm = args.get_string(activation, 0)?;
+        let algorithm = args.get_string(activation, 0);
         let algorithm = match algorithm.parse() {
             Ok(algorithm) => algorithm,
             Err(_) => {
@@ -717,7 +717,7 @@ pub fn uncompress<'gc>(
     let this = this.as_object().unwrap();
 
     if let Some(mut bytearray) = this.as_bytearray_mut() {
-        let algorithm = args.get_string(activation, 0)?;
+        let algorithm = args.get_string(activation, 0);
         let algorithm = match algorithm.parse() {
             Ok(algorithm) => algorithm,
             Err(_) => {
@@ -855,7 +855,7 @@ pub fn set_object_encoding<'gc>(
     let this = this.as_object().unwrap();
 
     if let Some(mut bytearray) = this.as_bytearray_mut() {
-        let new_encoding = args.get_u32(activation, 0)?;
+        let new_encoding = args.get_u32(0);
         match new_encoding {
             0 => bytearray.set_object_encoding(ObjectEncoding::Amf0),
             3 => bytearray.set_object_encoding(ObjectEncoding::Amf3),

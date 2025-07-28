@@ -140,7 +140,7 @@ pub fn get_child_at<'gc>(
         .as_display_object()
         .and_then(|this| this.as_container())
     {
-        let index = args.get_i32(activation, 0)?;
+        let index = args.get_i32(0);
         return if let Some(child) = dobj.child_by_index(index as usize) {
             Ok(child.object2())
         } else {
@@ -168,7 +168,7 @@ pub fn get_child_by_name<'gc>(
         .as_display_object()
         .and_then(|this| this.as_container())
     {
-        let name = args.get_string(activation, 0)?;
+        let name = args.get_string(activation, 0);
         if let Some(child) = dobj.child_by_name(&name, true) {
             return Ok(child.object2());
         } else {
@@ -219,7 +219,7 @@ pub fn add_child_at<'gc>(
             .get_object(activation, 0, "child")?
             .as_display_object()
             .expect("Child must be a display object");
-        let target_index = args.get_u32(activation, 1)? as usize;
+        let target_index = args.get_u32(1) as usize;
 
         validate_add_operation(activation, parent, child, target_index)?;
         add_child_to_displaylist(activation.context, parent, child, target_index);
@@ -332,7 +332,7 @@ pub fn remove_child_at<'gc>(
 
     if let Some(parent) = this.as_display_object() {
         if let Some(mut ctr) = parent.as_container() {
-            let target_child = args.get_i32(activation, 0)?;
+            let target_child = args.get_i32(0);
 
             if target_child >= ctr.num_children() as i32 || target_child < 0 {
                 // Flash error message: The supplied index is out of bounds.
@@ -369,8 +369,8 @@ pub fn remove_children<'gc>(
 
     if let Some(parent) = this.as_display_object() {
         if let Some(mut ctr) = parent.as_container() {
-            let from = args.get_i32(activation, 0)?;
-            let to = args.get_i32(activation, 1)?;
+            let from = args.get_i32(0);
+            let to = args.get_i32(1);
 
             // Flash special-cases `to==i32::MAX` to not throw an error,
             // even if `from` is not in range
@@ -434,7 +434,7 @@ pub fn set_child_index<'gc>(
             .get_object(activation, 0, "child")?
             .as_display_object()
             .expect("Child must be a display object");
-        let target_index = args.get_u32(activation, 1)? as usize;
+        let target_index = args.get_u32(1) as usize;
 
         let child_parent = child.parent();
         if child_parent.is_none() || !DisplayObject::ptr_eq(child_parent.unwrap(), parent) {
@@ -458,8 +458,8 @@ pub fn swap_children_at<'gc>(
 
     if let Some(parent) = this.as_display_object() {
         if let Some(mut ctr) = parent.as_container() {
-            let index0 = args.get_i32(activation, 0)?;
-            let index1 = args.get_i32(activation, 1)?;
+            let index0 = args.get_i32(0);
+            let index1 = args.get_i32(1);
             let bounds = ctr.num_children();
 
             if index0 < 0 || index0 as usize >= bounds {

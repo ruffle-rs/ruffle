@@ -65,7 +65,7 @@ pub fn set_buffer_time<'gc>(
     _this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let buffer_time = args.get_i32(activation, 0)?;
+    let buffer_time = args.get_i32(0);
 
     activation
         .context

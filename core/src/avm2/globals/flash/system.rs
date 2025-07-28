@@ -20,8 +20,8 @@ pub fn fscommand<'gc>(
     _this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let command = args.get_string(activation, 0)?;
-    let args = args.get_string(activation, 1)?;
+    let command = args.get_string(activation, 0);
+    let args = args.get_string(activation, 1);
 
     if !activation
         .context

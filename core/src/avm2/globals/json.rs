@@ -264,7 +264,7 @@ pub fn parse<'gc>(
     _this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let input = args.get_string(activation, 0)?;
+    let input = args.get_string(activation, 0);
     let reviver = args
         .get_value(1)
         .as_object()

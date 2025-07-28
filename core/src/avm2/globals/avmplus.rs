@@ -19,7 +19,7 @@ pub fn describe_type_json<'gc>(
     _this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let flags = DescribeTypeFlags::from_bits(args.get_u32(activation, 1)?).expect("Invalid flags!");
+    let flags = DescribeTypeFlags::from_bits(args.get_u32(1)).expect("Invalid flags!");
 
     let value = args[0];
     let class_def = instance_class_describe_type(activation, value);

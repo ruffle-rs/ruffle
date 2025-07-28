@@ -14,7 +14,7 @@ pub fn upload_from_byte_array<'gc>(
 
     let texture = this.as_texture().unwrap();
     let data = args.get_object(activation, 0, "data")?;
-    let byte_array_offset = args.get_u32(activation, 1)?;
+    let byte_array_offset = args.get_u32(1);
 
     do_copy(activation, data, texture, byte_array_offset, 0, 0)?;
     Ok(Value::Undefined)

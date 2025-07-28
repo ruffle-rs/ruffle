@@ -180,7 +180,7 @@ pub fn set_background_color<'gc>(
         .as_display_object()
         .and_then(|this| this.as_edit_text())
     {
-        let rgb = args.get_u32(activation, 0)?;
+        let rgb = args.get_u32(0);
         let color = Color::from_rgb(rgb, 255);
         this.set_background_color(activation.gc(), color);
     }
@@ -251,7 +251,7 @@ pub fn set_border_color<'gc>(
         .as_display_object()
         .and_then(|this| this.as_edit_text())
     {
-        let rgb = args.get_u32(activation, 0)?;
+        let rgb = args.get_u32(0);
         let color = Color::from_rgb(rgb, 255);
         this.set_border_color(activation.gc(), color);
     }
@@ -312,7 +312,7 @@ pub fn get_default_text_format<'gc>(
 }
 
 pub fn set_default_text_format<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    _activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -322,7 +322,7 @@ pub fn set_default_text_format<'gc>(
         .as_display_object()
         .and_then(|this| this.as_edit_text())
     {
-        let new_text_format = args.try_get_object(activation, 0);
+        let new_text_format = args.try_get_object(0);
 
         if let Some(new_text_format) = new_text_format {
             if let Some(new_text_format) = new_text_format.as_text_format() {
@@ -434,7 +434,7 @@ pub fn set_html_text<'gc>(
         .as_display_object()
         .and_then(|this| this.as_edit_text())
     {
-        let html_text = args.get_string(activation, 0)?;
+        let html_text = args.get_string(activation, 0);
 
         this.set_is_html(true);
         this.set_html_text(&html_text, activation.context);
@@ -600,7 +600,7 @@ pub fn set_text_color<'gc>(
         .as_display_object()
         .and_then(|this| this.as_edit_text())
     {
-        let text_color = args.get_u32(activation, 0)?;
+        let text_color = args.get_u32(0);
         let desired_format = TextFormat {
             color: Some(swf::Color::from_rgb(text_color, 0xFF)),
             ..TextFormat::default()
@@ -773,8 +773,8 @@ pub fn get_text_format<'gc>(
         .as_display_object()
         .and_then(|this| this.as_edit_text())
     {
-        let mut begin_index = args.get_i32(activation, 0)?;
-        let mut end_index = args.get_i32(activation, 1)?;
+        let mut begin_index = args.get_i32(0);
+        let mut end_index = args.get_i32(1);
 
         if begin_index < 0 {
             begin_index = 0;
@@ -830,8 +830,8 @@ pub fn replace_text<'gc>(
         .and_then(|this| this.as_edit_text())
     {
         // FIXME what is the behavior for negative beginIndex and endIndex?
-        let begin_index = args.get_i32(activation, 0)?;
-        let end_index = args.get_i32(activation, 1)?;
+        let begin_index = args.get_i32(0);
+        let end_index = args.get_i32(1);
         let value = args.get_string_non_null(activation, 2, "text")?;
 
         this.replace_text(
@@ -920,8 +920,8 @@ pub fn set_selection<'gc>(
         .and_then(|this| this.as_edit_text())
     {
         // FIXME what is the behavior for negative beginIndex and endIndex?
-        let begin_index = args.get_i32(activation, 0)?;
-        let end_index = args.get_i32(activation, 1)?;
+        let begin_index = args.get_i32(0);
+        let end_index = args.get_i32(1);
 
         this.set_selection(
             Some(TextSelection::for_range(
@@ -946,11 +946,11 @@ pub fn set_text_format<'gc>(
         .as_display_object()
         .and_then(|this| this.as_edit_text())
     {
-        let tf = args.try_get_object(activation, 0);
+        let tf = args.try_get_object(0);
         if let Some(tf) = tf {
             if let Some(tf) = tf.as_text_format() {
-                let mut begin_index = args.get_i32(activation, 1)?;
-                let mut end_index = args.get_i32(activation, 2)?;
+                let mut begin_index = args.get_i32(1);
+                let mut end_index = args.get_i32(2);
 
                 if begin_index < 0 {
                     begin_index = 0;
@@ -1094,7 +1094,7 @@ pub fn get_thickness<'gc>(
 }
 
 pub fn set_thickness<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    _activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -1105,7 +1105,7 @@ pub fn set_thickness<'gc>(
         .and_then(|this| this.as_edit_text())
     {
         let old_settings = this.render_settings();
-        let mut new_thickness = args.get_f64(activation, 0)?;
+        let mut new_thickness = args.get_f64(0);
 
         // NOTE: The thickness clamp is ONLY enforced on AS3.
         new_thickness = new_thickness.clamp(-200.0, 200.0);
@@ -1134,7 +1134,7 @@ pub fn get_sharpness<'gc>(
 }
 
 pub fn set_sharpness<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    _activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -1145,7 +1145,7 @@ pub fn set_sharpness<'gc>(
         .and_then(|this| this.as_edit_text())
     {
         let old_settings = this.render_settings();
-        let mut new_sharpness = args.get_f64(activation, 0)?;
+        let mut new_sharpness = args.get_f64(0);
 
         // NOTE: The sharpness clamp is only enforced on AS3.
         new_sharpness = new_sharpness.clamp(-400.0, 400.0);
@@ -1187,7 +1187,7 @@ pub fn get_line_metrics<'gc>(
         return Ok(Value::Undefined);
     };
 
-    let line_num = args.get_i32(activation, 0)?;
+    let line_num = args.get_i32(0);
     if line_num < 0 {
         return Err(make_error_2006(activation));
     }
@@ -1226,7 +1226,7 @@ pub fn get_line_length<'gc>(
         return Ok(Value::Undefined);
     };
 
-    let line_num = args.get_i32(activation, 0)?;
+    let line_num = args.get_i32(0);
     if line_num < 0 {
         return Err(make_error_2006(activation));
     }
@@ -1249,7 +1249,7 @@ pub fn get_line_text<'gc>(
         .as_display_object()
         .and_then(|this| this.as_edit_text())
     {
-        let line_num = args.get_i32(activation, 0)?;
+        let line_num = args.get_i32(0);
         return if let Some(text) = this.line_text(line_num as usize) {
             Ok(AvmString::new(activation.gc(), text).into())
         } else {
@@ -1274,7 +1274,7 @@ pub fn get_line_offset<'gc>(
         return Ok(Value::Undefined);
     };
 
-    let line_num = args.get_i32(activation, 0)?;
+    let line_num = args.get_i32(0);
     if line_num < 0 {
         return Err(make_error_2006(activation));
     }
@@ -1365,7 +1365,7 @@ pub fn set_scroll_v<'gc>(
         .as_display_object()
         .and_then(|this| this.as_edit_text())
     {
-        let input = args.get_i32(activation, 0)?;
+        let input = args.get_i32(0);
         this.set_scroll(input as f64, activation.context);
     }
 
@@ -1403,7 +1403,7 @@ pub fn set_scroll_h<'gc>(
         // NOTE: The clamping behavior here is identical to AVM1.
         // This is incorrect, SWFv9 uses more complex behavior and AS3 can only
         // be present in v9 SWFs.
-        let input = args.get_i32(activation, 0)?;
+        let input = args.get_i32(0);
         let clamped = input.abs().min(this.maxhscroll() as i32);
         this.set_hscroll(clamped as f64, activation.context);
     }
@@ -1429,7 +1429,7 @@ pub fn get_max_chars<'gc>(
 }
 
 pub fn set_max_chars<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    _activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -1439,7 +1439,7 @@ pub fn set_max_chars<'gc>(
         .as_display_object()
         .and_then(|this| this.as_edit_text())
     {
-        let input = args.get_i32(activation, 0)?;
+        let input = args.get_i32(0);
         this.set_max_chars(input);
     }
 
@@ -1485,7 +1485,7 @@ pub fn get_restrict<'gc>(
 }
 
 pub fn set_restrict<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    _activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -1495,7 +1495,7 @@ pub fn set_restrict<'gc>(
         .as_display_object()
         .and_then(|this| this.as_edit_text())
     {
-        this.set_restrict(args.try_get_string(activation, 0)?.as_deref());
+        this.set_restrict(args.try_get_string(0).as_deref());
     }
     Ok(Value::Undefined)
 }
@@ -1558,7 +1558,7 @@ pub fn get_text_runs<'gc>(
 }
 
 pub fn get_line_index_of_char<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    _activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -1571,7 +1571,7 @@ pub fn get_line_index_of_char<'gc>(
         return Ok(Value::Undefined);
     };
 
-    let index = args.get_i32(activation, 0)?;
+    let index = args.get_i32(0);
     if index < 0 {
         // Docs say "throw RangeError", reality says "return -1".
         return Ok(Value::Number(-1f64));
@@ -1585,7 +1585,7 @@ pub fn get_line_index_of_char<'gc>(
 }
 
 pub fn get_char_index_at_point<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    _activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -1599,8 +1599,8 @@ pub fn get_char_index_at_point<'gc>(
     };
 
     // No idea why FP does this weird 1px translation...
-    let x = args.get_f64(activation, 0)? + 1.0;
-    let y = args.get_f64(activation, 1)?;
+    let x = args.get_f64(0) + 1.0;
+    let y = args.get_f64(1);
 
     if let Some(index) = this.char_index_at_point(Point::from_pixels(x, y)) {
         Ok(index.into())
@@ -1610,7 +1610,7 @@ pub fn get_char_index_at_point<'gc>(
 }
 
 pub fn get_line_index_at_point<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    _activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -1624,8 +1624,8 @@ pub fn get_line_index_at_point<'gc>(
     };
 
     // No idea why FP does this weird 1px translation...
-    let x = args.get_f64(activation, 0)? + 1.0;
-    let y = args.get_f64(activation, 1)?;
+    let x = args.get_f64(0) + 1.0;
+    let y = args.get_f64(1);
 
     if let Some(index) = this.line_index_at_point(Point::from_pixels(x, y)) {
         Ok(index.into())
@@ -1635,7 +1635,7 @@ pub fn get_line_index_at_point<'gc>(
 }
 
 pub fn get_first_char_in_paragraph<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    _activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -1648,7 +1648,7 @@ pub fn get_first_char_in_paragraph<'gc>(
         return Ok(Value::Undefined);
     };
 
-    let char_index = args.get_i32(activation, 0)?;
+    let char_index = args.get_i32(0);
     if char_index < 0 {
         return Ok((-1).into());
     }
@@ -1661,7 +1661,7 @@ pub fn get_first_char_in_paragraph<'gc>(
 }
 
 pub fn get_paragraph_length<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    _activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -1674,7 +1674,7 @@ pub fn get_paragraph_length<'gc>(
         return Ok(Value::Undefined);
     };
 
-    let char_index = args.get_i32(activation, 0)?;
+    let char_index = args.get_i32(0);
     if char_index < 0 {
         return Ok((-1).into());
     }
@@ -1700,7 +1700,7 @@ pub fn get_char_boundaries<'gc>(
         return Ok(Value::Undefined);
     };
 
-    let char_index = args.get_i32(activation, 0)?;
+    let char_index = args.get_i32(0);
     if char_index < 0 {
         return Ok(Value::Null);
     }
@@ -1760,9 +1760,7 @@ pub fn set_style_sheet<'gc>(
         return Ok(Value::Undefined);
     };
 
-    let style_sheet = args
-        .try_get_object(activation, 0)
-        .and_then(|o| o.as_style_sheet());
+    let style_sheet = args.try_get_object(0).and_then(|o| o.as_style_sheet());
 
     this.set_style_sheet_avm2(activation.context, style_sheet);
 
