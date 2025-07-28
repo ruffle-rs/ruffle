@@ -14,9 +14,9 @@ pub fn object_constructor<'gc>(
     activation: &mut Activation<'_, 'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(arg) = args.get(0) {
+    if let Some(arg) = args.get_optional(0) {
         if !matches!(arg, Value::Undefined | Value::Null) {
-            return Ok(*arg);
+            return Ok(arg);
         }
     }
 

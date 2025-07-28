@@ -25,7 +25,7 @@ pub fn array_initializer<'gc>(
 
     if let Some(mut array) = this.as_array_storage_mut(activation.gc()) {
         if args.len() == 1 {
-            if let Some(expected_len) = args.get(0).filter(|v| v.is_number()).map(|v| v.as_f64()) {
+            if let Some(expected_len) = args.get_optional(0).and_then(|v| v.try_as_f64()) {
                 if expected_len < 0.0 || expected_len.is_nan() || expected_len.fract() != 0.0 {
                     return Err(Error::avm_error(range_error(
                         activation,
@@ -647,11 +647,10 @@ pub fn splice<'gc>(
     let array_length = this.as_array_storage().map(|a| a.length());
 
     if let Some(array_length) = array_length {
-        if let Some(start) = args.get(0).copied() {
+        if let Some(start) = args.get_optional(0) {
             let actual_start = resolve_index(activation, start, array_length)?;
             let delete_count = args
-                .get(1)
-                .copied()
+                .get_optional(1)
                 .unwrap_or_else(|| array_length.into())
                 .coerce_to_i32(activation)?;
 
@@ -1032,7 +1031,7 @@ pub fn sort<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
-    // FIXME avmplus does some manual argument count/type checking here,
+    // FIXME avmplus does some manual argument type checking here,
     // should we try to match that?
     let (compare_fnc, options) = if args.len() > 1 {
         // We have two or more args
@@ -1043,7 +1042,7 @@ pub fn sort<'gc>(
             Some(compare_fnc),
             SortOptions::from_bits_truncate(options as u8),
         )
-    } else if let Some(arg) = args.get(0).copied() {
+    } else if let Some(arg) = args.get_optional(0) {
         // We had exactly one arg
         if let Some(callable) = arg
             .as_object()
