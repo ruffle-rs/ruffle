@@ -1,6 +1,7 @@
 //! `flash.system.System` native methods
 
 use crate::avm2::activation::Activation;
+use crate::avm2::parameters::ParametersExt;
 use crate::avm2::value::Value;
 use crate::avm2::Error;
 
@@ -21,13 +22,11 @@ pub fn set_clipboard<'gc>(
         )?));
     }
 
-    let new_content = args
-        .get(0)
-        .unwrap_or(&Value::Undefined)
-        .coerce_to_string(activation)?
-        .to_string();
-
-    activation.context.ui.set_clipboard_content(new_content);
+    let new_content = args.get_string_non_null(activation, 0, "text")?;
+    activation
+        .context
+        .ui
+        .set_clipboard_content(new_content.to_string());
 
     Ok(Value::Undefined)
 }
