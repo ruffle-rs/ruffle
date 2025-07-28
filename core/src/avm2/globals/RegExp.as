@@ -2,6 +2,12 @@ package {
     [Ruffle(InstanceAllocator)]
     [Ruffle(CallHandler)]
     public dynamic class RegExp {
+        // NOTE: FP doesn't do args checking for the RegExp constructor because
+        // they mark the class as `construct="override"` (the equivalent of
+        // `[Ruffle(CustomConstructor)]` in Ruffle). However, because RegExp
+        // isn't `final`, we can't mark it as `CustomConstructor`. Instead, to
+        // allow calling RegExp with more than two arguments, we mark the
+        // constructor function as variadic using `...rest`.
         public function RegExp(re:* = undefined, flags:* = undefined, ...rest) {
             this.init(re, flags)
         }
