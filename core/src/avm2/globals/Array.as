@@ -165,14 +165,20 @@ package {
 
         AS3 native function forEach(callback:Function, receiver:* = null):void;
 
-        AS3 native function indexOf(searchVal:*, from:* = 0):int;
+        AS3 function indexOf(searchVal:*, from:* = 0):int {
+            return this._indexOf(searchVal, from);
+        }
+        private native function _indexOf(searchVal:*, from:int):int;
 
         [API("708")]
         AS3 native function insertAt(index:int, element:*):void;
 
         AS3 native function join(separator:* = void 0):String;
 
-        AS3 native function lastIndexOf(searchVal:*, from:* = 2147483647):int;
+        AS3 function lastIndexOf(searchVal:*, from:* = 2147483647):int {
+            return this._lastIndexOf(searchVal, from);
+        }
+        private native function _lastIndexOf(searchVal:*, from:int):int;
 
         public native function get length():uint;
 

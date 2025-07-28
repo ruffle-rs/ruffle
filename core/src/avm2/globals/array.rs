@@ -430,7 +430,7 @@ pub fn some<'gc>(
 }
 
 /// Implements `Array.indexOf`
-pub fn index_of<'gc>(
+pub fn _index_of<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
     args: &[Value<'gc>],
@@ -455,7 +455,7 @@ pub fn index_of<'gc>(
 }
 
 /// Implements `Array.lastIndexOf`
-pub fn last_index_of<'gc>(
+pub fn _last_index_of<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
     args: &[Value<'gc>],
@@ -1035,9 +1035,12 @@ pub fn sort<'gc>(
     // FIXME avmplus does some manual argument count/type checking here,
     // should we try to match that?
     let (compare_fnc, options) = if args.len() > 1 {
+        let compare_fnc = args.get_value(0);
+        let options = args.get_value(1).coerce_to_u32(activation)?;
+
         (
-            Some(args.get_value(0)),
-            SortOptions::from_bits_truncate(args.get_u32(1) as u8),
+            Some(compare_fnc),
+            SortOptions::from_bits_truncate(options as u8),
         )
     } else {
         let arg = args.get(0).copied().unwrap_or(Value::Undefined);
