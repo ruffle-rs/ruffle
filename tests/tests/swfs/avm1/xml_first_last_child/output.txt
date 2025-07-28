@@ -4,5 +4,7 @@ null
 null
 true
 true
+Warning: Reference to undeclared variable, 'teste_xml_text'
 undefined
+Warning: Reference to undeclared variable, 'teste_xml_text'
 undefined

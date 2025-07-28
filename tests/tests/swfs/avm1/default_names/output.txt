@@ -20,6 +20,7 @@ Symbol frame 1 (instance6)
 Symbol frame 1 (instance7)
 /// Root frame 2
 /// Root frame 3
+Warning: Reference to undeclared variable, 'run'
 /// Children frame 1 (instance11)
 
 Symbol frame 1 (instance12)
@@ -27,9 +28,11 @@ Symbol frame 1 (instance13)
 /// Root frame 1 ()
 
 // instance1
+Warning: Reference to undeclared variable, 'instance1'
 undefined
 
 // instance2
+Warning: Reference to undeclared variable, 'instance2'
 undefined
 
 

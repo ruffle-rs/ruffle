@@ -20,8 +20,10 @@ TICK: C test
 TICK: D test
 TICK: A test
 TICK
+Warning: Reference to undeclared variable, 'param2'
 OBJECT TICK: G (method)
 TICK: B
+Warning: Reference to undeclared variable, 'param2'
 OBJECT TICK: E (method)
 TICK: A test
 // END: Clearing intervals
