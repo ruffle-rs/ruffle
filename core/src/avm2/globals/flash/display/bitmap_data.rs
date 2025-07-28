@@ -254,28 +254,22 @@ pub fn copy_pixels<'gc>(
 
             let mut alpha_source = None;
 
-            if args.len() >= 4 {
-                if let Some(alpha_bitmap) = args
-                    .get(3)
-                    .and_then(|o| o.as_object())
-                    .and_then(|o| o.as_bitmap_data())
-                {
-                    // Testing shows that a null/undefined 'alphaPoint' parameter is treated
-                    // as 'new Point(0, 0)'
-                    let mut x = 0;
-                    let mut y = 0;
+            if let Some(alpha_bitmap) = args.try_get_object(3).and_then(|o| o.as_bitmap_data()) {
+                // Testing shows that a null/undefined 'alphaPoint' parameter is treated
+                // as 'new Point(0, 0)'
+                let mut x = 0;
+                let mut y = 0;
 
-                    if let Some(alpha_point) = args.try_get_object(4) {
-                        x = alpha_point
-                            .get_slot(point_slots::X)
-                            .coerce_to_i32(activation)?;
-                        y = alpha_point
-                            .get_slot(point_slots::Y)
-                            .coerce_to_i32(activation)?;
-                    }
-
-                    alpha_source = Some((alpha_bitmap, (x, y)));
+                if let Some(alpha_point) = args.try_get_object(4) {
+                    x = alpha_point
+                        .get_slot(point_slots::X)
+                        .coerce_to_i32(activation)?;
+                    y = alpha_point
+                        .get_slot(point_slots::Y)
+                        .coerce_to_i32(activation)?;
                 }
+
+                alpha_source = Some((alpha_bitmap, (x, y)));
             }
 
             let merge_alpha = args.get_bool(5);
