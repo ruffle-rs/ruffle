@@ -99,12 +99,8 @@ pub fn compute_spectrum<'gc>(
     let mut bytearray = arg0.as_bytearray_mut().unwrap();
     let mut hist = activation.context.audio.get_sample_history();
 
-    let fft = args.len() > 1 && args[1].coerce_to_boolean();
-    let stretch = if args.len() > 2 {
-        args[2].coerce_to_i32(activation)?
-    } else {
-        0
-    };
+    let fft = args.get_bool(1);
+    let stretch = args.get_i32(2);
 
     if fft {
         // TODO: Use `std::sync::LazyLock` once it's stabilized?
