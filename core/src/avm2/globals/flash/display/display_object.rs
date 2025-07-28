@@ -888,7 +888,7 @@ pub fn set_blend_mode<'gc>(
     let this = this.as_object().unwrap();
 
     if let Some(dobj) = this.as_display_object() {
-        let mode = args.get_string(activation, 0)?;
+        let mode = args.get_string_non_null(activation, 0, "blendMode")?;
 
         if let Ok(mode) = ExtendedBlendMode::from_str(&mode.to_string()) {
             dobj.set_blend_mode(activation.gc(), mode);
@@ -1141,7 +1141,7 @@ pub fn set_cache_as_bitmap<'gc>(
     let this = this.as_object().unwrap();
 
     if let Some(this) = this.as_display_object() {
-        let cache = args.get(0).unwrap_or(&Value::Undefined).coerce_to_boolean();
+        let cache = args.get_bool(0);
         this.set_bitmap_cached_preference(activation.gc(), cache);
     }
     Ok(Value::Undefined)
@@ -1174,9 +1174,10 @@ pub fn set_opaque_background<'gc>(
     let this = this.as_object().unwrap();
 
     if let Some(dobj) = this.as_display_object() {
-        let value = args.get(0).unwrap_or(&Value::Undefined);
+        let value = args.get_value(0);
         let color = match value {
-            Value::Null | Value::Undefined => None,
+            Value::Undefined => unreachable!("Object parameter is never Undefined"),
+            Value::Null => None,
             value => Some(Color::from_rgb(value.coerce_to_u32(activation)?, 255)),
         };
         dobj.set_opaque_background(activation.gc(), color);
