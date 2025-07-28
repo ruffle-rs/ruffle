@@ -212,9 +212,9 @@ pub fn set_focus_rect<'gc>(
         .as_display_object()
         .and_then(|this| this.as_interactive())
     {
-        let value = match args.get(0) {
-            Some(Value::Bool(true)) => Some(true),
-            Some(Value::Null) => None,
+        let value = match args.get_value(0) {
+            Value::Bool(true) => Some(true),
+            Value::Null => None,
             // everything else sets focusRect to false
             _ => Some(false),
         };

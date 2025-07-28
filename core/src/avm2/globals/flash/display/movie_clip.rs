@@ -351,7 +351,11 @@ pub fn goto_and_play<'gc>(
         .and_then(|dobj| dobj.as_movie_clip())
     {
         mc.set_programmatically_played();
-        goto_frame(activation, mc, args, false)?;
+
+        let frame_or_label = args.get_value(0);
+        let scene = args.try_get_string(activation, 1)?;
+
+        goto_frame(activation, mc, frame_or_label, scene, false)?;
     }
 
     Ok(Value::Undefined)
@@ -369,7 +373,10 @@ pub fn goto_and_stop<'gc>(
         .as_display_object()
         .and_then(|dobj| dobj.as_movie_clip())
     {
-        goto_frame(activation, mc, args, true)?;
+        let frame_or_label = args.get_value(0);
+        let scene = args.try_get_string(activation, 1)?;
+
+        goto_frame(activation, mc, frame_or_label, scene, true)?;
     }
 
     Ok(Value::Undefined)
@@ -378,12 +385,11 @@ pub fn goto_and_stop<'gc>(
 pub fn goto_frame<'gc>(
     activation: &mut Activation<'_, 'gc>,
     mc: MovieClip<'gc>,
-    args: &[Value<'gc>],
+    frame_or_label: Value<'gc>,
+    scene_str: Option<AvmString<'gc>>,
     stop: bool,
 ) -> Result<(), Error<'gc>> {
-    let frame_or_label = args.get(0).cloned().unwrap_or(Value::Null);
-
-    let scene = match args.try_get_string(activation, 1)? {
+    let scene = match scene_str {
         None => mc
             .current_scene()
             .and_then(|scene| mc.scene_label_to_number(&scene.name))
@@ -393,6 +399,7 @@ pub fn goto_frame<'gc>(
             .map(|v| v.saturating_sub(1)),
     }
     .unwrap_or(0) as i32;
+
     let frame = match frame_or_label {
         Value::Integer(i) => i + scene,
         frame_or_label => {
@@ -404,14 +411,17 @@ pub fn goto_frame<'gc>(
                     .wrapping_add(scene)
                     .saturating_add(1)
             } else {
-                if !matches!(args[1], Value::Null) {
+                if let Some(scene_str) = scene_str {
                     //If the user specified a scene, we need to validate that
                     //the requested frame exists within that scene.
-                    let scene = args[1].coerce_to_string(activation)?;
-                    if !mc.frame_exists_within_scene(&frame_or_label, &scene, activation.context) {
+                    if !mc.frame_exists_within_scene(
+                        &frame_or_label,
+                        &scene_str,
+                        activation.context,
+                    ) {
                         return Err(Error::avm_error(argument_error(
                             activation,
-                            &format!("Error #2109: Frame label {frame_or_label} not found in scene {scene}."),
+                            &format!("Error #2109: Frame label {frame_or_label} not found in scene {scene_str}."),
                             2109,
                         )?));
                     }
