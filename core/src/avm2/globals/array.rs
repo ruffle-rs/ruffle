@@ -25,7 +25,7 @@ pub fn array_initializer<'gc>(
 
     if let Some(mut array) = this.as_array_storage_mut(activation.gc()) {
         if args.len() == 1 {
-            if let Some(expected_len) = args.get(0).filter(|v| v.is_number()).map(|v| v.as_f64()) {
+            if let Some(expected_len) = args.get_optional(0).and_then(|v| v.try_as_f64()) {
                 if expected_len < 0.0 || expected_len.is_nan() || expected_len.fract() != 0.0 {
                     return Err(Error::avm_error(range_error(
                         activation,
@@ -647,11 +647,10 @@ pub fn splice<'gc>(
     let array_length = this.as_array_storage().map(|a| a.length());
 
     if let Some(array_length) = array_length {
-        if let Some(start) = args.get(0).copied() {
+        if let Some(start) = args.get_optional(0) {
             let actual_start = resolve_index(activation, start, array_length)?;
             let delete_count = args
-                .get(1)
-                .copied()
+                .get_optional(1)
                 .unwrap_or_else(|| array_length.into())
                 .coerce_to_i32(activation)?;
 
@@ -1032,7 +1031,7 @@ pub fn sort<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
-    // FIXME avmplus does some manual argument count/type checking here,
+    // FIXME avmplus does some manual argument type checking here,
     // should we try to match that?
     let (compare_fnc, options) = if args.len() > 1 {
         let compare_fnc = args.get_value(0);
@@ -1043,17 +1042,21 @@ pub fn sort<'gc>(
             SortOptions::from_bits_truncate(options as u8),
         )
     } else {
-        let arg = args.get(0).copied().unwrap_or(Value::Undefined);
-        if let Some(callable) = arg
-            .as_object()
-            .filter(|o| o.as_class_object().is_some() || o.as_function_object().is_some())
-        {
-            (Some(callable.into()), SortOptions::empty())
+        if let Some(arg) = args.get_optional(0) {
+            if let Some(callable) = arg
+                .as_object()
+                .filter(|o| o.as_class_object().is_some() || o.as_function_object().is_some())
+            {
+                (Some(callable.into()), SortOptions::empty())
+            } else {
+                (
+                    None,
+                    SortOptions::from_bits_truncate(arg.coerce_to_u32(activation)? as u8),
+                )
+            }
         } else {
-            (
-                None,
-                SortOptions::from_bits_truncate(arg.coerce_to_u32(activation)? as u8),
-            )
+            // No arg was passed, so use default options
+            (None, SortOptions::empty())
         }
     };
 

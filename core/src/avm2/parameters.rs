@@ -31,6 +31,9 @@ pub trait ParametersExt<'gc> {
     /// Gets the value at the given index.
     fn get_value(&self, index: usize) -> Value<'gc>;
 
+    /// Gets the value at the given index, if it exists.
+    fn get_optional(&self, index: usize) -> Option<Value<'gc>>;
+
     /// Gets the value at the given index as an Object. It is expected that the
     /// value is either Object or Null.
     ///
@@ -117,5 +120,10 @@ impl<'gc> ParametersExt<'gc> for &[Value<'gc>] {
     #[inline]
     fn get_value(&self, index: usize) -> Value<'gc> {
         self[index]
+    }
+
+    #[inline]
+    fn get_optional(&self, index: usize) -> Option<Value<'gc>> {
+        self.get(index).copied()
     }
 }

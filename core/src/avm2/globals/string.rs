@@ -16,7 +16,7 @@ pub fn string_constructor<'gc>(
     activation: &mut Activation<'_, 'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let string_value = match args.get(0) {
+    let string_value = match args.get_optional(0) {
         Some(arg) => arg.coerce_to_string(activation)?,
         None => istr!(""),
     };
@@ -29,7 +29,7 @@ pub fn call_handler<'gc>(
     _this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    match args.get(0) {
+    match args.get_optional(0) {
         Some(arg) => arg.coerce_to_string(activation).map(Into::into),
         None => Ok(istr!("").into()),
     }

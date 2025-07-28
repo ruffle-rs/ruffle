@@ -1,7 +1,5 @@
 //! `flash.system.ApplicationDomain` class
 
-use ruffle_macros::istr;
-
 use crate::avm2::activation::Activation;
 use crate::avm2::object::{DomainObject, Object, VectorObject};
 use crate::avm2::parameters::ParametersExt;
@@ -20,13 +18,14 @@ pub fn init<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
-    let parent_domain = if matches!(args[0], Value::Null) {
-        activation.avm2().playerglobals_domain()
-    } else {
-        args.get_object(activation, 0, "parentDomain")?
+    let parent_domain = if let Some(domain) = args.try_get_object(0) {
+        domain
             .as_application_domain()
             .expect("Invalid parent domain")
+    } else {
+        activation.avm2().playerglobals_domain()
     };
+
     let target_domain = this.as_domain_object().expect("Invalid target domain");
     let fresh_domain = Domain::movie_domain(activation, parent_domain);
     target_domain.init_domain(activation.gc(), fresh_domain);
@@ -76,10 +75,8 @@ pub fn get_definition<'gc>(
     let this = this.as_object().unwrap();
 
     if let Some(appdomain) = this.as_application_domain() {
-        let name = match args.get(0) {
-            Some(arg) => arg.coerce_to_string(activation)?,
-            None => istr!(""),
-        };
+        let name = args.get_string_non_null(activation, 0, "definitionName")?;
+
         return appdomain.get_defined_value_handling_vector(activation, name);
     }
 
@@ -95,11 +92,13 @@ pub fn has_definition<'gc>(
     let this = this.as_object().unwrap();
 
     if let Some(appdomain) = this.as_application_domain() {
-        let name = match args.get(0) {
-            Some(arg) => arg.coerce_to_string(activation)?,
-            None => istr!(""),
+        let name = match args.try_get_string(0) {
+            Some(arg) => arg,
+            None => return Ok(false.into()),
         };
 
+        // FIXME: Getting the defined value may error even if the value is
+        // defined (e.g. when calling a getter to get the value)
         return Ok(appdomain
             .get_defined_value_handling_vector(activation, name)
             .is_ok()
