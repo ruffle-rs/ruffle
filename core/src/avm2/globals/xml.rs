@@ -29,7 +29,7 @@ pub fn init<'gc>(
     let this = this.as_object().unwrap();
 
     let this = this.as_xml_object().unwrap();
-    let value = args[0];
+    let value = args.get_value(0);
     let ignore_comments = args.get_bool(1);
     let ignore_processing_instructions = args.get_bool(2);
     let ignore_whitespace = args.get_bool(3);
@@ -334,7 +334,8 @@ pub fn namespace_internal_impl<'gc>(
     let in_scope_ns = node.in_scope_namespaces();
 
     // 4. If prefix was not specified
-    if args[0] == Value::Bool(false) {
+    let has_prefix = args.get_bool(0);
+    if !has_prefix {
         // a. If x.[[Class]] ∈ {"text", "comment", "processing-instruction"}, return null
         if matches!(
             &*node.kind(),
@@ -680,7 +681,7 @@ pub fn child<'gc>(
     let this = this.as_object().unwrap();
 
     let xml = this.as_xml_object().unwrap();
-    let multiname = name_to_multiname(activation, &args[0], false)?;
+    let multiname = name_to_multiname(activation, args.get_value(0), false)?;
 
     let list = xml.child(&multiname, activation);
     Ok(list.into())
@@ -776,7 +777,7 @@ pub fn elements<'gc>(
     let this = this.as_object().unwrap();
 
     let xml = this.as_xml_object().unwrap();
-    let multiname = name_to_multiname(activation, &args[0], false)?;
+    let multiname = name_to_multiname(activation, args.get_value(0), false)?;
 
     let list = xml.elements(&multiname, activation);
     Ok(list.into())
@@ -814,7 +815,7 @@ pub fn attribute<'gc>(
     let this = this.as_object().unwrap();
 
     let xml = this.as_xml_object().unwrap();
-    let multiname = name_to_multiname(activation, &args[0], true)?;
+    let multiname = name_to_multiname(activation, args.get_value(0), true)?;
     let attributes = if let E4XNodeKind::Element { attributes, .. } = &*xml.node().kind() {
         attributes
             .iter()
@@ -939,7 +940,7 @@ pub fn descendants<'gc>(
     let this = this.as_object().unwrap();
 
     let xml = this.as_xml_object().unwrap();
-    let multiname = name_to_multiname(activation, &args[0], false)?;
+    let multiname = name_to_multiname(activation, args.get_value(0), false)?;
 
     // 2. Return the result of calling the [[Descendants]] method of x with argument name
     Ok(xml
@@ -1051,7 +1052,7 @@ pub fn processing_instructions<'gc>(
     let this = this.as_object().unwrap();
 
     let xml = this.as_xml_object().unwrap();
-    let multiname = name_to_multiname(activation, &args[0], false)?;
+    let multiname = name_to_multiname(activation, args.get_value(0), false)?;
     let nodes = if let E4XNodeKind::Element { children, .. } = &*xml.node().kind() {
         children
             .iter()
@@ -1209,7 +1210,7 @@ pub fn replace<'gc>(
 
     let xml = this.as_xml_object().unwrap();
     let self_node = xml.node();
-    let multiname = name_to_multiname(activation, &args[0], false)?;
+    let multiname = name_to_multiname(activation, args.get_value(0), false)?;
     let value = args.get_value(1);
 
     // 1. If x.[[Class]] ∈ {"text", "comment", "processing-instruction", "attribute"}, return x
