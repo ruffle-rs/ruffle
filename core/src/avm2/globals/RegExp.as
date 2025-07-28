@@ -2,7 +2,7 @@ package {
     [Ruffle(InstanceAllocator)]
     [Ruffle(CallHandler)]
     public dynamic class RegExp {
-        public function RegExp(re:* = undefined, flags:* = undefined) {
+        public function RegExp(re:* = undefined, flags:* = undefined, ...rest) {
             this.init(re, flags)
         }
 
@@ -14,18 +14,20 @@ package {
         public native function get ignoreCase():Boolean;
         public native function get multiline():Boolean;
         public native function get lastIndex():int;
-        public native function set lastIndex(value:int):void;
+        public native function set lastIndex(value:int):*;
         public native function get source():String;
 
-        AS3 native function exec(str:String = ""):Object;
+        AS3 native function exec(str:String = ""):*;
         AS3 native function test(str:String = ""):Boolean;
 
-        prototype.exec = function(str:String = ""):Object {
-            return this.AS3::exec(str);
+        prototype.exec = function(str:* = ""):* {
+            var self:RegExp = this;
+            return self.AS3::exec(str);
         }
 
-        prototype.test = function(str:String = ""):Boolean {
-            return this.AS3::test(str);
+        prototype.test = function(str:* = ""):Boolean {
+            var self:RegExp = this;
+            return self.AS3::test(str);
         }
 
         prototype.toString = function():String {

@@ -5,6 +5,7 @@ use ruffle_macros::istr;
 use crate::avm2::activation::Activation;
 use crate::avm2::error::type_error;
 use crate::avm2::object::{ArrayObject, Object, TObject as _};
+use crate::avm2::parameters::ParametersExt;
 use crate::avm2::regexp::RegExpFlags;
 use crate::avm2::value::Value;
 use crate::avm2::Error;
@@ -21,10 +22,10 @@ pub fn init<'gc>(
     let this = this.as_object().unwrap();
 
     if let Some(mut regexp) = this.as_regexp_mut(activation.gc()) {
-        let source: AvmString<'gc> = match args.get(0) {
-            Some(Value::Undefined) => istr!(""),
-            Some(Value::Object(Object::RegExpObject(o))) => {
-                if !matches!(args.get(1), Some(Value::Undefined)) {
+        let source: AvmString<'gc> = match args.get_value(0) {
+            Value::Undefined => istr!(""),
+            Value::Object(Object::RegExpObject(o)) => {
+                if !matches!(args.get_value(1), Value::Undefined) {
                     return Err(Error::avm_error(type_error(
                         activation,
                         "Error #1100: Cannot supply flags when constructing one RegExp from another.",
@@ -36,15 +37,14 @@ pub fn init<'gc>(
                 regexp.set_flags(other.flags());
                 return Ok(Value::Undefined);
             }
-            Some(arg) => arg.coerce_to_string(activation)?,
-            None => istr!(""),
+            arg => arg.coerce_to_string(activation)?,
         };
 
         regexp.set_source(source);
 
-        let flag_chars = match args.get(1) {
-            None | Some(Value::Undefined) => istr!(""),
-            Some(arg) => arg.coerce_to_string(activation)?,
+        let flag_chars = match args.get_value(1) {
+            Value::Undefined => istr!(""),
+            arg => arg.coerce_to_string(activation)?,
         };
 
         let mut flags = RegExpFlags::empty();
@@ -72,10 +72,9 @@ pub fn call_handler<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this_class = activation.avm2().classes().regexp;
 
-    if args.len() == 1 {
-        let arg = args.get(0).cloned().unwrap();
+    if let Some(arg) = args.get(0).filter(|_| args.len() == 1) {
         if arg.as_object().and_then(|o| o.as_regexp_object()).is_some() {
-            return Ok(arg);
+            return Ok(*arg);
         }
     }
     this_class.construct(activation, args)
@@ -180,10 +179,8 @@ pub fn set_last_index<'gc>(
     let this = this.as_object().unwrap();
 
     if let Some(mut re) = this.as_regexp_mut(activation.gc()) {
-        let i = args
-            .get(0)
-            .unwrap_or(&Value::Undefined)
-            .coerce_to_u32(activation)?;
+        // FIXME what is the behavior for negative lastIndex?
+        let i = args.get_i32(activation, 0)?;
         re.set_last_index(i as usize);
     }
 
@@ -214,10 +211,7 @@ pub fn exec<'gc>(
     let this = this.as_object().unwrap();
 
     if let Some(mut re) = this.as_regexp_mut(activation.gc()) {
-        let text = args
-            .get(0)
-            .unwrap_or(&Value::Undefined)
-            .coerce_to_string(activation)?;
+        let text = args.get_string(activation, 0)?;
 
         let matched = match re.exec(text) {
             Some(matched) => matched,
@@ -270,10 +264,7 @@ pub fn test<'gc>(
     let this = this.as_object().unwrap();
 
     if let Some(mut re) = this.as_regexp_mut(activation.gc()) {
-        let text = args
-            .get(0)
-            .unwrap_or(&Value::Undefined)
-            .coerce_to_string(activation)?;
+        let text = args.get_string(activation, 0)?;
         return Ok(re.test(text).into());
     }
 
