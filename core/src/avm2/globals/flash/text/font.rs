@@ -82,7 +82,7 @@ pub fn has_glyphs<'gc>(
     let this = this.as_object().unwrap();
 
     if let Some(font) = this.as_font() {
-        let my_str = args.get_string(activation, 0)?;
+        let my_str = args.get_string(activation, 0);
         return Ok(font.has_glyphs_for_str(&my_str).into());
     }
 

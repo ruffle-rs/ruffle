@@ -56,7 +56,7 @@ pub fn has_own_property<'gc>(
     this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let name = args.get_string(activation, 0)?;
+    let name = args.get_value(0).coerce_to_string(activation)?;
 
     if let Some(this) = this.as_object() {
         Ok(this.has_own_property_string(name, activation)?.into())
@@ -95,7 +95,7 @@ pub fn property_is_enumerable<'gc>(
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(this) = this.as_object() {
-        let name = args.get_string(activation, 0)?;
+        let name = args.get_value(0).coerce_to_string(activation)?;
 
         Ok(this.property_is_enumerable(name).into())
     } else {
@@ -111,7 +111,7 @@ pub fn _set_property_is_enumerable<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = args.get_value(0);
 
-    let name = args.get_string(activation, 1)?;
+    let name = args.get_string(activation, 1);
 
     if let Some(this) = this.as_object() {
         let is_enum = args.get_bool(2);

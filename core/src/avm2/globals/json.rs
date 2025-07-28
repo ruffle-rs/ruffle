@@ -264,7 +264,7 @@ pub fn parse<'gc>(
     _this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let Some(input) = args.try_get_string(activation, 0)? else {
+    let Some(input) = args.try_get_string(0) else {
         return Err(make_error_1132(activation));
     };
 

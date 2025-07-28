@@ -42,7 +42,7 @@ pub fn set_align<'gc>(
     let this = this.as_object().unwrap();
 
     if let Some(mut text_format) = this.as_text_format_mut() {
-        let value = args.try_get_string(activation, 0)?;
+        let value = args.try_get_string(0);
         let value = match value {
             Some(value) => value,
             None => {
@@ -619,7 +619,7 @@ pub fn set_tab_stops<'gc>(
     let this = this.as_object().unwrap();
 
     if let Some(mut text_format) = this.as_text_format_mut() {
-        let value = args.try_get_object(activation, 0);
+        let value = args.try_get_object(0);
         text_format.tab_stops = match value {
             Some(obj) => {
                 let array_storage = obj.as_array_storage().unwrap();
@@ -658,14 +658,14 @@ pub fn get_target<'gc>(
 }
 
 pub fn set_target<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    _activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
     if let Some(mut text_format) = this.as_text_format_mut() {
-        let target = args.try_get_string(activation, 0)?;
+        let target = args.try_get_string(0);
         text_format.target = target.map(|t| t.as_wstr().into());
     }
 
@@ -725,14 +725,14 @@ pub fn get_url<'gc>(
 }
 
 pub fn set_url<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    _activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
     if let Some(mut text_format) = this.as_text_format_mut() {
-        let url = args.try_get_string(activation, 0)?;
+        let url = args.try_get_string(0);
         text_format.url = url.map(|u| u.as_wstr().into());
     }
 

@@ -175,7 +175,7 @@ pub fn set_tab_index<'gc>(
     let this = this.as_object().unwrap();
 
     if let Some(obj) = this.as_display_object().and_then(|o| o.as_interactive()) {
-        let value = args.get_i32(activation, 0)?;
+        let value = args.get_i32(0);
         // Despite throwing an error that tabIndex cannot be negative,
         // the value of -1 is allowed, and it means that tabIndex is unset.
         if value < -1 {

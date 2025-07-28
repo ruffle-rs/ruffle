@@ -32,7 +32,7 @@ pub fn connect<'gc>(
         return Ok(Value::Undefined);
     }
 
-    let url = args.get_string(activation, 0)?;
+    let url = args.get_string(activation, 0);
     if url.starts_with(WStr::from_units(b"http://"))
         || url.starts_with(WStr::from_units(b"https://"))
     {
@@ -270,10 +270,8 @@ pub fn call<'gc>(
         .as_net_connection()
         .expect("Must be NetConnection object");
 
-    let command = args.get_string(activation, 0)?;
-    let responder = args
-        .try_get_object(activation, 1)
-        .and_then(|o| o.as_responder());
+    let command = args.get_string(activation, 0);
+    let responder = args.try_get_object(1).and_then(|o| o.as_responder());
     let mut arguments = Vec::new();
 
     let mut object_table = FnvHashMap::default();
@@ -328,7 +326,7 @@ pub fn add_header<'gc>(
     // `addHeader(name)` - but this is clearly false. It instead replaces the value of the header
     // with a null value, sending that over the wire.
 
-    let name = args.get_string(activation, 0)?;
+    let name = args.get_string(activation, 0);
     let must_understand = args.get_bool(1);
     // FIXME - do we re-use the same object reference table for all headers?
     let value = serialize_value(

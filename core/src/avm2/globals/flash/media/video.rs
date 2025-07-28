@@ -46,15 +46,15 @@ pub fn video_allocator<'gc>(
 
 /// Implements `flash.media.Video`'s `init` method, which is called from the constructor
 pub fn init<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    _activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
     if let Some(video) = this.as_display_object().and_then(|dobj| dobj.as_video()) {
-        let width = args.get_i32(activation, 0)?;
-        let height = args.get_i32(activation, 1)?;
+        let width = args.get_i32(0);
+        let height = args.get_i32(1);
 
         video.set_size(width, height);
     }
@@ -70,9 +70,7 @@ pub fn attach_net_stream<'gc>(
     let this = this.as_object().unwrap();
 
     if let Some(video) = this.as_display_object().and_then(|dobj| dobj.as_video()) {
-        let stream = args
-            .try_get_object(activation, 0)
-            .map(|o| o.as_netstream().unwrap());
+        let stream = args.try_get_object(0).map(|o| o.as_netstream().unwrap());
 
         if let Some(stream) = stream {
             video.attach_netstream(activation.context, stream);

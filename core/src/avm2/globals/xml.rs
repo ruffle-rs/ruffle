@@ -199,7 +199,7 @@ pub fn set_pretty_indent<'gc>(
     _this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    activation.avm2().xml_settings.pretty_indent = args.get_i32(activation, 0)?;
+    activation.avm2().xml_settings.pretty_indent = args.get_i32(0);
 
     Ok(Value::Undefined)
 }
@@ -350,7 +350,7 @@ pub fn namespace_internal_impl<'gc>(
         Ok(xml.namespace_object(activation, &in_scope_ns)?.into())
     } else {
         // a. Let prefix = ToString(prefix)
-        let prefix = args.get_string(activation, 1)?;
+        let prefix = args.get_string(activation, 1);
 
         // b. Find a Namespace ns ∈ inScopeNS, such that ns.prefix = prefix. If no such ns exists, let ns = undefined.
         // c. Return ns
@@ -1337,7 +1337,7 @@ pub fn set_notification<'gc>(
     avm2_stub_method!(activation, "XML", "setNotification");
     let xml = this.as_xml_object().unwrap();
     let node = xml.node();
-    let fun = args.try_get_object(activation, 0);
+    let fun = args.try_get_object(0);
     node.set_notification(fun.and_then(|f| f.as_function_object()), activation.gc());
     Ok(Value::Undefined)
 }

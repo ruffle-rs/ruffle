@@ -83,11 +83,9 @@ pub fn init<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
-    let bitmap_data = args
-        .try_get_object(activation, 0)
-        .and_then(|o| o.as_bitmap_data());
+    let bitmap_data = args.try_get_object(0).and_then(|o| o.as_bitmap_data());
 
-    let pixel_snapping = args.get_string(activation, 1)?;
+    let pixel_snapping = args.get_string(activation, 1);
 
     let pixel_snapping = if &pixel_snapping == b"always" {
         PixelSnapping::Always
@@ -144,7 +142,7 @@ pub fn set_bitmap_data<'gc>(
     let this = this.as_object().unwrap();
 
     if let Some(bitmap) = this.as_display_object().and_then(|dobj| dobj.as_bitmap()) {
-        let bitmap_data = args.try_get_object(activation, 0);
+        let bitmap_data = args.try_get_object(0);
 
         let bitmap_data = if let Some(bitmap_data) = bitmap_data {
             bitmap_data.as_bitmap_data().expect("Must be a BitmapData")
@@ -188,7 +186,7 @@ pub fn set_pixel_snapping<'gc>(
     let this = this.as_object().unwrap();
 
     if let Some(bitmap) = this.as_display_object().and_then(|dobj| dobj.as_bitmap()) {
-        let value = args.get_string(activation, 0)?;
+        let value = args.get_string(activation, 0);
 
         let pixel_snapping = if &value == b"always" {
             PixelSnapping::Always

@@ -11,7 +11,7 @@ pub fn generate_random_bytes<'gc>(
     _this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let length = args.get_u32(activation, 0)?;
+    let length = args.get_u32(0);
     if !(1..1025).contains(&length) {
         return Err(make_error_2004(activation, Error2004Type::Error));
     }

@@ -16,9 +16,9 @@ pub fn upload_from_byte_array<'gc>(
             .as_bytearray()
             .expect("Parameter must be a ByteArray");
 
-        let byte_offset = args.get_u32(activation, 1)?;
-        let start_offset = args.get_u32(activation, 2)?;
-        let count = args.get_u32(activation, 3)?;
+        let byte_offset = args.get_u32(1);
+        let start_offset = args.get_u32(2);
+        let count = args.get_u32(3);
 
         let data = byte_array
             // Each index is always 16 bits (2 bytes)
@@ -48,8 +48,8 @@ pub fn upload_from_vector<'gc>(
             .as_vector_storage()
             .expect("Parameter must be a Vector");
 
-        let start_offset = args.get_u32(activation, 1)?;
-        let count = args.get_u32(activation, 2)?;
+        let start_offset = args.get_u32(1);
+        let count = args.get_u32(2);
 
         index_buffer.set_count(count as usize);
 
