@@ -146,17 +146,9 @@ pub fn play<'gc>(
     let this = this.as_object().unwrap();
 
     if let Some(sound_object) = this.as_sound_object() {
-        let position = args
-            .get(0)
-            .cloned()
-            .unwrap_or_else(|| 0.0.into())
-            .coerce_to_number(activation)?;
-        let num_loops = args
-            .get(1)
-            .cloned()
-            .unwrap_or_else(|| 0.into())
-            .coerce_to_i32(activation)?;
-        let sound_transform = args.get(2).cloned().unwrap_or(Value::Null).as_object();
+        let position = args.get_f64(activation, 0)?;
+        let num_loops = args.get_i32(activation, 1)?;
+        let sound_transform = args.try_get_object(activation, 2);
 
         let in_sample = if position > 0.0 {
             Some((position / 1000.0 * 44100.0) as u32)
@@ -242,10 +234,10 @@ pub fn load<'gc>(
         return Err(make_error_2037(activation));
     }
 
-    let url_request = match args.get(0) {
-        Some(Value::Object(request)) => request,
-        // This should never actually happen
-        _ => return Ok(Value::Undefined),
+    let url_request = match args.try_get_object(activation, 0) {
+        Some(request) => request,
+        // FP ignores calls of `load(null)`
+        None => return Ok(Value::Undefined),
     };
 
     let url = url_request
