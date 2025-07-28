@@ -1249,7 +1249,7 @@ impl DisplayObjectWindow {
             CollapsingHeader::new(format!("Filters ({})", filters.len()))
                 .id_salt(ui.id().with("filters"))
                 .show(ui, |ui| {
-                    for filter in filters {
+                    for filter in &*filters {
                         ui.label(format!("{filter:?}"));
                     }
                 });

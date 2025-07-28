@@ -821,8 +821,8 @@ fn filters<'gc>(
     Ok(ArrayBuilder::new(activation)
         .with(
             this.filters()
-                .into_iter()
-                .map(|filter| bitmap_filter::filter_to_avm1(activation, filter)),
+                .iter()
+                .map(|filter| bitmap_filter::filter_to_avm1(activation, filter.clone())),
         )
         .into())
 }
@@ -841,7 +841,7 @@ fn set_filters<'gc>(
             }
         }
     }
-    this.set_filters(filters);
+    this.set_filters(filters.into_boxed_slice());
     Ok(())
 }
 

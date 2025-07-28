@@ -293,7 +293,7 @@ pub fn get_filters<'gc>(
     if let Some(dobj) = this.as_display_object() {
         let array = dobj
             .filters()
-            .into_iter()
+            .iter()
             .map(|f| f.as_avm2_object(activation))
             .collect::<Result<ArrayStorage<'gc>, Error<'gc>>>()?;
         return Ok(ArrayObject::from_storage(activation, array).into());
@@ -338,10 +338,10 @@ pub fn set_filters<'gc>(
                     filter_vec.push(Filter::from_avm2_object(activation, filter_object)?);
                 }
 
-                dobj.set_filters(filter_vec);
+                dobj.set_filters(filter_vec.into_boxed_slice());
             }
         } else {
-            dobj.set_filters(vec![]);
+            dobj.set_filters(Default::default());
         }
     }
 
