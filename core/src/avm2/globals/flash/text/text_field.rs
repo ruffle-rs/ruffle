@@ -312,7 +312,7 @@ pub fn get_default_text_format<'gc>(
 }
 
 pub fn set_default_text_format<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -322,7 +322,7 @@ pub fn set_default_text_format<'gc>(
         .as_display_object()
         .and_then(|this| this.as_edit_text())
     {
-        let new_text_format = args.get(0).unwrap_or(&Value::Undefined).as_object();
+        let new_text_format = args.try_get_object(activation, 0);
 
         if let Some(new_text_format) = new_text_format {
             if let Some(new_text_format) = new_text_format.as_text_format() {
@@ -600,11 +600,7 @@ pub fn set_text_color<'gc>(
         .as_display_object()
         .and_then(|this| this.as_edit_text())
     {
-        let text_color = args
-            .get(0)
-            .cloned()
-            .unwrap_or(Value::Undefined)
-            .coerce_to_u32(activation)?;
+        let text_color = args.get_u32(activation, 0)?;
         let desired_format = TextFormat {
             color: Some(swf::Color::from_rgb(text_color, 0xFF)),
             ..TextFormat::default()
@@ -777,16 +773,8 @@ pub fn get_text_format<'gc>(
         .as_display_object()
         .and_then(|this| this.as_edit_text())
     {
-        let mut begin_index = args
-            .get(0)
-            .cloned()
-            .unwrap_or(Value::Integer(-1))
-            .coerce_to_i32(activation)?;
-        let mut end_index = args
-            .get(1)
-            .cloned()
-            .unwrap_or(Value::Integer(-1))
-            .coerce_to_i32(activation)?;
+        let mut begin_index = args.get_i32(activation, 0)?;
+        let mut end_index = args.get_i32(activation, 1)?;
 
         if begin_index < 0 {
             begin_index = 0;
@@ -841,16 +829,9 @@ pub fn replace_text<'gc>(
         .as_display_object()
         .and_then(|this| this.as_edit_text())
     {
-        let begin_index = args
-            .get(0)
-            .cloned()
-            .unwrap_or(Value::Undefined)
-            .coerce_to_u32(activation)?;
-        let end_index = args
-            .get(1)
-            .cloned()
-            .unwrap_or(Value::Undefined)
-            .coerce_to_u32(activation)?;
+        // FIXME what is the behavior for negative beginIndex and endIndex?
+        let begin_index = args.get_i32(activation, 0)?;
+        let end_index = args.get_i32(activation, 1)?;
         let value = args.get_string_non_null(activation, 2, "text")?;
 
         this.replace_text(
@@ -938,16 +919,9 @@ pub fn set_selection<'gc>(
         .as_display_object()
         .and_then(|this| this.as_edit_text())
     {
-        let begin_index = args
-            .get(0)
-            .cloned()
-            .unwrap_or(Value::Undefined)
-            .coerce_to_u32(activation)?;
-        let end_index = args
-            .get(1)
-            .cloned()
-            .unwrap_or(Value::Undefined)
-            .coerce_to_u32(activation)?;
+        // FIXME what is the behavior for negative beginIndex and endIndex?
+        let begin_index = args.get_i32(activation, 0)?;
+        let end_index = args.get_i32(activation, 1)?;
 
         this.set_selection(
             Some(TextSelection::for_range(
@@ -972,17 +946,11 @@ pub fn set_text_format<'gc>(
         .as_display_object()
         .and_then(|this| this.as_edit_text())
     {
-        let tf = args.get(0).unwrap_or(&Value::Undefined).as_object();
+        let tf = args.try_get_object(activation, 0);
         if let Some(tf) = tf {
             if let Some(tf) = tf.as_text_format() {
-                let mut begin_index = args
-                    .get(1)
-                    .unwrap_or(&(-1).into())
-                    .coerce_to_i32(activation)?;
-                let mut end_index = args
-                    .get(2)
-                    .unwrap_or(&(-1).into())
-                    .coerce_to_i32(activation)?;
+                let mut begin_index = args.get_i32(activation, 1)?;
+                let mut end_index = args.get_i32(activation, 2)?;
 
                 if begin_index < 0 {
                     begin_index = 0;
@@ -1137,11 +1105,7 @@ pub fn set_thickness<'gc>(
         .and_then(|this| this.as_edit_text())
     {
         let old_settings = this.render_settings();
-        let mut new_thickness = args
-            .get(0)
-            .cloned()
-            .unwrap_or(Value::Undefined)
-            .coerce_to_number(activation)?;
+        let mut new_thickness = args.get_f64(activation, 0)?;
 
         // NOTE: The thickness clamp is ONLY enforced on AS3.
         new_thickness = new_thickness.clamp(-200.0, 200.0);
@@ -1181,11 +1145,7 @@ pub fn set_sharpness<'gc>(
         .and_then(|this| this.as_edit_text())
     {
         let old_settings = this.render_settings();
-        let mut new_sharpness = args
-            .get(0)
-            .cloned()
-            .unwrap_or(Value::Undefined)
-            .coerce_to_number(activation)?;
+        let mut new_sharpness = args.get_f64(activation, 0)?;
 
         // NOTE: The sharpness clamp is only enforced on AS3.
         new_sharpness = new_sharpness.clamp(-400.0, 400.0);
@@ -1405,11 +1365,7 @@ pub fn set_scroll_v<'gc>(
         .as_display_object()
         .and_then(|this| this.as_edit_text())
     {
-        let input = args
-            .get(0)
-            .cloned()
-            .unwrap_or(Value::Undefined)
-            .coerce_to_i32(activation)?;
+        let input = args.get_i32(activation, 0)?;
         this.set_scroll(input as f64, activation.context);
     }
 
@@ -1447,11 +1403,7 @@ pub fn set_scroll_h<'gc>(
         // NOTE: The clamping behavior here is identical to AVM1.
         // This is incorrect, SWFv9 uses more complex behavior and AS3 can only
         // be present in v9 SWFs.
-        let input = args
-            .get(0)
-            .cloned()
-            .unwrap_or(Value::Undefined)
-            .coerce_to_i32(activation)?;
+        let input = args.get_i32(activation, 0)?;
         let clamped = input.abs().min(this.maxhscroll() as i32);
         this.set_hscroll(clamped as f64, activation.context);
     }
@@ -1487,11 +1439,7 @@ pub fn set_max_chars<'gc>(
         .as_display_object()
         .and_then(|this| this.as_edit_text())
     {
-        let input = args
-            .get(0)
-            .cloned()
-            .unwrap_or(Value::Undefined)
-            .coerce_to_i32(activation)?;
+        let input = args.get_i32(activation, 0)?;
         this.set_max_chars(input);
     }
 
