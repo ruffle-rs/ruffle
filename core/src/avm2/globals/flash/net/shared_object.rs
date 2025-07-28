@@ -2,6 +2,7 @@
 
 use crate::avm2::error::error;
 use crate::avm2::object::{ScriptObject, SharedObjectObject};
+use crate::avm2::parameters::ParametersExt;
 use crate::avm2::{Activation, Error, Object, Value};
 use crate::{avm2_stub_getter, avm2_stub_method, avm2_stub_setter};
 use flash_lso::types::{AMFVersion, Lso};
@@ -40,10 +41,7 @@ pub fn get_local<'gc>(
     // TODO: It appears that Flash does some kind of escaping here:
     // the name "foo\uD800" correspond to a file named "fooE#FB#FB#D.sol".
 
-    let name = args
-        .get(0)
-        .unwrap_or(&Value::Undefined)
-        .coerce_to_string(activation)?;
+    let name = args.get_string_non_null(activation, 0, "name")?;
     let name = name.to_utf8_lossy();
 
     const INVALID_CHARS: &str = "~%&\\;:\"',<>?# ";
@@ -88,7 +86,8 @@ pub fn get_local<'gc>(
         movie_url.host_str().unwrap_or_default()
     };
 
-    let local_path = if let Some(Value::String(local_path)) = args.get(1) {
+    let local_path = &args.try_get_string(activation, 1)?;
+    let local_path = if let Some(local_path) = local_path {
         // Empty local path always fails.
         if local_path.is_empty() {
             return Ok(Value::Null);
