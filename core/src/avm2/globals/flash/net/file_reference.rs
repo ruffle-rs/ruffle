@@ -2,6 +2,7 @@ use crate::avm2::bytearray::ByteArrayStorage;
 use crate::avm2::error::{argument_error, error, make_error_2037, make_error_2097};
 use crate::avm2::globals::slots::flash_net_file_filter as file_filter_slots;
 use crate::avm2::object::{ByteArrayObject, DateObject, FileReference};
+use crate::avm2::parameters::ParametersExt;
 use crate::avm2::{Activation, Avm2, Error, EventObject, TObject as _, Value};
 use crate::backend::ui::FileFilter;
 use crate::string::AvmString;
@@ -143,7 +144,7 @@ pub fn browse<'gc>(
     let this = this.as_file_reference().unwrap();
 
     let mut filters = Vec::new();
-    if let Value::Object(obj) = args[0] {
+    if let Some(obj) = args.try_get_object(0) {
         if let Some(array_storage) = obj.as_array_storage() {
             for filter in array_storage.iter() {
                 if let Some(Value::Object(obj)) = filter {
@@ -252,7 +253,7 @@ pub fn save<'gc>(
     let this = this.as_object().unwrap();
 
     let this = this.as_file_reference().unwrap();
-    let data = args[0];
+    let data = args.get_value(0);
 
     let data = match data {
         Value::Null | Value::Undefined => {
@@ -271,7 +272,7 @@ pub fn save<'gc>(
         _ => data.coerce_to_string(activation)?.to_string().into_bytes(),
     };
 
-    let file_name = if let Value::String(name) = args[1] {
+    let file_name = if let Some(name) = args.try_get_string(1) {
         name.to_string()
     } else {
         "".into()
