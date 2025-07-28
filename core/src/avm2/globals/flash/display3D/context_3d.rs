@@ -419,13 +419,14 @@ pub fn clear<'gc>(
 
     if let Some(context) = this.as_context_3d() {
         // This is a native method, so all of the arguments have been checked and coerced for us
-        let red = args[0].as_f64();
-        let green = args[1].as_f64();
-        let blue = args[2].as_f64();
-        let alpha = args[3].as_f64();
-        let depth = args[4].as_f64();
-        let stencil = args[5].as_i32() as u32;
-        let mask = args[6].as_i32() as u32;
+        let red = args.get_f64(0);
+        let green = args.get_f64(1);
+        let blue = args.get_f64(2);
+        let alpha = args.get_f64(3);
+        let depth = args.get_f64(4);
+        let stencil = args.get_u32(5);
+        let mask = args.get_u32(6);
+
         context.set_clear(red, green, blue, alpha, depth, stencil, mask);
     }
     Ok(Value::Undefined)
@@ -530,7 +531,7 @@ pub fn set_texture_at<'gc>(
 
     if let Some(context) = this.as_context_3d() {
         // This is a native method, so all of the arguments have been checked and coerced for us
-        let sampler = args[0].as_i32() as u32;
+        let sampler = args.get_i32(0) as u32;
         let mut cube = false;
         let texture_object = args.try_get_object(1);
         let texture = if let Some(texture_object) = texture_object {
@@ -561,10 +562,11 @@ pub fn set_color_mask<'gc>(
 
     if let Some(context) = this.as_context_3d() {
         // This is a native method, so all of the arguments have been checked and coerced for us
-        let red = args[0].coerce_to_boolean();
-        let green = args[1].coerce_to_boolean();
-        let blue = args[2].coerce_to_boolean();
-        let alpha = args[3].coerce_to_boolean();
+        let red = args.get_bool(0);
+        let green = args.get_bool(1);
+        let blue = args.get_bool(2);
+        let alpha = args.get_bool(3);
+
         context.set_color_mask(red, green, blue, alpha);
     }
     Ok(Value::Undefined)
@@ -705,10 +707,10 @@ pub fn set_sampler_state_at<'gc>(
 
     if let Some(context) = this.as_context_3d() {
         // This is a native method, so all of the arguments have been checked and coerced for us
-        let sampler = args[0].as_i32() as u32;
-        let wrap = args[1].coerce_to_string(activation)?;
-        let filter = args[2].coerce_to_string(activation)?;
-        let mip_filter = args[3].coerce_to_string(activation)?;
+        let sampler = args.get_i32(0) as u32;
+        let wrap = args.get_string_non_null(activation, 1, "wrap")?;
+        let filter = args.get_string_non_null(activation, 2, "filter")?;
+        let mip_filter = args.get_string_non_null(activation, 3, "mipfilter")?;
 
         let wrap = Context3DWrapMode::from_wstr(&wrap)
             .ok_or_else(|| make_error_2008(activation, "wrap"))?;
