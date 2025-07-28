@@ -1150,14 +1150,14 @@ fn solve_quadratic(a: f64, b: f64, c: f64) -> (f64, f64) {
 /// from http://www.cplusplus.com/forum/beginner/234717/
 /// The roots are not necessarily unique.
 /// TODO: This probably isn't numerically robust
-#[allow(clippy::many_single_char_names)]
+#[expect(clippy::many_single_char_names)]
 fn solve_cubic(a: f64, b: f64, c: f64, d: f64) -> SmallVec<[f64; 3]> {
     let mut roots = SmallVec::new();
 
     if a.abs() <= COEFFICIENT_EPSILON {
         // Fall back to quadratic formula.
         let (t0, t1) = solve_quadratic(b, c, d);
-        #[allow(clippy::tuple_array_conversions)]
+        #[expect(clippy::tuple_array_conversions)]
         roots.extend_from_slice(&[t0, t1]);
         return roots;
     }

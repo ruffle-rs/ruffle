@@ -133,7 +133,7 @@ impl Request {
     }
 
     /// Construct a request with the given method and data
-    #[allow(clippy::self_named_constructors)]
+    #[expect(clippy::self_named_constructors)]
     pub fn request(method: NavigationMethod, url: String, body: Option<(Vec<u8>, String)>) -> Self {
         Self {
             url,

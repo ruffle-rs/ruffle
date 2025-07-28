@@ -333,7 +333,7 @@ impl<'gc> Executable<'gc> {
     /// returns. If on-stack execution is possible, then this function returns
     /// a return value you must push onto the stack. Otherwise, you must
     /// create a new stack frame and execute the action data yourself.
-    #[allow(clippy::too_many_arguments)]
+    #[expect(clippy::too_many_arguments)]
     pub fn exec(
         &self,
         name: ExecutionName<'gc>,

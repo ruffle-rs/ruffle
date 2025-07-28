@@ -1054,7 +1054,7 @@ impl<'gc> EditText<'gc> {
     /// Returns the selection, but takes into account whether the selection should be rendered.
     fn visible_selection(self) -> Option<TextSelection> {
         let selection = self.0.selection.get()?;
-        #[allow(clippy::collapsible_else_if)]
+        #[expect(clippy::collapsible_else_if)]
         if selection.is_caret() {
             if self.has_focus() && !self.0.flags.get().contains(EditTextFlag::READ_ONLY) {
                 Some(selection)

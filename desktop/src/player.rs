@@ -127,7 +127,7 @@ struct ActivePlayer {
 }
 
 impl ActivePlayer {
-    #[allow(clippy::too_many_arguments)]
+    #[expect(clippy::too_many_arguments)]
     pub fn new(
         opt: &LaunchOptions,
         event_loop: EventLoopProxy<RuffleEvent>,

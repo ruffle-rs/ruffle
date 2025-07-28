@@ -883,7 +883,6 @@ impl<'a> Reader<'a> {
 }
 
 #[cfg(test)]
-#[allow(clippy::unusual_byte_groupings)]
 pub mod tests {
     use super::*;
     use crate::test_data;

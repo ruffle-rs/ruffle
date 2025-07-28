@@ -36,7 +36,6 @@ impl<'gc> TObject<'gc> for MessageChannelObject<'gc> {
 }
 
 impl<'gc> MessageChannelObject<'gc> {
-    #[allow(dead_code)]
     pub fn new(activation: &mut Activation<'_, 'gc>) -> Self {
         let class = activation.avm2().classes().messagechannel;
         let base = ScriptObjectData::new(class);

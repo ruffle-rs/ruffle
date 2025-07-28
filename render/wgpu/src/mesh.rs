@@ -67,7 +67,7 @@ pub struct Draw {
 }
 
 impl PendingDraw {
-    #[allow(clippy::too_many_arguments)]
+    #[expect(clippy::too_many_arguments)]
     pub fn new<T: RenderTarget>(
         backend: &mut WgpuRenderBackend<T>,
         source: &dyn BitmapSource,

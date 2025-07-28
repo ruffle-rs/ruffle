@@ -130,7 +130,7 @@ impl BitmapCache {
     }
 
     /// Clears any dirtiness and ensure there's an appropriately sized texture allocated
-    #[allow(clippy::too_many_arguments)]
+    #[expect(clippy::too_many_arguments)]
     fn update(
         &mut self,
         renderer: &mut dyn RenderBackend,

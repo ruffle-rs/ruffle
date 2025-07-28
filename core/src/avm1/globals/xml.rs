@@ -25,18 +25,18 @@ pub enum XmlStatus {
     NoError = 0,
 
     /// A CDATA section was not properly terminated.
-    #[allow(dead_code)]
+    #[expect(dead_code)]
     CdataNotTerminated = -2,
 
     /// The XML declaration was not properly terminated.
     DeclNotTerminated = -3,
 
     /// The DOCTYPE declaration was not properly terminated.
-    #[allow(dead_code)]
+    #[expect(dead_code)]
     DoctypeNotTerminated = -4,
 
     /// A comment was not properly terminated.
-    #[allow(dead_code)]
+    #[expect(dead_code)]
     CommentNotTerminated = -5,
 
     /// An XML element was malformed.
@@ -49,7 +49,7 @@ pub enum XmlStatus {
     AttributeNotTerminated = -8,
 
     /// A start-tag was not matched with an end-tag.
-    #[allow(dead_code)]
+    #[expect(dead_code)]
     MismatchedStart = -9,
 
     /// An end-tag was encountered without a matching start-tag.

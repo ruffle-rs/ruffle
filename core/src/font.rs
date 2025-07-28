@@ -572,7 +572,7 @@ impl<'gc> Font<'gc> {
                 gc_context,
                 descriptor,
                 // TODO remove when https://github.com/rust-lang/rust-clippy/issues/15252 is fixed
-                #[allow(clippy::unnecessary_to_owned)]
+                #[expect(clippy::unnecessary_to_owned)]
                 FontFileData::new(bytes.to_vec()),
                 0,
                 FontType::EmbeddedCFF,

@@ -226,7 +226,6 @@ pub struct UpdateContext<'gc> {
 
     /// These functions are run at the end of each frame execution.
     /// Currently, this is just used for handling `Loader.loadBytes`
-    #[allow(clippy::type_complexity)]
     pub post_frame_callbacks: &'gc mut Vec<PostFrameCallback<'gc>>,
 
     pub notification_sender: Option<&'gc Sender<PlayerNotification>>,

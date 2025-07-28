@@ -1665,9 +1665,9 @@ impl Drop for Buffer {
 #[derive(Debug)]
 struct Draw {
     draw_type: DrawType,
-    #[allow(dead_code)]
+    #[expect(dead_code)]
     vertex_buffer: Buffer,
-    #[allow(dead_code)]
+    #[expect(dead_code)]
     index_buffer: Buffer,
     vao: WebGlVertexArrayObject,
     num_indices: i32,

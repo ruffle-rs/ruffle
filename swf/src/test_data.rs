@@ -12,7 +12,7 @@ use crate::write::write_swf;
 use std::borrow::Cow;
 use std::fs::File;
 
-#[allow(dead_code)]
+#[expect(dead_code)]
 pub fn echo_swf(filename: &str) {
     let in_data = std::fs::read(filename).unwrap();
     let swf_buf = decompress_swf(&in_data[..]).unwrap();

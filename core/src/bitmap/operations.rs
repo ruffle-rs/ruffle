@@ -26,7 +26,7 @@ use swf::{BlendMode, ColorTransform, Fixed8, Rectangle, Twips};
 ///
 /// This will allow us to be able to optimise the implementations and share the
 /// same code between VMs.
-#[allow(clippy::too_many_arguments)]
+#[expect(clippy::too_many_arguments)]
 pub fn fill_rect<'gc>(
     mc: &Mutation<'gc>,
     renderer: &mut dyn RenderBackend,
@@ -254,7 +254,7 @@ pub fn noise<'gc>(
     write.set_cpu_dirty(mc, region)
 }
 
-#[allow(clippy::too_many_arguments)]
+#[expect(clippy::too_many_arguments)]
 pub fn perlin_noise<'gc>(
     mc: &Mutation<'gc>,
     target: BitmapDataWrapper<'gc>,
@@ -371,7 +371,7 @@ pub fn perlin_noise<'gc>(
     write.set_cpu_dirty(mc, region)
 }
 
-#[allow(clippy::too_many_arguments)]
+#[expect(clippy::too_many_arguments)]
 pub fn copy_channel<'gc>(
     mc: &Mutation<'gc>,
     renderer: &mut dyn RenderBackend,
@@ -470,7 +470,7 @@ pub fn copy_channel<'gc>(
     write.set_cpu_dirty(mc, dest_region);
 }
 
-#[allow(clippy::too_many_arguments)]
+#[expect(clippy::too_many_arguments)]
 pub fn color_transform<'gc>(
     mc: &Mutation<'gc>,
     renderer: &mut dyn RenderBackend,
@@ -527,7 +527,7 @@ pub fn color_transform<'gc>(
     );
 }
 
-#[allow(clippy::too_many_arguments)]
+#[expect(clippy::too_many_arguments)]
 pub fn threshold<'gc>(
     mc: &Mutation<'gc>,
     renderer: &mut dyn RenderBackend,
@@ -1072,7 +1072,7 @@ pub fn copy_pixels<'gc>(
     );
 }
 
-#[allow(clippy::too_many_arguments)]
+#[expect(clippy::too_many_arguments)]
 pub fn copy_pixels_with_alpha_source<'gc>(
     context: &mut UpdateContext<'gc>,
     target: BitmapDataWrapper<'gc>,
@@ -1280,7 +1280,6 @@ pub fn apply_filter<'gc>(
     }
 }
 
-#[allow(clippy::too_many_arguments)]
 fn copy_on_cpu<'gc>(
     context: &Mutation<'gc>,
     renderer: &mut dyn RenderBackend,
@@ -1377,7 +1376,6 @@ fn copy_on_cpu<'gc>(
     }
 }
 
-#[allow(clippy::too_many_arguments)]
 fn blend_and_transform<'gc>(
     context: &mut UpdateContext<'gc>,
     source: BitmapDataWrapper<'gc>,
@@ -1433,7 +1431,7 @@ fn blend_and_transform<'gc>(
     }
 }
 
-#[allow(clippy::too_many_arguments)]
+#[expect(clippy::too_many_arguments)]
 pub fn draw<'gc>(
     context: &mut UpdateContext<'gc>,
     target: BitmapDataWrapper<'gc>,
@@ -1716,7 +1714,7 @@ pub fn get_pixels_as_byte_array<'gc>(
     Ok(())
 }
 
-#[allow(clippy::too_many_arguments)]
+#[expect(clippy::too_many_arguments)]
 pub fn set_pixels_from_byte_array<'gc>(
     mc: &Mutation<'gc>,
     renderer: &mut dyn RenderBackend,
@@ -1759,7 +1757,7 @@ pub fn set_pixels_from_byte_array<'gc>(
     Ok(())
 }
 
-#[allow(clippy::too_many_arguments)]
+#[expect(clippy::too_many_arguments)]
 pub fn pixel_dissolve<'gc>(
     mc: &Mutation<'gc>,
     renderer: &mut dyn RenderBackend,

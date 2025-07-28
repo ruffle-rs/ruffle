@@ -573,7 +573,7 @@ impl CurrentPipeline {
 }
 
 // This is useful for debugging shader issues
-#[allow(dead_code)]
+#[expect(dead_code)]
 fn to_wgsl(module: &naga::Module) -> String {
     let mut out = String::new();
 

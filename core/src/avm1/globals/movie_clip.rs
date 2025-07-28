@@ -214,7 +214,6 @@ fn set_scale_9_grid<'gc>(
     Ok(())
 }
 
-#[allow(clippy::comparison_chain)]
 pub fn hit_test<'gc>(
     movie_clip: MovieClip<'gc>,
     activation: &mut Activation<'_, 'gc>,

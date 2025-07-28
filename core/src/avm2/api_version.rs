@@ -5,7 +5,7 @@ use enum_map::{enum_map, Enum, EnumMap};
 
 // Based on https://github.com/adobe/avmplus/blob/master/core/api-versions.h
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug, FromPrimitive, Enum)]
-#[allow(non_camel_case_types)]
+#[expect(non_camel_case_types)]
 pub enum ApiVersion {
     AllVersions = 0,
     AIR_1_0 = 1,

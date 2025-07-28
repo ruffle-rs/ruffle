@@ -597,7 +597,6 @@ impl FormatSpans {
     }
 
     /// Construct a format span from its raw parts.
-    #[allow(dead_code)]
     pub fn from_str_and_spans(text: &WStr, spans: &[TextSpan]) -> Self {
         Self {
             text: text.into(),

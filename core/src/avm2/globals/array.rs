@@ -102,7 +102,6 @@ pub fn build_array<'gc>(
 }
 
 /// Implements `Array.concat`
-#[allow(clippy::map_clone)] //You can't clone `Option<Ref<'_, T>>` without it
 pub fn concat<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,

@@ -341,7 +341,6 @@ impl<'gc> Avm1<'gc> {
         self.stack.push(value);
     }
 
-    #[allow(clippy::let_and_return)]
     pub fn pop(&mut self) -> Value<'gc> {
         let value = self.stack.pop().unwrap_or_else(|| {
             tracing::warn!("Avm1::pop: Stack underflow");

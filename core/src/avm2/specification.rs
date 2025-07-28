@@ -466,7 +466,6 @@ impl Definition {
     }
 }
 
-#[allow(unreachable_code, unused_variables, clippy::diverging_sub_expression)]
 pub fn capture_specification(context: &mut UpdateContext, output: &Path) {
     let stubs = crate::stub::get_known_stubs();
 

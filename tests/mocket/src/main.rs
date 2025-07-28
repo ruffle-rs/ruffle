@@ -100,7 +100,6 @@ fn main() -> Result<(), Error> {
                     }
                 }
             }
-            #[allow(clippy::unused_io_amount)]
             SocketEvent::WaitForDisconnect => {
                 let mut buffer = [0; 4096];
 
