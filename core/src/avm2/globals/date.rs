@@ -2,6 +2,7 @@
 
 use crate::avm2::activation::Activation;
 use crate::avm2::object::DateObject;
+use crate::avm2::parameters::ParametersExt;
 use crate::avm2::value::Value;
 use crate::avm2::Error;
 use crate::locale::{get_current_date_time, get_timezone};
@@ -181,7 +182,7 @@ impl<'builder, 'activation_a, 'gc, T: TimeZone> DateAdjustment<'builder, 'activa
 }
 
 fn get_arguments_array<'gc>(args: &[Value<'gc>]) -> Vec<Value<'gc>> {
-    let object = args[0].as_object().unwrap();
+    let object = args.try_get_object(0).expect("Expected an Object");
     let array_storage = object.as_array_storage().unwrap();
     array_storage
         .iter()
