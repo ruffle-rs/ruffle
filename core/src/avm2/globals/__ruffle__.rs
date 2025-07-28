@@ -1,5 +1,6 @@
 use crate::avm2::activation::Activation;
 use crate::avm2::error::Error;
+use crate::avm2::parameters::ParametersExt;
 use crate::avm2::value::Value;
 use crate::string::WStr;
 use crate::stub::Stub;
@@ -150,7 +151,7 @@ pub fn is_dependent<'gc>(
     _this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Value::String(s) = args[0] {
+    if let Some(s) = args.try_get_string(0) {
         return Ok(s.is_dependent().into());
     }
 
