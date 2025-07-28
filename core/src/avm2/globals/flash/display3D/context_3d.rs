@@ -120,9 +120,8 @@ pub fn configure_back_buffer<'gc>(
             )?));
         }
 
-        let wants_best_resolution = args.get(4).unwrap_or(&Value::Undefined).coerce_to_boolean();
-        let wants_best_resolution_on_browser_zoom =
-            args.get(5).unwrap_or(&Value::Undefined).coerce_to_boolean();
+        let wants_best_resolution = args.get_bool(4);
+        let wants_best_resolution_on_browser_zoom = args.get_bool(5);
 
         if wants_best_resolution {
             avm2_stub_method!(
