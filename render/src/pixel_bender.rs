@@ -40,6 +40,9 @@ pub enum PixelBenderParsingError {
     #[error("Invalid conditional register kind")]
     InvalidConditionalKind,
 
+    #[error("Incompatible register kinds")]
+    IncompatibleRegisterKinds,
+
     #[error("IO error: {0}")]
     IoError(#[from] std::io::Error),
 
@@ -666,8 +669,14 @@ fn read_op<R: Read>(
             skip_padding(data, 1)?;
             let src_reg2 = read_src_reg(src2, 1);
 
-            if validate && condition_reg.kind == PixelBenderRegKind::Float {
-                return Err(PixelBenderParsingError::InvalidConditionalKind);
+            if validate {
+                if condition_reg.kind == PixelBenderRegKind::Float {
+                    return Err(PixelBenderParsingError::InvalidConditionalKind);
+                }
+
+                if dst_reg.kind != src_reg1.kind || src_reg1.kind != src_reg2.kind {
+                    return Err(PixelBenderParsingError::IncompatibleRegisterKinds);
+                }
             }
 
             shader.operations.push(Operation::Select {
