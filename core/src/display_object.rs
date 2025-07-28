@@ -255,7 +255,7 @@ pub struct DisplayObjectBase<'gc> {
 
 #[derive(Clone)]
 struct DisplayObjectBaseMut {
-    filters: Vec<Filter>,
+    filters: Box<[Filter]>,
 
     blend_shader: Option<PixelBenderShaderHandle>,
 
@@ -550,11 +550,11 @@ impl<'gc> DisplayObjectBase<'gc> {
         unlock!(this, Self, name).set(Some(name));
     }
 
-    fn filters(&self) -> Vec<Filter> {
-        self.cell.borrow().filters.clone()
+    fn filters(&self) -> Ref<'_, [Filter]> {
+        Ref::map(self.cell.borrow(), |c| &*c.filters)
     }
 
-    fn set_filters(&self, filters: Vec<Filter>) -> bool {
+    fn set_filters(&self, filters: Box<[Filter]>) -> bool {
         let mut write = self.cell.borrow_mut();
         let changed = filters != write.filters;
         write.filters = filters;
@@ -849,7 +849,7 @@ pub fn render_base<'gc>(this: DisplayObject<'gc>, context: &mut RenderContext<'_
             &context.stage.view_matrix(),
         );
         let name = this.name();
-        let mut filters: Vec<Filter> = this.filters();
+        let mut filters: Vec<Filter> = this.filters().to_owned();
         let swf_version = this.swf_version();
         filters.retain(|f| !f.impotent());
 
@@ -1237,8 +1237,7 @@ pub trait TDisplayObject<'gc>:
         }
 
         if include_own_filters {
-            let filters = self.filters();
-            for mut filter in filters {
+            for mut filter in self.filters().iter().cloned() {
                 filter.scale(view_matrix.a, view_matrix.d);
                 bounds = filter.calculate_dest_rect(bounds);
             }
@@ -1582,11 +1581,11 @@ pub trait TDisplayObject<'gc>:
         DisplayObjectBase::set_name(Gc::write(mc, self.base()), name)
     }
 
-    fn filters(self) -> Vec<Filter> {
-        self.base().filters()
+    fn filters(self) -> Ref<'gc, [Filter]> {
+        Gc::as_ref(self.base()).filters()
     }
 
-    fn set_filters(self, filters: Vec<Filter>) {
+    fn set_filters(self, filters: Box<[Filter]>) {
         if self.base().set_filters(filters) {
             self.invalidate_cached_bitmap();
         }

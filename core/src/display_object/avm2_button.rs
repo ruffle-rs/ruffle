@@ -615,8 +615,7 @@ impl<'gc> TDisplayObject<'gc> for Avm2Button<'gc> {
         }
 
         if include_own_filters {
-            let filters = self.filters();
-            for mut filter in filters {
+            for mut filter in self.filters().iter().cloned() {
                 filter.scale(view_matrix.a, view_matrix.d);
                 bounds = filter.calculate_dest_rect(bounds);
             }
