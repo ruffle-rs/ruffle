@@ -1,14 +1,14 @@
 use naga::valid::{Capabilities, ValidationFlags, Validator};
 use naga_agal::{Filter, SamplerConfig, Wrapping};
 use ruffle_render::backend::{
-    Context3DTextureFilter, Context3DTriangleFace, Context3DVertexBufferFormat, Context3DWrapMode,
-    Texture,
+    Context3DCompareMode, Context3DStencilAction, Context3DTextureFilter, Context3DTriangleFace,
+    Context3DVertexBufferFormat, Context3DWrapMode, Texture,
 };
 
 use wgpu::{
     BindGroupEntry, BindingResource, BufferDescriptor, BufferUsages, FrontFace, TextureView,
 };
-use wgpu::{Buffer, DepthStencilState, StencilFaceState};
+use wgpu::{Buffer, DepthStencilState};
 use wgpu::{ColorTargetState, RenderPipelineDescriptor, TextureFormat, VertexState};
 
 use std::cell::Cell;
@@ -63,6 +63,12 @@ pub struct CurrentPipeline {
 
     depth_mask: bool,
     pass_compare_mode: wgpu::CompareFunction,
+
+    stencil_front: wgpu::StencilFaceState,
+    stencil_back: wgpu::StencilFaceState,
+    stencil_ref_value: u32,
+    stencil_read_mask: u32,
+    stencil_write_mask: u32,
 
     color_component: wgpu::BlendComponent,
     alpha_component: wgpu::BlendComponent,
@@ -122,6 +128,13 @@ impl CurrentPipeline {
 
             depth_mask: true,
             pass_compare_mode: wgpu::CompareFunction::LessEqual,
+
+            stencil_front: wgpu::StencilFaceState::IGNORE,
+            stencil_back: wgpu::StencilFaceState::IGNORE,
+            stencil_ref_value: 0,
+            stencil_read_mask: !0,
+            stencil_write_mask: !0,
+
             color_component: wgpu::BlendComponent::REPLACE,
             alpha_component: wgpu::BlendComponent::REPLACE,
             sample_count: 1,
@@ -131,6 +144,11 @@ impl CurrentPipeline {
             sampler_configs: [SamplerConfig::default(); 8],
         }
     }
+
+    pub fn stencil_ref_value(&self) -> u32 {
+        self.stencil_ref_value
+    }
+
     pub fn set_shaders(&mut self, shaders: Option<Rc<ShaderPairAgal>>) {
         self.dirty.set(true);
         self.shaders = shaders;
@@ -446,12 +464,11 @@ impl CurrentPipeline {
                 format: TextureFormat::Depth24PlusStencil8,
                 depth_write_enabled: self.depth_mask,
                 depth_compare: self.pass_compare_mode,
-                // FIXME - implement this
                 stencil: wgpu::StencilState {
-                    front: StencilFaceState::IGNORE,
-                    back: StencilFaceState::IGNORE,
-                    read_mask: !0,
-                    write_mask: !0,
+                    front: self.stencil_front,
+                    back: self.stencil_back,
+                    read_mask: self.stencil_read_mask,
+                    write_mask: self.stencil_write_mask,
                 },
                 bias: Default::default(),
             })
@@ -569,6 +586,55 @@ impl CurrentPipeline {
         };
         self.dirty.set(true);
         self.sampler_configs[sampler] = sampler_config;
+    }
+
+    pub fn update_stencil_actions(
+        &mut self,
+        triangle_face: Context3DTriangleFace,
+        compare_mode: Context3DCompareMode,
+        on_both_pass: Context3DStencilAction,
+        on_depth_fail: Context3DStencilAction,
+        on_depth_pass_stencil_fail: Context3DStencilAction,
+    ) {
+        let stencil_state = wgpu::StencilFaceState {
+            compare: compare_mode.into(),
+            fail_op: on_depth_pass_stencil_fail.into(),
+            depth_fail_op: on_depth_fail.into(),
+            pass_op: on_both_pass.into(),
+        };
+
+        match triangle_face {
+            Context3DTriangleFace::None => {
+                // When triangle_face is "none", stencil operations are disabled
+                self.stencil_front = wgpu::StencilFaceState::IGNORE;
+                self.stencil_back = wgpu::StencilFaceState::IGNORE;
+            }
+            Context3DTriangleFace::Front => {
+                self.stencil_front = stencil_state;
+                self.stencil_back = wgpu::StencilFaceState::IGNORE;
+            }
+            Context3DTriangleFace::Back => {
+                self.stencil_front = wgpu::StencilFaceState::IGNORE;
+                self.stencil_back = stencil_state;
+            }
+            Context3DTriangleFace::FrontAndBack => {
+                self.stencil_front = stencil_state;
+                self.stencil_back = stencil_state;
+            }
+        }
+
+        self.dirty.set(true);
+    }
+
+    pub fn update_stencil_reference_value(
+        &mut self,
+        reference_value: u32,
+        read_mask: u32,
+        write_mask: u32,
+    ) {
+        self.stencil_ref_value = reference_value;
+        self.stencil_read_mask = read_mask;
+        self.stencil_write_mask = write_mask;
     }
 }
 
