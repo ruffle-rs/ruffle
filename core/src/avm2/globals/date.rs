@@ -285,8 +285,8 @@ pub fn get_time<'gc>(
 }
 
 /// Implements `setTime` method.
-pub fn set_time<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+pub fn _set_time<'gc>(
+    _activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -294,10 +294,7 @@ pub fn set_time<'gc>(
 
     let this = this.as_date_object().unwrap();
 
-    let new_time = args
-        .get(0)
-        .unwrap_or(&Value::Undefined)
-        .coerce_to_number(activation)?;
+    let new_time = args.get_f64(0);
     if new_time.is_finite() {
         let time = Utc
             .timestamp_millis_opt(new_time as i64)
@@ -1283,10 +1280,7 @@ pub fn parse<'gc>(
     _this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let date_str = args
-        .get(0)
-        .unwrap_or(&Value::Undefined)
-        .coerce_to_string(activation)?;
+    let date_str = args.get_value(0).coerce_to_string(activation)?;
 
     Ok(parse_full_date(activation, date_str)
         .unwrap_or(f64::NAN)
