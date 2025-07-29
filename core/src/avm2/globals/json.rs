@@ -328,8 +328,8 @@ pub fn stringify<'gc>(
             };
             Some(indent_bytes)
         }
-    } else if spaces.is_number() {
-        let indent_size = spaces.as_f64().clamp(0.0, 10.0) as u16;
+    } else if let Some(spaces) = spaces.try_as_f64() {
+        let indent_size = spaces.clamp(0.0, 10.0) as u16;
         if indent_size == 0 {
             None
         } else {
