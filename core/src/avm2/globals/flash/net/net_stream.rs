@@ -41,8 +41,7 @@ pub fn play<'gc>(
 
     if let Some(ns) = this.as_netstream() {
         let name = args
-            .get(0)
-            .cloned()
+            .get_optional(0)
             .filter(|v| !matches!(v, Value::Null))
             .map(|v| v.coerce_to_string(activation))
             .transpose()?;
