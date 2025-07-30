@@ -177,7 +177,7 @@ pub fn locale_compare<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.coerce_to_string(activation)?;
 
-    let other = args.get_string(activation, 0);
+    let other = args.get_value(0).coerce_to_string(activation)?;
 
     for (tc, oc) in this.iter().zip(other.iter()) {
         let res = (tc as i32) - (oc as i32);
