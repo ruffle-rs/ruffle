@@ -230,8 +230,13 @@ impl<'gc> Stage<'gc> {
 
     pub fn set_movie(self, gc_context: &Mutation<'gc>, movie: Arc<SwfMovie>) {
         // Stage is the only DO that has a fake movie set and then gets the real movie set.
-        *self.raw_container_mut(gc_context) = ChildContainer::new(&movie);
-        self.0.movie.replace(movie.clone());
+        // NOTE: Make sure to NOT reset any state here, AVM1 depends on it.
+
+        let is_action_script_3 = movie.is_action_script_3();
+        self.0.movie.replace(movie);
+        unlock!(Gc::write(gc_context, self.0), StageData, child)
+            .borrow_mut()
+            .set_is_action_script_3(is_action_script_3);
     }
 
     pub fn set_loader_info(self, gc_context: &Mutation<'gc>, loader_info: Avm2Object<'gc>) {
