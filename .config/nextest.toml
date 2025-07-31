@@ -8,3 +8,8 @@ test(avm2/stage3d_errors_atf) or \
 test(avm1/netstream_play_flv) or \
 test(avm1/netstream_play_flv_screen)"""
 retries = 4
+
+# On Windows aarch64 target: skip H264 tests
+[[profile.ci.overrides]]
+platform = 'aarch64-pc-windows-msvc'
+default-filter = 'not test(visual/video/h264)'
