@@ -1,9 +1,7 @@
 package __AS3__.vec {
     [Ruffle(CallHandler)]
     [Ruffle(InstanceAllocator)]
-    // FIXME: This class is supposed to be final, but then we can't create any
-    // Vector.<T> (since they all extend this class)
-    internal dynamic class Vector$object {
+    internal final dynamic class Vector$object {
         {
             prototype.concat = function(... rest):* {
                 var v:Vector$object = this;

@@ -115,25 +115,9 @@ impl<'gc> ClassObject<'gc> {
         class: Class<'gc>,
         superclass_object: Option<ClassObject<'gc>>,
     ) -> Result<Self, Error<'gc>> {
-        // For the early classes `Object` and `Class`, we reuse the ClassObject
-        // already constructed in `globals::init_early_classes` so that we don't
-        // create duplicate ClassObjects for them. However, we do run their class
-        // initializers now.
-        if class == activation.avm2().class_defs().object {
-            let object_class = activation.avm2().classes().object;
-            object_class.run_class_initializer(activation)?;
-
-            return Ok(object_class);
-        } else if class == activation.avm2().class_defs().class {
-            let class_class = activation.avm2().classes().class;
-            class_class.run_class_initializer(activation)?;
-
-            return Ok(class_class);
-        }
-
         let class_object = Self::from_class_partial(activation, class, superclass_object);
-        let class_proto = class_object.allocate_prototype(activation, superclass_object);
 
+        let class_proto = class_object.allocate_prototype(activation, superclass_object);
         class_object.link_prototype(activation, class_proto);
 
         let class_class_proto = activation.avm2().classes().class.prototype();

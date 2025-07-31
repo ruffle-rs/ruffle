@@ -1,7 +1,9 @@
 //! AVM2 classes
 
 use crate::avm2::activation::Activation;
-use crate::avm2::error::{make_error_1014, make_error_1053, verify_error, Error1014Type};
+use crate::avm2::error::{
+    make_error_1014, make_error_1053, make_error_1107, verify_error, Error1014Type,
+};
 use crate::avm2::method::{Method, NativeMethodImpl};
 use crate::avm2::object::{scriptobject_allocator, ClassObject, Object};
 use crate::avm2::script::TranslationUnit;
@@ -319,13 +321,9 @@ impl<'gc> Class<'gc> {
         let c_class = Class(Gc::new(mc, c_class));
 
         i_class.link_with_c_class(mc, c_class);
-        i_class
-            .init_vtable(context)
-            .expect("Vector class doesn't have any interfaces, so `init_vtable` cannot error");
+        i_class.init_vtable_with_interfaces(context, Box::new([]));
 
-        c_class
-            .init_vtable(context)
-            .expect("Vector$ class doesn't have any interfaces, so `init_vtable` cannot error");
+        c_class.init_vtable_with_interfaces(context, Box::new([]));
 
         let write = unlock!(Gc::write(mc, this.0), ClassData, cell);
         write.borrow_mut().applications.insert(Some(param), i_class);
@@ -830,7 +828,21 @@ impl<'gc> Class<'gc> {
         Ok(())
     }
 
-    pub fn init_vtable(self, context: &mut UpdateContext<'gc>) -> Result<(), Error<'gc>> {
+    /// Initialize the vtable and interfaces of this Class.
+    pub fn init_vtable(self, activation: &mut Activation<'_, 'gc>) -> Result<(), Error<'gc>> {
+        let interfaces = self.gather_interfaces(activation)?;
+
+        Ok(self.init_vtable_with_interfaces(activation.context, interfaces))
+    }
+
+    /// Given a list of interfaces, initialize the vtable and interfaces of this Class.
+    /// This is useful when you want to create a class without an Activation and
+    /// you already know which interfaces it has.
+    pub fn init_vtable_with_interfaces(
+        self,
+        context: &mut UpdateContext<'gc>,
+        interfaces: Box<[Class<'gc>]>,
+    ) {
         if self.0.traits.get().is_none() {
             panic!(
                 "Attempted to initialize vtable on a class that did not have its traits loaded yet"
@@ -841,8 +853,6 @@ impl<'gc> Class<'gc> {
 
         let write = Gc::write(context.gc(), self.0);
 
-        let interfaces = self.gather_interfaces()?;
-
         // The order is important here, as the VTable constructor needs the full list of interfaces.
         let _ = unlock!(write, ClassData, all_interfaces).set(interfaces);
         let _ = unlock!(write, ClassData, vtable).set(VTable::new_with_interface_properties(
@@ -852,23 +862,29 @@ impl<'gc> Class<'gc> {
             self.0.super_class.map(|c| c.vtable()),
             context,
         ));
-
-        Ok(())
     }
 
-    fn gather_interfaces(self) -> Result<Box<[Class<'gc>]>, Error<'gc>> {
-        let mut interfaces = Vec::with_capacity(self.direct_interfaces().len());
+    fn gather_interfaces(
+        self,
+        activation: &mut Activation<'_, 'gc>,
+    ) -> Result<Box<[Class<'gc>]>, Error<'gc>> {
+        let mc = activation.gc();
 
+        let mut interfaces = Vec::with_capacity(self.direct_interfaces().len());
         let mut dedup = HashSet::new();
         let mut queue = vec![self];
         while let Some(cls) = queue.pop() {
             for interface in cls.direct_interfaces() {
                 if !interface.is_interface() {
-                    return Err(format!(
-                        "Class {:?} is not an interface and cannot be implemented by classes",
-                        interface.name().local_name()
-                    )
-                    .into());
+                    return Err(Error::avm_error(verify_error(
+                        activation,
+                        &format!(
+                            "Error #1111: {} cannot implement {}.",
+                            self.name().to_qualified_name(mc),
+                            interface.name().to_qualified_name_err_message(mc)
+                        ),
+                        1111,
+                    )?));
                 }
 
                 if dedup.insert(*interface) {
@@ -899,12 +915,7 @@ impl<'gc> Class<'gc> {
             // Methods, getters, and setters are forbidden from appearing
             // in activation traits
             if loaded_trait.as_method().is_some() {
-                // TODO: Is this the correct error?
-                return Err(Error::avm_error(verify_error(
-                    activation,
-                    "Error #1101: Cannot verify method with unknown scope.",
-                    1101,
-                )?));
+                return Err(make_error_1107(activation));
             }
             Ok(loaded_trait)
         };
@@ -921,7 +932,7 @@ impl<'gc> Class<'gc> {
         i_class.attributes = Cell::new(ClassAttributes::FINAL | ClassAttributes::SEALED);
         i_class.traits = OnceLock::from(traits);
         let i_class = Class(Gc::new(activation.gc(), i_class));
-        i_class.init_vtable(activation.context)?;
+        i_class.init_vtable(activation)?;
 
         // We don't need to construct a c_class
 
@@ -940,7 +951,7 @@ impl<'gc> Class<'gc> {
         let traits: Box<[_]> = Box::new([Trait::from_const(variable_name, None, None, domain)]);
         i_class.traits = OnceLock::from(traits);
         let i_class = Class(Gc::new(activation.gc(), i_class));
-        i_class.init_vtable(activation.context)?;
+        i_class.init_vtable(activation)?;
 
         // We don't need to construct a c_class
 
