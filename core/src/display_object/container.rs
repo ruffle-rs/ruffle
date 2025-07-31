@@ -931,6 +931,10 @@ impl<'gc> ChildContainer<'gc> {
         self.is_action_script_3
     }
 
+    pub fn set_is_action_script_3(&mut self, is_action_script_3: bool) {
+        self.is_action_script_3 = is_action_script_3;
+    }
+
     /// Insert a child at a given render list position.
     ///
     /// If the child is already a child of another container, you must remove
