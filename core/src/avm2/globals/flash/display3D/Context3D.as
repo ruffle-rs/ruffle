@@ -69,23 +69,19 @@ package flash.display3D {
             return 2048;
         }
 
-        public function setStencilReferenceValue(referenceValue:uint, readMask:uint = 255, writeMask:uint = 255):void {
-            stub_method("flash.display3D.Context3D", "setStencilReferenceValue");
-        }
+        public native function setStencilReferenceValue(referenceValue:uint, readMask:uint = 255, writeMask:uint = 255):void;
 
         public native function setSamplerStateAt(sampler:int, wrap:String, filter:String, mipfilter:String):void;
 
         public native function setRenderToTexture(texture:TextureBase, enableDepthAndStencil:Boolean = false, antiAlias:int = 0, surfaceSelector:int = 0, colorOutputIndex:int = 0):void;
 
-        public function setStencilActions(
+        public native function setStencilActions(
             triangleFace:String = "frontAndBack",
             compareMode:String = "always",
             actionOnBothPass:String = "keep",
             actionOnDepthFail:String = "keep",
             actionOnDepthPassStencilFail:String = "keep"
-        ):void {
-            stub_method("flash.display3D.Context3D", "setStencilActions");
-        }
+        ):void;
 
         public native function dispose(recreate:Boolean = true):void;
     }
