@@ -4,7 +4,8 @@
 use std::cell::Cell;
 use std::fmt;
 
-use gc_arena::{Collect, Gc, Mutation};
+use gc_arena::barrier::unlock;
+use gc_arena::{Collect, Gc, Mutation, RefLock};
 use ruffle_macros::istr;
 
 use crate::avm1::activation::Activation;
@@ -16,9 +17,35 @@ use crate::avm1::{NativeObject, Object, Value};
 use crate::backend::audio::{SoundHandle, SoundInstanceHandle};
 use crate::backend::navigator::Request;
 use crate::character::Character;
+use crate::context::UpdateContext;
 use crate::display_object::{DisplayObject, SoundTransform, TDisplayObject};
 use crate::string::StringContext;
 use crate::{avm1_stub, avm_warn};
+
+#[derive(Debug, Collect)]
+#[collect(no_drop)]
+struct QueuedPlay<'gc> {
+    sound_object: Object<'gc>,
+    start_offset: f64,
+    loops: u16,
+}
+
+#[derive(Debug, Collect)]
+#[collect(no_drop)]
+enum SoundState<'gc> {
+    /// Empty sound object, no sound playback allowed.
+    Empty,
+
+    /// Sound is loading, plays can be queued.
+    Loading { queued_plays: Vec<QueuedPlay<'gc>> },
+
+    /// Sound is loaded, plays can be started immadiately.
+    Loaded {
+        /// The sound that is attached to this object.
+        #[collect(require_static)]
+        sound: SoundHandle,
+    },
+}
 
 /// A `Sound` object that is tied to a sound from the `AudioBackend``.
 #[derive(Clone, Copy, Collect)]
@@ -28,8 +55,7 @@ pub struct Sound<'gc>(Gc<'gc, SoundData<'gc>>);
 #[derive(Collect)]
 #[collect(no_drop)]
 struct SoundData<'gc> {
-    /// The sound that is attached to this object.
-    sound: Cell<Option<SoundHandle>>,
+    state: RefLock<SoundState<'gc>>,
 
     /// The instance of the last played sound on this object.
     sound_instance: Cell<Option<SoundInstanceHandle>>,
@@ -53,7 +79,7 @@ impl fmt::Debug for Sound<'_> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         f.debug_struct("Sound")
             .field("ptr", &Gc::as_ptr(self.0))
-            .field("sound", &self.0.sound.get())
+            .field("state", &self.0.state.borrow())
             .field("sound_instance", &self.0.sound_instance.get())
             .field("owner", &self.0.owner)
             .finish()
@@ -65,7 +91,7 @@ impl<'gc> Sound<'gc> {
         Sound(Gc::new(
             mc,
             SoundData {
-                sound: Cell::new(None),
+                state: RefLock::new(SoundState::Empty),
                 sound_instance: Cell::new(None),
                 owner,
                 position: Cell::new(0),
@@ -84,11 +110,11 @@ impl<'gc> Sound<'gc> {
     }
 
     pub fn sound(self) -> Option<SoundHandle> {
-        self.0.sound.get()
-    }
-
-    pub fn set_sound(self, sound: Option<SoundHandle>) {
-        self.0.sound.set(sound);
+        if let SoundState::Loaded { sound } = *self.0.state.borrow() {
+            Some(sound)
+        } else {
+            None
+        }
     }
 
     pub fn sound_instance(self) -> Option<SoundInstanceHandle> {
@@ -117,6 +143,67 @@ impl<'gc> Sound<'gc> {
 
     pub fn set_is_streaming(self, is_streaming: bool) {
         self.0.is_streaming.set(is_streaming);
+    }
+
+    fn play(self, play: QueuedPlay<'gc>, context: &mut UpdateContext<'gc>) {
+        let write = Gc::write(context.gc(), self.0);
+        let sound_handle = match &mut *unlock!(write, SoundData, state).borrow_mut() {
+            SoundState::Empty => {
+                tracing::warn!("Ignoring Sound playback, because it's not loaded.");
+                return;
+            }
+            SoundState::Loading { queued_plays } => {
+                queued_plays.push(play);
+                return;
+            }
+            SoundState::Loaded { sound } => *sound,
+        };
+
+        if self.is_streaming() {
+            // Streaming MP3s can only have a single active instance.
+            if let Some(sound_instance) = self.sound_instance() {
+                context.stop_sound(sound_instance);
+            }
+        }
+        let sound_instance = context.start_sound(
+            sound_handle,
+            &swf::SoundInfo {
+                event: swf::SoundEvent::Start,
+                in_sample: if play.start_offset > 0.0 {
+                    Some((play.start_offset * 44100.0) as u32)
+                } else {
+                    None
+                },
+                out_sample: None,
+                num_loops: play.loops,
+                envelope: None,
+            },
+            self.owner(),
+            Some(play.sound_object),
+        );
+        if sound_instance.is_some() {
+            self.set_sound_instance(sound_instance);
+        }
+    }
+
+    fn set_is_loading(self, context: &mut UpdateContext<'gc>) {
+        // All queued plays are discarded at this point.
+        let new_data = SoundState::Loading {
+            queued_plays: Vec::new(),
+        };
+        unlock!(Gc::write(context.gc(), self.0), SoundData, state).replace(new_data);
+    }
+
+    pub fn load_sound(self, sound: SoundHandle, context: &mut UpdateContext<'gc>) {
+        let new_data = SoundState::Loaded { sound };
+        let write = Gc::write(context.gc(), self.0);
+        let old_data = unlock!(write, SoundData, state).replace(new_data);
+
+        if let SoundState::Loading { queued_plays } = old_data {
+            for play in queued_plays {
+                self.play(play, context);
+            }
+        }
     }
 }
 
@@ -197,7 +284,7 @@ fn attach_sound<'gc>(
             .library_for_movie_mut(movie)
             .character_by_export_name(name)
         {
-            sound.set_sound(Some(sound_handle));
+            sound.load_sound(sound_handle, activation.context);
             sound.set_is_streaming(false);
             sound.set_duration(
                 activation
@@ -354,6 +441,7 @@ fn load_sound<'gc>(
                 }
             }
             sound.set_is_streaming(is_streaming);
+            sound.set_is_loading(activation.context);
             let future = activation.context.load_manager.load_sound_avm1(
                 activation.context.player.clone(),
                 this,
@@ -496,37 +584,13 @@ pub fn start<'gc>(
     // TODO: Handle loops > u16::MAX.
     let loops = (loops as u16).max(1);
 
-    use swf::{SoundEvent, SoundInfo};
     if let NativeObject::Sound(sound) = this.native() {
-        if let Some(sound_handle) = sound.sound() {
-            if sound.is_streaming() {
-                // Streaming MP3s can only have a single active instance.
-                if let Some(sound_instance) = sound.sound_instance() {
-                    activation.context.stop_sound(sound_instance);
-                }
-            }
-            let sound_instance = activation.context.start_sound(
-                sound_handle,
-                &SoundInfo {
-                    event: SoundEvent::Start,
-                    in_sample: if start_offset > 0.0 {
-                        Some((start_offset * 44100.0) as u32)
-                    } else {
-                        None
-                    },
-                    out_sample: None,
-                    num_loops: loops,
-                    envelope: None,
-                },
-                sound.owner(),
-                Some(this),
-            );
-            if sound_instance.is_some() {
-                sound.set_sound_instance(sound_instance);
-            }
-        } else {
-            avm_warn!(activation, "Sound.start: No sound is attached");
-        }
+        let play = QueuedPlay {
+            sound_object: this,
+            start_offset,
+            loops,
+        };
+        sound.play(play, activation.context);
     } else {
         avm_warn!(activation, "Sound.start: Invalid sound");
     }
