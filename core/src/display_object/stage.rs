@@ -738,7 +738,7 @@ impl<'gc> Stage<'gc> {
 }
 
 impl<'gc> TDisplayObject<'gc> for Stage<'gc> {
-    fn gc_base(self) -> Gc<'gc, RefLock<DisplayObjectBase<'gc>>> {
+    fn base(self) -> Gc<'gc, DisplayObjectBase<'gc>> {
         HasPrefixField::as_prefix_gc(self.raw_interactive())
     }
 
@@ -819,11 +819,7 @@ impl<'gc> TDisplayObject<'gc> for Stage<'gc> {
             matrix: self.0.viewport_matrix.get(),
             color_transform: Default::default(),
             // TODO: Verify perspective_projection when its rendering is implemented.
-            perspective_projection: self
-                .as_displayobject()
-                .base()
-                .perspective_projection()
-                .copied(),
+            perspective_projection: self.as_displayobject().base().perspective_projection(),
         });
 
         // All of our Stage3D instances get rendered *underneath* the main stage.
@@ -883,7 +879,7 @@ impl<'gc> TDisplayObject<'gc> for Stage<'gc> {
             perspective_projection = Some(Default::default());
         }
         if self
-            .base_mut(gc_context)
+            .base()
             .set_perspective_projection(perspective_projection)
         {
             if let Some(parent) = self.parent() {

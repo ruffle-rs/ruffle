@@ -208,17 +208,16 @@ fn sync_from_display_object<'gc>(
 }
 
 fn sync_to_display_object<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    _activation: &mut Activation<'_, 'gc>,
     this: Object<'gc>,
 ) -> Result<(), Error<'gc>> {
     let Some(dobj) = this.get_slot(pp_slots::DISPLAY_OBJECT).as_object() else {
         // Not associated with DO. Unnecessary to sync.
         return Ok(());
     };
-    let dobj = dobj.as_display_object().unwrap();
+    let base = dobj.as_display_object().unwrap().base();
 
-    let mut write = dobj.base_mut(activation.gc());
-    let Some(write) = write.perspective_projection_mut() else {
+    let Some(mut proj) = base.perspective_projection() else {
         return Ok(());
     };
 
@@ -230,8 +229,9 @@ fn sync_to_display_object<'gc>(
         (x, y)
     };
 
-    write.field_of_view = fov;
-    write.center = (x, y);
+    proj.field_of_view = fov;
+    proj.center = (x, y);
+    base.set_perspective_projection(Some(proj));
 
     Ok(())
 }

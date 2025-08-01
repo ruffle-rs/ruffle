@@ -21,7 +21,7 @@ use crate::string::AvmString;
 use crate::utils::HasPrefixField;
 use bitflags::bitflags;
 use gc_arena::barrier::unlock;
-use gc_arena::lock::{Lock, RefLock};
+use gc_arena::lock::Lock;
 use gc_arena::{Collect, Gc, Mutation};
 use ruffle_macros::{enum_trait_object, istr};
 use std::cell::Cell;
@@ -86,7 +86,7 @@ bitflags! {
 #[collect(no_drop)]
 #[repr(C, align(8))]
 pub struct InteractiveObjectBase<'gc> {
-    pub base: RefLock<DisplayObjectBase<'gc>>,
+    pub base: DisplayObjectBase<'gc>,
 
     context_menu: Lock<Avm2Value<'gc>>,
 

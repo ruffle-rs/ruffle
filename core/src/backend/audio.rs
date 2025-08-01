@@ -733,14 +733,13 @@ impl<'gc> AudioManager<'gc> {
     }
 
     fn transform_for_sound(&self, sound: &SoundInstance<'gc>) -> SoundTransform {
-        let mut transform = sound.transform.clone();
+        let mut transform = sound.transform;
         let mut parent = sound.display_object;
         while let Some(display_object) = parent {
-            transform.concat(display_object.base().sound_transform());
+            transform = transform.concat(display_object.base().sound_transform());
             parent = display_object.parent();
         }
-        transform.concat(&self.global_sound_transform);
-        transform.into()
+        transform.concat(self.global_sound_transform).into()
     }
 
     /// Update the sound transforms for all sounds.

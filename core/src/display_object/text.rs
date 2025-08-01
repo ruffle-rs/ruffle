@@ -10,8 +10,8 @@ use crate::utils::HasPrefixField;
 use crate::vminterface::Instantiator;
 use core::fmt;
 use gc_arena::barrier::unlock;
+use gc_arena::Lock;
 use gc_arena::{Collect, Gc, Mutation};
-use gc_arena::{Lock, RefLock};
 use ruffle_render::commands::CommandHandler;
 use ruffle_render::transform::Transform;
 use ruffle_wstr::WString;
@@ -34,7 +34,7 @@ impl fmt::Debug for Text<'_> {
 #[collect(no_drop)]
 #[repr(C, align(8))]
 pub struct TextData<'gc> {
-    base: RefLock<DisplayObjectBase<'gc>>,
+    base: DisplayObjectBase<'gc>,
     shared: Lock<Gc<'gc, TextShared>>,
     render_settings: RefCell<TextRenderSettings>,
     avm2_object: Lock<Option<Avm2Object<'gc>>>,
@@ -100,7 +100,7 @@ impl<'gc> Text<'gc> {
 }
 
 impl<'gc> TDisplayObject<'gc> for Text<'gc> {
-    fn gc_base(self) -> Gc<'gc, RefLock<DisplayObjectBase<'gc>>> {
+    fn base(self) -> Gc<'gc, DisplayObjectBase<'gc>> {
         HasPrefixField::as_prefix_gc(self.0)
     }
 

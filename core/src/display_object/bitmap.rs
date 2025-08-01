@@ -15,7 +15,7 @@ use crate::utils::HasPrefixField;
 use crate::vminterface::Instantiator;
 use core::fmt;
 use gc_arena::barrier::unlock;
-use gc_arena::lock::{Lock, RefLock};
+use gc_arena::lock::Lock;
 use gc_arena::{Collect, Gc, GcCell, GcWeak, Mutation};
 use ruffle_render::backend::RenderBackend;
 use ruffle_render::bitmap::{BitmapFormat, PixelSnapping};
@@ -101,7 +101,7 @@ impl fmt::Debug for Bitmap<'_> {
 #[collect(no_drop)]
 #[repr(C, align(8))]
 pub struct BitmapGraphicData<'gc> {
-    base: RefLock<DisplayObjectBase<'gc>>,
+    base: DisplayObjectBase<'gc>,
     movie: Arc<SwfMovie>,
 
     /// The AVM2 side of this object.
@@ -304,7 +304,7 @@ impl<'gc> Bitmap<'gc> {
 }
 
 impl<'gc> TDisplayObject<'gc> for Bitmap<'gc> {
-    fn gc_base(self) -> Gc<'gc, RefLock<DisplayObjectBase<'gc>>> {
+    fn base(self) -> Gc<'gc, DisplayObjectBase<'gc>> {
         HasPrefixField::as_prefix_gc(self.0)
     }
 

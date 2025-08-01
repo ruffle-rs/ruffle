@@ -125,7 +125,7 @@ pub fn get_concatenated_matrix<'gc>(
             StageQuality::High16x16 | StageQuality::High16x16Linear => 1.25,
         };
 
-        let mut mat = *dobj.base().matrix();
+        let mut mat = dobj.base().matrix();
         mat.a *= scale;
         mat.d *= scale;
 
@@ -140,11 +140,11 @@ pub fn has_matrix3d_from_transform_object(transform_object: Object<'_>) -> bool 
 }
 
 pub fn matrix_from_transform_object(transform_object: Object<'_>) -> Matrix {
-    *get_display_object(transform_object).base().matrix()
+    get_display_object(transform_object).base().matrix()
 }
 
 pub fn color_transform_from_transform_object(transform_object: Object<'_>) -> ColorTransform {
-    *get_display_object(transform_object)
+    get_display_object(transform_object)
         .base()
         .color_transform()
 }
@@ -260,7 +260,6 @@ pub fn object_to_perspective_projection<'gc>(
             .unwrap()
             .base()
             .perspective_projection()
-            .copied()
             .unwrap_or_default());
     }
 
@@ -367,7 +366,7 @@ pub fn get_matrix_3d<'gc>(
 
     let display_object = get_display_object(this);
     if display_object.base().has_matrix3d_stub() {
-        let matrix = *get_display_object(this).base().matrix();
+        let matrix = get_display_object(this).base().matrix();
         let matrix3d = Matrix3D::from(matrix);
         matrix3d_to_object(matrix3d, activation)
     } else {

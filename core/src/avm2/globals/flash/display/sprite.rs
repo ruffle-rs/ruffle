@@ -102,7 +102,7 @@ pub fn get_sound_transform<'gc>(
     let this = this.as_object().unwrap();
 
     if let Some(dobj) = this.as_display_object() {
-        let dobj_st = dobj.base().sound_transform().clone();
+        let dobj_st = dobj.base().sound_transform();
 
         return Ok(dobj_st.into_avm2_object(activation)?.into());
     }

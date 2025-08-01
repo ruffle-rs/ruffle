@@ -170,7 +170,7 @@ impl DebugUi {
         context: &mut RenderContext<'_, 'gc>,
         dynamic_root_set: DynamicRootSet<'gc>,
     ) {
-        let world_matrix = context.stage.view_matrix() * *context.stage.base().matrix();
+        let world_matrix = context.stage.view_matrix() * context.stage.base().matrix();
 
         for (object, window) in self.display_objects.iter() {
             if let Some(color) = window.debug_rect_color() {

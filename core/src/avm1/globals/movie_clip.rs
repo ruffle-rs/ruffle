@@ -983,8 +983,8 @@ pub fn clone_sprite<'gc>(
     parent.replace_at_depth(context, new_clip.into(), depth);
 
     // Copy display properties from previous clip to new clip.
-    new_clip.set_matrix(context.gc(), *movie_clip.base().matrix());
-    new_clip.set_color_transform(context.gc(), *movie_clip.base().color_transform());
+    new_clip.set_matrix(context.gc(), movie_clip.base().matrix());
+    new_clip.set_color_transform(context.gc(), movie_clip.base().color_transform());
 
     new_clip.init_clip_event_handlers(movie_clip.clip_actions().into());
 
@@ -1665,10 +1665,10 @@ fn set_transform<'gc>(
     if let Value::Object(object) = value {
         if let NativeObject::Transform(transform) = object.native() {
             if let Some(clip) = transform.clip(activation) {
-                let matrix = *clip.base().matrix();
+                let matrix = clip.base().matrix();
                 this.set_matrix(activation.gc(), matrix);
 
-                let color_transform = *clip.base().color_transform();
+                let color_transform = clip.base().color_transform();
                 this.set_color_transform(activation.gc(), color_transform);
 
                 if let Some(parent) = this.parent() {
