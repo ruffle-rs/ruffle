@@ -17,7 +17,7 @@ pub fn get_sound_transform<'gc>(
     _this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let dobj_st = activation.context.global_sound_transform().clone();
+    let dobj_st = activation.context.global_sound_transform();
 
     Ok(dobj_st.into_avm2_object(activation)?.into())
 }

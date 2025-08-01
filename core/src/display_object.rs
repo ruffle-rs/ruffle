@@ -14,13 +14,14 @@ use crate::tag_utils::SwfMovie;
 use crate::types::{Degrees, Percent};
 use crate::vminterface::Instantiator;
 use bitflags::bitflags;
-use gc_arena::lock::RefLock;
+use gc_arena::barrier::{unlock, Write};
+use gc_arena::lock::Lock;
 use gc_arena::{Collect, Gc, Mutation};
 use ruffle_macros::{enum_trait_object, istr};
 use ruffle_render::perspective_projection::PerspectiveProjection;
 use ruffle_render::pixel_bender::PixelBenderShaderHandle;
 use ruffle_render::transform::{Transform, TransformStack};
-use std::cell::{Cell, Ref, RefMut};
+use std::cell::{Cell, Ref, RefCell, RefMut};
 use std::fmt::Debug;
 use std::hash::Hash;
 use std::sync::Arc;
@@ -192,15 +193,18 @@ impl BitmapCache {
 #[derive(Clone, Collect)]
 #[collect(no_drop)]
 pub struct DisplayObjectBase<'gc> {
-    parent: Option<DisplayObject<'gc>>,
+    cell: RefCell<DisplayObjectBaseMut>,
+    parent: Lock<Option<DisplayObject<'gc>>>,
     place_frame: Cell<u16>,
     depth: Cell<Depth>,
-    #[collect(require_static)]
-    transform: Transform,
-    name: Option<AvmString<'gc>>,
-    #[collect(require_static)]
-    filters: Vec<Filter>,
+    name: Lock<Option<AvmString<'gc>>>,
     clip_depth: Cell<Depth>,
+
+    // The transform of this display object.
+    // (Split into several fields for easier access)
+    matrix: Cell<Matrix>,
+    color_transform: Cell<ColorTransform>,
+    perspective_projection: Cell<Option<PerspectiveProjection>>,
 
     // Cached transform properties `_xscale`, `_yscale`, `_rotation`.
     // These are expensive to calculate, so they will be calculated and cached
@@ -211,23 +215,21 @@ pub struct DisplayObjectBase<'gc> {
     skew: Cell<f64>,
 
     /// The sound transform of sounds playing via this display object.
-    #[collect(require_static)]
-    sound_transform: SoundTransform,
+    sound_transform: Cell<SoundTransform>,
 
     /// The display object that we are being masked by.
-    masker: Option<DisplayObject<'gc>>,
+    masker: Lock<Option<DisplayObject<'gc>>>,
 
     /// The display object we are currently masking.
-    maskee: Option<DisplayObject<'gc>>,
+    maskee: Lock<Option<DisplayObject<'gc>>>,
 
-    meta_data: Option<Avm2Object<'gc>>,
+    meta_data: Lock<Option<Avm2Object<'gc>>>,
 
     /// The blend mode used when rendering this display object.
     /// Values other than the default `BlendMode::Normal` implicitly cause cache-as-bitmap behavior.
     blend_mode: Cell<ExtendedBlendMode>,
 
     #[collect(require_static)]
-    blend_shader: Option<PixelBenderShaderHandle>,
 
     /// The opaque background color of this display object.
     /// The bounding box of the display object will be filled with the given color. This also
@@ -249,39 +251,49 @@ pub struct DisplayObjectBase<'gc> {
 
     /// Rectangle used for 9-slice scaling (`DisplayObject.scale9grid`).
     scaling_grid: Cell<Rectangle<Twips>>,
+}
+
+#[derive(Clone)]
+struct DisplayObjectBaseMut {
+    filters: Vec<Filter>,
+
+    blend_shader: Option<PixelBenderShaderHandle>,
 
     /// If this Display Object should cacheAsBitmap - and if so, the cache itself.
     /// None means not cached, Some means cached.
-    #[collect(require_static)]
     cache: Option<BitmapCache>,
 }
 
 impl Default for DisplayObjectBase<'_> {
     fn default() -> Self {
         Self {
+            cell: RefCell::new(DisplayObjectBaseMut {
+                filters: Default::default(),
+                blend_shader: None,
+                cache: None,
+            }),
             parent: Default::default(),
-            place_frame: Cell::new(Default::default()),
-            depth: Cell::new(Default::default()),
-            transform: Default::default(),
-            name: None,
-            filters: Default::default(),
-            clip_depth: Cell::new(Default::default()),
+            place_frame: Default::default(),
+            depth: Default::default(),
+            name: Lock::new(None),
+            clip_depth: Default::default(),
+            matrix: Default::default(),
+            color_transform: Default::default(),
+            perspective_projection: Default::default(),
             rotation: Cell::new(Degrees::from_radians(0.0)),
             scale_x: Cell::new(Percent::from_unit(1.0)),
             scale_y: Cell::new(Percent::from_unit(1.0)),
             skew: Cell::new(0.0),
-            masker: None,
-            maskee: None,
-            meta_data: None,
+            masker: Lock::new(None),
+            maskee: Lock::new(None),
+            meta_data: Lock::new(None),
             sound_transform: Default::default(),
-            blend_mode: Cell::new(Default::default()),
-            blend_shader: None,
-            opaque_background: Cell::new(Default::default()),
+            blend_mode: Default::default(),
+            opaque_background: Default::default(),
             flags: Cell::new(DisplayObjectFlags::VISIBLE),
             scroll_rect: Cell::new(None),
-            next_scroll_rect: Cell::new(Default::default()),
-            scaling_grid: Cell::new(Default::default()),
-            cache: None,
+            next_scroll_rect: Default::default(),
+            scaling_grid: Default::default(),
         }
     }
 }
@@ -319,70 +331,66 @@ impl<'gc> DisplayObjectBase<'gc> {
         self.place_frame.set(frame);
     }
 
-    fn transform(&self) -> &Transform {
-        &self.transform
+    fn transform(&self) -> Transform {
+        Transform {
+            matrix: self.matrix.get(),
+            color_transform: self.color_transform.get(),
+            perspective_projection: self.perspective_projection.get(),
+        }
     }
 
-    pub fn matrix(&self) -> &Matrix {
-        &self.transform.matrix
+    pub fn matrix(&self) -> Matrix {
+        self.matrix.get()
     }
 
-    pub fn matrix_mut(&mut self) -> &mut Matrix {
-        &mut self.transform.matrix
-    }
-
-    pub fn set_matrix(&mut self, matrix: Matrix) {
-        self.transform.matrix = matrix;
+    pub fn set_matrix(&self, matrix: Matrix) {
+        self.matrix.set(matrix);
         self.set_scale_rotation_cached(false);
     }
 
-    pub fn color_transform(&self) -> &ColorTransform {
-        &self.transform.color_transform
+    pub fn color_transform(&self) -> ColorTransform {
+        self.color_transform.get()
     }
 
-    pub fn color_transform_mut(&mut self) -> &mut ColorTransform {
-        &mut self.transform.color_transform
+    pub fn set_color_transform(&self, color_transform: ColorTransform) {
+        self.color_transform.set(color_transform);
     }
 
-    pub fn set_color_transform(&mut self, color_transform: ColorTransform) {
-        self.transform.color_transform = color_transform;
-    }
-
-    pub fn perspective_projection(&self) -> Option<&PerspectiveProjection> {
-        self.transform.perspective_projection.as_ref()
-    }
-    pub fn perspective_projection_mut(&mut self) -> Option<&mut PerspectiveProjection> {
-        self.transform.perspective_projection.as_mut()
+    pub fn perspective_projection(&self) -> Option<PerspectiveProjection> {
+        self.perspective_projection.get()
     }
 
     pub fn set_perspective_projection(
-        &mut self,
+        &self,
         perspective_projection: Option<PerspectiveProjection>,
     ) -> bool {
-        let changed = self.transform.perspective_projection != perspective_projection;
-        self.transform.perspective_projection = perspective_projection;
-        changed
+        let old = self.perspective_projection.replace(perspective_projection);
+        perspective_projection != old
     }
 
     fn x(&self) -> Twips {
-        self.transform.matrix.tx
+        self.matrix.get().tx
     }
 
-    fn set_x(&mut self, x: Twips) -> bool {
-        let changed = self.transform.matrix.tx != x;
+    fn set_x(&self, x: Twips) -> bool {
+        let mut matrix = self.matrix.get();
+        let changed = matrix.tx != x;
+        matrix.tx = x;
+        self.matrix.set(matrix);
         self.set_transformed_by_script(true);
-        self.transform.matrix.tx = x;
         changed
     }
 
     fn y(&self) -> Twips {
-        self.transform.matrix.ty
+        self.matrix.get().ty
     }
 
-    fn set_y(&mut self, y: Twips) -> bool {
-        let changed = self.transform.matrix.ty != y;
+    fn set_y(&self, y: Twips) -> bool {
+        let mut matrix = self.matrix.get();
+        let changed = matrix.ty != y;
+        matrix.ty = y;
+        self.matrix.set(matrix);
         self.set_transformed_by_script(true);
-        self.transform.matrix.ty = y;
         changed
     }
 
@@ -391,12 +399,12 @@ impl<'gc> DisplayObjectBase<'gc> {
     /// `_rotation` is accessed.
     fn cache_scale_rotation(&self) {
         if !self.scale_rotation_cached() {
-            let (a, b, c, d) = (
-                f64::from(self.transform.matrix.a),
-                f64::from(self.transform.matrix.b),
-                f64::from(self.transform.matrix.c),
-                f64::from(self.transform.matrix.d),
-            );
+            let Matrix { a, b, c, d, .. } = self.matrix.get();
+            let a = f64::from(a);
+            let b = f64::from(b);
+            let c = f64::from(c);
+            let d = f64::from(d);
+
             // If this object's transform matrix is:
             // [[a c tx]
             //  [b d ty]]
@@ -427,7 +435,7 @@ impl<'gc> DisplayObjectBase<'gc> {
         self.rotation.get()
     }
 
-    fn set_rotation(&mut self, degrees: Degrees) -> bool {
+    fn set_rotation(&self, degrees: Degrees) -> bool {
         self.set_transformed_by_script(true);
         self.cache_scale_rotation();
         let changed = self.rotation.get() != degrees;
@@ -453,11 +461,12 @@ impl<'gc> DisplayObjectBase<'gc> {
         let sin_y = f64::sin(degrees.into_radians() + skew);
         let scale_x = self.scale_x.get().unit();
         let scale_y = self.scale_y.get().unit();
-        let matrix = &mut self.transform.matrix;
+        let mut matrix = self.matrix.get();
         matrix.a = (scale_x * cos_x) as f32;
         matrix.b = (scale_x * sin_x) as f32;
         matrix.c = (scale_y * -sin_y) as f32;
         matrix.d = (scale_y * cos_y) as f32;
+        self.matrix.set(matrix);
 
         changed
     }
@@ -467,7 +476,7 @@ impl<'gc> DisplayObjectBase<'gc> {
         self.scale_x.get()
     }
 
-    fn set_scale_x(&mut self, mut value: Percent) -> bool {
+    fn set_scale_x(&self, mut value: Percent) -> bool {
         let changed = self.scale_x.get() != value;
         self.set_transformed_by_script(true);
         self.cache_scale_rotation();
@@ -489,9 +498,10 @@ impl<'gc> DisplayObjectBase<'gc> {
 
         let cos = f64::cos(rot);
         let sin = f64::sin(rot);
-        let matrix = &mut self.transform.matrix;
+        let mut matrix = self.matrix.get();
         matrix.a = (cos * value.unit()) as f32;
         matrix.b = (sin * value.unit()) as f32;
+        self.matrix.set(matrix);
 
         changed
     }
@@ -501,7 +511,7 @@ impl<'gc> DisplayObjectBase<'gc> {
         self.scale_y.get()
     }
 
-    fn set_scale_y(&mut self, mut value: Percent) -> bool {
+    fn set_scale_y(&self, mut value: Percent) -> bool {
         let changed = self.scale_y.get() != value;
         self.set_transformed_by_script(true);
         self.cache_scale_rotation();
@@ -524,43 +534,47 @@ impl<'gc> DisplayObjectBase<'gc> {
         let skew = self.skew.get();
         let cos = f64::cos(rot + skew);
         let sin = f64::sin(rot + skew);
-        let matrix = &mut self.transform.matrix;
+        let mut matrix = self.matrix.get();
         matrix.c = (-sin * value.unit()) as f32;
         matrix.d = (cos * value.unit()) as f32;
+        self.matrix.set(matrix);
 
         changed
     }
 
     fn name(&self) -> Option<AvmString<'gc>> {
-        self.name
+        self.name.get()
     }
 
-    fn set_name(&mut self, name: AvmString<'gc>) {
-        self.name = Some(name);
+    fn set_name(this: &Write<Self>, name: AvmString<'gc>) {
+        unlock!(this, Self, name).set(Some(name));
     }
 
     fn filters(&self) -> Vec<Filter> {
-        self.filters.clone()
+        self.cell.borrow().filters.clone()
     }
 
-    fn set_filters(&mut self, filters: Vec<Filter>) -> bool {
-        if filters != self.filters {
-            self.filters = filters;
+    fn set_filters(&self, filters: Vec<Filter>) -> bool {
+        let mut write = self.cell.borrow_mut();
+        let changed = filters != write.filters;
+        write.filters = filters;
+        drop(write);
+        if changed {
             self.recheck_cache_as_bitmap();
-            true
-        } else {
-            false
         }
+        changed
     }
 
     fn alpha(&self) -> f64 {
         f64::from(self.color_transform().a_multiply)
     }
 
-    fn set_alpha(&mut self, value: f64) -> bool {
-        let changed = self.alpha() != value;
-        self.set_transformed_by_script(true);
-        self.color_transform_mut().a_multiply = Fixed8::from_f64(value);
+    fn set_alpha(&self, value: f64) -> bool {
+        let value = Fixed8::from_f64(value);
+        let mut tf = self.color_transform.get();
+        let changed = tf.a_multiply != value;
+        tf.a_multiply = value;
+        self.color_transform.set(tf);
         changed
     }
 
@@ -573,13 +587,13 @@ impl<'gc> DisplayObjectBase<'gc> {
     }
 
     fn parent(&self) -> Option<DisplayObject<'gc>> {
-        self.parent
+        self.parent.get()
     }
 
     /// You should almost always use `DisplayObject.set_parent` instead, which
     /// properly handles 'orphan' movie clips
-    fn set_parent_ignoring_orphan_list(&mut self, parent: Option<DisplayObject<'gc>>) {
-        self.parent = parent;
+    fn set_parent_ignoring_orphan_list(this: &Write<Self>, parent: Option<DisplayObject<'gc>>) {
+        unlock!(this, Self, parent).set(parent)
     }
 
     fn avm1_removed(&self) -> bool {
@@ -619,12 +633,12 @@ impl<'gc> DisplayObjectBase<'gc> {
         self.flags.set(flags);
     }
 
-    pub fn sound_transform(&self) -> &SoundTransform {
-        &self.sound_transform
+    pub fn sound_transform(&self) -> SoundTransform {
+        self.sound_transform.get()
     }
 
-    pub fn set_sound_transform(&mut self, sound_transform: SoundTransform) {
-        self.sound_transform = sound_transform;
+    pub fn set_sound_transform(&self, sound_transform: SoundTransform) {
+        self.sound_transform.set(sound_transform);
     }
 
     fn visible(&self) -> bool {
@@ -646,11 +660,11 @@ impl<'gc> DisplayObjectBase<'gc> {
     }
 
     fn blend_shader(&self) -> Option<PixelBenderShaderHandle> {
-        self.blend_shader.clone()
+        self.cell.borrow().blend_shader.clone()
     }
 
-    fn set_blend_shader(&mut self, value: Option<PixelBenderShaderHandle>) {
-        self.blend_shader = value;
+    fn set_blend_shader(&self, value: Option<PixelBenderShaderHandle>) {
+        self.cell.borrow_mut().blend_shader = value;
     }
 
     /// The opaque background color of this display object.
@@ -709,13 +723,13 @@ impl<'gc> DisplayObjectBase<'gc> {
         self.contains_flag(DisplayObjectFlags::CACHE_AS_BITMAP)
     }
 
-    fn set_bitmap_cached_preference(&mut self, value: bool) {
+    fn set_bitmap_cached_preference(&self, value: bool) {
         self.set_flag(DisplayObjectFlags::CACHE_AS_BITMAP, value);
         self.recheck_cache_as_bitmap();
     }
 
-    fn bitmap_cache_mut(&mut self) -> Option<&mut BitmapCache> {
-        self.cache.as_mut()
+    fn bitmap_cache_mut(&self) -> RefMut<'_, Option<BitmapCache>> {
+        RefMut::map(self.cell.borrow_mut(), |c| &mut c.cache)
     }
 
     /// Invalidates a cached bitmap, if it exists.
@@ -723,11 +737,11 @@ impl<'gc> DisplayObjectBase<'gc> {
     /// if there was a cache.
     /// Any subsequent calls will return false, indicating that you do not need to invalidate the ancestors.
     /// This is reset during rendering.
-    fn invalidate_cached_bitmap(&mut self) -> bool {
+    fn invalidate_cached_bitmap(&self) -> bool {
         if self.contains_flag(DisplayObjectFlags::CACHE_INVALIDATED) {
             return false;
         }
-        if let Some(cache) = &mut self.cache {
+        if let Some(cache) = &mut *self.bitmap_cache_mut() {
             cache.make_dirty();
         }
         self.set_flag(DisplayObjectFlags::CACHE_INVALIDATED, true);
@@ -738,12 +752,13 @@ impl<'gc> DisplayObjectBase<'gc> {
         self.set_flag(DisplayObjectFlags::CACHE_INVALIDATED, false);
     }
 
-    fn recheck_cache_as_bitmap(&mut self) {
-        let should_cache = self.is_bitmap_cached_preference() || !self.filters.is_empty();
-        if should_cache && self.cache.is_none() {
-            self.cache = Some(Default::default());
-        } else if !should_cache && self.cache.is_some() {
-            self.cache = None;
+    fn recheck_cache_as_bitmap(&self) {
+        let mut write = self.cell.borrow_mut();
+        let should_cache = self.is_bitmap_cached_preference() || !write.filters.is_empty();
+        if should_cache && write.cache.is_none() {
+            write.cache = Some(Default::default());
+        } else if !should_cache && write.cache.is_some() {
+            write.cache = None;
         }
     }
 
@@ -772,27 +787,27 @@ impl<'gc> DisplayObjectBase<'gc> {
     }
 
     fn masker(&self) -> Option<DisplayObject<'gc>> {
-        self.masker
+        self.masker.get()
     }
 
-    fn set_masker(&mut self, node: Option<DisplayObject<'gc>>) {
-        self.masker = node;
+    fn set_masker(this: &Write<Self>, node: Option<DisplayObject<'gc>>) {
+        unlock!(this, Self, masker).set(node);
     }
 
     fn maskee(&self) -> Option<DisplayObject<'gc>> {
-        self.maskee
+        self.maskee.get()
     }
 
-    fn set_maskee(&mut self, node: Option<DisplayObject<'gc>>) {
-        self.maskee = node;
+    fn set_maskee(this: &Write<Self>, node: Option<DisplayObject<'gc>>) {
+        unlock!(this, Self, maskee).set(node);
     }
 
     fn meta_data(&self) -> Option<Avm2Object<'gc>> {
-        self.meta_data
+        self.meta_data.get()
     }
 
-    fn set_meta_data(&mut self, value: Avm2Object<'gc>) {
-        self.meta_data = Some(value);
+    fn set_meta_data(this: &Write<Self>, value: Avm2Object<'gc>) {
+        unlock!(this, Self, meta_data).set(Some(value));
     }
 
     pub fn has_matrix3d_stub(&self) -> bool {
@@ -817,7 +832,7 @@ pub fn render_base<'gc>(this: DisplayObject<'gc>, context: &mut RenderContext<'_
     if this.maskee().is_some() {
         return;
     }
-    context.transform_stack.push(this.base().transform());
+    context.transform_stack.push(&this.base().transform());
     let blend_mode = this.blend_mode();
     let original_commands = if blend_mode != ExtendedBlendMode::Normal {
         Some(std::mem::take(&mut context.commands))
@@ -838,7 +853,7 @@ pub fn render_base<'gc>(this: DisplayObject<'gc>, context: &mut RenderContext<'_
         let swf_version = this.swf_version();
         filters.retain(|f| !f.impotent());
 
-        if let Some(cache) = this.base_mut(context.gc()).bitmap_cache_mut() {
+        if let Some(cache) = &mut *this.base().bitmap_cache_mut() {
             let width = bounds.width().to_pixels().ceil().max(0.0);
             let height = bounds.height().to_pixels().ceil().max(0.0);
             if width <= u16::MAX as f64 && height <= u16::MAX as f64 {
@@ -1112,19 +1127,7 @@ pub fn apply_standard_mask_and_scroll<'gc, F>(
 pub trait TDisplayObject<'gc>:
     'gc + Clone + Copy + Collect<'gc> + Debug + Into<DisplayObject<'gc>>
 {
-    fn gc_base(self) -> Gc<'gc, RefLock<DisplayObjectBase<'gc>>>;
-
-    #[no_dynamic]
-    #[inline(always)]
-    fn base<'a>(&'a self) -> Ref<'a, DisplayObjectBase<'gc>> {
-        self.gc_base().borrow()
-    }
-
-    #[no_dynamic]
-    #[inline(always)]
-    fn base_mut<'a>(&'a self, mc: &Mutation<'gc>) -> RefMut<'a, DisplayObjectBase<'gc>> {
-        self.gc_base().borrow_mut(mc)
-    }
+    fn base(self) -> Gc<'gc, DisplayObjectBase<'gc>>;
 
     /// The `SCALE_ROTATION_CACHED` flag should only be set in SWFv5+.
     /// So scaling/rotation values always have to get recalculated from the matrix in SWFv4.
@@ -1160,7 +1163,7 @@ pub trait TDisplayObject<'gc>:
 
     /// The local bounding box of this object including children, in its parent's coordinate system.
     fn local_bounds(self) -> Rectangle<Twips> {
-        self.bounds_with_transform(self.base().matrix())
+        self.bounds_with_transform(&self.base().matrix())
     }
 
     /// The world bounding box of this object including children, relative to the stage.
@@ -1205,7 +1208,7 @@ pub trait TDisplayObject<'gc>:
 
         if let Some(ctr) = self.as_container() {
             for child in ctr.iter_render_list() {
-                let matrix = *matrix * *child.base().matrix();
+                let matrix = *matrix * child.base().matrix();
                 bounds = bounds.union(&child.bounds_with_transform(&matrix));
             }
         }
@@ -1227,7 +1230,7 @@ pub trait TDisplayObject<'gc>:
 
         if let Some(ctr) = self.as_container() {
             for child in ctr.iter_render_list() {
-                let matrix = *matrix * *child.base().matrix();
+                let matrix = *matrix * child.base().matrix();
                 bounds =
                     bounds.union(&child.render_bounds_with_transform(&matrix, true, view_matrix));
             }
@@ -1255,16 +1258,15 @@ pub trait TDisplayObject<'gc>:
     /// Sets the matrix of this object.
     /// This does NOT invalidate the cache, as it's often used with other operations.
     /// It is the callers responsibility to do so.
-    fn set_matrix(self, gc_context: &Mutation<'gc>, matrix: Matrix) {
-        self.base_mut(gc_context).set_matrix(matrix);
+    fn set_matrix(self, _gc_context: &Mutation<'gc>, matrix: Matrix) {
+        self.base().set_matrix(matrix);
     }
 
     /// Sets the color transform of this object.
     /// This does NOT invalidate the cache, as it's often used with other operations.
     /// It is the callers responsibility to do so.
-    fn set_color_transform(self, gc_context: &Mutation<'gc>, color_transform: ColorTransform) {
-        self.base_mut(gc_context)
-            .set_color_transform(color_transform)
+    fn set_color_transform(self, _gc_context: &Mutation<'gc>, color_transform: ColorTransform) {
+        self.base().set_color_transform(color_transform)
     }
 
     /// Sets the perspective projection of this object.
@@ -1275,7 +1277,7 @@ pub trait TDisplayObject<'gc>:
         perspective_projection: Option<PerspectiveProjection>,
     ) {
         if self
-            .base_mut(gc_context)
+            .base()
             .set_perspective_projection(perspective_projection)
         {
             if let Some(parent) = self.parent() {
@@ -1289,7 +1291,7 @@ pub trait TDisplayObject<'gc>:
     /// Should only be used to implement 'Transform.concatenatedMatrix'
     fn local_to_global_matrix_without_own_scroll_rect(self) -> Matrix {
         let mut node = self.parent();
-        let mut matrix = *self.base().matrix();
+        let mut matrix = self.base().matrix();
         while let Some(display_object) = node {
             // We want to transform to Stage-local coordinates,
             // so do *not* apply the Stage's matrix
@@ -1299,7 +1301,7 @@ pub trait TDisplayObject<'gc>:
             if let Some(rect) = display_object.scroll_rect() {
                 matrix = Matrix::translate(-rect.x_min, -rect.y_min) * matrix;
             }
-            matrix = *display_object.base().matrix() * matrix;
+            matrix = display_object.base().matrix() * matrix;
             node = display_object.parent();
         }
         matrix
@@ -1367,7 +1369,7 @@ pub trait TDisplayObject<'gc>:
     /// Set by the `_x`/`x` ActionScript properties.
     /// This invalidates any ancestors cacheAsBitmap automatically.
     fn set_x(self, gc_context: &Mutation<'gc>, x: Twips) {
-        if self.base_mut(gc_context).set_x(x) {
+        if self.base().set_x(x) {
             if let Some(parent) = self.parent() {
                 // Self-transform changes are automatically handled,
                 // we only want to inform ancestors to avoid unnecessary invalidations for tx/ty
@@ -1386,7 +1388,7 @@ pub trait TDisplayObject<'gc>:
     /// Set by the `_y`/`y` ActionScript properties.
     /// This invalidates any ancestors cacheAsBitmap automatically.
     fn set_y(self, gc_context: &Mutation<'gc>, y: Twips) {
-        if self.base_mut(gc_context).set_y(y) {
+        if self.base().set_y(y) {
             if let Some(parent) = self.parent() {
                 // Self-transform changes are automatically handled,
                 // we only want to inform ancestors to avoid unnecessary invalidations for tx/ty
@@ -1407,7 +1409,7 @@ pub trait TDisplayObject<'gc>:
     /// Set by the `_rotation`/`rotation` ActionScript properties.
     /// This invalidates any ancestors cacheAsBitmap automatically.
     fn set_rotation(self, gc_context: &Mutation<'gc>, radians: Degrees) {
-        if self.base_mut(gc_context).set_rotation(radians) {
+        if self.base().set_rotation(radians) {
             self.set_scale_rotation_cached();
             if let Some(parent) = self.parent() {
                 // Self-transform changes are automatically handled,
@@ -1429,7 +1431,7 @@ pub trait TDisplayObject<'gc>:
     /// Set by the `_xscale`/`scaleX` ActionScript properties.
     /// This invalidates any ancestors cacheAsBitmap automatically.
     fn set_scale_x(self, gc_context: &Mutation<'gc>, value: Percent) {
-        if self.base_mut(gc_context).set_scale_x(value) {
+        if self.base().set_scale_x(value) {
             self.set_scale_rotation_cached();
             if let Some(parent) = self.parent() {
                 // Self-transform changes are automatically handled,
@@ -1451,7 +1453,7 @@ pub trait TDisplayObject<'gc>:
     /// Returned by the `_yscale`/`scaleY` ActionScript properties.
     /// This invalidates any ancestors cacheAsBitmap automatically.
     fn set_scale_y(self, gc_context: &Mutation<'gc>, value: Percent) {
-        if self.base_mut(gc_context).set_scale_y(value) {
+        if self.base().set_scale_y(value) {
             self.set_scale_rotation_cached();
             if let Some(parent) = self.parent() {
                 // Self-transform changes are automatically handled,
@@ -1570,7 +1572,7 @@ pub trait TDisplayObject<'gc>:
     /// Set by the `_alpha`/`alpha` ActionScript properties.
     /// This invalidates any cacheAsBitmap automatically.
     fn set_alpha(self, gc_context: &Mutation<'gc>, value: f64) {
-        if self.base_mut(gc_context).set_alpha(value) {
+        if self.base().set_alpha(value) {
             if let Some(parent) = self.parent() {
                 // Self-transform changes are automatically handled
                 parent.invalidate_cached_bitmap(gc_context);
@@ -1582,8 +1584,8 @@ pub trait TDisplayObject<'gc>:
         self.base().name()
     }
 
-    fn set_name(self, gc_context: &Mutation<'gc>, name: AvmString<'gc>) {
-        self.base_mut(gc_context).set_name(name)
+    fn set_name(self, mc: &Mutation<'gc>, name: AvmString<'gc>) {
+        DisplayObjectBase::set_name(Gc::write(mc, self.base()), name)
     }
 
     fn filters(self) -> Vec<Filter> {
@@ -1591,7 +1593,7 @@ pub trait TDisplayObject<'gc>:
     }
 
     fn set_filters(self, gc_context: &Mutation<'gc>, filters: Vec<Filter>) {
-        if self.base_mut(gc_context).set_filters(filters) {
+        if self.base().set_filters(filters) {
             self.invalidate_cached_bitmap(gc_context);
         }
     }
@@ -1660,10 +1662,9 @@ pub trait TDisplayObject<'gc>:
     /// Set the parent of this display object.
     fn set_parent(self, context: &mut UpdateContext<'gc>, parent: Option<DisplayObject<'gc>>) {
         let had_parent = self.parent().is_some();
-        self.base_mut(context.gc())
-            .set_parent_ignoring_orphan_list(parent);
-        let has_parent = self.parent().is_some();
-        let parent_removed = had_parent && !has_parent;
+        let write = Gc::write(context.gc(), self.base());
+        DisplayObjectBase::set_parent_ignoring_orphan_list(write, parent);
+        let parent_removed = had_parent && parent.is_none();
 
         if parent_removed {
             if let Some(int) = self.as_interactive() {
@@ -1704,21 +1705,21 @@ pub trait TDisplayObject<'gc>:
 
     fn set_masker(
         self,
-        gc_context: &Mutation<'gc>,
+        mc: &Mutation<'gc>,
         node: Option<DisplayObject<'gc>>,
         remove_old_link: bool,
     ) {
         if remove_old_link {
             let old_masker = self.base().masker();
             if let Some(old_masker) = old_masker {
-                old_masker.set_maskee(gc_context, None, false);
+                old_masker.set_maskee(mc, None, false);
             }
             if let Some(parent) = self.parent() {
                 // Masks are natively handled by cacheAsBitmap - don't invalidate self, only parents
-                parent.invalidate_cached_bitmap(gc_context);
+                parent.invalidate_cached_bitmap(mc);
             }
         }
-        self.base_mut(gc_context).set_masker(node);
+        DisplayObjectBase::set_masker(Gc::write(mc, self.base()), node);
     }
 
     fn maskee(self) -> Option<DisplayObject<'gc>> {
@@ -1727,18 +1728,18 @@ pub trait TDisplayObject<'gc>:
 
     fn set_maskee(
         self,
-        gc_context: &Mutation<'gc>,
+        mc: &Mutation<'gc>,
         node: Option<DisplayObject<'gc>>,
         remove_old_link: bool,
     ) {
         if remove_old_link {
             let old_maskee = self.base().maskee();
             if let Some(old_maskee) = old_maskee {
-                old_maskee.set_masker(gc_context, None, false);
+                old_maskee.set_masker(mc, None, false);
             }
-            self.invalidate_cached_bitmap(gc_context);
+            self.invalidate_cached_bitmap(mc);
         }
-        self.base_mut(gc_context).set_maskee(node);
+        DisplayObjectBase::set_maskee(Gc::write(mc, self.base()), node);
     }
 
     fn scroll_rect(self) -> Option<Rectangle<Twips>> {
@@ -1815,8 +1816,8 @@ pub trait TDisplayObject<'gc>:
         self.base().meta_data()
     }
 
-    fn set_meta_data(self, gc_context: &Mutation<'gc>, value: Avm2Object<'gc>) {
-        self.base_mut(gc_context).set_meta_data(value);
+    fn set_meta_data(self, mc: &Mutation<'gc>, value: Avm2Object<'gc>) {
+        DisplayObjectBase::set_meta_data(Gc::write(mc, self.base()), value);
     }
 
     /// The blend mode used when rendering this display object.
@@ -1844,7 +1845,7 @@ pub trait TDisplayObject<'gc>:
     }
 
     fn set_blend_shader(self, gc_context: &Mutation<'gc>, value: Option<PixelBenderShaderHandle>) {
-        self.base_mut(gc_context).set_blend_shader(value);
+        self.base().set_blend_shader(value);
         self.set_blend_mode(gc_context, ExtendedBlendMode::Shader);
     }
 
@@ -1879,8 +1880,7 @@ pub trait TDisplayObject<'gc>:
         context: &mut UpdateContext<'gc>,
         sound_transform: SoundTransform,
     ) {
-        self.base_mut(context.gc())
-            .set_sound_transform(sound_transform);
+        self.base().set_sound_transform(sound_transform);
         context.set_sound_transforms_dirty();
     }
 
@@ -1917,14 +1917,13 @@ pub trait TDisplayObject<'gc>:
 
     /// Whether this display object is using a bitmap cache, whether by preference or necessity.
     fn is_bitmap_cached(self) -> bool {
-        self.base().cache.is_some()
+        self.base().cell.borrow().cache.is_some()
     }
 
     /// Explicitly sets the preference of this display object to be cached into a bitmap rendering.
     /// Note that the object will still be bitmap cached if a filter is active.
-    fn set_bitmap_cached_preference(self, gc_context: &Mutation<'gc>, value: bool) {
-        self.base_mut(gc_context)
-            .set_bitmap_cached_preference(value)
+    fn set_bitmap_cached_preference(self, _gc_context: &Mutation<'gc>, value: bool) {
+        self.base().set_bitmap_cached_preference(value)
     }
 
     /// Whether this display object has a scroll rectangle applied.
@@ -2511,7 +2510,7 @@ pub trait TDisplayObject<'gc>:
     /// Inform this object and its ancestors that it has visually changed and must be redrawn.
     /// If this object or any ancestor is marked as cacheAsBitmap, it will invalidate that cache.
     fn invalidate_cached_bitmap(self, mc: &Mutation<'gc>) {
-        if self.base_mut(mc).invalidate_cached_bitmap() {
+        if self.base().invalidate_cached_bitmap() {
             // Don't inform ancestors if we've already done so this frame
             if let Some(parent) = self.parent() {
                 parent.invalidate_cached_bitmap(mc);
@@ -2731,7 +2730,7 @@ impl<'gc> Avm1TextFieldBinding<'gc> {
 /// Every value is a percentage (0-100), but out of range values are allowed.
 /// In AVM1, this is returned by `Sound.getTransform`.
 /// In AVM2, this is returned by `Sprite.soundTransform`.
-#[derive(Debug, PartialEq, Eq, Clone)]
+#[derive(Debug, PartialEq, Eq, Copy, Clone)]
 pub struct SoundTransform {
     pub volume: i32,
     pub left_to_left: i32,
@@ -2744,7 +2743,8 @@ impl SoundTransform {
     pub const MAX_VOLUME: i32 = 100;
 
     /// Applies another SoundTransform on top of this SoundTransform.
-    pub fn concat(&mut self, other: &SoundTransform) {
+    #[must_use]
+    pub fn concat(mut self, other: SoundTransform) -> SoundTransform {
         const MAX_VOLUME: i64 = SoundTransform::MAX_VOLUME as i64;
 
         // It seems like Flash masks the results below to 30-bit integers:
@@ -2768,6 +2768,8 @@ impl SoundTransform {
         self.left_to_right = ((lr0 * ll1 + rr0 * lr1) / MAX_VOLUME) as i32 & MASK;
         self.right_to_left = ((ll0 * rl1 + rl0 * rr1) / MAX_VOLUME) as i32 & MASK;
         self.right_to_right = ((lr0 * rl1 + rr0 * rr1) / MAX_VOLUME) as i32 & MASK;
+
+        self
     }
 
     /// Returns the pan of this transform.
@@ -2783,10 +2785,11 @@ impl SoundTransform {
         }
     }
 
-    /// Sets this transform of this pan.
+    /// Modifies the pan of this transform.
     /// -100 is full left and 100 is full right.
     /// This matches the behavior of AVM1 `Sound.setPan()`.
-    pub fn set_pan(&mut self, pan: i32) {
+    #[must_use]
+    pub fn with_pan(mut self, pan: i32) -> SoundTransform {
         if pan >= 0 {
             self.left_to_left = Self::MAX_VOLUME - pan;
             self.right_to_right = Self::MAX_VOLUME;
@@ -2796,6 +2799,7 @@ impl SoundTransform {
         }
         self.left_to_right = 0;
         self.right_to_left = 0;
+        self
     }
 
     pub fn from_avm2_object(as3_st: Avm2Object<'_>) -> Self {

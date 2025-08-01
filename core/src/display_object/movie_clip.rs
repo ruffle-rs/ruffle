@@ -335,7 +335,7 @@ impl<'gc> MovieClip<'gc> {
         );
         let data = MovieClipData::new(shared, activation.gc());
         data.flags.set(MovieClipFlags::PLAYING);
-        data.base.base.borrow().set_is_root(true);
+        data.base.base.set_is_root(true);
 
         let mc = MovieClip(Gc::new(activation.gc(), data));
         if let Some((_, loader_info)) = loader_info {
@@ -369,8 +369,8 @@ impl<'gc> MovieClip<'gc> {
             "Called replace_movie on a clip with LoaderInfo set"
         );
 
-        write.base.base.borrow().reset_for_movie_load();
-        write.base.base.borrow().set_is_root(is_root);
+        write.base.base.reset_for_movie_load();
+        write.base.base.set_is_root(is_root);
 
         unlock!(write, MovieClipData, cell).borrow_mut().container = ChildContainer::new(&movie);
 
@@ -2243,7 +2243,7 @@ impl<'gc> MovieClip<'gc> {
 }
 
 impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
-    fn gc_base(self) -> Gc<'gc, RefLock<DisplayObjectBase<'gc>>> {
+    fn base(self) -> Gc<'gc, DisplayObjectBase<'gc>> {
         HasPrefixField::as_prefix_gc(self.raw_interactive())
     }
 
@@ -2525,7 +2525,7 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
         }
 
         if self
-            .base_mut(gc_context)
+            .base()
             .set_perspective_projection(perspective_projection)
         {
             if let Some(parent) = self.parent() {

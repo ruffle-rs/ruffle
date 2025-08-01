@@ -410,10 +410,11 @@ impl<'gc> EditText<'gc> {
 
         // Set position.
         {
-            let mut base = text_field.base_mut(context.gc());
-            let matrix = base.matrix_mut();
+            let base = text_field.base();
+            let mut matrix = base.matrix();
             matrix.tx = Twips::from_pixels(x);
             matrix.ty = Twips::from_pixels(y);
+            base.set_matrix(matrix);
         }
 
         text_field
@@ -2502,7 +2503,7 @@ impl<'gc> EditText<'gc> {
 }
 
 impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
-    fn gc_base(self) -> Gc<'gc, RefLock<DisplayObjectBase<'gc>>> {
+    fn base(self) -> Gc<'gc, DisplayObjectBase<'gc>> {
         HasPrefixField::as_prefix_gc(self.raw_interactive())
     }
 
@@ -2600,7 +2601,7 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
     fn set_x(self, gc_context: &Mutation<'gc>, x: Twips) {
         self.apply_autosize_bounds();
         let offset = self.bounds_x_offset();
-        self.base_mut(gc_context).set_x(x - offset);
+        self.base().set_x(x - offset);
         self.invalidate_cached_bitmap(gc_context);
     }
 
@@ -2612,7 +2613,7 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
     fn set_y(self, gc_context: &Mutation<'gc>, y: Twips) {
         self.apply_autosize_bounds();
         let offset = self.bounds_y_offset();
-        self.base_mut(gc_context).set_y(y - offset);
+        self.base().set_y(y - offset);
         self.invalidate_cached_bitmap(gc_context);
     }
 
@@ -2620,7 +2621,7 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
         self.apply_autosize_bounds();
 
         let bounds = self.0.bounds.get();
-        (self.base().transform.matrix * bounds).width().to_pixels()
+        (self.base().matrix() * bounds).width().to_pixels()
     }
 
     fn set_width(self, context: &mut UpdateContext<'gc>, value: f64) {
@@ -2636,7 +2637,7 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
         self.apply_autosize_bounds();
 
         let bounds = self.0.bounds.get();
-        (self.base().transform.matrix * bounds).height().to_pixels()
+        (self.base().matrix() * bounds).height().to_pixels()
     }
 
     fn set_height(self, context: &mut UpdateContext<'gc>, value: f64) {
@@ -2649,7 +2650,7 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
     }
 
     fn set_matrix(self, mc: &Mutation<'gc>, matrix: Matrix) {
-        self.base_mut(mc).set_matrix(matrix);
+        self.base().set_matrix(matrix);
         self.invalidate_cached_bitmap(mc);
     }
 

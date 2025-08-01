@@ -360,8 +360,8 @@ fn get_pan<'gc>(
     if let NativeObject::Sound(sound) = this.native() {
         let transform = sound
             .owner()
-            .map(|owner| owner.base().sound_transform().clone())
-            .unwrap_or_else(|| activation.context.global_sound_transform().clone());
+            .map(|owner| owner.base().sound_transform())
+            .unwrap_or_else(|| *activation.context.global_sound_transform());
         Ok(transform.pan().into())
     } else {
         Ok(Value::Undefined)
@@ -376,8 +376,8 @@ fn get_transform<'gc>(
     if let NativeObject::Sound(sound) = this.native() {
         let transform = sound
             .owner()
-            .map(|owner| owner.base().sound_transform().clone())
-            .unwrap_or_else(|| activation.context.global_sound_transform().clone());
+            .map(|owner| owner.base().sound_transform())
+            .unwrap_or_else(|| *activation.context.global_sound_transform());
 
         let obj = Object::new(
             &activation.context.strings,
@@ -402,8 +402,8 @@ fn get_volume<'gc>(
     if let NativeObject::Sound(sound) = this.native() {
         let transform = sound
             .owner()
-            .map(|owner| owner.base().sound_transform().clone())
-            .unwrap_or_else(|| activation.context.global_sound_transform().clone());
+            .map(|owner| owner.base().sound_transform())
+            .unwrap_or_else(|| *activation.context.global_sound_transform());
         Ok(transform.volume.into())
     } else {
         Ok(Value::Undefined)
@@ -483,13 +483,13 @@ fn set_pan<'gc>(
         .clamp_to_i32();
     if let NativeObject::Sound(sound) = this.native() {
         if let Some(owner) = sound.owner() {
-            let mut transform = owner.base().sound_transform().clone();
-            transform.set_pan(pan);
-            owner.set_sound_transform(activation.context, transform);
+            let transform = owner.base().sound_transform();
+            owner.set_sound_transform(activation.context, transform.with_pan(pan));
         } else {
-            let mut transform = activation.context.global_sound_transform().clone();
-            transform.set_pan(pan);
-            activation.context.set_global_sound_transform(transform);
+            let transform = activation.context.global_sound_transform();
+            activation
+                .context
+                .set_global_sound_transform(transform.with_pan(pan));
         }
     }
 
@@ -508,9 +508,9 @@ fn set_transform<'gc>(
 
     if let NativeObject::Sound(sound) = this.native() {
         let mut transform = if let Some(owner) = sound.owner() {
-            owner.base().sound_transform().clone()
+            owner.base().sound_transform()
         } else {
-            activation.context.global_sound_transform().clone()
+            *activation.context.global_sound_transform()
         };
 
         if obj.has_own_property(activation, istr!("ll")) {
@@ -558,7 +558,7 @@ fn set_volume<'gc>(
         if let Some(owner) = sound.owner() {
             let transform = SoundTransform {
                 volume,
-                ..*owner.base().sound_transform()
+                ..owner.base().sound_transform()
             };
             owner.set_sound_transform(activation.context, transform);
         } else {

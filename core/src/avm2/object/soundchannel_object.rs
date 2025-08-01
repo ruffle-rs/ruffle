@@ -133,7 +133,7 @@ impl<'gc> SoundChannelObject<'gc> {
                 if let Some(sound_transform) = sound_transform {
                     activation
                         .context
-                        .set_local_sound_transform(instance, sound_transform.clone());
+                        .set_local_sound_transform(instance, *sound_transform);
                 }
 
                 if *should_stop {
@@ -153,13 +153,13 @@ impl<'gc> SoundChannelObject<'gc> {
 
     pub fn sound_transform(self, activation: &mut Activation<'_, 'gc>) -> Option<SoundTransform> {
         let sound_channel_data = self.0.sound_channel_data.borrow();
-        match &*sound_channel_data {
+        match *sound_channel_data {
             SoundChannelData::NotLoaded {
                 sound_transform, ..
-            } => sound_transform.clone(),
+            } => sound_transform,
             SoundChannelData::Loaded { sound_instance } => activation
                 .context
-                .local_sound_transform(*sound_instance)
+                .local_sound_transform(sound_instance)
                 .cloned(),
         }
     }

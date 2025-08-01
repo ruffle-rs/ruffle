@@ -49,7 +49,7 @@ impl fmt::Debug for Video<'_> {
 #[collect(no_drop)]
 #[repr(C, align(8))]
 pub struct VideoData<'gc> {
-    base: RefLock<DisplayObjectBase<'gc>>,
+    base: DisplayObjectBase<'gc>,
 
     avm1_text_field_bindings: RefLock<Vec<Avm1TextFieldBinding<'gc>>>,
 
@@ -348,7 +348,7 @@ impl<'gc> Video<'gc> {
 }
 
 impl<'gc> TDisplayObject<'gc> for Video<'gc> {
-    fn gc_base(self) -> Gc<'gc, RefLock<DisplayObjectBase<'gc>>> {
+    fn base(self) -> Gc<'gc, DisplayObjectBase<'gc>> {
         HasPrefixField::as_prefix_gc(self.0)
     }
 
@@ -494,7 +494,7 @@ impl<'gc> TDisplayObject<'gc> for Video<'gc> {
             return;
         }
 
-        context.transform_stack.push(self.base().transform());
+        context.transform_stack.push(&self.base().transform());
 
         let mut transform = context.transform_stack.transform();
         let bounds = self.self_bounds();

@@ -13,7 +13,7 @@ use crate::utils::HasPrefixField;
 use crate::vminterface::Instantiator;
 use core::fmt;
 use gc_arena::barrier::unlock;
-use gc_arena::lock::{Lock, RefLock};
+use gc_arena::lock::Lock;
 use gc_arena::{Collect, Gc, Mutation};
 use ruffle_render::backend::ShapeHandle;
 use ruffle_render::commands::CommandHandler;
@@ -36,7 +36,7 @@ impl fmt::Debug for Graphic<'_> {
 #[collect(no_drop)]
 #[repr(C, align(8))]
 pub struct GraphicData<'gc> {
-    base: RefLock<DisplayObjectBase<'gc>>,
+    base: DisplayObjectBase<'gc>,
     shared: Lock<Gc<'gc, GraphicShared>>,
     class: Lock<Option<Avm2ClassObject<'gc>>>,
     avm2_object: Lock<Option<Avm2Object<'gc>>>,
@@ -124,7 +124,7 @@ impl<'gc> Graphic<'gc> {
 }
 
 impl<'gc> TDisplayObject<'gc> for Graphic<'gc> {
-    fn gc_base(self) -> Gc<'gc, RefLock<DisplayObjectBase<'gc>>> {
+    fn base(self) -> Gc<'gc, DisplayObjectBase<'gc>> {
         HasPrefixField::as_prefix_gc(self.0)
     }
 

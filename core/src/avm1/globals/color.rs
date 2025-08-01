@@ -142,14 +142,15 @@ fn set_rgb<'gc>(
             .coerce_to_i32(activation)?;
         let [b, g, r, _] = rgb.to_le_bytes();
 
-        let mut base = target.base_mut(activation.gc());
-        let color_transform = base.color_transform_mut();
+        let base = target.base();
+        let mut color_transform = base.color_transform();
         color_transform.r_multiply = Fixed8::ZERO;
         color_transform.g_multiply = Fixed8::ZERO;
         color_transform.b_multiply = Fixed8::ZERO;
         color_transform.r_add = r.into();
         color_transform.g_add = g.into();
         color_transform.b_add = b.into();
+        base.set_color_transform(color_transform);
     }
     Ok(Value::Undefined)
 }
@@ -198,8 +199,8 @@ fn set_transform<'gc>(
             parent.invalidate_cached_bitmap(activation.gc());
         }
 
-        let mut base = target.base_mut(activation.gc());
-        let color_transform = base.color_transform_mut();
+        let base = target.base();
+        let mut color_transform = base.color_transform();
         let transform = args
             .get(0)
             .unwrap_or(&Value::Undefined)
@@ -252,6 +253,8 @@ fn set_transform<'gc>(
             istr!("ab"),
             &mut color_transform.a_add,
         )?;
+
+        base.set_color_transform(color_transform);
     }
 
     Ok(Value::Undefined)

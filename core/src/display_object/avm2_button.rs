@@ -23,7 +23,7 @@ use crate::utils::HasPrefixField;
 use crate::vminterface::Instantiator;
 use core::fmt;
 use gc_arena::barrier::unlock;
-use gc_arena::lock::{Lock, RefLock};
+use gc_arena::lock::Lock;
 use gc_arena::{Collect, Gc, Mutation};
 use ruffle_render::filters::Filter;
 use std::cell::{Cell, RefCell};
@@ -413,7 +413,7 @@ impl<'gc> Avm2Button<'gc> {
 }
 
 impl<'gc> TDisplayObject<'gc> for Avm2Button<'gc> {
-    fn gc_base(self) -> Gc<'gc, RefLock<DisplayObjectBase<'gc>>> {
+    fn base(self) -> Gc<'gc, DisplayObjectBase<'gc>> {
         HasPrefixField::as_prefix_gc(self.raw_interactive())
     }
 
@@ -596,7 +596,7 @@ impl<'gc> TDisplayObject<'gc> for Avm2Button<'gc> {
 
         // Add the bounds of the child, dictated by current state
         if let Some(child) = self.get_state_child(self.0.state.get().into()) {
-            let matrix = *matrix * *child.base().matrix();
+            let matrix = *matrix * child.base().matrix();
             let child_bounds = child.bounds_with_transform(&matrix);
             bounds = bounds.union(&child_bounds);
         }
@@ -613,7 +613,7 @@ impl<'gc> TDisplayObject<'gc> for Avm2Button<'gc> {
         let mut bounds = *matrix * self.self_bounds();
 
         if let Some(child) = self.get_state_child(self.0.state.get().into()) {
-            let matrix = *matrix * *child.base().matrix();
+            let matrix = *matrix * child.base().matrix();
             bounds = bounds.union(&child.render_bounds_with_transform(&matrix, true, view_matrix));
         }
 

@@ -66,7 +66,7 @@ impl<'gc> LoaderDisplay<'gc> {
 }
 
 impl<'gc> TDisplayObject<'gc> for LoaderDisplay<'gc> {
-    fn gc_base(self) -> Gc<'gc, RefLock<DisplayObjectBase<'gc>>> {
+    fn base(self) -> Gc<'gc, DisplayObjectBase<'gc>> {
         HasPrefixField::as_prefix_gc(self.raw_interactive())
     }
 

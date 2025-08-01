@@ -1215,7 +1215,7 @@ impl DisplayObjectWindow {
                     object.set_blend_mode(context.gc(), new_blend);
                 }
 
-                let color_transform = *object.base().color_transform();
+                let color_transform = object.base().color_transform();
                 ui.label("Color Transform");
                 ui.label(summary_color_transform(color_transform));
                 ui.end_row();
@@ -1352,7 +1352,7 @@ impl DisplayObjectWindow {
             &object.local_to_global_matrix(),
             true,
         );
-        self.show_matrix_properties(ui, "Local Matrix", object, object.base().matrix(), false);
+        self.show_matrix_properties(ui, "Local Matrix", object, &object.base().matrix(), false);
     }
 
     fn show_matrix_properties(

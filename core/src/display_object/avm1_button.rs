@@ -247,7 +247,7 @@ impl<'gc> Avm1Button<'gc> {
 }
 
 impl<'gc> TDisplayObject<'gc> for Avm1Button<'gc> {
-    fn gc_base(self) -> Gc<'gc, RefLock<DisplayObjectBase<'gc>>> {
+    fn base(self) -> Gc<'gc, DisplayObjectBase<'gc>> {
         HasPrefixField::as_prefix_gc(self.raw_interactive())
     }
 
@@ -614,7 +614,7 @@ impl<'gc> Avm1ButtonData<'gc> {
         condition: ButtonActionCondition,
     ) -> ClipEventResult {
         let mut handled = ClipEventResult::NotHandled;
-        if let Some(parent) = self.base.base.borrow().parent {
+        if let Some(parent) = self.base.base.parent() {
             for action in &self.shared.actions {
                 if action.conditions.matches(condition) {
                     // Note that AVM1 buttons run actions relative to their parent, not themselves.

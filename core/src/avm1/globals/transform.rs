@@ -81,7 +81,7 @@ fn method<'gc>(
     };
 
     Ok(match index {
-        GET_MATRIX => matrix_to_value(clip.base().matrix(), activation)?,
+        GET_MATRIX => matrix_to_value(&clip.base().matrix(), activation)?,
         SET_MATRIX => {
             let matrix_props: &[AvmString<'_>] = &[
                 istr!("a"),
@@ -120,7 +120,7 @@ fn method<'gc>(
             )?
         }
         GET_COLOR_TRANSFORM => {
-            ColorTransformObject::construct(activation, clip.base().color_transform())?
+            ColorTransformObject::construct(activation, &clip.base().color_transform())?
         }
         SET_COLOR_TRANSFORM => {
             if let [value] = args {
@@ -135,10 +135,10 @@ fn method<'gc>(
         }
         GET_CONCATENATED_COLOR_TRANSFORM => {
             // Walk through parents to get combined color transform.
-            let mut color_transform = *clip.base().color_transform();
+            let mut color_transform = clip.base().color_transform();
             let mut node = clip.avm1_parent();
             while let Some(display_object) = node {
-                color_transform = *display_object.base().color_transform() * color_transform;
+                color_transform = display_object.base().color_transform() * color_transform;
                 node = display_object.parent();
             }
             ColorTransformObject::construct(activation, &color_transform)?
