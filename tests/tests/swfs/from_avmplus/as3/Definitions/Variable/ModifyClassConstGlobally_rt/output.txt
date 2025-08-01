@@ -1,0 +1,1 @@
+Attempt to modify class const globally PASSED!
