@@ -607,7 +607,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     ///
     /// If the currently-executing method is not part of a class, then this
     /// returns `None`.
-    pub fn bound_superclass_object(&self) -> Option<ClassObject<'gc>> {
+    fn bound_superclass_object(&self) -> Option<ClassObject<'gc>> {
         self.bound_superclass_object
     }
 
