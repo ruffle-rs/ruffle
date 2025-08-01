@@ -1204,27 +1204,35 @@ pub fn parse_full_date<'gc>(
             || item.starts_with(WStr::from_units(b"UTC"))
         {
             // Parse GMT-HHMM/GMT+HHMM or UTC-HHMM/UTC+HHMM
+            // Also handle standalone GMT/UTC (means UTC+0000)
 
-            if new_timezone.is_some() || item.len() != 8 {
+            if new_timezone.is_some() {
                 return None;
             }
-            let (other, tzn) = item.split_at(4);
-            if tzn.len() != 4 {
-                return None;
-            }
-            let (hours, minutes) = tzn.split_at(2);
-            let hours = hours.parse::<u32>().ok()?;
-            let minutes = minutes.parse::<u32>().ok()?;
-            let sign = other.at(3);
-            // NOTE: In real flash, invalid (out of bounds) timezones were allowed, but there isn't a way to construct these using FixedOffset.
-            // Since it is insanely rare to ever parse a date with an invalid timezone, for now we just return an error.
-            new_timezone = Some(if sign == b'-' as u16 {
-                FixedOffset::west_opt(((hours * 60 * 60) + minutes * 60) as i32)?
-            } else if sign == b'+' as u16 {
-                FixedOffset::east_opt(((hours * 60 * 60) + minutes * 60) as i32)?
+
+            if item == WStr::from_units(b"GMT") || item == WStr::from_units(b"UTC") {
+                new_timezone = Some(FixedOffset::east_opt(0).expect("UTC offset should be valid"));
+            } else if item.len() == 8 {
+                let (other, tzn) = item.split_at(4);
+                if tzn.len() != 4 {
+                    return None;
+                }
+                let (hours, minutes) = tzn.split_at(2);
+                let hours = hours.parse::<u32>().ok()?;
+                let minutes = minutes.parse::<u32>().ok()?;
+                let sign = other.at(3);
+                // NOTE: In real flash, invalid (out of bounds) timezones were allowed, but there isn't a way to construct these using FixedOffset.
+                // Since it is insanely rare to ever parse a date with an invalid timezone, for now we just return an error.
+                new_timezone = Some(if sign == b'-' as u16 {
+                    FixedOffset::west_opt(((hours * 60 * 60) + minutes * 60) as i32)?
+                } else if sign == b'+' as u16 {
+                    FixedOffset::east_opt(((hours * 60 * 60) + minutes * 60) as i32)?
+                } else {
+                    return None;
+                });
             } else {
                 return None;
-            });
+            }
         } else if let Ok(mut num) = item.parse::<u32>() {
             // Parse either a day or a year
 
