@@ -48,6 +48,7 @@ impl Debug for E4XNodeData<'_> {
             .field("parent", &self.parent.get().is_some())
             .field("local_name", &self.local_name.get())
             .field("kind", &self.kind.borrow())
+            .field("namespace", &self.namespace.get())
             .finish()
     }
 }
@@ -117,6 +118,55 @@ impl<'gc> E4XNamespace<'gc> {
             prefix: None,
             uri: istr!(context, ""),
         }
+    }
+
+    /// Generate a unique prefix for a namespace that doesn't have one.
+    /// This follows the same algorithm as avmplus's GenerateUniquePrefix.
+    pub fn generate_unique_prefix(
+        &self,
+        existing_namespaces: &[E4XNamespace<'gc>],
+        activation: &mut Activation<'_, 'gc>,
+    ) -> Option<AvmString<'gc>> {
+        // Should only be called when a namespace doesn't have a prefix
+        if self.prefix.is_some() {
+            return self.prefix;
+        }
+
+        // Try to use the empty string as a first try
+        let empty_prefix = istr!(activation.strings(), "");
+        if !existing_namespaces
+            .iter()
+            .any(|ns| ns.prefix == Some(empty_prefix))
+        {
+            return Some(empty_prefix);
+        }
+
+        // Generate prefixes in the form "aaa", "aab", ..., "zzz"
+        let mut prefix_chars = [b'a', b'a', b'a'];
+
+        for x1 in b'a'..=b'z' {
+            prefix_chars[0] = x1;
+            for x2 in b'a'..=b'z' {
+                prefix_chars[1] = x2;
+                for x3 in b'a'..=b'z' {
+                    prefix_chars[2] = x3;
+
+                    let prefix = AvmString::new_utf8_bytes(activation.gc(), &prefix_chars);
+
+                    // Check if this prefix is already used
+                    let is_used = existing_namespaces
+                        .iter()
+                        .any(|ns| ns.prefix == Some(prefix));
+
+                    if !is_used {
+                        return Some(prefix);
+                    }
+                }
+            }
+        }
+
+        // If we've exhausted all 3-letter combinations, return None
+        None
     }
 }
 
@@ -721,12 +771,13 @@ impl<'gc> E4XNode<'gc> {
     /// Parses a value provided to `XML`/`XMLList` into a list of nodes.
     /// The caller is responsible for validating that the number of top-level nodes
     /// is correct (for XML, there should be exactly one.)
-    pub fn parse(
+    pub fn parse_with_default_namespace(
         mut value: Value<'gc>,
         activation: &mut Activation<'_, 'gc>,
         ignore_comments: bool,
         ignore_processing_instructions: bool,
         ignore_white: bool,
+        default_namespace: Option<E4XNamespace<'gc>>,
     ) -> Result<Vec<Self>, Error<'gc>> {
         let string = match &value {
             // The docs claim that this throws a TypeError, but it actually doesn't
@@ -855,8 +906,13 @@ impl<'gc> E4XNode<'gc> {
 
             match &event {
                 Event::Start(bs) => {
-                    let child =
-                        E4XNode::from_start_event(activation, &parser, bs, parser.decoder())?;
+                    let child = E4XNode::from_start_event_with_default_namespace(
+                        activation,
+                        &parser,
+                        bs,
+                        parser.decoder(),
+                        default_namespace.as_ref(),
+                    )?;
 
                     if let Some(current_tag) = open_tags.last_mut() {
                         current_tag.append_child(activation.gc(), child);
@@ -864,8 +920,13 @@ impl<'gc> E4XNode<'gc> {
                     open_tags.push(child);
                 }
                 Event::Empty(bs) => {
-                    let node =
-                        E4XNode::from_start_event(activation, &parser, bs, parser.decoder())?;
+                    let node = E4XNode::from_start_event_with_default_namespace(
+                        activation,
+                        &parser,
+                        bs,
+                        parser.decoder(),
+                        default_namespace.as_ref(),
+                    )?;
                     push_childless_node(node, &mut open_tags, &mut top_level, activation);
                 }
                 Event::End(_) => {
@@ -968,15 +1029,16 @@ impl<'gc> E4XNode<'gc> {
         Ok(top_level)
     }
 
-    /// Construct an XML Element node from a `quick_xml` `BytesStart` event.
+    /// Construct an XML Element node from a `quick_xml` `BytesStart` event with default namespace support.
     ///
     /// The returned node will always be an `Element`, and it must only contain
     /// valid encoded UTF-8 data. (Other encoding support is planned later.)
-    pub fn from_start_event(
+    pub fn from_start_event_with_default_namespace(
         activation: &mut Activation<'_, 'gc>,
         parser: &NsReader<&[u8]>,
         bs: &BytesStart<'_>,
         decoder: quick_xml::Decoder,
+        default_namespace: Option<&E4XNamespace<'gc>>,
     ) -> Result<Self, Error<'gc>> {
         let mut attribute_nodes = Vec::new();
         let mut namespaces = Vec::new();
@@ -1083,7 +1145,10 @@ impl<'gc> E4XNode<'gc> {
             ResolveResult::Unknown(ns) => {
                 return Err(make_unknown_ns_error(activation, ns, name));
             }
-            ResolveResult::Unbound => None,
+            ResolveResult::Unbound => {
+                // Apply default namespace to unqualified element names
+                default_namespace.cloned()
+            }
         };
 
         let result = E4XNode(Gc::new(
@@ -1109,6 +1174,19 @@ impl<'gc> E4XNode<'gc> {
         }
 
         Ok(result)
+    }
+
+    /// Construct an XML Element node from a `quick_xml` `BytesStart` event.
+    ///
+    /// The returned node will always be an `Element`, and it must only contain
+    /// valid encoded UTF-8 data. (Other encoding support is planned later.)
+    pub fn from_start_event(
+        activation: &mut Activation<'_, 'gc>,
+        parser: &NsReader<&[u8]>,
+        bs: &BytesStart<'_>,
+        decoder: quick_xml::Decoder,
+    ) -> Result<Self, Error<'gc>> {
+        Self::from_start_event_with_default_namespace(activation, parser, bs, decoder, None)
     }
 
     pub fn set_namespace(&self, namespace: Option<E4XNamespace<'gc>>, mc: &Mutation<'gc>) {
@@ -1199,7 +1277,7 @@ impl<'gc> E4XNode<'gc> {
 
     // ECMA-357 9.1.1.13 [[AddInScopeNamespace]] (N)
     pub fn add_in_scope_namespace(&self, gc: &Mutation<'gc>, namespace: E4XNamespace<'gc>) {
-        // 1. If x.[[Class]] ∈ {"text", "comment", "processing-instruction", “attribute”}, return
+        // 1. If x.[[Class]] ∈ {"text", "comment", "processing-instruction", "attribute"}, return
         if !self.is_element() {
             return;
         }
@@ -1302,7 +1380,7 @@ impl<'gc> E4XNode<'gc> {
             let uri = ns.as_uri_opt().expect("NS set cannot contain Any");
 
             if let Some(self_ns) = self_ns {
-                uri == self_ns
+                uri == self_ns || self_ns.is_empty()
             } else {
                 uri.is_empty()
             }
@@ -1457,6 +1535,7 @@ fn to_xml_string_inner<'gc>(
     buf: &mut WString,
     ancestor_namespaces: &[E4XNamespace<'gc>],
     pretty: Option<(u32, u32)>,
+    activation: &mut Activation<'_, 'gc>,
 ) {
     let node = xml.node();
     let node_kind = node.kind();
@@ -1521,7 +1600,6 @@ fn to_xml_string_inner<'gc>(
     // 11. For each name in the set of names consisting of x.[[Name]] and
     //     the name of each attribute in x.[[Attributes]]
 
-    // TODO: Generate fake namespace prefixes when required.
     let get_namespace = |namespace_declarations: &[E4XNamespace<'gc>], ns: &E4XNamespace<'gc>| {
         ancestor_namespaces
             .iter()
@@ -1530,14 +1608,96 @@ fn to_xml_string_inner<'gc>(
             .copied()
     };
 
-    if let Some(ns) = node.namespace() {
+    // Helper function to generate unique prefix - this implements the C++ GenerateUniquePrefix logic
+    let generate_unique_prefix = |ns: &E4XNamespace<'gc>,
+                                  namespace_declarations: &[E4XNamespace<'gc>],
+                                  ancestor_namespaces: &[E4XNamespace<'gc>],
+                                  activation: &mut Activation<'_, 'gc>|
+     -> Option<AvmString<'gc>> {
+        // Should only be called when a namespace doesn't have a prefix
+        if ns.prefix.is_some() {
+            return ns.prefix;
+        }
+
+        // Try to use the empty string as a first try
+        let empty_prefix = istr!(activation.strings(), "");
+        let all_namespaces: Vec<_> = ancestor_namespaces
+            .iter()
+            .chain(namespace_declarations.iter())
+            .collect();
+
+        if !all_namespaces
+            .iter()
+            .any(|existing_ns| existing_ns.prefix == Some(empty_prefix))
+        {
+            return Some(empty_prefix);
+        }
+
+        // Generate prefixes in the form "aaa", "aab", ..., "zzz"
+        let mut prefix_chars = [b'a', b'a', b'a'];
+
+        for x1 in b'a'..=b'z' {
+            prefix_chars[0] = x1;
+            for x2 in b'a'..=b'z' {
+                prefix_chars[1] = x2;
+                for x3 in b'a'..=b'z' {
+                    prefix_chars[2] = x3;
+
+                    let prefix = AvmString::new_utf8_bytes(activation.gc(), &prefix_chars);
+
+                    // Check if this prefix is already used
+                    let is_used = all_namespaces
+                        .iter()
+                        .any(|existing_ns| existing_ns.prefix == Some(prefix));
+
+                    if !is_used {
+                        return Some(prefix);
+                    }
+                }
+            }
+        }
+
+        // If we've exhausted all 3-letter combinations, return None
+        None
+    };
+
+    if let Some(mut ns) = node.namespace() {
         if get_namespace(&namespace_declarations, &ns).is_none() {
+            // Generate unique prefix if namespace doesn't have one
+            if ns.prefix.is_none() {
+                if let Some(prefix) = generate_unique_prefix(
+                    &ns,
+                    &namespace_declarations,
+                    ancestor_namespaces,
+                    activation,
+                ) {
+                    ns = E4XNamespace {
+                        prefix: Some(prefix),
+                        uri: ns.uri,
+                    };
+                }
+            }
             namespace_declarations.push(ns);
         }
     }
+
     for attribute in attributes {
-        if let Some(ns) = attribute.namespace() {
+        if let Some(mut ns) = attribute.namespace() {
             if get_namespace(&namespace_declarations, &ns).is_none() {
+                // Generate unique prefix if namespace doesn't have one
+                if ns.prefix.is_none() {
+                    if let Some(prefix) = generate_unique_prefix(
+                        &ns,
+                        &namespace_declarations,
+                        ancestor_namespaces,
+                        activation,
+                    ) {
+                        ns = E4XNamespace {
+                            prefix: Some(prefix),
+                            uri: ns.uri,
+                        };
+                    }
+                }
                 namespace_declarations.push(ns);
             }
         }
@@ -1610,7 +1770,13 @@ fn to_xml_string_inner<'gc>(
         if pretty.is_some() && indent_children {
             buf.push_char('\n');
         }
-        to_xml_string_inner(E4XOrXml::E4X(*child), buf, &all_namespaces, child_pretty);
+        to_xml_string_inner(
+            E4XOrXml::E4X(*child),
+            buf,
+            &all_namespaces,
+            child_pretty,
+            activation,
+        );
     }
 
     if let Some((indent_level, _)) = pretty {
@@ -1653,7 +1819,7 @@ pub fn to_xml_string<'gc>(
 
     let mut buf = WString::new();
     let ancestor_namespaces = Vec::new();
-    to_xml_string_inner(xml, &mut buf, &ancestor_namespaces, pretty);
+    to_xml_string_inner(xml, &mut buf, &ancestor_namespaces, pretty, activation);
     AvmString::new(activation.gc(), buf)
 }
 
