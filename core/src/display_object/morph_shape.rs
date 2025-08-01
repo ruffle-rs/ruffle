@@ -62,9 +62,9 @@ impl<'gc> MorphShape<'gc> {
         self.0.ratio.get()
     }
 
-    pub fn set_ratio(self, gc_context: &Mutation<'gc>, ratio: u16) {
+    pub fn set_ratio(self, ratio: u16) {
         self.0.ratio.set(ratio);
-        self.invalidate_cached_bitmap(gc_context);
+        self.invalidate_cached_bitmap();
     }
 }
 
@@ -100,7 +100,7 @@ impl<'gc> TDisplayObject<'gc> for MorphShape<'gc> {
         } else {
             tracing::warn!("PlaceObject: expected morph shape at character ID {}", id);
         }
-        self.invalidate_cached_bitmap(context.gc());
+        self.invalidate_cached_bitmap();
     }
 
     fn object2(self) -> Avm2Value<'gc> {

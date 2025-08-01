@@ -100,12 +100,12 @@ fn method<'gc>(
                     .all(|p| object.has_own_property(activation, *p));
                 if is_matrix {
                     let matrix = object_to_matrix(object, activation)?;
-                    clip.set_matrix(activation.gc(), matrix);
+                    clip.set_matrix(matrix);
                     clip.set_transformed_by_script(true);
                     if let Some(parent) = clip.parent() {
                         // Self-transform changes are automatically handled,
                         // we only want to inform ancestors to avoid unnecessary invalidations for tx/ty
-                        parent.invalidate_cached_bitmap(activation.gc());
+                        parent.invalidate_cached_bitmap();
                     }
                 }
             }
@@ -126,8 +126,8 @@ fn method<'gc>(
             if let [value] = args {
                 // Set only occurs for an object with actual ColorTransform data.
                 if let Some(color_transform) = ColorTransformObject::cast(*value) {
-                    clip.set_color_transform(activation.gc(), (*color_transform).clone().into());
-                    clip.invalidate_cached_bitmap(activation.gc());
+                    clip.set_color_transform((*color_transform).clone().into());
+                    clip.invalidate_cached_bitmap();
                     clip.set_transformed_by_script(true);
                 }
             }

@@ -175,13 +175,10 @@ impl<'gc> Avm1Button<'gc> {
                 };
 
                 // Set transform of child (and modify previous child if it already existed)
-                child.set_matrix(context.gc(), record.matrix.into());
-                child.set_color_transform(context.gc(), record.color_transform);
-                child.set_blend_mode(context.gc(), record.blend_mode.into());
-                child.set_filters(
-                    context.gc(),
-                    record.filters.iter().map(Filter::from).collect(),
-                );
+                child.set_matrix(record.matrix.into());
+                child.set_color_transform(record.color_transform);
+                child.set_blend_mode(record.blend_mode.into());
+                child.set_filters(record.filters.iter().map(Filter::from).collect());
             }
         }
 
@@ -205,7 +202,7 @@ impl<'gc> Avm1Button<'gc> {
             }
         }
 
-        self.invalidate_cached_bitmap(context.gc());
+        self.invalidate_cached_bitmap();
     }
 
     pub fn state(self) -> Option<ButtonState> {
@@ -301,7 +298,7 @@ impl<'gc> TDisplayObject<'gc> for Avm1Button<'gc> {
                         .instantiate_by_id(record.id, context.gc_context)
                     {
                         Some(child) => {
-                            child.set_matrix(context.gc(), record.matrix.into());
+                            child.set_matrix(record.matrix.into());
                             child.set_parent(context, Some(self.into()));
                             child.set_depth(record.depth.into());
                             new_children.push((child, record.depth.into()));

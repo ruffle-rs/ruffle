@@ -71,9 +71,9 @@ impl<'gc> Text<'gc> {
         unlock!(Gc::write(mc, self.0), TextData, shared).set(to);
     }
 
-    pub fn set_render_settings(self, gc_context: &Mutation<'gc>, settings: TextRenderSettings) {
+    pub fn set_render_settings(self, settings: TextRenderSettings) {
         *self.0.render_settings.borrow_mut() = settings;
-        self.invalidate_cached_bitmap(gc_context);
+        self.invalidate_cached_bitmap();
     }
 
     pub fn text(&self, context: &mut UpdateContext<'gc>) -> WString {
@@ -134,7 +134,7 @@ impl<'gc> TDisplayObject<'gc> for Text<'gc> {
         } else {
             tracing::warn!("PlaceObject: expected text at character ID {}", id);
         }
-        self.invalidate_cached_bitmap(context.gc());
+        self.invalidate_cached_bitmap();
     }
 
     fn render_self(self, context: &mut RenderContext) {

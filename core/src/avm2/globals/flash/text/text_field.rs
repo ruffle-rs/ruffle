@@ -135,7 +135,7 @@ pub fn get_background<'gc>(
 }
 
 pub fn set_background<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    _activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -146,7 +146,7 @@ pub fn set_background<'gc>(
         .and_then(|this| this.as_edit_text())
     {
         let has_background = args.get_bool(0);
-        this.set_has_background(activation.gc(), has_background);
+        this.set_has_background(has_background);
     }
 
     Ok(Value::Undefined)
@@ -182,7 +182,7 @@ pub fn set_background_color<'gc>(
     {
         let rgb = args.get_u32(activation, 0)?;
         let color = Color::from_rgb(rgb, 255);
-        this.set_background_color(activation.gc(), color);
+        this.set_background_color(color);
     }
 
     Ok(Value::Undefined)
@@ -206,7 +206,7 @@ pub fn get_border<'gc>(
 }
 
 pub fn set_border<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    _activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -217,7 +217,7 @@ pub fn set_border<'gc>(
         .and_then(|this| this.as_edit_text())
     {
         let border = args.get_bool(0);
-        this.set_has_border(activation.gc(), border);
+        this.set_has_border(border);
     }
 
     Ok(Value::Undefined)
@@ -253,7 +253,7 @@ pub fn set_border_color<'gc>(
     {
         let rgb = args.get_u32(activation, 0)?;
         let color = Color::from_rgb(rgb, 255);
-        this.set_border_color(activation.gc(), color);
+        this.set_border_color(color);
     }
 
     Ok(Value::Undefined)
@@ -923,13 +923,10 @@ pub fn set_selection<'gc>(
         let begin_index = args.get_i32(activation, 0)?;
         let end_index = args.get_i32(activation, 1)?;
 
-        this.set_selection(
-            Some(TextSelection::for_range(
-                begin_index as usize,
-                end_index as usize,
-            )),
-            activation.gc(),
-        );
+        this.set_selection(Some(TextSelection::for_range(
+            begin_index as usize,
+            end_index as usize,
+        )));
     }
 
     Ok(Value::Undefined)
@@ -1366,7 +1363,7 @@ pub fn set_scroll_v<'gc>(
         .and_then(|this| this.as_edit_text())
     {
         let input = args.get_i32(activation, 0)?;
-        this.set_scroll(input as f64, activation.context);
+        this.set_scroll(input as f64);
     }
 
     Ok(Value::Undefined)
@@ -1405,7 +1402,7 @@ pub fn set_scroll_h<'gc>(
         // be present in v9 SWFs.
         let input = args.get_i32(activation, 0)?;
         let clamped = input.abs().min(this.maxhscroll() as i32);
-        this.set_hscroll(clamped as f64, activation.context);
+        this.set_hscroll(clamped as f64);
     }
 
     Ok(Value::Undefined)

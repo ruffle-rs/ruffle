@@ -70,12 +70,12 @@ fn blend_mode<'gc>(
 
 fn set_blend_mode<'gc>(
     this: Avm1Button<'gc>,
-    activation: &mut Activation<'_, 'gc>,
+    _activation: &mut Activation<'_, 'gc>,
     value: Value<'gc>,
 ) -> Result<(), Error<'gc>> {
     // No-op if value is not a valid blend mode.
     if let Some(mode) = value.as_blend_mode() {
-        this.set_blend_mode(activation.gc(), mode.into());
+        this.set_blend_mode(mode.into());
     } else {
         tracing::error!("Unknown blend mode {value:?}");
     }
@@ -109,7 +109,7 @@ fn set_filters<'gc>(
             }
         }
     }
-    this.set_filters(activation.gc(), filters);
+    this.set_filters(filters);
     Ok(())
 }
 
@@ -127,7 +127,7 @@ fn set_cache_as_bitmap<'gc>(
     value: Value<'gc>,
 ) -> Result<(), Error<'gc>> {
     // Note that the *getter* returns actual, and *setter* is preference
-    this.set_bitmap_cached_preference(activation.gc(), value.as_bool(activation.swf_version()));
+    this.set_bitmap_cached_preference(value.as_bool(activation.swf_version()));
     Ok(())
 }
 

@@ -339,7 +339,7 @@ impl<'gc> Video<'gc> {
         match res {
             Ok(bitmap) => {
                 self.0.decoded_frame.replace(Some((frame_id, bitmap)));
-                self.invalidate_cached_bitmap(context.gc());
+                self.invalidate_cached_bitmap();
                 *context.needs_render = true;
             }
             Err(e) => tracing::error!("Got error when seeking to video frame {}: {}", frame_id, e),

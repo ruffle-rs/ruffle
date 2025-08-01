@@ -777,7 +777,7 @@ impl<'gc> BitmapData<'gc> {
     fn inform_display_objects(&self, gc_context: &Mutation<'gc>) {
         for object in &self.display_objects {
             if let Some(object) = object.upgrade(gc_context) {
-                object.invalidate_cached_bitmap(gc_context);
+                object.invalidate_cached_bitmap();
             }
         }
     }

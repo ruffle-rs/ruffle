@@ -623,36 +623,36 @@ impl<'gc> EditText<'gc> {
         self.contains_flag(EditTextFlag::HAS_BACKGROUND)
     }
 
-    pub fn set_has_background(self, gc_context: &Mutation<'gc>, has_background: bool) {
+    pub fn set_has_background(self, has_background: bool) {
         self.set_flag(EditTextFlag::HAS_BACKGROUND, has_background);
-        self.invalidate_cached_bitmap(gc_context);
+        self.invalidate_cached_bitmap();
     }
 
     pub fn background_color(self) -> Color {
         self.0.background_color.get()
     }
 
-    pub fn set_background_color(self, gc_context: &Mutation<'gc>, background_color: Color) {
+    pub fn set_background_color(self, background_color: Color) {
         self.0.background_color.set(background_color);
-        self.invalidate_cached_bitmap(gc_context);
+        self.invalidate_cached_bitmap();
     }
 
     pub fn has_border(self) -> bool {
         self.contains_flag(EditTextFlag::BORDER)
     }
 
-    pub fn set_has_border(self, gc_context: &Mutation<'gc>, has_border: bool) {
+    pub fn set_has_border(self, has_border: bool) {
         self.set_flag(EditTextFlag::BORDER, has_border);
-        self.invalidate_cached_bitmap(gc_context);
+        self.invalidate_cached_bitmap();
     }
 
     pub fn border_color(self) -> Color {
         self.0.border_color.get()
     }
 
-    pub fn set_border_color(self, gc_context: &Mutation<'gc>, border_color: Color) {
+    pub fn set_border_color(self, border_color: Color) {
         self.0.border_color.set(border_color);
-        self.invalidate_cached_bitmap(gc_context);
+        self.invalidate_cached_bitmap();
     }
 
     pub fn condense_white(self) -> bool {
@@ -938,7 +938,7 @@ impl<'gc> EditText<'gc> {
             autosize_bounds.set_height(height);
         }
         self.0.autosize_lazy_bounds.set(Some(autosize_bounds));
-        self.invalidate_cached_bitmap(context.gc());
+        self.invalidate_cached_bitmap();
     }
 
     /// Apply lazily calculated autosize bounds.
@@ -1470,7 +1470,7 @@ impl<'gc> EditText<'gc> {
         self.0.selection.get()
     }
 
-    pub fn set_selection(self, selection: Option<TextSelection>, gc_context: &Mutation<'gc>) {
+    pub fn set_selection(self, selection: Option<TextSelection>) {
         let old_selection = self.0.selection.get();
         if let Some(mut selection) = selection {
             selection.clamp(self.0.text_spans.borrow().text().len());
@@ -1480,7 +1480,7 @@ impl<'gc> EditText<'gc> {
         }
 
         if old_selection != self.0.selection.get() {
-            self.invalidate_cached_bitmap(gc_context);
+            self.invalidate_cached_bitmap();
         }
     }
 
@@ -1525,9 +1525,9 @@ impl<'gc> EditText<'gc> {
         self.0.hscroll.get()
     }
 
-    pub fn set_hscroll(self, hscroll: f64, context: &mut UpdateContext<'gc>) {
+    pub fn set_hscroll(self, hscroll: f64) {
         self.0.hscroll.set(hscroll);
-        self.invalidate_cached_bitmap(context.gc());
+        self.invalidate_cached_bitmap();
     }
 
     pub fn scroll(self) -> usize {
@@ -1535,7 +1535,7 @@ impl<'gc> EditText<'gc> {
     }
 
     /// Returns `true` when scroll has been modified.
-    pub fn set_scroll(self, scroll: f64, context: &mut UpdateContext<'gc>) -> bool {
+    pub fn set_scroll(self, scroll: f64) -> bool {
         // derived experimentally. Not exact: overflows somewhere above 767100486418432.9
         // Checked in SWF 6, AVM1. Same in AVM2.
         const SCROLL_OVERFLOW_LIMIT: f64 = 767100486418433.0;
@@ -1548,7 +1548,7 @@ impl<'gc> EditText<'gc> {
         if self.0.scroll.replace(clamped) == clamped {
             false
         } else {
-            self.invalidate_cached_bitmap(context.gc());
+            self.invalidate_cached_bitmap();
             true
         }
     }
@@ -1703,7 +1703,7 @@ impl<'gc> EditText<'gc> {
                 } else {
                     selection.start()
                 };
-                self.set_selection(Some(TextSelection::for_position(new_pos)), context.gc());
+                self.set_selection(Some(TextSelection::for_position(new_pos)));
             }
             TextControlCode::MoveRight
             | TextControlCode::MoveRightWord
@@ -1714,7 +1714,7 @@ impl<'gc> EditText<'gc> {
                 } else {
                     selection.end()
                 };
-                self.set_selection(Some(TextSelection::for_position(new_pos)), context.gc());
+                self.set_selection(Some(TextSelection::for_position(new_pos)));
             }
             TextControlCode::SelectLeft
             | TextControlCode::SelectLeftWord
@@ -1722,10 +1722,7 @@ impl<'gc> EditText<'gc> {
             | TextControlCode::SelectLeftDocument => {
                 if selection.to > 0 {
                     let new_pos = self.find_new_position(control_code, selection.to);
-                    self.set_selection(
-                        Some(TextSelection::for_range(selection.from, new_pos)),
-                        context.gc(),
-                    );
+                    self.set_selection(Some(TextSelection::for_range(selection.from, new_pos)));
                 }
             }
             TextControlCode::SelectRight
@@ -1734,17 +1731,11 @@ impl<'gc> EditText<'gc> {
             | TextControlCode::SelectRightDocument => {
                 if selection.to < self.text().len() {
                     let new_pos = self.find_new_position(control_code, selection.to);
-                    self.set_selection(
-                        Some(TextSelection::for_range(selection.from, new_pos)),
-                        context.gc(),
-                    )
+                    self.set_selection(Some(TextSelection::for_range(selection.from, new_pos)))
                 }
             }
             TextControlCode::SelectAll => {
-                self.set_selection(
-                    Some(TextSelection::for_range(0, self.text().len())),
-                    context.gc(),
-                );
+                self.set_selection(Some(TextSelection::for_range(0, self.text().len())));
             }
             TextControlCode::Copy => {
                 let text = &self.text()[selection.start()..selection.end()];
@@ -1768,15 +1759,9 @@ impl<'gc> EditText<'gc> {
 
                 self.replace_text(selection.start(), selection.end(), WStr::empty(), context);
                 if is_selectable {
-                    self.set_selection(
-                        Some(TextSelection::for_position(selection.start())),
-                        context.gc(),
-                    );
+                    self.set_selection(Some(TextSelection::for_position(selection.start())));
                 } else {
-                    self.set_selection(
-                        Some(TextSelection::for_position(self.text().len())),
-                        context.gc(),
-                    );
+                    self.set_selection(Some(TextSelection::for_position(self.text().len())));
                 }
                 changed = true;
             }
@@ -1788,10 +1773,7 @@ impl<'gc> EditText<'gc> {
             {
                 // Backspace or delete with multiple characters selected
                 self.replace_text(selection.start(), selection.end(), WStr::empty(), context);
-                self.set_selection(
-                    Some(TextSelection::for_position(selection.start())),
-                    context.gc(),
-                );
+                self.set_selection(Some(TextSelection::for_position(selection.start())));
                 changed = true;
             }
             TextControlCode::Backspace | TextControlCode::BackspaceWord => {
@@ -1800,7 +1782,7 @@ impl<'gc> EditText<'gc> {
                     // Delete previous character(s)
                     let start = self.find_new_position(control_code, selection.start());
                     self.replace_text(start, selection.start(), WStr::empty(), context);
-                    self.set_selection(Some(TextSelection::for_position(start)), context.gc());
+                    self.set_selection(Some(TextSelection::for_position(start)));
                     changed = true;
                 }
             }
@@ -1860,7 +1842,7 @@ impl<'gc> EditText<'gc> {
                 let new_selection = cursor.map(|(from, to)| {
                     TextSelection::for_range(old_ime_start + from, old_ime_start + to)
                 });
-                self.set_selection(new_selection, context.gc());
+                self.set_selection(new_selection);
             }
             ImeEvent::Commit(text) => self.text_input(text, context),
         };
@@ -1894,7 +1876,7 @@ impl<'gc> EditText<'gc> {
         };
 
         self.replace_text(ime_start, ime_end, WStr::empty(), context);
-        self.set_selection(Some(TextSelection::for_position(ime_start)), context.gc());
+        self.set_selection(Some(TextSelection::for_position(ime_start)));
         self.0.ime_data.take();
     }
 
@@ -2074,7 +2056,7 @@ impl<'gc> EditText<'gc> {
 
         self.replace_text(selection.start(), selection.end(), text, context);
         let new_pos = selection.start() + text.len();
-        self.set_selection(Some(TextSelection::for_position(new_pos)), context.gc());
+        self.set_selection(Some(TextSelection::for_position(new_pos)));
 
         let mut activation = Avm1Activation::from_nothing(
             context,
@@ -2457,7 +2439,7 @@ impl<'gc> EditText<'gc> {
         })
     }
 
-    fn handle_click(self, click_index: usize, position: usize, context: &mut UpdateContext<'gc>) {
+    fn handle_click(self, click_index: usize, position: usize) {
         if !self.is_selectable() {
             return;
         }
@@ -2471,10 +2453,10 @@ impl<'gc> EditText<'gc> {
 
         // Update selection
         let selection = self.calculate_selection_at(position, selection_mode);
-        self.set_selection(Some(selection), context.gc());
+        self.set_selection(Some(selection));
     }
 
-    fn handle_drag(self, position: usize, context: &mut UpdateContext<'gc>) {
+    fn handle_drag(self, position: usize) {
         if !self.is_selectable() {
             return;
         }
@@ -2494,7 +2476,7 @@ impl<'gc> EditText<'gc> {
         let first_selection = self.calculate_selection_at(last_position, selection_mode);
         let current_selection = self.calculate_selection_at(position, selection_mode);
         let new_selection = TextSelection::span_across(first_selection, current_selection);
-        self.set_selection(Some(new_selection), context.gc());
+        self.set_selection(Some(new_selection));
     }
 
     pub fn set_avm2_class(self, mc: &Mutation<'gc>, class: Avm2ClassObject<'gc>) {
@@ -2598,11 +2580,11 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
         self.base().x() + self.bounds_x_offset()
     }
 
-    fn set_x(self, gc_context: &Mutation<'gc>, x: Twips) {
+    fn set_x(self, x: Twips) {
         self.apply_autosize_bounds();
         let offset = self.bounds_x_offset();
         self.base().set_x(x - offset);
-        self.invalidate_cached_bitmap(gc_context);
+        self.invalidate_cached_bitmap();
     }
 
     fn y(self) -> Twips {
@@ -2610,11 +2592,11 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
         self.base().y() + self.bounds_y_offset()
     }
 
-    fn set_y(self, gc_context: &Mutation<'gc>, y: Twips) {
+    fn set_y(self, y: Twips) {
         self.apply_autosize_bounds();
         let offset = self.bounds_y_offset();
         self.base().set_y(y - offset);
-        self.invalidate_cached_bitmap(gc_context);
+        self.invalidate_cached_bitmap();
     }
 
     fn width(self) -> f64 {
@@ -2649,9 +2631,9 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
         self.relayout(context);
     }
 
-    fn set_matrix(self, mc: &Mutation<'gc>, matrix: Matrix) {
+    fn set_matrix(self, matrix: Matrix) {
         self.base().set_matrix(matrix);
-        self.invalidate_cached_bitmap(mc);
+        self.invalidate_cached_bitmap();
     }
 
     fn render_self(self, context: &mut RenderContext<'_, 'gc>) {
@@ -2963,7 +2945,7 @@ impl<'gc> TInteractiveObject<'gc> for EditText<'gc> {
         if let ClipEvent::MouseWheel { delta } = event {
             let scrolled = if self.is_mouse_wheel_enabled() {
                 let new_scroll = self.scroll() as f64 - delta.lines();
-                let scrolled = self.set_scroll(new_scroll, context);
+                let scrolled = self.set_scroll(new_scroll);
 
                 let mut activation = Avm1Activation::from_nothing(
                     context,
@@ -2988,7 +2970,7 @@ impl<'gc> TInteractiveObject<'gc> for EditText<'gc> {
             let mut link_to_open = None;
 
             if let Some(position) = self.screen_position_to_index(*context.mouse_position) {
-                self.handle_click(index, position, context);
+                self.handle_click(index, position);
 
                 if let Some((span_index, _)) = self
                     .0
@@ -3004,10 +2986,7 @@ impl<'gc> TInteractiveObject<'gc> for EditText<'gc> {
                         .map(|s| (s.url.clone(), s.target.clone()));
                 }
             } else {
-                self.set_selection(
-                    Some(TextSelection::for_position(self.text_length())),
-                    context.gc(),
-                );
+                self.set_selection(Some(TextSelection::for_position(self.text_length())));
             }
 
             if let Some((url, target)) = link_to_open {
@@ -3028,7 +3007,7 @@ impl<'gc> TInteractiveObject<'gc> for EditText<'gc> {
             // If a mouse has moved and this EditTest is pressed, we need to update the selection.
             if InteractiveObject::option_ptr_eq(context.mouse_data.pressed, self.as_interactive()) {
                 if let Some(position) = self.screen_position_to_index(*context.mouse_position) {
-                    self.handle_drag(position, context);
+                    self.handle_drag(position);
                 }
             }
         }
@@ -3111,7 +3090,7 @@ impl<'gc> TInteractiveObject<'gc> for EditText<'gc> {
             let is_avm1 = !self.movie().is_action_script_3();
             if is_avm1 {
                 // Clear selection on focus lost in AVM1 only.
-                self.set_selection(None, context.gc());
+                self.set_selection(None);
             }
         }
 

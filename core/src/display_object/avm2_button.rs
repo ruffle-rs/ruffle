@@ -207,16 +207,13 @@ impl<'gc> Avm2Button<'gc> {
                     .instantiate_by_id(record.id, context.gc_context)
                 {
                     Some(child) => {
-                        child.set_matrix(context.gc(), record.matrix.into());
+                        child.set_matrix(record.matrix.into());
                         child.set_depth(record.depth.into());
 
                         if swf_state != swf::ButtonState::HIT_TEST {
-                            child.set_color_transform(context.gc(), record.color_transform);
-                            child.set_blend_mode(context.gc(), record.blend_mode.into());
-                            child.set_filters(
-                                context.gc(),
-                                record.filters.iter().map(Filter::from).collect(),
-                            );
+                            child.set_color_transform(record.color_transform);
+                            child.set_blend_mode(record.blend_mode.into());
+                            child.set_filters(record.filters.iter().map(Filter::from).collect());
                         }
 
                         children.push((child, record.depth));
@@ -232,7 +229,7 @@ impl<'gc> Avm2Button<'gc> {
             }
         }
 
-        self.invalidate_cached_bitmap(context.gc());
+        self.invalidate_cached_bitmap();
 
         // We manually call `construct_frame` for `child` and `state_sprite` - normally
         // this would be done in the `DisplayObject` constructor, but SimpleButton does
@@ -279,7 +276,7 @@ impl<'gc> Avm2Button<'gc> {
 
     /// Change the rendered state of the button.
     pub fn set_state(self, context: &mut UpdateContext<'gc>, state: ButtonState) {
-        self.invalidate_cached_bitmap(context.gc());
+        self.invalidate_cached_bitmap();
         self.0.state.set(state);
 
         for state in self.all_state_children(false) {
