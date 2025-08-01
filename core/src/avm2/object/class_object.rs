@@ -538,12 +538,18 @@ impl<'gc> ClassObject<'gc> {
                 Ok(())
             }
             Some(Property::ConstSlot { .. }) | Some(Property::Virtual { set: None, .. }) => {
-                Err(error::make_reference_error(
-                    activation,
-                    error::ReferenceErrorCode::WriteToReadOnly,
-                    multiname,
-                    self.inner_class_definition(),
-                ))
+                if activation.is_interpreter() {
+                    Err(error::make_reference_error(
+                        activation,
+                        error::ReferenceErrorCode::WriteToReadOnly,
+                        multiname,
+                        self.inner_class_definition(),
+                    ))
+                } else {
+                    // In JIT mode in FP, setsuper on const slots and
+                    // getter-only accessors is silently ignored
+                    Ok(())
+                }
             }
             None => Err(error::make_reference_error(
                 activation,
