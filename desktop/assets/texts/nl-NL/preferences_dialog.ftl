@@ -23,4 +23,11 @@ theme = Thema
 theme-system = Systeemstandaard
 theme-light = Licht
 theme-dark = Donker
+# See for context https://github.com/FeralInteractive/gamemode
+gamemode = GameMode
 gamemode-default = Standaard
+# See for context https://wiki.archlinux.org/title/Input_method
+ime-enabled = Invoermethode
+ime-enabled-experimental = (experimenteel)
+ime-enabled-tooltip = Een invoermethode maakt het mogelijk om tekens in te voeren die niet op het toetsenbord beschikbaar zijn, bijvoorbeeld Chinese, Japanse of Koreaanse tekens.
+ime-enabled-default = Standaard
