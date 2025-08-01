@@ -14,7 +14,8 @@ use crate::tag_utils::SwfMovie;
 use crate::types::{Degrees, Percent};
 use crate::vminterface::Instantiator;
 use bitflags::bitflags;
-use gc_arena::{Collect, Mutation};
+use gc_arena::lock::RefLock;
+use gc_arena::{Collect, Gc, Mutation};
 use ruffle_macros::{enum_trait_object, istr};
 use ruffle_render::perspective_projection::PerspectiveProjection;
 use ruffle_render::pixel_bender::PixelBenderShaderHandle;
@@ -1111,8 +1112,19 @@ pub fn apply_standard_mask_and_scroll<'gc, F>(
 pub trait TDisplayObject<'gc>:
     'gc + Clone + Copy + Collect<'gc> + Debug + Into<DisplayObject<'gc>>
 {
-    fn base<'a>(&'a self) -> Ref<'a, DisplayObjectBase<'gc>>;
-    fn base_mut<'a>(&'a self, mc: &Mutation<'gc>) -> RefMut<'a, DisplayObjectBase<'gc>>;
+    fn gc_base(self) -> Gc<'gc, RefLock<DisplayObjectBase<'gc>>>;
+
+    #[no_dynamic]
+    #[inline(always)]
+    fn base<'a>(&'a self) -> Ref<'a, DisplayObjectBase<'gc>> {
+        self.gc_base().borrow()
+    }
+
+    #[no_dynamic]
+    #[inline(always)]
+    fn base_mut<'a>(&'a self, mc: &Mutation<'gc>) -> RefMut<'a, DisplayObjectBase<'gc>> {
+        self.gc_base().borrow_mut(mc)
+    }
 
     /// The `SCALE_ROTATION_CACHED` flag should only be set in SWFv5+.
     /// So scaling/rotation values always have to get recalculated from the matrix in SWFv4.

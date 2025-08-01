@@ -33,8 +33,9 @@ use crate::vminterface::{AvmObject, Instantiator};
 use chrono::DateTime;
 use chrono::Utc;
 use core::fmt;
-use gc_arena::barrier::{field, unlock};
-use gc_arena::{Collect, Gc, Lock, Mutation, RefLock};
+use gc_arena::barrier::unlock;
+use gc_arena::lock::{Lock, RefLock};
+use gc_arena::{Collect, Gc, Mutation};
 use ruffle_macros::istr;
 use ruffle_render::commands::Command as RenderCommand;
 use ruffle_render::commands::CommandHandler;
@@ -2501,13 +2502,8 @@ impl<'gc> EditText<'gc> {
 }
 
 impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
-    fn base(&self) -> Ref<'_, DisplayObjectBase<'gc>> {
-        self.0.base.base()
-    }
-
-    fn base_mut<'a>(&'a self, mc: &Mutation<'gc>) -> RefMut<'a, DisplayObjectBase<'gc>> {
-        let base = field!(Gc::write(mc, self.0), EditTextData, base);
-        InteractiveObjectBase::base_mut(base)
+    fn gc_base(self) -> Gc<'gc, RefLock<DisplayObjectBase<'gc>>> {
+        HasPrefixField::as_prefix_gc(self.raw_interactive())
     }
 
     fn instantiate(self, gc_context: &Mutation<'gc>) -> DisplayObject<'gc> {

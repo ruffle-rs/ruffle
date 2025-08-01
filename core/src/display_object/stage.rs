@@ -22,7 +22,7 @@ use crate::tag_utils::SwfMovie;
 use crate::utils::HasPrefixField;
 use crate::vminterface::Instantiator;
 use bitflags::bitflags;
-use gc_arena::barrier::{field, unlock};
+use gc_arena::barrier::unlock;
 use gc_arena::{Collect, Gc, Lock, Mutation, RefLock};
 use ruffle_macros::istr;
 use ruffle_render::backend::ViewportDimensions;
@@ -738,13 +738,8 @@ impl<'gc> Stage<'gc> {
 }
 
 impl<'gc> TDisplayObject<'gc> for Stage<'gc> {
-    fn base(&self) -> Ref<'_, DisplayObjectBase<'gc>> {
-        self.0.base.base()
-    }
-
-    fn base_mut<'a>(&'a self, mc: &Mutation<'gc>) -> RefMut<'a, DisplayObjectBase<'gc>> {
-        let base = field!(Gc::write(mc, self.0), StageData, base);
-        InteractiveObjectBase::base_mut(base)
+    fn gc_base(self) -> Gc<'gc, RefLock<DisplayObjectBase<'gc>>> {
+        HasPrefixField::as_prefix_gc(self.raw_interactive())
     }
 
     fn instantiate(self, gc_context: &Mutation<'gc>) -> DisplayObject<'gc> {

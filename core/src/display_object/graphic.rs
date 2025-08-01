@@ -9,13 +9,15 @@ use crate::drawing::Drawing;
 use crate::library::MovieLibrarySource;
 use crate::prelude::*;
 use crate::tag_utils::SwfMovie;
+use crate::utils::HasPrefixField;
 use crate::vminterface::Instantiator;
 use core::fmt;
 use gc_arena::barrier::unlock;
-use gc_arena::{Collect, Gc, Lock, Mutation, RefLock};
+use gc_arena::lock::{Lock, RefLock};
+use gc_arena::{Collect, Gc, Mutation};
 use ruffle_render::backend::ShapeHandle;
 use ruffle_render::commands::CommandHandler;
-use std::cell::{OnceCell, Ref, RefCell, RefMut};
+use std::cell::{OnceCell, RefCell, RefMut};
 use std::sync::Arc;
 
 #[derive(Clone, Collect, Copy)]
@@ -30,8 +32,9 @@ impl fmt::Debug for Graphic<'_> {
     }
 }
 
-#[derive(Clone, Collect)]
+#[derive(Clone, Collect, HasPrefixField)]
 #[collect(no_drop)]
+#[repr(C, align(8))]
 pub struct GraphicData<'gc> {
     base: RefLock<DisplayObjectBase<'gc>>,
     shared: Lock<Gc<'gc, GraphicShared>>,
@@ -65,7 +68,7 @@ impl<'gc> Graphic<'gc> {
         Graphic(Gc::new(
             context.gc(),
             GraphicData {
-                base: RefLock::new(Default::default()),
+                base: Default::default(),
                 shared: Lock::new(Gc::new(context.gc(), shared)),
                 class: Lock::new(None),
                 avm2_object: Lock::new(None),
@@ -121,12 +124,8 @@ impl<'gc> Graphic<'gc> {
 }
 
 impl<'gc> TDisplayObject<'gc> for Graphic<'gc> {
-    fn base(&self) -> Ref<'_, DisplayObjectBase<'gc>> {
-        self.0.base.borrow()
-    }
-
-    fn base_mut<'a>(&'a self, mc: &Mutation<'gc>) -> RefMut<'a, DisplayObjectBase<'gc>> {
-        unlock!(Gc::write(mc, self.0), GraphicData, base).borrow_mut()
+    fn gc_base(self) -> Gc<'gc, RefLock<DisplayObjectBase<'gc>>> {
+        HasPrefixField::as_prefix_gc(self.0)
     }
 
     fn instantiate(self, gc_context: &Mutation<'gc>) -> DisplayObject<'gc> {

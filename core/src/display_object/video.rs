@@ -10,10 +10,12 @@ use crate::display_object::{Avm1TextFieldBinding, DisplayObjectBase, DisplayObje
 use crate::prelude::*;
 use crate::streams::NetStream;
 use crate::tag_utils::{SwfMovie, SwfSlice};
+use crate::utils::HasPrefixField;
 use crate::vminterface::{AvmObject, Instantiator};
 use core::fmt;
 use gc_arena::barrier::unlock;
-use gc_arena::{Collect, Gc, Lock, Mutation, RefLock};
+use gc_arena::lock::{Lock, RefLock};
+use gc_arena::{Collect, Gc, Mutation};
 use ruffle_render::bitmap::{BitmapInfo, PixelSnapping};
 use ruffle_render::commands::CommandHandler;
 use ruffle_render::quality::StageQuality;
@@ -43,8 +45,9 @@ impl fmt::Debug for Video<'_> {
     }
 }
 
-#[derive(Clone, Collect)]
+#[derive(Clone, Collect, HasPrefixField)]
 #[collect(no_drop)]
+#[repr(C, align(8))]
 pub struct VideoData<'gc> {
     base: RefLock<DisplayObjectBase<'gc>>,
 
@@ -69,14 +72,13 @@ pub struct VideoData<'gc> {
 
     /// The movie whose tagstream or code created the Video object.
     movie: Arc<SwfMovie>,
-
-    /// The self bounds for this movie.
-    size: Cell<(i32, i32)>,
-
     /// The last decoded frame in the video stream.
     ///
     /// NOTE: This is only used for SWF-source video streams.
     decoded_frame: RefCell<Option<(u32, BitmapInfo)>>,
+
+    /// The self bounds for this movie.
+    size: Cell<(i32, i32)>,
 }
 
 /// An optionally-instantiated video stream.
@@ -346,12 +348,8 @@ impl<'gc> Video<'gc> {
 }
 
 impl<'gc> TDisplayObject<'gc> for Video<'gc> {
-    fn base(&self) -> Ref<'_, DisplayObjectBase<'gc>> {
-        self.0.base.borrow()
-    }
-
-    fn base_mut<'a>(&'a self, mc: &Mutation<'gc>) -> RefMut<'a, DisplayObjectBase<'gc>> {
-        unlock!(Gc::write(mc, self.0), VideoData, base).borrow_mut()
+    fn gc_base(self) -> Gc<'gc, RefLock<DisplayObjectBase<'gc>>> {
+        HasPrefixField::as_prefix_gc(self.0)
     }
 
     fn instantiate(self, gc_context: &Mutation<'gc>) -> DisplayObject<'gc> {

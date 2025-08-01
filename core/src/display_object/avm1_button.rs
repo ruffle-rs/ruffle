@@ -16,7 +16,7 @@ use crate::tag_utils::{SwfMovie, SwfSlice};
 use crate::utils::HasPrefixField;
 use crate::vminterface::Instantiator;
 use core::fmt;
-use gc_arena::barrier::{field, unlock};
+use gc_arena::barrier::unlock;
 use gc_arena::lock::{Lock, RefLock};
 use gc_arena::{Collect, Gc, Mutation};
 use ruffle_macros::istr;
@@ -247,13 +247,8 @@ impl<'gc> Avm1Button<'gc> {
 }
 
 impl<'gc> TDisplayObject<'gc> for Avm1Button<'gc> {
-    fn base(&self) -> Ref<'_, DisplayObjectBase<'gc>> {
-        self.0.base.base()
-    }
-
-    fn base_mut<'a>(&'a self, mc: &Mutation<'gc>) -> RefMut<'a, DisplayObjectBase<'gc>> {
-        let base = field!(Gc::write(mc, self.0), Avm1ButtonData, base);
-        InteractiveObjectBase::base_mut(base)
+    fn gc_base(self) -> Gc<'gc, RefLock<DisplayObjectBase<'gc>>> {
+        HasPrefixField::as_prefix_gc(self.raw_interactive())
     }
 
     fn instantiate(self, mc: &Mutation<'gc>) -> DisplayObject<'gc> {
@@ -447,11 +442,7 @@ impl<'gc> TInteractiveObject<'gc> for Avm1Button<'gc> {
 
         // The `keyPress` event doesn't fire if the button is inside another button.
         if matches!(event, ClipEvent::KeyPress { .. })
-            && self
-                .base()
-                .parent
-                .and_then(|p| p.as_avm1_button())
-                .is_some()
+            && self.parent().and_then(|p| p.as_avm1_button()).is_some()
         {
             return ClipEventResult::NotHandled;
         }
@@ -623,7 +614,7 @@ impl<'gc> Avm1ButtonData<'gc> {
         condition: ButtonActionCondition,
     ) -> ClipEventResult {
         let mut handled = ClipEventResult::NotHandled;
-        if let Some(parent) = self.base.base().parent {
+        if let Some(parent) = self.base.base.borrow().parent {
             for action in &self.shared.actions {
                 if action.conditions.matches(condition) {
                     // Note that AVM1 buttons run actions relative to their parent, not themselves.

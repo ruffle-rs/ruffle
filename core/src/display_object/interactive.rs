@@ -18,12 +18,13 @@ use crate::display_object::{
 };
 use crate::events::{ClipEvent, ClipEventResult, MouseButton};
 use crate::string::AvmString;
+use crate::utils::HasPrefixField;
 use bitflags::bitflags;
-use gc_arena::barrier::{unlock, Write};
+use gc_arena::barrier::unlock;
 use gc_arena::lock::{Lock, RefLock};
 use gc_arena::{Collect, Gc, Mutation};
 use ruffle_macros::{enum_trait_object, istr};
-use std::cell::{Cell, Ref, RefMut};
+use std::cell::Cell;
 use std::fmt::Debug;
 use swf::{Point, Rectangle, Twips};
 
@@ -81,19 +82,22 @@ bitflags! {
     }
 }
 
-#[derive(Collect, Clone)]
+#[derive(Collect, Clone, HasPrefixField)]
 #[collect(no_drop)]
+#[repr(C, align(8))]
 pub struct InteractiveObjectBase<'gc> {
     pub base: RefLock<DisplayObjectBase<'gc>>,
-    #[collect(require_static)]
-    flags: Cell<InteractiveObjectFlags>,
+
     context_menu: Lock<Avm2Value<'gc>>,
 
     #[collect(require_static)]
-    tab_enabled: Cell<Option<bool>>,
+    tab_index: Cell<Option<i32>>,
 
     #[collect(require_static)]
-    tab_index: Cell<Option<i32>>,
+    flags: Cell<InteractiveObjectFlags>,
+
+    #[collect(require_static)]
+    tab_enabled: Cell<Option<bool>>,
 
     /// Specifies whether this object displays a yellow rectangle when focused.
     focus_rect: Cell<Option<bool>>,
@@ -113,14 +117,6 @@ impl Default for InteractiveObjectBase<'_> {
 }
 
 impl<'gc> InteractiveObjectBase<'gc> {
-    pub fn base(&self) -> Ref<'_, DisplayObjectBase<'gc>> {
-        self.base.borrow()
-    }
-
-    pub fn base_mut(this: &Write<Self>) -> RefMut<'_, DisplayObjectBase<'gc>> {
-        unlock!(this, Self, base).borrow_mut()
-    }
-
     fn contains_flag(&self, flag: InteractiveObjectFlags) -> bool {
         self.flags.get().contains(flag)
     }
