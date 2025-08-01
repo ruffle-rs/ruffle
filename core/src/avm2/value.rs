@@ -917,7 +917,7 @@ impl<'gc> Value<'gc> {
                 }
             }
             Some(Property::Virtual { get: Some(get), .. }) => {
-                self.call_method(get, &[], activation)
+                self.call_method_with_args(get, FunctionArgs::empty(), activation)
             }
             Some(Property::Virtual { get: None, .. }) => {
                 let instance_class = self.instance_class(activation);
@@ -1143,7 +1143,7 @@ impl<'gc> Value<'gc> {
                 self.call_method_with_args(disp_id, arguments, activation)
             }
             Some(Property::Virtual { get: Some(get), .. }) => {
-                let obj = self.call_method(get, &[], activation)?;
+                let obj = self.call_method_with_args(get, FunctionArgs::empty(), activation)?;
 
                 let arguments = &arguments.to_slice();
                 obj.call(activation, *self, arguments)

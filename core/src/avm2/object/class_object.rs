@@ -2,7 +2,7 @@
 
 use crate::avm2::activation::Activation;
 use crate::avm2::class::{AllocatorFn, Class, CustomConstructorFn};
-use crate::avm2::error::{argument_error, make_error_1127, reference_error, type_error};
+use crate::avm2::error::{self, argument_error, make_error_1127, reference_error, type_error};
 use crate::avm2::function::{exec, FunctionArgs};
 use crate::avm2::method::{Method, NativeMethodImpl};
 use crate::avm2::object::function_object::FunctionObject;
@@ -342,7 +342,7 @@ impl<'gc> ClassObject<'gc> {
         }
     }
 
-    /// Supercall a method defined in this class.
+    /// Call a method defined in this class.
     ///
     /// This is intended to be called on the class object that is the
     /// superclass of the one that defined the currently called property. If no
@@ -374,42 +374,49 @@ impl<'gc> ClassObject<'gc> {
         activation: &mut Activation<'_, 'gc>,
     ) -> Result<Value<'gc>, Error<'gc>> {
         let property = self.instance_vtable().get_trait(multiname);
-        if property.is_none() {
-            let qualified_multiname_name = multiname.as_uri(activation.strings());
-            let qualified_class_name = self
-                .inner_class_definition()
-                .name()
-                .to_qualified_name_err_message(activation.gc());
+        match property {
+            Some(Property::Slot { slot_id }) | Some(Property::ConstSlot { slot_id }) => {
+                let arguments = &arguments.to_slice();
 
-            return Err(Error::avm_error(reference_error(
+                let func = receiver.get_slot(slot_id);
+                func.call(activation, receiver.into(), arguments)
+            }
+            Some(Property::Method { disp_id }) => {
+                self.call_method_super(activation, receiver, disp_id, arguments)
+            }
+            Some(Property::Virtual { get: Some(get), .. }) => {
+                // Call the getter, then `Value::call` the result
+                let obj =
+                    self.call_method_super(activation, receiver, get, FunctionArgs::empty())?;
+
+                let arguments = &arguments.to_slice();
+                obj.call(activation, receiver.into(), arguments)
+            }
+            Some(Property::Virtual { get: None, .. }) => Err(error::make_reference_error(
                 activation,
-                &format!(
-                    "Error #1070: Method {qualified_multiname_name} not found on {qualified_class_name}",
-                ),
-                1070,
-            )?));
-        }
+                error::ReferenceErrorCode::ReadFromWriteOnly,
+                multiname,
+                self.inner_class_definition(),
+            )),
+            None => {
+                let qualified_multiname_name = multiname.as_uri(activation.strings());
+                let qualified_class_name = self
+                    .inner_class_definition()
+                    .name()
+                    .to_qualified_name_err_message(activation.gc());
 
-        if let Some(Property::Method { disp_id, .. }) = property {
-            // todo: handle errors
-            let full_method = self.instance_vtable().get_full_method(disp_id).unwrap();
-            let callee = FunctionObject::from_method(
-                activation,
-                full_method.method,
-                full_method.scope(),
-                Some(receiver.into()),
-                full_method.super_class_obj,
-                Some(full_method.class),
-            );
-
-            let arguments = &arguments.to_slice();
-            callee.call(activation, receiver.into(), arguments)
-        } else {
-            Value::from(receiver).call_property(multiname, arguments, activation)
+                return Err(Error::avm_error(reference_error(
+                    activation,
+                    &format!(
+                        "Error #1070: Method {qualified_multiname_name} not found on {qualified_class_name}",
+                    ),
+                    1070,
+                )?));
+            }
         }
     }
 
-    /// Supercall a getter defined in this class.
+    /// Call a getter defined in this class.
     ///
     /// This is intended to be called on the class object that is the
     /// superclass of the one that defined the currently called property. If no
@@ -442,13 +449,10 @@ impl<'gc> ClassObject<'gc> {
         let property = self.instance_vtable().get_trait(multiname);
 
         match property {
-            Some(
-                Property::Virtual {
-                    get: Some(disp_id), ..
-                }
-                | Property::Method { disp_id },
-            ) => {
-                // todo: handle errors
+            Some(Property::Slot { slot_id }) | Some(Property::ConstSlot { slot_id }) => {
+                Ok(receiver.get_slot(slot_id))
+            }
+            Some(Property::Method { disp_id }) => {
                 let full_method = self.instance_vtable().get_full_method(disp_id).unwrap();
                 let callee = FunctionObject::from_method(
                     activation,
@@ -459,29 +463,27 @@ impl<'gc> ClassObject<'gc> {
                     Some(full_method.class),
                 );
 
-                // We call getters, but return the actual function object for normal methods
-                if matches!(property, Some(Property::Virtual { .. })) {
-                    callee.call(activation, receiver.into(), &[])
-                } else {
-                    Ok(callee.into())
-                }
+                Ok(callee.into())
             }
-            Some(Property::Virtual { .. }) => Err(format!(
-                "Attempting to use get_super on non-getter property {multiname:?}",
-            )
-            .into()),
-            Some(Property::Slot { .. } | Property::ConstSlot { .. }) => {
-                Value::from(receiver).get_property(multiname, activation)
-            }
-            None => Err(format!(
-                "Attempted to supercall method {:?}, which does not exist",
-                multiname.local_name()
-            )
-            .into()),
+            Some(Property::Virtual {
+                get: Some(disp_id), ..
+            }) => self.call_method_super(activation, receiver, disp_id, FunctionArgs::empty()),
+            Some(Property::Virtual { get: None, .. }) => Err(error::make_reference_error(
+                activation,
+                error::ReferenceErrorCode::ReadFromWriteOnly,
+                multiname,
+                self.inner_class_definition(),
+            )),
+            None => Err(error::make_reference_error(
+                activation,
+                error::ReferenceErrorCode::InvalidRead,
+                multiname,
+                self.inner_class_definition(),
+            )),
         }
     }
 
-    /// Supercall a setter defined in this class.
+    /// Call a setter defined in this class.
     ///
     /// This is intended to be called on the class object that is the
     /// superclass of the one that defined the currently called property. If no
@@ -505,49 +507,89 @@ impl<'gc> ClassObject<'gc> {
     ///
     /// This method corresponds directly to the AVM2 operation `setsuper`,
     /// with the caveat listed above about what object to call it on.
-    #[expect(unused_mut)]
     pub fn set_super(
         self,
         multiname: &Multiname<'gc>,
         value: Value<'gc>,
-        mut receiver: Object<'gc>,
+        receiver: Object<'gc>,
         activation: &mut Activation<'_, 'gc>,
     ) -> Result<(), Error<'gc>> {
         let property = self.instance_vtable().get_trait(multiname);
-        if property.is_none() {
-            return Err(format!(
-                "Attempted to supercall method {:?}, which does not exist",
-                multiname.local_name()
-            )
-            .into());
-        }
-
         match property {
+            Some(Property::Slot { slot_id }) => {
+                // Comment placed for formatting reasons
+                receiver.set_slot(slot_id, value, activation)
+            }
+            Some(Property::Method { .. }) => Err(error::make_reference_error(
+                activation,
+                error::ReferenceErrorCode::AssignToMethod,
+                multiname,
+                self.inner_class_definition(),
+            )),
             Some(Property::Virtual {
                 set: Some(disp_id), ..
             }) => {
-                // todo: handle errors
-                let full_method = self.instance_vtable().get_full_method(disp_id).unwrap();
-                let callee = FunctionObject::from_method(
-                    activation,
-                    full_method.method,
-                    full_method.scope(),
-                    Some(receiver.into()),
-                    full_method.super_class_obj,
-                    Some(full_method.class),
-                );
+                let args = FunctionArgs::AsArgSlice {
+                    arguments: &[value],
+                };
 
-                callee.call(activation, receiver.into(), &[value])?;
+                self.call_method_super(activation, receiver, disp_id, args)?;
+
                 Ok(())
             }
-            Some(Property::Slot { .. }) => {
-                Value::from(receiver).set_property(multiname, value, activation)?;
-                Ok(())
+            Some(Property::ConstSlot { .. }) | Some(Property::Virtual { set: None, .. }) => {
+                Err(error::make_reference_error(
+                    activation,
+                    error::ReferenceErrorCode::WriteToReadOnly,
+                    multiname,
+                    self.inner_class_definition(),
+                ))
             }
-            _ => {
-                Err(format!("set_super on {receiver:?} {multiname:?} with {value:?} resolved to unexpected property {property:?}").into())
-            }
+            None => Err(error::make_reference_error(
+                activation,
+                error::ReferenceErrorCode::InvalidWrite,
+                multiname,
+                self.inner_class_definition(),
+            )),
         }
+    }
+
+    /// Like `Value::call_method`, but uses the method specifically on this class's
+    /// instance vtable, not the instance vtable of the receiver. This is intended
+    /// to be used for supercalls.
+    fn call_method_super(
+        self,
+        activation: &mut Activation<'_, 'gc>,
+        receiver: Object<'gc>,
+        disp_id: u32,
+        arguments: FunctionArgs<'_, 'gc>,
+    ) -> Result<Value<'gc>, Error<'gc>> {
+        let full_method = self.instance_vtable().get_full_method(disp_id).unwrap();
+
+        // Only create callee if the method needs it
+        let callee = if full_method.method.needs_arguments_object() {
+            Some(FunctionObject::from_method(
+                activation,
+                full_method.method,
+                full_method.scope(),
+                Some(receiver.into()),
+                full_method.super_class_obj,
+                Some(full_method.class),
+            ))
+        } else {
+            None
+        };
+
+        exec(
+            full_method.method,
+            full_method.scope(),
+            receiver.into(),
+            full_method.super_class_obj,
+            Some(full_method.class),
+            arguments,
+            activation,
+            callee,
+        )
     }
 
     pub fn add_application(
