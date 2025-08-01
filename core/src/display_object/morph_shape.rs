@@ -6,13 +6,14 @@ use crate::display_object::{DisplayObjectBase, DisplayObjectPtr};
 use crate::library::{Library, MovieLibrarySource};
 use crate::prelude::*;
 use crate::tag_utils::SwfMovie;
+use crate::utils::HasPrefixField;
 use core::fmt;
 use gc_arena::barrier::unlock;
 use gc_arena::lock::{Lock, RefLock};
 use gc_arena::{Collect, Gc, Mutation};
 use ruffle_render::backend::ShapeHandle;
 use ruffle_render::commands::CommandHandler;
-use std::cell::{Cell, Ref, RefCell, RefMut};
+use std::cell::{Cell, RefCell, RefMut};
 use std::sync::Arc;
 use swf::{Fixed16, Fixed8};
 
@@ -28,14 +29,15 @@ impl fmt::Debug for MorphShape<'_> {
     }
 }
 
-#[derive(Clone, Collect)]
+#[derive(Clone, Collect, HasPrefixField)]
 #[collect(no_drop)]
+#[repr(C, align(8))]
 pub struct MorphShapeData<'gc> {
     base: RefLock<DisplayObjectBase<'gc>>,
     shared: Lock<Gc<'gc, MorphShapeShared>>,
-    ratio: Cell<u16>,
     /// The AVM2 representation of this MorphShape.
     object: Lock<Option<Avm2Object<'gc>>>,
+    ratio: Cell<u16>,
 }
 
 impl<'gc> MorphShape<'gc> {
@@ -67,12 +69,8 @@ impl<'gc> MorphShape<'gc> {
 }
 
 impl<'gc> TDisplayObject<'gc> for MorphShape<'gc> {
-    fn base(&self) -> Ref<'_, DisplayObjectBase<'gc>> {
-        self.0.base.borrow()
-    }
-
-    fn base_mut<'a>(&'a self, mc: &Mutation<'gc>) -> RefMut<'a, DisplayObjectBase<'gc>> {
-        unlock!(Gc::write(mc, self.0), MorphShapeData, base).borrow_mut()
+    fn gc_base(self) -> Gc<'gc, RefLock<DisplayObjectBase<'gc>>> {
+        HasPrefixField::as_prefix_gc(self.0)
     }
 
     fn instantiate(self, gc_context: &Mutation<'gc>) -> DisplayObject<'gc> {

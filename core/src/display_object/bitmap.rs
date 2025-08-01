@@ -11,6 +11,7 @@ use crate::context::{RenderContext, UpdateContext};
 use crate::display_object::{DisplayObjectBase, DisplayObjectPtr, DisplayObjectWeak};
 use crate::prelude::*;
 use crate::tag_utils::SwfMovie;
+use crate::utils::HasPrefixField;
 use crate::vminterface::Instantiator;
 use core::fmt;
 use gc_arena::barrier::unlock;
@@ -18,7 +19,7 @@ use gc_arena::lock::{Lock, RefLock};
 use gc_arena::{Collect, Gc, GcCell, GcWeak, Mutation};
 use ruffle_render::backend::RenderBackend;
 use ruffle_render::bitmap::{BitmapFormat, PixelSnapping};
-use std::cell::{Cell, Ref, RefMut};
+use std::cell::Cell;
 use std::sync::Arc;
 
 #[derive(Clone, Debug, Collect, Copy)]
@@ -96,12 +97,21 @@ impl fmt::Debug for Bitmap<'_> {
     }
 }
 
-#[derive(Clone, Collect)]
+#[derive(Clone, Collect, HasPrefixField)]
 #[collect(no_drop)]
+#[repr(C, align(8))]
 pub struct BitmapGraphicData<'gc> {
     base: RefLock<DisplayObjectBase<'gc>>,
-    id: CharacterId,
     movie: Arc<SwfMovie>,
+
+    /// The AVM2 side of this object.
+    ///
+    /// AVM1 code cannot directly reference `Bitmap`s, so this does not support
+    /// storing an AVM1 object.
+    avm2_object: Lock<Option<Avm2Object<'gc>>>,
+
+    /// The class associated with this Bitmap.
+    avm2_bitmap_class: Lock<BitmapClass<'gc>>,
 
     /// The current bitmap data object.
     bitmap_data: Lock<BitmapDataWrapper<'gc>>,
@@ -112,20 +122,13 @@ pub struct BitmapGraphicData<'gc> {
     width: Cell<u32>,
     height: Cell<u32>,
 
+    id: CharacterId,
+
     /// Whether or not bitmap smoothing is enabled.
     smoothing: Cell<bool>,
 
     /// How to snap this bitmap to the pixel grid
     pixel_snapping: Cell<PixelSnapping>,
-
-    /// The AVM2 side of this object.
-    ///
-    /// AVM1 code cannot directly reference `Bitmap`s, so this does not support
-    /// storing an AVM1 object.
-    avm2_object: Lock<Option<Avm2Object<'gc>>>,
-
-    /// The class associated with this Bitmap.
-    avm2_bitmap_class: Lock<BitmapClass<'gc>>,
 }
 
 impl<'gc> Bitmap<'gc> {
@@ -301,12 +304,8 @@ impl<'gc> Bitmap<'gc> {
 }
 
 impl<'gc> TDisplayObject<'gc> for Bitmap<'gc> {
-    fn base(&self) -> Ref<'_, DisplayObjectBase<'gc>> {
-        self.0.base.borrow()
-    }
-
-    fn base_mut<'a>(&'a self, mc: &Mutation<'gc>) -> RefMut<'a, DisplayObjectBase<'gc>> {
-        unlock!(Gc::write(mc, self.0), BitmapGraphicData, base).borrow_mut()
+    fn gc_base(self) -> Gc<'gc, RefLock<DisplayObjectBase<'gc>>> {
+        HasPrefixField::as_prefix_gc(self.0)
     }
 
     fn instantiate(self, gc_context: &Mutation<'gc>) -> DisplayObject<'gc> {

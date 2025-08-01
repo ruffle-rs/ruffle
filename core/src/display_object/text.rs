@@ -6,14 +6,16 @@ use crate::display_object::{DisplayObjectBase, DisplayObjectPtr};
 use crate::font::TextRenderSettings;
 use crate::prelude::*;
 use crate::tag_utils::SwfMovie;
+use crate::utils::HasPrefixField;
 use crate::vminterface::Instantiator;
 use core::fmt;
 use gc_arena::barrier::unlock;
-use gc_arena::{Collect, Gc, Lock, Mutation, RefLock};
+use gc_arena::{Collect, Gc, Mutation};
+use gc_arena::{Lock, RefLock};
 use ruffle_render::commands::CommandHandler;
 use ruffle_render::transform::Transform;
 use ruffle_wstr::WString;
-use std::cell::{Ref, RefCell, RefMut};
+use std::cell::RefCell;
 use std::sync::Arc;
 
 #[derive(Clone, Collect, Copy)]
@@ -28,8 +30,9 @@ impl fmt::Debug for Text<'_> {
     }
 }
 
-#[derive(Clone, Collect)]
+#[derive(Clone, Collect, HasPrefixField)]
 #[collect(no_drop)]
+#[repr(C, align(8))]
 pub struct TextData<'gc> {
     base: RefLock<DisplayObjectBase<'gc>>,
     shared: Lock<Gc<'gc, TextShared>>,
@@ -97,12 +100,8 @@ impl<'gc> Text<'gc> {
 }
 
 impl<'gc> TDisplayObject<'gc> for Text<'gc> {
-    fn base(&self) -> Ref<'_, DisplayObjectBase<'gc>> {
-        self.0.base.borrow()
-    }
-
-    fn base_mut<'a>(&'a self, mc: &Mutation<'gc>) -> RefMut<'a, DisplayObjectBase<'gc>> {
-        unlock!(Gc::write(mc, self.0), TextData, base).borrow_mut()
+    fn gc_base(self) -> Gc<'gc, RefLock<DisplayObjectBase<'gc>>> {
+        HasPrefixField::as_prefix_gc(self.0)
     }
 
     fn instantiate(self, gc_context: &Mutation<'gc>) -> DisplayObject<'gc> {
