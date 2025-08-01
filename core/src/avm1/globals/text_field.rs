@@ -249,10 +249,9 @@ fn replace_sel<'gc>(
         &text,
         activation.context,
     );
-    text_field.set_selection(
-        Some(TextSelection::for_position(selection.start() + text.len())),
-        activation.gc(),
-    );
+    text_field.set_selection(Some(TextSelection::for_position(
+        selection.start() + text.len(),
+    )));
 
     text_field.propagate_text_binding(activation);
 
@@ -390,7 +389,7 @@ pub fn set_background<'gc>(
     value: Value<'gc>,
 ) -> Result<(), Error<'gc>> {
     let has_background = value.as_bool(activation.swf_version());
-    this.set_has_background(activation.gc(), has_background);
+    this.set_has_background(has_background);
     Ok(())
 }
 
@@ -408,7 +407,7 @@ pub fn set_background_color<'gc>(
 ) -> Result<(), Error<'gc>> {
     let rgb = value.coerce_to_u32(activation)?;
     let color = Color::from_rgb(rgb, 255);
-    this.set_background_color(activation.gc(), color);
+    this.set_background_color(color);
     Ok(())
 }
 
@@ -425,7 +424,7 @@ pub fn set_border<'gc>(
     value: Value<'gc>,
 ) -> Result<(), Error<'gc>> {
     let has_border = value.as_bool(activation.swf_version());
-    this.set_has_border(activation.gc(), has_border);
+    this.set_has_border(has_border);
     Ok(())
 }
 
@@ -443,7 +442,7 @@ pub fn set_border_color<'gc>(
 ) -> Result<(), Error<'gc>> {
     let rgb = value.coerce_to_u32(activation)?;
     let color = Color::from_rgb(rgb, 255);
-    this.set_border_color(activation.gc(), color);
+    this.set_border_color(color);
     Ok(())
 }
 
@@ -651,7 +650,7 @@ pub fn set_hscroll<'gc>(
     // SWF v8 and earlier has the simple clamping behaviour below. SWF v9+ is much more complicated. See #4634.
     let hscroll_pixels = value.coerce_to_i32(activation)? as f64;
     let clamped = hscroll_pixels.clamp(0.0, this.maxhscroll());
-    this.set_hscroll(clamped, activation.context);
+    this.set_hscroll(clamped);
     Ok(())
 }
 
@@ -675,7 +674,7 @@ pub fn set_scroll<'gc>(
     value: Value<'gc>,
 ) -> Result<(), Error<'gc>> {
     let input = value.coerce_to_f64(activation)?;
-    this.set_scroll(input, activation.context);
+    this.set_scroll(input);
     Ok(())
 }
 
@@ -842,7 +841,7 @@ fn set_filters<'gc>(
             }
         }
     }
-    this.set_filters(activation.gc(), filters);
+    this.set_filters(filters);
     Ok(())
 }
 

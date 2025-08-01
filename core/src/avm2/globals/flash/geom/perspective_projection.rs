@@ -68,7 +68,7 @@ pub fn set_focal_length<'gc>(
     let fov = PerspectiveProjection::from_focal_length(focal_length, width).field_of_view;
     this.set_slot(pp_slots::FOV, fov.into(), activation)?;
 
-    sync_to_display_object(activation, this)?;
+    sync_to_display_object(this)?;
 
     Ok(Value::Undefined)
 }
@@ -112,7 +112,7 @@ pub fn set_field_of_view<'gc>(
 
     this.set_slot(pp_slots::FOV, fov.into(), activation)?;
 
-    sync_to_display_object(activation, this)?;
+    sync_to_display_object(this)?;
 
     Ok(Value::Undefined)
 }
@@ -153,7 +153,7 @@ pub fn set_projection_center<'gc>(
     let point = args.get_value(0);
     this.set_slot(pp_slots::CENTER, point, activation)?;
 
-    sync_to_display_object(activation, this)?;
+    sync_to_display_object(this)?;
 
     Ok(Value::Undefined)
 }
@@ -207,10 +207,7 @@ fn sync_from_display_object<'gc>(
     Ok(())
 }
 
-fn sync_to_display_object<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
-) -> Result<(), Error<'gc>> {
+fn sync_to_display_object<'gc>(this: Object<'gc>) -> Result<(), Error<'gc>> {
     let Some(dobj) = this.get_slot(pp_slots::DISPLAY_OBJECT).as_object() else {
         // Not associated with DO. Unnecessary to sync.
         return Ok(());

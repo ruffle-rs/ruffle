@@ -325,7 +325,7 @@ fn set_x<'gc>(
     val: Value<'gc>,
 ) -> Result<(), Error<'gc>> {
     if let Some(x) = property_coerce_to_number(activation, val)? {
-        this.set_x(activation.gc(), Twips::from_pixels(x));
+        this.set_x(Twips::from_pixels(x));
     }
     Ok(())
 }
@@ -340,7 +340,7 @@ fn set_y<'gc>(
     val: Value<'gc>,
 ) -> Result<(), Error<'gc>> {
     if let Some(y) = property_coerce_to_number(activation, val)? {
-        this.set_y(activation.gc(), Twips::from_pixels(y));
+        this.set_y(Twips::from_pixels(y));
     }
     Ok(())
 }
@@ -355,7 +355,7 @@ fn set_x_scale<'gc>(
     val: Value<'gc>,
 ) -> Result<(), Error<'gc>> {
     if let Some(val) = property_coerce_to_number(activation, val)? {
-        this.set_scale_x(activation.gc(), Percent::from(val));
+        this.set_scale_x(Percent::from(val));
     }
     Ok(())
 }
@@ -370,7 +370,7 @@ fn set_y_scale<'gc>(
     val: Value<'gc>,
 ) -> Result<(), Error<'gc>> {
     if let Some(val) = property_coerce_to_number(activation, val)? {
-        this.set_scale_y(activation.gc(), Percent::from(val));
+        this.set_scale_y(Percent::from(val));
     }
     Ok(())
 }
@@ -403,7 +403,7 @@ fn set_alpha<'gc>(
     val: Value<'gc>,
 ) -> Result<(), Error<'gc>> {
     if let Some(val) = property_coerce_to_number(activation, val)? {
-        this.set_alpha(activation.gc(), val / 100.0);
+        this.set_alpha(val / 100.0);
     }
     Ok(())
 }
@@ -473,7 +473,7 @@ fn set_rotation<'gc>(
         } else if degrees > 180.0 {
             degrees -= 360.0
         }
-        this.set_rotation(activation.gc(), degrees.into());
+        this.set_rotation(degrees.into());
     }
     Ok(())
 }

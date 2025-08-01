@@ -108,7 +108,7 @@ pub fn set_alpha<'gc>(
 
     if let Some(dobj) = this.as_display_object() {
         let new_alpha = args.get_f64(activation, 0)?;
-        dobj.set_alpha(activation.gc(), new_alpha);
+        dobj.set_alpha(new_alpha);
     }
 
     Ok(Value::Undefined)
@@ -213,7 +213,7 @@ pub fn set_scale_y<'gc>(
 
     if let Some(dobj) = this.as_display_object() {
         let new_scale = args.get_f64(activation, 0)?;
-        dobj.set_scale_y(activation.gc(), Percent::from_unit(new_scale));
+        dobj.set_scale_y(Percent::from_unit(new_scale));
     }
 
     Ok(Value::Undefined)
@@ -277,7 +277,7 @@ pub fn set_scale_x<'gc>(
 
     if let Some(dobj) = this.as_display_object() {
         let new_scale = args.get_f64(activation, 0)?;
-        dobj.set_scale_x(activation.gc(), Percent::from_unit(new_scale));
+        dobj.set_scale_x(Percent::from_unit(new_scale));
     }
 
     Ok(Value::Undefined)
@@ -338,10 +338,10 @@ pub fn set_filters<'gc>(
                     filter_vec.push(Filter::from_avm2_object(activation, filter_object)?);
                 }
 
-                dobj.set_filters(activation.gc(), filter_vec);
+                dobj.set_filters(filter_vec);
             }
         } else {
-            dobj.set_filters(activation.gc(), vec![]);
+            dobj.set_filters(vec![]);
         }
     }
 
@@ -373,7 +373,7 @@ pub fn set_x<'gc>(
 
     if let Some(dobj) = this.as_display_object() {
         let x = args.get_f64(activation, 0)?;
-        dobj.set_x(activation.gc(), Twips::from_pixels(x));
+        dobj.set_x(Twips::from_pixels(x));
     }
 
     Ok(Value::Undefined)
@@ -404,7 +404,7 @@ pub fn set_y<'gc>(
 
     if let Some(dobj) = this.as_display_object() {
         let y = args.get_f64(activation, 0)?;
-        dobj.set_y(activation.gc(), Twips::from_pixels(y));
+        dobj.set_y(Twips::from_pixels(y));
     }
 
     Ok(Value::Undefined)
@@ -533,7 +533,7 @@ pub fn set_rotation<'gc>(
     if let Some(dobj) = this.as_display_object() {
         let new_rotation = args.get_f64(activation, 0)?;
 
-        dobj.set_rotation(activation.gc(), Degrees::from(new_rotation));
+        dobj.set_rotation(Degrees::from(new_rotation));
     }
 
     Ok(Value::Undefined)
@@ -857,7 +857,7 @@ pub fn set_transform<'gc>(
     if let Some(parent) = dobj.parent() {
         // Self-transform changes are automatically handled,
         // we only want to inform ancestors to avoid unnecessary invalidations for tx/ty
-        parent.invalidate_cached_bitmap(activation.gc());
+        parent.invalidate_cached_bitmap();
     }
 
     Ok(Value::Undefined)
@@ -890,7 +890,7 @@ pub fn set_blend_mode<'gc>(
         let mode = args.get_string_non_null(activation, 0, "blendMode")?;
 
         if let Ok(mode) = ExtendedBlendMode::from_str(&mode.to_string()) {
-            dobj.set_blend_mode(activation.gc(), mode);
+            dobj.set_blend_mode(mode);
         } else {
             tracing::error!("Unknown blend mode {}", mode);
             return Err(make_error_2008(activation, "blendMode"));
@@ -974,7 +974,7 @@ pub fn set_scroll_rect<'gc>(
             // operate on a `next_scroll_rect` field. Just before we render a DisplayObject, we copy
             // its `next_scroll_rect` to the `scroll_rect` field used for both rendering and
             // `localToGlobal`.
-            dobj.set_next_scroll_rect(activation.gc(), object_to_rectangle(activation, rectangle)?);
+            dobj.set_next_scroll_rect(object_to_rectangle(activation, rectangle)?);
 
             dobj.set_has_scroll_rect(true);
         } else {
@@ -1133,7 +1133,7 @@ pub fn get_cache_as_bitmap<'gc>(
 }
 
 pub fn set_cache_as_bitmap<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    _activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -1141,7 +1141,7 @@ pub fn set_cache_as_bitmap<'gc>(
 
     if let Some(this) = this.as_display_object() {
         let cache = args.get_bool(0);
-        this.set_bitmap_cached_preference(activation.gc(), cache);
+        this.set_bitmap_cached_preference(cache);
     }
     Ok(Value::Undefined)
 }
@@ -1179,7 +1179,7 @@ pub fn set_opaque_background<'gc>(
             Value::Null => None,
             value => Some(Color::from_rgb(value.coerce_to_u32(activation)?, 255)),
         };
-        dobj.set_opaque_background(activation.gc(), color);
+        dobj.set_opaque_background(color);
     }
 
     Ok(Value::Undefined)
@@ -1207,7 +1207,7 @@ pub fn set_blend_shader<'gc>(
             .pixel_bender_shader()
             .expect("Missing compiled PixelBender shader");
 
-        dobj.set_blend_shader(activation.gc(), Some(shader_handle));
+        dobj.set_blend_shader(Some(shader_handle));
     }
     Ok(Value::Undefined)
 }

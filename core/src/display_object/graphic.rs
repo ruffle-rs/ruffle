@@ -185,7 +185,7 @@ impl<'gc> TDisplayObject<'gc> for Graphic<'gc> {
         } else {
             tracing::warn!("PlaceObject: expected Graphic at character ID {}", id);
         }
-        self.invalidate_cached_bitmap(context.gc());
+        self.invalidate_cached_bitmap();
     }
 
     fn render_self(self, context: &mut RenderContext) {
@@ -259,7 +259,7 @@ impl<'gc> TDisplayObject<'gc> for Graphic<'gc> {
         unlock!(Gc::write(mc, self.0), GraphicData, avm2_object).set(Some(to));
     }
 
-    fn as_drawing(&self, _gc_context: &Mutation<'gc>) -> Option<RefMut<'_, Drawing>> {
+    fn as_drawing(&self) -> Option<RefMut<'_, Drawing>> {
         Some(self.drawing_mut())
     }
 }

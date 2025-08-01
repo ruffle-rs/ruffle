@@ -47,9 +47,9 @@ pub fn set_color_transform<'gc>(
         activation,
     )?;
     let dobj = get_display_object(this);
-    dobj.set_color_transform(activation.gc(), ct);
+    dobj.set_color_transform(ct);
     if let Some(parent) = dobj.parent() {
-        parent.invalidate_cached_bitmap(activation.gc());
+        parent.invalidate_cached_bitmap();
     }
     Ok(Value::Undefined)
 }
@@ -83,11 +83,11 @@ pub fn set_matrix<'gc>(
     };
 
     let matrix = object_to_matrix(obj, activation)?;
-    dobj.set_matrix(activation.gc(), matrix);
+    dobj.set_matrix(matrix);
     if let Some(parent) = dobj.parent() {
         // Self-transform changes are automatically handled,
         // we only want to inform ancestors to avoid unnecessary invalidations for tx/ty
-        parent.invalidate_cached_bitmap(activation.gc());
+        parent.invalidate_cached_bitmap();
     }
     dobj.base().set_has_matrix3d_stub(false);
     Ok(Value::Undefined)
@@ -398,11 +398,11 @@ pub fn set_matrix_3d<'gc>(
         }
     };
 
-    display_object.set_matrix(activation.gc(), matrix);
+    display_object.set_matrix(matrix);
     if let Some(parent) = display_object.parent() {
         // Self-transform changes are automatically handled,
         // we only want to inform ancestors to avoid unnecessary invalidations for tx/ty
-        parent.invalidate_cached_bitmap(activation.gc());
+        parent.invalidate_cached_bitmap();
     }
     display_object.base().set_has_matrix3d_stub(has_matrix3d);
 
@@ -455,7 +455,7 @@ pub fn set_perspective_projection<'gc>(
         .map(|object| object_to_perspective_projection(object, activation))
         .transpose()?;
 
-    get_display_object(this).set_perspective_projection(activation.gc(), perspective_projection);
+    get_display_object(this).set_perspective_projection(perspective_projection);
 
     Ok(Value::Undefined)
 }

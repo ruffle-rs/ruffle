@@ -186,7 +186,7 @@ impl<'gc> Stage<'gc> {
             },
         ));
         stage.set_is_root(true);
-        stage.set_perspective_projection(gc_context, None); // Set default PerspectiveProjection
+        stage.set_perspective_projection(None); // Set default PerspectiveProjection
         stage
     }
 
@@ -869,11 +869,7 @@ impl<'gc> TDisplayObject<'gc> for Stage<'gc> {
             .into()
     }
 
-    fn set_perspective_projection(
-        self,
-        gc_context: &Mutation<'gc>,
-        mut perspective_projection: Option<PerspectiveProjection>,
-    ) {
+    fn set_perspective_projection(self, mut perspective_projection: Option<PerspectiveProjection>) {
         if perspective_projection.is_none() {
             // `stage` doesn't allow null PerspectiveProjection.
             perspective_projection = Some(Default::default());
@@ -885,7 +881,7 @@ impl<'gc> TDisplayObject<'gc> for Stage<'gc> {
             if let Some(parent) = self.parent() {
                 // Self-transform changes are automatically handled,
                 // we only want to inform ancestors to avoid unnecessary invalidations for tx/ty
-                parent.invalidate_cached_bitmap(gc_context);
+                parent.invalidate_cached_bitmap();
             }
         }
     }

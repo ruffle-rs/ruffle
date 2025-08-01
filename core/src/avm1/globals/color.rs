@@ -133,7 +133,7 @@ fn set_rgb<'gc>(
     if let Some(target) = target(activation, this)? {
         target.set_transformed_by_script(true);
         if let Some(parent) = target.parent() {
-            parent.invalidate_cached_bitmap(activation.gc());
+            parent.invalidate_cached_bitmap();
         }
 
         let rgb = args
@@ -196,7 +196,7 @@ fn set_transform<'gc>(
     if let Some(target) = target(activation, this)? {
         target.set_transformed_by_script(true);
         if let Some(parent) = target.parent() {
-            parent.invalidate_cached_bitmap(activation.gc());
+            parent.invalidate_cached_bitmap();
         }
 
         let base = target.base();

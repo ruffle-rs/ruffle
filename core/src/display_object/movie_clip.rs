@@ -2005,9 +2005,9 @@ impl<'gc> MovieClip<'gc> {
         self.0.button_mode.set(button_mode);
     }
 
-    pub fn drawing_mut(&self, gc_context: &Mutation<'gc>) -> RefMut<'_, Drawing> {
+    pub fn drawing_mut(&self) -> RefMut<'_, Drawing> {
         // We're about to change graphics, so invalidate on the next frame
-        self.invalidate_cached_bitmap(gc_context);
+        self.invalidate_cached_bitmap();
         self.0.drawing.get_or_init(Default::default).borrow_mut()
     }
 
@@ -2456,8 +2456,8 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
         Some(self.into())
     }
 
-    fn as_drawing(&self, gc_context: &Mutation<'gc>) -> Option<RefMut<'_, Drawing>> {
-        Some(self.drawing_mut(gc_context))
+    fn as_drawing(&self) -> Option<RefMut<'_, Drawing>> {
+        Some(self.drawing_mut())
     }
 
     fn post_instantiation(
@@ -2508,11 +2508,7 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
         }
     }
 
-    fn set_perspective_projection(
-        self,
-        gc_context: &Mutation<'gc>,
-        mut perspective_projection: Option<PerspectiveProjection>,
-    ) {
+    fn set_perspective_projection(self, mut perspective_projection: Option<PerspectiveProjection>) {
         if perspective_projection.is_none() && self.is_root() {
             // `root` doesn't allow null PerspectiveProjection.
             perspective_projection = Some(PerspectiveProjection {
@@ -2531,7 +2527,7 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
             if let Some(parent) = self.parent() {
                 // Self-transform changes are automatically handled,
                 // we only want to inform ancestors to avoid unnecessary invalidations for tx/ty
-                parent.invalidate_cached_bitmap(gc_context);
+                parent.invalidate_cached_bitmap();
             }
         }
     }
@@ -3263,7 +3259,7 @@ impl<'gc, 'a> MovieClipShared<'gc> {
         let settings = reader.read_csm_text_settings()?;
         match self.library_mut(context).character_by_id(settings.id) {
             Some(Character::Text(text)) => {
-                text.set_render_settings(context.gc(), settings.into());
+                text.set_render_settings(settings.into());
             }
             Some(Character::EditText(edit_text)) => {
                 edit_text.set_render_settings(settings.into());

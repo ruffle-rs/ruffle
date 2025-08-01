@@ -974,7 +974,7 @@ impl<'gc> NetStream<'gc> {
                     Ok(bitmap_info) => {
                         self.0.last_decoded_bitmap.replace(Some(bitmap_info));
                         if let Some(mc) = self.0.attached_to.get() {
-                            mc.invalidate_cached_bitmap(context.gc());
+                            mc.invalidate_cached_bitmap();
                             *context.needs_render = true;
                         }
                     }
@@ -1019,7 +1019,7 @@ impl<'gc> NetStream<'gc> {
                     Ok(bitmap_info) => {
                         self.0.last_decoded_bitmap.replace(Some(bitmap_info));
                         if let Some(mc) = self.0.attached_to.get() {
-                            mc.invalidate_cached_bitmap(context.gc());
+                            mc.invalidate_cached_bitmap();
                             *context.needs_render = true;
                         }
                     }

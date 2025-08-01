@@ -330,12 +330,12 @@ impl DisplayObjectWindow {
                     let mut has_border = object.has_border();
                     Checkbox::without_text(&mut has_border).ui(ui);
                     if has_border != object.has_border() {
-                        object.set_has_border(context.gc(), has_border);
+                        object.set_has_border(has_border);
                     }
                     let mut border_color = object.border_color();
                     color_edit_button(ui, &mut border_color);
                     if border_color != object.border_color() {
-                        object.set_border_color(context.gc(), border_color);
+                        object.set_border_color(border_color);
                     }
                 });
                 ui.end_row();
@@ -345,12 +345,12 @@ impl DisplayObjectWindow {
                     let mut has_background = object.has_background();
                     Checkbox::without_text(&mut has_background).ui(ui);
                     if has_background != object.has_background() {
-                        object.set_has_background(context.gc(), has_background);
+                        object.set_has_background(has_background);
                     }
                     let mut background_color = object.background_color();
                     color_edit_button(ui, &mut background_color);
                     if background_color != object.background_color() {
-                        object.set_background_color(context.gc(), background_color);
+                        object.set_background_color(background_color);
                     }
                 });
                 ui.end_row();
@@ -450,7 +450,7 @@ impl DisplayObjectWindow {
                     ui.weak(format!("(max {max}px)"));
 
                     if hscroll != object.hscroll() {
-                        object.set_hscroll(hscroll, context);
+                        object.set_hscroll(hscroll);
                     }
                 });
                 ui.end_row();
@@ -465,7 +465,7 @@ impl DisplayObjectWindow {
                     ui.weak(format!("(max {max})"));
 
                     if scroll != object.scroll() {
-                        object.set_scroll(scroll as f64, context);
+                        object.set_scroll(scroll as f64);
                     }
                 });
                 ui.end_row();
@@ -1173,13 +1173,13 @@ impl DisplayObjectWindow {
                         let mut enabled = object.is_bitmap_cached_preference();
                         Checkbox::new(&mut enabled, "Enabled").ui(ui);
                         if enabled != object.is_bitmap_cached_preference() {
-                            object.set_bitmap_cached_preference(context.gc(), enabled);
+                            object.set_bitmap_cached_preference(enabled);
                         }
                     } else {
                         ui.label("Forced due to filters");
                     }
                     if ui.button("Invalidate").clicked() {
-                        object.invalidate_cached_bitmap(context.gc());
+                        object.invalidate_cached_bitmap();
                     }
                 });
                 ui.end_row();
@@ -1212,7 +1212,7 @@ impl DisplayObjectWindow {
                     });
                 ui.end_row();
                 if new_blend != old_blend {
-                    object.set_blend_mode(context.gc(), new_blend);
+                    object.set_blend_mode(new_blend);
                 }
 
                 let color_transform = object.base().color_transform();
