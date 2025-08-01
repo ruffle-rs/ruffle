@@ -1,0 +1,1 @@
+Attempt to modified class variable in an object instance PASSED!
