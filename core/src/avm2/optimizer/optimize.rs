@@ -79,12 +79,20 @@ impl<'gc> OptValue<'gc> {
         matches!(self.null_state, NullState::IsNull)
     }
 
+    // Returns true if the value is guaranteed to be neither Null nor Undefined.
     pub fn not_null(self) -> bool {
         if matches!(self.null_state, NullState::NotNull) {
             true
+        } else if let Some(class) = self.class {
+            // Primitives are always not-null. Note that we can't use
+            // `Class::is_builtin_non_null`, as that will return true for the
+            // `void` class.
+            class.is_builtin_int()
+                || class.is_builtin_uint()
+                || class.is_builtin_number()
+                || class.is_builtin_boolean()
         } else {
-            // Primitives are always not-null
-            self.class.is_some_and(|c| c.is_builtin_non_null())
+            false
         }
     }
 
