@@ -3,6 +3,7 @@
 use crate::avm2::activation::Activation;
 use crate::avm2::error::type_error;
 use crate::avm2::object::Object;
+use crate::avm2::parameters::ParametersExt;
 use crate::avm2::value::Value;
 use crate::avm2::{ClassObject, Error};
 use rand::Rng;
@@ -14,7 +15,7 @@ macro_rules! wrap_std {
             _this: Value<'gc>,
             args: &[Value<'gc>],
         ) -> Result<Value<'gc>, Error<'gc>> {
-            let input = args[0].as_f64();
+            let input = args.get_f64(0);
             Ok($std(input).into())
         }
     };
@@ -61,7 +62,7 @@ pub fn round<'gc>(
     _this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let x = args[0].as_f64();
+    let x = args.get_f64(0);
 
     // Note that Flash Math.round always rounds toward infinity,
     // unlike Rust f32::round which rounds away from zero.
@@ -74,8 +75,8 @@ pub fn atan2<'gc>(
     _this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let y = args[0].as_f64();
-    let x = args[1].as_f64();
+    let y = args.get_f64(0);
+    let x = args.get_f64(1);
 
     Ok(f64::atan2(y, x).into())
 }
@@ -119,8 +120,8 @@ pub fn pow<'gc>(
     _this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let n = args[0].as_f64();
-    let p = args[1].as_f64();
+    let n = args.get_f64(0);
+    let p = args.get_f64(1);
 
     Ok(f64::powf(n, p).into())
 }

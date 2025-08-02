@@ -353,7 +353,7 @@ pub fn goto_and_play<'gc>(
         mc.set_programmatically_played();
 
         let frame_or_label = args.get_value(0);
-        let scene = args.try_get_string(activation, 1)?;
+        let scene = args.try_get_string(1);
 
         goto_frame(activation, mc, frame_or_label, scene, false)?;
     }
@@ -374,7 +374,7 @@ pub fn goto_and_stop<'gc>(
         .and_then(|dobj| dobj.as_movie_clip())
     {
         let frame_or_label = args.get_value(0);
-        let scene = args.try_get_string(activation, 1)?;
+        let scene = args.try_get_string(1);
 
         goto_frame(activation, mc, frame_or_label, scene, true)?;
     }

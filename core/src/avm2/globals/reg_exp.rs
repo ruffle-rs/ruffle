@@ -72,9 +72,9 @@ pub fn call_handler<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this_class = activation.avm2().classes().regexp;
 
-    if let Some(arg) = args.get(0).filter(|_| args.len() == 1) {
+    if let Some(arg) = args.get_optional(0).filter(|_| args.len() == 1) {
         if arg.as_object().and_then(|o| o.as_regexp_object()).is_some() {
-            return Ok(*arg);
+            return Ok(arg);
         }
     }
     this_class.construct(activation, args)
@@ -180,7 +180,7 @@ pub fn set_last_index<'gc>(
 
     if let Some(mut re) = this.as_regexp_mut(activation.gc()) {
         // FIXME what is the behavior for negative lastIndex?
-        let i = args.get_i32(activation, 0)?;
+        let i = args.get_i32(0);
         re.set_last_index(i as usize);
     }
 
@@ -211,7 +211,7 @@ pub fn exec<'gc>(
     let this = this.as_object().unwrap();
 
     if let Some(mut re) = this.as_regexp_mut(activation.gc()) {
-        let text = args.get_string(activation, 0)?;
+        let text = args.get_string(activation, 0);
 
         let matched = match re.exec(text) {
             Some(matched) => matched,
@@ -264,7 +264,7 @@ pub fn test<'gc>(
     let this = this.as_object().unwrap();
 
     if let Some(mut re) = this.as_regexp_mut(activation.gc()) {
-        let text = args.get_string(activation, 0)?;
+        let text = args.get_string(activation, 0);
         return Ok(re.test(text).into());
     }
 

@@ -144,7 +144,7 @@ pub fn set_client<'gc>(
     let this = this.as_object().unwrap();
 
     if let Some(local_connection) = this.as_local_connection_object() {
-        let client_obj = args.try_get_object(activation, 0);
+        let client_obj = args.try_get_object(0);
 
         if let Some(client_obj) = client_obj {
             local_connection.set_client(activation.gc(), client_obj);

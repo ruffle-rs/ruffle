@@ -12,8 +12,7 @@ pub fn number_constructor<'gc>(
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     let number_value = args
-        .get(0)
-        .copied()
+        .get_optional(0)
         .unwrap_or(Value::Integer(0))
         .coerce_to_number(activation)?;
 
@@ -26,8 +25,7 @@ pub fn call_handler<'gc>(
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     Ok(args
-        .get(0)
-        .cloned()
+        .get_optional(0)
         .unwrap_or(Value::Number(0.0))
         .coerce_to_number(activation)?
         .into())

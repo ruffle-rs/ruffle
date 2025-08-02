@@ -65,7 +65,7 @@ pub fn load<'gc>(
     let this = this.as_object().unwrap();
 
     let url_request = args.get_object(activation, 0, "request")?;
-    let context = args.try_get_object(activation, 1);
+    let context = args.try_get_object(1);
 
     let loader_info = this
         .get_slot(loader_slots::_CONTENT_LOADER_INFO)
@@ -236,7 +236,7 @@ pub fn load_bytes<'gc>(
 
     let arg0 = args.get_object(activation, 0, "data")?;
     let bytes = arg0.as_bytearray().unwrap().bytes().to_vec();
-    let context = args.try_get_object(activation, 1);
+    let context = args.try_get_object(1);
 
     let loader_info = this
         .get_slot(loader_slots::_CONTENT_LOADER_INFO)
