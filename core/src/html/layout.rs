@@ -9,44 +9,13 @@ use crate::string::{utils as string_utils, WStr};
 use crate::tag_utils::SwfMovie;
 use crate::DefaultFont;
 use gc_arena::Collect;
-use ruffle_render::shape_utils::DrawCommand;
 use std::cmp::{max, min, Ordering};
 use std::fmt::{Debug, Formatter};
 use std::mem;
 use std::ops::Range;
 use std::slice::Iter;
 use std::sync::Arc;
-use swf::{Point, Rectangle, Twips};
-
-/// Draw an underline on a particular drawing.
-///
-/// This will not draw underlines shorter than a pixel in width.
-fn draw_underline(
-    drawing: &mut Drawing,
-    starting_pos: Position<Twips>,
-    width: Twips,
-    color: swf::Color,
-) {
-    if width < Twips::ONE_PX {
-        return;
-    }
-
-    let ending_pos = starting_pos + Position::from((width, Twips::ZERO));
-
-    drawing.set_line_style(Some(
-        swf::LineStyle::new()
-            .with_width(Twips::new(1))
-            .with_color(color),
-    ));
-    drawing.draw_command(DrawCommand::MoveTo(Point::new(
-        starting_pos.x(),
-        starting_pos.y(),
-    )));
-    drawing.draw_command(DrawCommand::LineTo(Point::new(
-        ending_pos.x(),
-        ending_pos.y(),
-    )));
-}
+use swf::{Rectangle, Twips};
 
 /// Contains information relating to the current layout operation.
 pub struct LayoutContext<'a, 'gc> {
@@ -294,82 +263,6 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
         }
     }
 
-    /// Construct an underline drawing for the current line of text and add it
-    /// to the line.
-    fn append_underlines(&mut self) {
-        let mut starting_pos: Option<Position<Twips>> = None;
-        let mut current_width: Option<Twips> = None;
-        let mut underline_color: Option<swf::Color> = None;
-        let mut line_drawing = Drawing::new();
-        let mut has_underline: bool = false;
-
-        for linebox in self.boxes.iter() {
-            if linebox.is_text_box() {
-                if let Some((_t, tf, font, params, color)) = linebox.as_renderable_text(self.text) {
-                    let underline_baseline =
-                        font.get_baseline_for_height(params.height()) + Twips::from_pixels(2.0);
-                    let mut line_extended = false;
-
-                    if let (Some(starting_pos), Some(underline_color)) =
-                        (starting_pos, underline_color)
-                    {
-                        if tf.underline.unwrap_or(false)
-                            && underline_baseline + linebox.bounds().origin().y()
-                                == starting_pos.y()
-                            && underline_color == color
-                        {
-                            //Underline is at the same baseline, extend it
-                            current_width = Some(linebox.bounds().extent_x() - starting_pos.x());
-
-                            line_extended = true;
-                        }
-                    }
-
-                    if !line_extended {
-                        //For whatever reason, we cannot extend the current underline.
-                        //This can happen if we don't have an underline to extend, the
-                        //underlines don't match, or this span doesn't call for one.
-                        if let (Some(pos), Some(width), Some(color)) =
-                            (starting_pos, current_width, underline_color)
-                        {
-                            draw_underline(&mut line_drawing, pos, width, color);
-                            has_underline = true;
-                            starting_pos = None;
-                            current_width = None;
-                            underline_color = None;
-                        }
-
-                        if tf.underline.unwrap_or(false) {
-                            starting_pos = Some(
-                                linebox.bounds().origin()
-                                    + Position::from((Twips::ZERO, underline_baseline)),
-                            );
-                            current_width = Some(linebox.bounds().width());
-                            underline_color = Some(color);
-                        }
-                    }
-                }
-            }
-        }
-
-        if let (Some(starting_pos), Some(current_width), Some(underline_color)) =
-            (starting_pos, current_width, underline_color)
-        {
-            draw_underline(
-                &mut line_drawing,
-                starting_pos,
-                current_width,
-                underline_color,
-            );
-            has_underline = true;
-        }
-
-        if has_underline {
-            let pos = self.last_box_end_position();
-            self.append_box(LayoutBox::from_drawing(pos, line_drawing));
-        }
-    }
-
     /// Apply all indents and alignment to the current line, if necessary.
     ///
     /// The `only_line` parameter should be flagged if this is the only line in
@@ -466,8 +359,6 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
 
             box_count += 1;
         }
-
-        self.append_underlines();
 
         line_size_bounds +=
             Position::from((left_adjustment + align_adjustment, baseline_adjustment));
@@ -1272,6 +1163,9 @@ pub enum LayoutContent<'gc> {
         /// ```
         #[collect(require_static)]
         char_end_pos: Vec<Twips>,
+
+        /// Whether this text should be underlined.
+        underline: bool,
     },
 
     /// A layout box containing a bullet.
@@ -1359,6 +1253,7 @@ impl<'gc> LayoutBox<'gc> {
                 params,
                 color: span.font.color,
                 char_end_pos,
+                underline: span.style.underline,
             },
         }
     }
@@ -1380,6 +1275,10 @@ impl<'gc> LayoutBox<'gc> {
     }
 
     /// Construct a drawing.
+    ///
+    /// TODO It's currently unused, but will be useful when adding support for
+    /// images embedded in HTML.
+    #[expect(unused)]
     pub fn from_drawing(position: usize, drawing: Drawing) -> Self {
         Self {
             bounds: Default::default(),

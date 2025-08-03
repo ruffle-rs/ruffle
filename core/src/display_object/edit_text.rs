@@ -1202,8 +1202,9 @@ impl<'gc> EditText<'gc> {
         line: &LayoutLine<'gc>,
         render_state: &mut EditTextRenderState,
     ) {
+        let max_descent = line.descent();
         for layout_box in line.boxes_iter() {
-            self.render_layout_box(context, layout_box, render_state);
+            self.render_layout_box(context, layout_box, render_state, max_descent);
         }
     }
 
@@ -1213,6 +1214,7 @@ impl<'gc> EditText<'gc> {
         context: &mut RenderContext<'_, 'gc>,
         lbox: &LayoutBox<'gc>,
         render_state: &mut EditTextRenderState,
+        max_descent: Twips,
     ) {
         let origin = lbox.bounds().origin();
 
@@ -1314,6 +1316,16 @@ impl<'gc> EditText<'gc> {
             if caret.is_some() {
                 self.render_caret(context, caret_x, caret_height, color, render_state);
             }
+
+            if let LayoutContent::Text {
+                underline: true, ..
+            } = lbox.content()
+            {
+                // Draw underline
+                let underline_y = baseline + (max_descent / 2);
+                let underline_width = lbox.bounds().width();
+                self.render_underline(context, underline_width, underline_y, color);
+            }
         }
 
         if let Some(drawing) = lbox.as_renderable_drawing() {
@@ -1347,6 +1359,22 @@ impl<'gc> EditText<'gc> {
             color,
             matrix: caret,
         });
+    }
+
+    fn render_underline(
+        self,
+        context: &mut RenderContext<'_, 'gc>,
+        width: Twips,
+        y: Twips,
+        color: Color,
+    ) {
+        let mut underline = context.transform_stack.transform().matrix
+            * Matrix::create_box_with_rotation(width.to_pixels() as f32, 1.0, 0.0, Twips::ZERO, y);
+
+        let pixel_snapping = EditTextPixelSnapping::new(context.stage.quality());
+        pixel_snapping.apply(&mut underline);
+
+        context.commands.draw_line(color, underline);
     }
 
     /// Attempts to bind this text field to a property of a display object.
