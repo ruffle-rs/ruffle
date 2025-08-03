@@ -816,6 +816,11 @@ pub fn get_loader_info<'gc>(
         {
             return Ok(loader_info.into());
         }
+
+        if let Some(loader_info_obj) = dobj.loader_info() {
+            return Ok(loader_info_obj.into());
+        }
+
         return Ok(Value::Null);
     }
     Ok(Value::Undefined)

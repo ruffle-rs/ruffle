@@ -253,6 +253,9 @@ pub struct DisplayObjectBase<'gc> {
     /// None means not cached, Some means cached.
     #[collect(require_static)]
     cache: Option<BitmapCache>,
+
+    /// Loader info.
+    loader_info: Option<Avm2Object<'gc>>,
 }
 
 impl Default for DisplayObjectBase<'_> {
@@ -281,6 +284,7 @@ impl Default for DisplayObjectBase<'_> {
             next_scroll_rect: Cell::new(Default::default()),
             scaling_grid: Cell::new(Default::default()),
             cache: None,
+            loader_info: None,
         }
     }
 }
@@ -800,6 +804,14 @@ impl<'gc> DisplayObjectBase<'gc> {
 
     pub fn set_has_matrix3d_stub(&self, value: bool) {
         self.set_flag(DisplayObjectFlags::HAS_MATRIX3D_STUB, value)
+    }
+
+    pub fn loader_info(&self) -> Option<Avm2Object<'gc>> {
+        self.loader_info
+    }
+
+    pub fn set_loader_info(&mut self, loader_info: Avm2Object<'gc>) {
+        self.loader_info = Some(loader_info);
     }
 }
 
@@ -1970,6 +1982,15 @@ pub trait TDisplayObject<'gc>:
     fn set_has_explicit_name(self, value: bool) {
         self.base().set_has_explicit_name(value);
     }
+
+    fn loader_info(self) -> Option<Avm2Object<'gc>> {
+        self.base().loader_info()
+    }
+
+    fn set_loader_info(self, gc_context: &Mutation<'gc>, loader_info: Avm2Object<'gc>) {
+        self.base_mut(gc_context).set_loader_info(loader_info);
+    }
+
     fn state(&self) -> Option<ButtonState> {
         None
     }
@@ -2347,10 +2368,6 @@ pub trait TDisplayObject<'gc>:
 
     /// Return the SWF that defines this display object.
     fn movie(self) -> Arc<SwfMovie>;
-
-    fn loader_info(self) -> Option<Avm2Object<'gc>> {
-        None
-    }
 
     fn instantiate(self, gc_context: &Mutation<'gc>) -> DisplayObject<'gc>;
 

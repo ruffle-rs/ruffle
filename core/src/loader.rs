@@ -11,7 +11,7 @@ use crate::avm2::object::{
     LoaderStream, SoundLoadingState, TObject as _,
 };
 use crate::avm2::{
-    Activation as Avm2Activation, Avm2, BitmapDataObject, Domain as Avm2Domain,
+    self, Activation as Avm2Activation, Avm2, BitmapDataObject, Domain as Avm2Domain,
     Object as Avm2Object,
 };
 use crate::avm2_stub_method_context;
@@ -2467,6 +2467,33 @@ impl<'gc> Loader<'gc> {
             );
 
             loader_info.set_expose_content();
+            if let Some(_dobj) = dobj {
+                let mut activation = Avm2Activation::from_nothing(uc);
+                let loader_stream = loader_info.loader_stream();
+                let loader_content_object = match &*loader_stream {
+                    LoaderStream::Swf(_, root) | LoaderStream::NotYetLoaded(_, Some(root), _) => {
+                        if root.movie().is_action_script_3() || !root.movie().is_movie() {
+                            root.object2()
+                        } else {
+                            // The movie was an AVM1 movie, return an AVM1Movie object
+                            let root_obj = *root;
+                            drop(loader_stream);
+
+                            loader_info
+                                .get_or_init_avm1movie(&mut activation, root_obj)
+                                .into()
+                        }
+                    }
+                    _ => avm2::Value::Null,
+                };
+
+                loader_content_object
+                    .as_object()
+                    .unwrap()
+                    .as_display_object()
+                    .unwrap()
+                    .set_loader_info(activation.gc(), loader_info.into());
+            }
 
             // Note that we do *not* use the 'addChild' method here:
             // Per the flash docs, our implementation always throws
