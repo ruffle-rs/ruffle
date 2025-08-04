@@ -1,6 +1,6 @@
 [package]
 name = "ruffle_web"
-description = "Web (WASM) bindings to the Ruffle flash player"
+description = "Web (WASM) bindings to the Ruffle Flash player"
 authors.workspace = true
 edition.workspace = true
 homepage.workspace = true
