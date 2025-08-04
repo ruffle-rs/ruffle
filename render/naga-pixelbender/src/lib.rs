@@ -6,7 +6,8 @@ use naga::{
     AddressSpace, ArraySize, BinaryOperator, Binding, Block, BuiltIn, EntryPoint, Expression,
     Function, FunctionArgument, FunctionResult, GlobalVariable, Handle, ImageClass, ImageDimension,
     ImageQuery, Literal, LocalVariable, MathFunction, Module, RelationalFunction, ResourceBinding,
-    ScalarKind, ShaderStage, Span, Statement, SwizzleComponent, Type, TypeInner, VectorSize,
+    ScalarKind, ShaderStage, Span, Statement, SwizzleComponent, Type, TypeInner, UnaryOperator,
+    VectorSize,
 };
 use ruffle_render::pixel_bender::{
     Opcode, Operation, PixelBenderParam, PixelBenderParamQualifier, PixelBenderReg,
@@ -970,6 +971,25 @@ impl ShaderBuilder<'_> {
                             self.evaluate_expr(Expression::Compose {
                                 ty: self.vec4f,
                                 components: res_components,
+                            })
+                        }
+                        Opcode::LogicalNot => {
+                            // [kjarosh] Looks like FP mistakenly implements LogicalNot as a bitwise not.
+                            //
+                            // 1. Pixel Bender Toolkit compiles the ! unary operator into
+                            //    the LogicalNot opcode.
+                            //
+                            // 2. Pixel Bender Toolkit correctly evaluates ! as logical negation.
+                            //
+                            // 2. The ! operator is described as logical operator that operates
+                            //    on booleans (see the Adobe Pixel Bender Reference, Chapter 3:
+                            //    Pixel Bender Data Types, Operators).
+                            //
+                            // Considering points above, it's likely not an issue with naming, but
+                            // a bug in Flash Player.
+                            self.evaluate_expr(Expression::Unary {
+                                op: UnaryOperator::BitwiseNot,
+                                expr: src,
                             })
                         }
                         Opcode::Floor => self.evaluate_expr(Expression::Math {
