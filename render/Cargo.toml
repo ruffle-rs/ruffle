@@ -13,6 +13,7 @@ workspace = true
 [dependencies]
 ruffle_wstr = { path = "../wstr" }
 swf = { path = "../swf"}
+pixel_bender = { path = "pixel_bender"}
 tracing = { workspace = true }
 gif = "0.13.3"
 png = "0.17.16"

@@ -1,6 +1,6 @@
 use std::fmt::{Display, Formatter};
 
-use crate::pixel_bender::{
+use crate::parser::{
     Opcode, Operation, PixelBenderMetadata, PixelBenderParam, PixelBenderParamQualifier,
     PixelBenderReg, PixelBenderRegChannel, PixelBenderRegKind, PixelBenderShader, PixelBenderType,
     PixelBenderTypeOpcode,
