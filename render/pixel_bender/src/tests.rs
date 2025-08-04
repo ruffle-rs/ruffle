@@ -1,10 +1,10 @@
-use crate::pixel_bender::{
+use crate::parser::{
     Opcode, Operation, PixelBenderMetadata, PixelBenderParam, PixelBenderParamQualifier,
     PixelBenderReg, PixelBenderRegChannel, PixelBenderRegKind, PixelBenderShader, PixelBenderType,
     PixelBenderTypeOpcode,
 };
 
-use super::parse_shader;
+use super::parser::parse_shader;
 
 #[test]
 fn simple_shader() {
