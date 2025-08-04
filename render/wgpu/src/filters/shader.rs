@@ -1,6 +1,6 @@
 use ruffle_render::{
     filters::ShaderFilter as ShaderFilterArgs,
-    pixel_bender::{ImageInputTexture, PixelBenderShaderArgument},
+    pixel_bender_support::{ImageInputTexture, PixelBenderShaderArgument},
 };
 
 use crate::{

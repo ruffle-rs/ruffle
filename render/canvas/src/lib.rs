@@ -574,7 +574,7 @@ impl RenderBackend for WebCanvasRenderBackend {
     fn run_pixelbender_shader(
         &mut self,
         _handle: ruffle_render::pixel_bender::PixelBenderShaderHandle,
-        _arguments: &[ruffle_render::pixel_bender::PixelBenderShaderArgument],
+        _arguments: &[ruffle_render::pixel_bender_support::PixelBenderShaderArgument],
         _target: &PixelBenderTarget,
     ) -> Result<PixelBenderOutput, Error> {
         Err(Error::Unimplemented("run_pixelbender_shader".into()))

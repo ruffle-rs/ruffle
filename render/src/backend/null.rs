@@ -10,7 +10,8 @@ use crate::bitmap::{
 };
 use crate::commands::CommandList;
 use crate::error::Error;
-use crate::pixel_bender::{PixelBenderShader, PixelBenderShaderArgument, PixelBenderShaderHandle};
+use crate::pixel_bender::{PixelBenderShader, PixelBenderShaderHandle};
+use crate::pixel_bender_support::PixelBenderShaderArgument;
 use crate::quality::StageQuality;
 use crate::shape_utils::DistilledShape;
 use swf::Color;
