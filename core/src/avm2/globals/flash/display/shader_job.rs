@@ -15,9 +15,10 @@ use crate::avm2_stub_method;
 use ruffle_render::backend::{PixelBenderOutput, PixelBenderTarget};
 use ruffle_render::bitmap::PixelRegion;
 use ruffle_render::pixel_bender::{
-    ImageInputTexture, PixelBenderParam, PixelBenderParamQualifier, PixelBenderShaderArgument,
-    PixelBenderShaderHandle, PixelBenderType, OUT_COORD_NAME,
+    PixelBenderParam, PixelBenderParamQualifier, PixelBenderShaderHandle, PixelBenderType,
+    OUT_COORD_NAME,
 };
+use ruffle_render::pixel_bender_support::{ImageInputTexture, PixelBenderShaderArgument};
 
 pub fn get_shader_args<'gc>(
     shader_obj: Object<'gc>,

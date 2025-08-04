@@ -11,6 +11,7 @@ pub mod matrix;
 pub mod matrix3d;
 pub mod perspective_projection;
 pub mod pixel_bender;
+pub mod pixel_bender_support;
 // The `renderdoc` crate doesn't compile on apple platforms
 #[cfg(all(feature = "renderdoc", not(target_vendor = "apple")))]
 pub mod renderdoc;
