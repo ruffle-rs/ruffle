@@ -1,5 +1,5 @@
 [package]
-name = "naga-pixelbender"
+name = "pixel_bender"
 authors.workspace = true
 edition.workspace = true
 homepage.workspace = true
@@ -11,6 +11,7 @@ version.workspace = true
 workspace = true
 
 [dependencies]
-ruffle_render = { path = "../" }
-naga = { workspace = true }
-anyhow = { workspace = true }
+thiserror = { workspace = true }
+num-traits = { workspace = true }
+num-derive = { workspace = true }
+byteorder = { workspace = true }

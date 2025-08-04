@@ -1,11 +1,6 @@
 //! Pixel bender bytecode parsing code.
 //! This is heavily based on https://github.com/jamesward/pbjas and https://github.com/HaxeFoundation/format/tree/master/format/pbj
 
-#[cfg(test)]
-mod tests;
-
-pub mod disassembly;
-
 use byteorder::{BigEndian, LittleEndian, ReadBytesExt};
 use num_traits::FromPrimitive;
 use std::{
