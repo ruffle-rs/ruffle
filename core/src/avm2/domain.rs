@@ -60,6 +60,7 @@ struct DomainDataMut<'gc> {
 
     /// All children of this domain. This is intended exclusively for
     /// use with `debug_ui`
+    #[cfg(feature = "egui")]
     children: Vec<DomainWeak<'gc>>,
 }
 
@@ -89,6 +90,7 @@ impl<'gc> Domain<'gc> {
                 cell: RefLock::new(DomainDataMut {
                     defs: PropertyMap::new(),
                     classes: PropertyMap::new(),
+                    #[cfg(feature = "egui")]
                     children: Vec::new(),
                 }),
                 parent,
@@ -96,6 +98,8 @@ impl<'gc> Domain<'gc> {
                 default_domain_memory: Default::default(),
             },
         ));
+
+        #[cfg(feature = "egui")]
         if let Some(parent) = parent {
             parent
                 .cell_mut(mc)
@@ -113,6 +117,7 @@ impl<'gc> Domain<'gc> {
         std::ptr::eq(Gc::as_ptr(avm2.playerglobals_domain.0), Gc::as_ptr(self.0))
     }
 
+    #[cfg(feature = "egui")]
     pub fn children(&self, mc: &Mutation<'gc>) -> Vec<Domain<'gc>> {
         // Take this opportunity to clean up dead children.
         let mut output = Vec::new();
@@ -139,6 +144,7 @@ impl<'gc> Domain<'gc> {
                 cell: RefLock::new(DomainDataMut {
                     defs: PropertyMap::new(),
                     classes: PropertyMap::new(),
+                    #[cfg(feature = "egui")]
                     children: Vec::new(),
                 }),
                 parent: Some(parent),
@@ -147,10 +153,13 @@ impl<'gc> Domain<'gc> {
             },
         ));
 
-        parent
-            .cell_mut(activation.gc())
-            .children
-            .push(DomainWeak(Gc::downgrade(this.0)));
+        #[cfg(feature = "egui")]
+        {
+            parent
+                .cell_mut(activation.gc())
+                .children
+                .push(DomainWeak(Gc::downgrade(this.0)));
+        }
 
         this
     }
