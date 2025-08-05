@@ -237,7 +237,7 @@ export class InnerPlayer {
         this.splashScreen = this.shadow.getElementById("splash-screen")!;
         this.virtualKeyboard = this.shadow.getElementById(
             "virtual-keyboard",
-        )! as HTMLInputElement;
+        )! as unknown as HTMLInputElement;
         this.virtualKeyboard.addEventListener(
             "input",
             this.virtualKeyboardInput.bind(this),
@@ -1335,7 +1335,9 @@ export class InnerPlayer {
                 zip.addFile(solName + ".sol", array);
             }
         });
-        const blob = new Blob([zip.save()], { type: "application/zip" });
+        const blob = new Blob([zip.save() as Uint8Array<ArrayBuffer>], {
+            type: "application/zip",
+        });
         saveFile(blob, "saves.zip");
     }
 
@@ -2419,7 +2421,7 @@ function saveFile(blob: Blob, name: string): void {
  * @param bytesBase64 The base64-encoded string.
  * @returns The new Uint8Array.
  */
-function base64ToArray(bytesBase64: string): Uint8Array {
+function base64ToArray(bytesBase64: string): Uint8Array<ArrayBuffer> {
     const byteString = atob(bytesBase64);
     return Uint8Array.from(byteString, (char) => char.charCodeAt(0));
 }
