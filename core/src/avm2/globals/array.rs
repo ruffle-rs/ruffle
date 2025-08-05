@@ -1065,24 +1065,47 @@ pub fn sort<'gc>(
     };
 
     let unique_satisfied = if let Some(v) = compare_fnc {
-        sort_inner(
-            activation,
-            &mut values,
-            options,
-            constrain(|activation, a, b| {
-                let order = v
-                    .call(activation, this.into(), &[a, b])?
-                    .coerce_to_number(activation)?;
+        // See <https://github.com/adobe/avmplus/blob/858d034a3bd3a54d9b70909386435cf4aec81d21/core/ArrayClass.cpp#L821>
+        // See <https://bugzilla.mozilla.org/show_bug.cgi?id=532454>
+        if activation.caller_movie_or_root().version() < 13 {
+            sort_inner(
+                activation,
+                &mut values,
+                options,
+                constrain(|activation, a, b| {
+                    let order = v
+                        .call(activation, this.into(), &[a, b])?
+                        .coerce_to_i32(activation)?;
 
-                if order > 0.0 {
-                    Ok(Ordering::Greater)
-                } else if order < 0.0 {
-                    Ok(Ordering::Less)
-                } else {
-                    Ok(Ordering::Equal)
-                }
-            }),
-        )?
+                    if order > 0 {
+                        Ok(Ordering::Greater)
+                    } else if order < 0 {
+                        Ok(Ordering::Less)
+                    } else {
+                        Ok(Ordering::Equal)
+                    }
+                }),
+            )?
+        } else {
+            sort_inner(
+                activation,
+                &mut values,
+                options,
+                constrain(|activation, a, b| {
+                    let order = v
+                        .call(activation, this.into(), &[a, b])?
+                        .coerce_to_number(activation)?;
+
+                    if order > 0.0 {
+                        Ok(Ordering::Greater)
+                    } else if order < 0.0 {
+                        Ok(Ordering::Less)
+                    } else {
+                        Ok(Ordering::Equal)
+                    }
+                }),
+            )?
+        }
     } else if options.contains(SortOptions::NUMERIC) {
         if activation.caller_movie_or_root().version() < 11 {
             sort_inner(activation, &mut values, options, compare_numeric::<true>)?
