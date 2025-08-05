@@ -3,7 +3,7 @@
 use crate::avm2::activation::Activation;
 use crate::avm2::globals::flash::display::bitmap_data::fill_bitmap_data_from_symbol;
 use crate::avm2::globals::flash::display::display_object::initialize_for_allocator;
-use crate::avm2::object::{BitmapDataObject, ClassObject, Object, TObject};
+use crate::avm2::object::{BitmapDataObject, ClassObject, Object};
 use crate::avm2::value::Value;
 use crate::avm2::Error;
 use ruffle_macros::istr;
@@ -44,25 +44,20 @@ pub fn bitmap_allocator<'gc>(
             .avm2_class_registry()
             .class_symbol(class)
         {
-            if let Some(Character::Bitmap {
-                compressed,
-                avm2_bitmapdata_class: _,
-                handle: _,
-            }) = activation
+            if let Some(Character::Bitmap(bitmap)) = activation
                 .context
                 .library
                 .library_for_movie_mut(movie)
                 .character_by_id(symbol)
-                .cloned()
             {
-                let new_bitmap_data = fill_bitmap_data_from_symbol(activation, &compressed);
+                let new_bitmap_data = fill_bitmap_data_from_symbol(activation, bitmap.compressed());
                 let bitmap_data_obj = BitmapDataObject::from_bitmap_data_internal(
                     activation,
                     BitmapDataWrapper::dummy(activation.gc()),
                     bitmapdata_cls,
                 )?;
                 bitmap_data_obj.init_bitmap_data(activation.gc(), new_bitmap_data);
-                new_bitmap_data.init_object2(activation.gc(), bitmap_data_obj);
+                new_bitmap_data.init_object2(activation.gc(), bitmap_data_obj.into());
 
                 let child = Bitmap::new_with_bitmap_data(
                     activation.gc(),

@@ -6,7 +6,7 @@ use crate::avm1::globals::bitmap_filter;
 use crate::avm1::globals::color_transform::ColorTransformObject;
 use crate::avm1::object::NativeObject;
 use crate::avm1::property_decl::{define_properties_on, Declaration};
-use crate::avm1::{Activation, Attribute, Error, Object, ScriptObject, TObject, Value};
+use crate::avm1::{Activation, Attribute, Error, Object, Value};
 use crate::bitmap::bitmap_data::{BitmapData, BitmapDataWrapper};
 use crate::bitmap::bitmap_data::{BitmapDataDrawError, IBitmapDrawable};
 use crate::bitmap::bitmap_data::{ChannelOptions, ThresholdOperation};
@@ -59,12 +59,12 @@ fn new_bitmap_data<'gc>(
     proto: Option<Value<'gc>>,
     bitmap_data: BitmapData<'gc>,
     activation: &mut Activation<'_, 'gc>,
-) -> ScriptObject<'gc> {
+) -> Object<'gc> {
     let gc_context = activation.gc();
 
-    let object = ScriptObject::new_without_proto(gc_context);
-    // Set `__proto__` manually since `ScriptObject::new()` doesn't support primitive prototypes.
-    // TODO: Pass `proto` to `ScriptObject::new()` once possible.
+    let object = Object::new_without_proto(gc_context);
+    // Set `__proto__` manually since `Object::new()` doesn't support primitive prototypes.
+    // TODO: Pass `proto` to `Object::new()` once possible.
     if let Some(proto) = proto {
         object.define_value(
             gc_context,
@@ -531,7 +531,7 @@ fn draw<'gc>(
             let color_transform = args
                 .get(2)
                 .and_then(|v| ColorTransformObject::cast(*v))
-                .map(|color_transform| color_transform.read().clone().into())
+                .map(|color_transform| (*color_transform).clone().into())
                 .unwrap_or_default();
 
             let mut blend_mode = BlendMode::Normal;
@@ -579,6 +579,7 @@ fn draw<'gc>(
                 Transform {
                     matrix,
                     color_transform,
+                    perspective_projection: None,
                 },
                 smoothing,
                 blend_mode,
@@ -719,7 +720,7 @@ fn color_transform<'gc>(
                 let y_max = (y + height) as u32;
 
                 let color_transform = match ColorTransformObject::cast(*color_transform) {
-                    Some(color_transform) => color_transform.read().clone(),
+                    Some(color_transform) => (*color_transform).clone(),
                     None => return Ok((-3).into()),
                 };
 
@@ -1530,17 +1531,17 @@ fn load_bitmap<'gc>(
     let library = &*activation.context.library;
 
     let movie = <DisplayObject as crate::display_object::TDisplayObject>::movie(
-        &activation.target_clip_or_root(),
+        activation.target_clip_or_root(),
     );
 
     let character = library
         .library_for_movie(movie)
         .and_then(|l| l.character_by_export_name(name));
 
-    let Some((_id, Character::Bitmap { compressed, .. })) = character else {
+    let Some((_id, Character::Bitmap(bitmap))) = character else {
         return Ok(Value::Undefined);
     };
-    let bitmap = compressed.decode().unwrap();
+    let bitmap = bitmap.compressed().decode().unwrap();
 
     let transparency = true;
     let bitmap_data = BitmapData::new_with_pixels(
@@ -1562,14 +1563,13 @@ fn load_bitmap<'gc>(
 
 pub fn create_constructor<'gc>(
     context: &mut StringContext<'gc>,
-    proto: ScriptObject<'gc>,
+    proto: Object<'gc>,
     fn_proto: Object<'gc>,
 ) -> Object<'gc> {
     define_properties_on(PROTO_DECLS, context, proto, fn_proto);
 
     let bitmap_data_constructor =
-        FunctionObject::constructor(context, constructor, None, fn_proto, proto.into());
-    let object = bitmap_data_constructor.raw_script_object();
-    define_properties_on(OBJECT_DECLS, context, object, fn_proto);
+        FunctionObject::constructor(context, constructor, None, fn_proto, proto);
+    define_properties_on(OBJECT_DECLS, context, bitmap_data_constructor, fn_proto);
     bitmap_data_constructor
 }

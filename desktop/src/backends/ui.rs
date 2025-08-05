@@ -3,10 +3,10 @@ use crate::custom_event::RuffleEvent;
 use crate::gui::dialogs::message_dialog::MessageDialogConfiguration;
 use crate::gui::{DialogDescriptor, FilePicker, LocalizableText};
 use crate::preferences::GlobalPreferences;
-use anyhow::Error;
+use anyhow::{anyhow, Error, Result};
 use chrono::{DateTime, Utc};
 use egui_winit::clipboard::Clipboard;
-use fontdb::Family;
+use fontdb::{FaceInfo, Family};
 use rfd::{
     AsyncFileDialog, FileHandle, MessageButtons, MessageDialog, MessageDialogResult, MessageLevel,
 };
@@ -14,11 +14,12 @@ use ruffle_core::backend::ui::{
     DialogLoaderError, DialogResultFuture, FileDialogResult, FileFilter, FontDefinition,
     FullscreenError, LanguageIdentifier, MouseCursor, UiBackend,
 };
+use ruffle_core::{FontFileData, FontQuery};
+use std::fs::File;
 use std::path::Path;
 use std::rc::Rc;
 use std::sync::Arc;
 use tokio::io::AsyncReadExt;
-use tracing::error;
 use url::Url;
 use winit::event_loop::EventLoopProxy;
 use winit::raw_window_handle::HasDisplayHandle;
@@ -227,7 +228,7 @@ impl UiBackend for DesktopUiBackend {
         Ok(())
     }
 
-    fn display_root_movie_download_failed_message(&self, _invalid_swf: bool) {
+    fn display_root_movie_download_failed_message(&self, _invalid_swf: bool, _fetch_error: String) {
         let _ = self
             .event_loop
             .send_event(RuffleEvent::OpenDialog(DialogDescriptor::ShowMessage(
@@ -261,7 +262,7 @@ impl UiBackend for DesktopUiBackend {
 
         let open_url_mode = self.preferences.open_url_mode();
         if open_url_mode == OpenUrlMode::Confirm {
-            let message = format!("The SWF file wants to open the website {}", url);
+            let message = format!("The SWF file wants to open the website {url}");
             // TODO: Add a checkbox with a GUI toolkit
             let confirm = MessageDialog::new()
                 .set_title("Open website?")
@@ -292,13 +293,11 @@ impl UiBackend for DesktopUiBackend {
         };
     }
 
-    fn load_device_font(
-        &self,
-        name: &str,
-        is_bold: bool,
-        is_italic: bool,
-        register: &mut dyn FnMut(FontDefinition),
-    ) {
+    fn load_device_font(&self, query: &FontQuery, register: &mut dyn FnMut(FontDefinition)) {
+        let name = &query.name;
+        let is_bold = query.is_bold;
+        let is_italic = query.is_italic;
+
         let query = fontdb::Query {
             families: &[Family::Name(name)],
             weight: if is_bold {
@@ -319,29 +318,25 @@ impl UiBackend for DesktopUiBackend {
             if let Some(face) = self.font_database.face(id) {
                 tracing::info!("Loading device font \"{}\" for \"{name}\" (italic: {is_italic}, bold: {is_bold})", face.post_script_name);
 
-                match &face.source {
-                    fontdb::Source::File(path) => match std::fs::read(path) {
-                        Ok(bytes) => register(FontDefinition::FontFile {
-                            name: name.to_owned(),
-                            is_bold,
-                            is_italic,
-                            data: bytes,
-                            index: face.index,
-                        }),
-                        Err(e) => error!("Couldn't read font file at {path:?}: {e}"),
-                    },
-                    fontdb::Source::Binary(bin) | fontdb::Source::SharedFile(_, bin) => {
-                        register(FontDefinition::FontFile {
-                            name: name.to_owned(),
-                            is_bold,
-                            is_italic,
-                            data: bin.as_ref().as_ref().to_vec(),
-                            index: face.index,
-                        })
-                    }
-                };
+                match load_fontdb_font(name.to_string(), face) {
+                    Ok(font_definition) => register(font_definition),
+                    Err(error) => tracing::error!("Error loading font from fontdb: {error}"),
+                }
             }
         }
+    }
+
+    #[allow(unused_variables)]
+    fn sort_device_fonts(
+        &self,
+        query: &FontQuery,
+        register: &mut dyn FnMut(FontDefinition),
+    ) -> Vec<FontQuery> {
+        #[cfg(feature = "fontconfig")]
+        return fontconfig_sort_device_fonts(query, register);
+
+        #[cfg(not(feature = "fontconfig"))]
+        return Vec::new();
     }
 
     // Unused on desktop
@@ -400,4 +395,140 @@ impl UiBackend for DesktopUiBackend {
     }
 
     fn close_file_dialog(&mut self) {}
+}
+
+fn load_font_from_file(
+    path: &Path,
+    name: String,
+    index: u32,
+    is_bold: bool,
+    is_italic: bool,
+) -> Result<FontDefinition<'static>> {
+    let file = File::open(path).map_err(|e| anyhow!("Couldn't open font file at {path:?}: {e}"))?;
+
+    // SAFETY: We have to assume that the font file won't change.
+    // This assumption is realistic, as we're using system fonts only.
+    // However, we never store other references to this data, and we reparse
+    // the whole file each time we're accessing any font data.
+    // Realistically, when the underlying file or memory region changes,
+    // we can expect Ruffle to crash due to SIGBUS or errors when parsing.
+    let mmap = unsafe { memmap2::Mmap::map(&file) };
+
+    let mmap = mmap.map_err(|e| anyhow!("Failed to mmap font file at {path:?}: {e}"))?;
+    let data = FontFileData::new(mmap);
+    Ok(FontDefinition::FontFile {
+        name,
+        is_bold,
+        is_italic,
+        data,
+        index,
+    })
+}
+
+fn load_fontdb_font(name: String, face: &FaceInfo) -> Result<FontDefinition<'static>> {
+    let is_bold = face.weight > fontdb::Weight::NORMAL;
+    let is_italic = face.style != fontdb::Style::Normal;
+
+    match &face.source {
+        fontdb::Source::File(path) => {
+            load_font_from_file(path, name, face.index, is_bold, is_italic)
+        }
+
+        fontdb::Source::Binary(bin) | fontdb::Source::SharedFile(_, bin) => {
+            Ok(FontDefinition::FontFile {
+                name,
+                is_bold,
+                is_italic,
+                data: FontFileData::new_shared(bin.clone()),
+                index: face.index,
+            })
+        }
+    }
+}
+
+#[cfg(feature = "fontconfig")]
+fn fontconfig_sort_device_fonts(
+    query: &FontQuery,
+    register: &mut dyn FnMut(FontDefinition),
+) -> Vec<FontQuery> {
+    use fontconfig::{FontFormat, Pattern};
+    use std::sync::LazyLock;
+
+    static FONTCONFIG: LazyLock<Option<fontconfig::Fontconfig>> =
+        LazyLock::new(fontconfig::Fontconfig::new);
+
+    let Some(fc) = FONTCONFIG.as_ref() else {
+        return Vec::new();
+    };
+
+    let Ok(family) = std::ffi::CString::new(query.name.as_str()) else {
+        tracing::error!("Cannot sort device fonts, null in font family");
+        return Vec::new();
+    };
+
+    let mut pattern: Pattern<'static> = Pattern::new(fc);
+    pattern.add_string(fontconfig::FC_FAMILY, family.as_c_str());
+
+    if query.is_bold {
+        pattern.add_integer(fontconfig::FC_WEIGHT, fontconfig::FC_WEIGHT_BOLD);
+    }
+    if query.is_italic {
+        pattern.add_integer(fontconfig::FC_SLANT, fontconfig::FC_SLANT_ITALIC);
+    }
+
+    let font_set = pattern.sort_fonts(true);
+    let mut font_queries = Vec::new();
+    for font in font_set.iter() {
+        let is_ttf = font
+            .format()
+            .is_ok_and(|f| matches!(f, FontFormat::TrueType));
+        if !is_ttf {
+            if let Some(name) = font.name() {
+                tracing::info!("Skipping font '{name}' because it's not a TTF");
+            }
+            continue;
+        }
+
+        let (
+            Some(name), //
+            Some(filename),
+            Some(index),
+            Some(weight),
+            Some(slant),
+        ) = (
+            font.name(),
+            font.filename(),
+            font.face_index(),
+            font.weight(),
+            font.slant(),
+        )
+        else {
+            continue;
+        };
+
+        let Ok(index) = index.try_into() else {
+            continue;
+        };
+
+        let is_bold = weight >= fontconfig::FC_WEIGHT_BOLD;
+        let is_italic = slant >= fontconfig::FC_SLANT_ITALIC;
+
+        match load_font_from_file(
+            Path::new(filename),
+            name.to_string(),
+            index,
+            is_bold,
+            is_italic,
+        ) {
+            Ok(definition) => register(definition),
+            Err(err) => {
+                tracing::error!("Error loading font from fontconfig: {err}");
+                continue;
+            }
+        }
+
+        let query = FontQuery::new(query.font_type, name.to_string(), is_bold, is_italic);
+        font_queries.push(query);
+    }
+    font_queries
 }

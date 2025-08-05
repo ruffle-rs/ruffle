@@ -43,11 +43,11 @@ pub fn make_shader_parameter<'gc>(
                     param_object.set_slot(parameter_slots::_VALUE, value, activation)?;
                 }
             }
-            param_object.set_string_property_local(
+            param_object.set_dynamic_property(
                 istr!("name"),
                 AvmString::new_utf8(activation.gc(), name).into(),
-                activation,
-            )?;
+                activation.gc(),
+            );
             Ok(param_value)
         }
         PixelBenderParam::Texture { name, channels, .. } => {
@@ -61,11 +61,11 @@ pub fn make_shader_parameter<'gc>(
 
             obj.set_slot(input_slots::_CHANNELS, (*channels).into(), activation)?;
             obj.set_slot(input_slots::_INDEX, index.into(), activation)?;
-            obj.set_string_property_local(
+            obj.set_dynamic_property(
                 istr!("name"),
                 AvmString::new_utf8(activation.gc(), name).into(),
-                activation,
-            )?;
+                activation.gc(),
+            );
             Ok(obj.into())
         }
     }

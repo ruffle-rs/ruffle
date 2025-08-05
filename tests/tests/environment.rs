@@ -33,7 +33,8 @@ mod renderer {
     use ruffle_render_wgpu::wgpu;
     use ruffle_test_framework::environment::{RenderBackend, RenderInterface};
     use ruffle_test_framework::options::RenderOptions;
-    use {std::sync::Arc, std::sync::OnceLock};
+    use std::any::Any;
+    use std::sync::{Arc, OnceLock};
 
     pub struct NativeRenderInterface;
 
@@ -67,10 +68,9 @@ mod renderer {
             }
         }
 
-        fn capture(&self, backend: &mut Box<dyn RenderBackend>) -> RgbaImage {
-            let renderer = backend
-                .downcast_mut::<WgpuRenderBackend<TextureTarget>>()
-                .unwrap();
+        fn capture(&self, backend: &mut dyn RenderBackend) -> RgbaImage {
+            let renderer =
+                <dyn Any>::downcast_mut::<WgpuRenderBackend<TextureTarget>>(backend).unwrap();
 
             renderer.capture_frame().expect("Failed to capture image")
         }
@@ -101,7 +101,6 @@ mod renderer {
             &instance,
             None,
             Default::default(),
-            None,
         ))
         .ok()
         .map(|(adapter, device, queue)| (instance, adapter, device, queue))

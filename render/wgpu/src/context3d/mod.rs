@@ -4,6 +4,8 @@ use ruffle_render::backend::{
 };
 use ruffle_render::bitmap::BitmapHandle;
 use ruffle_render::error::Error;
+use std::any::Any;
+use std::borrow::Cow;
 use std::cell::Cell;
 use swf::{Rectangle, Twips};
 
@@ -702,10 +704,7 @@ impl Context3D for WgpuContext3D {
                 if data.is_empty() {
                     return;
                 }
-                let buffer: &mut IndexBufferWrapper = buffer
-                    .as_any_mut()
-                    .downcast_mut::<IndexBufferWrapper>()
-                    .unwrap();
+                let buffer: &mut IndexBufferWrapper = <dyn Any>::downcast_mut(buffer).unwrap();
 
                 // Unfortunately, ActionScript works with 2-byte indices, while wgpu requires
                 // copy offsets and sizes to have 4-byte alignment. To support this, we need
@@ -720,7 +719,7 @@ impl Context3D for WgpuContext3D {
                     offset_bytes - (offset_bytes % COPY_BUFFER_ALIGNMENT as usize);
                 let rounded_up_length = align_copy_buffer_size(data.len());
 
-                buffer.data[offset_bytes..(offset_bytes + data.len())].copy_from_slice(&data);
+                buffer.data[offset_bytes..(offset_bytes + data.len())].copy_from_slice(data);
                 self.buffer_staging_belt
                     .write_buffer(
                         &mut self.buffer_command_encoder,
@@ -745,11 +744,8 @@ impl Context3D for WgpuContext3D {
                     return;
                 }
 
-                let buffer: Rc<VertexBufferWrapper> = buffer
-                    .clone()
-                    .into_any_rc()
-                    .downcast::<VertexBufferWrapper>()
-                    .unwrap();
+                let buffer: Rc<VertexBufferWrapper> =
+                    Rc::<dyn Any>::downcast(buffer.clone()).unwrap();
 
                 // ActionScript can only work with 32-bit chunks of data, so our `write_buffer`
                 // offset and size will always be a multiple of `COPY_BUFFER_ALIGNMENT` (4 bytes)
@@ -761,7 +757,7 @@ impl Context3D for WgpuContext3D {
                     NonZeroU64::new(data.len() as u64).unwrap(),
                     &self.descriptors.device,
                 )[..data.len()]
-                    .copy_from_slice(&data);
+                    .copy_from_slice(data);
             }
 
             Context3DCommand::SetRenderToTexture {
@@ -787,7 +783,8 @@ impl Context3D for WgpuContext3D {
                     }
                 }
 
-                let texture_wrapper = texture.as_any().downcast_ref::<TextureWrapper>().unwrap();
+                let texture_wrapper =
+                    <dyn Any>::downcast_ref::<TextureWrapper>(texture.as_ref()).unwrap();
                 self.current_texture_size = Some(Extent3d {
                     width: texture_wrapper.texture.width(),
                     height: texture_wrapper.texture.height(),
@@ -862,10 +859,8 @@ impl Context3D for WgpuContext3D {
                 first_index,
                 num_triangles,
             } => {
-                let index_buffer: &IndexBufferWrapper = index_buffer
-                    .as_any()
-                    .downcast_ref::<IndexBufferWrapper>()
-                    .unwrap();
+                let index_buffer: &IndexBufferWrapper =
+                    <dyn Any>::downcast_ref(index_buffer).unwrap();
 
                 let indices =
                     (first_index as u32)..((first_index as u32) + (num_triangles as u32 * 3));
@@ -926,11 +921,8 @@ impl Context3D for WgpuContext3D {
                 buffer_offset,
             } => {
                 let info = if let Some((buffer, format)) = buffer {
-                    let buffer = buffer
-                        .clone()
-                        .into_any_rc()
-                        .downcast::<VertexBufferWrapper>()
-                        .unwrap();
+                    let buffer =
+                        Rc::<dyn Any>::downcast::<VertexBufferWrapper>(buffer.clone()).unwrap();
 
                     Some(VertexAttributeInfo {
                         buffer,
@@ -958,8 +950,7 @@ impl Context3D for WgpuContext3D {
             }
 
             Context3DCommand::SetShaders { module } => {
-                let shaders =
-                    module.map(|shader| shader.into_any_rc().downcast::<ShaderPairAgal>().unwrap());
+                let shaders = module.map(|shader| Rc::<dyn Any>::downcast(shader).unwrap());
 
                 self.current_pipeline.set_shaders(shaders)
             }
@@ -1002,13 +993,13 @@ impl Context3D for WgpuContext3D {
                 self.current_pipeline.set_culling(face);
             }
             Context3DCommand::CopyBitmapToTexture {
-                mut source,
+                source,
                 source_width,
                 source_height,
                 dest,
                 layer,
             } => {
-                let dest = dest.as_any().downcast_ref::<TextureWrapper>().unwrap();
+                let dest = Rc::<dyn Any>::downcast::<TextureWrapper>(dest).unwrap();
 
                 // Unfortunately, we need to copy from the CPU data, rather than using the GPU texture.
                 // The GPU side of a BitmapData can be updated at any time from non-Stage3D code.
@@ -1022,21 +1013,26 @@ impl Context3D for WgpuContext3D {
                 let rows_per_image = source_height / dest_format.block_dimensions().1;
 
                 // Wgpu requires us to pad the image rows to a multiple of COPY_BYTES_PER_ROW_ALIGNMENT
-                if (source_width * 4) % COPY_BYTES_PER_ROW_ALIGNMENT != 0
+                let source = if (source_width * 4) % COPY_BYTES_PER_ROW_ALIGNMENT != 0
                     && matches!(dest.texture.format(), wgpu::TextureFormat::Rgba8Unorm)
                 {
-                    source = source
+                    let padded: Vec<u8> = source
                         .chunks_exact(source_width as usize * 4)
                         .flat_map(|row| {
                             let padding_len = COPY_BYTES_PER_ROW_ALIGNMENT as usize
                                 - (row.len() % COPY_BYTES_PER_ROW_ALIGNMENT as usize);
-                            let padding = vec![0; padding_len];
-                            row.iter().copied().chain(padding)
+                            row.iter()
+                                .copied()
+                                .chain(std::iter::repeat_n(0, padding_len))
                         })
                         .collect();
 
-                    bytes_per_row = source.len() as u32 / source_height;
-                }
+                    bytes_per_row = padded.len() as u32 / source_height;
+
+                    Cow::Owned(padded)
+                } else {
+                    Cow::Borrowed(source)
+                };
 
                 let texture_buffer = self.descriptors.device.create_buffer(&BufferDescriptor {
                     label: None,
@@ -1085,7 +1081,7 @@ impl Context3D for WgpuContext3D {
             } => {
                 let bound_texture = if let Some(texture) = texture {
                     let texture_wrapper =
-                        texture.as_any().downcast_ref::<TextureWrapper>().unwrap();
+                        <dyn Any>::downcast_ref::<TextureWrapper>(texture.as_ref()).unwrap();
 
                     let mut view: wgpu::TextureViewDescriptor = Default::default();
                     if cube {
@@ -1094,8 +1090,8 @@ impl Context3D for WgpuContext3D {
                     }
 
                     Some(BoundTextureData {
-                        id: texture.clone(),
                         view: texture_wrapper.texture.create_view(&view),
+                        id: texture,
                         cube,
                     })
                 } else {

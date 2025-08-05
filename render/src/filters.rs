@@ -2,8 +2,7 @@ use crate::{
     bitmap::BitmapHandle,
     pixel_bender::{PixelBenderShaderArgument, PixelBenderShaderHandle},
 };
-use downcast_rs::{impl_downcast, Downcast};
-use std::fmt::Debug;
+use std::{any::Any, fmt::Debug};
 use swf::{Color, Rectangle, Twips};
 
 #[derive(Debug, Clone, PartialEq)]
@@ -47,12 +46,11 @@ impl PartialEq for ShaderFilter<'_> {
     }
 }
 
-pub trait ShaderObject: Downcast + Debug {
+pub trait ShaderObject: Any + Debug {
     fn clone_box(&self) -> Box<dyn ShaderObject>;
 
     fn equals(&self, other: &dyn ShaderObject) -> bool;
 }
-impl_downcast!(ShaderObject);
 
 impl Clone for Box<dyn ShaderObject> {
     fn clone(&self) -> Self {

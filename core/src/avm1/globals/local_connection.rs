@@ -3,11 +3,8 @@
 use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
 use crate::avm1::globals::shared_object::{deserialize_value, serialize};
-use crate::avm1::object::TObject;
 use crate::avm1::property_decl::{define_properties_on, Declaration};
-use crate::avm1::{
-    ActivationIdentifier, ExecutionReason, NativeObject, Object, ScriptObject, Value,
-};
+use crate::avm1::{ActivationIdentifier, ExecutionReason, NativeObject, Object, Value};
 use crate::context::UpdateContext;
 use crate::display_object::TDisplayObject;
 use crate::local_connection::{LocalConnectionHandle, LocalConnections};
@@ -52,7 +49,7 @@ impl<'gc> LocalConnection<'gc> {
         }
 
         let connection_handle = activation.context.local_connections.connect(
-            &LocalConnections::get_domain(activation.context.swf.url()),
+            &LocalConnections::get_domain(activation.context.root_swf.url()),
             this,
             &name,
         );
@@ -205,7 +202,7 @@ pub fn send<'gc>(
     }
 
     activation.context.local_connections.send(
-        &LocalConnections::get_domain(activation.context.swf.url()),
+        &LocalConnections::get_domain(activation.context.root_swf.url()),
         this,
         *connection_name,
         *method_name,
@@ -247,7 +244,7 @@ pub fn create_proto<'gc>(
     proto: Object<'gc>,
     fn_proto: Object<'gc>,
 ) -> Object<'gc> {
-    let object = ScriptObject::new(context, Some(proto));
+    let object = Object::new(context, Some(proto));
     define_properties_on(PROTO_DECLS, context, object, fn_proto);
-    object.into()
+    object
 }

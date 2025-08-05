@@ -10,7 +10,6 @@ package flash.net {
     import flash.events.ProgressEvent;
     import flash.events.SecurityErrorEvent;
     import __ruffle__.stub_constructor;
-    import __ruffle__.stub_method;
     import __ruffle__.stub_getter;
     import __ruffle__.stub_setter;
 

@@ -242,7 +242,7 @@ impl<'gc> Domain<'gc> {
     ) -> Result<(QName<'gc>, Script<'gc>), Error<'gc>> {
         match self.get_defining_script(multiname) {
             Some(val) => Ok(val),
-            None => Err(Error::AvmError(reference_error(
+            None => Err(Error::avm_error(reference_error(
                 activation,
                 &format!(
                     "Error #1065: Variable {} is not defined.",
@@ -297,7 +297,7 @@ impl<'gc> Domain<'gc> {
             let type_class = self.get_defined_value_handling_vector(activation, type_name)?;
             if let Ok(res) = res {
                 let class = res.as_object().ok_or_else(|| {
-                    Error::RustError(format!("Vector type {:?} was not an object", res).into())
+                    Error::rust_error(format!("Vector type {res:?} was not an object").into())
                 })?;
                 return class.apply(activation, &[type_class]).map(|obj| obj.into());
             }
@@ -335,7 +335,7 @@ impl<'gc> Domain<'gc> {
         self.0.write(mc).classes.insert(export_name, class);
     }
 
-    pub fn defs(&self) -> Ref<PropertyMap<'gc, Script<'gc>>> {
+    pub fn defs(&self) -> Ref<'_, PropertyMap<'gc, Script<'gc>>> {
         Ref::map(self.0.read(), |this| &this.defs)
     }
 
@@ -364,7 +364,7 @@ impl<'gc> Domain<'gc> {
         let mut write = self.0.write(activation.gc());
         let memory = if let Some(domain_memory) = domain_memory {
             if domain_memory.storage().len() < MIN_DOMAIN_MEMORY_LENGTH {
-                return Err(Error::AvmError(error(
+                return Err(Error::avm_error(error(
                     activation,
                     "Error #1504: End of file.",
                     1504,

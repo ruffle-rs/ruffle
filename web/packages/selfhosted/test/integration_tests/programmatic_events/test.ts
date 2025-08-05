@@ -10,8 +10,7 @@ import chaiHtml from "chai-html";
 use(chaiHtml);
 
 async function focusElement(element: ChainablePromiseElement) {
-    await browser.execute((element) => {
-        const el = element as unknown as HTMLElement;
+    await browser.execute((el) => {
         el.focus();
     }, element);
 }
@@ -42,13 +41,11 @@ describe("Programmatic Events", () => {
 
         await typeText("should be ignored");
 
-        await browser.execute((element) => {
-            const el = element as unknown as HTMLElement;
+        await browser.execute((el) => {
             el.dispatchEvent(new PointerEvent("pointerdown"));
         }, player);
 
-        await browser.execute((element) => {
-            const el = element as unknown as HTMLElement;
+        await browser.execute((el) => {
             el.dispatchEvent(
                 new KeyboardEvent("keydown", {
                     key: "ArrowRight",
@@ -81,8 +78,7 @@ describe("Programmatic Events", () => {
 
         await focusElement(await player.shadow$("#container"));
 
-        await browser.execute((element) => {
-            const el = element as unknown as HTMLElement;
+        await browser.execute((el) => {
             el.dispatchEvent(
                 new KeyboardEvent("keydown", {
                     key: "ArrowRight",
@@ -114,8 +110,7 @@ describe("Programmatic Events", () => {
 
         await focusElement(player);
 
-        await browser.execute((element) => {
-            const el = element as unknown as HTMLElement;
+        await browser.execute((el) => {
             el.dispatchEvent(
                 new KeyboardEvent("keydown", {
                     key: "ArrowRight",

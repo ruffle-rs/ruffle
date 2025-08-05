@@ -1,14 +1,15 @@
 //! `String` impl
 
+use std::num::NonZero;
+
 use ruffle_macros::istr;
 
 use crate::avm2::activation::Activation;
-use crate::avm2::object::TObject;
 use crate::avm2::parameters::ParametersExt;
 use crate::avm2::regexp::{RegExp, RegExpFlags};
 use crate::avm2::value::Value;
-use crate::avm2::Error;
 use crate::avm2::{ArrayObject, ArrayStorage};
+use crate::avm2::{Error, TObject};
 use crate::string::{AvmString, WString};
 
 pub fn string_constructor<'gc>(
@@ -207,7 +208,7 @@ pub fn match_internal<'gc>(
     let pattern = args.get_value(0);
 
     let regexp_class = activation.avm2().classes().regexp;
-    let pattern = if pattern.is_of_type(activation, regexp_class.inner_class_definition()) {
+    let pattern = if pattern.is_of_type(regexp_class.inner_class_definition()) {
         pattern
     } else {
         let string = pattern.coerce_to_string(activation)?;
@@ -218,14 +219,14 @@ pub fn match_internal<'gc>(
     if let Some(mut regexp) = pattern.as_regexp_mut(activation.gc()) {
         let mut storage = ArrayStorage::new(0);
         if regexp.flags().contains(RegExpFlags::GLOBAL) {
-            let mut last = regexp.last_index();
+            let mut last = 0;
             let old_last_index = regexp.last_index();
             regexp.set_last_index(0);
             while let Some(result) = regexp.exec(this) {
                 if regexp.last_index() == last {
                     break;
                 }
-                storage.push(AvmString::new(activation.gc(), &this[result.range()]).into());
+                storage.push(activation.strings().substring(this, result.range()).into());
                 last = regexp.last_index();
             }
             regexp.set_last_index(0);
@@ -237,16 +238,25 @@ pub fn match_internal<'gc>(
         } else {
             let old = regexp.last_index();
             regexp.set_last_index(0);
-            if let Some(result) = regexp.exec(this) {
-                let substrings = result.groups().map(|range| &this[range.unwrap_or(0..0)]);
 
-                let mut storage = ArrayStorage::new(0);
-                for substring in substrings {
-                    storage.push(AvmString::new(activation.gc(), substring).into());
-                }
+            if let Some(result) = regexp.exec(this) {
+                let storage = result
+                    .groups()
+                    .map(|range| {
+                        range.map_or(Value::Undefined, |range| {
+                            activation.strings().substring(this, range).into()
+                        })
+                    })
+                    .collect();
+
                 regexp.set_last_index(old);
 
-                return Ok(ArrayObject::from_storage(activation, storage).into());
+                let array = ArrayObject::from_storage(activation, storage);
+
+                array.set_dynamic_property(istr!("index"), result.start().into(), activation.gc());
+                array.set_dynamic_property(istr!("input"), this.into(), activation.gc());
+
+                return Ok(array.into());
             } else {
                 regexp.set_last_index(old);
                 // If the pattern parameter is a String or a non-global regular expression
@@ -315,7 +325,7 @@ pub fn search<'gc>(
     let pattern = args.get_value(0);
 
     let regexp_class = activation.avm2().classes().regexp;
-    let pattern = if pattern.is_of_type(activation, regexp_class.inner_class_definition()) {
+    let pattern = if pattern.is_of_type(regexp_class.inner_class_definition()) {
         pattern
     } else {
         let string = pattern.coerce_to_string(activation)?;
@@ -381,6 +391,10 @@ pub fn split<'gc>(
         limit => limit.coerce_to_u32(activation)? as usize,
     };
 
+    let Some(limit) = NonZero::new(limit) else {
+        return Ok(ArrayObject::empty(activation).into());
+    };
+
     if let Some(mut regexp) = delimiter
         .as_object()
         .as_ref()
@@ -396,12 +410,12 @@ pub fn split<'gc>(
         // e.g., split("foo", "") returns ["", "f", "o", "o", ""] in Rust but ["f, "o", "o"] in Flash.
         // Special case this to match Flash's behavior.
         this.iter()
-            .take(limit)
+            .take(limit.get())
             .map(|c| Value::from(activation.strings().make_char(c)))
             .collect()
     } else {
         this.split(&delimiter)
-            .take(limit)
+            .take(limit.get())
             .map(|c| Value::from(AvmString::new(activation.gc(), c)))
             .collect()
     };

@@ -1,7 +1,5 @@
 package flash.text.engine {
     import flash.events.EventDispatcher;
-    import __ruffle__.stub_setter;
-    import __ruffle__.stub_method;
 
     [API("662")]
     public final class TextElement extends ContentElement {
@@ -29,4 +27,3 @@ package flash.text.engine {
         }
     }
 }
-

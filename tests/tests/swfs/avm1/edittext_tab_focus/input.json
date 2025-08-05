@@ -1,13 +1,13 @@
 [
-    { "type": "KeyDown", "key": "Tab" },
-    { "type": "KeyDown", "key": "Escape" },
-    { "type": "KeyDown", "key": "Tab" },
-    { "type": "TextControl", "code": "MoveRight" },
-    { "type": "KeyDown", "key": "Escape" },
-    { "type": "KeyDown", "key": "Tab" },
-    { "type": "KeyDown", "key": "Escape" },
-    { "type": "KeyDown", "key": "Tab" },
-    { "type": "TextControl", "code": "MoveRight" },
-    { "type": "KeyDown", "key": "Tab" },
-    { "type": "KeyDown", "key": "Escape" }
+  { "type": "KeyDown", "key": "Tab" },
+  { "type": "KeyDown", "key": "Escape" },
+  { "type": "KeyDown", "key": "Tab" },
+  { "type": "TextControl", "code": "MoveRight" },
+  { "type": "KeyDown", "key": "Escape" },
+  { "type": "KeyDown", "key": "Tab" },
+  { "type": "KeyDown", "key": "Escape" },
+  { "type": "KeyDown", "key": "Tab" },
+  { "type": "TextControl", "code": "MoveRight" },
+  { "type": "KeyDown", "key": "Tab" },
+  { "type": "KeyDown", "key": "Escape" }
 ]

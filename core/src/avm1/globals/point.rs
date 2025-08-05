@@ -4,7 +4,7 @@ use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
 use crate::avm1::function::{ExecutionReason, FunctionObject};
 use crate::avm1::property_decl::{define_properties_on, Declaration};
-use crate::avm1::{Object, ScriptObject, TObject, Value};
+use crate::avm1::{Object, Value};
 use crate::string::{AvmString, StringContext};
 
 use ruffle_macros::istr;
@@ -310,8 +310,7 @@ pub fn create_point_object<'gc>(
     fn_proto: Object<'gc>,
 ) -> Object<'gc> {
     let point = FunctionObject::native(context, constructor, fn_proto, point_proto);
-    let object = point.raw_script_object();
-    define_properties_on(OBJECT_DECLS, context, object, fn_proto);
+    define_properties_on(OBJECT_DECLS, context, point, fn_proto);
     point
 }
 
@@ -320,7 +319,7 @@ pub fn create_proto<'gc>(
     proto: Object<'gc>,
     fn_proto: Object<'gc>,
 ) -> Object<'gc> {
-    let object = ScriptObject::new(context, Some(proto));
+    let object = Object::new(context, Some(proto));
     define_properties_on(PROTO_DECLS, context, object, fn_proto);
-    object.into()
+    object
 }

@@ -1,0 +1,240 @@
+Default params:
+  selector=0
+  pBool=1
+  pBool2=0,1
+After setting params:
+  selector=0
+  pBool=0
+  pBool2=0,1
+Result: ff0000ff
+=================
+Default params:
+  selector=0
+  pBool=1
+  pBool2=0,1
+After setting params:
+  selector=0
+  pBool=1
+  pBool2=0,1
+Result: ff000000
+=================
+Default params:
+  selector=0
+  pBool=1
+  pBool2=0,1
+After setting params:
+  selector=0
+  pBool=-1
+  pBool2=0,1
+Result: ff000000
+=================
+Default params:
+  selector=0
+  pBool=1
+  pBool2=0,1
+After setting params:
+  selector=0
+  pBool=0.1
+  pBool2=0,1
+Result: ff0000ff
+=================
+Default params:
+  selector=0
+  pBool=1
+  pBool2=0,1
+After setting params:
+  selector=0
+  pBool=0.5
+  pBool2=0,1
+Result: ff0000ff
+=================
+Default params:
+  selector=0
+  pBool=1
+  pBool2=0,1
+After setting params:
+  selector=0
+  pBool=0.9
+  pBool2=0,1
+Result: ff0000ff
+=================
+Default params:
+  selector=0
+  pBool=1
+  pBool2=0,1
+After setting params:
+  selector=0
+  pBool=1
+  pBool2=0,1
+Result: ff000000
+=================
+Default params:
+  selector=0
+  pBool=1
+  pBool2=0,1
+After setting params:
+  selector=0
+  pBool=1.1
+  pBool2=0,1
+Result: ff000000
+=================
+Default params:
+  selector=0
+  pBool=1
+  pBool2=0,1
+After setting params:
+  selector=0
+  pBool=2
+  pBool2=0,1
+Result: ff000000
+=================
+Default params:
+  selector=0
+  pBool=1
+  pBool2=0,1
+After setting params:
+  selector=0
+  pBool=3
+  pBool2=0,1
+Result: ff000000
+=================
+Default params:
+  selector=0
+  pBool=1
+  pBool2=0,1
+After setting params:
+  selector=0
+  pBool=-0.1
+  pBool2=0,1
+Result: ff0000ff
+=================
+Default params:
+  selector=0
+  pBool=1
+  pBool2=0,1
+After setting params:
+  selector=0
+  pBool=-0.5
+  pBool2=0,1
+Result: ff0000ff
+=================
+Default params:
+  selector=0
+  pBool=1
+  pBool2=0,1
+After setting params:
+  selector=0
+  pBool=-0.9
+  pBool2=0,1
+Result: ff0000ff
+=================
+Default params:
+  selector=0
+  pBool=1
+  pBool2=0,1
+After setting params:
+  selector=0
+  pBool=-1
+  pBool2=0,1
+Result: ff000000
+=================
+Default params:
+  selector=0
+  pBool=1
+  pBool2=0,1
+After setting params:
+  selector=0
+  pBool=-1.1
+  pBool2=0,1
+Result: ff000000
+=================
+Default params:
+  selector=0
+  pBool=1
+  pBool2=0,1
+After setting params:
+  selector=0
+  pBool=-2
+  pBool2=0,1
+Result: ff000000
+=================
+Default params:
+  selector=0
+  pBool=1
+  pBool2=0,1
+After setting params:
+  selector=0
+  pBool=-3
+  pBool2=0,1
+Result: ff000000
+=================
+Default params:
+  selector=0
+  pBool=1
+  pBool2=0,1
+After setting params:
+  selector=1
+  pBool=1
+  pBool2=
+Result: ff0000ff
+=================
+Default params:
+  selector=0
+  pBool=1
+  pBool2=0,1
+After setting params:
+  selector=1
+  pBool=1
+  pBool2=0
+Result: ff0000ff
+=================
+Default params:
+  selector=0
+  pBool=1
+  pBool2=0,1
+After setting params:
+  selector=1
+  pBool=1
+  pBool2=1
+Result: ff000000
+=================
+Default params:
+  selector=0
+  pBool=1
+  pBool2=0,1
+After setting params:
+  selector=1
+  pBool=1
+  pBool2=0,1
+Result: ff0000ff
+=================
+Default params:
+  selector=0
+  pBool=1
+  pBool2=0,1
+After setting params:
+  selector=1
+  pBool=1
+  pBool2=1,0
+Result: ff000000
+=================
+Default params:
+  selector=0
+  pBool=1
+  pBool2=0,1
+After setting params:
+  selector=1
+  pBool=1
+  pBool2=1,1
+Result: ff000000
+=================
+Default params:
+  selector=0
+  pBool=1
+  pBool2=0,1
+After setting params:
+  selector=1
+  pBool=1
+  pBool2=0,0
+Result: ff0000ff
+=================

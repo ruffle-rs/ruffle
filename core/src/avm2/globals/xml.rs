@@ -41,7 +41,7 @@ pub fn init<'gc>(
             // an error, since E4XNode::parse would otherwise return an empty array
             // (which would be accepted)
             if xml_list.length() != 1 {
-                return Err(Error::AvmError(ill_formed_markup_err(activation)?));
+                return Err(Error::avm_error(ill_formed_markup_err(activation)?));
             }
         }
     }
@@ -95,7 +95,7 @@ pub fn init<'gc>(
             if let Some(element) = single_element_node {
                 *element
             } else {
-                return Err(Error::AvmError(ill_formed_markup_err(activation)?));
+                return Err(Error::avm_error(ill_formed_markup_err(activation)?));
             }
         }
     };
@@ -850,7 +850,7 @@ pub fn call_handler<'gc>(
                         .get_or_create_xml(activation)
                         .into());
                 }
-                return Err(Error::AvmError(ill_formed_markup_err(activation)?));
+                return Err(Error::avm_error(ill_formed_markup_err(activation)?));
             }
         }
     }
@@ -1226,7 +1226,7 @@ pub fn replace<'gc>(
     } else {
         // NOTE: Depends on root swf version.
         // See https://github.com/adobe/avmplus/blob/858d034a3bd3a54d9b70909386435cf4aec81d21/core/XMLObject.cpp#L1540
-        if activation.context.swf.version() <= 9 {
+        if activation.context.root_swf.version() <= 9 {
             // SWF version 9 edge case, call XML constructor.
             // https://github.com/adobe/avmplus/blob/858d034a3bd3a54d9b70909386435cf4aec81d21/core/XMLObject.cpp#L2241-L2242
             activation

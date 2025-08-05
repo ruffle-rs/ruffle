@@ -4,6 +4,7 @@
 	import flash.display.Shape;
 	import flash.geom.Rectangle;
 	import flash.net.URLRequest;
+	import flash.events.Event;
 	import flash.events.MouseEvent;
 	import flash.display.Loader;
 	import flash.display.Sprite;
@@ -52,6 +53,14 @@
 			fourthLoader.mouseEnabled = false;
 			fourthLoader.mouseChildren = false;
 			loaderWrapper.addChild(fourthLoader);
+
+			var fifthLoader = new Loader();
+			fifthLoader.name = "fifthLoader";
+			fifthLoader.contentLoaderInfo.addEventListener(Event.COMPLETE, function(e) {
+				loaderWrapper.addChild(e.target.content);
+				e.target.content.y = 600;
+			});
+			fifthLoader.load(new URLRequest("loadable.swf"));
 			
 			this.addChild(loaderWrapper);
 		}

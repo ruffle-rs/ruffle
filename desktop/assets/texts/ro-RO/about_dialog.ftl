@@ -1,6 +1,11 @@
 about-ruffle = Despre Ruffle
 about-ruffle-version = Versiune
 about-ruffle-channel = Canal
+about-ruffle-build-time = Timpul Clădirii
+about-ruffle-build-features = Caracteristicile Clădirii
+about-ruffle-commit-ref = Referința Commit-ului
+about-ruffle-commit-time = Timpul Commit-ului
 about-ruffle-visit-website = Site web
 about-ruffle-visit-github = GitHub
 about-ruffle-visit-discord = Discord
+about-ruffle-visit-sponsor = Sponsorizare

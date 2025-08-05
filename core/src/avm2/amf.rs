@@ -189,10 +189,11 @@ pub fn recursive_serialize<'gc>(
     if let Some(static_properties) = static_properties {
         let vtable = obj.vtable();
         // TODO: respect versioning
-        let mut props = vtable.public_properties();
         // Flash appears to use vtable iteration order, but we sort ours
         // to make our test output consistent.
-        props.sort_by_key(|(name, _)| name.to_utf8_lossy().to_string());
+        let mut props = vtable.public_properties().collect::<Vec<_>>();
+        props.sort_by_key(|(name, _)| *name);
+
         for (name, prop) in props {
             if let Property::Method { .. } = prop {
                 continue;
@@ -307,16 +308,25 @@ pub fn deserialize_value_impl<'gc>(
                 arr.push(Some(deserialize_value_impl(activation, value, object_map)?));
             }
             array
-                .array_storage_mut(activation.gc())
+                .storage_mut(activation.gc())
                 .replace_dense_storage(arr);
 
             // Now let's add each element as a property
             for element in elements {
-                array.set_string_property_local(
-                    AvmString::new_utf8(activation.gc(), element.name()),
-                    deserialize_value_impl(activation, element.value(), object_map)?,
-                    activation,
-                )?;
+                let name = ruffle_wstr::from_utf8(element.name());
+                let value = deserialize_value_impl(activation, element.value(), object_map)?;
+
+                // If the name of the element was a valid array index, we set an
+                // element on the array instead of setting a dynamic property.
+                if let Some(index) = ArrayObject::as_array_index(&name) {
+                    array.set_element(activation.gc(), index, value);
+                } else {
+                    array.set_dynamic_property(
+                        AvmString::new(activation.gc(), name),
+                        value,
+                        activation.gc(),
+                    );
+                }
             }
             array.into()
         }
@@ -331,7 +341,7 @@ pub fn deserialize_value_impl<'gc>(
             }
 
             array
-                .array_storage_mut(activation.gc())
+                .storage_mut(activation.gc())
                 .replace_dense_storage(arr);
 
             array.into()
@@ -359,7 +369,7 @@ pub fn deserialize_value_impl<'gc>(
                     tracing::warn!(
                         "Ignoring error deserializing AMF property for field {name:?}: {e:?}"
                     );
-                    if let Error::AvmError(e) = e {
+                    if let Some(e) = e.as_avm_error() {
                         if let Some(e) = e.as_object().and_then(|o| o.as_error_object()) {
                             // Flash player *traces* the error (without a stacktrace)
                             activation.context.avm_trace(&e.display().to_string());
@@ -408,12 +418,8 @@ pub fn deserialize_value_impl<'gc>(
             let class = alias_to_class(activation, name)?;
 
             // Create an empty vector, as it has to exist in the map before reading children, in case they reference it
-            let empty_storage = VectorStorage::new(
-                0,
-                *is_fixed,
-                Some(class.inner_class_definition()),
-                activation,
-            );
+            let empty_storage =
+                VectorStorage::new(0, *is_fixed, Some(class.inner_class_definition()));
             let obj = VectorObject::from_vector(empty_storage, activation)?;
             object_map.insert(*id, obj);
 
@@ -461,7 +467,7 @@ pub fn deserialize_value_impl<'gc>(
                     dict_obj.set_property_by_object(key, value, activation.gc());
                 } else {
                     let key_string = key.coerce_to_string(activation)?;
-                    dict_obj.set_string_property_local(key_string, value, activation)?;
+                    dict_obj.set_dynamic_property(key_string, value, activation.gc());
                 }
             }
             dict_obj.into()
@@ -498,11 +504,11 @@ pub fn deserialize_lso<'gc>(
     let obj = ScriptObject::new_object(activation);
 
     for child in &lso.body {
-        obj.set_string_property_local(
+        obj.set_dynamic_property(
             AvmString::new_utf8(activation.gc(), &child.name),
             deserialize_value(activation, child.value())?,
-            activation,
-        )?;
+            activation.gc(),
+        );
     }
 
     Ok(obj)

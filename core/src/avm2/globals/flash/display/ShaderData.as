@@ -1,13 +1,12 @@
 package flash.display {
     import flash.utils.ByteArray;
-    
+
     [Ruffle(InstanceAllocator)]
     public final dynamic class ShaderData {
         public function ShaderData(bytecode:ByteArray) {
-            this.init(bytecode);
+            this._setByteCode(bytecode);
         }
 
-        private native function init(bytecode:ByteArray);
+        private native function _setByteCode(bytecode:ByteArray);
     }
 }
-

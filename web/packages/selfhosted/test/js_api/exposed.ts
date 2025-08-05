@@ -9,9 +9,7 @@ describe("Exposed RufflePlayer methods/properties", () => {
 
     it("exposed API has not changed", async () => {
         const player = await browser.$("<ruffle-player>");
-        const keys = await browser.execute(async (playerElement) => {
-            // https://github.com/webdriverio/webdriverio/issues/6486
-            const player = playerElement as unknown;
+        const keys = await browser.execute(async (player) => {
             return Reflect.ownKeys(Object.getPrototypeOf(player));
         }, player);
         expect(keys).to.have.members([

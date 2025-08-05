@@ -166,6 +166,15 @@ impl<T: Coordinate> Rectangle<T> {
     }
 
     #[must_use]
+    pub fn grow_x(mut self, amount: T) -> Self {
+        if self.is_valid() {
+            self.x_min -= amount;
+            self.x_max += amount;
+        }
+        self
+    }
+
+    #[must_use]
     pub fn is_point(&self) -> bool {
         self.x_min == self.x_max && self.y_min == self.y_max
     }

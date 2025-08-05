@@ -10,7 +10,9 @@ members = [
     "web/packages/extension/safari",
     "wstr",
     "scanner",
+
     "exporter",
+    "exporter/integration_tests",
 
     "frontend-utils",
 
@@ -29,6 +31,7 @@ members = [
     "video/external",
 
     "tests",
+    "tests/fs-tests-runner",
     "tests/input-format",
     "tests/socket-format",
     "tests/mocket",
@@ -48,19 +51,19 @@ version = "0.1.0"
 [workspace.dependencies]
 tracing = "0.1.41"
 tracing-subscriber = { version = "0.3.19", features = ["env-filter"] }
-naga = { version = "24.0.0", features = ["wgsl-out"] }
-wgpu = "24.0.3"
-egui = "0.31.1"
-clap = { version = "4.5.37", features = ["derive"] }
+naga = { version = "25.0.1", features = ["wgsl-out"] }
+wgpu = "25.0.2"
+egui = { git = "https://github.com/emilk/egui.git", branch = "main" }
+clap = { version = "4.5.41", features = ["derive"] }
 cpal = "0.15.3"
 anyhow = "1.0"
 slotmap = "1.0.7"
-async-channel = "2.3.1"
-bitflags = "2.9.0"
-bytemuck = "1.22.0"
-chrono = { version = "0.4.40", default-features = false }
+async-channel = "2.5.0"
+bitflags = "2.9.1"
+bytemuck = "1.23.1"
+chrono = { version = "0.4.41", default-features = false }
 enum-map = "2.7.3"
-flate2 = "1.1.1"
+flate2 = "1.1.2"
 futures = "0.3.31"
 image = { version = "0.25.6", default-features = false }
 js-sys = "0.3.77"
@@ -74,9 +77,30 @@ url = "2.5.2"
 # Make sure to match wasm-bindgen-cli version to this everywhere.
 wasm-bindgen = "=0.2.100"
 walkdir = "2.5.0"
-tokio = "1.44.2"
+tokio = "1.46.1"
 # Switching from the `async-std` to the `tokio` runtime, which we depend on anyway.
-rfd = { version = "0.15.2", default-features = false, features = ["tokio", "xdg-portal"] }
+rfd = { version = "0.15.4", default-features = false, features = ["tokio", "xdg-portal"] }
+memmap2 = "0.9.7"
+libtest-mimic = "0.8.1"
+regex = "1.11.1"
+toml = "0.8.23"
+vfs = "0.12.2"
+smallvec = { version = "1.15.1", features = ["const_new", "union"] }
+serde_json = "1.0.141"
+percent-encoding = "2.3.1"
+approx = "0.5.1"
+encoding_rs = "0.8.35"
+byteorder = "1.5"
+bitstream-io = "4.4.0"
+indicatif = "0.17"
+rayon = "1.10.0"
+sha2 = "0.10.9"
+indexmap = "2.10.0"
+fnv = "1.0.7"
+fluent-templates = "0.13.0"
+lzma-rs = "0.3.0"
+tempfile = "3.19.1"
+tracing-wasm = "0.2.1"
 
 [workspace.lints.rust]
 # Clippy nightly often adds new/buggy lints that we want to ignore.

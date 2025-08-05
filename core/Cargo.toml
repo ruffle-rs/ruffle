@@ -12,13 +12,13 @@ workspace = true
 
 [dependencies]
 linkme = { version = "0.3", optional = true }
-byteorder = "1.5"
-bitstream-io = "3.2.0"
+byteorder = { workspace = true }
+bitstream-io = { workspace = true }
 flate2 = { workspace = true }
-fnv = "1.0.7"
+fnv = { workspace = true }
 gc-arena = { package = "ruffle_gc_arena", path = "../ruffle_gc_arena" }
 slotmap = { workspace = true }
-indexmap = "2.9.0"
+indexmap = { workspace = true }
 tracing = { workspace = true }
 ruffle_render = { path = "../render", features = ["tessellator"] }
 ruffle_video = { path = "../video" }
@@ -26,36 +26,35 @@ ruffle_macros = { path = "macros" }
 ruffle_wstr = { path = "../wstr" }
 swf = { path = "../swf" }
 bitflags = { workspace = true }
-smallvec = { version = "1.15.0", features = ["union"] }
+smallvec = { workspace = true }
 num-traits = { workspace = true }
 num-derive = { workspace = true }
-quick-xml = "0.37.4"
-downcast-rs = "2.0.1"
+quick-xml = "0.37.5"
 url = { workspace = true }
 weak-table = "0.3.2"
-percent-encoding = "2.3.1"
+percent-encoding = { workspace = true }
 thiserror = { workspace = true }
 chrono = { workspace = true, features = ["clock"] }
 web-time = "1.1.0"
-encoding_rs = "0.8.35"
-rand = { version = "0.8.5", features = ["std", "small_rng"], default-features = false }
+encoding_rs = { workspace = true }
+rand = { version = "0.9.1", features = ["std", "small_rng", "os_rng"], default-features = false }
 serde = { workspace = true }
-serde_json = { version = "1.0", features = ["preserve_order"] }
-nellymoser-rs = { git = "https://github.com/ruffle-rs/nellymoser", rev = "03660d5f9e1b3ae3d822ac8e9b2743f7c5074cc8", optional = true }
-regress = "0.10"
-flash-lso = { git = "https://github.com/ruffle-rs/rust-flash-lso", rev = "a5e938d9bb1909095f2340c2435867f6aae930b0" }
-lzma-rs = {version = "0.3.0", optional = true }
+serde_json = { workspace = true, features = ["preserve_order"] }
+nellymoser-rs = { git = "https://github.com/ruffle-rs/nellymoser", rev = "073eb48d907201f46dea0c8feb4e8d9a1d92208c", optional = true }
+regress = { git = "https://github.com/ruffle-rs/regras3", rev = "5fcb02513c5ab4e00df4346459f5a8d0521d8fed" }
+flash-lso = { git = "https://github.com/ruffle-rs/rust-flash-lso", rev = "998f47c926b9986aabd518fbb7394ff56936d0b0" }
+lzma-rs = { workspace = true, optional = true }
 dasp = { version = "0.11.0", features = ["interpolate", "interpolate-linear", "signal"], optional = true }
 symphonia = { version = "0.5.4", default-features = false, optional = true }
-enumset = "1.1.5"
-bytemuck = { workspace = true }
+enumset = "1.1.7"
+bytemuck = { workspace = true, features = ["derive"] }
 clap = { workspace = true, optional=true }
-realfft = "3.4.0"
+realfft = "3.5.0"
 hashbrown = { version = "0.14.5", features = ["raw"] }
 scopeguard = "1.2.0"
-fluent-templates = "0.13.0"
+fluent-templates = { workspace = true }
 egui = { workspace = true, optional = true }
-egui_extras = { version = "0.31.1", default-features = false, optional = true }
+egui_extras = { git = "https://github.com/emilk/egui.git", branch = "main", default-features = false, optional = true }
 png = { version = "0.17.16", optional = true }
 flv-rs = { path = "../flv" }
 async-channel = { workspace = true }
@@ -65,7 +64,7 @@ enum-map = { workspace = true }
 ttf-parser = "0.25"
 num-bigint = "0.4"
 unic-segment = "0.9.0"
-id3 = "1.16.1"
+id3 = "1.16.3"
 either = "1.15.0"
 chardetng = "0.1.17"
 tracy-client = { version = "0.17.6", optional = true, default-features = false }

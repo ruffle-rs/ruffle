@@ -3,18 +3,21 @@ use crate::avm2::error::{
     make_error_1014, make_error_1021, make_error_1025, make_error_1032, make_error_1054,
     make_error_1107, verify_error, Error1014Type,
 };
-use crate::avm2::method::{BytecodeMethod, ParamConfig, ResolvedParamConfig};
+use crate::avm2::method::Method;
 use crate::avm2::multiname::Multiname;
+use crate::avm2::namespace::Namespace;
 use crate::avm2::op::{LookupSwitch, Op};
 use crate::avm2::script::TranslationUnit;
 use crate::avm2::{Activation, Error, QName};
 use crate::string::{AvmAtom, AvmString};
 
 use gc_arena::{Collect, Gc};
+use std::cell::Cell;
 use std::collections::{HashMap, HashSet};
 use swf::avm2::read::Reader;
 use swf::avm2::types::{
-    Class as AbcClass, Index, MethodFlags as AbcMethodFlags, Multiname as AbcMultiname, Op as AbcOp,
+    Class as AbcClass, Index, Method as AbcMethod, MethodFlags as AbcMethodFlags,
+    Multiname as AbcMultiname, Namespace as AbcNamespace, Op as AbcOp,
 };
 use swf::error::Error as AbcReadError;
 
@@ -24,9 +27,6 @@ pub struct VerifiedMethodInfo<'gc> {
     pub parsed_code: Vec<Op<'gc>>,
 
     pub exceptions: Vec<Exception<'gc>>,
-
-    pub param_config: Vec<ResolvedParamConfig<'gc>>,
-    pub return_type: Option<Class<'gc>>,
 }
 
 #[derive(Collect)]
@@ -61,7 +61,7 @@ impl<'gc> ByteInfo<'gc> {
 
 pub fn verify_method<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    method: Gc<'gc, BytecodeMethod<'gc>>,
+    method: Method<'gc>,
 ) -> Result<VerifiedMethodInfo<'gc>, Error<'gc>> {
     let mc = activation.gc();
     let body = method
@@ -85,7 +85,7 @@ pub fn verify_method<'gc>(
     use swf::extensions::ReadSwfExt;
 
     if body.code.is_empty() {
-        return Err(Error::AvmError(verify_error(
+        return Err(Error::avm_error(verify_error(
             activation,
             "Error #1043: Invalid code_length=0.",
             1043,
@@ -94,8 +94,8 @@ pub fn verify_method<'gc>(
 
     let activation_class = create_activation_class(activation, method)?;
 
-    let resolved_param_config = resolve_param_config(activation, method.signature())?;
-    let resolved_return_type = resolve_return_type(activation, method.return_type)?;
+    let resolved_return_type = method.resolved_return_type();
+    let resolved_param_config = method.resolved_param_config();
 
     let mut seen_exception_indices = HashSet::new();
 
@@ -122,14 +122,14 @@ pub fn verify_method<'gc>(
                 Ok(op) => op,
 
                 Err(AbcReadError::InvalidData(_)) => {
-                    return Err(Error::AvmError(verify_error(
+                    return Err(Error::avm_error(verify_error(
                         activation,
                         "Error #1011: Method contained illegal opcode.",
                         1011,
                     )?));
                 }
                 Err(AbcReadError::IoError(_)) => {
-                    return Err(Error::AvmError(verify_error(
+                    return Err(Error::avm_error(verify_error(
                         activation,
                         "Error #1020: Code cannot fall off the end of a method.",
                         1020,
@@ -503,25 +503,16 @@ pub fn verify_method<'gc>(
                 jump_targets.insert(adjusted_result);
             }
             Op::LookupSwitch(lookup_switch) => {
-                let default_offset =
-                    adjust_jump_to_idx(i, lookup_switch.default_offset as i32, false)?;
+                for target in lookup_switch
+                    .case_offsets
+                    .iter()
+                    .chain(std::slice::from_ref(&lookup_switch.default_offset))
+                {
+                    let adjusted_target = adjust_jump_to_idx(i, target.get() as i32, false)?;
+                    target.set(adjusted_target);
 
-                jump_targets.insert(default_offset);
-
-                let mut case_offsets = Vec::with_capacity(lookup_switch.case_offsets.len());
-                for case in lookup_switch.case_offsets.iter() {
-                    let adjusted_case = adjust_jump_to_idx(i, *case as i32, false)?;
-                    case_offsets.push(adjusted_case);
-
-                    jump_targets.insert(adjusted_case);
+                    jump_targets.insert(adjusted_target);
                 }
-
-                let new_lookup_switch = LookupSwitch {
-                    default_offset,
-                    case_offsets: case_offsets.into_boxed_slice(),
-                };
-
-                *op = Op::LookupSwitch(Gc::new(mc, new_lookup_switch));
             }
             _ => {}
         }
@@ -531,22 +522,20 @@ pub fn verify_method<'gc>(
         activation,
         method,
         &mut verified_code,
-        &resolved_param_config,
-        &new_exceptions,
+        &mut new_exceptions,
+        resolved_param_config,
         &jump_targets,
     )?;
 
     Ok(VerifiedMethodInfo {
         parsed_code: verified_code,
         exceptions: new_exceptions,
-        param_config: resolved_param_config,
-        return_type: resolved_return_type,
     })
 }
 
 fn create_activation_class<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    method: Gc<'gc, BytecodeMethod<'gc>>,
+    method: Method<'gc>,
 ) -> Result<Option<Class<'gc>>, Error<'gc>> {
     let translation_unit = method.translation_unit();
     let abc_method = method.method();
@@ -559,77 +548,6 @@ fn create_activation_class<'gc>(
             Class::for_activation(activation, translation_unit, abc_method, body)?;
 
         Ok(Some(activation_class))
-    } else {
-        Ok(None)
-    }
-}
-
-pub fn resolve_param_config<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    param_config: &[ParamConfig<'gc>],
-) -> Result<Vec<ResolvedParamConfig<'gc>>, Error<'gc>> {
-    let mut resolved_param_config = Vec::new();
-
-    for param in param_config {
-        let resolved_class = if let Some(param_type_name) = param.param_type_name {
-            if param_type_name.has_lazy_component() {
-                return Err(make_error_1014(
-                    activation,
-                    Error1014Type::VerifyError,
-                    AvmString::new_utf8(activation.gc(), "[]"),
-                ));
-            }
-
-            Some(
-                activation
-                    .domain()
-                    .get_class(activation.context, &param_type_name)
-                    .ok_or_else(|| {
-                        make_error_1014(
-                            activation,
-                            Error1014Type::VerifyError,
-                            param_type_name.to_qualified_name(activation.gc()),
-                        )
-                    })?,
-            )
-        } else {
-            None
-        };
-
-        resolved_param_config.push(ResolvedParamConfig {
-            param_type: resolved_class,
-            default_value: param.default_value,
-        });
-    }
-
-    Ok(resolved_param_config)
-}
-
-fn resolve_return_type<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    return_type: Option<Gc<'gc, Multiname<'gc>>>,
-) -> Result<Option<Class<'gc>>, Error<'gc>> {
-    if let Some(return_type) = return_type {
-        if return_type.has_lazy_component() {
-            return Err(make_error_1014(
-                activation,
-                Error1014Type::VerifyError,
-                AvmString::new_utf8(activation.gc(), "[]"),
-            ));
-        }
-
-        Ok(Some(
-            activation
-                .domain()
-                .get_class(activation.context, &return_type)
-                .ok_or_else(|| {
-                    make_error_1014(
-                        activation,
-                        Error1014Type::VerifyError,
-                        return_type.to_qualified_name(activation.gc()),
-                    )
-                })?,
-        ))
     } else {
         Ok(None)
     }
@@ -763,6 +681,23 @@ fn pool_class<'gc>(
     translation_unit.load_class(index.0, activation)
 }
 
+fn pool_namespace<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    translation_unit: TranslationUnit<'gc>,
+    index: Index<AbcNamespace>,
+) -> Result<Namespace<'gc>, Error<'gc>> {
+    translation_unit.pool_namespace(activation, index)
+}
+
+fn pool_method<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    translation_unit: TranslationUnit<'gc>,
+    index: Index<AbcMethod>,
+    is_function: bool,
+) -> Result<Method<'gc>, Error<'gc>> {
+    translation_unit.load_method(index, is_function, activation)
+}
+
 fn lookup_class<'gc>(
     activation: &mut Activation<'_, 'gc>,
     translation_unit: TranslationUnit<'gc>,
@@ -793,7 +728,7 @@ fn lookup_class<'gc>(
 
 fn translate_op<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    method: Gc<'gc, BytecodeMethod<'gc>>,
+    method: Method<'gc>,
     max_locals: u32,
     activation_class: Option<Class<'gc>>,
     resolved_return_type: Option<Class<'gc>>,
@@ -826,7 +761,7 @@ fn translate_op<'gc>(
             } else if index_register >= max_locals {
                 return Err(make_error_1025(activation, index_register));
             } else if index_register == object_register {
-                return Err(Error::AvmError(verify_error(
+                return Err(Error::avm_error(verify_error(
                     activation,
                     "Error #1124: OP_hasnext2 requires object and index to be distinct registers.",
                     1124,
@@ -836,7 +771,7 @@ fn translate_op<'gc>(
 
         // Misc opcode verification
         AbcOp::CallMethod { index, .. } => {
-            return Err(Error::AvmError(if index == 0 {
+            return Err(Error::avm_error(if index == 0 {
                 verify_error(activation, "Error #1072: Disp_id 0 is illegal.", 1072)?
             } else {
                 verify_error(
@@ -852,7 +787,7 @@ fn translate_op<'gc>(
                 translation_unit.pool_maybe_uninitialized_multiname(activation, index)?;
 
             if multiname.has_lazy_component() {
-                return Err(Error::AvmError(verify_error(
+                return Err(Error::avm_error(verify_error(
                     activation,
                     "Error #1078: Illegal opcode/multiname combination.",
                     1078,
@@ -862,7 +797,7 @@ fn translate_op<'gc>(
 
         AbcOp::GetOuterScope { index } => {
             if activation.outer().get(index as usize).is_none() {
-                return Err(Error::AvmError(verify_error(
+                return Err(Error::avm_error(verify_error(
                     activation,
                     "Error #1019: Getscopeobject  is out of bounds.",
                     1019,
@@ -875,7 +810,7 @@ fn translate_op<'gc>(
         | AbcOp::GetGlobalSlot { index }
         | AbcOp::SetGlobalSlot { index } => {
             if index == 0 {
-                return Err(Error::AvmError(verify_error(
+                return Err(Error::avm_error(verify_error(
                     activation,
                     "Error #1026: Slot 0 exceeds slotCount",
                     1026,
@@ -901,7 +836,11 @@ fn translate_op<'gc>(
 
             Op::PushInt { value }
         }
-        AbcOp::PushNamespace { value } => Op::PushNamespace { value },
+        AbcOp::PushNamespace { value } => {
+            let namespace = pool_namespace(activation, translation_unit, value)?;
+
+            Op::PushNamespace { namespace }
+        }
         AbcOp::PushNaN => Op::PushDouble { value: f64::NAN },
         AbcOp::PushNull => Op::PushNull,
         AbcOp::PushShort { value } => Op::PushShort { value },
@@ -952,7 +891,11 @@ fn translate_op<'gc>(
                 num_args,
             }
         }
-        AbcOp::CallStatic { index, num_args } => Op::CallStatic { index, num_args },
+        AbcOp::CallStatic { index, num_args } => {
+            let method = pool_method(activation, translation_unit, index, false)?;
+
+            Op::CallStatic { method, num_args }
+        }
         AbcOp::CallSuper { index, num_args } => {
             let multiname = pool_multiname(activation, translation_unit, index)?;
 
@@ -982,12 +925,40 @@ fn translate_op<'gc>(
         AbcOp::GetProperty { index } => {
             let multiname = pool_multiname(activation, translation_unit, index)?;
 
-            Op::GetProperty { multiname }
+            if !multiname.has_lazy_component() {
+                Op::GetPropertyStatic { multiname }
+            } else if multiname.has_lazy_name() && !multiname.has_lazy_ns() {
+                // The fast-path path usually doesn't activate when the public
+                // namespace isn't included in the multiname's namespace set.
+                // However, it does still activate when this Activation is
+                // running in interpreter mode
+                if multiname.valid_dynamic_name() || activation.is_interpreter() {
+                    Op::GetPropertyFast { multiname }
+                } else {
+                    Op::GetPropertySlow { multiname }
+                }
+            } else {
+                Op::GetPropertySlow { multiname }
+            }
         }
         AbcOp::SetProperty { index } => {
             let multiname = pool_multiname(activation, translation_unit, index)?;
 
-            Op::SetProperty { multiname }
+            if !multiname.has_lazy_component() {
+                Op::SetPropertyStatic { multiname }
+            } else if multiname.has_lazy_name() && !multiname.has_lazy_ns() {
+                // The fast-path path usually doesn't activate when the public
+                // namespace isn't included in the multiname's namespace set.
+                // However, it does still activate when this Activation is
+                // running in interpreter mode
+                if multiname.valid_dynamic_name() || activation.is_interpreter() {
+                    Op::SetPropertyFast { multiname }
+                } else {
+                    Op::SetPropertySlow { multiname }
+                }
+            } else {
+                Op::SetPropertySlow { multiname }
+            }
         }
         AbcOp::InitProperty { index } => {
             let multiname = pool_multiname(activation, translation_unit, index)?;
@@ -1052,10 +1023,10 @@ fn translate_op<'gc>(
         AbcOp::GetLex { index } => {
             let multiname = pool_multiname(activation, translation_unit, index)?;
 
-            // GetLex is split into two ops
+            // GetLex is split into two ops; multiname is guaranteed static
             return Ok((
                 Op::FindPropStrict { multiname },
-                Some(Op::GetProperty { multiname }),
+                Some(Op::GetPropertyStatic { multiname }),
             ));
         }
         AbcOp::GetDescendants { index } => {
@@ -1100,7 +1071,7 @@ fn translate_op<'gc>(
                 // This results in this VerifyError being thrown upon
                 // encountering any `newactivation` op in the bytecode.
 
-                return Err(Error::AvmError(verify_error(
+                return Err(Error::avm_error(verify_error(
                     activation,
                     "Error #1113: OP_newactivation used in method without NEED_ACTIVATION flag.",
                     1113,
@@ -1108,7 +1079,11 @@ fn translate_op<'gc>(
             }
         }
         AbcOp::NewObject { num_args } => Op::NewObject { num_args },
-        AbcOp::NewFunction { index } => Op::NewFunction { index },
+        AbcOp::NewFunction { index } => {
+            let method = pool_method(activation, translation_unit, index, true)?;
+
+            Op::NewFunction { method }
+        }
         AbcOp::NewClass { index } => {
             let class = pool_class(activation, translation_unit, index)?;
             Op::NewClass { class }
@@ -1320,11 +1295,11 @@ fn translate_op<'gc>(
         AbcOp::DxnsLate => Op::DxnsLate,
         AbcOp::LookupSwitch(lookup_switch) => {
             let created_lookup_switch = LookupSwitch {
-                default_offset: lookup_switch.default_offset as usize,
+                default_offset: Cell::new(lookup_switch.default_offset as usize),
                 case_offsets: lookup_switch
                     .case_offsets
                     .iter()
-                    .map(|o| *o as usize)
+                    .map(|o| Cell::new(*o as usize))
                     .collect(),
             };
 

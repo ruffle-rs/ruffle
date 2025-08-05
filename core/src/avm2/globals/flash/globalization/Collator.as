@@ -2,6 +2,7 @@ package flash.globalization {
     import __ruffle__.stub_constructor;
     import __ruffle__.stub_getter;
     import __ruffle__.stub_method;
+    import __ruffle__.stub_setter;
 
     [API("667")]
     public final class Collator {

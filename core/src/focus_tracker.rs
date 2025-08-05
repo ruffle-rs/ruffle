@@ -90,7 +90,7 @@ impl<'gc> FocusTracker<'gc> {
     /// Set the focus programmatically.
     pub fn set(&self, new: Option<InteractiveObject<'gc>>, context: &mut UpdateContext<'gc>) {
         self.set_internal(new, context, false);
-        self.update_edittext_selection(context);
+        self.update_edittext_selection();
     }
 
     /// Reset the focus programmatically.
@@ -139,7 +139,7 @@ impl<'gc> FocusTracker<'gc> {
         }
 
         self.set_internal(new, context, true);
-        self.update_edittext_selection(context);
+        self.update_edittext_selection();
     }
 
     fn set_internal(
@@ -174,12 +174,12 @@ impl<'gc> FocusTracker<'gc> {
             self.update_highlight(context);
 
             if let Some(old) = old {
-                old.set_has_focus(context.gc(), false);
+                old.set_has_focus(false);
                 old.on_focus_changed(context, false, new);
                 old.call_focus_handler(context, false, new);
             }
             if let Some(new) = new {
-                new.set_has_focus(context.gc(), true);
+                new.set_has_focus(true);
                 new.on_focus_changed(context, true, old);
                 new.call_focus_handler(context, true, old);
             }
@@ -222,7 +222,7 @@ impl<'gc> FocusTracker<'gc> {
     /// Update selection on the newly focused text field.
     ///
     /// This applies even if the focused element hasn't changed.
-    fn update_edittext_selection(&self, context: &mut UpdateContext<'gc>) {
+    fn update_edittext_selection(&self) {
         // Only key and programmatic focus change should trigger this, because
         // when focusing a text field with a mouse, a caret should be placed.
         // Note that this may suggest we should reorder operations on the text field:
@@ -231,7 +231,7 @@ impl<'gc> FocusTracker<'gc> {
         if let Some(text_field) = self.get_as_edit_text() {
             if !text_field.movie().is_action_script_3() {
                 let length = text_field.text_length();
-                text_field.set_selection(Some(TextSelection::for_range(0, length)), context.gc());
+                text_field.set_selection(Some(TextSelection::for_range(0, length)));
             }
         }
     }

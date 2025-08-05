@@ -6,7 +6,7 @@ use crate::string::AvmString;
 /// Extensions over parameters that are passed into AS-defined, Rust-implemented methods.
 ///
 /// It is expected that the AS signature is correct and you only operate on values defined from it.
-/// These values will be `expect()`ed to exist, and any method here will panic if they're missing.  
+/// These values will be `expect()`ed to exist, and any method here will panic if they're missing.
 pub trait ParametersExt<'gc> {
     /// Gets the value at the given index.
     fn get_value(&self, index: usize) -> Value<'gc>;

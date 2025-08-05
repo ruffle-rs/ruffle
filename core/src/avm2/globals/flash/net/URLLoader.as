@@ -10,25 +10,18 @@ package flash.net {
         [Ruffle(NativeAccessible)]
         public var dataFormat: String = "text";
 
+        [Ruffle(NativeAccessible)]
+        public var bytesLoaded:uint;
+
+        [Ruffle(NativeAccessible)]
+        public var bytesTotal:uint;
+
         public function URLLoader(request:URLRequest = null) {
             if (request != null) {
                 this.load(request);
             }
         }
 
-        // FIXME - this should be a normal property for consistency with Flash
-        public function get bytesTotal():uint {
-            if (this.data) {
-                return this.data.length;
-            }
-            return 0;
-        }
-
-        // FIXME - this should be a normal property for consistency with Flash
-        public function get bytesLoaded():uint {
-            // TODO - update this as the download progresses
-            return this.bytesTotal
-        }
         public native function load(request:URLRequest):void;
 
         public function close():void {

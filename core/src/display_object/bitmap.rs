@@ -3,7 +3,7 @@
 use crate::avm1;
 use crate::avm2::{
     Activation as Avm2Activation, BitmapDataObject as Avm2BitmapDataObject,
-    ClassObject as Avm2ClassObject, Object as Avm2Object, StageObject as Avm2StageObject, TObject,
+    ClassObject as Avm2ClassObject, Object as Avm2Object, StageObject as Avm2StageObject,
     Value as Avm2Value,
 };
 use crate::bitmap::bitmap_data::{BitmapData, BitmapDataWrapper};
@@ -11,14 +11,15 @@ use crate::context::{RenderContext, UpdateContext};
 use crate::display_object::{DisplayObjectBase, DisplayObjectPtr, DisplayObjectWeak};
 use crate::prelude::*;
 use crate::tag_utils::SwfMovie;
+use crate::utils::HasPrefixField;
 use crate::vminterface::Instantiator;
 use core::fmt;
 use gc_arena::barrier::unlock;
-use gc_arena::lock::{Lock, RefLock};
+use gc_arena::lock::Lock;
 use gc_arena::{Collect, Gc, GcCell, GcWeak, Mutation};
 use ruffle_render::backend::RenderBackend;
 use ruffle_render::bitmap::{BitmapFormat, PixelSnapping};
-use std::cell::{Cell, Ref, RefMut};
+use std::cell::Cell;
 use std::sync::Arc;
 
 #[derive(Clone, Debug, Collect, Copy)]
@@ -96,12 +97,21 @@ impl fmt::Debug for Bitmap<'_> {
     }
 }
 
-#[derive(Clone, Collect)]
+#[derive(Clone, Collect, HasPrefixField)]
 #[collect(no_drop)]
+#[repr(C, align(8))]
 pub struct BitmapGraphicData<'gc> {
-    base: RefLock<DisplayObjectBase<'gc>>,
-    id: CharacterId,
+    base: DisplayObjectBase<'gc>,
     movie: Arc<SwfMovie>,
+
+    /// The AVM2 side of this object.
+    ///
+    /// AVM1 code cannot directly reference `Bitmap`s, so this does not support
+    /// storing an AVM1 object.
+    avm2_object: Lock<Option<Avm2Object<'gc>>>,
+
+    /// The class associated with this Bitmap.
+    avm2_bitmap_class: Lock<BitmapClass<'gc>>,
 
     /// The current bitmap data object.
     bitmap_data: Lock<BitmapDataWrapper<'gc>>,
@@ -112,20 +122,13 @@ pub struct BitmapGraphicData<'gc> {
     width: Cell<u32>,
     height: Cell<u32>,
 
+    id: CharacterId,
+
     /// Whether or not bitmap smoothing is enabled.
     smoothing: Cell<bool>,
 
     /// How to snap this bitmap to the pixel grid
     pixel_snapping: Cell<PixelSnapping>,
-
-    /// The AVM2 side of this object.
-    ///
-    /// AVM1 code cannot directly reference `Bitmap`s, so this does not support
-    /// storing an AVM1 object.
-    avm2_object: Lock<Option<Avm2Object<'gc>>>,
-
-    /// The class associated with this Bitmap.
-    avm2_bitmap_class: Lock<BitmapClass<'gc>>,
 }
 
 impl<'gc> Bitmap<'gc> {
@@ -205,11 +208,11 @@ impl<'gc> Bitmap<'gc> {
     // Important - we read 'width' and 'height' from the cached
     // values on this object. See the definition of these fields
     // for more information
-    pub fn width(self) -> u16 {
+    pub fn bitmap_width(self) -> u16 {
         self.0.width.get() as u16
     }
 
-    pub fn height(self) -> u16 {
+    pub fn bitmap_height(self) -> u16 {
         self.0.height.get() as u16
     }
 
@@ -301,41 +304,37 @@ impl<'gc> Bitmap<'gc> {
 }
 
 impl<'gc> TDisplayObject<'gc> for Bitmap<'gc> {
-    fn base(&self) -> Ref<DisplayObjectBase<'gc>> {
-        self.0.base.borrow()
+    fn base(self) -> Gc<'gc, DisplayObjectBase<'gc>> {
+        HasPrefixField::as_prefix_gc(self.0)
     }
 
-    fn base_mut<'a>(&'a self, mc: &Mutation<'gc>) -> RefMut<'a, DisplayObjectBase<'gc>> {
-        unlock!(Gc::write(mc, self.0), BitmapGraphicData, base).borrow_mut()
-    }
-
-    fn instantiate(&self, gc_context: &Mutation<'gc>) -> DisplayObject<'gc> {
+    fn instantiate(self, gc_context: &Mutation<'gc>) -> DisplayObject<'gc> {
         Self(Gc::new(gc_context, self.0.as_ref().clone())).into()
     }
 
-    fn as_ptr(&self) -> *const DisplayObjectPtr {
+    fn as_ptr(self) -> *const DisplayObjectPtr {
         Gc::as_ptr(self.0) as *const DisplayObjectPtr
     }
 
-    fn id(&self) -> CharacterId {
+    fn id(self) -> CharacterId {
         self.0.id
     }
 
-    fn self_bounds(&self) -> Rectangle<Twips> {
+    fn self_bounds(self) -> Rectangle<Twips> {
         Rectangle {
             x_min: Twips::ZERO,
             y_min: Twips::ZERO,
-            x_max: Twips::from_pixels(Bitmap::width(*self).into()),
-            y_max: Twips::from_pixels(Bitmap::height(*self).into()),
+            x_max: Twips::from_pixels(self.bitmap_width().into()),
+            y_max: Twips::from_pixels(self.bitmap_height().into()),
         }
     }
 
     fn post_instantiation(
-        &self,
+        self,
         context: &mut UpdateContext<'gc>,
         _init_object: Option<avm1::Object<'gc>>,
         instantiated_by: Instantiator,
-        run_frame: bool,
+        _run_frame: bool,
     ) {
         if self.movie().is_action_script_3() {
             let mut activation = Avm2Activation::from_nothing(context);
@@ -351,7 +350,7 @@ impl<'gc> TDisplayObject<'gc> for Bitmap<'gc> {
 
                 let bitmap = Avm2StageObject::for_display_object_childless(
                     &mut activation,
-                    (*self).into(),
+                    self.into(),
                     bitmap_cls,
                 )
                 .expect("can't throw from post_instantiation -_-");
@@ -367,23 +366,14 @@ impl<'gc> TDisplayObject<'gc> for Bitmap<'gc> {
                 )
                 .expect("can't throw from post_instantiation -_-");
 
-                self.set_bitmap_data(
-                    activation.context,
-                    bitmap_data_obj.as_bitmap_data().unwrap(),
-                );
+                self.set_bitmap_data(activation.context, bitmap_data_obj.get_bitmap_data());
             }
 
             self.on_construction_complete(context);
-        } else {
-            context.avm1.add_to_exec_list(context.gc(), (*self).into());
-
-            if run_frame {
-                self.run_frame_avm1(context);
-            }
         }
     }
 
-    fn render_self(&self, context: &mut RenderContext<'_, 'gc>) {
+    fn render_self(self, context: &mut RenderContext<'_, 'gc>) {
         if !context.is_offscreen && !self.world_bounds().intersects(&context.stage.view_bounds()) {
             // Off-screen; culled
             return;
@@ -396,7 +386,7 @@ impl<'gc> TDisplayObject<'gc> for Bitmap<'gc> {
         );
     }
 
-    fn object2(&self) -> Avm2Value<'gc> {
+    fn object2(self) -> Avm2Value<'gc> {
         self.0
             .avm2_object
             .get()
@@ -404,7 +394,7 @@ impl<'gc> TDisplayObject<'gc> for Bitmap<'gc> {
             .unwrap_or(Avm2Value::Null)
     }
 
-    fn set_object2(&self, context: &mut UpdateContext<'gc>, to: Avm2Object<'gc>) {
+    fn set_object2(self, context: &mut UpdateContext<'gc>, to: Avm2Object<'gc>) {
         self.set_avm2_object(context.gc(), Some(to));
     }
 
@@ -412,7 +402,7 @@ impl<'gc> TDisplayObject<'gc> for Bitmap<'gc> {
         Some(self)
     }
 
-    fn movie(&self) -> Arc<SwfMovie> {
+    fn movie(self) -> Arc<SwfMovie> {
         self.0.movie.clone()
     }
 }

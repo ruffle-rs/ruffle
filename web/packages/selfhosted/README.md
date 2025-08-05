@@ -13,7 +13,7 @@ For more examples and in-depth documentation on how to use Ruffle on your websit
 ### Host Ruffle
 
 The `selfhosted` package is configured for websites that do not use bundlers or npm and just want
-to get up and running. If you'd prefer to use Ruffle through npm and a bundler, please 
+to get up and running. If you'd prefer to use Ruffle through npm and a bundler, please
 [refer to ruffle core](https://github.com/ruffle-rs/ruffle/tree/master/web/packages/core).
 
 Before you can get started with using Ruffle on your website, you must host its files yourself.

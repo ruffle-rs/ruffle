@@ -25,11 +25,11 @@ pub struct Response {
 }
 
 impl SuccessResponse for Response {
-    fn url(&self) -> std::borrow::Cow<str> {
+    fn url(&self) -> std::borrow::Cow<'_, str> {
         std::borrow::Cow::Borrowed(&self.url)
     }
 
-    #[allow(clippy::await_holding_lock)]
+    #[expect(clippy::await_holding_lock)]
     fn body(self: Box<Self>) -> OwnedFuture<Vec<u8>, Error> {
         match self.response_body {
             ResponseBody::File(file) => {
@@ -61,7 +61,7 @@ impl SuccessResponse for Response {
         self.redirected
     }
 
-    #[allow(clippy::await_holding_lock)]
+    #[expect(clippy::await_holding_lock)]
     fn next_chunk(&mut self) -> OwnedFuture<Option<Vec<u8>>, Error> {
         match &mut self.response_body {
             ResponseBody::File(file) => {

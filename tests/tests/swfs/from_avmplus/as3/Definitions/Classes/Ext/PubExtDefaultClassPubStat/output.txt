@@ -1,0 +1,29 @@
+*** Public Static Methods and Public Static properites *** PASSED!
+*** Access public static method from default method of sub class *** PASSED!
+EXTDCLASS.subSetArray(arr), EXTDCLASS.subGetArray() PASSED!
+*** Access public static method from public method of sub class *** PASSED!
+EXTDCLASS.pubSubSetArray(arr), EXTDCLASS.pubSubGetArray() PASSED!
+*** Access public static method from private method of sub class *** PASSED!
+EXTDCLASS.testPrivSubArray(arr) PASSED!
+*** Access public static method from final method of sub class *** PASSED!
+EXTDCLASS.testFinSubArray(arr) PASSED!
+*** Access public static method from static method of sub class *** PASSED!
+PubExtDefaultClassPubStat.testStatSubArray(arr) PASSED!
+*** Access public static method from public static method of sub class *** PASSED!
+PubExtDefaultClassPubStat.pubStatSubSetArray(arr), PubExtDefaultClassPubStat.pubStatSubGetArray() PASSED!
+*** Access public static method from private static method of sub class *** PASSED!
+PubExtDefaultClassPubStat.testPrivStatSubArray(arr) PASSED!
+*** Access public static property from default method in sub class *** PASSED!
+EXTDCLASS.subSetDPArray(arr), EXTDCLASS.subGetDPArray() PASSED!
+*** Access public static property from public method in sub class *** PASSED!
+EXTDCLASS.pubSubSetDPArray(arr), EXTDCLASS.pubSubGetDPArray() PASSED!
+*** Access public static property from private method in sub class *** PASSED!
+EXTDCLASS.privSubSetDPArray(arr), EXTDCLASS.privSubGetDPArray() PASSED!
+*** Access public static property from final method in sub class *** PASSED!
+EXTDCLASS.finSubSetDPArray(arr), EXTDCLASS.finSubGetDPArray() PASSED!
+*** Access public static property from static method in sub class *** PASSED!
+PubExtDefaultClassPubStat.statSubSetSPArray(arr), PubExtDefaultClassPubStat.statSubGetSPArray() PASSED!
+*** Access public static property from public static method in sub class *** PASSED!
+PubExtDefaultClassPubStat.pubStatSubSetSPArray(arr), PubExtDefaultClassPubStat.pubStatSubGetSPArray() PASSED!
+*** Access public static property from private static method in sub class *** PASSED!
+PubExtDefaultClassPubStat.testPrivStatSubPArray(arr) PASSED!

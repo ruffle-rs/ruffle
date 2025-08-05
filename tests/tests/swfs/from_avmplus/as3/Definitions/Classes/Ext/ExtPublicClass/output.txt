@@ -1,0 +1,7 @@
+EXTDCLASS.testSubGetSetArray(arr) PASSED!
+EXTDCLASS.pubSubSetArray(arr), EXTDCLASS.pubSubGetArray() PASSED!
+EXTDCLASS.testPrivSubArray(arr) PASSED!
+EXTDCLASS.testSubGetSetDPArray(arr) PASSED!
+EXTDCLASS.pubSubSetDPArray(arr), EXTDCLASS.pubSubGetDPArray() PASSED!
+EXTDCLASS.testPrivSubDPArray(arr) PASSED!
+access default property from public static method of sub class PASSED!

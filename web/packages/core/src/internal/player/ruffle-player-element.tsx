@@ -199,7 +199,7 @@ export function copyElement(element: Element, destination: Element): void {
 
                 try {
                     destination.setAttribute(attribute.name, attribute.value);
-                } catch (err) {
+                } catch (_err) {
                     // The embed may have invalid attributes, so handle these gracefully.
                     console.warn(
                         `Unable to set attribute ${attribute.name} on Ruffle instance`,

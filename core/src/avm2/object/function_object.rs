@@ -2,14 +2,15 @@
 
 use crate::avm2::activation::Activation;
 use crate::avm2::class::Class;
-use crate::avm2::function::BoundMethod;
+use crate::avm2::function::{BoundMethod, FunctionArgs};
 use crate::avm2::method::Method;
 use crate::avm2::object::script_object::{ScriptObject, ScriptObjectData};
-use crate::avm2::object::{ClassObject, Object, ObjectPtr, TObject};
+use crate::avm2::object::{ClassObject, Object, TObject};
 use crate::avm2::scope::ScopeChain;
 use crate::avm2::value::Value;
 use crate::avm2::Error;
 use crate::string::AvmString;
+use crate::utils::HasPrefixField;
 use core::fmt;
 use gc_arena::barrier::unlock;
 use gc_arena::{lock::Lock, Collect, Gc, GcWeak, Mutation};
@@ -32,7 +33,7 @@ impl fmt::Debug for FunctionObject<'_> {
     }
 }
 
-#[derive(Collect, Clone)]
+#[derive(Collect, Clone, HasPrefixField)]
 #[collect(no_drop)]
 #[repr(C, align(8))]
 pub struct FunctionObjectData<'gc> {
@@ -45,10 +46,6 @@ pub struct FunctionObjectData<'gc> {
     /// Attached prototype (note: not the same thing as base object's proto)
     prototype: Lock<Option<Object<'gc>>>,
 }
-
-const _: () = assert!(std::mem::offset_of!(FunctionObjectData, base) == 0);
-const _: () =
-    assert!(std::mem::align_of::<FunctionObjectData>() == std::mem::align_of::<ScriptObjectData>());
 
 impl<'gc> FunctionObject<'gc> {
     /// Construct a function from an ABC method and the current closure scope.
@@ -96,14 +93,21 @@ impl<'gc> FunctionObject<'gc> {
     ) -> Result<Value<'gc>, Error<'gc>> {
         let exec = &self.0.exec;
 
-        exec.exec(receiver, arguments, activation, self.into())
+        exec.exec(
+            receiver,
+            FunctionArgs::AsArgSlice { arguments },
+            activation,
+            Some(self),
+        )
     }
 
     pub fn construct(
         self,
         activation: &mut Activation<'_, 'gc>,
-        arguments: &[Value<'gc>],
+        arguments: FunctionArgs<'_, 'gc>,
     ) -> Result<Object<'gc>, Error<'gc>> {
+        let arguments = &arguments.to_slice();
+
         let object_class = activation.avm2().classes().object;
 
         let prototype = if let Some(proto) = self.prototype() {
@@ -141,27 +145,13 @@ impl<'gc> FunctionObject<'gc> {
 
 impl<'gc> TObject<'gc> for FunctionObject<'gc> {
     fn gc_base(&self) -> Gc<'gc, ScriptObjectData<'gc>> {
-        // SAFETY: Object data is repr(C), and a compile-time assert ensures
-        // that the ScriptObjectData stays at offset 0 of the struct- so the
-        // layouts are compatible
-
-        unsafe { Gc::cast(self.0) }
-    }
-
-    fn as_ptr(&self) -> *const ObjectPtr {
-        Gc::as_ptr(self.0) as *const ObjectPtr
+        HasPrefixField::as_prefix_gc(self.0)
     }
 
     fn to_string(&self, mc: &Mutation<'gc>) -> AvmString<'gc> {
-        // TODO this should use the ABC method index of the Method held by the
-        // BoundMethod (the same number that appears after "MethodInfo-" in
-        // stack traces)
-        let method_idx = 0;
+        let method = self.0.exec.as_method();
+        let method_index = method.abc_method_index();
 
-        AvmString::new_utf8(mc, format!("[object Function-{method_idx}]"))
-    }
-
-    fn as_function_object(&self) -> Option<FunctionObject<'gc>> {
-        Some(*self)
+        AvmString::new_utf8(mc, format!("[object Function-{method_index}]"))
     }
 }

@@ -5,7 +5,7 @@ use crate::avm2::error::{argument_error, make_error_2037};
 use crate::avm2::globals::methods::flash_media_sound as sound_methods;
 use crate::avm2::globals::slots::flash_net_url_request as url_request_slots;
 use crate::avm2::object::{
-    EventObject, QueuedPlay, SoundChannelObject, SoundLoadingState, TObject,
+    EventObject, QueuedPlay, SoundChannelObject, SoundLoadingState, TObject as _,
 };
 use crate::avm2::parameters::ParametersExt;
 use crate::avm2::value::Value;
@@ -40,7 +40,6 @@ pub fn init<'gc>(
                 .library_for_movie_mut(movie)
                 .character_by_id(symbol)
             {
-                let sound = *sound;
                 sound_object.set_sound(activation.context, sound)?;
             } else {
                 tracing::warn!("Attempted to construct subclass of Sound, {}, which is associated with non-Sound character {}", class_def.name().local_name(), symbol);
@@ -147,17 +146,9 @@ pub fn play<'gc>(
     let this = this.as_object().unwrap();
 
     if let Some(sound_object) = this.as_sound_object() {
-        let position = args
-            .get(0)
-            .cloned()
-            .unwrap_or_else(|| 0.0.into())
-            .coerce_to_number(activation)?;
-        let num_loops = args
-            .get(1)
-            .cloned()
-            .unwrap_or_else(|| 0.into())
-            .coerce_to_i32(activation)?;
-        let sound_transform = args.get(2).cloned().unwrap_or(Value::Null).as_object();
+        let position = args.get_f64(activation, 0)?;
+        let num_loops = args.get_i32(activation, 1)?;
+        let sound_transform = args.try_get_object(activation, 2);
 
         let in_sample = if position > 0.0 {
             Some((position / 1000.0 * 44100.0) as u32)
@@ -243,10 +234,10 @@ pub fn load<'gc>(
         return Err(make_error_2037(activation));
     }
 
-    let url_request = match args.get(0) {
-        Some(Value::Object(request)) => request,
-        // This should never actually happen
-        _ => return Ok(Value::Undefined),
+    let url_request = match args.try_get_object(activation, 0) {
+        Some(request) => request,
+        // FP ignores calls of `load(null)`
+        None => return Ok(Value::Undefined),
     };
 
     let url = url_request
@@ -292,7 +283,7 @@ pub fn load_compressed_data_from_byte_array<'gc>(
         bytes
     } else {
         // This is the error Flash throws
-        return Err(Error::AvmError(argument_error(
+        return Err(Error::avm_error(argument_error(
             activation,
             "Error #2084: The AMF encoding of the arguments cannot exceed 40K.",
             2084,
@@ -301,7 +292,7 @@ pub fn load_compressed_data_from_byte_array<'gc>(
 
     // FIXME - determine the actual error thrown by Flash Player
     let handle = activation.context.audio.register_mp3(bytes).map_err(|e| {
-        Error::RustError(format!("Failed to register sound from bytearray: {e:?}").into())
+        Error::rust_error(format!("Failed to register sound from bytearray: {e:?}").into())
     })?;
 
     let progress_evt =

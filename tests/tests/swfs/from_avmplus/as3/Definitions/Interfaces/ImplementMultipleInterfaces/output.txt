@@ -1,0 +1,8 @@
+single implements PASSED!
+double implements PASSED!
+triple implements PASSED!
+quadruple implements PASSED!
+extends single, single implements PASSED!
+extends double, double implements PASSED!
+extends double, double implements PASSED!
+extends triple, single implements PASSED!

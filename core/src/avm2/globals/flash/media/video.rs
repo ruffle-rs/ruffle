@@ -1,7 +1,7 @@
 use crate::avm2::error::{make_error_2136, Error};
 use crate::avm2::globals::flash::display::display_object::initialize_for_allocator;
 use crate::avm2::parameters::ParametersExt;
-use crate::avm2::{Activation, ClassObject, Object, TObject, Value};
+use crate::avm2::{Activation, ClassObject, Object, Value};
 use crate::avm2_stub_method;
 use crate::display_object::{TDisplayObject, Video};
 
@@ -56,7 +56,7 @@ pub fn init<'gc>(
         let width = args.get_i32(activation, 0)?;
         let height = args.get_i32(activation, 1)?;
 
-        video.set_size(activation.gc(), width, height);
+        video.set_size(width, height);
     }
 
     Ok(Value::Undefined)

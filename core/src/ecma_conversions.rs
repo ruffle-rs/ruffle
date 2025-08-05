@@ -28,7 +28,7 @@ pub fn f64_to_wrapping_i16(n: f64) -> i16 {
 
 /// Converts an `f64` to a `u32` with ECMAScript `ToUInt32` wrapping behavior.
 /// The value will be wrapped modulo 2^32.
-#[allow(clippy::unreadable_literal)]
+#[expect(clippy::unreadable_literal)]
 pub fn f64_to_wrapping_u32(n: f64) -> u32 {
     if !n.is_finite() {
         0

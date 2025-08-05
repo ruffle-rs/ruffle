@@ -1,7 +1,6 @@
 use crate::avm2::amf::serialize_value;
 use crate::avm2::error::make_error_2126;
 pub use crate::avm2::object::net_connection_allocator;
-use crate::avm2::object::TObject;
 use crate::avm2::parameters::ParametersExt;
 use crate::net_connection::NetConnections;
 use crate::string::AvmString;

@@ -2,8 +2,9 @@
 
 use crate::avm2::activation::Activation;
 use crate::avm2::object::script_object::ScriptObjectData;
-use crate::avm2::object::{Object, ObjectPtr, TObject};
+use crate::avm2::object::{Object, TObject};
 use crate::avm2::Error;
+use crate::utils::HasPrefixField;
 use gc_arena::{Collect, Gc, GcWeak};
 use ruffle_render::backend::ShaderModule;
 use std::cell::RefCell;
@@ -51,7 +52,7 @@ impl<'gc> Program3DObject<'gc> {
     }
 }
 
-#[derive(Collect)]
+#[derive(Collect, HasPrefixField)]
 #[collect(no_drop)]
 #[repr(C, align(8))]
 pub struct Program3DObjectData<'gc> {
@@ -63,26 +64,9 @@ pub struct Program3DObjectData<'gc> {
     shader_module_handle: RefCell<Option<Rc<dyn ShaderModule>>>,
 }
 
-const _: () = assert!(std::mem::offset_of!(Program3DObjectData, base) == 0);
-const _: () = assert!(
-    std::mem::align_of::<Program3DObjectData>() == std::mem::align_of::<ScriptObjectData>()
-);
-
 impl<'gc> TObject<'gc> for Program3DObject<'gc> {
     fn gc_base(&self) -> Gc<'gc, ScriptObjectData<'gc>> {
-        // SAFETY: Object data is repr(C), and a compile-time assert ensures
-        // that the ScriptObjectData stays at offset 0 of the struct- so the
-        // layouts are compatible
-
-        unsafe { Gc::cast(self.0) }
-    }
-
-    fn as_ptr(&self) -> *const ObjectPtr {
-        Gc::as_ptr(self.0) as *const ObjectPtr
-    }
-
-    fn as_program_3d(&self) -> Option<Program3DObject<'gc>> {
-        Some(*self)
+        HasPrefixField::as_prefix_gc(self.0)
     }
 }
 

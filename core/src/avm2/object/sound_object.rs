@@ -3,7 +3,7 @@
 use crate::avm2::activation::Activation;
 use crate::avm2::globals::slots::flash_media_id3info as id3_slots;
 use crate::avm2::object::script_object::ScriptObjectData;
-use crate::avm2::object::{ClassObject, Object, ObjectPtr, TObject};
+use crate::avm2::object::{ClassObject, Object, TObject};
 use crate::avm2::Avm2;
 use crate::avm2::Error;
 use crate::avm2::EventObject;
@@ -11,6 +11,7 @@ use crate::backend::audio::{AudioManager, SoundHandle};
 use crate::context::UpdateContext;
 use crate::display_object::SoundTransform;
 use crate::string::AvmString;
+use crate::utils::HasPrefixField;
 use core::fmt;
 use gc_arena::barrier::unlock;
 use gc_arena::{
@@ -61,7 +62,7 @@ impl fmt::Debug for SoundObject<'_> {
     }
 }
 
-#[derive(Collect)]
+#[derive(Collect, HasPrefixField)]
 #[collect(no_drop)]
 #[repr(C, align(8))]
 pub struct SoundObjectData<'gc> {
@@ -77,10 +78,6 @@ pub struct SoundObjectData<'gc> {
     /// ID3Info Object
     id3: Lock<Option<Object<'gc>>>,
 }
-
-const _: () = assert!(std::mem::offset_of!(SoundObjectData, base) == 0);
-const _: () =
-    assert!(std::mem::align_of::<SoundObjectData>() == std::mem::align_of::<ScriptObjectData>());
 
 #[derive(Collect)]
 #[collect(no_drop)]
@@ -294,8 +291,6 @@ fn play_queued<'gc>(
 
         queued
             .sound_channel
-            .as_sound_channel()
-            .unwrap()
             .set_sound_instance(activation, instance);
 
         activation
@@ -307,18 +302,6 @@ fn play_queued<'gc>(
 
 impl<'gc> TObject<'gc> for SoundObject<'gc> {
     fn gc_base(&self) -> Gc<'gc, ScriptObjectData<'gc>> {
-        // SAFETY: Object data is repr(C), and a compile-time assert ensures
-        // that the ScriptObjectData stays at offset 0 of the struct- so the
-        // layouts are compatible
-
-        unsafe { Gc::cast(self.0) }
-    }
-
-    fn as_ptr(&self) -> *const ObjectPtr {
-        Gc::as_ptr(self.0) as *const ObjectPtr
-    }
-
-    fn as_sound_object(self) -> Option<SoundObject<'gc>> {
-        Some(self)
+        HasPrefixField::as_prefix_gc(self.0)
     }
 }

@@ -1,4 +1,4 @@
-﻿package flash.filters {
+package flash.filters {
     public final class ColorMatrixFilter extends BitmapFilter {
         [Ruffle(NativeAccessible)]
         private var _matrix: Array;

@@ -2,9 +2,9 @@
 
 <!--
     wix extension add -g WixToolset.UI.wixext
-    wix extension add -g WixToolset.Util.wixext 
+    wix extension add -g WixToolset.Util.wixext
     RUFFLE_VERSION="xxxxxx" wix build ruffle.wxs -ext WixToolset.UI.wixext -ext WixToolset.Util.wixext -arch x64
-    -->
+-->
 
 <Wix xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:ui="http://wixtoolset.org/schemas/v4/wxs/ui"
      xmlns:util="http://wixtoolset.org/schemas/v4/wxs/util"
@@ -93,11 +93,11 @@ http://wixtoolset.org/schemas/v4/wxs/util https://raw.githubusercontent.com/wixt
         </StandardDirectory>
 
         <Component Id='Associations' Guid='2216512a-9c76-412f-ba36-08e703a56f25'>
-            <!-- 
+            <!--
                 This creates the Ruffle progids and *hints* that Ruffle can be associated with them.
-                This may or may not cause Windows to make the association, but more likely makes it ask the user 
+                This may or may not cause Windows to make the association, but more likely makes it ask the user
                 what they want the next time they open a swf.
-                -->
+            -->
 
             <ProgId Id='Ruffle.swf' Description='Flash Movie' Icon="DesktopEXE" IconIndex="1">
                 <Extension Id='swf' ContentType='application/x-shockwave-flash'>
@@ -124,7 +124,7 @@ http://wixtoolset.org/schemas/v4/wxs/util https://raw.githubusercontent.com/wixt
         <Component Id='ApplicationInfo' Guid='f7e7c5bb-729c-427e-b913-fd0d2e11a143'>
             <!--
                 Tell windows a few properties about our application, so that it can handle it slightly better in "Open With"
-                
+
                 (wondering how Windows matches these to the ruffle.exe that we install at some arbitrary path the user picks?)
                 (well that's the fun part... it doesn't! Windows SOLELY goes by the filename. Isn't that convenient?!)
                 (rename an executable and suddenly windows can't associate these things with it anymore whoops)

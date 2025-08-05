@@ -3,7 +3,7 @@ use crate::avm1::error::Error;
 use crate::avm1::globals::bitmap_filter;
 use crate::avm1::object::NativeObject;
 use crate::avm1::property_decl::{define_properties_on, Declaration};
-use crate::avm1::{globals, ArrayBuilder, Object, ScriptObject, TObject, Value};
+use crate::avm1::{globals, ArrayBuilder, Object, Value};
 use crate::display_object::{
     AutoSizeMode, EditText, TDisplayObject, TInteractiveObject, TextSelection,
 };
@@ -105,9 +105,9 @@ pub fn create_proto<'gc>(
     proto: Object<'gc>,
     fn_proto: Object<'gc>,
 ) -> Object<'gc> {
-    let object = ScriptObject::new(context, Some(proto));
+    let object = Object::new(context, Some(proto));
     define_properties_on(PROTO_DECLS, context, object, fn_proto);
-    object.into()
+    object
 }
 
 pub fn password<'gc>(
@@ -129,9 +129,9 @@ pub fn set_password<'gc>(
 fn new_text_format<'gc>(
     activation: &mut Activation<'_, 'gc>,
     text_format: TextFormat,
-) -> ScriptObject<'gc> {
+) -> Object<'gc> {
     let proto = activation.context.avm1.prototypes().text_format;
-    let object = ScriptObject::new(&activation.context.strings, Some(proto));
+    let object = Object::new(&activation.context.strings, Some(proto));
     object.set_native(
         activation.gc(),
         NativeObject::TextFormat(Gc::new(activation.gc(), text_format.into())),
@@ -150,12 +150,12 @@ fn get_new_text_format<'gc>(
 
 fn set_new_text_format<'gc>(
     text_field: EditText<'gc>,
-    activation: &mut Activation<'_, 'gc>,
+    _activation: &mut Activation<'_, 'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let [Value::Object(text_format), ..] = args {
         if let NativeObject::TextFormat(text_format) = text_format.native() {
-            text_field.set_new_text_format(text_format.borrow().clone(), activation.context);
+            text_field.set_new_text_format(text_format.borrow().clone());
         }
     }
 
@@ -249,10 +249,9 @@ fn replace_sel<'gc>(
         &text,
         activation.context,
     );
-    text_field.set_selection(
-        Some(TextSelection::for_position(selection.start() + text.len())),
-        activation.gc(),
-    );
+    text_field.set_selection(Some(TextSelection::for_position(
+        selection.start() + text.len(),
+    )));
 
     text_field.propagate_text_binding(activation);
 
@@ -325,7 +324,7 @@ pub fn set_html<'gc>(
     value: Value<'gc>,
 ) -> Result<(), Error<'gc>> {
     let value = value.as_bool(activation.swf_version());
-    this.set_is_html(activation.context, value);
+    this.set_is_html(value);
     Ok(())
 }
 
@@ -355,7 +354,7 @@ pub fn set_text_color<'gc>(
         text_format.clone(),
         activation.context,
     );
-    this.set_new_text_format(text_format, activation.context);
+    this.set_new_text_format(text_format);
     Ok(())
 }
 
@@ -390,7 +389,7 @@ pub fn set_background<'gc>(
     value: Value<'gc>,
 ) -> Result<(), Error<'gc>> {
     let has_background = value.as_bool(activation.swf_version());
-    this.set_has_background(activation.gc(), has_background);
+    this.set_has_background(has_background);
     Ok(())
 }
 
@@ -408,7 +407,7 @@ pub fn set_background_color<'gc>(
 ) -> Result<(), Error<'gc>> {
     let rgb = value.coerce_to_u32(activation)?;
     let color = Color::from_rgb(rgb, 255);
-    this.set_background_color(activation.gc(), color);
+    this.set_background_color(color);
     Ok(())
 }
 
@@ -425,7 +424,7 @@ pub fn set_border<'gc>(
     value: Value<'gc>,
 ) -> Result<(), Error<'gc>> {
     let has_border = value.as_bool(activation.swf_version());
-    this.set_has_border(activation.gc(), has_border);
+    this.set_has_border(has_border);
     Ok(())
 }
 
@@ -443,7 +442,7 @@ pub fn set_border_color<'gc>(
 ) -> Result<(), Error<'gc>> {
     let rgb = value.coerce_to_u32(activation)?;
     let color = Color::from_rgb(rgb, 255);
-    this.set_border_color(activation.gc(), color);
+    this.set_border_color(color);
     Ok(())
 }
 
@@ -500,7 +499,7 @@ pub fn set_mouse_wheel_enabled<'gc>(
     value: Value<'gc>,
 ) -> Result<(), Error<'gc>> {
     let is_enabled = value.as_bool(activation.swf_version());
-    this.set_mouse_wheel_enabled(is_enabled, activation.context);
+    this.set_mouse_wheel_enabled(is_enabled);
     Ok(())
 }
 
@@ -534,7 +533,7 @@ pub fn set_selectable<'gc>(
     value: Value<'gc>,
 ) -> Result<(), Error<'gc>> {
     let set_selectable = value.as_bool(activation.swf_version());
-    this.set_selectable(set_selectable, activation.context);
+    this.set_selectable(set_selectable);
     Ok(())
 }
 
@@ -626,9 +625,9 @@ pub fn set_type<'gc>(
     let value = value.coerce_to_string(activation)?;
 
     if value.eq_ignore_case(WStr::from_units(b"input")) {
-        this.set_editable(true, activation.context);
+        this.set_editable(true);
     } else if value.eq_ignore_case(WStr::from_units(b"dynamic")) {
-        this.set_editable(false, activation.context)
+        this.set_editable(false)
     } else {
         tracing::warn!("Invalid TextField.type: {}", value);
     }
@@ -651,7 +650,7 @@ pub fn set_hscroll<'gc>(
     // SWF v8 and earlier has the simple clamping behaviour below. SWF v9+ is much more complicated. See #4634.
     let hscroll_pixels = value.coerce_to_i32(activation)? as f64;
     let clamped = hscroll_pixels.clamp(0.0, this.maxhscroll());
-    this.set_hscroll(clamped, activation.context);
+    this.set_hscroll(clamped);
     Ok(())
 }
 
@@ -675,7 +674,7 @@ pub fn set_scroll<'gc>(
     value: Value<'gc>,
 ) -> Result<(), Error<'gc>> {
     let input = value.coerce_to_f64(activation)?;
-    this.set_scroll(input, activation.context);
+    this.set_scroll(input);
     Ok(())
 }
 
@@ -692,7 +691,7 @@ pub fn set_max_chars<'gc>(
     value: Value<'gc>,
 ) -> Result<(), Error<'gc>> {
     let input = value.coerce_to_i32(activation)?;
-    this.set_max_chars(input, activation.context);
+    this.set_max_chars(input);
     Ok(())
 }
 
@@ -735,9 +734,9 @@ pub fn set_anti_alias_type<'gc>(
     let new_type = value.coerce_to_string(activation)?;
 
     if &new_type == b"advanced" {
-        this.set_render_settings(activation.gc(), old_settings.with_advanced_rendering());
+        this.set_render_settings(old_settings.with_advanced_rendering());
     } else if &new_type == b"normal" {
-        this.set_render_settings(activation.gc(), old_settings.with_normal_rendering());
+        this.set_render_settings(old_settings.with_normal_rendering());
     }
 
     Ok(())
@@ -765,20 +764,11 @@ pub fn set_grid_fit_type<'gc>(
     let new_type = value.coerce_to_string(activation)?;
 
     if &new_type == b"pixel" {
-        this.set_render_settings(
-            activation.gc(),
-            old_settings.with_grid_fit(swf::TextGridFit::Pixel),
-        );
+        this.set_render_settings(old_settings.with_grid_fit(swf::TextGridFit::Pixel));
     } else if &new_type == b"subpixel" {
-        this.set_render_settings(
-            activation.gc(),
-            old_settings.with_grid_fit(swf::TextGridFit::SubPixel),
-        );
+        this.set_render_settings(old_settings.with_grid_fit(swf::TextGridFit::SubPixel));
     } else if &new_type == b"none" {
-        this.set_render_settings(
-            activation.gc(),
-            old_settings.with_grid_fit(swf::TextGridFit::None),
-        );
+        this.set_render_settings(old_settings.with_grid_fit(swf::TextGridFit::None));
     } // NOTE: In AS2 invalid values do nothing.
 
     Ok(())
@@ -799,10 +789,7 @@ pub fn set_thickness<'gc>(
     let old_settings = this.render_settings();
     let new_thickness = value.coerce_to_f64(activation)?;
 
-    this.set_render_settings(
-        activation.gc(),
-        old_settings.with_thickness(new_thickness as f32),
-    );
+    this.set_render_settings(old_settings.with_thickness(new_thickness as f32));
 
     Ok(())
 }
@@ -822,10 +809,7 @@ pub fn set_sharpness<'gc>(
     let old_settings = this.render_settings();
     let new_sharpness = value.coerce_to_f64(activation)?;
 
-    this.set_render_settings(
-        activation.gc(),
-        old_settings.with_sharpness(new_sharpness as f32),
-    );
+    this.set_render_settings(old_settings.with_sharpness(new_sharpness as f32));
 
     Ok(())
 }
@@ -837,8 +821,8 @@ fn filters<'gc>(
     Ok(ArrayBuilder::new(activation)
         .with(
             this.filters()
-                .into_iter()
-                .map(|filter| bitmap_filter::filter_to_avm1(activation, filter)),
+                .iter()
+                .map(|filter| bitmap_filter::filter_to_avm1(activation, filter.clone())),
         )
         .into())
 }
@@ -857,7 +841,7 @@ fn set_filters<'gc>(
             }
         }
     }
-    this.set_filters(activation.gc(), filters);
+    this.set_filters(filters.into_boxed_slice());
     Ok(())
 }
 
@@ -878,16 +862,16 @@ fn set_restrict<'gc>(
 ) -> Result<(), Error<'gc>> {
     match value {
         Value::Undefined | Value::Null => {
-            this.set_restrict(None, activation.context);
+            this.set_restrict(None);
         }
         _ => {
             let text = value.coerce_to_string(activation)?;
             if text.is_empty() {
                 // According to docs, an empty string means that you cannot enter any character,
                 // but according to reality, an empty string is equivalent to null in AVM1.
-                this.set_restrict(None, activation.context);
+                this.set_restrict(None);
             } else {
-                this.set_restrict(Some(&text), activation.context);
+                this.set_restrict(Some(&text));
             }
         }
     };
@@ -921,7 +905,7 @@ pub fn set_tab_index<'gc>(
                 Some(u32_value as i32)
             }
         };
-        this.set_tab_index(activation.context, value);
+        this.set_tab_index(value);
     }
     Ok(())
 }
@@ -939,7 +923,7 @@ pub fn set_condense_white<'gc>(
     value: Value<'gc>,
 ) -> Result<(), Error<'gc>> {
     let condense_white = value.as_bool(activation.swf_version());
-    this.set_condense_white(activation.context, condense_white);
+    this.set_condense_white(condense_white);
     Ok(())
 }
 

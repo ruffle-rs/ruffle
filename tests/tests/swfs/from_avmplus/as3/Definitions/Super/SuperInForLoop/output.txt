@@ -1,0 +1,16 @@
+for_array_access:length PASSED!
+for_array_access:company PASSED!
+for_array_access:year PASSED!
+for_array_access:0 PASSED!
+foreach_array_access:zero PASSED!
+foreach_array_access:4 PASSED!
+foreach_array_access:netscape PASSED!
+foreach_array_access:2000 PASSED!
+for_prop_access:length PASSED!
+for_prop_access:company PASSED!
+for_prop_access:year PASSED!
+for_prop_access:0 PASSED!
+foreach_prop_access:zero PASSED!
+foreach_prop_access:4 PASSED!
+foreach_prop_access:netscape PASSED!
+foreach_prop_access:2000 PASSED!

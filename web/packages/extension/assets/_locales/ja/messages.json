@@ -26,6 +26,12 @@
     "settings_log_level_info": {
         "message": "情報"
     },
+    "settings_log_level_debug": {
+        "message": "デバッグ"
+    },
+    "settings_log_level_trace": {
+        "message": "トレース"
+    },
     "settings_max_execution_duration": {
         "message": "ActionScriptの最長実行時間(秒)"
     },

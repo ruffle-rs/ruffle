@@ -1,4 +1,4 @@
-use crate::avm2::error::{make_error_2008, type_error};
+use crate::avm2::error::make_error_2008;
 use crate::avm2::globals::flash::display::shader_job::get_shader_args;
 use crate::avm2::globals::slots::flash_filters_bevel_filter as bevel_filter_slots;
 use crate::avm2::globals::slots::flash_filters_blur_filter as blur_filter_slots;
@@ -11,7 +11,7 @@ use crate::avm2::globals::slots::flash_filters_gradient_bevel_filter as gradient
 use crate::avm2::globals::slots::flash_filters_gradient_glow_filter as gradient_glow_filter_slots;
 use crate::avm2::globals::slots::flash_filters_shader_filter as shader_filter_slots;
 use crate::avm2::globals::slots::flash_geom_point as point_slots;
-use crate::avm2::object::{ArrayObject, ClassObject, Object, TObject};
+use crate::avm2::object::{ArrayObject, ClassObject, Object, TObject as _};
 use crate::avm2::{Activation, Error, Value};
 
 use gc_arena::{Collect, DynamicRoot, Gc, Rootable};
@@ -19,6 +19,7 @@ use ruffle_macros::istr;
 use ruffle_render::filters::{
     DisplacementMapFilter, DisplacementMapFilterMode, Filter, ShaderFilter, ShaderObject,
 };
+use std::any::Any;
 use std::fmt::Debug;
 use swf::{
     BevelFilter, BevelFilterFlags, BlurFilter, BlurFilterFlags, Color, ColorMatrixFilter,
@@ -50,7 +51,7 @@ impl ShaderObject for ObjectWrapper {
     }
 
     fn equals(&self, other: &dyn ShaderObject) -> bool {
-        if let Some(other_wrapper) = other.downcast_ref::<ObjectWrapper>() {
+        if let Some(other_wrapper) = <dyn Any>::downcast_ref::<ObjectWrapper>(other) {
             std::ptr::eq(self.root.as_ptr(), other_wrapper.root.as_ptr())
         } else {
             false
@@ -167,13 +168,7 @@ impl FilterAvm2Ext for Filter {
             )?));
         }
 
-        Err(Error::AvmError(type_error(
-            activation,
-            &format!(
-                "Error #1034: Type Coercion failed: cannot convert {object:?} to flash.filters.BitmapFilter."
-            ),
-            1034,
-        )?))
+        unreachable!("{object:?} must be of type BitmapFilter")
     }
 
     fn as_avm2_object<'gc>(
@@ -497,23 +492,17 @@ fn avm2_to_displacement_map_filter<'gc>(
     let scale_y = object
         .get_slot(displacement_map_filter_slots::SCALE_Y)
         .coerce_to_number(activation)?;
-    let map_bitmap = if let Value::Object(bitmap) =
-        object.get_slot(displacement_map_filter_slots::MAP_BITMAP)
-    {
-        if let Some(bitmap) = bitmap.as_bitmap_data() {
-            Some(bitmap.bitmap_handle(activation.gc(), activation.context.renderer))
+    let map_bitmap =
+        if let Value::Object(bitmap) = object.get_slot(displacement_map_filter_slots::MAP_BITMAP) {
+            Some(
+                bitmap
+                    .as_bitmap_data()
+                    .unwrap()
+                    .bitmap_handle(activation.gc(), activation.context.renderer),
+            )
         } else {
-            return Err(Error::AvmError(type_error(
-                activation,
-                &format!(
-                    "Error #1034: Type Coercion failed: cannot convert {bitmap:?} to flash.display.BitmapData."
-                ),
-                1034,
-            )?));
-        }
-    } else {
-        None
-    };
+            None
+        };
     Ok(Filter::DisplacementMapFilter(DisplacementMapFilter {
         color: Color::from_rgb(color, (alpha * 255.0) as u8),
         component_x: component_x as u8,
@@ -700,45 +689,45 @@ fn avm2_to_gradient_filter<'gc>(
     activation: &mut Activation<'_, 'gc>,
     object: Object<'gc>,
 ) -> Result<GradientFilter, Error<'gc>> {
-    #[allow(clippy::assertions_on_constants)]
+    #[expect(clippy::assertions_on_constants)]
     {
-        assert!(gradient_bevel_filter_slots::ANGLE == gradient_glow_filter_slots::ANGLE);
-        assert!(gradient_bevel_filter_slots::BLUR_X == gradient_glow_filter_slots::BLUR_X);
-        assert!(gradient_bevel_filter_slots::BLUR_Y == gradient_glow_filter_slots::BLUR_Y);
-        assert!(gradient_bevel_filter_slots::DISTANCE == gradient_glow_filter_slots::DISTANCE);
-        assert!(gradient_bevel_filter_slots::KNOCKOUT == gradient_glow_filter_slots::KNOCKOUT);
-        assert!(gradient_bevel_filter_slots::QUALITY == gradient_glow_filter_slots::QUALITY);
-        assert!(gradient_bevel_filter_slots::STRENGTH == gradient_glow_filter_slots::STRENGTH);
-        assert!(gradient_bevel_filter_slots::TYPE == gradient_glow_filter_slots::TYPE);
+        assert!(gradient_bevel_filter_slots::_ANGLE == gradient_glow_filter_slots::_ANGLE);
+        assert!(gradient_bevel_filter_slots::_BLUR_X == gradient_glow_filter_slots::_BLUR_X);
+        assert!(gradient_bevel_filter_slots::_BLUR_Y == gradient_glow_filter_slots::_BLUR_Y);
+        assert!(gradient_bevel_filter_slots::_DISTANCE == gradient_glow_filter_slots::_DISTANCE);
+        assert!(gradient_bevel_filter_slots::_KNOCKOUT == gradient_glow_filter_slots::_KNOCKOUT);
+        assert!(gradient_bevel_filter_slots::_QUALITY == gradient_glow_filter_slots::_QUALITY);
+        assert!(gradient_bevel_filter_slots::_STRENGTH == gradient_glow_filter_slots::_STRENGTH);
+        assert!(gradient_bevel_filter_slots::_TYPE == gradient_glow_filter_slots::_TYPE);
 
-        assert!(gradient_bevel_filter_slots::COLORS == gradient_glow_filter_slots::COLORS);
-        assert!(gradient_bevel_filter_slots::ALPHAS == gradient_glow_filter_slots::ALPHAS);
-        assert!(gradient_bevel_filter_slots::RATIOS == gradient_glow_filter_slots::RATIOS);
+        assert!(gradient_bevel_filter_slots::_COLORS == gradient_glow_filter_slots::_COLORS);
+        assert!(gradient_bevel_filter_slots::_ALPHAS == gradient_glow_filter_slots::_ALPHAS);
+        assert!(gradient_bevel_filter_slots::_RATIOS == gradient_glow_filter_slots::_RATIOS);
     }
 
     let angle = object
-        .get_slot(gradient_bevel_filter_slots::ANGLE)
+        .get_slot(gradient_bevel_filter_slots::_ANGLE)
         .coerce_to_number(activation)?;
     let blur_x = object
-        .get_slot(gradient_bevel_filter_slots::BLUR_X)
+        .get_slot(gradient_bevel_filter_slots::_BLUR_X)
         .coerce_to_number(activation)?;
     let blur_y = object
-        .get_slot(gradient_bevel_filter_slots::BLUR_Y)
+        .get_slot(gradient_bevel_filter_slots::_BLUR_Y)
         .coerce_to_number(activation)?;
     let distance = object
-        .get_slot(gradient_bevel_filter_slots::DISTANCE)
+        .get_slot(gradient_bevel_filter_slots::_DISTANCE)
         .coerce_to_number(activation)?;
     let knockout = object
-        .get_slot(gradient_bevel_filter_slots::KNOCKOUT)
+        .get_slot(gradient_bevel_filter_slots::_KNOCKOUT)
         .coerce_to_boolean();
     let quality = object
-        .get_slot(gradient_bevel_filter_slots::QUALITY)
+        .get_slot(gradient_bevel_filter_slots::_QUALITY)
         .coerce_to_u32(activation)?;
     let strength = object
-        .get_slot(gradient_bevel_filter_slots::STRENGTH)
+        .get_slot(gradient_bevel_filter_slots::_STRENGTH)
         .coerce_to_number(activation)?;
     let bevel_type = object
-        .get_slot(gradient_bevel_filter_slots::TYPE)
+        .get_slot(gradient_bevel_filter_slots::_TYPE)
         .coerce_to_string(activation)?;
     let colors = get_gradient_colors(activation, object)?;
     let mut flags = GradientFilterFlags::COMPOSITE_SOURCE;
@@ -857,9 +846,7 @@ fn shader_filter_to_avm2<'gc>(
     activation: &mut Activation<'_, 'gc>,
     filter: &ShaderFilter<'static>,
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let object_wrapper: &ObjectWrapper = filter
-        .shader_object
-        .downcast_ref::<ObjectWrapper>()
+    let object_wrapper: &ObjectWrapper = <dyn Any>::downcast_ref(filter.shader_object.as_ref())
         .expect("ShaderObject was not an ObjectWrapper");
 
     let obj = *activation.context.dynamic_root.fetch(&object_wrapper.root);
@@ -876,17 +863,17 @@ fn get_gradient_colors<'gc>(
 ) -> Result<Vec<GradientRecord>, Error<'gc>> {
     let mut colors = vec![];
     if let Some(colors_object) = object
-        .get_slot(gradient_bevel_filter_slots::COLORS)
+        .get_slot(gradient_bevel_filter_slots::_COLORS)
         .as_object()
     {
         if let Some(colors_array) = colors_object.as_array_storage() {
             if let Some(alphas_object) = object
-                .get_slot(gradient_bevel_filter_slots::ALPHAS)
+                .get_slot(gradient_bevel_filter_slots::_ALPHAS)
                 .as_object()
             {
                 if let Some(alphas_array) = alphas_object.as_array_storage() {
                     if let Some(ratios_object) = object
-                        .get_slot(gradient_bevel_filter_slots::RATIOS)
+                        .get_slot(gradient_bevel_filter_slots::_RATIOS)
                         .as_object()
                     {
                         if let Some(ratios_array) = ratios_object.as_array_storage() {

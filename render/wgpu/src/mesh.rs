@@ -3,6 +3,7 @@ use crate::target::RenderTarget;
 use crate::{
     as_texture, Descriptors, GradientUniforms, PosColorVertex, PosVertex, TextureTransforms,
 };
+use std::any::Any;
 use std::ops::Range;
 use wgpu::util::DeviceExt;
 
@@ -25,7 +26,7 @@ pub struct Mesh {
 impl ShapeHandleImpl for Mesh {}
 
 pub fn as_mesh(handle: &ShapeHandle) -> &Mesh {
-    <dyn ShapeHandleImpl>::downcast_ref(&*handle.0).expect("Shape handle must be a WGPU ShapeData")
+    <dyn Any>::downcast_ref(&*handle.0).expect("Shape handle must be a WGPU ShapeData")
 }
 
 #[derive(Debug)]
@@ -66,7 +67,7 @@ pub struct Draw {
 }
 
 impl PendingDraw {
-    #[allow(clippy::too_many_arguments)]
+    #[expect(clippy::too_many_arguments)]
     pub fn new<T: RenderTarget>(
         backend: &mut WgpuRenderBackend<T>,
         source: &dyn BitmapSource,
@@ -117,7 +118,6 @@ impl PendingDraw {
     }
 }
 
-#[allow(dead_code)]
 #[derive(Debug)]
 pub enum PendingDrawType {
     Color,
@@ -274,7 +274,6 @@ impl PendingDrawType {
     }
 }
 
-#[allow(dead_code)]
 #[derive(Debug)]
 pub enum DrawType {
     Color,

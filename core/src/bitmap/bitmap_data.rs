@@ -23,13 +23,13 @@ impl LehmerRng {
 
     /// Generate the next value in the sequence via the following formula
     /// X_(k+1) = a * X_k mod m
-    pub fn gen(&mut self) -> u32 {
+    pub fn random(&mut self) -> u32 {
         self.x = ((self.x as u64).overflowing_mul(16_807).0 % 2_147_483_647) as u32;
         self.x
     }
 
-    pub fn gen_range(&mut self, rng: Range<u8>) -> u8 {
-        rng.start + (self.gen() % ((rng.end - rng.start) as u32 + 1)) as u8
+    pub fn random_range(&mut self, rng: Range<u8>) -> u8 {
+        rng.start + (self.random() % ((rng.end - rng.start) as u32 + 1)) as u8
     }
 }
 
@@ -40,8 +40,17 @@ impl LehmerRng {
 /// unmultiplied values. Make sure to convert the color to the correct form beforehand.
 // TODO: Maybe split the type into `PremultipliedColor(u32)` and
 //   `UnmultipliedColor(u32)`?
-#[derive(Debug, Default, Copy, Clone, Eq, PartialEq, Ord, PartialOrd)]
-pub struct Color(u32);
+#[derive(Debug, Default, Copy, Clone, Eq, PartialEq, Ord, PartialOrd, bytemuck::NoUninit)]
+#[repr(C, align(4))]
+pub struct Color {
+    // Note: even though AS2/AS3 represent colors as (little-endian) BGRA `u32`s, this is stored
+    // in RGBA order to be compatible with what the render backend expects.
+    // TODO: consider switching renderers to use BGRA to avoid byteswaps when talking to ActionScript?
+    r: u8,
+    g: u8,
+    b: u8,
+    a: u8,
+}
 
 #[derive(Debug, Clone)]
 pub enum BitmapDataDrawError {
@@ -49,20 +58,35 @@ pub enum BitmapDataDrawError {
 }
 
 impl Color {
+    #[must_use]
+    pub fn rgba(r: u8, g: u8, b: u8, a: u8) -> Self {
+        Self { r, g, b, a }
+    }
+
+    #[must_use]
+    pub fn bgra_u32(bgra: u32) -> Self {
+        let [b, g, r, a] = bgra.to_le_bytes();
+        Self { r, g, b, a }
+    }
+
+    pub fn to_bgra_u32(&self) -> u32 {
+        u32::from_le_bytes([self.b, self.g, self.r, self.a])
+    }
+
     pub fn blue(&self) -> u8 {
-        (self.0 & 0xFF) as u8
+        self.b
     }
 
     pub fn green(&self) -> u8 {
-        ((self.0 >> 8) & 0xFF) as u8
+        self.g
     }
 
     pub fn red(&self) -> u8 {
-        ((self.0 >> 16) & 0xFF) as u8
+        self.r
     }
 
     pub fn alpha(&self) -> u8 {
-        ((self.0 >> 24) & 0xFF) as u8
+        self.a
     }
 
     #[must_use]
@@ -76,7 +100,7 @@ impl Color {
         let g = ((self.green() as u32 * a + 127) / 255) as u8;
         let b = ((self.blue() as u32 * a + 127) / 255) as u8;
 
-        Self::argb(old_alpha, r, g, b)
+        Self::rgba(r, g, b, old_alpha)
     }
 
     #[must_use]
@@ -119,17 +143,12 @@ impl Color {
         let g = unmultiply(self.green());
         let b = unmultiply(self.blue());
 
-        Self::argb(self.alpha(), r, g, b)
-    }
-
-    #[must_use]
-    pub fn argb(alpha: u8, red: u8, green: u8, blue: u8) -> Self {
-        Self(u32::from_le_bytes([blue, green, red, alpha]))
+        Self::rgba(r, g, b, self.alpha())
     }
 
     #[must_use]
     pub fn with_alpha(&self, alpha: u8) -> Self {
-        Self::argb(alpha, self.red(), self.green(), self.blue())
+        Self::rgba(self.red(), self.green(), self.blue(), alpha)
     }
 
     /// # Arguments
@@ -144,31 +163,35 @@ impl Color {
         let g = source.green() + ((self.green() as u16 * (255 - sa as u16)) / 255) as u8;
         let b = source.blue() + ((self.blue() as u16 * (255 - sa as u16)) / 255) as u8;
         let a = source.alpha() + ((self.alpha() as u16 * (255 - sa as u16)) / 255) as u8;
-        Self::argb(a, r, g, b)
+        Self::rgba(r, g, b, a)
+    }
+
+    fn slice_as_rgba(slice: &[Self]) -> &[u8] {
+        bytemuck::cast_slice(slice)
     }
 }
 
 impl std::fmt::Display for Color {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.write_str(&format!("{:#x}", self.0))
+        f.write_str(&format!("{:#x}", self.to_bgra_u32()))
     }
 }
 
 impl From<Color> for u32 {
     fn from(c: Color) -> Self {
-        c.0
+        c.to_bgra_u32()
     }
 }
 
 impl From<u32> for Color {
     fn from(i: u32) -> Self {
-        Color(i)
+        Color::bgra_u32(i)
     }
 }
 
 impl From<swf::Color> for Color {
     fn from(c: swf::Color) -> Self {
-        Self::argb(c.a, c.r, c.g, c.b)
+        Self::rgba(c.r, c.g, c.b, c.a)
     }
 }
 
@@ -235,7 +258,7 @@ pub struct BitmapData<'gc> {
 }
 
 #[derive(Clone, Debug)]
-enum DirtyState {
+pub enum DirtyState {
     // Both the CPU and GPU pixels are up to date. We do not need to wait for any syncs to complete
     Clean,
 
@@ -388,7 +411,6 @@ mod wrapper {
         /// This should only be used when you will be overwriting the entire
         /// `pixels` vec without reading from it. Cancels any in-progress GPU -> CPU sync.
         /// This does not sync from cpu to gpu.
-        #[allow(clippy::type_complexity)]
         pub fn overwrite_cpu_pixels_from_gpu(
             &self,
             mc: &Mutation<'gc>,
@@ -454,7 +476,7 @@ mod wrapper {
             activation: &mut crate::avm2::Activation<'_, 'gc>,
         ) -> Result<(), crate::avm2::Error<'gc>> {
             if self.disposed() {
-                return Err(crate::avm2::Error::AvmError(
+                return Err(crate::avm2::Error::avm_error(
                     crate::avm2::error::argument_error(
                         activation,
                         "Error #2015: Invalid BitmapData.",
@@ -564,7 +586,7 @@ impl<'gc> BitmapData<'gc> {
     pub fn new(width: u32, height: u32, transparency: bool, fill_color: u32) -> Self {
         Self {
             pixels: vec![
-                Color(fill_color).to_premultiplied_alpha(transparency);
+                Color::bgra_u32(fill_color).to_premultiplied_alpha(transparency);
                 width as usize * height as usize
             ],
             width,
@@ -608,7 +630,7 @@ impl<'gc> BitmapData<'gc> {
     pub fn dispose(&mut self) {
         self.width = 0;
         self.height = 0;
-        self.pixels.clear();
+        self.pixels = Vec::new(); // free the CPU pixel buffer
         self.bitmap_handle = None;
         // There's no longer a handle to update
         self.dirty_state = DirtyState::Clean;
@@ -637,6 +659,10 @@ impl<'gc> BitmapData<'gc> {
 
     pub fn transparency(&self) -> bool {
         self.transparency
+    }
+
+    pub fn dirty_state(&self) -> &DirtyState {
+        &self.dirty_state
     }
 
     pub fn set_gpu_dirty(
@@ -678,22 +704,8 @@ impl<'gc> BitmapData<'gc> {
         &self.pixels
     }
 
-    pub fn pixels_rgba(&self) -> Vec<u8> {
-        // TODO: This could have been implemented as follows:
-        //
-        // self.pixels
-        //     .iter()
-        //     .flat_map(|p| [p.red(), p.green(), p.blue(), p.alpha()])
-        //     .collect()
-        //
-        // But currently Rust emits suboptimal code in that case. For now we use
-        // `Vec::with_capacity` manually to avoid unnecessary re-allocations.
-
-        let mut output = Vec::with_capacity(self.pixels.len() * 4);
-        for p in &self.pixels {
-            output.extend_from_slice(&[p.red(), p.green(), p.blue(), p.alpha()])
-        }
-        output
+    pub fn pixels_rgba(&self) -> &[u8] {
+        Color::slice_as_rgba(&self.pixels)
     }
 
     pub fn width(&self) -> u32 {
@@ -765,7 +777,7 @@ impl<'gc> BitmapData<'gc> {
     fn inform_display_objects(&self, gc_context: &Mutation<'gc>) {
         for object in &self.display_objects {
             if let Some(object) = object.upgrade(gc_context) {
-                object.invalidate_cached_bitmap(gc_context);
+                object.invalidate_cached_bitmap();
             }
         }
     }
@@ -824,8 +836,7 @@ fn copy_pixels_to_bitmapdata(
                 255
             };
 
-            // TODO(later): we might want to swap Color storage from argb to rgba, to make it cheaper
-            let nc = Color::argb(a, r, g, b);
+            let nc = Color::rgba(r, g, b, a);
 
             // Ignore the original color entirely - the blending (including alpha)
             // was done by the renderer when it wrote over the previous texture contents.

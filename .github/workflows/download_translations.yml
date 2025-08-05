@@ -79,7 +79,7 @@ jobs:
 
           pr_url=$(gh pr create \
             --title 'chore: Update translations' \
-            --body 'New Crowdin pull request with translations 🎉' \
+            --body 'New [Crowdin](https://crowdin.com/project/ruffle) pull request with translations 🎉' \
             --head l10n_crowdin_translations \
             --base master)
 

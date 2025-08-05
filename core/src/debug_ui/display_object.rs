@@ -3,8 +3,8 @@ mod search;
 use ruffle_render::blend::ExtendedBlendMode;
 pub use search::DisplayObjectSearchWindow;
 
-use crate::avm1::TObject as _;
 use crate::avm2::object::TObject as _;
+use crate::bitmap::bitmap_data::DirtyState;
 use crate::context::UpdateContext;
 use crate::debug_ui::handle::{AVM1ObjectHandle, AVM2ObjectHandle, DisplayObjectHandle};
 use crate::debug_ui::movie::open_movie_button;
@@ -60,7 +60,7 @@ const ALL_BLEND_MODES: [ExtendedBlendMode; 15] = [
 ];
 
 #[derive(Debug, Eq, PartialEq, Hash, Default, Copy, Clone)]
-enum Panel {
+pub enum Panel {
     #[default]
     Position,
     Display,
@@ -78,6 +78,8 @@ pub struct DisplayObjectWindow {
     hovered_bounds: Option<Rectangle<Twips>>,
     search: String,
     track_current_frame: bool,
+    /// Which frame to scroll to in the frame list, if any
+    scroll_to_frame: Option<usize>,
 
     /// A buffer for editing EditText
     html_text: String,
@@ -98,12 +100,19 @@ impl Default for DisplayObjectWindow {
             hovered_bounds: None,
             search: Default::default(),
             track_current_frame: false,
+            scroll_to_frame: None,
             html_text: Default::default(),
         }
     }
 }
 
 impl DisplayObjectWindow {
+    pub fn with_panel(panel: Panel) -> Self {
+        Self {
+            open_panel: panel,
+            ..Default::default()
+        }
+    }
     pub fn debug_rect_color(&self) -> Option<Color> {
         if self.debug_rect_visible {
             Some(Color {
@@ -210,7 +219,7 @@ impl DisplayObjectWindow {
                     let mut enabled = object.mouse_enabled();
                     Checkbox::new(&mut enabled, "Enabled").ui(ui);
                     if enabled != object.mouse_enabled() {
-                        object.set_mouse_enabled(context.gc(), enabled);
+                        object.set_mouse_enabled(enabled);
                     }
                 });
                 ui.end_row();
@@ -220,7 +229,7 @@ impl DisplayObjectWindow {
                     let mut enabled = object.double_click_enabled();
                     Checkbox::new(&mut enabled, "Enabled").ui(ui);
                     if enabled != object.double_click_enabled() {
-                        object.set_double_click_enabled(context.gc(), enabled);
+                        object.set_double_click_enabled(enabled);
                     }
                 });
                 ui.end_row();
@@ -242,9 +251,9 @@ impl DisplayObjectWindow {
                     Checkbox::without_text(&mut enabled).ui(ui);
                     if enabled != tab_index.is_some() {
                         if enabled {
-                            object.set_tab_index(context, Some(0));
+                            object.set_tab_index(Some(0));
                         } else {
-                            object.set_tab_index(context, None);
+                            object.set_tab_index(None);
                         }
                     }
 
@@ -252,7 +261,7 @@ impl DisplayObjectWindow {
                         let mut new_tab_index: usize = tab_index;
                         DragValue::new(&mut new_tab_index).ui(ui);
                         if new_tab_index != tab_index {
-                            object.set_tab_index(context, Some(new_tab_index as i32));
+                            object.set_tab_index(Some(new_tab_index as i32));
                         }
                     } else {
                         ui.label("None");
@@ -275,7 +284,7 @@ impl DisplayObjectWindow {
                         }
                     });
                 if new_focus_rect != focus_rect {
-                    object.set_focus_rect(context.gc(), new_focus_rect);
+                    object.set_focus_rect(new_focus_rect);
                 }
                 ui.end_row();
 
@@ -321,12 +330,12 @@ impl DisplayObjectWindow {
                     let mut has_border = object.has_border();
                     Checkbox::without_text(&mut has_border).ui(ui);
                     if has_border != object.has_border() {
-                        object.set_has_border(context.gc(), has_border);
+                        object.set_has_border(has_border);
                     }
                     let mut border_color = object.border_color();
                     color_edit_button(ui, &mut border_color);
                     if border_color != object.border_color() {
-                        object.set_border_color(context.gc(), border_color);
+                        object.set_border_color(border_color);
                     }
                 });
                 ui.end_row();
@@ -336,12 +345,12 @@ impl DisplayObjectWindow {
                     let mut has_background = object.has_background();
                     Checkbox::without_text(&mut has_background).ui(ui);
                     if has_background != object.has_background() {
-                        object.set_has_background(context.gc(), has_background);
+                        object.set_has_background(has_background);
                     }
                     let mut background_color = object.background_color();
                     color_edit_button(ui, &mut background_color);
                     if background_color != object.background_color() {
-                        object.set_background_color(context.gc(), background_color);
+                        object.set_background_color(background_color);
                     }
                 });
                 ui.end_row();
@@ -355,7 +364,7 @@ impl DisplayObjectWindow {
                     let mut editable = object.is_editable();
                     ui.checkbox(&mut editable, "Enabled");
                     if editable != object.is_editable() {
-                        object.set_editable(editable, context);
+                        object.set_editable(editable);
                     }
                 });
                 ui.end_row();
@@ -365,7 +374,7 @@ impl DisplayObjectWindow {
                     let mut is_html = object.is_html();
                     ui.checkbox(&mut is_html, "Enabled");
                     if is_html != object.is_html() {
-                        object.set_is_html(context, is_html);
+                        object.set_is_html(is_html);
                     }
                 });
                 ui.end_row();
@@ -375,7 +384,7 @@ impl DisplayObjectWindow {
                     let mut selectable = object.is_selectable();
                     ui.checkbox(&mut selectable, "Enabled");
                     if selectable != object.is_selectable() {
-                        object.set_selectable(selectable, context);
+                        object.set_selectable(selectable);
                     }
                 });
                 ui.end_row();
@@ -415,7 +424,7 @@ impl DisplayObjectWindow {
                     let mut always_show_selection = object.always_show_selection();
                     ui.checkbox(&mut always_show_selection, "Enabled");
                     if always_show_selection != object.always_show_selection() {
-                        object.set_always_show_selection(context, always_show_selection);
+                        object.set_always_show_selection(always_show_selection);
                     }
                 });
                 ui.end_row();
@@ -425,7 +434,7 @@ impl DisplayObjectWindow {
                     let mut condense_white = object.condense_white();
                     ui.checkbox(&mut condense_white, "Enabled");
                     if condense_white != object.condense_white() {
-                        object.set_condense_white(context, condense_white);
+                        object.set_condense_white(condense_white);
                     }
                 });
                 ui.end_row();
@@ -438,10 +447,10 @@ impl DisplayObjectWindow {
                         .suffix("px")
                         .range(RangeInclusive::new(0.0, max))
                         .ui(ui);
-                    ui.weak(format!("(max {}px)", max));
+                    ui.weak(format!("(max {max}px)"));
 
                     if hscroll != object.hscroll() {
-                        object.set_hscroll(hscroll, context);
+                        object.set_hscroll(hscroll);
                     }
                 });
                 ui.end_row();
@@ -453,10 +462,10 @@ impl DisplayObjectWindow {
                     DragValue::new(&mut scroll)
                         .range(RangeInclusive::new(1, max))
                         .ui(ui);
-                    ui.weak(format!("(max {})", max));
+                    ui.weak(format!("(max {max})"));
 
                     if scroll != object.scroll() {
-                        object.set_scroll(scroll as f64, context);
+                        object.set_scroll(scroll as f64);
                     }
                 });
                 ui.end_row();
@@ -465,7 +474,7 @@ impl DisplayObjectWindow {
                 ui.horizontal(|ui| {
                     let mut autosize = object.autosize();
                     ComboBox::from_id_salt(ui.id().with("autosize"))
-                        .selected_text(format!("{:?}", autosize))
+                        .selected_text(format!("{autosize:?}"))
                         .show_ui(ui, |ui| {
                             for value in [
                                 AutoSizeMode::None,
@@ -473,7 +482,7 @@ impl DisplayObjectWindow {
                                 AutoSizeMode::Center,
                                 AutoSizeMode::Right,
                             ] {
-                                ui.selectable_value(&mut autosize, value, format!("{:?}", value));
+                                ui.selectable_value(&mut autosize, value, format!("{value:?}"));
                             }
                         });
                     if autosize != object.autosize() {
@@ -487,7 +496,7 @@ impl DisplayObjectWindow {
                     let mut max_chars = object.max_chars();
                     DragValue::new(&mut max_chars).ui(ui);
                     if max_chars != object.max_chars() {
-                        object.set_max_chars(max_chars, context);
+                        object.set_max_chars(max_chars);
                     }
                 });
                 ui.end_row();
@@ -505,7 +514,7 @@ impl DisplayObjectWindow {
                         } else {
                             None
                         };
-                        object.set_restrict(new_restrict, context);
+                        object.set_restrict(new_restrict);
                     }
 
                     if let Some(original_restrict) = restrict {
@@ -513,7 +522,7 @@ impl DisplayObjectWindow {
                         let mut restrict = original_restrict.clone();
                         ui.text_edit_singleline(&mut restrict);
                         if restrict != original_restrict {
-                            object.set_restrict(Some(&WString::from_utf8(&restrict)), context);
+                            object.set_restrict(Some(&WString::from_utf8(&restrict)));
                         }
                     } else {
                         ui.weak("Disabled");
@@ -579,7 +588,7 @@ impl DisplayObjectWindow {
                         let mut value = old_value;
                         ui.checkbox(&mut value, name);
                         if value != old_value {
-                            object.set_layout_debug_boxes_flag(context, flag, value);
+                            object.set_layout_debug_boxes_flag(flag, value);
                         }
                     }
                 });
@@ -665,10 +674,10 @@ impl DisplayObjectWindow {
                     let original_state = object.state();
                     let mut state = original_state;
                     ComboBox::from_id_salt(ui.id().with("state"))
-                        .selected_text(format!("{:?}", state))
+                        .selected_text(format!("{state:?}"))
                         .show_ui(ui, |ui| {
                             for value in [ButtonState::Up, ButtonState::Over, ButtonState::Down] {
-                                ui.selectable_value(&mut state, value, format!("{:?}", value));
+                                ui.selectable_value(&mut state, value, format!("{value:?}"));
                             }
                         });
                     if state != original_state {
@@ -718,21 +727,76 @@ impl DisplayObjectWindow {
         context: &mut UpdateContext<'gc>,
         object: Bitmap<'gc>,
     ) {
-        let bitmap_data = object.bitmap_data(context.renderer);
-        let bitmap_data = bitmap_data.read();
-        let mut egui_texture = bitmap_data.egui_texture.borrow_mut();
-        let texture = egui_texture.get_or_insert_with(|| {
-            let image = egui::ColorImage::from_rgba_premultiplied(
-                [bitmap_data.width() as usize, bitmap_data.height() as usize],
-                &bitmap_data.pixels_rgba(),
-            );
-            ui.ctx().load_texture(
-                format!("bitmap-{:?}", object.as_ptr()),
-                image,
-                Default::default(),
-            )
-        });
-        ui.image((texture.id(), texture.size_vec2()));
+        Grid::new(ui.id().with("bitmap"))
+            .num_columns(2)
+            .show(ui, |ui| {
+                let bitmap_data = object.bitmap_data(context.renderer);
+                let bitmap_data = bitmap_data.read();
+
+                ui.label("Width");
+                ui.label(format!("{} px", bitmap_data.width()));
+                ui.end_row();
+
+                ui.label("Height");
+                ui.label(format!("{} px", bitmap_data.height()));
+                ui.end_row();
+
+                ui.label("Transparency");
+                if bitmap_data.transparency() {
+                    ui.label("Yes");
+                } else {
+                    ui.label("No");
+                }
+                ui.end_row();
+
+                ui.label("Disposed");
+                if bitmap_data.disposed() {
+                    ui.label("Yes");
+                } else {
+                    ui.label("No");
+                }
+                ui.end_row();
+
+                ui.label("Dirty State");
+                match bitmap_data.dirty_state() {
+                    DirtyState::Clean => ui.label("Clean"),
+                    DirtyState::CpuModified(region) => ui.label(format!(
+                        "CPU Modified ({},{} to {},{})",
+                        region.x_min, region.y_min, region.x_max, region.y_max
+                    )),
+                    DirtyState::GpuModified(_, region) => ui.label(format!(
+                        "GPU Modified ({},{} to {},{})",
+                        region.x_min, region.y_min, region.x_max, region.y_max
+                    )),
+                };
+                ui.end_row();
+            });
+
+        CollapsingHeader::new("Preview")
+            .id_salt(ui.id().with("bitmap-preview"))
+            .show(ui, |ui| {
+                let bitmap_data = object.bitmap_data(context.renderer);
+                let bitmap_data = bitmap_data.read();
+
+                if bitmap_data.width() == 0 || bitmap_data.height() == 0 {
+                    ui.weak("(no pixels)");
+                    return;
+                }
+
+                let mut egui_texture = bitmap_data.egui_texture.borrow_mut();
+                let texture = egui_texture.get_or_insert_with(|| {
+                    let image = egui::ColorImage::from_rgba_premultiplied(
+                        [bitmap_data.width() as usize, bitmap_data.height() as usize],
+                        bitmap_data.pixels_rgba(),
+                    );
+                    ui.ctx().load_texture(
+                        format!("bitmap-{:?}", object.as_ptr()),
+                        image,
+                        Default::default(),
+                    )
+                });
+                ui.image((texture.id(), texture.size_vec2()));
+            });
     }
 
     pub fn show_movieclip<'gc>(
@@ -778,7 +842,7 @@ impl DisplayObjectWindow {
                 ui.label("Controls");
                 ui.horizontal(|ui| {
                     if ui.button("Play").clicked() {
-                        object.play(context);
+                        object.play();
                     }
                     if ui.button("Stop").clicked() {
                         object.stop(context);
@@ -806,77 +870,111 @@ impl DisplayObjectWindow {
                 let mut table = egui_extras::TableBuilder::new(ui)
                     .columns(egui_extras::Column::auto(), 4)
                     .column(egui_extras::Column::remainder())
+                    .cell_layout(egui::Layout::left_to_right(egui::Align::Center))
                     .auto_shrink(false);
                 if self.track_current_frame {
                     table = table
                         .scroll_to_row(object.current_frame() as usize, Some(egui::Align::Center));
                 }
-                table
-                    .header(row_h, |mut row| {
-                        row.col(|ui| {
-                            ui.label("#");
-                        });
-                        row.col(|ui| {
-                            ui.label("Scene");
-                        });
-                        row.col(|ui| {
-                            ui.label("Label");
-                        });
-                        row.col(|ui| {
-                            ui.label("Has Script");
-                        });
-                        row.col(|ui| {
-                            ui.label("Goto-and-");
-                        });
-                    })
-                    .body(|body| {
-                        body.rows(row_h, usize::from(object.total_frames()), |mut row| {
-                            let frame = (row.index() + 1) as u16;
-                            row.set_selected(object.current_frame() == frame);
-                            row.col(|ui| {
-                                ui.label(frame.to_string());
-                            });
-                            row.col(|ui| {
-                                ui.label(
-                                    scenes
-                                        .iter()
-                                        .find(|s| s.start <= frame && (s.start + s.length) > frame)
-                                        .map(|s| s.name.to_string())
-                                        .unwrap_or_default(),
-                                );
-                            });
-                            row.col(|ui| {
-                                ui.label(
-                                    object
-                                        .labels_in_range(frame, frame + 1)
-                                        .first()
-                                        .map(|(l, _)| l.to_string())
-                                        .unwrap_or_default(),
-                                );
-                            });
-                            row.col(|ui| {
-                                if object.has_frame_script(frame) {
-                                    ui.add_enabled(false, Button::new("AVM2 Script"));
+                // Due to an API limitation of `Table`, we can't scroll to a row inside the
+                // table UI code, instead, we store which frame to scroll to, and do the scrolling
+                // here.
+                if let Some(frame) = self.scroll_to_frame.take() {
+                    table = table.scroll_to_row(frame, Some(egui::Align::Center))
+                }
+                let mut table = table.header(row_h, |mut row| {
+                    row.col(|ui| {
+                        ui.label("#");
+                    });
+                    row.col(|ui| {
+                        ui.menu_button("Scene", |ui| {
+                            egui::ScrollArea::vertical().show(ui, |ui| {
+                                if scenes.is_empty() {
+                                    ui.label("<no scenes>");
                                 } else {
-                                    ui.label("");
-                                }
-                            });
-                            row.col(|ui| {
-                                if object.current_frame() != frame {
-                                    ui.horizontal(|ui| {
-                                        if ui.button("Stop").clicked() {
-                                            object.goto_frame(context, frame, true);
+                                    for scene in &scenes {
+                                        if ui.button(scene.name.to_string()).clicked() {
+                                            ui.close();
+                                            self.scroll_to_frame = Some(usize::from(scene.start));
                                         }
-                                        if ui.button("Play").clicked() {
-                                            object.goto_frame(context, frame, false);
-                                        }
-                                    });
-                                } else {
-                                    ui.label("(current)");
+                                    }
                                 }
                             });
                         });
                     });
+                    row.col(|ui| {
+                        ui.menu_button("Label", |ui| {
+                            egui::ScrollArea::vertical().show(ui, |ui| {
+                                let labels = object.labels_in_range(0, u16::MAX);
+                                if labels.is_empty() {
+                                    ui.label("<no labels>");
+                                } else {
+                                    for (name, frame) in labels {
+                                        if ui.button(name.to_string()).clicked() {
+                                            ui.close();
+                                            self.scroll_to_frame = Some(usize::from(frame));
+                                        }
+                                    }
+                                }
+                            });
+                        });
+                    });
+                    row.col(|ui| {
+                        ui.label("Has Script");
+                    });
+                    row.col(|ui| {
+                        ui.label("Goto-and-");
+                    });
+                });
+                table.ui_mut().separator();
+                table.body(|body| {
+                    body.rows(row_h, usize::from(object.total_frames()), |mut row| {
+                        let frame = (row.index() + 1) as u16;
+                        row.set_selected(object.current_frame() == frame);
+                        row.col(|ui| {
+                            ui.label(frame.to_string());
+                        });
+                        row.col(|ui| {
+                            ui.label(
+                                scenes
+                                    .iter()
+                                    .find(|s| s.start <= frame && (s.start + s.length) > frame)
+                                    .map(|s| s.name.to_string())
+                                    .unwrap_or_default(),
+                            );
+                        });
+                        row.col(|ui| {
+                            ui.label(
+                                object
+                                    .labels_in_range(frame, frame + 1)
+                                    .first()
+                                    .map(|(l, _)| l.to_string())
+                                    .unwrap_or_default(),
+                            );
+                        });
+                        row.col(|ui| {
+                            if object.has_frame_script(frame) {
+                                ui.add_enabled(false, Button::new("AVM2 Script"));
+                            } else {
+                                ui.label("");
+                            }
+                        });
+                        row.col(|ui| {
+                            if object.current_frame() != frame {
+                                ui.horizontal(|ui| {
+                                    if ui.button("Stop").clicked() {
+                                        object.goto_frame(context, frame, true);
+                                    }
+                                    if ui.button("Play").clicked() {
+                                        object.goto_frame(context, frame, false);
+                                    }
+                                });
+                            } else {
+                                ui.label("(current)");
+                            }
+                        });
+                    });
+                });
             });
     }
 
@@ -896,7 +994,7 @@ impl DisplayObjectWindow {
                 let mut new_stage_focus_rect = object.stage_focus_rect();
                 ui.checkbox(&mut new_stage_focus_rect, "Enabled");
                 if new_stage_focus_rect != object.stage_focus_rect() {
-                    object.set_stage_focus_rect(context.gc(), new_stage_focus_rect);
+                    object.set_stage_focus_rect(new_stage_focus_rect);
                 }
                 ui.end_row();
 
@@ -942,7 +1040,7 @@ impl DisplayObjectWindow {
         } else {
             "automatic"
         };
-        CollapsingHeader::new(format!("Tab Order ({})", tab_order_suffix))
+        CollapsingHeader::new(format!("Tab Order ({tab_order_suffix})"))
             .id_salt(ui.id().with("tab_order"))
             .show(ui, |ui| {
                 Grid::new(ui.id().with("tab_order_grid"))
@@ -1075,13 +1173,13 @@ impl DisplayObjectWindow {
                         let mut enabled = object.is_bitmap_cached_preference();
                         Checkbox::new(&mut enabled, "Enabled").ui(ui);
                         if enabled != object.is_bitmap_cached_preference() {
-                            object.set_bitmap_cached_preference(context.gc(), enabled);
+                            object.set_bitmap_cached_preference(enabled);
                         }
                     } else {
                         ui.label("Forced due to filters");
                     }
                     if ui.button("Invalidate").clicked() {
-                        object.invalidate_cached_bitmap(context.gc());
+                        object.invalidate_cached_bitmap();
                     }
                 });
                 ui.end_row();
@@ -1114,10 +1212,10 @@ impl DisplayObjectWindow {
                     });
                 ui.end_row();
                 if new_blend != old_blend {
-                    object.set_blend_mode(context.gc(), new_blend);
+                    object.set_blend_mode(new_blend);
                 }
 
-                let color_transform = *object.base().color_transform();
+                let color_transform = object.base().color_transform();
                 ui.label("Color Transform");
                 ui.label(summary_color_transform(color_transform));
                 ui.end_row();
@@ -1151,8 +1249,8 @@ impl DisplayObjectWindow {
             CollapsingHeader::new(format!("Filters ({})", filters.len()))
                 .id_salt(ui.id().with("filters"))
                 .show(ui, |ui| {
-                    for filter in filters {
-                        ui.label(format!("{:?}", filter));
+                    for filter in &*filters {
+                        ui.label(format!("{filter:?}"));
                     }
                 });
         }
@@ -1254,7 +1352,7 @@ impl DisplayObjectWindow {
             &object.local_to_global_matrix(),
             true,
         );
-        self.show_matrix_properties(ui, "Local Matrix", object, object.base().matrix(), false);
+        self.show_matrix_properties(ui, "Local Matrix", object, &object.base().matrix(), false);
     }
 
     fn show_matrix_properties(

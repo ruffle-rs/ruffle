@@ -2,17 +2,18 @@
 
 use crate::avm2::activation::Activation;
 use crate::avm2::class::Class;
-use crate::avm2::error::{verify_error, Error};
+use crate::avm2::error::{make_error_1014, verify_error, Error, Error1014Type};
 use crate::avm2::script::TranslationUnit;
 use crate::avm2::value::{abc_default_value, Value};
-use crate::avm2::verify::{resolve_param_config, VerifiedMethodInfo};
+use crate::avm2::verify::VerifiedMethodInfo;
 use crate::avm2::Multiname;
+use crate::string::AvmString;
 use crate::tag_utils::SwfMovie;
-use gc_arena::barrier::unlock;
-use gc_arena::lock::RefLock;
-use gc_arena::{Collect, Gc, GcCell, Mutation};
+use gc_arena::barrier::{unlock, Write};
+use gc_arena::lock::OnceLock;
+use gc_arena::{Collect, Gc};
 use std::borrow::Cow;
-use std::fmt;
+use std::cell::Cell;
 use std::rc::Rc;
 use std::sync::Arc;
 use swf::avm2::types::{
@@ -90,55 +91,84 @@ impl<'gc> ParamConfig<'gc> {
 }
 
 /// Represents a reference to an AVM2 method and body.
+#[derive(Clone, Collect, Copy)]
+#[collect(no_drop)]
+pub struct Method<'gc>(Gc<'gc, MethodData<'gc>>);
+
 #[derive(Collect)]
 #[collect(no_drop)]
-pub struct BytecodeMethod<'gc> {
+struct MethodData<'gc> {
     /// The translation unit this function was defined in.
-    pub txunit: TranslationUnit<'gc>,
+    txunit: TranslationUnit<'gc>,
 
     /// The underlying ABC file of the above translation unit.
     #[collect(require_static)]
     abc: Rc<AbcFile>,
 
     /// The ABC method this function uses.
-    pub abc_method: u32,
+    abc_method: u32,
 
     /// The ABC method body this function uses.
-    pub abc_method_body: Option<u32>,
+    abc_method_body: Option<u32>,
 
-    pub verified_info: RefLock<Option<VerifiedMethodInfo<'gc>>>,
+    method_kind: MethodKind<'gc>,
 
     /// The parameter signature of this method.
-    pub signature: Vec<ParamConfig<'gc>>,
+    signature: Vec<ParamConfig<'gc>>,
 
     /// The return type of this method, or None if the method does not coerce
     /// its return value.
-    pub return_type: Option<Gc<'gc, Multiname<'gc>>>,
+    return_type: Option<Gc<'gc, Multiname<'gc>>>,
+
+    /// The resolved signature and return type.
+    resolved_info: OnceLock<ResolvedMethodInfo<'gc>>,
+
+    /// Whether this method should be run in "interpreter mode" (as opposed to
+    /// "JIT mode"). Most methods run in "JIT mode", except for class
+    /// initializer and script initializer methods, which always run in
+    /// "interpreter mode". See `Activation.is_interpreter` for more information.
+    is_interpreted: Cell<bool>,
 
     /// Whether or not this method was declared as a free-standing function.
     ///
     /// A free-standing function corresponds to the `Function` trait type, and
     /// is instantiated with the `newfunction` opcode.
-    pub is_function: bool,
+    is_function: bool,
 
     /// Whether or not this method substitutes Undefined for missing arguments.
     ///
     /// This is true when the method is a free-standing function and none of the
     /// declared arguments have a type or a default value.
-    pub is_unchecked: bool,
+    is_unchecked: bool,
 }
 
-impl<'gc> BytecodeMethod<'gc> {
-    /// Construct an `BytecodeMethod` from an `AbcFile` and method index.
+impl PartialEq for Method<'_> {
+    fn eq(&self, other: &Self) -> bool {
+        Gc::ptr_eq(self.0, other.0)
+    }
+}
+
+impl core::fmt::Debug for Method<'_> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
+        f.debug_struct("Method")
+            .field("ptr", &Gc::as_ptr(self.0))
+            .finish()
+    }
+}
+
+impl<'gc> Method<'gc> {
+    /// Construct a `Method` from an `AbcFile` and method index.
     pub fn from_method_index(
         txunit: TranslationUnit<'gc>,
         abc_method: Index<AbcMethod>,
         is_function: bool,
         activation: &mut Activation<'_, 'gc>,
     ) -> Result<Self, Error<'gc>> {
+        let method_index = abc_method.0 as usize;
         let abc = txunit.abc();
-        let Some(method) = abc.methods.get(abc_method.0 as usize) else {
-            return Err(Error::AvmError(verify_error(
+
+        let Some(method) = abc.methods.get(method_index) else {
+            return Err(Error::avm_error(verify_error(
                 activation,
                 "Error #1027: Method_info exceeds method_count.",
                 1027,
@@ -161,76 +191,145 @@ impl<'gc> BytecodeMethod<'gc> {
             }
         }
 
-        Ok(Self {
-            txunit,
-            abc: txunit.abc(),
-            abc_method: abc_method.0,
-            abc_method_body,
-            verified_info: RefLock::new(None),
-            signature,
-            return_type,
-            is_function,
-            is_unchecked: is_function && all_params_unchecked,
-        })
+        let mut native_info = None;
+        if txunit.domain().is_playerglobals_domain(activation.avm2()) {
+            if let Some(native_method) = activation.avm2().native_method_table[method_index] {
+                let fast_call = activation
+                    .avm2()
+                    .native_fast_call_list
+                    .contains(&method_index);
+
+                native_info = Some((native_method, fast_call));
+            }
+        };
+
+        let method_kind = if let Some((native_method, fast_call)) = native_info {
+            MethodKind::Native {
+                native_method,
+                fast_call,
+            }
+        } else {
+            MethodKind::Bytecode {
+                verified_info: OnceLock::new(),
+            }
+        };
+
+        Ok(Self(Gc::new(
+            activation.gc(),
+            MethodData {
+                txunit,
+                abc: txunit.abc(),
+                abc_method: abc_method.0,
+                abc_method_body,
+                method_kind,
+                signature,
+                return_type,
+                resolved_info: OnceLock::new(),
+                is_interpreted: Cell::new(false),
+                is_function,
+                is_unchecked: is_function && all_params_unchecked,
+            },
+        )))
     }
 
     /// Get the underlying ABC file.
     pub fn abc(&self) -> Rc<AbcFile> {
-        self.txunit.abc()
+        self.0.txunit.abc()
     }
 
     /// Get the underlying translation unit this method was defined in.
     pub fn translation_unit(&self) -> TranslationUnit<'gc> {
-        self.txunit
+        self.0.txunit
+    }
+
+    pub fn abc_method_index(&self) -> u32 {
+        self.0.abc_method
     }
 
     /// Get a reference to the ABC method entry this refers to.
     pub fn method(&self) -> &AbcMethod {
-        self.abc.methods.get(self.abc_method as usize).unwrap()
+        &self.0.abc.methods[self.0.abc_method as usize]
     }
 
     /// Get a reference to the SwfMovie this method came from.
     pub fn owner_movie(&self) -> Arc<SwfMovie> {
-        self.txunit.movie()
+        self.0.txunit.movie()
     }
 
     /// Get a reference to the ABC method body entry this refers to.
     ///
     /// Some methods do not have bodies; this returns `None` in that case.
     pub fn body(&self) -> Option<&AbcMethodBody> {
-        if let Some(abc_method_body) = self.abc_method_body {
-            self.abc.method_bodies.get(abc_method_body as usize)
+        if let Some(abc_method_body) = self.0.abc_method_body {
+            self.0.abc.method_bodies.get(abc_method_body as usize)
         } else {
             None
         }
     }
 
-    #[inline(never)]
-    pub fn verify(
-        this: Gc<'gc, BytecodeMethod<'gc>>,
-        activation: &mut Activation<'_, 'gc>,
-    ) -> Result<(), Error<'gc>> {
-        // TODO: avmplus seems to eaglerly verify some methods
+    #[inline]
+    pub fn verify(self, activation: &mut Activation<'_, 'gc>) -> Result<(), Error<'gc>> {
+        // TODO: avmplus seems to eagerly verify some methods
 
-        *unlock!(
-            Gc::write(activation.gc(), this),
-            BytecodeMethod,
-            verified_info
-        )
-        .borrow_mut() = Some(crate::avm2::verify::verify_method(activation, this)?);
+        match &self.0.method_kind {
+            MethodKind::Bytecode { verified_info } if verified_info.get().is_none() => {
+                let info = crate::avm2::verify::verify_method(activation, self)?;
 
-        Ok(())
+                Gc::write(activation.gc(), self.0);
+
+                // SAFETY: We just triggered a write barrier on the Gc.
+                let verified_info = unsafe { Write::assume(verified_info) };
+                let _ = verified_info.unlock().set(info);
+
+                Ok(())
+            }
+            MethodKind::Bytecode { .. } | MethodKind::Native { .. } => Ok(()),
+        }
     }
 
     /// Get the list of method params for this method.
     pub fn signature(&self) -> &[ParamConfig<'gc>] {
-        &self.signature
+        &self.0.signature
+    }
+
+    pub fn resolved_param_config(&self) -> &[ResolvedParamConfig<'gc>] {
+        &self.0.resolved_info.get().unwrap().param_config
     }
 
     pub fn resolved_return_type(&self) -> Option<Class<'gc>> {
-        let verified_info = self.verified_info.borrow();
+        self.0.resolved_info.get().unwrap().return_type
+    }
 
-        verified_info.as_ref().unwrap().return_type
+    pub fn get_verified_info(&self) -> &VerifiedMethodInfo<'gc> {
+        match &self.0.method_kind {
+            MethodKind::Bytecode { verified_info } => verified_info.get().unwrap(),
+            _ => panic!("get_verified_info should be called on a bytecode method"),
+        }
+    }
+
+    /// Resolve the classes used in this method's signature and return type.
+    #[inline(never)]
+    pub fn resolve_info(self, activation: &mut Activation<'_, 'gc>) -> Result<(), Error<'gc>> {
+        if self.0.resolved_info.get().is_some() {
+            return Ok(());
+        }
+
+        let param_config = resolve_param_config(activation, self.signature())?;
+        let return_type = resolve_return_type(activation, self.return_type())?;
+
+        let resolved_info = ResolvedMethodInfo {
+            param_config,
+            return_type,
+        };
+
+        let _ = unlock!(
+            Gc::write(activation.gc(), self.0),
+            MethodData,
+            resolved_info
+        )
+        .set(resolved_info);
+
+        Ok(())
     }
 
     /// Get the name of this method.
@@ -240,7 +339,8 @@ impl<'gc> BytecodeMethod<'gc> {
             return Cow::Borrowed("");
         }
 
-        self.abc
+        self.0
+            .abc
             .constant_pool
             .strings
             .get(name_index - 1)
@@ -257,6 +357,35 @@ impl<'gc> BytecodeMethod<'gc> {
             .intersects(AbcMethodFlags::NEED_ARGUMENTS | AbcMethodFlags::NEED_REST)
     }
 
+    /// Check if this method needs `arguments`.
+    pub fn needs_arguments_object(&self) -> bool {
+        self.method().flags.contains(AbcMethodFlags::NEED_ARGUMENTS)
+    }
+
+    pub fn method_kind(&self) -> &MethodKind<'gc> {
+        &self.0.method_kind
+    }
+
+    pub fn return_type(&self) -> Option<Gc<'gc, Multiname<'gc>>> {
+        self.0.return_type
+    }
+
+    /// Whether this method should be run in "interpreter mode" (as opposed to
+    /// "JIT mode").
+    pub fn is_interpreted(self) -> bool {
+        self.0.is_interpreted.get()
+    }
+
+    /// Mark this method as one that should be run in "interpreter mode" (as
+    /// opposed to "JIT mode").
+    pub fn mark_as_interpreted(self) {
+        self.0.is_interpreted.set(true);
+    }
+
+    pub fn is_function(self) -> bool {
+        self.0.is_function
+    }
+
     /// Determine if a given method is unchecked.
     ///
     /// A method is unchecked if both of the following are true:
@@ -264,152 +393,99 @@ impl<'gc> BytecodeMethod<'gc> {
     ///  * The method was declared as a free-standing function
     ///  * The function's parameters have no declared types or default values
     pub fn is_unchecked(&self) -> bool {
-        self.is_unchecked
+        self.0.is_unchecked
     }
 }
 
-/// An uninstantiated method
-#[derive(Clone, Collect)]
+/// Represents info for either a bytecode or native method
+#[derive(Collect)]
 #[collect(no_drop)]
-pub struct NativeMethod<'gc> {
-    /// The function to call to execute the method.
-    #[collect(require_static)]
-    pub method: NativeMethodImpl,
-
-    /// The name of the method.
-    pub name: &'static str,
-
-    /// The parameter signature of the method.
-    pub signature: Vec<ParamConfig<'gc>>,
-
-    /// The resolved parameter signature of the method.
-    pub resolved_signature: GcCell<'gc, Option<Vec<ResolvedParamConfig<'gc>>>>,
-
-    /// The return type of this method, or None if the method does not coerce
-    /// its return value.
-    pub return_type: Option<Gc<'gc, Multiname<'gc>>>,
-
-    /// Whether or not this method accepts parameters beyond those
-    /// mentioned in the parameter list.
-    pub is_variadic: bool,
+pub enum MethodKind<'gc> {
+    Bytecode {
+        verified_info: OnceLock<VerifiedMethodInfo<'gc>>,
+    },
+    Native {
+        #[collect(require_static)]
+        native_method: NativeMethodImpl,
+        fast_call: bool,
+    },
 }
 
-impl<'gc> NativeMethod<'gc> {
-    pub fn resolve_signature(
-        &self,
-        activation: &mut Activation<'_, 'gc>,
-    ) -> Result<(), Error<'gc>> {
-        *self.resolved_signature.write(activation.gc()) =
-            Some(resolve_param_config(activation, &self.signature)?);
-
-        Ok(())
-    }
-}
-
-impl fmt::Debug for NativeMethod<'_> {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.debug_struct("NativeMethod")
-            .field("method", &format!("{:p}", &self.method))
-            .field("name", &self.name)
-            .field("signature", &self.signature)
-            .field("is_variadic", &self.is_variadic)
-            .finish()
-    }
-}
-
-/// An uninstantiated method that can either be natively implemented or sourced
-/// from an ABC file.
-#[derive(Copy, Clone, Collect)]
+/// The resolved parameters and return type of a method.
+#[derive(Collect)]
 #[collect(no_drop)]
-pub enum Method<'gc> {
-    /// A native method.
-    Native(Gc<'gc, NativeMethod<'gc>>),
-
-    /// An ABC-provided method entry.
-    Bytecode(Gc<'gc, BytecodeMethod<'gc>>),
+struct ResolvedMethodInfo<'gc> {
+    param_config: Vec<ResolvedParamConfig<'gc>>,
+    return_type: Option<Class<'gc>>,
 }
 
-impl<'gc> From<Gc<'gc, BytecodeMethod<'gc>>> for Method<'gc> {
-    fn from(bm: Gc<'gc, BytecodeMethod<'gc>>) -> Self {
-        Self::Bytecode(bm)
+fn resolve_param_config<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    param_config: &[ParamConfig<'gc>],
+) -> Result<Vec<ResolvedParamConfig<'gc>>, Error<'gc>> {
+    let mut resolved_param_config = Vec::new();
+
+    for param in param_config {
+        let resolved_class = if let Some(param_type_name) = param.param_type_name {
+            if param_type_name.has_lazy_component() {
+                return Err(make_error_1014(
+                    activation,
+                    Error1014Type::VerifyError,
+                    AvmString::new_utf8(activation.gc(), "[]"),
+                ));
+            }
+
+            Some(
+                activation
+                    .domain()
+                    .get_class(activation.context, &param_type_name)
+                    .ok_or_else(|| {
+                        make_error_1014(
+                            activation,
+                            Error1014Type::VerifyError,
+                            param_type_name.to_qualified_name(activation.gc()),
+                        )
+                    })?,
+            )
+        } else {
+            None
+        };
+
+        resolved_param_config.push(ResolvedParamConfig {
+            param_type: resolved_class,
+            default_value: param.default_value,
+        });
     }
+
+    Ok(resolved_param_config)
 }
 
-impl<'gc> Method<'gc> {
-    /// Define a builtin method with a particular param configuration.
-    pub fn from_builtin_and_params(
-        method: NativeMethodImpl,
-        name: &'static str,
-        signature: Vec<ParamConfig<'gc>>,
-        return_type: Option<Gc<'gc, Multiname<'gc>>>,
-        is_variadic: bool,
-        mc: &Mutation<'gc>,
-    ) -> Self {
-        Self::Native(Gc::new(
-            mc,
-            NativeMethod {
-                method,
-                name,
-                signature,
-                resolved_signature: GcCell::new(mc, None),
-                return_type,
-                is_variadic,
-            },
+fn resolve_return_type<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    return_type: Option<Gc<'gc, Multiname<'gc>>>,
+) -> Result<Option<Class<'gc>>, Error<'gc>> {
+    if let Some(return_type) = return_type {
+        if return_type.has_lazy_component() {
+            return Err(make_error_1014(
+                activation,
+                Error1014Type::VerifyError,
+                AvmString::new_utf8(activation.gc(), "[]"),
+            ));
+        }
+
+        Ok(Some(
+            activation
+                .domain()
+                .get_class(activation.context, &return_type)
+                .ok_or_else(|| {
+                    make_error_1014(
+                        activation,
+                        Error1014Type::VerifyError,
+                        return_type.to_qualified_name(activation.gc()),
+                    )
+                })?,
         ))
-    }
-
-    /// Define a builtin with no parameter constraints.
-    pub fn from_builtin(method: NativeMethodImpl, name: &'static str, mc: &Mutation<'gc>) -> Self {
-        Self::Native(Gc::new(
-            mc,
-            NativeMethod {
-                method,
-                name,
-                signature: Vec::new(),
-                resolved_signature: GcCell::new(mc, None),
-                // FIXME - take in the real return type. This is needed for 'describeType'
-                return_type: None,
-                is_variadic: true,
-            },
-        ))
-    }
-
-    /// Access the bytecode of this method.
-    ///
-    /// This function returns `None` if this is a native method.
-    pub fn into_bytecode(self) -> Option<Gc<'gc, BytecodeMethod<'gc>>> {
-        match self {
-            Method::Native { .. } => None,
-            Method::Bytecode(bm) => Some(bm),
-        }
-    }
-
-    pub fn return_type(&self) -> Option<Gc<'gc, Multiname<'gc>>> {
-        match self {
-            Method::Native(nm) => nm.return_type,
-            Method::Bytecode(bm) => bm.return_type,
-        }
-    }
-
-    pub fn signature(&self) -> &[ParamConfig<'gc>] {
-        match self {
-            Method::Native(nm) => &nm.signature,
-            Method::Bytecode(bm) => bm.signature(),
-        }
-    }
-
-    pub fn is_variadic(&self) -> bool {
-        match self {
-            Method::Native(nm) => nm.is_variadic,
-            Method::Bytecode(bm) => bm.is_variadic(),
-        }
-    }
-
-    /// Check if this method needs `arguments`.
-    pub fn needs_arguments_object(&self) -> bool {
-        match self {
-            Method::Native { .. } => false,
-            Method::Bytecode(bm) => bm.method().flags.contains(AbcMethodFlags::NEED_ARGUMENTS),
-        }
+    } else {
+        Ok(None)
     }
 }

@@ -6,7 +6,7 @@ use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
 use crate::avm1::globals::as_broadcaster::BroadcasterFunctions;
 use crate::avm1::property_decl::{define_properties_on, Declaration};
-use crate::avm1::{Object, ScriptObject, Value};
+use crate::avm1::{Object, Value};
 use crate::display_object::StageDisplayState;
 use crate::string::{AvmString, StringContext, WStr, WString};
 use ruffle_macros::istr;
@@ -27,10 +27,10 @@ pub fn create_stage_object<'gc>(
     fn_proto: Object<'gc>,
     broadcaster_functions: BroadcasterFunctions<'gc>,
 ) -> Object<'gc> {
-    let stage = ScriptObject::new(context, Some(proto));
-    broadcaster_functions.initialize(context, stage.into(), array_proto);
+    let stage = Object::new(context, Some(proto));
+    broadcaster_functions.initialize(context, stage, array_proto);
     define_properties_on(OBJECT_DECLS, context, stage, fn_proto);
-    stage.into()
+    stage
 }
 
 fn align<'gc>(
@@ -174,10 +174,7 @@ fn set_show_menu<'gc>(
         .unwrap_or(&true.into())
         .to_owned()
         .as_bool(activation.swf_version());
-    activation
-        .context
-        .stage
-        .set_show_menu(activation.context, show_menu);
+    activation.context.stage.set_show_menu(show_menu);
     Ok(Value::Undefined)
 }
 

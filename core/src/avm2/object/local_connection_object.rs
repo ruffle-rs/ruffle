@@ -1,12 +1,13 @@
 use crate::avm2::activation::Activation;
 use crate::avm2::amf::deserialize_value;
 use crate::avm2::object::script_object::ScriptObjectData;
-use crate::avm2::object::{ClassObject, EventObject, Object, ObjectPtr, TObject};
+use crate::avm2::object::{ClassObject, EventObject, Object, TObject};
 use crate::avm2::value::Value;
 use crate::avm2::{Avm2, Domain, Error};
 use crate::context::UpdateContext;
 use crate::local_connection::{LocalConnectionHandle, LocalConnections};
 use crate::string::AvmString;
+use crate::utils::HasPrefixField;
 use core::fmt;
 use flash_lso::types::Value as AmfValue;
 use gc_arena::barrier::unlock;
@@ -51,7 +52,7 @@ impl fmt::Debug for LocalConnectionObject<'_> {
     }
 }
 
-#[derive(Collect)]
+#[derive(Collect, HasPrefixField)]
 #[collect(no_drop)]
 #[repr(C, align(8))]
 pub struct LocalConnectionObjectData<'gc> {
@@ -62,11 +63,6 @@ pub struct LocalConnectionObjectData<'gc> {
 
     client: Lock<Option<Object<'gc>>>,
 }
-
-const _: () = assert!(std::mem::offset_of!(LocalConnectionObjectData, base) == 0);
-const _: () = assert!(
-    std::mem::align_of::<LocalConnectionObjectData>() == std::mem::align_of::<ScriptObjectData>()
-);
 
 impl<'gc> LocalConnectionObject<'gc> {
     pub fn is_connected(&self) -> bool {
@@ -87,7 +83,7 @@ impl<'gc> LocalConnectionObject<'gc> {
         }
 
         let connection_handle = activation.context.local_connections.connect(
-            &LocalConnections::get_domain(activation.context.swf.url()),
+            &LocalConnections::get_domain(activation.context.root_swf.url()),
             (activation.domain(), *self),
             &name,
         );
@@ -141,8 +137,8 @@ impl<'gc> LocalConnectionObject<'gc> {
 
         let client = Value::from(self.client());
         if let Err(e) = client.call_public_property(method_name, &arguments, &mut activation) {
-            match e {
-                Error::AvmError(error) => {
+            match e.as_avm_error() {
+                Some(error) => {
                     let event_name = istr!("asyncError");
                     let async_error_event_cls = activation.avm2().classes().asyncerrorevent;
                     let event = EventObject::from_class_and_args(
@@ -163,18 +159,6 @@ impl<'gc> LocalConnectionObject<'gc> {
 
 impl<'gc> TObject<'gc> for LocalConnectionObject<'gc> {
     fn gc_base(&self) -> Gc<'gc, ScriptObjectData<'gc>> {
-        // SAFETY: Object data is repr(C), and a compile-time assert ensures
-        // that the ScriptObjectData stays at offset 0 of the struct- so the
-        // layouts are compatible
-
-        unsafe { Gc::cast(self.0) }
-    }
-
-    fn as_ptr(&self) -> *const ObjectPtr {
-        Gc::as_ptr(self.0) as *const ObjectPtr
-    }
-
-    fn as_local_connection_object(&self) -> Option<LocalConnectionObject<'gc>> {
-        Some(*self)
+        HasPrefixField::as_prefix_gc(self.0)
     }
 }

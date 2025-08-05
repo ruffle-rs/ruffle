@@ -1,4 +1,4 @@
-﻿package flash.filters {
+package flash.filters {
     import flash.display.BitmapData;
     import flash.geom.Point;
 
@@ -32,15 +32,17 @@
         [Ruffle(NativeAccessible)]
         public var scaleY: Number;
 
-        public function DisplacementMapFilter(mapBitmap:BitmapData = null,
-                                              mapPoint:Point = null,
-                                              componentX:uint = 0,
-                                              componentY:uint = 0,
-                                              scaleX:Number = 0.0,
-                                              scaleY:Number = 0.0,
-                                              mode:String = "wrap",
-                                              color:uint = 0,
-                                              alpha:Number = 0.0) {
+        public function DisplacementMapFilter(
+            mapBitmap:BitmapData = null,
+            mapPoint:Point = null,
+            componentX:uint = 0,
+            componentY:uint = 0,
+            scaleX:Number = 0.0,
+            scaleY:Number = 0.0,
+            mode:String = "wrap",
+            color:uint = 0,
+            alpha:Number = 0.0
+        ) {
             this.mapBitmap = mapBitmap;
             this.mapPoint = mapPoint;
             this.componentX = componentX;

@@ -3,13 +3,29 @@
 use crate::avm2::activation::Activation;
 use crate::avm2::error::{eval_error, type_error};
 use crate::avm2::globals::array::resolve_array_hole;
-use crate::avm2::method::{Method, NativeMethod};
-use crate::avm2::object::{FunctionObject, TObject};
+use crate::avm2::globals::methods::function as function_class_methods;
+use crate::avm2::object::FunctionObject;
 use crate::avm2::parameters::ParametersExt;
 use crate::avm2::value::Value;
 use crate::avm2::Error;
 
-use gc_arena::{Gc, GcCell};
+/// Create a dummy function using Function.createDummyFunction. The Function class
+/// must be stored properly in SystemClasses; otherwise, this method will panic.
+fn create_dummy_function<'gc>(activation: &mut Activation<'_, 'gc>) -> FunctionObject<'gc> {
+    let function_class = activation.avm2().classes().function;
+
+    Value::from(function_class)
+        .call_method(
+            function_class_methods::CREATE_DUMMY_FUNCTION,
+            &[],
+            activation,
+        )
+        .expect("Function.createDummyFunction is infallible")
+        .as_object()
+        .unwrap()
+        .as_function_object()
+        .unwrap()
+}
 
 /// Implements `Function`'s custom constructor.
 /// This is used when ActionScript manually calls 'new Function()',
@@ -20,36 +36,14 @@ pub fn function_constructor<'gc>(
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if !args.is_empty() {
-        return Err(Error::AvmError(eval_error(
+        return Err(Error::avm_error(eval_error(
             activation,
             "Error #1066: The form function('function body') is not supported.",
             1066,
         )?));
     }
 
-    let mc = activation.gc();
-
-    let dummy = Gc::new(
-        mc,
-        NativeMethod {
-            method: |_, _, _| Ok(Value::Undefined),
-            name: "<Empty Function>",
-            signature: vec![],
-            resolved_signature: GcCell::new(mc, None),
-            return_type: None,
-            is_variadic: true,
-        },
-    );
-
-    let function_object = FunctionObject::from_method(
-        activation,
-        Method::Native(dummy),
-        activation.create_scopechain(),
-        None,
-        None,
-        None,
-    );
-
+    let function_object = create_dummy_function(activation);
     Ok(function_object.into())
 }
 
@@ -76,11 +70,8 @@ pub fn _init_function_class<'gc>(
 
     activation.avm2().system_classes.as_mut().unwrap().function = function_class_object;
 
-    let function_proto = function_class_object
-        .construct(activation, &[])?
-        .as_object()
-        .unwrap();
-    function_class_object.link_prototype(activation, function_proto);
+    let function_proto = create_dummy_function(activation);
+    function_class_object.link_prototype(activation, function_proto.into());
 
     Ok(Value::Undefined)
 }
@@ -115,11 +106,7 @@ pub fn apply<'gc>(
     let arg_array = args.get_value(1);
     let resolved_args = if !matches!(arg_array, Value::Undefined | Value::Null) {
         if let Some(array_object) = arg_array.as_object().and_then(|o| o.as_array_object()) {
-            let arg_storage = array_object
-                .as_array_storage()
-                .unwrap()
-                .iter()
-                .collect::<Vec<_>>();
+            let arg_storage = array_object.storage().iter().collect::<Vec<_>>();
 
             let mut resolved_args = Vec::with_capacity(arg_storage.len());
             for (i, v) in arg_storage.iter().enumerate() {
@@ -128,7 +115,7 @@ pub fn apply<'gc>(
 
             resolved_args
         } else {
-            return Err(Error::AvmError(type_error(
+            return Err(Error::avm_error(type_error(
                 activation,
                 "Error #1116: second argument to Function.prototype.apply must be an array.",
                 1116,
@@ -150,7 +137,7 @@ pub fn get_length<'gc>(
     let this = this.as_object().unwrap();
 
     if let Some(this) = this.as_function_object() {
-        return Ok(this.executable().num_parameters().into());
+        return Ok(this.executable().signature().len().into());
     }
 
     Ok(Value::Undefined)

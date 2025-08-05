@@ -84,7 +84,6 @@ impl DestField {
 }
 
 #[derive(Debug, Clone)]
-#[allow(dead_code)]
 pub struct SourceField {
     pub direct_mode: DirectMode,
     pub index_select: u8,
@@ -172,7 +171,6 @@ impl Special {
 }
 
 #[derive(Debug)]
-#[allow(dead_code)]
 pub struct SamplerField {
     pub filter: Filter,
     pub mipmap: Mipmap,
@@ -180,6 +178,7 @@ pub struct SamplerField {
     pub dimension: Dimension,
     pub special: Special,
     /// Texture level-of-detail (LOD) bias
+    #[expect(dead_code)]
     pub texture_lod_bias: i8,
     pub reg_num: u16,
     pub reg_type: RegisterType,

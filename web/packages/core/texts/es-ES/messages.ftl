@@ -78,7 +78,7 @@ error-javascript-conflict =
 error-javascript-conflict-outdated = También puedes intentar subir una versión más reciente de Ruffle que puede eludir el problema (la versión actual está desactualizada: { $buildDate }).
 error-csp-conflict =
     Ruffle encontró un problema al intentar inicializarse.
-    La Política de Seguridad de Contenido de este servidor web no permite el componente requerido ".wasm". 
+    La Política de Seguridad de Contenido de este servidor web no permite el componente requerido ".wasm".
     Si usted es el administrador del servidor, por favor consulta la wiki de Ruffle para obtener ayuda.
 error-unknown =
     Ruffle ha encontrado un problema al tratar de mostrar el contenido Flash.

@@ -33,6 +33,7 @@ bookmarks-menu-add = Thêm...
 bookmarks-menu-manage = Quản lý đánh dấu...
 debug-menu = Công cụ gỡ lỗi
 debug-menu-open-stage = Xem thông tin stage
+debug-menu-open-root-movie-clip = Xem Root MovieClip
 debug-menu-open-movie = Xem thông tin SWF
 debug-menu-open-movie-list = Hiển thị các tệp đã biết
 debug-menu-open-domain-list = Hiển thị các domain đã biết

@@ -3,7 +3,7 @@
 use crate::avm2::activation::Activation;
 use crate::avm2::error::{make_error_2006, make_error_2008};
 use crate::avm2::globals::flash::display::display_object::initialize_for_allocator;
-use crate::avm2::object::{ClassObject, Object, TObject, TextFormatObject};
+use crate::avm2::object::{ClassObject, Object, TextFormatObject};
 use crate::avm2::parameters::ParametersExt;
 use crate::avm2::value::Value;
 use crate::avm2::{ArrayObject, ArrayStorage, Error};
@@ -43,7 +43,7 @@ pub fn get_always_show_selection<'gc>(
 }
 
 pub fn set_always_show_selection<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    _activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -57,7 +57,7 @@ pub fn set_always_show_selection<'gc>(
     };
 
     let value = args.get_bool(0);
-    this.set_always_show_selection(activation.context, value);
+    this.set_always_show_selection(value);
 
     Ok(Value::Undefined)
 }
@@ -135,7 +135,7 @@ pub fn get_background<'gc>(
 }
 
 pub fn set_background<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    _activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -146,7 +146,7 @@ pub fn set_background<'gc>(
         .and_then(|this| this.as_edit_text())
     {
         let has_background = args.get_bool(0);
-        this.set_has_background(activation.gc(), has_background);
+        this.set_has_background(has_background);
     }
 
     Ok(Value::Undefined)
@@ -182,7 +182,7 @@ pub fn set_background_color<'gc>(
     {
         let rgb = args.get_u32(activation, 0)?;
         let color = Color::from_rgb(rgb, 255);
-        this.set_background_color(activation.gc(), color);
+        this.set_background_color(color);
     }
 
     Ok(Value::Undefined)
@@ -206,7 +206,7 @@ pub fn get_border<'gc>(
 }
 
 pub fn set_border<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    _activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -217,7 +217,7 @@ pub fn set_border<'gc>(
         .and_then(|this| this.as_edit_text())
     {
         let border = args.get_bool(0);
-        this.set_has_border(activation.gc(), border);
+        this.set_has_border(border);
     }
 
     Ok(Value::Undefined)
@@ -253,7 +253,7 @@ pub fn set_border_color<'gc>(
     {
         let rgb = args.get_u32(activation, 0)?;
         let color = Color::from_rgb(rgb, 255);
-        this.set_border_color(activation.gc(), color);
+        this.set_border_color(color);
     }
 
     Ok(Value::Undefined)
@@ -277,7 +277,7 @@ pub fn get_condense_white<'gc>(
 }
 
 pub fn set_condense_white<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    _activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -288,7 +288,7 @@ pub fn set_condense_white<'gc>(
         .and_then(|this| this.as_edit_text())
     {
         let value = args.get_bool(0);
-        this.set_condense_white(activation.context, value);
+        this.set_condense_white(value);
     }
 
     Ok(Value::Undefined)
@@ -322,11 +322,11 @@ pub fn set_default_text_format<'gc>(
         .as_display_object()
         .and_then(|this| this.as_edit_text())
     {
-        let new_text_format = args.get(0).unwrap_or(&Value::Undefined).as_object();
+        let new_text_format = args.try_get_object(activation, 0);
 
         if let Some(new_text_format) = new_text_format {
             if let Some(new_text_format) = new_text_format.as_text_format() {
-                this.set_new_text_format(new_text_format.clone(), activation.context);
+                this.set_new_text_format(new_text_format.clone());
             }
         }
     }
@@ -436,7 +436,7 @@ pub fn set_html_text<'gc>(
     {
         let html_text = args.get_string(activation, 0)?;
 
-        this.set_is_html(activation.context, true);
+        this.set_is_html(true);
         this.set_html_text(&html_text, activation.context);
     }
 
@@ -514,7 +514,7 @@ pub fn get_selectable<'gc>(
 }
 
 pub fn set_selectable<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    _activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -526,7 +526,7 @@ pub fn set_selectable<'gc>(
     {
         let is_selectable = args.get_bool(0);
 
-        this.set_selectable(is_selectable, activation.context);
+        this.set_selectable(is_selectable);
     }
 
     Ok(Value::Undefined)
@@ -600,11 +600,7 @@ pub fn set_text_color<'gc>(
         .as_display_object()
         .and_then(|this| this.as_edit_text())
     {
-        let text_color = args
-            .get(0)
-            .cloned()
-            .unwrap_or(Value::Undefined)
-            .coerce_to_u32(activation)?;
+        let text_color = args.get_u32(activation, 0)?;
         let desired_format = TextFormat {
             color: Some(swf::Color::from_rgb(text_color, 0xFF)),
             ..TextFormat::default()
@@ -616,7 +612,7 @@ pub fn set_text_color<'gc>(
             desired_format.clone(),
             activation.context,
         );
-        this.set_new_text_format(desired_format, activation.context);
+        this.set_new_text_format(desired_format);
     }
 
     Ok(Value::Undefined)
@@ -694,9 +690,9 @@ pub fn set_type<'gc>(
         let is_editable = args.get_string_non_null(activation, 0, "type")?;
 
         if &is_editable == b"input" {
-            this.set_editable(true, activation.context);
+            this.set_editable(true);
         } else if &is_editable == b"dynamic" {
-            this.set_editable(false, activation.context);
+            this.set_editable(false);
         } else {
             return Err(make_error_2008(activation, "type"));
         }
@@ -777,16 +773,8 @@ pub fn get_text_format<'gc>(
         .as_display_object()
         .and_then(|this| this.as_edit_text())
     {
-        let mut begin_index = args
-            .get(0)
-            .cloned()
-            .unwrap_or(Value::Integer(-1))
-            .coerce_to_i32(activation)?;
-        let mut end_index = args
-            .get(1)
-            .cloned()
-            .unwrap_or(Value::Integer(-1))
-            .coerce_to_i32(activation)?;
+        let mut begin_index = args.get_i32(activation, 0)?;
+        let mut end_index = args.get_i32(activation, 1)?;
 
         if begin_index < 0 {
             begin_index = 0;
@@ -841,16 +829,9 @@ pub fn replace_text<'gc>(
         .as_display_object()
         .and_then(|this| this.as_edit_text())
     {
-        let begin_index = args
-            .get(0)
-            .cloned()
-            .unwrap_or(Value::Undefined)
-            .coerce_to_u32(activation)?;
-        let end_index = args
-            .get(1)
-            .cloned()
-            .unwrap_or(Value::Undefined)
-            .coerce_to_u32(activation)?;
+        // FIXME what is the behavior for negative beginIndex and endIndex?
+        let begin_index = args.get_i32(activation, 0)?;
+        let end_index = args.get_i32(activation, 1)?;
         let value = args.get_string_non_null(activation, 2, "text")?;
 
         this.replace_text(
@@ -938,24 +919,14 @@ pub fn set_selection<'gc>(
         .as_display_object()
         .and_then(|this| this.as_edit_text())
     {
-        let begin_index = args
-            .get(0)
-            .cloned()
-            .unwrap_or(Value::Undefined)
-            .coerce_to_u32(activation)?;
-        let end_index = args
-            .get(1)
-            .cloned()
-            .unwrap_or(Value::Undefined)
-            .coerce_to_u32(activation)?;
+        // FIXME what is the behavior for negative beginIndex and endIndex?
+        let begin_index = args.get_i32(activation, 0)?;
+        let end_index = args.get_i32(activation, 1)?;
 
-        this.set_selection(
-            Some(TextSelection::for_range(
-                begin_index as usize,
-                end_index as usize,
-            )),
-            activation.gc(),
-        );
+        this.set_selection(Some(TextSelection::for_range(
+            begin_index as usize,
+            end_index as usize,
+        )));
     }
 
     Ok(Value::Undefined)
@@ -972,17 +943,11 @@ pub fn set_text_format<'gc>(
         .as_display_object()
         .and_then(|this| this.as_edit_text())
     {
-        let tf = args.get(0).unwrap_or(&Value::Undefined).as_object();
+        let tf = args.try_get_object(activation, 0);
         if let Some(tf) = tf {
             if let Some(tf) = tf.as_text_format() {
-                let mut begin_index = args
-                    .get(1)
-                    .unwrap_or(&(-1).into())
-                    .coerce_to_i32(activation)?;
-                let mut end_index = args
-                    .get(2)
-                    .unwrap_or(&(-1).into())
-                    .coerce_to_i32(activation)?;
+                let mut begin_index = args.get_i32(activation, 1)?;
+                let mut end_index = args.get_i32(activation, 2)?;
 
                 if begin_index < 0 {
                     begin_index = 0;
@@ -1051,9 +1016,9 @@ pub fn set_anti_alias_type<'gc>(
         let new_type = args.get_string_non_null(activation, 0, "antiAliasType")?;
 
         if &new_type == b"advanced" {
-            this.set_render_settings(activation.gc(), old_settings.with_advanced_rendering());
+            this.set_render_settings(old_settings.with_advanced_rendering());
         } else if &new_type == b"normal" {
-            this.set_render_settings(activation.gc(), old_settings.with_normal_rendering());
+            this.set_render_settings(old_settings.with_normal_rendering());
         }
     }
     Ok(Value::Undefined)
@@ -1097,21 +1062,12 @@ pub fn set_grid_fit_type<'gc>(
         let new_type = args.get_string_non_null(activation, 0, "gridFitType")?;
 
         if &new_type == b"pixel" {
-            this.set_render_settings(
-                activation.gc(),
-                old_settings.with_grid_fit(swf::TextGridFit::Pixel),
-            );
+            this.set_render_settings(old_settings.with_grid_fit(swf::TextGridFit::Pixel));
         } else if &new_type == b"subpixel" {
-            this.set_render_settings(
-                activation.gc(),
-                old_settings.with_grid_fit(swf::TextGridFit::SubPixel),
-            );
+            this.set_render_settings(old_settings.with_grid_fit(swf::TextGridFit::SubPixel));
         } else {
             //NOTE: In AS3 invalid values are treated as None.
-            this.set_render_settings(
-                activation.gc(),
-                old_settings.with_grid_fit(swf::TextGridFit::None),
-            );
+            this.set_render_settings(old_settings.with_grid_fit(swf::TextGridFit::None));
         }
     }
     Ok(Value::Undefined)
@@ -1146,19 +1102,12 @@ pub fn set_thickness<'gc>(
         .and_then(|this| this.as_edit_text())
     {
         let old_settings = this.render_settings();
-        let mut new_thickness = args
-            .get(0)
-            .cloned()
-            .unwrap_or(Value::Undefined)
-            .coerce_to_number(activation)?;
+        let mut new_thickness = args.get_f64(activation, 0)?;
 
         // NOTE: The thickness clamp is ONLY enforced on AS3.
         new_thickness = new_thickness.clamp(-200.0, 200.0);
 
-        this.set_render_settings(
-            activation.gc(),
-            old_settings.with_thickness(new_thickness as f32),
-        );
+        this.set_render_settings(old_settings.with_thickness(new_thickness as f32));
     }
 
     Ok(Value::Undefined)
@@ -1193,19 +1142,12 @@ pub fn set_sharpness<'gc>(
         .and_then(|this| this.as_edit_text())
     {
         let old_settings = this.render_settings();
-        let mut new_sharpness = args
-            .get(0)
-            .cloned()
-            .unwrap_or(Value::Undefined)
-            .coerce_to_number(activation)?;
+        let mut new_sharpness = args.get_f64(activation, 0)?;
 
         // NOTE: The sharpness clamp is only enforced on AS3.
         new_sharpness = new_sharpness.clamp(-400.0, 400.0);
 
-        this.set_render_settings(
-            activation.gc(),
-            old_settings.with_sharpness(new_sharpness as f32),
-        );
+        this.set_render_settings(old_settings.with_sharpness(new_sharpness as f32));
     }
 
     Ok(Value::Undefined)
@@ -1420,12 +1362,8 @@ pub fn set_scroll_v<'gc>(
         .as_display_object()
         .and_then(|this| this.as_edit_text())
     {
-        let input = args
-            .get(0)
-            .cloned()
-            .unwrap_or(Value::Undefined)
-            .coerce_to_i32(activation)?;
-        this.set_scroll(input as f64, activation.context);
+        let input = args.get_i32(activation, 0)?;
+        this.set_scroll(input as f64);
     }
 
     Ok(Value::Undefined)
@@ -1462,13 +1400,9 @@ pub fn set_scroll_h<'gc>(
         // NOTE: The clamping behavior here is identical to AVM1.
         // This is incorrect, SWFv9 uses more complex behavior and AS3 can only
         // be present in v9 SWFs.
-        let input = args
-            .get(0)
-            .cloned()
-            .unwrap_or(Value::Undefined)
-            .coerce_to_i32(activation)?;
+        let input = args.get_i32(activation, 0)?;
         let clamped = input.abs().min(this.maxhscroll() as i32);
-        this.set_hscroll(clamped as f64, activation.context);
+        this.set_hscroll(clamped as f64);
     }
 
     Ok(Value::Undefined)
@@ -1502,12 +1436,8 @@ pub fn set_max_chars<'gc>(
         .as_display_object()
         .and_then(|this| this.as_edit_text())
     {
-        let input = args
-            .get(0)
-            .cloned()
-            .unwrap_or(Value::Undefined)
-            .coerce_to_i32(activation)?;
-        this.set_max_chars(input, activation.context);
+        let input = args.get_i32(activation, 0)?;
+        this.set_max_chars(input);
     }
 
     Ok(Value::Undefined)
@@ -1562,10 +1492,7 @@ pub fn set_restrict<'gc>(
         .as_display_object()
         .and_then(|this| this.as_edit_text())
     {
-        this.set_restrict(
-            args.try_get_string(activation, 0)?.as_deref(),
-            activation.context,
-        );
+        this.set_restrict(args.try_get_string(activation, 0)?.as_deref());
     }
     Ok(Value::Undefined)
 }

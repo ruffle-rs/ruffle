@@ -3,14 +3,14 @@
 use crate::avm2::activation::Activation;
 use crate::avm2::e4x::{string_to_multiname, E4XNamespace, E4XNode, E4XNodeKind};
 use crate::avm2::error::make_error_1087;
+use crate::avm2::function::FunctionArgs;
 use crate::avm2::multiname::NamespaceSet;
 use crate::avm2::object::script_object::ScriptObjectData;
-use crate::avm2::object::{
-    ClassObject, NamespaceObject, Object, ObjectPtr, TObject, XmlListObject,
-};
+use crate::avm2::object::{ClassObject, NamespaceObject, Object, TObject, XmlListObject};
 use crate::avm2::string::AvmString;
 use crate::avm2::value::Value;
 use crate::avm2::{Error, Multiname};
+use crate::utils::HasPrefixField;
 use core::fmt;
 use gc_arena::barrier::unlock;
 use gc_arena::{lock::Lock, Collect, Gc, GcWeak, Mutation};
@@ -51,7 +51,7 @@ impl fmt::Debug for XmlObject<'_> {
     }
 }
 
-#[derive(Clone, Collect)]
+#[derive(Clone, Collect, HasPrefixField)]
 #[collect(no_drop)]
 #[repr(C, align(8))]
 pub struct XmlObjectData<'gc> {
@@ -60,10 +60,6 @@ pub struct XmlObjectData<'gc> {
 
     node: Lock<E4XNode<'gc>>,
 }
-
-const _: () = assert!(std::mem::offset_of!(XmlObjectData, base) == 0);
-const _: () =
-    assert!(std::mem::align_of::<XmlObjectData>() == std::mem::align_of::<ScriptObjectData>());
 
 impl<'gc> XmlObject<'gc> {
     pub fn new(node: E4XNode<'gc>, activation: &mut Activation<'_, 'gc>) -> Self {
@@ -290,19 +286,7 @@ impl<'gc> XmlObject<'gc> {
 
 impl<'gc> TObject<'gc> for XmlObject<'gc> {
     fn gc_base(&self) -> Gc<'gc, ScriptObjectData<'gc>> {
-        // SAFETY: Object data is repr(C), and a compile-time assert ensures
-        // that the ScriptObjectData stays at offset 0 of the struct- so the
-        // layouts are compatible
-
-        unsafe { Gc::cast(self.0) }
-    }
-
-    fn as_ptr(&self) -> *const ObjectPtr {
-        Gc::as_ptr(self.0) as *const ObjectPtr
-    }
-
-    fn as_xml_object(&self) -> Option<Self> {
-        Some(*self)
+        HasPrefixField::as_prefix_gc(self.0)
     }
 
     fn xml_descendants(
@@ -354,8 +338,6 @@ impl<'gc> TObject<'gc> for XmlObject<'gc> {
         arguments: &[Value<'gc>],
         activation: &mut Activation<'_, 'gc>,
     ) -> Result<Value<'gc>, Error<'gc>> {
-        let this = self.as_xml_object().unwrap();
-
         let method = Value::from(self.proto().expect("XMLList missing prototype"))
             .get_property(multiname, activation)?;
 
@@ -370,10 +352,14 @@ impl<'gc> TObject<'gc> for XmlObject<'gc> {
             // Compare to the very similar case in XMLListObject::call_property_local
             let prop = self.get_property_local(multiname, activation)?;
             if let Some(list) = prop.as_object().and_then(|obj| obj.as_xml_list_object()) {
-                if list.length() == 0 && this.node().has_simple_content() {
-                    let receiver = Value::String(this.node().xml_to_string(activation));
+                if list.length() == 0 && self.node().has_simple_content() {
+                    let receiver = Value::String(self.node().xml_to_string(activation));
 
-                    return receiver.call_property(multiname, arguments, activation);
+                    return receiver.call_property(
+                        multiname,
+                        FunctionArgs::AsArgSlice { arguments },
+                        activation,
+                    );
                 }
             }
         }
@@ -498,7 +484,7 @@ impl<'gc> TObject<'gc> for XmlObject<'gc> {
             let mc = activation.gc();
             self.delete_property_local(activation, &name)?;
             let Some(local_name) = name.local_name() else {
-                return Err(format!("Cannot set attribute {:?} without a local name", name).into());
+                return Err(format!("Cannot set attribute {name:?} without a local name").into());
             };
             let ns = name.explicit_namespace().map(E4XNamespace::new_uri);
             let new_attr = E4XNode::attribute(mc, ns, local_name, value, Some(self.node()));

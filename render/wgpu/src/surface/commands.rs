@@ -33,7 +33,6 @@ pub struct CommandRenderer<'pass, 'frame: 'pass, 'global: 'frame> {
 }
 
 impl<'pass, 'frame: 'pass, 'global: 'frame> CommandRenderer<'pass, 'frame, 'global> {
-    #[allow(clippy::too_many_arguments)]
     pub fn new(
         pipelines: &'frame Pipelines,
         descriptors: &'global Descriptors,
@@ -441,7 +440,7 @@ pub enum LayerRef<'a> {
 
 /// Replaces every blend with a RenderBitmap, with the subcommands rendered out to a temporary texture
 /// Every complex blend will be its own item, but every other draw will be chunked together
-#[allow(clippy::too_many_arguments)]
+#[expect(clippy::too_many_arguments)]
 pub fn chunk_blends<'a>(
     commands: CommandList,
     descriptors: &'a Descriptors,
@@ -491,7 +490,7 @@ struct WgpuCommandHandler<'a> {
 }
 
 impl<'a> WgpuCommandHandler<'a> {
-    #[allow(clippy::too_many_arguments)]
+    #[expect(clippy::too_many_arguments)]
     fn new(
         descriptors: &'a Descriptors,
         staging_belt: &'a mut wgpu::util::StagingBelt,
@@ -642,6 +641,7 @@ impl CommandHandler for WgpuCommandHandler<'_> {
                 let transform = Transform {
                     matrix: Matrix::scale(target.width() as f32, target.height() as f32),
                     color_transform: Default::default(),
+                    perspective_projection: None,
                 };
                 let texture = target.take_color_texture();
                 let bind_group =

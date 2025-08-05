@@ -9,19 +9,19 @@ package flash.ui {
         private var _clipboardMenu:Boolean;
 
         [Ruffle(NativeAccessible)]
-        private var _builtInItems: ContextMenuBuiltInItems = new ContextMenuBuiltInItems();
+        private var _builtInItems:ContextMenuBuiltInItems = new ContextMenuBuiltInItems();
 
-        private var _clipboardItems: ContextMenuClipboardItems = new ContextMenuClipboardItems();
+        private var _clipboardItems:ContextMenuClipboardItems = new ContextMenuClipboardItems();
 
         public function ContextMenu() {
             super();
             this.customItems = new Array();
         }
-        
+
         public function get customItems():Array {
             return this._customItems;
         }
-        
+
         public function set customItems(value:Array):void {
             this._customItems = value;
         }
@@ -39,7 +39,7 @@ package flash.ui {
             }
         }
 
-        public function get builtInItems(): ContextMenuBuiltInItems {
+        public function get builtInItems():ContextMenuBuiltInItems {
             return this._builtInItems;
         }
 
@@ -47,7 +47,7 @@ package flash.ui {
             this._builtInItems = value;
         }
 
-        public function get clipboardItems(): ContextMenuClipboardItems {
+        public function get clipboardItems():ContextMenuClipboardItems {
             return this._clipboardItems;
         }
 

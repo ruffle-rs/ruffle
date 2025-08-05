@@ -2,11 +2,12 @@
 
 use crate::avm2::activation::Activation;
 use crate::avm2::object::script_object::ScriptObjectData;
-use crate::avm2::object::{ObjectPtr, TObject};
+use crate::avm2::object::TObject;
 use crate::avm2::value::Value;
 use crate::avm2::Error;
 use crate::avm2::Namespace;
 use crate::string::AvmString;
+use crate::utils::HasPrefixField;
 use core::fmt;
 use gc_arena::{Collect, Gc, GcWeak};
 use ruffle_macros::istr;
@@ -28,7 +29,7 @@ impl fmt::Debug for NamespaceObject<'_> {
     }
 }
 
-#[derive(Collect, Clone)]
+#[derive(Collect, Clone, HasPrefixField)]
 #[collect(no_drop)]
 #[repr(C, align(8))]
 pub struct NamespaceObjectData<'gc> {
@@ -41,11 +42,6 @@ pub struct NamespaceObjectData<'gc> {
     /// The prefix that this namespace has been given.
     prefix: Option<AvmString<'gc>>,
 }
-
-const _: () = assert!(std::mem::offset_of!(NamespaceObjectData, base) == 0);
-const _: () = assert!(
-    std::mem::align_of::<NamespaceObjectData>() == std::mem::align_of::<ScriptObjectData>()
-);
 
 impl<'gc> NamespaceObject<'gc> {
     pub fn from_ns_and_prefix(
@@ -96,23 +92,7 @@ impl<'gc> NamespaceObject<'gc> {
 
 impl<'gc> TObject<'gc> for NamespaceObject<'gc> {
     fn gc_base(&self) -> Gc<'gc, ScriptObjectData<'gc>> {
-        // SAFETY: Object data is repr(C), and a compile-time assert ensures
-        // that the ScriptObjectData stays at offset 0 of the struct- so the
-        // layouts are compatible
-
-        unsafe { Gc::cast(self.0) }
-    }
-
-    fn as_ptr(&self) -> *const ObjectPtr {
-        Gc::as_ptr(self.0) as *const ObjectPtr
-    }
-
-    fn as_namespace(&self) -> Option<Namespace<'gc>> {
-        Some(self.0.namespace)
-    }
-
-    fn as_namespace_object(&self) -> Option<Self> {
-        Some(*self)
+        HasPrefixField::as_prefix_gc(self.0)
     }
 
     fn property_is_enumerable(&self, name: AvmString<'gc>) -> bool {

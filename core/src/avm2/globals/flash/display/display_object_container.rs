@@ -6,7 +6,7 @@ use swf::Twips;
 use crate::avm2::activation::Activation;
 use crate::avm2::error::{argument_error, make_error_2025, range_error};
 use crate::avm2::globals::slots::flash_geom_point as point_slots;
-use crate::avm2::object::TObject;
+use crate::avm2::object::TObject as _;
 use crate::avm2::parameters::ParametersExt;
 use crate::avm2::value::Value;
 use crate::avm2::{ArrayObject, ArrayStorage, Error};
@@ -33,7 +33,7 @@ fn validate_add_operation<'gc>(
         .expect("Parent must be a DisplayObjectContainer");
 
     if let DisplayObject::Stage(_) = proposed_child {
-        return Err(Error::AvmError(argument_error(
+        return Err(Error::avm_error(argument_error(
             activation,
             "Error #3783: A Stage object cannot be added as the child of another object.",
             3783,
@@ -41,7 +41,7 @@ fn validate_add_operation<'gc>(
     }
 
     if !proposed_child.movie().is_action_script_3() {
-        return Err(Error::AvmError(argument_error(
+        return Err(Error::avm_error(argument_error(
             activation,
             "Error #2180: It is illegal to move AVM1 content (AS1 or AS2) to a different part of the displayList when it has been loaded into AVM2 (AS3) content.",
             2180,
@@ -49,7 +49,7 @@ fn validate_add_operation<'gc>(
     }
 
     if DisplayObject::ptr_eq(proposed_child, new_parent) {
-        return Err(Error::AvmError(argument_error(
+        return Err(Error::avm_error(argument_error(
             activation,
             "Error #2024: An object cannot be added as a child of itself.",
             2024,
@@ -60,7 +60,7 @@ fn validate_add_operation<'gc>(
 
     while let Some(tp) = checking_parent {
         if DisplayObject::ptr_eq(tp, proposed_child) {
-            return Err(Error::AvmError(argument_error(
+            return Err(Error::avm_error(argument_error(
                 activation,
                 "Error #2150: An object cannot be added as a child to one of it's children (or children's children, etc.).",
                 2150,
@@ -72,7 +72,7 @@ fn validate_add_operation<'gc>(
 
     if proposed_index > ctr.num_children() {
         // Flash error message: The supplied index is out of bounds.
-        return Err(Error::AvmError(range_error(
+        return Err(Error::avm_error(range_error(
             activation,
             "Index position does not exist in the child list",
             2006,
@@ -109,7 +109,7 @@ fn validate_remove_operation<'gc>(
 fn remove_child_from_displaylist<'gc>(context: &mut UpdateContext<'gc>, child: DisplayObject<'gc>) {
     if let Some(parent) = child.parent() {
         if let Some(mut ctr) = parent.as_container() {
-            child.set_placed_by_script(context.gc(), true);
+            child.set_placed_by_script(true);
             ctr.remove_child(context, child);
         }
     }
@@ -123,7 +123,7 @@ pub(super) fn add_child_to_displaylist<'gc>(
     index: usize,
 ) {
     if let Some(mut ctr) = parent.as_container() {
-        child.set_placed_by_script(context.gc(), true);
+        child.set_placed_by_script(true);
         ctr.insert_at_index(context, child, index);
     }
 }
@@ -145,7 +145,7 @@ pub fn get_child_at<'gc>(
             Ok(child.object2())
         } else {
             // Flash error message: The supplied index is out of bounds.
-            Err(Error::AvmError(range_error(
+            Err(Error::avm_error(range_error(
                 activation,
                 &format!("Display object container has no child with id {index}"),
                 2006,
@@ -153,7 +153,7 @@ pub fn get_child_at<'gc>(
         };
     }
 
-    Ok(Value::Undefined)
+    Ok(Value::Null)
 }
 
 /// Implements `DisplayObjectContainer.getChildByName`
@@ -176,7 +176,7 @@ pub fn get_child_by_name<'gc>(
         }
     }
 
-    Ok(Value::Undefined)
+    Ok(Value::Null)
 }
 
 /// Implements `DisplayObjectContainer.addChild`
@@ -203,7 +203,7 @@ pub fn add_child<'gc>(
         }
     }
 
-    Ok(Value::Undefined)
+    Ok(Value::Null)
 }
 
 /// Implements `DisplayObjectContainer.addChildAt`
@@ -227,7 +227,7 @@ pub fn add_child_at<'gc>(
         return Ok(child.object2());
     }
 
-    Ok(Value::Undefined)
+    Ok(Value::Null)
 }
 
 /// Implements `DisplayObjectContainer.removeChild`
@@ -250,7 +250,7 @@ pub fn remove_child<'gc>(
         return Ok(child.object2());
     }
 
-    Ok(Value::Undefined)
+    Ok(Value::Null)
 }
 
 /// Implements `DisplayObjectContainer.numChildren`
@@ -268,7 +268,7 @@ pub fn get_num_children<'gc>(
         return Ok(parent.num_children().into());
     }
 
-    Ok(Value::Undefined)
+    Ok(0.into())
 }
 
 /// Implements `DisplayObjectContainer.contains`
@@ -336,7 +336,7 @@ pub fn remove_child_at<'gc>(
 
             if target_child >= ctr.num_children() as i32 || target_child < 0 {
                 // Flash error message: The supplied index is out of bounds.
-                return Err(Error::AvmError(range_error(
+                return Err(Error::avm_error(range_error(
                     activation,
                     &format!(
                         "{} does not exist in the child list (valid range is 0 to {})",
@@ -348,7 +348,7 @@ pub fn remove_child_at<'gc>(
             }
 
             let child = ctr.child_by_index(target_child as usize).unwrap();
-            child.set_placed_by_script(activation.gc(), true);
+            child.set_placed_by_script(true);
 
             ctr.remove_child(activation.context, child);
 
@@ -356,7 +356,7 @@ pub fn remove_child_at<'gc>(
         }
     }
 
-    Ok(Value::Undefined)
+    Ok(Value::Null)
 }
 
 /// Implements `DisplayObjectContainer.removeChildren`
@@ -378,7 +378,7 @@ pub fn remove_children<'gc>(
 
             if (from >= ctr.num_children() as i32 || from < 0) && to != i32::MAX {
                 // Flash error message: The supplied index is out of bounds.
-                return Err(Error::AvmError(range_error(
+                return Err(Error::avm_error(range_error(
                     activation,
                     &format!(
                         "Starting position {} does not exist in the child list (valid range is 0 to {})",
@@ -391,7 +391,7 @@ pub fn remove_children<'gc>(
 
             if (to >= ctr.num_children() as i32 || to < 0) && to != i32::MAX {
                 // Flash error message: The supplied index is out of bounds.
-                return Err(Error::AvmError(range_error(
+                return Err(Error::avm_error(range_error(
                     activation,
                     &format!(
                         "Ending position {} does not exist in the child list (valid range is 0 to {})",
@@ -404,7 +404,7 @@ pub fn remove_children<'gc>(
 
             if from > to {
                 // Flash error message: The supplied index is out of bounds.
-                return Err(Error::AvmError(range_error(
+                return Err(Error::avm_error(range_error(
                     activation,
                     &format!("Range {from} to {to} is invalid"),
                     2006,
@@ -443,8 +443,6 @@ pub fn set_child_index<'gc>(
 
         validate_add_operation(activation, parent, child, target_index)?;
         add_child_to_displaylist(activation.context, parent, child, target_index);
-
-        return Ok(child.object2());
     }
 
     Ok(Value::Undefined)
@@ -466,18 +464,18 @@ pub fn swap_children_at<'gc>(
 
             if index0 < 0 || index0 as usize >= bounds {
                 // Flash error message: The supplied index is out of bounds.
-                return Err(Error::AvmError(range_error(
+                return Err(Error::avm_error(range_error(
                     activation,
-                    &format!("Index {index0} is out of bounds",),
+                    &format!("Index {index0} is out of bounds"),
                     2006,
                 )?));
             }
 
             if index1 < 0 || index1 as usize >= bounds {
                 // Flash error message: The supplied index is out of bounds.
-                return Err(Error::AvmError(range_error(
+                return Err(Error::avm_error(range_error(
                     activation,
-                    &format!("Index {index1} is out of bounds",),
+                    &format!("Index {index1} is out of bounds"),
                     2006,
                 )?));
             }
@@ -485,8 +483,8 @@ pub fn swap_children_at<'gc>(
             let child0 = ctr.child_by_index(index0 as usize).unwrap();
             let child1 = ctr.child_by_index(index1 as usize).unwrap();
 
-            child0.set_placed_by_script(activation.gc(), true);
-            child1.set_placed_by_script(activation.gc(), true);
+            child0.set_placed_by_script(true);
+            child1.set_placed_by_script(true);
 
             ctr.swap_at_index(activation.context, index0 as usize, index1 as usize);
         }
@@ -523,8 +521,8 @@ pub fn swap_children<'gc>(
                 .position(|a| DisplayObject::ptr_eq(a, child1))
                 .ok_or(make_error_2025(activation))?;
 
-            child0.set_placed_by_script(activation.gc(), true);
-            child1.set_placed_by_script(activation.gc(), true);
+            child0.set_placed_by_script(true);
+            child1.set_placed_by_script(true);
 
             ctr.swap_at_index(activation.context, index0, index1);
         }
@@ -636,7 +634,7 @@ pub fn get_mouse_children<'gc>(
     {
         return Ok(dobj.raw_container().mouse_children().into());
     }
-    Ok(Value::Undefined)
+    Ok(false.into())
 }
 
 pub fn set_mouse_children<'gc>(
@@ -671,7 +669,7 @@ pub fn get_tab_children<'gc>(
     {
         Ok(Value::Bool(obj.is_tab_children(activation.context)))
     } else {
-        Ok(Value::Undefined)
+        Ok(false.into())
     }
 }
 

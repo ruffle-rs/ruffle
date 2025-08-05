@@ -2,7 +2,7 @@ use crate::avm2::bytearray::ByteArrayStorage;
 use crate::avm2::error::{argument_error, error, make_error_2037, make_error_2097};
 use crate::avm2::globals::slots::flash_net_file_filter as file_filter_slots;
 use crate::avm2::object::{ByteArrayObject, DateObject, FileReference};
-use crate::avm2::{Activation, Avm2, Error, EventObject, TObject, Value};
+use crate::avm2::{Activation, Avm2, Error, EventObject, TObject as _, Value};
 use crate::backend::ui::FileFilter;
 use crate::string::AvmString;
 
@@ -257,7 +257,7 @@ pub fn save<'gc>(
     let data = match data {
         Value::Null | Value::Undefined => {
             // For some reason this isn't a proper error.
-            return Err(Error::AvmError(argument_error(activation, "data", 0)?));
+            return Err(Error::avm_error(argument_error(activation, "data", 0)?));
         }
         Value::Object(obj) => {
             if let Some(bytearray) = obj.as_bytearray() {
@@ -280,7 +280,7 @@ pub fn save<'gc>(
     // Create and spawn dialog
     let dialog = activation.context.ui.display_file_save_dialog(
         file_name.to_owned(),
-        format!("Select location to save the file {}", file_name),
+        format!("Select location to save the file {file_name}"),
     );
 
     match dialog {
@@ -294,7 +294,7 @@ pub fn save<'gc>(
 
             activation.context.navigator.spawn_future(process);
         }
-        None => return Err(Error::AvmError(error(activation, "Error #2174: Only one download, upload, load or save operation can be active at a time on each FileReference.", 2174)?)),
+        None => return Err(Error::avm_error(error(activation, "Error #2174: Only one download, upload, load or save operation can be active at a time on each FileReference.", 2174)?)),
     }
 
     Ok(Value::Undefined)

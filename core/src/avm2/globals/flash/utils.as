@@ -3,6 +3,8 @@ package flash.utils {
     public native function getDefinitionByName(name:String):Object;
     public native function getQualifiedClassName(value:*):String;
     public native function getQualifiedSuperclassName(value:*):String;
+
+    [Ruffle(FastCall)]
     public native function getTimer():int;
 
     public function describeType(value:*): XML {

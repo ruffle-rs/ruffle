@@ -1,6 +1,9 @@
 message-cant-embed =
     Ruffle nemohl spustit Flash vložený na této stránce.
     Můžete se pokusit otevřít soubor na samostatné kartě, abyste se vyhnuli tomuto problému.
+message-restored-from-bfcache =
+    Váš prohlížeč obnovil tento Flash obsah z předchozí relace.
+    Chcete-li začít znovu, znovu načtěte stránku.
 panic-title = Něco se pokazilo :(
 more-info = Další informace
 run-anyway = Přesto spustit

@@ -2,7 +2,7 @@ package __AS3__.vec {
     [Ruffle(CallHandler)]
     [Ruffle(InstanceAllocator)]
     internal final dynamic class Vector$int {
-         {
+        {
             prototype.concat = function(... rest):* {
                 var v:Vector$int = this;
                 return v.AS3::concat.apply(v, rest);
@@ -145,6 +145,7 @@ package __AS3__.vec {
 
         public native function set fixed(isFixed:Boolean):*;
 
+        [Ruffle(FastCall)]
         public native function get length():uint;
 
         public native function set length(length:uint):*;
@@ -181,7 +182,11 @@ package __AS3__.vec {
 
         AS3 native function slice(start:Number = 0, end:Number = 2147483647):Vector$int;
 
-        AS3 native function some(callback:*, receiver:Object = null):Boolean;
+        AS3 function some(callback:*, receiver:Object = null):Boolean {
+            return _some(callback, receiver);
+        }
+
+        private native function _some(callback:Function, receiver:Object):Boolean;
 
         AS3 native function sort(func:*):Vector$int;
 
@@ -198,4 +203,3 @@ package __AS3__.vec {
         AS3 native function unshift(... rest):uint;
     }
 }
-

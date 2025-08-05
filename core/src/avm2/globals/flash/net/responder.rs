@@ -1,5 +1,4 @@
 pub use crate::avm2::object::responder_allocator;
-use crate::avm2::object::TObject;
 use crate::avm2::parameters::ParametersExt;
 use crate::avm2::{Activation, Error, Value};
 

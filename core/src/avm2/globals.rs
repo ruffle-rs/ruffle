@@ -1,8 +1,8 @@
 use crate::avm2::activation::Activation;
 use crate::avm2::api_version::ApiVersion;
-use crate::avm2::class::Class;
+use crate::avm2::class::{BuiltinType, Class};
 use crate::avm2::domain::Domain;
-use crate::avm2::object::{ClassObject, ScriptObject, TObject};
+use crate::avm2::object::{ClassObject, ScriptObject};
 use crate::avm2::scope::{Scope, ScopeChain};
 use crate::avm2::script::TranslationUnit;
 use crate::avm2::{Avm2, Error, Multiname, Namespace, QName};
@@ -172,6 +172,10 @@ pub struct SystemClasses<'gc> {
     pub id3info: ClassObject<'gc>,
     pub textrun: ClassObject<'gc>,
     pub sharedobject: ClassObject<'gc>,
+    pub worker: ClassObject<'gc>,
+    pub workerdomain: ClassObject<'gc>,
+    pub messagechannel: ClassObject<'gc>,
+    pub securitydomain: ClassObject<'gc>,
 }
 
 #[derive(Clone, Collect)]
@@ -335,6 +339,10 @@ impl<'gc> SystemClasses<'gc> {
             id3info: object,
             textrun: object,
             sharedobject: object,
+            worker: object,
+            workerdomain: object,
+            messagechannel: object,
+            securitydomain: object,
         }
     }
 }
@@ -429,11 +437,8 @@ pub fn init_early_classes<'gc>(
     class_c_class.init_vtable(activation.context)?;
 
     // Now we link the i_classes and c_classes with each other:
-    object_i_class.set_c_class(mc, object_c_class);
-    object_c_class.set_i_class(mc, object_i_class);
-
-    class_i_class.set_c_class(mc, class_c_class);
-    class_c_class.set_i_class(mc, class_i_class);
+    object_i_class.link_with_c_class(mc, object_c_class);
+    class_i_class.link_with_c_class(mc, class_c_class);
 
     // Set the classes on the TranslationUnit to prevent `TranslationUnit::load_class`
     // from creating duplicate classes for them
@@ -626,6 +631,17 @@ pub fn init_builtin_system_class_defs(activation: &mut Activation<'_, '_>) {
         ]
     );
 
+    // Mark all the special builtin classes; see the documentation on
+    // `Class.builtin_type` for more information
+    let class_defs = activation.avm2().class_defs();
+    class_defs.int.mark_builtin_type(BuiltinType::Int);
+    class_defs.uint.mark_builtin_type(BuiltinType::Uint);
+    class_defs.number.mark_builtin_type(BuiltinType::Number);
+    class_defs.boolean.mark_builtin_type(BuiltinType::Boolean);
+    class_defs.object.mark_builtin_type(BuiltinType::Object);
+    class_defs.string.mark_builtin_type(BuiltinType::String);
+    class_defs.void.mark_builtin_type(BuiltinType::Void);
+
     crate::avm2::globals::vector::init_vector_class_defs(activation);
 }
 
@@ -705,6 +721,10 @@ pub fn init_native_system_classes(activation: &mut Activation<'_, '_>) {
             ("flash.utils", "ByteArray", bytearray),
             ("flash.utils", "Dictionary", dictionary),
             ("flash.system", "ApplicationDomain", application_domain),
+            ("flash.system", "MessageChannel", messagechannel),
+            ("flash.system", "SecurityDomain", securitydomain),
+            ("flash.system", "Worker", worker),
+            ("flash.system", "WorkerDomain", workerdomain),
             ("flash.text", "Font", font),
             ("flash.text", "StaticText", statictext),
             ("flash.text", "TextFormat", textformat),
@@ -776,6 +796,7 @@ pub fn load_playerglobal<'gc>(
     activation.avm2().native_instance_allocator_table = native::NATIVE_INSTANCE_ALLOCATOR_TABLE;
     activation.avm2().native_call_handler_table = native::NATIVE_CALL_HANDLER_TABLE;
     activation.avm2().native_custom_constructor_table = native::NATIVE_CUSTOM_CONSTRUCTOR_TABLE;
+    activation.avm2().native_fast_call_list = native::NATIVE_FAST_CALL_LIST;
 
     let movie = Arc::new(
         SwfMovie::from_data(PLAYERGLOBAL, "file:///".into(), None)

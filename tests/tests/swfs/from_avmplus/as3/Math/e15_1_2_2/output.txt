@@ -1,0 +1,4 @@
+radix 32 > 53bits of precisions FAILED! expected: 1228503247364293600 got: 38390726480134180
+radix 8 > 53bits of precisions PASSED!
+radix 4 > 53bits of precisions PASSED!
+radix 2 > 53bits of precisions PASSED!

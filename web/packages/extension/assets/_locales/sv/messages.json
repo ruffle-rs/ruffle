@@ -26,6 +26,12 @@
     "settings_log_level_info": {
         "message": "Info"
     },
+    "settings_log_level_debug": {
+        "message": "Felsök"
+    },
+    "settings_log_level_trace": {
+        "message": "Spår"
+    },
     "settings_max_execution_duration": {
         "message": "Maximal tillåten exekveringstid för ActionScript (i sekunder)"
     },
@@ -106,5 +112,8 @@
     },
     "grant_single_site_permission": {
         "message": "Sätt på permanent på denna sida"
+    },
+    "permissions_explanation": {
+        "message": "Ruffletillägget fungerar best med tillgång till data för alla webbplatser. Det tillåter tillägget att köra på alla webbplatser när de först laddas in, vilket låter det lura webbplatser som kollar efter Flash Player att köra Flashinnehållet omedelbart. Det gör det också möjligt för webbplatsen att ladda SWF-filer in i dess interna spelar sida från andra webbplatser och gör det möjligt för den att ladda direkt SWF-länkar in i sidan. Om du inte ger den här behörigheten, måste du manuellt sätta på Ruffle på varje webplats som du vill använda den på genom att klicka på ikonen för tillägget och sätta på det för webbplatsen."
     }
 }

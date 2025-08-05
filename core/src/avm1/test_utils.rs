@@ -9,7 +9,7 @@ pub fn with_avm<F>(swf_version: u8, test: F)
 where
     F: for<'a, 'gc> FnOnce(&mut Activation<'_, 'gc>, Object<'gc>) -> Result<(), Error<'gc>>,
 {
-    let movie = crate::tag_utils::SwfMovie::empty(swf_version);
+    let movie = crate::tag_utils::SwfMovie::empty(swf_version, None);
     let player = crate::player::PlayerBuilder::new()
         .with_movie(movie)
         .build();
@@ -43,7 +43,7 @@ macro_rules! test_method {
 
                         $(
                             let args: Vec<Value> = vec![$($arg.into()),*];
-                            let ret = crate::avm1::object::TObject::call_method(&object, name, &args, activation, crate::avm1::function::ExecutionReason::Special)?;
+                            let ret = crate::avm1::object::Object::call_method(object, name, &args, activation, crate::avm1::function::ExecutionReason::Special)?;
 
                             // Do a numeric comparison with tolerance if `@epsilon` was given:
                             $(

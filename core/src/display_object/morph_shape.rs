@@ -6,13 +6,14 @@ use crate::display_object::{DisplayObjectBase, DisplayObjectPtr};
 use crate::library::{Library, MovieLibrarySource};
 use crate::prelude::*;
 use crate::tag_utils::SwfMovie;
+use crate::utils::HasPrefixField;
 use core::fmt;
 use gc_arena::barrier::unlock;
-use gc_arena::lock::{Lock, RefLock};
+use gc_arena::lock::Lock;
 use gc_arena::{Collect, Gc, Mutation};
 use ruffle_render::backend::ShapeHandle;
 use ruffle_render::commands::CommandHandler;
-use std::cell::{Cell, Ref, RefCell, RefMut};
+use std::cell::{Cell, RefCell, RefMut};
 use std::sync::Arc;
 use swf::{Fixed16, Fixed8};
 
@@ -28,14 +29,15 @@ impl fmt::Debug for MorphShape<'_> {
     }
 }
 
-#[derive(Clone, Collect)]
+#[derive(Clone, Collect, HasPrefixField)]
 #[collect(no_drop)]
+#[repr(C, align(8))]
 pub struct MorphShapeData<'gc> {
-    base: RefLock<DisplayObjectBase<'gc>>,
+    base: DisplayObjectBase<'gc>,
     shared: Lock<Gc<'gc, MorphShapeShared>>,
-    ratio: Cell<u16>,
     /// The AVM2 representation of this MorphShape.
     object: Lock<Option<Avm2Object<'gc>>>,
+    ratio: Cell<u16>,
 }
 
 impl<'gc> MorphShape<'gc> {
@@ -60,38 +62,34 @@ impl<'gc> MorphShape<'gc> {
         self.0.ratio.get()
     }
 
-    pub fn set_ratio(self, gc_context: &Mutation<'gc>, ratio: u16) {
+    pub fn set_ratio(self, ratio: u16) {
         self.0.ratio.set(ratio);
-        self.invalidate_cached_bitmap(gc_context);
+        self.invalidate_cached_bitmap();
     }
 }
 
 impl<'gc> TDisplayObject<'gc> for MorphShape<'gc> {
-    fn base(&self) -> Ref<DisplayObjectBase<'gc>> {
-        self.0.base.borrow()
+    fn base(self) -> Gc<'gc, DisplayObjectBase<'gc>> {
+        HasPrefixField::as_prefix_gc(self.0)
     }
 
-    fn base_mut<'a>(&'a self, mc: &Mutation<'gc>) -> RefMut<'a, DisplayObjectBase<'gc>> {
-        unlock!(Gc::write(mc, self.0), MorphShapeData, base).borrow_mut()
-    }
-
-    fn instantiate(&self, gc_context: &Mutation<'gc>) -> DisplayObject<'gc> {
+    fn instantiate(self, gc_context: &Mutation<'gc>) -> DisplayObject<'gc> {
         Self(Gc::new(gc_context, self.0.as_ref().clone())).into()
     }
 
-    fn as_ptr(&self) -> *const DisplayObjectPtr {
+    fn as_ptr(self) -> *const DisplayObjectPtr {
         Gc::as_ptr(self.0) as *const DisplayObjectPtr
     }
 
-    fn id(&self) -> CharacterId {
+    fn id(self) -> CharacterId {
         self.0.shared.get().id
     }
 
-    fn as_morph_shape(&self) -> Option<Self> {
-        Some(*self)
+    fn as_morph_shape(self) -> Option<Self> {
+        Some(self)
     }
 
-    fn replace_with(&self, context: &mut UpdateContext<'gc>, id: CharacterId) {
+    fn replace_with(self, context: &mut UpdateContext<'gc>, id: CharacterId) {
         if let Some(new_morph_shape) = context
             .library
             .library_for_movie_mut(self.movie())
@@ -102,14 +100,10 @@ impl<'gc> TDisplayObject<'gc> for MorphShape<'gc> {
         } else {
             tracing::warn!("PlaceObject: expected morph shape at character ID {}", id);
         }
-        self.invalidate_cached_bitmap(context.gc());
+        self.invalidate_cached_bitmap();
     }
 
-    fn run_frame_avm1(&self, _context: &mut UpdateContext) {
-        // Noop
-    }
-
-    fn object2(&self) -> Avm2Value<'gc> {
+    fn object2(self) -> Avm2Value<'gc> {
         self.0
             .object
             .get()
@@ -117,21 +111,18 @@ impl<'gc> TDisplayObject<'gc> for MorphShape<'gc> {
             .unwrap_or(Avm2Value::Null)
     }
 
-    fn set_object2(&self, context: &mut UpdateContext<'gc>, to: Avm2Object<'gc>) {
+    fn set_object2(self, context: &mut UpdateContext<'gc>, to: Avm2Object<'gc>) {
         let mc = context.gc();
         unlock!(Gc::write(mc, self.0), MorphShapeData, object).set(Some(to))
     }
 
     /// Construct objects placed on this frame.
-    fn construct_frame(&self, context: &mut UpdateContext<'gc>) {
+    fn construct_frame(self, context: &mut UpdateContext<'gc>) {
         if self.movie().is_action_script_3() && matches!(self.object2(), Avm2Value::Null) {
             let class = context.avm2.classes().morphshape;
             let mut activation = Avm2Activation::from_nothing(context);
-            match Avm2StageObject::for_display_object_childless(
-                &mut activation,
-                (*self).into(),
-                class,
-            ) {
+            match Avm2StageObject::for_display_object_childless(&mut activation, self.into(), class)
+            {
                 Ok(object) => self.set_object2(context, object.into()),
                 Err(e) => tracing::error!("Got {} when constructing AVM2 side of MorphShape", e),
             };
@@ -139,7 +130,7 @@ impl<'gc> TDisplayObject<'gc> for MorphShape<'gc> {
         }
     }
 
-    fn render_self(&self, context: &mut RenderContext) {
+    fn render_self(self, context: &mut RenderContext) {
         let ratio = self.0.ratio.get();
         let shared = self.0.shared.get();
         let shape_handle = shared.get_shape(context, context.library, ratio);
@@ -148,7 +139,7 @@ impl<'gc> TDisplayObject<'gc> for MorphShape<'gc> {
             .render_shape(shape_handle, context.transform_stack.transform());
     }
 
-    fn self_bounds(&self) -> Rectangle<Twips> {
+    fn self_bounds(self) -> Rectangle<Twips> {
         let ratio = self.0.ratio.get();
         let shared = self.0.shared.get();
         let frame = shared.get_frame(ratio);
@@ -156,7 +147,7 @@ impl<'gc> TDisplayObject<'gc> for MorphShape<'gc> {
     }
 
     fn hit_test_shape(
-        &self,
+        self,
         _context: &mut UpdateContext<'gc>,
         point: Point<Twips>,
         options: HitTestOptions,
@@ -181,7 +172,7 @@ impl<'gc> TDisplayObject<'gc> for MorphShape<'gc> {
         false
     }
 
-    fn movie(&self) -> Arc<SwfMovie> {
+    fn movie(self) -> Arc<SwfMovie> {
         self.0.shared.get().movie.clone()
     }
 }
@@ -194,7 +185,6 @@ struct Frame {
 }
 
 /// Data shared between all instances of a morph shape.
-#[allow(dead_code)]
 #[derive(Collect)]
 #[collect(require_static)]
 pub struct MorphShapeShared {

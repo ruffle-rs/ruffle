@@ -38,7 +38,7 @@ impl DomainListWindow {
         keep_open
     }
 
-    #[allow(clippy::only_used_in_recursion)]
+    #[expect(clippy::only_used_in_recursion)]
     pub fn show_domain<'gc>(
         &mut self,
         ui: &mut Ui,
@@ -63,7 +63,7 @@ impl DomainListWindow {
                     }
 
                     CollapsingHeader::new(format!("Class {class_name}"))
-                        .id_salt(ui.id().with(class.0.as_ptr()))
+                        .id_salt(ui.id().with(class.as_ptr()))
                         .show(ui, |ui| {
                             for class_obj in &*class.class_objects() {
                                 let button = ui.button(format!("{class_obj:?}"));
@@ -96,6 +96,3 @@ pub fn open_domain_button<'gc>(
         messages.push(Message::TrackDomain(DomainHandle::new(context, domain)));
     }
 }
-
-#[derive(Debug, Default)]
-pub struct DomainWindow {}

@@ -301,7 +301,7 @@ impl TestRunner {
                 AutomatedEvent::Wait | AutomatedEvent::SetClipboardText { .. } => unreachable!(),
             });
 
-            #[allow(clippy::single_match)]
+            #[expect(clippy::single_match)]
             match evt {
                 AutomatedEvent::MouseDown {
                     assert_handled: Some(assert_handled),

@@ -26,7 +26,7 @@ use swf::{BlendMode, ColorTransform, Fixed8, Rectangle, Twips};
 ///
 /// This will allow us to be able to optimise the implementations and share the
 /// same code between VMs.
-#[allow(clippy::too_many_arguments)]
+#[expect(clippy::too_many_arguments)]
 pub fn fill_rect<'gc>(
     mc: &Mutation<'gc>,
     renderer: &mut dyn RenderBackend,
@@ -211,40 +211,40 @@ pub fn noise<'gc>(
     for y in 0..write.height() {
         for x in 0..write.width() {
             let pixel_color = if gray_scale {
-                let gray = rng.gen_range(low..high);
+                let gray = rng.random_range(low..high);
                 let alpha = if channel_options.contains(ChannelOptions::ALPHA) {
-                    rng.gen_range(low..high)
+                    rng.random_range(low..high)
                 } else {
                     255
                 };
 
-                Color::argb(alpha, gray, gray, gray)
+                Color::rgba(gray, gray, gray, alpha)
             } else {
                 let r = if channel_options.contains(ChannelOptions::RED) {
-                    rng.gen_range(low..high)
+                    rng.random_range(low..high)
                 } else {
                     0
                 };
 
                 let g = if channel_options.contains(ChannelOptions::GREEN) {
-                    rng.gen_range(low..high)
+                    rng.random_range(low..high)
                 } else {
                     0
                 };
 
                 let b = if channel_options.contains(ChannelOptions::BLUE) {
-                    rng.gen_range(low..high)
+                    rng.random_range(low..high)
                 } else {
                     0
                 };
 
                 let a = if channel_options.contains(ChannelOptions::ALPHA) {
-                    rng.gen_range(low..high)
+                    rng.random_range(low..high)
                 } else {
                     255
                 };
 
-                Color::argb(a, r, g, b)
+                Color::rgba(r, g, b, a)
             };
 
             write.set_pixel32_raw(x, y, pixel_color);
@@ -254,7 +254,7 @@ pub fn noise<'gc>(
     write.set_cpu_dirty(mc, region)
 }
 
-#[allow(clippy::too_many_arguments)]
+#[expect(clippy::too_many_arguments)]
 pub fn perlin_noise<'gc>(
     mc: &Mutation<'gc>,
     target: BitmapDataWrapper<'gc>,
@@ -364,14 +364,14 @@ pub fn perlin_noise<'gc>(
                 color[3] = 255;
             }
 
-            write.set_pixel32_raw(x, y, Color::argb(color[3], color[0], color[1], color[2]));
+            write.set_pixel32_raw(x, y, Color::rgba(color[0], color[1], color[2], color[3]));
         }
     }
     let region = PixelRegion::for_whole_size(write.width(), write.height());
     write.set_cpu_dirty(mc, region)
 }
 
-#[allow(clippy::too_many_arguments)]
+#[expect(clippy::too_many_arguments)]
 pub fn copy_channel<'gc>(
     mc: &Mutation<'gc>,
     renderer: &mut dyn RenderBackend,
@@ -470,7 +470,7 @@ pub fn copy_channel<'gc>(
     write.set_cpu_dirty(mc, dest_region);
 }
 
-#[allow(clippy::too_many_arguments)]
+#[expect(clippy::too_many_arguments)]
 pub fn color_transform<'gc>(
     mc: &Mutation<'gc>,
     renderer: &mut dyn RenderBackend,
@@ -494,6 +494,9 @@ pub fn color_transform<'gc>(
         return;
     }
 
+    // Clamp both min and max coordinates to target size to enforce invariants
+    let x_min = x_min.min(target.width());
+    let y_min = y_min.min(target.height());
     let x_max = x_max.min(target.width());
     let y_max = y_max.min(target.height());
 
@@ -524,7 +527,7 @@ pub fn color_transform<'gc>(
     );
 }
 
-#[allow(clippy::too_many_arguments)]
+#[expect(clippy::too_many_arguments)]
 pub fn threshold<'gc>(
     mc: &Mutation<'gc>,
     renderer: &mut dyn RenderBackend,
@@ -770,19 +773,19 @@ pub fn compare<'gc>(
             let bitmap_pixel = bitmap_pixel.to_un_multiplied_alpha();
             let other_pixel = other_pixel.to_un_multiplied_alpha();
             if bitmap_pixel == other_pixel {
-                Color::argb(0, 0, 0, 0)
+                Color::rgba(0, 0, 0, 0)
             } else if bitmap_pixel.with_alpha(0) != other_pixel.with_alpha(0) {
                 different = true;
-                Color::argb(
-                    0xff,
+                Color::rgba(
                     bitmap_pixel.red().wrapping_sub(other_pixel.red()),
                     bitmap_pixel.green().wrapping_sub(other_pixel.green()),
                     bitmap_pixel.blue().wrapping_sub(other_pixel.blue()),
+                    0xff,
                 )
             } else {
                 different = true;
                 let alpha = bitmap_pixel.alpha().wrapping_sub(other_pixel.alpha());
-                Color::argb(alpha, alpha, alpha, alpha)
+                Color::rgba(alpha, alpha, alpha, alpha)
             }
         })
         .collect();
@@ -1018,7 +1021,7 @@ pub fn merge<'gc>(
                 + dest_color.alpha() as u16 * (256 - alpha_mult))
                 / 256;
 
-            let mix_color = Color::argb(alpha as u8, red as u8, green as u8, blue as u8);
+            let mix_color = Color::rgba(red as u8, green as u8, blue as u8, alpha as u8);
 
             write.set_pixel32_raw(
                 dest_x,
@@ -1069,7 +1072,7 @@ pub fn copy_pixels<'gc>(
     );
 }
 
-#[allow(clippy::too_many_arguments)]
+#[expect(clippy::too_many_arguments)]
 pub fn copy_pixels_with_alpha_source<'gc>(
     context: &mut UpdateContext<'gc>,
     target: BitmapDataWrapper<'gc>,
@@ -1183,7 +1186,7 @@ pub fn copy_pixels_with_alpha_source<'gc>(
             let r = (source_color.red() as f64 / a).round() as u8;
             let g = (source_color.green() as f64 / a).round() as u8;
             let b = (source_color.blue() as f64 / a).round() as u8;
-            let intermediate_color = Color::argb(source_color.alpha(), r, g, b)
+            let intermediate_color = Color::rgba(r, g, b, source_color.alpha())
                 .with_alpha(final_alpha)
                 .to_premultiplied_alpha(true);
 
@@ -1277,7 +1280,6 @@ pub fn apply_filter<'gc>(
     }
 }
 
-#[allow(clippy::too_many_arguments)]
 fn copy_on_cpu<'gc>(
     context: &Mutation<'gc>,
     renderer: &mut dyn RenderBackend,
@@ -1374,7 +1376,6 @@ fn copy_on_cpu<'gc>(
     }
 }
 
-#[allow(clippy::too_many_arguments)]
 fn blend_and_transform<'gc>(
     context: &mut UpdateContext<'gc>,
     source: BitmapDataWrapper<'gc>,
@@ -1430,7 +1431,7 @@ fn blend_and_transform<'gc>(
     }
 }
 
-#[allow(clippy::too_many_arguments)]
+#[expect(clippy::too_many_arguments)]
 pub fn draw<'gc>(
     context: &mut UpdateContext<'gc>,
     target: BitmapDataWrapper<'gc>,
@@ -1713,7 +1714,7 @@ pub fn get_pixels_as_byte_array<'gc>(
     Ok(())
 }
 
-#[allow(clippy::too_many_arguments)]
+#[expect(clippy::too_many_arguments)]
 pub fn set_pixels_from_byte_array<'gc>(
     mc: &Mutation<'gc>,
     renderer: &mut dyn RenderBackend,
@@ -1756,7 +1757,7 @@ pub fn set_pixels_from_byte_array<'gc>(
     Ok(())
 }
 
-#[allow(clippy::too_many_arguments)]
+#[expect(clippy::too_many_arguments)]
 pub fn pixel_dissolve<'gc>(
     mc: &Mutation<'gc>,
     renderer: &mut dyn RenderBackend,
@@ -1834,8 +1835,8 @@ pub fn pixel_dissolve<'gc>(
     }
 
     fn write_pixel(
-        write: &mut RefMut<BitmapData>,
-        different_source_than_target: &Option<Ref<BitmapData>>,
+        write: &mut RefMut<'_, BitmapData>,
+        different_source_than_target: &Option<Ref<'_, BitmapData>>,
         fill_color: u32,
         transparency: bool,
         base_point: (u32, u32),

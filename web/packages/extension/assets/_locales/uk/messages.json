@@ -26,6 +26,12 @@
     "settings_log_level_info": {
         "message": "Інформація"
     },
+    "settings_log_level_debug": {
+        "message": "Налагодження"
+    },
+    "settings_log_level_trace": {
+        "message": "Відстежувати"
+    },
     "settings_max_execution_duration": {
         "message": "Максимально дозволена тривалість виконання ActionScript (у секундах)"
     },

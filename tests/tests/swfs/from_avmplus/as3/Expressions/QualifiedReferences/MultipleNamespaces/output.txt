@@ -1,0 +1,7 @@
+f.teamName = 'Macromedia' PASSED!
+f.public::teamName = 'Macromedia' PASSED!
+f.Baseball::teamName = 'Giants' PASSED!
+f.Football::teamName = 'Chargers' PASSED!
+f.Basketball::teamName = 'Kings' PASSED!
+f.Hockey::teamName = 'Sharks' PASSED!
+f.Hockey::teamColor = 'yellow' PASSED!

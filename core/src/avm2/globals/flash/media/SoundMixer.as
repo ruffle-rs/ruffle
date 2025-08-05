@@ -1,8 +1,7 @@
 package flash.media {
     import flash.utils.ByteArray;
-    
-    public final class SoundMixer {
 
+    public final class SoundMixer {
         public static native function get soundTransform():SoundTransform;
         public static native function set soundTransform(value:SoundTransform):void;
 

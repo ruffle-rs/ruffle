@@ -2,7 +2,7 @@ use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
 use crate::avm1::function::ExecutionReason;
 use crate::avm1::object::NativeObject;
-use crate::avm1::{Object, ScriptObject, TObject};
+use crate::avm1::Object;
 use crate::display_object::TDisplayObject;
 use crate::ecma_conversions::{
     f64_to_wrapping_i16, f64_to_wrapping_i32, f64_to_wrapping_u16, f64_to_wrapping_u32,
@@ -17,7 +17,6 @@ use super::object_reference::MovieClipReference;
 
 #[derive(Debug, Clone, Copy, Collect)]
 #[collect(no_drop)]
-#[allow(dead_code)]
 pub enum Value<'gc> {
     Undefined,
     Null,
@@ -49,12 +48,9 @@ impl From<bool> for Value<'_> {
     }
 }
 
-impl<'gc, T> From<T> for Value<'gc>
-where
-    Object<'gc>: From<T>,
-{
-    fn from(value: T) -> Self {
-        Value::Object(Object::from(value))
+impl<'gc> From<Object<'gc>> for Value<'gc> {
+    fn from(value: Object<'gc>) -> Self {
+        Value::Object(value)
     }
 }
 
@@ -363,7 +359,6 @@ impl<'gc> Value<'gc> {
     /// Coerce a number to an `u16` following the ECMAScript specifications for `ToUInt16`.
     /// The value will be wrapped modulo 2^16.
     /// This will call `valueOf` and do any conversions that are necessary.
-    #[allow(dead_code)]
     pub fn coerce_to_u16(&self, activation: &mut Activation<'_, 'gc>) -> Result<u16, Error<'gc>> {
         self.coerce_to_f64(activation).map(f64_to_wrapping_u16)
     }
@@ -371,7 +366,6 @@ impl<'gc> Value<'gc> {
     /// Coerce a number to an `i16` following the wrapping behavior ECMAScript specifications.
     /// The value will be wrapped in the range [-2^15, 2^15).
     /// This will call `valueOf` and do any conversions that are necessary.
-    #[allow(dead_code)]
     pub fn coerce_to_i16(&self, activation: &mut Activation<'_, 'gc>) -> Result<i16, Error<'gc>> {
         self.coerce_to_f64(activation).map(f64_to_wrapping_i16)
     }
@@ -380,7 +374,6 @@ impl<'gc> Value<'gc> {
     /// The value will be wrapped modulo 2^32.
     /// This will call `valueOf` and do any conversions that are necessary.
     /// If you are writing AVM code that accepts an integer, you probably want to use this.
-    #[allow(dead_code)]
     pub fn coerce_to_i32(&self, activation: &mut Activation<'_, 'gc>) -> Result<i32, Error<'gc>> {
         self.coerce_to_f64(activation).map(f64_to_wrapping_i32)
     }
@@ -388,7 +381,6 @@ impl<'gc> Value<'gc> {
     /// Coerce a number to an `u32` following the ECMAScript specifications for `ToUInt32`.
     /// The value will be wrapped in the range [-2^31, 2^31).
     /// This will call `valueOf` and do any conversions that are necessary.
-    #[allow(dead_code)]
     pub fn coerce_to_u32(&self, activation: &mut Activation<'_, 'gc>) -> Result<u32, Error<'gc>> {
         self.coerce_to_f64(activation).map(f64_to_wrapping_u32)
     }
@@ -407,10 +399,7 @@ impl<'gc> Value<'gc> {
                 istr!("0")
             }
             Value::Object(object) => {
-                if let Some(object) = object
-                    .as_display_object()
-                    .filter(|_| !matches!(object, Object::SuperObject(_)))
-                {
+                if let Some(object) = object.as_display_object_no_super() {
                     // StageObjects are special-cased to return their path.
                     AvmString::new(activation.gc(), object.path())
                 } else {
@@ -489,7 +478,7 @@ impl<'gc> Value<'gc> {
             Value::String(_) => (self, Some(activation.context.avm1.prototypes().string)),
         };
 
-        let obj = ScriptObject::new(&activation.context.strings, proto).into();
+        let obj = Object::new(&activation.context.strings, proto);
 
         // Constructor populates the boxed object with the value.
         use crate::avm1::globals;
@@ -546,7 +535,7 @@ fn decimal_shift(mut value: f64, mut exp: i32) -> f64 {
 /// Exponential notation is used for numbers <= 1e-5 and >= 1e15.
 /// Rounding done with ties rounded away from zero.
 /// NAN returns `"NaN"`, and infinity returns `"Infinity"`.
-#[allow(clippy::approx_constant)]
+#[expect(clippy::approx_constant)]
 fn f64_to_string<'gc>(activation: &mut Activation<'_, 'gc>, mut n: f64) -> AvmString<'gc> {
     if n.is_nan() {
         istr!("NaN")
@@ -900,14 +889,13 @@ fn string_to_f64(mut s: &WStr, swf_version: u8) -> f64 {
 }
 
 #[cfg(test)]
-#[allow(clippy::unreadable_literal)] // Large numeric literals in tests
+#[expect(clippy::unreadable_literal)] // Large numeric literals in tests
 mod test {
     use crate::avm1::activation::Activation;
     use crate::avm1::error::Error;
     use crate::avm1::function::FunctionObject;
     use crate::avm1::globals::create_globals;
-    use crate::avm1::object::script_object::ScriptObject;
-    use crate::avm1::object::{Object, TObject};
+    use crate::avm1::object::Object;
     use crate::avm1::property::Attribute;
     use crate::avm1::test_utils::with_avm;
     use crate::avm1::Value;
@@ -950,7 +938,7 @@ mod test {
                 protos.function,
             );
 
-            let o = ScriptObject::new(&activation.context.strings, Some(protos.object));
+            let o = Object::new(&activation.context.strings, Some(protos.object));
             o.define_value(
                 activation.gc(),
                 istr!("valueOf"),
@@ -968,7 +956,7 @@ mod test {
     }
 
     #[test]
-    #[allow(clippy::float_cmp)]
+    #[expect(clippy::float_cmp)]
     fn to_number_swf7() {
         with_avm(7, |activation, _this| -> Result<(), Error> {
             let t = Value::Bool(true);
@@ -981,7 +969,7 @@ mod test {
             assert_eq!(f.coerce_to_f64(activation).unwrap(), 0.0);
             assert!(n.coerce_to_f64(activation).unwrap().is_nan());
 
-            let o = ScriptObject::new(&activation.context.strings, None);
+            let o = Object::new(&activation.context.strings, None);
 
             assert!(Value::from(o).coerce_to_f64(activation).unwrap().is_nan());
 
@@ -990,7 +978,7 @@ mod test {
     }
 
     #[test]
-    #[allow(clippy::float_cmp)]
+    #[expect(clippy::float_cmp)]
     fn to_number_swf6() {
         with_avm(6, |activation, _this| -> Result<(), Error> {
             let t = Value::Bool(true);
@@ -1003,7 +991,7 @@ mod test {
             assert_eq!(f.coerce_to_f64(activation).unwrap(), 0.0);
             assert_eq!(n.coerce_to_f64(activation).unwrap(), 0.0);
 
-            let o = ScriptObject::new(&activation.context.strings, None);
+            let o = Object::new(&activation.context.strings, None);
 
             assert_eq!(Value::from(o).coerce_to_f64(activation).unwrap(), 0.0);
 

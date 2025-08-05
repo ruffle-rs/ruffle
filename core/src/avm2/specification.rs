@@ -1,7 +1,7 @@
 use crate::avm2::dynamic_map::DynamicKey;
 use crate::avm2::function::BoundMethod;
 use crate::avm2::method::{Method, ParamConfig};
-use crate::avm2::object::TObject;
+use crate::avm2::object::TObject as _;
 use crate::avm2::traits::{Trait, TraitKind};
 use crate::avm2::{Activation, Avm2, ClassObject, QName, Value};
 use crate::context::UpdateContext;
@@ -322,13 +322,13 @@ impl Definition {
 
         Self::fill_traits(
             activation.avm2(),
-            &c_class.traits(),
+            c_class.traits(),
             &mut definition.static_traits,
             stubs,
         );
         Self::fill_traits(
             activation.avm2(),
-            &i_class.traits(),
+            i_class.traits(),
             &mut definition.instance_traits,
             stubs,
         );
@@ -466,7 +466,6 @@ impl Definition {
     }
 }
 
-#[allow(unreachable_code, unused_variables, clippy::diverging_sub_expression)]
 pub fn capture_specification(context: &mut UpdateContext, output: &Path) {
     let stubs = crate::stub::get_known_stubs();
 

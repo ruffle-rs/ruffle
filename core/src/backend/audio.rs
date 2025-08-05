@@ -1,12 +1,13 @@
+use std::any::Any;
+
 use crate::{
-    avm1::{NativeObject, Object as Avm1Object, TObject as _},
+    avm1::{NativeObject, Object as Avm1Object},
     avm2::{Avm2, EventObject as Avm2EventObject, SoundChannelObject},
     buffer::Substream,
     context::UpdateContext,
     display_object::{self, DisplayObject, MovieClip, TDisplayObject},
     string::AvmString,
 };
-use downcast_rs::Downcast;
 use gc_arena::Collect;
 use slotmap::{new_key_type, Key, SlotMap};
 
@@ -84,7 +85,7 @@ pub enum RegisterError {
     ShortMp3,
 }
 
-pub trait AudioBackend: Downcast {
+pub trait AudioBackend: Any {
     fn play(&mut self);
     fn pause(&mut self);
 
@@ -193,8 +194,6 @@ pub trait AudioBackend: Downcast {
         self.get_sound_position(instance).is_some()
     }
 }
-
-impl_downcast!(AudioBackend);
 
 /// Information about a sound provided to `NullAudioBackend`.
 struct NullSound {
@@ -734,14 +733,13 @@ impl<'gc> AudioManager<'gc> {
     }
 
     fn transform_for_sound(&self, sound: &SoundInstance<'gc>) -> SoundTransform {
-        let mut transform = sound.transform.clone();
+        let mut transform = sound.transform;
         let mut parent = sound.display_object;
         while let Some(display_object) = parent {
-            transform.concat(display_object.base().sound_transform());
+            transform = transform.concat(display_object.base().sound_transform());
             parent = display_object.parent();
         }
-        transform.concat(&self.global_sound_transform);
-        transform.into()
+        transform.concat(self.global_sound_transform).into()
     }
 
     /// Update the sound transforms for all sounds.

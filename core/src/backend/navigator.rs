@@ -4,9 +4,9 @@ use crate::loader::Error;
 use crate::socket::{ConnectionState, SocketAction, SocketHandle};
 use crate::string::WStr;
 use async_channel::{Receiver, Sender};
-use downcast_rs::Downcast;
 use encoding_rs::Encoding;
 use indexmap::IndexMap;
+use std::any::Any;
 use std::borrow::Cow;
 use std::fmt;
 use std::fmt::Display;
@@ -34,7 +34,7 @@ pub fn url_from_relative_url(base: &str, relative: &str) -> Result<Url, ParseErr
 }
 
 /// Enumerates all possible navigation methods.
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, PartialEq)]
 pub enum NavigationMethod {
     /// Indicates that navigation should generate a GET request.
     Get,
@@ -133,7 +133,7 @@ impl Request {
     }
 
     /// Construct a request with the given method and data
-    #[allow(clippy::self_named_constructors)]
+    #[expect(clippy::self_named_constructors)]
     pub fn request(method: NavigationMethod, url: String, body: Option<(Vec<u8>, String)>) -> Self {
         Self {
             url,
@@ -174,7 +174,7 @@ impl Request {
 /// A response to a successful fetch request.
 pub trait SuccessResponse {
     /// The final URL obtained after any redirects.
-    fn url(&self) -> Cow<str>;
+    fn url(&self) -> Cow<'_, str>;
 
     /// Retrieve the contents of the response body.
     ///
@@ -227,7 +227,7 @@ pub struct ErrorResponse {
 pub type OwnedFuture<T, E> = Pin<Box<dyn Future<Output = Result<T, E>> + 'static>>;
 
 /// A backend interacting with a browser environment.
-pub trait NavigatorBackend: Downcast {
+pub trait NavigatorBackend: Any {
     /// Cause a browser navigation to a given URL.
     ///
     /// The URL given may be any URL scheme a browser can support. This may not
@@ -302,7 +302,6 @@ pub trait NavigatorBackend: Downcast {
         sender: Sender<SocketAction>,
     );
 }
-impl_downcast!(NavigatorBackend);
 
 #[cfg(not(target_family = "wasm"))]
 pub struct NullExecutor(futures::executor::LocalPool);
@@ -567,7 +566,7 @@ pub fn fetch_path<NavigatorType: NavigatorBackend>(
     }
 
     impl SuccessResponse for LocalResponse {
-        fn url(&self) -> Cow<str> {
+        fn url(&self) -> Cow<'_, str> {
             Cow::Borrowed(&self.url)
         }
 

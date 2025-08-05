@@ -127,7 +127,7 @@ struct ActivePlayer {
 }
 
 impl ActivePlayer {
-    #[allow(clippy::too_many_arguments)]
+    #[expect(clippy::too_many_arguments)]
     pub fn new(
         opt: &LaunchOptions,
         event_loop: EventLoopProxy<RuffleEvent>,
@@ -477,7 +477,7 @@ impl PlayerController {
         self.player = None;
     }
 
-    pub fn get(&self) -> Option<MutexGuard<Player>> {
+    pub fn get(&self) -> Option<MutexGuard<'_, Player>> {
         match &self.player {
             None => None,
             // We don't want to return None when the lock fails to grab as that's a fatal error, not a lack of player

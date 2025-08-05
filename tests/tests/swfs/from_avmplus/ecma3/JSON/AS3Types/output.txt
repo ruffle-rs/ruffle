@@ -1,0 +1,26 @@
+Vectors are stringified to JSON Array syntax PASSED!
+Vectors of int are stringified to JSON Array syntax PASSED!
+Vectors of uint are stringified to JSON Array syntax PASSED!
+Vectors of Number are stringified to JSON Array syntax PASSED!
+Vectors of Boolean are stringified to JSON Array syntax PASSED!
+uninitialized Vector is stringified to [] PASSED!
+Vector of edge case values PASSED!
+Arrays are parsed correctly, empty [] PASSED!
+Arrays are parsed correctly, [1] PASSED!
+Arrays are parsed correctly, [1,2,3] PASSED!
+Arrays errors are detected, [ PASSED!
+Arrays errors are detected, [1,2,3,fals] PASSED!
+Arrays errors are detected, [1,2,] PASSED!
+Arrays errors are detected, [1,2,3 PASSED!
+Type * is like an untyped variable PASSED!
+stringify a Dictionary object PASSED!
+stringify a 1-elem Dictionary with customized toJSON PASSED!
+stringify a 3-elem Dictionary with customized toJSON PASSED!
+stringify a Dictionary restored original toJSON PASSED!
+stringify a ByteArray object PASSED!
+stringify a ByteArray object with custom toJSON PASSED!
+stringify a ByteArray object with restored toJSON PASSED!
+stringify XML object PASSED!
+stringify a Date object PASSED!
+stringify a Date object with custom toJSON PASSED!
+stringify a Date object with restored toJSON PASSED!

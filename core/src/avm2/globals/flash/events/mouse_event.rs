@@ -1,6 +1,6 @@
 use crate::avm2::activation::Activation;
 use crate::avm2::globals::slots::flash_events_mouse_event as slots;
-use crate::avm2::object::{Object, TObject};
+use crate::avm2::object::{Object, TObject as _};
 use crate::avm2::value::Value;
 use crate::avm2::Error;
 use crate::display_object::TDisplayObject;
@@ -14,7 +14,7 @@ pub fn get_stage_x<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
-    local_to_stage_x(activation, this, slots::LOCAL_X, slots::LOCAL_Y)
+    local_to_stage_x(activation, this, slots::_LOCAL_X, slots::_LOCAL_Y)
 }
 
 /// Implements `stageY`'s getter.
@@ -25,7 +25,7 @@ pub fn get_stage_y<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
-    local_to_stage_y(activation, this, slots::LOCAL_X, slots::LOCAL_Y)
+    local_to_stage_y(activation, this, slots::_LOCAL_X, slots::_LOCAL_Y)
 }
 
 pub fn update_after_event<'gc>(

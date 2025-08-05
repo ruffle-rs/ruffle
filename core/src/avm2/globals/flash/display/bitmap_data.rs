@@ -96,6 +96,7 @@ pub fn init<'gc>(
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
+    let bitmap_data_obj = this.as_bitmap_data_object().unwrap();
 
     // We set the underlying BitmapData instance - we start out with a dummy BitmapDataWrapper,
     // which makes custom classes see a disposed BitmapData before they call super()
@@ -111,17 +112,11 @@ pub fn init<'gc>(
                 .library
                 .library_for_movie_mut(movie)
                 .character_by_id(chara_id)
-                .cloned()
         });
 
-    let new_bitmap_data = if let Some(Character::Bitmap {
-        compressed,
-        avm2_bitmapdata_class: _,
-        handle: _,
-    }) = character
-    {
+    let new_bitmap_data = if let Some(Character::Bitmap(bitmap)) = character {
         // Instantiating BitmapData from an Animate-style bitmap asset
-        fill_bitmap_data_from_symbol(activation, &compressed)
+        fill_bitmap_data_from_symbol(activation, bitmap.compressed())
     } else {
         if character.is_some() {
             //TODO: Determine if mismatched symbols will still work as a
@@ -137,8 +132,8 @@ pub fn init<'gc>(
         let transparency = args.get_bool(2);
         let fill_color = args.get_u32(activation, 3)?;
 
-        if !is_size_valid(activation.context.swf.version(), width, height) {
-            return Err(Error::AvmError(argument_error(
+        if !is_size_valid(activation.context.root_swf.version(), width, height) {
+            return Err(Error::avm_error(argument_error(
                 activation,
                 "Error #2015: Invalid BitmapData.",
                 2015,
@@ -150,7 +145,7 @@ pub fn init<'gc>(
     };
 
     new_bitmap_data.init_object2(activation.gc(), this);
-    this.init_bitmap_data(activation.gc(), new_bitmap_data);
+    bitmap_data_obj.init_bitmap_data(activation.gc(), new_bitmap_data);
 
     Ok(Value::Undefined)
 }
@@ -912,7 +907,7 @@ pub fn hit_test<'gc>(
                 )));
             } else {
                 // This is the error message Flash Player produces. Even though it's misleading.
-                return Err(Error::AvmError(argument_error(
+                return Err(Error::avm_error(argument_error(
                     activation,
                     "Parameter 0 is of the incorrect type. Should be type BitmapData.",
                     2005,
@@ -1434,7 +1429,7 @@ pub fn threshold<'gc>(
                     operation
                 } else {
                     // It's wrong but this is what Flash says.
-                    return Err(Error::AvmError(argument_error(
+                    return Err(Error::avm_error(argument_error(
                         activation,
                         "Parameter 0 is of the incorrect type. Should be type Operation.",
                         2005,
@@ -1575,7 +1570,7 @@ pub fn pixel_dissolve<'gc>(
 
         let num_pixels = args.get_i32(activation, 4)?;
         if num_pixels < 0 {
-            return Err(Error::AvmError(range_error(
+            return Err(Error::avm_error(range_error(
                 activation,
                 &format!("Error #2027: Parameter numPixels must be a non-negative number; got {num_pixels}."),
                 2027,

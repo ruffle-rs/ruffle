@@ -1,4 +1,5 @@
 package flash.geom {
+    [Ruffle(Abstract)]
     public class Utils3D {
 
 

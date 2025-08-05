@@ -6,7 +6,6 @@ use super::atf_jpegxr::do_compressed_upload;
 use crate::avm2::object::TextureObject;
 use crate::avm2::parameters::ParametersExt;
 use crate::avm2::Activation;
-use crate::avm2::TObject;
 use crate::avm2::Value;
 use crate::avm2::{Error, Object};
 use crate::avm2_stub_method;
@@ -47,7 +46,7 @@ pub fn do_copy<'gc>(
                 .chunks_exact(4)
                 .map(|chunk| {
                     // The ByteArray is in BGRA format. FIXME - should this be premultiplied?
-                    Color::argb(chunk[3], chunk[2], chunk[1], chunk[0])
+                    Color::rgba(chunk[2], chunk[1], chunk[0], chunk[3])
                 })
                 .collect();
 

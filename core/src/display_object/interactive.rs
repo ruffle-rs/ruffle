@@ -18,10 +18,13 @@ use crate::display_object::{
 };
 use crate::events::{ClipEvent, ClipEventResult, MouseButton};
 use crate::string::AvmString;
+use crate::utils::HasPrefixField;
 use bitflags::bitflags;
-use gc_arena::{Collect, Mutation};
+use gc_arena::barrier::unlock;
+use gc_arena::lock::Lock;
+use gc_arena::{Collect, Gc, Mutation};
 use ruffle_macros::{enum_trait_object, istr};
-use std::cell::{Ref, RefMut};
+use std::cell::Cell;
 use std::fmt::Debug;
 use swf::{Point, Rectangle, Twips};
 
@@ -79,34 +82,49 @@ bitflags! {
     }
 }
 
-#[derive(Collect, Clone)]
+#[derive(Collect, Clone, HasPrefixField)]
 #[collect(no_drop)]
+#[repr(C, align(8))]
 pub struct InteractiveObjectBase<'gc> {
     pub base: DisplayObjectBase<'gc>,
-    #[collect(require_static)]
-    flags: InteractiveObjectFlags,
-    context_menu: Avm2Value<'gc>,
+
+    context_menu: Lock<Avm2Value<'gc>>,
 
     #[collect(require_static)]
-    tab_enabled: Option<bool>,
+    tab_index: Cell<Option<i32>>,
 
     #[collect(require_static)]
-    tab_index: Option<i32>,
+    flags: Cell<InteractiveObjectFlags>,
+
+    #[collect(require_static)]
+    tab_enabled: Cell<Option<bool>>,
 
     /// Specifies whether this object displays a yellow rectangle when focused.
-    focus_rect: Option<bool>,
+    focus_rect: Cell<Option<bool>>,
 }
 
 impl Default for InteractiveObjectBase<'_> {
     fn default() -> Self {
         Self {
             base: Default::default(),
-            flags: InteractiveObjectFlags::MOUSE_ENABLED,
-            context_menu: Avm2Value::Null,
-            tab_enabled: None,
-            tab_index: None,
-            focus_rect: None,
+            flags: Cell::new(InteractiveObjectFlags::MOUSE_ENABLED),
+            context_menu: Lock::new(Avm2Value::Null),
+            tab_enabled: Cell::new(None),
+            tab_index: Cell::new(None),
+            focus_rect: Cell::new(None),
         }
+    }
+}
+
+impl<'gc> InteractiveObjectBase<'gc> {
+    fn contains_flag(&self, flag: InteractiveObjectFlags) -> bool {
+        self.flags.get().contains(flag)
+    }
+
+    fn set_flag(&self, flag: InteractiveObjectFlags, value: bool) {
+        let mut flags = self.flags.get();
+        flags.set(flag, value);
+        self.flags.set(flags);
     }
 }
 
@@ -125,70 +143,63 @@ impl Default for InteractiveObjectBase<'_> {
 pub trait TInteractiveObject<'gc>:
     'gc + Clone + Copy + Collect<'gc> + Debug + Into<InteractiveObject<'gc>>
 {
-    fn raw_interactive(&self) -> Ref<InteractiveObjectBase<'gc>>;
-
-    fn raw_interactive_mut(&self, mc: &Mutation<'gc>) -> RefMut<InteractiveObjectBase<'gc>>;
+    fn raw_interactive(self) -> Gc<'gc, InteractiveObjectBase<'gc>>;
 
     fn as_displayobject(self) -> DisplayObject<'gc>;
 
     /// Check if the interactive object accepts user input.
     fn mouse_enabled(self) -> bool {
         self.raw_interactive()
-            .flags
-            .contains(InteractiveObjectFlags::MOUSE_ENABLED)
+            .contains_flag(InteractiveObjectFlags::MOUSE_ENABLED)
     }
 
     /// Set if the interactive object accepts user input.
-    fn set_mouse_enabled(self, mc: &Mutation<'gc>, value: bool) {
-        self.raw_interactive_mut(mc)
-            .flags
-            .set(InteractiveObjectFlags::MOUSE_ENABLED, value)
+    fn set_mouse_enabled(self, value: bool) {
+        self.raw_interactive()
+            .set_flag(InteractiveObjectFlags::MOUSE_ENABLED, value)
     }
 
     /// Check if the interactive object accepts double-click events.
     fn double_click_enabled(self) -> bool {
         self.raw_interactive()
-            .flags
-            .contains(InteractiveObjectFlags::DOUBLE_CLICK_ENABLED)
+            .contains_flag(InteractiveObjectFlags::DOUBLE_CLICK_ENABLED)
     }
 
     // Set if the interactive object accepts double-click events.
-    fn set_double_click_enabled(self, mc: &Mutation<'gc>, value: bool) {
-        self.raw_interactive_mut(mc)
-            .flags
-            .set(InteractiveObjectFlags::DOUBLE_CLICK_ENABLED, value)
+    fn set_double_click_enabled(self, value: bool) {
+        self.raw_interactive()
+            .set_flag(InteractiveObjectFlags::DOUBLE_CLICK_ENABLED, value)
     }
 
     fn has_focus(self) -> bool {
         self.raw_interactive()
-            .flags
-            .contains(InteractiveObjectFlags::HAS_FOCUS)
+            .contains_flag(InteractiveObjectFlags::HAS_FOCUS)
     }
 
-    fn set_has_focus(self, mc: &Mutation<'gc>, value: bool) {
-        self.raw_interactive_mut(mc)
-            .flags
-            .set(InteractiveObjectFlags::HAS_FOCUS, value)
+    fn set_has_focus(self, value: bool) {
+        self.raw_interactive()
+            .set_flag(InteractiveObjectFlags::HAS_FOCUS, value)
     }
 
     fn context_menu(self) -> Avm2Value<'gc> {
-        self.raw_interactive().context_menu
+        self.raw_interactive().context_menu.get()
     }
 
     fn set_context_menu(self, mc: &Mutation<'gc>, value: Avm2Value<'gc>) {
-        self.raw_interactive_mut(mc).context_menu = value;
+        let write = Gc::write(mc, self.raw_interactive());
+        unlock!(write, InteractiveObjectBase, context_menu).set(value);
     }
 
     /// Get the boolean flag which determines whether objects display a glowing border
     /// when they have focus.
     fn focus_rect(self) -> Option<bool> {
-        self.raw_interactive().focus_rect
+        self.raw_interactive().focus_rect.get()
     }
 
     /// Set the boolean flag which determines whether objects display a glowing border
     /// when they have focus.
-    fn set_focus_rect(self, mc: &Mutation<'gc>, value: Option<bool>) {
-        self.raw_interactive_mut(mc).focus_rect = value;
+    fn set_focus_rect(self, value: Option<bool>) {
+        self.raw_interactive().focus_rect.set(value);
     }
 
     /// Filter the incoming clip event.
@@ -320,8 +331,7 @@ pub trait TInteractiveObject<'gc>:
                 let is_double_click = index % 2 != 0;
                 let double_click_enabled = self
                     .raw_interactive()
-                    .flags
-                    .contains(InteractiveObjectFlags::DOUBLE_CLICK_ENABLED);
+                    .contains_flag(InteractiveObjectFlags::DOUBLE_CLICK_ENABLED);
 
                 if is_double_click && double_click_enabled {
                     let string_double_click = istr!("doubleClick");
@@ -539,7 +549,7 @@ pub trait TInteractiveObject<'gc>:
     /// mouse events. As a result of this, the returned object will always be
     /// an `InteractiveObject`.
     fn mouse_pick_avm1(
-        &self,
+        self,
         _context: &mut UpdateContext<'gc>,
         _point: Point<Twips>,
         _require_button_mode: bool,
@@ -548,7 +558,7 @@ pub trait TInteractiveObject<'gc>:
     }
 
     fn mouse_pick_avm2(
-        &self,
+        self,
         _context: &mut UpdateContext<'gc>,
         _point: Point<Twips>,
         _require_button_mode: bool,
@@ -562,7 +572,7 @@ pub trait TInteractiveObject<'gc>:
     }
 
     /// Whether this object is focusable for keyboard input.
-    fn is_focusable(&self, _context: &mut UpdateContext<'gc>) -> bool {
+    fn is_focusable(self, _context: &mut UpdateContext<'gc>) -> bool {
         // By default, all interactive objects are focusable.
         true
     }
@@ -573,7 +583,7 @@ pub trait TInteractiveObject<'gc>:
     /// The default behavior is following:
     /// * in AVM1 objects cannot be focused by mouse,
     /// * in AVM2 objects can be focused by mouse when they are tab enabled.
-    fn is_focusable_by_mouse(&self, context: &mut UpdateContext<'gc>) -> bool {
+    fn is_focusable_by_mouse(self, context: &mut UpdateContext<'gc>) -> bool {
         let self_do = self.as_displayobject();
         self_do.movie().is_action_script_3() && self.tab_enabled(context)
     }
@@ -582,7 +592,7 @@ pub trait TInteractiveObject<'gc>:
     /// of being the currently focused object.
     /// This should only be called by the focus manager. To change a focus, go through that.
     fn on_focus_changed(
-        &self,
+        self,
         _context: &mut UpdateContext<'gc>,
         _focused: bool,
         _other: Option<InteractiveObject<'gc>>,
@@ -590,7 +600,7 @@ pub trait TInteractiveObject<'gc>:
     }
 
     /// If this object has focus, this method drops it.
-    fn drop_focus(&self, context: &mut UpdateContext<'gc>) {
+    fn drop_focus(self, context: &mut UpdateContext<'gc>) {
         if self.has_focus() {
             let tracker = context.focus_tracker;
             tracker.set(None, context);
@@ -598,7 +608,7 @@ pub trait TInteractiveObject<'gc>:
     }
 
     fn call_focus_handler(
-        &self,
+        self,
         context: &mut UpdateContext<'gc>,
         focused: bool,
         other: Option<InteractiveObject<'gc>>,
@@ -625,7 +635,7 @@ pub trait TInteractiveObject<'gc>:
     }
 
     /// Whether this object may be highlighted when focused.
-    fn is_highlightable(&self, context: &mut UpdateContext<'gc>) -> bool {
+    fn is_highlightable(self, context: &mut UpdateContext<'gc>) -> bool {
         self.is_highlight_enabled(context)
     }
 
@@ -633,7 +643,7 @@ pub trait TInteractiveObject<'gc>:
     ///
     /// Note: This value does not mean that a highlight should actually be rendered,
     /// for that see [`Self::is_highlightable()`].
-    fn is_highlight_enabled(&self, context: &mut UpdateContext<'gc>) -> bool {
+    fn is_highlight_enabled(self, context: &mut UpdateContext<'gc>) -> bool {
         if self.as_displayobject().movie().version() >= 6 {
             self.focus_rect()
                 .unwrap_or_else(|| context.stage.stage_focus_rect())
@@ -648,7 +658,7 @@ pub trait TInteractiveObject<'gc>:
     }
 
     /// Whether this object is included in tab ordering.
-    fn is_tabbable(&self, context: &mut UpdateContext<'gc>) -> bool {
+    fn is_tabbable(self, context: &mut UpdateContext<'gc>) -> bool {
         self.tab_enabled(context)
     }
 
@@ -656,10 +666,11 @@ pub trait TInteractiveObject<'gc>:
     ///
     /// Some objects may be excluded from tab ordering
     /// even if it's enabled, see [`Self::is_tabbable()`].
-    fn tab_enabled(&self, context: &mut UpdateContext<'gc>) -> bool {
+    fn tab_enabled(self, context: &mut UpdateContext<'gc>) -> bool {
         if self.as_displayobject().movie().is_action_script_3() {
             self.raw_interactive()
                 .tab_enabled
+                .get()
                 .unwrap_or_else(|| self.tab_enabled_default(context))
         } else {
             self.as_displayobject().get_avm1_boolean_property(
@@ -670,13 +681,13 @@ pub trait TInteractiveObject<'gc>:
         }
     }
 
-    fn tab_enabled_default(&self, _context: &mut UpdateContext<'gc>) -> bool {
+    fn tab_enabled_default(self, _context: &mut UpdateContext<'gc>) -> bool {
         false
     }
 
-    fn set_tab_enabled(&self, context: &mut UpdateContext<'gc>, value: bool) {
+    fn set_tab_enabled(self, context: &mut UpdateContext<'gc>, value: bool) {
         if self.as_displayobject().movie().is_action_script_3() {
-            self.raw_interactive_mut(context.gc()).tab_enabled = Some(value)
+            self.raw_interactive().tab_enabled.set(Some(value))
         } else {
             self.as_displayobject().set_avm1_property(
                 istr!(context, "tabEnabled"),
@@ -689,23 +700,23 @@ pub trait TInteractiveObject<'gc>:
     /// Used to customize tab ordering.
     /// When not `None`, a custom ordering is used, and
     /// objects are ordered according to this value.
-    fn tab_index(&self) -> Option<i32> {
-        self.raw_interactive().tab_index
+    fn tab_index(self) -> Option<i32> {
+        self.raw_interactive().tab_index.get()
     }
 
-    fn set_tab_index(&self, context: &mut UpdateContext<'gc>, value: Option<i32>) {
+    fn set_tab_index(self, value: Option<i32>) {
         // tabIndex = -1 is always equivalent to unset tabIndex
         let value = if matches!(value, Some(-1)) {
             None
         } else {
             value
         };
-        self.raw_interactive_mut(context.gc()).tab_index = value
+        self.raw_interactive().tab_index.set(value)
     }
 
     /// Whether event handlers (e.g. onKeyUp, onPress) should be fired for the given event.
     fn should_fire_event_handlers(
-        &self,
+        self,
         context: &mut UpdateContext<'gc>,
         event: ClipEvent,
     ) -> bool {
@@ -749,11 +760,13 @@ impl<'gc> Avm2MousePick<'gc> {
     pub fn combine_with_parent(&self, parent: DisplayObjectContainer<'gc>) -> Avm2MousePick<'gc> {
         let parent_int = DisplayObject::from(parent).as_interactive().unwrap();
         let res = match self {
-            Avm2MousePick::Hit(_) => {
+            Avm2MousePick::Hit(target) => {
                 // If the parent has `mouseChildren=true` then propagate the existing
                 // Avm2MousePick::Hit, leaving the target unchanged. This is unaffected
                 // by the parent `mouseEnabled` property.
-                if parent.raw_container().mouse_children() {
+                // However, the root object of a loader or stage is never a valid target of hit
+                // events (even if moved out of the loader's hierarchy).
+                if parent.raw_container().mouse_children() && !target.as_displayobject().is_root() {
                     *self
                 // If the parent has `mouseChildren=false`, then the eventual
                 // MouseEvent (if it gets fired) will *not* have a `target`

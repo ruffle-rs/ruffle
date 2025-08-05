@@ -3,7 +3,7 @@
 use crate::avm2::activation::Activation;
 use crate::avm2::events::Event;
 use crate::avm2::object::script_object::ScriptObjectData;
-use crate::avm2::object::{ClassObject, Object, ObjectPtr, ScriptObject, TObject};
+use crate::avm2::object::{ClassObject, Object, ScriptObject, TObject};
 use crate::avm2::value::Value;
 use crate::avm2::Error;
 use crate::context::UpdateContext;
@@ -11,6 +11,7 @@ use crate::display_object::TDisplayObject;
 use crate::display_object::{DisplayObject, InteractiveObject, TInteractiveObject};
 use crate::events::{KeyCode, MouseButton};
 use crate::string::AvmString;
+use crate::utils::HasPrefixField;
 use gc_arena::barrier::unlock;
 use gc_arena::{lock::RefLock, Collect, Gc, GcWeak, Mutation};
 use ruffle_macros::istr;
@@ -42,7 +43,7 @@ pub struct EventObject<'gc>(pub Gc<'gc, EventObjectData<'gc>>);
 #[collect(no_drop)]
 pub struct EventObjectWeak<'gc>(pub GcWeak<'gc, EventObjectData<'gc>>);
 
-#[derive(Clone, Collect)]
+#[derive(Clone, Collect, HasPrefixField)]
 #[collect(no_drop)]
 #[repr(C, align(8))]
 pub struct EventObjectData<'gc> {
@@ -52,10 +53,6 @@ pub struct EventObjectData<'gc> {
     /// The event this object holds.
     event: RefLock<Event<'gc>>,
 }
-
-const _: () = assert!(std::mem::offset_of!(EventObjectData, base) == 0);
-const _: () =
-    assert!(std::mem::align_of::<EventObjectData>() == std::mem::align_of::<ScriptObjectData>());
 
 impl<'gc> EventObject<'gc> {
     /// Create a bare Event instance while skipping the usual `construct()` pipeline.
@@ -239,9 +236,7 @@ impl<'gc> EventObject<'gc> {
             let key = AvmString::new_utf8(activation.gc(), key);
             let value = AvmString::new_utf8(activation.gc(), value);
 
-            info_object
-                .set_string_property_local(key, Value::String(value), activation)
-                .unwrap();
+            info_object.set_dynamic_property(key, Value::String(value), activation.gc());
         }
 
         let event_name = istr!("netStatus");
@@ -357,38 +352,18 @@ impl<'gc> EventObject<'gc> {
         )
     }
 
-    pub fn event(&self) -> Ref<Event<'gc>> {
-        self.0.event.borrow()
+    pub fn event(&self) -> Ref<'gc, Event<'gc>> {
+        Gc::as_ref(self.0).event.borrow()
     }
 
-    pub fn event_mut(&self, mc: &Mutation<'gc>) -> RefMut<Event<'gc>> {
+    pub fn event_mut(self, mc: &Mutation<'gc>) -> RefMut<'gc, Event<'gc>> {
         unlock!(Gc::write(mc, self.0), EventObjectData, event).borrow_mut()
     }
 }
 
 impl<'gc> TObject<'gc> for EventObject<'gc> {
     fn gc_base(&self) -> Gc<'gc, ScriptObjectData<'gc>> {
-        // SAFETY: Object data is repr(C), and a compile-time assert ensures
-        // that the ScriptObjectData stays at offset 0 of the struct- so the
-        // layouts are compatible
-
-        unsafe { Gc::cast(self.0) }
-    }
-
-    fn as_ptr(&self) -> *const ObjectPtr {
-        Gc::as_ptr(self.0) as *const ObjectPtr
-    }
-
-    fn as_event_object(self) -> Option<EventObject<'gc>> {
-        Some(self)
-    }
-
-    fn as_event(&self) -> Option<Ref<Event<'gc>>> {
-        Some(self.0.event.borrow())
-    }
-
-    fn as_event_mut(&self, mc: &Mutation<'gc>) -> Option<RefMut<Event<'gc>>> {
-        Some(unlock!(Gc::write(mc, self.0), EventObjectData, event).borrow_mut())
+        HasPrefixField::as_prefix_gc(self.0)
     }
 }
 
@@ -396,7 +371,7 @@ impl Debug for EventObject<'_> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
         f.debug_struct("EventObject")
             .field("type", &self.0.event.borrow().event_type())
-            .field("class", &self.base().debug_class_name())
+            .field("class", &self.base().class_name())
             .field("ptr", &Gc::as_ptr(self.0))
             .finish()
     }

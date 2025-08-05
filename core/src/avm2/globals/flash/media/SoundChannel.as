@@ -1,6 +1,6 @@
 package flash.media {
     import flash.events.EventDispatcher;
-    
+
     [Ruffle(InstanceAllocator)]
     public final class SoundChannel extends EventDispatcher {
         public native function get leftPeak():Number;

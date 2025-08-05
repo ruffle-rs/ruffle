@@ -51,9 +51,9 @@ impl OpenH264Codec {
         const ARCH: &str = std::env::consts::ARCH;
 
         let local_filenames = match OS {
-            "linux" => vec!["libopenh264.so.7", "libopenh264.so.2.4.1", "libopenh264.so"],
+            "linux" => ["libopenh264.so.7", "libopenh264.so.2.4.1", "libopenh264.so"].as_slice(),
             // TODO: investigate other OSes
-            _ => vec![],
+            _ => [].as_slice(),
         };
 
         // Source: https://github.com/cisco/openh264/releases/tag/v2.4.1
@@ -90,7 +90,7 @@ impl OpenH264Codec {
                 "openh264-2.4.1-win64.dll",
                 "081b0c081480d177cbfddfbc90b1613640e702f875897b30d8de195cde73dd34",
             ),
-            (os, arch) => return Err(format!("Unsupported OS/arch: {}/{}", os, arch).into()),
+            (os, arch) => return Err(format!("Unsupported OS/arch: {os}/{arch}").into()),
         };
 
         Ok(OpenH264Data {
@@ -120,7 +120,7 @@ impl OpenH264Codec {
         // If the binary doesn't exist in the expected location, download it.
         if !filepath.is_file() {
             tracing::info!("Downloading OpenH264 library");
-            let url = format!("{}{}{}", URL_BASE, filename, URL_SUFFIX);
+            let url = format!("{URL_BASE}{filename}{URL_SUFFIX}");
             let response = reqwest::blocking::get(url)?;
             let mut bzip2_reader = BzDecoder::new(response);
 
@@ -173,7 +173,7 @@ impl OpenH264Codec {
     pub fn load(directory: &Path) -> Result<Self, Box<dyn std::error::Error>> {
         let openh264_data = Self::get_data()?;
 
-        for filename in &openh264_data.local_filenames {
+        for filename in openh264_data.local_filenames {
             match OpenH264Codec::load_existing(filename) {
                 Ok(codec) => return Ok(codec),
                 Err(err) => {
@@ -202,14 +202,12 @@ pub struct H264Decoder {
 }
 
 struct OpenH264Data {
-    local_filenames: Vec<&'static str>,
+    local_filenames: &'static [&'static str],
     download_filename: &'static str,
     download_sha256: &'static str,
 }
 
 impl H264Decoder {
-    /// `extradata` should hold "AVCC (MP4) format" decoder configuration, including PPS and SPS.
-    /// Make sure it has any start code emulation prevention "three bytes" removed.
     pub fn new(h264: &OpenH264Codec) -> Self {
         let openh264 = h264.openh264.clone();
         let mut decoder: *mut ISVCDecoder = ptr::null_mut();
@@ -244,18 +242,17 @@ impl Drop for H264Decoder {
 }
 
 impl VideoDecoder for H264Decoder {
+    /// `configuration_data` should hold "AVCC (MP4) format" decoder configuration, including PPS and SPS.
+    /// Make sure it has any start code emulation prevention "three bytes" removed.
     fn configure_decoder(&mut self, configuration_data: &[u8]) -> Result<(), Error> {
         unsafe {
-            // TODO: Check whether the "start code emulation prevention" needs to be
-            // undone here before looking into the data. (i.e. conversion from SODB
-            // into RBSP, by replacing each 0x00000301 byte sequence with 0x000001)
-
             assert_eq!(configuration_data[0], 1, "Invalid configuration version");
-            // extradata[0]: configuration version, always 1
-            // extradata[1]: profile
-            // extradata[2]: compatibility
-            // extradata[3]: level
-            // extradata[4]: 6 reserved bits | NALU length size - 1
+            // configuration_data[0]: configuration version, always 1
+            // configuration_data[1]: profile
+            // configuration_data[2]: compatibility
+            // configuration_data[3]: level
+            // configuration_data[4]: 6 reserved bits | NALU length size - 1
+            // configuration_data[5]: 3 reserved bits | number of SPSs
 
             self.length_size = (configuration_data[4] & 0b0000_0011) + 1;
 
@@ -267,6 +264,9 @@ impl VideoDecoder for H264Decoder {
             // Converting from AVCC to Annex B (stream-like) format,
             // putting the PPS and SPS into a NALU.
 
+            let num_sps = configuration_data[5] as usize & 0b0001_1111;
+            assert_eq!(num_sps, 1, "More than one SPS is not supported");
+
             buffer.extend_from_slice(&[0, 0, 0, 1]);
 
             let sps_length = configuration_data[6] as usize * 256 + configuration_data[7] as usize;
@@ -276,7 +276,6 @@ impl VideoDecoder for H264Decoder {
             }
 
             let num_pps = configuration_data[8 + sps_length] as usize;
-
             assert_eq!(num_pps, 1, "More than one PPS is not supported");
 
             buffer.extend_from_slice(&[0, 0, 0, 1]);
@@ -288,9 +287,8 @@ impl VideoDecoder for H264Decoder {
                 buffer.push(configuration_data[8 + sps_length + 3 + i]);
             }
 
-            //output: [0~2] for Y,U,V buffer for Decoding only
+            //output: [0~2] for Y,U,V buffer
             let mut output = [ptr::null_mut() as *mut c_uchar; 3];
-            //in-out: for Decoding only: declare and initialize the output buffer info
             let mut dest_buf_info: openh264_sys::SBufferInfo = std::mem::zeroed();
 
             let _ret = decoder_vtbl.DecodeFrameNoDelay.unwrap()(
@@ -355,7 +353,7 @@ impl VideoDecoder for H264Decoder {
 
             if ret != 0 {
                 return Err(Error::DecoderError(
-                    format!("Decoding failed with status code: {}", ret).into(),
+                    format!("Decoding failed with status code: {ret}").into(),
                 ));
             }
             if dest_buf_info.iBufferStatus != 1 {

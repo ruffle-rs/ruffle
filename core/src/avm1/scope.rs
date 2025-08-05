@@ -4,7 +4,7 @@ use crate::avm1::activation::Activation;
 use crate::avm1::callable_value::CallableValue;
 use crate::avm1::error::Error;
 use crate::avm1::property::Attribute;
-use crate::avm1::{Object, ScriptObject, TObject, Value};
+use crate::avm1::{Object, Value};
 use crate::display_object::TDisplayObject;
 use crate::string::AvmString;
 use gc_arena::{Collect, Gc, Mutation};
@@ -53,7 +53,7 @@ impl<'gc> Scope<'gc> {
         Scope {
             parent: Some(parent),
             class: ScopeClass::Local,
-            values: ScriptObject::new_without_proto(mc).into(),
+            values: Object::new_without_proto(mc),
         }
     }
 
@@ -109,6 +109,11 @@ impl<'gc> Scope<'gc> {
     /// Returns a reference to the parent scope object.
     pub fn parent(&self) -> Option<Gc<'gc, Scope<'gc>>> {
         self.parent
+    }
+
+    /// Produces first the scope itself, then its ancestors
+    pub fn ancestors(scope: Gc<'gc, Scope<'gc>>) -> impl Iterator<Item = Gc<'gc, Scope<'gc>>> {
+        core::iter::successors(Some(scope), |scope| scope.parent())
     }
 
     /// Returns the class.

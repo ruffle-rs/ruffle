@@ -33,6 +33,7 @@ bookmarks-menu-add = 추가...
 bookmarks-menu-manage = 북마크 관리...
 debug-menu = 디버그 도구
 debug-menu-open-stage = 스테이지 정보 보기
+debug-menu-open-root-movie-clip = 루트 무비클립 보기
 debug-menu-open-movie = 무비 보기
 debug-menu-open-movie-list = 알려진 무비 표시
 debug-menu-open-domain-list = 도메인 보기

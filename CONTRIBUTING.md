@@ -68,7 +68,7 @@ Ruffle is a young project, and there is still much Flash functionality that is u
 
 ## Debugging ActionScript Content
 
-To enable debug logging, set `RUST_LOG=warn,ruffle=info,ruffle_core=debug,avm_trace=info` and run Ruffle from the command line. 
+To enable debug logging, set `RUST_LOG=warn,ruffle=info,ruffle_core=debug,avm_trace=info` and run Ruffle from the command line.
 This will also enable printing `trace()` statements.
 
 Additionally, if you build Ruffle with `--features avm_debug` then you will activate a few more built-in debugging utilities inside Ruffle, listed below.
@@ -109,7 +109,7 @@ This currently only works for AVM1. We'd [welcome a PR to change that](https://g
 
 ### Render Tree Dumping
 
-The hotkey <kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>F</kbd> dumps the DisplayObject render tree at the moment you press it. 
+The hotkey <kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>F</kbd> dumps the DisplayObject render tree at the moment you press it.
 This allows you to see Ruffle's representation of the objects on the Stage.
 
 ## Reporting Bugs
@@ -183,7 +183,7 @@ When you run a test SWF, trace output will appear in a file called `flashlog.txt
 * MacOS: `~/Library/Preferences/Macromedia/Flash Player/Logs/`
 * Linux: `$HOME/.macromedia/Flash_Player/Logs/`
 
-There are several ways to create your own test SWFs, which are listed in the sections below. 
+There are several ways to create your own test SWFs, which are listed in the sections below.
 Once you have an `.swf`, run it in the debug Flash Player and copy the output of the trace statements into a file called `output.txt`. Add the `output.txt`, `test.swf` and either the `test.as` or `test.fla` file to a directory under `tests/tests/swfs/avm1` (or `avm2`) named after what your test tests.
 
 Finally, add a `test.toml` in the same directory to control how the test is run - such as how many frames it should take or if we should compare the image it generates. See [tests/README.md](tests/README.md) for information on what the test.toml should look like.

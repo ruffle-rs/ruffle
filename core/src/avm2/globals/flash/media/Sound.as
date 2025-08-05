@@ -2,14 +2,14 @@ package flash.media {
     import flash.events.EventDispatcher;
     import flash.utils.ByteArray;
     import flash.net.URLRequest;
-    
+
     [Ruffle(InstanceAllocator)]
     public class Sound extends EventDispatcher {
         public function Sound(stream:URLRequest = null, context:SoundLoaderContext = null) {
             this.init(stream, context)
         }
-        private native function init(stream:URLRequest, context:SoundLoaderContext);
 
+        private native function init(stream:URLRequest, context:SoundLoaderContext);
 
         public native function get bytesLoaded():uint;
         public native function get bytesTotal():int;

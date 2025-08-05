@@ -2,12 +2,13 @@
 
 use crate::avm2::activation::Activation;
 use crate::avm2::object::script_object::ScriptObjectData;
-use crate::avm2::object::{EventObject, Object, ObjectPtr, StageObject, TObject};
+use crate::avm2::object::{EventObject, Object, StageObject, TObject};
 use crate::avm2::{Avm2, Error, Value};
 use crate::context::UpdateContext;
 use crate::display_object::{DisplayObject, TDisplayObject};
 use crate::loader::ContentType;
 use crate::tag_utils::SwfMovie;
+use crate::utils::HasPrefixField;
 use core::fmt;
 use gc_arena::barrier::unlock;
 use gc_arena::{
@@ -70,7 +71,7 @@ impl fmt::Debug for LoaderInfoObject<'_> {
     }
 }
 
-#[derive(Collect, Clone)]
+#[derive(Collect, Clone, HasPrefixField)]
 #[collect(no_drop)]
 #[repr(C, align(8))]
 pub struct LoaderInfoObjectData<'gc> {
@@ -103,11 +104,6 @@ pub struct LoaderInfoObjectData<'gc> {
 
     errored: Cell<bool>,
 }
-
-const _: () = assert!(std::mem::offset_of!(LoaderInfoObjectData, base) == 0);
-const _: () = assert!(
-    std::mem::align_of::<LoaderInfoObjectData>() == std::mem::align_of::<ScriptObjectData>()
-);
 
 impl<'gc> LoaderInfoObject<'gc> {
     /// Box a movie into a loader info object.
@@ -276,7 +272,7 @@ impl<'gc> LoaderInfoObject<'gc> {
                     root.as_movie_clip()
                         .map(|mc| mc.loaded_bytes() as i32 >= mc.total_bytes())
                         .unwrap_or(true),
-                    movie.loader_url().is_some(),
+                    movie.url() != "file:///",
                 ),
                 _ => (false, false),
             };
@@ -301,8 +297,8 @@ impl<'gc> LoaderInfoObject<'gc> {
     }
 
     /// Unwrap this object's loader stream
-    pub fn loader_stream(&self) -> Ref<LoaderStream<'gc>> {
-        self.0.loaded_stream.borrow()
+    pub fn loader_stream(&self) -> Ref<'gc, LoaderStream<'gc>> {
+        Gc::as_ref(self.0).loaded_stream.borrow()
     }
 
     pub fn expose_content(&self) -> bool {
@@ -354,7 +350,8 @@ impl<'gc> LoaderInfoObject<'gc> {
 
     pub fn unload(&self, activation: &mut Activation<'_, 'gc>) {
         // Reset properties
-        let empty_swf = Arc::new(SwfMovie::empty(activation.context.swf.version()));
+        let movie = &activation.context.root_swf;
+        let empty_swf = Arc::new(SwfMovie::empty(movie.version(), Some(movie.url().into())));
         let loader_stream = LoaderStream::NotYetLoaded(empty_swf, None, false);
         self.set_loader_stream(loader_stream, activation.gc());
         self.set_errored(false);
@@ -377,18 +374,6 @@ impl<'gc> LoaderInfoObject<'gc> {
 
 impl<'gc> TObject<'gc> for LoaderInfoObject<'gc> {
     fn gc_base(&self) -> Gc<'gc, ScriptObjectData<'gc>> {
-        // SAFETY: Object data is repr(C), and a compile-time assert ensures
-        // that the ScriptObjectData stays at offset 0 of the struct- so the
-        // layouts are compatible
-
-        unsafe { Gc::cast(self.0) }
-    }
-
-    fn as_ptr(&self) -> *const ObjectPtr {
-        Gc::as_ptr(self.0) as *const ObjectPtr
-    }
-
-    fn as_loader_info_object(&self) -> Option<&LoaderInfoObject<'gc>> {
-        Some(self)
+        HasPrefixField::as_prefix_gc(self.0)
     }
 }

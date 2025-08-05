@@ -9,7 +9,7 @@ use ruffle_video::error::Error;
 use ruffle_video::frame::{DecodedFrame, EncodedFrame, FrameDependency};
 
 use js_sys::Uint8Array;
-use tracing::{debug, trace, warn};
+use tracing::{debug, error, trace, warn};
 use tracing_subscriber::{layer::Layered, Registry};
 use tracing_wasm::WASMLayer;
 use wasm_bindgen::prelude::*;
@@ -58,9 +58,9 @@ pub struct H264Decoder {
 
     // Simply keeping these objects alive, as they are used by the JS side.
     // See: https://rustwasm.github.io/wasm-bindgen/examples/closures.html
-    #[allow(dead_code)]
+    #[expect(dead_code)]
     output_callback: Closure<dyn Fn(VideoFrame)>,
-    #[allow(dead_code)]
+    #[expect(dead_code)]
     error_callback: Closure<dyn Fn(DomException)>,
 }
 
@@ -109,7 +109,7 @@ impl H264Decoder {
                     )));
                 }
                 other_format => {
-                    tracing::error!("Unsupported pixel format: {:?}", other_format);
+                    error!("Unsupported pixel format: {:?}", other_format);
                 }
             };
         };
@@ -117,7 +117,7 @@ impl H264Decoder {
         let log_subscriber_for_error = log_subscriber.clone();
         let error = move |error: &DomException| {
             let _subscriber = tracing::subscriber::set_default(log_subscriber_for_error.clone());
-            tracing::error!("WebCodecs error: {:}", error.message());
+            error!("WebCodecs error: {:}", error.message());
         };
 
         let output_callback = Closure::new(move |frame| output(&frame));
@@ -233,12 +233,12 @@ impl VideoDecoder for H264Decoder {
             // "After the decoding of an IDR picture all following coded pictures in decoding order can
             // be decoded without inter prediction from any picture decoded prior to the IDR picture."
             if nalu_type == NALU_TYPE_IDR {
-                tracing::trace!("is key");
+                trace!("is key");
                 return Ok(FrameDependency::None);
             }
         }
 
-        tracing::trace!("is not key");
+        trace!("is not key");
         Ok(FrameDependency::Past)
     }
 

@@ -1,7 +1,4 @@
 package flash.net {
-    import __ruffle__.stub_getter;
-    import __ruffle__.stub_setter;
-
     public final class URLRequest {
         // NOTE - when implementing properties (e.g. `contentType`, `data`, etc.)
         // be sure to also check for them in `URLLoader`
@@ -10,10 +7,10 @@ package flash.net {
         private var _url:String;
 
         [Ruffle(NativeAccessible)]
-        private var _contentType: String = "application/x-www-form-urlencoded"; // ignored
+        private var _contentType:String = "application/x-www-form-urlencoded"; // ignored
 
         [Ruffle(NativeAccessible)]
-        private var _requestHeaders: Array = [];
+        private var _requestHeaders:Array = [];
 
         private var _digest:String;
 
@@ -39,7 +36,7 @@ package flash.net {
             return this._method;
         }
 
-        public function set method(value: String):void {
+        public function set method(value:String):void {
             // The method can apparently either be all upper or lower case, but not mixed.
             if (value !== "GET" && value !== "get" && value !== "POST" && value !== "post") {
                 throw new ArgumentError("Error #2008: Parameter method must be one of the accepted values.", 2008);
@@ -80,6 +77,5 @@ package flash.net {
         public function set digest(value:String):void {
             this._digest = value;
         }
-
     }
 }

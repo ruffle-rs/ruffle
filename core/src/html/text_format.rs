@@ -597,7 +597,6 @@ impl FormatSpans {
     }
 
     /// Construct a format span from its raw parts.
-    #[allow(dead_code)]
     pub fn from_str_and_spans(text: &WStr, spans: &[TextSpan]) -> Self {
         Self {
             text: text.into(),
@@ -1415,7 +1414,7 @@ impl FormatSpans {
     ///    character covered by the span, plus one)
     /// 3. The string contents of the text span
     /// 4. The formatting applied to the text span.
-    pub fn iter_spans(&self) -> TextSpanIter {
+    pub fn iter_spans(&self) -> TextSpanIter<'_> {
         TextSpanIter::for_format_spans(self)
     }
 

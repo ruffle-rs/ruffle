@@ -501,7 +501,6 @@ impl<W: Write> Writer<W> {
                 }
             }
 
-            #[allow(clippy::unusual_byte_groupings)]
             Tag::CsmTextSettings(ref settings) => {
                 self.write_tag_header(TagCode::CsmTextSettings, 12)?;
                 self.write_character_id(settings.id)?;
@@ -667,7 +666,7 @@ impl<W: Write> Writer<W> {
             Tag::DefineFont2(ref font) => self.write_define_font_2(font)?,
             Tag::DefineFont4(ref font) => self.write_define_font_4(font)?,
 
-            #[allow(clippy::unusual_byte_groupings)]
+            #[expect(clippy::unusual_byte_groupings)]
             Tag::DefineFontAlignZones {
                 id,
                 thickness,
@@ -2123,7 +2122,7 @@ impl<W: Write> Writer<W> {
                 writer.write_u16(layout.descent)?;
                 writer.write_i16(layout.leading)?;
                 for glyph in &font.glyphs {
-                    writer.write_i16(glyph.advance)?;
+                    writer.write_u16(glyph.advance)?;
                 }
                 for glyph in &font.glyphs {
                     writer.write_rectangle(
@@ -2437,7 +2436,7 @@ fn count_fbits(n: Fixed16) -> u32 {
 }
 
 #[cfg(test)]
-#[allow(clippy::unusual_byte_groupings)]
+#[expect(clippy::unusual_byte_groupings)]
 mod tests {
     use super::*;
     use crate::test_data;

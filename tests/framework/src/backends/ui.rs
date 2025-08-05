@@ -1,8 +1,11 @@
 use crate::test::Font;
 use chrono::{DateTime, Utc};
-use ruffle_core::backend::ui::{
-    DialogLoaderError, DialogResultFuture, FileDialogResult, FileFilter, FontDefinition,
-    FullscreenError, LanguageIdentifier, MouseCursor, UiBackend, US_ENGLISH,
+use ruffle_core::{
+    backend::ui::{
+        DialogLoaderError, DialogResultFuture, FileDialogResult, FileFilter, FontDefinition,
+        FullscreenError, LanguageIdentifier, MouseCursor, UiBackend, US_ENGLISH,
+    },
+    FontFileData, FontQuery,
 };
 use url::Url;
 
@@ -111,7 +114,8 @@ impl UiBackend for TestUiBackend {
         Ok(())
     }
 
-    fn display_root_movie_download_failed_message(&self, _invalid_swf: bool) {}
+    fn display_root_movie_download_failed_message(&self, _invalid_swf: bool, _fetch_error: String) {
+    }
 
     fn message(&self, _message: &str) {}
 
@@ -125,13 +129,11 @@ impl UiBackend for TestUiBackend {
 
     fn display_unsupported_video(&self, _url: Url) {}
 
-    fn load_device_font(
-        &self,
-        name: &str,
-        is_bold: bool,
-        is_italic: bool,
-        register: &mut dyn FnMut(FontDefinition),
-    ) {
+    fn load_device_font(&self, query: &FontQuery, register: &mut dyn FnMut(FontDefinition)) {
+        let name = &query.name;
+        let is_bold = query.is_bold;
+        let is_italic = query.is_italic;
+
         for font in &self.fonts {
             if !font.family.eq_ignore_ascii_case(name)
                 || font.bold != is_bold
@@ -144,11 +146,19 @@ impl UiBackend for TestUiBackend {
                 name: name.to_owned(),
                 is_bold,
                 is_italic,
-                data: font.bytes.clone(),
+                data: FontFileData::new(font.bytes.clone()),
                 index: 0,
             });
             break;
         }
+    }
+
+    fn sort_device_fonts(
+        &self,
+        _query: &FontQuery,
+        _register: &mut dyn FnMut(FontDefinition),
+    ) -> Vec<FontQuery> {
+        Vec::new()
     }
 
     fn display_file_open_dialog(&mut self, filters: Vec<FileFilter>) -> Option<DialogResultFuture> {

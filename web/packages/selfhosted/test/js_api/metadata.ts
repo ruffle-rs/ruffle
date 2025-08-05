@@ -11,9 +11,7 @@ describe("RufflePlayer.metadata", () => {
     it("has metadata after load", async () => {
         const player = await browser.$("<ruffle-player>");
         const metadata = await browser.execute(
-            // https://github.com/webdriverio/webdriverio/issues/6486
-            (player) =>
-                (player as unknown as Player.PlayerElement).ruffle().metadata,
+            (player) => (player as Player.PlayerElement).ruffle().metadata,
             player,
         );
         // [NA] Work around a chrome 87 bug where it's (somehow) adding extra data to this object

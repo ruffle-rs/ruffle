@@ -16,6 +16,7 @@ use crate::debug_ui::handle::{
 };
 use crate::debug_ui::movie::{MovieListWindow, MovieWindow};
 use crate::display_object::TDisplayObject;
+use crate::prelude::DisplayObject;
 use crate::tag_utils::SwfMovie;
 use gc_arena::DynamicRootSet;
 use hashbrown::HashMap;
@@ -51,6 +52,7 @@ pub enum Message {
     ShowDomains,
     SaveFile(ItemToSave),
     SearchForDisplayObject,
+    TrackRootMovieClip,
 }
 
 impl DebugUi {
@@ -113,7 +115,8 @@ impl DebugUi {
                     self.movies.insert(movie, Default::default());
                 }
                 Message::TrackTopLevelMovie => {
-                    self.movies.insert(context.swf.clone(), Default::default());
+                    self.movies
+                        .insert(context.root_swf.clone(), Default::default());
                 }
                 Message::TrackAVM1Object(object) => {
                     self.avm1_objects.insert(object, Default::default());
@@ -132,6 +135,15 @@ impl DebugUi {
                 }
                 Message::SearchForDisplayObject => {
                     self.display_object_search = Some(Default::default());
+                }
+                Message::TrackRootMovieClip => {
+                    // Convenience action to quickly access the root movie clip
+                    if let Some(obj @ DisplayObject::MovieClip(_)) = context.stage.root_clip() {
+                        let win =
+                            DisplayObjectWindow::with_panel(display_object::Panel::TypeSpecific);
+                        self.display_objects
+                            .insert(DisplayObjectHandle::new(context, obj), win);
+                    }
                 }
             }
         }
@@ -158,7 +170,7 @@ impl DebugUi {
         context: &mut RenderContext<'_, 'gc>,
         dynamic_root_set: DynamicRootSet<'gc>,
     ) {
-        let world_matrix = context.stage.view_matrix() * *context.stage.base().matrix();
+        let world_matrix = context.stage.view_matrix() * context.stage.base().matrix();
 
         for (object, window) in self.display_objects.iter() {
             if let Some(color) = window.debug_rect_color() {

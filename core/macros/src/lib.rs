@@ -6,8 +6,8 @@ use proc_macro2::TokenStream as TokenStream2;
 use quote::{format_ident, quote};
 use syn::parse::{Parse, ParseStream};
 use syn::{
-    parse_macro_input, parse_quote, FnArg, ImplItem, ImplItemFn, ItemEnum, ItemTrait, LitStr, Meta,
-    Pat, TraitItem, Visibility,
+    parse_macro_input, parse_quote, DeriveInput, FnArg, ImplItem, ImplItemFn, ItemEnum, ItemTrait,
+    LitStr, Meta, Pat, TraitItem, Visibility,
 };
 
 /// Define an enum whose variants each implement a trait.
@@ -175,6 +175,63 @@ pub fn enum_trait_object(args: TokenStream, item: TokenStream) -> TokenStream {
     );
 
     out.into()
+}
+
+#[proc_macro_derive(HasPrefixField)]
+pub fn derive_has_prefix_field(input: TokenStream) -> TokenStream {
+    let input = parse_macro_input!(input as DeriveInput);
+
+    let mut is_repr_c = false;
+    for attr in &input.attrs {
+        if attr.path().is_ident("repr") {
+            // Ignore parse errors.
+            let _ = attr.parse_nested_meta(|meta| {
+                is_repr_c = is_repr_c || meta.path.is_ident("C");
+                Ok(())
+            });
+        }
+    }
+
+    let Some(first_field) = ({
+        if let syn::Data::Struct(data) = &input.data {
+            data.fields
+                .iter()
+                .next()
+                .filter(|f| is_repr_c && f.ident.is_some())
+        } else {
+            None
+        }
+    }) else {
+        panic!("`HasPrefixField` can only be derived for repr(C) structs with at least one named field");
+    };
+
+    let (impl_generics, ty_generics, where_clause) = input.generics.split_for_impl();
+    let (ty, field_ty, field_name) = (
+        &input.ident,
+        &first_field.ty,
+        first_field.ident.as_ref().unwrap(),
+    );
+
+    quote! {
+        // SAFETY: `repr(C)` structs always have their first field at offset 0.
+        // Technically, an attribute macro executing after this derive could rewrite the struct
+        // definition (see <https://github.com/google/zerocopy/issues/388#issuecomment-1737817682>
+        // for a worked-out example), so we add post-mono checks as a latch-ditch guard.
+        #[automatically_derived]
+        unsafe impl #impl_generics
+                crate::utils::HasPrefixField<#field_ty>
+                for #ty #ty_generics #where_clause {
+            const ASSERT_PREFIX_FIELD: () = {
+                ::core::assert!(::core::mem::offset_of!(Self, #field_name) == 0);
+                // Check that the field exists and has the correct type.
+                let _ = |check: &(Self,)| -> *const #field_ty {
+                    let (Self { #field_name, .. },) = check;
+                    #field_name as *const _
+                };
+            };
+        }
+    }
+    .into()
 }
 
 /// Get the string passed to it as an interned `AvmAtom`, assumed to be present on

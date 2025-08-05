@@ -10,7 +10,7 @@ use crate::avm2::globals::slots::flash_net_url_request as url_request_slots;
 use crate::avm2::globals::slots::flash_net_url_request_header as url_request_header_slots;
 use crate::avm2::object::LoaderInfoObject;
 use crate::avm2::object::LoaderStream;
-use crate::avm2::object::TObject;
+use crate::avm2::object::TObject as _;
 use crate::avm2::parameters::ParametersExt;
 use crate::avm2::value::Value;
 use crate::avm2::ClassObject;
@@ -30,7 +30,8 @@ pub fn loader_allocator<'gc>(
 ) -> Result<Object<'gc>, Error<'gc>> {
     // Loader does not have an associated `Character` variant, and can never be
     // instantiated from the timeline.
-    let display_object = LoaderDisplay::empty(activation, activation.context.swf.clone()).into();
+    let display_object =
+        LoaderDisplay::empty(activation, activation.context.root_swf.clone()).into();
     let loader = initialize_for_allocator(activation, display_object, class)?;
 
     // Note that the initialization of `_contentLoaderInfo` is intentionally done here,
@@ -40,9 +41,10 @@ pub fn loader_allocator<'gc>(
     // Some LoaderInfo properties (such as 'bytesLoaded' and 'bytesTotal') are always
     // accessible, even before the 'init' event has fired. Using an empty movie gives
     // us the correct value (0) for them.
+    let movie = &activation.context.root_swf;
     let loader_info = LoaderInfoObject::not_yet_loaded(
         activation,
-        Arc::new(SwfMovie::empty(activation.context.swf.version())),
+        Arc::new(SwfMovie::empty(movie.version(), Some(movie.url().into()))),
         Some(loader),
         None,
         false,
@@ -87,15 +89,16 @@ pub fn load<'gc>(
     loader_info.unload(activation);
 
     // This is a dummy MovieClip, which will get overwritten in `Loader`
+    let movie = &activation.context.root_swf;
     let content = MovieClip::new(
-        Arc::new(SwfMovie::empty(activation.context.swf.version())),
+        Arc::new(SwfMovie::empty(movie.version(), Some(movie.url().into()))),
         activation.gc(),
     );
 
     // Update the LoaderStream - we still have a fake SwfMovie, but we now have the real target clip.
     loader_info.set_loader_stream(
         LoaderStream::NotYetLoaded(
-            Arc::new(SwfMovie::empty(activation.context.swf.version())),
+            Arc::new(SwfMovie::empty(movie.version(), Some(movie.url().into()))),
             Some(content.into()),
             false,
         ),
@@ -111,7 +114,7 @@ pub fn load<'gc>(
         request,
         Some(url),
         MovieLoaderVMData::Avm2 {
-            loader_info: *loader_info,
+            loader_info,
             context,
             default_domain: activation
                 .caller_domain()
@@ -171,7 +174,7 @@ pub fn request_from_url_request<'gc>(
         }
     }
 
-    let method =
+    let mut method =
         NavigationMethod::from_method_str(&method).expect("URLRequest should have a valid method");
     let data = url_request.get_slot(url_request_slots::_DATA);
     let body = match (method, data) {
@@ -193,20 +196,30 @@ pub fn request_from_url_request<'gc>(
                 .get_slot(url_request_slots::_CONTENT_TYPE)
                 .coerce_to_string(activation)?
                 .to_string();
-            if let Some(ba) = data.as_object().and_then(|o| o.as_bytearray_object()) {
+
+            let payload = if let Some(ba) = data.as_object().and_then(|o| o.as_bytearray_object()) {
                 // Note that this does *not* respect or modify the position.
-                Some((ba.storage().bytes().to_vec(), content_type))
+                ba.storage().bytes().to_vec()
             } else {
-                Some((
-                    data.coerce_to_string(activation)?
-                        .to_utf8_lossy()
-                        .as_bytes()
-                        .to_vec(),
-                    content_type,
-                ))
+                data.coerce_to_string(activation)?
+                    .to_utf8_lossy()
+                    .as_bytes()
+                    .to_vec()
+            };
+
+            if payload.is_empty() {
+                None
+            } else {
+                Some((payload, content_type))
             }
         }
     };
+
+    // Flash behaviour:
+    // When payload is null or empty, flash will ignore the method and do a GET request instead.
+    if body.is_none() {
+        method = NavigationMethod::Get;
+    }
 
     let mut request = Request::request(method, url.to_string(), body);
     request.set_headers(string_headers);
@@ -247,8 +260,9 @@ pub fn load_bytes<'gc>(
     loader_info.unload(activation);
 
     // This is a dummy MovieClip, which will get overwritten in `Loader`
+    let movie = &activation.context.root_swf;
     let content = MovieClip::new(
-        Arc::new(SwfMovie::empty(activation.context.swf.version())),
+        Arc::new(SwfMovie::empty(movie.version(), Some(movie.url().into()))),
         activation.gc(),
     );
 
@@ -261,12 +275,12 @@ pub fn load_bytes<'gc>(
         content.into(),
         bytes,
         MovieLoaderVMData::Avm2 {
-            loader_info: *loader_info,
+            loader_info,
             context,
             default_domain,
         },
     ) {
-        return Err(Error::RustError(
+        return Err(Error::rust_error(
             format!("Error in Loader.loadBytes: {e:?}").into(),
         ));
     }

@@ -1,0 +1,4 @@
+simple public implements PASSED!
+simple namespace implements PASSED!
+simple interface name implements PASSED!
+simple namespace implements PASSED!

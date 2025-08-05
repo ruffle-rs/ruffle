@@ -5,7 +5,7 @@ use crate::avm1::clamp::Clamp;
 use crate::avm1::error::Error;
 use crate::avm1::function::FunctionObject;
 use crate::avm1::property_decl::{define_properties_on, Declaration};
-use crate::avm1::{Attribute, NativeObject, Object, ScriptObject, TObject, Value};
+use crate::avm1::{Attribute, NativeObject, Object, Value};
 use crate::ecma_conversions::f64_to_wrapping_i32;
 use crate::string::{AvmString, StringContext};
 use bitflags::bitflags;
@@ -72,7 +72,7 @@ pub struct ArrayBuilder<'gc> {
 }
 
 impl<'gc> ArrayBuilder<'gc> {
-    pub fn empty(activation: &Activation<'_, 'gc>) -> ScriptObject<'gc> {
+    pub fn empty(activation: &Activation<'_, 'gc>) -> Object<'gc> {
         Self::new(activation).with([])
     }
 
@@ -107,8 +107,8 @@ impl<'gc> ArrayBuilder<'gc> {
         this.set_native(self.mc, NativeObject::Array(()));
     }
 
-    pub fn with(self, elements: impl IntoIterator<Item = Value<'gc>>) -> ScriptObject<'gc> {
-        let obj = ScriptObject::new_without_proto(self.mc);
+    pub fn with(self, elements: impl IntoIterator<Item = Value<'gc>>) -> Object<'gc> {
+        let obj = Object::new_without_proto(self.mc);
         obj.define_value(
             self.mc,
             self.proto_prop,
@@ -116,7 +116,7 @@ impl<'gc> ArrayBuilder<'gc> {
             Attribute::DONT_ENUM | Attribute::DONT_DELETE,
         );
 
-        self.init_with(obj.into(), elements);
+        self.init_with(obj, elements);
         obj
     }
 }
@@ -128,12 +128,11 @@ pub fn create_array_object<'gc>(
 ) -> Object<'gc> {
     let array =
         FunctionObject::constructor(context, constructor, Some(array), fn_proto, array_proto);
-    let object = array.raw_script_object();
 
     // TODO: These were added in Flash Player 7, but are available even to SWFv6 and lower
     // when run in Flash Player 7. Make these conditional if we add a parameter to control
     // target Flash Player version.
-    define_properties_on(OBJECT_DECLS, context, object, fn_proto);
+    define_properties_on(OBJECT_DECLS, context, array, fn_proto);
     array
 }
 
@@ -440,28 +439,37 @@ pub fn concat<'gc>(
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let mut elements = vec![];
-    for &value in [this.into()].iter().chain(args) {
-        let array_object = if let Value::Object(object) = value {
-            if let NativeObject::Array(_) = object.native() {
-                Some(object)
-            } else {
-                None
-            }
-        } else {
-            None
-        };
+    let this_value = this.into();
 
-        if let Some(array_object) = array_object {
-            let length = array_object.length(activation)?;
-            for i in 0..length {
-                let element = array_object.get_element(activation, i);
-                elements.push(element);
+    let mut elements = vec![];
+
+    std::iter::once(&this_value)
+        .chain(args)
+        .enumerate()
+        .try_for_each(|(index, value)| -> Result<(), Error<'gc>> {
+            if let Value::Object(object) = value {
+                match (object.native(), index) {
+                    // When Array.prototype.concat is called directly with the first argument being an object,
+                    // such as in the avm1/from_shumway/array test, the this value (i.e. index 0 in the iterator) will be NativeObject::None instead of NativeObject::Array
+                    (NativeObject::None, 0) | (NativeObject::Array(()), _) => {
+                        let length = object.length(activation)?;
+
+                        let object_elements =
+                            (0..length).map(|index| object.get_element(activation, index));
+
+                        elements.extend(object_elements);
+
+                        return Ok(());
+                    }
+                    _ => {}
+                }
             }
-        } else {
-            elements.push(value);
-        }
-    }
+
+            elements.push(*value);
+
+            Ok(())
+        })?;
+
     Ok(ArrayBuilder::new(activation).with(elements).into())
 }
 
@@ -745,7 +753,7 @@ fn qsort<'gc>(
 
         loop {
             // Find an element greater than the pivot from the left.
-            while left <= high {
+            while left < right {
                 let (_, item) = &elements[left];
                 if compare_fn(activation, &pivot, item, options)?.is_le() {
                     break;
@@ -776,10 +784,10 @@ fn qsort<'gc>(
         elements.swap(low, right);
 
         // Push subarrays onto the stack for further sorting.
+        stack.push((right + 1, high));
         if right > 0 {
             stack.push((low, right - 1));
         }
-        stack.push((right + 1, high));
     }
 
     Ok(())
@@ -791,7 +799,6 @@ pub fn create_proto<'gc>(
     fn_proto: Object<'gc>,
 ) -> Object<'gc> {
     let array = ArrayBuilder::new_with_proto(context, proto).with([]);
-    let object = array.raw_script_object();
-    define_properties_on(PROTO_DECLS, context, object, fn_proto);
-    object.into()
+    define_properties_on(PROTO_DECLS, context, array, fn_proto);
+    array
 }

@@ -1,0 +1,15 @@
+[
+  { "type": "MouseDown", "pos": [10, 10], "btn": "Left" },
+  { "type": "KeyDown", "key": { "Char": "a" } },
+  { "type": "TextInput", "codepoint": "a" },
+  { "type": "KeyUp", "key": { "Char": "a" } },
+  { "type": "KeyDown", "key": "Enter" },
+  { "type": "TextControl", "code": "Enter" },
+  { "type": "KeyUp", "key": "Enter" },
+  { "type": "KeyDown", "key": { "Char": "b" } },
+  { "type": "TextInput", "codepoint": "b" },
+  { "type": "KeyUp", "key": { "Char": "b" } },
+  { "type": "KeyDown", "key": "Enter" },
+  { "type": "TextControl", "code": "Enter" },
+  { "type": "KeyUp", "key": "Enter" }
+]

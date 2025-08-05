@@ -17,6 +17,7 @@ use ruffle_render::quality::StageQuality;
 use ruffle_render::shape_utils::{DistilledShape, DrawCommand, LineScaleMode, LineScales};
 use ruffle_render::transform::Transform;
 use ruffle_web_common::{JsError, JsResult};
+use std::any::Any;
 use std::borrow::Cow;
 use std::sync::Arc;
 use swf::{BlendMode, Color, ColorTransform, Point, Twips};
@@ -52,8 +53,7 @@ struct ShapeData(Vec<CanvasDrawCommand>);
 impl ShapeHandleImpl for ShapeData {}
 
 fn as_shape_data(handle: &ShapeHandle) -> &ShapeData {
-    <dyn ShapeHandleImpl>::downcast_ref(&*handle.0)
-        .expect("Shape handle must be a Canvas ShapeData")
+    <dyn Any>::downcast_ref(&*handle.0).expect("Shape handle must be a Canvas ShapeData")
 }
 
 #[derive(Debug)]
@@ -144,9 +144,9 @@ struct CanvasBitmap {
     smoothed: bool,
 }
 
-#[allow(dead_code)]
 #[derive(Debug)]
 struct BitmapData {
+    #[expect(dead_code)]
     image_data: ImageData,
     canvas: HtmlCanvasElement,
     context: CanvasRenderingContext2d,
@@ -155,8 +155,7 @@ struct BitmapData {
 impl BitmapHandleImpl for BitmapData {}
 
 fn as_bitmap_data(handle: &BitmapHandle) -> &BitmapData {
-    <dyn BitmapHandleImpl>::downcast_ref(&*handle.0)
-        .expect("Bitmap handle must be a Canvas BitmapData")
+    <dyn Any>::downcast_ref(&*handle.0).expect("Bitmap handle must be a Canvas BitmapData")
 }
 
 impl BitmapData {
@@ -199,7 +198,7 @@ impl BitmapData {
         })
     }
 
-    fn update_pixels(&self, bitmap: Bitmap) -> Result<(), JsValue> {
+    fn update_pixels(&self, bitmap: Bitmap<'_>) -> Result<(), JsValue> {
         let bitmap = bitmap.to_rgba();
         let image_data =
             ImageData::new_with_u8_clamped_array(Clamped(bitmap.data()), bitmap.width())
@@ -323,7 +322,6 @@ impl WebCanvasRenderBackend {
         Ok(renderer)
     }
 
-    #[allow(clippy::float_cmp)]
     #[inline]
     fn set_transform(&mut self, matrix: &Matrix) {
         self.context
@@ -338,7 +336,6 @@ impl WebCanvasRenderBackend {
             .warn_on_error();
     }
 
-    #[allow(clippy::float_cmp)]
     #[inline]
     fn set_color_filter(&self, transform: &Transform) {
         let color_transform = &transform.color_transform;
@@ -531,7 +528,7 @@ impl RenderBackend for WebCanvasRenderBackend {
         commands.execute(self);
     }
 
-    fn register_bitmap(&mut self, bitmap: Bitmap) -> Result<BitmapHandle, Error> {
+    fn register_bitmap(&mut self, bitmap: Bitmap<'_>) -> Result<BitmapHandle, Error> {
         let bitmap_data = BitmapData::with_bitmap(bitmap).map_err(Error::JavascriptError)?;
         Ok(BitmapHandle(Arc::new(bitmap_data)))
     }
@@ -539,7 +536,7 @@ impl RenderBackend for WebCanvasRenderBackend {
     fn update_texture(
         &mut self,
         handle: &BitmapHandle,
-        bitmap: Bitmap,
+        bitmap: Bitmap<'_>,
         _region: PixelRegion,
     ) -> Result<(), Error> {
         let data = as_bitmap_data(handle);
@@ -614,9 +611,14 @@ impl CommandHandler for WebCanvasRenderBackend {
         self.set_transform(&transform.matrix);
         self.set_color_filter(&transform);
         let bitmap = as_bitmap_data(&bitmap);
-        let _ = self
-            .context
-            .draw_image_with_html_canvas_element(&bitmap.canvas, 0.0, 0.0);
+        let bitmap_canvas = &bitmap.canvas;
+
+        if bitmap_canvas.width() > 0 && bitmap_canvas.height() > 0 {
+            let _ = self
+                .context
+                .draw_image_with_html_canvas_element(bitmap_canvas, 0.0, 0.0);
+        }
+
         self.clear_color_filter();
     }
 
@@ -1304,7 +1306,7 @@ fn create_bitmap_pattern(
         {
             Ok(Some(pattern)) => pattern,
             _ => {
-                log::warn!("Unable to create bitmap pattern for bitmap ID {}", id);
+                log::warn!("Unable to create bitmap pattern for bitmap ID {id}");
                 return None;
             }
         };
@@ -1315,7 +1317,7 @@ fn create_bitmap_pattern(
             smoothed: is_smoothed,
         })
     } else {
-        log::warn!("Couldn't fill shape with unknown bitmap {}", id);
+        log::warn!("Couldn't fill shape with unknown bitmap {id}");
         None
     }
 }

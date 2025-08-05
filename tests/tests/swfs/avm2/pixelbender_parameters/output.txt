@@ -1,0 +1,1563 @@
+Testing selector 0, value 'null'
+Default params:
+  selector=0
+  pBool=1
+  pInt=128
+  pFloat=128
+  pPixel1=0.5
+  pFloat2=128,128
+  pFloat3=128,128,128
+  pFloat4=128,128,128,128
+  pBool2=1,1
+  pBool3=1,1,1
+  pBool4=1,1,1,1
+  pInt2=128,128
+  pInt3=128,128,128
+  pInt4=128,128,128,128
+  pPixel2=0.5,0.5
+  pPixel3=0.5,0.5,0.5
+  pPixel4=0.5,0.5,0.5,0.5
+  pFloat2x2=128,128,128,128
+  pFloat3x3=128,128,128,128,128,128,128,128,128
+  pFloat4x4=128,128,128,128,128,128,128,128,128,128,128,128,128,128,128,128
+Result: ffff0000
+=================
+Testing selector 1, value 'null'
+Result: ff000000
+=================
+Testing selector 1, value 'null'
+Result: ff000000
+=================
+Testing selector 1, value ''
+Result: ff000000
+=================
+Testing selector 1, value '256'
+Result: ff000000
+=================
+Testing selector 1, value '256,256'
+Result: ff000000
+=================
+Testing selector 1, value '256,256,256'
+Result: ff000000
+=================
+Testing selector 1, value '0,0,256'
+Result: ff000000
+=================
+Testing selector 1, value '0,0,test'
+Result: ff000000
+=================
+Testing selector 1, value 'test'
+Error while starting: ArgumentError: Error #2004: One of the parameters is invalid.
+=================
+Testing selector 1, value ''
+Error while starting: ArgumentError: Error #2004: One of the parameters is invalid.
+=================
+Testing selector 1, value ''
+Error while starting: ArgumentError: Error #2004: One of the parameters is invalid.
+=================
+Testing selector 1, value ',256'
+Error while starting: ArgumentError: Error #2004: One of the parameters is invalid.
+=================
+Testing selector 1, value ',256'
+Error while starting: ArgumentError: Error #2004: One of the parameters is invalid.
+=================
+Testing selector 1, value '[object Object]'
+Error while starting: ArgumentError: Error #2004: One of the parameters is invalid.
+=================
+Testing selector 1, value 'true'
+Error while starting: ArgumentError: Error #2004: One of the parameters is invalid.
+=================
+Testing selector 1, value 'false'
+Error while starting: ArgumentError: Error #2004: One of the parameters is invalid.
+=================
+Testing selector 1, value 'true,false'
+Error while starting: ArgumentError: Error #2004: One of the parameters is invalid.
+=================
+Testing selector 1, value 'true,false,true'
+Error while starting: ArgumentError: Error #2004: One of the parameters is invalid.
+=================
+Testing selector 1, value '0.8'
+Result: ff000000
+=================
+Testing selector 1, value '0.2'
+Result: ff000000
+=================
+Testing selector 1, value '0.6'
+Result: ff000000
+=================
+Testing selector 1, value '1.1'
+Result: ff000000
+=================
+Testing selector 1, value '1.5'
+Result: ff000000
+=================
+Testing selector 1, value '0.8,0.8'
+Result: ff000000
+=================
+Testing selector 1, value '0.8,1,1'
+Result: ff000000
+=================
+Testing selector 1, value '1,0,1'
+Result: ff000000
+=================
+Testing selector 1, value '1'
+Error while starting: ArgumentError: Error #2004: One of the parameters is invalid.
+=================
+Testing selector 2, value 'null'
+Result: ff000000
+=================
+Testing selector 2, value 'null'
+Result: ff000000
+=================
+Testing selector 2, value ''
+Result: ff000000
+=================
+Testing selector 2, value '256'
+Result: ff00ff00
+=================
+Testing selector 2, value '256,256'
+Result: ff00ff00
+=================
+Testing selector 2, value '256,256,256'
+Result: ff00ff00
+=================
+Testing selector 2, value '0,0,256'
+Result: ff000000
+=================
+Testing selector 2, value '0,0,test'
+Result: ff000000
+=================
+Testing selector 2, value 'test'
+Error while starting: ArgumentError: Error #2004: One of the parameters is invalid.
+=================
+Testing selector 2, value ''
+Error while starting: ArgumentError: Error #2004: One of the parameters is invalid.
+=================
+Testing selector 2, value ''
+Error while starting: ArgumentError: Error #2004: One of the parameters is invalid.
+=================
+Testing selector 2, value ',256'
+Error while starting: ArgumentError: Error #2004: One of the parameters is invalid.
+=================
+Testing selector 2, value ',256'
+Error while starting: ArgumentError: Error #2004: One of the parameters is invalid.
+=================
+Testing selector 2, value '[object Object]'
+Error while starting: ArgumentError: Error #2004: One of the parameters is invalid.
+=================
+Testing selector 2, value 'true'
+Error while starting: ArgumentError: Error #2004: One of the parameters is invalid.
+=================
+Testing selector 2, value 'false'
+Error while starting: ArgumentError: Error #2004: One of the parameters is invalid.
+=================
+Testing selector 2, value 'true,false'
+Error while starting: ArgumentError: Error #2004: One of the parameters is invalid.
+=================
+Testing selector 2, value 'true,false,true'
+Error while starting: ArgumentError: Error #2004: One of the parameters is invalid.
+=================
+Testing selector 2, value '0.8'
+Result: ff000000
+=================
+Testing selector 2, value '0.2'
+Result: ff000000
+=================
+Testing selector 2, value '0.6'
+Result: ff000000
+=================
+Testing selector 2, value '1.1'
+Result: ff000100
+=================
+Testing selector 2, value '1.5'
+Result: ff000100
+=================
+Testing selector 2, value '0.8,0.8'
+Result: ff000000
+=================
+Testing selector 2, value '0.8,1,1'
+Result: ff000000
+=================
+Testing selector 2, value '1,0,1'
+Result: ff000100
+=================
+Testing selector 2, value '1'
+Error while starting: ArgumentError: Error #2004: One of the parameters is invalid.
+=================
+Testing selector 3, value 'null'
+Result: ff000000
+=================
+Testing selector 3, value 'null'
+Result: ff000000
+=================
+Testing selector 3, value ''
+Result: ff000000
+=================
+Testing selector 3, value '256'
+Result: ff00ff00
+=================
+Testing selector 3, value '256,256'
+Result: ff00ff00
+=================
+Testing selector 3, value '256,256,256'
+Result: ff00ff00
+=================
+Testing selector 3, value '0,0,256'
+Result: ff000000
+=================
+Testing selector 3, value '0,0,test'
+Result: ff000000
+=================
+Testing selector 3, value 'test'
+Error while starting: ArgumentError: Error #2004: One of the parameters is invalid.
+=================
+Testing selector 3, value ''
+Error while starting: ArgumentError: Error #2004: One of the parameters is invalid.
+=================
+Testing selector 3, value ''
+Error while starting: ArgumentError: Error #2004: One of the parameters is invalid.
+=================
+Testing selector 3, value ',256'
+Error while starting: ArgumentError: Error #2004: One of the parameters is invalid.
+=================
+Testing selector 3, value ',256'
+Error while starting: ArgumentError: Error #2004: One of the parameters is invalid.
+=================
+Testing selector 3, value '[object Object]'
+Error while starting: ArgumentError: Error #2004: One of the parameters is invalid.
+=================
+Testing selector 3, value 'true'
+Error while starting: ArgumentError: Error #2004: One of the parameters is invalid.
+=================
+Testing selector 3, value 'false'
+Error while starting: ArgumentError: Error #2004: One of the parameters is invalid.
+=================
+Testing selector 3, value 'true,false'
+Error while starting: ArgumentError: Error #2004: One of the parameters is invalid.
+=================
+Testing selector 3, value 'true,false,true'
+Error while starting: ArgumentError: Error #2004: One of the parameters is invalid.
+=================
+Testing selector 3, value '0.8'
+Result: ff000100
+=================
+Testing selector 3, value '0.2'
+Result: ff000000
+=================
+Testing selector 3, value '0.6'
+Result: ff000100
+=================
+Testing selector 3, value '1.1'
+Result: ff000100
+=================
+Testing selector 3, value '1.5'
+Result: ff000100
+=================
+Testing selector 3, value '0.8,0.8'
+Result: ff000100
+=================
+Testing selector 3, value '0.8,1,1'
+Result: ff000100
+=================
+Testing selector 3, value '1,0,1'
+Result: ff000100
+=================
+Testing selector 3, value '1'
+Error while starting: ArgumentError: Error #2004: One of the parameters is invalid.
+=================
+Testing selector 4, value 'null'
+Result: ff000000
+=================
+Testing selector 4, value 'null'
+Result: ff000000
+=================
+Testing selector 4, value ''
+Result: ff000000
+=================
+Testing selector 4, value '256'
+Result: ff00ff00
+=================
+Testing selector 4, value '256,256'
+Result: ff00ff00
+=================
+Testing selector 4, value '256,256,256'
+Result: ff00ff00
+=================
+Testing selector 4, value '0,0,256'
+Result: ff000000
+=================
+Testing selector 4, value '0,0,test'
+Result: ff000000
+=================
+Testing selector 4, value 'test'
+Error while starting: ArgumentError: Error #2004: One of the parameters is invalid.
+=================
+Testing selector 4, value ''
+Error while starting: ArgumentError: Error #2004: One of the parameters is invalid.
+=================
+Testing selector 4, value ''
+Error while starting: ArgumentError: Error #2004: One of the parameters is invalid.
+=================
+Testing selector 4, value ',256'
+Error while starting: ArgumentError: Error #2004: One of the parameters is invalid.
+=================
+Testing selector 4, value ',256'
+Error while starting: ArgumentError: Error #2004: One of the parameters is invalid.
+=================
+Testing selector 4, value '[object Object]'
+Error while starting: ArgumentError: Error #2004: One of the parameters is invalid.
+=================
+Testing selector 4, value 'true'
+Error while starting: ArgumentError: Error #2004: One of the parameters is invalid.
+=================
+Testing selector 4, value 'false'
+Error while starting: ArgumentError: Error #2004: One of the parameters is invalid.
+=================
+Testing selector 4, value 'true,false'
+Error while starting: ArgumentError: Error #2004: One of the parameters is invalid.
+=================
+Testing selector 4, value 'true,false,true'
+Error while starting: ArgumentError: Error #2004: One of the parameters is invalid.
+=================
+Testing selector 4, value '0.8'
+Result: ff00cc00
+=================
+Testing selector 4, value '0.2'
+Result: ff003300
+=================
+Testing selector 4, value '0.6'
+Result: ff009900
+=================
+Testing selector 4, value '1.1'
+Result: ff00ff00
+=================
+Testing selector 4, value '1.5'
+Result: ff00ff00
+=================
+Testing selector 4, value '0.8,0.8'
+Result: ff00cc00
+=================
+Testing selector 4, value '0.8,1,1'
+Result: ff00cc00
+=================
+Testing selector 4, value '1,0,1'
+Result: ff00ff00
+=================
+Testing selector 4, value '1'
+Error while starting: ArgumentError: Error #2004: One of the parameters is invalid.
+=================
+Testing selector 5, value 'null'
+Result: ff000000
+=================
+Testing selector 5, value 'null'
+Result: ff000000
+=================
+Testing selector 5, value ''
+Result: ff000000
+=================
+Testing selector 5, value '256'
+Result: ff00ff00
+=================
+Testing selector 5, value '256,256'
+Result: ff00ffff
+=================
+Testing selector 5, value '256,256,256'
+Result: ff00ffff
+=================
+Testing selector 5, value '0,0,256'
+Result: ff000000
+=================
+Testing selector 5, value '0,0,test'
+Result: ff000000
+=================
+Testing selector 5, value 'test'
+Error while starting: ArgumentError: Error #2004: One of the parameters is invalid.
+=================
+Testing selector 5, value ''
+Error while starting: ArgumentError: Error #2004: One of the parameters is invalid.
+=================
+Testing selector 5, value ''
+Error while starting: ArgumentError: Error #2004: One of the parameters is invalid.
+=================
+Testing selector 5, value ',256'
+Error while starting: ArgumentError: Error #2004: One of the parameters is invalid.
+=================
+Testing selector 5, value ',256'
+Error while starting: ArgumentError: Error #2004: One of the parameters is invalid.
+=================
+Testing selector 5, value '[object Object]'
+Error while starting: ArgumentError: Error #2004: One of the parameters is invalid.
+=================
+Testing selector 5, value 'true'
+Error while starting: ArgumentError: Error #2004: One of the parameters is invalid.
+=================
+Testing selector 5, value 'false'
+Error while starting: ArgumentError: Error #2004: One of the parameters is invalid.
+=================
+Testing selector 5, value 'true,false'
+Error while starting: ArgumentError: Error #2004: One of the parameters is invalid.
+=================
+Testing selector 5, value 'true,false,true'
+Error while starting: ArgumentError: Error #2004: One of the parameters is invalid.
+=================
+Testing selector 5, value '0.8'
+Result: ff000100
+=================
+Testing selector 5, value '0.2'
+Result: ff000000
+=================
+Testing selector 5, value '0.6'
+Result: ff000100
+=================
+Testing selector 5, value '1.1'
+Result: ff000100
+=================
+Testing selector 5, value '1.5'
+Result: ff000100
+=================
+Testing selector 5, value '0.8,0.8'
+Result: ff000101
+=================
+Testing selector 5, value '0.8,1,1'
+Result: ff000101
+=================
+Testing selector 5, value '1,0,1'
+Result: ff000100
+=================
+Testing selector 5, value '1'
+Error while starting: ArgumentError: Error #2004: One of the parameters is invalid.
+=================
+Testing selector 6, value 'null'
+Result: ff000000
+=================
+Testing selector 6, value 'null'
+Result: ff000000
+=================
+Testing selector 6, value ''
+Result: ff000000
+=================
+Testing selector 6, value '256'
+Result: ffff0000
+=================
+Testing selector 6, value '256,256'
+Result: ffffff00
+=================
+Testing selector 6, value '256,256,256'
+Result: ffffffff
+=================
+Testing selector 6, value '0,0,256'
+Result: ff0000ff
+=================
+Testing selector 6, value '0,0,test'
+Error while starting: ArgumentError: Error #2004: One of the parameters is invalid.
+=================
+Testing selector 6, value 'test'
+Error while starting: ArgumentError: Error #2004: One of the parameters is invalid.
+=================
+Testing selector 6, value ''
+Error while starting: ArgumentError: Error #2004: One of the parameters is invalid.
+=================
+Testing selector 6, value ''
+Error while starting: ArgumentError: Error #2004: One of the parameters is invalid.
+=================
+Testing selector 6, value ',256'
+Error while starting: ArgumentError: Error #2004: One of the parameters is invalid.
+=================
+Testing selector 6, value ',256'
+Error while starting: ArgumentError: Error #2004: One of the parameters is invalid.
+=================
+Testing selector 6, value '[object Object]'
+Error while starting: ArgumentError: Error #2004: One of the parameters is invalid.
+=================
+Testing selector 6, value 'true'
+Error while starting: ArgumentError: Error #2004: One of the parameters is invalid.
+=================
+Testing selector 6, value 'false'
+Error while starting: ArgumentError: Error #2004: One of the parameters is invalid.
+=================
+Testing selector 6, value 'true,false'
+Error while starting: ArgumentError: Error #2004: One of the parameters is invalid.
+=================
+Testing selector 6, value 'true,false,true'
+Error while starting: ArgumentError: Error #2004: One of the parameters is invalid.
+=================
+Testing selector 6, value '0.8'
+Result: ff010000
+=================
+Testing selector 6, value '0.2'
+Result: ff000000
+=================
+Testing selector 6, value '0.6'
+Result: ff010000
+=================
+Testing selector 6, value '1.1'
+Result: ff010000
+=================
+Testing selector 6, value '1.5'
+Result: ff010000
+=================
+Testing selector 6, value '0.8,0.8'
+Result: ff010100
+=================
+Testing selector 6, value '0.8,1,1'
+Result: ff010101
+=================
+Testing selector 6, value '1,0,1'
+Result: ff010001
+=================
+Testing selector 6, value '1'
+Error while starting: ArgumentError: Error #2004: One of the parameters is invalid.
+=================
+Testing selector 7, value 'null'
+Result: ff000000
+=================
+Testing selector 7, value 'null'
+Result: ff000000
+=================
+Testing selector 7, value ''
+Result: ff000000
+=================
+Testing selector 7, value '256'
+Result: ffff0000
+=================
+Testing selector 7, value '256,256'
+Result: ffffff00
+=================
+Testing selector 7, value '256,256,256'
+Result: ffffffff
+=================
+Testing selector 7, value '0,0,256'
+Result: ff0000ff
+=================
+Testing selector 7, value '0,0,test'
+Error while starting: ArgumentError: Error #2004: One of the parameters is invalid.
+=================
+Testing selector 7, value 'test'
+Error while starting: ArgumentError: Error #2004: One of the parameters is invalid.
+=================
+Testing selector 7, value ''
+Error while starting: ArgumentError: Error #2004: One of the parameters is invalid.
+=================
+Testing selector 7, value ''
+Error while starting: ArgumentError: Error #2004: One of the parameters is invalid.
+=================
+Testing selector 7, value ',256'
+Error while starting: ArgumentError: Error #2004: One of the parameters is invalid.
+=================
+Testing selector 7, value ',256'
+Error while starting: ArgumentError: Error #2004: One of the parameters is invalid.
+=================
+Testing selector 7, value '[object Object]'
+Error while starting: ArgumentError: Error #2004: One of the parameters is invalid.
+=================
+Testing selector 7, value 'true'
+Error while starting: ArgumentError: Error #2004: One of the parameters is invalid.
+=================
+Testing selector 7, value 'false'
+Error while starting: ArgumentError: Error #2004: One of the parameters is invalid.
+=================
+Testing selector 7, value 'true,false'
+Error while starting: ArgumentError: Error #2004: One of the parameters is invalid.
+=================
+Testing selector 7, value 'true,false,true'
+Error while starting: ArgumentError: Error #2004: One of the parameters is invalid.
+=================
+Testing selector 7, value '0.8'
+Result: ff010000
+=================
+Testing selector 7, value '0.2'
+Result: ff000000
+=================
+Testing selector 7, value '0.6'
+Result: ff010000
+=================
+Testing selector 7, value '1.1'
+Result: ff010000
+=================
+Testing selector 7, value '1.5'
+Result: ff010000
+=================
+Testing selector 7, value '0.8,0.8'
+Result: ff010100
+=================
+Testing selector 7, value '0.8,1,1'
+Result: ff010101
+=================
+Testing selector 7, value '1,0,1'
+Result: ff010001
+=================
+Testing selector 7, value '1'
+Error while starting: ArgumentError: Error #2004: One of the parameters is invalid.
+=================
+Testing selector 8, value 'null'
+Result: ff000000
+=================
+Testing selector 8, value 'null'
+Result: ff000000
+=================
+Testing selector 8, value ''
+Result: ff000000
+=================
+Testing selector 8, value '256'
+Result: ff000000
+=================
+Testing selector 8, value '256,256'
+Result: ff000000
+=================
+Testing selector 8, value '256,256,256'
+Result: ff000000
+=================
+Testing selector 8, value '0,0,256'
+Result: ff000000
+=================
+Testing selector 8, value '0,0,test'
+Result: ff000000
+=================
+Testing selector 8, value 'test'
+Error while starting: ArgumentError: Error #2004: One of the parameters is invalid.
+=================
+Testing selector 8, value ''
+Error while starting: ArgumentError: Error #2004: One of the parameters is invalid.
+=================
+Testing selector 8, value ''
+Error while starting: ArgumentError: Error #2004: One of the parameters is invalid.
+=================
+Testing selector 8, value ',256'
+Error while starting: ArgumentError: Error #2004: One of the parameters is invalid.
+=================
+Testing selector 8, value ',256'
+Error while starting: ArgumentError: Error #2004: One of the parameters is invalid.
+=================
+Testing selector 8, value '[object Object]'
+Error while starting: ArgumentError: Error #2004: One of the parameters is invalid.
+=================
+Testing selector 8, value 'true'
+Error while starting: ArgumentError: Error #2004: One of the parameters is invalid.
+=================
+Testing selector 8, value 'false'
+Error while starting: ArgumentError: Error #2004: One of the parameters is invalid.
+=================
+Testing selector 8, value 'true,false'
+Error while starting: ArgumentError: Error #2004: One of the parameters is invalid.
+=================
+Testing selector 8, value 'true,false,true'
+Error while starting: ArgumentError: Error #2004: One of the parameters is invalid.
+=================
+Testing selector 8, value '0.8'
+Result: ff000000
+=================
+Testing selector 8, value '0.2'
+Result: ff000000
+=================
+Testing selector 8, value '0.6'
+Result: ff000000
+=================
+Testing selector 8, value '1.1'
+Result: ff000000
+=================
+Testing selector 8, value '1.5'
+Result: ff000000
+=================
+Testing selector 8, value '0.8,0.8'
+Result: ff000000
+=================
+Testing selector 8, value '0.8,1,1'
+Result: ff000000
+=================
+Testing selector 8, value '1,0,1'
+Result: ff000000
+=================
+Testing selector 8, value '1'
+Error while starting: ArgumentError: Error #2004: One of the parameters is invalid.
+=================
+Testing selector 9, value 'null'
+Result: ff000000
+=================
+Testing selector 9, value 'null'
+Result: ff000000
+=================
+Testing selector 9, value ''
+Result: ff000000
+=================
+Testing selector 9, value '256'
+Result: ff000000
+=================
+Testing selector 9, value '256,256'
+Result: ff000000
+=================
+Testing selector 9, value '256,256,256'
+Result: ff000000
+=================
+Testing selector 9, value '0,0,256'
+Result: ff000000
+=================
+Testing selector 9, value '0,0,test'
+Error while starting: ArgumentError: Error #2004: One of the parameters is invalid.
+=================
+Testing selector 9, value 'test'
+Error while starting: ArgumentError: Error #2004: One of the parameters is invalid.
+=================
+Testing selector 9, value ''
+Error while starting: ArgumentError: Error #2004: One of the parameters is invalid.
+=================
+Testing selector 9, value ''
+Error while starting: ArgumentError: Error #2004: One of the parameters is invalid.
+=================
+Testing selector 9, value ',256'
+Error while starting: ArgumentError: Error #2004: One of the parameters is invalid.
+=================
+Testing selector 9, value ',256'
+Error while starting: ArgumentError: Error #2004: One of the parameters is invalid.
+=================
+Testing selector 9, value '[object Object]'
+Error while starting: ArgumentError: Error #2004: One of the parameters is invalid.
+=================
+Testing selector 9, value 'true'
+Error while starting: ArgumentError: Error #2004: One of the parameters is invalid.
+=================
+Testing selector 9, value 'false'
+Error while starting: ArgumentError: Error #2004: One of the parameters is invalid.
+=================
+Testing selector 9, value 'true,false'
+Error while starting: ArgumentError: Error #2004: One of the parameters is invalid.
+=================
+Testing selector 9, value 'true,false,true'
+Error while starting: ArgumentError: Error #2004: One of the parameters is invalid.
+=================
+Testing selector 9, value '0.8'
+Result: ff000000
+=================
+Testing selector 9, value '0.2'
+Result: ff000000
+=================
+Testing selector 9, value '0.6'
+Result: ff000000
+=================
+Testing selector 9, value '1.1'
+Result: ff000000
+=================
+Testing selector 9, value '1.5'
+Result: ff000000
+=================
+Testing selector 9, value '0.8,0.8'
+Result: ff000000
+=================
+Testing selector 9, value '0.8,1,1'
+Result: ff000000
+=================
+Testing selector 9, value '1,0,1'
+Result: ff000000
+=================
+Testing selector 9, value '1'
+Error while starting: ArgumentError: Error #2004: One of the parameters is invalid.
+=================
+Testing selector 10, value 'null'
+Result: ff000000
+=================
+Testing selector 10, value 'null'
+Result: ff000000
+=================
+Testing selector 10, value ''
+Result: ff000000
+=================
+Testing selector 10, value '256'
+Result: ff000000
+=================
+Testing selector 10, value '256,256'
+Result: ff000000
+=================
+Testing selector 10, value '256,256,256'
+Result: ff000000
+=================
+Testing selector 10, value '0,0,256'
+Result: ff000000
+=================
+Testing selector 10, value '0,0,test'
+Error while starting: ArgumentError: Error #2004: One of the parameters is invalid.
+=================
+Testing selector 10, value 'test'
+Error while starting: ArgumentError: Error #2004: One of the parameters is invalid.
+=================
+Testing selector 10, value ''
+Error while starting: ArgumentError: Error #2004: One of the parameters is invalid.
+=================
+Testing selector 10, value ''
+Error while starting: ArgumentError: Error #2004: One of the parameters is invalid.
+=================
+Testing selector 10, value ',256'
+Error while starting: ArgumentError: Error #2004: One of the parameters is invalid.
+=================
+Testing selector 10, value ',256'
+Error while starting: ArgumentError: Error #2004: One of the parameters is invalid.
+=================
+Testing selector 10, value '[object Object]'
+Error while starting: ArgumentError: Error #2004: One of the parameters is invalid.
+=================
+Testing selector 10, value 'true'
+Error while starting: ArgumentError: Error #2004: One of the parameters is invalid.
+=================
+Testing selector 10, value 'false'
+Error while starting: ArgumentError: Error #2004: One of the parameters is invalid.
+=================
+Testing selector 10, value 'true,false'
+Error while starting: ArgumentError: Error #2004: One of the parameters is invalid.
+=================
+Testing selector 10, value 'true,false,true'
+Error while starting: ArgumentError: Error #2004: One of the parameters is invalid.
+=================
+Testing selector 10, value '0.8'
+Result: ff000000
+=================
+Testing selector 10, value '0.2'
+Result: ff000000
+=================
+Testing selector 10, value '0.6'
+Result: ff000000
+=================
+Testing selector 10, value '1.1'
+Result: ff000000
+=================
+Testing selector 10, value '1.5'
+Result: ff000000
+=================
+Testing selector 10, value '0.8,0.8'
+Result: ff000000
+=================
+Testing selector 10, value '0.8,1,1'
+Result: ff000000
+=================
+Testing selector 10, value '1,0,1'
+Result: ff000000
+=================
+Testing selector 10, value '1'
+Error while starting: ArgumentError: Error #2004: One of the parameters is invalid.
+=================
+Testing selector 11, value 'null'
+Result: ff000000
+=================
+Testing selector 11, value 'null'
+Result: ff000000
+=================
+Testing selector 11, value ''
+Result: ff000000
+=================
+Testing selector 11, value '256'
+Result: ff00ff00
+=================
+Testing selector 11, value '256,256'
+Result: ff00ffff
+=================
+Testing selector 11, value '256,256,256'
+Result: ff00ffff
+=================
+Testing selector 11, value '0,0,256'
+Result: ff000000
+=================
+Testing selector 11, value '0,0,test'
+Result: ff000000
+=================
+Testing selector 11, value 'test'
+Error while starting: ArgumentError: Error #2004: One of the parameters is invalid.
+=================
+Testing selector 11, value ''
+Error while starting: ArgumentError: Error #2004: One of the parameters is invalid.
+=================
+Testing selector 11, value ''
+Error while starting: ArgumentError: Error #2004: One of the parameters is invalid.
+=================
+Testing selector 11, value ',256'
+Error while starting: ArgumentError: Error #2004: One of the parameters is invalid.
+=================
+Testing selector 11, value ',256'
+Error while starting: ArgumentError: Error #2004: One of the parameters is invalid.
+=================
+Testing selector 11, value '[object Object]'
+Error while starting: ArgumentError: Error #2004: One of the parameters is invalid.
+=================
+Testing selector 11, value 'true'
+Error while starting: ArgumentError: Error #2004: One of the parameters is invalid.
+=================
+Testing selector 11, value 'false'
+Error while starting: ArgumentError: Error #2004: One of the parameters is invalid.
+=================
+Testing selector 11, value 'true,false'
+Error while starting: ArgumentError: Error #2004: One of the parameters is invalid.
+=================
+Testing selector 11, value 'true,false,true'
+Error while starting: ArgumentError: Error #2004: One of the parameters is invalid.
+=================
+Testing selector 11, value '0.8'
+Result: ff000000
+=================
+Testing selector 11, value '0.2'
+Result: ff000000
+=================
+Testing selector 11, value '0.6'
+Result: ff000000
+=================
+Testing selector 11, value '1.1'
+Result: ff000100
+=================
+Testing selector 11, value '1.5'
+Result: ff000100
+=================
+Testing selector 11, value '0.8,0.8'
+Result: ff000000
+=================
+Testing selector 11, value '0.8,1,1'
+Result: ff000001
+=================
+Testing selector 11, value '1,0,1'
+Result: ff000100
+=================
+Testing selector 11, value '1'
+Error while starting: ArgumentError: Error #2004: One of the parameters is invalid.
+=================
+Testing selector 12, value 'null'
+Result: ff000000
+=================
+Testing selector 12, value 'null'
+Result: ff000000
+=================
+Testing selector 12, value ''
+Result: ff000000
+=================
+Testing selector 12, value '256'
+Result: ffff0000
+=================
+Testing selector 12, value '256,256'
+Result: ffffff00
+=================
+Testing selector 12, value '256,256,256'
+Result: ffffffff
+=================
+Testing selector 12, value '0,0,256'
+Result: ff0000ff
+=================
+Testing selector 12, value '0,0,test'
+Error while starting: ArgumentError: Error #2004: One of the parameters is invalid.
+=================
+Testing selector 12, value 'test'
+Error while starting: ArgumentError: Error #2004: One of the parameters is invalid.
+=================
+Testing selector 12, value ''
+Error while starting: ArgumentError: Error #2004: One of the parameters is invalid.
+=================
+Testing selector 12, value ''
+Error while starting: ArgumentError: Error #2004: One of the parameters is invalid.
+=================
+Testing selector 12, value ',256'
+Error while starting: ArgumentError: Error #2004: One of the parameters is invalid.
+=================
+Testing selector 12, value ',256'
+Error while starting: ArgumentError: Error #2004: One of the parameters is invalid.
+=================
+Testing selector 12, value '[object Object]'
+Error while starting: ArgumentError: Error #2004: One of the parameters is invalid.
+=================
+Testing selector 12, value 'true'
+Error while starting: ArgumentError: Error #2004: One of the parameters is invalid.
+=================
+Testing selector 12, value 'false'
+Error while starting: ArgumentError: Error #2004: One of the parameters is invalid.
+=================
+Testing selector 12, value 'true,false'
+Error while starting: ArgumentError: Error #2004: One of the parameters is invalid.
+=================
+Testing selector 12, value 'true,false,true'
+Error while starting: ArgumentError: Error #2004: One of the parameters is invalid.
+=================
+Testing selector 12, value '0.8'
+Result: ff000000
+=================
+Testing selector 12, value '0.2'
+Result: ff000000
+=================
+Testing selector 12, value '0.6'
+Result: ff000000
+=================
+Testing selector 12, value '1.1'
+Result: ff010000
+=================
+Testing selector 12, value '1.5'
+Result: ff010000
+=================
+Testing selector 12, value '0.8,0.8'
+Result: ff000000
+=================
+Testing selector 12, value '0.8,1,1'
+Result: ff000101
+=================
+Testing selector 12, value '1,0,1'
+Result: ff010001
+=================
+Testing selector 12, value '1'
+Error while starting: ArgumentError: Error #2004: One of the parameters is invalid.
+=================
+Testing selector 13, value 'null'
+Result: ff000000
+=================
+Testing selector 13, value 'null'
+Result: ff000000
+=================
+Testing selector 13, value ''
+Result: ff000000
+=================
+Testing selector 13, value '256'
+Result: ffff0000
+=================
+Testing selector 13, value '256,256'
+Result: ffffff00
+=================
+Testing selector 13, value '256,256,256'
+Result: ffffffff
+=================
+Testing selector 13, value '0,0,256'
+Result: ff0000ff
+=================
+Testing selector 13, value '0,0,test'
+Error while starting: ArgumentError: Error #2004: One of the parameters is invalid.
+=================
+Testing selector 13, value 'test'
+Error while starting: ArgumentError: Error #2004: One of the parameters is invalid.
+=================
+Testing selector 13, value ''
+Error while starting: ArgumentError: Error #2004: One of the parameters is invalid.
+=================
+Testing selector 13, value ''
+Error while starting: ArgumentError: Error #2004: One of the parameters is invalid.
+=================
+Testing selector 13, value ',256'
+Error while starting: ArgumentError: Error #2004: One of the parameters is invalid.
+=================
+Testing selector 13, value ',256'
+Error while starting: ArgumentError: Error #2004: One of the parameters is invalid.
+=================
+Testing selector 13, value '[object Object]'
+Error while starting: ArgumentError: Error #2004: One of the parameters is invalid.
+=================
+Testing selector 13, value 'true'
+Error while starting: ArgumentError: Error #2004: One of the parameters is invalid.
+=================
+Testing selector 13, value 'false'
+Error while starting: ArgumentError: Error #2004: One of the parameters is invalid.
+=================
+Testing selector 13, value 'true,false'
+Error while starting: ArgumentError: Error #2004: One of the parameters is invalid.
+=================
+Testing selector 13, value 'true,false,true'
+Error while starting: ArgumentError: Error #2004: One of the parameters is invalid.
+=================
+Testing selector 13, value '0.8'
+Result: ff000000
+=================
+Testing selector 13, value '0.2'
+Result: ff000000
+=================
+Testing selector 13, value '0.6'
+Result: ff000000
+=================
+Testing selector 13, value '1.1'
+Result: ff010000
+=================
+Testing selector 13, value '1.5'
+Result: ff010000
+=================
+Testing selector 13, value '0.8,0.8'
+Result: ff000000
+=================
+Testing selector 13, value '0.8,1,1'
+Result: ff000101
+=================
+Testing selector 13, value '1,0,1'
+Result: ff010001
+=================
+Testing selector 13, value '1'
+Error while starting: ArgumentError: Error #2004: One of the parameters is invalid.
+=================
+Testing selector 14, value 'null'
+Result: ff000000
+=================
+Testing selector 14, value 'null'
+Result: ff000000
+=================
+Testing selector 14, value ''
+Result: ff000000
+=================
+Testing selector 14, value '256'
+Result: ff00ff00
+=================
+Testing selector 14, value '256,256'
+Result: ff00ffff
+=================
+Testing selector 14, value '256,256,256'
+Result: ff00ffff
+=================
+Testing selector 14, value '0,0,256'
+Result: ff000000
+=================
+Testing selector 14, value '0,0,test'
+Result: ff000000
+=================
+Testing selector 14, value 'test'
+Error while starting: ArgumentError: Error #2004: One of the parameters is invalid.
+=================
+Testing selector 14, value ''
+Error while starting: ArgumentError: Error #2004: One of the parameters is invalid.
+=================
+Testing selector 14, value ''
+Error while starting: ArgumentError: Error #2004: One of the parameters is invalid.
+=================
+Testing selector 14, value ',256'
+Error while starting: ArgumentError: Error #2004: One of the parameters is invalid.
+=================
+Testing selector 14, value ',256'
+Error while starting: ArgumentError: Error #2004: One of the parameters is invalid.
+=================
+Testing selector 14, value '[object Object]'
+Error while starting: ArgumentError: Error #2004: One of the parameters is invalid.
+=================
+Testing selector 14, value 'true'
+Error while starting: ArgumentError: Error #2004: One of the parameters is invalid.
+=================
+Testing selector 14, value 'false'
+Error while starting: ArgumentError: Error #2004: One of the parameters is invalid.
+=================
+Testing selector 14, value 'true,false'
+Error while starting: ArgumentError: Error #2004: One of the parameters is invalid.
+=================
+Testing selector 14, value 'true,false,true'
+Error while starting: ArgumentError: Error #2004: One of the parameters is invalid.
+=================
+Testing selector 14, value '0.8'
+Result: ff00cc00
+=================
+Testing selector 14, value '0.2'
+Result: ff003300
+=================
+Testing selector 14, value '0.6'
+Result: ff009900
+=================
+Testing selector 14, value '1.1'
+Result: ff00ff00
+=================
+Testing selector 14, value '1.5'
+Result: ff00ff00
+=================
+Testing selector 14, value '0.8,0.8'
+Result: ff00cccc
+=================
+Testing selector 14, value '0.8,1,1'
+Result: ff00ccff
+=================
+Testing selector 14, value '1,0,1'
+Result: ff00ff00
+=================
+Testing selector 14, value '1'
+Error while starting: ArgumentError: Error #2004: One of the parameters is invalid.
+=================
+Testing selector 15, value 'null'
+Result: ff000000
+=================
+Testing selector 15, value 'null'
+Result: ff000000
+=================
+Testing selector 15, value ''
+Result: ff000000
+=================
+Testing selector 15, value '256'
+Result: ffff0000
+=================
+Testing selector 15, value '256,256'
+Result: ffffff00
+=================
+Testing selector 15, value '256,256,256'
+Result: ffffffff
+=================
+Testing selector 15, value '0,0,256'
+Result: ff0000ff
+=================
+Testing selector 15, value '0,0,test'
+Error while starting: ArgumentError: Error #2004: One of the parameters is invalid.
+=================
+Testing selector 15, value 'test'
+Error while starting: ArgumentError: Error #2004: One of the parameters is invalid.
+=================
+Testing selector 15, value ''
+Error while starting: ArgumentError: Error #2004: One of the parameters is invalid.
+=================
+Testing selector 15, value ''
+Error while starting: ArgumentError: Error #2004: One of the parameters is invalid.
+=================
+Testing selector 15, value ',256'
+Error while starting: ArgumentError: Error #2004: One of the parameters is invalid.
+=================
+Testing selector 15, value ',256'
+Error while starting: ArgumentError: Error #2004: One of the parameters is invalid.
+=================
+Testing selector 15, value '[object Object]'
+Error while starting: ArgumentError: Error #2004: One of the parameters is invalid.
+=================
+Testing selector 15, value 'true'
+Error while starting: ArgumentError: Error #2004: One of the parameters is invalid.
+=================
+Testing selector 15, value 'false'
+Error while starting: ArgumentError: Error #2004: One of the parameters is invalid.
+=================
+Testing selector 15, value 'true,false'
+Error while starting: ArgumentError: Error #2004: One of the parameters is invalid.
+=================
+Testing selector 15, value 'true,false,true'
+Error while starting: ArgumentError: Error #2004: One of the parameters is invalid.
+=================
+Testing selector 15, value '0.8'
+Result: ffcc0000
+=================
+Testing selector 15, value '0.2'
+Result: ff330000
+=================
+Testing selector 15, value '0.6'
+Result: ff990000
+=================
+Testing selector 15, value '1.1'
+Result: ffff0000
+=================
+Testing selector 15, value '1.5'
+Result: ffff0000
+=================
+Testing selector 15, value '0.8,0.8'
+Result: ffcccc00
+=================
+Testing selector 15, value '0.8,1,1'
+Result: ffccffff
+=================
+Testing selector 15, value '1,0,1'
+Result: ffff00ff
+=================
+Testing selector 15, value '1'
+Error while starting: ArgumentError: Error #2004: One of the parameters is invalid.
+=================
+Testing selector 16, value 'null'
+Result: ff000000
+=================
+Testing selector 16, value 'null'
+Result: ff000000
+=================
+Testing selector 16, value ''
+Result: ff000000
+=================
+Testing selector 16, value '256'
+Result: ffff0000
+=================
+Testing selector 16, value '256,256'
+Result: ffffff00
+=================
+Testing selector 16, value '256,256,256'
+Result: ffffffff
+=================
+Testing selector 16, value '0,0,256'
+Result: ff0000ff
+=================
+Testing selector 16, value '0,0,test'
+Error while starting: ArgumentError: Error #2004: One of the parameters is invalid.
+=================
+Testing selector 16, value 'test'
+Error while starting: ArgumentError: Error #2004: One of the parameters is invalid.
+=================
+Testing selector 16, value ''
+Error while starting: ArgumentError: Error #2004: One of the parameters is invalid.
+=================
+Testing selector 16, value ''
+Error while starting: ArgumentError: Error #2004: One of the parameters is invalid.
+=================
+Testing selector 16, value ',256'
+Error while starting: ArgumentError: Error #2004: One of the parameters is invalid.
+=================
+Testing selector 16, value ',256'
+Error while starting: ArgumentError: Error #2004: One of the parameters is invalid.
+=================
+Testing selector 16, value '[object Object]'
+Error while starting: ArgumentError: Error #2004: One of the parameters is invalid.
+=================
+Testing selector 16, value 'true'
+Error while starting: ArgumentError: Error #2004: One of the parameters is invalid.
+=================
+Testing selector 16, value 'false'
+Error while starting: ArgumentError: Error #2004: One of the parameters is invalid.
+=================
+Testing selector 16, value 'true,false'
+Error while starting: ArgumentError: Error #2004: One of the parameters is invalid.
+=================
+Testing selector 16, value 'true,false,true'
+Error while starting: ArgumentError: Error #2004: One of the parameters is invalid.
+=================
+Testing selector 16, value '0.8'
+Result: ffcc0000
+=================
+Testing selector 16, value '0.2'
+Result: ff330000
+=================
+Testing selector 16, value '0.6'
+Result: ff990000
+=================
+Testing selector 16, value '1.1'
+Result: ffff0000
+=================
+Testing selector 16, value '1.5'
+Result: ffff0000
+=================
+Testing selector 16, value '0.8,0.8'
+Result: ffcccc00
+=================
+Testing selector 16, value '0.8,1,1'
+Result: ffccffff
+=================
+Testing selector 16, value '1,0,1'
+Result: ffff00ff
+=================
+Testing selector 16, value '1'
+Error while starting: ArgumentError: Error #2004: One of the parameters is invalid.
+=================
+Testing selector 17, value 'null'
+Result: ff000000
+=================
+Testing selector 17, value 'null'
+Result: ff000000
+=================
+Testing selector 17, value ''
+Result: ff000000
+=================
+Testing selector 17, value '256'
+Result: ffff0000
+=================
+Testing selector 17, value '256,256'
+Result: ffffff00
+=================
+Testing selector 17, value '256,256,256'
+Result: ffffffff
+=================
+Testing selector 17, value '0,0,256'
+Result: ff0000ff
+=================
+Testing selector 17, value '0,0,test'
+Error while starting: ArgumentError: Error #2004: One of the parameters is invalid.
+=================
+Testing selector 17, value 'test'
+Error while starting: ArgumentError: Error #2004: One of the parameters is invalid.
+=================
+Testing selector 17, value ''
+Error while starting: ArgumentError: Error #2004: One of the parameters is invalid.
+=================
+Testing selector 17, value ''
+Error while starting: ArgumentError: Error #2004: One of the parameters is invalid.
+=================
+Testing selector 17, value ',256'
+Error while starting: ArgumentError: Error #2004: One of the parameters is invalid.
+=================
+Testing selector 17, value ',256'
+Error while starting: ArgumentError: Error #2004: One of the parameters is invalid.
+=================
+Testing selector 17, value '[object Object]'
+Error while starting: ArgumentError: Error #2004: One of the parameters is invalid.
+=================
+Testing selector 17, value 'true'
+Error while starting: ArgumentError: Error #2004: One of the parameters is invalid.
+=================
+Testing selector 17, value 'false'
+Error while starting: ArgumentError: Error #2004: One of the parameters is invalid.
+=================
+Testing selector 17, value 'true,false'
+Error while starting: ArgumentError: Error #2004: One of the parameters is invalid.
+=================
+Testing selector 17, value 'true,false,true'
+Error while starting: ArgumentError: Error #2004: One of the parameters is invalid.
+=================
+Testing selector 17, value '0.8'
+Result: ff010000
+=================
+Testing selector 17, value '0.2'
+Result: ff000000
+=================
+Testing selector 17, value '0.6'
+Result: ff010000
+=================
+Testing selector 17, value '1.1'
+Result: ff010000
+=================
+Testing selector 17, value '1.5'
+Result: ff010000
+=================
+Testing selector 17, value '0.8,0.8'
+Result: ff010100
+=================
+Testing selector 17, value '0.8,1,1'
+Result: ff010101
+=================
+Testing selector 17, value '1,0,1'
+Result: ff010001
+=================
+Testing selector 17, value '1'
+Error while starting: ArgumentError: Error #2004: One of the parameters is invalid.
+=================
+Testing selector 18, value 'null'
+Result: ff000000
+=================
+Testing selector 18, value 'null'
+Result: ff000000
+=================
+Testing selector 18, value ''
+Result: ff000000
+=================
+Testing selector 18, value '256'
+Result: ffff0000
+=================
+Testing selector 18, value '256,256'
+Result: ffffff00
+=================
+Testing selector 18, value '256,256,256'
+Result: ffffffff
+=================
+Testing selector 18, value '0,0,256'
+Result: ff0000ff
+=================
+Testing selector 18, value '0,0,test'
+Error while starting: ArgumentError: Error #2004: One of the parameters is invalid.
+=================
+Testing selector 18, value 'test'
+Error while starting: ArgumentError: Error #2004: One of the parameters is invalid.
+=================
+Testing selector 18, value ''
+Error while starting: ArgumentError: Error #2004: One of the parameters is invalid.
+=================
+Testing selector 18, value ''
+Error while starting: ArgumentError: Error #2004: One of the parameters is invalid.
+=================
+Testing selector 18, value ',256'
+Error while starting: ArgumentError: Error #2004: One of the parameters is invalid.
+=================
+Testing selector 18, value ',256'
+Error while starting: ArgumentError: Error #2004: One of the parameters is invalid.
+=================
+Testing selector 18, value '[object Object]'
+Error while starting: ArgumentError: Error #2004: One of the parameters is invalid.
+=================
+Testing selector 18, value 'true'
+Error while starting: ArgumentError: Error #2004: One of the parameters is invalid.
+=================
+Testing selector 18, value 'false'
+Error while starting: ArgumentError: Error #2004: One of the parameters is invalid.
+=================
+Testing selector 18, value 'true,false'
+Error while starting: ArgumentError: Error #2004: One of the parameters is invalid.
+=================
+Testing selector 18, value 'true,false,true'
+Error while starting: ArgumentError: Error #2004: One of the parameters is invalid.
+=================
+Testing selector 18, value '0.8'
+Result: ff010000
+=================
+Testing selector 18, value '0.2'
+Result: ff000000
+=================
+Testing selector 18, value '0.6'
+Result: ff010000
+=================
+Testing selector 18, value '1.1'
+Result: ff010000
+=================
+Testing selector 18, value '1.5'
+Result: ff010000
+=================
+Testing selector 18, value '0.8,0.8'
+Result: ff010100
+=================
+Testing selector 18, value '0.8,1,1'
+Result: ff010101
+=================
+Testing selector 18, value '1,0,1'
+Result: ff010001
+=================
+Testing selector 18, value '1'
+Error while starting: ArgumentError: Error #2004: One of the parameters is invalid.
+=================
+Testing selector 19, value 'null'
+Result: ff000000
+=================
+Testing selector 19, value 'null'
+Result: ff000000
+=================
+Testing selector 19, value ''
+Result: ff000000
+=================
+Testing selector 19, value '256'
+Result: ffff0000
+=================
+Testing selector 19, value '256,256'
+Result: ffffff00
+=================
+Testing selector 19, value '256,256,256'
+Result: ffffffff
+=================
+Testing selector 19, value '0,0,256'
+Result: ff0000ff
+=================
+Testing selector 19, value '0,0,test'
+Error while starting: ArgumentError: Error #2004: One of the parameters is invalid.
+=================
+Testing selector 19, value 'test'
+Error while starting: ArgumentError: Error #2004: One of the parameters is invalid.
+=================
+Testing selector 19, value ''
+Error while starting: ArgumentError: Error #2004: One of the parameters is invalid.
+=================
+Testing selector 19, value ''
+Error while starting: ArgumentError: Error #2004: One of the parameters is invalid.
+=================
+Testing selector 19, value ',256'
+Error while starting: ArgumentError: Error #2004: One of the parameters is invalid.
+=================
+Testing selector 19, value ',256'
+Error while starting: ArgumentError: Error #2004: One of the parameters is invalid.
+=================
+Testing selector 19, value '[object Object]'
+Error while starting: ArgumentError: Error #2004: One of the parameters is invalid.
+=================
+Testing selector 19, value 'true'
+Error while starting: ArgumentError: Error #2004: One of the parameters is invalid.
+=================
+Testing selector 19, value 'false'
+Error while starting: ArgumentError: Error #2004: One of the parameters is invalid.
+=================
+Testing selector 19, value 'true,false'
+Error while starting: ArgumentError: Error #2004: One of the parameters is invalid.
+=================
+Testing selector 19, value 'true,false,true'
+Error while starting: ArgumentError: Error #2004: One of the parameters is invalid.
+=================
+Testing selector 19, value '0.8'
+Result: ff010000
+=================
+Testing selector 19, value '0.2'
+Result: ff000000
+=================
+Testing selector 19, value '0.6'
+Result: ff010000
+=================
+Testing selector 19, value '1.1'
+Result: ff010000
+=================
+Testing selector 19, value '1.5'
+Result: ff010000
+=================
+Testing selector 19, value '0.8,0.8'
+Result: ff010100
+=================
+Testing selector 19, value '0.8,1,1'
+Result: ff010101
+=================
+Testing selector 19, value '1,0,1'
+Result: ff010001
+=================
+Testing selector 19, value '1'
+Error while starting: ArgumentError: Error #2004: One of the parameters is invalid.
+=================

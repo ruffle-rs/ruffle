@@ -1,10 +1,10 @@
 //! RegExp Structure
 
 use std::borrow::Cow;
+use std::num::NonZero;
 
 use crate::avm2::activation::Activation;
 use crate::avm2::object::FunctionObject;
-use crate::avm2::object::TObject;
 use crate::avm2::Error;
 use crate::avm2::{ArrayObject, ArrayStorage, Value};
 use crate::string::WString;
@@ -100,6 +100,7 @@ impl<'gc> RegExp<'gc> {
                     icase: self.flags.contains(RegExpFlags::IGNORE_CASE),
                     multiline: self.flags.contains(RegExpFlags::MULTILINE),
                     dot_all: self.flags.contains(RegExpFlags::DOTALL),
+                    extended: self.flags.contains(RegExpFlags::EXTENDED),
                     no_opt: false,
                     unicode: false,
                     unicode_sets: false,
@@ -232,7 +233,7 @@ impl<'gc> RegExp<'gc> {
             let args = std::iter::once(Some(&m.range))
                 .chain((m.captures.iter()).map(|x| x.as_ref()))
                 .map(|o| match o {
-                    Some(r) => AvmString::new(activation.gc(), &txt[r.start..r.end]).into(),
+                    Some(r) => activation.strings().substring(*txt, r.clone()).into(),
                     None => istr!("").into(),
                 })
                 .chain(std::iter::once(m.range.start.into()))
@@ -281,7 +282,7 @@ impl<'gc> RegExp<'gc> {
             // we only hold onto a mutable lock on the regular expression
             // for a small window, because f might refer to the RegExp
             // (See https://github.com/ruffle-rs/ruffle/issues/17899)
-            let mut re = regexp.as_regexp_mut(activation.gc()).unwrap();
+            let mut re = regexp.regexp_mut(activation.gc());
             let global_flag = re.flags().contains(RegExpFlags::GLOBAL);
 
             (global_flag, re.find_utf16_match(*text, start))
@@ -313,8 +314,7 @@ impl<'gc> RegExp<'gc> {
             // the RegExp long enough to do our matching, so that
             // when we call f we don't have a lock
             m = regexp
-                .as_regexp_mut(activation.gc())
-                .unwrap()
+                .regexp_mut(activation.gc())
                 .find_utf16_match(*text, start);
         }
 
@@ -326,8 +326,10 @@ impl<'gc> RegExp<'gc> {
         &mut self,
         activation: &mut Activation<'_, 'gc>,
         text: AvmString<'gc>,
-        limit: usize,
+        limit: NonZero<usize>,
     ) -> ArrayObject<'gc> {
+        let limit = limit.get();
+
         let mut storage = ArrayStorage::new(0);
         // The empty regex is a special case which splits into characters.
         if self.source.is_empty() {
@@ -343,12 +345,17 @@ impl<'gc> RegExp<'gc> {
             if m.range.end == start {
                 break;
             }
-            storage.push(AvmString::new(activation.gc(), &text[start..m.range.start]).into());
+            storage.push(
+                activation
+                    .strings()
+                    .substring(text, start..m.range.start)
+                    .into(),
+            );
             if storage.length() >= limit {
                 break;
             }
             for c in m.captures.iter().filter_map(Option::as_ref) {
-                storage.push(AvmString::new(activation.gc(), &text[c.start..c.end]).into());
+                storage.push(activation.strings().substring(text, c.clone()).into());
                 if storage.length() >= limit {
                     break; // Intentional bug to match Flash.
                            // Causes adding parts past limit.

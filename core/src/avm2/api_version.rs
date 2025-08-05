@@ -5,7 +5,7 @@ use enum_map::{enum_map, Enum, EnumMap};
 
 // Based on https://github.com/adobe/avmplus/blob/master/core/api-versions.h
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug, FromPrimitive, Enum)]
-#[allow(non_camel_case_types)]
+#[expect(non_camel_case_types)]
 pub enum ApiVersion {
     AllVersions = 0,
     AIR_1_0 = 1,
@@ -143,62 +143,64 @@ impl ApiVersion {
         }
     }
 
-    pub fn from_swf_version(val: u8, runtime: PlayerRuntime) -> Option<ApiVersion> {
+    pub fn from_swf_version(val: u8, runtime: PlayerRuntime) -> ApiVersion {
         // Based on this table: https://github.com/ruffle-rs/ruffle/wiki/SWF-version-chart
         match (val, runtime) {
             // There's no specific entry for SWF 9 in avmplus,
             // so map it to the lowest entry.
-            (9, _) => Some(ApiVersion::AllVersions),
-            (10, PlayerRuntime::FlashPlayer) => Some(ApiVersion::FP_10_1),
-            (10, PlayerRuntime::AIR) => Some(ApiVersion::AIR_2_0),
-            (11, PlayerRuntime::FlashPlayer) => Some(ApiVersion::FP_10_2),
-            (11, PlayerRuntime::AIR) => Some(ApiVersion::AIR_2_6),
-            (12, PlayerRuntime::FlashPlayer) => Some(ApiVersion::SWF_12),
-            (12, PlayerRuntime::AIR) => Some(ApiVersion::AIR_2_7),
-            (13, PlayerRuntime::FlashPlayer) => Some(ApiVersion::SWF_13),
-            (13, PlayerRuntime::AIR) => Some(ApiVersion::AIR_3_0),
-            (14, PlayerRuntime::FlashPlayer) => Some(ApiVersion::SWF_14),
-            (14, PlayerRuntime::AIR) => Some(ApiVersion::AIR_3_1),
-            (15, PlayerRuntime::FlashPlayer) => Some(ApiVersion::SWF_15),
-            (15, PlayerRuntime::AIR) => Some(ApiVersion::AIR_3_2),
-            (16, PlayerRuntime::FlashPlayer) => Some(ApiVersion::SWF_16),
-            (16, PlayerRuntime::AIR) => Some(ApiVersion::AIR_3_3),
-            (17, PlayerRuntime::FlashPlayer) => Some(ApiVersion::SWF_17),
-            (17, PlayerRuntime::AIR) => Some(ApiVersion::AIR_3_4),
-            (18, PlayerRuntime::FlashPlayer) => Some(ApiVersion::SWF_18),
-            (18, PlayerRuntime::AIR) => Some(ApiVersion::AIR_3_5),
-            (19, PlayerRuntime::FlashPlayer) => Some(ApiVersion::SWF_19),
-            (19, PlayerRuntime::AIR) => Some(ApiVersion::AIR_3_6),
-            (20, PlayerRuntime::FlashPlayer) => Some(ApiVersion::SWF_20),
-            (20, PlayerRuntime::AIR) => Some(ApiVersion::AIR_3_7),
-            (21, PlayerRuntime::FlashPlayer) => Some(ApiVersion::SWF_21),
-            (21, PlayerRuntime::AIR) => Some(ApiVersion::AIR_3_8),
-            (22, PlayerRuntime::FlashPlayer) => Some(ApiVersion::SWF_22),
-            (22, PlayerRuntime::AIR) => Some(ApiVersion::AIR_3_9),
-            (23, PlayerRuntime::FlashPlayer) => Some(ApiVersion::SWF_23),
-            (23, PlayerRuntime::AIR) => Some(ApiVersion::AIR_4_0),
-            (24, PlayerRuntime::FlashPlayer) => Some(ApiVersion::SWF_24),
-            (24, PlayerRuntime::AIR) => Some(ApiVersion::AIR_13_0),
-            (25, PlayerRuntime::FlashPlayer) => Some(ApiVersion::SWF_25),
-            (25, PlayerRuntime::AIR) => Some(ApiVersion::AIR_14_0),
-            (26, PlayerRuntime::FlashPlayer) => Some(ApiVersion::SWF_26),
-            (26, PlayerRuntime::AIR) => Some(ApiVersion::AIR_15_0),
-            (27, PlayerRuntime::FlashPlayer) => Some(ApiVersion::SWF_27),
-            (27, PlayerRuntime::AIR) => Some(ApiVersion::AIR_16_0),
-            (28, PlayerRuntime::FlashPlayer) => Some(ApiVersion::SWF_28),
-            (28, PlayerRuntime::AIR) => Some(ApiVersion::AIR_17_0),
-            (29, PlayerRuntime::FlashPlayer) => Some(ApiVersion::SWF_29),
-            (29, PlayerRuntime::AIR) => Some(ApiVersion::AIR_18_0),
-            (30, PlayerRuntime::FlashPlayer) => Some(ApiVersion::SWF_30),
-            (30, PlayerRuntime::AIR) => Some(ApiVersion::AIR_19_0),
-            (31, PlayerRuntime::FlashPlayer) => Some(ApiVersion::SWF_31),
-            (31, PlayerRuntime::AIR) => Some(ApiVersion::AIR_20_0),
+            // NOTE: FP10 and above will refuse to run AVM2 SWFs with a SWF
+            // version that is 8 or below. We want to keep these SWFs working,
+            // so be lenient here and allow SWFs with a version <=9 to run.
+            (..=9, _) => ApiVersion::AllVersions,
+            (10, PlayerRuntime::FlashPlayer) => ApiVersion::FP_10_1,
+            (10, PlayerRuntime::AIR) => ApiVersion::AIR_2_0,
+            (11, PlayerRuntime::FlashPlayer) => ApiVersion::FP_10_2,
+            (11, PlayerRuntime::AIR) => ApiVersion::AIR_2_6,
+            (12, PlayerRuntime::FlashPlayer) => ApiVersion::SWF_12,
+            (12, PlayerRuntime::AIR) => ApiVersion::AIR_2_7,
+            (13, PlayerRuntime::FlashPlayer) => ApiVersion::SWF_13,
+            (13, PlayerRuntime::AIR) => ApiVersion::AIR_3_0,
+            (14, PlayerRuntime::FlashPlayer) => ApiVersion::SWF_14,
+            (14, PlayerRuntime::AIR) => ApiVersion::AIR_3_1,
+            (15, PlayerRuntime::FlashPlayer) => ApiVersion::SWF_15,
+            (15, PlayerRuntime::AIR) => ApiVersion::AIR_3_2,
+            (16, PlayerRuntime::FlashPlayer) => ApiVersion::SWF_16,
+            (16, PlayerRuntime::AIR) => ApiVersion::AIR_3_3,
+            (17, PlayerRuntime::FlashPlayer) => ApiVersion::SWF_17,
+            (17, PlayerRuntime::AIR) => ApiVersion::AIR_3_4,
+            (18, PlayerRuntime::FlashPlayer) => ApiVersion::SWF_18,
+            (18, PlayerRuntime::AIR) => ApiVersion::AIR_3_5,
+            (19, PlayerRuntime::FlashPlayer) => ApiVersion::SWF_19,
+            (19, PlayerRuntime::AIR) => ApiVersion::AIR_3_6,
+            (20, PlayerRuntime::FlashPlayer) => ApiVersion::SWF_20,
+            (20, PlayerRuntime::AIR) => ApiVersion::AIR_3_7,
+            (21, PlayerRuntime::FlashPlayer) => ApiVersion::SWF_21,
+            (21, PlayerRuntime::AIR) => ApiVersion::AIR_3_8,
+            (22, PlayerRuntime::FlashPlayer) => ApiVersion::SWF_22,
+            (22, PlayerRuntime::AIR) => ApiVersion::AIR_3_9,
+            (23, PlayerRuntime::FlashPlayer) => ApiVersion::SWF_23,
+            (23, PlayerRuntime::AIR) => ApiVersion::AIR_4_0,
+            (24, PlayerRuntime::FlashPlayer) => ApiVersion::SWF_24,
+            (24, PlayerRuntime::AIR) => ApiVersion::AIR_13_0,
+            (25, PlayerRuntime::FlashPlayer) => ApiVersion::SWF_25,
+            (25, PlayerRuntime::AIR) => ApiVersion::AIR_14_0,
+            (26, PlayerRuntime::FlashPlayer) => ApiVersion::SWF_26,
+            (26, PlayerRuntime::AIR) => ApiVersion::AIR_15_0,
+            (27, PlayerRuntime::FlashPlayer) => ApiVersion::SWF_27,
+            (27, PlayerRuntime::AIR) => ApiVersion::AIR_16_0,
+            (28, PlayerRuntime::FlashPlayer) => ApiVersion::SWF_28,
+            (28, PlayerRuntime::AIR) => ApiVersion::AIR_17_0,
+            (29, PlayerRuntime::FlashPlayer) => ApiVersion::SWF_29,
+            (29, PlayerRuntime::AIR) => ApiVersion::AIR_18_0,
+            (30, PlayerRuntime::FlashPlayer) => ApiVersion::SWF_30,
+            (30, PlayerRuntime::AIR) => ApiVersion::AIR_19_0,
+            (31, PlayerRuntime::FlashPlayer) => ApiVersion::SWF_31,
+            (31, PlayerRuntime::AIR) => ApiVersion::AIR_20_0,
 
             // We haven't yet created entries from higher versions - just map them
             // to the highest non-VM_INTERNAL version.
-            (32.., PlayerRuntime::FlashPlayer) => Some(ApiVersion::SWF_31),
-            (32.., PlayerRuntime::AIR) => Some(ApiVersion::AIR_20_0),
-            _ => None,
+            (32.., PlayerRuntime::FlashPlayer) => ApiVersion::SWF_31,
+            (32.., PlayerRuntime::AIR) => ApiVersion::AIR_20_0,
         }
     }
 }

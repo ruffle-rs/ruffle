@@ -1,6 +1,6 @@
 use crate::avm2::activation::Activation;
 use crate::avm2::error::make_error_2008;
-use crate::avm2::object::{ArrayObject, TObject};
+use crate::avm2::object::ArrayObject;
 use crate::avm2::parameters::ParametersExt;
 use crate::avm2::value::Value;
 use crate::avm2::Error;
@@ -42,13 +42,13 @@ pub fn set_align<'gc>(
     let this = this.as_object().unwrap();
 
     if let Some(mut text_format) = this.as_text_format_mut() {
-        let value = args.get(0).unwrap_or(&Value::Undefined);
+        let value = args.try_get_string(activation, 0)?;
         let value = match value {
-            Value::Undefined | Value::Null => {
+            Some(value) => value,
+            None => {
                 text_format.align = None;
                 return Ok(Value::Undefined);
             }
-            value => value.coerce_to_string(activation)?,
         };
 
         text_format.align = if value == WStr::from_units(b"left") {
@@ -92,9 +92,10 @@ pub fn set_block_indent<'gc>(
     let this = this.as_object().unwrap();
 
     if let Some(mut text_format) = this.as_text_format_mut() {
-        let value = args.get(0).unwrap_or(&Value::Undefined);
+        let value = args.get_value(0);
         text_format.block_indent = match value {
-            Value::Undefined | Value::Null => None,
+            Value::Undefined => unreachable!("Object parameter is never Undefined"),
+            Value::Null => None,
             value => Some(round_to_even(value.coerce_to_number(activation)?).into()),
         };
     }
@@ -127,9 +128,10 @@ pub fn set_bold<'gc>(
     let this = this.as_object().unwrap();
 
     if let Some(mut text_format) = this.as_text_format_mut() {
-        let value = args.get(0).unwrap_or(&Value::Undefined);
+        let value = args.get_value(0);
         text_format.bold = match value {
-            Value::Undefined | Value::Null => None,
+            Value::Undefined => unreachable!("Object parameter is never Undefined"),
+            Value::Null => None,
             value => Some(value.coerce_to_boolean()),
         };
     }
@@ -162,9 +164,10 @@ pub fn set_bullet<'gc>(
     let this = this.as_object().unwrap();
 
     if let Some(mut text_format) = this.as_text_format_mut() {
-        let value = args.get(0).unwrap_or(&Value::Undefined);
+        let value = args.get_value(0);
         text_format.bullet = match value {
-            Value::Undefined | Value::Null => None,
+            Value::Undefined => unreachable!("Object parameter is never Undefined"),
+            Value::Null => None,
             value => Some(value.coerce_to_boolean()),
         };
     }
@@ -197,9 +200,10 @@ pub fn set_color<'gc>(
     let this = this.as_object().unwrap();
 
     if let Some(mut text_format) = this.as_text_format_mut() {
-        let value = args.get(0).unwrap_or(&Value::Undefined);
+        let value = args.get_value(0);
         text_format.color = match value {
-            Value::Undefined | Value::Null => None,
+            Value::Undefined => unreachable!("Object parameter is never Undefined"),
+            Value::Null => None,
             value => Some(swf::Color::from_rgba(value.coerce_to_u32(activation)?)),
         };
     }
@@ -236,9 +240,10 @@ pub fn set_display<'gc>(
     let this = this.as_object().unwrap();
 
     if let Some(mut text_format) = this.as_text_format_mut() {
-        let value = args.get(0).unwrap_or(&Value::Undefined);
+        let value = args.get_value(0);
         let value = match value {
-            Value::Undefined | Value::Null => {
+            Value::Undefined => unreachable!("Object parameter is never Undefined"),
+            Value::Null => {
                 text_format.display = None;
                 return Ok(Value::Undefined);
             }
@@ -284,9 +289,10 @@ pub fn set_font<'gc>(
     let this = this.as_object().unwrap();
 
     if let Some(mut text_format) = this.as_text_format_mut() {
-        let value = args.get(0).unwrap_or(&Value::Undefined);
+        let value = args.get_value(0);
         text_format.font = match value {
-            Value::Undefined | Value::Null => None,
+            Value::Undefined => unreachable!("Object parameter is never Undefined"),
+            Value::Null => None,
             value => {
                 let font = value.coerce_to_string(activation)?;
                 Some(font.slice(0..64).unwrap_or(&font).to_owned())
@@ -322,9 +328,10 @@ pub fn set_indent<'gc>(
     let this = this.as_object().unwrap();
 
     if let Some(mut text_format) = this.as_text_format_mut() {
-        let value = args.get(0).unwrap_or(&Value::Undefined);
+        let value = args.get_value(0);
         text_format.indent = match value {
-            Value::Undefined | Value::Null => None,
+            Value::Undefined => unreachable!("Object parameter is never Undefined"),
+            Value::Null => None,
             value => Some(round_to_even(value.coerce_to_number(activation)?).into()),
         };
     }
@@ -357,9 +364,10 @@ pub fn set_italic<'gc>(
     let this = this.as_object().unwrap();
 
     if let Some(mut text_format) = this.as_text_format_mut() {
-        let value = args.get(0).unwrap_or(&Value::Undefined);
+        let value = args.get_value(0);
         text_format.italic = match value {
-            Value::Undefined | Value::Null => None,
+            Value::Undefined => unreachable!("Object parameter is never Undefined"),
+            Value::Null => None,
             value => Some(value.coerce_to_boolean()),
         };
     }
@@ -392,9 +400,10 @@ pub fn set_kerning<'gc>(
     let this = this.as_object().unwrap();
 
     if let Some(mut text_format) = this.as_text_format_mut() {
-        let value = args.get(0).unwrap_or(&Value::Undefined);
+        let value = args.get_value(0);
         text_format.kerning = match value {
-            Value::Undefined | Value::Null => None,
+            Value::Undefined => unreachable!("Object parameter is never Undefined"),
+            Value::Null => None,
             value => Some(value.coerce_to_boolean()),
         };
     }
@@ -427,9 +436,10 @@ pub fn set_leading<'gc>(
     let this = this.as_object().unwrap();
 
     if let Some(mut text_format) = this.as_text_format_mut() {
-        let value = args.get(0).unwrap_or(&Value::Undefined);
+        let value = args.get_value(0);
         text_format.leading = match value {
-            Value::Undefined | Value::Null => None,
+            Value::Undefined => unreachable!("Object parameter is never Undefined"),
+            Value::Null => None,
             value => Some(round_to_even(value.coerce_to_number(activation)?).into()),
         };
     }
@@ -462,9 +472,10 @@ pub fn set_left_margin<'gc>(
     let this = this.as_object().unwrap();
 
     if let Some(mut text_format) = this.as_text_format_mut() {
-        let value = args.get(0).unwrap_or(&Value::Undefined);
+        let value = args.get_value(0);
         text_format.left_margin = match value {
-            Value::Undefined | Value::Null => None,
+            Value::Undefined => unreachable!("Object parameter is never Undefined"),
+            Value::Null => None,
             value => Some(round_to_even(value.coerce_to_number(activation)?).into()),
         };
     }
@@ -497,9 +508,10 @@ pub fn set_letter_spacing<'gc>(
     let this = this.as_object().unwrap();
 
     if let Some(mut text_format) = this.as_text_format_mut() {
-        let value = args.get(0).unwrap_or(&Value::Undefined);
+        let value = args.get_value(0);
         text_format.letter_spacing = match value {
-            Value::Undefined | Value::Null => None,
+            Value::Undefined => unreachable!("Object parameter is never Undefined"),
+            Value::Null => None,
             value => Some(value.coerce_to_number(activation)?),
         };
     }
@@ -532,9 +544,10 @@ pub fn set_right_margin<'gc>(
     let this = this.as_object().unwrap();
 
     if let Some(mut text_format) = this.as_text_format_mut() {
-        let value = args.get(0).unwrap_or(&Value::Undefined);
+        let value = args.get_value(0);
         text_format.right_margin = match value {
-            Value::Undefined | Value::Null => None,
+            Value::Undefined => unreachable!("Object parameter is never Undefined"),
+            Value::Null => None,
             value => Some(round_to_even(value.coerce_to_number(activation)?).into()),
         };
     }
@@ -567,9 +580,10 @@ pub fn set_size<'gc>(
     let this = this.as_object().unwrap();
 
     if let Some(mut text_format) = this.as_text_format_mut() {
-        let value = args.get(0).unwrap_or(&Value::Undefined);
+        let value = args.get_value(0);
         text_format.size = match value {
-            Value::Undefined | Value::Null => None,
+            Value::Undefined => unreachable!("Object parameter is never Undefined"),
+            Value::Null => None,
             value => Some(round_to_even(value.coerce_to_number(activation)?).into()),
         };
     }
@@ -651,11 +665,8 @@ pub fn set_target<'gc>(
     let this = this.as_object().unwrap();
 
     if let Some(mut text_format) = this.as_text_format_mut() {
-        let value = args.get(0).unwrap_or(&Value::Undefined);
-        text_format.target = match value {
-            Value::Undefined | Value::Null => None,
-            value => Some(value.coerce_to_string(activation)?.as_wstr().into()),
-        };
+        let target = args.try_get_string(activation, 0)?;
+        text_format.target = target.map(|t| t.as_wstr().into());
     }
 
     Ok(Value::Undefined)
@@ -686,9 +697,10 @@ pub fn set_underline<'gc>(
     let this = this.as_object().unwrap();
 
     if let Some(mut text_format) = this.as_text_format_mut() {
-        let value = args.get(0).unwrap_or(&Value::Undefined);
+        let value = args.get_value(0);
         text_format.underline = match value {
-            Value::Undefined | Value::Null => None,
+            Value::Undefined => unreachable!("Object parameter is never Undefined"),
+            Value::Null => None,
             value => Some(value.coerce_to_boolean()),
         };
     }
@@ -720,11 +732,8 @@ pub fn set_url<'gc>(
     let this = this.as_object().unwrap();
 
     if let Some(mut text_format) = this.as_text_format_mut() {
-        let value = args.get(0).unwrap_or(&Value::Undefined);
-        text_format.url = match value {
-            Value::Undefined | Value::Null => None,
-            value => Some(value.coerce_to_string(activation)?.as_wstr().into()),
-        };
+        let url = args.try_get_string(activation, 0)?;
+        text_format.url = url.map(|u| u.as_wstr().into());
     }
 
     Ok(Value::Undefined)

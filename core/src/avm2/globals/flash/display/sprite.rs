@@ -6,7 +6,7 @@ use crate::avm2::globals::flash::display::display_object::initialize_for_allocat
 use crate::avm2::globals::slots::{
     flash_display_sprite as sprite_slots, flash_geom_rectangle as rectangle_slots,
 };
-use crate::avm2::object::{ClassObject, Object, StageObject, TObject};
+use crate::avm2::object::{ClassObject, Object, StageObject, TObject as _};
 use crate::avm2::parameters::ParametersExt;
 use crate::avm2::value::Value;
 use crate::display_object::{MovieClip, SoundTransform, TDisplayObject};
@@ -102,7 +102,7 @@ pub fn get_sound_transform<'gc>(
     let this = this.as_object().unwrap();
 
     if let Some(dobj) = this.as_display_object() {
-        let dobj_st = dobj.base().sound_transform().clone();
+        let dobj_st = dobj.base().sound_transform();
 
         return Ok(dobj_st.into_avm2_object(activation)?.into());
     }
@@ -145,7 +145,7 @@ pub fn get_button_mode<'gc>(
 
 /// Implements `buttonMode`'s setter
 pub fn set_button_mode<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    _activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -154,7 +154,7 @@ pub fn set_button_mode<'gc>(
     if let Some(mc) = this.as_display_object().and_then(|o| o.as_movie_clip()) {
         let forced_button_mode = args.get_bool(0);
 
-        mc.set_forced_button_mode(activation.context, forced_button_mode);
+        mc.set_forced_button_mode(forced_button_mode);
     }
 
     Ok(Value::Undefined)
@@ -259,7 +259,7 @@ pub fn get_use_hand_cursor<'gc>(
 
 /// Implements `useHandCursor`'s setter
 pub fn set_use_hand_cursor<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    _activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -269,7 +269,7 @@ pub fn set_use_hand_cursor<'gc>(
         .as_display_object()
         .and_then(|this| this.as_movie_clip())
     {
-        mc.set_avm2_use_hand_cursor(activation.context, args.get_bool(0));
+        mc.set_avm2_use_hand_cursor(args.get_bool(0));
     }
 
     Ok(Value::Undefined)
@@ -309,7 +309,7 @@ pub fn set_hit_area<'gc>(
         let object = args
             .try_get_object(activation, 0)
             .and_then(|hit_area| hit_area.as_display_object());
-        mc.set_hit_area(activation.context, object);
+        mc.set_hit_area(activation.gc(), object);
     }
 
     Ok(Value::Undefined)

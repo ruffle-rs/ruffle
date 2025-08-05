@@ -1,0 +1,177 @@
+<languageVersion : 1.0;>
+
+kernel shader
+<   namespace : "Ruffle Tests";
+    vendor : "Kamil Jarosz";
+    version : 1;
+>
+{
+    input image4 src;
+    output pixel4 dst;
+
+    parameter int selector
+    <
+        defaultValue:0;
+    >;
+
+    parameter bool pBool
+    <
+        defaultValue:true;
+    >;
+
+    parameter int pInt
+    <
+        defaultValue:128;
+    >;
+
+    parameter float pFloat
+    <
+        defaultValue:128.0;
+    >;
+
+    parameter pixel1 pPixel1
+    <
+        defaultValue:pixel1(0.5);
+    >;
+
+    parameter float2 pFloat2
+    <
+        defaultValue:float2(128.0,128.0);
+    >;
+
+    parameter float3 pFloat3
+    <
+        defaultValue:float3(128.0,128.0,128.0);
+    >;
+
+    parameter float4 pFloat4
+    <
+        defaultValue:float4(128.0,128.0,128.0,128.0);
+    >;
+
+    parameter bool2 pBool2
+    <
+        defaultValue:bool2(true,true);
+    >;
+
+    parameter bool3 pBool3
+    <
+        defaultValue:bool3(true,true,true);
+    >;
+
+    parameter bool4 pBool4
+    <
+        defaultValue:bool4(true,true,true,true);
+    >;
+
+    parameter int2 pInt2
+    <
+        defaultValue:int2(128,128);
+    >;
+
+    parameter int3 pInt3
+    <
+        defaultValue:int3(128,128,128);
+    >;
+
+    parameter int4 pInt4
+    <
+        defaultValue:int4(128,128,128,128);
+    >;
+
+    parameter pixel2 pPixel2
+    <
+        defaultValue:pixel2(0.5,0.5);
+    >;
+
+    parameter pixel3 pPixel3
+    <
+        defaultValue:pixel3(0.5,0.5,0.5);
+    >;
+
+    parameter pixel4 pPixel4
+    <
+        defaultValue:pixel4(0.5,0.5,0.5,0.5);
+    >;
+
+    parameter float2x2 pFloat2x2
+    <
+        defaultValue:float2x2(128.0,128.0,128.0,128.0);
+    >;
+
+    parameter float3x3 pFloat3x3
+    <
+        defaultValue:float3x3(128.0,128.0,128.0,128.0,128.0,128.0,128.0,128.0,128.0);
+    >;
+
+    parameter float4x4 pFloat4x4
+    <
+        defaultValue:float4x4(128.0,128.0,128.0,128.0,128.0,128.0,128.0,128.0,128.0,128.0,128.0,128.0,128.0,128.0,128.0,128.0);
+    >;
+
+    void
+    evaluatePixel()
+    {
+        if (selector == 0) {
+            // red
+            dst = pixel4(1,0,0,1);
+        } else if (selector == 1) {
+            // pBool
+            dst = pixel4(0,pBool,0,1);
+        } else if (selector == 2) {
+            // pInt
+            dst = pixel4(0,float(pInt)/256.0,0,1);
+        } else if (selector == 3) {
+            // pFloat
+            dst = pixel4(0,pFloat/256.0,0,1);
+        } else if (selector == 4) {
+            // pPixel1
+            dst = pixel4(0,pPixel1,0,1);
+        } else if (selector == 5) {
+            // pFloat2
+            dst = pixel4(0,pFloat2[0]/256.0,pFloat2[1]/256.0,1);
+        } else if (selector == 6) {
+            // pFloat3
+            dst = pixel4(pFloat3[0]/256.0,pFloat3[1]/256.0,pFloat3[2]/256.0,1);
+        } else if (selector == 7) {
+            // pFloat4
+            dst = pixel4(pFloat4[0]/256.0,pFloat4[1]/256.0,pFloat4[2]/256.0,1);
+        } else if (selector == 8) {
+            // pBool2
+            dst = pixel4(0,pBool2[0],pBool2[1],1);
+        } else if (selector == 9) {
+            // pBool3
+            dst = pixel4(pBool3[0],pBool3[1],pBool3[2],1);
+        } else if (selector == 10) {
+            // pBool4
+            dst = pixel4(pBool4[0],pBool4[1],pBool4[2],1);
+        } else if (selector == 11) {
+            // pInt2
+            dst = pixel4(0,float(pInt2[0])/256.0,float(pInt2[1])/256.0,1);
+        } else if (selector == 12) {
+            // pInt3
+            dst = pixel4(float(pInt3[0])/256.0,float(pInt3[1])/256.0,float(pInt3[2])/256.0,1);
+        } else if (selector == 13) {
+            // pInt4
+            dst = pixel4(float(pInt4[0])/256.0,float(pInt4[1])/256.0,float(pInt4[2])/256.0,1);
+        } else if (selector == 14) {
+            // pPixel2
+            dst = pixel4(0,pPixel2[0],pPixel2[1],1);
+        } else if (selector == 15) {
+            // pPixel3
+            dst = pixel4(pPixel3[0],pPixel3[1],pPixel3[2],1);
+        } else if (selector == 16) {
+            // pPixel4
+            dst = pixel4(pPixel4[0],pPixel4[1],pPixel4[2],1);
+        } else if (selector == 17) {
+            // pFloat2x2
+            dst = pixel4(pFloat2x2[0][0]/256.0,pFloat2x2[0][1]/256.0,pFloat2x2[1][0]/256.0,1);
+        } else if (selector == 18) {
+            // pFloat3x3
+            dst = pixel4(pFloat3x3[0][0]/256.0,pFloat3x3[0][1]/256.0,pFloat3x3[0][2]/256.0,1);
+        } else if (selector == 19) {
+            // pFloat4x4
+            dst = pixel4(pFloat4x4[0][0]/256.0,pFloat4x4[0][1]/256.0,pFloat4x4[0][2]/256.0,1);
+        }
+    }
+}

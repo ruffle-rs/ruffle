@@ -77,6 +77,35 @@ class is loaded.
 
 See `flash/events/Event.as` for an example
 
+## Accessing fields and calling methods from native code
+
+You can access fields of ActionScript objects from Rust code by annotating the
+field in the class definition with `[Ruffle(NativeAccessible)]`, which will
+record the slot id of the field. After doing so, `Object::get_slot` can be used
+to access the slot. See `flash/display/Loader.as` and `flash/display/loader.rs`
+for an example.
+
+Similarly, you can also call methods of ActionScript objects from Rust code by
+annotating methods with `[Ruffle(NativeCallable)]` and using `Value::call_method`.
+See `flash/utils/Proxy.as` and `proxy_object.rs` for example usage.
+
+## `[Ruffle(FastCall)]` annotation
+
+As an optimization, native methods defined in playerglobals can be annotated with
+`[Ruffle(FastCall)]` to make calling them faster under certain conditions. However,
+the following conditions must all be met before declaring a method `FastCall`:
+
+- the method is declared as `static`, or the class the method is declared in is `final`;
+- the method has zero, one, or two arguments;
+- the method does not use default values for any of these arguments;
+- the method does not use `...rest` arguments;
+- the Rust function that defines the method does not throw exceptions (does not ever return `Err`);
+- and the method's Rust function does not access any fields on the provided `activation` except for the `activation.context` field.
+
+Only if all of these conditions are met can the method safely be annotated with
+`[Ruffle(FastCall)]`. In general, methods should not be marked `FastCall` unless
+there is a clear performance improvement when doing so.
+
 ## API Versioning
 
 Ruffle supports Flash's API versioning, which hides newer playerglobal definitions
@@ -125,3 +154,9 @@ when any of our ActionScript classes are changed.
 be implemented in `playerglobal`, since they are initialized in a special
 way. However, virtually all classes in the `flash` package are initialized
 in a 'normal' way, and are eligible for implementation in `playerglobal`.
+
+## Acknowledgments
+
+Some ActionScript files were originally generated with
+https://github.com/golfinq/ActionScript_Event_Builder based on the official AS3
+reference.

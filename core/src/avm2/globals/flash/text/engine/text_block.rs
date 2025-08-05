@@ -162,7 +162,7 @@ fn apply_format<'gc>(
 
         display_object.set_is_device_font(activation.context, is_device_font);
         display_object.set_text_format(0, text.len(), format.clone(), activation.context);
-        display_object.set_new_text_format(format, activation.context);
+        display_object.set_new_text_format(format);
     } else {
         display_object.set_is_device_font(activation.context, true);
     }

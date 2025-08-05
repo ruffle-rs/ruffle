@@ -1,0 +1,11 @@
+class as interface, call via interface PASSED!
+class as interface, call via interface PASSED!
+class passed as interface, call via args PASSED!
+class returned as interface, call via result PASSED!
+class as extended interface, call via interface PASSED!
+class as extended interface, call via interface PASSED!
+class as extended interface, call via extended interface PASSED!
+class passed as extended interface, call via args PASSED!
+class passed as interface, call via extended args PASSED!
+class returned as extended interface, call via result PASSED!
+class returned as interface, call via extended result PASSED!

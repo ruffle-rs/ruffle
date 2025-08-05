@@ -7,14 +7,65 @@ use ruffle_render::backend::null::NullBitmapSource;
 use ruffle_render::backend::{RenderBackend, ShapeHandle};
 use ruffle_render::shape_utils::{DrawCommand, FillRule};
 use ruffle_render::transform::Transform;
-use std::borrow::Cow;
 use std::cell::{OnceCell, RefCell};
 use std::hash::{Hash, Hasher};
+use std::sync::Arc;
 use swf::FillStyle;
 
 pub use swf::TextGridFit;
 
-#[derive(Debug, Copy, Clone, Eq, PartialEq, Hash)]
+#[derive(Clone, Eq, Collect, Debug)]
+#[collect(require_static)]
+pub struct FontQuery {
+    pub font_type: FontType,
+    pub name: String,
+    pub lowercase_name: String,
+    pub is_bold: bool,
+    pub is_italic: bool,
+}
+
+impl FontQuery {
+    pub fn new(font_type: FontType, name: String, is_bold: bool, is_italic: bool) -> Self {
+        Self {
+            font_type,
+            lowercase_name: name.to_lowercase(),
+            name,
+            is_bold,
+            is_italic,
+        }
+    }
+
+    pub fn from_descriptor(font_type: FontType, descriptor: &FontDescriptor) -> Self {
+        Self {
+            font_type,
+            name: descriptor.name().to_owned(),
+            lowercase_name: descriptor.lowercase_name().to_owned(),
+            is_bold: descriptor.bold(),
+            is_italic: descriptor.italic(),
+        }
+    }
+}
+
+impl PartialEq for FontQuery {
+    fn eq(&self, other: &Self) -> bool {
+        self.font_type == other.font_type
+            && self.lowercase_name == other.lowercase_name
+            && self.is_bold == other.is_bold
+            && self.is_italic == other.is_italic
+    }
+}
+
+impl Hash for FontQuery {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        self.font_type.hash(state);
+        self.lowercase_name.hash(state);
+        self.is_bold.hash(state);
+        self.is_italic.hash(state);
+    }
+}
+
+#[derive(Debug, Copy, Clone, Eq, PartialEq, Hash, Collect)]
+#[collect(require_static)]
 pub enum DefaultFont {
     /// `_sans`, a Sans-Serif font (similar to Helvetica or Arial)
     Sans,
@@ -72,16 +123,6 @@ pub struct EvalParameters {
 }
 
 impl EvalParameters {
-    /// Construct eval parameters from their individual parts.
-    #[allow(dead_code)]
-    fn from_parts(height: Twips, letter_spacing: Twips, kerning: bool) -> Self {
-        Self {
-            height,
-            letter_spacing,
-            kerning,
-        }
-    }
-
     /// Convert the formatting on a text span over to font evaluation
     /// parameters.
     pub fn from_span(span: &TextSpan) -> Self {
@@ -138,6 +179,33 @@ impl ttf_parser::OutlineBuilder for GlyphToDrawing<'_> {
     }
 }
 
+pub struct FontFileData(Arc<dyn AsRef<[u8]>>);
+
+impl FontFileData {
+    pub fn new(data: impl AsRef<[u8]> + 'static) -> Self {
+        Self(Arc::new(data))
+    }
+
+    pub fn new_shared(data: Arc<dyn AsRef<[u8]>>) -> Self {
+        Self(data)
+    }
+}
+
+impl std::ops::Deref for FontFileData {
+    type Target = [u8];
+
+    #[inline]
+    fn deref(&self) -> &[u8] {
+        self.0.as_ref().as_ref()
+    }
+}
+
+impl std::fmt::Debug for FontFileData {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_tuple("FontFileData").field(&"<data>").finish()
+    }
+}
+
 /// Represents a raw font file (ie .ttf).
 /// This should be shared and reused where possible, and it's reparsed every time a new glyph is required.
 ///
@@ -147,7 +215,7 @@ impl ttf_parser::OutlineBuilder for GlyphToDrawing<'_> {
 /// Glyph from the same file. For this reason, glyphs are reused where possible.
 #[derive(Debug)]
 pub struct FontFace {
-    bytes: Cow<'static, [u8]>,
+    data: FontFileData,
     glyphs: Vec<OnceCell<Option<Glyph>>>,
     font_index: u32,
 
@@ -159,14 +227,11 @@ pub struct FontFace {
 }
 
 impl FontFace {
-    pub fn new(
-        bytes: Cow<'static, [u8]>,
-        font_index: u32,
-    ) -> Result<Self, ttf_parser::FaceParsingError> {
+    pub fn new(data: FontFileData, font_index: u32) -> Result<Self, ttf_parser::FaceParsingError> {
         // TODO: Support font collections
 
         // We validate that the font is good here, so we can just `.expect()` it later
-        let face = ttf_parser::Face::parse(&bytes, font_index)?;
+        let face = ttf_parser::Face::parse(&data, font_index)?;
 
         let ascender = face.ascender() as i32;
         let descender = -face.descender() as i32;
@@ -187,7 +252,7 @@ impl FontFace {
             .unwrap_or_default();
 
         Ok(Self {
-            bytes,
+            data,
             font_index,
             glyphs,
             ascender,
@@ -199,7 +264,7 @@ impl FontFace {
     }
 
     pub fn get_glyph(&self, character: char) -> Option<&Glyph> {
-        let face = ttf_parser::Face::parse(&self.bytes, self.font_index)
+        let face = ttf_parser::Face::parse(&self.data, self.font_index)
             .expect("Font was already checked to be valid");
         if let Some(glyph_id) = face.glyph_index(character) {
             return self.glyphs[glyph_id.0 as usize]
@@ -219,7 +284,6 @@ impl FontFace {
                             |a| Twips::new(a as i32),
                         );
                         Some(Glyph {
-                            shape_handle: Default::default(),
                             shape: GlyphShape::Drawing(Box::new(drawing)),
                             advance,
                             character,
@@ -228,7 +292,6 @@ impl FontFace {
                         let advance = Twips::new(face.glyph_hor_advance(glyph_id)? as i32);
                         // If we have advance, then this is either an image, SVG or simply missing (ie whitespace)
                         Some(Glyph {
-                            shape_handle: Default::default(),
                             shape: GlyphShape::None,
                             advance,
                             character,
@@ -245,7 +308,7 @@ impl FontFace {
     }
 
     pub fn get_kerning_offset(&self, left: char, right: char) -> Twips {
-        let face = ttf_parser::Face::parse(&self.bytes, self.font_index)
+        let face = ttf_parser::Face::parse(&self.data, self.font_index)
             .expect("Font was already checked to be valid");
 
         if let (Some(left_glyph), Some(right_glyph)) =
@@ -395,11 +458,11 @@ impl<'gc> Font<'gc> {
     pub fn from_font_file(
         gc_context: &Mutation<'gc>,
         descriptor: FontDescriptor,
-        bytes: Cow<'static, [u8]>,
+        data: FontFileData,
         font_index: u32,
         font_type: FontType,
     ) -> Result<Font<'gc>, ttf_parser::FaceParsingError> {
-        let face = FontFace::new(bytes, font_index)?;
+        let face = FontFace::new(data, font_index)?;
 
         Ok(Font(Gc::new(
             gc_context,
@@ -444,9 +507,8 @@ impl<'gc> Font<'gc> {
                 code_point_to_glyph.insert(code, index);
 
                 let glyph = Glyph {
-                    shape_handle: None.into(),
                     advance: Twips::new(swf_glyph.advance.into()),
-                    shape: GlyphShape::Swf(RefCell::new(Box::new(SwfGlyphOrShape::Glyph(
+                    shape: GlyphShape::Swf(Box::new(RefCell::new(SwfGlyphOrShape::Glyph(
                         swf_glyph,
                     )))),
                     character,
@@ -509,7 +571,9 @@ impl<'gc> Font<'gc> {
             Font::from_font_file(
                 gc_context,
                 descriptor,
-                Cow::Owned(bytes.to_vec()),
+                // TODO remove when https://github.com/rust-lang/rust-clippy/issues/15252 is fixed
+                #[expect(clippy::unnecessary_to_owned)]
+                FontFileData::new(bytes.to_vec()),
                 0,
                 FontType::EmbeddedCFF,
             )
@@ -801,17 +865,27 @@ impl<'gc> Font<'gc> {
 #[derive(Debug, Clone)]
 enum SwfGlyphOrShape {
     Glyph(swf::Glyph),
-    Shape(swf::Shape),
+    Shape {
+        shape: swf::Shape,
+        // Handle to registered shape, loaded lazily on first render of this glyph.
+        handle: Option<ShapeHandle>,
+    },
+    Poisoned,
 }
 
 impl SwfGlyphOrShape {
-    pub fn shape(&mut self) -> &mut swf::Shape {
-        if let SwfGlyphOrShape::Glyph(glyph) = self {
-            *self = SwfGlyphOrShape::Shape(ruffle_render::shape_utils::swf_glyph_to_shape(glyph));
+    fn shape(&mut self) -> (&mut swf::Shape, &mut Option<ShapeHandle>) {
+        if let Self::Glyph(_) = self {
+            if let Self::Glyph(glyph) = core::mem::replace(self, Self::Poisoned) {
+                *self = Self::Shape {
+                    shape: ruffle_render::shape_utils::swf_glyph_to_shape(glyph),
+                    handle: None,
+                };
+            }
         }
 
         match self {
-            SwfGlyphOrShape::Shape(shape) => shape,
+            SwfGlyphOrShape::Shape { shape, handle } => (shape, handle),
             _ => unreachable!(),
         }
     }
@@ -819,7 +893,7 @@ impl SwfGlyphOrShape {
 
 #[derive(Debug, Clone)]
 enum GlyphShape {
-    Swf(RefCell<Box<SwfGlyphOrShape>>),
+    Swf(Box<RefCell<SwfGlyphOrShape>>),
     Drawing(Box<Drawing>),
     None,
 }
@@ -829,7 +903,7 @@ impl GlyphShape {
         match self {
             GlyphShape::Swf(glyph) => {
                 let mut glyph = glyph.borrow_mut();
-                let shape = glyph.shape();
+                let (shape, _) = glyph.shape();
                 shape.shape_bounds.contains(point)
                     && ruffle_render::shape_utils::shape_hit_test(shape, point, local_matrix)
             }
@@ -842,7 +916,11 @@ impl GlyphShape {
         match self {
             GlyphShape::Swf(glyph) => {
                 let mut glyph = glyph.borrow_mut();
-                Some(renderer.register_shape((&*glyph.shape()).into(), &NullBitmapSource))
+                let (shape, handle) = glyph.shape();
+                handle.get_or_insert_with(|| {
+                    renderer.register_shape((&*shape).into(), &NullBitmapSource)
+                });
+                handle.clone()
             }
             GlyphShape::Drawing(drawing) => drawing.register_or_replace(renderer),
             GlyphShape::None => None,
@@ -852,11 +930,6 @@ impl GlyphShape {
 
 #[derive(Debug, Clone)]
 pub struct Glyph {
-    // Handle to registered shape.
-    // If None, it'll be loaded lazily on first render of this glyph.
-    // It's a double option; the outer one is "have we registered", the inner one is option because it may not exist
-    shape_handle: RefCell<Option<Option<ShapeHandle>>>,
-
     shape: GlyphShape,
     advance: Twips,
 
@@ -868,7 +941,6 @@ impl Glyph {
     /// Returns an empty glyph with zero advance.
     pub fn empty(character: char) -> Self {
         Self {
-            shape_handle: Default::default(),
             shape: GlyphShape::None,
             advance: Twips::ZERO,
             character,
@@ -876,10 +948,7 @@ impl Glyph {
     }
 
     pub fn shape_handle(&self, renderer: &mut dyn RenderBackend) -> Option<ShapeHandle> {
-        self.shape_handle
-            .borrow_mut()
-            .get_or_insert_with(|| self.shape.register(renderer))
-            .clone()
+        self.shape.register(renderer)
     }
 
     pub fn hit_test(&self, point: Point<Twips>, local_matrix: &Matrix) -> bool {
@@ -984,7 +1053,7 @@ impl FontDescriptor {
 /// This is controlled by the "Anti-alias" setting in the Flash IDE.
 /// Using "Anti-alias for readability" switches to the "Advanced" text
 /// rendering engine.
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug, PartialEq, Clone, Copy)]
 pub enum TextRenderSettings {
     /// This text should render with the standard rendering engine.
     /// Set via "Anti-alias for animation" in the Flash IDE.
@@ -1162,15 +1231,27 @@ impl Default for TextRenderSettings {
 
 #[cfg(test)]
 mod tests {
-    use crate::font::{EvalParameters, Font, FontDescriptor, FontType};
+    use crate::font::{EvalParameters, Font, FontDescriptor, FontFileData, FontType};
     use crate::string::WStr;
     use flate2::read::DeflateDecoder;
     use gc_arena::{arena::rootless_mutate, Mutation};
-    use std::borrow::Cow;
     use std::io::Read;
     use swf::Twips;
 
     const DEVICE_FONT: &[u8] = include_bytes!("../assets/notosans-regular.subset.ttf.gz");
+
+    /// Construct eval parameters from their individual parts.
+    fn eval_parameters_from_parts(
+        height: Twips,
+        letter_spacing: Twips,
+        kerning: bool,
+    ) -> EvalParameters {
+        EvalParameters {
+            height,
+            letter_spacing,
+            kerning,
+        }
+    }
 
     fn with_device_font<F>(callback: F)
     where
@@ -1185,7 +1266,7 @@ mod tests {
 
             let descriptor = FontDescriptor::from_parts("Noto Sans", false, false);
             let device_font =
-                Font::from_font_file(mc, descriptor, Cow::Owned(data), 0, FontType::Device)
+                Font::from_font_file(mc, descriptor, FontFileData::new(data), 0, FontType::Device)
                     .unwrap();
             callback(mc, device_font);
         })
@@ -1194,7 +1275,7 @@ mod tests {
     #[test]
     fn wrap_line_no_breakpoint() {
         with_device_font(|_mc, df| {
-            let params = EvalParameters::from_parts(Twips::from_pixels(12.0), Twips::ZERO, true);
+            let params = eval_parameters_from_parts(Twips::from_pixels(12.0), Twips::ZERO, true);
             let string = WStr::from_units(b"abcdefghijklmnopqrstuv");
             let breakpoint =
                 df.wrap_line(string, params, Twips::from_pixels(200.0), Twips::ZERO, true);
@@ -1206,7 +1287,7 @@ mod tests {
     #[test]
     fn wrap_line_breakpoint_every_word() {
         with_device_font(|_mc, df| {
-            let params = EvalParameters::from_parts(Twips::from_pixels(12.0), Twips::ZERO, true);
+            let params = eval_parameters_from_parts(Twips::from_pixels(12.0), Twips::ZERO, true);
             let string = WStr::from_units(b"abcd efgh ijkl mnop");
             let mut last_bp = 0;
             let breakpoint =
@@ -1255,7 +1336,7 @@ mod tests {
     #[test]
     fn wrap_line_breakpoint_no_room() {
         with_device_font(|_mc, df| {
-            let params = EvalParameters::from_parts(Twips::from_pixels(12.0), Twips::ZERO, true);
+            let params = eval_parameters_from_parts(Twips::from_pixels(12.0), Twips::ZERO, true);
             let string = WStr::from_units(b"abcd efgh ijkl mnop");
             let breakpoint = df.wrap_line(
                 string,
@@ -1272,7 +1353,7 @@ mod tests {
     #[test]
     fn wrap_line_breakpoint_irregular_sized_words() {
         with_device_font(|_mc, df| {
-            let params = EvalParameters::from_parts(Twips::from_pixels(12.0), Twips::ZERO, true);
+            let params = eval_parameters_from_parts(Twips::from_pixels(12.0), Twips::ZERO, true);
             let string = WStr::from_units(b"abcdi j kl mnop q rstuv");
             let mut last_bp = 0;
             let breakpoint =

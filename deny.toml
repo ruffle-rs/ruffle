@@ -14,15 +14,14 @@ allow = [
     "BSD-2-Clause",
     "BSD-3-Clause",
     "ISC",
-    "Unicode-DFS-2016",
     "Unicode-3.0",
     "MPL-2.0",
     "BSL-1.0",
     "CC0-1.0",
     "OFL-1.1",
-    "LicenseRef-UFL-1.0",
     "Ubuntu-font-1.0",
-    "OpenSSL"
+    "CDLA-Permissive-2.0",
+    "bzip2-1.0.6",
 ]
 
 # Some crates don't have (easily) machine readable licensing information,
@@ -86,6 +85,7 @@ unknown-git = "deny"
 github = [
     "ruffle-rs",
     "kyren", # for `gc-arena`
+    "emilk", # for `egui`
 ]
 
 [advisories]

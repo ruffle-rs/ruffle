@@ -23,3 +23,8 @@ theme = Tema
 theme-system = Systemstandard
 theme-light = Ljust
 theme-dark = Mörkt
+# See for context https://github.com/FeralInteractive/gamemode
+gamemode = GameMode
+gamemode-default = Förval
+ime-enabled-experimental = (experimentell)
+ime-enabled-default = Förval

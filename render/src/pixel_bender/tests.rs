@@ -340,6 +340,6 @@ fn simple_shader() {
         ],
     };
 
-    let shader = parse_shader(shader).expect("Failed to parse shader");
+    let shader = parse_shader(shader, false).expect("Failed to parse shader");
     assert_eq!(shader, expected, "Shader parsed incorrectly!");
 }

@@ -106,7 +106,7 @@ export function Navbar({
             typeof navigator.standalone !== "undefined");
 
     useEffect(() => {
-        if (selectedFilename != null) {
+        if (selectedFilename !== null) {
             setSelectedSample(null);
             if (sampleSelectionInput.current) {
                 sampleSelectionInput.current.selectedIndex = -1;

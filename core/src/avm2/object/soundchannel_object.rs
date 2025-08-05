@@ -2,12 +2,13 @@
 
 use crate::avm2::activation::Activation;
 use crate::avm2::object::script_object::ScriptObjectData;
-use crate::avm2::object::{ClassObject, Object, ObjectPtr, TObject};
+use crate::avm2::object::{ClassObject, Object, TObject};
 use crate::avm2::value::Value;
 use crate::avm2::Error;
 use crate::backend::audio::SoundInstanceHandle;
 use crate::context::UpdateContext;
 use crate::display_object::SoundTransform;
+use crate::utils::HasPrefixField;
 use core::fmt;
 use gc_arena::{Collect, Gc, GcWeak};
 use std::cell::{Cell, RefCell};
@@ -49,7 +50,7 @@ impl fmt::Debug for SoundChannelObject<'_> {
     }
 }
 
-#[derive(Collect)]
+#[derive(Collect, HasPrefixField)]
 #[collect(no_drop)]
 #[repr(C, align(8))]
 pub struct SoundChannelObjectData<'gc> {
@@ -62,11 +63,6 @@ pub struct SoundChannelObjectData<'gc> {
     /// Position of the last playing sound in milliseconds.
     position: Cell<f64>,
 }
-
-const _: () = assert!(std::mem::offset_of!(SoundChannelObjectData, base) == 0);
-const _: () = assert!(
-    std::mem::align_of::<SoundChannelObjectData>() == std::mem::align_of::<ScriptObjectData>()
-);
 
 pub enum SoundChannelData {
     NotLoaded {
@@ -137,7 +133,7 @@ impl<'gc> SoundChannelObject<'gc> {
                 if let Some(sound_transform) = sound_transform {
                     activation
                         .context
-                        .set_local_sound_transform(instance, sound_transform.clone());
+                        .set_local_sound_transform(instance, *sound_transform);
                 }
 
                 if *should_stop {
@@ -157,13 +153,13 @@ impl<'gc> SoundChannelObject<'gc> {
 
     pub fn sound_transform(self, activation: &mut Activation<'_, 'gc>) -> Option<SoundTransform> {
         let sound_channel_data = self.0.sound_channel_data.borrow();
-        match &*sound_channel_data {
+        match *sound_channel_data {
             SoundChannelData::NotLoaded {
                 sound_transform, ..
-            } => sound_transform.clone(),
+            } => sound_transform,
             SoundChannelData::Loaded { sound_instance } => activation
                 .context
-                .local_sound_transform(*sound_instance)
+                .local_sound_transform(sound_instance)
                 .cloned(),
         }
     }
@@ -206,18 +202,6 @@ impl<'gc> SoundChannelObject<'gc> {
 
 impl<'gc> TObject<'gc> for SoundChannelObject<'gc> {
     fn gc_base(&self) -> Gc<'gc, ScriptObjectData<'gc>> {
-        // SAFETY: Object data is repr(C), and a compile-time assert ensures
-        // that the ScriptObjectData stays at offset 0 of the struct- so the
-        // layouts are compatible
-
-        unsafe { Gc::cast(self.0) }
-    }
-
-    fn as_ptr(&self) -> *const ObjectPtr {
-        Gc::as_ptr(self.0) as *const ObjectPtr
-    }
-
-    fn as_sound_channel(self) -> Option<SoundChannelObject<'gc>> {
-        Some(self)
+        HasPrefixField::as_prefix_gc(self.0)
     }
 }

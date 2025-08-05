@@ -16,7 +16,7 @@
 			this.addChild(circle);
 		}
 		private function onAddedToStage(event: *) {
-			trace("Added to stage: this.loaderInfo.url = " + this.urlPrefix(this.loaderInfo.url) + " this.loaderInfo.content = " + this.loaderInfo.content);
+			trace("Added to stage: this.loaderInfo.url = " + this.urlPrefix(this.loaderInfo.url) + " / this.loaderInfo.content = " + this.loaderInfo.content + " / this.loaderInfo.loaderURL = " + this.loaderInfo.loaderURL);
 		}
 	
 		private function urlPrefix(url: String): String {

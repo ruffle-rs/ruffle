@@ -5,7 +5,7 @@ use crate::avm2::globals::slots::flash_geom_rectangle as rectangle_slots;
 use crate::avm2::parameters::ParametersExt;
 use crate::avm2::Activation;
 use crate::avm2::Error;
-use crate::avm2::TObject;
+use crate::avm2::TObject as _;
 use crate::avm2::Value;
 use crate::avm2_stub_method;
 use ruffle_macros::istr;
@@ -29,7 +29,7 @@ pub fn create_index_buffer<'gc>(
         let num_indices = args.get_u32(activation, 0)?;
 
         if num_indices == 0 {
-            return Err(Error::AvmError(argument_error(
+            return Err(Error::avm_error(argument_error(
                 activation,
                 "Error #3671: Buffer has zero size.",
                 3671,
@@ -54,13 +54,13 @@ pub fn create_vertex_buffer<'gc>(
         let data_32_per_vertex = args.get_u32(activation, 1)?;
 
         if data_32_per_vertex > 64 {
-            return Err(Error::AvmError(argument_error(
+            return Err(Error::avm_error(argument_error(
                 activation,
                 "Error #3670: Buffer too big.",
                 3670,
             )?));
         } else if data_32_per_vertex == 0 {
-            return Err(Error::AvmError(argument_error(
+            return Err(Error::avm_error(argument_error(
                 activation,
                 "Error #3671: Buffer has zero size.",
                 3671,
@@ -90,14 +90,14 @@ pub fn configure_back_buffer<'gc>(
         let anti_alias = args.get_u32(activation, 2)?;
         let enable_depth_and_stencil = args.get_bool(3);
 
-        let old_swf = activation.context.swf.version() < 30;
+        let old_swf = activation.context.root_swf.version() < 30;
 
         if old_swf && width == 0 && height == 0 && anti_alias == 0 && !enable_depth_and_stencil {
             return Ok(Value::Undefined);
         }
 
         if width < 32 || width > 16384 {
-            return Err(Error::AvmError(error(
+            return Err(Error::avm_error(error(
                 activation,
                 if old_swf {
                     "Error #3669: Bad input size."
@@ -109,7 +109,7 @@ pub fn configure_back_buffer<'gc>(
         }
 
         if height < 32 || height > 16384 {
-            return Err(Error::AvmError(error(
+            return Err(Error::avm_error(error(
                 activation,
                 if old_swf {
                     "Error #3669: Bad input size."
@@ -179,7 +179,7 @@ pub fn set_vertex_buffer_at<'gc>(
             } else if &*format == b"bytes4" {
                 Context3DVertexBufferFormat::Bytes4
             } else {
-                return Err(Error::AvmError(argument_error(
+                return Err(Error::avm_error(argument_error(
                     activation,
                     "Error #2008: Parameter vertexStreamFormat must be one of the accepted values.",
                     2008,
@@ -383,7 +383,7 @@ pub fn set_program_constants_from_vector<'gc>(
         } else if &*program_type == b"fragment" {
             ProgramType::Fragment
         } else {
-            panic!("Unknown program type {:?}", program_type);
+            panic!("Unknown program type {program_type:?}");
         };
 
         let first_register = args.get_u32(activation, 1)?;
@@ -656,7 +656,7 @@ pub fn set_render_to_texture<'gc>(
         }
     }
     if let Some((code, message)) = error {
-        return Err(Error::AvmError(argument_error(activation, message, code)?));
+        return Err(Error::avm_error(argument_error(activation, message, code)?));
     }
 
     if anti_alias != 0 {

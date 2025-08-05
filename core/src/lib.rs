@@ -10,12 +10,6 @@ mod display_object;
 pub use display_object::{StageAlign, StageDisplayState, StageScaleMode};
 
 #[macro_use]
-extern crate smallvec;
-
-#[macro_use]
-extern crate downcast_rs;
-
-#[macro_use]
 extern crate num_derive;
 
 #[macro_use]
@@ -52,6 +46,7 @@ mod system_properties;
 pub mod tag_utils;
 pub mod timer;
 mod types;
+pub mod utils;
 mod vminterface;
 mod xml;
 
@@ -66,10 +61,10 @@ pub mod stub;
 
 pub use context_menu::ContextMenuItem;
 pub use events::PlayerEvent;
-pub use font::DefaultFont;
+pub use font::{DefaultFont, FontFileData, FontQuery};
 pub use indexmap;
 pub use loader::LoadBehavior;
-pub use player::{Player, PlayerBuilder, PlayerRuntime, StaticCallstack};
+pub use player::{Player, PlayerBuilder, PlayerMode, PlayerRuntime, StaticCallstack};
 pub use ruffle_render::backend::ViewportDimensions;
 pub use swf;
 pub use swf::Color;

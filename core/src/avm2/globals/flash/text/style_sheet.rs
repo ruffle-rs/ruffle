@@ -1,4 +1,4 @@
-use crate::avm2::object::{ScriptObject, TObject};
+use crate::avm2::object::{ScriptObject, TObject as _};
 use crate::avm2::parameters::ParametersExt;
 use crate::avm2::{Activation, Error, Value};
 use crate::html::{transform_dashes_to_camel_case, CssStream};
@@ -20,18 +20,18 @@ pub fn inner_parse_css<'gc>(
             let object = ScriptObject::new_object(activation);
 
             for (key, value) in properties.into_iter() {
-                object.set_string_property_local(
+                object.set_dynamic_property(
                     AvmString::new(activation.gc(), transform_dashes_to_camel_case(key)),
                     Value::String(AvmString::new(activation.gc(), value)),
-                    activation,
-                )?;
+                    activation.gc(),
+                );
             }
 
-            result.set_string_property_local(
+            result.set_dynamic_property(
                 AvmString::new(activation.gc(), selector),
                 Value::Object(object),
-                activation,
-            )?;
+                activation.gc(),
+            );
         }
     }
 

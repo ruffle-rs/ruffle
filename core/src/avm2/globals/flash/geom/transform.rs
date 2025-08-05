@@ -2,15 +2,17 @@ use crate::avm2::globals::slots::flash_geom_color_transform as ct_slots;
 use crate::avm2::globals::slots::flash_geom_matrix as matrix_slots;
 use crate::avm2::globals::slots::flash_geom_matrix_3d as matrix3d_slots;
 use crate::avm2::globals::slots::flash_geom_perspective_projection as pp_slots;
+use crate::avm2::globals::slots::flash_geom_point as point_slots;
 use crate::avm2::globals::slots::flash_geom_transform as transform_slots;
 use crate::avm2::object::VectorObject;
 use crate::avm2::parameters::ParametersExt;
 use crate::avm2::vector::VectorStorage;
-use crate::avm2::{Activation, Error, Object, TObject, Value};
+use crate::avm2::{Activation, Error, Object, TObject as _, Value};
 use crate::display_object::TDisplayObject;
 use crate::prelude::{DisplayObject, Matrix, Twips};
 use crate::{avm2_stub_getter, avm2_stub_setter};
 use ruffle_render::matrix3d::Matrix3D;
+use ruffle_render::perspective_projection::PerspectiveProjection;
 use ruffle_render::quality::StageQuality;
 use swf::{ColorTransform, Fixed8, Rectangle};
 
@@ -45,9 +47,9 @@ pub fn set_color_transform<'gc>(
         activation,
     )?;
     let dobj = get_display_object(this);
-    dobj.set_color_transform(activation.gc(), ct);
+    dobj.set_color_transform(ct);
     if let Some(parent) = dobj.parent() {
-        parent.invalidate_cached_bitmap(activation.gc());
+        parent.invalidate_cached_bitmap();
     }
     Ok(Value::Undefined)
 }
@@ -76,18 +78,18 @@ pub fn set_matrix<'gc>(
 
     let dobj = get_display_object(this);
     let Some(obj) = args.try_get_object(activation, 0) else {
-        dobj.base_mut(activation.gc()).set_has_matrix3d_stub(true);
+        dobj.base().set_has_matrix3d_stub(true);
         return Ok(Value::Undefined);
     };
 
     let matrix = object_to_matrix(obj, activation)?;
-    dobj.set_matrix(activation.gc(), matrix);
+    dobj.set_matrix(matrix);
     if let Some(parent) = dobj.parent() {
         // Self-transform changes are automatically handled,
         // we only want to inform ancestors to avoid unnecessary invalidations for tx/ty
-        parent.invalidate_cached_bitmap(activation.gc());
+        parent.invalidate_cached_bitmap();
     }
-    dobj.base_mut(activation.gc()).set_has_matrix3d_stub(false);
+    dobj.base().set_has_matrix3d_stub(false);
     Ok(Value::Undefined)
 }
 
@@ -123,7 +125,7 @@ pub fn get_concatenated_matrix<'gc>(
             StageQuality::High16x16 | StageQuality::High16x16Linear => 1.25,
         };
 
-        let mut mat = *dobj.base().matrix();
+        let mut mat = dobj.base().matrix();
         mat.a *= scale;
         mat.d *= scale;
 
@@ -138,11 +140,11 @@ pub fn has_matrix3d_from_transform_object(transform_object: Object<'_>) -> bool 
 }
 
 pub fn matrix_from_transform_object(transform_object: Object<'_>) -> Matrix {
-    *get_display_object(transform_object).base().matrix()
+    get_display_object(transform_object).base().matrix()
 }
 
 pub fn color_transform_from_transform_object(transform_object: Object<'_>) -> ColorTransform {
-    *get_display_object(transform_object)
+    get_display_object(transform_object)
         .base()
         .color_transform()
 }
@@ -209,12 +211,12 @@ pub fn color_transform_to_object<'gc>(
     Ok(object)
 }
 
-fn matrix3d_to_object<'gc>(
+pub fn matrix3d_to_object<'gc>(
     matrix: Matrix3D,
     activation: &mut Activation<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let number = activation.avm2().class_defs().number;
-    let mut raw_data_storage = VectorStorage::new(16, true, Some(number), activation);
+    let mut raw_data_storage = VectorStorage::new(16, true, Some(number));
     for (i, data) in matrix.raw_data.iter().enumerate() {
         raw_data_storage.set(i, Value::Number(*data), activation)?;
     }
@@ -246,6 +248,31 @@ fn object_to_matrix3d<'gc>(
         .try_into()
         .expect("rawData size must be 16");
     Ok(Matrix3D { raw_data })
+}
+
+pub fn object_to_perspective_projection<'gc>(
+    object: Object<'gc>,
+    _activation: &mut Activation<'_, 'gc>,
+) -> Result<PerspectiveProjection, Error<'gc>> {
+    if let Some(display_object) = object.get_slot(pp_slots::DISPLAY_OBJECT).as_object() {
+        return Ok(display_object
+            .as_display_object()
+            .unwrap()
+            .base()
+            .perspective_projection()
+            .unwrap_or_default());
+    }
+
+    let fov = object.get_slot(pp_slots::FOV).as_f64();
+
+    let center = object.get_slot(pp_slots::CENTER).as_object().unwrap();
+    let x = center.get_slot(point_slots::X).as_f64();
+    let y = center.get_slot(point_slots::Y).as_f64();
+
+    Ok(PerspectiveProjection {
+        field_of_view: fov,
+        center: (x, y),
+    })
 }
 
 pub fn matrix_to_object<'gc>(
@@ -339,7 +366,7 @@ pub fn get_matrix_3d<'gc>(
 
     let display_object = get_display_object(this);
     if display_object.base().has_matrix3d_stub() {
-        let matrix = *get_display_object(this).base().matrix();
+        let matrix = get_display_object(this).base().matrix();
         let matrix3d = Matrix3D::from(matrix);
         matrix3d_to_object(matrix3d, activation)
     } else {
@@ -371,15 +398,13 @@ pub fn set_matrix_3d<'gc>(
         }
     };
 
-    display_object.set_matrix(activation.gc(), matrix);
+    display_object.set_matrix(matrix);
     if let Some(parent) = display_object.parent() {
         // Self-transform changes are automatically handled,
         // we only want to inform ancestors to avoid unnecessary invalidations for tx/ty
-        parent.invalidate_cached_bitmap(activation.gc());
+        parent.invalidate_cached_bitmap();
     }
-    display_object
-        .base_mut(activation.gc())
-        .set_has_matrix3d_stub(has_matrix3d);
+    display_object.base().set_has_matrix3d_stub(has_matrix3d);
 
     Ok(Value::Undefined)
 }
@@ -391,44 +416,25 @@ pub fn get_perspective_projection<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
-    avm2_stub_getter!(activation, "flash.geom.Transform", "perspectiveProjection");
-
-    let display_object = get_display_object(this);
-    let has_perspective_projection = if display_object.is_root() {
-        true
-    } else {
-        display_object.base().has_perspective_projection_stub()
-    };
-
-    if has_perspective_projection {
-        let result = activation
+    if get_display_object(this)
+        .base()
+        .perspective_projection()
+        .is_some()
+    {
+        let object = activation
             .avm2()
             .classes()
             .perspectiveprojection
-            .construct(activation, &[])?;
+            .construct(activation, &[])?
+            .as_object()
+            .unwrap();
 
-        let object = result.as_object().unwrap();
         object.set_slot(
             pp_slots::DISPLAY_OBJECT,
             this.get_slot(transform_slots::DISPLAY_OBJECT),
             activation,
         )?;
-
-        if display_object.is_root() && display_object.as_stage().is_none() {
-            // TODO: Move this special PerspectiveProjection assignment to `root` object initialization time.
-            // This should be assigned to `root.transform` from the beginning.
-
-            let (width, height) = activation.context.stage.stage_size();
-
-            let center = activation.avm2().classes().point.construct(
-                activation,
-                &[(width as f64 / 2.0).into(), (height as f64 / 2.0).into()],
-            )?;
-
-            object.set_slot(pp_slots::CENTER, center, activation)?;
-        }
-
-        Ok(result)
+        Ok(object.into())
     } else {
         Ok(Value::Null)
     }
@@ -441,15 +447,15 @@ pub fn set_perspective_projection<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
+    // FIXME: Render with the given PerspectiveProjection.
     avm2_stub_setter!(activation, "flash.geom.Transform", "perspectiveProjection");
 
-    let set = args
-        .get(0)
-        .map(|arg| arg.as_object().is_some())
-        .unwrap_or_default();
-    let display_object = get_display_object(this);
-    display_object
-        .base_mut(activation.gc())
-        .set_has_perspective_projection_stub(set);
+    let perspective_projection = args
+        .try_get_object(activation, 0)
+        .map(|object| object_to_perspective_projection(object, activation))
+        .transpose()?;
+
+    get_display_object(this).set_perspective_projection(perspective_projection);
+
     Ok(Value::Undefined)
 }

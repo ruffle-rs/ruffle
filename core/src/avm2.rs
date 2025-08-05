@@ -5,13 +5,16 @@ use std::rc::Rc;
 use crate::avm2::class::{AllocatorFn, CustomConstructorFn};
 use crate::avm2::e4x::XmlSettings;
 use crate::avm2::error::{make_error_1014, make_error_1107, type_error, Error1014Type};
+use crate::avm2::function::{exec, FunctionArgs};
 use crate::avm2::globals::{
     init_builtin_system_class_defs, init_builtin_system_classes, init_native_system_classes,
     SystemClassDefs, SystemClasses,
 };
 use crate::avm2::method::{Method, NativeMethodImpl};
+use crate::avm2::object::FunctionObject;
 use crate::avm2::scope::ScopeChain;
 use crate::avm2::script::{Script, TranslationUnit};
+use crate::avm2::stack::Stack;
 use crate::character::Character;
 use crate::context::UpdateContext;
 use crate::display_object::{DisplayObject, DisplayObjectWeak, MovieClip, TDisplayObject};
@@ -67,6 +70,7 @@ mod scope;
 pub mod script;
 #[cfg(feature = "known_stubs")]
 pub mod specification;
+mod stack;
 mod string;
 mod stubs;
 mod traits;
@@ -100,8 +104,6 @@ use self::scope::Scope;
 const BROADCAST_WHITELIST: [&[u8]; 4] =
     [b"enterFrame", b"exitFrame", b"frameConstructed", b"render"];
 
-const PREALLOCATED_STACK_SIZE: usize = 120000;
-
 /// The state of an AVM2 interpreter.
 #[derive(Collect)]
 #[collect(no_drop)]
@@ -114,7 +116,7 @@ pub struct Avm2<'gc> {
     pub player_runtime: PlayerRuntime,
 
     /// Values currently present on the operand stack.
-    stack: Vec<Value<'gc>>,
+    stack: Stack<'gc>,
 
     /// Scopes currently present of the scope stack.
     scope_stack: Vec<Scope<'gc>>,
@@ -144,16 +146,18 @@ pub struct Avm2<'gc> {
     namespaces: Gc<'gc, CommonNamespaces<'gc>>,
 
     #[collect(require_static)]
-    native_method_table: &'static [Option<(&'static str, NativeMethodImpl)>],
+    native_method_table: &'static [Option<NativeMethodImpl>],
 
     #[collect(require_static)]
-    native_instance_allocator_table: &'static [Option<(&'static str, AllocatorFn)>],
+    native_instance_allocator_table: &'static [Option<AllocatorFn>],
 
     #[collect(require_static)]
-    native_call_handler_table: &'static [Option<(&'static str, NativeMethodImpl)>],
+    native_call_handler_table: &'static [Option<NativeMethodImpl>],
 
     #[collect(require_static)]
-    native_custom_constructor_table: &'static [Option<(&'static str, CustomConstructorFn)>],
+    native_custom_constructor_table: &'static [Option<CustomConstructorFn>],
+
+    native_fast_call_list: &'static [usize],
 
     /// A list of objects which are capable of receiving broadcasts.
     ///
@@ -210,7 +214,7 @@ impl<'gc> Avm2<'gc> {
         Self {
             player_version,
             player_runtime,
-            stack: Vec::with_capacity(PREALLOCATED_STACK_SIZE),
+            stack: Stack::new(mc),
             scope_stack: Vec::new(),
             call_stack: GcRefLock::new(mc, CallStack::new().into()),
             playerglobals_domain,
@@ -225,6 +229,7 @@ impl<'gc> Avm2<'gc> {
             native_instance_allocator_table: Default::default(),
             native_call_handler_table: Default::default(),
             native_custom_constructor_table: Default::default(),
+            native_fast_call_list: Default::default(),
             broadcast_list: Default::default(),
 
             orphan_objects: Default::default(),
@@ -292,50 +297,42 @@ impl<'gc> Avm2<'gc> {
         script: Script<'gc>,
         context: &mut UpdateContext<'gc>,
     ) -> Result<(), Error<'gc>> {
-        let mut init_activation = Activation::from_script(context, script)?;
+        // TODO can we skip creating this temporary Activation?
+        let mut activation = Activation::from_nothing(context);
 
-        // Execute everything in a closure so we can run `cleanup` more easily.
-        let mut closure = || -> Result<(), Error<'gc>> {
-            let (method, scope, _domain) = script.init();
-            match method {
-                Method::Native(method) => {
-                    if method.resolved_signature.read().is_none() {
-                        method.resolve_signature(&mut init_activation)?;
-                    }
+        let (method, global_object, domain) = script.init();
 
-                    let resolved_signature = method.resolved_signature.read();
-                    let resolved_signature = resolved_signature.as_ref().unwrap();
+        let scope = ScopeChain::new(domain);
+        // Script `global` classes extend Object
+        let bound_superclass = Some(activation.avm2().classes().object);
+        let bound_class = Some(script.global_class());
 
-                    // This exists purely to check if the builtin is OK with being called with
-                    // no parameters.
-                    init_activation.resolve_parameters(method, &[], resolved_signature, None)?;
-                    init_activation
-                        .context
-                        .avm2
-                        .push_global_init(init_activation.gc(), script);
-                    let r = (method.method)(&mut init_activation, Value::Object(scope), &[]);
-                    init_activation.context.avm2.pop_call(init_activation.gc());
-                    r?;
-                }
-                Method::Bytecode(method) => {
-                    init_activation
-                        .context
-                        .avm2
-                        .push_global_init(init_activation.gc(), script);
-                    let r = init_activation.run_actions(method);
-                    init_activation.context.avm2.pop_call(init_activation.gc());
-                    r?;
-                }
-            };
-
-            Ok(())
+        // Provide a callee object if necessary
+        let callee = if method.needs_arguments_object() {
+            Some(FunctionObject::from_method(
+                &mut activation,
+                method,
+                scope,
+                Some(global_object.into()),
+                bound_superclass,
+                bound_class,
+            ))
+        } else {
+            None
         };
 
-        let result = closure();
+        exec(
+            method,
+            scope,
+            global_object.into(),
+            bound_superclass,
+            bound_class,
+            FunctionArgs::empty(),
+            &mut activation,
+            callee,
+        )?;
 
-        init_activation.cleanup();
-
-        result
+        Ok(())
     }
 
     fn orphan_objects_mut(&mut self) -> &mut Vec<DisplayObjectWeak<'gc>> {
@@ -608,7 +605,7 @@ impl<'gc> Avm2<'gc> {
                 // The class must extend DisplayObject to ensure that events
                 // can properly be dispatched to them
                 if !class.has_class_in_chain(activation.avm2().class_defs().display_object) {
-                    return Err(Error::AvmError(type_error(
+                    return Err(Error::avm_error(type_error(
                         activation,
                         &format!("Error #2022: Class {}$ must inherit from DisplayObject to link to a symbol.", name.to_qualified_name(activation.gc())),
                         2022,
@@ -621,7 +618,7 @@ impl<'gc> Avm2<'gc> {
             // ClassObject is going to be the class of the MC. Ensure it
             // subclasses Sprite.
             if !class.has_class_in_chain(activation.avm2().class_defs().sprite) {
-                return Err(Error::AvmError(type_error(
+                return Err(Error::avm_error(type_error(
                     activation,
                     &format!(
                         "Error #2023: Class {}$ must inherit from Sprite to link to the root.",
@@ -749,11 +746,6 @@ impl<'gc> Avm2<'gc> {
         self.call_stack.borrow_mut(mc).push(method, class)
     }
 
-    /// Pushes script initializer (global init) on the call stack
-    pub fn push_global_init(&self, mc: &Mutation<'gc>, script: Script<'gc>) {
-        self.call_stack.borrow_mut(mc).push_global_init(script)
-    }
-
     /// Pops an executable off the call stack
     pub fn pop_call(&self, mc: &Mutation<'gc>) -> Option<CallNode<'gc>> {
         self.call_stack.borrow_mut(mc).pop()
@@ -761,82 +753,6 @@ impl<'gc> Avm2<'gc> {
 
     pub fn call_stack(&self) -> GcRefLock<'gc, CallStack<'gc>> {
         self.call_stack
-    }
-
-    // See: https://doc.rust-lang.org/std/vec/struct.Vec.html#method.push_within_capacity
-    #[inline(always)]
-    fn push_internal(&mut self, value: Value<'gc>) {
-        let stack = &mut self.stack;
-
-        if stack.len() == stack.capacity() {
-            panic!("Native stack underflow");
-        }
-
-        unsafe {
-            let end = stack.as_mut_ptr().add(stack.len());
-            std::ptr::write(end, value);
-            stack.set_len(stack.len() + 1);
-        }
-    }
-
-    /// Push a value onto the operand stack.
-    #[inline(always)]
-    fn push(&mut self, value: Value<'gc>) {
-        avm_debug!(self, "Stack push {}: {value:?}", self.stack.len());
-
-        self.push_internal(value);
-    }
-
-    /// Retrieve the top-most value on the operand stack.
-    #[inline(always)]
-    fn pop(&mut self) -> Value<'gc> {
-        let value = self.stack.pop().expect("Native stack underflow");
-
-        avm_debug!(self, "Stack pop {}: {value:?}", self.stack.len());
-
-        value
-    }
-
-    /// Peek the n-th value from the end of the operand stack.
-    #[inline(always)]
-    fn peek(&self, index: usize) -> Value<'gc> {
-        let value = self.stack[self.stack.len() - index - 1];
-
-        avm_debug!(self, "Stack peek {}: {value:?}", self.stack.len());
-
-        value
-    }
-
-    #[inline(always)]
-    fn stack_at(&self, index: usize) -> Value<'gc> {
-        let value = self.stack[index];
-
-        avm_debug!(self, "Stack peek {}: {value:?}", index);
-
-        value
-    }
-
-    #[inline(always)]
-    fn set_stack_at(&mut self, index: usize, value: Value<'gc>) {
-        avm_debug!(self, "Stack poke {}: {value:?}", index);
-
-        self.stack[index] = value;
-    }
-
-    fn pop_args(&mut self, arg_count: u32) -> Vec<Value<'gc>> {
-        let mut args = vec![Value::Undefined; arg_count as usize];
-        for arg in args.iter_mut().rev() {
-            *arg = self.pop();
-        }
-        args
-    }
-
-    fn stack_slice(&mut self, start: usize, len: usize) -> &[Value<'gc>] {
-        &self.stack[start..start + len]
-    }
-
-    fn truncate_stack(&mut self, size: usize) {
-        self.stack.truncate(size);
     }
 
     fn push_scope(&mut self, scope: Scope<'gc>) {

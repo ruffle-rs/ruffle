@@ -1,11 +1,7 @@
 use crate::avm1::NativeObject;
-use crate::avm1::TObject as _;
 use crate::avm1::Value as Avm1Value;
 use crate::avm1::{Activation as Avm1Activation, ActivationIdentifier as Avm1ActivationIdentifier};
-use crate::avm1::{
-    ArrayBuilder as Avm1ArrayBuilder, Error as Avm1Error, Object as Avm1Object,
-    ScriptObject as Avm1ScriptObject,
-};
+use crate::avm1::{ArrayBuilder as Avm1ArrayBuilder, Error as Avm1Error, Object as Avm1Object};
 use crate::avm2::activation::Activation as Avm2Activation;
 use crate::avm2::error::Error as Avm2Error;
 use crate::avm2::object::{
@@ -173,7 +169,7 @@ impl Value {
                 Avm1Value::String(AvmString::new_utf8(activation.gc(), value))
             }
             Value::Object(values) => {
-                let object = Avm1ScriptObject::new(
+                let object = Avm1Object::new(
                     &activation.context.strings,
                     Some(activation.context.avm1.prototypes().object),
                 );
@@ -252,8 +248,7 @@ impl Value {
                 for (key, value) in values.into_iter() {
                     let key = AvmString::new_utf8(activation.gc(), key);
                     let value = value.into_avm2(activation);
-                    obj.set_string_property_local(key, value, activation)
-                        .unwrap();
+                    obj.set_dynamic_property(key, value, activation.gc());
                 }
                 Avm2Value::Object(obj)
             }
@@ -316,7 +311,7 @@ impl<'gc> Callback<'gc> {
 
                 let domain = context
                     .library
-                    .library_for_movie(context.swf.clone())
+                    .library_for_movie(context.root_swf.clone())
                     .unwrap()
                     .avm2_domain();
                 let mut activation = Avm2Activation::from_domain(context, domain);

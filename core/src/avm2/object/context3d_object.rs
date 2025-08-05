@@ -2,12 +2,13 @@
 
 use crate::avm2::activation::Activation;
 use crate::avm2::object::script_object::ScriptObjectData;
-use crate::avm2::object::{Object, ObjectPtr, TObject};
+use crate::avm2::object::{Object, TObject};
 use crate::avm2::value::Value;
 use crate::avm2::Error;
 use crate::avm2_stub_method;
 use crate::bitmap::bitmap_data::BitmapData;
 use crate::context::RenderContext;
+use crate::utils::HasPrefixField;
 use gc_arena::{Collect, Gc, GcCell, GcWeak};
 use ruffle_render::backend::{
     BufferUsage, Context3D, Context3DBlendFactor, Context3DCommand, Context3DCompareMode,
@@ -103,7 +104,7 @@ impl<'gc> Context3DObject<'gc> {
         )?))
     }
 
-    #[allow(clippy::too_many_arguments)]
+    #[expect(clippy::too_many_arguments)]
     pub fn create_texture(
         &self,
         width: u32,
@@ -151,7 +152,7 @@ impl<'gc> Context3DObject<'gc> {
     pub fn upload_vertex_buffer_data(
         &self,
         buffer: VertexBuffer3DObject<'gc>,
-        data: Vec<u8>,
+        data: &[u8],
         start_vertex: usize,
         data32_per_vertex: u8,
     ) {
@@ -168,7 +169,7 @@ impl<'gc> Context3DObject<'gc> {
     pub fn upload_index_buffer_data(
         &self,
         buffer: IndexBuffer3DObject<'gc>,
-        data: Vec<u8>,
+        data: &[u8],
         start_offset: usize,
     ) {
         let mut handle = buffer.handle();
@@ -319,7 +320,7 @@ impl<'gc> Context3DObject<'gc> {
         });
     }
 
-    #[allow(clippy::too_many_arguments)]
+    #[expect(clippy::too_many_arguments)]
     pub fn set_clear(
         &self,
         red: f64,
@@ -386,7 +387,7 @@ impl<'gc> Context3DObject<'gc> {
     ) {
         self.with_context_3d(|ctx| {
             ctx.process_command(Context3DCommand::CopyBitmapToTexture {
-                source,
+                source: &source,
                 source_width: dest.width(),
                 source_height: dest.height(),
                 dest,
@@ -477,7 +478,7 @@ impl<'gc> Context3DObject<'gc> {
     }
 }
 
-#[derive(Collect)]
+#[derive(Collect, HasPrefixField)]
 #[collect(no_drop)]
 #[repr(C, align(8))]
 pub struct Context3DData<'gc> {
@@ -490,25 +491,9 @@ pub struct Context3DData<'gc> {
     stage3d: Stage3DObject<'gc>,
 }
 
-const _: () = assert!(std::mem::offset_of!(Context3DData, base) == 0);
-const _: () =
-    assert!(std::mem::align_of::<Context3DData>() == std::mem::align_of::<ScriptObjectData>());
-
 impl<'gc> TObject<'gc> for Context3DObject<'gc> {
     fn gc_base(&self) -> Gc<'gc, ScriptObjectData<'gc>> {
-        // SAFETY: Object data is repr(C), and a compile-time assert ensures
-        // that the ScriptObjectData stays at offset 0 of the struct- so the
-        // layouts are compatible
-
-        unsafe { Gc::cast(self.0) }
-    }
-
-    fn as_ptr(&self) -> *const ObjectPtr {
-        Gc::as_ptr(self.0) as *const ObjectPtr
-    }
-
-    fn as_context_3d(&self) -> Option<Context3DObject<'gc>> {
-        Some(*self)
+        HasPrefixField::as_prefix_gc(self.0)
     }
 }
 

@@ -9,9 +9,10 @@ package {
 
         private native function init(value:*, ignoreComments:Boolean, ignoreProcessingInstructions:Boolean, ignoreWhitespace:Boolean): void;
 
+        [Ruffle(FastCall)]
+        AS3 native function length():int;
         AS3 native function hasComplexContent():Boolean;
         AS3 native function hasSimpleContent():Boolean;
-        AS3 native function length():int;
         AS3 native function child(name:Object):XMLList;
         AS3 native function children():XMLList;
         AS3 native function contains(value:*):Boolean;
@@ -20,7 +21,9 @@ package {
         AS3 native function attributes():XMLList;
         AS3 native function descendants(name:* = "*"):XMLList;
         AS3 native function text():XMLList;
+        [Ruffle(FastCall)]
         AS3 native function toXMLString():String;
+        [Ruffle(FastCall)]
         AS3 native function toString():String;
         AS3 native function comments():XMLList;
         AS3 native function parent():*;

@@ -7,7 +7,7 @@ pub use crate::avm2::globals::vector::{
     set_fixed,
     get_length,
     set_length,
-    
+
     concat,
     every,
     filter,
@@ -23,7 +23,7 @@ pub use crate::avm2::globals::vector::{
     reverse,
     shift,
     slice,
-    some,
+    _some,
     sort,
     splice,
     unshift,

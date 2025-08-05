@@ -1,0 +1,16 @@
+*** Access final method from default method of sub class *** PASSED!
+EXTDCLASS.subSetArray(arr), EXTDCLASS.subGetArray() PASSED!
+*** Access final method from public method of sub class *** PASSED!
+EXTDCLASS.pubSubSetArray(arr), EXTDCLASS.pubSubGetArray() PASSED!
+*** Access final method from private method of sub class *** PASSED!
+EXTDCLASS.testPrivSubArray(arr) PASSED!
+*** Access final method from final method of sub class *** PASSED!
+EXTDCLASS.finSubSetArray(arr), EXTDCLASS.finSubGetArray() PASSED!
+*** Access final property from method in sub class *** PASSED!
+EXTDCLASS.subSetDPArray(arr), EXTDCLASS.subGetDPArray() PASSED!
+*** Access final property from public method in sub class *** PASSED!
+EXTDCLASS.pubSubSetDPArray(arr), EXTDCLASS.pubSubGetDPArray() PASSED!
+*** Access final property from private method in sub class *** PASSED!
+EXTDCLASS.privSubSetDPArray(arr), EXTDCLASS.privSubGetDPArray() PASSED!
+*** Access final property from final method in sub class *** PASSED!
+EXTDCLASS.finSubSetDPArray(arr), EXTDCLASS.finSubGetDPArray() PASSED!

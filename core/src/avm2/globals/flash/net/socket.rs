@@ -5,7 +5,7 @@ use crate::avm2::error::{io_error, make_error_2008, security_error};
 pub use crate::avm2::object::socket_allocator;
 use crate::avm2::parameters::ParametersExt;
 use crate::avm2::string::AvmString;
-use crate::avm2::{Activation, Error, TObject, Value};
+use crate::avm2::{Activation, Error, Value};
 use crate::context::UpdateContext;
 use encoding_rs::Encoding;
 use encoding_rs::UTF_8;
@@ -816,7 +816,7 @@ fn invalid_socket_error<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc>
         "Error #2002: Operation attempted on invalid socket.",
         2002,
     ) {
-        Ok(err) => Error::AvmError(err),
+        Ok(err) => Error::avm_error(err),
         Err(e) => e,
     }
 }
@@ -827,7 +827,7 @@ fn invalid_port_number<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> 
         "Error #2003: Invalid socket port number specified.",
         2003,
     ) {
-        Ok(err) => Error::AvmError(err),
+        Ok(err) => Error::avm_error(err),
         Err(e) => e,
     }
 }

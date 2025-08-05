@@ -1,8 +1,9 @@
 use crate::avm2::activation::Activation;
 use crate::avm2::object::script_object::ScriptObjectData;
-use crate::avm2::object::{ClassObject, Object, ObjectPtr, TObject};
+use crate::avm2::object::{ClassObject, Object, TObject};
 use crate::avm2::value::Hint;
 use crate::avm2::Error;
+use crate::utils::HasPrefixField;
 use chrono::{DateTime, Utc};
 use core::fmt;
 use gc_arena::{Collect, Gc, GcWeak};
@@ -60,6 +61,29 @@ impl<'gc> DateObject<'gc> {
         Ok(instance)
     }
 
+    pub fn for_prototype(
+        activation: &mut Activation<'_, 'gc>,
+        date_class: ClassObject<'gc>,
+    ) -> Object<'gc> {
+        let object_class = activation.avm2().classes().object;
+        let base = ScriptObjectData::custom_new(
+            date_class.inner_class_definition(),
+            Some(object_class.prototype()),
+            date_class.instance_vtable(),
+        );
+
+        let instance: Object<'gc> = DateObject(Gc::new(
+            activation.gc(),
+            DateObjectData {
+                base,
+                date_time: Cell::new(None),
+            },
+        ))
+        .into();
+
+        instance
+    }
+
     pub fn date_time(self) -> Option<DateTime<Utc>> {
         self.0.date_time.get()
     }
@@ -69,7 +93,7 @@ impl<'gc> DateObject<'gc> {
     }
 }
 
-#[derive(Clone, Collect)]
+#[derive(Clone, Collect, HasPrefixField)]
 #[collect(no_drop)]
 #[repr(C, align(8))]
 pub struct DateObjectData<'gc> {
@@ -79,28 +103,12 @@ pub struct DateObjectData<'gc> {
     date_time: Cell<Option<DateTime<Utc>>>,
 }
 
-const _: () = assert!(std::mem::offset_of!(DateObjectData, base) == 0);
-const _: () =
-    assert!(std::mem::align_of::<DateObjectData>() == std::mem::align_of::<ScriptObjectData>());
-
 impl<'gc> TObject<'gc> for DateObject<'gc> {
     fn gc_base(&self) -> Gc<'gc, ScriptObjectData<'gc>> {
-        // SAFETY: Object data is repr(C), and a compile-time assert ensures
-        // that the ScriptObjectData stays at offset 0 of the struct- so the
-        // layouts are compatible
-
-        unsafe { Gc::cast(self.0) }
-    }
-
-    fn as_ptr(&self) -> *const ObjectPtr {
-        Gc::as_ptr(self.0) as *const ObjectPtr
+        HasPrefixField::as_prefix_gc(self.0)
     }
 
     fn default_hint(&self) -> Hint {
         Hint::String
-    }
-
-    fn as_date_object(&self) -> Option<DateObject<'gc>> {
-        Some(*self)
     }
 }

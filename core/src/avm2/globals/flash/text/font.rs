@@ -2,7 +2,7 @@
 
 use crate::avm2::activation::Activation;
 use crate::avm2::error::make_error_1508;
-use crate::avm2::object::{FontObject, TObject};
+use crate::avm2::object::FontObject;
 use crate::avm2::parameters::ParametersExt;
 use crate::avm2::value::Value;
 use crate::avm2::{ArrayObject, ArrayStorage, Error};
@@ -157,7 +157,7 @@ pub fn register_font<'gc>(
         {
             if let Some(lib) = activation.context.library.library_for_movie(movie) {
                 if let Some(Character::Font(font)) = lib.character_by_id(id) {
-                    activation.context.library.register_global_font(*font);
+                    activation.context.library.register_global_font(font);
                     return Ok(Value::Undefined);
                 }
             }

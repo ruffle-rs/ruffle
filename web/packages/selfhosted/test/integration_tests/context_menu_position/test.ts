@@ -15,12 +15,10 @@ async function setDirection(
     direction: string,
 ) {
     await browser.execute(
-        (element, direction) => {
-            const el = element as unknown as HTMLElement;
-            el.dir = direction;
+        ({ el, dir }: { el: HTMLElement; dir: string }) => {
+            el.dir = dir;
         },
-        element,
-        direction,
+        { el: element, dir: direction },
     );
 }
 
@@ -36,7 +34,7 @@ describe("Context Menu", () => {
         await player.click();
 
         // Make the window large enough to accommodate a protruding context menu
-        await browser.setWindowSize(1000, 1000);
+        await browser.setWindowSize(1500, 1500);
     });
 
     it("open context menu in the middle LTR", async () => {

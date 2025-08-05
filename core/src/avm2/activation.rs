@@ -8,7 +8,7 @@ use crate::avm2::error::{
     make_error_1065, make_error_1127, make_error_1506, make_null_or_undefined_error, type_error,
 };
 use crate::avm2::function::FunctionArgs;
-use crate::avm2::method::{BytecodeMethod, Method, NativeMethod, ResolvedParamConfig};
+use crate::avm2::method::{Method, NativeMethodImpl, ResolvedParamConfig};
 use crate::avm2::object::{
     ArrayObject, ByteArrayObject, ClassObject, FunctionObject, NamespaceObject, ScriptObject,
     XmlListObject,
@@ -17,6 +17,7 @@ use crate::avm2::object::{Object, TObject};
 use crate::avm2::op::{LookupSwitch, Op};
 use crate::avm2::scope::{search_scope_stack, Scope, ScopeChain};
 use crate::avm2::script::Script;
+use crate::avm2::stack::StackFrame;
 use crate::avm2::value::Value;
 use crate::avm2::Multiname;
 use crate::avm2::Namespace;
@@ -28,9 +29,7 @@ use gc_arena::Gc;
 use ruffle_macros::istr;
 use std::cmp::{min, Ordering};
 use std::sync::Arc;
-use swf::avm2::types::{
-    Index, Method as AbcMethod, MethodFlags as AbcMethodFlags, Namespace as AbcNamespace,
-};
+use swf::avm2::types::MethodFlags as AbcMethodFlags;
 
 use super::error::make_mismatch_error;
 
@@ -73,11 +72,19 @@ pub struct Activation<'a, 'gc: 'a> {
 
     bound_class: Option<Class<'gc>>,
 
-    /// The index where the stack frame starts.
-    stack_depth: usize,
+    /// The stack frame.
+    stack: StackFrame<'a, 'gc>,
 
     /// The index where the scope frame starts.
     scope_depth: usize,
+
+    /// In avmplus, some behavior differs slightly depending on whether the JIT
+    /// or the interpreter is used. Most methods are executed in "JIT mode", but
+    /// in some cases "interpreter mode" is used instead: for example, script
+    /// initializers always execute in "interpreter mode". We keep track of
+    /// whether the current method would be interpreted or JITted in this flag.
+    /// See `MethodData.is_interpreted` for more information.
+    is_interpreter: bool,
 
     pub context: &'a mut UpdateContext<'gc>,
 }
@@ -118,8 +125,9 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             caller_movie: None,
             bound_superclass_object: None,
             bound_class: None,
-            stack_depth: context.avm2.stack.len(),
+            stack: StackFrame::empty(),
             scope_depth: context.avm2.scope_stack.len(),
+            is_interpreter: false,
             context,
         }
     }
@@ -141,57 +149,11 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             caller_movie: None,
             bound_superclass_object: None,
             bound_class: None,
-            stack_depth: context.avm2.stack.len(),
+            stack: StackFrame::empty(),
             scope_depth: context.avm2.scope_stack.len(),
+            is_interpreter: false,
             context,
         }
-    }
-
-    /// Construct an activation for the execution of a particular script's
-    /// initializer method.
-    pub fn from_script(
-        context: &'a mut UpdateContext<'gc>,
-        script: Script<'gc>,
-    ) -> Result<Self, Error<'gc>> {
-        let (method, global_object, domain) = script.init();
-
-        let num_locals = match method {
-            Method::Native { .. } => 1,
-            Method::Bytecode(bytecode) => {
-                let body = bytecode
-                    .body()
-                    .expect("Cannot execute non-native method (for script) without body");
-
-                body.num_locals as usize
-            }
-        };
-
-        let mut created_activation = Self {
-            num_locals,
-            outer: ScopeChain::new(domain),
-            caller_domain: Some(domain),
-            caller_movie: Some(script.translation_unit().movie()),
-            bound_superclass_object: Some(context.avm2.classes().object), // The script global class extends Object
-            bound_class: Some(script.global_class()),
-            stack_depth: context.avm2.stack.len(),
-            scope_depth: context.avm2.scope_stack.len(),
-            context,
-        };
-
-        // Run verifier for bytecode methods
-        if let Method::Bytecode(method) = method {
-            if method.verified_info.borrow().is_none() {
-                BytecodeMethod::verify(method, &mut created_activation)?;
-            }
-        }
-
-        // Create locals- script init methods are run with no parameters passed
-        created_activation.push_stack(global_object);
-        for _ in 0..num_locals - 1 {
-            created_activation.push_stack(Value::Undefined);
-        }
-
-        Ok(created_activation)
     }
 
     /// Finds an object on either the current or outer scope of this activation by definition.
@@ -205,7 +167,9 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             Ok(Some(obj))
         } else if let Some(obj) = outer_scope.find(name, self)? {
             Ok(Some(obj))
-        } else if let Some(global) = self.global_scope() {
+        } else {
+            let global = self.global_scope();
+
             if global
                 .as_object()
                 .is_some_and(|o| o.base().has_own_dynamic_property(name))
@@ -214,8 +178,6 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             } else {
                 Ok(None)
             }
-        } else {
-            Ok(None)
         }
     }
 
@@ -228,7 +190,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     /// the signature, with missing parameters filled in with defaults.
     pub fn resolve_parameters(
         &mut self,
-        method: Gc<'gc, NativeMethod<'gc>>,
+        method: Method<'gc>,
         user_arguments: &[Value<'gc>],
         signature: &[ResolvedParamConfig<'gc>],
         bound_class: Option<Class<'gc>>,
@@ -255,9 +217,9 @@ impl<'a, 'gc> Activation<'a, 'gc> {
                     let arg = if let Some(default_value) = &param_config.default_value {
                         *default_value
                     } else {
-                        return Err(Error::AvmError(make_mismatch_error(
+                        return Err(Error::avm_error(make_mismatch_error(
                             self,
-                            Method::Native(method),
+                            method,
                             user_arguments.len(),
                             bound_class,
                         )?));
@@ -283,10 +245,10 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     #[inline(never)]
     fn create_varargs_object(
         &mut self,
-        method: Gc<'gc, BytecodeMethod<'gc>>,
+        method: Method<'gc>,
         signature: &[ResolvedParamConfig<'gc>],
         user_arguments: FunctionArgs<'_, 'gc>,
-        callee: Value<'gc>,
+        callee: Option<FunctionObject<'gc>>,
     ) -> ArrayObject<'gc> {
         let mut all_arguments = Vec::new();
 
@@ -296,14 +258,14 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         // in `init_from_method` ensures that we have at least `signature.len()`
         // arguments on the stack right now.
         for i in 0..signature.len() {
-            let arg = self.avm2().peek(signature.len() - i - 1);
+            let arg = self.stack.peek(signature.len() - i - 1);
             all_arguments.push(arg);
         }
 
         // We put all the non-variadic arguments into the Vec, but there
         // could have been more passed to the function. Add them now.
         for i in signature.len()..user_arguments.len() {
-            let arg = user_arguments.get_at(self, i);
+            let arg = user_arguments.get_at(i);
             all_arguments.push(arg);
         }
 
@@ -331,10 +293,11 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             .contains(AbcMethodFlags::NEED_ARGUMENTS)
         {
             let string_callee = istr!(self, "callee");
+            let callee = callee
+                .expect("Should have a callee if the method is NEED_ARGUMENTS")
+                .into();
 
-            args_object
-                .set_string_property_local(string_callee, callee, self)
-                .unwrap();
+            args_object.set_dynamic_property(string_callee, callee, self.gc());
             args_object.set_local_property_is_enumerable(self.gc(), string_callee, false);
         }
 
@@ -345,16 +308,17 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     /// method.
     /// NOTE: this is intended to be used immediately after from_nothing(),
     /// as a more efficient replacement for direct `Activation::from_method()`
-    #[allow(clippy::too_many_arguments)]
+    #[expect(clippy::too_many_arguments)]
     pub fn init_from_method(
         &mut self,
-        method: Gc<'gc, BytecodeMethod<'gc>>,
+        method: Method<'gc>,
         outer: ScopeChain<'gc>,
         this: Value<'gc>,
         user_arguments: FunctionArgs<'_, 'gc>,
+        stack_frame: StackFrame<'a, 'gc>,
         bound_superclass_object: Option<ClassObject<'gc>>,
         bound_class: Option<Class<'gc>>,
-        callee: Value<'gc>,
+        callee: Option<FunctionObject<'gc>>,
     ) -> Result<(), Error<'gc>> {
         let body = method
             .body()
@@ -364,7 +328,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         let has_rest_or_args = method.is_variadic();
 
         if let Some(bound_class) = bound_class {
-            assert!(this.is_of_type(self, bound_class));
+            assert!(this.is_of_type(bound_class));
         }
 
         self.num_locals = num_locals;
@@ -373,21 +337,22 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         self.caller_movie = Some(method.owner_movie());
         self.bound_superclass_object = bound_superclass_object;
         self.bound_class = bound_class;
-        self.stack_depth = self.context.avm2.stack.len();
+        self.stack = stack_frame;
         self.scope_depth = self.context.avm2.scope_stack.len();
+        self.is_interpreter = method.is_interpreted();
+
+        // Resolve parameters and return type
+        method.resolve_info(self)?;
 
         // Everything is now setup for the verifier to run
-        if method.verified_info.borrow().is_none() {
-            BytecodeMethod::verify(method, self)?;
-        }
+        method.verify(self)?;
 
-        let verified_info = method.verified_info.borrow();
-        let signature = &verified_info.as_ref().unwrap().param_config;
+        let signature = method.resolved_param_config();
 
         if user_arguments.len() > signature.len() && !has_rest_or_args && !method.is_unchecked() {
-            return Err(Error::AvmError(make_mismatch_error(
+            return Err(Error::avm_error(make_mismatch_error(
                 self,
-                Method::Bytecode(method),
+                method,
                 user_arguments.len(),
                 bound_class,
             )?));
@@ -399,7 +364,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         // Statically verify all non-variadic, provided parameters.
         let static_arg_count = min(user_arguments.len(), signature.len());
         for (i, param_config) in signature.iter().enumerate().take(static_arg_count) {
-            let arg = user_arguments.get_at(self, i);
+            let arg = user_arguments.get_at(i);
 
             let coerced_arg = if let Some(param_class) = param_config.param_type {
                 arg.coerce_to_type(self, param_class)?
@@ -419,9 +384,9 @@ impl<'a, 'gc> Activation<'a, 'gc> {
                 } else if method.is_unchecked() {
                     Value::Undefined
                 } else {
-                    return Err(Error::AvmError(make_mismatch_error(
+                    return Err(Error::avm_error(make_mismatch_error(
                         self,
-                        Method::Bytecode(method),
+                        method,
                         user_arguments.len(),
                         bound_class,
                     )?));
@@ -444,15 +409,9 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             self.push_stack(args_object);
         }
 
-        // Locals not including the `this` value or arguments.
-        let mut extra_locals = num_locals - signature.len() - 1;
-        if has_rest_or_args {
-            extra_locals -= 1;
-        }
-
-        for _ in 0..extra_locals {
-            self.push_stack(Value::Undefined);
-        }
+        // `Stack::get_stack_frame` already initializes all values on the frame
+        // to undefined, so we just have to increase the stack pointer
+        self.reset_stack();
 
         Ok(())
     }
@@ -478,8 +437,9 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             caller_movie,
             bound_superclass_object,
             bound_class,
-            stack_depth: context.avm2.stack.len(),
+            stack: StackFrame::empty(),
             scope_depth: context.avm2.scope_stack.len(),
+            is_interpreter: false,
             context,
         }
     }
@@ -490,30 +450,32 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     pub fn super_init(
         &mut self,
         receiver: Value<'gc>,
-        args: &[Value<'gc>],
+        args: FunctionArgs<'_, 'gc>,
     ) -> Result<Value<'gc>, Error<'gc>> {
         let bound_superclass_object = self
             .bound_superclass_object
             .expect("Superclass object is required to run super_init");
 
-        bound_superclass_object.call_init(receiver, args, self)
+        bound_superclass_object.call_init_with_args(receiver, args, self)
     }
 
     /// Retrieve a local register.
     pub fn local_register(&mut self, id: u32) -> Value<'gc> {
-        let stack_depth = self.stack_depth;
-
         // Verification guarantees that this points to a local register
-        self.avm2().stack_at(stack_depth + id as usize)
+        self.stack.value_at(id as usize)
     }
 
     /// Set a local register.
     pub fn set_local_register(&mut self, id: u32, value: impl Into<Value<'gc>>) {
-        let stack_depth = self.stack_depth;
-
         // Verification guarantees that this is valid
-        self.avm2()
-            .set_stack_at(stack_depth + id as usize, value.into());
+        self.stack.set_value_at(id as usize, value.into());
+    }
+
+    /// Returns whether this Activation is running in "interpreter mode" as
+    /// opposed to "JIT mode". Note that these modes do not actually correspond
+    /// to whether the method is being interpreted or JITted.
+    pub fn is_interpreter(&self) -> bool {
+        self.is_interpreter
     }
 
     /// Retrieve the outer scope of this activation
@@ -547,7 +509,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     /// Like `caller_movie()`, but returns the root movie if `caller_movie`
     /// is `None`. This matches what FP does in most cases.
     pub fn caller_movie_or_root(&self) -> Arc<SwfMovie> {
-        self.caller_movie().unwrap_or(self.context.swf.clone())
+        self.caller_movie().unwrap_or(self.context.root_swf.clone())
     }
 
     /// Returns the global scope of this activation.
@@ -556,14 +518,14 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     /// outer scope. If the outer scope is empty, we use the bottom
     /// of the current scope stack instead.
     ///
-    /// A return value of `None` implies that both the outer scope, and
-    /// the current scope stack were both empty.
-    pub fn global_scope(&self) -> Option<Value<'gc>> {
+    /// The verifier guarantees that there is always a global scope
+    /// when this function is called.
+    pub fn global_scope(&self) -> Value<'gc> {
         let outer_scope = self.outer;
         outer_scope
             .get(0)
-            .or_else(|| self.scope_frame().first().copied())
-            .map(|scope| scope.values())
+            .unwrap_or_else(|| self.scope_frame()[0])
+            .values()
     }
 
     pub fn avm2(&mut self) -> &mut Avm2<'gc> {
@@ -575,23 +537,23 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     }
 
     /// Pushes a value onto the operand stack.
-    #[inline]
-    pub fn push_stack(&mut self, value: impl Into<Value<'gc>>) {
-        self.avm2().push(value.into());
+    #[inline(always)]
+    pub fn push_stack(&self, value: impl Into<Value<'gc>>) {
+        self.stack.push(value.into());
     }
 
     /// Pops a value off the operand stack.
-    #[inline]
+    #[inline(always)]
     #[must_use]
-    pub fn pop_stack(&mut self) -> Value<'gc> {
-        self.avm2().pop()
+    pub fn pop_stack(&self) -> Value<'gc> {
+        self.stack.pop()
     }
 
     /// Pops multiple values off the operand stack.
     #[inline]
     #[must_use]
-    pub fn pop_stack_args(&mut self, arg_count: u32) -> Vec<Value<'gc>> {
-        self.avm2().pop_args(arg_count)
+    pub fn pop_stack_args(&self, arg_count: u32) -> Vec<Value<'gc>> {
+        self.stack.pop_args(arg_count)
     }
 
     /// Pushes a scope onto the scope stack.
@@ -609,27 +571,27 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     /// Cleans up after this Activation. This removes stack and local entries,
     /// and clears the scope stack. This method must be called after an Activation
     /// created with `Activation::init_from_activation` or `Activation::from_script`
-    /// is done executing; otherwise, old values may accumulate on the stack
-    /// (and not get GC-ed).
+    /// is finished executing.
+    ///
+    /// This function should take `mut self` instead of `&mut self`, but that
+    /// results in worse codegen (the entire Activation is moved).
     #[inline]
     pub fn cleanup(&mut self) {
-        self.clear_stack_and_locals();
         self.clear_scope();
+
+        let stack = self.context.avm2.stack;
+        stack.dispose_stack_frame(self.stack.take());
     }
 
     /// Clears the operand stack used by this activation.
+    ///
+    /// This is called `reset_stack` because it sets the stack pointer to the
+    /// first stack entry, which also makes it useful for initializing the stack.
     #[inline]
-    fn clear_stack(&mut self) {
-        let stack_depth = self.stack_depth;
-        let num_locals = self.num_locals;
-        self.avm2().truncate_stack(stack_depth + num_locals);
-    }
-
-    /// Clears the operand stack and locals used by this activation.
-    #[inline]
-    fn clear_stack_and_locals(&mut self) {
-        let stack_depth = self.stack_depth;
-        self.avm2().truncate_stack(stack_depth);
+    fn reset_stack(&self) {
+        // This sets the stack pointer to the first stack entry, which is right
+        // after all the entries for local registers
+        self.stack.set_stack_pointer(self.num_locals);
     }
 
     /// Clears the scope stack used by this activation.
@@ -642,17 +604,10 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     /// Get the superclass of the class that defined the currently-executing
     /// method, if it exists.
     ///
-    /// If the currently-executing method is not part of a class, or the class
-    /// does not have a superclass, then this panics. The `name` parameter
-    /// allows you to provide the name of a property you were attempting to
-    /// access on the object.
-    pub fn bound_superclass_object(&self, name: &Multiname<'gc>) -> ClassObject<'gc> {
-        self.bound_superclass_object.unwrap_or_else(|| {
-            panic!(
-                "Cannot call supermethod {} without a superclass",
-                name.to_qualified_name(self.gc()),
-            )
-        })
+    /// If the currently-executing method is not part of a class, then this
+    /// returns `None`.
+    pub fn bound_superclass_object(&self) -> Option<ClassObject<'gc>> {
+        self.bound_superclass_object
     }
 
     /// Get the class that defined the currently-executing method, if it exists.
@@ -660,35 +615,11 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         self.bound_class
     }
 
-    /// Retrieve a namespace from the current constant pool.
-    fn pool_namespace(
-        &mut self,
-        method: Gc<'gc, BytecodeMethod<'gc>>,
-        index: Index<AbcNamespace>,
-    ) -> Result<Namespace<'gc>, Error<'gc>> {
-        method.translation_unit().pool_namespace(self, index)
-    }
-
-    /// Retrieve a method entry from the current ABC file's method table.
-    fn table_method(
-        &mut self,
-        method: Gc<'gc, BytecodeMethod<'gc>>,
-        index: Index<AbcMethod>,
-        is_function: bool,
-    ) -> Result<Method<'gc>, Error<'gc>> {
-        method
-            .translation_unit()
-            .load_method(index, is_function, self)
-    }
-
-    pub fn run_actions(
-        &mut self,
-        method: Gc<'gc, BytecodeMethod<'gc>>,
-    ) -> Result<Value<'gc>, Error<'gc>> {
+    pub fn run_actions(&mut self, method: Method<'gc>) -> Result<Value<'gc>, Error<'gc>> {
         // The method must be verified at this point
 
-        let verified_info = method.verified_info.borrow();
-        let opcodes = verified_info.as_ref().unwrap().parsed_code.as_slice();
+        let verified_info = method.get_verified_info();
+        let opcodes = verified_info.parsed_code.as_slice();
 
         self.timeout_check()?;
 
@@ -703,7 +634,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
                 Op::PushDouble { value } => self.op_push_double(*value),
                 Op::PushFalse => self.op_push_false(),
                 Op::PushInt { value } => self.op_push_int(*value),
-                Op::PushNamespace { value } => self.op_push_namespace(method, *value),
+                Op::PushNamespace { namespace } => self.op_push_namespace(*namespace),
                 Op::PushNull => self.op_push_null(),
                 Op::PushShort { value } => self.op_push_short(*value),
                 Op::PushString { string } => self.op_push_string(*string),
@@ -721,6 +652,11 @@ impl<'a, 'gc> Activation<'a, 'gc> {
                     num_args,
                     push_return_value,
                 } => self.op_call_method(*index, *num_args, *push_return_value),
+                Op::CallNative {
+                    method,
+                    num_args,
+                    push_return_value,
+                } => self.op_call_native(*method, *num_args, *push_return_value),
                 Op::CallProperty {
                     multiname,
                     num_args,
@@ -733,15 +669,17 @@ impl<'a, 'gc> Activation<'a, 'gc> {
                     multiname,
                     num_args,
                 } => self.op_call_prop_void(*multiname, *num_args),
-                Op::CallStatic { index, num_args } => {
-                    self.op_call_static(method, *index, *num_args)
-                }
+                Op::CallStatic { method, num_args } => self.op_call_static(*method, *num_args),
                 Op::CallSuper {
                     multiname,
                     num_args,
                 } => self.op_call_super(*multiname, *num_args),
-                Op::GetProperty { multiname } => self.op_get_property(*multiname),
-                Op::SetProperty { multiname } => self.op_set_property(*multiname),
+                Op::GetPropertyStatic { multiname } => self.op_get_property_static(*multiname),
+                Op::GetPropertyFast { multiname } => self.op_get_property_fast(*multiname),
+                Op::GetPropertySlow { multiname } => self.op_get_property_slow(*multiname),
+                Op::SetPropertyStatic { multiname } => self.op_set_property_static(*multiname),
+                Op::SetPropertyFast { multiname } => self.op_set_property_fast(*multiname),
+                Op::SetPropertySlow { multiname } => self.op_set_property_slow(*multiname),
                 Op::InitProperty { multiname } => self.op_init_property(*multiname),
                 Op::DeleteProperty { multiname } => self.op_delete_property(*multiname),
                 Op::GetSuper { multiname } => self.op_get_super(*multiname),
@@ -771,7 +709,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
                 Op::ConstructSuper { num_args } => self.op_construct_super(*num_args),
                 Op::NewActivation { activation_class } => self.op_new_activation(*activation_class),
                 Op::NewObject { num_args } => self.op_new_object(*num_args),
-                Op::NewFunction { index } => self.op_new_function(method, *index),
+                Op::NewFunction { method } => self.op_new_function(*method),
                 Op::NewClass { class } => self.op_new_class(*class),
                 Op::ApplyType { num_types } => self.op_apply_type(*num_types),
                 Op::NewArray { num_args } => self.op_new_array(*num_args),
@@ -902,7 +840,11 @@ impl<'a, 'gc> Activation<'a, 'gc> {
 
                 // Return ops
                 Op::ReturnValue { return_type } => {
-                    return self.return_value(*return_type);
+                    let coerce_result = self.return_value(*return_type);
+                    match coerce_result {
+                        Ok(value) => return Ok(value),
+                        Err(error) => Err(error),
+                    }
                 }
                 Op::ReturnVoid { return_type } => {
                     return Ok(self.return_void(*return_type));
@@ -919,24 +861,25 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     /// the error. Otherwise pass the error down the stack.
     fn handle_err(
         &mut self,
-        method: Gc<'gc, BytecodeMethod<'gc>>,
+        method: Method<'gc>,
         ip: usize,
         error: Error<'gc>,
     ) -> Result<usize, Error<'gc>> {
-        let error = match error {
-            Error::AvmError(err) => err,
-            Error::RustError(_) => return Err(error),
+        let error = if let Some(error) = error.as_avm_error() {
+            error
+        } else {
+            return Err(error);
         };
 
-        let verified_info = method.verified_info.borrow();
-        let exception_list = &verified_info.as_ref().unwrap().exceptions;
+        let verified_info = method.get_verified_info();
+        let exception_list = &verified_info.exceptions;
 
         let last_ip = ip - 1;
         for e in exception_list {
             if last_ip >= e.from_offset && last_ip < e.to_offset {
                 let matches = if let Some(target_class) = e.target_class {
                     // This ensures null and undefined don't match
-                    error.is_of_type(self, target_class)
+                    error.is_of_type(target_class)
                 } else {
                     // A typeless catch block (i.e. `catch(err:*) { ... }`) will
                     // always match.
@@ -945,9 +888,9 @@ impl<'a, 'gc> Activation<'a, 'gc> {
 
                 if matches {
                     #[cfg(feature = "avm_debug")]
-                    tracing::info!(target: "avm_caught", "Caught exception: {:?}", Error::AvmError(error));
+                    tracing::info!(target: "avm_caught", "Caught exception: {:?}", Error::avm_error(error));
 
-                    self.clear_stack();
+                    self.reset_stack();
                     self.push_stack(error);
 
                     self.clear_scope();
@@ -956,7 +899,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             }
         }
 
-        Err(Error::AvmError(error))
+        Err(Error::avm_error(error))
     }
 
     #[inline(always)]
@@ -989,13 +932,8 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         Ok(())
     }
 
-    fn op_push_namespace(
-        &mut self,
-        method: Gc<'gc, BytecodeMethod<'gc>>,
-        value: Index<AbcNamespace>,
-    ) -> Result<(), Error<'gc>> {
-        let ns = self.pool_namespace(method, value)?;
-        let ns_object = NamespaceObject::from_namespace(self, ns);
+    fn op_push_namespace(&mut self, namespace: Namespace<'gc>) -> Result<(), Error<'gc>> {
+        let ns_object = NamespaceObject::from_namespace(self, namespace);
 
         self.push_stack(ns_object);
         Ok(())
@@ -1038,7 +976,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     }
 
     fn op_dup(&mut self) -> Result<(), Error<'gc>> {
-        let value = self.avm2().peek(0);
+        let value = self.stack.peek(0);
         self.push_stack(value);
 
         Ok(())
@@ -1090,21 +1028,33 @@ impl<'a, 'gc> Activation<'a, 'gc> {
 
         // However, the optimizer can still generate it.
 
-        let stack_base = self.avm2().stack.len() - arg_count as usize;
-
-        let args = FunctionArgs::OnAvmStack {
-            arg_count: arg_count as usize,
-            stack_base,
-        };
-        let receiver = self
-            .avm2()
-            .peek(arg_count as usize)
-            .null_check(self, None)?;
+        let args = self.stack.get_args(arg_count as usize);
+        let receiver = self.pop_stack().null_check(self, None)?;
 
         let value = receiver.call_method_with_args(index, args, self)?;
 
-        // Ensure all arguments are popped
-        self.avm2().truncate_stack(stack_base - 1);
+        if push_return_value {
+            self.push_stack(value);
+        }
+
+        Ok(())
+    }
+
+    fn op_call_native(
+        &mut self,
+        method: NativeMethodImpl,
+        num_args: u32,
+        push_return_value: bool,
+    ) -> Result<(), Error<'gc>> {
+        let mut args_buf = [Value::Undefined; 2];
+        let args = &mut args_buf[..num_args as usize];
+        for arg in args.iter_mut().rev() {
+            *arg = self.pop_stack();
+        }
+
+        let receiver = self.pop_stack().null_check(self, None)?;
+
+        let value = method(self, receiver, args).expect("FastCall methods should not return Err");
 
         if push_return_value {
             self.push_stack(value);
@@ -1118,11 +1068,11 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         multiname: Gc<'gc, Multiname<'gc>>,
         arg_count: u32,
     ) -> Result<(), Error<'gc>> {
-        let args = self.pop_stack_args(arg_count);
+        let args = self.stack.get_args(arg_count as usize);
         let multiname = multiname.fill_with_runtime_params(self)?;
         let receiver = self.pop_stack().null_check(self, Some(&multiname))?;
 
-        let value = receiver.call_property(&multiname, &args, self)?;
+        let value = receiver.call_property(&multiname, args, self)?;
 
         self.push_stack(value);
 
@@ -1150,24 +1100,18 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         multiname: Gc<'gc, Multiname<'gc>>,
         arg_count: u32,
     ) -> Result<(), Error<'gc>> {
-        let args = self.pop_stack_args(arg_count);
+        let args = self.stack.get_args(arg_count as usize);
         let multiname = multiname.fill_with_runtime_params(self)?;
         let receiver = self.pop_stack().null_check(self, Some(&multiname))?;
 
-        receiver.call_property(&multiname, &args, self)?;
+        receiver.call_property(&multiname, args, self)?;
 
         Ok(())
     }
 
-    fn op_call_static(
-        &mut self,
-        method: Gc<'gc, BytecodeMethod<'gc>>,
-        index: Index<AbcMethod>,
-        arg_count: u32,
-    ) -> Result<(), Error<'gc>> {
+    fn op_call_static(&mut self, method: Method<'gc>, arg_count: u32) -> Result<(), Error<'gc>> {
         let args = self.pop_stack_args(arg_count);
         let receiver = self.pop_stack();
-        let method = self.table_method(method, index, false)?;
         // TODO: What scope should the function be executed with?
         let scope = self.create_scopechain();
         let function = FunctionObject::from_method(self, method, scope, None, None, None);
@@ -1183,7 +1127,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         multiname: Gc<'gc, Multiname<'gc>>,
         arg_count: u32,
     ) -> Result<(), Error<'gc>> {
-        let args = self.pop_stack_args(arg_count);
+        let args = self.stack.get_args(arg_count as usize);
         let multiname = multiname.fill_with_runtime_params(self)?;
         let receiver = self
             .pop_stack()
@@ -1191,9 +1135,11 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             .as_object()
             .expect("Super ops should not appear in primitive functions");
 
-        let bound_superclass_object = self.bound_superclass_object(&multiname);
+        let bound_superclass_object = self
+            .bound_superclass_object()
+            .expect("Expected a superclass when running callsuper");
 
-        let value = bound_superclass_object.call_super(&multiname, receiver, &args, self)?;
+        let value = bound_superclass_object.call_super(&multiname, receiver, args, self)?;
 
         self.push_stack(value);
 
@@ -1213,17 +1159,12 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     fn return_void(&mut self, return_type: Option<Class<'gc>>) -> Value<'gc> {
         // Manual coerce_to_type
 
-        let class_defs = self.avm2().class_defs();
-
         if let Some(return_type) = return_type {
-            if return_type == class_defs.void {
+            if return_type.is_builtin_void() {
                 Value::Undefined
-            } else if return_type == class_defs.int
-                || return_type == class_defs.uint
-                || return_type == class_defs.number
-            {
+            } else if return_type.is_builtin_numeric() {
                 0.into()
-            } else if return_type == class_defs.boolean {
+            } else if return_type.is_builtin_boolean() {
                 false.into()
             } else {
                 Value::Null
@@ -1233,54 +1174,65 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         }
     }
 
-    fn op_get_property(&mut self, multiname: Gc<'gc, Multiname<'gc>>) -> Result<(), Error<'gc>> {
+    fn op_get_property_static(
+        &mut self,
+        multiname: Gc<'gc, Multiname<'gc>>,
+    ) -> Result<(), Error<'gc>> {
         // default path for static names
-        if !multiname.has_lazy_component() {
-            let object = self.pop_stack().null_check(self, Some(&multiname))?;
+        let object = self.pop_stack().null_check(self, Some(&multiname))?;
 
-            let value = object.get_property(&multiname, self)?;
-            self.push_stack(value);
+        let value = object.get_property(&multiname, self)?;
+        self.push_stack(value);
 
-            return Ok(());
-        }
+        Ok(())
+    }
 
+    fn op_get_property_fast(
+        &mut self,
+        multiname: Gc<'gc, Multiname<'gc>>,
+    ) -> Result<(), Error<'gc>> {
         // (fast) side path for dictionary/array-likes
-        // NOTE: FP behaves differently here when the public namespace isn't
-        // included in the multiname's namespace set
-        if multiname.has_lazy_name() && !multiname.has_lazy_ns() {
-            // `MultinameL` is the only form of multiname that allows fast-path
-            // or alternate-path lookups based on the local name *value*,
-            // rather than it's string representation.
 
-            let name_value = self.context.avm2.peek(0);
-            let object_value = self.context.avm2.peek(1);
+        // `MultinameL` is the only form of multiname that allows fast-path
+        // or alternate-path lookups based on the local name *value*,
+        // rather than it's string representation.
 
-            if let Value::Object(object) = object_value {
-                match name_value {
-                    Value::Integer(name_int) if name_int >= 0 => {
-                        if let Some(value) = object.get_index_property(name_int as usize) {
-                            let _ = self.pop_stack();
-                            let _ = self.pop_stack();
-                            self.push_stack(value);
+        let name_value = self.stack.peek(0);
+        let object_value = self.stack.peek(1);
 
-                            return Ok(());
-                        }
+        if let Value::Object(object) = object_value {
+            match name_value {
+                Value::Integer(name_int) if name_int >= 0 => {
+                    if let Some(value) = object.get_index_property(name_int as usize) {
+                        let _ = self.pop_stack();
+                        let _ = self.pop_stack();
+                        self.push_stack(value);
+
+                        return Ok(());
                     }
-                    Value::Object(name_object) => {
-                        if let Some(dictionary) = object.as_dictionary_object() {
-                            let _ = self.pop_stack();
-                            let _ = self.pop_stack();
-                            let value = dictionary.get_property_by_object(name_object);
-                            self.push_stack(value);
-
-                            return Ok(());
-                        }
-                    }
-                    _ => {}
                 }
+                Value::Object(name_object) => {
+                    if let Some(dictionary) = object.as_dictionary_object() {
+                        let _ = self.pop_stack();
+                        let _ = self.pop_stack();
+                        let value = dictionary.get_property_by_object(name_object);
+                        self.push_stack(value);
+
+                        return Ok(());
+                    }
+                }
+                _ => {}
             }
         }
 
+        // If it wasn't actually a fast-path access, fall back to the slow version
+        self.op_get_property_slow(multiname)
+    }
+
+    fn op_get_property_slow(
+        &mut self,
+        multiname: Gc<'gc, Multiname<'gc>>,
+    ) -> Result<(), Error<'gc>> {
         // main path for dynamic names
         let multiname = multiname.fill_with_runtime_params(self)?;
         let object = self.pop_stack().null_check(self, Some(&multiname))?;
@@ -1291,54 +1243,74 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         Ok(())
     }
 
-    fn op_set_property(&mut self, multiname: Gc<'gc, Multiname<'gc>>) -> Result<(), Error<'gc>> {
+    fn op_set_property_static(
+        &mut self,
+        multiname: Gc<'gc, Multiname<'gc>>,
+    ) -> Result<(), Error<'gc>> {
+        // default path for static names
+
         let value = self.pop_stack();
 
-        // default path for static names
-        if !multiname.has_lazy_component() {
-            let object = self.pop_stack().null_check(self, Some(&multiname))?;
+        let object = self.pop_stack().null_check(self, Some(&multiname))?;
 
-            object.set_property(&multiname, value, self)?;
-            return Ok(());
-        }
+        object.set_property(&multiname, value, self)?;
 
-        // side path for dictionary/arrays (TODO)
-        // NOTE: FP behaves differently here when the public namespace isn't
-        // included in the multiname's namespace set
-        if multiname.has_lazy_name() && !multiname.has_lazy_ns() {
-            // `MultinameL` is the only form of multiname that allows fast-path
-            // or alternate-path lookups based on the local name *value*,
-            // rather than it's string representation.
+        Ok(())
+    }
 
-            let name_value = self.context.avm2.peek(0);
-            let object_value = self.context.avm2.peek(1);
+    fn op_set_property_fast(
+        &mut self,
+        multiname: Gc<'gc, Multiname<'gc>>,
+    ) -> Result<(), Error<'gc>> {
+        // side path for dictionary/arrays
 
-            if let Value::Object(object) = object_value {
-                match name_value {
-                    Value::Integer(name_int) if name_int >= 0 => {
-                        if let Some(mut array) = object.as_array_storage_mut(self.gc()) {
-                            let _ = self.pop_stack();
-                            let _ = self.pop_stack();
-                            array.set(name_int as usize, value);
+        let value = self.stack.peek(0);
 
-                            return Ok(());
-                        }
+        // `MultinameL` is the only form of multiname that allows fast-path
+        // or alternate-path lookups based on the local name *value*,
+        // rather than it's string representation.
+
+        let name_value = self.stack.peek(1);
+        let object_value = self.stack.peek(2);
+
+        if let Value::Object(object) = object_value {
+            match name_value {
+                Value::Integer(name_int) if name_int >= 0 => {
+                    if let Some(result) = object.set_index_property(self, name_int as usize, value)
+                    {
+                        let _ = self.pop_stack();
+                        let _ = self.pop_stack();
+                        let _ = self.pop_stack();
+
+                        return result;
                     }
-                    Value::Object(name_object) => {
-                        if let Some(dictionary) = object.as_dictionary_object() {
-                            let _ = self.pop_stack();
-                            let _ = self.pop_stack();
-                            dictionary.set_property_by_object(name_object, value, self.gc());
-
-                            return Ok(());
-                        }
-                    }
-                    _ => {}
                 }
+                Value::Object(name_object) => {
+                    if let Some(dictionary) = object.as_dictionary_object() {
+                        let _ = self.pop_stack();
+                        let _ = self.pop_stack();
+                        let _ = self.pop_stack();
+                        dictionary.set_property_by_object(name_object, value, self.gc());
+
+                        return Ok(());
+                    }
+                }
+                _ => {}
             }
         }
 
+        // If it wasn't actually a fast-path access, fall back to the slow version
+        self.op_set_property_slow(multiname)
+    }
+
+    fn op_set_property_slow(
+        &mut self,
+        multiname: Gc<'gc, Multiname<'gc>>,
+    ) -> Result<(), Error<'gc>> {
         // main path for dynamic names
+
+        let value = self.pop_stack();
+
         let multiname = multiname.fill_with_runtime_params(self)?;
         let object = self.pop_stack().null_check(self, Some(&multiname))?;
 
@@ -1376,8 +1348,8 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             // or alternate-path lookups based on the local name *value*,
             // rather than it's string representation.
 
-            let name_value = self.context.avm2.peek(0);
-            let object = self.context.avm2.peek(1);
+            let name_value = self.stack.peek(0);
+            let object = self.stack.peek(1);
             if let Some(name_object) = name_value.as_object() {
                 if let Some(dictionary) = object.as_object().and_then(|o| o.as_dictionary_object())
                 {
@@ -1393,11 +1365,11 @@ impl<'a, 'gc> Activation<'a, 'gc> {
 
         // main path for dynamic names
         if multiname.has_lazy_name() {
-            let name_value = self.context.avm2.peek(0);
+            let name_value = self.stack.peek(0);
             if matches!(name_value, Value::Object(Object::XmlListObject(_))) {
                 // ECMA-357 11.3.1 The delete Operator
                 // If the type of the operand is XMLList, then a TypeError exception is thrown.
-                return Err(Error::AvmError(type_error(
+                return Err(Error::avm_error(type_error(
                     self,
                     "Error #1119: Delete operator is not supported with operand of type XMLList.",
                     1119,
@@ -1422,7 +1394,9 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             .as_object()
             .expect("Super ops should not appear in primitive functions");
 
-        let bound_superclass_object = self.bound_superclass_object(&multiname);
+        let bound_superclass_object = self
+            .bound_superclass_object()
+            .expect("Expected a superclass when running getsuper");
 
         let value = bound_superclass_object.get_super(&multiname, object, self)?;
 
@@ -1440,7 +1414,9 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             .as_object()
             .expect("Super ops should not appear in primitive functions");
 
-        let bound_superclass_object = self.bound_superclass_object(&multiname);
+        let bound_superclass_object = self
+            .bound_superclass_object()
+            .expect("Expected a superclass when running setsuper");
 
         bound_superclass_object.set_super(&multiname, value, object, self)?;
 
@@ -1487,14 +1463,10 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         Ok(())
     }
 
-    fn op_newcatch(
-        &mut self,
-        method: Gc<'gc, BytecodeMethod<'gc>>,
-        index: usize,
-    ) -> Result<(), Error<'gc>> {
+    fn op_newcatch(&mut self, method: Method<'gc>, index: usize) -> Result<(), Error<'gc>> {
         // TODO can we store the catch class in the op?
-        let verified_info = method.verified_info.borrow();
-        let exception_list = &verified_info.as_ref().unwrap().exceptions;
+        let verified_info = method.get_verified_info();
+        let exception_list = &verified_info.exceptions;
 
         let catch_class = &exception_list[index].catch_class;
 
@@ -1569,9 +1541,9 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         let multiname = multiname.fill_with_runtime_params(self)?;
         let result = self
             .find_definition(&multiname)?
-            .or_else(|| self.global_scope());
+            .unwrap_or_else(|| self.global_scope());
 
-        self.push_stack(result.unwrap_or(Value::Undefined));
+        self.push_stack(result);
 
         Ok(())
     }
@@ -1616,11 +1588,10 @@ impl<'a, 'gc> Activation<'a, 'gc> {
                 .name()
                 .to_qualified_name_err_message(self.gc());
 
-            return Err(Error::AvmError(type_error(
+            return Err(Error::avm_error(type_error(
                 self,
                 &format!(
-                    "Error #1016: Descendants operator (..) not supported on type {}",
-                    class_name
+                    "Error #1016: Descendants operator (..) not supported on type {class_name}",
                 ),
                 1016,
             )?));
@@ -1630,14 +1601,20 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     }
 
     fn op_get_slot(&mut self, index: u32) -> Result<(), Error<'gc>> {
-        let object = self
-            .pop_stack()
+        let stack_top = self.stack.stack_top();
+
+        let object = stack_top
+            .get()
             .null_check(self, None)?
             .as_object()
             .expect("Cannot get_slot on primitive");
         let value = object.get_slot(index);
 
-        self.push_stack(value);
+        // We use `stack_top` instead of `pop_stack` and `push_stack` here
+        // because it allows us to skip the extra bounds checks and stack pointer
+        // changes. This is important here because getslot is one of the hottest
+        // ops in most SWFs.
+        stack_top.set(value);
 
         Ok(())
     }
@@ -1672,17 +1649,18 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         let value = self.pop_stack();
 
         self.global_scope()
-            .map(|global| global.as_object().unwrap().set_slot(index, value, self))
-            .transpose()?;
+            .as_object()
+            .unwrap()
+            .set_slot(index, value, self)?;
 
         Ok(())
     }
 
     fn op_construct(&mut self, arg_count: u32) -> Result<(), Error<'gc>> {
-        let args = self.pop_stack_args(arg_count);
+        let args = self.stack.get_args(arg_count as usize);
         let ctor = self.pop_stack();
 
-        let object = ctor.construct(self, &args)?;
+        let object = ctor.construct(self, args)?;
 
         self.push_stack(object);
 
@@ -1694,12 +1672,12 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         multiname: Gc<'gc, Multiname<'gc>>,
         arg_count: u32,
     ) -> Result<(), Error<'gc>> {
-        let args = self.pop_stack_args(arg_count);
+        let args = self.stack.get_args(arg_count as usize);
         let multiname = multiname.fill_with_runtime_params(self)?;
         let source = self.pop_stack().null_check(self, Some(&multiname))?;
 
         let ctor = source.get_property(&multiname, self)?;
-        let constructed_object = ctor.construct(self, &args)?;
+        let constructed_object = ctor.construct(self, args)?;
 
         self.push_stack(constructed_object);
 
@@ -1707,7 +1685,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     }
 
     fn op_construct_slot(&mut self, index: u32, arg_count: u32) -> Result<(), Error<'gc>> {
-        let args = self.pop_stack_args(arg_count);
+        let args = self.stack.get_args(arg_count as usize);
         let source = self
             .pop_stack()
             .null_check(self, None)?
@@ -1715,7 +1693,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             .expect("Cannot get_slot on primitive");
 
         let ctor = source.get_slot(index);
-        let constructed_object = ctor.construct(self, &args)?;
+        let constructed_object = ctor.construct(self, args)?;
 
         self.push_stack(constructed_object);
 
@@ -1723,10 +1701,10 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     }
 
     fn op_construct_super(&mut self, arg_count: u32) -> Result<(), Error<'gc>> {
-        let args = self.pop_stack_args(arg_count);
+        let args = self.stack.get_args(arg_count as usize);
         let receiver = self.pop_stack().null_check(self, None)?;
 
-        self.super_init(receiver, &args)?;
+        self.super_init(receiver, args)?;
 
         Ok(())
     }
@@ -1754,7 +1732,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             let value = self.pop_stack();
             let name = self.pop_stack();
 
-            object.set_string_property_local(name.coerce_to_string(self)?, value, self)?;
+            object.set_dynamic_property(name.coerce_to_string(self)?, value, self.gc());
         }
 
         self.push_stack(object);
@@ -1762,15 +1740,10 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         Ok(())
     }
 
-    fn op_new_function(
-        &mut self,
-        method: Gc<'gc, BytecodeMethod<'gc>>,
-        index: Index<AbcMethod>,
-    ) -> Result<(), Error<'gc>> {
-        let method_entry = self.table_method(method, index, true)?;
+    fn op_new_function(&mut self, method: Method<'gc>) -> Result<(), Error<'gc>> {
         let scope = self.create_scopechain();
 
-        let new_fn = FunctionObject::from_method(self, method_entry, scope, None, None, None);
+        let new_fn = FunctionObject::from_method(self, method, scope, None, None, None);
 
         self.push_stack(new_fn);
 
@@ -1926,17 +1899,14 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         let xml_list = self.avm2().class_defs().xml_list;
         let value = self.pop_stack().null_check(self, None)?;
 
-        if value.is_of_type(self, xml) || value.is_of_type(self, xml_list) {
+        if value.is_of_type(xml) || value.is_of_type(xml_list) {
             self.push_stack(value);
         } else {
             let class_name = value.instance_of_class_name(self);
 
-            return Err(Error::AvmError(type_error(
+            return Err(Error::avm_error(type_error(
                 self,
-                &format!(
-                    "Error #1123: Filter operator not supported on type {}.",
-                    class_name
-                ),
+                &format!("Error #1123: Filter operator not supported on type {class_name}."),
                 1123,
             )?));
         }
@@ -2304,14 +2274,13 @@ impl<'a, 'gc> Activation<'a, 'gc> {
 
     fn op_has_next(&mut self) -> Result<(), Error<'gc>> {
         let cur_index = self.pop_stack().coerce_to_i32(self)?;
+        let value = self.pop_stack();
 
         if cur_index < 0 {
             self.push_stack(0);
 
             return Ok(());
         }
-
-        let value = self.pop_stack();
 
         let object = match value {
             Value::Undefined | Value::Null => None,
@@ -2385,6 +2354,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
 
     fn op_next_name(&mut self) -> Result<(), Error<'gc>> {
         let cur_index = self.pop_stack().coerce_to_i32(self)?;
+        let value = self.pop_stack();
 
         if cur_index <= 0 {
             self.push_stack(Value::Null);
@@ -2392,7 +2362,6 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             return Ok(());
         }
 
-        let value = self.pop_stack();
         let object = match value.null_check(self, None)? {
             Value::Object(obj) => obj,
             value => value
@@ -2408,6 +2377,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
 
     fn op_next_value(&mut self) -> Result<(), Error<'gc>> {
         let cur_index = self.pop_stack().coerce_to_i32(self)?;
+        let value = self.pop_stack();
 
         if cur_index <= 0 {
             self.push_stack(Value::Undefined);
@@ -2415,7 +2385,6 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             return Ok(());
         }
 
-        let value = self.pop_stack();
         let object = match value.null_check(self, None)? {
             Value::Object(obj) => obj,
             value => value
@@ -2432,7 +2401,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     fn op_is_type(&mut self, class: Class<'gc>) -> Result<(), Error<'gc>> {
         let value = self.pop_stack();
 
-        let is_instance_of = value.is_of_type(self, class);
+        let is_instance_of = value.is_of_type(class);
         self.push_stack(is_instance_of);
 
         Ok(())
@@ -2444,7 +2413,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             .as_object()
             .and_then(|o| o.as_class_object())
         else {
-            return Err(Error::AvmError(type_error(
+            return Err(Error::avm_error(type_error(
                 self,
                 "Error #1041: The right-hand side of operator must be a class.",
                 1041,
@@ -2452,7 +2421,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         };
         let value = self.pop_stack();
 
-        let is_instance_of = value.is_of_type(self, type_object.inner_class_definition());
+        let is_instance_of = value.is_of_type(type_object.inner_class_definition());
         self.push_stack(is_instance_of);
 
         Ok(())
@@ -2461,7 +2430,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     fn op_as_type(&mut self, class: Class<'gc>) -> Result<(), Error<'gc>> {
         let value = self.pop_stack();
 
-        if value.is_of_type(self, class) {
+        if value.is_of_type(class) {
             self.push_stack(value);
         } else {
             self.push_stack(Value::Null);
@@ -2479,7 +2448,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
 
         if let Some(class) = class.as_object() {
             let Some(class) = class.as_class_object() else {
-                return Err(Error::AvmError(type_error(
+                return Err(Error::avm_error(type_error(
                     self,
                     "Error #1041: The right-hand side of operator must be a class.",
                     1041,
@@ -2487,7 +2456,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             };
             let value = self.pop_stack();
 
-            if value.is_of_type(self, class.inner_class_definition()) {
+            if value.is_of_type(class.inner_class_definition()) {
                 self.push_stack(value);
             } else {
                 self.push_stack(Value::Null);
@@ -2502,7 +2471,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
 
     fn op_instance_of(&mut self) -> Result<(), Error<'gc>> {
         let Some(type_object) = self.pop_stack().as_object() else {
-            return Err(Error::AvmError(type_error(
+            return Err(Error::avm_error(type_error(
                 self,
                 "Error #1040: The right-hand side of instanceof must be a class or function.",
                 1040,
@@ -2510,7 +2479,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         };
 
         if type_object.as_class_object().is_none() && type_object.as_function_object().is_none() {
-            return Err(Error::AvmError(type_error(
+            return Err(Error::avm_error(type_error(
                 self,
                 "Error #1040: The right-hand side of instanceof must be a class or function.",
                 1040,
@@ -2614,13 +2583,14 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     fn lookup_switch(&mut self, lookup_switch: &LookupSwitch) -> usize {
         let index = self.pop_stack().as_i32();
 
-        let default_offset = lookup_switch.default_offset;
+        let default_offset = lookup_switch.default_offset.clone();
         let case_offsets = &lookup_switch.case_offsets;
 
         case_offsets
             .get(index as usize)
-            .copied()
+            .cloned()
             .unwrap_or(default_offset)
+            .get()
     }
 
     /// Implements `Op::Coerce`
@@ -2654,11 +2624,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     fn op_si8(&mut self) -> Result<(), Error<'gc>> {
         let address = self.pop_stack().coerce_to_i32(self)?;
         let val = self.pop_stack().coerce_to_i32(self)? as i8;
-
-        let dm = self.domain_memory();
-        let mut dm = dm
-            .as_bytearray_mut()
-            .expect("Bytearray storage should exist");
+        let mut dm = self.domain_memory().storage_mut();
 
         let Ok(address) = usize::try_from(address) else {
             return Err(make_error_1506(self));
@@ -2677,11 +2643,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     fn op_si16(&mut self) -> Result<(), Error<'gc>> {
         let address = self.pop_stack().coerce_to_i32(self)?;
         let val = self.pop_stack().coerce_to_i32(self)? as i16;
-
-        let dm = self.domain_memory();
-        let mut dm = dm
-            .as_bytearray_mut()
-            .expect("Bytearray storage should exist");
+        let mut dm = self.domain_memory().storage_mut();
 
         let Ok(address) = usize::try_from(address) else {
             return Err(make_error_1506(self));
@@ -2699,11 +2661,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     fn op_si32(&mut self) -> Result<(), Error<'gc>> {
         let address = self.pop_stack().coerce_to_i32(self)?;
         let val = self.pop_stack().coerce_to_i32(self)?;
-
-        let dm = self.domain_memory();
-        let mut dm = dm
-            .as_bytearray_mut()
-            .expect("Bytearray storage should exist");
+        let mut dm = self.domain_memory().storage_mut();
 
         let Ok(address) = usize::try_from(address) else {
             return Err(make_error_1506(self));
@@ -2721,11 +2679,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     fn op_sf32(&mut self) -> Result<(), Error<'gc>> {
         let address = self.pop_stack().coerce_to_i32(self)?;
         let val = self.pop_stack().coerce_to_number(self)? as f32;
-
-        let dm = self.domain_memory();
-        let mut dm = dm
-            .as_bytearray_mut()
-            .expect("Bytearray storage should exist");
+        let mut dm = self.domain_memory().storage_mut();
 
         let Ok(address) = usize::try_from(address) else {
             return Err(make_error_1506(self));
@@ -2743,11 +2697,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     fn op_sf64(&mut self) -> Result<(), Error<'gc>> {
         let address = self.pop_stack().coerce_to_i32(self)?;
         let val = self.pop_stack().coerce_to_number(self)?;
-
-        let dm = self.domain_memory();
-        let mut dm = dm
-            .as_bytearray_mut()
-            .expect("Bytearray storage should exist");
+        let mut dm = self.domain_memory().storage_mut();
 
         let Ok(address) = usize::try_from(address) else {
             return Err(make_error_1506(self));
@@ -2764,9 +2714,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     /// Implements `Op::Li8`
     fn op_li8(&mut self) -> Result<(), Error<'gc>> {
         let address = self.pop_stack().coerce_to_u32(self)? as usize;
-
-        let dm = self.domain_memory();
-        let dm = dm.as_bytearray().expect("Bytearray storage should exist");
+        let dm = self.domain_memory().storage();
 
         let val = dm.get(address);
 
@@ -2782,9 +2730,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     /// Implements `Op::Li16`
     fn op_li16(&mut self) -> Result<(), Error<'gc>> {
         let address = self.pop_stack().coerce_to_u32(self)? as usize;
-
-        let dm = self.domain_memory();
-        let dm = dm.as_bytearray().expect("Bytearray storage should exist");
+        let dm = self.domain_memory().storage();
 
         if address > dm.len() - 2 {
             return Err(make_error_1506(self));
@@ -2799,9 +2745,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     /// Implements `Op::Li32`
     fn op_li32(&mut self) -> Result<(), Error<'gc>> {
         let address = self.pop_stack().coerce_to_u32(self)? as usize;
-
-        let dm = self.domain_memory();
-        let dm = dm.as_bytearray().expect("Bytearray storage should exist");
+        let dm = self.domain_memory().storage();
 
         if address > dm.len() - 4 {
             return Err(make_error_1506(self));
@@ -2815,9 +2759,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     /// Implements `Op::Lf32`
     fn op_lf32(&mut self) -> Result<(), Error<'gc>> {
         let address = self.pop_stack().coerce_to_u32(self)? as usize;
-
-        let dm = self.domain_memory();
-        let dm = dm.as_bytearray().expect("Bytearray storage should exist");
+        let dm = self.domain_memory().storage();
 
         if address > dm.len() - 4 {
             return Err(make_error_1506(self));
@@ -2832,9 +2774,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     /// Implements `Op::Lf64`
     fn op_lf64(&mut self) -> Result<(), Error<'gc>> {
         let address = self.pop_stack().coerce_to_u32(self)? as usize;
-
-        let dm = self.domain_memory();
-        let dm = dm.as_bytearray().expect("Bytearray storage should exist");
+        let dm = self.domain_memory().storage();
 
         if address > dm.len() - 8 {
             return Err(make_error_1506(self));
@@ -2948,6 +2888,6 @@ impl<'a, 'gc> Activation<'a, 'gc> {
 
     fn op_throw(&mut self) -> Result<(), Error<'gc>> {
         let error_val = self.pop_stack();
-        Err(Error::AvmError(error_val))
+        Err(Error::avm_error(error_val))
     }
 }

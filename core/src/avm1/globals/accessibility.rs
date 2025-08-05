@@ -3,7 +3,7 @@
 use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
 use crate::avm1::property_decl::{define_properties_on, Declaration};
-use crate::avm1::{Object, ScriptObject, Value};
+use crate::avm1::{Object, Value};
 use crate::avm1_stub;
 use crate::string::StringContext;
 
@@ -45,7 +45,7 @@ pub fn create_accessibility_object<'gc>(
     proto: Object<'gc>,
     fn_proto: Object<'gc>,
 ) -> Object<'gc> {
-    let accessibility = ScriptObject::new(context, Some(proto));
+    let accessibility = Object::new(context, Some(proto));
     define_properties_on(OBJECT_DECLS, context, accessibility, fn_proto);
-    accessibility.into()
+    accessibility
 }

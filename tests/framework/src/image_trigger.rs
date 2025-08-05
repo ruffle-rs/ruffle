@@ -35,7 +35,7 @@ impl Visitor<'_> for ImageTriggerVisitor {
         if value >= 0 && value <= i64::from(u32::MAX) {
             Ok(ImageTrigger::SpecificIteration(value as u32))
         } else {
-            Err(E::custom(format!("i64 out of range: {}", value)))
+            Err(E::custom(format!("i64 out of range: {value}")))
         }
     }
 
@@ -46,7 +46,7 @@ impl Visitor<'_> for ImageTriggerVisitor {
         if value <= u64::from(u32::MAX) {
             Ok(ImageTrigger::SpecificIteration(value as u32))
         } else {
-            Err(E::custom(format!("u64 out of range: {}", value)))
+            Err(E::custom(format!("u64 out of range: {value}")))
         }
     }
 

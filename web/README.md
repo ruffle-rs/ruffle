@@ -57,7 +57,7 @@ should work. Additionally, headless JREs should also work.
 
 Follow the instructions to [install Node.js](https://nodejs.org/) on your machine.
 
-We recommend using the currently active LTS 22, but we do also run tests with current Node.js 23.
+We recommend using the currently active LTS 22, but we do also run tests with current Node.js 24.
 
 Note that npm 7 or newer is required. It should come bundled with Node.js 15 or newer, but can be upgraded with older Node.js versions using `npm install -g npm` as root/Administrator.
 

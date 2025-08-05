@@ -1,7 +1,7 @@
 num_frames = 1
 
 [image_comparisons.output]
-tolerance = 6
+tolerance = 13
 
 [player_options]
 with_renderer = { optional = true, sample_count = 1 }

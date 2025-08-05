@@ -1,8 +1,9 @@
 use crate::avm2::object::script_object::ScriptObjectData;
-use crate::avm2::object::{Object, ObjectPtr, TObject};
+use crate::avm2::object::{Object, TObject};
 use crate::avm2::{Activation, ClassObject, Error};
 use crate::character::Character;
 use crate::font::Font;
+use crate::utils::HasPrefixField;
 use gc_arena::{Collect, Gc, GcWeak, Mutation};
 use std::fmt;
 
@@ -21,7 +22,7 @@ pub fn font_allocator<'gc>(
     {
         if let Some(lib) = activation.context.library.library_for_movie(movie) {
             if let Some(Character::Font(font)) = lib.character_by_id(id) {
-                Some(*font)
+                Some(font)
             } else {
                 None
             }
@@ -55,27 +56,19 @@ impl<'gc> FontObject<'gc> {
         ))
         .into()
     }
-}
 
-impl<'gc> TObject<'gc> for FontObject<'gc> {
-    fn gc_base(&self) -> Gc<'gc, ScriptObjectData<'gc>> {
-        // SAFETY: Object data is repr(C), and a compile-time assert ensures
-        // that the ScriptObjectData stays at offset 0 of the struct- so the
-        // layouts are compatible
-
-        unsafe { Gc::cast(self.0) }
-    }
-
-    fn as_ptr(&self) -> *const ObjectPtr {
-        Gc::as_ptr(self.0) as *const ObjectPtr
-    }
-
-    fn as_font(&self) -> Option<Font<'gc>> {
+    pub fn font(self) -> Option<Font<'gc>> {
         self.0.font
     }
 }
 
-#[derive(Collect)]
+impl<'gc> TObject<'gc> for FontObject<'gc> {
+    fn gc_base(&self) -> Gc<'gc, ScriptObjectData<'gc>> {
+        HasPrefixField::as_prefix_gc(self.0)
+    }
+}
+
+#[derive(Collect, HasPrefixField)]
 #[collect(no_drop)]
 #[repr(C, align(8))]
 pub struct FontObjectData<'gc> {
@@ -84,10 +77,6 @@ pub struct FontObjectData<'gc> {
 
     font: Option<Font<'gc>>,
 }
-
-const _: () = assert!(std::mem::offset_of!(FontObjectData, base) == 0);
-const _: () =
-    assert!(std::mem::align_of::<FontObjectData>() == std::mem::align_of::<ScriptObjectData>());
 
 impl fmt::Debug for FontObject<'_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {

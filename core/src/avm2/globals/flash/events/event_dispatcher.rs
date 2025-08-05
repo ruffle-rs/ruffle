@@ -3,7 +3,7 @@
 use crate::avm2::activation::Activation;
 use crate::avm2::events;
 use crate::avm2::globals::slots::flash_events_event_dispatcher as slots;
-use crate::avm2::object::{DispatchObject, Object, TObject};
+use crate::avm2::object::{DispatchObject, Object, TObject as _};
 use crate::avm2::parameters::ParametersExt;
 use crate::avm2::value::Value;
 use crate::avm2::{Avm2, Error};

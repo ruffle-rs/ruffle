@@ -6,7 +6,7 @@ use crate::avm1::globals::bitmap_filter;
 use crate::avm1::globals::movie_clip::{new_rectangle, object_to_rectangle};
 use crate::avm1::property_decl::{define_properties_on, Declaration};
 use crate::avm1::ArrayBuilder;
-use crate::avm1::{globals, Object, ScriptObject, TObject, Value};
+use crate::avm1::{globals, Object, Value};
 use crate::avm1_stub;
 use crate::display_object::{Avm1Button, TDisplayObject, TInteractiveObject};
 use crate::string::{AvmString, StringContext};
@@ -55,9 +55,9 @@ pub fn create_proto<'gc>(
     proto: Object<'gc>,
     fn_proto: Object<'gc>,
 ) -> Object<'gc> {
-    let object = ScriptObject::new(context, Some(proto));
+    let object = Object::new(context, Some(proto));
     define_properties_on(PROTO_DECLS, context, object, fn_proto);
-    object.into()
+    object
 }
 
 fn blend_mode<'gc>(
@@ -70,12 +70,12 @@ fn blend_mode<'gc>(
 
 fn set_blend_mode<'gc>(
     this: Avm1Button<'gc>,
-    activation: &mut Activation<'_, 'gc>,
+    _activation: &mut Activation<'_, 'gc>,
     value: Value<'gc>,
 ) -> Result<(), Error<'gc>> {
     // No-op if value is not a valid blend mode.
     if let Some(mode) = value.as_blend_mode() {
-        this.set_blend_mode(activation.gc(), mode.into());
+        this.set_blend_mode(mode.into());
     } else {
         tracing::error!("Unknown blend mode {value:?}");
     }
@@ -89,8 +89,8 @@ fn filters<'gc>(
     Ok(ArrayBuilder::new(activation)
         .with(
             this.filters()
-                .into_iter()
-                .map(|filter| bitmap_filter::filter_to_avm1(activation, filter)),
+                .iter()
+                .map(|filter| bitmap_filter::filter_to_avm1(activation, filter.clone())),
         )
         .into())
 }
@@ -109,7 +109,7 @@ fn set_filters<'gc>(
             }
         }
     }
-    this.set_filters(activation.gc(), filters);
+    this.set_filters(filters.into_boxed_slice());
     Ok(())
 }
 
@@ -127,7 +127,7 @@ fn set_cache_as_bitmap<'gc>(
     value: Value<'gc>,
 ) -> Result<(), Error<'gc>> {
     // Note that the *getter* returns actual, and *setter* is preference
-    this.set_bitmap_cached_preference(activation.gc(), value.as_bool(activation.swf_version()));
+    this.set_bitmap_cached_preference(value.as_bool(activation.swf_version()));
     Ok(())
 }
 
@@ -152,10 +152,10 @@ fn set_scale_9_grid<'gc>(
     avm1_stub!(activation, "Button", "scale9Grid");
     if let Value::Object(object) = value {
         if let Some(rectangle) = object_to_rectangle(activation, object)? {
-            this.set_scaling_grid(activation.gc(), rectangle);
+            this.set_scaling_grid(rectangle);
         }
     } else {
-        this.set_scaling_grid(activation.gc(), Default::default());
+        this.set_scaling_grid(Default::default());
     };
     Ok(())
 }
@@ -187,7 +187,7 @@ fn set_tab_index<'gc>(
             }
             _ => Some(i32::MIN),
         };
-        this.set_tab_index(activation.context, value);
+        this.set_tab_index(value);
     }
     Ok(())
 }

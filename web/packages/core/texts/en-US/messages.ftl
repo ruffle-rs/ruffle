@@ -1,6 +1,9 @@
 message-cant-embed =
     Ruffle wasn't able to run the Flash embedded in this page.
     You can try to open the file in a separate tab, to sidestep this issue.
+message-restored-from-bfcache =
+    Your browser restored this Flash content from a previous session.
+    To start fresh, reload the page.
 panic-title = Something went wrong :(
 more-info = More info
 run-anyway = Run anyway

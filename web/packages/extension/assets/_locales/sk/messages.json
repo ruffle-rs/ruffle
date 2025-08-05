@@ -26,6 +26,12 @@
     "settings_log_level_info": {
         "message": "Info"
     },
+    "settings_log_level_debug": {
+        "message": "Ladenie"
+    },
+    "settings_log_level_trace": {
+        "message": "Trasovanie"
+    },
     "settings_max_execution_duration": {
         "message": "Maximálne povolené trvanie spustenia ActionScript (v sekundách)"
     },

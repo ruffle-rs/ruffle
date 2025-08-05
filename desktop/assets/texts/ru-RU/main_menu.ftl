@@ -33,6 +33,7 @@ bookmarks-menu-add = Добавить...
 bookmarks-menu-manage = Управление закладками...
 debug-menu = Отладка
 debug-menu-open-stage = Информация о сцене
+debug-menu-open-root-movie-clip = Просмотр корня MovieClip
 debug-menu-open-movie = Просмотр ролика
 debug-menu-open-movie-list = Известные ролики
 debug-menu-open-domain-list = Показать домены

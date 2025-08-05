@@ -8,7 +8,7 @@ package flash.net {
             }
         }
 
-        public function decode(str: String) {
+        public function decode(str: String):void {
             for each (var pair in str.AS3::split("&")) {
                 var splitIndex = pair.AS3::indexOf("=");
                 if (splitIndex === -1) {

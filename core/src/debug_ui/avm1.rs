@@ -1,5 +1,5 @@
 use crate::avm1::globals::style_sheet::StyleSheetObject;
-use crate::avm1::{Activation, ActivationIdentifier, Error, NativeObject, Object, TObject, Value};
+use crate::avm1::{Activation, ActivationIdentifier, Error, NativeObject, Object, Value};
 use crate::context::UpdateContext;
 use crate::debug_ui::display_object::open_display_object_button;
 use crate::debug_ui::handle::{AVM1ObjectHandle, DisplayObjectHandle};

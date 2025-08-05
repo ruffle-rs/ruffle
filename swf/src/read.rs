@@ -89,19 +89,13 @@ pub fn decompress_swf<'a, R: Read + 'a>(mut input: R) -> Result<SwfBuf> {
         Compression::None => Box::new(input),
         Compression::Zlib => {
             if version < 6 {
-                log::warn!(
-                    "zlib compressed SWF is version {} but minimum version is 6",
-                    version
-                );
+                log::warn!("zlib compressed SWF is version {version} but minimum version is 6");
             }
             make_zlib_reader(input)?
         }
         Compression::Lzma => {
             if version < 13 {
-                log::warn!(
-                    "LZMA compressed SWF is version {} but minimum version is 13",
-                    version
-                );
+                log::warn!("LZMA compressed SWF is version {version} but minimum version is 13");
             }
             // Uncompressed length includes the 4-byte header and 4-byte uncompressed length itself,
             // subtract it here.
@@ -112,7 +106,7 @@ pub fn decompress_swf<'a, R: Read + 'a>(mut input: R) -> Result<SwfBuf> {
     // Decompress the entire SWF.
     let mut data = Vec::with_capacity(uncompressed_len as usize);
     if let Err(e) = decompress_stream.read_to_end(&mut data) {
-        log::error!("Error decompressing SWF: {}", e);
+        log::error!("Error decompressing SWF: {e}");
     }
 
     // Some SWF streams may not be compressed correctly,
@@ -412,13 +406,11 @@ impl<'a> Reader<'a> {
                 Tag::DefineBinaryData(tag_reader.read_define_binary_data()?)
             }
             TagCode::DefineBits => {
-                let id = tag_reader.read_u16()?;
-                let jpeg_data = tag_reader.read_slice_to_end();
+                let (id, jpeg_data) = tag_reader.read_define_bits()?;
                 Tag::DefineBits { id, jpeg_data }
             }
             TagCode::DefineBitsJpeg2 => {
-                let id = tag_reader.read_u16()?;
-                let jpeg_data = tag_reader.read_slice_to_end();
+                let (id, jpeg_data) = tag_reader.read_define_bits_jpeg_2()?;
                 Tag::DefineBitsJpeg2 { id, jpeg_data }
             }
             TagCode::DefineBitsJpeg3 => {
@@ -630,7 +622,7 @@ impl<'a> Reader<'a> {
             // But sometimes tools will export SWF tags that are larger than they should be.
             // TODO: It might be worthwhile to have a "strict mode" to determine
             // whether this should error or not.
-            log::warn!("Data remaining in buffer when parsing {:?}", tag_code);
+            log::warn!("Data remaining in buffer when parsing {tag_code:?}");
         }
 
         Ok(tag)
@@ -1093,7 +1085,7 @@ impl<'a> Reader<'a> {
             let leading = self.read_i16()?;
 
             for glyph in &mut glyphs {
-                glyph.advance = self.read_i16()?;
+                glyph.advance = self.read_u16()?;
             }
 
             // Some older SWFs end the tag here, as this data isn't used until v7.
@@ -2489,7 +2481,19 @@ impl<'a> Reader<'a> {
         })
     }
 
-    fn read_define_bits_jpeg_3(&mut self, version: u8) -> Result<DefineBitsJpeg3<'a>> {
+    pub fn read_define_bits(&mut self) -> Result<(CharacterId, &'a [u8])> {
+        let id = self.read_character_id()?;
+        let jpeg_data = self.read_slice_to_end();
+        Ok((id, jpeg_data))
+    }
+
+    pub fn read_define_bits_jpeg_2(&mut self) -> Result<(CharacterId, &'a [u8])> {
+        let id = self.read_character_id()?;
+        let jpeg_data = self.read_slice_to_end();
+        Ok((id, jpeg_data))
+    }
+
+    pub fn read_define_bits_jpeg_3(&mut self, version: u8) -> Result<DefineBitsJpeg3<'a>> {
         let id = self.read_character_id()?;
         let data_size = self.read_u32()? as usize;
         let deblocking = if version >= 4 {
@@ -2584,7 +2588,7 @@ pub fn read_compression_type<R: Read>(mut input: R) -> Result<Compression> {
 }
 
 #[cfg(test)]
-#[allow(clippy::unusual_byte_groupings)]
+#[expect(clippy::unusual_byte_groupings)]
 pub mod tests {
     use super::*;
     use crate::test_data;

@@ -17,8 +17,8 @@ ruffle_core = { path = "../core", features = ["deterministic", "default_font"] }
 ruffle_render_wgpu = { path = "../render/wgpu", features = ["clap"] }
 image = { workspace = true, features = ["png"] }
 walkdir = { workspace = true }
-indicatif = "0.17"
-rayon = "1.10.0"
+indicatif = { workspace = true }
+rayon = { workspace = true }
 anyhow = { workspace = true }
 
 [features]

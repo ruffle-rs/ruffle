@@ -75,6 +75,10 @@ bitflags! {
         /// TODO: There are places (getQName()) where FP sets this where we don't have a direct equivalent,
         /// these should probably be audited eventually
         const IS_QNAME = 1 << 3;
+
+        /// Whether this multiname was initially a Multiname, MultinameA,
+        /// MultinameL, or MultinameLA.
+        const HAS_MULTIPLE_NS = 1 << 4;
     }
 }
 
@@ -136,6 +140,11 @@ impl<'gc> Multiname<'gc> {
 
     pub fn set_is_qname(&mut self, is_qname: bool) {
         self.flags.set(MultinameFlags::IS_QNAME, is_qname);
+    }
+
+    #[inline(always)]
+    pub fn has_multiple_ns(&self) -> bool {
+        self.flags.contains(MultinameFlags::HAS_MULTIPLE_NS)
     }
 
     /// Read a namespace set from the ABC constant pool, and return a list of
@@ -246,14 +255,14 @@ impl<'gc> Multiname<'gc> {
                     .pool_string_option(name.0, activation.strings())?
                     .map(|v| v.into()),
                 param: None,
-                flags: Default::default(),
+                flags: MultinameFlags::HAS_MULTIPLE_NS,
             },
             AbcMultiname::MultinameL { namespace_set }
             | AbcMultiname::MultinameLA { namespace_set } => Self {
                 ns: Self::abc_namespace_set(activation, translation_unit, *namespace_set)?,
                 name: None,
                 param: None,
-                flags: MultinameFlags::HAS_LAZY_NAME,
+                flags: MultinameFlags::HAS_LAZY_NAME | MultinameFlags::HAS_MULTIPLE_NS,
             },
             AbcMultiname::TypeName {
                 base_type,
@@ -325,7 +334,7 @@ impl<'gc> Multiname<'gc> {
             ns,
             name,
             param: self.param,
-            flags: self.flags & (MultinameFlags::ATTRIBUTE | MultinameFlags::IS_QNAME),
+            flags: self.flags & !(MultinameFlags::HAS_LAZY_NS | MultinameFlags::HAS_LAZY_NAME),
         })
     }
 
@@ -431,6 +440,11 @@ impl<'gc> Multiname<'gc> {
         let name_match = self.name.map(|n| n == name.local_name()).unwrap_or(true);
 
         ns_match && name_match
+    }
+
+    /// Whether this multiname is valid for dynamic lookups, such as `array[3]`.
+    pub fn valid_dynamic_name(&self) -> bool {
+        self.contains_public_namespace() && !self.is_attribute()
     }
 
     /// List the parameters that the selected class must match.

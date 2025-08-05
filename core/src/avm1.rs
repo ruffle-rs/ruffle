@@ -22,6 +22,7 @@ mod property_map;
 mod runtime;
 mod scope;
 mod value;
+mod xml;
 
 pub use activation::{Activation, ActivationIdentifier};
 pub use debug::VariableDumper;
@@ -31,8 +32,7 @@ pub use function::ExecutionReason;
 pub use globals::array::ArrayBuilder;
 pub use globals::context_menu::make_context_menu_state;
 pub use globals::sound::start as start_sound;
-pub use object::script_object::ScriptObject;
-pub use object::{NativeObject, Object, ObjectPtr, TObject};
+pub use object::{NativeObject, Object, ObjectPtr};
 pub use property::Attribute;
 pub use property_map::PropertyMap;
 pub use runtime::Avm1;

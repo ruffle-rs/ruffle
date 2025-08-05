@@ -1,9 +1,9 @@
 use crate::avm1::Attribute;
 use crate::avm1::Avm1;
 use crate::avm1::Object;
+use crate::avm1::Value;
 use crate::avm1::VariableDumper;
 use crate::avm1::{Activation, ActivationIdentifier};
-use crate::avm1::{TObject, Value};
 use crate::avm2::object::{EventObject as Avm2EventObject, Object as Avm2Object};
 use crate::avm2::{Activation as Avm2Activation, Avm2, CallStack};
 use crate::backend::ui::FontDefinition;
@@ -203,7 +203,7 @@ struct GcRootData<'gc> {
 #[collect(no_drop)]
 pub struct PostFrameCallback<'gc> {
     #[collect(require_static)]
-    #[allow(clippy::type_complexity)]
+    #[expect(clippy::type_complexity)]
     pub callback: Box<dyn for<'b> FnOnce(&mut UpdateContext<'b>, DisplayObject<'b>) + 'static>,
     pub data: DisplayObject<'gc>,
 }
@@ -211,7 +211,7 @@ pub struct PostFrameCallback<'gc> {
 impl<'gc> GcRootData<'gc> {
     /// Splits out parameters for creating an `UpdateContext`
     /// (because we can borrow fields of `self` independently)
-    #[allow(clippy::type_complexity)]
+    #[expect(clippy::type_complexity)]
     fn update_context_params(
         &mut self,
     ) -> (
@@ -267,14 +267,6 @@ impl<'gc> GcRootData<'gc> {
 
 type GcArena = gc_arena::Arena<Rootable![GcRoot<'_>]>;
 
-type Audio = Box<dyn AudioBackend>;
-type Navigator = Box<dyn NavigatorBackend>;
-type Renderer = Box<dyn RenderBackend>;
-type Storage = Box<dyn StorageBackend>;
-type Log = Box<dyn LogBackend>;
-type Ui = Box<dyn UiBackend>;
-type Video = Box<dyn VideoBackend>;
-
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]
 enum RunState {
     Playing,
@@ -297,21 +289,24 @@ pub struct Player {
 
     /// The runtime we're emulating (Flash Player or Adobe AIR).
     /// In Adobe AIR mode, additional classes are available
-    #[allow(unused)]
+    #[expect(unused)]
     player_runtime: PlayerRuntime,
+
+    /// Whether we're emulating the release or the debug build.
+    player_mode: PlayerMode,
 
     swf: Arc<SwfMovie>,
 
     run_state: RunState,
     needs_render: bool,
 
-    renderer: Renderer,
-    audio: Audio,
-    navigator: Navigator,
-    storage: Storage,
-    log: Log,
-    ui: Ui,
-    video: Video,
+    renderer: Box<dyn RenderBackend>,
+    audio: Box<dyn AudioBackend>,
+    navigator: Box<dyn NavigatorBackend>,
+    storage: Box<dyn StorageBackend>,
+    log: Box<dyn LogBackend>,
+    ui: Box<dyn UiBackend>,
+    video: Box<dyn VideoBackend>,
 
     transform_stack: TransformStack,
 
@@ -842,7 +837,7 @@ impl Player {
             if mc.playing() {
                 mc.stop(context);
             } else {
-                mc.play(context);
+                mc.play();
             }
         }
     }
@@ -914,9 +909,7 @@ impl Player {
     }
 
     pub fn set_background_color(&mut self, color: Option<Color>) {
-        self.mutate_with_update_context(|context| {
-            context.stage.set_background_color(context.gc(), color)
-        })
+        self.mutate_with_update_context(|context| context.stage.set_background_color(color))
     }
 
     pub fn letterbox(&mut self) -> Letterbox {
@@ -924,9 +917,7 @@ impl Player {
     }
 
     pub fn set_letterbox(&mut self, letterbox: Letterbox) {
-        self.mutate_with_update_context(|context| {
-            context.stage.set_letterbox(context.gc(), letterbox)
-        })
+        self.mutate_with_update_context(|context| context.stage.set_letterbox(letterbox))
     }
 
     pub fn movie_width(&mut self) -> u32 {
@@ -951,7 +942,7 @@ impl Player {
     pub fn set_show_menu(&mut self, show_menu: bool) {
         self.mutate_with_update_context(|context| {
             let stage = context.stage;
-            stage.set_show_menu(context, show_menu);
+            stage.set_show_menu(show_menu);
         })
     }
 
@@ -959,7 +950,7 @@ impl Player {
     pub fn set_allow_fullscreen(&mut self, allow_fullscreen: bool) {
         self.mutate_with_update_context(|context| {
             let stage = context.stage;
-            stage.set_allow_fullscreen(context, allow_fullscreen);
+            stage.set_allow_fullscreen(allow_fullscreen);
         })
     }
 
@@ -977,7 +968,7 @@ impl Player {
         self.mutate_with_update_context(|context| {
             let stage = context.stage;
             if let Ok(window_mode) = WindowMode::from_str(window_mode) {
-                stage.set_window_mode(context, window_mode);
+                stage.set_window_mode(window_mode);
             }
         })
     }
@@ -998,7 +989,7 @@ impl Player {
 
     pub fn set_forced_scale_mode(&mut self, force: bool) {
         self.mutate_with_update_context(|context| {
-            context.stage.set_forced_scale_mode(context, force);
+            context.stage.set_forced_scale_mode(force);
         })
     }
 
@@ -1407,8 +1398,12 @@ impl Player {
                 };
                 if let Some(target) = target {
                     let event = ClipEvent::MouseWheel { delta: *delta };
-                    target.event_dispatch_to_avm2(context, event);
-                    target.handle_clip_event(context, event);
+                    if target.event_dispatch_to_avm2(context, event) == ClipEventResult::Handled {
+                        player_event_handled = true;
+                    }
+                    if target.handle_clip_event(context, event) == ClipEventResult::Handled {
+                        player_event_handled = true;
+                    }
                 }
             });
         }
@@ -1493,8 +1488,8 @@ impl Player {
             };
 
             // TODO: Introduce `DisplayObject::set_position()`?
-            display_object.set_x(context.gc(), new_position.x);
-            display_object.set_y(context.gc(), new_position.y);
+            display_object.set_x(new_position.x);
+            display_object.set_y(new_position.y);
 
             // Update `_droptarget` property of dragged object.
             if let Some(movie_clip) = display_object.as_movie_clip() {
@@ -2035,20 +2030,20 @@ impl Player {
         self.current_frame
     }
 
-    pub fn audio(&self) -> &Audio {
-        &self.audio
+    pub fn audio(&self) -> &dyn AudioBackend {
+        &*self.audio
     }
 
-    pub fn audio_mut(&mut self) -> &mut Audio {
-        &mut self.audio
+    pub fn audio_mut(&mut self) -> &mut dyn AudioBackend {
+        &mut *self.audio
     }
 
-    pub fn navigator(&self) -> &Navigator {
-        &self.navigator
+    pub fn navigator(&self) -> &dyn NavigatorBackend {
+        &*self.navigator
     }
 
-    pub fn navigator_mut(&mut self) -> &mut Navigator {
-        &mut self.navigator
+    pub fn navigator_mut(&mut self) -> &mut dyn NavigatorBackend {
+        &mut *self.navigator
     }
 
     // The frame rate of the current movie in FPS.
@@ -2056,32 +2051,34 @@ impl Player {
         self.frame_rate
     }
 
-    pub fn renderer(&self) -> &Renderer {
-        &self.renderer
+    pub fn renderer(&self) -> &dyn RenderBackend {
+        &*self.renderer
     }
 
-    pub fn renderer_mut(&mut self) -> &mut Renderer {
-        &mut self.renderer
+    pub fn renderer_mut(&mut self) -> &mut dyn RenderBackend {
+        &mut *self.renderer
     }
 
-    pub fn storage(&self) -> &Storage {
-        &self.storage
+    pub fn storage(&self) -> &dyn StorageBackend {
+        &*self.storage
     }
 
-    pub fn storage_mut(&mut self) -> &mut Storage {
-        &mut self.storage
+    pub fn storage_mut(&mut self) -> &mut dyn StorageBackend {
+        &mut *self.storage
     }
 
-    pub fn destroy(self) -> Renderer {
-        self.renderer
+    /// Only used by tests.
+    // TODO: consider removing this?
+    pub fn swap_storage(&mut self, storage: &mut Box<dyn StorageBackend>) {
+        std::mem::swap(&mut self.storage, storage);
     }
 
-    pub fn ui(&self) -> &Ui {
-        &self.ui
+    pub fn ui(&self) -> &dyn UiBackend {
+        &*self.ui
     }
 
-    pub fn ui_mut(&mut self) -> &mut Ui {
-        &mut self.ui
+    pub fn ui_mut(&mut self) -> &mut dyn UiBackend {
+        &mut *self.ui
     }
 
     pub fn run_actions(context: &mut UpdateContext<'_>) {
@@ -2202,7 +2199,8 @@ impl Player {
 
             let mut update_context = UpdateContext {
                 player_version: this.player_version,
-                swf: &mut this.swf,
+                player_mode: this.player_mode,
+                root_swf: &mut this.swf,
                 library,
                 rng: &mut this.rng,
                 renderer: this.renderer.deref_mut(),
@@ -2253,6 +2251,7 @@ impl Player {
                 dynamic_root,
                 post_frame_callbacks,
                 notification_sender: this.notification_sender.as_ref(),
+                frame_script_cleanup_queue: VecDeque::new(),
             };
 
             let prev_frame_rate = *update_context.frame_rate;
@@ -2260,7 +2259,7 @@ impl Player {
             let ret = f(&mut update_context);
 
             // If we changed the framerate, let the audio handler now.
-            #[allow(clippy::float_cmp)]
+            #[expect(clippy::float_cmp)]
             if *update_context.frame_rate != prev_frame_rate {
                 update_context
                     .audio
@@ -2410,8 +2409,8 @@ impl Player {
         &self.compatibility_rules
     }
 
-    pub fn log_backend(&self) -> &Log {
-        &self.log
+    pub fn log_backend(&self) -> &dyn LogBackend {
+        &*self.log
     }
 
     pub fn max_execution_duration(&self) -> Duration {
@@ -2446,18 +2445,24 @@ impl Player {
     }
 }
 
+impl Drop for Player {
+    fn drop(&mut self) {
+        self.flush_shared_objects();
+    }
+}
+
 /// Player factory, which can be used to configure the aspects of a Ruffle player.
 pub struct PlayerBuilder {
     movie: Option<SwfMovie>,
 
     // Backends
-    audio: Option<Audio>,
-    log: Option<Log>,
-    navigator: Option<Navigator>,
-    renderer: Option<Renderer>,
-    storage: Option<Storage>,
-    ui: Option<Ui>,
-    video: Option<Video>,
+    audio: Option<Box<dyn AudioBackend>>,
+    log: Option<Box<dyn LogBackend>>,
+    navigator: Option<Box<dyn NavigatorBackend>>,
+    renderer: Option<Box<dyn RenderBackend>>,
+    storage: Option<Box<dyn StorageBackend>>,
+    ui: Option<Box<dyn UiBackend>>,
+    video: Option<Box<dyn VideoBackend>>,
 
     // Notifications
     notification_sender: Option<Sender<PlayerNotification>>,
@@ -2481,6 +2486,7 @@ pub struct PlayerBuilder {
     gamepad_button_mapping: HashMap<GamepadButton, KeyCode>,
     player_version: Option<u8>,
     player_runtime: PlayerRuntime,
+    player_mode: PlayerMode,
     quality: StageQuality,
     page_url: Option<String>,
     frame_rate: Option<f64>,
@@ -2534,6 +2540,7 @@ impl PlayerBuilder {
             gamepad_button_mapping: HashMap::new(),
             player_version: None,
             player_runtime: PlayerRuntime::default(),
+            player_mode: PlayerMode::default(),
             quality: StageQuality::High,
             page_url: None,
             frame_rate: None,
@@ -2715,6 +2722,12 @@ impl PlayerBuilder {
         self
     }
 
+    /// Configures the player mode (default is `PlayerMode::Release`)
+    pub fn with_player_mode(mut self, mode: PlayerMode) -> Self {
+        self.player_mode = mode;
+        self
+    }
+
     // Configure the embedding page's URL (if applicable)
     pub fn with_page_url(mut self, page_url: Option<String>) -> Self {
         self.page_url = page_url;
@@ -2851,7 +2864,7 @@ impl PlayerBuilder {
         let language = ui.language();
 
         // Instantiate the player.
-        let fake_movie = Arc::new(SwfMovie::empty(player_version));
+        let fake_movie = Arc::new(SwfMovie::empty(player_version, None));
         let frame_rate = self.frame_rate.unwrap_or(12.0);
         let forced_frame_rate = self.frame_rate.is_some();
         let player = Arc::new_cyclic(|self_ref| {
@@ -2896,6 +2909,7 @@ impl PlayerBuilder {
                 instance_counter: 0,
                 player_version,
                 player_runtime: self.player_runtime,
+                player_mode: self.player_mode,
                 run_state: if self.autoplay {
                     RunState::Playing
                 } else {
@@ -2931,6 +2945,7 @@ impl PlayerBuilder {
 
         #[cfg(feature = "default_font")]
         {
+            use crate::font::FontFileData;
             use flate2::read::DeflateDecoder;
             use std::io::Read;
 
@@ -2944,7 +2959,7 @@ impl PlayerBuilder {
                 name: "Noto Sans".into(),
                 is_bold: false,
                 is_italic: false,
-                data,
+                data: FontFileData::new(data),
                 index: 0,
             });
 
@@ -2975,10 +2990,10 @@ impl PlayerBuilder {
 
             let stage = context.stage;
             stage.set_align(context, self.align);
-            stage.set_forced_align(context, self.forced_align);
+            stage.set_forced_align(self.forced_align);
             stage.set_scale_mode(context, self.scale_mode, false);
-            stage.set_forced_scale_mode(context, self.forced_scale_mode);
-            stage.set_allow_fullscreen(context, self.allow_fullscreen);
+            stage.set_forced_scale_mode(self.forced_scale_mode);
+            stage.set_allow_fullscreen(self.allow_fullscreen);
             stage.post_instantiation(context, None, Instantiator::Movie, false);
             stage.build_matrices(context);
             #[cfg(feature = "known_stubs")]
@@ -3040,17 +3055,21 @@ fn run_mouse_pick<'gc>(
     context.stage.iter_render_list().rev().find_map(|level| {
         level.as_interactive().and_then(|l| {
             if l.as_displayobject().movie().is_action_script_3() {
-                let mut res = None;
-                if let Avm2MousePick::Hit(target) =
-                    l.mouse_pick_avm2(context, *context.mouse_position, require_button_mode)
-                {
-                    // Flash Player appears to never target events at the root object
-                    if !target.as_displayobject().is_root() {
-                        res = Some(target);
-                    }
-                }
+                let pick = l
+                    .mouse_pick_avm2(context, *context.mouse_position, require_button_mode)
+                    .combine_with_parent(context.stage.into());
 
-                res
+                if let Avm2MousePick::Hit(target) = pick {
+                    if target == context.stage.into() {
+                        // The caller does not expect the stage to be the target, instead return
+                        // None. We can end up here because the root objects of stages and
+                        // loaders do not accept hit events. (handled by combine_with_parent)
+                        return None;
+                    }
+                    Some(target)
+                } else {
+                    None
+                }
             } else {
                 l.mouse_pick_avm1(context, *context.mouse_position, require_button_mode)
             }
@@ -3080,4 +3099,15 @@ impl FromStr for PlayerRuntime {
         };
         Ok(player_runtime)
     }
+}
+
+#[derive(Default, Clone, Copy, Debug, Eq, PartialEq)]
+#[cfg_attr(feature = "serde", derive(serde::Deserialize))]
+pub enum PlayerMode {
+    /// Represents the release version of Flash Player, i.e. flashplayer.
+    #[default]
+    Release,
+
+    /// Represents the debug version of Flash Player, i.e. flashplayerdebugger.
+    Debug,
 }

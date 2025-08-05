@@ -2,7 +2,6 @@
 
 use crate::avm2::globals::avmplus::instance_class_describe_type;
 
-use crate::avm2::object::TObject;
 use crate::avm2::parameters::ParametersExt;
 use crate::avm2::{Activation, Error, Value};
 use crate::string::AvmString;
