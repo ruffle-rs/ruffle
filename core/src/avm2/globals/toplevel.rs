@@ -259,7 +259,6 @@ where
 }
 
 // code derived from flash.utils.unescapeMultiByte
-// FIXME: support bugzilla #538107
 fn decode<'gc>(
     activation: &mut Activation<'_, 'gc>,
     args: &[Value<'gc>],
@@ -335,19 +334,19 @@ fn decode<'gc>(
             }
         }
 
-        let Ok(decoded) = std::str::from_utf8(&bytes) else {
-            return Err(Error::avm_error(uri_error(
-                activation,
-                &format!("Error #1052: Invalid URI passed to {func_name} function."),
-                1052,
-            )?));
+        let is_reserved = if bytes.len() == 1 {
+            reserved_set.contains(bytes[0] as char)
+        } else {
+            // Multi-byte string cannot be reserved
+            false
         };
-        if reserved_set.contains(decoded) {
+
+        if is_reserved {
             for byte in &bytes {
                 write!(output, "%{byte:02X}").unwrap();
             }
         } else {
-            output.push_utf8(decoded);
+            output.push_utf8_bytes(&bytes);
         }
     }
 
