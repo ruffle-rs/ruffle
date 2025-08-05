@@ -3,7 +3,7 @@
 use ruffle_wstr::Units;
 
 use crate::avm2::activation::Activation;
-use crate::avm2::error::{uri_error, Error};
+use crate::avm2::error::{make_error_1052, Error};
 use crate::avm2::parameters::ParametersExt;
 use crate::avm2::value::Value;
 use crate::string::{AvmString, WStr, WString};
@@ -273,11 +273,7 @@ fn decode<'gc>(
 
     while let Some(c) = chars.next() {
         let Ok(c) = c else {
-            return Err(Error::avm_error(uri_error(
-                activation,
-                &format!("Error #1052: Invalid URI passed to {func_name} function."),
-                1052,
-            )?));
+            return Err(make_error_1052(activation, func_name));
         };
 
         if c != '%' {
@@ -287,47 +283,27 @@ fn decode<'gc>(
 
         bytes.clear();
         let Some(byte) = handle_percent(&mut chars) else {
-            return Err(Error::avm_error(uri_error(
-                activation,
-                &format!("Error #1052: Invalid URI passed to {func_name} function."),
-                1052,
-            )?));
+            return Err(make_error_1052(activation, func_name));
         };
         bytes.push(byte);
         if (byte & 0x80) != 0 {
             let n = byte.leading_ones();
 
             if n == 1 || n > 4 {
-                return Err(Error::avm_error(uri_error(
-                    activation,
-                    &format!("Error #1052: Invalid URI passed to {func_name} function."),
-                    1052,
-                )?));
+                return Err(make_error_1052(activation, func_name));
             }
 
             for _ in 1..n {
                 if chars.next() != Some(Ok('%')) {
-                    return Err(Error::avm_error(uri_error(
-                        activation,
-                        &format!("Error #1052: Invalid URI passed to {func_name} function."),
-                        1052,
-                    )?));
+                    return Err(make_error_1052(activation, func_name));
                 }; // consume %
 
                 let Some(byte) = handle_percent(&mut chars) else {
-                    return Err(Error::avm_error(uri_error(
-                        activation,
-                        &format!("Error #1052: Invalid URI passed to {func_name} function."),
-                        1052,
-                    )?));
+                    return Err(make_error_1052(activation, func_name));
                 };
 
                 if (byte & 0xC0) != 0x80 {
-                    return Err(Error::avm_error(uri_error(
-                        activation,
-                        &format!("Error #1052: Invalid URI passed to {func_name} function."),
-                        1052,
-                    )?));
+                    return Err(make_error_1052(activation, func_name));
                 }
 
                 bytes.push(byte);
