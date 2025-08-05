@@ -1149,7 +1149,7 @@ fn draw_triangles_internal<'gc>(
         .expect("vertices is not a Vector");
 
     if let Some(indices) = indices {
-        if vertices.length() % 2 != 0 {
+        if !vertices.length().is_multiple_of(2) {
             return Err(make_error_2004(activation, Error2004Type::ArgumentError));
         }
 
@@ -1205,7 +1205,7 @@ fn draw_triangles_internal<'gc>(
             draw_triangle_internal(triangle, drawing, culling);
         }
     } else {
-        if vertices.length() % 6 != 0 {
+        if !vertices.length().is_multiple_of(6) {
             return Err(make_error_2004(activation, Error2004Type::ArgumentError));
         }
 
@@ -1388,7 +1388,7 @@ fn process_commands<'gc>(
 
     // This error is always thrown at this point,
     // no matter if data is superfluous.
-    if data.length() % 2 != 0 {
+    if !data.length().is_multiple_of(2) {
         return Err(make_error_2004(activation, Error2004Type::ArgumentError));
     }
 

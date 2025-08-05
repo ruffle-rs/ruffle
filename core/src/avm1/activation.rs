@@ -1139,7 +1139,9 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     fn action_get_time(&mut self) -> Result<FrameControl<'gc>, Error<'gc>> {
         self.context.times_get_time_called += 1;
         // heuristic to detect busy loops used for delays and slowly progress fake time
-        if self.context.times_get_time_called >= 20 && self.context.times_get_time_called % 5 == 0 {
+        if self.context.times_get_time_called >= 20
+            && self.context.times_get_time_called.is_multiple_of(5)
+        {
             *self.context.time_offset += 1;
         }
 
