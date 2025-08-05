@@ -90,7 +90,7 @@ pub fn max<'gc>(
         let val = arg.coerce_to_number(activation)?;
         if val.is_nan() {
             return Ok(f64::NAN.into());
-        } else if val > cur_max {
+        } else if val.total_cmp(&cur_max).is_gt() {
             cur_max = val;
         };
     }
@@ -107,7 +107,7 @@ pub fn min<'gc>(
         let val = arg.coerce_to_number(activation)?;
         if val.is_nan() {
             return Ok(f64::NAN.into());
-        } else if val < cur_min {
+        } else if val.total_cmp(&cur_min).is_lt() {
             cur_min = val;
         }
     }
