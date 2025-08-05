@@ -272,6 +272,18 @@ pub fn make_error_1033<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> 
     }
 }
 
+pub fn make_error_1052<'gc>(activation: &mut Activation<'_, 'gc>, func_name: &str) -> Error<'gc> {
+    let err = uri_error(
+        activation,
+        &format!("Error #1052: Invalid URI passed to {func_name} function."),
+        1052,
+    );
+    match err {
+        Ok(err) => Error::avm_error(err),
+        Err(err) => err,
+    }
+}
+
 pub fn make_error_1053<'gc>(
     activation: &mut Activation<'_, 'gc>,
     trait_name: AvmString<'gc>,
