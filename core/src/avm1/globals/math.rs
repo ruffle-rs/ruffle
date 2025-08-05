@@ -108,7 +108,8 @@ fn max<'gc>(
         if let Some(b) = args.get(1) {
             let b = b.coerce_to_f64(activation)?;
             use std::cmp::Ordering;
-            match a.partial_cmp(&b) {
+            // Normalize -0 to 0
+            0.0 + match a.partial_cmp(&b) {
                 Some(Ordering::Less) => b,
                 Some(Ordering::Equal) => a,
                 Some(Ordering::Greater) => a,
@@ -133,7 +134,8 @@ fn min<'gc>(
         if let Some(b) = args.get(1) {
             let b = b.coerce_to_f64(activation)?;
             use std::cmp::Ordering;
-            match a.partial_cmp(&b) {
+            // Normalize -0 to 0
+            0.0 + match a.partial_cmp(&b) {
                 Some(Ordering::Less) => a,
                 Some(Ordering::Equal) => a,
                 Some(Ordering::Greater) => b,
