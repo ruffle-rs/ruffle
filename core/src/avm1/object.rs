@@ -23,7 +23,7 @@ use crate::avm1::globals::xml_socket::XmlSocket;
 use crate::avm1::object::super_object::SuperObject;
 use crate::avm1::xml::XmlNode;
 use crate::avm1::{Activation, Error, Value};
-use crate::bitmap::bitmap_data::BitmapDataWrapper;
+use crate::bitmap::bitmap_data::BitmapData;
 use crate::display_object::{
     Avm1Button, DisplayObject, EditText, MovieClip, TDisplayObject as _, Video,
 };
@@ -85,7 +85,7 @@ pub enum NativeObject<'gc> {
     Transform(TransformObject<'gc>),
     TextFormat(Gc<'gc, RefCell<TextFormat>>),
     NetStream(NetStream<'gc>),
-    BitmapData(BitmapDataWrapper<'gc>),
+    BitmapData(BitmapData<'gc>),
     Xml(Xml<'gc>),
     XmlNode(XmlNode<'gc>),
     SharedObject(Gc<'gc, RefCell<SharedObject>>),
