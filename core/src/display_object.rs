@@ -570,6 +570,7 @@ impl<'gc> DisplayObjectBase<'gc> {
     }
 
     fn set_alpha(&self, value: f64) -> bool {
+        self.set_transformed_by_script(true);
         let value = Fixed8::from_f64(value);
         let mut tf = self.color_transform.get();
         let changed = tf.a_multiply != value;
