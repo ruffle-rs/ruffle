@@ -494,3 +494,22 @@ pub fn dispatch_event<'gc>(
     let handled = event.event().target.is_some();
     Ok(handled)
 }
+
+/// Like `dispatch_event`, but does not run the Capturing and Bubbling phases,
+/// and dispatches the event regardless of whether propagation has been stopped.
+/// This matches FP's event broadcasting logic.
+pub fn broadcast_event<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    this: Object<'gc>,
+    event: EventObject<'gc>,
+) -> Result<(), Error<'gc>> {
+    let target = this.get_slot(slots::TARGET).as_object().unwrap_or(this);
+
+    event
+        .event_mut(activation.gc())
+        .set_phase(EventPhase::AtTarget);
+
+    dispatch_event_to_target(activation, this, target, target, event, false)?;
+
+    Ok(())
+}
