@@ -44,6 +44,7 @@ package {
                 IME,
                 IndexBuffer3D,
                 InteractiveObject,
+                JSON,
                 Keyboard,
                 LoaderInfo,
                 Math,

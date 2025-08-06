@@ -49,6 +49,9 @@ ArgumentError: Error #2012: IndexBuffer3D$ class cannot be instantiated.
 [class InteractiveObject]
 ArgumentError: Error #2012: InteractiveObject$ class cannot be instantiated.
 	at Test()
+[class JSON]
+ArgumentError: Error #2012: JSON$ class cannot be instantiated.
+	at Test()
 [class Keyboard]
 ArgumentError: Error #2012: Keyboard$ class cannot be instantiated.
 	at Test()
