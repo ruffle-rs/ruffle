@@ -17,8 +17,8 @@ use crate::avm2::{
 use crate::avm2_stub_method_context;
 use crate::backend::navigator::{ErrorResponse, OwnedFuture, Request, SuccessResponse};
 use crate::backend::ui::DialogResultFuture;
+use crate::bitmap::bitmap_data::BitmapData;
 use crate::bitmap::bitmap_data::Color;
-use crate::bitmap::bitmap_data::{BitmapData, BitmapDataWrapper};
 use crate::context::{ActionQueue, ActionType, UpdateContext};
 use crate::display_object::{
     DisplayObject, MovieClip, TDisplayObject, TDisplayObjectContainer, TInteractiveObject,
@@ -34,7 +34,7 @@ use crate::vminterface::Instantiator;
 use chardetng::EncodingDetector;
 use encoding_rs::{UTF_8, WINDOWS_1252};
 use gc_arena::collect::Trace;
-use gc_arena::{Collect, GcCell};
+use gc_arena::Collect;
 use indexmap::IndexMap;
 use ruffle_macros::istr;
 use ruffle_render::utils::{determine_jpeg_tag_format, JpegTagFormat};
@@ -2186,18 +2186,17 @@ impl<'gc> Loader<'gc> {
                 let bitmap = ruffle_render::utils::decode_define_bits_jpeg(data, None)?;
 
                 let transparency = true;
-                let bitmap_data = BitmapData::new_with_pixels(
+                let bitmapdata = BitmapData::new_with_pixels(
+                    activation.context.gc_context,
                     bitmap.width(),
                     bitmap.height(),
                     transparency,
                     bitmap.as_colors().map(Color::from).collect(),
                 );
-                let bitmapdata_wrapper =
-                    BitmapDataWrapper::new(GcCell::new(activation.gc(), bitmap_data));
                 let bitmapdata_class = activation.context.avm2.classes().bitmapdata;
                 let bitmapdata_avm2 = BitmapDataObject::from_bitmap_data_internal(
                     &mut activation,
-                    bitmapdata_wrapper,
+                    bitmapdata,
                     bitmapdata_class,
                 )
                 .unwrap();

@@ -6,7 +6,7 @@ use crate::avm2::object::{Object, TObject};
 use crate::avm2::value::Value;
 use crate::avm2::Error;
 use crate::avm2_stub_method;
-use crate::bitmap::bitmap_data::BitmapData;
+use crate::bitmap::bitmap_data::BitmapRawData;
 use crate::context::RenderContext;
 use crate::utils::HasPrefixField;
 use gc_arena::{Collect, Gc, GcCell, GcWeak};
@@ -345,7 +345,7 @@ impl<'gc> Context3DObject<'gc> {
     }
     pub(crate) fn copy_bitmapdata_to_texture(
         &self,
-        source: GcCell<'gc, BitmapData<'gc>>,
+        source: GcCell<'gc, BitmapRawData<'gc>>,
         dest: Rc<dyn Texture>,
         layer: u32,
     ) {

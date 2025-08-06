@@ -3,7 +3,7 @@ use crate::avm2::error::make_error_2006;
 use crate::avm2::vector::VectorStorage;
 use crate::avm2::{Activation, Error, Value as Avm2Value};
 use crate::bitmap::bitmap_data::{
-    BitmapData, BitmapDataDrawError, BitmapDataWrapper, ChannelOptions, Color, IBitmapDrawable,
+    BitmapData, BitmapDataDrawError, BitmapRawData, ChannelOptions, Color, IBitmapDrawable,
     LehmerRng, ThresholdOperation,
 };
 use crate::bitmap::turbulence::Turbulence;
@@ -30,7 +30,7 @@ use swf::{BlendMode, ColorTransform, Fixed8, Rectangle, Twips};
 pub fn fill_rect<'gc>(
     mc: &Mutation<'gc>,
     renderer: &mut dyn RenderBackend,
-    target: BitmapDataWrapper<'gc>,
+    target: BitmapData<'gc>,
     x: i32,
     y: i32,
     width: i32,
@@ -69,7 +69,7 @@ pub fn fill_rect<'gc>(
 pub fn set_pixel32<'gc>(
     mc: &Mutation<'gc>,
     renderer: &mut dyn RenderBackend,
-    target: BitmapDataWrapper<'gc>,
+    target: BitmapData<'gc>,
     x: u32,
     y: u32,
     color: u32,
@@ -88,12 +88,7 @@ pub fn set_pixel32<'gc>(
     write.set_cpu_dirty(mc, PixelRegion::for_pixel(x, y));
 }
 
-pub fn get_pixel32(
-    target: BitmapDataWrapper,
-    renderer: &mut dyn RenderBackend,
-    x: u32,
-    y: u32,
-) -> u32 {
+pub fn get_pixel32(target: BitmapData, renderer: &mut dyn RenderBackend, x: u32, y: u32) -> u32 {
     if x >= target.width() || y >= target.height() {
         return 0;
     }
@@ -104,7 +99,7 @@ pub fn get_pixel32(
 pub fn set_pixel<'gc>(
     mc: &Mutation<'gc>,
     renderer: &mut dyn RenderBackend,
-    target: BitmapDataWrapper<'gc>,
+    target: BitmapData<'gc>,
     x: u32,
     y: u32,
     color: Color,
@@ -125,12 +120,7 @@ pub fn set_pixel<'gc>(
     write.set_cpu_dirty(mc, PixelRegion::for_pixel(x, y));
 }
 
-pub fn get_pixel(
-    target: BitmapDataWrapper,
-    renderer: &mut dyn RenderBackend,
-    x: u32,
-    y: u32,
-) -> u32 {
+pub fn get_pixel(target: BitmapData, renderer: &mut dyn RenderBackend, x: u32, y: u32) -> u32 {
     if x >= target.width() || y >= target.height() {
         return 0;
     }
@@ -143,7 +133,7 @@ pub fn get_pixel(
 pub fn flood_fill<'gc>(
     mc: &Mutation<'gc>,
     renderer: &mut dyn RenderBackend,
-    target: BitmapDataWrapper<'gc>,
+    target: BitmapData<'gc>,
     x: u32,
     y: u32,
     color: u32,
@@ -190,7 +180,7 @@ pub fn flood_fill<'gc>(
 
 pub fn noise<'gc>(
     mc: &Mutation<'gc>,
-    target: BitmapDataWrapper<'gc>,
+    target: BitmapData<'gc>,
     seed: i32,
     low: u8,
     high: u8,
@@ -257,7 +247,7 @@ pub fn noise<'gc>(
 #[expect(clippy::too_many_arguments)]
 pub fn perlin_noise<'gc>(
     mc: &Mutation<'gc>,
-    target: BitmapDataWrapper<'gc>,
+    target: BitmapData<'gc>,
     base: (f64, f64),
     num_octaves: usize,
     random_seed: i64,
@@ -375,10 +365,10 @@ pub fn perlin_noise<'gc>(
 pub fn copy_channel<'gc>(
     mc: &Mutation<'gc>,
     renderer: &mut dyn RenderBackend,
-    target: BitmapDataWrapper<'gc>,
+    target: BitmapData<'gc>,
     dest_point: (i32, i32),
     src_rect: (i32, i32, i32, i32),
-    source_bitmap: BitmapDataWrapper<'gc>,
+    source_bitmap: BitmapData<'gc>,
     source_channel: i32,
     dest_channel: i32,
 ) {
@@ -474,7 +464,7 @@ pub fn copy_channel<'gc>(
 pub fn color_transform<'gc>(
     mc: &Mutation<'gc>,
     renderer: &mut dyn RenderBackend,
-    target: BitmapDataWrapper<'gc>,
+    target: BitmapData<'gc>,
     x_min: u32,
     y_min: u32,
     x_max: u32,
@@ -531,8 +521,8 @@ pub fn color_transform<'gc>(
 pub fn threshold<'gc>(
     mc: &Mutation<'gc>,
     renderer: &mut dyn RenderBackend,
-    target: BitmapDataWrapper<'gc>,
-    source_bitmap: BitmapDataWrapper<'gc>,
+    target: BitmapData<'gc>,
+    source_bitmap: BitmapData<'gc>,
     src_rect: (i32, i32, i32, i32),
     dest_point: (i32, i32),
     operation: ThresholdOperation,
@@ -631,7 +621,7 @@ pub fn threshold<'gc>(
 pub fn scroll<'gc>(
     mc: &Mutation<'gc>,
     renderer: &mut dyn RenderBackend,
-    target: BitmapDataWrapper<'gc>,
+    target: BitmapData<'gc>,
     x: i32,
     y: i32,
 ) {
@@ -685,8 +675,8 @@ pub fn scroll<'gc>(
 pub fn palette_map<'gc>(
     mc: &Mutation<'gc>,
     renderer: &mut dyn RenderBackend,
-    target: BitmapDataWrapper<'gc>,
-    source_bitmap: BitmapDataWrapper<'gc>,
+    target: BitmapData<'gc>,
+    source_bitmap: BitmapData<'gc>,
     src_rect: (i32, i32, i32, i32),
     dest_point: (i32, i32),
     channel_arrays: ([u32; 256], [u32; 256], [u32; 256], [u32; 256]),
@@ -750,9 +740,10 @@ pub fn palette_map<'gc>(
 /// Compare two BitmapData objects.
 /// Returns `None` if the bitmaps are equivalent.
 pub fn compare<'gc>(
+    mc: &Mutation<'gc>,
     renderer: &mut dyn RenderBackend,
-    left: BitmapDataWrapper<'gc>,
-    right: BitmapDataWrapper<'gc>,
+    left: BitmapData<'gc>,
+    right: BitmapData<'gc>,
 ) -> Option<BitmapData<'gc>> {
     // This function expects that the two bitmaps have the same dimensions.
     // TODO: Relax this assumption and return a special value instead?
@@ -792,6 +783,7 @@ pub fn compare<'gc>(
 
     if different {
         Some(BitmapData::new_with_pixels(
+            mc,
             left.width(),
             left.height(),
             true,
@@ -804,7 +796,7 @@ pub fn compare<'gc>(
 
 pub fn hit_test_point(
     renderer: &mut dyn RenderBackend,
-    target: BitmapDataWrapper,
+    target: BitmapData,
     alpha_threshold: u8,
     test_point: (i32, i32),
 ) -> bool {
@@ -823,7 +815,7 @@ pub fn hit_test_point(
 
 pub fn hit_test_rectangle(
     renderer: &mut dyn RenderBackend,
-    target: BitmapDataWrapper,
+    target: BitmapData,
     alpha_threshold: u8,
     top_left: (i32, i32),
     size: (i32, i32),
@@ -844,10 +836,10 @@ pub fn hit_test_rectangle(
 
 pub fn hit_test_bitmapdata<'gc>(
     renderer: &mut dyn RenderBackend,
-    target: BitmapDataWrapper<'gc>,
+    target: BitmapData<'gc>,
     self_point: (i32, i32),
     self_threshold: u8,
-    test: BitmapDataWrapper<'gc>,
+    test: BitmapData<'gc>,
     test_point: (i32, i32),
     test_threshold: u8,
 ) -> bool {
@@ -905,7 +897,7 @@ pub fn hit_test_bitmapdata<'gc>(
 
 pub fn color_bounds_rect(
     renderer: &mut dyn RenderBackend,
-    target: BitmapDataWrapper,
+    target: BitmapData,
     find_color: bool,
     mask: u32,
     color: u32,
@@ -951,8 +943,8 @@ pub fn color_bounds_rect(
 pub fn merge<'gc>(
     mc: &Mutation<'gc>,
     renderer: &mut dyn RenderBackend,
-    target: BitmapDataWrapper<'gc>,
-    source_bitmap: BitmapDataWrapper<'gc>,
+    target: BitmapData<'gc>,
+    source_bitmap: BitmapData<'gc>,
     src_rect: (i32, i32, i32, i32),
     dest_point: (i32, i32),
     rgba_mult: (i32, i32, i32, i32),
@@ -1036,8 +1028,8 @@ pub fn merge<'gc>(
 
 pub fn copy_pixels<'gc>(
     context: &mut UpdateContext<'gc>,
-    target: BitmapDataWrapper<'gc>,
-    source_bitmap: BitmapDataWrapper<'gc>,
+    target: BitmapData<'gc>,
+    source_bitmap: BitmapData<'gc>,
     src_rect: (i32, i32, i32, i32),
     dest_point: (i32, i32),
     merge_alpha: bool,
@@ -1075,11 +1067,11 @@ pub fn copy_pixels<'gc>(
 #[expect(clippy::too_many_arguments)]
 pub fn copy_pixels_with_alpha_source<'gc>(
     context: &mut UpdateContext<'gc>,
-    target: BitmapDataWrapper<'gc>,
-    source_bitmap: BitmapDataWrapper<'gc>,
+    target: BitmapData<'gc>,
+    source_bitmap: BitmapData<'gc>,
     src_rect: (i32, i32, i32, i32),
     dest_point: (i32, i32),
-    alpha_bitmap: BitmapDataWrapper<'gc>,
+    alpha_bitmap: BitmapData<'gc>,
     alpha_point: (i32, i32),
     merge_alpha: bool,
 ) {
@@ -1213,8 +1205,8 @@ pub fn copy_pixels_with_alpha_source<'gc>(
 
 pub fn apply_filter<'gc>(
     context: &mut UpdateContext<'gc>,
-    target: BitmapDataWrapper<'gc>,
-    source: BitmapDataWrapper<'gc>,
+    target: BitmapData<'gc>,
+    source: BitmapData<'gc>,
     source_point: (u32, u32),
     source_size: (u32, u32),
     dest_point: (u32, u32),
@@ -1283,8 +1275,8 @@ pub fn apply_filter<'gc>(
 fn copy_on_cpu<'gc>(
     context: &Mutation<'gc>,
     renderer: &mut dyn RenderBackend,
-    source: BitmapDataWrapper<'gc>,
-    dest: BitmapDataWrapper<'gc>,
+    source: BitmapData<'gc>,
+    dest: BitmapData<'gc>,
     source_region: PixelRegion,
     dest_region: PixelRegion,
     mut blend: bool,
@@ -1378,8 +1370,8 @@ fn copy_on_cpu<'gc>(
 
 fn blend_and_transform<'gc>(
     context: &mut UpdateContext<'gc>,
-    source: BitmapDataWrapper<'gc>,
-    dest: BitmapDataWrapper<'gc>,
+    source: BitmapData<'gc>,
+    dest: BitmapData<'gc>,
     source_region: PixelRegion,
     dest_region: PixelRegion,
     transform: &ColorTransform,
@@ -1434,7 +1426,7 @@ fn blend_and_transform<'gc>(
 #[expect(clippy::too_many_arguments)]
 pub fn draw<'gc>(
     context: &mut UpdateContext<'gc>,
-    target: BitmapDataWrapper<'gc>,
+    target: BitmapData<'gc>,
     mut source: IBitmapDrawable<'gc>,
     transform: Transform,
     smoothing: bool,
@@ -1624,7 +1616,7 @@ pub fn draw<'gc>(
 }
 
 pub fn get_vector<'gc>(
-    target: BitmapDataWrapper,
+    target: BitmapData,
     renderer: &mut dyn RenderBackend,
     x: i32,
     y: i32,
@@ -1651,7 +1643,7 @@ pub fn get_vector<'gc>(
 
 pub fn set_vector<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    target: BitmapDataWrapper<'gc>,
+    target: BitmapData<'gc>,
     x_min: u32,
     y_min: u32,
     x_max: u32,
@@ -1691,7 +1683,7 @@ pub fn set_vector<'gc>(
 
 pub fn get_pixels_as_byte_array<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    target: BitmapDataWrapper,
+    target: BitmapData,
     x: i32,
     y: i32,
     width: i32,
@@ -1718,7 +1710,7 @@ pub fn get_pixels_as_byte_array<'gc>(
 pub fn set_pixels_from_byte_array<'gc>(
     mc: &Mutation<'gc>,
     renderer: &mut dyn RenderBackend,
-    target: BitmapDataWrapper<'gc>,
+    target: BitmapData<'gc>,
     x: i32,
     y: i32,
     width: i32,
@@ -1761,8 +1753,8 @@ pub fn set_pixels_from_byte_array<'gc>(
 pub fn pixel_dissolve<'gc>(
     mc: &Mutation<'gc>,
     renderer: &mut dyn RenderBackend,
-    target: BitmapDataWrapper<'gc>,
-    source_bitmap: BitmapDataWrapper<'gc>,
+    target: BitmapData<'gc>,
+    source_bitmap: BitmapData<'gc>,
     src_rect: (i32, i32, i32, i32),
     dest_point: (i32, i32),
     random_seed: i32,
@@ -1835,8 +1827,8 @@ pub fn pixel_dissolve<'gc>(
     }
 
     fn write_pixel(
-        write: &mut RefMut<'_, BitmapData>,
-        different_source_than_target: &Option<Ref<'_, BitmapData>>,
+        write: &mut RefMut<'_, BitmapRawData>,
+        different_source_than_target: &Option<Ref<'_, BitmapRawData>>,
         fill_color: u32,
         transparency: bool,
         base_point: (u32, u32),

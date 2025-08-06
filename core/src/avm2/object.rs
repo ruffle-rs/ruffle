@@ -15,7 +15,7 @@ use crate::avm2::vtable::VTable;
 use crate::avm2::Error;
 use crate::avm2::Multiname;
 use crate::avm2::Namespace;
-use crate::bitmap::bitmap_data::BitmapDataWrapper;
+use crate::bitmap::bitmap_data::BitmapData;
 use crate::display_object::DisplayObject;
 use crate::html::TextFormat;
 use crate::streams::NetStream;
@@ -870,7 +870,7 @@ impl<'gc> Object<'gc> {
     }
 
     /// Unwrap this object as a bitmap data.
-    pub fn as_bitmap_data(&self) -> Option<BitmapDataWrapper<'gc>> {
+    pub fn as_bitmap_data(&self) -> Option<BitmapData<'gc>> {
         self.as_bitmap_data_object().map(|o| o.get_bitmap_data())
     }
 
