@@ -5,7 +5,7 @@ use crate::avm1::function::FunctionObject;
 use crate::avm1::object::NativeObject;
 use crate::avm1::property_decl::{define_properties_on, Declaration};
 use crate::avm1::{Activation, Error, Object, Value};
-use crate::bitmap::bitmap_data::BitmapDataWrapper;
+use crate::bitmap::bitmap_data::BitmapData;
 use crate::context::UpdateContext;
 use crate::string::StringContext;
 use gc_arena::barrier::unlock;
@@ -20,7 +20,7 @@ use swf::{Color, Point};
 #[derive(Clone, Collect, Debug, Default)]
 #[collect(no_drop)]
 struct DisplacementMapFilterData<'gc> {
-    map_bitmap: Lock<Option<BitmapDataWrapper<'gc>>>,
+    map_bitmap: Lock<Option<BitmapData<'gc>>>,
     map_point: Cell<Point<i32>>,
     component_x: Cell<i32>,
     component_y: Cell<i32>,

@@ -11,7 +11,7 @@ use ruffle_render::bitmap::PixelSnapping;
 
 use crate::avm2::error::make_error_2008;
 use crate::avm2::parameters::ParametersExt;
-use crate::bitmap::bitmap_data::BitmapDataWrapper;
+use crate::bitmap::bitmap_data::BitmapData;
 use crate::character::Character;
 use crate::display_object::{Bitmap, TDisplayObject};
 
@@ -26,7 +26,7 @@ pub fn bitmap_allocator<'gc>(
     let orig_class = class;
     while let Some(class) = class_def {
         if class == bitmap_cls {
-            let bitmap_data = BitmapDataWrapper::dummy(activation.gc());
+            let bitmap_data = BitmapData::dummy(activation.gc());
             let display_object = Bitmap::new_with_bitmap_data(
                 activation.gc(),
                 0,
@@ -53,7 +53,7 @@ pub fn bitmap_allocator<'gc>(
                 let new_bitmap_data = fill_bitmap_data_from_symbol(activation, bitmap.compressed());
                 let bitmap_data_obj = BitmapDataObject::from_bitmap_data_internal(
                     activation,
-                    BitmapDataWrapper::dummy(activation.gc()),
+                    BitmapData::dummy(activation.gc()),
                     bitmapdata_cls,
                 )?;
                 bitmap_data_obj.init_bitmap_data(activation.gc(), new_bitmap_data);
@@ -121,7 +121,7 @@ pub fn get_bitmap_data<'gc>(
     let this = this.as_object().unwrap();
 
     if let Some(bitmap) = this.as_display_object().and_then(|dobj| dobj.as_bitmap()) {
-        let mut value = bitmap.bitmap_data_wrapper().object2();
+        let mut value = bitmap.bitmap_data().object2();
 
         // AS3 expects an unset BitmapData to be null, not 'undefined'
         if matches!(value, Value::Undefined) {
@@ -148,7 +148,7 @@ pub fn set_bitmap_data<'gc>(
             bitmap_data.as_bitmap_data().expect("Must be a BitmapData")
         } else {
             // Passing null results in a dummy BitmapData being set.
-            BitmapDataWrapper::dummy(activation.gc())
+            BitmapData::dummy(activation.gc())
         };
 
         bitmap.set_bitmap_data(activation.context, bitmap_data);

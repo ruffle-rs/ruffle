@@ -6,7 +6,7 @@ use crate::avm2::{
     ClassObject as Avm2ClassObject, Object as Avm2Object, StageObject as Avm2StageObject,
     Value as Avm2Value,
 };
-use crate::bitmap::bitmap_data::{BitmapData, BitmapDataWrapper};
+use crate::bitmap::bitmap_data::BitmapData;
 use crate::context::{RenderContext, UpdateContext};
 use crate::display_object::{DisplayObjectBase, DisplayObjectPtr, DisplayObjectWeak};
 use crate::prelude::*;
@@ -16,8 +16,7 @@ use crate::vminterface::Instantiator;
 use core::fmt;
 use gc_arena::barrier::unlock;
 use gc_arena::lock::Lock;
-use gc_arena::{Collect, Gc, GcCell, GcWeak, Mutation};
-use ruffle_render::backend::RenderBackend;
+use gc_arena::{Collect, Gc, GcWeak, Mutation};
 use ruffle_render::bitmap::{BitmapFormat, PixelSnapping};
 use std::cell::Cell;
 use std::sync::Arc;
@@ -114,9 +113,9 @@ pub struct BitmapGraphicData<'gc> {
     avm2_bitmap_class: Lock<BitmapClass<'gc>>,
 
     /// The current bitmap data object.
-    bitmap_data: Lock<BitmapDataWrapper<'gc>>,
+    bitmap_data: Lock<BitmapData<'gc>>,
 
-    /// The width and height values are cached from the BitmapDataWrapper
+    /// The width and height values are cached from the BitmapData
     /// when this Bitmap instance is first created,
     /// and continue to be reported even if the BitmapData is disposed.
     width: Cell<u32>,
@@ -142,7 +141,7 @@ impl<'gc> Bitmap<'gc> {
     pub fn new_with_bitmap_data(
         mc: &Mutation<'gc>,
         id: CharacterId,
-        bitmap_data: BitmapDataWrapper<'gc>,
+        bitmap_data: BitmapData<'gc>,
         smoothing: bool,
         movie: &Arc<SwfMovie>,
     ) -> Self {
@@ -193,16 +192,10 @@ impl<'gc> Bitmap<'gc> {
             .as_colors()
             .map(crate::bitmap::bitmap_data::Color::from)
             .collect();
-        let bitmap_data = BitmapData::new_with_pixels(width, height, transparency, pixels);
+        let bitmap_data = BitmapData::new_with_pixels(mc, width, height, transparency, pixels);
 
         let smoothing = true;
-        Self::new_with_bitmap_data(
-            mc,
-            id,
-            BitmapDataWrapper::new(GcCell::new(mc, bitmap_data)),
-            smoothing,
-            &movie,
-        )
+        Self::new_with_bitmap_data(mc, id, bitmap_data, smoothing, &movie)
     }
 
     // Important - we read 'width' and 'height' from the cached
@@ -224,13 +217,8 @@ impl<'gc> Bitmap<'gc> {
         self.0.pixel_snapping.set(value);
     }
 
-    pub fn bitmap_data_wrapper(self) -> BitmapDataWrapper<'gc> {
+    pub fn bitmap_data(self) -> BitmapData<'gc> {
         self.0.bitmap_data.get()
-    }
-
-    /// Retrieve the bitmap data associated with this `Bitmap`.
-    pub fn bitmap_data(self, renderer: &mut dyn RenderBackend) -> GcCell<'gc, BitmapData<'gc>> {
-        self.0.bitmap_data.get().sync(renderer)
     }
 
     /// Associate this `Bitmap` with new `BitmapData`.
@@ -241,11 +229,7 @@ impl<'gc> Bitmap<'gc> {
     ///
     /// This also forces the `BitmapData` to be sent to the rendering backend,
     /// if that has not already been done.
-    pub fn set_bitmap_data(
-        self,
-        context: &mut UpdateContext<'gc>,
-        bitmap_data: BitmapDataWrapper<'gc>,
-    ) {
+    pub fn set_bitmap_data(self, context: &mut UpdateContext<'gc>, bitmap_data: BitmapData<'gc>) {
         let weak_self = DisplayObjectWeak::Bitmap(self.downgrade());
 
         self.0
@@ -361,7 +345,7 @@ impl<'gc> TDisplayObject<'gc> for Bitmap<'gc> {
                 // even if it's linked to an image.
                 let bitmap_data_obj = Avm2BitmapDataObject::from_bitmap_data_internal(
                     &mut activation,
-                    BitmapDataWrapper::dummy(mc),
+                    BitmapData::dummy(mc),
                     bitmapdata_cls,
                 )
                 .expect("can't throw from post_instantiation -_-");
