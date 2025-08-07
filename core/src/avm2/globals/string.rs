@@ -177,7 +177,22 @@ pub fn locale_compare<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.coerce_to_string(activation)?;
 
-    let other = args.get_string(activation, 0)?;
+    let other_value = args.get_value(0);
+
+    if activation.caller_movie_or_root().version() < 11 {
+        match other_value {
+            Value::Null | Value::Undefined => {
+                if this.is_empty() {
+                    return Ok(Value::Integer(1));
+                } else {
+                    return Ok(Value::Integer(0));
+                }
+            }
+            _ => {}
+        };
+    }
+
+    let other = other_value.coerce_to_string(activation)?;
 
     for (tc, oc) in this.iter().zip(other.iter()) {
         let res = (tc as i32) - (oc as i32);
