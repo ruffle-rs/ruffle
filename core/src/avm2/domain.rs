@@ -25,6 +25,9 @@ use ruffle_wstr::WStr;
 #[collect(no_drop)]
 pub struct Domain<'gc>(Gc<'gc, DomainData<'gc>>);
 
+/// Weak version of the Domain struct, used to mark children of a Domain when
+/// the egui feature is enabled
+#[allow(dead_code)]
 #[derive(Copy, Clone, Collect)]
 #[collect(no_drop)]
 pub struct DomainWeak<'gc>(GcWeak<'gc, DomainData<'gc>>);
