@@ -1,4 +1,20 @@
-50
-50
-0
+// Frame 2
+// clip_x._x
+200
+// clip_y._y
+200
+// clip_rotation._rotation
+60
+// clip_xscale._xscale
+150
+// clip_yscale._yscale
+150
+// clip_alpha._alpha
+25
+// Frame 3
+undefined
+undefined
+undefined
+undefined
+undefined
 undefined
