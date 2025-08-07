@@ -2158,9 +2158,21 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     }
 
     fn op_multiply(&mut self) -> Result<(), Error<'gc>> {
-        let value2 = self.pop_stack().coerce_to_number(self)?;
-        let value1 = self.pop_stack().coerce_to_number(self)?;
+        let value2 = self.pop_stack();
+        let value1 = self.pop_stack();
 
+        // note: this exists only to preserve int*int -> int behavior
+        // to help int-indexing.
+        // Once we get a generic implicit double->int conversion,
+        // we can reevaluate whether this path is needed.
+        if let (Value::Integer(n1), Value::Integer(n2)) = (value1, value2) {
+            if let Some(result) = n1.checked_mul(n2) {
+                self.push_stack(result);
+                return Ok(());
+            }
+        }
+        let value2 = value2.coerce_to_number(self)?;
+        let value1 = value1.coerce_to_number(self)?;
         self.push_stack(value1 * value2);
 
         Ok(())
