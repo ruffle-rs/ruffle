@@ -73,7 +73,12 @@ fn load_test(params: TestLoaderParams) -> Trial {
 
     let test = Test::from_options(
         TestOptions::read(&root.join("test.toml").unwrap())
-            .context("Couldn't load test options")
+            .with_context(|| {
+                format!(
+                    "Couldn't load test options for {}",
+                    params.test_dir_real.to_string_lossy()
+                )
+            })
             .unwrap(),
         root,
         name.to_string(),
