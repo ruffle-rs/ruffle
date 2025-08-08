@@ -22,6 +22,7 @@ text2.text: Test2
 
 Empty text field does not set variable value:
 someOtherVar:
+Warning: Reference to undeclared variable, 'someOtherVar'
 undefined
 text3.text:
 
