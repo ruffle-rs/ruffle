@@ -4,7 +4,7 @@ use crate::avm2::activation::Activation;
 use crate::avm2::object::script_object::ScriptObjectData;
 use crate::avm2::object::{ClassObject, Object, TObject};
 use crate::avm2::Error;
-use crate::bitmap::bitmap_data::BitmapDataWrapper;
+use crate::bitmap::bitmap_data::BitmapData;
 use crate::utils::HasPrefixField;
 use core::fmt;
 use gc_arena::barrier::unlock;
@@ -21,10 +21,10 @@ pub fn bitmap_data_allocator<'gc>(
         activation.gc(),
         BitmapDataObjectData {
             base,
-            // This always starts out as a dummy (invalid) BitmapDataWrapper, so
+            // This always starts out as a dummy (invalid) BitmapData, so
             // that custom subclasses see a disposed BitmapData before they call super().
-            // The real BitmapDataWrapper is set by BitmapData.init()
-            bitmap_data: Lock::new(BitmapDataWrapper::dummy(activation.gc())),
+            // The real BitmapData is set by BitmapData.init()
+            bitmap_data: Lock::new(BitmapData::dummy(activation.context.gc_context)),
         },
     ))
     .into())
@@ -53,11 +53,11 @@ pub struct BitmapDataObjectData<'gc> {
     /// Base script object
     base: ScriptObjectData<'gc>,
 
-    bitmap_data: Lock<BitmapDataWrapper<'gc>>,
+    bitmap_data: Lock<BitmapData<'gc>>,
 }
 
 impl<'gc> BitmapDataObject<'gc> {
-    // Constructs a BitmapData object from a BitmapDataWrapper.
+    // Constructs a BitmapData object from a BitmapData.
     // This is *not* used when explicitly constructing a BitmapData
     // instance from ActionScript (e.g. `new BitmapData(100, 100)`,
     // or `new MyBitmapDataSubclass(100, 100)`).
@@ -68,7 +68,7 @@ impl<'gc> BitmapDataObject<'gc> {
     // like `clone()`
     pub fn from_bitmap_data_internal(
         activation: &mut Activation<'_, 'gc>,
-        bitmap_data: BitmapDataWrapper<'gc>,
+        bitmap_data: BitmapData<'gc>,
         class: ClassObject<'gc>,
     ) -> Result<Self, Error<'gc>> {
         let instance = Self(Gc::new(
@@ -93,14 +93,14 @@ impl<'gc> BitmapDataObject<'gc> {
         Ok(instance)
     }
 
-    pub fn get_bitmap_data(self) -> BitmapDataWrapper<'gc> {
+    pub fn get_bitmap_data(self) -> BitmapData<'gc> {
         self.0.bitmap_data.get()
     }
 
     /// This should only be called to initialize the association between an AVM
     /// object and it's associated bitmap data. This association should not be
     /// reinitialized later.
-    pub fn init_bitmap_data(self, mc: &Mutation<'gc>, new_bitmap: BitmapDataWrapper<'gc>) {
+    pub fn init_bitmap_data(self, mc: &Mutation<'gc>, new_bitmap: BitmapData<'gc>) {
         unlock!(Gc::write(mc, self.0), BitmapDataObjectData, bitmap_data).set(new_bitmap);
     }
 }

@@ -1,5 +1,3 @@
-use gc_arena::GcCell;
-
 use ruffle_render::backend::Context3DTextureFormat;
 
 use super::atf_jpegxr::do_compressed_upload;
@@ -10,7 +8,6 @@ use crate::avm2::Value;
 use crate::avm2::{Error, Object};
 use crate::avm2_stub_method;
 use crate::bitmap::bitmap_data::BitmapData;
-use crate::bitmap::bitmap_data::BitmapDataWrapper;
 use crate::bitmap::bitmap_data::Color;
 
 pub fn do_copy<'gc>(
@@ -31,7 +28,7 @@ pub fn do_copy<'gc>(
         return Ok(());
     }
 
-    // FIXME - see if we can avoid this intermediate BitmapDataWrapper, and copy
+    // FIXME - see if we can avoid this intermediate BitmapData, and copy
     // directly from a buffer to the target GPU texture
     let bitmap_data = match texture.original_format() {
         Context3DTextureFormat::Bgra => {
@@ -50,8 +47,7 @@ pub fn do_copy<'gc>(
                 })
                 .collect();
 
-            let bitmap_data = BitmapData::new_with_pixels(width, height, true, colors);
-            BitmapDataWrapper::new(GcCell::new(activation.gc(), bitmap_data))
+            BitmapData::new_with_pixels(activation.context.gc_context, width, height, true, colors)
         }
         _ => {
             tracing::warn!(
