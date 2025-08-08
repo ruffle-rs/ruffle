@@ -4132,6 +4132,18 @@ impl<'gc, 'a> MovieClip<'gc> {
                                 if self.avm2_class().is_none() {
                                     self.set_avm2_class(activation.gc(), Some(class_object));
                                 }
+
+                                // We also need to register this MovieClip as a character now
+
+                                let instantiated =
+                                    self.instantiate(activation.gc()).as_movie_clip().unwrap();
+
+                                let library = activation
+                                    .context
+                                    .library
+                                    .library_for_movie_mut(movie.clone());
+
+                                library.register_character(id, Character::MovieClip(instantiated));
                             }
                             _ => {
                                 tracing::warn!(
