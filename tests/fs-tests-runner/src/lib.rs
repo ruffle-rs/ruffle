@@ -61,6 +61,7 @@ pub struct TestLoaderParams<'a> {
 }
 
 pub type TestLoader = Box<dyn Fn(TestLoaderParams) -> Option<Trial>>;
+pub type TestComparator = Box<dyn FnMut(&Trial, &Trial) -> std::cmp::Ordering>;
 
 pub struct FsTestsRunner {
     root_dir: PathBuf,
@@ -68,6 +69,7 @@ pub struct FsTestsRunner {
     additional_tests: Vec<Trial>,
     test_loader: Option<TestLoader>,
     canonicalize_paths: bool,
+    comparator: TestComparator,
 }
 
 impl Default for FsTestsRunner {
@@ -84,6 +86,7 @@ impl FsTestsRunner {
             additional_tests: Vec::new(),
             test_loader: None,
             canonicalize_paths: false,
+            comparator: Box::new(|a, b| a.name().cmp(b.name())),
         }
     }
 
@@ -110,6 +113,21 @@ impl FsTestsRunner {
     pub fn with_canonicalize_paths(&mut self, canonicalize_paths: bool) -> &mut Self {
         self.canonicalize_paths = canonicalize_paths;
         self
+    }
+
+    pub fn with_test_ordering(&mut self, comparator: TestComparator) -> &mut Self {
+        self.comparator = comparator;
+        self
+    }
+
+    pub fn with_test_ordering_by_key<K, F>(&mut self, mut key_extractor: F) -> &mut Self
+    where
+        F: FnMut(&Trial) -> K + 'static,
+        K: Ord,
+    {
+        self.with_test_ordering(Box::new(move |a, b| {
+            key_extractor(a).cmp(&key_extractor(b))
+        }))
     }
 
     pub fn run(mut self) -> ! {
@@ -154,7 +172,7 @@ impl FsTestsRunner {
 
         tests.append(&mut self.additional_tests);
 
-        tests.sort_unstable_by(|a, b| a.name().cmp(b.name()));
+        tests.sort_unstable_by(self.comparator);
 
         libtest_mimic::run(&args, tests).exit()
     }
