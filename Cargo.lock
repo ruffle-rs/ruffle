@@ -1340,8 +1340,8 @@ checksum = "d8b14ccef22fc6f5a8f4d7d768562a182c04ce9a3b3157b91390b52ddfdf1a76"
 
 [[package]]
 name = "ecolor"
-version = "0.31.1"
-source = "git+https://github.com/emilk/egui.git?branch=main#78a8de2e8f8d6da82680af4701cfa6e61cfe389c"
+version = "0.32.0"
+source = "git+https://github.com/emilk/egui.git?branch=main#6fae65a3fabaf442cbbc96a76cbf70fe2fee16ee"
 dependencies = [
  "bytemuck",
  "emath",
@@ -1349,8 +1349,8 @@ dependencies = [
 
 [[package]]
 name = "egui"
-version = "0.31.1"
-source = "git+https://github.com/emilk/egui.git?branch=main#78a8de2e8f8d6da82680af4701cfa6e61cfe389c"
+version = "0.32.0"
+source = "git+https://github.com/emilk/egui.git?branch=main#6fae65a3fabaf442cbbc96a76cbf70fe2fee16ee"
 dependencies = [
  "ahash",
  "bitflags 2.9.1",
@@ -1365,8 +1365,8 @@ dependencies = [
 
 [[package]]
 name = "egui-wgpu"
-version = "0.31.1"
-source = "git+https://github.com/emilk/egui.git?branch=main#78a8de2e8f8d6da82680af4701cfa6e61cfe389c"
+version = "0.32.0"
+source = "git+https://github.com/emilk/egui.git?branch=main#6fae65a3fabaf442cbbc96a76cbf70fe2fee16ee"
 dependencies = [
  "ahash",
  "bytemuck",
@@ -1384,10 +1384,9 @@ dependencies = [
 
 [[package]]
 name = "egui-winit"
-version = "0.31.1"
-source = "git+https://github.com/emilk/egui.git?branch=main#78a8de2e8f8d6da82680af4701cfa6e61cfe389c"
+version = "0.32.0"
+source = "git+https://github.com/emilk/egui.git?branch=main#6fae65a3fabaf442cbbc96a76cbf70fe2fee16ee"
 dependencies = [
- "ahash",
  "arboard",
  "bytemuck",
  "egui",
@@ -1402,8 +1401,8 @@ dependencies = [
 
 [[package]]
 name = "egui_extras"
-version = "0.31.1"
-source = "git+https://github.com/emilk/egui.git?branch=main#78a8de2e8f8d6da82680af4701cfa6e61cfe389c"
+version = "0.32.0"
+source = "git+https://github.com/emilk/egui.git?branch=main#6fae65a3fabaf442cbbc96a76cbf70fe2fee16ee"
 dependencies = [
  "ahash",
  "egui",
@@ -1421,8 +1420,8 @@ checksum = "48c757948c5ede0e46177b7add2e67155f70e33c07fea8284df6576da70b3719"
 
 [[package]]
 name = "emath"
-version = "0.31.1"
-source = "git+https://github.com/emilk/egui.git?branch=main#78a8de2e8f8d6da82680af4701cfa6e61cfe389c"
+version = "0.32.0"
+source = "git+https://github.com/emilk/egui.git?branch=main#6fae65a3fabaf442cbbc96a76cbf70fe2fee16ee"
 dependencies = [
  "bytemuck",
 ]
@@ -1549,8 +1548,8 @@ dependencies = [
 
 [[package]]
 name = "epaint"
-version = "0.31.1"
-source = "git+https://github.com/emilk/egui.git?branch=main#78a8de2e8f8d6da82680af4701cfa6e61cfe389c"
+version = "0.32.0"
+source = "git+https://github.com/emilk/egui.git?branch=main#6fae65a3fabaf442cbbc96a76cbf70fe2fee16ee"
 dependencies = [
  "ab_glyph",
  "ahash",
@@ -1566,8 +1565,8 @@ dependencies = [
 
 [[package]]
 name = "epaint_default_fonts"
-version = "0.31.1"
-source = "git+https://github.com/emilk/egui.git?branch=main#78a8de2e8f8d6da82680af4701cfa6e61cfe389c"
+version = "0.32.0"
+source = "git+https://github.com/emilk/egui.git?branch=main#6fae65a3fabaf442cbbc96a76cbf70fe2fee16ee"
 
 [[package]]
 name = "equivalent"
@@ -2106,7 +2105,7 @@ dependencies = [
  "vec_map",
  "wasm-bindgen",
  "web-sys",
- "windows 0.61.1",
+ "windows 0.54.0",
 ]
 
 [[package]]
@@ -2224,7 +2223,7 @@ dependencies = [
  "log",
  "presser",
  "thiserror 1.0.69",
- "windows 0.58.0",
+ "windows 0.54.0",
 ]
 
 [[package]]
@@ -7113,9 +7112,9 @@ checksum = "271414315aff87387382ec3d271b52d7ae78726f5d44ac98b4f4030c91880486"
 
 [[package]]
 name = "winit"
-version = "0.30.11"
+version = "0.30.12"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a4409c10174df8779dc29a4788cac85ed84024ccbc1743b776b21a520ee1aaf4"
+checksum = "c66d4b9ed69c4009f6321f762d6e61ad8a2389cd431b97cb1e146812e9e6c732"
 dependencies = [
  "ahash",
  "android-activity",
