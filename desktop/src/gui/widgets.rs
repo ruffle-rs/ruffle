@@ -7,6 +7,8 @@ use url::Url;
 
 use super::FilePicker;
 
+pub mod compat_flags_widget;
+
 pub struct PathOrUrlField {
     picker: FilePicker,
     value: Arc<Mutex<String>>,

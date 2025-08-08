@@ -1,4 +1,5 @@
 use crate::preferences::SavedGlobalPreferences;
+use ruffle_core::compat_flags::CompatFlags;
 use ruffle_frontend_utils::parse::{
     DocumentHolder, ParseContext, ParseDetails, ParseWarning, ReadExt,
 };
@@ -69,6 +70,10 @@ pub fn read_preferences(input: &str) -> ParseDetails<SavedGlobalPreferences> {
 
     if let Some(value) = document.parse_from_str(&mut cx, "open_url_mode") {
         result.open_url_mode = value;
+    }
+
+    if let Some(value) = document.parse_from_str::<String>(&mut cx, "compat_flags") {
+        result.compat_flags = CompatFlags::parse(&value);
     }
 
     document.get_table_like(&mut cx, "log", |cx, log| {
@@ -760,5 +765,38 @@ mod tests {
             }],
             result.warnings
         );
+    }
+
+    #[test]
+    fn compat_flags() {
+        let result = read_preferences("compat_flags = \"\"");
+        assert_eq!(
+            &SavedGlobalPreferences {
+                compat_flags: CompatFlags::empty(),
+                ..Default::default()
+            },
+            result.values()
+        );
+        assert_eq!(Vec::<ParseWarning>::new(), result.warnings);
+
+        let result = read_preferences("compat_flags = \"A,B\"");
+        assert_eq!(
+            &SavedGlobalPreferences {
+                compat_flags: CompatFlags::parse("A,B"),
+                ..Default::default()
+            },
+            result.values()
+        );
+        assert_eq!(Vec::<ParseWarning>::new(), result.warnings);
+
+        let result = read_preferences("compat_flags = \"TabSkip,B\"");
+        assert_eq!(
+            &SavedGlobalPreferences {
+                compat_flags: CompatFlags::parse("TabSkip,B"),
+                ..Default::default()
+            },
+            result.values()
+        );
+        assert_eq!(Vec::<ParseWarning>::new(), result.warnings);
     }
 }

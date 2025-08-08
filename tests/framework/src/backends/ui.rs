@@ -1,5 +1,6 @@
 use crate::test::Font;
 use chrono::{DateTime, Utc};
+use ruffle_core::compat_flags::{CompatFlag, CompatFlags};
 use ruffle_core::{
     backend::ui::{
         DialogLoaderError, DialogResultFuture, FileDialogResult, FileFilter, FontDefinition,
@@ -82,13 +83,15 @@ impl FileDialogResult for TestFileDialogResult {
 pub struct TestUiBackend {
     fonts: Vec<Font>,
     clipboard: String,
+    flags: CompatFlags,
 }
 
 impl TestUiBackend {
-    pub fn new(fonts: Vec<Font>) -> Self {
+    pub fn new(fonts: Vec<Font>, flags: CompatFlags) -> Self {
         Self {
             fonts,
             clipboard: "".to_string(),
+            flags,
         }
     }
 }
@@ -200,4 +203,8 @@ impl UiBackend for TestUiBackend {
     }
 
     fn close_file_dialog(&mut self) {}
+
+    fn compat_flag_enabled(&self, flag: CompatFlag) -> bool {
+        self.flags.enabled(flag).unwrap_or_else(|default| default)
+    }
 }

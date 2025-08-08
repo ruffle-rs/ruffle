@@ -19,6 +19,7 @@ mod binary_data;
 pub mod bitmap;
 pub mod buffer;
 mod character;
+pub mod compat_flags;
 pub mod context;
 pub mod context_menu;
 mod drawing;

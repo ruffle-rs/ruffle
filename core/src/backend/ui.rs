@@ -1,3 +1,4 @@
+use crate::compat_flags::CompatFlag;
 pub use crate::loader::Error as DialogLoaderError;
 use crate::{
     backend::navigator::OwnedFuture,
@@ -133,6 +134,10 @@ pub trait UiBackend: Any {
 
     /// Mark that any previously open dialog has been closed
     fn close_file_dialog(&mut self);
+
+    fn compat_flag_enabled(&self, flag: CompatFlag) -> bool {
+        flag.definition().default_value
+    }
 }
 
 /// A mouse cursor icon displayed by the Flash Player.

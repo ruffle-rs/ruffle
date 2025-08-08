@@ -1,5 +1,6 @@
 use crate::cli::{GameModePreference, OpenUrlMode};
-use crate::gui::{available_languages, optional_text, text, ThemePreference};
+use crate::gui::widgets::compat_flags_widget::CompatFlagsWidget;
+use crate::gui::{available_languages, optional_text, text, LocalizableText, ThemePreference};
 use crate::log::FilenamePattern;
 use crate::preferences::{storage::StorageBackend, GlobalPreferences};
 use cpal::traits::{DeviceTrait, HostTrait};
@@ -8,9 +9,16 @@ use ruffle_render_wgpu::clap::{GraphicsBackend, PowerPreference};
 use std::borrow::Cow;
 use unic_langid::LanguageIdentifier;
 
+#[derive(PartialEq, Eq, Clone, Copy, Debug)]
+enum PreferencesDialogPanel {
+    General,
+    CompatFlags,
+}
+
 pub struct PreferencesDialog {
     available_backends: wgpu::Backends,
     preferences: GlobalPreferences,
+    open_panel: PreferencesDialogPanel,
 
     graphics_backend: GraphicsBackend,
     graphics_backend_readonly: bool,
@@ -54,6 +62,8 @@ pub struct PreferencesDialog {
 
     ime_enabled: Option<bool>,
     ime_enabled_changed: bool,
+
+    compat_flags_widget: CompatFlagsWidget,
 }
 
 impl PreferencesDialog {
@@ -115,14 +125,20 @@ impl PreferencesDialog {
             ime_enabled: preferences.ime_enabled(),
             ime_enabled_changed: false,
 
+            compat_flags_widget: CompatFlagsWidget::new(
+                preferences.flags(),
+                preferences.cli.compat_flags.clone(),
+                LocalizableText::LocalizedText("preference-locked-by-cli"),
+            ),
+
             preferences,
+            open_panel: PreferencesDialogPanel::General,
         }
     }
 
     pub fn show(&mut self, locale: &LanguageIdentifier, egui_ctx: &egui::Context) -> bool {
         let mut keep_open = true;
         let mut should_close = false;
-        let locked_text = text(locale, "preference-locked-by-cli");
 
         Window::new(text(locale, "preferences-dialog"))
             .open(&mut keep_open)
@@ -130,55 +146,108 @@ impl PreferencesDialog {
             .collapsible(false)
             .resizable(false)
             .show(egui_ctx, |ui| {
-                ui.vertical_centered_justified(|ui| {
-                    Grid::new("preferences-dialog-graphics")
-                        .num_columns(2)
-                        .striped(true)
-                        .show(ui, |ui| {
-                            self.show_graphics_preferences(locale, &locked_text, ui);
+                self.show_top_panel(locale, ui);
 
-                            if cfg!(target_os = "linux") {
-                                self.show_gamemode_preferences(locale, &locked_text, ui);
-                            }
+                ui.separator();
 
-                            self.show_open_url_mode_preferences(locale, &locked_text, ui);
-
-                            self.show_ime_preferences(locale, ui);
-
-                            self.show_language_preferences(locale, ui);
-
-                            self.show_theme_preferences(locale, ui);
-
-                            self.show_audio_preferences(locale, ui);
-
-                            self.show_video_preferences(egui_ctx, locale, ui);
-
-                            self.show_log_preferences(locale, ui);
-
-                            self.show_storage_preferences(locale, &locked_text, ui);
-
-                            self.show_misc_preferences(locale, ui);
-                        });
-
-                    if self.restart_required() {
-                        ui.colored_label(
-                            ui.style().visuals.error_fg_color,
-                            "A restart is required to apply the selected changes",
-                        );
+                match self.open_panel {
+                    PreferencesDialogPanel::General => {
+                        self.show_general_preferences(locale, egui_ctx, ui);
                     }
+                    PreferencesDialogPanel::CompatFlags => {
+                        self.show_compatibility_flags(locale, ui);
+                    }
+                }
 
-                    ui.horizontal(|ui| {
-                        ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
-                            if Button::new(text(locale, "save")).ui(ui).clicked() {
-                                self.save();
-                                should_close = true;
-                            }
-                        })
-                    });
-                });
+                ui.separator();
+
+                if !self.show_bottom_panel(locale, ui) {
+                    should_close = true;
+                }
             });
 
         keep_open && !should_close
+    }
+
+    fn show_top_panel(&mut self, locale: &LanguageIdentifier, ui: &mut Ui) {
+        ui.horizontal(|ui| {
+            ui.selectable_value(
+                &mut self.open_panel,
+                PreferencesDialogPanel::General,
+                text(locale, "preferences-panel-general"),
+            );
+            ui.selectable_value(
+                &mut self.open_panel,
+                PreferencesDialogPanel::CompatFlags,
+                text(locale, "preferences-panel-compatibility-flags"),
+            );
+        });
+    }
+
+    fn show_general_preferences(
+        &mut self,
+        locale: &LanguageIdentifier,
+        egui_ctx: &egui::Context,
+        ui: &mut Ui,
+    ) {
+        let locked_text = text(locale, "preference-locked-by-cli");
+
+        ui.vertical_centered_justified(|ui| {
+            Grid::new("preferences-dialog-graphics")
+                .num_columns(2)
+                .striped(true)
+                .show(ui, |ui| {
+                    self.show_graphics_preferences(locale, &locked_text, ui);
+
+                    if cfg!(target_os = "linux") {
+                        self.show_gamemode_preferences(locale, &locked_text, ui);
+                    }
+
+                    self.show_open_url_mode_preferences(locale, &locked_text, ui);
+
+                    self.show_ime_preferences(locale, ui);
+
+                    self.show_language_preferences(locale, ui);
+
+                    self.show_theme_preferences(locale, ui);
+
+                    self.show_audio_preferences(locale, ui);
+
+                    self.show_video_preferences(egui_ctx, locale, ui);
+
+                    self.show_log_preferences(locale, ui);
+
+                    self.show_storage_preferences(locale, &locked_text, ui);
+
+                    self.show_misc_preferences(locale, ui);
+                });
+        });
+    }
+
+    fn show_compatibility_flags(&mut self, locale: &LanguageIdentifier, ui: &mut Ui) {
+        self.compat_flags_widget.show(locale, ui);
+    }
+
+    fn show_bottom_panel(&mut self, locale: &LanguageIdentifier, ui: &mut Ui) -> bool {
+        let mut should_close = false;
+        ui.vertical_centered_justified(|ui| {
+            if self.restart_required() {
+                ui.colored_label(
+                    ui.style().visuals.error_fg_color,
+                    "A restart is required to apply the selected changes",
+                );
+            }
+
+            ui.horizontal(|ui| {
+                ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
+                    if Button::new(text(locale, "save")).ui(ui).clicked() {
+                        self.save();
+                        should_close = true;
+                    }
+                })
+            });
+        });
+        !should_close
     }
 
     fn restart_required(&self) -> bool {
@@ -602,6 +671,9 @@ impl PreferencesDialog {
             }
             if self.ime_enabled_changed {
                 preferences.set_ime_enabled(self.ime_enabled);
+            }
+            if self.compat_flags_widget.changed() {
+                preferences.set_compat_flags(self.compat_flags_widget.flags().clone());
             }
         }) {
             // [NA] TODO: Better error handling... everywhere in desktop, really
