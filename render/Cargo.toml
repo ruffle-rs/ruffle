@@ -31,6 +31,9 @@ num-derive = { workspace = true }
 byteorder = { workspace = true }
 wgpu = { workspace = true, optional = true }
 indexmap = { workspace = true }
+pest = { version = "2.8.1", optional = true }
+pest_derive = { version = "2.8.1", optional = true }
+serde_json = { version = "1.0.140", optional = true }
 
 # This crate has a `compile_error!` on apple platforms
 [target.'cfg(not(target_vendor = "apple"))'.dependencies.renderdoc]
@@ -50,3 +53,4 @@ tessellator = ["lyon"]
 web = ["wasm-bindgen"]
 wgpu = ["dep:wgpu"]
 serde = ["dep:serde"]
+assembly = ["dep:pest", "dep:pest_derive", "dep:serde_json"]

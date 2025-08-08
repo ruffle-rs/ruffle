@@ -82,18 +82,22 @@ fn simple_shader() {
                         value: PixelBenderType::TString(
                             "The size of the image to which the kernel is applied".to_string(),
                         ),
+                        is_meta2: true,
                     },
                     PixelBenderMetadata {
                         key: "minValue".to_string(),
                         value: PixelBenderType::TFloat2(0.0, 0.0),
+                        is_meta2: true,
                     },
                     PixelBenderMetadata {
                         key: "maxValue".to_string(),
                         value: PixelBenderType::TFloat2(100.0, 100.0),
+                        is_meta2: true,
                     },
                     PixelBenderMetadata {
                         key: "defaultValue".to_string(),
                         value: PixelBenderType::TFloat2(50.0, 50.0),
+                        is_meta2: true,
                     },
                 ],
             },
@@ -110,18 +114,22 @@ fn simple_shader() {
                     PixelBenderMetadata {
                         key: "description".to_string(),
                         value: PixelBenderType::TString("The radius of the effect".to_string()),
+                        is_meta2: true,
                     },
                     PixelBenderMetadata {
                         key: "minValue".to_string(),
                         value: PixelBenderType::TFloat(0.0),
+                        is_meta2: true,
                     },
                     PixelBenderMetadata {
                         key: "maxValue".to_string(),
                         value: PixelBenderType::TFloat(50.0),
+                        is_meta2: true,
                     },
                     PixelBenderMetadata {
                         key: "defaultValue".to_string(),
                         value: PixelBenderType::TFloat(25.0),
+                        is_meta2: true,
                     },
                 ],
             },
@@ -130,20 +138,24 @@ fn simple_shader() {
             PixelBenderMetadata {
                 key: "namespace".to_string(),
                 value: PixelBenderType::TString("Adobe::Example".to_string()),
+                is_meta2: false,
             },
             PixelBenderMetadata {
                 key: "vendor".to_string(),
                 value: PixelBenderType::TString("Adobe examples".to_string()),
+                is_meta2: false,
             },
             PixelBenderMetadata {
                 key: "version".to_string(),
                 value: PixelBenderType::TInt(1),
+                is_meta2: false,
             },
             PixelBenderMetadata {
                 key: "description".to_string(),
                 value: PixelBenderType::TString(
                     "A shader that does nothing, but does it well.".to_string(),
                 ),
+                is_meta2: false,
             },
         ],
         operations: vec![

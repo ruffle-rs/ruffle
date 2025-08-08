@@ -14,18 +14,17 @@ impl Display for PixelBenderShaderDisassembly<'_> {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         writeln!(
             f,
-            "{} {}",
+            "{} {}i",
             self.opcode_to_str(Opcode::Version),
             self.0.version,
         )?;
         writeln!(f, "{} {:?}", self.opcode_to_str(Opcode::Name), self.0.name)?;
         writeln!(f)?;
-        self.fmt_metadata(f, &self.0.metadata, "")?;
+        self.fmt_metadata(f, &self.0.metadata)?;
         if !self.0.metadata.is_empty() {
             writeln!(f)?;
         }
         self.fmt_parameters(f)?;
-        writeln!(f)?;
         self.fmt_operations(f)?;
         Ok(())
     }
@@ -36,10 +35,14 @@ impl PixelBenderShaderDisassembly<'_> {
         &self,
         f: &mut Formatter<'_>,
         metadata: &Vec<PixelBenderMetadata>,
-        prefix: &str,
     ) -> std::fmt::Result {
         for meta in metadata {
-            write!(f, "{prefix}meta {:?} ", meta.key)?;
+            let opcode = self.opcode_to_str(if meta.is_meta2 {
+                Opcode::PBJMeta2
+            } else {
+                Opcode::PBJMeta1
+            });
+            write!(f, "{} {:?}, ", opcode, meta.key)?;
             self.fmt_type(f, &meta.value)?;
             writeln!(f)?;
         }
@@ -60,17 +63,12 @@ impl PixelBenderShaderDisassembly<'_> {
                     let param_type = self.type_to_str(*param_type);
                     write!(
                         f,
-                        "{} {qualifier} {name:?} {param_type} ",
+                        "{}.{qualifier} {name:?}, {param_type}, ",
                         self.opcode_to_str(Opcode::PBJParam)
                     )?;
                     self.fmt_reg(f, reg)?;
-                    if metadata.is_empty() {
-                        writeln!(f)?;
-                    } else {
-                        writeln!(f, " {{")?;
-                        self.fmt_metadata(f, metadata, "  ")?;
-                        writeln!(f, "}}")?;
-                    }
+                    writeln!(f)?;
+                    self.fmt_metadata(f, metadata)?;
                 }
                 PixelBenderParam::Texture {
                     index,
@@ -79,11 +77,12 @@ impl PixelBenderShaderDisassembly<'_> {
                 } => {
                     writeln!(
                         f,
-                        "{} {name:?} {index} {channels}",
+                        "{} {name:?}, {index}i, {channels}i",
                         self.opcode_to_str(Opcode::PBJParamTexture)
                     )?;
                 }
             }
+            writeln!(f)?;
         }
         Ok(())
     }
@@ -108,22 +107,28 @@ impl PixelBenderShaderDisassembly<'_> {
 
     fn fmt_type(&self, f: &mut Formatter<'_>, type_: &PixelBenderType) -> std::fmt::Result {
         match type_ {
-            PixelBenderType::TFloat(a) => write!(f, "float({a})"),
-            PixelBenderType::TFloat2(a, b) => write!(f, "float2({a}, {b})"),
-            PixelBenderType::TFloat3(a, b, c) => write!(f, "float3({a}, {b}, {c})"),
-            PixelBenderType::TFloat4(a, b, c, d) => write!(f, "float4({a}, {b}, {c}, {d})"),
-            PixelBenderType::TFloat2x2(a) => write!(f, "float2x2({a:?})"),
-            PixelBenderType::TFloat3x3(a) => write!(f, "float3x3({a:?})"),
-            PixelBenderType::TFloat4x4(a) => write!(f, "float4x4({a:?})"),
-            PixelBenderType::TInt(a) => write!(f, "int({a})"),
-            PixelBenderType::TInt2(a, b) => write!(f, "int2({a}, {b})"),
-            PixelBenderType::TInt3(a, b, c) => write!(f, "int3({a}, {b}, {c})"),
-            PixelBenderType::TInt4(a, b, c, d) => write!(f, "int4({a}, {b}, {c}, {d})"),
+            PixelBenderType::TFloat(a) => write!(f, "float({a}f)"),
+            PixelBenderType::TFloat2(a, b) => write!(f, "float2({a}f, {b}f)"),
+            PixelBenderType::TFloat3(a, b, c) => write!(f, "float3({a}f, {b}f, {c}f)"),
+            PixelBenderType::TFloat4(a, b, c, d) => write!(f, "float4({a}f, {b}f, {c}f, {d}f)"),
+            PixelBenderType::TFloat2x2(v) => {
+                write!(f, "float2x2({}f)", v.map(|v| v.to_string()).join("f, "))
+            }
+            PixelBenderType::TFloat3x3(v) => {
+                write!(f, "float3x3({}f)", v.map(|v| v.to_string()).join("f, "))
+            }
+            PixelBenderType::TFloat4x4(v) => {
+                write!(f, "float4x4({}f)", v.map(|v| v.to_string()).join("f, "))
+            }
+            PixelBenderType::TInt(a) => write!(f, "int({a}i)"),
+            PixelBenderType::TInt2(a, b) => write!(f, "int2({a}i, {b}i)"),
+            PixelBenderType::TInt3(a, b, c) => write!(f, "int3({a}i, {b}i, {c}i)"),
+            PixelBenderType::TInt4(a, b, c, d) => write!(f, "int4({a}i, {b}i, {c}i, {d}i)"),
             PixelBenderType::TString(a) => write!(f, "string({a:?})"),
-            PixelBenderType::TBool(a) => write!(f, "bool({a})"),
-            PixelBenderType::TBool2(a, b) => write!(f, "bool2({a}, {b})"),
-            PixelBenderType::TBool3(a, b, c) => write!(f, "bool3({a}, {b}, {c})"),
-            PixelBenderType::TBool4(a, b, c, d) => write!(f, "bool4({a}, {b}, {c}, {d})"),
+            PixelBenderType::TBool(a) => write!(f, "bool({a}i)"),
+            PixelBenderType::TBool2(a, b) => write!(f, "bool2({a}i, {b}i)"),
+            PixelBenderType::TBool3(a, b, c) => write!(f, "bool3({a}i, {b}i, {c}i)"),
+            PixelBenderType::TBool4(a, b, c, d) => write!(f, "bool4({a}i, {b}i, {c}i, {d}i)"),
         }
     }
 
@@ -144,41 +149,57 @@ impl PixelBenderShaderDisassembly<'_> {
         match op {
             Operation::Nop => writeln!(f, "{prefix}{}", self.opcode_to_str(Opcode::Nop))?,
             Operation::Normal { opcode, dst, src } => {
-                write!(f, "{prefix}{}\t", self.opcode_to_str(*opcode))?;
+                write!(f, "{prefix}{:<7} ", self.opcode_to_str(*opcode))?;
                 self.fmt_reg(f, dst)?;
                 write!(f, ", ")?;
                 self.fmt_reg(f, src)?;
                 writeln!(f)?;
             }
             Operation::LoadInt { dst, val } => {
-                write!(f, "{prefix}ld.i\t")?;
+                write!(
+                    f,
+                    "{prefix}{:<7} ",
+                    self.opcode_to_str(Opcode::LoadIntOrFloat)
+                )?;
                 self.fmt_reg(f, dst)?;
-                writeln!(f, ", {val}")?;
+                writeln!(f, ", {val}i")?;
             }
             Operation::LoadFloat { dst, val } => {
-                write!(f, "{prefix}ld.f\t")?;
+                write!(
+                    f,
+                    "{prefix}{:<7} ",
+                    self.opcode_to_str(Opcode::LoadIntOrFloat)
+                )?;
                 self.fmt_reg(f, dst)?;
-                writeln!(f, ", {val}")?;
+                writeln!(f, ", {val}f")?;
             }
             Operation::If { src } => {
-                write!(f, "{prefix}{}\t", self.opcode_to_str(Opcode::If))?;
+                write!(f, "{prefix}{:<7} ", self.opcode_to_str(Opcode::If))?;
                 self.fmt_reg(f, src)?;
                 writeln!(f)?;
                 self.prefix_inc(prefix);
             }
             Operation::SampleNearest { dst, src, tf } => {
-                write!(f, "{prefix}{}\t", self.opcode_to_str(Opcode::SampleNearest))?;
+                write!(
+                    f,
+                    "{prefix}{:<7} ",
+                    self.opcode_to_str(Opcode::SampleNearest)
+                )?;
                 self.fmt_reg(f, dst)?;
                 write!(f, ", ")?;
                 self.fmt_reg(f, src)?;
-                writeln!(f, ", {tf}")?;
+                writeln!(f, ", {tf}i")?;
             }
             Operation::SampleLinear { dst, src, tf } => {
-                write!(f, "{prefix}{}\t", self.opcode_to_str(Opcode::SampleLinear))?;
+                write!(
+                    f,
+                    "{prefix}{:<7} ",
+                    self.opcode_to_str(Opcode::SampleLinear)
+                )?;
                 self.fmt_reg(f, dst)?;
                 write!(f, ", ")?;
                 self.fmt_reg(f, src)?;
-                writeln!(f, ", {tf}")?;
+                writeln!(f, ", {tf}i")?;
             }
             Operation::Else => {
                 self.prefix_dec(prefix);
@@ -195,14 +216,14 @@ impl PixelBenderShaderDisassembly<'_> {
                 condition,
                 dst,
             } => {
-                write!(f, "{prefix}{}\t", self.opcode_to_str(Opcode::Select))?;
-                self.fmt_reg(f, src1)?;
-                write!(f, ", ")?;
-                self.fmt_reg(f, src2)?;
+                write!(f, "{prefix}{:<7} ", self.opcode_to_str(Opcode::Select))?;
+                self.fmt_reg(f, dst)?;
                 write!(f, ", ")?;
                 self.fmt_reg(f, condition)?;
                 write!(f, ", ")?;
-                self.fmt_reg(f, dst)?;
+                self.fmt_reg(f, src1)?;
+                write!(f, ", ")?;
+                self.fmt_reg(f, src2)?;
                 writeln!(f)?;
             }
         }
@@ -302,7 +323,7 @@ impl PixelBenderShaderDisassembly<'_> {
             Opcode::Equal => "eq",
             Opcode::NotEqual => "neq",
             Opcode::LessThan => "lt",
-            Opcode::LessThanEqual => "lte",
+            Opcode::LessThanEqual => "le",
             Opcode::LogicalNot => "not",
             Opcode::LogicalAnd => "and",
             Opcode::LogicalOr => "or",
@@ -322,10 +343,10 @@ impl PixelBenderShaderDisassembly<'_> {
             Opcode::VectorNotEqual => "neq.v",
             Opcode::BoolAny => "any.b",
             Opcode::BoolAll => "all.b",
-            Opcode::PBJMeta1 => "meta1",
+            Opcode::PBJMeta1 => "meta",
             Opcode::PBJParam => "param",
             Opcode::PBJMeta2 => "meta2",
-            Opcode::PBJParamTexture => "param_texture",
+            Opcode::PBJParamTexture => "param.tex",
             Opcode::Name => "name",
             Opcode::Version => "version",
         }
