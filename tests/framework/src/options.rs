@@ -17,6 +17,14 @@ use std::time::Duration;
 use vfs::VfsPath;
 
 #[derive(Clone, Deserialize)]
+pub enum TestSize {
+    #[serde(rename = "regular")]
+    Regular,
+    #[serde(rename = "large")]
+    Large,
+}
+
+#[derive(Clone, Deserialize)]
 #[serde(default, deny_unknown_fields)]
 pub struct TestOptions {
     pub num_frames: Option<u32>,
@@ -32,6 +40,7 @@ pub struct TestOptions {
     pub log_fetch: bool,
     pub required_features: RequiredFeatures,
     pub fonts: HashMap<String, FontOptions>,
+    pub size: TestSize,
 }
 
 impl Default for TestOptions {
@@ -50,6 +59,7 @@ impl Default for TestOptions {
             log_fetch: false,
             required_features: RequiredFeatures::default(),
             fonts: Default::default(),
+            size: TestSize::Regular,
         }
     }
 }
@@ -226,6 +236,10 @@ impl PlayerOptions {
                 height: movie.height().to_pixels() as u32,
                 scale_factor: 1.0,
             })
+    }
+
+    pub fn has_renderer(&self) -> bool {
+        self.with_renderer.is_some()
     }
 
     pub fn create_renderer(
