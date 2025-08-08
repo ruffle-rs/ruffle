@@ -1582,11 +1582,11 @@ fn abstract_interpret_ops<'gc>(
                 // Remove `super()` calls in classes that extend Object, since they
                 // are noops anyway.
                 if num_args == 0 {
-                    let object_class = activation.avm2().classes().object;
-                    // TODO: A `None` `bound_superclass_object` should throw
-                    // a VerifyError
+                    let object_class = activation.avm2().class_defs().object;
+                    // TODO: A `None` superclass should throw a VerifyError
                     if activation
-                        .bound_superclass_object()
+                        .bound_class()
+                        .and_then(|c| c.super_class())
                         .is_some_and(|c| c == object_class)
                     {
                         // When the receiver is null, this op can still throw an
