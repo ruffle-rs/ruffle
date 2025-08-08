@@ -1,0 +1,4 @@
+Instantiated LoadableMain with arg: null
+Instantiated LoadableMain with arg: From Test Loader!
+Constructed: [object LoadableMain]
+instance.myChild: [object MovieClip]
