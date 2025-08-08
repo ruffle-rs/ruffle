@@ -1,2 +1,3 @@
 num_ticks = 1
+size = "large"
 known_failure = true

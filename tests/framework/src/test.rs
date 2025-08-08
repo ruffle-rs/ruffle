@@ -1,7 +1,7 @@
-use crate::environment::Environment;
 use crate::options::TestOptions;
 use crate::runner::TestRunner;
 use crate::util::read_bytes;
+use crate::{environment::Environment, options::TestSize};
 use anyhow::{anyhow, Result};
 use ruffle_core::tag_utils::SwfMovie;
 use ruffle_input_format::InputInjector;
@@ -13,6 +13,38 @@ pub struct Font {
     pub family: String,
     pub bold: bool,
     pub italic: bool,
+}
+
+#[derive(Clone, Copy)]
+pub enum TestKind {
+    Large,
+    RealTime,
+    Render,
+}
+
+impl TestKind {
+    pub fn name(self) -> &'static str {
+        match self {
+            TestKind::Large => "large",
+            TestKind::RealTime => "realtime",
+            TestKind::Render => "render",
+        }
+    }
+
+    pub fn priority(kind: &str) -> isize {
+        // NOTE: Make sure to synchronize this with the nextest config
+        match kind {
+            "realtime" => 3,
+            "large" => 2,
+            // Render tests are slower on Windows and sometimes on nextest
+            "render" => 1,
+            _ => 0,
+        }
+    }
+
+    pub fn ord(kind: &str) -> impl Ord {
+        -Self::priority(kind)
+    }
 }
 
 pub struct Test {
@@ -41,6 +73,24 @@ impl Test {
             root_path: test_dir,
             name,
         })
+    }
+
+    pub fn kind(&self) -> Option<TestKind> {
+        // Real time overrides everything
+        if self.options.sleep_to_meet_frame_rate {
+            return Some(TestKind::RealTime);
+        }
+
+        match self.options.size {
+            TestSize::Regular => (),
+            TestSize::Large => return Some(TestKind::Large),
+        }
+
+        if self.options.player_options.has_renderer() {
+            return Some(TestKind::Render);
+        }
+
+        None
     }
 
     pub fn create_test_runner(&self, environment: &impl Environment) -> Result<TestRunner> {

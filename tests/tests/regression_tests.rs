@@ -11,7 +11,7 @@ use libtest_mimic::Trial;
 use ruffle_fs_tests_runner::{FsTestsRunner, TestLoaderParams};
 use ruffle_test_framework::options::TestOptions;
 use ruffle_test_framework::runner::TestStatus;
-use ruffle_test_framework::test::Test;
+use ruffle_test_framework::test::{Test, TestKind};
 use std::borrow::Cow;
 use std::panic::{catch_unwind, resume_unwind, AssertUnwindSafe};
 use std::path::PathBuf;
@@ -61,6 +61,8 @@ fn main() {
         external_interface_avm2(&NativeEnvironment)
     }));
 
+    runner.with_test_ordering_by_key(|t| (TestKind::ord(t.kind()), t.name().to_owned()));
+
     runner.run()
 }
 
@@ -71,7 +73,12 @@ fn load_test(params: TestLoaderParams) -> Trial {
 
     let test = Test::from_options(
         TestOptions::read(&root.join("test.toml").unwrap())
-            .context("Couldn't load test options")
+            .with_context(|| {
+                format!(
+                    "Couldn't load test options for {}",
+                    params.test_dir_real.to_string_lossy()
+                )
+            })
             .unwrap(),
         root,
         name.to_string(),
@@ -80,8 +87,12 @@ fn load_test(params: TestLoaderParams) -> Trial {
     .unwrap();
 
     let ignore = !test.should_run(!args.list, &NativeEnvironment);
+    let kind = test.kind();
 
     let mut trial = Trial::test(test.name.to_string(), move || {
+        #[cfg(feature = "times")]
+        let start = std::time::Instant::now();
+
         let test = AssertUnwindSafe(test);
         let unwind_result = catch_unwind(|| {
             let mut runner = test.create_test_runner(&NativeEnvironment)?;
@@ -97,6 +108,30 @@ fn load_test(params: TestLoaderParams) -> Trial {
 
             Result::<_>::Ok(())
         });
+
+        #[cfg(feature = "times")]
+        {
+            use std::io::Write;
+            let time = std::time::Instant::now() - start;
+            let mut file = std::fs::OpenOptions::new()
+                .append(true)
+                .create(true)
+                .open(format!(
+                    "times-{}-{:?}.log",
+                    std::process::id(),
+                    std::thread::current().id()
+                ))
+                .unwrap();
+
+            let time = time.as_secs_f64();
+            let kind = test
+                .kind()
+                .map(TestKind::name)
+                .map(|k| Cow::Owned(format!("[{k}] ")))
+                .unwrap_or(Cow::Borrowed(""));
+            let _ = writeln!(file, "{time:.4} {kind}{}", test.name);
+        }
+
         if test.options.known_failure {
             match unwind_result {
                 Ok(Ok(())) => Err(
@@ -111,6 +146,9 @@ fn load_test(params: TestLoaderParams) -> Trial {
             }
         }
     });
+    if let Some(kind) = kind {
+        trial = trial.with_kind(kind.name());
+    }
     if ignore {
         trial = trial.with_ignored_flag(true);
     }
