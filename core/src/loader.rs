@@ -1038,6 +1038,42 @@ impl<'gc> Loader<'gc> {
         }
     }
 
+    async fn crossdomain_security_check(
+        player: Arc<Mutex<Player>>,
+        request: &Request,
+    ) -> Result<(), Error> {
+        let mut xml_url = player
+            .lock()
+            .unwrap()
+            .navigator()
+            .resolve_url(request.url())
+            .map_err(|_| Error::FetchError("foobar".into()))?;
+        xml_url.set_path("/crossdomain.xml");
+
+        let fetch = player
+            .lock()
+            .unwrap()
+            .navigator()
+            .fetch(Request::get(xml_url.to_string()));
+        let (body, ..) = Self::wait_for_full_response(fetch)
+            .await
+            .map_err(|_| Error::FetchError("foobar".into()))?;
+
+        let data = String::from_utf8(body).unwrap();
+        let policy = crate::crossdomain::Policy::parse(&data).map_err(|err| {
+            Error::FetchError(format!("Parsing failed for crossdomain.xml: {err:?}"))
+        })?;
+
+        let movie_url = Url::parse(player.lock().unwrap().root_movie_url()).unwrap();
+        if !policy.is_allowed(&movie_url) {
+            return Err(Error::FetchError(format!(
+                "Security Error, load not allowed by crossdomain.xml"
+            )));
+        }
+
+        Ok(())
+    }
+
     /// Construct a future for the root movie loader.
     fn root_movie_loader(
         &mut self,
@@ -1573,6 +1609,8 @@ impl<'gc> Loader<'gc> {
             .expect("Could not upgrade weak reference to player");
 
         Box::pin(async move {
+            Self::crossdomain_security_check(player.clone(), &request).await?;
+
             let fetch = player.lock().unwrap().navigator().fetch(request);
             let response = Self::wait_for_full_response(fetch).await;
 
