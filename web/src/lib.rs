@@ -1,5 +1,4 @@
 #![deny(clippy::unwrap_used)]
-#![allow(clippy::empty_docs)] //False positive in rustc 1.78 beta
 
 //! Ruffle web frontend.
 mod audio;
