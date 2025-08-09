@@ -293,8 +293,8 @@ impl<'gc> Context3DObject<'gc> {
         self.with_context_3d(|ctx| ctx.process_command(Context3DCommand::SetRenderToBackBuffer));
     }
 
-    pub fn present(&self, activation: &mut Activation<'_, 'gc>) -> Result<(), Error<'gc>> {
-        Ok(self.with_context_3d(|ctx| activation.context.renderer.context3d_present(ctx))?)
+    pub fn present(&self) {
+        self.with_context_3d(|ctx| ctx.present())
     }
 
     // Renders our finalized frame to the screen, as part of the Ruffle rendering process.
