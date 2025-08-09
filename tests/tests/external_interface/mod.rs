@@ -33,7 +33,7 @@ fn do_reentry(context: &mut UpdateContext<'_>, _args: &[ExternalValue]) -> Exter
         callback.call(
             context,
             "callWith",
-            vec!["trace".into(), "successful reentry!".into()],
+            ["trace".into(), "successful reentry!".into()],
         )
     } else {
         ExternalValue::Null
