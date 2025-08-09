@@ -1083,13 +1083,7 @@ pub fn sort<'gc>(
                         .call(activation, this.into(), &[a, b])?
                         .coerce_to_i32(activation)?;
 
-                    if order > 0 {
-                        Ok(Ordering::Greater)
-                    } else if order < 0 {
-                        Ok(Ordering::Less)
-                    } else {
-                        Ok(Ordering::Equal)
-                    }
+                    Ok(order.cmp(&0))
                 }),
             )?
         } else {
