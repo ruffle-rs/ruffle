@@ -330,15 +330,19 @@ impl<'gc> RegExp<'gc> {
     ) -> ArrayObject<'gc> {
         let limit = limit.get();
 
-        let mut storage = ArrayStorage::new(0);
         // The empty regex is a special case which splits into characters.
         if self.source.is_empty() {
-            let mut it = text.chars().take(limit);
-            while let Some(Ok(c)) = it.next() {
-                storage.push(AvmString::new(activation.gc(), WString::from_char(c)).into());
-            }
+            let storage = text
+                .chars()
+                .take(limit)
+                .map_while(|c| c.ok())
+                .map(|c| AvmString::new(activation.gc(), WString::from_char(c)))
+                .collect();
+
             return ArrayObject::from_storage(activation, storage);
         }
+
+        let mut storage = ArrayStorage::new(0);
 
         let mut start = 0;
         while let Some(m) = self.find_utf16_match(text, start) {

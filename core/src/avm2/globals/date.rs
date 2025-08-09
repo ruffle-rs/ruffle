@@ -1208,7 +1208,7 @@ pub fn parse_full_date<'gc>(
                 return None;
             }
 
-            if item == WStr::from_units(b"GMT") || item == WStr::from_units(b"UTC") {
+            if item == b"GMT" || item == b"UTC" {
                 new_timezone = Some(FixedOffset::east_opt(0).expect("UTC offset should be valid"));
             } else if item.len() == 8 {
                 let (other, tzn) = item.split_at(4);

@@ -8,6 +8,7 @@ use crate::display_object::{
 use egui::collapsing_header::CollapsingState;
 use egui::color_picker::show_color;
 use egui::{Rgba, Ui, Vec2, Window};
+use either::Either;
 use fnv::FnvHashMap;
 use swf::{Point, Twips};
 
@@ -29,14 +30,11 @@ pub struct DisplayObjectSearchWindow {
 }
 
 impl DisplayObjectSearchWindow {
-    pub fn hovered_debug_rects(&self) -> Vec<(swf::Color, DisplayObjectHandle)> {
+    pub fn hovered_debug_rects(&self) -> impl Iterator<Item = (&DisplayObjectHandle, &swf::Color)> {
         if let Some(hovered_debug_rect) = &self.hovered_debug_rect {
-            vec![(swf::Color::RED, hovered_debug_rect.clone())]
+            Either::Left(core::iter::once((hovered_debug_rect, &swf::Color::RED)))
         } else {
-            self.unique_results
-                .iter()
-                .map(|(k, v)| (*v, k.clone()))
-                .collect()
+            Either::Right(self.unique_results.iter())
         }
     }
 

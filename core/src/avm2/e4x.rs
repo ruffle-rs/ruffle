@@ -765,28 +765,6 @@ impl<'gc> E4XNode<'gc> {
             }
         }
 
-        // Inbuilt trim_ascii is behind an unstable feature
-        // So the method was moved out in order to use it for the time being
-        const fn trim_ascii(bytes: &[u8]) -> &[u8] {
-            let mut bytes = bytes;
-            while let [first, rest @ ..] = bytes {
-                if first.is_ascii_whitespace() {
-                    bytes = rest;
-                } else {
-                    break;
-                }
-            }
-            while let [rest @ .., last] = bytes {
-                if last.is_ascii_whitespace() {
-                    bytes = rest;
-                } else {
-                    break;
-                }
-            }
-
-            bytes
-        }
-
         fn handle_text_cdata<'gc>(
             text: &[u8],
             ignore_white: bool,
@@ -801,7 +779,7 @@ impl<'gc> E4XNode<'gc> {
                 let text = AvmString::new_utf8_bytes(
                     activation.gc(),
                     if is_text && ignore_white {
-                        trim_ascii(text)
+                        text.trim_ascii()
                     } else {
                         text
                     },
