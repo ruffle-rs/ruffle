@@ -782,6 +782,19 @@ fn translate_op<'gc>(
             }));
         }
 
+        AbcOp::Dxns { .. } | AbcOp::DxnsLate => {
+            if !method.sets_dxns() {
+                return Err(Error::avm_error(verify_error(
+                    activation,
+                    &format!(
+                        "Error #1015: Method {} cannot set default xml namespace",
+                        method.method_name()
+                    ),
+                    1015,
+                )?));
+            }
+        }
+
         AbcOp::FindDef { index } | AbcOp::GetLex { index } => {
             let multiname =
                 translation_unit.pool_maybe_uninitialized_multiname(activation, index)?;
