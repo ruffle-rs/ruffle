@@ -2,7 +2,7 @@
 
 use crate::avm2::activation::Activation;
 use crate::avm2::array::ArrayStorage;
-use crate::avm2::error::{syntax_error, type_error};
+use crate::avm2::error::{make_error_1132, type_error};
 use crate::avm2::globals::array::ArrayIter;
 use crate::avm2::object::{ArrayObject, FunctionObject, Object, ScriptObject, TObject};
 use crate::avm2::parameters::ParametersExt;
@@ -264,7 +264,10 @@ pub fn parse<'gc>(
     _this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let input = args.get_string(activation, 0)?;
+    let Some(input) = args.try_get_string(activation, 0)? else {
+        return Err(make_error_1132(activation));
+    };
+
     let reviver = args
         .get_value(1)
         .as_object()
@@ -273,11 +276,7 @@ pub fn parse<'gc>(
     let parsed = if let Ok(parsed) = serde_json::from_str(&input.to_utf8_lossy()) {
         parsed
     } else {
-        return Err(Error::avm_error(syntax_error(
-            activation,
-            "Error #1132: Invalid JSON parse input.",
-            1132,
-        )?));
+        return Err(make_error_1132(activation));
     };
 
     deserialize_json(activation, parsed, reviver)
