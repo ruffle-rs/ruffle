@@ -5,7 +5,7 @@ use crate::avm2::error::make_error_1508;
 use crate::avm2::object::FontObject;
 use crate::avm2::parameters::ParametersExt;
 use crate::avm2::value::Value;
-use crate::avm2::{ArrayObject, ArrayStorage, Error};
+use crate::avm2::{ArrayObject, Error};
 use crate::avm2_stub_method;
 use crate::string::AvmString;
 
@@ -133,10 +133,11 @@ pub fn enumerate_fonts<'gc>(
     });
 
     let font_class = activation.avm2().classes().font;
-    let mut storage = ArrayStorage::new(fonts.len());
-    for font in fonts {
-        storage.push(FontObject::for_font(activation.gc(), font_class, font).into());
-    }
+    let storage = fonts
+        .into_iter()
+        .map(|font| FontObject::for_font(activation.gc(), font_class, font))
+        .collect();
+
     Ok(ArrayObject::from_storage(activation, storage).into())
 }
 
