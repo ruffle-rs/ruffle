@@ -227,9 +227,9 @@ impl<'gc> EventObject<'gc> {
         )
     }
 
-    pub fn net_status_event(
+    pub fn net_status_event<'a>(
         activation: &mut Activation<'_, 'gc>,
-        info: Vec<(&str, &str)>,
+        info: impl IntoIterator<Item = (&'a str, &'a str)>,
     ) -> EventObject<'gc> {
         let info_object = ScriptObject::new_object(activation);
         for (key, value) in info {
