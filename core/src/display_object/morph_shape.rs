@@ -111,6 +111,9 @@ impl<'gc> TDisplayObject<'gc> for MorphShape<'gc> {
         if self.movie().is_action_script_3() && matches!(self.object2(), Avm2Value::Null) {
             let class = context.avm2.classes().morphshape;
             let object = Avm2StageObject::for_display_object(context.gc(), self.into(), class);
+            // We don't need to call the initializer method, as AVM2 can't link
+            // a custom class to a MorphShape, and the initializer method for
+            // MorphShape itself is a no-op
             self.set_object2(context, object.into());
 
             self.on_construction_complete(context);

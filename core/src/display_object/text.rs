@@ -264,6 +264,9 @@ impl<'gc> TDisplayObject<'gc> for Text<'gc> {
         if self.movie().is_action_script_3() {
             let statictext = context.avm2.classes().statictext;
             let object = Avm2StageObject::for_display_object(context.gc(), self.into(), statictext);
+            // We don't need to call the initializer method, as AVM2 can't link
+            // a custom class to a StaticText, and the initializer method for
+            // StaticText itself is a no-op
             self.set_object2(context, object.into());
 
             self.on_construction_complete(context);
