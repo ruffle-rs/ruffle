@@ -1,6 +1,6 @@
 {
     "name": "ruffle-demo",
-    "version": "0.1.0",
+    "version": "0.2.0-nightly.2025.8.9",
     "description": "Demo of Ruffle Flash emulator",
     "license": "(MIT OR Apache-2.0)",
     "private": true,
@@ -15,7 +15,7 @@
     "dependencies": {
         "react": "^19.1.1",
         "react-dom": "^19.1.1",
-        "ruffle-core": "^0.1.0"
+        "ruffle-core": "^0.2.0-nightly.2025.8.9"
     },
     "devDependencies": {
         "@types/react": "^19.1.9",

@@ -1,6 +1,6 @@
 {
     "name": "ruffle-extension",
-    "version": "0.1.0",
+    "version": "0.2.0-nightly.2025.8.9",
     "description": "Extension packaging for Ruffle Flash emulator",
     "license": "(MIT OR Apache-2.0)",
     "private": true,
@@ -13,7 +13,7 @@
         "checkTypes": "tsc --noemit && tsc --noemit -p tools"
     },
     "dependencies": {
-        "ruffle-core": "^0.1.0"
+        "ruffle-core": "^0.2.0-nightly.2025.8.9"
     },
     "devDependencies": {
         "@tsconfig/strictest": "^2.0.5",
