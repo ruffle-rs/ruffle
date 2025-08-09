@@ -2833,7 +2833,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         }
 
         // Special case, mutating `this`
-        if path.as_wstr() == WStr::from_units(b"this") {
+        if path.as_wstr() == b"this" {
             self.this = value;
             return Ok(());
         }
