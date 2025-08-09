@@ -550,9 +550,6 @@ impl RenderBackend for WebCanvasRenderBackend {
     ) -> Result<Box<dyn Context3D>, Error> {
         Err(Error::Unimplemented("createContext3D".into()))
     }
-    fn context3d_present(&mut self, _context: &mut dyn Context3D) -> Result<(), Error> {
-        Err(Error::Unimplemented("Context3D.present".into()))
-    }
 
     fn debug_info(&self) -> Cow<'static, str> {
         Cow::Borrowed("Renderer: Canvas")

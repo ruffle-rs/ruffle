@@ -246,14 +246,14 @@ pub fn draw_triangles<'gc>(
 }
 
 pub fn present<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    _activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
     if let Some(context) = this.as_context_3d() {
-        context.present(activation)?;
+        context.present();
     }
     Ok(Value::Undefined)
 }
