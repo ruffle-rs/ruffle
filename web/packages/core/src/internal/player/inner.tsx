@@ -152,7 +152,15 @@ export class InnerPlayer {
      * @event RufflePlayer#loadeddata
      */
     static LOADED_DATA = "loadeddata";
+    
+    /**
+     * Triggered when the ruffle player panict.
+     *
+     * @event RufflePlayer#error
+     */
+    static PLAYER_ERROR = "error";
 
+    
     // The element that contains this player
     public element: HTMLElement;
 
@@ -2023,7 +2031,9 @@ export class InnerPlayer {
         }
 
         errorArray.push(this.getPanicData());
-
+    
+        this.element.dispatchEvent(new CustomEvent(InnerPlayer.PLAYER_ERROR, error));
+        
         // Clears out any existing content (ie play button or canvas) and replaces it with the error screen
         showPanicScreen(this.container, originalError, errorArray, this.swfUrl);
 
