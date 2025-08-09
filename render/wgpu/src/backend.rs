@@ -24,9 +24,8 @@ use ruffle_render::bitmap::{
 use ruffle_render::commands::CommandList;
 use ruffle_render::error::Error as BitmapError;
 use ruffle_render::filters::Filter;
-use ruffle_render::pixel_bender::{
-    PixelBenderShader, PixelBenderShaderArgument, PixelBenderShaderHandle,
-};
+use ruffle_render::pixel_bender::{PixelBenderShader, PixelBenderShaderHandle};
+use ruffle_render::pixel_bender_support::PixelBenderShaderArgument;
 use ruffle_render::quality::StageQuality;
 use ruffle_render::shape_utils::DistilledShape;
 use ruffle_render::tessellator::ShapeTessellator;

@@ -4,7 +4,8 @@ use crate::bitmap::{Bitmap, BitmapHandle, BitmapSource, PixelRegion, RgbaBufRead
 use crate::commands::CommandList;
 use crate::error::Error;
 use crate::filters::Filter;
-use crate::pixel_bender::{PixelBenderShader, PixelBenderShaderArgument, PixelBenderShaderHandle};
+use crate::pixel_bender::{PixelBenderShader, PixelBenderShaderHandle};
+use crate::pixel_bender_support::PixelBenderShaderArgument;
 use crate::quality::StageQuality;
 use crate::shape_utils::DistilledShape;
 use ruffle_wstr::WStr;

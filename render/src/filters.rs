@@ -1,7 +1,6 @@
-use crate::{
-    bitmap::BitmapHandle,
-    pixel_bender::{PixelBenderShaderArgument, PixelBenderShaderHandle},
-};
+use crate::bitmap::BitmapHandle;
+use crate::pixel_bender::PixelBenderShaderHandle;
+use crate::pixel_bender_support::PixelBenderShaderArgument;
 use std::{any::Any, fmt::Debug};
 use swf::{Color, Rectangle, Twips};
 

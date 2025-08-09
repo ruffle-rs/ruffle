@@ -1,11 +1,6 @@
 //! Pixel bender bytecode parsing code.
 //! This is heavily based on https://github.com/jamesward/pbjas and https://github.com/HaxeFoundation/format/tree/master/format/pbj
 
-#[cfg(test)]
-mod tests;
-
-pub mod disassembly;
-
 use byteorder::{BigEndian, LittleEndian, ReadBytesExt};
 use num_traits::FromPrimitive;
 use std::{
@@ -15,8 +10,6 @@ use std::{
     sync::Arc,
 };
 use thiserror::Error;
-
-use crate::{backend::RawTexture, bitmap::BitmapHandle};
 
 /// The name of a special parameter, which gets automatically filled in with the coordinates
 /// of the pixel being processed.
@@ -305,61 +298,6 @@ pub enum Operation {
         condition: PixelBenderReg,
         dst: PixelBenderReg,
     },
-}
-
-#[derive(Debug, Clone, PartialEq)]
-pub enum PixelBenderShaderArgument<'a> {
-    ImageInput {
-        index: u8,
-        channels: u8,
-        name: String,
-        texture: Option<ImageInputTexture<'a>>,
-    },
-    ValueInput {
-        index: u8,
-        value: PixelBenderType,
-    },
-}
-
-/// An image input.
-///
-/// This accepts both an owned BitmapHandle, and a borrowed texture
-/// (used when applying a filter to a texture that we don't have
-/// ownership of, and therefore cannot construct a BitmapHandle for).
-#[derive(Debug, Clone)]
-pub enum ImageInputTexture<'a> {
-    Bitmap(BitmapHandle),
-    TextureRef(&'a dyn RawTexture),
-    Bytes {
-        width: u32,
-        height: u32,
-        channels: u32,
-        bytes: Vec<u8>,
-    },
-}
-
-impl PartialEq for ImageInputTexture<'_> {
-    fn eq(&self, other: &Self) -> bool {
-        match (self, other) {
-            (Self::Bitmap(self_bitmap), Self::Bitmap(other_bitmap)) => self_bitmap == other_bitmap,
-            (Self::TextureRef(self_texture), Self::TextureRef(other_texture)) => {
-                self_texture.equals(*other_texture)
-            }
-            _ => false,
-        }
-    }
-}
-
-impl From<BitmapHandle> for ImageInputTexture<'_> {
-    fn from(b: BitmapHandle) -> Self {
-        ImageInputTexture::Bitmap(b)
-    }
-}
-
-impl<'a> From<&'a dyn RawTexture> for ImageInputTexture<'a> {
-    fn from(t: &'a dyn RawTexture) -> Self {
-        ImageInputTexture::TextureRef(t)
-    }
 }
 
 #[derive(Debug, PartialEq, Clone)]

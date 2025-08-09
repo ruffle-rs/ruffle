@@ -12,7 +12,7 @@ use crate::surface::commands::{chunk_blends, Chunk, CommandRenderer};
 use crate::utils::{remove_srgb, supported_sample_count};
 use crate::{Descriptors, MaskState, Pipelines};
 use ruffle_render::commands::CommandList;
-use ruffle_render::pixel_bender::{ImageInputTexture, PixelBenderShaderArgument};
+use ruffle_render::pixel_bender_support::{ImageInputTexture, PixelBenderShaderArgument};
 use ruffle_render::quality::StageQuality;
 use std::sync::Arc;
 use target::CommandTarget;
