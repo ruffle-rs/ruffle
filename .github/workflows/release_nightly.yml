@@ -112,14 +112,14 @@ jobs:
             DESKTOP_FEATURES: sandbox,jpegxr
 
           - build_name: windows-x86_32
-            os: windows-latest
+            os: windows-2025
             target: i686-pc-windows-msvc
             RUSTFLAGS: -Ctarget-feature=+crt-static
             DESKTOP_FEATURES: jpegxr
             MSI_ARCH: x86
 
           - build_name: windows-x86_64
-            os: windows-latest
+            os: windows-2025
             target: x86_64-pc-windows-msvc
             RUSTFLAGS: -Ctarget-feature=+crt-static
             DESKTOP_FEATURES: jpegxr
