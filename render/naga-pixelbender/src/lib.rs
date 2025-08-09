@@ -1,4 +1,4 @@
-use std::{num::NonZeroU32, sync::OnceLock, vec};
+use std::{num::NonZeroU32, sync::LazyLock, vec};
 
 use anyhow::Result;
 use naga::{
@@ -126,13 +126,11 @@ impl ShaderBuilder<'_> {
     pub fn build(shader: &PixelBenderShader) -> Result<NagaModules> {
         let mut module = Module::default();
 
-        static VERTEX_SHADER: OnceLock<Module> = OnceLock::new();
-        let vertex_shader = VERTEX_SHADER
-            .get_or_init(|| {
-                naga::front::wgsl::parse_str(ruffle_render::shader_source::SHADER_FILTER_COMMON)
-                    .expect("Failed to parse vertex shader")
-            })
-            .clone();
+        static VERTEX_SHADER: LazyLock<Module> = LazyLock::new(|| {
+            naga::front::wgsl::parse_str(ruffle_render::shader_source::SHADER_FILTER_COMMON)
+                .expect("Failed to parse vertex shader")
+        });
+        let vertex_shader = VERTEX_SHADER.clone();
 
         let vec2f = module.types.insert(
             Type {
