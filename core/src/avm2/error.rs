@@ -500,6 +500,16 @@ pub fn make_error_1127<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> 
 
 #[inline(never)]
 #[cold]
+pub fn make_error_1132<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
+    let err = syntax_error(activation, "Error #1132: Invalid JSON parse input.", 1132);
+    match err {
+        Ok(err) => Error::avm_error(err),
+        Err(err) => err,
+    }
+}
+
+#[inline(never)]
+#[cold]
 pub fn make_error_1506<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
     let err = range_error(
         activation,

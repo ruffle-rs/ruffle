@@ -24,9 +24,9 @@ pub fn upload_from_byte_array<'gc>(
     );
     let texture = this.as_texture().unwrap();
     let data = args.get_object(activation, 0, "data")?;
-    let byte_array_offset = args.get_u32(activation, 1)?;
-    let side = args.get_u32(activation, 2)?;
-    let mip_level = args.get_u32(activation, 3)?;
+    let byte_array_offset = args.get_u32(1);
+    let side = args.get_u32(2);
+    let mip_level = args.get_u32(3);
 
     do_copy(
         activation,
@@ -55,7 +55,7 @@ pub fn upload_compressed_texture_from_byte_array<'gc>(
 
     let texture = this.as_texture().unwrap();
     let data = args.get_object(activation, 0, "data")?;
-    let byte_array_offset = args.get_u32(activation, 1)? as usize;
+    let byte_array_offset = args.get_u32(1) as usize;
     let async_ = args.get_bool(2);
     if async_ {
         avm2_stub_method!(
@@ -91,8 +91,8 @@ pub fn upload_from_bitmap_data<'gc>(
         let source_obj = args.get_object(activation, 0, "source")?;
 
         if let Some(source) = source_obj.as_bitmap_data() {
-            let side = args[1].coerce_to_u32(activation)?;
-            let mip_level = args[2].coerce_to_u32(activation)?;
+            let side = args.get_u32(1);
+            let mip_level = args.get_u32(2);
             if mip_level == 0 {
                 texture.context3d().copy_bitmapdata_to_texture(
                     source.sync(activation.context.renderer),
@@ -109,7 +109,7 @@ pub fn upload_from_bitmap_data<'gc>(
                 );
             }
         } else {
-            panic!("Invalid source: {:?}", args[0]);
+            unreachable!("Argument is BitmapData-typed");
         }
     }
     Ok(Value::Undefined)

@@ -171,7 +171,7 @@ pub fn start_drag<'gc>(
     if let Some(display_object) = this.as_display_object() {
         let lock_center = args.get_bool(0);
 
-        let rectangle = args.try_get_object(activation, 1);
+        let rectangle = args.try_get_object(1);
         let constraint = if let Some(rectangle) = rectangle {
             let x = rectangle
                 .get_slot(rectangle_slots::X)
@@ -307,7 +307,7 @@ pub fn set_hit_area<'gc>(
         .and_then(|this| this.as_movie_clip())
     {
         let object = args
-            .try_get_object(activation, 0)
+            .try_get_object(0)
             .and_then(|hit_area| hit_area.as_display_object());
         mc.set_hit_area(activation.gc(), object);
     }

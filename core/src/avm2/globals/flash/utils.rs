@@ -32,12 +32,14 @@ pub fn set_interval<'gc>(
     _this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let (args, params) = args.split_at(2);
+    let closure = args.try_get_object(0);
+    let interval = args.get_f64(1);
+    let params = &args[2..];
+
     let callback = crate::timer::TimerCallback::Avm2Callback {
-        closure: args.try_get_object(activation, 0),
+        closure,
         params: params.to_vec(),
     };
-    let interval = args.get_f64(activation, 1)?;
 
     Ok(Value::Integer(activation.context.timers.add_timer(
         callback,
@@ -52,7 +54,7 @@ pub fn clear_interval<'gc>(
     _this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let id = args.get_u32(activation, 0)?;
+    let id = args.get_u32(0);
     activation.context.timers.remove(id as i32);
     Ok(Value::Undefined)
 }
@@ -63,12 +65,14 @@ pub fn set_timeout<'gc>(
     _this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let (args, params) = args.split_at(2);
+    let closure = args.try_get_object(0);
+    let interval = args.get_f64(1);
+    let params = &args[2..];
+
     let callback = crate::timer::TimerCallback::Avm2Callback {
-        closure: args.try_get_object(activation, 0),
+        closure,
         params: params.to_vec(),
     };
-    let interval = args.get_f64(activation, 1)?;
 
     Ok(Value::Integer(activation.context.timers.add_timer(
         callback,
@@ -83,7 +87,7 @@ pub fn clear_timeout<'gc>(
     _this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let id = args.get_u32(activation, 0)?;
+    let id = args.get_u32(0);
     activation.context.timers.remove(id as i32);
     Ok(Value::Undefined)
 }
@@ -94,7 +98,7 @@ pub fn escape_multi_byte<'gc>(
     _this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let s = args.get_string(activation, 0)?;
+    let s = args.get_string(activation, 0);
 
     let utf8 = s.as_wstr().to_utf8_lossy();
     let mut result = WString::new();
@@ -126,7 +130,7 @@ pub fn unescape_multi_byte<'gc>(
     _this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let s = args.get_string(activation, 0)?;
+    let s = args.get_string(activation, 0);
 
     let bs = s.as_wstr();
     let mut buf = WString::new();
@@ -199,7 +203,7 @@ pub fn get_definition_by_name<'gc>(
     let appdomain = activation
         .caller_domain()
         .expect("Missing caller domain in getDefinitionByName");
-    let name = args.try_get_string(activation, 0)?;
+    let name = args.try_get_string(0);
 
     if let Some(name) = name {
         appdomain.get_defined_value_handling_vector(activation, name)

@@ -16,7 +16,7 @@ pub fn _escape_xml<'gc>(
     let quote = from_utf8("\"");
     let apos = from_utf8("'");
 
-    let input = args.get_string(activation, 0)?;
+    let input = args.get_string(activation, 0);
     if input.contains(and.as_ref())
         || input.contains(lt.as_ref())
         || input.contains(gt.as_ref())

@@ -2,6 +2,7 @@
 
 use crate::avm2::activation::Activation;
 use crate::avm2::object::DateObject;
+use crate::avm2::parameters::ParametersExt;
 use crate::avm2::value::Value;
 use crate::avm2::Error;
 use crate::locale::{get_current_date_time, get_timezone};
@@ -181,7 +182,7 @@ impl<'builder, 'activation_a, 'gc, T: TimeZone> DateAdjustment<'builder, 'activa
 }
 
 fn get_arguments_array<'gc>(args: &[Value<'gc>]) -> Vec<Value<'gc>> {
-    let object = args[0].as_object().unwrap();
+    let object = args.try_get_object(0).expect("Expected an Object");
     let array_storage = object.as_array_storage().unwrap();
     array_storage
         .iter()
@@ -284,8 +285,8 @@ pub fn get_time<'gc>(
 }
 
 /// Implements `setTime` method.
-pub fn set_time<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+pub fn _set_time<'gc>(
+    _activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -293,10 +294,7 @@ pub fn set_time<'gc>(
 
     let this = this.as_date_object().unwrap();
 
-    let new_time = args
-        .get(0)
-        .unwrap_or(&Value::Undefined)
-        .coerce_to_number(activation)?;
+    let new_time = args.get_f64(0);
     if new_time.is_finite() {
         let time = Utc
             .timestamp_millis_opt(new_time as i64)
@@ -1282,10 +1280,7 @@ pub fn parse<'gc>(
     _this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let date_str = args
-        .get(0)
-        .unwrap_or(&Value::Undefined)
-        .coerce_to_string(activation)?;
+    let date_str = args.get_value(0).coerce_to_string(activation)?;
 
     Ok(parse_full_date(activation, date_str)
         .unwrap_or(f64::NAN)

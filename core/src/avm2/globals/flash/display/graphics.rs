@@ -36,15 +36,15 @@ fn color_from_args(rgb: u32, alpha: f64) -> Color {
 
 /// Implements `Graphics.beginFill`.
 pub fn begin_fill<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    _activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
     if let Some(this) = this.as_display_object() {
-        let color = args.get_u32(activation, 0)?;
-        let alpha = args.get_f64(activation, 1)?;
+        let color = args.get_u32(0);
+        let alpha = args.get_f64(1);
 
         if let Some(mut draw) = this.as_drawing() {
             draw.set_fill_style(Some(FillStyle::Color(color_from_args(color, alpha))));
@@ -67,7 +67,7 @@ pub fn begin_bitmap_fill<'gc>(
             .get_object(activation, 0, "bitmap")?
             .as_bitmap_data()
             .expect("Bitmap argument is ensured to be a BitmapData from actionscript");
-        let matrix = if let Some(matrix) = args.try_get_object(activation, 1) {
+        let matrix = if let Some(matrix) = args.try_get_object(1) {
             Matrix::from(object_to_matrix(matrix, activation)?)
         } else {
             // Users can explicitly pass in `null` to mean identity matrix
@@ -111,11 +111,11 @@ pub fn begin_gradient_fill<'gc>(
     let this = this.as_object().unwrap();
 
     if let Some(this) = this.as_display_object() {
-        let gradient_type = args.get_string(activation, 0)?;
+        let gradient_type = args.get_string(activation, 0);
         let gradient_type = parse_gradient_type(activation, gradient_type)?;
         let colors = args.get_object(activation, 1, "colors")?;
-        let alphas = args.try_get_object(activation, 2);
-        let ratios = args.try_get_object(activation, 3);
+        let alphas = args.try_get_object(2);
+        let ratios = args.try_get_object(3);
 
         let records = build_gradient_records(
             activation,
@@ -124,17 +124,17 @@ pub fn begin_gradient_fill<'gc>(
             ratios,
         )?;
 
-        let matrix = if let Some(matrix) = args.try_get_object(activation, 4) {
+        let matrix = if let Some(matrix) = args.try_get_object(4) {
             Matrix::from(object_to_matrix(matrix, activation)?)
         } else {
             // Users can explicitly pass in `null` to mean identity matrix
             Matrix::IDENTITY
         };
         let spread = args.get_string(activation, 5);
-        let spread = parse_spread_method(spread?);
+        let spread = parse_spread_method(spread);
         let interpolation = args.get_string(activation, 6);
-        let interpolation = parse_interpolation_method(interpolation?);
-        let focal_point = args.get_f64(activation, 7)?;
+        let interpolation = parse_interpolation_method(interpolation);
+        let focal_point = args.get_f64(7);
 
         if let Some(mut draw) = this.as_drawing() {
             match gradient_type {
@@ -271,17 +271,17 @@ pub fn clear<'gc>(
 
 /// Implements `Graphics.curveTo`.
 pub fn curve_to<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    _activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
     if let Some(this) = this.as_display_object() {
-        let control_x = args.get_f64(activation, 0)?;
-        let control_y = args.get_f64(activation, 1)?;
-        let anchor_x = args.get_f64(activation, 2)?;
-        let anchor_y = args.get_f64(activation, 3)?;
+        let control_x = args.get_f64(0);
+        let control_y = args.get_f64(1);
+        let anchor_x = args.get_f64(2);
+        let anchor_y = args.get_f64(3);
 
         if let Some(mut draw) = this.as_drawing() {
             draw.draw_command(DrawCommand::QuadraticCurveTo {
@@ -360,20 +360,20 @@ pub fn line_style<'gc>(
     let this = this.as_object().unwrap();
 
     if let Some(this) = this.as_display_object() {
-        let thickness = args.get_f64(activation, 0)?;
+        let thickness = args.get_f64(0);
 
         if thickness.is_nan() {
             if let Some(mut draw) = this.as_drawing() {
                 draw.set_line_style(None);
             }
         } else {
-            let color = args.get_u32(activation, 1)?;
-            let alpha = args.get_f64(activation, 2)?;
+            let color = args.get_u32(1);
+            let alpha = args.get_f64(2);
             let is_pixel_hinted = args.get_bool(3);
-            let scale_mode = args.get_string(activation, 4)?;
-            let caps = caps_to_cap_style(args.try_get_string(activation, 5)?);
-            let joints = args.try_get_string(activation, 6)?;
-            let miter_limit = args.get_f64(activation, 7)?;
+            let scale_mode = args.get_string(activation, 4);
+            let caps = caps_to_cap_style(args.try_get_string(5));
+            let joints = args.try_get_string(6);
+            let miter_limit = args.get_f64(7);
 
             let width = Twips::from_pixels(thickness.clamp(0.0, 255.0));
             let color = color_from_args(color, alpha);
@@ -402,15 +402,15 @@ pub fn line_style<'gc>(
 
 /// Implements `Graphics.lineTo`.
 pub fn line_to<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    _activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
     if let Some(this) = this.as_display_object() {
-        let x = Twips::from_pixels(args.get_f64(activation, 0)?);
-        let y = Twips::from_pixels(args.get_f64(activation, 1)?);
+        let x = Twips::from_pixels(args.get_f64(0));
+        let y = Twips::from_pixels(args.get_f64(1));
 
         if let Some(mut draw) = this.as_drawing() {
             draw.draw_command(DrawCommand::LineTo(Point::new(x, y)));
@@ -422,15 +422,15 @@ pub fn line_to<'gc>(
 
 /// Implements `Graphics.moveTo`.
 pub fn move_to<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    _activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
     if let Some(this) = this.as_display_object() {
-        let x = Twips::from_pixels(args.get_f64(activation, 0)?);
-        let y = Twips::from_pixels(args.get_f64(activation, 1)?);
+        let x = Twips::from_pixels(args.get_f64(0));
+        let y = Twips::from_pixels(args.get_f64(1));
 
         if let Some(mut draw) = this.as_drawing() {
             draw.draw_command(DrawCommand::MoveTo(Point::new(x, y)));
@@ -442,17 +442,17 @@ pub fn move_to<'gc>(
 
 /// Implements `Graphics.drawRect`.
 pub fn draw_rect<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    _activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
     if let Some(this) = this.as_display_object() {
-        let x = Twips::from_pixels(args.get_f64(activation, 0)?);
-        let y = Twips::from_pixels(args.get_f64(activation, 1)?);
-        let width = Twips::from_pixels(args.get_f64(activation, 2)?);
-        let height = Twips::from_pixels(args.get_f64(activation, 3)?);
+        let x = Twips::from_pixels(args.get_f64(0));
+        let y = Twips::from_pixels(args.get_f64(1));
+        let width = Twips::from_pixels(args.get_f64(2));
+        let height = Twips::from_pixels(args.get_f64(3));
 
         if let Some(mut draw) = this.as_drawing() {
             draw.draw_command(DrawCommand::MoveTo(Point::new(x, y)));
@@ -730,19 +730,19 @@ fn draw_round_rect_internal(
 
 /// Implements `Graphics.drawRoundRect`.
 pub fn draw_round_rect<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    _activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
     if let Some(this) = this.as_display_object() {
-        let x = args.get_f64(activation, 0)?;
-        let y = args.get_f64(activation, 1)?;
-        let width = args.get_f64(activation, 2)?;
-        let height = args.get_f64(activation, 3)?;
-        let ellipse_width = args.get_f64(activation, 4)?;
-        let mut ellipse_height = args.get_f64(activation, 5)?;
+        let x = args.get_f64(0);
+        let y = args.get_f64(1);
+        let width = args.get_f64(2);
+        let height = args.get_f64(3);
+        let ellipse_width = args.get_f64(4);
+        let mut ellipse_height = args.get_f64(5);
 
         if ellipse_height.is_nan() {
             ellipse_height = ellipse_width;
@@ -772,21 +772,21 @@ pub fn draw_round_rect<'gc>(
 
 /// Implements `Graphics.drawRoundRectComplex`
 pub fn draw_round_rect_complex<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    _activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
     if let Some(this) = this.as_display_object() {
-        let x = args.get_f64(activation, 0)?;
-        let y = args.get_f64(activation, 1)?;
-        let width = args.get_f64(activation, 2)?;
-        let height = args.get_f64(activation, 3)?;
-        let top_left = args.get_f64(activation, 4)?;
-        let top_right = args.get_f64(activation, 5)?;
-        let bottom_left = args.get_f64(activation, 6)?;
-        let bottom_right = args.get_f64(activation, 7)?;
+        let x = args.get_f64(0);
+        let y = args.get_f64(1);
+        let width = args.get_f64(2);
+        let height = args.get_f64(3);
+        let top_left = args.get_f64(4);
+        let top_right = args.get_f64(5);
+        let bottom_left = args.get_f64(6);
+        let bottom_right = args.get_f64(7);
 
         if let Some(mut draw) = this.as_drawing() {
             draw_round_rect_internal(
@@ -812,16 +812,16 @@ pub fn draw_round_rect_complex<'gc>(
 
 /// Implements `Graphics.drawCircle`.
 pub fn draw_circle<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    _activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
     if let Some(this) = this.as_display_object() {
-        let x = args.get_f64(activation, 0)?;
-        let y = args.get_f64(activation, 1)?;
-        let radius = args.get_f64(activation, 2)?;
+        let x = args.get_f64(0);
+        let y = args.get_f64(1);
+        let radius = args.get_f64(2);
 
         if let Some(mut draw) = this.as_drawing() {
             draw_round_rect_internal(
@@ -847,17 +847,17 @@ pub fn draw_circle<'gc>(
 
 /// Implements `Graphics.drawEllipse`.
 pub fn draw_ellipse<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    _activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
     if let Some(this) = this.as_display_object() {
-        let x = args.get_f64(activation, 0)?;
-        let y = args.get_f64(activation, 1)?;
-        let width = args.get_f64(activation, 2)?;
-        let height = args.get_f64(activation, 3)?;
+        let x = args.get_f64(0);
+        let y = args.get_f64(1);
+        let width = args.get_f64(2);
+        let height = args.get_f64(3);
 
         if let Some(mut draw) = this.as_drawing() {
             draw_round_rect_internal(
@@ -891,10 +891,10 @@ pub fn line_gradient_style<'gc>(
 
     if let Some(this) = this.as_display_object() {
         let gradient_type = args.get_string(activation, 0);
-        let gradient_type = parse_gradient_type(activation, gradient_type?)?;
+        let gradient_type = parse_gradient_type(activation, gradient_type)?;
         let colors = args.get_object(activation, 1, "colors")?;
-        let alphas = args.try_get_object(activation, 2);
-        let ratios = args.try_get_object(activation, 3);
+        let alphas = args.try_get_object(2);
+        let ratios = args.try_get_object(3);
 
         let records = build_gradient_records(
             activation,
@@ -902,17 +902,17 @@ pub fn line_gradient_style<'gc>(
             alphas,
             ratios,
         )?;
-        let matrix = if let Some(matrix) = args.try_get_object(activation, 4) {
+        let matrix = if let Some(matrix) = args.try_get_object(4) {
             Matrix::from(object_to_matrix(matrix, activation)?)
         } else {
             // Users can explicitly pass in `null` to mean identity matrix
             Matrix::IDENTITY
         };
         let spread = args.get_string(activation, 5);
-        let spread = parse_spread_method(spread?);
+        let spread = parse_spread_method(spread);
         let interpolation = args.get_string(activation, 6);
-        let interpolation = parse_interpolation_method(interpolation?);
-        let focal_point = args.get_f64(activation, 7)?;
+        let interpolation = parse_interpolation_method(interpolation);
+        let focal_point = args.get_f64(7);
 
         if let Some(mut draw) = this.as_drawing() {
             match gradient_type {
@@ -949,19 +949,19 @@ pub fn line_gradient_style<'gc>(
 
 /// Implements `Graphics.cubicCurveTo`
 pub fn cubic_curve_to<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    _activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
     if let Some(this) = this.as_display_object() {
-        let control_a_x = args.get_f64(activation, 0)?;
-        let control_a_y = args.get_f64(activation, 1)?;
-        let control_b_x = args.get_f64(activation, 2)?;
-        let control_b_y = args.get_f64(activation, 3)?;
-        let anchor_x = args.get_f64(activation, 4)?;
-        let anchor_y = args.get_f64(activation, 5)?;
+        let control_a_x = args.get_f64(0);
+        let control_a_y = args.get_f64(1);
+        let control_b_x = args.get_f64(2);
+        let control_b_y = args.get_f64(3);
+        let anchor_x = args.get_f64(4);
+        let anchor_y = args.get_f64(5);
 
         if let Some(mut draw) = this.as_drawing() {
             draw.draw_command(DrawCommand::CubicCurveTo {
@@ -1012,7 +1012,7 @@ pub fn draw_path<'gc>(
     let mut drawing = this.as_drawing().unwrap();
     let commands = args.get_object(activation, 0, "commands")?;
     let data = args.get_object(activation, 1, "data")?;
-    let winding = args.get_string(activation, 2)?;
+    let winding = args.get_string(activation, 2);
 
     let fill_rule = if winding == WStr::from_units(b"nonZero") {
         FillRule::NonZero
@@ -1053,12 +1053,12 @@ pub fn draw_triangles<'gc>(
         if let Some(mut drawing) = this.as_drawing() {
             let vertices = args.get_object(activation, 0, "vertices")?;
 
-            let indices = args.try_get_object(activation, 1);
+            let indices = args.try_get_object(1);
 
-            let uvt_data = args.try_get_object(activation, 2);
+            let uvt_data = args.try_get_object(2);
 
             let culling = {
-                let culling = args.get_string(activation, 3)?;
+                let culling = args.get_string(activation, 3);
                 TriangleCulling::from_string(culling)
                     .ok_or_else(|| make_error_2004(activation, Error2004Type::ArgumentError))?
             };
@@ -1309,7 +1309,7 @@ pub fn line_bitmap_style<'gc>(
             .get_object(activation, 0, "bitmap")?
             .as_bitmap_data()
             .expect("Bitmap argument is ensured to be a BitmapData from actionscript");
-        let matrix = if let Some(matrix) = args.try_get_object(activation, 1) {
+        let matrix = if let Some(matrix) = args.try_get_object(1) {
             Matrix::from(object_to_matrix(matrix, activation)?)
         } else {
             // Users can explicitly pass in `null` to mean identity matrix

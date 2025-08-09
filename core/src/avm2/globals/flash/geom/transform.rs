@@ -77,7 +77,7 @@ pub fn set_matrix<'gc>(
     let this = this.as_object().unwrap();
 
     let dobj = get_display_object(this);
-    let Some(obj) = args.try_get_object(activation, 0) else {
+    let Some(obj) = args.try_get_object(0) else {
         dobj.base().set_has_matrix3d_stub(true);
         return Ok(Value::Undefined);
     };
@@ -388,7 +388,7 @@ pub fn set_matrix_3d<'gc>(
     let display_object = get_display_object(this);
 
     let (matrix, has_matrix3d) = {
-        match args.try_get_object(activation, 0) {
+        match args.try_get_object(0) {
             Some(obj) => {
                 let matrix3d = object_to_matrix3d(obj, activation)?;
                 let matrix = Matrix::from(matrix3d);
@@ -451,7 +451,7 @@ pub fn set_perspective_projection<'gc>(
     avm2_stub_setter!(activation, "flash.geom.Transform", "perspectiveProjection");
 
     let perspective_projection = args
-        .try_get_object(activation, 0)
+        .try_get_object(0)
         .map(|object| object_to_perspective_projection(object, activation))
         .transpose()?;
 

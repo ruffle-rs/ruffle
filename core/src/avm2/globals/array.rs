@@ -25,7 +25,7 @@ pub fn array_initializer<'gc>(
 
     if let Some(mut array) = this.as_array_storage_mut(activation.gc()) {
         if args.len() == 1 {
-            if let Some(expected_len) = args.get(0).filter(|v| v.is_number()).map(|v| v.as_f64()) {
+            if let Some(expected_len) = args.get_optional(0).and_then(|v| v.try_as_f64()) {
                 if expected_len < 0.0 || expected_len.is_nan() || expected_len.fract() != 0.0 {
                     return Err(Error::avm_error(range_error(
                         activation,
@@ -86,7 +86,7 @@ pub fn set_length<'gc>(
     let this = this.as_object().unwrap();
 
     if let Some(mut array) = this.as_array_storage_mut(activation.gc()) {
-        let size = args.get_u32(activation, 0)?;
+        let size = args.get_u32(0);
         array.set_length(size as usize);
     }
 
@@ -430,7 +430,7 @@ pub fn some<'gc>(
 }
 
 /// Implements `Array.indexOf`
-pub fn index_of<'gc>(
+pub fn _index_of<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
     args: &[Value<'gc>],
@@ -439,7 +439,7 @@ pub fn index_of<'gc>(
 
     if let Some(array) = this.as_array_storage() {
         let search_val = args.get_value(0);
-        let from = args.get_i32(activation, 1)?;
+        let from = args.get_i32(1);
 
         for (i, val) in array.iter().enumerate() {
             let val = resolve_array_hole(activation, this, i, val)?;
@@ -455,7 +455,7 @@ pub fn index_of<'gc>(
 }
 
 /// Implements `Array.lastIndexOf`
-pub fn last_index_of<'gc>(
+pub fn _last_index_of<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
     args: &[Value<'gc>],
@@ -464,7 +464,7 @@ pub fn last_index_of<'gc>(
 
     if let Some(array) = this.as_array_storage() {
         let search_val = args.get_value(0);
-        let from = args.get_i32(activation, 1)?;
+        let from = args.get_i32(1);
 
         let from_index = if from >= 0 {
             from as usize
@@ -647,11 +647,10 @@ pub fn splice<'gc>(
     let array_length = this.as_array_storage().map(|a| a.length());
 
     if let Some(array_length) = array_length {
-        if let Some(start) = args.get(0).copied() {
+        if let Some(start) = args.get_optional(0) {
             let actual_start = resolve_index(activation, start, array_length)?;
             let delete_count = args
-                .get(1)
-                .copied()
+                .get_optional(1)
                 .unwrap_or_else(|| array_length.into())
                 .coerce_to_i32(activation)?;
 
@@ -1032,15 +1031,19 @@ pub fn sort<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
-    // FIXME avmplus does some manual argument count/type checking here,
+    // FIXME avmplus does some manual argument type checking here,
     // should we try to match that?
     let (compare_fnc, options) = if args.len() > 1 {
+        // We have two or more args
+        let compare_fnc = args.get_value(0);
+        let options = args.get_value(1).coerce_to_u32(activation)?;
+
         (
-            Some(args.get_value(0)),
-            SortOptions::from_bits_truncate(args.get_u32(activation, 1)? as u8),
+            Some(compare_fnc),
+            SortOptions::from_bits_truncate(options as u8),
         )
-    } else {
-        let arg = args.get(0).copied().unwrap_or(Value::Undefined);
+    } else if let Some(arg) = args.get_optional(0) {
+        // We had exactly one arg
         if let Some(callable) = arg
             .as_object()
             .filter(|o| o.as_class_object().is_some() || o.as_function_object().is_some())
@@ -1052,6 +1055,9 @@ pub fn sort<'gc>(
                 SortOptions::from_bits_truncate(arg.coerce_to_u32(activation)? as u8),
             )
         }
+    } else {
+        // No arg was passed, so use default options
+        (None, SortOptions::empty())
     };
 
     let mut values = if let Some(values) = extract_array_values(activation, this.into())? {
@@ -1266,7 +1272,7 @@ pub fn remove_at<'gc>(
     let this = this.as_object().unwrap();
 
     if let Some(mut array) = this.as_array_storage_mut(activation.gc()) {
-        let index = args.get_i32(activation, 0)?;
+        let index = args.get_i32(0);
 
         return Ok(array.remove(index).unwrap_or(Value::Undefined));
     }
