@@ -435,7 +435,7 @@ impl RuffleHandle {
         #[expect(clippy::boxed_local)] // for js_bind
         args: Box<[JsValue]>,
     ) -> JsValue {
-        let args: Vec<_> = args.iter().map(js_to_external_value).collect();
+        let args = args.iter().map(js_to_external_value);
 
         // Re-entrant callbacks need to return through the hole that was punched through for them
         // We record the context of external functions, and then if we get an internal callback

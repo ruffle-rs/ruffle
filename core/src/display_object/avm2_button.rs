@@ -22,6 +22,7 @@ use crate::tag_utils::{SwfMovie, SwfSlice};
 use crate::utils::HasPrefixField;
 use crate::vminterface::Instantiator;
 use core::fmt;
+use either::Either;
 use gc_arena::barrier::unlock;
 use gc_arena::lock::Lock;
 use gc_arena::{Collect, Gc, Mutation};
@@ -478,16 +479,14 @@ impl<'gc> TDisplayObject<'gc> for Avm2Button<'gc> {
                 self.create_state(context, swf::ButtonState::HIT_TEST);
 
             let has_movie_clip_state = {
-                let objs: Vec<_> = if up_should_fire {
-                    up_state
-                        .as_container()
-                        .unwrap()
-                        .iter_render_list()
-                        .collect()
+                let objs = if up_should_fire {
+                    Either::Left(up_state.as_container().unwrap().iter_render_list())
                 } else {
-                    vec![up_state]
+                    Either::Right(core::iter::once(up_state))
                 };
-                objs.iter().any(|display| display.as_movie_clip().is_some())
+
+                objs.into_iter()
+                    .any(|display| display.as_movie_clip().is_some())
             };
 
             let write = Gc::write(context.gc(), self.0);
