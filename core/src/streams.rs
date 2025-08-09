@@ -367,7 +367,7 @@ impl<'gc> NetStream<'gc> {
         // NOTE: The onMetaData event triggers before this event in Flash due to its streaming behavior.
         self.trigger_status_event(
             context,
-            vec![("code", "NetStream.Buffer.Full"), ("level", "status")],
+            [("code", "NetStream.Buffer.Full"), ("level", "status")],
         );
     }
 
@@ -414,8 +414,8 @@ impl<'gc> NetStream<'gc> {
             let trigger = format!("Start Seeking {}", offset as u64);
             self.trigger_status_event(
                 context,
-                vec![
-                    ("description", &trigger),
+                [
+                    ("description", trigger.as_str()),
                     ("level", "status"),
                     ("code", "NetStream.SeekStart.Notify"),
                 ],
@@ -442,7 +442,7 @@ impl<'gc> NetStream<'gc> {
     pub fn execute_seek(self, context: &mut UpdateContext<'gc>, offset: f64) {
         self.trigger_status_event(
             context,
-            vec![("code", "NetStream.Seek.Notify"), ("level", "status")],
+            [("code", "NetStream.Seek.Notify"), ("level", "status")],
         );
 
         let source = self.source();
@@ -544,7 +544,7 @@ impl<'gc> NetStream<'gc> {
         if let Some(AvmObject::Avm2(_)) = self.0.avm_object.get() {
             self.trigger_status_event(
                 context,
-                vec![
+                [
                     ("description", "Seek Complete -1"),
                     ("level", "status"),
                     ("code", "NetStream.Seek.Complete"),
@@ -581,7 +581,7 @@ impl<'gc> NetStream<'gc> {
 
         self.trigger_status_event(
             context,
-            vec![("code", "NetStream.Play.Start"), ("level", "status")],
+            [("code", "NetStream.Play.Start"), ("level", "status")],
         );
     }
 
@@ -594,7 +594,7 @@ impl<'gc> NetStream<'gc> {
         if notify {
             self.trigger_status_event(
                 context,
-                vec![
+                [
                     ("description", "Pausing"),
                     ("level", "status"),
                     ("code", "NetStream.Pause.Notify"),
@@ -1250,19 +1250,19 @@ impl<'gc> NetStream<'gc> {
 
             self.trigger_status_event(
                 context,
-                vec![("code", "NetStream.Buffer.Flush"), ("level", "status")],
+                [("code", "NetStream.Buffer.Flush"), ("level", "status")],
             );
 
             if is_end_of_video {
                 self.trigger_status_event(
                     context,
-                    vec![("code", "NetStream.Play.Stop"), ("level", "status")],
+                    [("code", "NetStream.Play.Stop"), ("level", "status")],
                 );
             }
 
             self.trigger_status_event(
                 context,
-                vec![("code", "NetStream.Buffer.Empty"), ("level", "status")],
+                [("code", "NetStream.Buffer.Empty"), ("level", "status")],
             );
 
             if is_end_of_video {
@@ -1281,7 +1281,11 @@ impl<'gc> NetStream<'gc> {
     }
 
     /// Trigger a status event on the stream.
-    pub fn trigger_status_event(self, context: &mut UpdateContext<'gc>, values: Vec<(&str, &str)>) {
+    pub fn trigger_status_event<'a>(
+        self,
+        context: &mut UpdateContext<'gc>,
+        values: impl IntoIterator<Item = (&'a str, &'a str)>,
+    ) {
         let object = self.0.avm_object.get();
         match object {
             Some(AvmObject::Avm1(object)) => {
