@@ -143,6 +143,7 @@ pub trait TDisplayObjectContainer<'gc>:
     ///
     /// The `index` provided here should not be confused with the `Depth`s used
     /// to index the depth list.
+    #[no_dynamic]
     fn child_by_index(self, index: usize) -> Option<DisplayObject<'gc>> {
         self.raw_container().get_id(index)
     }
@@ -151,11 +152,13 @@ pub trait TDisplayObjectContainer<'gc>:
     ///
     /// The `Depth` provided here should not be confused with the `index`s used
     /// to index the render list.
+    #[no_dynamic]
     fn child_by_depth(self, depth: Depth) -> Option<DisplayObject<'gc>> {
         self.raw_container().get_depth(depth)
     }
 
     /// Checks if there's a child at a given depth.
+    #[no_dynamic]
     fn has_child_at_depth(self, depth: Depth) -> bool {
         self.raw_container().has_depth(depth)
     }
@@ -168,16 +171,19 @@ pub trait TDisplayObjectContainer<'gc>:
     /// If multiple children with the same name exist, the one with the lowest
     /// depth wins. Children not on the depth list will not be accessible via
     /// this mechanism.
+    #[no_dynamic]
     fn child_by_name(self, name: &WStr, case_sensitive: bool) -> Option<DisplayObject<'gc>> {
         self.raw_container().get_name(name, case_sensitive)
     }
 
     /// Returns the number of children on the render list.
+    #[no_dynamic]
     fn num_children(self) -> usize {
         self.raw_container().num_children()
     }
 
     /// Returns the highest depth among children.
+    #[no_dynamic]
     fn highest_depth(self) -> Depth {
         self.raw_container().highest_depth()
     }
@@ -197,6 +203,7 @@ pub trait TDisplayObjectContainer<'gc>:
     ///
     /// Note: this method specifically does *not* dispatch events on any
     /// children it modifies. You must do this yourself.
+    #[no_dynamic]
     fn replace_at_depth(
         self,
         context: &mut UpdateContext<'gc>,
@@ -231,6 +238,7 @@ pub trait TDisplayObjectContainer<'gc>:
     /// also be swapped. If no child has been displaced by the swap operation,
     /// then the render list position of the child will be determined in the same
     /// way as `replace_at_depth`.
+    #[no_dynamic]
     fn swap_at_depth(
         &mut self,
         context: &mut UpdateContext<'gc>,
@@ -255,6 +263,7 @@ pub trait TDisplayObjectContainer<'gc>:
     /// Callers of this method should be aware that reordering items onto or off of the
     /// render list can make further depth list manipulations (e.g. from the
     /// timeline) produce unusual results.
+    #[no_dynamic]
     fn insert_at_index(
         &mut self,
         context: &mut UpdateContext<'gc>,
@@ -297,6 +306,7 @@ pub trait TDisplayObjectContainer<'gc>:
     /// Swap two children in the render list.
     ///
     /// No changes to the depth or render lists are made by this function.
+    #[no_dynamic]
     fn swap_at_index(&mut self, context: &mut UpdateContext<'gc>, index1: usize, index2: usize) {
         self.raw_container_mut(context.gc())
             .swap_at_id(index1, index2);
@@ -307,6 +317,7 @@ pub trait TDisplayObjectContainer<'gc>:
     /// Remove (and unloads) a child display object from this container's render and depth lists.
     ///
     /// Will also handle AVM1 delayed clip removal, when a unload listener is present
+    #[no_dynamic]
     fn remove_child(&mut self, context: &mut UpdateContext<'gc>, child: DisplayObject<'gc>) {
         let this: DisplayObject<'_> = (*self).into();
 
@@ -354,9 +365,10 @@ pub trait TDisplayObjectContainer<'gc>:
     }
 
     /// Remove (and unloads) a child display object from this container's render and depth lists.
+    #[no_dynamic]
     fn remove_child_directly(&self, context: &mut UpdateContext<'gc>, child: DisplayObject<'gc>) {
         dispatch_removed_event(child, context);
-        let this: DisplayObjectContainer<'gc> = (*self).into();
+        let this: DisplayObjectContainer<'gc> = *self;
         let mut write = self.raw_container_mut(context.gc());
         write.remove_child_from_depth_list(child);
         drop(write);
@@ -380,6 +392,7 @@ pub trait TDisplayObjectContainer<'gc>:
     }
 
     /// Insert a child directly into this container's depth list.
+    #[no_dynamic]
     fn insert_child_into_depth_list(
         &mut self,
         context: &mut UpdateContext<'gc>,
@@ -397,6 +410,7 @@ pub trait TDisplayObjectContainer<'gc>:
     }
 
     /// Removes (without unloading) a child display object from this container's depth list.
+    #[no_dynamic]
     fn remove_child_from_depth_list(
         &mut self,
         context: &mut UpdateContext<'gc>,
@@ -416,6 +430,7 @@ pub trait TDisplayObjectContainer<'gc>:
 
     /// Remove a set of children identified by their render list indices from
     /// this container's render and depth lists.
+    #[no_dynamic]
     fn remove_range<R>(&mut self, context: &mut UpdateContext<'gc>, range: R)
     where
         R: RangeBounds<usize>,
@@ -441,7 +456,7 @@ pub trait TDisplayObjectContainer<'gc>:
             write.remove_child_from_depth_list(removed);
             drop(write);
 
-            let this: DisplayObjectContainer<'gc> = (*self).into();
+            let this: DisplayObjectContainer<'gc> = *self;
             ChildContainer::remove_child_from_render_list(this, removed, context);
 
             if !self.raw_container().is_action_script_3() {
@@ -459,6 +474,7 @@ pub trait TDisplayObjectContainer<'gc>:
     }
 
     /// Determine if the container is empty.
+    #[no_dynamic]
     fn is_empty(self) -> bool {
         self.raw_container().is_empty()
     }
@@ -472,8 +488,9 @@ pub trait TDisplayObjectContainer<'gc>:
     ///
     /// The iterator's concrete type is stated here due to Rust language
     /// limitations.
+    #[no_dynamic]
     fn iter_render_list(self) -> RenderIter<'gc> {
-        RenderIter::from_container(self.into())
+        RenderIter::from_container(self)
     }
 
     fn is_tab_children_avm1(self, _context: &mut UpdateContext<'gc>) -> bool {
@@ -488,6 +505,7 @@ pub trait TDisplayObjectContainer<'gc>:
     /// _NOTE:_
     /// According to the AS2 documentation, it should affect only automatic tab ordering.
     /// However, that does not seem to be the case, as it also affects custom ordering.
+    #[no_dynamic]
     fn is_tab_children(&self, context: &mut UpdateContext<'gc>) -> bool {
         let container = self.raw_container();
         if container.is_action_script_3() {
@@ -497,6 +515,7 @@ pub trait TDisplayObjectContainer<'gc>:
         }
     }
 
+    #[no_dynamic]
     fn set_tab_children(&self, context: &mut UpdateContext<'gc>, value: bool) {
         let this: DisplayObject<'_> = (*self).into();
         if self.raw_container().is_action_script_3() {
@@ -506,6 +525,7 @@ pub trait TDisplayObjectContainer<'gc>:
         }
     }
 
+    #[no_dynamic]
     fn fill_tab_order(&self, tab_order: &mut TabOrder<'gc>, context: &mut UpdateContext<'gc>) {
         if !self.is_tab_children(context) {
             // AS3 docs say that objects with custom ordering (tabIndex set)
@@ -531,6 +551,7 @@ pub trait TDisplayObjectContainer<'gc>:
     }
 
     /// Renders the children of this container in render list order.
+    #[no_dynamic]
     fn render_children(self, context: &mut RenderContext<'_, 'gc>) {
         let mut clip_depth = 0;
         let mut clip_depth_stack: Vec<(Depth, DisplayObject<'_>)> = vec![];
@@ -574,9 +595,11 @@ pub trait TDisplayObjectContainer<'gc>:
     }
 
     #[cfg(not(feature = "avm_debug"))]
+    #[no_dynamic]
     fn recurse_render_tree(&self, _depth: usize) {}
 
     #[cfg(feature = "avm_debug")]
+    #[no_dynamic]
     fn recurse_render_tree(&self, depth: usize) {
         for child in self.iter_render_list() {
             child.display_render_tree(depth);
