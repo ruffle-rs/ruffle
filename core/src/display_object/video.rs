@@ -443,6 +443,10 @@ impl<'gc> TDisplayObject<'gc> for Video<'gc> {
             let video_constr = context.avm2.classes().video;
             let object =
                 Avm2StageObject::for_display_object(context.gc(), self.into(), video_constr);
+            // We don't need to call the initializer method, as AVM2 can't link
+            // a custom class to a Video, and the initializer method for Video
+            // itself only sets the size of the Video- the Video already has the
+            // correct size at this point.
 
             self.set_object2(context, object.into());
 
