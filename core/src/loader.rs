@@ -1610,7 +1610,7 @@ impl<'gc> Loader<'gc> {
 
                     let data_object = if &data_format == b"binary" {
                         let storage = ByteArrayStorage::from_vec(body);
-                        let bytearray = ByteArrayObject::from_storage(activation, storage).unwrap();
+                        let bytearray = ByteArrayObject::from_storage(activation, storage);
 
                         Some(bytearray.into())
                     } else if &data_format == b"variables" {
@@ -2194,13 +2194,8 @@ impl<'gc> Loader<'gc> {
                 );
                 let bitmapdata_wrapper =
                     BitmapDataWrapper::new(GcCell::new(activation.gc(), bitmap_data));
-                let bitmapdata_class = activation.context.avm2.classes().bitmapdata;
-                let bitmapdata_avm2 = BitmapDataObject::from_bitmap_data_internal(
-                    &mut activation,
-                    bitmapdata_wrapper,
-                    bitmapdata_class,
-                )
-                .unwrap();
+                let bitmapdata_avm2 =
+                    BitmapDataObject::from_bitmap_data(activation.context, bitmapdata_wrapper);
 
                 let bitmap_avm2 = activation
                     .avm2()

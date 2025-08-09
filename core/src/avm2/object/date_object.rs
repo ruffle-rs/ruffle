@@ -43,22 +43,18 @@ impl<'gc> DateObject<'gc> {
     pub fn from_date_time(
         activation: &mut Activation<'_, 'gc>,
         date_time: DateTime<Utc>,
-    ) -> Result<Object<'gc>, Error<'gc>> {
+    ) -> Object<'gc> {
         let class = activation.avm2().classes().date;
         let base = ScriptObjectData::new(class);
 
-        let instance: Object<'gc> = DateObject(Gc::new(
+        DateObject(Gc::new(
             activation.gc(),
             DateObjectData {
                 base,
                 date_time: Cell::new(Some(date_time)),
             },
         ))
-        .into();
-
-        class.call_init(instance.into(), &[], activation)?;
-
-        Ok(instance)
+        .into()
     }
 
     pub fn for_prototype(
