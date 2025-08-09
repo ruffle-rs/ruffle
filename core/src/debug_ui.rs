@@ -194,11 +194,11 @@ impl DebugUi {
         }
 
         if let Some(window) = &self.display_object_search {
-            for (color, object) in window.hovered_debug_rects() {
+            for (object, color) in window.hovered_debug_rects() {
                 let object = object.fetch(dynamic_root_set);
                 let bounds = world_matrix * object.debug_rect_bounds();
 
-                draw_debug_rect(context, color, bounds, 5.0);
+                draw_debug_rect(context, *color, bounds, 5.0);
             }
         }
 
