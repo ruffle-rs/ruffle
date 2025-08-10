@@ -15,8 +15,10 @@ use ruffle_render_wgpu::wgpu;
 use std::any::Any;
 use std::fs::create_dir_all;
 use std::io::{self, Write};
+use std::num::NonZeroUsize;
 use std::panic::catch_unwind;
 use std::path::{Path, PathBuf};
+use std::str::FromStr;
 use std::sync::Arc;
 use std::sync::Mutex;
 use walkdir::{DirEntry, WalkDir};
@@ -36,6 +38,29 @@ pub struct SizeOpt {
     height: Option<u32>,
 }
 
+#[derive(Debug, Clone, Copy)]
+enum FrameSelection {
+    All,
+    Count(NonZeroUsize),
+}
+
+impl FromStr for FrameSelection {
+    type Err = String;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let s_lower = s.to_ascii_lowercase();
+        if s_lower == "all" {
+            Ok(FrameSelection::All)
+        } else if let Ok(n) = s.parse::<u32>() {
+            let non_zero = NonZeroUsize::new(n as usize)
+                .ok_or_else(|| "Frame count must be greater than 0".to_string())?;
+            Ok(FrameSelection::Count(non_zero))
+        } else {
+            Err(format!("Invalid value for --frames: {s}"))
+        }
+    }
+}
+
 #[derive(Parser, Debug)]
 #[clap(name = "Ruffle Exporter", author, version)]
 pub struct Opt {
@@ -51,9 +76,9 @@ pub struct Opt {
     #[clap(name = "output")]
     output_path: Option<PathBuf>,
 
-    /// Number of frames to capture per file
+    /// Number of frames to capture per file. Use 'all' to capture all frames.
     #[clap(short = 'f', long = "frames", default_value = "1")]
-    frames: u32,
+    frames: FrameSelection,
 
     /// Number of frames to skip
     #[clap(long = "skipframes", default_value = "0")]
@@ -91,7 +116,7 @@ pub struct Opt {
 fn take_screenshot(
     descriptors: Arc<Descriptors>,
     swf_path: &Path,
-    frames: u32,
+    frames: FrameSelection, // TODO Figure out a way to get framecount before calling take_screenshot, so that we can have accurate progress bars when using --frames all
     skipframes: u32,
     progress: &Option<ProgressBar>,
     size: SizeOpt,
@@ -122,7 +147,15 @@ fn take_screenshot(
         .build();
 
     let mut result = Vec::new();
-    let totalframes = frames + skipframes;
+    let totalframes = match frames {
+        FrameSelection::All => player.lock().unwrap().mutate_with_update_context(|ctx| {
+            ctx.stage
+                .root_clip()
+                .and_then(|root_clip| root_clip.as_movie_clip())
+                .map_or(1, |movie_clip| movie_clip.total_frames() as u32)
+        }),
+        FrameSelection::Count(n) => n.get() as u32 + skipframes,
+    };
 
     for i in 0..totalframes {
         if let Some(progress) = &progress {
@@ -164,8 +197,10 @@ fn take_screenshot(
             }
         }
 
-        if let Some(progress) = &progress {
-            progress.inc(1);
+        if !matches!(frames, FrameSelection::All) {
+            if let Some(progress) = &progress {
+                progress.inc(1);
+            }
         }
     }
     Ok(result)
@@ -225,18 +260,21 @@ fn capture_single_swf(descriptors: Arc<Descriptors>, opt: &Opt) -> Result<()> {
     let output = opt.output_path.clone().unwrap_or_else(|| {
         let mut result = PathBuf::new();
         result.set_file_name(opt.swf.file_stem().unwrap());
-        if opt.frames == 1 {
+        if matches!(opt.frames, FrameSelection::Count(n) if n.get() == 1) {
             result.set_extension("png");
         }
         result
     });
 
-    if opt.frames > 1 {
+    if !matches!(opt.frames, FrameSelection::Count(n) if n.get() == 1) {
         let _ = create_dir_all(&output);
     }
 
     let progress = if !opt.silent {
-        let progress = ProgressBar::new(opt.frames as u64);
+        let progress = match opt.frames {
+            FrameSelection::Count(n) => ProgressBar::new(n.get() as u64),
+            _ => ProgressBar::new_spinner(), // TODO Once we figure out a way to get framecount before calling take_screenshot, then this can be changed back to a progress bar when using --frames all
+        };
         progress.set_style(
             ProgressStyle::with_template(
                 "[{elapsed_precise}] {bar:40.cyan/blue} [{eta_precise}] {pos:>7}/{len:7} {msg}",
@@ -320,7 +358,10 @@ fn capture_multiple_swfs(descriptors: Arc<Descriptors>, opt: &Opt) -> Result<()>
     let files = find_files(&opt.swf, !opt.silent);
 
     let progress = if !opt.silent {
-        let progress = ProgressBar::new((files.len() as u64) * (opt.frames as u64));
+        let progress = match opt.frames {
+            FrameSelection::Count(n) => ProgressBar::new((files.len() as u64) * (n.get() as u64)),
+            _ => ProgressBar::new(files.len() as u64),
+        };
         progress.set_style(
             ProgressStyle::with_template(
                 "[{elapsed_precise}] {bar:40.cyan/blue} [{eta_precise}] {pos:>7}/{len:7} {msg}",
@@ -383,19 +424,23 @@ fn capture_multiple_swfs(descriptors: Arc<Descriptors>, opt: &Opt) -> Result<()>
         Ok(())
     })?;
 
-    let message = if opt.frames == 1 {
-        format!(
+    let message = match opt.frames {
+        FrameSelection::Count(n) if n.get() == 1 => format!(
             "Saved first frame of {} files to {}",
             files.len(),
             output.to_string_lossy()
-        )
-    } else {
-        format!(
-            "Saved first {} frames of {} files to {}",
-            opt.frames,
+        ),
+        FrameSelection::All => format!(
+            "Saved all frames of {} files to {}",
             files.len(),
             output.to_string_lossy()
-        )
+        ),
+        FrameSelection::Count(n) => format!(
+            "Saved first {} frames of {} files to {}",
+            n,
+            files.len(),
+            output.to_string_lossy()
+        ),
     };
 
     if let Some(progress) = progress {
