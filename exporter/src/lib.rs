@@ -60,6 +60,10 @@ pub struct Opt {
     #[clap(long = "skipframes", default_value = "0")]
     skipframes: u32,
 
+    /// Stops capturing frames once the root movie clip reaches its final frame.
+    #[clap(long, action)]
+    stop_on_last_frame: bool,
+
     /// Don't show a progress bar
     #[clap(short, long, action)]
     silent: bool,
@@ -89,6 +93,7 @@ pub struct Opt {
 }
 
 /// Captures a screenshot. The resulting image uses straight alpha
+#[allow(clippy::too_many_arguments)]
 fn take_screenshot(
     descriptors: Arc<Descriptors>,
     swf_path: &Path,
@@ -97,6 +102,7 @@ fn take_screenshot(
     progress: &Option<ProgressBar>,
     size: SizeOpt,
     force_play: bool,
+    stop_on_last_frame: bool,
 ) -> Result<Vec<RgbaImage>> {
     let movie = SwfMovie::from_path(swf_path, None).map_err(|e| anyhow!(e.to_string()))?;
 
@@ -168,8 +174,21 @@ fn take_screenshot(
         if let Some(progress) = &progress {
             progress.inc(1);
         }
+
+        if stop_on_last_frame && is_root_movie_clip_at_end(&player) {
+            break;
+        }
     }
     Ok(result)
+}
+
+fn is_root_movie_clip_at_end(player: &Arc<Mutex<Player>>) -> bool {
+    player.lock().unwrap().mutate_with_update_context(|ctx| {
+        ctx.stage
+            .root_clip()
+            .and_then(|root_clip| root_clip.as_movie_clip())
+            .is_some_and(|movie_clip| movie_clip.current_frame() == movie_clip.total_frames())
+    })
 }
 
 fn force_root_clip_play(player: &Arc<Mutex<Player>>) {
@@ -258,6 +277,7 @@ fn capture_single_swf(descriptors: Arc<Descriptors>, opt: &Opt) -> Result<()> {
         &progress,
         opt.size,
         opt.force_play,
+        opt.stop_on_last_frame,
     )?;
 
     if let Some(progress) = &progress {
@@ -352,6 +372,7 @@ fn capture_multiple_swfs(descriptors: Arc<Descriptors>, opt: &Opt) -> Result<()>
             &progress,
             opt.size,
             opt.force_play,
+            opt.stop_on_last_frame,
         ) {
             let mut relative_path = file
                 .path()
