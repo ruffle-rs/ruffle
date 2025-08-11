@@ -108,10 +108,6 @@ impl<'gc> TDisplayObject<'gc> for Text<'gc> {
         Self(Gc::new(gc_context, self.0.as_ref().clone())).into()
     }
 
-    fn as_text(self) -> Option<Text<'gc>> {
-        Some(self)
-    }
-
     fn as_ptr(self) -> *const DisplayObjectPtr {
         Gc::as_ptr(self.0) as *const DisplayObjectPtr
     }

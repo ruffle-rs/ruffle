@@ -5,7 +5,7 @@ use crate::avm2::error::make_error_2027;
 use crate::avm2::parameters::ParametersExt;
 use crate::avm2::value::Value;
 use crate::avm2::Error;
-use crate::display_object::{TDisplayObject, TInteractiveObject};
+use crate::display_object::TInteractiveObject;
 
 /// Implements `InteractiveObject.mouseEnabled`'s getter.
 pub fn get_mouse_enabled<'gc>(

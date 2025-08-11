@@ -11,9 +11,7 @@ use crate::backend::ui::MouseCursor;
 use crate::context::{RenderContext, UpdateContext};
 use crate::display_object::avm1_button::{ButtonState, ButtonTracking};
 use crate::display_object::container::{dispatch_added_event, dispatch_removed_event};
-use crate::display_object::interactive::{
-    InteractiveObject, InteractiveObjectBase, TInteractiveObject,
-};
+use crate::display_object::interactive::{InteractiveObjectBase, TInteractiveObject};
 use crate::display_object::{DisplayObjectBase, DisplayObjectPtr, MovieClip};
 use crate::events::{ClipEvent, ClipEventResult};
 use crate::frame_lifecycle::catchup_display_object_to_frame;
@@ -663,14 +661,6 @@ impl<'gc> TDisplayObject<'gc> for Avm2Button<'gc> {
     fn set_object2(self, context: &mut UpdateContext<'gc>, to: Avm2Object<'gc>) {
         let write = Gc::write(context.gc(), self.0);
         unlock!(write, Avm2ButtonData, object).set(Some(to));
-    }
-
-    fn as_avm2_button(self) -> Option<Self> {
-        Some(self)
-    }
-
-    fn as_interactive(self) -> Option<InteractiveObject<'gc>> {
-        Some(self.into())
     }
 
     fn allow_as_mask(self) -> bool {

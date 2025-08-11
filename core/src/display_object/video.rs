@@ -360,10 +360,6 @@ impl<'gc> TDisplayObject<'gc> for Video<'gc> {
         Gc::as_ptr(self.0) as *const DisplayObjectPtr
     }
 
-    fn as_video(self) -> Option<Video<'gc>> {
-        Some(self)
-    }
-
     fn post_instantiation(
         self,
         context: &mut UpdateContext<'gc>,

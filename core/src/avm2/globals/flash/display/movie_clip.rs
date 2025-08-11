@@ -7,7 +7,7 @@ use crate::avm2::object::ArrayObject;
 use crate::avm2::parameters::ParametersExt;
 use crate::avm2::value::Value;
 use crate::avm2::Error;
-use crate::display_object::{MovieClip, Scene, TDisplayObject};
+use crate::display_object::{MovieClip, Scene};
 use crate::string::{AvmString, WString};
 
 /// Implements `addFrameScript`, an undocumented method of `MovieClip` used to

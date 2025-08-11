@@ -10,9 +10,7 @@ use crate::backend::ui::MouseCursor;
 use crate::config::Letterbox;
 use crate::context::{RenderContext, UpdateContext};
 use crate::display_object::container::ChildContainer;
-use crate::display_object::interactive::{
-    InteractiveObject, InteractiveObjectBase, TInteractiveObject,
-};
+use crate::display_object::interactive::{InteractiveObjectBase, TInteractiveObject};
 use crate::display_object::{render_base, DisplayObjectBase, DisplayObjectPtr};
 use crate::events::{ClipEvent, ClipEventResult};
 use crate::focus_tracker::FocusTracker;
@@ -796,18 +794,6 @@ impl<'gc> TDisplayObject<'gc> for Stage<'gc> {
 
     fn self_bounds(self) -> Rectangle<Twips> {
         Default::default()
-    }
-
-    fn as_container(self) -> Option<DisplayObjectContainer<'gc>> {
-        Some(self.into())
-    }
-
-    fn as_interactive(self) -> Option<InteractiveObject<'gc>> {
-        Some(self.into())
-    }
-
-    fn as_stage(self) -> Option<Stage<'gc>> {
-        Some(self)
     }
 
     fn render_self(self, context: &mut RenderContext<'_, 'gc>) {

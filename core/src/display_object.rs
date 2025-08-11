@@ -2280,54 +2280,6 @@ pub trait TDisplayObject<'gc>:
         None
     }
 
-    fn as_stage(self) -> Option<Stage<'gc>> {
-        None
-    }
-
-    fn as_avm1_button(self) -> Option<Avm1Button<'gc>> {
-        None
-    }
-
-    fn as_avm2_button(self) -> Option<Avm2Button<'gc>> {
-        None
-    }
-
-    fn as_movie_clip(self) -> Option<MovieClip<'gc>> {
-        None
-    }
-
-    fn as_edit_text(self) -> Option<EditText<'gc>> {
-        None
-    }
-
-    fn as_text(self) -> Option<Text<'gc>> {
-        None
-    }
-
-    fn as_morph_shape(self) -> Option<MorphShape<'gc>> {
-        None
-    }
-
-    fn as_container(self) -> Option<DisplayObjectContainer<'gc>> {
-        None
-    }
-
-    fn as_video(self) -> Option<Video<'gc>> {
-        None
-    }
-
-    fn as_drawing(&self) -> Option<RefMut<'_, Drawing>> {
-        None
-    }
-
-    fn as_bitmap(self) -> Option<Bitmap<'gc>> {
-        None
-    }
-
-    fn as_interactive(self) -> Option<InteractiveObject<'gc>> {
-        None
-    }
-
     #[no_dynamic]
     fn apply_place_object(self, context: &mut UpdateContext<'gc>, place_object: &swf::PlaceObject) {
         // PlaceObject tags only apply if this object has not been dynamically moved by AS code.
@@ -2658,9 +2610,40 @@ pub trait TDisplayObject<'gc>:
             let _ = object.set(name, value, &mut activation);
         }
     }
+
+    fn as_drawing(&self) -> Option<RefMut<'_, Drawing>> {
+        None
+    }
+
+    #[no_dynamic]
+    fn as_container(self) -> Option<DisplayObjectContainer<'gc>> {
+        match self {
+            Self::Avm1Button(dobj) => Some(DisplayObjectContainer::Avm1Button(dobj)),
+            Self::LoaderDisplay(dobj) => Some(DisplayObjectContainer::LoaderDisplay(dobj)),
+            Self::MovieClip(dobj) => Some(DisplayObjectContainer::MovieClip(dobj)),
+            Self::Stage(dobj) => Some(DisplayObjectContainer::Stage(dobj)),
+            _ => None,
+        }
+    }
 }
 
 pub enum DisplayObjectPtr {}
+
+macro_rules! impl_downcast_methods {
+    ($(
+        $vis:vis fn $fn_name:ident for $variant:ident;
+    )*) => { $(
+        #[doc = concat!("Downcast this display object as a `", stringify!($variant), "`.")]
+        #[inline(always)]
+        $vis fn $fn_name(self) -> Option<$variant<'gc>> {
+            if let Self::$variant(obj) = self {
+                Some(obj)
+            } else {
+                None
+            }
+        }
+    )* }
+}
 
 impl<'gc> DisplayObject<'gc> {
     pub fn ptr_eq(a: DisplayObject<'gc>, b: DisplayObject<'gc>) -> bool {
@@ -2669,6 +2652,30 @@ impl<'gc> DisplayObject<'gc> {
 
     pub fn option_ptr_eq(a: Option<DisplayObject<'gc>>, b: Option<DisplayObject<'gc>>) -> bool {
         a.map(|o| o.as_ptr()) == b.map(|o| o.as_ptr())
+    }
+
+    impl_downcast_methods! {
+        pub fn as_stage for Stage;
+        pub fn as_avm1_button for Avm1Button;
+        pub fn as_avm2_button for Avm2Button;
+        pub fn as_movie_clip for MovieClip;
+        pub fn as_edit_text for EditText;
+        pub fn as_text for Text;
+        pub fn as_morph_shape for MorphShape;
+        pub fn as_video for Video;
+        pub fn as_bitmap for Bitmap;
+    }
+
+    pub fn as_interactive(self) -> Option<InteractiveObject<'gc>> {
+        match self {
+            Self::Avm1Button(dobj) => Some(InteractiveObject::Avm1Button(dobj)),
+            Self::Avm2Button(dobj) => Some(InteractiveObject::Avm2Button(dobj)),
+            Self::EditText(dobj) => Some(InteractiveObject::EditText(dobj)),
+            Self::LoaderDisplay(dobj) => Some(InteractiveObject::LoaderDisplay(dobj)),
+            Self::MovieClip(dobj) => Some(InteractiveObject::MovieClip(dobj)),
+            Self::Stage(dobj) => Some(InteractiveObject::Stage(dobj)),
+            _ => None,
+        }
     }
 
     pub fn downgrade(self) -> DisplayObjectWeak<'gc> {

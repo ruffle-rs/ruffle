@@ -3,7 +3,7 @@ use crate::avm2::globals::flash::display::display_object::initialize_for_allocat
 use crate::avm2::parameters::ParametersExt;
 use crate::avm2::{Activation, ClassObject, Object, Value};
 use crate::avm2_stub_method;
-use crate::display_object::{TDisplayObject, Video};
+use crate::display_object::Video;
 
 pub fn video_allocator<'gc>(
     class: ClassObject<'gc>,

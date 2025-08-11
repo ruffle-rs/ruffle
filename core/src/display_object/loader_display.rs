@@ -103,14 +103,6 @@ impl<'gc> TDisplayObject<'gc> for LoaderDisplay<'gc> {
         unlock!(Gc::write(mc, self.0), LoaderDisplayData, avm2_object).set(Some(to))
     }
 
-    fn as_container(self) -> Option<DisplayObjectContainer<'gc>> {
-        Some(self.into())
-    }
-
-    fn as_interactive(self) -> Option<InteractiveObject<'gc>> {
-        Some(self.into())
-    }
-
     fn enter_frame(self, context: &mut UpdateContext<'gc>) {
         let skip_frame = self.base().should_skip_next_enter_frame();
         for child in self.iter_render_list() {

@@ -1,5 +1,4 @@
 use crate::avm2::{Activation, Error, Value};
-use crate::prelude::TDisplayObject;
 use crate::string::AvmString;
 
 /// Implements `StaticText.text`

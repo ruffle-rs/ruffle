@@ -13,7 +13,7 @@ use crate::avm2::error::make_error_2008;
 use crate::avm2::parameters::ParametersExt;
 use crate::bitmap::bitmap_data::BitmapData;
 use crate::character::Character;
-use crate::display_object::{Bitmap, TDisplayObject};
+use crate::display_object::Bitmap;
 
 pub fn bitmap_allocator<'gc>(
     class: ClassObject<'gc>,

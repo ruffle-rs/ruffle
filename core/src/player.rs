@@ -1394,7 +1394,7 @@ impl Player {
                         None
                     }
                 } else {
-                    context.stage.as_interactive()
+                    Some(context.stage.into())
                 };
                 if let Some(target) = target {
                     let event = ClipEvent::MouseWheel { delta: *delta };
@@ -1835,7 +1835,7 @@ impl Player {
     ) {
         let tracker = context.focus_tracker;
         let mut pressed_object = pressed_object.as_interactive();
-        if InteractiveObject::option_ptr_eq(pressed_object, context.stage.as_interactive()) {
+        if InteractiveObject::option_ptr_eq(pressed_object, Some(context.stage.into())) {
             pressed_object = None;
         }
 
