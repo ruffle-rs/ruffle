@@ -105,13 +105,13 @@ jobs:
 
           # Mac does two Rust builds to make a universal binary
           - build_name: macos-x86_64
-            os: macos-14
+            os: macos-15
             target: x86_64-apple-darwin
             MACOSX_DEPLOYMENT_TARGET: 10.7
             DESKTOP_FEATURES: sandbox,jpegxr
 
           - build_name: macos-aarch64
-            os: macos-14
+            os: macos-15
             target: aarch64-apple-darwin
             MACOSX_DEPLOYMENT_TARGET: 11.0
             DESKTOP_FEATURES: sandbox,jpegxr
@@ -230,7 +230,7 @@ jobs:
   build-mac-universal-binary:
     name: Build macOS universal binary
     needs: [create-nightly-release, build, build-browser-extensions]
-    runs-on: macos-14
+    runs-on: macos-15
     env:
       PACKAGE_FILE: ${{ needs.create-nightly-release.outputs.package_prefix }}-macos-universal.tar.gz
     steps:
