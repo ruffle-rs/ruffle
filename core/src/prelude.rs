@@ -1,6 +1,6 @@
 pub use crate::avm2::Value as Avm2Value;
 pub use crate::display_object::{
-    DisplayObject, DisplayObjectContainer, HitTestOptions, TDisplayObject, TDisplayObjectContainer,
+    DisplayObject, HitTestOptions, TDisplayObject, TDisplayObjectContainer,
 };
 pub use ruffle_render::matrix::Matrix;
 pub use std::ops::RangeBounds;

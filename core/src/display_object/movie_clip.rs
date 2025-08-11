@@ -2366,10 +2366,8 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
     fn run_frame_scripts(self, context: &mut UpdateContext<'gc>) {
         self.run_local_frame_scripts(context);
 
-        if let Some(container) = self.as_container() {
-            for child in container.iter_render_list() {
-                child.run_frame_scripts(context);
-            }
+        for child in self.iter_render_list() {
+            child.run_frame_scripts(context);
         }
     }
 
@@ -2442,18 +2440,6 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
         }
 
         false
-    }
-
-    fn as_movie_clip(self) -> Option<MovieClip<'gc>> {
-        Some(self)
-    }
-
-    fn as_container(self) -> Option<DisplayObjectContainer<'gc>> {
-        Some(self.into())
-    }
-
-    fn as_interactive(self) -> Option<InteractiveObject<'gc>> {
-        Some(self.into())
     }
 
     fn as_drawing(&self) -> Option<RefMut<'_, Drawing>> {

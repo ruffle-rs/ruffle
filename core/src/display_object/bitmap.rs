@@ -382,10 +382,6 @@ impl<'gc> TDisplayObject<'gc> for Bitmap<'gc> {
         self.set_avm2_object(context.gc(), Some(to));
     }
 
-    fn as_bitmap(self) -> Option<Bitmap<'gc>> {
-        Some(self)
-    }
-
     fn movie(self) -> Arc<SwfMovie> {
         self.0.movie.clone()
     }

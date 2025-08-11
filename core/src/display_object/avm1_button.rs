@@ -357,18 +357,6 @@ impl<'gc> TDisplayObject<'gc> for Avm1Button<'gc> {
             .unwrap_or(Value::Undefined)
     }
 
-    fn as_avm1_button(self) -> Option<Self> {
-        Some(self)
-    }
-
-    fn as_interactive(self) -> Option<InteractiveObject<'gc>> {
-        Some(self.into())
-    }
-
-    fn as_container(self) -> Option<DisplayObjectContainer<'gc>> {
-        Some(self.into())
-    }
-
     fn allow_as_mask(self) -> bool {
         !self.is_empty()
     }
@@ -530,10 +518,10 @@ impl<'gc> TInteractiveObject<'gc> for Avm1Button<'gc> {
         } else {
             // Remove the current mouse hovered and mouse down objects.
             // This is required to make sure the button will fire its events if it gets enabled.
-            if InteractiveObject::option_ptr_eq(self.as_interactive(), context.mouse_data.hovered) {
+            if InteractiveObject::option_ptr_eq(Some(self.into()), context.mouse_data.hovered) {
                 context.mouse_data.hovered = None;
             }
-            if InteractiveObject::option_ptr_eq(self.as_interactive(), context.mouse_data.pressed) {
+            if InteractiveObject::option_ptr_eq(Some(self.into()), context.mouse_data.pressed) {
                 context.mouse_data.pressed = None;
             }
 

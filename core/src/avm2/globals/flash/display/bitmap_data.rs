@@ -20,7 +20,6 @@ use crate::bitmap::bitmap_data::{BitmapData, ChannelOptions, ThresholdOperation}
 use crate::bitmap::bitmap_data::{BitmapDataDrawError, IBitmapDrawable};
 use crate::bitmap::{is_size_valid, operations};
 use crate::character::{Character, CompressedBitmap};
-use crate::display_object::TDisplayObject;
 use crate::ecma_conversions::round_to_even;
 use crate::swf::BlendMode;
 use ruffle_render::filters::Filter;

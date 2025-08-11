@@ -2545,14 +2545,6 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
         }
     }
 
-    fn as_edit_text(self) -> Option<EditText<'gc>> {
-        Some(self)
-    }
-
-    fn as_interactive(self) -> Option<InteractiveObject<'gc>> {
-        Some(self.into())
-    }
-
     fn post_instantiation(
         self,
         context: &mut UpdateContext<'gc>,
@@ -3037,7 +3029,7 @@ impl<'gc> TInteractiveObject<'gc> for EditText<'gc> {
 
         if let ClipEvent::MouseMove = event {
             // If a mouse has moved and this EditTest is pressed, we need to update the selection.
-            if InteractiveObject::option_ptr_eq(context.mouse_data.pressed, self.as_interactive()) {
+            if InteractiveObject::option_ptr_eq(context.mouse_data.pressed, Some(self.into())) {
                 if let Some(position) = self.screen_position_to_index(*context.mouse_position) {
                     self.handle_drag(position);
                 }

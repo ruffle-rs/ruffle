@@ -85,10 +85,6 @@ impl<'gc> TDisplayObject<'gc> for MorphShape<'gc> {
         self.0.shared.get().id
     }
 
-    fn as_morph_shape(self) -> Option<Self> {
-        Some(self)
-    }
-
     fn replace_with(self, context: &mut UpdateContext<'gc>, id: CharacterId) {
         if let Some(new_morph_shape) = context
             .library

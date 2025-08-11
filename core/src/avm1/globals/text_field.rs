@@ -882,7 +882,7 @@ pub fn tab_index<'gc>(
     this: EditText<'gc>,
     _activation: &mut Activation<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(index) = this.as_interactive().and_then(|this| this.tab_index()) {
+    if let Some(index) = this.tab_index() {
         Ok(Value::Number(index as u32 as f64))
     } else {
         Ok(Value::Undefined)
@@ -894,19 +894,17 @@ pub fn set_tab_index<'gc>(
     activation: &mut Activation<'_, 'gc>,
     value: Value<'gc>,
 ) -> Result<(), Error<'gc>> {
-    if let Some(this) = this.as_interactive() {
-        let value = match value {
-            Value::Undefined | Value::Null => None,
-            _ => {
-                // `tabIndex` is u32 in TextField, compared to i32 in Button and MovieClip,
-                // but that is only a data representation difference,
-                // as both are interpreted as i32.
-                let u32_value = value.coerce_to_u32(activation)?;
-                Some(u32_value as i32)
-            }
-        };
-        this.set_tab_index(value);
-    }
+    let value = match value {
+        Value::Undefined | Value::Null => None,
+        _ => {
+            // `tabIndex` is u32 in TextField, compared to i32 in Button and MovieClip,
+            // but that is only a data representation difference,
+            // as both are interpreted as i32.
+            let u32_value = value.coerce_to_u32(activation)?;
+            Some(u32_value as i32)
+        }
+    };
+    this.set_tab_index(value);
     Ok(())
 }
 

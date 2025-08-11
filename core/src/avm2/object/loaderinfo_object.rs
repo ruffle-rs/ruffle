@@ -5,7 +5,7 @@ use crate::avm2::object::script_object::ScriptObjectData;
 use crate::avm2::object::{EventObject, Object, StageObject, TObject};
 use crate::avm2::{Avm2, Error, Value};
 use crate::context::UpdateContext;
-use crate::display_object::{DisplayObject, TDisplayObject};
+use crate::display_object::DisplayObject;
 use crate::loader::ContentType;
 use crate::tag_utils::SwfMovie;
 use crate::utils::HasPrefixField;

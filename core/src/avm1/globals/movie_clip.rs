@@ -1793,7 +1793,7 @@ fn tab_index<'gc>(
     this: MovieClip<'gc>,
     _activation: &mut Activation<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(index) = this.as_interactive().and_then(|this| this.tab_index()) {
+    if let Some(index) = this.tab_index() {
         Ok(Value::Number(index as f64))
     } else {
         Ok(Value::Undefined)
@@ -1805,18 +1805,16 @@ fn set_tab_index<'gc>(
     activation: &mut Activation<'_, 'gc>,
     value: Value<'gc>,
 ) -> Result<(), Error<'gc>> {
-    if let Some(this) = this.as_interactive() {
-        let value = match value {
-            Value::Undefined | Value::Null => None,
-            Value::Bool(_) | Value::Number(_) => {
-                // FIXME This coercion is not perfect, as it wraps
-                //       instead of falling back to MIN, as FP does
-                let i32_value = value.coerce_to_i32(activation)?;
-                Some(i32_value)
-            }
-            _ => Some(i32::MIN),
-        };
-        this.set_tab_index(value);
-    }
+    let value = match value {
+        Value::Undefined | Value::Null => None,
+        Value::Bool(_) | Value::Number(_) => {
+            // FIXME This coercion is not perfect, as it wraps
+            //       instead of falling back to MIN, as FP does
+            let i32_value = value.coerce_to_i32(activation)?;
+            Some(i32_value)
+        }
+        _ => Some(i32::MIN),
+    };
+    this.set_tab_index(value);
     Ok(())
 }
