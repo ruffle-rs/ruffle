@@ -289,15 +289,20 @@ export enum ScrollingBehavior {
 export interface SocketProxy {
     /**
      * Host used by the SWF.
+     * Use "*" to match any host.
      */
     host: string;
     /**
      * Port used by the SWF.
+     * Use 0 to match any port.
      */
     port: number;
 
     /**
      * The proxy URL to use when SWF file tries to connect to the specified host and port.
+     * There are placeholders that will be replaced.
+     *   - $host = Will be replaced with the original host
+     *   - $port = Will be replaced with the original port
      */
     proxyUrl: string;
 }
@@ -664,6 +669,11 @@ export interface BaseLoadOptions {
      * When a SWF tries to establish a Socket connection, Ruffle will search for
      * a matching SocketProxy object in this array and use it to establish a WebSocket connection,
      * through which all communication is tunneled through.
+     *
+     * Wildcards are supported: set `host` to "*" to match any host, and/or set `port` to `0` to match any port.
+     * If multiple entries match, the first one is used.
+     *
+     * When using $host or $port in the proxyUrl, they will be replaced with the actual host and port of the connection.
      *
      * When none are found, Ruffle will fail the connection gracefully.
      * When multiple matching SocketProxy objects exist, the first one is used.

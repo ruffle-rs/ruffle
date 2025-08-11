@@ -491,11 +491,8 @@ impl NavigatorBackend for WebNavigatorBackend {
         receiver: Receiver<Vec<u8>>,
         sender: Sender<SocketAction>,
     ) {
-        let Some(proxy) = self
-            .socket_proxies
-            .iter()
-            .find(|x| x.host == host && x.port == port)
-        else {
+        // Find the first proxy that matches according to wildcard rules.
+        let Some(proxy) = Self::find_matching_proxy(&self.socket_proxies, &host, port) else {
             tracing::warn!("Missing WebSocket proxy for host {}, port {}", host, port);
             sender
                 .try_send(SocketAction::Connect(handle, ConnectionState::Failed))
@@ -503,9 +500,17 @@ impl NavigatorBackend for WebNavigatorBackend {
             return;
         };
 
-        tracing::info!("Connecting to {}", proxy.proxy_url);
+        // Replace $host and $port with the parameters.
+        let proxy_url = proxy
+            .proxy_url
+            .as_str()
+            .unwrap()
+            .replace("$host", &host)
+            .replace("$port", &port.to_string());
 
-        let ws = match WebSocket::open(&proxy.proxy_url) {
+        tracing::info!("Connecting to {}", proxy_url);
+
+        let ws = match WebSocket::open(&proxy_url) {
             Ok(x) => x,
             Err(e) => {
                 tracing::error!("Failed to create WebSocket, reason {:?}", e);
@@ -558,6 +563,22 @@ impl NavigatorBackend for WebNavigatorBackend {
 
             Ok(())
         }));
+    }
+}
+
+impl WebNavigatorBackend {
+    /// Returns the first matching SocketProxy according to wildcard rules.
+    /// host "*" matches any host; port 0 matches any port. Host matching is case-insensitive.
+    fn find_matching_proxy<'a>(
+        proxies: &'a [SocketProxy],
+        host: &str,
+        port: u16,
+    ) -> Option<&'a SocketProxy> {
+        proxies.iter().find(|x| {
+            let host_match = x.host == "*" || x.host.eq_ignore_ascii_case(host);
+            let port_match = x.port == 0 || x.port == port;
+            host_match && port_match
+        })
     }
 }
 
@@ -660,5 +681,76 @@ impl SuccessResponse for WebResponseWrapper {
         } else {
             Ok(None)
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn sp(host: &str, port: u16, url: &str) -> SocketProxy {
+        SocketProxy {
+            host: host.to_string(),
+            port,
+            proxy_url: url.to_string(),
+        }
+    }
+
+    #[test]
+    fn exact_match() {
+        let proxies = vec![sp("example.com", 1234, "ws://a")];
+        let m = WebNavigatorBackend::find_matching_proxy(&proxies, "example.com", 1234)
+            .expect("should match");
+        assert_eq!(m.proxy_url, "ws://a");
+    }
+
+    #[test]
+    fn wildcard_host_matches_any() {
+        let proxies = vec![sp("*", 1234, "ws://any-host")];
+        let m = WebNavigatorBackend::find_matching_proxy(&proxies, "foo.bar", 1234)
+            .expect("should match");
+        assert_eq!(m.proxy_url, "ws://any-host");
+    }
+
+    #[test]
+    fn wildcard_port_matches_any() {
+        let proxies = vec![sp("example.com", 0, "ws://any-port")];
+        let m = WebNavigatorBackend::find_matching_proxy(&proxies, "example.com", 9999)
+            .expect("should match");
+        assert_eq!(m.proxy_url, "ws://any-port");
+    }
+
+    #[test]
+    fn both_wildcards_match_any() {
+        let proxies = vec![sp("*", 0, "ws://catch-all")];
+        let m =
+            WebNavigatorBackend::find_matching_proxy(&proxies, "host", 1).expect("should match");
+        assert_eq!(m.proxy_url, "ws://catch-all");
+    }
+
+    #[test]
+    fn first_match_wins() {
+        let proxies = vec![
+            sp("*", 0, "ws://first"),
+            sp("example.com", 1234, "ws://second"),
+        ];
+        let m = WebNavigatorBackend::find_matching_proxy(&proxies, "example.com", 1234)
+            .expect("should match");
+        assert_eq!(m.proxy_url, "ws://first");
+    }
+
+    #[test]
+    fn case_insensitive_host() {
+        let proxies = vec![sp("ExAmPlE.CoM", 1234, "ws://case")];
+        let m = WebNavigatorBackend::find_matching_proxy(&proxies, "example.com", 1234)
+            .expect("should match");
+        assert_eq!(m.proxy_url, "ws://case");
+    }
+
+    #[test]
+    fn no_match_returns_none() {
+        let proxies = vec![sp("example.com", 1234, "ws://a")];
+        assert!(WebNavigatorBackend::find_matching_proxy(&proxies, "other.com", 1234).is_none());
+        assert!(WebNavigatorBackend::find_matching_proxy(&proxies, "example.com", 42).is_none());
     }
 }
