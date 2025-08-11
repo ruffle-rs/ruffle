@@ -12,7 +12,7 @@ use crate::context::{RenderContext, UpdateContext};
 use crate::display_object::avm1_button::{ButtonState, ButtonTracking};
 use crate::display_object::container::{dispatch_added_event, dispatch_removed_event};
 use crate::display_object::interactive::{InteractiveObjectBase, TInteractiveObject};
-use crate::display_object::{DisplayObjectBase, DisplayObjectPtr, MovieClip};
+use crate::display_object::{DisplayObjectBase, MovieClip};
 use crate::events::{ClipEvent, ClipEventResult};
 use crate::frame_lifecycle::catchup_display_object_to_frame;
 use crate::prelude::*;
@@ -415,10 +415,6 @@ impl<'gc> TDisplayObject<'gc> for Avm2Button<'gc> {
 
     fn instantiate(self, mc: &Mutation<'gc>) -> DisplayObject<'gc> {
         Self(Gc::new(mc, (*self.0).clone())).into()
-    }
-
-    fn as_ptr(self) -> *const DisplayObjectPtr {
-        Gc::as_ptr(self.0) as *const DisplayObjectPtr
     }
 
     fn id(self) -> CharacterId {

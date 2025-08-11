@@ -8,7 +8,7 @@ use crate::display_object::container::{
 use crate::display_object::interactive::{
     Avm2MousePick, InteractiveObject, InteractiveObjectBase, TInteractiveObject,
 };
-use crate::display_object::{Avm1TextFieldBinding, DisplayObjectBase, DisplayObjectPtr};
+use crate::display_object::{Avm1TextFieldBinding, DisplayObjectBase};
 use crate::events::{ClipEvent, ClipEventResult};
 use crate::prelude::*;
 use crate::string::AvmString;
@@ -251,10 +251,6 @@ impl<'gc> TDisplayObject<'gc> for Avm1Button<'gc> {
     fn instantiate(self, mc: &Mutation<'gc>) -> DisplayObject<'gc> {
         let data: &Avm1ButtonData = &self.0;
         Self(Gc::new(mc, data.clone())).into()
-    }
-
-    fn as_ptr(self) -> *const DisplayObjectPtr {
-        Gc::as_ptr(self.0) as *const DisplayObjectPtr
     }
 
     fn id(self) -> CharacterId {

@@ -1132,6 +1132,11 @@ pub trait TDisplayObject<'gc>:
 {
     fn base(self) -> Gc<'gc, DisplayObjectBase<'gc>>;
 
+    #[no_dynamic]
+    fn as_ptr(self) -> *const DisplayObjectPtr {
+        Gc::as_ptr(self.base()).cast()
+    }
+
     /// The `SCALE_ROTATION_CACHED` flag should only be set in SWFv5+.
     /// So scaling/rotation values always have to get recalculated from the matrix in SWFv4.
     #[no_dynamic]
@@ -2399,8 +2404,6 @@ pub trait TDisplayObject<'gc>:
     }
 
     fn instantiate(self, gc_context: &Mutation<'gc>) -> DisplayObject<'gc>;
-
-    fn as_ptr(self) -> *const DisplayObjectPtr;
 
     /// Whether this object can be used as a mask.
     /// If this returns false and this object is used as a mask, the mask will not be applied.
