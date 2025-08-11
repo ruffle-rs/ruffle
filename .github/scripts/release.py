@@ -5,6 +5,7 @@ import subprocess
 import sys
 from datetime import datetime
 import xml.etree.ElementTree as xml
+import json
 
 SCRIPT_DIR = os.path.dirname(os.path.realpath(__file__))
 REPO_DIR = os.path.realpath(os.path.join(SCRIPT_DIR, '../../'))
@@ -64,6 +65,25 @@ def cargo_get_version():
 
 def cargo_set_version(args):
     run_command(['cargo', 'set-version', '--exclude', 'swf', *args])
+
+
+def gh_list_nightly_tags(limit):
+    tags_json = run_command([
+        'gh', 'release', 'list',
+        '--order', 'desc',
+        '--limit', str(limit),
+        '--json=tagName',
+        '--jq', '.[] | select(.tagName | startswith("nightly-"))',
+    ])
+    for tag_json in tags_json.splitlines():
+        tag = json.loads(tag_json)
+        yield tag['tagName']
+
+
+def gh_get_last_nightly_tag():
+    # Assume that the last nightly tag will be in the last 16 releases.
+    # It's very unlikely we'll have 16 releases without a nightly.
+    return next(gh_list_nightly_tags(16), None)
 
 
 # ===== Commands ===========================================
@@ -126,9 +146,16 @@ def release():
     current_time_underscores = now.strftime('%Y_%m_%d')
 
     tag_name = get_tag_name()
+    last_nightly_tag = gh_get_last_nightly_tag()
     release_name = f'Nightly {current_time_dashes}'
     package_prefix = f'ruffle-nightly-{current_time_underscores}'
     release_options = ['--generate-notes', '--prerelease']
+
+    if last_nightly_tag is not None:
+        log(f'Using {last_nightly_tag} as start tag for notes')
+        release_options += ['--notes-start-tag', last_nightly_tag]
+    else:
+        log(f'No start tag for notes found')
 
     release_commit = run_command(['git', 'rev-parse', 'HEAD']).strip()
     run_command([
