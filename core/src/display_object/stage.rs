@@ -11,7 +11,7 @@ use crate::config::Letterbox;
 use crate::context::{RenderContext, UpdateContext};
 use crate::display_object::container::ChildContainer;
 use crate::display_object::interactive::{InteractiveObjectBase, TInteractiveObject};
-use crate::display_object::{render_base, DisplayObjectBase, DisplayObjectPtr};
+use crate::display_object::{render_base, DisplayObjectBase};
 use crate::events::{ClipEvent, ClipEventResult};
 use crate::focus_tracker::FocusTracker;
 use crate::prelude::*;
@@ -742,10 +742,6 @@ impl<'gc> TDisplayObject<'gc> for Stage<'gc> {
 
     fn instantiate(self, gc_context: &Mutation<'gc>) -> DisplayObject<'gc> {
         Self(Gc::new(gc_context, self.0.as_ref().clone())).into()
-    }
-
-    fn as_ptr(self) -> *const DisplayObjectPtr {
-        Gc::as_ptr(self.0) as *const DisplayObjectPtr
     }
 
     fn local_to_global_matrix(self) -> Matrix {

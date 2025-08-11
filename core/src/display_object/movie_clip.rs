@@ -2251,10 +2251,6 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
         Self(Gc::new(mc, (*self.0).clone())).into()
     }
 
-    fn as_ptr(self) -> *const DisplayObjectPtr {
-        Gc::as_ptr(self.0) as *const DisplayObjectPtr
-    }
-
     fn id(self) -> CharacterId {
         self.0.id()
     }

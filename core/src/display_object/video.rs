@@ -6,7 +6,7 @@ use crate::avm2::{
     Value as Avm2Value,
 };
 use crate::context::{RenderContext, UpdateContext};
-use crate::display_object::{Avm1TextFieldBinding, DisplayObjectBase, DisplayObjectPtr};
+use crate::display_object::{Avm1TextFieldBinding, DisplayObjectBase};
 use crate::prelude::*;
 use crate::streams::NetStream;
 use crate::tag_utils::{SwfMovie, SwfSlice};
@@ -354,10 +354,6 @@ impl<'gc> TDisplayObject<'gc> for Video<'gc> {
 
     fn instantiate(self, gc_context: &Mutation<'gc>) -> DisplayObject<'gc> {
         Self(Gc::new(gc_context, self.0.as_ref().clone())).into()
-    }
-
-    fn as_ptr(self) -> *const DisplayObjectPtr {
-        Gc::as_ptr(self.0) as *const DisplayObjectPtr
     }
 
     fn post_instantiation(
