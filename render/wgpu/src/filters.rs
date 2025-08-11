@@ -7,7 +7,7 @@ mod glow;
 mod shader;
 
 use std::collections::HashSet;
-use std::sync::{Mutex, OnceLock};
+use std::sync::{LazyLock, Mutex};
 
 use crate::buffer_pool::TexturePool;
 use crate::descriptors::Descriptors;
@@ -277,7 +277,9 @@ impl Filters {
                 &filter,
             ),
             filter => {
-                static WARNED_FILTERS: OnceLock<Mutex<HashSet<&'static str>>> = OnceLock::new();
+                static WARNED_FILTERS: LazyLock<Mutex<HashSet<&'static str>>> =
+                    LazyLock::new(Default::default);
+
                 let name = match filter {
                     Filter::GradientGlowFilter(_) => "GradientGlowFilter",
                     Filter::GradientBevelFilter(_) => "GradientBevelFilter",
@@ -291,12 +293,7 @@ impl Filters {
                     | Filter::ShaderFilter(_) => unreachable!(),
                 };
                 // Only warn once per filter type
-                if WARNED_FILTERS
-                    .get_or_init(Default::default)
-                    .lock()
-                    .unwrap()
-                    .insert(name)
-                {
+                if WARNED_FILTERS.lock().unwrap().insert(name) {
                     tracing::warn!("Unsupported filter {filter:?}");
                 }
                 None

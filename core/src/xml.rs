@@ -1,7 +1,7 @@
 use regress::Regex;
-use std::sync::OnceLock;
+use std::{ops::Deref, sync::LazyLock};
 
-static ENTITY_REGEX: OnceLock<Regex> = OnceLock::new();
+static ENTITY_REGEX: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"&[^;]*;").unwrap());
 
 /// Handles flash-specific XML unescaping behavior.
 /// We accept all XML entities, and also accept standalone '&' without
@@ -12,7 +12,7 @@ pub fn custom_unescape(
 ) -> Result<String, quick_xml::Error> {
     let input = decoder.decode(data)?;
 
-    let re = ENTITY_REGEX.get_or_init(|| Regex::new(r"&[^;]*;").unwrap());
+    let re = ENTITY_REGEX.deref();
     let mut result = String::new();
     let mut last_end = 0;
 

@@ -1,4 +1,4 @@
-use std::sync::OnceLock;
+use std::sync::LazyLock;
 
 use crate::PlayerRuntime;
 use enum_map::{enum_map, Enum, EnumMap};
@@ -62,80 +62,81 @@ pub enum ApiVersion {
     VM_INTERNAL = 52,
 }
 
-static TRANSFER_TABLE: OnceLock<EnumMap<ApiVersion, (ApiVersion, ApiVersion)>> = OnceLock::new();
+// This maps an ApiVersion from our playerglobals SWF to the closest valid version,
+// based on the active runtime.
+//
+// If our runtime is AIR, then we leave ApiVersion::AIR_* unchanged, and map
+// ApiVersion::FP_* to the closest AIR version. This has the effect of exposing
+// API versioned with an AIR-specific version, and also exposing all of the normal FP
+// APIs that were included in that AIR release.
+//
+// If our runtime is FlashPlayer, then we leave ApiVersion::FP_* unchanged, and
+// map ApiVersion::AIR_* to VM_INTERNAL. This hides all AIR-specific APIs when
+// running in FlashPlayer.
+//
+// See https://github.com/adobe/avmplus/blob/858d034a3bd3a54d9b70909386435cf4aec81d21/core/api-versions.cpp#L63
+static TRANSFER_TABLE: LazyLock<EnumMap<ApiVersion, (ApiVersion, ApiVersion)>> =
+    LazyLock::new(|| {
+        enum_map! {
+            ApiVersion::AllVersions => (ApiVersion::AllVersions, ApiVersion::AllVersions),
+            ApiVersion::AIR_1_0 => (ApiVersion::AIR_1_0, ApiVersion::VM_INTERNAL),
+            ApiVersion::FP_10_0 => (ApiVersion::AIR_1_5, ApiVersion::FP_10_0),
+            ApiVersion::AIR_1_5 => (ApiVersion::AIR_1_5, ApiVersion::VM_INTERNAL),
+            ApiVersion::AIR_1_5_1 => (ApiVersion::AIR_1_5_1, ApiVersion::VM_INTERNAL),
+            ApiVersion::FP_10_0_32 => (ApiVersion::AIR_1_5_2, ApiVersion::FP_10_0_32),
+            ApiVersion::AIR_1_5_2 => (ApiVersion::AIR_1_5_2, ApiVersion::VM_INTERNAL),
+            ApiVersion::FP_10_1 => (ApiVersion::AIR_2_0, ApiVersion::FP_10_1),
+            ApiVersion::AIR_2_0 => (ApiVersion::AIR_2_0, ApiVersion::VM_INTERNAL),
+            ApiVersion::AIR_2_5 => (ApiVersion::AIR_2_5, ApiVersion::VM_INTERNAL),
+            ApiVersion::FP_10_2 => (ApiVersion::AIR_2_6, ApiVersion::FP_10_2),
+            ApiVersion::AIR_2_6 => (ApiVersion::AIR_2_6, ApiVersion::VM_INTERNAL),
+            ApiVersion::SWF_12 => (ApiVersion::SWF_12, ApiVersion::SWF_12),
+            ApiVersion::AIR_2_7 => (ApiVersion::AIR_2_7, ApiVersion::VM_INTERNAL),
+            ApiVersion::SWF_13 => (ApiVersion::AIR_3_0, ApiVersion::SWF_13),
+            ApiVersion::AIR_3_0 => (ApiVersion::AIR_3_0, ApiVersion::VM_INTERNAL),
+            ApiVersion::SWF_14 => (ApiVersion::AIR_3_1, ApiVersion::SWF_14),
+            ApiVersion::AIR_3_1 => (ApiVersion::AIR_3_1, ApiVersion::VM_INTERNAL),
+            ApiVersion::SWF_15 => (ApiVersion::AIR_3_2, ApiVersion::SWF_15),
+            ApiVersion::AIR_3_2 => (ApiVersion::AIR_3_2, ApiVersion::VM_INTERNAL),
+            ApiVersion::SWF_16 => (ApiVersion::AIR_3_3, ApiVersion::SWF_16),
+            ApiVersion::AIR_3_3 => (ApiVersion::AIR_3_3, ApiVersion::VM_INTERNAL),
+            ApiVersion::SWF_17 => (ApiVersion::AIR_3_4, ApiVersion::SWF_17),
+            ApiVersion::AIR_3_4 => (ApiVersion::AIR_3_4, ApiVersion::VM_INTERNAL),
+            ApiVersion::SWF_18 => (ApiVersion::AIR_3_5, ApiVersion::SWF_18),
+            ApiVersion::AIR_3_5 => (ApiVersion::AIR_3_5, ApiVersion::VM_INTERNAL),
+            ApiVersion::SWF_19 => (ApiVersion::AIR_3_6, ApiVersion::SWF_19),
+            ApiVersion::AIR_3_6 => (ApiVersion::AIR_3_6, ApiVersion::VM_INTERNAL),
+            ApiVersion::SWF_20 => (ApiVersion::AIR_3_7, ApiVersion::SWF_20),
+            ApiVersion::AIR_3_7 => (ApiVersion::AIR_3_7, ApiVersion::VM_INTERNAL),
+            ApiVersion::SWF_21 => (ApiVersion::AIR_3_8, ApiVersion::SWF_21),
+            ApiVersion::AIR_3_8 => (ApiVersion::AIR_3_8, ApiVersion::VM_INTERNAL),
+            ApiVersion::SWF_22 => (ApiVersion::AIR_3_9, ApiVersion::SWF_22),
+            ApiVersion::AIR_3_9 => (ApiVersion::AIR_3_9, ApiVersion::VM_INTERNAL),
+            ApiVersion::SWF_23 => (ApiVersion::AIR_4_0, ApiVersion::SWF_23),
+            ApiVersion::AIR_4_0 => (ApiVersion::AIR_4_0, ApiVersion::VM_INTERNAL),
+            ApiVersion::SWF_24 => (ApiVersion::AIR_13_0, ApiVersion::SWF_24),
+            ApiVersion::AIR_13_0 => (ApiVersion::AIR_13_0, ApiVersion::VM_INTERNAL),
+            ApiVersion::SWF_25 => (ApiVersion::AIR_14_0, ApiVersion::SWF_25),
+            ApiVersion::AIR_14_0 => (ApiVersion::AIR_14_0, ApiVersion::VM_INTERNAL),
+            ApiVersion::SWF_26 => (ApiVersion::AIR_15_0, ApiVersion::SWF_26),
+            ApiVersion::AIR_15_0 => (ApiVersion::AIR_15_0, ApiVersion::VM_INTERNAL),
+            ApiVersion::SWF_27 => (ApiVersion::AIR_16_0, ApiVersion::SWF_27),
+            ApiVersion::AIR_16_0 => (ApiVersion::AIR_16_0, ApiVersion::VM_INTERNAL),
+            ApiVersion::SWF_28 => (ApiVersion::AIR_17_0, ApiVersion::SWF_28),
+            ApiVersion::AIR_17_0 => (ApiVersion::AIR_17_0, ApiVersion::VM_INTERNAL),
+            ApiVersion::SWF_29 => (ApiVersion::AIR_18_0, ApiVersion::SWF_29),
+            ApiVersion::AIR_18_0 => (ApiVersion::AIR_18_0, ApiVersion::VM_INTERNAL),
+            ApiVersion::SWF_30 => (ApiVersion::AIR_19_0, ApiVersion::SWF_30),
+            ApiVersion::AIR_19_0 => (ApiVersion::AIR_19_0, ApiVersion::VM_INTERNAL),
+            ApiVersion::SWF_31 => (ApiVersion::AIR_20_0, ApiVersion::SWF_31),
+            ApiVersion::AIR_20_0 => (ApiVersion::AIR_20_0, ApiVersion::VM_INTERNAL),
+            ApiVersion::VM_INTERNAL => (ApiVersion::VM_INTERNAL, ApiVersion::VM_INTERNAL),
+        }
+    });
 
 impl ApiVersion {
     pub fn to_valid_playerglobals_version(self, runtime: PlayerRuntime) -> ApiVersion {
-        // This maps an ApiVersion from our playerglobals SWF to the closest valid version,
-        // based on the active runtime.
-        //
-        // If our runtime is AIR, then we leave ApiVersion::AIR_* unchanged, and map
-        // ApiVersion::FP_* to the closest AIR version. This has the effect of exposing
-        // API versioned with an AIR-specific version, and also exposing all of the normal FP
-        // APIs that were included in that AIR release.
-        //
-        // If our runtime is FlashPlayer, then we leave ApiVersion::FP_* unchanged, and
-        // map ApiVersion::AIR_* to VM_INTERNAL. This hides all AIR-specific APIs when
-        // running in FlashPlayer.
-        //
-        // See https://github.com/adobe/avmplus/blob/858d034a3bd3a54d9b70909386435cf4aec81d21/core/api-versions.cpp#L63
-        let active_series = TRANSFER_TABLE.get_or_init(|| {
-            enum_map! {
-                ApiVersion::AllVersions => (ApiVersion::AllVersions, ApiVersion::AllVersions),
-                ApiVersion::AIR_1_0 => (ApiVersion::AIR_1_0, ApiVersion::VM_INTERNAL),
-                ApiVersion::FP_10_0 => (ApiVersion::AIR_1_5, ApiVersion::FP_10_0),
-                ApiVersion::AIR_1_5 => (ApiVersion::AIR_1_5, ApiVersion::VM_INTERNAL),
-                ApiVersion::AIR_1_5_1 => (ApiVersion::AIR_1_5_1, ApiVersion::VM_INTERNAL),
-                ApiVersion::FP_10_0_32 => (ApiVersion::AIR_1_5_2, ApiVersion::FP_10_0_32),
-                ApiVersion::AIR_1_5_2 => (ApiVersion::AIR_1_5_2, ApiVersion::VM_INTERNAL),
-                ApiVersion::FP_10_1 => (ApiVersion::AIR_2_0, ApiVersion::FP_10_1),
-                ApiVersion::AIR_2_0 => (ApiVersion::AIR_2_0, ApiVersion::VM_INTERNAL),
-                ApiVersion::AIR_2_5 => (ApiVersion::AIR_2_5, ApiVersion::VM_INTERNAL),
-                ApiVersion::FP_10_2 => (ApiVersion::AIR_2_6, ApiVersion::FP_10_2),
-                ApiVersion::AIR_2_6 => (ApiVersion::AIR_2_6, ApiVersion::VM_INTERNAL),
-                ApiVersion::SWF_12 => (ApiVersion::SWF_12, ApiVersion::SWF_12),
-                ApiVersion::AIR_2_7 => (ApiVersion::AIR_2_7, ApiVersion::VM_INTERNAL),
-                ApiVersion::SWF_13 => (ApiVersion::AIR_3_0, ApiVersion::SWF_13),
-                ApiVersion::AIR_3_0 => (ApiVersion::AIR_3_0, ApiVersion::VM_INTERNAL),
-                ApiVersion::SWF_14 => (ApiVersion::AIR_3_1, ApiVersion::SWF_14),
-                ApiVersion::AIR_3_1 => (ApiVersion::AIR_3_1, ApiVersion::VM_INTERNAL),
-                ApiVersion::SWF_15 => (ApiVersion::AIR_3_2, ApiVersion::SWF_15),
-                ApiVersion::AIR_3_2 => (ApiVersion::AIR_3_2, ApiVersion::VM_INTERNAL),
-                ApiVersion::SWF_16 => (ApiVersion::AIR_3_3, ApiVersion::SWF_16),
-                ApiVersion::AIR_3_3 => (ApiVersion::AIR_3_3, ApiVersion::VM_INTERNAL),
-                ApiVersion::SWF_17 => (ApiVersion::AIR_3_4, ApiVersion::SWF_17),
-                ApiVersion::AIR_3_4 => (ApiVersion::AIR_3_4, ApiVersion::VM_INTERNAL),
-                ApiVersion::SWF_18 => (ApiVersion::AIR_3_5, ApiVersion::SWF_18),
-                ApiVersion::AIR_3_5 => (ApiVersion::AIR_3_5, ApiVersion::VM_INTERNAL),
-                ApiVersion::SWF_19 => (ApiVersion::AIR_3_6, ApiVersion::SWF_19),
-                ApiVersion::AIR_3_6 => (ApiVersion::AIR_3_6, ApiVersion::VM_INTERNAL),
-                ApiVersion::SWF_20 => (ApiVersion::AIR_3_7, ApiVersion::SWF_20),
-                ApiVersion::AIR_3_7 => (ApiVersion::AIR_3_7, ApiVersion::VM_INTERNAL),
-                ApiVersion::SWF_21 => (ApiVersion::AIR_3_8, ApiVersion::SWF_21),
-                ApiVersion::AIR_3_8 => (ApiVersion::AIR_3_8, ApiVersion::VM_INTERNAL),
-                ApiVersion::SWF_22 => (ApiVersion::AIR_3_9, ApiVersion::SWF_22),
-                ApiVersion::AIR_3_9 => (ApiVersion::AIR_3_9, ApiVersion::VM_INTERNAL),
-                ApiVersion::SWF_23 => (ApiVersion::AIR_4_0, ApiVersion::SWF_23),
-                ApiVersion::AIR_4_0 => (ApiVersion::AIR_4_0, ApiVersion::VM_INTERNAL),
-                ApiVersion::SWF_24 => (ApiVersion::AIR_13_0, ApiVersion::SWF_24),
-                ApiVersion::AIR_13_0 => (ApiVersion::AIR_13_0, ApiVersion::VM_INTERNAL),
-                ApiVersion::SWF_25 => (ApiVersion::AIR_14_0, ApiVersion::SWF_25),
-                ApiVersion::AIR_14_0 => (ApiVersion::AIR_14_0, ApiVersion::VM_INTERNAL),
-                ApiVersion::SWF_26 => (ApiVersion::AIR_15_0, ApiVersion::SWF_26),
-                ApiVersion::AIR_15_0 => (ApiVersion::AIR_15_0, ApiVersion::VM_INTERNAL),
-                ApiVersion::SWF_27 => (ApiVersion::AIR_16_0, ApiVersion::SWF_27),
-                ApiVersion::AIR_16_0 => (ApiVersion::AIR_16_0, ApiVersion::VM_INTERNAL),
-                ApiVersion::SWF_28 => (ApiVersion::AIR_17_0, ApiVersion::SWF_28),
-                ApiVersion::AIR_17_0 => (ApiVersion::AIR_17_0, ApiVersion::VM_INTERNAL),
-                ApiVersion::SWF_29 => (ApiVersion::AIR_18_0, ApiVersion::SWF_29),
-                ApiVersion::AIR_18_0 => (ApiVersion::AIR_18_0, ApiVersion::VM_INTERNAL),
-                ApiVersion::SWF_30 => (ApiVersion::AIR_19_0, ApiVersion::SWF_30),
-                ApiVersion::AIR_19_0 => (ApiVersion::AIR_19_0, ApiVersion::VM_INTERNAL),
-                ApiVersion::SWF_31 => (ApiVersion::AIR_20_0, ApiVersion::SWF_31),
-                ApiVersion::AIR_20_0 => (ApiVersion::AIR_20_0, ApiVersion::VM_INTERNAL),
-                ApiVersion::VM_INTERNAL => (ApiVersion::VM_INTERNAL, ApiVersion::VM_INTERNAL),
-            }
-        })[self];
+        let active_series = TRANSFER_TABLE[self];
 
         match runtime {
             PlayerRuntime::AIR => active_series.0,

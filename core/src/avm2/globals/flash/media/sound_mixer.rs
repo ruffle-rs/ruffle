@@ -106,10 +106,10 @@ pub fn compute_spectrum<'gc>(
     let stretch = args.get_i32(2);
 
     if fft {
+        // Flash Player appears to do a 2048-long FFT with only the first 512 samples filled in...
         static FFT: LazyLock<Arc<dyn realfft::RealToComplex<f32>>> =
             LazyLock::new(|| realfft::RealFftPlanner::new().plan_fft_forward(2048));
 
-        // Flash Player appears to do a 2048-long FFT with only the first 512 samples filled in...
         let fft = FFT.deref();
 
         let mut in_left = fft.make_input_vec();
