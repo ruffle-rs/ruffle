@@ -4478,6 +4478,7 @@ dependencies = [
  "flv-rs",
  "fnv",
  "futures",
+ "gc-arena",
  "hashbrown 0.14.5",
  "id3",
  "image",
@@ -4495,7 +4496,6 @@ dependencies = [
  "rand",
  "realfft",
  "regress",
- "ruffle_gc_arena",
  "ruffle_macros",
  "ruffle_render",
  "ruffle_video",
@@ -4602,13 +4602,6 @@ dependencies = [
  "regex",
  "vfs",
  "walkdir",
-]
-
-[[package]]
-name = "ruffle_gc_arena"
-version = "0.1.0"
-dependencies = [
- "gc-arena",
 ]
 
 [[package]]
