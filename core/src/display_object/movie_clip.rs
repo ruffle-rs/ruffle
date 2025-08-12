@@ -513,7 +513,17 @@ impl<'gc> MovieClip<'gc> {
                 TagCode::DefineSound => shared.define_sound(context, reader),
                 TagCode::DefineVideoStream => shared.define_video_stream(context, reader),
                 TagCode::DefineSprite => {
-                    return shared.define_sprite(context, reader, tag_len, chunk_limit)
+                    let overall_position = (reader.get_ref().as_ptr() as u64)
+                        .saturating_sub(swf.data().as_ptr() as u64);
+                    let frame_number = shared.preload_progress.cur_preload_frame.get();
+                    return shared.define_sprite(
+                        context,
+                        reader,
+                        tag_len,
+                        chunk_limit,
+                        overall_position,
+                        frame_number,
+                    );
                 }
                 TagCode::DefineText => shared.define_text(context, reader, 1),
                 TagCode::DefineText2 => shared.define_text(context, reader, 2),
@@ -1299,9 +1309,22 @@ impl<'gc> MovieClip<'gc> {
         id: CharacterId,
         depth: Depth,
         place_object: &swf::PlaceObject,
+        frame: FrameNumber,
     ) -> Option<DisplayObject<'gc>> {
         if self.has_child_at_depth(depth) {
             context.avm_warning(&format!("Failed to place object at depth {depth}."));
+            return None;
+        }
+
+        let check_frame = self.0.shared.get().preload_progress.cur_preload_frame.get();
+        let library = context.library.library_for_movie_mut(self.movie().clone());
+
+        if !library.is_character_defined_before_frame_number(id, frame) {
+            tracing::error!(
+                "Character ID {} is not defined before frame {}",
+                id,
+                check_frame
+            );
             return None;
         }
 
@@ -1619,9 +1642,17 @@ impl<'gc> MovieClip<'gc> {
                 }
                 (PlaceObjectAction::Place(id), _, _)
                 | (swf::PlaceObjectAction::Replace(id), _, _) => {
-                    if let Some(child) =
-                        clip.instantiate_child(context, id, params.depth(), &params.place_object)
-                    {
+                    let root = context
+                        .stage
+                        .root_clip()
+                        .expect("Root clip should always be present in the stage");
+                    if let Some(child) = clip.instantiate_child(
+                        context,
+                        id,
+                        params.depth(),
+                        &params.place_object,
+                        root.as_movie_clip().unwrap().current_frame(),
+                    ) {
                         // Set the place frame to the frame where the object *would* have been placed.
                         child.set_place_frame(params.frame);
                     }
@@ -3618,6 +3649,8 @@ impl<'gc, 'a> MovieClipShared<'gc> {
         reader: &mut SwfStream<'a>,
         tag_len: usize,
         chunk_limit: &mut ExecutionLimit,
+        tag_position: u64,
+        frame_number: u16,
     ) -> DecodeResult {
         let start = reader.as_slice();
         let id = reader.read_character_id()?;
@@ -3633,7 +3666,12 @@ impl<'gc, 'a> MovieClipShared<'gc> {
 
         if self
             .library_mut(context)
-            .register_character(id, Character::MovieClip(movie_clip))
+            .register_character_with_position_and_frame(
+                id,
+                Character::MovieClip(movie_clip),
+                tag_position,
+                frame_number,
+            )
         {
             self.preload_progress.cur_preload_symbol.set(Some(id));
         } else {
@@ -4221,7 +4259,17 @@ impl<'gc, 'a> MovieClip<'gc> {
         use swf::PlaceObjectAction;
         match place_object.action {
             PlaceObjectAction::Place(id) => {
-                self.instantiate_child(context, id, place_object.depth.into(), &place_object);
+                let root = context
+                    .stage
+                    .root_clip()
+                    .expect("Root clip should always be present in the stage");
+                self.instantiate_child(
+                    context,
+                    id,
+                    place_object.depth.into(),
+                    &place_object,
+                    root.as_movie_clip().unwrap().current_frame(),
+                );
             }
             PlaceObjectAction::Replace(id) => {
                 if let Some(child) = self.child_by_depth(place_object.depth.into()) {
