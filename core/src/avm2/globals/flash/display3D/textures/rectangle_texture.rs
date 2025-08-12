@@ -32,7 +32,7 @@ pub fn upload_from_bitmap_data<'gc>(
 
         if let Some(source) = source_obj.as_bitmap_data() {
             texture.context3d().copy_bitmapdata_to_texture(
-                source.sync(activation.context.renderer),
+                &source.sync(activation.context.renderer).borrow(),
                 texture.handle(),
                 0,
             );

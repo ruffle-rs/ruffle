@@ -147,7 +147,9 @@ impl Avm2ObjectWindow {
                                 encoder.set_depth(png::BitDepth::Eight);
                                 if let Err(e) = encoder.write_header().and_then(|mut w| {
                                     w.write_image_data(
-                                        bmd.sync(activation.context.renderer).read().pixels_rgba(),
+                                        bmd.sync(activation.context.renderer)
+                                            .borrow()
+                                            .pixels_rgba(),
                                     )
                                 }) {
                                     tracing::error!("Couldn't create png: {e}");
