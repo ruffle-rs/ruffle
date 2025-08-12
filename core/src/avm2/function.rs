@@ -157,7 +157,7 @@ impl<'a, 'gc> FunctionArgs<'a, 'gc> {
 /// The value returned in either case will be provided here.
 ///
 /// It is a panicking logic error to attempt to execute user code while any
-/// reachable object is currently under a GcCell write lock.
+/// reachable object is currently under a write lock.
 ///
 /// Passed-in arguments will be conformed to the set of method parameters
 /// declared on the function.

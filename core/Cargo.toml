@@ -16,7 +16,7 @@ byteorder = { workspace = true }
 bitstream-io = { workspace = true }
 flate2 = { workspace = true }
 fnv = { workspace = true }
-gc-arena = { package = "ruffle_gc_arena", path = "../ruffle_gc_arena" }
+gc-arena = { workspace = true }
 slotmap = { workspace = true }
 indexmap = { workspace = true }
 tracing = { workspace = true }
