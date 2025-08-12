@@ -36,19 +36,7 @@ const COLOR_MASK: u32 = 1 << 0;
 const DEPTH_MASK: u32 = 1 << 1;
 const STENCIL_MASK: u32 = 1 << 2;
 
-/// A wgpu-based implemented of `Context3D`.
-/// Many of the WGPU methods have very strict lifetime requirements
-/// (e.g. taking in a reference that lives as long as the `RenderPass`).
-/// As a result, most methods buffer a `Context3DCommand` without actually
-/// calling any WGPU methods. The commands are then executed in `present`
-///
-/// The main exception to this are `create_vertex_buffer` and `create_index_buffer`.
-/// These methods immediately create a `wgpu::Buffer`. This greatly simplifies
-/// lifetime management - we can store an `Rc<dyn VertexBuffer>` or `Rc<dyn IndexBuffer>`
-/// in the `VertexBuffer3DObject` or `IndexBuffer3DObject`. If we delayed creating them,
-/// we would need to store a `GcCell<Option<Rc<dyn VertexBuffer>>>`, which prevents
-/// us from obtaining a long-lived reference to the `wgpu:Buffer` (it would instead be
-/// tied to the `Ref` returned by `GcCell::read`).
+/// A wgpu-based implementation of `Context3D`.
 pub struct WgpuContext3D {
     // We only use some of the fields from `Descriptors`, but we
     // store an entire `Arc<Descriptors>` rather than wrapping the fields
