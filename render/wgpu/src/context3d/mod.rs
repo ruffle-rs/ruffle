@@ -5,7 +5,6 @@ use ruffle_render::backend::{
 use ruffle_render::bitmap::BitmapHandle;
 use ruffle_render::error::Error;
 use std::any::Any;
-use std::borrow::Cow;
 use std::cell::Cell;
 use swf::{Rectangle, Twips};
 
@@ -1007,42 +1006,45 @@ impl Context3D for WgpuContext3D {
                 // BitmapData's gpu texture might be modified before we actually submit
                 // `buffer_command_encoder` to the device.
                 let dest_format = dest.texture.format();
-                let mut bytes_per_row = dest_format.block_copy_size(None).unwrap()
+                let src_bytes_per_row = dest_format.block_copy_size(None).unwrap()
                     * (source_width / dest_format.block_dimensions().0);
 
                 let rows_per_image = source_height / dest_format.block_dimensions().1;
 
                 // Wgpu requires us to pad the image rows to a multiple of COPY_BYTES_PER_ROW_ALIGNMENT
-                let source = if (source_width * 4) % COPY_BYTES_PER_ROW_ALIGNMENT != 0
-                    && matches!(dest.texture.format(), wgpu::TextureFormat::Rgba8Unorm)
-                {
-                    let padded: Vec<u8> = source
-                        .chunks_exact(source_width as usize * 4)
-                        .flat_map(|row| {
-                            let padding_len = COPY_BYTES_PER_ROW_ALIGNMENT as usize
-                                - (row.len() % COPY_BYTES_PER_ROW_ALIGNMENT as usize);
-                            row.iter()
-                                .copied()
-                                .chain(std::iter::repeat_n(0, padding_len))
-                        })
-                        .collect();
-
-                    bytes_per_row = padded.len() as u32 / source_height;
-
-                    Cow::Owned(padded)
-                } else {
-                    Cow::Borrowed(source)
-                };
+                let dest_bytes_per_row =
+                    if matches!(dest.texture.format(), wgpu::TextureFormat::Rgba8Unorm) {
+                        (source_width * 4).next_multiple_of(COPY_BYTES_PER_ROW_ALIGNMENT)
+                    } else {
+                        src_bytes_per_row
+                    };
+                let dest_size = dest_bytes_per_row as u64 * rows_per_image as u64;
+                assert!(
+                    dest_bytes_per_row >= src_bytes_per_row && dest_size >= source.len() as u64
+                );
 
                 let texture_buffer = self.descriptors.device.create_buffer(&BufferDescriptor {
                     label: None,
-                    size: source.len() as u64,
+                    size: dest_size,
                     usage: BufferUsages::COPY_SRC,
                     mapped_at_creation: true,
                 });
 
                 let mut texture_buffer_view = texture_buffer.slice(..).get_mapped_range_mut();
-                texture_buffer_view.copy_from_slice(&source);
+                if dest_bytes_per_row == src_bytes_per_row {
+                    // No padding, we can copy everything in one go.
+                    texture_buffer_view.copy_from_slice(source);
+                } else {
+                    // Copy row by row.
+                    for (dest, src) in texture_buffer_view
+                        .chunks_exact_mut(dest_bytes_per_row as usize)
+                        .zip(source.chunks_exact(src_bytes_per_row as usize))
+                    {
+                        let (dest, padding) = dest.split_at_mut(src_bytes_per_row as usize);
+                        dest.copy_from_slice(src);
+                        padding.fill(0);
+                    }
+                }
                 drop(texture_buffer_view);
                 texture_buffer.unmap();
 
@@ -1052,7 +1054,7 @@ impl Context3D for WgpuContext3D {
                         // The copy source uses the padded image data, with larger rows
                         layout: wgpu::TexelCopyBufferLayout {
                             offset: 0,
-                            bytes_per_row: Some(bytes_per_row),
+                            bytes_per_row: Some(dest_bytes_per_row),
                             rows_per_image: Some(rows_per_image),
                         },
                     },
