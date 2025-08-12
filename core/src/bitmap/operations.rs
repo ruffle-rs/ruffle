@@ -53,7 +53,7 @@ pub fn fill_rect<'gc>(
         // If we're filling a partial region, finish any gpu->cpu sync
         target.sync(renderer)
     };
-    let mut write = target.write(mc);
+    let mut write = target.borrow_mut(mc);
     let color = Color::from(color).to_premultiplied_alpha(write.transparency());
 
     if is_full {
@@ -78,7 +78,7 @@ pub fn set_pixel32<'gc>(
         return;
     }
     let target = target.sync(renderer);
-    let mut write = target.write(mc);
+    let mut write = target.borrow_mut(mc);
     let transparency = write.transparency();
     write.set_pixel32_raw(
         x,
@@ -108,7 +108,7 @@ pub fn set_pixel<'gc>(
         return;
     }
     let target = target.sync(renderer);
-    let mut write = target.write(mc);
+    let mut write = target.borrow_mut(mc);
 
     if write.transparency() {
         let current_alpha = write.get_pixel32_raw(x, y).alpha();
@@ -142,7 +142,7 @@ pub fn flood_fill<'gc>(
         return;
     }
     let target = target.sync(renderer);
-    let mut write = target.write(mc);
+    let mut write = target.borrow_mut(mc);
     let expected_color = write.get_pixel32_raw(x, y);
     let replace_color = Color::from(color).to_premultiplied_alpha(write.transparency());
 
@@ -188,7 +188,7 @@ pub fn noise<'gc>(
     gray_scale: bool,
 ) {
     let (target, _) = target.overwrite_cpu_pixels_from_gpu(mc);
-    let mut write = target.write(mc);
+    let mut write = target.borrow_mut(mc);
 
     let true_seed = if seed <= 0 {
         (-seed + 1) as u32
@@ -258,7 +258,7 @@ pub fn perlin_noise<'gc>(
     offsets: Vec<(f64, f64)>, // must contain `num_octaves` values
 ) {
     let (target, _) = target.overwrite_cpu_pixels_from_gpu(mc);
-    let mut write = target.write(mc);
+    let mut write = target.borrow_mut(mc);
 
     let turb = Turbulence::from_seed(random_seed);
 
@@ -409,7 +409,7 @@ pub fn copy_channel<'gc>(
     };
 
     let target = target.sync(renderer);
-    let mut write = target.write(mc);
+    let mut write = target.borrow_mut(mc);
 
     for y in 0..dest_region.height().min(source_region.height()) {
         for x in 0..dest_region.width().min(source_region.width()) {
@@ -495,7 +495,7 @@ pub fn color_transform<'gc>(
     }
 
     let target = target.sync(renderer);
-    let mut write = target.write(mc);
+    let mut write = target.borrow_mut(mc);
     let transparency = write.transparency();
 
     for y in y_min..y_max {
@@ -564,7 +564,7 @@ pub fn threshold<'gc>(
     };
 
     let target = target.sync(renderer);
-    let mut write = target.write(mc);
+    let mut write = target.borrow_mut(mc);
 
     // Check each pixel
     for y in 0..dest_region.height() {
@@ -655,7 +655,7 @@ pub fn scroll<'gc>(
     let dx = if reverse_x { -1 } else { 1 };
 
     let target = target.sync(renderer);
-    let mut write = target.write(mc);
+    let mut write = target.borrow_mut(mc);
 
     let mut src_y = y_from;
     while src_y != y_to {
@@ -705,7 +705,7 @@ pub fn palette_map<'gc>(
     };
 
     let target = target.sync(renderer);
-    let mut write = target.write(mc);
+    let mut write = target.borrow_mut(mc);
 
     for y in 0..dest_region.height() {
         for x in 0..dest_region.width() {
@@ -750,10 +750,8 @@ pub fn compare<'gc>(
     debug_assert_eq!(left.width(), right.width());
     debug_assert_eq!(left.height(), right.height());
 
-    let left = left.sync(renderer);
-    let left = left.read();
-    let right = right.sync(renderer);
-    let right = right.read();
+    let left = left.sync(renderer).borrow();
+    let right = right.sync(renderer).borrow();
 
     let mut different = false;
     let pixels = left
@@ -907,12 +905,11 @@ pub fn color_bounds_rect(
     let mut min_y = target.height();
     let mut max_y = 0;
 
-    let target = target.sync(renderer);
-    let read = target.read();
+    let target = target.sync(renderer).borrow();
 
-    for x in 0..read.width() {
-        for y in 0..read.height() {
-            let pixel_raw: u32 = read.get_pixel32_raw(x, y).into();
+    for x in 0..target.width() {
+        for y in 0..target.height() {
+            let pixel_raw: u32 = target.get_pixel32_raw(x, y).into();
             let color_matches = if find_color {
                 (pixel_raw & mask) == color
             } else {
@@ -974,7 +971,7 @@ pub fn merge<'gc>(
     };
 
     let target = target.sync(renderer);
-    let mut write = target.write(mc);
+    let mut write = target.borrow_mut(mc);
 
     for y in 0..dest_region.height() {
         for x in 0..dest_region.width() {
@@ -1115,7 +1112,7 @@ pub fn copy_pixels_with_alpha_source<'gc>(
     };
 
     let target = target.sync(context.renderer);
-    let mut write = target.write(context.gc());
+    let mut write = target.borrow_mut(context.gc());
 
     for src_y in src_min_y..(src_min_y + src_height) {
         for src_x in src_min_x..(src_min_x + src_width) {
@@ -1252,7 +1249,7 @@ pub fn apply_filter<'gc>(
 
     let source_handle = source.bitmap_handle(context.gc(), context.renderer);
     let (target, _) = target.overwrite_cpu_pixels_from_gpu(context.gc());
-    let mut write = target.write(context.gc());
+    let mut write = target.borrow_mut(context.gc());
     let dest = write.bitmap_handle(context.renderer).unwrap();
 
     let sync_handle = context.renderer.apply_filter(
@@ -1292,7 +1289,7 @@ fn copy_on_cpu<'gc>(
 
     if source.ptr_eq(dest) {
         let dest = dest.sync(renderer);
-        let mut write = dest.write(context);
+        let mut write = dest.borrow_mut(context);
 
         for y in 0..dest_region.height() {
             for x in 0..dest_region.width() {
@@ -1310,7 +1307,7 @@ fn copy_on_cpu<'gc>(
         write.set_cpu_dirty(context, dest_region);
     } else {
         let dest = dest.sync(renderer);
-        let mut dest_write = dest.write(context);
+        let mut dest_write = dest.borrow_mut(context);
         let source_read = source.read_area(source_region, renderer);
 
         if !blend && (dest_write.transparency() || !source_read.transparency()) {
@@ -1378,7 +1375,7 @@ fn blend_and_transform<'gc>(
 ) {
     if source.ptr_eq(dest) {
         let dest = dest.sync(context.renderer);
-        let mut write = dest.write(context.gc());
+        let mut write = dest.borrow_mut(context.gc());
 
         for y in 0..dest_region.height() {
             for x in 0..dest_region.width() {
@@ -1399,7 +1396,7 @@ fn blend_and_transform<'gc>(
         write.set_cpu_dirty(context.gc(), dest_region);
     } else {
         let dest = dest.sync(context.renderer);
-        let mut dest_write = dest.write(context.gc());
+        let mut dest_write = dest.borrow_mut(context.gc());
         let source_read = source.read_area(source_region, context.renderer);
         let opaque = !dest_write.transparency();
 
@@ -1592,7 +1589,7 @@ pub fn draw<'gc>(
     };
 
     let (target, include_dirty_area) = target.overwrite_cpu_pixels_from_gpu(context.gc());
-    let mut write = target.write(context.gc());
+    let mut write = target.borrow_mut(context.gc());
     // If we have another dirty area to preserve, expand this to include it
     if let Some(old) = include_dirty_area {
         dirty_region.union(old);
@@ -1660,7 +1657,7 @@ pub fn set_vector<'gc>(
     let region = PixelRegion::for_region(x_min, y_min, width as u32, height as u32);
 
     let bitmap_data = target.sync(activation.context.renderer);
-    let mut bitmap_data = bitmap_data.write(activation.gc());
+    let mut bitmap_data = bitmap_data.borrow_mut(activation.gc());
     let transparency = bitmap_data.transparency();
     let mut iter = vector.iter();
     bitmap_data.set_cpu_dirty(activation.gc(), region);
@@ -1728,7 +1725,7 @@ pub fn set_pixels_from_byte_array<'gc>(
         // If we're filling a partial region, finish any gpu->cpu sync
         target.sync(renderer)
     };
-    let mut write = target.write(mc);
+    let mut write = target.borrow_mut(mc);
 
     if region.width() > 0 && region.height() > 0 {
         for y in region.y_min..region.y_max {
@@ -1903,7 +1900,7 @@ pub fn pixel_dissolve<'gc>(
     let num_pixels = num_pixels.min(final_pixel_sequence_length as i32);
 
     let target = target.sync(renderer);
-    let mut write = target.write(mc);
+    let mut write = target.borrow_mut(mc);
 
     // For compliance with the official Flash Player, we always write the pixel at (0, 0).
     write_pixel(

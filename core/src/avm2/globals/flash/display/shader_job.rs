@@ -215,7 +215,7 @@ pub fn start<'gc>(
         let target_bitmap = bitmap.sync(activation.context.renderer);
         // Perform both a GPU->CPU and CPU->GPU sync before writing to it.
         // FIXME - are both necessary?
-        let mut target_bitmap_data = target_bitmap.write(activation.gc());
+        let mut target_bitmap_data = target_bitmap.borrow_mut(activation.gc());
         target_bitmap_data.update_dirty_texture(activation.context.renderer);
 
         PixelBenderTarget::Bitmap(
@@ -252,7 +252,7 @@ pub fn start<'gc>(
                 .as_bitmap_data()
                 .unwrap()
                 .sync(activation.context.renderer);
-            let mut target_bitmap_data = target_bitmap.write(activation.gc());
+            let mut target_bitmap_data = target_bitmap.borrow_mut(activation.gc());
             let width = target_bitmap_data.width();
             let height = target_bitmap_data.height();
             target_bitmap_data.set_gpu_dirty(

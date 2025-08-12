@@ -2,7 +2,8 @@ use crate::avm2::{Object as Avm2Object, Value as Avm2Value};
 use crate::context::RenderContext;
 use crate::display_object::{DisplayObject, DisplayObjectWeak, TDisplayObject};
 use bitflags::bitflags;
-use gc_arena::{Collect, GcCell, Mutation};
+use gc_arena::lock::GcRefLock;
+use gc_arena::{Collect, Gc, Mutation};
 use ruffle_render::backend::RenderBackend;
 use ruffle_render::bitmap::{
     Bitmap, BitmapFormat, BitmapHandle, PixelRegion, PixelSnapping, SyncHandle,
@@ -232,7 +233,7 @@ impl<'gc> BitmapData<'gc> {
         fill_color: u32,
     ) -> Self {
         let data = BitmapRawData::new(width, height, transparency, fill_color);
-        let data = BitmapRawDataWrapper::new(GcCell::new(mc, data));
+        let data = BitmapRawDataWrapper::new(Gc::new(mc, data.into()));
 
         Self(data)
     }
@@ -245,7 +246,7 @@ impl<'gc> BitmapData<'gc> {
         pixels: Vec<Color>,
     ) -> Self {
         let data = BitmapRawData::new_with_pixels(width, height, transparency, pixels);
-        let data = BitmapRawDataWrapper::new(GcCell::new(mc, data));
+        let data = BitmapRawDataWrapper::new(Gc::new(mc, data.into()));
 
         Self(data)
     }
@@ -260,11 +261,11 @@ impl<'gc> BitmapData<'gc> {
         renderer: &mut dyn RenderBackend,
     ) -> BitmapData<'gc> {
         let data = self.0.clone_data(renderer);
-        let data = BitmapRawDataWrapper::new(GcCell::new(mc, data));
+        let data = BitmapRawDataWrapper::new(Gc::new(mc, data.into()));
         Self(data)
     }
 
-    pub fn sync(&self, renderer: &mut dyn RenderBackend) -> GcCell<'gc, BitmapRawData<'gc>> {
+    pub fn sync(&self, renderer: &mut dyn RenderBackend) -> GcRefLock<'gc, BitmapRawData<'gc>> {
         self.0.sync(renderer)
     }
 
@@ -279,7 +280,7 @@ impl<'gc> BitmapData<'gc> {
     pub fn overwrite_cpu_pixels_from_gpu(
         &self,
         mc: &Mutation<'gc>,
-    ) -> (GcCell<'gc, BitmapRawData<'gc>>, Option<PixelRegion>) {
+    ) -> (GcRefLock<'gc, BitmapRawData<'gc>>, Option<PixelRegion>) {
         self.0.overwrite_cpu_pixels_from_gpu(mc)
     }
 
@@ -419,7 +420,9 @@ mod wrapper {
     use crate::avm2::{Object as Avm2Object, Value as Avm2Value};
     use crate::context::RenderContext;
     use crate::display_object::DisplayObjectWeak;
-    use gc_arena::{Collect, GcCell, Mutation};
+    use gc_arena::barrier::Write;
+    use gc_arena::lock::GcRefLock;
+    use gc_arena::{Collect, Gc, Mutation};
     use ruffle_render::backend::RenderBackend;
     use ruffle_render::bitmap::{BitmapHandle, PixelRegion, PixelSnapping};
     use ruffle_render::commands::CommandHandler;
@@ -440,7 +443,7 @@ mod wrapper {
     ///
     /// There are three ways that this type gets used:
     /// 1. Blocking on the current GPU->CPU sync via the `sync` method,
-    ///    and obtainng a `GcCell<'gc, BitmapData<'gc>>` (or implicily through `as_bitmap_data`).
+    ///    and obtainng a `GcRefLock<'gc, BitmapData<'gc>>` (or implicily through `as_bitmap_data`).
     ///    This is done for the vast majority of BitmapData AS2/AS3 methods, as they need to access CPU-side pixels.
     /// 2. Ignoring the current GPU->CPU sync state. This is done by the `render` method defined on this type,
     ///    since rendering only uses GPU-side data, and ignores CPU-side pixels entirely.
@@ -457,10 +460,10 @@ mod wrapper {
     /// `sync_handle` and `dirty` can never be set at the same time - we can only have one of them set, or none of them set.
     #[derive(Copy, Clone, Collect, Debug)]
     #[collect(no_drop)]
-    pub struct BitmapRawDataWrapper<'gc>(GcCell<'gc, BitmapRawData<'gc>>);
+    pub struct BitmapRawDataWrapper<'gc>(GcRefLock<'gc, BitmapRawData<'gc>>);
 
     impl<'gc> BitmapRawDataWrapper<'gc> {
-        pub fn new(data: GcCell<'gc, BitmapRawData<'gc>>) -> Self {
+        pub fn new(data: GcRefLock<'gc, BitmapRawData<'gc>>) -> Self {
             BitmapRawDataWrapper(data)
         }
 
@@ -469,7 +472,7 @@ mod wrapper {
         // Marking it as disposed skips rendering, and the unset `avm2_object` will cause this to
         // be inaccessible to AS3 code.
         pub fn dummy(mc: &Mutation<'gc>) -> Self {
-            BitmapRawDataWrapper(GcCell::new(
+            BitmapRawDataWrapper(Gc::new(
                 mc,
                 BitmapRawData {
                     pixels: Vec::new(),
@@ -483,7 +486,8 @@ mod wrapper {
                     dirty_state: DirtyState::Clean,
                     #[cfg(feature = "egui")]
                     egui_texture: Default::default(),
-                },
+                }
+                .into(),
             ))
         }
 
@@ -492,8 +496,7 @@ mod wrapper {
         pub fn clone_data(&self, renderer: &mut dyn RenderBackend) -> BitmapRawData<'gc> {
             // Sync from the GPU to CPU, since our new BitmapData starts out
             // with no GPU texture
-            let data = self.sync(renderer);
-            let data = data.read();
+            let data = self.sync(renderer).borrow();
             BitmapRawData {
                 pixels: data.pixels.clone(),
                 width: data.width,
@@ -512,12 +515,14 @@ mod wrapper {
 
         // Provides access to the underlying `BitmapData`. If a GPU -> CPU sync
         // is in progress, waits for it to complete
-        pub fn sync(&self, renderer: &mut dyn RenderBackend) -> GcCell<'gc, BitmapRawData<'gc>> {
+        pub fn sync(&self, renderer: &mut dyn RenderBackend) -> GcRefLock<'gc, BitmapRawData<'gc>> {
             // SAFETY: The only fields that can store gc pointers are `avm2_object` and `dirty_callbacks`,
             // which we don't update here. Ideally, we would refactor this so that
             // `BitmapData` doesn't contain any gc pointers, allowing us to use a normal
-            // `RefCell` instead of a `GcCell`.
-            let mut write = unsafe { self.0.borrow_mut() };
+            // `RefCell` instead of a `RefLock`.
+            let mut write = unsafe { Write::assume(Gc::as_ref(self.0)) }
+                .unlock()
+                .borrow_mut();
             match std::mem::replace(&mut write.dirty_state, DirtyState::Clean) {
                 DirtyState::GpuModified(sync_handle, bounds) => {
                     renderer
@@ -548,7 +553,7 @@ mod wrapper {
             gc_context: &Mutation<'gc>,
             renderer: &mut dyn RenderBackend,
         ) -> BitmapHandle {
-            let mut bitmap_data = self.0.write(gc_context);
+            let mut bitmap_data = self.0.borrow_mut(gc_context);
             bitmap_data.update_dirty_texture(renderer);
             bitmap_data.bitmap_handle(renderer).unwrap()
         }
@@ -560,8 +565,8 @@ mod wrapper {
         pub fn overwrite_cpu_pixels_from_gpu(
             &self,
             mc: &Mutation<'gc>,
-        ) -> (GcCell<'gc, BitmapRawData<'gc>>, Option<PixelRegion>) {
-            let mut write = self.0.write(mc);
+        ) -> (GcRefLock<'gc, BitmapRawData<'gc>>, Option<PixelRegion>) {
+            let mut write = self.0.borrow_mut(mc);
             let dirty_rect = match write.dirty_state {
                 DirtyState::GpuModified(_, rect) => {
                     write.dirty_state = DirtyState::Clean;
@@ -582,7 +587,8 @@ mod wrapper {
             read_area: PixelRegion,
             renderer: &mut dyn RenderBackend,
         ) -> Ref<'_, BitmapRawData<'gc>> {
-            let needs_update = if let DirtyState::GpuModified(_, area) = self.0.read().dirty_state {
+            let needs_update = if let DirtyState::GpuModified(_, area) = self.0.borrow().dirty_state
+            {
                 area.intersects(read_area)
             } else {
                 false
@@ -590,7 +596,7 @@ mod wrapper {
             if needs_update {
                 self.sync(renderer);
             }
-            self.0.read()
+            self.0.borrow()
         }
 
         // These methods do not require a sync to complete, as they do not depend on the
@@ -598,23 +604,23 @@ mod wrapper {
         // callers to avoid calling sync()
 
         pub fn height(&self) -> u32 {
-            self.0.read().height
+            self.0.borrow().height
         }
 
         pub fn width(&self) -> u32 {
-            self.0.read().width
+            self.0.borrow().width
         }
 
         pub fn object2(&self) -> Avm2Value<'gc> {
-            self.0.read().object2()
+            self.0.borrow().object2()
         }
 
         pub fn disposed(&self) -> bool {
-            self.0.read().disposed
+            self.0.borrow().disposed
         }
 
         pub fn transparency(&self) -> bool {
-            self.0.read().transparency
+            self.0.borrow().transparency
         }
 
         pub fn check_valid(
@@ -634,24 +640,24 @@ mod wrapper {
         }
 
         pub fn dispose(&self, mc: &Mutation<'gc>) {
-            self.0.write(mc).dispose();
+            self.0.borrow_mut(mc).dispose();
         }
 
         pub fn init_object2(&self, mc: &Mutation<'gc>, object: Avm2Object<'gc>) {
-            self.0.write(mc).avm2_object = Some(object)
+            self.0.borrow_mut(mc).avm2_object = Some(object)
         }
 
         pub fn remove_display_object(&self, mc: &Mutation<'gc>, callback: DisplayObjectWeak<'gc>) {
             // [NA] Removing is a rare operation, whereas insert is often, and iteration is extremely frequent.
             // The list will typically be 0-1 entries long too, so I think retain is fine for quick iteration.
             self.0
-                .write(mc)
+                .borrow_mut(mc)
                 .display_objects
                 .retain(|c| !std::ptr::eq(c.as_ptr(), callback.as_ptr()))
         }
 
         pub fn add_display_object(&self, mc: &Mutation<'gc>, callback: DisplayObjectWeak<'gc>) {
-            self.0.write(mc).display_objects.push(callback);
+            self.0.borrow_mut(mc).display_objects.push(callback);
         }
 
         pub fn render(
@@ -660,7 +666,7 @@ mod wrapper {
             context: &mut RenderContext<'_, 'gc>,
             pixel_snapping: PixelSnapping,
         ) {
-            let mut inner_bitmap_data = self.0.write(context.gc());
+            let mut inner_bitmap_data = self.0.borrow_mut(context.gc());
             if inner_bitmap_data.disposed() {
                 return;
             }
@@ -681,7 +687,7 @@ mod wrapper {
         }
 
         pub fn can_read(&self, read_area: PixelRegion) -> bool {
-            if let DirtyState::GpuModified(_, area) = self.0.read().dirty_state {
+            if let DirtyState::GpuModified(_, area) = self.0.borrow().dirty_state {
                 !area.intersects(read_area)
             } else {
                 true
@@ -690,7 +696,7 @@ mod wrapper {
 
         #[cfg(feature = "egui")]
         pub fn debug_sync_status(&self) -> std::borrow::Cow<'static, str> {
-            match self.0.read().dirty_state {
+            match self.0.borrow().dirty_state {
                 DirtyState::Clean => std::borrow::Cow::Borrowed("Clean"),
                 DirtyState::CpuModified(area) => std::borrow::Cow::Owned(format!(
                     "CPU modified from {}, {} to {}, {}",
@@ -708,7 +714,7 @@ mod wrapper {
         }
 
         pub fn ptr_eq(&self, other: BitmapRawDataWrapper<'gc>) -> bool {
-            GcCell::ptr_eq(self.0, other.0)
+            Gc::ptr_eq(self.0, other.0)
         }
     }
 }

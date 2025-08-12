@@ -9,7 +9,7 @@ use crate::avm2_stub_method;
 use crate::bitmap::bitmap_data::BitmapRawData;
 use crate::context::RenderContext;
 use crate::utils::HasPrefixField;
-use gc_arena::{Collect, Gc, GcCell, GcWeak};
+use gc_arena::{Collect, Gc, GcWeak};
 use ruffle_render::backend::{
     BufferUsage, Context3D, Context3DBlendFactor, Context3DCommand, Context3DCompareMode,
     Context3DTextureFormat, Context3DTriangleFace, Context3DVertexBufferFormat, ProgramType,
@@ -345,12 +345,10 @@ impl<'gc> Context3DObject<'gc> {
     }
     pub(crate) fn copy_bitmapdata_to_texture(
         &self,
-        source: GcCell<'gc, BitmapRawData<'gc>>,
+        source: &BitmapRawData<'gc>,
         dest: Rc<dyn Texture>,
         layer: u32,
     ) {
-        let source = source.read();
-
         // Note - Flash appears to allow a source that's larger than the destination.
         // Let's leave in this assertion to see if there any real SWFS relying on this
         // behavior.
