@@ -207,7 +207,7 @@ impl<'gc> VTable<'gc> {
     pub fn replace_scopes_with(self, mc: &Mutation<'gc>, new_scope: ScopeChain<'gc>) {
         let methods = field!(Gc::write(mc, self.0), VTableData, method_table).as_deref();
         for i in 0..methods.len() {
-            unlock!(methods[i], ClassBoundMethod, scope).set(Some(new_scope));
+            unlock!(&methods[i], ClassBoundMethod, scope).set(Some(new_scope));
         }
     }
 

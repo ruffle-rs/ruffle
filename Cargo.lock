@@ -1988,7 +1988,7 @@ dependencies = [
 [[package]]
 name = "gc-arena"
 version = "0.5.3"
-source = "git+https://github.com/kyren/gc-arena.git?rev=cef6db5e15bdf27f3c85b83ec0455431f134d2f0#cef6db5e15bdf27f3c85b83ec0455431f134d2f0"
+source = "git+https://github.com/kyren/gc-arena.git?rev=08e08414249d5914dfc3b402d7eadc133e00ce56#08e08414249d5914dfc3b402d7eadc133e00ce56"
 dependencies = [
  "gc-arena-derive",
 ]
@@ -1996,7 +1996,7 @@ dependencies = [
 [[package]]
 name = "gc-arena-derive"
 version = "0.5.3"
-source = "git+https://github.com/kyren/gc-arena.git?rev=cef6db5e15bdf27f3c85b83ec0455431f134d2f0#cef6db5e15bdf27f3c85b83ec0455431f134d2f0"
+source = "git+https://github.com/kyren/gc-arena.git?rev=08e08414249d5914dfc3b402d7eadc133e00ce56#08e08414249d5914dfc3b402d7eadc133e00ce56"
 dependencies = [
  "proc-macro2",
  "quote",
