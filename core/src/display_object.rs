@@ -2167,10 +2167,27 @@ pub trait TDisplayObject<'gc>:
     /// may have.
     #[no_dynamic]
     fn frame_constructed(self, context: &mut UpdateContext<'gc>) {
+        self.clear_all_skip_next_frame_for_self(context.stage.as_container().unwrap());
         let frame_constructed_evt =
             Avm2EventObject::bare_default_event(context, "frameConstructed");
         let dobject_constr = context.avm2.classes().display_object;
         Avm2::broadcast_event(context, frame_constructed_evt, dobject_constr);
+    }
+
+    fn clear_all_skip_next_frame_for_self(self, container: DisplayObjectContainer<'gc>) {
+        tracing::debug!("Clearing skipNextFrame for all children of {}", self.path());
+        for child in container.iter_render_list() {
+            if let Some(ctr) = child.as_container() {
+                child.clear_all_skip_next_frame_for_self(ctr);
+            }
+        }
+
+        self.clear_skip_next_frame();
+    }
+
+    fn clear_skip_next_frame(self) {
+        self.base()
+            .set_flag(DisplayObjectFlags::SKIP_NEXT_FRAME_FOR_SELF, false);
     }
 
     /// Run any frame scripts (if they exist and this object needs to run them).
@@ -2681,7 +2698,7 @@ impl<'gc> DisplayObject<'gc> {
 
 bitflags! {
     /// Bit flags used by `DisplayObject`.
-    #[derive(Clone, Copy)]
+    #[derive(Clone, Copy, Debug)]
     struct DisplayObjectFlags: u16 {
         /// Whether this object has been removed from the display list.
         /// Necessary in AVM1 to throw away queued actions from removed movie clips.
@@ -2737,6 +2754,9 @@ bitflags! {
 
         /// Whether this object has matrix3D (used for stubbing).
         const HAS_MATRIX3D_STUB        = 1 << 14;
+
+        const SKIP_NEXT_FRAME_FOR_SELF = 1 << 15;
+
     }
 }
 
