@@ -188,7 +188,7 @@ pub struct MovieClipData<'gc> {
 
     last_queued_script_frame: Cell<Option<FrameNumber>>,
     queued_script_frame: Cell<FrameNumber>,
-    queued_goto_frame: Cell<Option<FrameNumber>>,
+    queued_goto_frame: Cell<Option<Option<(FrameNumber, bool)>>>,
 
     current_frame: Cell<FrameNumber>,
 
@@ -737,20 +737,12 @@ impl<'gc> MovieClip<'gc> {
     /// This is treated as an 'explicit' goto: frame scripts and other frame
     /// lifecycle events will be retriggered.
     pub fn goto_frame(self, context: &mut UpdateContext<'gc>, frame: FrameNumber, stop: bool) {
-        // Stop first, in case we need to kill and restart the stream sound.
-        if stop {
-            self.stop(context);
-        } else {
-            self.play();
-        }
-
         // When performing goto, frame scripts behave the same as when entering a new frame
         // so no separate cleanup is performed on ones registered during frame script phase
         context.frame_script_cleanup_queue.clear();
 
         // Clamp frame number in bounds.
         let frame = frame.max(1);
-
         // In AS3, no-op gotos have side effects that are visible to user code.
         // Hence, we have to run them anyway.
         if frame != self.current_frame() {
@@ -758,16 +750,17 @@ impl<'gc> MovieClip<'gc> {
                 .0
                 .contains_flag(MovieClipFlags::EXECUTING_AVM2_FRAME_SCRIPT)
             {
-                // AVM2 does not allow a clip to see while it is executing a frame script.
-                // The goto is instead queued and run once the frame script is completed.
-                self.0.queued_goto_frame.set(Some(frame));
+                self.0.queued_goto_frame.set(Some(Some((frame, stop))));
             } else {
+                if stop {
+                    self.stop(context);
+                } else {
+                    self.play();
+                }
                 self.run_goto(context, frame, false);
             }
         } else if self.movie().is_action_script_3() {
-            // Despite not running, the goto still overwrites the currently enqueued frame.
             self.0.queued_goto_frame.set(None);
-            // Pretend we actually did a goto, but don't do anything.
             run_inner_goto_frame(context, &[], self);
         }
     }
@@ -2234,11 +2227,70 @@ impl<'gc> MovieClip<'gc> {
                 }
             }
         }
-
-        let goto_frame = self.0.queued_goto_frame.take();
-        if let Some(frame) = goto_frame {
-            self.run_goto(context, frame, false);
+        let queued_goto = self.0.queued_goto_frame.take();
+        if self
+            .0
+            .contains_flag(MovieClipFlags::POST_SCRIPT_ACTION_PENDING)
+        {
+            if self
+                .0
+                .contains_flag(MovieClipFlags::POST_SCRIPT_ACTION_IS_STOP)
+            {
+                self.stop(context);
+            } else {
+                self.set_programmatically_played();
+                self.play();
+            }
+            self.clear_post_script_action();
         }
+
+        if let Some(Some((frame, stop))) = queued_goto {
+            self.goto_frame(context, frame, stop);
+        }
+    }
+
+    pub fn set_erroneous_queued_goto_frame(&self) {
+        self.0.queued_goto_frame.set(Some(None));
+    }
+
+    pub fn set_post_script_action(self, stop: bool) {
+        let mut flags = self.0.flags.get();
+        flags.insert(MovieClipFlags::POST_SCRIPT_ACTION_PENDING);
+        flags.set(MovieClipFlags::POST_SCRIPT_ACTION_IS_STOP, stop);
+        self.0.flags.set(flags);
+    }
+
+    pub fn clear_post_script_action(self) {
+        self.0
+            .set_flag(MovieClipFlags::POST_SCRIPT_ACTION_PENDING, false);
+    }
+
+    pub fn is_pending_play(&self) -> bool {
+        let flags = self.0.flags.get();
+        flags.contains(MovieClipFlags::POST_SCRIPT_ACTION_PENDING)
+            && !flags.contains(MovieClipFlags::POST_SCRIPT_ACTION_IS_STOP)
+    }
+
+    pub fn is_pending_stop(&self) -> bool {
+        let flags = self.0.flags.get();
+        flags.contains(MovieClipFlags::POST_SCRIPT_ACTION_PENDING)
+            && flags.contains(MovieClipFlags::POST_SCRIPT_ACTION_IS_STOP)
+    }
+
+    pub fn queued_goto_frame(&self) -> Option<Option<(FrameNumber, bool)>> {
+        self.0.queued_goto_frame.get()
+    }
+
+    pub fn set_queued_goto_frame(&self, queued_goto_frame: Option<Option<(FrameNumber, bool)>>) {
+        self.0.queued_goto_frame.set(queued_goto_frame);
+    }
+
+    pub fn set_play_once(&self, val: bool) {
+        self.0.set_flag(MovieClipFlags::PLAY_ONCE, val);
+    }
+
+    pub fn is_play_once(&self) -> bool {
+        self.0.contains_flag(MovieClipFlags::PLAY_ONCE)
     }
 }
 
@@ -2365,6 +2417,11 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
 
     fn run_frame_scripts(self, context: &mut UpdateContext<'gc>) {
         self.run_local_frame_scripts(context);
+
+        if self.is_play_once() {
+            self.set_play_once(false);
+            self.stop(context);
+        }
 
         if let Some(container) = self.as_container() {
             for child in container.iter_render_list() {
@@ -4710,7 +4767,7 @@ pub enum QueuedTagAction {
 bitflags! {
     /// Boolean state flags used by `MovieClip`.
     #[derive(Clone, Copy)]
-    struct MovieClipFlags: u8 {
+    struct MovieClipFlags: u16 {
         /// Whether this `MovieClip` has run its initial frame.
         const INITIALIZED             = 1 << 0;
 
@@ -4738,6 +4795,17 @@ bitflags! {
 
         /// Whether this `MovieClip` has been post-instantiated yet.
         const POST_INSTANTIATED = 1 << 6;
+
+        /// A goto-and-play/stop has been issued and will be processed after frame scripts.
+        const POST_SCRIPT_ACTION_PENDING  = 1 << 7;
+
+        /// When `POST_SCRIPT_ACTION_PENDING` is set, this indicates if the action is a `stop`.
+        /// If this flag is clear, the action is a `play`.
+        const POST_SCRIPT_ACTION_IS_STOP  = 1 << 8;
+
+         /// A `play()` was called after a `gotoAndStop()`, creating a special
+        /// "play once" state that should be resolved at the end of the frame.
+        const PLAY_ONCE = 1 << 9;
     }
 }
 
