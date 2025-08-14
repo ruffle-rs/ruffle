@@ -1,7 +1,10 @@
+Warning: Reference to undeclared variable, '/obj:test'
 undefined
 tEst
 TeSt
+Warning: Reference to undeclared variable, '/obj:test'
 undefined
 TeSt
 tEst
+Warning: Reference to undeclared variable, '/obj:INnEr.test'
 undefined
