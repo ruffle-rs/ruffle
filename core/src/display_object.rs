@@ -199,6 +199,7 @@ pub struct DisplayObjectBase<'gc> {
     parent: Lock<Option<DisplayObject<'gc>>>,
     place_frame: Cell<u16>,
     depth: Cell<Depth>,
+    ratio: Cell<u16>,
     name: Lock<Option<AvmString<'gc>>>,
     clip_depth: Cell<Depth>,
 
@@ -277,6 +278,7 @@ impl Default for DisplayObjectBase<'_> {
             parent: Default::default(),
             place_frame: Default::default(),
             depth: Default::default(),
+            ratio: Default::default(),
             name: Lock::new(None),
             clip_depth: Default::default(),
             matrix: Default::default(),
@@ -720,6 +722,14 @@ impl<'gc> DisplayObjectBase<'gc> {
 
     fn set_placed_by_script(&self, value: bool) {
         self.set_flag(DisplayObjectFlags::PLACED_BY_SCRIPT, value);
+    }
+
+    fn set_placed_by_avm1_script(&self, value: bool) {
+        self.set_flag(DisplayObjectFlags::PLACED_BY_AVM1_SCRIPT, value);
+    }
+
+    fn placed_by_avm1_script(&self) -> bool {
+        self.contains_flag(DisplayObjectFlags::PLACED_BY_AVM1_SCRIPT)
     }
 
     fn is_bitmap_cached_preference(&self) -> bool {
@@ -1434,6 +1444,17 @@ pub trait TDisplayObject<'gc>:
         }
     }
 
+    #[no_dynamic]
+    fn ratio(self) -> u16 {
+        self.base().ratio.get()
+    }
+
+    #[no_dynamic]
+    fn set_ratio(self, ratio: u16) {
+        self.base().ratio.set(ratio);
+        self.invalidate_cached_bitmap();
+    }
+
     /// The X axis scale for this display object in local space.
     /// Returned by the `_xscale`/`scaleX` ActionScript properties.
     #[no_dynamic]
@@ -2016,6 +2037,16 @@ pub trait TDisplayObject<'gc>:
         self.base().set_placed_by_script(value)
     }
 
+    #[no_dynamic]
+    fn placed_by_avm1_script(self) -> bool {
+        self.base().placed_by_avm1_script()
+    }
+
+    #[no_dynamic]
+    fn set_placed_by_avm1_script(self, value: bool) {
+        self.base().set_placed_by_avm1_script(value);
+    }
+
     /// Whether this display object has been instantiated by the timeline.
     /// When this flag is set, attempts to change the object's name from AVM2
     /// throw an exception.
@@ -2351,6 +2382,8 @@ pub trait TDisplayObject<'gc>:
                     morph_shape.set_ratio(ratio);
                 } else if let Some(video) = self.as_video() {
                     video.seek(context, ratio.into());
+                } else {
+                    self.set_ratio(ratio);
                 }
             }
             if let Some(is_bitmap_cached) = place_object.is_bitmap_cached {
@@ -2739,6 +2772,8 @@ bitflags! {
 
         /// Whether this object has matrix3D (used for stubbing).
         const HAS_MATRIX3D_STUB        = 1 << 14;
+
+        const PLACED_BY_AVM1_SCRIPT    = 1 << 15;
     }
 }
 
