@@ -11,7 +11,7 @@ pub enum Error {
     /// This can contain sub-errors with further information (`Error::source`)
     Avm1ParseError {
         opcode: u8,
-        source: Option<Box<dyn error::Error + 'static>>,
+        source: Option<Box<dyn error::Error + Send + Sync + 'static>>,
     },
 
     /// Invalid or unknown data was encountered.
@@ -21,7 +21,7 @@ pub enum Error {
     /// This can contain sub-errors with further information (`Error::source`)
     SwfParseError {
         tag_code: u16,
-        source: Box<dyn error::Error + 'static>,
+        source: Box<dyn error::Error + Send + Sync + 'static>,
     },
 
     /// An IO error occurred (probably unexpected EOF).
@@ -43,7 +43,10 @@ impl Error {
 
     /// Helper method to create `Error::Avm1ParseError`.
     #[inline]
-    pub fn avm1_parse_error_with_source(opcode: u8, source: impl error::Error + 'static) -> Self {
+    pub fn avm1_parse_error_with_source(
+        opcode: u8,
+        source: impl error::Error + Send + Sync + 'static,
+    ) -> Self {
         Self::Avm1ParseError {
             opcode,
             source: Some(Box::new(source)),
@@ -58,7 +61,10 @@ impl Error {
 
     /// Helper method to create `Error::SwfParseError`.
     #[inline]
-    pub fn swf_parse_error(tag_code: u16, source: impl error::Error + 'static) -> Self {
+    pub fn swf_parse_error(
+        tag_code: u16,
+        source: impl error::Error + Send + Sync + 'static,
+    ) -> Self {
         Self::SwfParseError {
             tag_code,
             source: Box::new(source),
@@ -99,9 +105,11 @@ impl fmt::Display for Error {
 
 impl error::Error for Error {
     fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
-        use std::ops::Deref;
         match self {
-            Self::Avm1ParseError { source, .. } => source.as_ref().map(|s| s.deref()),
+            Self::Avm1ParseError { source, .. } => match source {
+                Some(s) => Some(s.as_ref()),
+                None => None,
+            },
             Self::IoError(e) => e.source(),
             Self::InvalidData(_) => None,
             Self::SwfParseError { source, .. } => Some(source.as_ref()),
@@ -114,4 +122,11 @@ impl From<io::Error> for Error {
     fn from(error: io::Error) -> Self {
         Self::IoError(error)
     }
+}
+
+#[cfg(test)]
+#[test]
+fn test_error_send_sync() {
+    fn assert_send_sync<T: Send + Sync>() {}
+    assert_send_sync::<Error>()
 }

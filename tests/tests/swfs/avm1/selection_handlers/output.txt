@@ -1,36 +1,27 @@
-==========
-text.onSetFocus
-null
-==========
-Selection.onSetFocus
-null
-_level0.text
-==========
-text.onKillFocus
-_level0.button
-==========
-button.onSetFocus
-_level0.text
-==========
-Selection.onSetFocus
-_level0.text
-_level0.button
-==========
-button.onKillFocus
-_level0.clip
-==========
-clip.onSetFocus
-_level0.button
-==========
-Selection.onSetFocus
-_level0.button
-_level0.clip
-==========
-clip.onKillFocus
-null
-==========
-Selection.onSetFocus
-_level0.clip
-null
-==========
+Setting text
+text.onSetFocus: null
+Selection.onSetFocus: null -> _level0.text
+Setting text
+Setting button
+text.onKillFocus: _level0.button
+button.onSetFocus: _level0.text
+Selection.onSetFocus: _level0.text -> _level0.button
+Setting button
+Setting clip
+button.onKillFocus: _level0.clip
+clip.onSetFocus: _level0.button
+Selection.onSetFocus: _level0.button -> _level0.clip
+Setting clip
+Setting null
+clip.onKillFocus: null
+Selection.onSetFocus: _level0.clip -> null
+Setting null
 Done
+button.onRollOver
+button.onRollOut
+button.onRollOver
+button.onRollOut
+clip.onRollOver
+clip.onRollOut
+clip.onRollOver
+clip.onRollOut

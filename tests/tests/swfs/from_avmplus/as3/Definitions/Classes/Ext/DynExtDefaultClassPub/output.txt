@@ -1,0 +1,40 @@
+*** Access from outside of class *** PASSED!
+EXTDCLASS.setPubArray(arr), EXTDCLASS.getPubArray PASSED!
+*** Access public method from default method of sub class *** PASSED!
+EXTDCLASS.testSubArray(arr) PASSED!
+*** Access public method from public method of sub class *** PASSED!
+EXTDCLASS.pubSubSetArray(arr), EXTDCLASS.pubSubGetArray() PASSED!
+*** Access public method from private method of sub class *** PASSED!
+EXTDCLASS.testPrivSubArray(arr) PASSED!
+*** Access public method from final method of sub class *** PASSED!
+EXTDCLASS.testFinSubArray(arr) PASSED!
+*** Access public method from final method of sub class *** PASSED!
+EXTDCLASS.testPubFinSubArray(arr) PASSED!
+*** Access public method from final method of sub class *** PASSED!
+EXTDCLASS.testPrivFinSubArray(arr) PASSED!
+*** Access public method from virtual method of sub class *** PASSED!
+EXTDCLASS.testVirSubArray(arr) PASSED!
+*** Access public method from public virtual method of sub class *** PASSED!
+EXTDCLASS.testPubVirSubArray(arr) PASSED!
+*** Access public method from private virtual method of sub class *** PASSED!
+EXTDCLASS.testPrivVirSubArray(arr) PASSED!
+*** Access public property from outside the class *** PASSED!
+EXTDCLASS.pubArray = arr PASSED!
+*** Access public property from default method in sub class *** PASSED!
+EXTDCLASS.testSubDPArray(arr) PASSED!
+*** Access public property from public method in sub class *** PASSED!
+EXTDCLASS.pubSubSetDPArray(arr), EXTDCLASS.pubSubGetDPArray() PASSED!
+*** Access public property from private method in sub class *** PASSED!
+EXTDCLASS.testPrivDPArray(arr) PASSED!
+*** Access public property from final method in sub class *** PASSED!
+EXTDCLASS.testFinDPArray(arr) PASSED!
+*** Access public property from public final method in sub class *** PASSED!
+EXTDCLASS.testPubFinDPArray(arr) PASSED!
+*** Access public property from private final method in sub class *** PASSED!
+EXTDCLASS.testPrivFinDPArray(arr) PASSED!
+*** Access public property from final method in sub class *** PASSED!
+EXTDCLASS.testVirDPArray(arr) PASSED!
+*** Access public property from public final method in sub class *** PASSED!
+EXTDCLASS.testPubVirDPArray(arr) PASSED!
+*** Access public property from private final method in sub class *** PASSED!
+EXTDCLASS.testPrivVirDPArray(arr) PASSED!

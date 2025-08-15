@@ -1,11 +1,9 @@
 use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
-use crate::avm1::globals::system::SystemCapabilities;
-use crate::avm1::object::Object;
 use crate::avm1::property_decl::{define_properties_on, Declaration};
-use crate::avm1::{ScriptObject, Value};
-use crate::context::GcContext;
-use crate::string::AvmString;
+use crate::avm1::{Object, Value};
+use crate::string::{AvmString, StringContext};
+use crate::system_properties::SystemCapabilities;
 
 const OBJECT_DECLS: &[Declaration] = declare_properties! {
     "supports64BitProcesses" => property(get_has_64_bit_support);
@@ -104,7 +102,7 @@ pub fn get_player_type<'gc>(
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     Ok(AvmString::new_utf8(
-        activation.context.gc_context,
+        activation.gc(),
         activation.context.system.player_type.to_string(),
     )
     .into())
@@ -116,7 +114,7 @@ pub fn get_screen_color<'gc>(
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     Ok(AvmString::new_utf8(
-        activation.context.gc_context,
+        activation.gc(),
         activation.context.system.screen_color.to_string(),
     )
     .into())
@@ -128,12 +126,12 @@ pub fn get_language<'gc>(
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     Ok(AvmString::new_utf8(
-        activation.context.gc_context,
+        activation.gc(),
         activation
             .context
             .system
             .language
-            .get_language_code(activation.context.avm1.player_version()),
+            .get_language_code(activation.context.player_version),
     )
     .into())
 }
@@ -182,12 +180,12 @@ pub fn get_manufacturer<'gc>(
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     Ok(AvmString::new_utf8(
-        activation.context.gc_context,
+        activation.gc(),
         activation
             .context
             .system
             .manufacturer
-            .get_manufacturer_string(activation.context.avm1.player_version()),
+            .get_manufacturer_string(activation.context.player_version),
     )
     .into())
 }
@@ -197,11 +195,7 @@ pub fn get_os_name<'gc>(
     _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    Ok(AvmString::new_utf8(
-        activation.context.gc_context,
-        activation.context.system.os.to_string(),
-    )
-    .into())
+    Ok(AvmString::new_utf8(activation.gc(), activation.context.system.os.to_string()).into())
 }
 
 pub fn get_version<'gc>(
@@ -210,11 +204,11 @@ pub fn get_version<'gc>(
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     Ok(AvmString::new_utf8(
-        activation.context.gc_context,
+        activation.gc(),
         activation
             .context
             .system
-            .get_version_string(activation.context.avm1),
+            .get_version_string(activation.context.player_version),
     )
     .into())
 }
@@ -227,8 +221,8 @@ pub fn get_server_string<'gc>(
     let server_string = activation
         .context
         .system
-        .get_server_string(&activation.context);
-    Ok(AvmString::new_utf8(activation.context.gc_context, server_string).into())
+        .get_server_string(activation.context);
+    Ok(AvmString::new_utf8(activation.gc(), server_string).into())
 }
 
 pub fn get_cpu_architecture<'gc>(
@@ -237,7 +231,7 @@ pub fn get_cpu_architecture<'gc>(
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     Ok(AvmString::new_utf8(
-        activation.context.gc_context,
+        activation.gc(),
         activation.context.system.cpu_architecture.to_string(),
     )
     .into())
@@ -248,19 +242,15 @@ pub fn get_max_idc_level<'gc>(
     _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    Ok(AvmString::new_utf8(
-        activation.context.gc_context,
-        &activation.context.system.idc_level,
-    )
-    .into())
+    Ok(AvmString::new_utf8(activation.gc(), &activation.context.system.idc_level).into())
 }
 
 pub fn create<'gc>(
-    context: &mut GcContext<'_, 'gc>,
+    context: &mut StringContext<'gc>,
     proto: Object<'gc>,
     fn_proto: Object<'gc>,
 ) -> Object<'gc> {
-    let capabilities = ScriptObject::new(context.gc_context, Some(proto));
+    let capabilities = Object::new(context, Some(proto));
     define_properties_on(OBJECT_DECLS, context, capabilities, fn_proto);
-    capabilities.into()
+    capabilities
 }

@@ -10,14 +10,33 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+env:
+  FEATURES: lzma,jpegxr
+  TEST_OPTS: --workspace --locked --no-fail-fast -j 4
+
+  # This is to counteract the disabling by rust-cache.
+  # See: https://github.com/Swatinem/rust-cache/issues/43
+  CARGO_INCREMENTAL: '1'
+
+  # Supposedly makes "Updating crates.io index" faster on Windows.
+  # See: https://github.com/rust-lang/cargo/issues/9167
+  CARGO_NET_GIT_FETCH_WITH_CLI: 'true'
+
+  # Workaround for: https://github.com/nextest-rs/nextest/issues/1493
+  # See also: https://github.com/rust-lang/rustup/issues/3825
+  RUSTUP_WINDOWS_PATH_ADD_BIN: '1'
+
+  # (Linux) Just to silence warnings about it missing
+  XDG_RUNTIME_DIR: ''
+
 jobs:
   changes:
     name: Paths filter
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     outputs:
       should_run: ${{ steps.filter.outputs.src }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - uses: AurorNZ/paths-filter@v4
         id: filter
@@ -31,7 +50,7 @@ jobs:
 
   build:
     needs: changes
-    if: needs.changes.outputs.should_run== 'true'
+    if: needs.changes.outputs.should_run == 'true'
     name: Test Rust ${{ matrix.rust_version }} / ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
     continue-on-error: ${{ matrix.rust_version == 'nightly' || matrix.rust_version == 'beta' }}
@@ -39,15 +58,73 @@ jobs:
       fail-fast: false
       matrix:
         rust_version: [stable]
-        os: [ubuntu-22.04, windows-latest, macos-latest]
+        os: [ubuntu-24.04, ubuntu-24.04-arm, windows-2025, macos-14]
         include:
           - rust_version: nightly
-            os: ubuntu-22.04
+            os: ubuntu-24.04
           - rust_version: beta
-            os: ubuntu-22.04
+            os: ubuntu-24.04
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: ${{ matrix.rust_version }}
+
+      - name: Install Linux dependencies
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt install -y libasound2-dev mesa-vulkan-drivers libudev-dev
+
+      - name: Enable image tests
+        if: runner.os != 'macOS'
+        shell: bash
+        run: echo FEATURES=${FEATURES},imgtests | tee -a $GITHUB_ENV
+
+      - name: Cache Cargo output
+        uses: Swatinem/rust-cache@v2
+        with:
+          shared-key: "desktop"
+          save-if: ${{ github.ref == 'refs/heads/master' }}
+
+      - name: Install cargo nextest
+        uses: taiki-e/install-action@v2
+        with:
+          tool: cargo-nextest
+
+      - name: Run tests
+        shell: bash
+        run: cargo nextest run --profile ci --cargo-profile ci ${TEST_OPTS} --features ${FEATURES}
+
+      - name: Run doctests
+        shell: bash
+        run: cargo test --doc --profile ci ${TEST_OPTS} --features ${FEATURES}
+
+      - name: Upload images
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: swf_images_${{ matrix.rust_version }}_${{ matrix.os }}
+          path: |
+            tests*/**/*.actual*.png
+            tests*/**/*.difference*.png
+
+  lints:
+    needs: changes
+    if: needs.changes.outputs.should_run == 'true'
+    name: Lints with Rust ${{ matrix.rust_version }}
+    runs-on: ubuntu-24.04
+    continue-on-error: ${{ matrix.rust_version == 'nightly' || matrix.rust_version == 'beta' }}
+    strategy:
+      fail-fast: false
+      matrix:
+        rust_version: [stable, beta, nightly]
+
+    steps:
+      - uses: actions/checkout@v5
 
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable
@@ -56,64 +133,45 @@ jobs:
           components: rustfmt, clippy
 
       - name: Install Linux dependencies
-        if: runner.os == 'Linux'
         run: |
           sudo apt-get update
-          sudo apt install -y libasound2-dev libxcb-shape0-dev libxcb-xfixes0-dev libgtk-3-dev mesa-vulkan-drivers libpango1.0-dev
-
-      - name: Cache Cargo output
-        uses: Swatinem/rust-cache@v2
-        with:
-          shared-key: "desktop"
-          save-if: ${{ github.ref == 'refs/heads/master' }}
+          sudo apt install -y libasound2-dev mesa-vulkan-drivers libudev-dev
 
       - name: Check formatting
-        if: runner.os == 'Linux'
         run: cargo fmt --all -- --check
 
-      - name: Check clippy
-        # not critical on other platforms, and slows down Windows
-        if: runner.os == 'Linux'
+      - name: Check clippy (with tests)
         # Don't fail the build for clippy on nightly, since we get a lot of false-positives
         run: cargo clippy --all --all-features --tests ${{ (matrix.rust_version != 'nightly' && '-- -D warnings') || '' }}
 
-      - name: Check licensing and duplicates in used crates
-        if: ${{ runner.os == 'Linux' && matrix.rust_version == 'stable' }}
-        uses: EmbarkStudios/cargo-deny-action@v1
+      - name: Check clippy (without tests)
+        # Don't fail the build for clippy on nightly, since we get a lot of false-positives
+        run: cargo clippy --all --all-features ${{ (matrix.rust_version != 'nightly' && '-- -D warnings') || '' }}
 
       - name: Check documentation
-        if: runner.os == 'Linux'
         run: cargo doc --no-deps --all-features
         env:
           RUSTDOCFLAGS: -D warnings
 
-      - name: Install cargo nextest
-        uses: taiki-e/install-action@v2
-        with:
-          tool: cargo-nextest
+  dependencies:
+    needs: changes
+    if: needs.changes.outputs.should_run == 'true'
+    name: Check dependencies
+    runs-on: ubuntu-24.04
 
-      - name: Run tests with image tests
-        if: runner.os != 'macOS'
-        # TODO: Disallow retries in general once we can allow only after SIGABRT.
-        # See: https://github.com/nextest-rs/nextest/issues/1172
-        run: cargo nextest run --workspace --locked --no-fail-fast --retries 2 -j 4 --features imgtests,lzma,jpegxr
-        env:
-          XDG_RUNTIME_DIR: '' # dummy value, just to silence warnings about it missing
+    steps:
+      - uses: actions/checkout@v5
 
-      - name: Run tests without image tests
-        if: runner.os == 'macOS'
-        run: cargo nextest run --workspace --locked --no-fail-fast -j 4 --features lzma,jpegxr
-        env:
-          XDG_RUNTIME_DIR: '' # dummy value, just to silence warnings about it missing
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
 
-      - name: Upload images
-        if: failure()
-        uses: actions/upload-artifact@v4
-        with:
-          name: swf_images
-          path: |
-            tests*/**/*.actual*.png
-            tests*/**/*.difference*.png
+      - name: Check licenses, duplicates, and advisories
+        uses: EmbarkStudios/cargo-deny-action@v2
+
+      - name: Check unused dependencies
+        uses: bnjbvr/cargo-machete@main
+        # So the previous step failing doesn't prevent this one from running.
+        if: always()
 
   check-required:
     needs: changes
@@ -123,12 +181,12 @@ jobs:
     strategy:
       matrix:
         rust_version: [stable]
-        os: [ubuntu-22.04, windows-latest, macos-latest]
+        os: [ubuntu-24.04, ubuntu-24.04-arm, windows-2025, macos-14]
         include:
           - rust_version: nightly
-            os: ubuntu-22.04
+            os: ubuntu-24.04
           - rust_version: beta
-            os: ubuntu-22.04
+            os: ubuntu-24.04
 
     steps:
       - name: No-op

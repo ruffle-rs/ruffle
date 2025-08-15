@@ -1,3 +1,2 @@
-volume-controls = Contrôles du volume
-volume-controls-mute = Muet
-volume-controls-volume = Volume
+volume-controls-mute = Rendre muet
+volume-controls-unmute = Rendre audible

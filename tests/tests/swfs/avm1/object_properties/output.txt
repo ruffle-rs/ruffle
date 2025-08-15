@@ -1,0 +1,31 @@
+// get_undefined
+undefined
+// set_get
+forced
+natural
+// set_readonly
+replaced
+initial
+// deletable_not_readonly
+false
+initial
+false
+replaced
+// virtual_get
+Virtual!
+Virtual!
+// delete
+true
+false
+true
+false
+false
+undefined
+Virtual!
+undefined
+Stored!
+// get_keys
+true
+false
+true
+false

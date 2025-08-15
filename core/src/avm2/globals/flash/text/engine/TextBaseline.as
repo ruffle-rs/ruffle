@@ -5,31 +5,30 @@
 
 package flash.text.engine
 {
-    
-    
+    [API("662")]
     public final class TextBaseline
     {
         // Specifies an ascent baseline.
         public static const ASCENT:String = "ascent";
-        
+
         // Specifies a descent baseline.
         public static const DESCENT:String = "descent";
-        
+
         // Specifies an ideographic bottom baseline.
         public static const IDEOGRAPHIC_BOTTOM:String = "ideographicBottom";
-        
+
         // Specifies an ideographic center baseline.
         public static const IDEOGRAPHIC_CENTER:String = "ideographicCenter";
-        
+
         // Specifies an ideographic top baseline.
         public static const IDEOGRAPHIC_TOP:String = "ideographicTop";
-        
+
         // Specifies a roman baseline.
         public static const ROMAN:String = "roman";
-        
+
         // Specifies that the alignmentBaseline is the same as the dominantBaseline.
         public static const USE_DOMINANT_BASELINE:String = "useDominantBaseline";
-        
-        
+
+
     }
 }

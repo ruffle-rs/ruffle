@@ -108,7 +108,7 @@ impl WStrMetadata {
     }
 
     /// Returns the length of the described `WStr`. This is never greater than `WStr::MAX_LEN`.
-    #[allow(clippy::len_without_is_empty)]
+    #[expect(clippy::len_without_is_empty)]
     #[inline(always)]
     pub const fn len(self) -> usize {
         (self.0 & (WIDE_MASK - 1)) as usize
@@ -165,7 +165,10 @@ pub const unsafe fn from_units(units: Units<*const [u8], *const [u16]>) -> *cons
 #[inline(always)]
 pub const unsafe fn from_units_mut(units: Units<*mut [u8], *mut [u16]>) -> *mut WStr {
     // SAFETY: `Units` is `repr(C)` so the transmute is sound.
-    from_units(transmute(units)) as *mut WStr
+    from_units(transmute::<
+        Units<*mut [u8], *mut [u16]>,
+        Units<*const [u8], *const [u16]>,
+    >(units)) as *mut WStr
 }
 
 /// Gets a pointer to the buffer designated by `ptr`.

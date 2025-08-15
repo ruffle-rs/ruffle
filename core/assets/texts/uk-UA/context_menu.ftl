@@ -1,0 +1,12 @@
+context-menu-play = Відтворити
+context-menu-rewind = Перемотати назад
+context-menu-forward = Перемотати вперед
+context-menu-back = Повернутися
+context-menu-quality-low = Якість: Низька
+context-menu-quality-medium = Якість: Середня
+context-menu-quality-high = Якість: Висока
+context-menu-cut = Вирізати
+context-menu-copy = Копіювати
+context-menu-paste = Вставити
+context-menu-delete = Видалити
+context-menu-select-all = Вибрати все

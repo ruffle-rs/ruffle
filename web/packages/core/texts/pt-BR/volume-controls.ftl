@@ -1,3 +1,2 @@
-volume-controls = Controles de volume
 volume-controls-mute = Silenciar
-volume-controls-volume = Volume
+volume-controls-unmute = Ativar som

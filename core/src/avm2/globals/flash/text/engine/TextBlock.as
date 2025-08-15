@@ -1,6 +1,7 @@
 package flash.text.engine {
     import __ruffle__.stub_method;
 
+    [API("662")]
     public final class TextBlock {
         public var userData;
 
@@ -12,22 +13,27 @@ package flash.text.engine {
         private var _lineRotation:String;
         private var _tabStops:Vector.<TabStop>;
         private var _textJustifier:TextJustifier;
+
+        [Ruffle(NativeAccessible)]
         private var _content:ContentElement;
 
-        internal var _textLineCreationResult:String = null;
-        internal var _firstLine:TextLine = null;
+        [Ruffle(NativeAccessible)]
+        private var _textLineCreationResult:String = null;
 
+        [Ruffle(NativeAccessible)]
+        private var _firstLine:TextLine = null;
 
-        public function TextBlock(content:ContentElement = null,
-                                  tabStops:Vector.<TabStop> = null,
-                                  textJustifier:TextJustifier = null,
-                                  lineRotation:String = "rotate0",
-                                  baselineZero:String = "roman",
-                                  bidiLevel:int = 0,
-                                  applyNonLinearFontScaling:Boolean = true,
-                                  baselineFontDescription:FontDescription = null,
-                                  baselineFontSize:Number = 12
-                                 ) {
+        public function TextBlock(
+            content:ContentElement = null,
+            tabStops:Vector.<TabStop> = null,
+            textJustifier:TextJustifier = null,
+            lineRotation:String = "rotate0",
+            baselineZero:String = "roman",
+            bidiLevel:int = 0,
+            applyNonLinearFontScaling:Boolean = true,
+            baselineFontDescription:FontDescription = null,
+            baselineFontSize:Number = 12
+        ) {
             // The order of setting these properties matters- if lineRotation
             // is null/invalid, the rest won't be set because it will throw an error
             if (content) {
@@ -162,7 +168,7 @@ package flash.text.engine {
         public function get lastLine():TextLine {
             return this._firstLine;
         }
-        
+
         public function releaseLines(start:TextLine, end:TextLine):void {
             if (start != end || end != this._firstLine) {
                 stub_method("flash.text.engine.TextBlock", "releaseLines", "with start != end or multiple lines");

@@ -1,0 +1,7 @@
+
+Roundtrip with AMF version: 3
+Current alias: [class MySecondClass]
+Called setter with: My other val
+Error: Called myOtherProp setter with My other val
+ReferenceError: Error #1056: Cannot create property myProp on Test.as$0.MySecondClass.
+Deserialized: MySecondClass(oneGoodProp = The one good prop)

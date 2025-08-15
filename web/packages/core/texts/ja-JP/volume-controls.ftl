@@ -1,3 +1,2 @@
-volume-controls = 音量
-volume-controls-mute = 消音
-volume-controls-volume = 音量
+volume-controls-mute = ミュート
+volume-controls-unmute = ミュート解除

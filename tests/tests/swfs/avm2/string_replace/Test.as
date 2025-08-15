@@ -50,10 +50,22 @@ trace("axbfg".replace(/b/,"$'"))
 trace("// $1")
 trace("abc".replace(/(b)/, "<$1>"))
 
+trace("// capture group 0 not recognized")
+trace("abc".replace(/(b)/, "<$0>"))
+
+trace("// capture group 00 not recognized")
+trace("abc".replace(/(b)/, "<$00>"))
+
+trace("// leading 0 capture group number")
+trace("abc".replace(/(b)/, "<$01>"))
+
 trace("// not enough groups")
 trace("abc".replace(/(b)/, "<$2>"))
 
 trace("// two-digit capture group number, but not enough groups")
+trace("abc".replace(/(b)/, "<$20>"))
+
+trace("// two-digit capture group number, but not enough groups with prefix as a valid group")
 trace("abc".replace(/(b)/, "<$10>"))
 
 trace("// Two-digit capture group number")
@@ -93,3 +105,10 @@ trace("<<a>>".replace(/(a)(b)?|(c)/, rFN))
 
 // The pattern is string and the replacement is a function
 trace("<<a>>".replace("a", rFN))
+
+trace("// regex calling into itself")
+
+var pattern = /simple/g
+trace("this is simple, really simple.".replace(pattern, function (match) {
+  return match.replace(pattern, "complicated")
+}))

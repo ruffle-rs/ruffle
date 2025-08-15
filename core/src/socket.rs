@@ -1,26 +1,26 @@
-use crate::{
-    avm1::{
-        globals::xml_socket::XmlSocket, Activation as Avm1Activation, ActivationIdentifier,
-        ExecutionReason, Object as Avm1Object, TObject as Avm1TObject,
-    },
-    avm2::{
-        object::SocketObject, Activation as Avm2Activation, Avm2, EventObject,
-        TObject as Avm2TObject,
-    },
-    backend::navigator::NavigatorBackend,
-    context::UpdateContext,
-    string::AvmString,
+use crate::avm1::{
+    globals::xml_socket::XmlSocket, Activation as Avm1Activation, ActivationIdentifier,
+    ExecutionReason, Object as Avm1Object,
 };
-use async_channel::{unbounded, Sender as AsyncSender};
+use crate::avm2::object::{EventObject, SocketObject};
+use crate::avm2::{Activation as Avm2Activation, Avm2};
+use crate::backend::navigator::NavigatorBackend;
+use crate::context::UpdateContext;
+use crate::string::AvmString;
+
+use async_channel::{unbounded, Receiver, Sender as AsyncSender, Sender};
+use gc_arena::collect::Trace;
 use gc_arena::Collect;
-use generational_arena::{Arena, Index};
+use ruffle_macros::istr;
+use slotmap::{new_key_type, SlotMap};
 use std::{
-    cell::RefCell,
-    sync::mpsc::{channel, Receiver, Sender},
+    cell::{Cell, RefCell},
     time::Duration,
 };
 
-pub type SocketHandle = Index;
+new_key_type! {
+    pub struct SocketHandle;
+}
 
 #[derive(Copy, Clone, Collect)]
 #[collect(no_drop)]
@@ -34,6 +34,7 @@ enum SocketKind<'gc> {
 struct Socket<'gc> {
     target: SocketKind<'gc>,
     sender: RefCell<AsyncSender<Vec<u8>>>,
+    connected: Cell<bool>,
 }
 
 impl<'gc> Socket<'gc> {
@@ -41,18 +42,19 @@ impl<'gc> Socket<'gc> {
         Self {
             target,
             sender: RefCell::new(sender),
+            connected: Cell::new(false),
         }
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq)]
 pub enum ConnectionState {
     Connected,
     Failed,
     TimedOut,
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq)]
 pub enum SocketAction {
     Connect(SocketHandle, ConnectionState),
     Data(SocketHandle, Vec<u8>),
@@ -61,26 +63,26 @@ pub enum SocketAction {
 
 /// Manages the collection of Sockets.
 pub struct Sockets<'gc> {
-    sockets: Arena<Socket<'gc>>,
+    sockets: SlotMap<SocketHandle, Socket<'gc>>,
 
     receiver: Receiver<SocketAction>,
     sender: Sender<SocketAction>,
 }
 
-unsafe impl<'gc> Collect for Sockets<'gc> {
-    fn trace(&self, cc: &gc_arena::Collection) {
+unsafe impl<'gc> Collect<'gc> for Sockets<'gc> {
+    fn trace<C: Trace<'gc>>(&self, cc: &mut C) {
         for (_, socket) in self.sockets.iter() {
-            socket.trace(cc)
+            cc.trace(socket);
         }
     }
 }
 
 impl<'gc> Sockets<'gc> {
     pub fn empty() -> Self {
-        let (sender, receiver) = channel();
+        let (sender, receiver) = unbounded();
 
         Self {
-            sockets: Arena::new(),
+            sockets: SlotMap::with_key(),
             receiver,
             sender,
         }
@@ -100,7 +102,7 @@ impl<'gc> Sockets<'gc> {
 
         // NOTE: This call will send SocketAction::Connect to sender with connection status.
         backend.connect_socket(
-            host,
+            sanitize_host(&host).to_string(),
             port,
             Duration::from_millis(target.timeout().into()),
             handle,
@@ -134,7 +136,7 @@ impl<'gc> Sockets<'gc> {
 
         // NOTE: This call will send SocketAction::Connect to sender with connection status.
         backend.connect_socket(
-            host,
+            sanitize_host(&host).to_string(),
             port,
             Duration::from_millis(xml_socket.timeout().into()),
             handle,
@@ -150,7 +152,11 @@ impl<'gc> Sockets<'gc> {
     }
 
     pub fn is_connected(&self, handle: SocketHandle) -> bool {
-        matches!(self.sockets.get(handle), Some(Socket { .. }))
+        if let Some(socket) = self.sockets.get(handle) {
+            socket.connected.get()
+        } else {
+            false
+        }
     }
 
     pub fn send(&mut self, handle: SocketHandle, data: Vec<u8>) {
@@ -163,27 +169,42 @@ impl<'gc> Sockets<'gc> {
         }
     }
 
+    pub fn close_all(&mut self) {
+        for (_, socket) in self.sockets.drain() {
+            Self::close_internal(socket);
+        }
+    }
+
     pub fn close(&mut self, handle: SocketHandle) {
-        if let Some(Socket { sender, target }) = self.sockets.remove(handle) {
-            drop(sender); // NOTE: By dropping the sender, the reading task will close automatically.
+        if let Some(socket) = self.sockets.remove(handle) {
+            Self::close_internal(socket);
+        }
+    }
 
-            // Clear the buffers if the connection was closed.
-            match target {
-                SocketKind::Avm1(target) => {
-                    let target =
-                        XmlSocket::cast(target.into()).expect("target should be XmlSocket");
+    fn close_internal(socket: Socket) {
+        let Socket {
+            sender,
+            target,
+            connected: _,
+        } = socket;
 
-                    target.read_buffer().clear();
-                }
-                SocketKind::Avm2(target) => {
-                    target.read_buffer().clear();
-                    target.write_buffer().clear();
-                }
+        drop(sender); // NOTE: By dropping the sender, the reading task will close automatically.
+
+        // Clear the buffers if the connection was closed.
+        match target {
+            SocketKind::Avm1(target) => {
+                let target = XmlSocket::cast(target.into()).expect("target should be XmlSocket");
+
+                target.read_buffer().clear();
+            }
+            SocketKind::Avm2(target) => {
+                target.read_buffer().clear();
+                target.write_buffer().clear();
             }
         }
     }
 
-    pub fn update_sockets(context: &mut UpdateContext<'_, 'gc>) {
+    pub fn update_sockets(context: &mut UpdateContext<'gc>) {
         let mut actions = vec![];
 
         while let Ok(action) = context.sockets.receiver.try_recv() {
@@ -194,31 +215,30 @@ impl<'gc> Sockets<'gc> {
             match action {
                 SocketAction::Connect(handle, ConnectionState::Connected) => {
                     let target = match context.sockets.sockets.get(handle) {
-                        Some(socket) => socket.target,
+                        Some(socket) => {
+                            socket.connected.set(true);
+                            socket.target
+                        }
                         // Socket must have been closed before we could send event.
                         None => continue,
                     };
 
                     match target {
                         SocketKind::Avm2(target) => {
-                            let mut activation = Avm2Activation::from_nothing(context.reborrow());
+                            let activation = Avm2Activation::from_nothing(context);
 
                             let connect_evt =
-                                EventObject::bare_default_event(&mut activation.context, "connect");
-                            Avm2::dispatch_event(
-                                &mut activation.context,
-                                connect_evt,
-                                target.into(),
-                            );
+                                EventObject::bare_default_event(activation.context, "connect");
+                            Avm2::dispatch_event(activation.context, connect_evt, target.into());
                         }
                         SocketKind::Avm1(target) => {
                             let mut activation = Avm1Activation::from_stub(
-                                context.reborrow(),
+                                context,
                                 ActivationIdentifier::root("[XMLSocket]"),
                             );
 
                             let _ = target.call_method(
-                                "onConnect".into(),
+                                istr!("onConnect"),
                                 &[true.into()],
                                 &mut activation,
                                 ExecutionReason::Special,
@@ -238,39 +258,25 @@ impl<'gc> Sockets<'gc> {
 
                     match target {
                         SocketKind::Avm2(target) => {
-                            let mut activation = Avm2Activation::from_nothing(context.reborrow());
+                            let mut activation = Avm2Activation::from_nothing(context);
 
-                            let io_error_evt = activation
-                                .avm2()
-                                .classes()
-                                .ioerrorevent
-                                .construct(
-                                    &mut activation,
-                                    &[
-                                        "ioError".into(),
-                                        false.into(),
-                                        false.into(),
-                                        "Error #2031: Socket Error.".into(),
-                                        2031.into(),
-                                    ],
-                                )
-                                .expect("IOErrorEvent should be constructed");
-
-                            Avm2::dispatch_event(
-                                &mut activation.context,
-                                io_error_evt,
-                                target.into(),
+                            let io_error_evt = EventObject::io_error_event(
+                                &mut activation,
+                                "Error #2031: Socket Error.",
+                                2031,
                             );
+
+                            Avm2::dispatch_event(activation.context, io_error_evt, target.into());
                         }
                         // TODO: Not sure if avm1 xmlsocket has a way to notify a error. (Probably should just fire connect event with success as false).
                         SocketKind::Avm1(target) => {
                             let mut activation = Avm1Activation::from_stub(
-                                context.reborrow(),
+                                context,
                                 ActivationIdentifier::root("[XMLSocket]"),
                             );
 
                             let _ = target.call_method(
-                                "onConnect".into(),
+                                istr!("onConnect"),
                                 &[false.into()],
                                 &mut activation,
                                 ExecutionReason::Special,
@@ -287,37 +293,23 @@ impl<'gc> Sockets<'gc> {
 
                     match target {
                         SocketKind::Avm2(target) => {
-                            let mut activation = Avm2Activation::from_nothing(context.reborrow());
+                            let mut activation = Avm2Activation::from_nothing(context);
 
                             let bytes_loaded = data.len();
                             target.read_buffer().extend(data);
 
-                            let progress_evt = activation
-                                .avm2()
-                                .classes()
-                                .progressevent
-                                .construct(
-                                    &mut activation,
-                                    &[
-                                        "socketData".into(),
-                                        false.into(),
-                                        false.into(),
-                                        bytes_loaded.into(),
-                                        //NOTE: bytesTotal is not used by socketData event.
-                                        0.into(),
-                                    ],
-                                )
-                                .expect("ProgressEvent should be constructed");
-
-                            Avm2::dispatch_event(
-                                &mut activation.context,
-                                progress_evt,
-                                target.into(),
+                            let progress_evt = EventObject::progress_event(
+                                &mut activation,
+                                "socketData",
+                                bytes_loaded,
+                                0, // NOTE: bytesTotal is not used by socketData event.
                             );
+
+                            Avm2::dispatch_event(activation.context, progress_evt, target.into());
                         }
                         SocketKind::Avm1(target) => {
                             let mut activation = Avm1Activation::from_stub(
-                                context.reborrow(),
+                                context,
                                 ActivationIdentifier::root("[XMLSocket]"),
                             );
 
@@ -346,7 +338,7 @@ impl<'gc> Sockets<'gc> {
 
                                     // Call the event handler.
                                     let _ = target.call_method(
-                                        "onData".into(),
+                                        istr!("onData"),
                                         &[message.into()],
                                         &mut activation,
                                         ExecutionReason::Special,
@@ -377,26 +369,29 @@ impl<'gc> Sockets<'gc> {
                 }
                 SocketAction::Close(handle) => {
                     let target = match context.sockets.sockets.remove(handle) {
-                        Some(socket) => socket.target,
+                        Some(socket) => {
+                            socket.connected.set(false);
+                            socket.target
+                        }
                         // Socket must have been closed before we could send event.
                         None => continue,
                     };
 
                     match target {
                         SocketKind::Avm2(target) => {
-                            let mut activation = Avm2Activation::from_nothing(context.reborrow());
+                            let activation = Avm2Activation::from_nothing(context);
 
                             // Clear the buffers if the connection was closed.
                             target.read_buffer().clear();
                             target.write_buffer().clear();
 
                             let close_evt =
-                                EventObject::bare_default_event(&mut activation.context, "close");
-                            Avm2::dispatch_event(&mut activation.context, close_evt, target.into());
+                                EventObject::bare_default_event(activation.context, "close");
+                            Avm2::dispatch_event(activation.context, close_evt, target.into());
                         }
                         SocketKind::Avm1(target) => {
                             let mut activation = Avm1Activation::from_stub(
-                                context.reborrow(),
+                                context,
                                 ActivationIdentifier::root("[XMLSocket]"),
                             );
 
@@ -407,7 +402,7 @@ impl<'gc> Sockets<'gc> {
                             socket.read_buffer().clear();
 
                             let _ = target.call_method(
-                                "onClose".into(),
+                                istr!("onClose"),
                                 &[],
                                 &mut activation,
                                 ExecutionReason::Special,
@@ -417,5 +412,31 @@ impl<'gc> Sockets<'gc> {
                 }
             }
         }
+    }
+}
+
+/// Flash treats a socket host as a cstring, and stops reading at a null byte.
+/// We need to account for this here.
+fn sanitize_host(host: &str) -> &str {
+    host.split('\0').next().unwrap()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::sanitize_host;
+
+    #[test]
+    fn truncate_host_at_null() {
+        assert_eq!(
+            sanitize_host("1.2.3.4\0nonsense that gets dropped\0"),
+            "1.2.3.4"
+        );
+        assert_eq!(sanitize_host("\0nonsense"), "");
+        assert_eq!(sanitize_host("host\0"), "host");
+    }
+
+    #[test]
+    fn normal_host() {
+        assert_eq!(sanitize_host("1.2.3.4"), "1.2.3.4");
     }
 }

@@ -6,6 +6,7 @@
 package flash.media
 {
 
+    [API("688")] // the docs say 670, that's wrong
     public final class StageVideoAvailabilityReason
     {
         // Stage video is not currently available, the driver is too old or black listed

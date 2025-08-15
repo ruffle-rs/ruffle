@@ -1,16 +1,21 @@
 use crate::avm2::bytearray::ByteArrayStorage;
 use crate::avm2::error::{argument_error, error, make_error_2037, make_error_2097};
-pub use crate::avm2::object::file_reference_allocator;
+use crate::avm2::globals::slots::flash_net_file_filter as file_filter_slots;
 use crate::avm2::object::{ByteArrayObject, DateObject, FileReference};
-use crate::avm2::{Activation, Avm2, Error, EventObject, Object, TObject, Value};
+use crate::avm2::parameters::ParametersExt;
+use crate::avm2::{Activation, Avm2, Error, EventObject, TObject as _, Value};
 use crate::backend::ui::FileFilter;
 use crate::string::AvmString;
 
+pub use crate::avm2::object::file_reference_allocator;
+
 pub fn get_creation_date<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     let this = this.as_file_reference().unwrap();
 
     let creation_date = match *this.file_reference() {
@@ -29,9 +34,11 @@ pub fn get_creation_date<'gc>(
 
 pub fn get_data<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     let this = this.as_file_reference().unwrap();
 
     let bytearray = match *this.file_reference() {
@@ -49,9 +56,11 @@ pub fn get_data<'gc>(
 
 pub fn get_modification_date<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     let this = this.as_file_reference().unwrap();
 
     let modification_date = match *this.file_reference() {
@@ -70,16 +79,18 @@ pub fn get_modification_date<'gc>(
 
 pub fn get_name<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     let this = this.as_file_reference().unwrap();
 
     let name = match *this.file_reference() {
         FileReference::None => return Err(make_error_2037(activation)),
         FileReference::FileDialogResult(ref dialog_result) => {
             let name = dialog_result.file_name().unwrap_or_default();
-            AvmString::new_utf8(activation.context.gc_context, name).into()
+            AvmString::new_utf8(activation.gc(), name).into()
         }
     };
 
@@ -88,9 +99,11 @@ pub fn get_name<'gc>(
 
 pub fn get_size<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     let this = this.as_file_reference().unwrap();
 
     let size = match *this.file_reference() {
@@ -103,16 +116,18 @@ pub fn get_size<'gc>(
 
 pub fn get_type<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     let this = this.as_file_reference().unwrap();
 
     let type_ = match *this.file_reference() {
         FileReference::None => return Err(make_error_2037(activation)),
         FileReference::FileDialogResult(ref dialog_result) => {
             let type_ = dialog_result.file_type().unwrap_or_default();
-            AvmString::new_utf8(activation.context.gc_context, type_).into()
+            AvmString::new_utf8(activation.gc(), type_).into()
         }
     };
 
@@ -121,13 +136,15 @@ pub fn get_type<'gc>(
 
 pub fn browse<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     let this = this.as_file_reference().unwrap();
 
     let mut filters = Vec::new();
-    if let Value::Object(obj) = args[0] {
+    if let Some(obj) = args.try_get_object(0) {
         if let Some(array_storage) = obj.as_array_storage() {
             for filter in array_storage.iter() {
                 if let Some(Value::Object(obj)) = filter {
@@ -136,13 +153,13 @@ pub fn browse<'gc>(
                         .classes()
                         .filefilter
                         .inner_class_definition();
-                    if !obj.is_of_type(filefilter, &mut activation.context) {
+                    if !obj.is_of_type(filefilter) {
                         return Err(make_error_2097(activation));
                     }
 
-                    let description = obj.get_public_property("description", activation)?;
-                    let extension = obj.get_public_property("extension", activation)?;
-                    let mac_type = obj.get_public_property("macType", activation)?;
+                    let description = obj.get_slot(file_filter_slots::_DESCRIPTION);
+                    let extension = obj.get_slot(file_filter_slots::_EXTENSION);
+                    let mac_type = obj.get_slot(file_filter_slots::_MAC_TYPE);
 
                     // The description and extension must be non-empty strings.
                     match (description, extension) {
@@ -191,9 +208,11 @@ pub fn browse<'gc>(
 
 pub fn load<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     let this = this.as_file_reference().unwrap();
 
     // Somewhat unexpectedly, we don't need to load anything here, because
@@ -204,39 +223,42 @@ pub fn load<'gc>(
         FileReference::FileDialogResult(ref dialog_result) => dialog_result.size().unwrap_or(0),
     };
 
-    let open_evt = EventObject::bare_default_event(&mut activation.context, "open");
-    Avm2::dispatch_event(&mut activation.context, open_evt, this.into());
+    let size = size as usize;
 
-    let progress_evt = EventObject::progress_event(activation, "progress", 0, size, false, false);
-    Avm2::dispatch_event(&mut activation.context, progress_evt, this.into());
+    let open_evt = EventObject::bare_default_event(activation.context, "open");
+    Avm2::dispatch_event(activation.context, open_evt, this.into());
 
-    let open_evt2 = EventObject::bare_default_event(&mut activation.context, "open");
-    Avm2::dispatch_event(&mut activation.context, open_evt2, this.into());
+    let progress_evt = EventObject::progress_event(activation, "progress", 0, size);
+    Avm2::dispatch_event(activation.context, progress_evt, this.into());
 
-    let progress_evt2 =
-        EventObject::progress_event(activation, "progress", size, size, false, false);
-    Avm2::dispatch_event(&mut activation.context, progress_evt2, this.into());
+    let open_evt2 = EventObject::bare_default_event(activation.context, "open");
+    Avm2::dispatch_event(activation.context, open_evt2, this.into());
+
+    let progress_evt2 = EventObject::progress_event(activation, "progress", size, size);
+    Avm2::dispatch_event(activation.context, progress_evt2, this.into());
 
     this.set_loaded(true);
 
-    let complete_evt = EventObject::bare_default_event(&mut activation.context, "complete");
-    Avm2::dispatch_event(&mut activation.context, complete_evt, this.into());
+    let complete_evt = EventObject::bare_default_event(activation.context, "complete");
+    Avm2::dispatch_event(activation.context, complete_evt, this.into());
 
     Ok(Value::Undefined)
 }
 
 pub fn save<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     let this = this.as_file_reference().unwrap();
-    let data = args[0];
+    let data = args.get_value(0);
 
     let data = match data {
         Value::Null | Value::Undefined => {
             // For some reason this isn't a proper error.
-            return Err(Error::AvmError(argument_error(activation, "data", 0)?));
+            return Err(Error::avm_error(argument_error(activation, "data", 0)?));
         }
         Value::Object(obj) => {
             if let Some(bytearray) = obj.as_bytearray() {
@@ -250,7 +272,7 @@ pub fn save<'gc>(
         _ => data.coerce_to_string(activation)?.to_string().into_bytes(),
     };
 
-    let file_name = if let Value::String(name) = args[1] {
+    let file_name = if let Some(name) = args.try_get_string(1) {
         name.to_string()
     } else {
         "".into()
@@ -259,7 +281,7 @@ pub fn save<'gc>(
     // Create and spawn dialog
     let dialog = activation.context.ui.display_file_save_dialog(
         file_name.to_owned(),
-        format!("Select location to save the file {}", file_name),
+        format!("Select location to save the file {file_name}"),
     );
 
     match dialog {
@@ -273,7 +295,7 @@ pub fn save<'gc>(
 
             activation.context.navigator.spawn_future(process);
         }
-        None => return Err(Error::AvmError(error(activation, "Error #2174: Only one download, upload, load or save operation can be active at a time on each FileReference.", 2174)?)),
+        None => return Err(Error::avm_error(error(activation, "Error #2174: Only one download, upload, load or save operation can be active at a time on each FileReference.", 2174)?)),
     }
 
     Ok(Value::Undefined)

@@ -3,27 +3,33 @@ package flash.text.engine {
     import __ruffle__.stub_setter;
     import __ruffle__.stub_method;
 
+    import flash.display.DisplayObject;
     import flash.display.DisplayObjectContainer;
+    import flash.errors.IllegalOperationError;
     import flash.geom.Rectangle;
+    import flash.ui.ContextMenu;
 
     // FIXME: None of the DisplayObjectContainer methods actually work on
     // the TextLine class in Ruffle, despite the methods working fine in FP-
     // however, it's unlikely that SWFs will actually attempt to add children
     // to a TextLine.
-    [Ruffle(NativeInstanceInit)]
+    [Ruffle(Abstract)]
+    [API("662")]
     public final class TextLine extends DisplayObjectContainer {
-        internal var _specifiedWidth:Number = 0.0;
+        [Ruffle(NativeAccessible)]
+        private var _specifiedWidth:Number = 0.0;
+
+        [Ruffle(NativeAccessible)]
         internal var _textBlock:TextBlock = null;
-        internal var _rawTextLength:int = 0;
+
+        [Ruffle(NativeAccessible)]
+        private var _rawTextLength:int = 0;
+
         internal var _validity:String = "valid";
 
         public static const MAX_LINE_WIDTH:int = 1000000;
 
         public var userData;
-
-        public function TextLine() {
-            throw new ArgumentError("Error #2012: TextLine$ class cannot be instantiated.", 2012);
-        }
 
         public function get rawTextLength():int {
             return this._rawTextLength;
@@ -93,7 +99,7 @@ package flash.text.engine {
             return 0.0;
         }
 
-        public function hasTabs():Boolean {
+        public function get hasTabs():Boolean {
             stub_getter("flash.text.engine.TextLine", "hasTabs");
             return false;
         }
@@ -108,12 +114,71 @@ package flash.text.engine {
             return -1;
         }
 
+        public function getAtomBidiLevel(index:int):int {
+            stub_method("flash.text.engine.TextLine", "getAtomBidiLevel");
+            return 0;
+        }
+
         public function getAtomBounds(index:int):Rectangle {
             stub_method("flash.text.engine.TextLine", "getAtomBounds");
             return new Rectangle(0, 0, 0, 0);
         }
 
+        public function getAtomCenter(index:int):Number {
+            stub_method("flash.text.engine.TextLine", "getAtomCenter");
+            return 1.0;
+        }
+
+        public function getAtomGraphic(index:int):DisplayObject {
+            stub_method("flash.text.engine.TextLine", "getAtomGraphic");
+            return null;
+        }
+
+        public function getAtomTextBlockBeginIndex(index:int):int {
+            stub_method("flash.text.engine.TextLine", "getAtomTextBlockBeginIndex");
+            return 0;
+        }
+
+        public function getAtomTextBlockEndIndex(index:int):int {
+            stub_method("flash.text.engine.TextLine", "getAtomTextBlockEndIndex");
+            return 0;
+        }
+
+        public function getAtomTextRotation(index:int):String {
+            stub_method("flash.text.engine.TextLine", "getAtomTextRotation");
+            return TextRotation.ROTATE_0;
+        }
+
+        public function getAtomWordBoundaryOnLeft(index:int):Boolean {
+            stub_method("flash.text.engine.TextLine", "getAtomWordBoundaryOnLeft");
+            return false;
+        }
+
         // This function does nothing in Flash Player 32
         public function flushAtomData():void { }
+
+        // Overrides
+
+        override public function set contextMenu(cm:ContextMenu):void {
+            throw new IllegalOperationError("Error #2181: The TextLine class does not implement this property or method.", 2181);
+        }
+
+        override public function set focusRect(value:Object):void {
+            throw new IllegalOperationError("Error #2181: The TextLine class does not implement this property or method.", 2181);
+        }
+
+        override public function set tabChildren(value:Boolean):void {
+            throw new IllegalOperationError("Error #2181: The TextLine class does not implement this property or method.", 2181);
+        }
+
+        override public function set tabEnabled(value:Boolean):void {
+            throw new IllegalOperationError("Error #2181: The TextLine class does not implement this property or method.", 2181);
+        }
+
+        override public function set tabIndex(index:int):void {
+            throw new IllegalOperationError("Error #2181: The TextLine class does not implement this property or method.", 2181);
+        }
+
+        // End of overrides
     }
 }

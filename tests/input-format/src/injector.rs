@@ -96,9 +96,15 @@ impl InputInjector {
                     AutomatedEvent::Wait => break,
                     AutomatedEvent::MouseMove { .. }
                     | AutomatedEvent::KeyDown { .. }
+                    | AutomatedEvent::KeyUp { .. }
                     | AutomatedEvent::TextInput { .. }
                     | AutomatedEvent::TextControl { .. }
-                    | AutomatedEvent::SetClipboardText { .. } => {}
+                    | AutomatedEvent::SetClipboardText { .. }
+                    | AutomatedEvent::MouseWheel { .. }
+                    | AutomatedEvent::ImePreedit { .. }
+                    | AutomatedEvent::ImeCommit { .. }
+                    | AutomatedEvent::FocusGained
+                    | AutomatedEvent::FocusLost => {}
                     AutomatedEvent::MouseDown { btn, .. } => {
                         self.buttons |= (*btn).into();
                     }

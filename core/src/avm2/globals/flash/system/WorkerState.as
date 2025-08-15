@@ -6,6 +6,7 @@
 package flash.system
 {
 
+    [API("682")]
     public final class WorkerState
     {
         // This state indicates that an object that represents the new worker has been created, but the worker is not executing code.

@@ -1,0 +1,12 @@
+TESTOBJ.returnString() PASSED!
+returnString() PASSED!
+TESTOBJ1.returnString() PASSED!
+returnStringNoPackage() PASSED!
+TESTOBJ.returnBoolean() PASSED!
+returnBoolean() PASSED!
+TESTOBJ1.returnBoolean() PASSED!
+returnBooleanNoPackage() PASSED!
+TESTOBJ.returnNumber() PASSED!
+returnNumber() PASSED!
+TESTOBJ1.returnNumber() PASSED!
+returnNumberNoPackage() PASSED!

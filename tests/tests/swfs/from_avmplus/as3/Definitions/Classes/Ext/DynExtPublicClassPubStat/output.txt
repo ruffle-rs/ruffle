@@ -1,0 +1,14 @@
+*** Access public static method from default method of sub class *** PASSED!
+DYNEXTDCLASS.testSubArray(arr) PASSED!
+*** Access public static method from public method of sub class *** PASSED!
+DYNEXTDCLASS.pubSubSetArray(arr), DYNEXTDCLASS.pubSubGetArray() PASSED!
+*** Access public static method from private method of sub class *** PASSED!
+DYNEXTDCLASS.testPrivSubArray(arr) PASSED!
+*** Access public static method from final method of sub class *** PASSED!
+DYNEXTDCLASS.testFinSubArray(arr) PASSED!
+*** Access public static property from public method in sub class *** PASSED!
+DYNEXTDCLASS.pubSubSetDPArray(arr), DYNEXTDCLASS.pubSubGetDPArray() PASSED!
+*** Access public static property from public static method in sub class *** PASSED!
+DynExtPublicClassPubStat.pubStatSubSetSPArray(arr), DynExtPublicClassPubStat.pubStatSubGetSPArray() PASSED!
+*** Access public static property from private static method in sub class *** PASSED!
+DYNEXTDCLASS.testPrivStatSubPArray(arr) PASSED!

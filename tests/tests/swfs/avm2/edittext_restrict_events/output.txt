@@ -1,0 +1,22 @@
+key down: 17, 
+text input: text, 
+changed: x
+key up: 17, x
+key down: 89, x
+text input: y, x
+changed: x
+key up: 89, x
+key down: 88, x
+text input: x, x
+changed: xx
+key up: 88, xx
+key down: 16, xx
+key down: 88, xx
+text input: X, xx
+changed: xxx
+key up: 88, xxx
+key up: 16, xxx
+key down: 17, xxx
+text input: xxxxx, xxx
+changed: xxxxx
+key up: 17, xxxxx

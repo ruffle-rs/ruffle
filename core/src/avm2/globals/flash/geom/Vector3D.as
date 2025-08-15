@@ -66,6 +66,7 @@ package flash.geom {
             return new Vector3D(this.x, this.y, this.z, this.w);
         }
 
+        [API("674")]
         public function copyFrom(sourceVector3D:Vector3D):void {
             this.x = sourceVector3D.x;
             this.y = sourceVector3D.y;
@@ -87,6 +88,7 @@ package flash.geom {
                 && (!allFour || Math.abs(toCompare.w) < tolerance); // FP BUG
         }
 
+        [API("674")]
         public function setTo(xa:Number, ya:Number, za: Number):void {
             this.x = xa;
             this.y = ya;

@@ -1,7 +1,7 @@
 //! `flash.media.SoundChannel` builtin/prototype
 
 use crate::avm2::activation::Activation;
-use crate::avm2::object::{Object, TObject};
+use crate::avm2::parameters::ParametersExt;
 use crate::avm2::value::Value;
 use crate::avm2::Error;
 use crate::display_object::SoundTransform;
@@ -11,9 +11,11 @@ pub use crate::avm2::object::sound_channel_allocator;
 /// Implements `SoundChannel.leftPeak`
 pub fn get_left_peak<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     if let Some(instance) = this
         .as_sound_channel()
         .and_then(|channel| channel.instance())
@@ -29,9 +31,11 @@ pub fn get_left_peak<'gc>(
 /// Implements `SoundChannel.rightPeak`
 pub fn get_right_peak<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     if let Some(instance) = this
         .as_sound_channel()
         .and_then(|channel| channel.instance())
@@ -47,11 +51,13 @@ pub fn get_right_peak<'gc>(
 /// Impl `SoundChannel.position`
 pub fn get_position<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     if let Some(instance) = this.as_sound_channel() {
-        return Ok(instance.position(&mut activation.context).into());
+        return Ok(instance.position(activation.context).into());
     }
     Ok(Value::Undefined)
 }
@@ -59,9 +65,11 @@ pub fn get_position<'gc>(
 /// Implements `soundTransform`'s getter
 pub fn get_sound_transform<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     if let Some(channel) = this.as_sound_channel() {
         let dobj_st = channel.sound_transform(activation).unwrap_or_default();
 
@@ -74,16 +82,14 @@ pub fn get_sound_transform<'gc>(
 /// Implements `soundTransform`'s setter
 pub fn set_sound_transform<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     if let Some(sound_channel) = this.as_sound_channel() {
-        let as3_st = args
-            .get(0)
-            .cloned()
-            .unwrap_or(Value::Undefined)
-            .coerce_to_object(activation)?;
-        let dobj_st = SoundTransform::from_avm2_object(activation, as3_st)?;
+        let as3_st = args.get_object(activation, 0, "soundChannel")?;
+        let dobj_st = SoundTransform::from_avm2_object(as3_st);
 
         sound_channel.set_sound_transform(activation, dobj_st);
     }
@@ -94,9 +100,11 @@ pub fn set_sound_transform<'gc>(
 /// Impl `SoundChannel.stop`
 pub fn stop<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     if let Some(sound_channel) = this.as_sound_channel() {
         sound_channel.stop(activation);
     }

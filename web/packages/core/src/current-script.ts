@@ -5,9 +5,7 @@ export let isExtension = false;
 
 try {
     if (
-        document.currentScript !== undefined &&
-        document.currentScript !== null &&
-        "src" in document.currentScript &&
+        document.currentScript instanceof HTMLScriptElement &&
         document.currentScript.src !== ""
     ) {
         let src = document.currentScript.src;
@@ -22,5 +20,15 @@ try {
         isExtension = currentScriptURL.protocol.includes("extension");
     }
 } catch (e) {
-    console.warn("Unable to get currentScript URL");
+    console.warn("Unable to get currentScript URL", e);
+}
+
+/**
+ * Sets the current script URL and isExtension boolean manually when using the extension.
+ *
+ * @param src The location of Ruffle's resources within the extension.
+ */
+export function setCurrentScriptURL(src: URL) {
+    currentScriptURL = src;
+    isExtension = currentScriptURL.protocol.includes("extension");
 }

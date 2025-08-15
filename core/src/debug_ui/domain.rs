@@ -38,11 +38,11 @@ impl DomainListWindow {
         keep_open
     }
 
-    #[allow(clippy::only_used_in_recursion)]
+    #[expect(clippy::only_used_in_recursion)]
     pub fn show_domain<'gc>(
         &mut self,
         ui: &mut Ui,
-        context: &mut UpdateContext<'_, 'gc>,
+        context: &mut UpdateContext<'gc>,
         domain: Domain<'gc>,
         messages: &mut Vec<Message>,
         search: &str,
@@ -57,15 +57,15 @@ impl DomainListWindow {
                 classes.sort_by_key(|(name, _, _)| *name);
 
                 for (_, _, class) in classes {
-                    let class_name = class.read().name().to_qualified_name(context.gc_context);
+                    let class_name = class.name().to_qualified_name(context.gc());
                     if !class_name.to_string().to_ascii_lowercase().contains(search) {
                         continue;
                     }
 
                     CollapsingHeader::new(format!("Class {class_name}"))
-                        .id_source(ui.id().with(class.as_ptr()))
+                        .id_salt(ui.id().with(class.as_ptr()))
                         .show(ui, |ui| {
-                            for class_obj in class.read().class_objects() {
+                            for class_obj in &*class.class_objects() {
                                 let button = ui.button(format!("{class_obj:?}"));
                                 if button.clicked() {
                                     messages.push(Message::TrackAVM2Object(AVM2ObjectHandle::new(
@@ -78,7 +78,7 @@ impl DomainListWindow {
                 }
                 drop(class_props);
 
-                for child_domain in domain.children(context.gc_context) {
+                for child_domain in domain.children(context.gc()) {
                     self.show_domain(ui, context, child_domain, messages, search);
                 }
             });
@@ -87,7 +87,7 @@ impl DomainListWindow {
 
 pub fn open_domain_button<'gc>(
     ui: &mut Ui,
-    context: &mut UpdateContext<'_, 'gc>,
+    context: &mut UpdateContext<'gc>,
     messages: &mut Vec<Message>,
     domain: Domain<'gc>,
 ) {
@@ -96,6 +96,3 @@ pub fn open_domain_button<'gc>(
         messages.push(Message::TrackDomain(DomainHandle::new(context, domain)));
     }
 }
-
-#[derive(Debug, Default)]
-pub struct DomainWindow {}

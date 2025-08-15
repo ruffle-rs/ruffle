@@ -7,43 +7,23 @@ use crate::external_interface::tests::{external_interface_avm1, external_interfa
 use crate::shared_object::{shared_object_avm1, shared_object_avm2, shared_object_self_ref_avm1};
 use anyhow::Context;
 use anyhow::Result;
-use libtest_mimic::{Arguments, Trial};
+use libtest_mimic::Trial;
+use ruffle_fs_tests_runner::{FsTestsRunner, TestLoaderParams};
 use ruffle_test_framework::options::TestOptions;
 use ruffle_test_framework::runner::TestStatus;
 use ruffle_test_framework::test::Test;
-use ruffle_test_framework::vfs::{PhysicalFS, VfsPath};
+use std::borrow::Cow;
 use std::panic::{catch_unwind, resume_unwind, AssertUnwindSafe};
-use std::path::Path;
+use std::path::PathBuf;
 use std::thread::sleep;
-use walkdir::DirEntry;
 
 mod environment;
 mod external_interface;
 mod shared_object;
 
-fn is_candidate(args: &Arguments, test_name: &str) -> bool {
-    if let Some(filter) = &args.filter {
-        match args.exact {
-            true if test_name != filter => return false,
-            false if !test_name.contains(filter) => return false,
-            _ => {}
-        };
-    }
-
-    for skip_filter in &args.skip {
-        match args.exact {
-            true if test_name == skip_filter => return false,
-            false if test_name.contains(skip_filter) => return false,
-            _ => {}
-        }
-    }
-
-    true
-}
+const TEST_TOML_NAME: &str = "test.toml";
 
 fn main() {
-    let args = Arguments::from_args();
-
     let _ = env_logger::Builder::from_env(
         env_logger::Env::default().default_filter_or("info,wgpu_core=warn,wgpu_hal=warn"),
     )
@@ -57,58 +37,44 @@ fn main() {
     // Ignore error if it's already been set
     let _ = tracing::subscriber::set_global_default(subscriber);
 
-    let root = Path::new("tests/swfs");
-    let mut tests: Vec<Trial> = walkdir::WalkDir::new(root)
-        .into_iter()
-        .map(Result::unwrap)
-        .filter(|entry| entry.file_type().is_file() && entry.file_name() == "test.toml")
-        .filter_map(|file| {
-            let name = file
-                .path()
-                .parent()?
-                .strip_prefix(root)
-                .context("Couldn't strip root prefix from test dir")
-                .unwrap()
-                .to_string_lossy()
-                .replace('\\', "/");
-            if is_candidate(&args, &name) {
-                Some(run_test(&args, file, name))
-            } else {
-                None
-            }
-        })
-        .collect();
+    let mut runner = FsTestsRunner::new();
+
+    runner
+        .with_descriptor_name(Cow::Borrowed(TEST_TOML_NAME))
+        .with_root_dir(PathBuf::from("tests/swfs"))
+        .with_test_loader(Box::new(|params| Some(load_test(params))));
 
     // Manual tests here, since #[test] doesn't work once we use our own test harness
-    tests.push(Trial::test("shared_object_avm1", || {
+    runner.with_additional_test(Trial::test("shared_object_avm1", || {
         shared_object_avm1(&NativeEnvironment)
     }));
-    tests.push(Trial::test("shared_object_self_ref_avm1", || {
+    runner.with_additional_test(Trial::test("shared_object_self_ref_avm1", || {
         shared_object_self_ref_avm1(&NativeEnvironment)
     }));
-    tests.push(Trial::test("shared_object_avm2", || {
+    runner.with_additional_test(Trial::test("shared_object_avm2", || {
         shared_object_avm2(&NativeEnvironment)
     }));
-    tests.push(Trial::test("external_interface_avm1", || {
+    runner.with_additional_test(Trial::test("external_interface_avm1", || {
         external_interface_avm1(&NativeEnvironment)
     }));
-    tests.push(Trial::test("external_interface_avm2", || {
+    runner.with_additional_test(Trial::test("external_interface_avm2", || {
         external_interface_avm2(&NativeEnvironment)
     }));
 
-    tests.sort_unstable_by(|a, b| a.name().cmp(b.name()));
-
-    libtest_mimic::run(&args, tests).exit()
+    runner.run()
 }
 
-fn run_test(args: &Arguments, file: DirEntry, name: String) -> Trial {
-    let root = VfsPath::new(PhysicalFS::new(file.path().parent().unwrap()));
+fn load_test(params: TestLoaderParams) -> Trial {
+    let args = params.args;
+    let root = params.test_dir;
+    let name = params.test_name;
+
     let test = Test::from_options(
         TestOptions::read(&root.join("test.toml").unwrap())
             .context("Couldn't load test options")
             .unwrap(),
         root,
-        name.clone(),
+        name.to_string(),
     )
     .with_context(|| format!("Couldn't create test {name}"))
     .unwrap();

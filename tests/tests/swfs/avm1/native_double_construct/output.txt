@@ -1,0 +1,12 @@
+this.blurX: undefined
+this.blurY: undefined
+this.quality: undefined
+// super(10, 20, 4)
+this.blurX: 10
+this.blurY: 20
+this.quality: 4
+// super(20, 10, noisyFive)
+valueOf called!
+this.blurX: 10
+this.blurY: 20
+this.quality: 4

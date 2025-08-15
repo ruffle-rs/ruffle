@@ -1,0 +1,7 @@
+Before: q
+  1
+  q|
+Changed: q|
+After: q|
+  2
+  |q|

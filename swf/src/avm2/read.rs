@@ -67,8 +67,14 @@ impl<'a> Reader<'a> {
 
         let len = self.read_u30()?;
         let mut method_bodies = Vec::with_capacity(len as usize);
-        for _ in 0..len {
-            method_bodies.push(self.read_method_body()?);
+        for body_idx in 0..len {
+            let body = self.read_method_body()?;
+            if methods[body.method.0 as usize].body.is_some() {
+                // TODO: this should somehow throw error 1121 in FP.
+                return Err(Error::invalid_data("Duplicate method body"));
+            }
+            methods[body.method.0 as usize].body = Some(Index::new(body_idx));
+            method_bodies.push(body);
         }
 
         Ok(AbcFile {
@@ -279,6 +285,7 @@ impl<'a> Reader<'a> {
             params,
             return_type,
             flags,
+            body: None,
         })
     }
 
@@ -544,7 +551,7 @@ impl<'a> Reader<'a> {
                 num_args: self.read_u30()?,
             },
             OpCode::CallMethod => Op::CallMethod {
-                index: self.read_index()?,
+                index: self.read_u30()?,
                 num_args: self.read_u30()?,
             },
             OpCode::CallProperty => Op::CallProperty {
@@ -876,7 +883,6 @@ impl<'a> Reader<'a> {
 }
 
 #[cfg(test)]
-#[allow(clippy::unusual_byte_groupings)]
 pub mod tests {
     use super::*;
     use crate::test_data;

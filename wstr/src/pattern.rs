@@ -135,7 +135,6 @@ impl<'a, F: FnMut(u16) -> bool> Pattern<'a> for F {
 }
 
 impl<'a> Pattern<'a> for &'a WStr {
-    #[allow(clippy::type_complexity)]
     type Searcher = Either<
         Either<Either<SliceSearcher<'a, u8>, SliceSearcher<'a, u16>>, StrSearcher<'a>>,
         EmptySearcher,
@@ -221,7 +220,7 @@ impl EmptySearcher {
     }
 }
 
-impl<'a> Searcher<'a> for EmptySearcher {
+impl Searcher<'_> for EmptySearcher {
     fn next(&mut self) -> SearchStep {
         match self.range.next() {
             Some(i) => SearchStep::Match(i, i),
@@ -255,7 +254,7 @@ impl<T: Copy + Eq> Predicate<T> for T {
 
 pub struct AnyOf<'a, T>(&'a [T]);
 
-impl<'a, T: Copy, U: Copy + Eq + TryFrom<T>> Predicate<T> for AnyOf<'a, U> {
+impl<T: Copy, U: Copy + Eq + TryFrom<T>> Predicate<T> for AnyOf<'_, U> {
     fn matches(&mut self, c: T) -> bool {
         self.0.iter().any(|m| U::try_from(c).ok() == Some(*m))
     }

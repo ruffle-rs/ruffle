@@ -5,16 +5,13 @@
 
 package flash.text.engine
 {
-    
-    
+    [API("662")]
     public final class CFFHinting
     {
         // Fits strong horizontal stems to the pixel grid for improved readability.
         public static const HORIZONTAL_STEM:String = "horizontalStem";
-        
+
         // No hinting is applied.
         public static const NONE:String = "none";
-        
-        
     }
 }

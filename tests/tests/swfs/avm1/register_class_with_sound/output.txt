@@ -1,0 +1,11 @@
+Construct through attachMovie
+typeof this = movieclip
+this instanceof Sound = true
+this instanceof MovieClip = false
+this._name = instance
+this._x = 5.5
+this.getVolume() = 100
+this.getVolume() = 10
+this.getTransform() = [object Object]
+
+getVolume.call({}) = undefined

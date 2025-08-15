@@ -1,6 +1,6 @@
 use fnv::FnvBuildHasher;
 use gc_arena::Collect;
-use hashbrown::{self, raw::RawTable};
+use hashbrown::raw::RawTable;
 use std::{cell::Cell, hash::Hash};
 
 use super::{string::AvmString, Object};
@@ -25,14 +25,25 @@ pub enum DynamicKey<'gc> {
 }
 
 /// A HashMap designed for dynamic properties on an object.
-#[derive(Debug, Collect, Clone)]
-#[collect(no_drop)]
-pub struct DynamicMap<K: Eq + PartialEq + Hash, V> {
+#[derive(Debug, Clone)]
+pub struct DynamicMap<K, V> {
     values: hashbrown::HashMap<K, DynamicProperty<V>, FnvBuildHasher>,
     // The last index that was given back to flash
     public_index: Cell<usize>,
     // The actual index that represents where an item is in the HashMap
     real_index: Cell<usize>,
+}
+
+// `gc-arena` doesn't provide a `Collect` impl for the version of `hashbrown` we use.
+unsafe impl<'gc, K: Collect<'gc>, V: Collect<'gc>> Collect<'gc> for DynamicMap<K, V> {
+    const NEEDS_TRACE: bool = K::NEEDS_TRACE || V::NEEDS_TRACE;
+
+    fn trace<T: gc_arena::collect::Trace<'gc>>(&self, cc: &mut T) {
+        for (k, v) in &self.values {
+            cc.trace(k);
+            cc.trace(v);
+        }
+    }
 }
 
 impl<K: Eq + PartialEq + Hash, V> Default for DynamicMap<K, V> {
@@ -57,7 +68,7 @@ impl<K: Eq + PartialEq + Hash, V> DynamicMap<K, V> {
     pub fn entry(
         &mut self,
         key: K,
-    ) -> hashbrown::hash_map::Entry<K, DynamicProperty<V>, FnvBuildHasher> {
+    ) -> hashbrown::hash_map::Entry<'_, K, DynamicProperty<V>, FnvBuildHasher> {
         self.values.entry(key)
     }
 

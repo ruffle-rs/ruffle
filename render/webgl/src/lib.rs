@@ -13,6 +13,7 @@ use ruffle_render::bitmap::{
 };
 use ruffle_render::commands::{CommandHandler, CommandList, RenderBlendMode};
 use ruffle_render::error::Error as BitmapError;
+use ruffle_render::matrix::Matrix;
 use ruffle_render::quality::StageQuality;
 use ruffle_render::shape_utils::{DistilledShape, GradientType};
 use ruffle_render::tessellator::{
@@ -20,9 +21,10 @@ use ruffle_render::tessellator::{
 };
 use ruffle_render::transform::Transform;
 use ruffle_web_common::{JsError, JsResult};
+use std::any::Any;
 use std::borrow::Cow;
 use std::sync::Arc;
-use swf::{BlendMode, Color};
+use swf::{BlendMode, Color, Twips};
 use thiserror::Error;
 use wasm_bindgen::{JsCast, JsValue};
 use web_sys::{
@@ -168,14 +170,17 @@ impl Drop for RegistryData {
 impl BitmapHandleImpl for RegistryData {}
 
 fn as_registry_data(handle: &BitmapHandle) -> &RegistryData {
-    <dyn BitmapHandleImpl>::downcast_ref(&*handle.0)
-        .expect("Bitmap handle must be webgl RegistryData")
+    <dyn Any>::downcast_ref(&*handle.0).expect("Bitmap handle must be webgl RegistryData")
 }
 
 const MAX_GRADIENT_COLORS: usize = 15;
 
 impl WebGlRenderBackend {
-    pub fn new(canvas: &HtmlCanvasElement, is_transparent: bool) -> Result<Self, Error> {
+    pub fn new(
+        canvas: &HtmlCanvasElement,
+        is_transparent: bool,
+        quality: StageQuality,
+    ) -> Result<Self, Error> {
         // Create WebGL context.
         let options = [
             ("stencil", JsValue::TRUE),
@@ -200,19 +205,13 @@ impl WebGlRenderBackend {
                 .map_err(|_| Error::CantCreateGLContext)?;
 
             // Determine MSAA sample count.
-            // Default to 4x MSAA on desktop, 2x on mobile/tablets.
-            let mut msaa_sample_count = if ruffle_web_common::is_mobile_or_tablet() {
-                log::info!("Running on a mobile device; defaulting to 2x MSAA");
-                2
-            } else {
-                4
-            };
+            let mut msaa_sample_count = quality.sample_count().min(4);
 
             // Ensure that we don't exceed the max MSAA of this device.
             if let Ok(max_samples) = gl2.get_parameter(Gl2::MAX_SAMPLES) {
                 let max_samples = max_samples.as_f64().unwrap_or(0.0) as u32;
                 if max_samples > 0 && max_samples < msaa_sample_count {
-                    log::info!("Device only supports {}xMSAA", max_samples);
+                    log::info!("Device only supports {max_samples}xMSAA");
                     msaa_sample_count = max_samples;
                 }
             }
@@ -267,7 +266,7 @@ impl WebGlRenderBackend {
                 .ok()
                 .and_then(|val| val.as_string())
                 .unwrap_or_else(|| "<unknown>".to_string());
-            log::info!("WebGL graphics driver: {}", driver_info);
+            log::info!("WebGL graphics driver: {driver_info}");
         }
 
         let color_vertex = Self::compile_shader(&gl, Gl::VERTEX_SHADER, COLOR_VERTEX_GLSL)?;
@@ -368,7 +367,7 @@ impl WebGlRenderBackend {
             .bind_buffer(Gl::ELEMENT_ARRAY_BUFFER, Some(&index_buffer));
         self.gl.buffer_data_with_u8_array(
             Gl::ELEMENT_ARRAY_BUFFER,
-            bytemuck::cast_slice(&[0u32, 1, 2, 0, 2, 3]),
+            bytemuck::cast_slice(&[0u32, 1, 2, 3]),
             Gl::STATIC_DRAW,
         );
 
@@ -423,8 +422,8 @@ impl WebGlRenderBackend {
                 gl: self.gl.clone(),
                 buffer: index_buffer,
             },
-            num_indices: 6,
-            num_mask_indices: 6,
+            num_indices: 4,
+            num_mask_indices: 4,
         });
         Ok(draws)
     }
@@ -438,7 +437,7 @@ impl WebGlRenderBackend {
         if log::log_enabled!(log::Level::Error) {
             let log = gl.get_shader_info_log(&shader).unwrap_or_default();
             if !log.is_empty() {
-                log::error!("{}", log);
+                log::error!("{log}");
             }
         }
         Ok(shader)
@@ -893,8 +892,12 @@ impl WebGlRenderBackend {
             // Render the quad.
             let quad = &self.bitmap_quad_draws;
             self.bind_vertex_array(Some(&quad[0].vao));
-            self.gl
-                .draw_elements_with_i32(Gl::TRIANGLES, quad[0].num_indices, Gl::UNSIGNED_INT, 0);
+            self.gl.draw_elements_with_i32(
+                Gl::TRIANGLE_FAN,
+                quad[0].num_indices,
+                Gl::UNSIGNED_INT,
+                0,
+            );
         }
     }
 
@@ -914,6 +917,69 @@ impl WebGlRenderBackend {
         if !same_blend_mode(old.as_ref(), current) {
             self.apply_blend_mode(current.clone());
         }
+    }
+
+    fn draw_quad<const MODE: u32, const COUNT: i32>(&mut self, color: Color, matrix: Matrix) {
+        let world_matrix = [
+            [matrix.a, matrix.b, 0.0, 0.0],
+            [matrix.c, matrix.d, 0.0, 0.0],
+            [0.0, 0.0, 1.0, 0.0],
+            [
+                matrix.tx.to_pixels() as f32,
+                matrix.ty.to_pixels() as f32,
+                0.0,
+                1.0,
+            ],
+        ];
+
+        let mult_color = [
+            color.r as f32 * 255.0,
+            color.g as f32 * 255.0,
+            color.b as f32 * 255.0,
+            color.a as f32 * 255.0,
+        ];
+        let add_color = [0.0; 4];
+
+        self.set_stencil_state();
+
+        let program = &self.color_program;
+
+        // Set common render state, while minimizing unnecessary state changes.
+        // TODO: Using designated layout specifiers in WebGL2/OpenGL ES 3, we could guarantee that uniforms
+        // are in the same location between shaders, and avoid changing them unless necessary.
+        if !std::ptr::eq(program, self.active_program) {
+            self.gl.use_program(Some(&program.program));
+            self.active_program = program as *const ShaderProgram;
+
+            program.uniform_matrix4fv(&self.gl, ShaderUniform::ViewMatrix, &self.view_matrix);
+
+            self.mult_color = None;
+            self.add_color = None;
+        };
+
+        self.color_program
+            .uniform_matrix4fv(&self.gl, ShaderUniform::WorldMatrix, &world_matrix);
+        if Some(mult_color) != self.mult_color {
+            self.color_program
+                .uniform4fv(&self.gl, ShaderUniform::MultColor, &mult_color);
+            self.mult_color = Some(mult_color);
+        }
+        if Some(add_color) != self.add_color {
+            self.color_program
+                .uniform4fv(&self.gl, ShaderUniform::AddColor, &add_color);
+            self.add_color = Some(add_color);
+        }
+
+        let quad = &self.color_quad_draws;
+        self.bind_vertex_array(Some(&quad[0].vao));
+
+        let count = if COUNT < 0 {
+            quad[0].num_indices
+        } else {
+            COUNT
+        };
+        self.gl
+            .draw_elements_with_i32(MODE, count, Gl::UNSIGNED_INT, 0);
     }
 }
 
@@ -980,7 +1046,7 @@ impl RenderBackend for WebGlRenderBackend {
                 vao_ext: self.vao_ext.clone(),
             },
             Err(e) => {
-                log::error!("Couldn't register shape: {:?}", e);
+                log::error!("Couldn't register shape: {e:?}");
                 Mesh {
                     draws: vec![],
                     gl2: self.gl2.clone(),
@@ -1005,7 +1071,7 @@ impl RenderBackend for WebGlRenderBackend {
         self.end_frame();
     }
 
-    fn register_bitmap(&mut self, bitmap: Bitmap) -> Result<BitmapHandle, BitmapError> {
+    fn register_bitmap(&mut self, bitmap: Bitmap<'_>) -> Result<BitmapHandle, BitmapError> {
         let (format, bitmap) = match bitmap.format() {
             BitmapFormat::Rgb | BitmapFormat::Yuv420p => (Gl::RGB, bitmap.to_rgb()),
             BitmapFormat::Rgba | BitmapFormat::Yuva420p => (Gl::RGBA, bitmap.to_rgba()),
@@ -1052,7 +1118,7 @@ impl RenderBackend for WebGlRenderBackend {
     fn update_texture(
         &mut self,
         handle: &BitmapHandle,
-        bitmap: Bitmap,
+        bitmap: Bitmap<'_>,
         _region: PixelRegion,
     ) -> Result<(), BitmapError> {
         let texture = &as_registry_data(handle).texture;
@@ -1151,7 +1217,7 @@ impl RenderBackend for WebGlRenderBackend {
     fn run_pixelbender_shader(
         &mut self,
         _handle: ruffle_render::pixel_bender::PixelBenderShaderHandle,
-        _arguments: &[ruffle_render::pixel_bender::PixelBenderShaderArgument],
+        _arguments: &[ruffle_render::pixel_bender_support::PixelBenderShaderArgument],
         _target: &PixelBenderTarget,
     ) -> Result<PixelBenderOutput, BitmapError> {
         Err(BitmapError::Unimplemented("run_pixelbender_shader".into()))
@@ -1209,7 +1275,7 @@ impl CommandHandler for WebGlRenderBackend {
         // Scale the quad to the bitmap's dimensions.
         let mut matrix = transform.matrix;
         pixel_snapping.apply(&mut matrix);
-        matrix *= ruffle_render::matrix::Matrix::scale(entry.width as f32, entry.height as f32);
+        matrix *= Matrix::scale(entry.width as f32, entry.height as f32);
 
         let world_matrix = [
             [matrix.a, matrix.b, 0.0, 0.0],
@@ -1233,7 +1299,7 @@ impl CommandHandler for WebGlRenderBackend {
         // Set common render state, while minimizing unnecessary state changes.
         // TODO: Using designated layout specifiers in WebGL2/OpenGL ES 3, we could guarantee that uniforms
         // are in the same location between shaders, and avoid changing them unless necessary.
-        if program as *const ShaderProgram != self.active_program {
+        if !std::ptr::eq(program, self.active_program) {
             self.gl.use_program(Some(&program.program));
             self.active_program = program as *const ShaderProgram;
 
@@ -1279,7 +1345,7 @@ impl CommandHandler for WebGlRenderBackend {
 
         // Draw the triangles.
         self.gl
-            .draw_elements_with_i32(Gl::TRIANGLES, draw.num_indices, Gl::UNSIGNED_INT, 0);
+            .draw_elements_with_i32(Gl::TRIANGLE_FAN, draw.num_indices, Gl::UNSIGNED_INT, 0);
     }
 
     fn render_shape(&mut self, shape: ShapeHandle, transform: Transform) {
@@ -1325,7 +1391,7 @@ impl CommandHandler for WebGlRenderBackend {
             // Set common render state, while minimizing unnecessary state changes.
             // TODO: Using designated layout specifiers in WebGL2/OpenGL ES 3, we could guarantee that uniforms
             // are in the same location between shaders, and avoid changing them unless necessary.
-            if program as *const ShaderProgram != self.active_program {
+            if !std::ptr::eq(program, self.active_program) {
                 self.gl.use_program(Some(&program.program));
                 self.active_program = program as *const ShaderProgram;
 
@@ -1434,62 +1500,20 @@ impl CommandHandler for WebGlRenderBackend {
         panic!("Stage3D should not have been created on WebGL backend")
     }
 
-    fn draw_rect(&mut self, color: Color, matrix: ruffle_render::matrix::Matrix) {
-        let world_matrix = [
-            [matrix.a, matrix.b, 0.0, 0.0],
-            [matrix.c, matrix.d, 0.0, 0.0],
-            [0.0, 0.0, 1.0, 0.0],
-            [
-                matrix.tx.to_pixels() as f32,
-                matrix.ty.to_pixels() as f32,
-                0.0,
-                1.0,
-            ],
-        ];
+    fn draw_rect(&mut self, color: Color, matrix: Matrix) {
+        self.draw_quad::<{ Gl::TRIANGLE_FAN }, -1>(color, matrix)
+    }
 
-        let mult_color = [
-            color.r as f32 * 255.0,
-            color.g as f32 * 255.0,
-            color.b as f32 * 255.0,
-            color.a as f32 * 255.0,
-        ];
-        let add_color = [0.0; 4];
+    fn draw_line(&mut self, color: Color, mut matrix: Matrix) {
+        matrix.tx += Twips::HALF_PX;
+        matrix.ty += Twips::HALF_PX;
+        self.draw_quad::<{ Gl::LINE_STRIP }, 2>(color, matrix)
+    }
 
-        self.set_stencil_state();
-
-        let program = &self.color_program;
-
-        // Set common render state, while minimizing unnecessary state changes.
-        // TODO: Using designated layout specifiers in WebGL2/OpenGL ES 3, we could guarantee that uniforms
-        // are in the same location between shaders, and avoid changing them unless necessary.
-        if program as *const ShaderProgram != self.active_program {
-            self.gl.use_program(Some(&program.program));
-            self.active_program = program as *const ShaderProgram;
-
-            program.uniform_matrix4fv(&self.gl, ShaderUniform::ViewMatrix, &self.view_matrix);
-
-            self.mult_color = None;
-            self.add_color = None;
-        };
-
-        self.color_program
-            .uniform_matrix4fv(&self.gl, ShaderUniform::WorldMatrix, &world_matrix);
-        if Some(mult_color) != self.mult_color {
-            self.color_program
-                .uniform4fv(&self.gl, ShaderUniform::MultColor, &mult_color);
-            self.mult_color = Some(mult_color);
-        }
-        if Some(add_color) != self.add_color {
-            self.color_program
-                .uniform4fv(&self.gl, ShaderUniform::AddColor, &add_color);
-            self.add_color = Some(add_color);
-        }
-
-        let quad = &self.color_quad_draws;
-        self.bind_vertex_array(Some(&quad[0].vao));
-
-        self.gl
-            .draw_elements_with_i32(Gl::TRIANGLES, quad[0].num_indices, Gl::UNSIGNED_INT, 0);
+    fn draw_line_rect(&mut self, color: Color, mut matrix: Matrix) {
+        matrix.tx += Twips::HALF_PX;
+        matrix.ty += Twips::HALF_PX;
+        self.draw_quad::<{ Gl::LINE_LOOP }, -1>(color, matrix)
     }
 
     fn push_mask(&mut self) {
@@ -1623,7 +1647,7 @@ impl Drop for Mesh {
 impl ShapeHandleImpl for Mesh {}
 
 fn as_mesh(handle: &ShapeHandle) -> &Mesh {
-    <dyn ShapeHandleImpl>::downcast_ref(&*handle.0).expect("Shape handle must be a WebGL ShapeData")
+    <dyn Any>::downcast_ref(&*handle.0).expect("Shape handle must be a WebGL ShapeData")
 }
 
 #[derive(Debug)]
@@ -1638,11 +1662,12 @@ impl Drop for Buffer {
     }
 }
 
-#[allow(dead_code)]
 #[derive(Debug)]
 struct Draw {
     draw_type: DrawType,
+    #[expect(dead_code)]
     vertex_buffer: Buffer,
+    #[expect(dead_code)]
     index_buffer: Buffer,
     vao: WebGlVertexArrayObject,
     num_indices: i32,
@@ -1727,7 +1752,7 @@ impl ShaderProgram {
                 "Error linking shader program: {:?}",
                 gl.get_program_info_log(&program)
             );
-            log::error!("{}", msg);
+            log::error!("{msg}");
             return Err(Error::LinkingShaderProgram(msg));
         }
 
@@ -1790,8 +1815,6 @@ impl ShaderProgram {
         );
     }
 }
-
-impl WebGlRenderBackend {}
 
 trait GlExt {
     fn check_error(&self, error_msg: &'static str) -> Result<(), Error>;

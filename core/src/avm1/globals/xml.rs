@@ -1,18 +1,22 @@
 //! XML class
 
-use crate::avm1::function::{Executable, ExecutionReason, FunctionObject};
+use std::cell::Cell;
+
+use crate::avm1::function::{ExecutionReason, FunctionObject};
 use crate::avm1::property_decl::{define_properties_on, Declaration};
-use crate::avm1::{
-    Activation, Attribute, Error, NativeObject, Object, ScriptObject, TObject, Value,
-};
+use crate::avm1::xml::{XmlNode, ELEMENT_NODE, TEXT_NODE};
+use crate::avm1::{Activation, Attribute, Error, NativeObject, Object, Value};
 use crate::avm_warn;
 use crate::backend::navigator::Request;
-use crate::context::GcContext;
-use crate::string::{AvmString, WStr, WString};
-use crate::xml::{custom_unescape, XmlNode, ELEMENT_NODE, TEXT_NODE};
-use gc_arena::{Collect, GcCell, Mutation};
+use crate::string::{AvmString, StringContext, WStr, WString};
+use crate::xml::custom_unescape;
+use gc_arena::barrier::unlock;
+use gc_arena::lock::Lock;
+use gc_arena::{Collect, Gc};
+use quick_xml::errors::IllFormedError;
 use quick_xml::events::attributes::AttrError;
 use quick_xml::{events::Event, Reader};
+use ruffle_macros::istr;
 
 #[derive(Clone, Copy, Collect)]
 #[collect(no_drop)]
@@ -21,18 +25,18 @@ pub enum XmlStatus {
     NoError = 0,
 
     /// A CDATA section was not properly terminated.
-    #[allow(dead_code)]
+    #[expect(dead_code)]
     CdataNotTerminated = -2,
 
     /// The XML declaration was not properly terminated.
     DeclNotTerminated = -3,
 
     /// The DOCTYPE declaration was not properly terminated.
-    #[allow(dead_code)]
+    #[expect(dead_code)]
     DoctypeNotTerminated = -4,
 
     /// A comment was not properly terminated.
-    #[allow(dead_code)]
+    #[expect(dead_code)]
     CommentNotTerminated = -5,
 
     /// An XML element was malformed.
@@ -45,7 +49,7 @@ pub enum XmlStatus {
     AttributeNotTerminated = -8,
 
     /// A start-tag was not matched with an end-tag.
-    #[allow(dead_code)]
+    #[expect(dead_code)]
     MismatchedStart = -9,
 
     /// An end-tag was encountered without a matching start-tag.
@@ -54,7 +58,7 @@ pub enum XmlStatus {
 
 #[derive(Copy, Clone, Collect)]
 #[collect(no_drop)]
-pub struct Xml<'gc>(GcCell<'gc, XmlData<'gc>>);
+pub struct Xml<'gc>(Gc<'gc, XmlData<'gc>>);
 
 #[derive(Clone, Collect)]
 #[collect(no_drop)]
@@ -63,36 +67,38 @@ pub struct XmlData<'gc> {
     root: XmlNode<'gc>,
 
     /// The XML declaration, if set.
-    xml_decl: Option<AvmString<'gc>>,
+    xml_decl: Lock<Option<AvmString<'gc>>>,
 
     /// The XML doctype, if set.
-    doctype: Option<AvmString<'gc>>,
+    doctype: Lock<Option<AvmString<'gc>>>,
 
     /// The document's ID map.
     ///
     /// When nodes are parsed into the document by way of `parseXML` or the
     /// document constructor, they get put into this object, which is accessible
     /// through the document's `idMap`.
-    id_map: ScriptObject<'gc>,
+    id_map: Object<'gc>,
 
     /// The last parse error encountered, if any.
-    status: XmlStatus,
+    status: Cell<XmlStatus>,
 }
 
 impl<'gc> Xml<'gc> {
     /// Associate an object with a new XML document.
-    fn empty(gc_context: &Mutation<'gc>, object: Object<'gc>) -> Self {
-        let mut root = XmlNode::new(gc_context, ELEMENT_NODE, None);
+    fn empty(context: &StringContext<'gc>, object: Object<'gc>) -> Self {
+        let gc_context = context.gc();
+
+        let root = XmlNode::new(gc_context, ELEMENT_NODE, None);
         root.introduce_script_object(gc_context, object);
 
-        let xml = Self(GcCell::new(
+        let xml = Self(Gc::new(
             gc_context,
             XmlData {
                 root,
-                xml_decl: None,
-                doctype: None,
-                id_map: ScriptObject::new(gc_context, None),
-                status: XmlStatus::NoError,
+                xml_decl: Lock::new(None),
+                doctype: Lock::new(None),
+                id_map: Object::new(context, None),
+                status: Cell::new(XmlStatus::NoError),
             },
         ));
         object.set_native(gc_context, NativeObject::Xml(xml));
@@ -101,33 +107,33 @@ impl<'gc> Xml<'gc> {
 
     /// Yield the document in node form.
     pub fn root(self) -> XmlNode<'gc> {
-        self.0.read().root
+        self.0.root
     }
 
     /// Retrieve the XML declaration of this document.
     fn xml_decl(self) -> Option<AvmString<'gc>> {
-        self.0.read().xml_decl
+        self.0.xml_decl.get()
     }
 
     /// Retrieve the first DocType node in the document.
     fn doctype(self) -> Option<AvmString<'gc>> {
-        self.0.read().doctype
+        self.0.doctype.get()
     }
 
     /// Obtain the script object for the document's `idMap` property.
-    fn id_map(self) -> ScriptObject<'gc> {
-        self.0.read().id_map
+    fn id_map(self) -> Object<'gc> {
+        self.0.id_map
     }
 
     fn status(self) -> XmlStatus {
-        self.0.read().status
+        self.0.status.get()
     }
 
     /// Replace the contents of this document with the result of parsing a string.
     ///
     /// This method does not yet actually remove existing node contents.
     fn parse(
-        &self,
+        self,
         activation: &mut Activation<'_, 'gc>,
         data: &WStr,
         ignore_white: bool,
@@ -136,18 +142,23 @@ impl<'gc> Xml<'gc> {
         let mut parser = Reader::from_str(&data_utf8);
         let mut open_tags = vec![self.root()];
 
-        self.0.write(activation.context.gc_context).status = XmlStatus::NoError;
+        self.0.status.set(XmlStatus::NoError);
 
         loop {
             let event = parser.read_event().map_err(|error| {
-                self.0.write(activation.context.gc_context).status = match error {
-                    quick_xml::Error::UnexpectedEof(_)
+                self.0.status.set(match error {
+                    quick_xml::Error::Syntax(_)
                     | quick_xml::Error::InvalidAttr(AttrError::ExpectedEq(_))
                     | quick_xml::Error::InvalidAttr(AttrError::Duplicated(_, _)) => {
                         XmlStatus::ElementMalformed
                     }
-                    quick_xml::Error::EndEventMismatch { .. } => XmlStatus::MismatchedEnd,
-                    quick_xml::Error::XmlDeclWithoutVersion(_) => XmlStatus::DeclNotTerminated,
+                    quick_xml::Error::IllFormed(
+                        IllFormedError::MismatchedEndTag { .. }
+                        | IllFormedError::UnmatchedEndTag { .. },
+                    ) => XmlStatus::MismatchedEnd,
+                    quick_xml::Error::IllFormed(IllFormedError::MissingDeclVersion(_)) => {
+                        XmlStatus::DeclNotTerminated
+                    }
                     quick_xml::Error::InvalidAttr(AttrError::UnquotedValue(_)) => {
                         XmlStatus::AttributeNotTerminated
                     }
@@ -157,7 +168,7 @@ impl<'gc> Xml<'gc> {
                     // quick_xml::Error::UnexpectedBang
                     // quick_xml::Error::TextNotFound
                     // quick_xml::Error::EscapeError(_)
-                };
+                });
                 error
             })?;
 
@@ -166,18 +177,18 @@ impl<'gc> Xml<'gc> {
                     let child =
                         XmlNode::from_start_event(activation, bs, self.id_map(), parser.decoder())?;
                     open_tags
-                        .last_mut()
+                        .last()
                         .unwrap()
-                        .append_child(activation.context.gc_context, child);
+                        .append_child(activation.gc(), child);
                     open_tags.push(child);
                 }
                 Event::Empty(bs) => {
                     let child =
                         XmlNode::from_start_event(activation, bs, self.id_map(), parser.decoder())?;
                     open_tags
-                        .last_mut()
+                        .last()
                         .unwrap()
-                        .append_child(activation.context.gc_context, child);
+                        .append_child(activation.gc(), child);
                 }
                 Event::End(_) => {
                     open_tags.pop();
@@ -186,25 +197,20 @@ impl<'gc> Xml<'gc> {
                     Self::handle_text_cdata(
                         custom_unescape(&bt.into_inner(), parser.decoder())?.as_bytes(),
                         ignore_white,
-                        &mut open_tags,
+                        &open_tags,
                         activation,
                     );
                 }
                 Event::CData(bt) => {
                     // This is already unescaped
-                    Self::handle_text_cdata(
-                        &bt.into_inner(),
-                        ignore_white,
-                        &mut open_tags,
-                        activation,
-                    );
+                    Self::handle_text_cdata(&bt.into_inner(), ignore_white, &open_tags, activation);
                 }
                 Event::Decl(bd) => {
                     let mut xml_decl = WString::from_buf(b"<?".to_vec());
                     xml_decl.push_str(WStr::from_units(&*bd));
                     xml_decl.push_str(WStr::from_units(b"?>"));
-                    self.0.write(activation.context.gc_context).xml_decl =
-                        Some(AvmString::new(activation.context.gc_context, xml_decl));
+                    let xml_decl = Some(AvmString::new(activation.gc(), xml_decl));
+                    unlock!(Gc::write(activation.gc(), self.0), XmlData, xml_decl).set(xml_decl);
                 }
                 Event::DocType(bt) => {
                     // TODO: `quick-xml` is case-insensitive for DOCTYPE declarations,
@@ -214,8 +220,8 @@ impl<'gc> Xml<'gc> {
                     let mut doctype = WString::from_buf(b"<!DOCTYPE ".to_vec());
                     doctype.push_str(WStr::from_units(&*bt.escape_ascii().collect::<Vec<_>>()));
                     doctype.push_byte(b'>');
-                    self.0.write(activation.context.gc_context).doctype =
-                        Some(AvmString::new(activation.context.gc_context, doctype));
+                    let doctype = Some(AvmString::new(activation.gc(), doctype));
+                    unlock!(Gc::write(activation.gc(), self.0), XmlData, doctype).set(doctype);
                 }
                 Event::Eof => break,
                 _ => {}
@@ -230,18 +236,18 @@ impl<'gc> Xml<'gc> {
     fn handle_text_cdata(
         text: &[u8],
         ignore_white: bool,
-        open_tags: &mut [XmlNode<'gc>],
+        open_tags: &[XmlNode<'gc>],
         activation: &mut Activation<'_, 'gc>,
     ) {
         let is_whitespace_char = |c: &u8| matches!(*c, b'\t' | b'\n' | b'\r' | b' ');
         let is_whitespace_text = text.iter().all(is_whitespace_char);
         if !(text.is_empty() || ignore_white && is_whitespace_text) {
-            let text = AvmString::new_utf8_bytes(activation.context.gc_context, text);
-            let child = XmlNode::new(activation.context.gc_context, TEXT_NODE, Some(text));
+            let text = AvmString::new_utf8_bytes(activation.gc(), text);
+            let child = XmlNode::new(activation.gc(), TEXT_NODE, Some(text));
             open_tags
-                .last_mut()
+                .last()
                 .unwrap()
-                .append_child(activation.context.gc_context, child);
+                .append_child(activation.gc(), child);
         }
     }
 }
@@ -269,13 +275,13 @@ fn constructor<'gc>(
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let xml = Xml::empty(activation.context.gc_context, this);
+    let xml = Xml::empty(&activation.context.strings, this);
 
     if let [text, ..] = args {
         let text = text.coerce_to_string(activation)?;
 
         let ignore_whitespace = this
-            .get("ignoreWhite", activation)?
+            .get(istr!("ignoreWhite"), activation)?
             .as_bool(activation.swf_version());
 
         if let Err(e) = xml.parse(activation, &text, ignore_whitespace) {
@@ -293,7 +299,7 @@ fn create_element<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let (NativeObject::Xml(_), [name, ..]) = (this.native(), args) {
         let name = name.coerce_to_string(activation)?;
-        let mut node = XmlNode::new(activation.context.gc_context, ELEMENT_NODE, Some(name));
+        let node = XmlNode::new(activation.gc(), ELEMENT_NODE, Some(name));
         return Ok(node.script_object(activation).into());
     }
 
@@ -307,7 +313,7 @@ fn create_text_node<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let (NativeObject::Xml(_), [text, ..]) = (this.native(), args) {
         let text = text.coerce_to_string(activation)?;
-        let mut node = XmlNode::new(activation.context.gc_context, TEXT_NODE, Some(text));
+        let node = XmlNode::new(activation.gc(), TEXT_NODE, Some(text));
         return Ok(node.script_object(activation).into());
     }
 
@@ -320,7 +326,7 @@ fn get_bytes_loaded<'gc>(
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     // Forwards to undocumented property on the object.
-    this.get("_bytesLoaded", activation)
+    this.get(istr!("_bytesLoaded"), activation)
 }
 
 fn get_bytes_total<'gc>(
@@ -329,7 +335,7 @@ fn get_bytes_total<'gc>(
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     // Forwards to undocumented property on the object.
-    this.get("_bytesTotal", activation)
+    this.get(istr!("_bytesTotal"), activation)
 }
 
 fn parse_xml<'gc>(
@@ -338,15 +344,15 @@ fn parse_xml<'gc>(
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let NativeObject::Xml(xml) = this.native() {
-        for mut child in xml.root().children().rev() {
-            child.remove_node(activation.context.gc_context);
+        for child in xml.root().children().rev() {
+            child.remove_node(activation.gc());
         }
 
         if let [text, ..] = args {
             let text = text.coerce_to_string(activation)?;
 
             let ignore_whitespace = this
-                .get("ignoreWhite", activation)?
+                .get(istr!("ignoreWhite"), activation)?
                 .as_bool(activation.swf_version());
 
             let result = xml.parse(activation, &text, ignore_whitespace);
@@ -412,27 +418,27 @@ fn on_data<'gc>(
 
     if let Value::Undefined = src {
         this.call_method(
-            "onLoad".into(),
+            istr!("onLoad"),
             &[false.into()],
             activation,
-            ExecutionReason::FunctionCall,
+            ExecutionReason::Special,
         )?;
     } else {
         let src = src.coerce_to_string(activation)?;
         this.call_method(
-            "parseXML".into(),
+            istr!("parseXML"),
             &[src.into()],
             activation,
-            ExecutionReason::FunctionCall,
+            ExecutionReason::Special,
         )?;
 
-        this.set("loaded", true.into(), activation)?;
+        this.set(istr!("loaded"), true.into(), activation)?;
 
         this.call_method(
-            "onLoad".into(),
+            istr!("onLoad"),
             &[true.into()],
             activation,
-            ExecutionReason::FunctionCall,
+            ExecutionReason::Special,
         )?;
     }
 
@@ -516,37 +522,43 @@ fn spawn_xml_fetch<'gc>(
     };
 
     // Create hidden properties on object.
-    if !this.has_property(activation, "_bytesLoaded".into()) {
+    let bytes_loaded_string = istr!("_bytesLoaded");
+
+    if !this.has_property(activation, bytes_loaded_string) {
         this.define_value(
-            activation.context.gc_context,
-            "_bytesLoaded",
+            activation.gc(),
+            bytes_loaded_string,
             0.into(),
             Attribute::DONT_DELETE | Attribute::DONT_ENUM,
         );
     } else {
-        this.set("_bytesLoaded", 0.into(), activation)?;
+        this.set(bytes_loaded_string, 0.into(), activation)?;
     }
 
-    if !this.has_property(activation, "_bytesTotal".into()) {
+    let bytes_total_string = istr!("_bytesTotal");
+
+    if !this.has_property(activation, bytes_total_string) {
         this.define_value(
-            activation.context.gc_context,
-            "_bytesTotal",
+            activation.gc(),
+            bytes_total_string,
             Value::Undefined,
             Attribute::DONT_DELETE | Attribute::DONT_ENUM,
         );
     } else {
-        this.set("_bytesTotal", Value::Undefined, activation)?;
+        this.set(bytes_total_string, Value::Undefined, activation)?;
     }
 
-    if !this.has_property(activation, "loaded".into()) {
+    let loaded_string = istr!("loaded");
+
+    if !this.has_property(activation, loaded_string) {
         this.define_value(
-            activation.context.gc_context,
-            "loaded",
+            activation.gc(),
+            loaded_string,
             false.into(),
             Attribute::DONT_DELETE | Attribute::DONT_ENUM,
         );
     } else {
-        this.set("loaded", false.into(), activation)?;
+        this.set(loaded_string, false.into(), activation)?;
     }
 
     let future = activation.context.load_manager.load_form_into_load_vars(
@@ -560,17 +572,11 @@ fn spawn_xml_fetch<'gc>(
 }
 
 pub fn create_constructor<'gc>(
-    context: &mut GcContext<'_, 'gc>,
+    context: &mut StringContext<'gc>,
     proto: Object<'gc>,
     fn_proto: Object<'gc>,
 ) -> Object<'gc> {
-    let xml_proto = ScriptObject::new(context.gc_context, Some(proto));
+    let xml_proto = Object::new(context, Some(proto));
     define_properties_on(PROTO_DECLS, context, xml_proto, fn_proto);
-    FunctionObject::constructor(
-        context.gc_context,
-        Executable::Native(constructor),
-        constructor_to_fn!(constructor),
-        fn_proto,
-        xml_proto.into(),
-    )
+    FunctionObject::constructor(context, constructor, None, fn_proto, xml_proto)
 }

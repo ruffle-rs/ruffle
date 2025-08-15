@@ -19,13 +19,16 @@ package flash.net {
 
         public native function connect(host: String, port: int):void;
 
+        [API("662")]
         public native function get timeout():uint;
+        [API("662")]
         public native function set timeout(value:uint):void;
 
         public native function close():void;
 
         public native function get bytesAvailable():uint;
 
+        [API("674")]
         public function get bytesPending():uint {
             stub_getter("flash.net.Socket", "bytesPending");
             return 0;

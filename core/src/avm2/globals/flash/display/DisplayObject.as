@@ -1,5 +1,7 @@
 package flash.display {
-    
+
+    import __ruffle__.stub_method;
+
     import flash.accessibility.AccessibilityProperties;
     import flash.geom.Rectangle;
     import flash.geom.Transform;
@@ -8,20 +10,15 @@ package flash.display {
     import flash.display.LoaderInfo;
     import flash.display.Stage;
     import flash.geom.Point;
+    import flash.geom.Vector3D;
     import flash.events.EventDispatcher;
-    
-    import __ruffle__.stub_getter;
-    import __ruffle__.stub_setter;
 
-    [Ruffle(InstanceAllocator)]
-    [Ruffle(NativeInstanceInit)]
+    [Ruffle(Abstract)]
     public class DisplayObject extends EventDispatcher implements IBitmapDrawable {
         private var _accessibilityProperties:AccessibilityProperties;
 
-        public function DisplayObject() {
-            throw new Error("Cannot instantiate abstract DisplayObject class");
-        }
-        
+        public native function DisplayObject();
+
         public function get accessibilityProperties():AccessibilityProperties {
             return this._accessibilityProperties;
         }
@@ -61,16 +58,24 @@ package flash.display {
         public native function get rotation():Number;
         public native function set rotation(value:Number):void;
 
+        [API("662")]
         public native function get rotationX():Number;
+        [API("662")]
         public native function set rotationX(value:Number):void;
 
+        [API("662")]
         public native function get rotationY():Number;
+        [API("662")]
         public native function set rotationY(value:Number):void;
 
+        [API("662")]
         public native function get rotationZ():Number;
+        [API("662")]
         public native function set rotationZ(value:Number):void;
 
+        [API("662")]
         public native function get scaleZ():Number;
+        [API("662")]
         public native function set scaleZ(value:Number):void;
 
         public native function get scale9Grid():Rectangle;
@@ -87,6 +92,11 @@ package flash.display {
 
         public native function get visible():Boolean;
         public native function set visible(value:Boolean):void;
+
+        [API("686")]
+        public native function get metaData():Object;
+        [API("686")]
+        public native function set metaData(value:Object):void;
 
         public native function get mouseX():Number;
 
@@ -120,10 +130,23 @@ package flash.display {
 
         public native function globalToLocal(point:Point):Point;
 
+        [API("662")]
+        public function local3DToGlobal(point3d:Vector3D):Point {
+            stub_method("flash.display.DisplayObject", "local3DToGlobal");
+            return new Point(0, 0);
+        }
+
+        [API("662")]
+        public function globalToLocal3D(point:Point):Vector3D {
+            stub_method("flash.display.DisplayObject", "globalToLocal3D");
+            return new Vector3D(0, 0, 0);
+        }
+
         public native function getBounds(targetCoordinateSpace:DisplayObject):Rectangle;
 
         public native function getRect(targetCoordinateSpace:DisplayObject):Rectangle;
 
+        [API("662")]
         public native function set blendShader(value:Shader):void;
     }
 

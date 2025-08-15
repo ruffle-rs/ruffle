@@ -1,13 +1,13 @@
 use crate::avm2::bytearray::{ByteArrayError, Endian, ObjectEncoding};
+use crate::avm2::error::{make_error_2006, Error};
 use crate::avm2::object::script_object::ScriptObjectData;
-use crate::avm2::object::{ClassObject, Object, ObjectPtr, TObject};
-use crate::avm2::value::Value;
-use crate::avm2::{Activation, Error};
+use crate::avm2::object::{ClassObject, Object, TObject};
+use crate::avm2::Activation;
 use crate::socket::SocketHandle;
-use gc_arena::barrier::unlock;
-use gc_arena::{lock::RefLock, Collect, Gc};
-use gc_arena::{GcWeak, Mutation};
-use std::cell::{Cell, Ref, RefCell, RefMut};
+use crate::utils::HasPrefixField;
+use gc_arena::GcWeak;
+use gc_arena::{Collect, Gc};
+use std::cell::{Cell, RefCell, RefMut};
 use std::fmt;
 
 /// A class instance allocator that allocates ShaderData objects.
@@ -15,10 +15,10 @@ pub fn socket_allocator<'gc>(
     class: ClassObject<'gc>,
     activation: &mut Activation<'_, 'gc>,
 ) -> Result<Object<'gc>, Error<'gc>> {
-    let base = ScriptObjectData::new(class).into();
+    let base = ScriptObjectData::new(class);
 
     Ok(SocketObject(Gc::new(
-        activation.context.gc(),
+        activation.gc(),
         SocketObjectData {
             base,
             // Default endianness is Big.
@@ -42,24 +42,8 @@ pub struct SocketObject<'gc>(pub Gc<'gc, SocketObjectData<'gc>>);
 pub struct SocketObjectWeak<'gc>(pub GcWeak<'gc, SocketObjectData<'gc>>);
 
 impl<'gc> TObject<'gc> for SocketObject<'gc> {
-    fn base(&self) -> Ref<ScriptObjectData<'gc>> {
-        self.0.base.borrow()
-    }
-
-    fn base_mut(&self, mc: &Mutation<'gc>) -> RefMut<ScriptObjectData<'gc>> {
-        unlock!(Gc::write(mc, self.0), SocketObjectData, base).borrow_mut()
-    }
-
-    fn as_ptr(&self) -> *const ObjectPtr {
-        Gc::as_ptr(self.0) as *const ObjectPtr
-    }
-
-    fn value_of(&self, _mc: &Mutation<'gc>) -> Result<Value<'gc>, Error<'gc>> {
-        Ok(Value::Object(Object::from(*self)))
-    }
-
-    fn as_socket(&self) -> Option<SocketObject<'gc>> {
-        Some(*self)
+    fn gc_base(&self) -> Gc<'gc, ScriptObjectData<'gc>> {
+        HasPrefixField::as_prefix_gc(self.0)
     }
 }
 
@@ -152,13 +136,17 @@ impl<'gc> SocketObject<'gc> {
     }
 
     // Writes a UTF String into the buffer, with its length as a prefix
-    pub fn write_utf(&self, utf_string: &str) -> Result<(), Error<'gc>> {
+    pub fn write_utf(
+        &self,
+        activation: &mut Activation<'_, 'gc>,
+        utf_string: &str,
+    ) -> Result<(), Error<'gc>> {
         if let Ok(str_size) = u16::try_from(utf_string.len()) {
             self.write_unsigned_short(str_size);
             self.write_bytes(utf_string.as_bytes());
             Ok(())
         } else {
-            Err("RangeError: UTF String length must fit into a short".into())
+            Err(make_error_2006(activation))
         }
     }
 }
@@ -197,12 +185,13 @@ macro_rules! impl_read{
 impl_write!(write_float f32, write_double f64, write_int i32, write_unsigned_int u32, write_short i16, write_unsigned_short u16);
 impl_read!(read_float 4; f32, read_double 8; f64, read_int 4; i32, read_unsigned_int 4; u32, read_short 2; i16, read_unsigned_short 2; u16, read_byte 1; i8, read_unsigned_byte 1; u8);
 
-#[derive(Collect)]
+#[derive(Collect, HasPrefixField)]
 #[collect(no_drop)]
+#[repr(C, align(8))]
 pub struct SocketObjectData<'gc> {
     /// Base script object
-    base: RefLock<ScriptObjectData<'gc>>,
-    #[collect(require_static)]
+    base: ScriptObjectData<'gc>,
+
     handle: Cell<Option<SocketHandle>>,
 
     endian: Cell<Endian>,

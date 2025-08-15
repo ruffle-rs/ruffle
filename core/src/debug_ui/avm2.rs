@@ -1,5 +1,8 @@
+use crate::avm2::object::StyleSheetObject;
 use crate::avm2::property::Property;
-use crate::avm2::{Activation, ClassObject, Error, Namespace, Object, TObject, Value};
+use crate::avm2::{
+    Activation, ArrayStorage, ClassObject, Error, Namespace, Object, TObject as _, Value,
+};
 use crate::context::UpdateContext;
 use crate::debug_ui::display_object::open_display_object_button;
 use crate::debug_ui::handle::{AVM2ObjectHandle, DisplayObjectHandle};
@@ -10,6 +13,7 @@ use fnv::FnvHashMap;
 use gc_arena::Mutation;
 use std::borrow::Cow;
 
+use super::common::show_style_sheet;
 use super::movie::open_movie_button;
 
 #[derive(Debug, Eq, PartialEq, Hash, Default, Copy, Clone)]
@@ -17,7 +21,9 @@ enum Panel {
     Information,
     #[default]
     Properties,
+    Elements,
     Class,
+    StyleSheet,
 }
 
 #[derive(Debug, Default)]
@@ -38,23 +44,29 @@ impl Avm2ObjectWindow {
     pub fn show<'gc>(
         &mut self,
         egui_ctx: &egui::Context,
-        context: &mut UpdateContext<'_, 'gc>,
+        context: &mut UpdateContext<'gc>,
         object: Object<'gc>,
         messages: &mut Vec<Message>,
     ) -> bool {
         let mut keep_open = true;
         let domain = context.avm2.stage_domain();
-        let mut activation = Activation::from_domain(context.reborrow(), domain);
-        Window::new(object_name(activation.context.gc_context, object))
+        let mut activation = Activation::from_domain(context, domain);
+        Window::new(object_name(activation.gc(), object))
             .id(Id::new(object.as_ptr()))
             .open(&mut keep_open)
-            .scroll2([true, true])
+            .scroll([true, true])
             .show(egui_ctx, |ui| {
                 ui.horizontal(|ui| {
                     ui.selectable_value(&mut self.open_panel, Panel::Information, "Information");
                     ui.selectable_value(&mut self.open_panel, Panel::Properties, "Properties");
+                    if object.as_array_storage().is_some() {
+                        ui.selectable_value(&mut self.open_panel, Panel::Elements, "Elements");
+                    }
                     if object.as_class_object().is_some() {
                         ui.selectable_value(&mut self.open_panel, Panel::Class, "Class Info");
+                    }
+                    if object.as_style_sheet().is_some() {
+                        ui.selectable_value(&mut self.open_panel, Panel::StyleSheet, "Style Sheet");
                     }
                 });
                 ui.separator();
@@ -66,9 +78,19 @@ impl Avm2ObjectWindow {
                     Panel::Properties => {
                         self.show_properties(object, messages, &mut activation, ui)
                     }
+                    Panel::Elements => {
+                        if let Some(array) = object.as_array_storage() {
+                            self.show_elements(array, messages, activation.context, ui)
+                        }
+                    }
                     Panel::Class => {
                         if let Some(class) = object.as_class_object() {
                             self.show_class(class, messages, &mut activation, ui)
+                        }
+                    }
+                    Panel::StyleSheet => {
+                        if let Some(style_sheet) = object.as_style_sheet() {
+                            self.show_style_sheet(style_sheet, ui)
                         }
                     }
                 }
@@ -87,9 +109,9 @@ impl Avm2ObjectWindow {
             .num_columns(2)
             .striped(true)
             .show(ui, |ui| {
-                if let Some(class) = object.instance_of() {
+                if let Some(class) = object.instance_class().class_object() {
                     ui.label("Instance Of");
-                    show_avm2_value(ui, &mut activation.context, class.into(), messages);
+                    show_avm2_value(ui, activation.context, class.into(), messages);
                     ui.end_row();
                 }
 
@@ -97,7 +119,7 @@ impl Avm2ObjectWindow {
                     ui.label("Display Object");
                     open_display_object_button(
                         ui,
-                        &mut activation.context,
+                        activation.context,
                         messages,
                         object,
                         &mut self.hovered_debug_rect,
@@ -125,7 +147,7 @@ impl Avm2ObjectWindow {
                                 encoder.set_depth(png::BitDepth::Eight);
                                 if let Err(e) = encoder.write_header().and_then(|mut w| {
                                     w.write_image_data(
-                                        &bmd.sync(activation.context.renderer).read().pixels_rgba(),
+                                        bmd.sync(activation.context.renderer).read().pixels_rgba(),
                                     )
                                 }) {
                                     tracing::error!("Couldn't create png: {e}");
@@ -172,6 +194,47 @@ impl Avm2ObjectWindow {
             });
     }
 
+    fn show_elements<'gc>(
+        &mut self,
+        array: std::cell::Ref<'_, ArrayStorage<'gc>>,
+        messages: &mut Vec<Message>,
+        context: &mut UpdateContext<'gc>,
+        ui: &mut Ui,
+    ) {
+        TableBuilder::new(ui)
+            .striped(true)
+            .resizable(true)
+            .column(Column::initial(40.0))
+            .column(Column::remainder())
+            .auto_shrink([true, true])
+            .cell_layout(Layout::left_to_right(Align::Center))
+            .header(20.0, |mut header| {
+                header.col(|ui| {
+                    ui.strong("Index");
+                });
+                header.col(|ui| {
+                    ui.strong("Value");
+                });
+            })
+            .body(|mut body| {
+                for (index, value) in array.iter().enumerate() {
+                    body.row(18.0, |mut row| {
+                        row.col(|ui| {
+                            ui.label(index.to_string());
+                        });
+                        row.col(|ui| {
+                            if let Some(value) = value {
+                                show_avm2_value(ui, context, value, messages);
+                            } else {
+                                // Array hole.
+                                ui.weak("(Empty)");
+                            }
+                        });
+                    });
+                }
+            });
+    }
+
     fn show_class<'gc>(
         &mut self,
         class: ClassObject<'gc>,
@@ -185,10 +248,11 @@ impl Avm2ObjectWindow {
             .spacing([8.0, 8.0])
             .show(ui, |ui| {
                 let definition = class.inner_class_definition();
-                let name = definition.read().name();
+                let name = definition.name();
 
                 ui.label("Namespace");
-                ui.text_edit_singleline(&mut name.namespace().as_uri().to_string().as_str());
+                let namespace = name.namespace().as_uri(activation.strings());
+                ui.text_edit_singleline(&mut namespace.to_string().as_str());
                 ui.end_row();
 
                 ui.label("Name");
@@ -205,7 +269,7 @@ impl Avm2ObjectWindow {
                 ui.vertical(|ui| {
                     let mut superclass = Some(class);
                     while let Some(class) = superclass {
-                        show_avm2_value(ui, &mut activation.context, class.into(), messages);
+                        show_avm2_value(ui, activation.context, class.into(), messages);
                         superclass = class.superclass_object();
                     }
                 });
@@ -213,12 +277,11 @@ impl Avm2ObjectWindow {
 
                 ui.label("Interfaces");
                 ui.vertical(|ui| {
-                    for interface in class.interfaces() {
+                    for interface in class.inner_class_definition().all_interfaces() {
                         ui.text_edit_singleline(
                             &mut interface
-                                .read()
                                 .name()
-                                .to_qualified_name_err_message(activation.context.gc_context)
+                                .to_qualified_name_err_message(activation.gc())
                                 .to_string()
                                 .as_str(),
                         );
@@ -228,6 +291,10 @@ impl Avm2ObjectWindow {
             });
     }
 
+    fn show_style_sheet(&mut self, style_sheet: StyleSheetObject<'_>, ui: &mut Ui) {
+        show_style_sheet(ui, style_sheet.style_sheet());
+    }
+
     fn show_properties<'gc>(
         &mut self,
         object: Object<'gc>,
@@ -235,13 +302,12 @@ impl Avm2ObjectWindow {
         activation: &mut Activation<'_, 'gc>,
         ui: &mut Ui,
     ) {
-        let mut entries = Vec::<(String, Namespace<'gc>, Property)>::new();
-        // We can't access things whilst we iterate the vtable, so clone and sort it all here
-        if let Some(vtable) = object.vtable() {
-            for (name, ns, prop) in vtable.resolved_traits().iter() {
-                entries.push((name.to_string(), ns, *prop));
-            }
-        }
+        let mut entries: Vec<(Cow<'gc, str>, Namespace<'gc>, Property)> = object
+            .vtable()
+            .resolved_traits()
+            .iter()
+            .map(|(name, ns, prop)| (name.as_wstr().to_utf8_lossy(), ns, *prop))
+            .collect();
         entries.sort_by(|a, b| a.0.cmp(&b.0));
 
         ui.horizontal(|ui| {
@@ -289,7 +355,7 @@ impl Avm2ObjectWindow {
             });
     }
 
-    #[allow(clippy::too_many_arguments)]
+    #[expect(clippy::too_many_arguments)]
     fn show_property<'gc>(
         &mut self,
         object: Object<'gc>,
@@ -307,24 +373,28 @@ impl Avm2ObjectWindow {
                 });
             });
         };
+
         match prop {
             Property::Slot { slot_id } | Property::ConstSlot { slot_id } => {
                 body.row(18.0, |mut row| {
                     label_col(&mut row);
                     row.col(|ui| {
                         let value = object.get_slot(slot_id);
-                        ValueResultWidget::new(activation, value).show(ui, messages);
+                        ValueResultWidget::new(activation, Ok(value)).show(ui, messages);
                     });
                     row.col(|_| {});
                 });
             }
             Property::Virtual { get: Some(get), .. } => {
-                let key = (ns.as_uri().to_string(), name.to_string());
+                let key = (
+                    ns.as_uri(activation.strings()).to_string(),
+                    name.to_string(),
+                );
                 body.row(18.0, |mut row| {
                     label_col(&mut row);
                     row.col(|ui| {
                         if self.call_getters {
-                            let value = object.call_method(get, &[], activation);
+                            let value = Value::from(object).call_method(get, &[], activation);
                             ValueResultWidget::new(activation, value).show(ui, messages);
                         } else {
                             let value = self.getter_values.get_mut(&key);
@@ -332,7 +402,8 @@ impl Avm2ObjectWindow {
                                 // Empty entry means we want to refresh it,
                                 // so let's do that now
                                 let widget = value.get_or_insert_with(|| {
-                                    let value = object.call_method(get, &[], activation);
+                                    let value =
+                                        Value::from(object).call_method(get, &[], activation);
                                     ValueResultWidget::new(activation, value)
                                 });
                                 widget.show(ui, messages);
@@ -359,7 +430,7 @@ enum ValueWidget {
 }
 
 impl ValueWidget {
-    fn new<'gc>(context: &mut UpdateContext<'_, 'gc>, value: Value<'gc>) -> Self {
+    fn new<'gc>(context: &mut UpdateContext<'gc>, value: Value<'gc>) -> Self {
         match value {
             Value::Undefined => ValueWidget::Other(Cow::Borrowed("Undefined")),
             Value::Null => ValueWidget::Other(Cow::Borrowed("Null")),
@@ -369,7 +440,7 @@ impl ValueWidget {
             Value::String(value) => ValueWidget::String(value.to_string()),
             Value::Object(value) => ValueWidget::Object(
                 AVM2ObjectHandle::new(context, value),
-                object_name(context.gc_context, value),
+                object_name(context.gc(), value),
             ),
         }
     }
@@ -404,7 +475,7 @@ impl ValueResultWidget {
         value: Result<Value<'gc>, Error<'gc>>,
     ) -> Self {
         match value {
-            Ok(value) => Self::Value(ValueWidget::new(&mut activation.context, value)),
+            Ok(value) => Self::Value(ValueWidget::new(activation.context, value)),
             Err(error) => Self::Error(format!("{error:?})")),
         }
     }
@@ -423,7 +494,7 @@ impl ValueResultWidget {
 
 pub fn show_avm2_value<'gc>(
     ui: &mut Ui,
-    context: &mut UpdateContext<'_, 'gc>,
+    context: &mut UpdateContext<'gc>,
     value: Value<'gc>,
     messages: &mut Vec<Message>,
 ) {
@@ -434,15 +505,11 @@ fn object_name<'gc>(mc: &Mutation<'gc>, object: Object<'gc>) -> String {
     if let Some(class) = object.as_class_object() {
         class
             .inner_class_definition()
-            .read()
             .name()
             .to_qualified_name_err_message(mc)
             .to_string()
     } else {
-        let name = object
-            .instance_of_class_definition()
-            .map(|r| Cow::Owned(r.read().name().local_name().to_string()))
-            .unwrap_or(Cow::Borrowed("Object"));
+        let name = object.instance_class().name().local_name().to_string();
         format!("{} {:p}", name, object.as_ptr())
     }
 }

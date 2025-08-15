@@ -1,0 +1,998 @@
+===== Stage 0 (direction 0, Initial)
+Focused other0 at dx=0, dy=20, w=10, h=10
+Collected the tab at 0, 100000
+===== Stage 1 (direction 0, General direction)
+Collected the tab at 0, 100000
+===== Stage 2
+Collected the tab at 0, 100000
+===== Stage 3
+Focused other0 at dx=0, dy=50, w=10, h=10
+Collected the tab at 0, 100000
+===== Stage 4
+Collected the tab at 0, 100000
+===== Stage 5
+Focused other0 at dx=50, dy=50, w=10, h=10
+Collected the tab at 0, 100000
+===== Stage 6
+Focused other0 at dx=-50, dy=50, w=10, h=10
+Collected the tab at 0, 100000
+===== Stage 7
+Collected the tab at 0, 100000
+===== Stage 8
+Collected the tab at 0, 100000
+===== Stage 9 (direction 0, Overlapping bounds)
+Collected the tab at 0, 100000
+===== Stage 10
+Collected the tab at 0, 100000
+===== Stage 11
+Collected the tab at 0, 100000
+===== Stage 12
+Collected the tab at 0, 100000
+===== Stage 13
+Collected the tab at 0, 100000
+===== Stage 14
+Collected the tab at 0, 100000
+===== Stage 15
+Collected the tab at 0, 100000
+===== Stage 16
+Collected the tab at 0, 100000
+===== Stage 17 (direction 0, Specific direction)
+Focused other0 at dx=50, dy=50, w=10, h=10
+Collected the tab at 0, 100000
+===== Stage 18
+Focused other1 at dx=5, dy=1, w=10, h=10
+Focused other0 at dx=50, dy=50, w=10, h=10
+Collected the tab at 0, 100000
+===== Stage 19
+Focused other0 at dx=50, dy=50, w=10, h=10
+Collected the tab at 0, 100000
+===== Stage 20
+Focused other0 at dx=50, dy=50, w=10, h=10
+Collected the tab at 0, 100000
+===== Stage 21
+Focused other0 at dx=50, dy=50, w=10, h=10
+Collected the tab at 0, 100000
+===== Stage 22
+Focused other0 at dx=50, dy=50, w=10, h=10
+Collected the tab at 0, 100000
+===== Stage 23
+Focused other1 at dx=5, dy=-10, w=10, h=21
+Focused other0 at dx=50, dy=50, w=10, h=10
+Collected the tab at 0, 100000
+===== Stage 24
+Focused other0 at dx=20, dy=-10, w=10, h=30
+Collected the tab at 0, 100000
+===== Stage 25 (direction 0, Same distance, behind origin)
+Focused other0 at dx=-5, dy=10, w=10, h=10
+Collected the tab at 0, 100000
+===== Stage 26
+Focused other0 at dx=5, dy=10, w=10, h=10
+Collected the tab at 0, 100000
+===== Stage 27
+Focused other0 at dx=2, dy=10, w=10, h=10
+Collected the tab at 0, 100000
+===== Stage 28
+Focused other0 at dx=0, dy=10, w=10, h=10
+Collected the tab at 0, 100000
+===== Stage 29
+Focused other0 at dx=10, dy=10, w=10, h=10
+Collected the tab at 0, 100000
+===== Stage 30
+Focused other0 at dx=-10, dy=10, w=10, h=10
+Collected the tab at 0, 100000
+===== Stage 31
+Focused other0 at dx=-7, dy=30, w=10, h=10
+Collected the tab at 0, 100000
+===== Stage 32
+Focused other0 at dx=8, dy=30, w=10, h=10
+Collected the tab at 0, 100000
+===== Stage 33 (direction 0, Same distance, different sizes, behind origin)
+Focused other0 at dx=-5, dy=30, w=10, h=10
+Collected the tab at 0, 100000
+===== Stage 34
+Focused other0 at dx=-5, dy=30, w=10, h=10
+Collected the tab at 0, 100000
+===== Stage 35 (direction 0, Different distance, behind origin)
+Focused other1 at dx=0, dy=10, w=10, h=10
+Focused other0 at dx=0, dy=11, w=10, h=10
+Collected the tab at 0, 100000
+===== Stage 36
+Focused other0 at dx=0, dy=10, w=10, h=10
+Focused other1 at dx=0, dy=11, w=10, h=10
+Collected the tab at 0, 100000
+===== Stage 37
+Focused other1 at dx=-8, dy=10, w=10, h=10
+Focused other0 at dx=0, dy=30, w=10, h=10
+Collected the tab at 0, 100000
+===== Stage 38
+Focused other1 at dx=0, dy=10, w=10, h=10
+Focused other0 at dx=-8, dy=30, w=10, h=10
+Collected the tab at 0, 100000
+===== Stage 39 (direction 0, Behind origin preference)
+Focused other1 at dx=-10, dy=10, w=10, h=10
+Collected the tab at 0, 100000
+===== Stage 40
+Focused other0 at dx=-10, dy=10, w=10, h=10
+Collected the tab at 0, 100000
+===== Stage 41
+Focused other0 at dx=-10, dy=40, w=10, h=10
+Collected the tab at 0, 100000
+===== Stage 42
+Focused other0 at dx=10, dy=10, w=10, h=10
+Focused other1 at dx=11, dy=40, w=10, h=10
+Collected the tab at 0, 100000
+===== Stage 43
+Focused other0 at dx=10, dy=40, w=10, h=10
+Collected the tab at 0, 100000
+===== Stage 44
+Focused other0 at dx=10, dy=10, w=10, h=10
+Focused other1 at dx=11, dy=40, w=10, h=10
+Collected the tab at 0, 100000
+===== Stage 45 (direction 0, Size vs distance behind)
+Collected the tab at 0, 100000
+===== Stage 46
+Collected the tab at 0, 100000
+===== Stage 47
+Focused other0 at dx=0, dy=20, w=10, h=10
+Collected the tab at 0, 100000
+===== Stage 48
+Focused other1 at dx=0, dy=20, w=10, h=10
+Collected the tab at 0, 100000
+===== Stage 49
+Focused other0 at dx=0, dy=20, w=10, h=10
+Collected the tab at 0, 100000
+===== Stage 50
+Focused other0 at dx=0, dy=20, w=10, h=5
+Focused other1 at dx=0, dy=20, w=10, h=10
+Collected the tab at 0, 100000
+===== Stage 51 (direction 0, Behind vs wings)
+Focused other0 at dx=0, dy=90, w=10, h=10
+Collected the tab at 0, 100000
+===== Stage 52
+Focused other0 at dx=0, dy=90, w=10, h=10
+Collected the tab at 0, 100000
+===== Stage 53 (direction 0, Not behind vs wings)
+Focused other1 at dx=-80, dy=5, w=10, h=10
+Focused other0 at dx=20, dy=20, w=10, h=10
+Collected the tab at 0, 100000
+===== Stage 54
+Focused other1 at dx=80, dy=5, w=10, h=10
+Focused other0 at dx=20, dy=20, w=10, h=10
+Collected the tab at 0, 100000
+===== Stage 55
+Focused other0 at dx=20, dy=20, w=10, h=10
+Collected the tab at 0, 100000
+===== Stage 56
+Focused other0 at dx=20, dy=20, w=10, h=10
+Collected the tab at 0, 100000
+===== Stage 57 (direction 0, Not behind origin)
+Focused other0 at dx=-11, dy=10, w=10, h=10
+Collected the tab at 0, 100000
+===== Stage 58
+Focused other0 at dx=11, dy=10, w=10, h=10
+Collected the tab at 0, 100000
+===== Stage 59
+Focused other0 at dx=-12, dy=10, w=10, h=10
+Collected the tab at 0, 100000
+===== Stage 60
+Focused other0 at dx=12, dy=10, w=10, h=10
+Collected the tab at 0, 100000
+===== Stage 61
+Focused other0 at dx=25, dy=20, w=10, h=10
+Focused other1 at dx=20, dy=25, w=10, h=10
+Collected the tab at 0, 100000
+===== Stage 62
+Focused other0 at dx=20, dy=25, w=10, h=10
+Collected the tab at 0, 100000
+===== Stage 63
+Focused other1 at dx=20, dy=25, w=10, h=10
+Collected the tab at 0, 100000
+===== Stage 64
+Focused other0 at dx=20, dy=25, w=10, h=10
+Collected the tab at 0, 100000
+===== Stage 65
+Focused other0 at dx=24, dy=20, w=10, h=10
+Focused other1 at dx=20, dy=25, w=10, h=10
+Collected the tab at 0, 100000
+===== Stage 66
+Focused other1 at dx=24, dy=20, w=10, h=10
+Focused other0 at dx=20, dy=25, w=10, h=10
+Collected the tab at 0, 100000
+===== Stage 67
+Focused other1 at dx=160, dy=140, w=10, h=10
+Focused other0 at dx=60, dy=210, w=10, h=10
+Collected the tab at 0, 100000
+===== Stage 68
+Focused other0 at dx=60, dy=210, w=10, h=10
+Collected the tab at 0, 100000
+===== Stage 69
+Focused other1 at dx=-160, dy=140, w=10, h=10
+Focused other0 at dx=-60, dy=210, w=10, h=10
+Collected the tab at 0, 100000
+===== Stage 70
+Focused other0 at dx=-60, dy=210, w=10, h=10
+Collected the tab at 0, 100000
+===== Stage 71
+Focused other1 at dx=160, dy=140, w=20, h=20
+Focused other0 at dx=60, dy=210, w=20, h=20
+Collected the tab at 0, 100000
+===== Stage 72
+Focused other0 at dx=60, dy=210, w=20, h=20
+Collected the tab at 0, 100000
+===== Stage 73
+Focused other1 at dx=-170, dy=140, w=20, h=20
+Focused other0 at dx=-70, dy=210, w=20, h=20
+Collected the tab at 0, 100000
+===== Stage 74
+Focused other0 at dx=-70, dy=210, w=20, h=20
+Collected the tab at 0, 100000
+===== Stage 75 (direction 0, Tab index)
+Focused other0 at dx=0, dy=30, w=10, h=10
+Focused other1 at dx=0, dy=60, w=10, h=10
+Collected the tab at 0, 100000
+===== Stage 76
+Focused other0 at dx=0, dy=30, w=10, h=10
+Focused other1 at dx=0, dy=60, w=10, h=10
+Collected the tab at 0, 100000
+===== Stage 77
+Focused other0 at dx=5, dy=30, w=10, h=10
+Collected the tab at 0, 100000
+===== Stage 78
+Focused other0 at dx=-5, dy=30, w=10, h=10
+Collected the tab at 0, 100000
+===== Stage 79
+Focused other0 at dx=5, dy=30, w=10, h=10
+Collected the tab at 0, 100000
+===== Stage 80
+Focused other0 at dx=-5, dy=30, w=10, h=10
+Collected the tab at 0, 100000
+===== Finished
+===== Changing arrow: 1
+===== Stage 0 (direction 1, Initial)
+Focused other0 at dx=-10, dy=-30, w=10, h=10
+Collected the tab at 100000, 0
+===== Stage 1 (direction 1, General direction)
+Collected the tab at 100000, 0
+===== Stage 2
+Collected the tab at 100000, 0
+===== Stage 3
+Focused other0 at dx=-10, dy=-60, w=10, h=10
+Collected the tab at 100000, 0
+===== Stage 4
+Collected the tab at 100000, 0
+===== Stage 5
+Focused other0 at dx=-60, dy=-60, w=10, h=10
+Collected the tab at 100000, 0
+===== Stage 6
+Focused other0 at dx=40, dy=-60, w=10, h=10
+Collected the tab at 100000, 0
+===== Stage 7
+Collected the tab at 100000, 0
+===== Stage 8
+Collected the tab at 100000, 0
+===== Stage 9 (direction 1, Overlapping bounds)
+Collected the tab at 100000, 0
+===== Stage 10
+Collected the tab at 100000, 0
+===== Stage 11
+Focused other0 at dx=-10, dy=-10, w=5, h=5
+Collected the tab at 100000, 0
+===== Stage 12
+Focused other0 at dx=-5, dy=-10, w=5, h=5
+Collected the tab at 100000, 0
+===== Stage 13
+Collected the tab at 100000, 0
+===== Stage 14
+Focused other0 at dx=-10, dy=-10, w=10, h=5
+Collected the tab at 100000, 0
+===== Stage 15
+Collected the tab at 100000, 0
+===== Stage 16
+Collected the tab at 100000, 0
+===== Stage 17 (direction 1, Specific direction)
+Focused other0 at dx=-60, dy=-60, w=10, h=10
+Collected the tab at 100000, 0
+===== Stage 18
+Focused other1 at dx=-15, dy=-11, w=10, h=10
+Focused other0 at dx=-60, dy=-60, w=10, h=10
+Collected the tab at 100000, 0
+===== Stage 19
+Focused other1 at dx=-15, dy=-10, w=10, h=9
+Focused other0 at dx=-60, dy=-60, w=10, h=10
+Collected the tab at 100000, 0
+===== Stage 20
+Focused other1 at dx=-15, dy=-9, w=10, h=8
+Focused other0 at dx=-60, dy=-60, w=10, h=10
+Collected the tab at 100000, 0
+===== Stage 21
+Focused other0 at dx=-60, dy=-60, w=10, h=10
+Collected the tab at 100000, 0
+===== Stage 22
+Focused other0 at dx=-60, dy=-60, w=10, h=10
+Collected the tab at 100000, 0
+===== Stage 23
+Focused other0 at dx=-60, dy=-60, w=10, h=10
+Collected the tab at 100000, 0
+===== Stage 24
+Collected the tab at 100000, 0
+===== Stage 25 (direction 1, Same distance, behind origin)
+Focused other0 at dx=-5, dy=-20, w=10, h=10
+Collected the tab at 100000, 0
+===== Stage 26
+Focused other0 at dx=-15, dy=-20, w=10, h=10
+Collected the tab at 100000, 0
+===== Stage 27
+Focused other0 at dx=-12, dy=-20, w=10, h=10
+Collected the tab at 100000, 0
+===== Stage 28
+Focused other0 at dx=-10, dy=-20, w=10, h=10
+Collected the tab at 100000, 0
+===== Stage 29
+Focused other0 at dx=-20, dy=-20, w=10, h=10
+Collected the tab at 100000, 0
+===== Stage 30
+Focused other0 at dx=0, dy=-20, w=10, h=10
+Collected the tab at 100000, 0
+===== Stage 31
+Focused other0 at dx=-3, dy=-40, w=10, h=10
+Collected the tab at 100000, 0
+===== Stage 32
+Focused other0 at dx=-18, dy=-40, w=10, h=10
+Collected the tab at 100000, 0
+===== Stage 33 (direction 1, Same distance, different sizes, behind origin)
+Focused other0 at dx=-5, dy=-40, w=10, h=10
+Collected the tab at 100000, 0
+===== Stage 34
+Focused other0 at dx=-5, dy=-40, w=10, h=10
+Focused other1 at dx=-15, dy=-40, w=10, h=5
+Collected the tab at 100000, 0
+===== Stage 35 (direction 1, Different distance, behind origin)
+Focused other1 at dx=-10, dy=-20, w=10, h=10
+Focused other0 at dx=-10, dy=-21, w=10, h=10
+Collected the tab at 100000, 0
+===== Stage 36
+Focused other0 at dx=-10, dy=-20, w=10, h=10
+Focused other1 at dx=-10, dy=-21, w=10, h=10
+Collected the tab at 100000, 0
+===== Stage 37
+Focused other1 at dx=-2, dy=-20, w=10, h=10
+Focused other0 at dx=-10, dy=-40, w=10, h=10
+Collected the tab at 100000, 0
+===== Stage 38
+Focused other1 at dx=-10, dy=-20, w=10, h=10
+Focused other0 at dx=-2, dy=-40, w=10, h=10
+Collected the tab at 100000, 0
+===== Stage 39 (direction 1, Behind origin preference)
+Focused other1 at dx=0, dy=-20, w=10, h=10
+Collected the tab at 100000, 0
+===== Stage 40
+Focused other0 at dx=0, dy=-20, w=10, h=10
+Collected the tab at 100000, 0
+===== Stage 41
+Focused other0 at dx=0, dy=-50, w=10, h=10
+Collected the tab at 100000, 0
+===== Stage 42
+Focused other0 at dx=-20, dy=-20, w=10, h=10
+Focused other1 at dx=-21, dy=-50, w=10, h=10
+Collected the tab at 100000, 0
+===== Stage 43
+Focused other0 at dx=-20, dy=-50, w=10, h=10
+Collected the tab at 100000, 0
+===== Stage 44
+Focused other0 at dx=-20, dy=-20, w=10, h=10
+Focused other1 at dx=-21, dy=-50, w=10, h=10
+Collected the tab at 100000, 0
+===== Stage 45 (direction 1, Size vs distance behind)
+Collected the tab at 100000, 0
+===== Stage 46
+Collected the tab at 100000, 0
+===== Stage 47
+Focused other0 at dx=-10, dy=-30, w=10, h=10
+Focused other1 at dx=-10, dy=-30, w=10, h=5
+Collected the tab at 100000, 0
+===== Stage 48
+Focused other1 at dx=-10, dy=-30, w=10, h=10
+Focused other0 at dx=-10, dy=-30, w=10, h=5
+Collected the tab at 100000, 0
+===== Stage 49
+Focused other0 at dx=-10, dy=-30, w=10, h=10
+Collected the tab at 100000, 0
+===== Stage 50
+Focused other0 at dx=-10, dy=-25, w=10, h=5
+Collected the tab at 100000, 0
+===== Stage 51 (direction 1, Behind vs wings)
+Focused other0 at dx=-10, dy=-100, w=10, h=10
+Collected the tab at 100000, 0
+===== Stage 52
+Focused other0 at dx=-10, dy=-100, w=10, h=10
+Collected the tab at 100000, 0
+===== Stage 53 (direction 1, Not behind vs wings)
+Focused other0 at dx=-30, dy=-30, w=10, h=10
+Collected the tab at 100000, 0
+===== Stage 54
+Focused other0 at dx=-30, dy=-30, w=10, h=10
+Collected the tab at 100000, 0
+===== Stage 55
+Focused other0 at dx=-30, dy=-30, w=10, h=10
+Collected the tab at 100000, 0
+===== Stage 56
+Focused other0 at dx=-30, dy=-30, w=10, h=10
+Collected the tab at 100000, 0
+===== Stage 57 (direction 1, Not behind origin)
+Focused other0 at dx=1, dy=-20, w=10, h=10
+Collected the tab at 100000, 0
+===== Stage 58
+Focused other0 at dx=-21, dy=-20, w=10, h=10
+Collected the tab at 100000, 0
+===== Stage 59
+Focused other0 at dx=2, dy=-20, w=10, h=10
+Collected the tab at 100000, 0
+===== Stage 60
+Focused other0 at dx=-22, dy=-20, w=10, h=10
+Collected the tab at 100000, 0
+===== Stage 61
+Focused other0 at dx=-35, dy=-30, w=10, h=10
+Focused other1 at dx=-30, dy=-35, w=10, h=10
+Collected the tab at 100000, 0
+===== Stage 62
+Focused other0 at dx=-30, dy=-35, w=10, h=10
+Collected the tab at 100000, 0
+===== Stage 63
+Focused other1 at dx=-30, dy=-35, w=10, h=10
+Collected the tab at 100000, 0
+===== Stage 64
+Focused other0 at dx=-30, dy=-35, w=10, h=10
+Collected the tab at 100000, 0
+===== Stage 65
+Focused other0 at dx=-34, dy=-30, w=10, h=10
+Focused other1 at dx=-30, dy=-35, w=10, h=10
+Collected the tab at 100000, 0
+===== Stage 66
+Focused other1 at dx=-34, dy=-30, w=10, h=10
+Focused other0 at dx=-30, dy=-35, w=10, h=10
+Collected the tab at 100000, 0
+===== Stage 67
+Focused other1 at dx=-170, dy=-150, w=10, h=10
+Focused other0 at dx=-70, dy=-220, w=10, h=10
+Collected the tab at 100000, 0
+===== Stage 68
+Focused other0 at dx=-70, dy=-220, w=10, h=10
+Collected the tab at 100000, 0
+===== Stage 69
+Focused other1 at dx=150, dy=-150, w=10, h=10
+Focused other0 at dx=50, dy=-220, w=10, h=10
+Collected the tab at 100000, 0
+===== Stage 70
+Focused other0 at dx=50, dy=-220, w=10, h=10
+Collected the tab at 100000, 0
+===== Stage 71
+Focused other1 at dx=-180, dy=-160, w=20, h=20
+Focused other0 at dx=-80, dy=-230, w=20, h=20
+Collected the tab at 100000, 0
+===== Stage 72
+Focused other0 at dx=-80, dy=-230, w=20, h=20
+Collected the tab at 100000, 0
+===== Stage 73
+Focused other1 at dx=150, dy=-160, w=20, h=20
+Focused other0 at dx=50, dy=-230, w=20, h=20
+Collected the tab at 100000, 0
+===== Stage 74
+Focused other0 at dx=50, dy=-230, w=20, h=20
+Collected the tab at 100000, 0
+===== Stage 75 (direction 1, Tab index)
+Focused other0 at dx=-10, dy=-40, w=10, h=10
+Focused other1 at dx=-10, dy=-70, w=10, h=10
+Collected the tab at 100000, 0
+===== Stage 76
+Focused other0 at dx=-10, dy=-40, w=10, h=10
+Focused other1 at dx=-10, dy=-70, w=10, h=10
+Collected the tab at 100000, 0
+===== Stage 77
+Focused other0 at dx=-15, dy=-40, w=10, h=10
+Collected the tab at 100000, 0
+===== Stage 78
+Focused other0 at dx=-5, dy=-40, w=10, h=10
+Collected the tab at 100000, 0
+===== Stage 79
+Focused other0 at dx=-15, dy=-40, w=10, h=10
+Collected the tab at 100000, 0
+===== Stage 80
+Focused other0 at dx=-5, dy=-40, w=10, h=10
+Collected the tab at 100000, 0
+===== Finished
+===== Changing arrow: 2
+===== Stage 0 (direction 2, Initial)
+Focused other0 at dx=-30, dy=-10, w=10, h=10
+Collected the tab at 0, 100000
+===== Stage 1 (direction 2, General direction)
+Collected the tab at 0, 100000
+===== Stage 2
+Collected the tab at 0, 100000
+===== Stage 3
+Focused other0 at dx=-60, dy=-10, w=10, h=10
+Collected the tab at 0, 100000
+===== Stage 4
+Collected the tab at 0, 100000
+===== Stage 5
+Focused other0 at dx=-60, dy=-60, w=10, h=10
+Collected the tab at 0, 100000
+===== Stage 6
+Focused other0 at dx=-60, dy=40, w=10, h=10
+Collected the tab at 0, 100000
+===== Stage 7
+Collected the tab at 0, 100000
+===== Stage 8
+Collected the tab at 0, 100000
+===== Stage 9 (direction 2, Overlapping bounds)
+Collected the tab at 0, 100000
+===== Stage 10
+Collected the tab at 0, 100000
+===== Stage 11
+Collected the tab at 0, 100000
+===== Stage 12
+Collected the tab at 0, 100000
+===== Stage 13
+Collected the tab at 0, 100000
+===== Stage 14
+Collected the tab at 0, 100000
+===== Stage 15
+Collected the tab at 0, 100000
+===== Stage 16
+Collected the tab at 0, 100000
+===== Stage 17 (direction 2, Specific direction)
+Focused other0 at dx=-60, dy=-60, w=10, h=10
+Collected the tab at 0, 100000
+===== Stage 18
+Focused other1 at dx=-11, dy=-15, w=10, h=10
+Focused other0 at dx=-60, dy=-60, w=10, h=10
+Collected the tab at 0, 100000
+===== Stage 19
+Focused other0 at dx=-60, dy=-60, w=10, h=10
+Collected the tab at 0, 100000
+===== Stage 20
+Focused other0 at dx=-60, dy=-60, w=10, h=10
+Collected the tab at 0, 100000
+===== Stage 21
+Focused other0 at dx=-60, dy=-60, w=10, h=10
+Collected the tab at 0, 100000
+===== Stage 22
+Focused other0 at dx=-60, dy=-60, w=10, h=10
+Collected the tab at 0, 100000
+===== Stage 23
+Focused other1 at dx=-11, dy=-15, w=21, h=10
+Focused other0 at dx=-60, dy=-60, w=10, h=10
+Collected the tab at 0, 100000
+===== Stage 24
+Focused other0 at dx=-20, dy=-30, w=30, h=10
+Collected the tab at 0, 100000
+===== Stage 25 (direction 2, Same distance, behind origin)
+Focused other0 at dx=-20, dy=-5, w=10, h=10
+Collected the tab at 0, 100000
+===== Stage 26
+Focused other0 at dx=-20, dy=-15, w=10, h=10
+Collected the tab at 0, 100000
+===== Stage 27
+Focused other0 at dx=-20, dy=-12, w=10, h=10
+Collected the tab at 0, 100000
+===== Stage 28
+Focused other0 at dx=-20, dy=-10, w=10, h=10
+Collected the tab at 0, 100000
+===== Stage 29
+Focused other0 at dx=-20, dy=-20, w=10, h=10
+Collected the tab at 0, 100000
+===== Stage 30
+Focused other0 at dx=-20, dy=0, w=10, h=10
+Collected the tab at 0, 100000
+===== Stage 31
+Focused other0 at dx=-40, dy=-3, w=10, h=10
+Collected the tab at 0, 100000
+===== Stage 32
+Focused other0 at dx=-40, dy=-18, w=10, h=10
+Collected the tab at 0, 100000
+===== Stage 33 (direction 2, Same distance, different sizes, behind origin)
+Focused other0 at dx=-40, dy=-5, w=10, h=10
+Collected the tab at 0, 100000
+===== Stage 34
+Focused other0 at dx=-40, dy=-5, w=10, h=10
+Collected the tab at 0, 100000
+===== Stage 35 (direction 2, Different distance, behind origin)
+Focused other1 at dx=-20, dy=-10, w=10, h=10
+Focused other0 at dx=-21, dy=-10, w=10, h=10
+Collected the tab at 0, 100000
+===== Stage 36
+Focused other0 at dx=-20, dy=-10, w=10, h=10
+Focused other1 at dx=-21, dy=-10, w=10, h=10
+Collected the tab at 0, 100000
+===== Stage 37
+Focused other1 at dx=-20, dy=-2, w=10, h=10
+Focused other0 at dx=-40, dy=-10, w=10, h=10
+Collected the tab at 0, 100000
+===== Stage 38
+Focused other1 at dx=-20, dy=-10, w=10, h=10
+Focused other0 at dx=-40, dy=-2, w=10, h=10
+Collected the tab at 0, 100000
+===== Stage 39 (direction 2, Behind origin preference)
+Focused other1 at dx=-20, dy=0, w=10, h=10
+Collected the tab at 0, 100000
+===== Stage 40
+Focused other0 at dx=-20, dy=0, w=10, h=10
+Collected the tab at 0, 100000
+===== Stage 41
+Focused other0 at dx=-50, dy=0, w=10, h=10
+Collected the tab at 0, 100000
+===== Stage 42
+Focused other0 at dx=-20, dy=-20, w=10, h=10
+Focused other1 at dx=-50, dy=-21, w=10, h=10
+Collected the tab at 0, 100000
+===== Stage 43
+Focused other0 at dx=-50, dy=-20, w=10, h=10
+Collected the tab at 0, 100000
+===== Stage 44
+Focused other0 at dx=-20, dy=-20, w=10, h=10
+Focused other1 at dx=-50, dy=-21, w=10, h=10
+Collected the tab at 0, 100000
+===== Stage 45 (direction 2, Size vs distance behind)
+Collected the tab at 0, 100000
+===== Stage 46
+Collected the tab at 0, 100000
+===== Stage 47
+Focused other0 at dx=-30, dy=-10, w=10, h=10
+Collected the tab at 0, 100000
+===== Stage 48
+Focused other1 at dx=-30, dy=-10, w=10, h=10
+Collected the tab at 0, 100000
+===== Stage 49
+Focused other0 at dx=-30, dy=-10, w=10, h=10
+Collected the tab at 0, 100000
+===== Stage 50
+Focused other0 at dx=-25, dy=-10, w=5, h=10
+Focused other1 at dx=-30, dy=-10, w=10, h=10
+Collected the tab at 0, 100000
+===== Stage 51 (direction 2, Behind vs wings)
+Focused other0 at dx=-100, dy=-10, w=10, h=10
+Collected the tab at 0, 100000
+===== Stage 52
+Focused other0 at dx=-100, dy=-10, w=10, h=10
+Collected the tab at 0, 100000
+===== Stage 53 (direction 2, Not behind vs wings)
+Focused other0 at dx=-30, dy=-30, w=10, h=10
+Collected the tab at 0, 100000
+===== Stage 54
+Focused other0 at dx=-30, dy=-30, w=10, h=10
+Collected the tab at 0, 100000
+===== Stage 55
+Focused other0 at dx=-30, dy=-30, w=10, h=10
+Collected the tab at 0, 100000
+===== Stage 56
+Focused other0 at dx=-30, dy=-30, w=10, h=10
+Collected the tab at 0, 100000
+===== Stage 57 (direction 2, Not behind origin)
+Focused other0 at dx=-20, dy=1, w=10, h=10
+Collected the tab at 0, 100000
+===== Stage 58
+Focused other0 at dx=-20, dy=-21, w=10, h=10
+Collected the tab at 0, 100000
+===== Stage 59
+Focused other0 at dx=-20, dy=2, w=10, h=10
+Collected the tab at 0, 100000
+===== Stage 60
+Focused other0 at dx=-20, dy=-22, w=10, h=10
+Collected the tab at 0, 100000
+===== Stage 61
+Focused other0 at dx=-30, dy=-35, w=10, h=10
+Focused other1 at dx=-35, dy=-30, w=10, h=10
+Collected the tab at 0, 100000
+===== Stage 62
+Focused other0 at dx=-35, dy=-30, w=10, h=10
+Collected the tab at 0, 100000
+===== Stage 63
+Focused other1 at dx=-35, dy=-30, w=10, h=10
+Collected the tab at 0, 100000
+===== Stage 64
+Focused other0 at dx=-35, dy=-30, w=10, h=10
+Collected the tab at 0, 100000
+===== Stage 65
+Focused other0 at dx=-30, dy=-34, w=10, h=10
+Focused other1 at dx=-35, dy=-30, w=10, h=10
+Collected the tab at 0, 100000
+===== Stage 66
+Focused other1 at dx=-30, dy=-34, w=10, h=10
+Focused other0 at dx=-35, dy=-30, w=10, h=10
+Collected the tab at 0, 100000
+===== Stage 67
+Focused other1 at dx=-150, dy=-170, w=10, h=10
+Focused other0 at dx=-220, dy=-70, w=10, h=10
+Collected the tab at 0, 100000
+===== Stage 68
+Focused other0 at dx=-220, dy=-70, w=10, h=10
+Collected the tab at 0, 100000
+===== Stage 69
+Focused other1 at dx=-150, dy=150, w=10, h=10
+Focused other0 at dx=-220, dy=50, w=10, h=10
+Collected the tab at 0, 100000
+===== Stage 70
+Focused other0 at dx=-220, dy=50, w=10, h=10
+Collected the tab at 0, 100000
+===== Stage 71
+Focused other1 at dx=-160, dy=-180, w=20, h=20
+Focused other0 at dx=-230, dy=-80, w=20, h=20
+Collected the tab at 0, 100000
+===== Stage 72
+Focused other0 at dx=-230, dy=-80, w=20, h=20
+Collected the tab at 0, 100000
+===== Stage 73
+Focused other1 at dx=-160, dy=150, w=20, h=20
+Focused other0 at dx=-230, dy=50, w=20, h=20
+Collected the tab at 0, 100000
+===== Stage 74
+Focused other0 at dx=-230, dy=50, w=20, h=20
+Collected the tab at 0, 100000
+===== Stage 75 (direction 2, Tab index)
+Focused other0 at dx=-40, dy=-10, w=10, h=10
+Focused other1 at dx=-70, dy=-10, w=10, h=10
+Collected the tab at 0, 100000
+===== Stage 76
+Focused other0 at dx=-40, dy=-10, w=10, h=10
+Focused other1 at dx=-70, dy=-10, w=10, h=10
+Collected the tab at 0, 100000
+===== Stage 77
+Focused other0 at dx=-40, dy=-15, w=10, h=10
+Collected the tab at 0, 100000
+===== Stage 78
+Focused other0 at dx=-40, dy=-5, w=10, h=10
+Collected the tab at 0, 100000
+===== Stage 79
+Focused other0 at dx=-40, dy=-15, w=10, h=10
+Collected the tab at 0, 100000
+===== Stage 80
+Focused other0 at dx=-40, dy=-5, w=10, h=10
+Collected the tab at 0, 100000
+===== Finished
+===== Changing arrow: 3
+===== Stage 0 (direction 3, Initial)
+Focused other0 at dx=20, dy=0, w=10, h=10
+Collected the tab at 100000, 0
+===== Stage 1 (direction 3, General direction)
+Collected the tab at 100000, 0
+===== Stage 2
+Collected the tab at 100000, 0
+===== Stage 3
+Focused other0 at dx=50, dy=0, w=10, h=10
+Collected the tab at 100000, 0
+===== Stage 4
+Collected the tab at 100000, 0
+===== Stage 5
+Focused other0 at dx=50, dy=50, w=10, h=10
+Collected the tab at 100000, 0
+===== Stage 6
+Focused other0 at dx=50, dy=-50, w=10, h=10
+Collected the tab at 100000, 0
+===== Stage 7
+Collected the tab at 100000, 0
+===== Stage 8
+Collected the tab at 100000, 0
+===== Stage 9 (direction 3, Overlapping bounds)
+Collected the tab at 100000, 0
+===== Stage 10
+Collected the tab at 100000, 0
+===== Stage 11
+Collected the tab at 100000, 0
+===== Stage 12
+Collected the tab at 100000, 0
+===== Stage 13
+Collected the tab at 100000, 0
+===== Stage 14
+Collected the tab at 100000, 0
+===== Stage 15
+Collected the tab at 100000, 0
+===== Stage 16
+Collected the tab at 100000, 0
+===== Stage 17 (direction 3, Specific direction)
+Focused other0 at dx=50, dy=50, w=10, h=10
+Collected the tab at 100000, 0
+===== Stage 18
+Focused other1 at dx=1, dy=5, w=10, h=10
+Focused other0 at dx=50, dy=50, w=10, h=10
+Collected the tab at 100000, 0
+===== Stage 19
+Focused other0 at dx=50, dy=50, w=10, h=10
+Collected the tab at 100000, 0
+===== Stage 20
+Focused other0 at dx=50, dy=50, w=10, h=10
+Collected the tab at 100000, 0
+===== Stage 21
+Focused other0 at dx=50, dy=50, w=10, h=10
+Collected the tab at 100000, 0
+===== Stage 22
+Focused other0 at dx=50, dy=50, w=10, h=10
+Collected the tab at 100000, 0
+===== Stage 23
+Focused other1 at dx=-10, dy=5, w=21, h=10
+Focused other0 at dx=50, dy=50, w=10, h=10
+Collected the tab at 100000, 0
+===== Stage 24
+Focused other0 at dx=-10, dy=20, w=30, h=10
+Collected the tab at 100000, 0
+===== Stage 25 (direction 3, Same distance, behind origin)
+Focused other0 at dx=10, dy=-5, w=10, h=10
+Collected the tab at 100000, 0
+===== Stage 26
+Focused other0 at dx=10, dy=5, w=10, h=10
+Collected the tab at 100000, 0
+===== Stage 27
+Focused other0 at dx=10, dy=2, w=10, h=10
+Collected the tab at 100000, 0
+===== Stage 28
+Focused other0 at dx=10, dy=0, w=10, h=10
+Collected the tab at 100000, 0
+===== Stage 29
+Focused other0 at dx=10, dy=10, w=10, h=10
+Collected the tab at 100000, 0
+===== Stage 30
+Focused other0 at dx=10, dy=-10, w=10, h=10
+Collected the tab at 100000, 0
+===== Stage 31
+Focused other0 at dx=30, dy=-7, w=10, h=10
+Collected the tab at 100000, 0
+===== Stage 32
+Focused other0 at dx=30, dy=8, w=10, h=10
+Collected the tab at 100000, 0
+===== Stage 33 (direction 3, Same distance, different sizes, behind origin)
+Focused other0 at dx=30, dy=-5, w=10, h=10
+Collected the tab at 100000, 0
+===== Stage 34
+Focused other0 at dx=30, dy=-5, w=10, h=10
+Collected the tab at 100000, 0
+===== Stage 35 (direction 3, Different distance, behind origin)
+Focused other1 at dx=10, dy=0, w=10, h=10
+Focused other0 at dx=11, dy=0, w=10, h=10
+Collected the tab at 100000, 0
+===== Stage 36
+Focused other0 at dx=10, dy=0, w=10, h=10
+Focused other1 at dx=11, dy=0, w=10, h=10
+Collected the tab at 100000, 0
+===== Stage 37
+Focused other1 at dx=10, dy=-8, w=10, h=10
+Focused other0 at dx=30, dy=0, w=10, h=10
+Collected the tab at 100000, 0
+===== Stage 38
+Focused other1 at dx=10, dy=0, w=10, h=10
+Focused other0 at dx=30, dy=-8, w=10, h=10
+Collected the tab at 100000, 0
+===== Stage 39 (direction 3, Behind origin preference)
+Focused other1 at dx=10, dy=-10, w=10, h=10
+Collected the tab at 100000, 0
+===== Stage 40
+Focused other0 at dx=10, dy=-10, w=10, h=10
+Collected the tab at 100000, 0
+===== Stage 41
+Focused other0 at dx=40, dy=-10, w=10, h=10
+Collected the tab at 100000, 0
+===== Stage 42
+Focused other0 at dx=10, dy=10, w=10, h=10
+Focused other1 at dx=40, dy=11, w=10, h=10
+Collected the tab at 100000, 0
+===== Stage 43
+Focused other0 at dx=40, dy=10, w=10, h=10
+Collected the tab at 100000, 0
+===== Stage 44
+Focused other0 at dx=10, dy=10, w=10, h=10
+Focused other1 at dx=40, dy=11, w=10, h=10
+Collected the tab at 100000, 0
+===== Stage 45 (direction 3, Size vs distance behind)
+Collected the tab at 100000, 0
+===== Stage 46
+Collected the tab at 100000, 0
+===== Stage 47
+Focused other0 at dx=20, dy=0, w=10, h=10
+Collected the tab at 100000, 0
+===== Stage 48
+Focused other1 at dx=20, dy=0, w=10, h=10
+Collected the tab at 100000, 0
+===== Stage 49
+Focused other0 at dx=20, dy=0, w=10, h=10
+Collected the tab at 100000, 0
+===== Stage 50
+Focused other0 at dx=20, dy=0, w=5, h=10
+Focused other1 at dx=20, dy=0, w=10, h=10
+Collected the tab at 100000, 0
+===== Stage 51 (direction 3, Behind vs wings)
+Focused other0 at dx=90, dy=0, w=10, h=10
+Collected the tab at 100000, 0
+===== Stage 52
+Focused other0 at dx=90, dy=0, w=10, h=10
+Collected the tab at 100000, 0
+===== Stage 53 (direction 3, Not behind vs wings)
+Focused other0 at dx=20, dy=20, w=10, h=10
+Collected the tab at 100000, 0
+===== Stage 54
+Focused other0 at dx=20, dy=20, w=10, h=10
+Collected the tab at 100000, 0
+===== Stage 55
+Focused other0 at dx=20, dy=20, w=10, h=10
+Collected the tab at 100000, 0
+===== Stage 56
+Focused other0 at dx=20, dy=20, w=10, h=10
+Collected the tab at 100000, 0
+===== Stage 57 (direction 3, Not behind origin)
+Focused other0 at dx=10, dy=-11, w=10, h=10
+Collected the tab at 100000, 0
+===== Stage 58
+Focused other0 at dx=10, dy=11, w=10, h=10
+Collected the tab at 100000, 0
+===== Stage 59
+Focused other0 at dx=10, dy=-12, w=10, h=10
+Collected the tab at 100000, 0
+===== Stage 60
+Focused other0 at dx=10, dy=12, w=10, h=10
+Collected the tab at 100000, 0
+===== Stage 61
+Focused other0 at dx=20, dy=25, w=10, h=10
+Focused other1 at dx=25, dy=20, w=10, h=10
+Collected the tab at 100000, 0
+===== Stage 62
+Focused other0 at dx=25, dy=20, w=10, h=10
+Collected the tab at 100000, 0
+===== Stage 63
+Focused other1 at dx=25, dy=20, w=10, h=10
+Collected the tab at 100000, 0
+===== Stage 64
+Focused other0 at dx=25, dy=20, w=10, h=10
+Collected the tab at 100000, 0
+===== Stage 65
+Focused other0 at dx=20, dy=24, w=10, h=10
+Focused other1 at dx=25, dy=20, w=10, h=10
+Collected the tab at 100000, 0
+===== Stage 66
+Focused other1 at dx=20, dy=24, w=10, h=10
+Focused other0 at dx=25, dy=20, w=10, h=10
+Collected the tab at 100000, 0
+===== Stage 67
+Focused other1 at dx=140, dy=160, w=10, h=10
+Focused other0 at dx=210, dy=60, w=10, h=10
+Collected the tab at 100000, 0
+===== Stage 68
+Focused other0 at dx=210, dy=60, w=10, h=10
+Collected the tab at 100000, 0
+===== Stage 69
+Focused other1 at dx=140, dy=-160, w=10, h=10
+Focused other0 at dx=210, dy=-60, w=10, h=10
+Collected the tab at 100000, 0
+===== Stage 70
+Focused other0 at dx=210, dy=-60, w=10, h=10
+Collected the tab at 100000, 0
+===== Stage 71
+Focused other1 at dx=140, dy=160, w=20, h=20
+Focused other0 at dx=210, dy=60, w=20, h=20
+Collected the tab at 100000, 0
+===== Stage 72
+Focused other0 at dx=210, dy=60, w=20, h=20
+Collected the tab at 100000, 0
+===== Stage 73
+Focused other1 at dx=140, dy=-170, w=20, h=20
+Focused other0 at dx=210, dy=-70, w=20, h=20
+Collected the tab at 100000, 0
+===== Stage 74
+Focused other0 at dx=210, dy=-70, w=20, h=20
+Collected the tab at 100000, 0
+===== Stage 75 (direction 3, Tab index)
+Focused other0 at dx=30, dy=0, w=10, h=10
+Focused other1 at dx=60, dy=0, w=10, h=10
+Collected the tab at 100000, 0
+===== Stage 76
+Focused other0 at dx=30, dy=0, w=10, h=10
+Focused other1 at dx=60, dy=0, w=10, h=10
+Collected the tab at 100000, 0
+===== Stage 77
+Focused other0 at dx=30, dy=5, w=10, h=10
+Collected the tab at 100000, 0
+===== Stage 78
+Focused other0 at dx=30, dy=-5, w=10, h=10
+Collected the tab at 100000, 0
+===== Stage 79
+Focused other0 at dx=30, dy=5, w=10, h=10
+Collected the tab at 100000, 0
+===== Stage 80
+Focused other0 at dx=30, dy=-5, w=10, h=10
+Collected the tab at 100000, 0
+===== Finished

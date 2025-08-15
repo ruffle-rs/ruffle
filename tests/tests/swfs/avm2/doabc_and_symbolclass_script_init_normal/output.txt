@@ -1,0 +1,6 @@
+New
+New constructor
+Test inaccessible in frame 1: ReferenceError: Error #1065: Variable getDefiniitionByName is not defined.
+C
+Z
+B

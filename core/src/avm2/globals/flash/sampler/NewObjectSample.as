@@ -3,7 +3,6 @@ package flash.sampler {
 
     public final class NewObjectSample extends Sample {
         public const id:Number;
-     
         public const type:Class;
 
         public function get object():* {
@@ -17,4 +16,3 @@ package flash.sampler {
         }
     }
 }
-

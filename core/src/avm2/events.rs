@@ -1,11 +1,10 @@
 //! Core event structure
 
 use crate::avm2::activation::Activation;
-use crate::avm2::error::type_error;
-use crate::avm2::object::{Object, TObject};
+use crate::avm2::globals::slots::flash_events_event_dispatcher as slots;
+use crate::avm2::object::{EventObject, Object, TObject as _};
 use crate::avm2::value::Value;
 use crate::avm2::Error;
-use crate::avm2::Multiname;
 use crate::display_object::TDisplayObject;
 use crate::string::AvmString;
 use fnv::FnvHashMap;
@@ -46,22 +45,22 @@ pub enum PropagationMode {
 #[derive(Clone, Collect)]
 #[collect(no_drop)]
 pub struct Event<'gc> {
-    /// Whether or not the event "bubbles" - fires on it's parents after it
+    /// Whether the event "bubbles" - fires on its parents after it
     /// fires on the child.
     bubbles: bool,
 
-    /// Whether or not the event has a default response that an event handler
+    /// Whether the event has a default response that an event handler
     /// can request to not occur.
     cancelable: bool,
 
-    /// Whether or not the event's default response has been cancelled.
+    /// Whether the event's default response has been cancelled.
     cancelled: bool,
 
-    /// Whether or not event propagation has stopped.
+    /// Whether event propagation has stopped.
     #[collect(require_static)]
     propagation: PropagationMode,
 
-    /// The object currently having it's event handlers invoked.
+    /// The object currently having its event handlers invoked.
     current_target: Option<Object<'gc>>,
 
     /// The current event phase.
@@ -73,17 +72,11 @@ pub struct Event<'gc> {
 
     /// The name of the event being triggered.
     event_type: AvmString<'gc>,
-
-    /// Whether is event has been dispatched before.
-    dispatched: bool,
 }
 
 impl<'gc> Event<'gc> {
     /// Construct a new event of a given type.
-    pub fn new<S>(event_type: S) -> Self
-    where
-        S: Into<AvmString<'gc>>,
-    {
+    pub fn new(event_type: AvmString<'gc>) -> Self {
         Event {
             bubbles: false,
             cancelable: false,
@@ -92,8 +85,7 @@ impl<'gc> Event<'gc> {
             current_target: None,
             event_phase: EventPhase::AtTarget,
             target: None,
-            event_type: event_type.into(),
-            dispatched: false,
+            event_type,
         }
     }
 
@@ -101,11 +93,8 @@ impl<'gc> Event<'gc> {
         self.event_type
     }
 
-    pub fn set_event_type<S>(&mut self, event_type: S)
-    where
-        S: Into<AvmString<'gc>>,
-    {
-        self.event_type = event_type.into();
+    pub fn set_event_type(&mut self, event_type: AvmString<'gc>) {
+        self.event_type = event_type;
     }
 
     pub fn is_bubbling(&self) -> bool {
@@ -190,11 +179,8 @@ impl<'gc> DispatchList<'gc> {
 
     /// Get all of the event handlers for a given event type, if such a type
     /// exists.
-    fn get_event(
-        &self,
-        event: impl Into<AvmString<'gc>>,
-    ) -> Option<&BTreeMap<i32, Vec<EventHandler<'gc>>>> {
-        self.0.get(&event.into())
+    fn get_event(&self, event: AvmString<'gc>) -> Option<&BTreeMap<i32, Vec<EventHandler<'gc>>>> {
+        self.0.get(&event)
     }
 
     /// Get all of the event handlers for a given event type, for mutation.
@@ -203,20 +189,20 @@ impl<'gc> DispatchList<'gc> {
     /// list.
     fn get_event_mut(
         &mut self,
-        event: impl Into<AvmString<'gc>>,
+        event: AvmString<'gc>,
     ) -> &mut BTreeMap<i32, Vec<EventHandler<'gc>>> {
-        self.0.entry(event.into()).or_default()
+        self.0.entry(event).or_default()
     }
 
     /// Get a single priority level of event handlers for a given event type,
     /// for mutation.
     fn get_event_priority_mut(
         &mut self,
-        event: impl Into<AvmString<'gc>>,
+        event: AvmString<'gc>,
         priority: i32,
     ) -> &mut Vec<EventHandler<'gc>> {
         self.0
-            .entry(event.into())
+            .entry(event)
             .or_default()
             .entry(priority)
             .or_default()
@@ -230,14 +216,14 @@ impl<'gc> DispatchList<'gc> {
     /// be added again, and this function will silently fail.
     pub fn add_event_listener(
         &mut self,
-        event: impl Into<AvmString<'gc>> + Clone,
+        event: AvmString<'gc>,
         priority: i32,
         handler: Object<'gc>,
         use_capture: bool,
     ) {
         let new_handler = EventHandler::new(handler, use_capture);
 
-        if let Some(event_sheaf) = self.get_event(event.clone()) {
+        if let Some(event_sheaf) = self.get_event(event) {
             for (_other_prio, other_set) in event_sheaf.iter() {
                 if other_set.contains(&new_handler) {
                     return;
@@ -255,7 +241,7 @@ impl<'gc> DispatchList<'gc> {
     /// removed from any priority in the list.
     pub fn remove_event_listener(
         &mut self,
-        event: impl Into<AvmString<'gc>>,
+        event: AvmString<'gc>,
         handler: Object<'gc>,
         use_capture: bool,
     ) {
@@ -269,7 +255,7 @@ impl<'gc> DispatchList<'gc> {
     }
 
     /// Determine if there are any event listeners in this dispatch list.
-    pub fn has_event_listener(&self, event: impl Into<AvmString<'gc>>) -> bool {
+    pub fn has_event_listener(&self, event: AvmString<'gc>) -> bool {
         if let Some(event_sheaf) = self.get_event(event) {
             for (_prio, set) in event_sheaf.iter() {
                 if !set.is_empty() {
@@ -291,7 +277,7 @@ impl<'gc> DispatchList<'gc> {
     /// phases.
     pub fn iter_event_handlers<'a>(
         &'a mut self,
-        event: impl Into<AvmString<'gc>>,
+        event: AvmString<'gc>,
         use_capture: bool,
     ) -> impl 'a + Iterator<Item = Object<'gc>> {
         self.get_event_mut(event)
@@ -303,7 +289,7 @@ impl<'gc> DispatchList<'gc> {
     }
 }
 
-impl<'gc> Default for DispatchList<'gc> {
+impl Default for DispatchList<'_> {
     fn default() -> Self {
         Self::new()
     }
@@ -331,15 +317,15 @@ impl<'gc> EventHandler<'gc> {
     }
 }
 
-impl<'gc> PartialEq for EventHandler<'gc> {
+impl PartialEq for EventHandler<'_> {
     fn eq(&self, rhs: &Self) -> bool {
         self.use_capture == rhs.use_capture && Object::ptr_eq(self.handler, rhs.handler)
     }
 }
 
-impl<'gc> Eq for EventHandler<'gc> {}
+impl Eq for EventHandler<'_> {}
 
-impl<'gc> Hash for EventHandler<'gc> {
+impl Hash for EventHandler<'_> {
     fn hash<H: Hasher>(&self, state: &mut H) {
         self.use_capture.hash(state);
         self.handler.as_ptr().hash(state);
@@ -370,23 +356,21 @@ pub fn parent_of(target: Object<'_>) -> Option<Object<'_>> {
 /// `EventObject`, or this function will panic. You must have already set the
 /// event's phase to match what targets you are dispatching to, or you will
 /// call the wrong handlers.
-pub fn dispatch_event_to_target<'gc>(
+fn dispatch_event_to_target<'gc>(
     activation: &mut Activation<'_, 'gc>,
     dispatcher: Object<'gc>,
-    target: Object<'gc>,
-    event: Object<'gc>,
+    real_target: Object<'gc>,
+    current_target: Object<'gc>,
+    event: EventObject<'gc>,
+    simulate_dispatch: bool,
 ) -> Result<(), Error<'gc>> {
     avm_debug!(
         activation.context.avm2,
-        "Event dispatch: {} to {target:?}",
-        event.as_event().unwrap().event_type(),
+        "Event dispatch: {} to {current_target:?}",
+        event.event().event_type(),
     );
-    let dispatch_list = dispatcher
-        .get_property(
-            &Multiname::new(activation.avm2().flash_events_internal, "_dispatchList"),
-            activation,
-        )?
-        .as_object();
+
+    let dispatch_list = dispatcher.get_slot(slots::DISPATCH_LIST).as_object();
 
     if dispatch_list.is_none() {
         // Objects with no dispatch list act as if they had an empty one
@@ -395,36 +379,35 @@ pub fn dispatch_event_to_target<'gc>(
 
     let dispatch_list = dispatch_list.unwrap();
 
-    let mut evtmut = event.as_event_mut(activation.context.gc_context).unwrap();
+    let mut evtmut = event.event_mut(activation.gc());
     let name = evtmut.event_type();
     let use_capture = evtmut.phase() == EventPhase::Capturing;
 
     let handlers: Vec<Object<'gc>> = dispatch_list
-        .as_dispatch_mut(activation.context.gc_context)
-        .ok_or_else(|| Error::from("Internal dispatch list is missing during dispatch!"))?
+        .as_dispatch_mut(activation.gc())
+        .expect("Internal dispatch list is missing during dispatch!")
         .iter_event_handlers(name, use_capture)
         .collect();
 
-    evtmut.set_current_target(target);
-
     if !handlers.is_empty() {
-        evtmut.dispatched = true;
+        evtmut.set_target(real_target);
+        evtmut.set_current_target(current_target);
     }
 
     drop(evtmut);
 
+    if simulate_dispatch {
+        return Ok(());
+    }
+
     for handler in handlers.iter() {
-        if event
-            .as_event()
-            .unwrap()
-            .is_propagation_stopped_immediately()
-        {
+        if event.event().is_propagation_stopped_immediately() {
             break;
         }
 
         let global = activation.context.avm2.toplevel_global_object().unwrap();
 
-        if let Err(err) = handler.call(global.into(), &[event.into()], activation) {
+        if let Err(err) = Value::from(*handler).call(activation, global.into(), &[event.into()]) {
             tracing::error!(
                 "Error dispatching event {:?} to handler {:?} : {:?}",
                 event,
@@ -440,15 +423,10 @@ pub fn dispatch_event_to_target<'gc>(
 pub fn dispatch_event<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Object<'gc>,
-    event: Object<'gc>,
+    event: EventObject<'gc>,
+    simulate_dispatch: bool,
 ) -> Result<bool, Error<'gc>> {
-    let target = this
-        .get_property(
-            &Multiname::new(activation.avm2().flash_events_internal, "_target"),
-            activation,
-        )?
-        .as_object()
-        .unwrap_or(this);
+    let target = this.get_slot(slots::TARGET).as_object().unwrap_or(this);
 
     let mut ancestor_list = Vec::new();
     // Edge case - during button construction, we fire bubbling events for objects
@@ -463,68 +441,75 @@ pub fn dispatch_event<'gc>(
         parent = parent_dobj.parent();
     }
 
-    let dispatched = event.as_event().unwrap().dispatched;
-
-    let event = if dispatched {
-        event
-            .call_public_property("clone", &[], activation)?
-            .as_object()
-            .ok_or_else(|| {
-                let error = type_error(
-                    activation,
-                    "Error #2007: Parameter event must be non-null.",
-                    2007,
-                );
-
-                match error {
-                    Err(e) => e,
-                    Ok(e) => Error::AvmError(e),
-                }
-            })?
-    } else {
-        event
-    };
-
-    let mut evtmut = event.as_event_mut(activation.context.gc_context).unwrap();
+    let mut evtmut = event.event_mut(activation.gc());
 
     evtmut.set_phase(EventPhase::Capturing);
-    evtmut.set_target(target);
 
     drop(evtmut);
 
     for ancestor in ancestor_list.iter().rev() {
-        if event.as_event().unwrap().is_propagation_stopped() {
+        if event.event().is_propagation_stopped() {
             break;
         }
 
-        dispatch_event_to_target(activation, *ancestor, *ancestor, event)?;
+        dispatch_event_to_target(
+            activation,
+            *ancestor,
+            target,
+            *ancestor,
+            event,
+            simulate_dispatch,
+        )?;
     }
 
     event
-        .as_event_mut(activation.context.gc_context)
-        .unwrap()
+        .event_mut(activation.gc())
         .set_phase(EventPhase::AtTarget);
 
-    if !event.as_event().unwrap().is_propagation_stopped() {
-        dispatch_event_to_target(activation, this, target, event)?;
+    if !event.event().is_propagation_stopped() {
+        dispatch_event_to_target(activation, this, target, target, event, simulate_dispatch)?;
     }
 
     event
-        .as_event_mut(activation.context.gc_context)
-        .unwrap()
+        .event_mut(activation.context.gc_context)
         .set_phase(EventPhase::Bubbling);
 
-    if event.as_event().unwrap().is_bubbling() {
+    if event.event().is_bubbling() {
         for ancestor in ancestor_list.iter() {
-            if event.as_event().unwrap().is_propagation_stopped() {
+            if event.event().is_propagation_stopped() {
                 break;
             }
 
-            dispatch_event_to_target(activation, *ancestor, *ancestor, event)?;
+            dispatch_event_to_target(
+                activation,
+                *ancestor,
+                target,
+                *ancestor,
+                event,
+                simulate_dispatch,
+            )?;
         }
     }
 
-    let was_not_cancelled = !event.as_event().unwrap().is_cancelled();
+    let handled = event.event().target.is_some();
+    Ok(handled)
+}
 
-    Ok(was_not_cancelled)
+/// Like `dispatch_event`, but does not run the Capturing and Bubbling phases,
+/// and dispatches the event regardless of whether propagation has been stopped.
+/// This matches FP's event broadcasting logic.
+pub fn broadcast_event<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    this: Object<'gc>,
+    event: EventObject<'gc>,
+) -> Result<(), Error<'gc>> {
+    let target = this.get_slot(slots::TARGET).as_object().unwrap_or(this);
+
+    event
+        .event_mut(activation.gc())
+        .set_phase(EventPhase::AtTarget);
+
+    dispatch_event_to_target(activation, this, target, target, event, false)?;
+
+    Ok(())
 }

@@ -1,33 +1,27 @@
 use crate::avm2::activation::Activation;
 use crate::avm2::metadata::Metadata;
 use crate::avm2::method::Method;
-use crate::avm2::object::{ClassObject, FunctionObject, Object};
+use crate::avm2::object::{ClassObject, FunctionObject};
 use crate::avm2::property::{Property, PropertyClass};
 use crate::avm2::property_map::PropertyMap;
 use crate::avm2::scope::ScopeChain;
 use crate::avm2::traits::{Trait, TraitKind};
 use crate::avm2::value::Value;
-use crate::avm2::Error;
-use crate::avm2::Multiname;
-use crate::avm2::Namespace;
-use crate::avm2::QName;
-use crate::string::AvmString;
-use gc_arena::{Collect, GcCell, Mutation};
-use std::cell::Ref;
+use crate::avm2::{Class, Error, Multiname, Namespace, QName};
+use crate::context::UpdateContext;
+use crate::string::{AvmString, StringContext};
+use gc_arena::barrier::{field, unlock};
+use gc_arena::lock::Lock;
+use gc_arena::{Collect, Gc, Mutation};
 use std::collections::HashMap;
-use std::ops::DerefMut;
 
 #[derive(Collect, Clone, Copy)]
 #[collect(no_drop)]
-pub struct VTable<'gc>(GcCell<'gc, VTableData<'gc>>);
+pub struct VTable<'gc>(Gc<'gc, VTableData<'gc>>);
 
-#[derive(Collect, Clone)]
+#[derive(Collect, Default)]
 #[collect(no_drop)]
-pub struct VTableData<'gc> {
-    /// should always be Some post-initialization
-    defining_class: Option<ClassObject<'gc>>,
-
-    /// should always be Some post-initialization
+struct VTableData<'gc> {
     scope: Option<ScopeChain<'gc>>,
 
     protected_namespace: Option<Namespace<'gc>>,
@@ -41,12 +35,18 @@ pub struct VTableData<'gc> {
 
     /// Stores the `PropertyClass` for each slot,
     /// indexed by `slot_id`
-    slot_classes: Vec<PropertyClass<'gc>>,
+    slot_classes: Box<[Lock<PropertyClass<'gc>>]>,
 
     /// method_table is indexed by `disp_id`
-    method_table: Vec<ClassBoundMethod<'gc>>,
+    method_table: Box<[ClassBoundMethod<'gc>]>,
 
-    default_slots: Vec<Option<Value<'gc>>>,
+    default_slots: Box<[Option<Value<'gc>>]>,
+}
+
+impl PartialEq for VTable<'_> {
+    fn eq(&self, other: &Self) -> bool {
+        Gc::ptr_eq(self.0, other.0)
+    }
 }
 
 // TODO: it might make more sense to just bind the Method to the VTable (and this its class and scope) directly
@@ -55,84 +55,84 @@ pub struct VTableData<'gc> {
 #[derive(Collect, Clone)]
 #[collect(no_drop)]
 pub struct ClassBoundMethod<'gc> {
-    pub class: ClassObject<'gc>,
-    pub scope: ScopeChain<'gc>,
+    pub class: Class<'gc>,
+    pub super_class_obj: Option<ClassObject<'gc>>,
+    scope: Lock<Option<ScopeChain<'gc>>>,
     pub method: Method<'gc>,
+}
+
+impl<'gc> ClassBoundMethod<'gc> {
+    pub fn scope(&self) -> ScopeChain<'gc> {
+        self.scope.get().expect("Scope should exists here")
+    }
 }
 
 impl<'gc> VTable<'gc> {
     pub fn empty(mc: &Mutation<'gc>) -> Self {
-        VTable(GcCell::new(
-            mc,
-            VTableData {
-                defining_class: None,
-                scope: None,
-                protected_namespace: None,
-                resolved_traits: PropertyMap::new(),
-                slot_metadata_table: HashMap::new(),
-                disp_metadata_table: HashMap::new(),
-                slot_classes: vec![],
-                method_table: vec![],
-                default_slots: vec![],
-            },
-        ))
+        VTable(Gc::new(mc, VTableData::default()))
     }
 
-    /// A special case for newcatch. A single variable (q)name that maps to slot 1.
-    pub fn newcatch(mc: &Mutation<'gc>, vname: &QName<'gc>) -> Self {
-        let mut rt = PropertyMap::new();
-
-        rt.insert(*vname, Property::Slot { slot_id: 1 });
-
-        let vt = VTable(GcCell::new(
-            mc,
-            VTableData {
-                defining_class: None,
-                scope: None,
-                protected_namespace: None,
-                resolved_traits: rt,
-                slot_metadata_table: HashMap::new(),
-                disp_metadata_table: HashMap::new(),
-                method_table: vec![],
-                // Compilers expect `setslot 1` to work on the `newcatch` object.
-                // `setslot 1` maps to index 1, so we need two slots here, because Ruffle
-                // maps setslot arg directly to the slot array index, unlike AVM which does the
-                // -1 shift.
-                default_slots: vec![None, None],
-                slot_classes: vec![PropertyClass::Any, PropertyClass::Any],
-            },
-        ));
-
-        vt
-    }
-
-    pub fn duplicate(self, mc: &Mutation<'gc>) -> Self {
-        VTable(GcCell::new(mc, self.0.read().clone()))
-    }
-
-    pub fn resolved_traits(&self) -> Ref<'_, PropertyMap<'gc, Property>> {
-        Ref::map(self.0.read(), |v| &v.resolved_traits)
-    }
-
-    pub fn get_metadata_for_slot(&self, slot_id: &u32) -> Option<Box<[Metadata<'gc>]>> {
-        self.0.read().slot_metadata_table.get(slot_id).cloned()
-    }
-
-    pub fn get_metadata_for_disp(&self, disp_id: &u32) -> Option<Box<[Metadata<'gc>]>> {
-        self.0.read().disp_metadata_table.get(disp_id).cloned()
-    }
-
-    pub fn slot_class_name(
-        &self,
-        slot_id: u32,
+    /// Builds a new vtable by calculating the flattened list of instance traits
+    /// that this class maintains.
+    pub fn new(
+        defining_class_def: Class<'gc>,
+        super_class_obj: Option<ClassObject<'gc>>,
+        scope: Option<ScopeChain<'gc>>,
+        superclass_vtable: Option<Self>,
         mc: &Mutation<'gc>,
-    ) -> Result<Multiname<'gc>, Error<'gc>> {
+    ) -> Self {
+        let this = Self::init_vtable(
+            defining_class_def,
+            super_class_obj,
+            scope,
+            superclass_vtable,
+        );
+        VTable(Gc::new(mc, this))
+    }
+
+    /// Like `VTable::new`, but also copies properties from the defining class' interfaces.
+    pub fn new_with_interface_properties(
+        defining_class_def: Class<'gc>,
+        super_class_obj: Option<ClassObject<'gc>>,
+        scope: Option<ScopeChain<'gc>>,
+        superclass_vtable: Option<Self>,
+        context: &UpdateContext<'gc>,
+    ) -> Self {
+        let mut this = Self::init_vtable(
+            defining_class_def,
+            super_class_obj,
+            scope,
+            superclass_vtable,
+        );
+        Self::copy_interface_properties(&mut this, defining_class_def, context);
+        VTable(Gc::new(context.gc(), this))
+    }
+
+    pub fn resolved_traits(self) -> &'gc PropertyMap<'gc, Property> {
+        &Gc::as_ref(self.0).resolved_traits
+    }
+
+    pub fn get_metadata_for_slot(self, slot_id: u32) -> Option<&'gc [Metadata<'gc>]> {
+        Gc::as_ref(self.0)
+            .slot_metadata_table
+            .get(&slot_id)
+            .map(|v| &**v)
+    }
+
+    pub fn get_metadata_for_disp(self, disp_id: u32) -> Option<&'gc [Metadata<'gc>]> {
+        Gc::as_ref(self.0)
+            .disp_metadata_table
+            .get(&disp_id)
+            .map(|v| &**v)
+    }
+
+    pub fn slot_class_name(self, context: &mut StringContext<'gc>, slot_id: u32) -> AvmString<'gc> {
         self.0
-            .read()
             .slot_classes
             .get(slot_id as usize)
-            .ok_or_else(|| "Invalid slot ID".into())
-            .map(|c| c.get_name(mc))
+            .expect("Invalid slot ID")
+            .get()
+            .get_name(context)
     }
 
     pub fn get_trait(self, name: &Multiname<'gc>) -> Option<Property> {
@@ -140,11 +140,7 @@ impl<'gc> VTable<'gc> {
             return None;
         }
 
-        self.0
-            .read()
-            .resolved_traits
-            .get_for_multiname(name)
-            .cloned()
+        self.resolved_traits().get_for_multiname(name).cloned()
     }
 
     pub fn get_trait_with_ns(self, name: &Multiname<'gc>) -> Option<(Namespace<'gc>, Property)> {
@@ -152,72 +148,75 @@ impl<'gc> VTable<'gc> {
             return None;
         }
 
-        self.0
-            .read()
-            .resolved_traits
+        self.resolved_traits()
             .get_with_ns_for_multiname(name)
             .map(|(ns, p)| (ns, *p))
     }
 
     /// Coerces `value` to the type of the slot with id `slot_id`
     pub fn coerce_trait_value(
-        &self,
+        self,
         slot_id: u32,
         value: Value<'gc>,
         activation: &mut Activation<'_, 'gc>,
     ) -> Result<Value<'gc>, Error<'gc>> {
-        // Drop the `write()` guard, as 'slot_class.coerce' may need to access this vtable.
-        let mut slot_class = { self.0.read().slot_classes[slot_id as usize].clone() };
+        let slot_id = slot_id as usize;
+        let mut slot_class = self.0.slot_classes[slot_id].get();
 
         let (value, changed) = slot_class.coerce(activation, value)?;
 
         // Calling coerce modified `PropertyClass` to cache the class lookup,
         // so store the new value back in the vtable.
         if changed {
-            self.0.write(activation.context.gc_context).slot_classes[slot_id as usize] = slot_class;
+            let write = Gc::write(activation.gc(), self.0);
+            let slots = field!(write, VTableData, slot_classes).as_deref();
+            slots[slot_id].unlock().set(slot_class);
         }
         Ok(value)
     }
 
     pub fn has_trait(self, name: &Multiname<'gc>) -> bool {
-        self.0
-            .read()
-            .resolved_traits
-            .get_for_multiname(name)
-            .is_some()
+        self.resolved_traits().get_for_multiname(name).is_some()
     }
 
     pub fn get_method(self, disp_id: u32) -> Option<Method<'gc>> {
         self.0
-            .read()
             .method_table
             .get(disp_id as usize)
             .cloned()
             .map(|x| x.method)
     }
 
-    pub fn get_full_method(self, disp_id: u32) -> Option<ClassBoundMethod<'gc>> {
-        self.0.read().method_table.get(disp_id as usize).cloned()
+    pub fn get_full_method(self, disp_id: u32) -> Option<&'gc ClassBoundMethod<'gc>> {
+        Gc::as_ref(self.0).method_table.get(disp_id as usize)
     }
 
-    pub fn default_slots(&self) -> Ref<Vec<Option<Value<'gc>>>> {
-        Ref::map(self.0.read(), |v| &v.default_slots)
+    pub fn default_slots(&self) -> &[Option<Value<'gc>>] {
+        &self.0.default_slots
     }
 
-    /// Calculate the flattened list of instance traits that this class
-    /// maintains.
-    ///
-    /// This should be run during the class finalization step, before instances
-    /// are linked (as instances will further add traits to the list).
-    #[allow(clippy::if_same_then_else)]
-    pub fn init_vtable(
-        self,
-        defining_class: ClassObject<'gc>,
-        traits: &[Trait<'gc>],
-        scope: ScopeChain<'gc>,
+    pub fn slot_class(self, slot_id: u32) -> Option<PropertyClass<'gc>> {
+        self.0.slot_classes.get(slot_id as usize).map(Lock::get)
+    }
+
+    pub fn set_slot_class(self, mc: &Mutation<'gc>, slot_id: u32, value: PropertyClass<'gc>) {
+        let slots = field!(Gc::write(mc, self.0), VTableData, slot_classes).as_deref();
+        slots[slot_id as usize].unlock().set(value);
+    }
+
+    pub fn replace_scopes_with(self, mc: &Mutation<'gc>, new_scope: ScopeChain<'gc>) {
+        let methods = field!(Gc::write(mc, self.0), VTableData, method_table).as_deref();
+        for i in 0..methods.len() {
+            unlock!(methods[i], ClassBoundMethod, scope).set(Some(new_scope));
+        }
+    }
+
+    fn init_vtable(
+        defining_class_def: Class<'gc>,
+        super_class_obj: Option<ClassObject<'gc>>,
+        scope: Option<ScopeChain<'gc>>,
         superclass_vtable: Option<Self>,
-        activation: &mut Activation<'_, 'gc>,
-    ) -> Result<(), Error<'gc>> {
+    ) -> VTableData<'gc> {
         // Let's talk about slot_ids and disp_ids.
         // Specification is one thing, but reality is another.
 
@@ -269,64 +268,42 @@ impl<'gc> VTable<'gc> {
         // so long-term it's still something we should verify.
         // (and it's far from the only verification check we lack anyway)
 
-        let mut write = self.0.write(activation.context.gc_context);
-        let write = write.deref_mut();
-
-        write.defining_class = Some(defining_class);
-        write.scope = Some(scope);
-
-        write.protected_namespace = defining_class
-            .inner_class_definition()
-            .read()
-            .protected_namespace();
+        let mut resolved_traits = PropertyMap::new();
+        let mut slot_metadata_table = HashMap::new();
+        let mut disp_metadata_table = HashMap::new();
+        let mut method_table = Vec::new();
+        let mut default_slots = Vec::new();
+        let mut slot_classes = Vec::new();
 
         if let Some(superclass_vtable) = superclass_vtable {
-            write.resolved_traits = superclass_vtable.0.read().resolved_traits.clone();
-            write.slot_metadata_table = superclass_vtable.0.read().slot_metadata_table.clone();
-            write.disp_metadata_table = superclass_vtable.0.read().disp_metadata_table.clone();
-            write.slot_classes = superclass_vtable.0.read().slot_classes.clone();
-            write.method_table = superclass_vtable.0.read().method_table.clone();
-            write.default_slots = superclass_vtable.0.read().default_slots.clone();
+            resolved_traits = superclass_vtable.resolved_traits().clone();
+            slot_metadata_table = superclass_vtable.0.slot_metadata_table.clone();
+            disp_metadata_table = superclass_vtable.0.disp_metadata_table.clone();
+            slot_classes.extend_from_slice(&superclass_vtable.0.slot_classes);
+            method_table.extend_from_slice(&superclass_vtable.0.method_table);
+            default_slots.extend_from_slice(&superclass_vtable.0.default_slots);
 
-            if let Some(protected_namespace) = write.protected_namespace {
-                if let Some(super_protected_namespace) =
-                    superclass_vtable.0.read().protected_namespace
-                {
+            if let Some(protected_namespace) = defining_class_def.protected_namespace() {
+                if let Some(super_protected_namespace) = superclass_vtable.0.protected_namespace {
                     // Copy all protected traits from superclass
                     // but with this class's protected namespace
-                    for (local_name, ns, prop) in superclass_vtable.0.read().resolved_traits.iter()
-                    {
+                    for (local_name, ns, prop) in superclass_vtable.resolved_traits().iter() {
                         if ns.exact_version_match(super_protected_namespace) {
                             let new_name = QName::new(protected_namespace, local_name);
-                            write.resolved_traits.insert(new_name, *prop);
+                            resolved_traits.insert(new_name, *prop);
                         }
                     }
                 }
             }
         }
 
-        let (
-            resolved_traits,
-            slot_metadata_table,
-            disp_metadata_table,
-            method_table,
-            default_slots,
-            slot_classes,
-        ) = (
-            &mut write.resolved_traits,
-            &mut write.slot_metadata_table,
-            &mut write.disp_metadata_table,
-            &mut write.method_table,
-            &mut write.default_slots,
-            &mut write.slot_classes,
-        );
-
-        for trait_data in traits {
+        for trait_data in defining_class_def.traits() {
             match trait_data.kind() {
                 TraitKind::Method { method, .. } => {
                     let entry = ClassBoundMethod {
-                        class: defining_class,
-                        scope,
+                        class: defining_class_def,
+                        super_class_obj,
+                        scope: Lock::new(scope),
                         method: *method,
                     };
                     match resolved_traits.get(trait_data.name()) {
@@ -353,8 +330,9 @@ impl<'gc> VTable<'gc> {
                 }
                 TraitKind::Getter { method, .. } => {
                     let entry = ClassBoundMethod {
-                        class: defining_class,
-                        scope,
+                        class: defining_class_def,
+                        super_class_obj,
+                        scope: Lock::new(scope),
                         method: *method,
                     };
                     match resolved_traits.get_mut(trait_data.name()) {
@@ -390,8 +368,9 @@ impl<'gc> VTable<'gc> {
                 }
                 TraitKind::Setter { method, .. } => {
                     let entry = ClassBoundMethod {
-                        class: defining_class,
-                        scope,
+                        class: defining_class_def,
+                        super_class_obj,
+                        scope: Lock::new(scope),
                         method: *method,
                     };
                     match resolved_traits.get_mut(trait_data.name()) {
@@ -427,69 +406,55 @@ impl<'gc> VTable<'gc> {
                 }
                 TraitKind::Slot { slot_id, .. }
                 | TraitKind::Const { slot_id, .. }
-                | TraitKind::Function { slot_id, .. }
                 | TraitKind::Class { slot_id, .. } => {
                     let slot_id = *slot_id;
 
-                    let value = trait_to_default_value(scope, trait_data, activation);
+                    let value = trait_to_default_value(trait_data);
                     let value = Some(value);
 
                     let new_slot_id = if slot_id == 0 {
                         default_slots.push(value);
                         default_slots.len() as u32 - 1
-                    } else if let Some(Some(_)) = default_slots.get(slot_id as usize) {
-                        // slot_id conflict
-                        default_slots.push(value);
-                        default_slots.len() as u32 - 1
                     } else {
-                        if slot_id as usize >= default_slots.len() {
-                            default_slots.resize_with(slot_id as usize + 1, Default::default);
+                        // it's non-zero, so let's turn it from 1-based to 0-based.
+                        let slot_id = slot_id - 1;
+                        if let Some(Some(_)) = default_slots.get(slot_id as usize) {
+                            // slot_id conflict
+                            default_slots.push(value);
+                            default_slots.len() as u32 - 1
+                        } else {
+                            if slot_id as usize >= default_slots.len() {
+                                default_slots.resize_with(slot_id as usize + 1, Default::default);
+                            }
+                            default_slots[slot_id as usize] = value;
+                            slot_id
                         }
-                        default_slots[slot_id as usize] = value;
-                        slot_id
                     };
 
                     if new_slot_id as usize >= slot_classes.len() {
                         // We will overwrite `PropertyClass::Any` when we process the slots
                         // with the ids that we just skipped over.
-                        slot_classes.resize(new_slot_id as usize + 1, PropertyClass::Any);
+                        slot_classes
+                            .resize(new_slot_id as usize + 1, Lock::new(PropertyClass::Any));
                     }
 
                     let (new_prop, new_class) = match trait_data.kind() {
                         TraitKind::Slot {
-                            type_name, unit, ..
+                            type_name, domain, ..
                         } => (
                             Property::new_slot(new_slot_id),
-                            PropertyClass::name(
-                                activation.context.gc_context,
-                                type_name.clone(),
-                                *unit,
-                            ),
-                        ),
-                        TraitKind::Function { .. } => (
-                            Property::new_slot(new_slot_id),
-                            PropertyClass::Class(
-                                activation
-                                    .avm2()
-                                    .classes()
-                                    .function
-                                    .inner_class_definition(),
-                            ),
+                            PropertyClass::name(*type_name, *domain),
                         ),
                         TraitKind::Const {
-                            type_name, unit, ..
+                            type_name, domain, ..
                         } => (
                             Property::new_const_slot(new_slot_id),
-                            PropertyClass::name(
-                                activation.context.gc_context,
-                                type_name.clone(),
-                                *unit,
-                            ),
+                            PropertyClass::name(*type_name, *domain),
                         ),
-                        TraitKind::Class { .. } => (
+                        TraitKind::Class { class, .. } => (
                             Property::new_const_slot(new_slot_id),
                             PropertyClass::Class(
-                                activation.avm2().classes().class.inner_class_definition(),
+                                class.c_class().expect("Trait should hold an i_class"),
                             ),
                         ),
                         _ => unreachable!(),
@@ -501,17 +466,49 @@ impl<'gc> VTable<'gc> {
                         slot_metadata_table.insert(new_slot_id, metadata);
                     }
 
-                    slot_classes[new_slot_id as usize] = new_class;
+                    slot_classes[new_slot_id as usize] = Lock::new(new_class);
                 }
             }
         }
 
-        Ok(())
+        VTableData {
+            scope,
+            protected_namespace: defining_class_def.protected_namespace(),
+            resolved_traits,
+            slot_metadata_table,
+            disp_metadata_table,
+            method_table: method_table.into_boxed_slice(),
+            default_slots: default_slots.into_boxed_slice(),
+            slot_classes: slot_classes.into_boxed_slice(),
+        }
+    }
+
+    fn copy_interface_properties(
+        this: &mut VTableData<'gc>,
+        class: Class<'gc>,
+        context: &UpdateContext<'gc>,
+    ) {
+        // FIXME - we should only be copying properties for newly-implemented
+        // interfaces (i.e. those that were not already implemented by the superclass)
+        // Otherwise, our behavior diverges from Flash Player in certain cases.
+        // See the ignored test 'tests/tests/swfs/avm2/weird_superinterface_properties/'
+        let internal_ns = context.avm2.namespaces.public_vm_internal();
+        for interface in class.all_interfaces() {
+            for interface_trait in interface.traits() {
+                let interface_name = interface_trait.name();
+                if !interface_name.namespace().is_public() {
+                    let public_name = QName::new(internal_ns, interface_name.local_name());
+                    if let Some(prop) = this.resolved_traits.get(public_name).copied() {
+                        this.resolved_traits.insert(interface_name, prop);
+                    }
+                }
+            }
+        }
     }
 
     /// Retrieve a bound instance method suitable for use as a value.
     ///
-    /// This returns the bound method object itself, as well as it's dispatch
+    /// This returns the bound method object itself, as well as its dispatch
     /// ID. You will need the additional properties in order to install the
     /// method into your object.
     ///
@@ -519,99 +516,51 @@ impl<'gc> VTable<'gc> {
     /// the result. Otherwise, code that relies on bound methods having stable
     /// object identitities (e.g. `EventDispatcher.removeEventListener`) will
     /// fail.
+    ///
+    /// It is the caller's responsibility to ensure that the `receiver` passed
+    /// to this method is not Value::Null or Value::Undefined.
     pub fn make_bound_method(
         self,
         activation: &mut Activation<'_, 'gc>,
-        receiver: Object<'gc>,
+        receiver: Value<'gc>,
         disp_id: u32,
     ) -> Option<FunctionObject<'gc>> {
-        if let Some(ClassBoundMethod {
-            class,
-            scope,
-            method,
-        }) = self.get_full_method(disp_id)
-        {
-            Some(FunctionObject::from_method(
-                activation,
-                method,
-                scope,
-                Some(receiver),
-                Some(class),
-            ))
-        } else {
-            None
-        }
+        self.get_full_method(disp_id)
+            .map(|method| Self::bind_method(activation, receiver, method))
     }
 
-    /// Install a const trait on the global object.
-    /// This should only ever be called via `Object::install_const_late`,
-    /// on the `global` object.
-    pub fn install_const_trait_late(
-        self,
-        mc: &Mutation<'gc>,
-        name: QName<'gc>,
-        value: Value<'gc>,
-        class: ClassObject<'gc>,
-    ) -> u32 {
-        let mut write = self.0.write(mc);
-
-        write.default_slots.push(Some(value));
-        let new_slot_id = write.default_slots.len() as u32 - 1;
-        write
-            .resolved_traits
-            .insert(name, Property::new_const_slot(new_slot_id));
-        write
-            .slot_classes
-            .push(PropertyClass::Class(class.inner_class_definition()));
-
-        new_slot_id
+    /// Bind an instance method to a receiver, allowing it to be used as a value. See `VTable::make_bound_method`
+    ///
+    /// It is the caller's responsibility to ensure that the `receiver` passed
+    /// to this method is not Value::Null or Value::Undefined.
+    pub fn bind_method(
+        activation: &mut Activation<'_, 'gc>,
+        receiver: Value<'gc>,
+        method: &ClassBoundMethod<'gc>,
+    ) -> FunctionObject<'gc> {
+        FunctionObject::from_method(
+            activation,
+            method.method,
+            method.scope(),
+            Some(receiver),
+            method.super_class_obj,
+            Some(method.class),
+        )
     }
 
-    /// Install an existing trait under a new name, provided by interface.
-    /// This should only ever be called by `link_interfaces`.
-    pub fn copy_property_for_interface(
-        self,
-        mc: &Mutation<'gc>,
-        public_name: QName<'gc>,
-        interface_name: QName<'gc>,
-    ) {
-        let mut write = self.0.write(mc);
-
-        let prop = write.resolved_traits.get(public_name).cloned();
-
-        if let Some(prop) = prop {
-            write.resolved_traits.insert(interface_name, prop);
-        }
-    }
-
-    pub fn public_properties(self) -> Vec<(AvmString<'gc>, Property)> {
-        let read = self.0.read();
-
-        let mut props = Vec::new();
-
-        for (name, ns, prop) in read.resolved_traits.iter() {
-            if ns.is_public() {
-                props.push((name, *prop));
-            }
-        }
-        props
+    pub fn public_properties(self) -> impl Iterator<Item = (AvmString<'gc>, Property)> {
+        self.resolved_traits()
+            .iter()
+            .filter(|(_, ns, _)| ns.is_public())
+            .map(|(name, _, prop)| (name, *prop))
     }
 }
 
-fn trait_to_default_value<'gc>(
-    scope: ScopeChain<'gc>,
-    trait_data: &Trait<'gc>,
-    activation: &mut Activation<'_, 'gc>,
-) -> Value<'gc> {
+fn trait_to_default_value<'gc>(trait_data: &Trait<'gc>) -> Value<'gc> {
     match trait_data.kind() {
         TraitKind::Slot { default_value, .. } => *default_value,
         TraitKind::Const { default_value, .. } => *default_value,
-        TraitKind::Function { function, .. } => {
-            FunctionObject::from_function(activation, *function, scope)
-                .unwrap()
-                .into()
-        }
-        TraitKind::Class { .. } => Value::Undefined,
+        TraitKind::Class { .. } => Value::Null,
         _ => unreachable!(),
     }
 }

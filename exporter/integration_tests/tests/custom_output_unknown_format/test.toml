@@ -1,0 +1,3 @@
+args = ["custom_output"]
+
+expect_error = "The image format could not be determined"

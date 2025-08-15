@@ -33,7 +33,8 @@ mod renderer {
     use ruffle_render_wgpu::wgpu;
     use ruffle_test_framework::environment::{RenderBackend, RenderInterface};
     use ruffle_test_framework::options::RenderOptions;
-    use {std::sync::Arc, std::sync::OnceLock};
+    use std::any::Any;
+    use std::sync::{Arc, OnceLock};
 
     pub struct NativeRenderInterface;
 
@@ -67,25 +68,16 @@ mod renderer {
             }
         }
 
-        fn capture(&self, backend: &mut Box<dyn RenderBackend>) -> RgbaImage {
-            let renderer = backend
-                .downcast_mut::<WgpuRenderBackend<TextureTarget>>()
-                .unwrap();
+        fn capture(&self, backend: &mut dyn RenderBackend) -> RgbaImage {
+            let renderer =
+                <dyn Any>::downcast_mut::<WgpuRenderBackend<TextureTarget>>(backend).unwrap();
 
             renderer.capture_frame().expect("Failed to capture image")
         }
     }
 
-    pub fn is_supported(requirements: &RenderOptions) -> bool {
-        if let Some(descriptors) = descriptors() {
-            let adapter_info = descriptors.adapter.get_info();
-            let is_warp =
-                cfg!(windows) && adapter_info.vendor == 5140 && adapter_info.device == 140;
-
-            !requirements.exclude_warp || !is_warp
-        } else {
-            false
-        }
+    pub fn is_supported(_requirements: &RenderOptions) -> bool {
+        descriptors().is_some()
     }
 
     static WGPU: OnceLock<Option<Arc<Descriptors>>> = OnceLock::new();
@@ -103,13 +95,12 @@ mod renderer {
     */
 
     fn create_wgpu_device() -> Option<(wgpu::Instance, wgpu::Adapter, wgpu::Device, wgpu::Queue)> {
-        let instance = wgpu::Instance::new(Default::default());
+        let instance = wgpu::Instance::new(&Default::default());
         futures::executor::block_on(request_adapter_and_device(
             wgpu::Backends::all(),
             &instance,
             None,
             Default::default(),
-            None,
         ))
         .ok()
         .map(|(adapter, device, queue)| (instance, adapter, device, queue))

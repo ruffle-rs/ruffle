@@ -1,0 +1,15 @@
+# Format only known test configuration files, as other files constitute tests
+# and can or sometimes even have to be formatted differently.
+root = true
+
+[test.toml]
+end_of_line = lf
+insert_final_newline = true
+trim_trailing_whitespace = true
+
+[{input,socket}.json]
+end_of_line = lf
+insert_final_newline = true
+trim_trailing_whitespace = true
+indent_style = space
+indent_size = 2

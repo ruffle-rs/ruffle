@@ -29,6 +29,10 @@
                 <input type="checkbox" id="autostart" />
                 <label for="autostart">Autoplay Flash content (click to unmute)</label>
             </div>
+            <div class="option checkbox">
+                <input type="checkbox" id="swf_takeover" />
+                <label for="swf_takeover">Play SWF files in browser instead of downloading</label>
+            </div>
             <div id="advanced-options">Advanced Options</div>
             <div class="option checkbox">
                 <input type="checkbox" id="ignore_optout" />
@@ -36,9 +40,11 @@
             </div>
             <div class="option select">
                 <select id="log_level">
-                    <option value="info" id="log_level_info">Info</option>
-                    <option value="warn" id="log_level_warn">Warning</option>
                     <option value="error" id="log_level_error">Error</option>
+                    <option value="warn" id="log_level_warn">Warning</option>
+                    <option value="info" id="log_level_info">Info</option>
+                    <option value="debug" id="log_level_debug">Debug</option>
+                    <option value="trace" id="log_level_trace">Trace</option>
                 </select>
                 <label for="log_level">Log level</label>
             </div>
@@ -46,7 +52,7 @@
                 <select id="preferred_renderer">
                     <option value="" id="preferred_renderer_auto">Automatic</option>
                     <option value="webgpu">WebGPU</option>
-                    <option value="wgpu-webgl">Wgpu (via WebGL)</option>
+                    <option value="wgpu-webgl">wgpu (via WebGL)</option>
                     <option value="webgl">WebGL</option>
                     <option value="canvas">Canvas2D</option>
                 </select>

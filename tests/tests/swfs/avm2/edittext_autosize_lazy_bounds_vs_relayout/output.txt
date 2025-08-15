@@ -1,0 +1,106 @@
+Test: maxScrollH
+  value: 0
+  value: 0
+  value: 64
+  value: 64
+  x,y,w,h: 0,0,164,204
+  value: 0
+Test: maxScrollV
+  value: 1
+  value: 1
+  value: 9
+  value: 9
+  x,y,w,h: 0,0,164,204
+  value: 1
+Test: bottomScrollV
+  value: 1
+  value: 1
+  value: 2
+  value: 2
+  x,y,w,h: 0,0,164,204
+  value: 10
+Test: textWidth
+  value: 0
+  value: 0
+  value: 160
+  value: 160
+  x,y,w,h: 0,0,164,204
+  value: 160
+Test: textHeight
+  value: 0
+  value: 0
+  value: 200
+  value: 200
+  x,y,w,h: 0,0,164,204
+  value: 200
+Test: length
+  value: 0
+  value: 0
+  value: 29
+  value: 29
+  x,y,w,h: 0,0,164,204
+  value: 29
+Test: numLines
+  value: 1
+  value: 1
+  value: 11
+  value: 11
+  x,y,w,h: 0,0,164,204
+  value: 11
+Test: getLineMetrics
+  value: 0;?
+  value: 0;?
+  value: 160;16
+  value: 160;16
+  x,y,w,h: 0,0,164,204
+  value: 160;16
+Test: getLineOffset
+  value: 0;?
+  value: 0;?
+  value: 0;11
+  value: 0;11
+  x,y,w,h: 0,0,164,204
+  value: 0;11
+Test: getLineText
+  value: ;?
+  value: ;?
+  value: aaaaaaaaaa\n;a\n
+  value: aaaaaaaaaa\n;a\n
+  x,y,w,h: 0,0,164,204
+  value: aaaaaaaaaa\n;a\n
+Test: getLineLength
+  value: 0;?
+  value: 0;?
+  value: 11;2
+  value: 11;2
+  x,y,w,h: 0,0,164,204
+  value: 11;2
+Test: getLineIndexAtPoint
+  value: 0;0
+  value: 0;0
+  value: 0;1
+  value: 0;1
+  x,y,w,h: 0,0,164,204
+  value: 0;1
+Test: getLineIndexOfChar
+  value: -1;-1
+  value: -1;-1
+  value: 0;3
+  value: 0;3
+  x,y,w,h: 0,0,164,204
+  value: 0;3
+Test: getCharBoundaries
+  value: null;null
+  value: null;null
+  value: (x=2, y=2, w=16, h=20);(x=82, y=2, w=16, h=20)
+  value: (x=2, y=2, w=16, h=20);(x=82, y=2, w=16, h=20)
+  x,y,w,h: 0,0,164,204
+  value: (x=2, y=2, w=16, h=20);(x=82, y=2, w=16, h=20)
+Test: getCharIndexAtPoint
+  value: -1;-1
+  value: -1;-1
+  value: 0;4
+  value: 0;4
+  x,y,w,h: 0,0,164,204
+  value: 0;4
+Tests finished

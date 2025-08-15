@@ -1,0 +1,4 @@
+[
+  { "type": "Wait" },
+  { "type": "KeyDown", "key": "Escape" }
+]

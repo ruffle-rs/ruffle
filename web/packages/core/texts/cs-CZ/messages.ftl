@@ -1,6 +1,9 @@
 message-cant-embed =
     Ruffle nemohl spustit Flash vložený na této stránce.
     Můžete se pokusit otevřít soubor na samostatné kartě, abyste se vyhnuli tomuto problému.
+message-restored-from-bfcache =
+    Váš prohlížeč obnovil tento Flash obsah z předchozí relace.
+    Chcete-li začít znovu, znovu načtěte stránku.
 panic-title = Něco se pokazilo :(
 more-info = Další informace
 run-anyway = Přesto spustit
@@ -10,10 +13,21 @@ update-ruffle = Aktualizovat Ruffle
 ruffle-demo = Web Demo
 ruffle-desktop = Desktopová aplikace
 ruffle-wiki = Zobrazit Ruffle Wiki
-enable-hardware-acceleration = Zdá se, že hardwarová akcelerace není povolena. I když Ruffle funguje správně, může být nepřiměřeně pomalý. Jak povolit hardwarovou akceleraci zjistíte na tomto odkazu.
+enable-hardware-acceleration = Zdá se, že hardwarová akcelerace je vypnutá. I když Ruffle funguje správně, může být nepřiměřeně pomalý. Jak povolit hardwarovou akceleraci zjistíte na tomto odkazu:
+enable-hardware-acceleration-link = Časté dotazy - Hardwarová akcelerace Chrome
 view-error-details = Zobrazit podrobnosti o chybě
 open-in-new-tab = Otevřít na nové kartě
 click-to-unmute = Kliknutím zrušíte ztlumení
+clipboard-message-title = Kopírování a vkládání v Ruffle
+clipboard-message-description =
+    { $variant ->
+       *[unsupported] Váš prohlížeč nepodporuje plný přístup ke schránce,
+        [access-denied] Přístup ke schránce byl odepřen,
+    } ale místo toho můžete vždy použít tyto zkratky:
+clipboard-message-copy = { " " } pro kopírování
+clipboard-message-cut = { " " } pro vystřihování
+clipboard-message-paste = { " " } pro vkládání
+error-canvas-reload = Nelze znovu načíst pomocí vykreslovače plátna, pokud je vykreslovač plátna již používán.
 error-file-protocol =
     Zdá se, že používáte Ruffle na protokolu "file:".
     To není možné, protože prohlížeče blokují fungování mnoha funkcí z bezpečnostních důvodů.
@@ -58,6 +72,10 @@ error-wasm-disabled-on-edge =
     Chcete-li tento problém vyřešit, zkuste otevřít nastavení prohlížeče, klikněte na položku „Ochrana osobních údajů, vyhledávání a služby“, přejděte dolů a vypněte možnost „Zvyšte svou bezpečnost na webu“.
     Vašemu prohlížeči to umožní načíst požadované soubory „.wasm“.
     Pokud problém přetrvává, budete možná muset použít jiný prohlížeč.
+error-wasm-unsupported-browser =
+    Prohlížeč, který používáte, nepodporuje rozšíření WebAssembly, které Ruffle vyžaduje ke spuštění.
+    Přejděte na podporovaný prohlížeč.
+    Seznam podporovaných prohlížečů naleznete na Wiki.
 error-javascript-conflict =
     Ruffle narazil na problém při pokusu o inicializaci.
     Zdá se, že tato stránka používá kód JavaScript, který je v konfliktu s Ruffle.

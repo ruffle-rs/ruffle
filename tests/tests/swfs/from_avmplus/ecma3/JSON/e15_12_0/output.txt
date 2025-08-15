@@ -1,0 +1,4 @@
+15.12-0-1: JSON must be a built-in object PASSED!
+15.12-0-2: JSON must not support the [[Construct]] method PASSED!
+15.12-0-3: JSON must not support the [[Call]] method PASSED!
+15.12-0-4: JSON object properties must be non enumerable PASSED!

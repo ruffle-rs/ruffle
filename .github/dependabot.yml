@@ -1,0 +1,53 @@
+version: 2
+updates:
+  - package-ecosystem: "npm"
+    directory: "/web/"
+    versioning-strategy: increase
+    schedule:
+      interval: "weekly"
+    groups:
+      npm-minor:
+        patterns:
+          - "*"
+        update-types:
+          - "minor"
+          - "patch"
+    labels:
+      - "T-chore"
+      - "A-deps"
+
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    labels:
+      - "T-chore"
+      - "A-deps"
+
+  - package-ecosystem: "cargo"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    groups:
+      winit-wgpu-egui:
+        patterns:
+        - "winit"
+        - "wgpu"
+        - "naga"
+        - "egui*"
+        - "raw-window-handle"
+      wasm-bindgen:
+        patterns:
+        - "wasm-bindgen"
+        - "js-sys"
+        - "web-sys"
+        - "wasm-bindgen-futures"
+      cargo-minor:
+        patterns:
+          - "*"
+        update-types:
+          - "minor"
+          - "patch"
+    labels:
+      - "T-chore"
+      - "A-deps"

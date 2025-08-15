@@ -1,0 +1,9 @@
+(new Date(current)).getUTCMilliseconds() PASSED!
+(new Date(-62167219200000)).getUTCMilliseconds() PASSED!
+(new Date(0)).getUTCMilliseconds() PASSED!
+(new Date(-2208988800000)).getUTCMilliseconds() PASSED!
+(new Date(946684800000)).getUTCMilliseconds() PASSED!
+(new Date(949464000000)).getUTCMilliseconds() PASSED!
+(new Date(1104537600000)).getUTCMilliseconds() PASSED!
+(new Date(NaN)).getUTCMilliseconds() PASSED!
+Date.prototype.getUTCMilliseconds.length PASSED!

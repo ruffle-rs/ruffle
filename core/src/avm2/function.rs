@@ -1,23 +1,24 @@
-//! AVM2 executables.
-
 use crate::avm2::activation::Activation;
-use crate::avm2::method::{BytecodeMethod, Method, NativeMethod, ParamConfig};
-use crate::avm2::object::{ClassObject, Object};
+use crate::avm2::class::Class;
+use crate::avm2::error::{make_mismatch_error, Error};
+use crate::avm2::method::{Method, MethodKind, ParamConfig};
+use crate::avm2::object::{ClassObject, FunctionObject};
 use crate::avm2::scope::ScopeChain;
 use crate::avm2::traits::TraitKind;
 use crate::avm2::value::Value;
-use crate::avm2::{Error, Multiname};
+use crate::avm2::Multiname;
 use crate::string::WString;
 use gc_arena::{Collect, Gc};
+use std::borrow::Cow;
+use std::cell::Cell;
 use std::fmt;
 
-/// Represents code written in AVM2 bytecode that can be executed by some
-/// means.
+/// Represents a bound method.
 #[derive(Clone, Collect)]
 #[collect(no_drop)]
-pub struct BytecodeExecutable<'gc> {
+pub struct BoundMethod<'gc> {
     /// The method code to execute from a given ABC file.
-    method: Gc<'gc, BytecodeMethod<'gc>>,
+    method: Method<'gc>,
 
     /// The scope this method was defined in.
     scope: ScopeChain<'gc>,
@@ -26,343 +27,325 @@ pub struct BytecodeExecutable<'gc> {
     ///
     /// If `None`, then the receiver provided by the caller is used. A
     /// `Some` value indicates a bound executable.
-    receiver: Option<Object<'gc>>,
-
-    /// The bound superclass for this method.
     ///
-    /// The `superclass` is the class that defined this method. If `None`,
-    /// then there is no defining superclass and `super` operations should fall
-    /// back to the `receiver`.
-    bound_superclass: Option<ClassObject<'gc>>,
-}
+    /// This should never be `Value::Null` or `Value::Undefined`.
+    bound_receiver: Option<Value<'gc>>,
 
-#[derive(Clone, Collect)]
-#[collect(no_drop)]
-pub struct NativeExecutable<'gc> {
-    /// The method associated with the executable.
-    method: Gc<'gc, NativeMethod<'gc>>,
-
-    /// The scope this method was defined in.
-    scope: ScopeChain<'gc>,
-
-    /// The bound receiver for this method.
-    bound_receiver: Option<Object<'gc>>,
-
-    /// The bound superclass for this method.
+    /// The superclass of the bound class for this method.
     ///
-    /// The `superclass` is the class that defined this method. If `None`,
-    /// then there is no defining superclass and `super` operations should fall
-    /// back to the `receiver`.
+    /// The `bound_superclass` is the superclass of the class that defined
+    /// this method. If `None`, then there is no defining class and `super`
+    /// operations should be invalid.
     bound_superclass: Option<ClassObject<'gc>>,
+
+    bound_class: Option<Class<'gc>>,
 }
 
-/// Represents code that can be executed by some means.
-#[derive(Clone, Collect)]
-#[collect(no_drop)]
-pub enum Executable<'gc> {
-    /// Code defined in Ruffle's binary.
-    Native(NativeExecutable<'gc>),
-
-    /// Code defined in a loaded ABC file.
-    Action(BytecodeExecutable<'gc>),
-}
-
-impl<'gc> Executable<'gc> {
-    /// Convert a method into an executable.
+impl<'gc> BoundMethod<'gc> {
     pub fn from_method(
         method: Method<'gc>,
         scope: ScopeChain<'gc>,
-        receiver: Option<Object<'gc>>,
+        receiver: Option<Value<'gc>>,
         superclass: Option<ClassObject<'gc>>,
+        class: Option<Class<'gc>>,
     ) -> Self {
-        match method {
-            Method::Native(method) => Self::Native(NativeExecutable {
-                method,
-                scope,
-                bound_receiver: receiver,
-                bound_superclass: superclass,
-            }),
-            Method::Bytecode(method) => Self::Action(BytecodeExecutable {
-                method,
-                scope,
-                receiver,
-                bound_superclass: superclass,
-            }),
+        Self {
+            method,
+            scope,
+            bound_receiver: receiver,
+            bound_superclass: superclass,
+            bound_class: class,
         }
     }
 
-    /// Execute a method.
-    ///
-    /// The function will either be called directly if it is a Rust builtin, or
-    /// executed on the same AVM2 instance as the activation passed in here.
-    /// The value returned in either case will be provided here.
-    ///
-    /// It is a panicking logic error to attempt to execute user code while any
-    /// reachable object is currently under a GcCell write lock.
-    ///
-    /// Passed-in arguments will be conformed to the set of method parameters
-    /// declared on the function.
     pub fn exec(
         &self,
         unbound_receiver: Value<'gc>,
-        mut arguments: &[Value<'gc>],
+        arguments: FunctionArgs<'_, 'gc>,
         activation: &mut Activation<'_, 'gc>,
-        callee: Object<'gc>,
+        callee: Option<FunctionObject<'gc>>,
     ) -> Result<Value<'gc>, Error<'gc>> {
-        let ret = match self {
-            Executable::Native(bm) => {
-                let method = bm.method.method;
-
-                let receiver = if let Some(receiver) = bm.bound_receiver {
-                    receiver
-                } else if matches!(unbound_receiver, Value::Null | Value::Undefined) {
-                    bm.scope
-                        .get(0)
-                        .expect("No global scope for function call")
-                        .values()
-                } else {
-                    unbound_receiver.coerce_to_object(activation)?
-                };
-
-                let caller_domain = activation.caller_domain();
-                let caller_movie = activation.caller_movie();
-                let subclass_object = bm.bound_superclass;
-                let mut activation = Activation::from_builtin(
-                    activation.context.reborrow(),
-                    subclass_object,
-                    bm.scope,
-                    caller_domain,
-                    caller_movie,
-                )?;
-
-                if arguments.len() > bm.method.signature.len() && !bm.method.is_variadic {
-                    return Err(format!(
-                        "Attempted to call {:?} with {} arguments (more than {} is prohibited)",
-                        bm.method.name,
-                        arguments.len(),
-                        bm.method.signature.len()
-                    )
-                    .into());
-                }
-
-                let arguments = activation.resolve_parameters(
-                    Method::Native(bm.method),
-                    arguments,
-                    &bm.method.signature,
-                    Some(callee),
-                )?;
-                activation
-                    .context
-                    .avm2
-                    .push_call(activation.context.gc_context, self);
-                method(&mut activation, receiver, &arguments)
-            }
-            Executable::Action(bm) => {
-                if bm.method.is_unchecked() {
-                    let max_args = bm.method.signature().len();
-                    if arguments.len() > max_args && !bm.method.is_variadic() {
-                        arguments = &arguments[..max_args];
-                    }
-                }
-
-                let receiver = if let Some(receiver) = bm.receiver {
-                    receiver
-                } else if matches!(unbound_receiver, Value::Null | Value::Undefined) {
-                    bm.scope
-                        .get(0)
-                        .expect("No global scope for function call")
-                        .values()
-                } else {
-                    unbound_receiver.coerce_to_object(activation)?
-                };
-
-                let subclass_object = bm.bound_superclass;
-
-                let mut activation = Activation::from_method(
-                    activation.context.reborrow(),
-                    bm.method,
-                    bm.scope,
-                    receiver,
-                    arguments,
-                    subclass_object,
-                    callee,
-                )?;
-                activation
-                    .context
-                    .avm2
-                    .push_call(activation.context.gc_context, self);
-                activation.run_actions(bm.method)
-            }
+        let receiver = if let Some(receiver) = self.bound_receiver {
+            receiver
+        } else if matches!(unbound_receiver, Value::Null | Value::Undefined) {
+            self.scope
+                .get(0)
+                .expect("No global scope for function call")
+                .values()
+        } else {
+            unbound_receiver
         };
-        activation
-            .context
-            .avm2
-            .pop_call(activation.context.gc_context);
-        ret
+
+        exec(
+            self.method,
+            self.scope,
+            receiver,
+            self.bound_superclass,
+            self.bound_class,
+            arguments,
+            activation,
+            callee,
+        )
     }
 
-    pub fn bound_superclass(&self) -> Option<ClassObject<'gc>> {
-        match self {
-            Executable::Native(NativeExecutable {
-                bound_superclass, ..
-            }) => *bound_superclass,
-            Executable::Action(BytecodeExecutable {
-                bound_superclass, ..
-            }) => *bound_superclass,
-        }
+    pub fn bound_class(&self) -> Option<Class<'gc>> {
+        self.bound_class
     }
 
     pub fn as_method(&self) -> Method<'gc> {
-        match self {
-            Executable::Native(nm) => Method::Native(nm.method),
-            Executable::Action(bm) => Method::Bytecode(bm.method),
-        }
+        self.method
     }
 
     pub fn debug_full_name(&self) -> WString {
         let mut output = WString::new();
-        display_function(&mut output, &self.as_method(), self.bound_superclass());
+        display_function(&mut output, self.as_method(), self.bound_class());
         output
     }
 
-    pub fn num_parameters(&self) -> usize {
-        match self {
-            Executable::Native(NativeExecutable { method, .. }) => method.signature.len(),
-            Executable::Action(BytecodeExecutable { method, .. }) => method.signature.len(),
-        }
-    }
-
     pub fn signature(&self) -> &[ParamConfig<'gc>] {
-        match self {
-            Executable::Native(NativeExecutable { method, .. }) => &method.signature,
-            Executable::Action(BytecodeExecutable { method, .. }) => method.signature(),
-        }
+        self.method.signature()
     }
 
     pub fn is_variadic(&self) -> bool {
+        self.method.is_variadic()
+    }
+
+    pub fn return_type(&self) -> Option<Gc<'gc, Multiname<'gc>>> {
+        self.method.return_type()
+    }
+}
+
+#[derive(Clone, Copy)]
+pub enum FunctionArgs<'a, 'gc> {
+    AsCellArgSlice { arguments: &'a [Cell<Value<'gc>>] },
+    AsArgSlice { arguments: &'a [Value<'gc>] },
+}
+
+impl<'a, 'gc> FunctionArgs<'a, 'gc> {
+    pub fn empty() -> Self {
+        FunctionArgs::AsArgSlice { arguments: &[] }
+    }
+
+    pub fn to_slice(self) -> Cow<'a, [Value<'gc>]> {
         match self {
-            Executable::Native(NativeExecutable { method, .. }) => method.is_variadic,
-            Executable::Action(BytecodeExecutable { method, .. }) => method.is_variadic(),
+            FunctionArgs::AsCellArgSlice { arguments } => {
+                Cow::Owned(arguments.iter().map(|o| o.get()).collect::<Vec<_>>())
+            }
+            FunctionArgs::AsArgSlice { arguments } => Cow::Borrowed(arguments),
         }
     }
 
-    pub fn return_type(&self) -> &Multiname<'gc> {
+    pub fn get_at(&self, index: usize) -> Value<'gc> {
         match self {
-            Executable::Native(NativeExecutable { method, .. }) => &method.return_type,
-            Executable::Action(BytecodeExecutable { method, .. }) => &method.return_type,
+            FunctionArgs::AsCellArgSlice { arguments } => arguments[index].get(),
+            FunctionArgs::AsArgSlice { arguments } => arguments[index],
+        }
+    }
+
+    pub fn len(&self) -> usize {
+        match self {
+            FunctionArgs::AsCellArgSlice { arguments } => arguments.len(),
+            FunctionArgs::AsArgSlice { arguments } => arguments.len(),
         }
     }
 }
 
-impl<'gc> fmt::Debug for Executable<'gc> {
-    fn fmt(&self, fmt: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            Self::Action(be) => fmt
-                .debug_struct("Executable::Action")
-                .field("method", &Gc::as_ptr(be.method))
-                .field("scope", &be.scope)
-                .field("receiver", &be.receiver)
-                .finish(),
-            Self::Native(bm) => fmt
-                .debug_struct("Executable::Native")
-                .field("method", &bm.method)
-                .field("bound_receiver", &bm.bound_receiver)
-                .finish(),
+/// Execute a method.
+///
+/// The function will either be called directly if it is a Rust builtin, or
+/// executed on the same AVM2 instance as the activation passed in here.
+/// The value returned in either case will be provided here.
+///
+/// It is a panicking logic error to attempt to execute user code while any
+/// reachable object is currently under a GcCell write lock.
+///
+/// Passed-in arguments will be conformed to the set of method parameters
+/// declared on the function.
+///
+/// It is the caller's responsibility to ensure that the `receiver` passed
+/// to this method is not Value::Null or Value::Undefined.
+#[expect(clippy::too_many_arguments)]
+pub fn exec<'gc>(
+    method: Method<'gc>,
+    scope: ScopeChain<'gc>,
+    receiver: Value<'gc>,
+    bound_superclass: Option<ClassObject<'gc>>,
+    bound_class: Option<Class<'gc>>,
+    arguments: FunctionArgs<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
+    callee: Option<FunctionObject<'gc>>,
+) -> Result<Value<'gc>, Error<'gc>> {
+    let mc = activation.gc();
+
+    let ret = match method.method_kind() {
+        MethodKind::Native { native_method, .. } => {
+            let arguments = &arguments.to_slice();
+
+            let caller_domain = activation.caller_domain();
+            let caller_movie = activation.caller_movie();
+            let mut activation = Activation::from_builtin(
+                activation.context,
+                bound_superclass,
+                bound_class,
+                scope,
+                caller_domain,
+                caller_movie,
+            );
+
+            method.resolve_info(&mut activation)?;
+
+            let signature = method.resolved_param_config();
+
+            // Check for too many arguments
+            if arguments.len() > signature.len() && !method.is_variadic() && !method.is_unchecked()
+            {
+                return Err(Error::avm_error(make_mismatch_error(
+                    &mut activation,
+                    method,
+                    arguments.len(),
+                    bound_class,
+                )?));
+            }
+
+            let arguments =
+                activation.resolve_parameters(method, arguments, signature, bound_class)?;
+
+            #[cfg(feature = "tracy_avm")]
+            let _span = {
+                let mut name = WString::new();
+                display_function(&mut name, method, bound_class);
+                let span = tracy_client::Client::running()
+                    .expect("tracy_client should be running")
+                    .span_alloc(None, &name.to_utf8_lossy(), "rust", 0, 0);
+                span.emit_color(0x2c4980);
+                span
+            };
+
+            activation.context.avm2.push_call(mc, method, bound_class);
+
+            native_method(&mut activation, receiver, &arguments)
         }
+        MethodKind::Bytecode { .. } => {
+            // We must initialize the stack frame here so the lifetime works out
+            let stack = activation.context.avm2.stack;
+            let stack_frame = stack.get_stack_frame(method);
+
+            // This used to be a one step called Activation::from_method,
+            // but avoiding moving an Activation around helps perf
+            let mut activation = Activation::from_nothing(activation.context);
+            if let Err(e) = activation.init_from_method(
+                method,
+                scope,
+                receiver,
+                arguments,
+                stack_frame,
+                bound_superclass,
+                bound_class,
+                callee,
+            ) {
+                // If an error is thrown during verification or argument coercion,
+                // we still need to call cleanup to dispose of the stack frame
+                activation.cleanup();
+                return Err(e);
+            }
+
+            #[cfg(feature = "tracy_avm")]
+            let _span = {
+                let mut name = WString::new();
+                display_function(&mut name, method, bound_class);
+                let option = tracy_client::Client::running();
+                let span = option.expect("tracy_client should be running").span_alloc(
+                    None,
+                    &name.to_utf8_lossy(),
+                    method.owner_movie().url(),
+                    line!(),
+                    0,
+                );
+                span.emit_color(0x425fa1);
+                span
+            };
+
+            activation.context.avm2.push_call(mc, method, bound_class);
+
+            let result = activation.run_actions(method);
+
+            activation.cleanup();
+
+            result
+        }
+    };
+    activation.context.avm2.pop_call(mc);
+    ret
+}
+
+impl fmt::Debug for BoundMethod<'_> {
+    fn fmt(&self, fmt: &mut fmt::Formatter<'_>) -> fmt::Result {
+        fmt.debug_struct("BoundMethod")
+            .field("method", &self.method)
+            .field("scope", &self.scope)
+            .field("receiver", &self.bound_receiver)
+            .finish()
     }
 }
 
 pub fn display_function<'gc>(
     output: &mut WString,
-    method: &Method<'gc>,
-    superclass: Option<ClassObject<'gc>>,
+    method: Method<'gc>,
+    bound_class: Option<Class<'gc>>,
 ) {
-    let class_def = superclass.map(|superclass| {
-        let class_def = superclass.inner_class_definition();
-        let name = class_def.read().name().to_qualified_name_no_mc();
+    if let Some(bound_class) = bound_class {
+        let name = bound_class.name().to_qualified_name_no_mc();
         output.push_str(&name);
-        class_def
-    });
-    match method {
-        Method::Native(method) => {
-            output.push_char('/');
-            output.push_utf8(method.name)
-        }
-        Method::Bytecode(method) => {
-            // NOTE: The name of a bytecode method refers to the name of the trait that contains the method,
-            // rather than the name of the method itself.
-            if let Some(class_def) = class_def {
-                if class_def
-                    .read()
-                    .class_init()
-                    .into_bytecode()
-                    .map(|b| Gc::ptr_eq(b, *method))
-                    .unwrap_or(false)
-                {
-                    output.push_utf8("$cinit");
-                } else if !class_def
-                    .read()
-                    .instance_init()
-                    .into_bytecode()
-                    .map(|b| Gc::ptr_eq(b, *method))
-                    .unwrap_or(false)
-                {
-                    // TODO: Ideally, the declaring trait of this executable should already be attached here, that way
-                    // we can avoid needing to lookup the trait like this.
-                    let class_def = class_def.read();
-                    let mut method_trait = None;
-                    // First search instance traits for the method
-                    for t in class_def.instance_traits() {
-                        if let Some(b) = t.as_method().and_then(|m| m.into_bytecode().ok()) {
-                            if Gc::ptr_eq(b, *method) {
-                                method_trait = Some(t);
-                                break;
-                            }
-                        }
-                    }
-                    if method_trait.is_none() {
-                        // If we can't find it in instance traits, search class traits instead
-                        for t in class_def.class_traits() {
-                            if let Some(b) = t.as_method().and_then(|m| m.into_bytecode().ok()) {
-                                if Gc::ptr_eq(b, *method) {
-                                    // Class traits always start with $
-                                    output.push_char('$');
-                                    method_trait = Some(t);
-                                    break;
-                                }
-                            }
-                        }
-                    }
-                    if let Some(method_trait) = method_trait {
-                        output.push_char('/');
-                        match method_trait.kind() {
-                            TraitKind::Setter { .. } => output.push_utf8("set "),
-                            TraitKind::Getter { .. } => output.push_utf8("get "),
-                            _ => (),
-                        }
-                        if method_trait.name().namespace().is_namespace() {
-                            output.push_str(&method_trait.name().to_qualified_name_no_mc());
-                        } else {
-                            output.push_str(&method_trait.name().local_name());
-                        }
-                    } else if !method.method_name().is_empty() {
-                        // Last resort if we can't find a name anywhere else.
-                        // SWF's with debug information will provide a method name attached
-                        // to the method definition, so we can use that.
-                        output.push_char('/');
-                        output.push_utf8(&method.method_name());
-                    }
-                    // TODO: What happens if we can't find the trait?
-                }
-                // We purposely do nothing for instance initializers
-            } else if method.is_function && !method.method_name().is_empty() {
-                output.push_utf8("Function/");
-                output.push_utf8(&method.method_name());
-            } else {
-                output.push_utf8("MethodInfo-");
-                output.push_utf8(&method.abc_method.to_string());
-            }
-        }
     }
+
+    // NOTE: The name of a bytecode method refers to the name of the trait that contains the method,
+    // rather than the name of the method itself.
+    if let Some(bound_class) = bound_class {
+        if bound_class.instance_init() == Some(method) {
+            if bound_class.is_c_class() {
+                // If the associated class is a c_class, its initializer
+                // method is a class initializer.
+                output.push_utf8("cinit");
+            }
+            // We purposely do nothing for instance initializers
+        } else {
+            let mut method_trait = None;
+
+            for t in bound_class.traits() {
+                if t.as_method().is_some_and(|tm| tm == method) {
+                    method_trait = Some(t);
+                    break;
+                }
+            }
+
+            if let Some(method_trait) = method_trait {
+                output.push_char('/');
+                match method_trait.kind() {
+                    TraitKind::Setter { .. } => output.push_utf8("set "),
+                    TraitKind::Getter { .. } => output.push_utf8("get "),
+                    _ => (),
+                }
+                if method_trait.name().namespace().is_namespace() {
+                    output.push_str(&method_trait.name().to_qualified_name_no_mc());
+                } else {
+                    output.push_str(&method_trait.name().local_name());
+                }
+            } else if !method.method_name().is_empty() {
+                // Last resort if we can't find a name anywhere else.
+                // SWF's with debug information will provide a method name attached
+                // to the method definition, so we can use that.
+                output.push_char('/');
+                output.push_utf8(&method.method_name());
+            }
+            // TODO: What happens if we can't find the trait?
+        }
+    } else if method.is_function() && !method.method_name().is_empty() {
+        output.push_utf8("Function/");
+        output.push_utf8(&method.method_name());
+    } else {
+        output.push_utf8("MethodInfo-");
+        output.push_utf8(&method.abc_method_index().to_string());
+    }
+
     output.push_utf8("()");
 }

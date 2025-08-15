@@ -1,0 +1,8 @@
+after setting to x: x
+after setting to empty: x
+after setting to null: x
+null font in format: null
+empty font in format: 
+after setting to x: x
+after setting to empty: x
+after setting to null: x

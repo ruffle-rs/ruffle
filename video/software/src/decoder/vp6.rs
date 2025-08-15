@@ -70,7 +70,7 @@ impl Vp6Decoder {
 }
 
 fn crop(data: &[u8], mut width: usize, to_size: (u16, u16)) -> Vec<u8> {
-    debug_assert!(data.len() % width == 0);
+    debug_assert!(data.len().is_multiple_of(width));
     let mut height = data.len() / width;
     let mut data = data.to_vec();
 
@@ -178,8 +178,8 @@ impl VideoDecoder for Vp6Decoder {
 
         let (mut width, mut height) = frame.get_dimensions(0);
         let (chroma_width, chroma_height) = frame.get_dimensions(1);
-        debug_assert_eq!(chroma_width, (width + 1) / 2);
-        debug_assert_eq!(chroma_height, (height + 1) / 2);
+        debug_assert_eq!(chroma_width, width.div_ceil(2));
+        debug_assert_eq!(chroma_height, height.div_ceil(2));
 
         // We assume that there is no padding between rows
         debug_assert!(frame.get_stride(0) == frame.get_dimensions(0).0);
@@ -198,7 +198,7 @@ impl VideoDecoder for Vp6Decoder {
         let v = &yuv[offsets.2..offsets.2 + chroma_width * chroma_height];
 
         // Cropping the encoded frame (containing whole macroblocks) to the
-        // size requested by the the bounds attribute.
+        // size requested by the bounds attribute.
 
         let &bounds = &self.bounds;
 
@@ -211,8 +211,16 @@ impl VideoDecoder for Vp6Decoder {
         // Bitmap at the moment does not allow these gaps, so we need to remove them.
 
         let y = crop(y, width, bounds);
-        let u = crop(u, chroma_width, ((bounds.0 + 1) / 2, (bounds.1 + 1) / 2));
-        let v = crop(v, chroma_width, ((bounds.0 + 1) / 2, (bounds.1 + 1) / 2));
+        let u = crop(
+            u,
+            chroma_width,
+            (bounds.0.div_ceil(2), bounds.1.div_ceil(2)),
+        );
+        let v = crop(
+            v,
+            chroma_width,
+            (bounds.0.div_ceil(2), bounds.1.div_ceil(2)),
+        );
 
         width = bounds.0 as usize;
         height = bounds.1 as usize;

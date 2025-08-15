@@ -1,283 +1,72 @@
 //! `uint` impl
 
 use crate::avm2::activation::Activation;
-use crate::avm2::class::{Class, ClassAttributes};
-use crate::avm2::error::{make_error_1003, make_error_1004};
-use crate::avm2::globals::number::print_with_radix;
-use crate::avm2::method::{Method, NativeMethodImpl, ParamConfig};
-use crate::avm2::object::{primitive_allocator, FunctionObject, Object, TObject};
+use crate::avm2::parameters::ParametersExt;
 use crate::avm2::value::Value;
-use crate::avm2::{AvmString, Error, Multiname, QName};
-use gc_arena::GcCell;
+use crate::avm2::Error;
 
-/// Implements `uint`'s instance initializer.
-fn instance_init<'gc>(
+pub fn uint_constructor<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(mut prim) = this.as_primitive_mut(activation.context.gc_context) {
-        if matches!(*prim, Value::Undefined | Value::Null) {
-            *prim = args
-                .get(0)
-                .cloned()
-                .unwrap_or(Value::Undefined)
-                .coerce_to_u32(activation)?
-                .into();
-        }
-    }
+    let uint_value = args
+        .get_optional(0)
+        .unwrap_or(Value::Integer(0))
+        .coerce_to_u32(activation)?;
 
-    Ok(Value::Undefined)
-}
-
-/// Implements `uint`'s native instance initializer.
-fn native_instance_init<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
-    args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error<'gc>> {
-    activation.super_init(this, args)?;
-
-    Ok(Value::Undefined)
-}
-
-/// Implements `uint`'s class initializer.
-fn class_init<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
-    _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error<'gc>> {
-    let scope = activation.create_scopechain();
-    let gc_context = activation.context.gc_context;
-    let this_class = this.as_class_object().unwrap();
-    let uint_proto = this_class.prototype();
-
-    uint_proto.set_string_property_local(
-        "toExponential",
-        FunctionObject::from_method(
-            activation,
-            Method::from_builtin(to_exponential, "toExponential", gc_context),
-            scope,
-            None,
-            Some(this_class),
-        )
-        .into(),
-        activation,
-    )?;
-    uint_proto.set_string_property_local(
-        "toFixed",
-        FunctionObject::from_method(
-            activation,
-            Method::from_builtin(to_fixed, "toFixed", gc_context),
-            scope,
-            None,
-            Some(this_class),
-        )
-        .into(),
-        activation,
-    )?;
-    uint_proto.set_string_property_local(
-        "toPrecision",
-        FunctionObject::from_method(
-            activation,
-            Method::from_builtin(to_precision, "toPrecision", gc_context),
-            scope,
-            None,
-            Some(this_class),
-        )
-        .into(),
-        activation,
-    )?;
-    uint_proto.set_string_property_local(
-        "toLocaleString",
-        FunctionObject::from_method(
-            activation,
-            Method::from_builtin(to_string, "toLocaleString", gc_context),
-            scope,
-            None,
-            Some(this_class),
-        )
-        .into(),
-        activation,
-    )?;
-    uint_proto.set_string_property_local(
-        "toString",
-        FunctionObject::from_method(
-            activation,
-            Method::from_builtin(to_string, "toString", gc_context),
-            scope,
-            None,
-            Some(this_class),
-        )
-        .into(),
-        activation,
-    )?;
-    uint_proto.set_string_property_local(
-        "valueOf",
-        FunctionObject::from_method(
-            activation,
-            Method::from_builtin(value_of, "valueOf", gc_context),
-            scope,
-            None,
-            Some(this_class),
-        )
-        .into(),
-        activation,
-    )?;
-
-    uint_proto.set_local_property_is_enumerable(gc_context, "toExponential".into(), false);
-    uint_proto.set_local_property_is_enumerable(gc_context, "toFixed".into(), false);
-    uint_proto.set_local_property_is_enumerable(gc_context, "toPrecision".into(), false);
-    uint_proto.set_local_property_is_enumerable(gc_context, "toLocaleString".into(), false);
-    uint_proto.set_local_property_is_enumerable(gc_context, "toString".into(), false);
-    uint_proto.set_local_property_is_enumerable(gc_context, "valueOf".into(), false);
-
-    Ok(Value::Undefined)
+    Ok(uint_value.into())
 }
 
 pub fn call_handler<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    _this: Object<'gc>,
+    _this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     Ok(args
-        .get(0)
-        .cloned()
+        .get_optional(0)
         .unwrap_or(Value::Integer(0))
         .coerce_to_u32(activation)?
         .into())
 }
 
-/// Implements `uint.toExponential`
-use crate::avm2::globals::number::to_exponential;
+// See the comment in uint.as for an explanation as to why these are all `unreachable!()`
 
-/// Implements `uint.toFixed`
-use crate::avm2::globals::number::to_fixed;
-
-/// Implements `uint.toPrecision`
-use crate::avm2::globals::number::to_precision;
-
-/// Implements `uint.toString`
-fn to_string<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
-    args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error<'gc>> {
-    let uint_proto = activation.avm2().classes().uint.prototype();
-    if Object::ptr_eq(uint_proto, this) {
-        return Ok("0".into());
-    }
-
-    let number = if let Some(this) = this.as_primitive() {
-        match *this {
-            Value::Integer(o) => o as f64,
-            Value::Number(o) => o,
-            _ => return Err(make_error_1004(activation, "uint.prototype.toString")),
-        }
-    } else {
-        return Err(make_error_1004(activation, "uint.prototype.toString"));
-    };
-
-    let radix = args
-        .get(0)
-        .cloned()
-        .unwrap_or(Value::Integer(10))
-        .coerce_to_i32(activation)?;
-
-    if radix < 2 || radix > 36 {
-        return Err(make_error_1003(activation, radix));
-    }
-
-    Ok(print_with_radix(activation, number, radix as usize)?.into())
-}
-
-/// Implements `uint.valueOf`
-fn value_of<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+pub fn to_exponential<'gc>(
+    _activation: &mut Activation<'_, 'gc>,
+    _this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let uint_proto = activation.avm2().classes().uint.prototype();
-    if Object::ptr_eq(uint_proto, this) {
-        return Ok(0.into());
-    }
-
-    if let Some(this) = this.as_primitive() {
-        match *this {
-            Value::Integer(_) => Ok(*this),
-            _ => Err(make_error_1004(activation, "uint.prototype.valueOf")),
-        }
-    } else {
-        Err(make_error_1004(activation, "uint.prototype.valueOf"))
-    }
+    unreachable!()
 }
 
-/// Construct `uint`'s class.
-pub fn create_class<'gc>(activation: &mut Activation<'_, 'gc>) -> GcCell<'gc, Class<'gc>> {
-    let mc = activation.context.gc_context;
-    let class = Class::new(
-        QName::new(activation.avm2().public_namespace_base_version, "uint"),
-        Some(Multiname::new(
-            activation.avm2().public_namespace_base_version,
-            "Object",
-        )),
-        Method::from_builtin_and_params(
-            instance_init,
-            "<uint instance initializer>",
-            vec![ParamConfig {
-                param_name: AvmString::new_utf8(activation.context.gc_context, "value"),
-                param_type_name: Multiname::any(activation.context.gc_context),
-                default_value: Some(Value::Integer(0)),
-            }],
-            Multiname::any(activation.context.gc_context),
-            true,
-            mc,
-        ),
-        Method::from_builtin(class_init, "<uint class initializer>", mc),
-        mc,
-    );
+pub fn to_fixed<'gc>(
+    _activation: &mut Activation<'_, 'gc>,
+    _this: Value<'gc>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    unreachable!()
+}
 
-    let mut write = class.write(mc);
-    write.set_attributes(ClassAttributes::FINAL | ClassAttributes::SEALED);
-    write.set_instance_allocator(primitive_allocator);
-    write.set_native_instance_init(Method::from_builtin(
-        native_instance_init,
-        "<uint native instance initializer>",
-        mc,
-    ));
-    write.set_call_handler(Method::from_builtin(
-        call_handler,
-        "<uint call handler>",
-        mc,
-    ));
+pub fn to_precision<'gc>(
+    _activation: &mut Activation<'_, 'gc>,
+    _this: Value<'gc>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    unreachable!()
+}
 
-    const CLASS_CONSTANTS_UINT: &[(&str, u32)] =
-        &[("MAX_VALUE", u32::MAX), ("MIN_VALUE", u32::MIN)];
-    write.define_constant_uint_class_traits(
-        activation.avm2().public_namespace_base_version,
-        CLASS_CONSTANTS_UINT,
-        activation,
-    );
+pub fn to_string<'gc>(
+    _activation: &mut Activation<'_, 'gc>,
+    _this: Value<'gc>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    unreachable!()
+}
 
-    const CLASS_CONSTANTS_INT: &[(&str, i32)] = &[("length", 1)];
-    write.define_constant_int_class_traits(
-        activation.avm2().public_namespace_base_version,
-        CLASS_CONSTANTS_INT,
-        activation,
-    );
-
-    const AS3_INSTANCE_METHODS: &[(&str, NativeMethodImpl)] = &[
-        ("toExponential", to_exponential),
-        ("toFixed", to_fixed),
-        ("toPrecision", to_precision),
-        ("toString", to_string),
-        ("valueOf", value_of),
-    ];
-    write.define_builtin_instance_methods(
-        mc,
-        activation.avm2().as3_namespace,
-        AS3_INSTANCE_METHODS,
-    );
-
-    class
+pub fn value_of<'gc>(
+    _activation: &mut Activation<'_, 'gc>,
+    _this: Value<'gc>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    unreachable!()
 }

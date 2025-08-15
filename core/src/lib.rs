@@ -10,12 +10,6 @@ mod display_object;
 pub use display_object::{StageAlign, StageDisplayState, StageScaleMode};
 
 #[macro_use]
-extern crate smallvec;
-
-#[macro_use]
-extern crate downcast_rs;
-
-#[macro_use]
 extern crate num_derive;
 
 #[macro_use]
@@ -29,12 +23,12 @@ pub mod context;
 pub mod context_menu;
 mod drawing;
 mod ecma_conversions;
-pub(crate) mod either;
 pub mod events;
 pub mod focus_tracker;
 mod font;
 mod frame_lifecycle;
 mod html;
+mod input;
 mod library;
 pub mod limits;
 pub mod loader;
@@ -44,12 +38,15 @@ mod net_connection;
 pub mod pixel_bender;
 mod player;
 mod prelude;
+pub mod sandbox;
 pub mod socket;
 mod streams;
 pub mod string;
+mod system_properties;
 pub mod tag_utils;
 pub mod timer;
 mod types;
+pub mod utils;
 mod vminterface;
 mod xml;
 
@@ -62,13 +59,13 @@ pub mod external;
 pub mod i18n;
 pub mod stub;
 
-pub use avm1::globals::system::SandboxType;
 pub use context_menu::ContextMenuItem;
 pub use events::PlayerEvent;
-pub use font::DefaultFont;
+pub use font::{DefaultFont, FontFileData, FontQuery, FontType};
 pub use indexmap;
 pub use loader::LoadBehavior;
-pub use player::{Player, PlayerBuilder, PlayerRuntime, StaticCallstack};
+pub use player::{Player, PlayerBuilder, PlayerMode, PlayerRuntime, StaticCallstack};
 pub use ruffle_render::backend::ViewportDimensions;
 pub use swf;
 pub use swf::Color;
+pub use ttf_parser;

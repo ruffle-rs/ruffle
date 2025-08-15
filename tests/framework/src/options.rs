@@ -4,13 +4,16 @@ use crate::image_trigger::ImageTrigger;
 use crate::util::write_image;
 use anyhow::{anyhow, Result};
 use approx::relative_eq;
-use image::ImageOutputFormat;
+use image::ImageFormat;
 use regex::Regex;
 use ruffle_core::tag_utils::SwfMovie;
-use ruffle_core::{PlayerBuilder, PlayerRuntime, ViewportDimensions};
+use ruffle_core::{
+    FontQuery, FontType, PlayerBuilder, PlayerMode, PlayerRuntime, ViewportDimensions,
+};
 use ruffle_render::backend::RenderBackend;
 use ruffle_render::quality::StageQuality;
 use serde::Deserialize;
+use std::borrow::Cow;
 use std::collections::{HashMap, HashSet};
 use std::time::Duration;
 use vfs::VfsPath;
@@ -31,6 +34,7 @@ pub struct TestOptions {
     pub log_fetch: bool,
     pub required_features: RequiredFeatures,
     pub fonts: HashMap<String, FontOptions>,
+    pub font_sorts: HashMap<String, FontSortOptions>,
 }
 
 impl Default for TestOptions {
@@ -49,6 +53,7 @@ impl Default for TestOptions {
             log_fetch: false,
             required_features: RequiredFeatures::default(),
             fonts: Default::default(),
+            font_sorts: Default::default(),
         }
     }
 }
@@ -150,6 +155,7 @@ pub struct PlayerOptions {
     with_audio: bool,
     with_video: bool,
     runtime: PlayerRuntime,
+    mode: Option<PlayerMode>,
 }
 
 impl PlayerOptions {
@@ -172,12 +178,35 @@ impl PlayerOptions {
             player_builder = player_builder.with_audio(TestAudioBackend::default());
         }
 
-        player_builder = player_builder.with_player_runtime(self.runtime);
+        player_builder = player_builder
+            .with_player_runtime(self.runtime)
+            // Assume flashplayerdebugger is used in tests
+            .with_player_mode(self.mode.unwrap_or(PlayerMode::Debug));
 
-        #[cfg(feature = "ruffle_video_software")]
         if self.with_video {
-            use ruffle_video_software::backend::SoftwareVideoBackend;
-            player_builder = player_builder.with_video(SoftwareVideoBackend::new())
+            #[cfg(feature = "ruffle_video_external")]
+            {
+                let current_exe = std::env::current_exe()?;
+                let directory = current_exe.parent().expect("Executable parent dir");
+
+                use ruffle_video_external::{
+                    backend::ExternalVideoBackend, decoder::openh264::OpenH264Codec,
+                };
+                let openh264 = OpenH264Codec::load(directory)
+                    .map_err(|e| anyhow!("Couldn't load OpenH264: {}", e))?;
+
+                player_builder =
+                    player_builder.with_video(ExternalVideoBackend::new_with_openh264(openh264));
+            }
+
+            #[cfg(all(
+                not(feature = "ruffle_video_external"),
+                feature = "ruffle_video_software"
+            ))]
+            {
+                player_builder = player_builder
+                    .with_video(ruffle_video_software::backend::SoftwareVideoBackend::new());
+            }
         }
 
         Ok(player_builder)
@@ -219,8 +248,9 @@ impl PlayerOptions {
 #[derive(Deserialize, Default, Clone, Debug)]
 #[serde(default, deny_unknown_fields)]
 pub struct ImageComparison {
-    tolerance: u8,
-    max_outliers: usize,
+    tolerance: Option<u8>,
+    max_outliers: Option<usize>,
+    checks: Vec<ImageComparisonCheck>,
     pub trigger: ImageTrigger,
 }
 
@@ -229,6 +259,26 @@ fn calc_difference(lhs: u8, rhs: u8) -> u8 {
 }
 
 impl ImageComparison {
+    fn checks(&self) -> Result<Cow<'_, [ImageComparisonCheck]>> {
+        let has_simple_check = self.tolerance.is_some() || self.max_outliers.is_some();
+        if has_simple_check && !self.checks.is_empty() {
+            return Err(anyhow!(
+                "Both simple and advanced checks are defined. \
+                Either remove 'tolerance' & 'max_outliers', or move it to 'checks'."
+            ));
+        }
+
+        if !self.checks.is_empty() {
+            Ok(Cow::Borrowed(&self.checks))
+        } else {
+            Ok(Cow::Owned(vec![ImageComparisonCheck {
+                tolerance: self.tolerance.unwrap_or_default(),
+                max_outliers: self.max_outliers.unwrap_or_default(),
+                filter: None,
+            }]))
+        }
+    }
+
     pub fn test(
         &self,
         name: &str,
@@ -246,7 +296,7 @@ impl ImageComparison {
                 write_image(
                     &test_path.join(format!("{name}.actual-{environment_name}.png"))?,
                     &actual_image,
-                    ImageOutputFormat::Png,
+                    ImageFormat::Png,
                 )
             } else {
                 Ok(())
@@ -269,41 +319,41 @@ impl ImageComparison {
 
         let mut is_alpha_different = false;
 
-        let difference_data: Vec<u8> = expected_image
-            .as_raw()
-            .chunks_exact(4)
-            .zip(actual_image.as_raw().chunks_exact(4))
-            .flat_map(|(cmp_chunk, data_chunk)| {
-                if cmp_chunk[3] != data_chunk[3] {
-                    is_alpha_different = true;
-                }
+        let difference_data: Vec<u8> = Self::calculate_difference_data(
+            &actual_image,
+            &expected_image,
+            &mut is_alpha_different,
+        );
 
-                [
-                    calc_difference(cmp_chunk[0], data_chunk[0]),
-                    calc_difference(cmp_chunk[1], data_chunk[1]),
-                    calc_difference(cmp_chunk[2], data_chunk[2]),
-                    calc_difference(cmp_chunk[3], data_chunk[3]),
-                ]
-            })
-            .collect();
+        let checks = self
+            .checks()
+            .map_err(|err| anyhow!("Image '{name}' failed: {err}"))?;
 
-        let outliers: usize = difference_data
-            .chunks_exact(4)
-            .map(|colors| {
-                (colors[0] > self.tolerance) as usize
-                    + (colors[1] > self.tolerance) as usize
-                    + (colors[2] > self.tolerance) as usize
-                    + (colors[3] > self.tolerance) as usize
-            })
-            .sum();
+        let mut any_check_executed = false;
+        for (i, check) in checks.iter().enumerate() {
+            let check_name = format!("Image '{name}' check {i}");
+            let filter_passed = check
+                .filter
+                .as_ref()
+                .map(|f| f.evaluate())
+                .unwrap_or(Ok(true))?;
+            if !filter_passed {
+                println!("{check_name} skipped: Filtered out.");
+                continue;
+            }
 
-        let max_difference = difference_data
-            .chunks_exact(4)
-            .map(|colors| colors[0].max(colors[1]).max(colors[2]).max(colors[3]))
-            .max()
-            .unwrap();
+            let outliers = Self::calculate_outliers(&difference_data, check.tolerance);
+            let max_outliers = check.max_outliers;
+            let max_difference = Self::calculate_max_difference(&difference_data);
 
-        if outliers > self.max_outliers {
+            any_check_executed = true;
+            if outliers <= max_outliers {
+                println!("{check_name} succeeded: {outliers} outliers found, max difference {max_difference}");
+                continue;
+            }
+
+            // The image failed a check :(
+
             save_actual_image()?;
 
             let mut difference_color = Vec::with_capacity(
@@ -324,7 +374,7 @@ impl ImageComparison {
                 write_image(
                     &test_path.join(format!("{name}.difference-color-{environment_name}.png"))?,
                     &difference_image,
-                    ImageOutputFormat::Png,
+                    ImageFormat::Png,
                 )?;
             }
 
@@ -348,24 +398,77 @@ impl ImageComparison {
                         &test_path
                             .join(format!("{name}.difference-alpha-{environment_name}.png"))?,
                         &difference_image,
-                        ImageOutputFormat::Png,
+                        ImageFormat::Png,
                     )?;
                 }
             }
 
             return Err(anyhow!(
-                "Image '{}' failed: Number of outliers ({}) is bigger than allowed limit of {}. Max difference is {}",
-                name,
-                outliers,
-                self.max_outliers,
-                max_difference
+                "{check_name} failed: \
+                Number of outliers ({outliers}) is bigger than allowed limit of {max_outliers}. \
+                Max difference is {max_difference}",
             ));
-        } else {
-            println!("Image '{name}' succeeded: {outliers} outliers found, max difference {max_difference}",);
+        }
+
+        if !any_check_executed {
+            return Err(anyhow!("Image '{name}' failed: No checks executed.",));
         }
 
         Ok(())
     }
+
+    fn calculate_difference_data(
+        actual_image: &image::RgbaImage,
+        expected_image: &image::RgbaImage,
+        is_alpha_different: &mut bool,
+    ) -> Vec<u8> {
+        expected_image
+            .as_raw()
+            .chunks_exact(4)
+            .zip(actual_image.as_raw().chunks_exact(4))
+            .flat_map(|(cmp_chunk, data_chunk)| {
+                if cmp_chunk[3] != data_chunk[3] {
+                    *is_alpha_different = true;
+                }
+
+                [
+                    calc_difference(cmp_chunk[0], data_chunk[0]),
+                    calc_difference(cmp_chunk[1], data_chunk[1]),
+                    calc_difference(cmp_chunk[2], data_chunk[2]),
+                    calc_difference(cmp_chunk[3], data_chunk[3]),
+                ]
+            })
+            .collect()
+    }
+
+    fn calculate_outliers(difference_data: &[u8], tolerance: u8) -> usize {
+        difference_data
+            .chunks_exact(4)
+            .map(|colors| {
+                (colors[0] > tolerance) as usize
+                    + (colors[1] > tolerance) as usize
+                    + (colors[2] > tolerance) as usize
+                    + (colors[3] > tolerance) as usize
+            })
+            .sum()
+    }
+
+    fn calculate_max_difference(difference_data: &[u8]) -> u8 {
+        difference_data
+            .chunks_exact(4)
+            .map(|colors| colors[0].max(colors[1]).max(colors[2]).max(colors[3]))
+            .max()
+            .unwrap()
+    }
+}
+
+#[derive(Deserialize, Default, Clone, Debug)]
+#[serde(default, deny_unknown_fields)]
+struct ImageComparisonCheck {
+    tolerance: u8,
+    max_outliers: usize,
+
+    filter: Option<TestExpression>,
 }
 
 #[derive(Clone, Deserialize)]
@@ -373,7 +476,6 @@ impl ImageComparison {
 pub struct RenderOptions {
     optional: bool,
     pub sample_count: u32,
-    pub exclude_warp: bool,
 }
 
 impl Default for RenderOptions {
@@ -381,7 +483,6 @@ impl Default for RenderOptions {
         Self {
             optional: false,
             sample_count: 1,
-            exclude_warp: false,
         }
     }
 }
@@ -393,4 +494,67 @@ pub struct FontOptions {
     pub path: String,
     pub bold: bool,
     pub italic: bool,
+}
+
+impl FontOptions {
+    pub fn to_font_query(&self) -> FontQuery {
+        FontQuery::new(
+            FontType::Device,
+            self.family.clone(),
+            self.bold,
+            self.italic,
+        )
+    }
+}
+
+#[derive(Deserialize, Default, Clone)]
+#[serde(default, deny_unknown_fields)]
+pub struct FontSortOptions {
+    pub family: String,
+    pub bold: bool,
+    pub italic: bool,
+    pub sort: Vec<String>,
+}
+
+/// Test expression is a cfg-like expression that evaluates to a boolean
+/// and can be used in test configuration.
+///
+/// Currently the following variables are supported:
+/// * `os` --- refers to [`std::env::consts::OS`],
+/// * `arch` --- refers to [`std::env::consts::ARCH`],
+/// * `family` --- refers to [`std::env::consts::FAMILY`].
+///
+/// Example expression:
+///
+/// ```text
+/// not(os = "aarch64")
+/// ```
+#[derive(Deserialize, Clone, Debug)]
+struct TestExpression(String);
+
+impl TestExpression {
+    fn evaluate(&self) -> Result<bool> {
+        let cfg_parsed = cfg_expr::Expression::parse(&self.0)
+            .map_err(|err| anyhow!("Cannot parse expression:\n{err}"))?;
+        let mut unknown_pred = None;
+        let cfg_matches = cfg_parsed.eval(|pred| match pred {
+            cfg_expr::Predicate::KeyValue { key, val } if *key == "os" => {
+                *val == std::env::consts::OS
+            }
+            cfg_expr::Predicate::KeyValue { key, val } if *key == "arch" => {
+                *val == std::env::consts::ARCH
+            }
+            cfg_expr::Predicate::KeyValue { key, val } if *key == "family" => {
+                *val == std::env::consts::FAMILY
+            }
+            _ => {
+                unknown_pred = Some(format!("{pred:?}"));
+                false
+            }
+        });
+        if let Some(pred) = unknown_pred {
+            return Err(anyhow!("Unknown predicate used in expression: {pred}"));
+        }
+        Ok(cfg_matches)
+    }
 }

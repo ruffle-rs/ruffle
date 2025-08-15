@@ -1,0 +1,13 @@
+loading started
+loadee initialized
+loading complete
+bytes loaded: 787
+under point: undefined
+bounds: (x=0, y=0, w=220, h=100)
+width: 220
+bbox  hit test: true
+shape hit test: false
+bbox  hit test: true
+avm1-loadee loaded
+avm1 root `this`: _root
+avm1 root `_parent`: undefined

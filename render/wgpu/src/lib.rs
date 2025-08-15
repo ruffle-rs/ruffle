@@ -21,6 +21,7 @@ use ruffle_render::backend::RawTexture;
 use ruffle_render::bitmap::{BitmapHandle, BitmapHandleImpl, PixelRegion, SyncHandle};
 use ruffle_render::shape_utils::GradientType;
 use ruffle_render::tessellator::{Gradient as TessGradient, Vertex as TessVertex};
+use std::any::Any;
 use std::cell::{Cell, OnceCell};
 use std::sync::Arc;
 use swf::GradientSpread;
@@ -55,11 +56,11 @@ mod surface;
 impl BitmapHandleImpl for Texture {}
 
 pub fn as_texture(handle: &BitmapHandle) -> &Texture {
-    <dyn BitmapHandleImpl>::downcast_ref(&*handle.0).unwrap()
+    <dyn Any>::downcast_ref(&*handle.0).unwrap()
 }
 
 pub fn raw_texture_as_texture(handle: &dyn RawTexture) -> &wgpu::Texture {
-    <dyn RawTexture>::downcast_ref(handle).unwrap()
+    <dyn Any>::downcast_ref(handle).unwrap()
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Enum)]
@@ -200,7 +201,7 @@ impl QueueSyncHandle {
 
                 let buffer = pool.take(&descriptors, buffer_dimensions.clone());
                 frame.command_encoder.copy_texture_to_buffer(
-                    wgpu::ImageCopyTexture {
+                    wgpu::TexelCopyTextureInfo {
                         texture: &texture.texture,
                         mip_level: 0,
                         origin: wgpu::Origin3d {
@@ -210,9 +211,9 @@ impl QueueSyncHandle {
                         },
                         aspect: wgpu::TextureAspect::All,
                     },
-                    wgpu::ImageCopyBuffer {
+                    wgpu::TexelCopyBufferInfo {
                         buffer: &buffer,
-                        layout: wgpu::ImageDataLayout {
+                        layout: wgpu::TexelCopyBufferLayout {
                             offset: 0,
                             bytes_per_row: Some(buffer_dimensions.padded_bytes_per_row),
                             rows_per_image: None,
@@ -248,7 +249,7 @@ impl QueueSyncHandle {
 
 #[derive(Debug)]
 pub struct Texture {
-    pub(crate) texture: Arc<wgpu::Texture>,
+    pub(crate) texture: wgpu::Texture,
     bind_linear: OnceCell<BitmapBinds>,
     bind_nearest: OnceCell<BitmapBinds>,
     copy_count: Cell<u8>,

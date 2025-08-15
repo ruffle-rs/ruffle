@@ -1,0 +1,890 @@
+LocalConnection.isSupported: true
+
+
+-- start test: A message to nowhere! --
+
+sender.send("nowhere", "test", *0 [])
+
+-- end frame: A message to nowhere! --
+
+sender received event StatusEvent.STATUS
+  bubbles: false
+  cancelable: false
+  code: null
+  currentTarget: sender
+  level: "error"
+  target: sender
+
+
+-- end test: A message to nowhere! --
+
+
+-- start test: Both receivers try to connect to the same channel --
+
+receiver.connect("channel")
+custom.connect("channel"): ! ArgumentError: Error #2082: Connect failed because the object is already connected.
+
+-- end frame: Both receivers try to connect to the same channel --
+
+
+-- end test: Both receivers try to connect to the same channel --
+
+
+-- start test: A message to an unimplemented function --
+
+sender.send("channel", "unimplemented", *0 [])
+
+-- end frame: A message to an unimplemented function --
+
+sender received event StatusEvent.STATUS
+  bubbles: false
+  cancelable: false
+  code: null
+  currentTarget: sender
+  level: "status"
+  target: sender
+
+receiver received event AsyncErrorEvent.ASYNC_ERROR
+  bubbles: false
+  cancelable: false
+  error: ReferenceError: Error #1069: Property unimplemented not found on flash.net.LocalConnection and there is no default value.
+  currentTarget: receiver
+  target: receiver
+
+
+-- end test: A message to an unimplemented function --
+
+
+-- start test: Receiver tries to connect elsewhere, but can't --
+
+receiver.connect("elsewhere"): ! ArgumentError: Error #2082: Connect failed because the object is already connected.
+
+-- end frame: Receiver tries to connect elsewhere, but can't --
+
+
+-- end test: Receiver tries to connect elsewhere, but can't --
+
+
+-- start test: Receiver actually connects elsewhere, and custom is allowed to connect to channel --
+
+receiver.close()
+receiver.connect("elsewhere")
+custom.connect("channel")
+
+-- end frame: Receiver actually connects elsewhere, and custom is allowed to connect to channel --
+
+
+-- end test: Receiver actually connects elsewhere, and custom is allowed to connect to channel --
+
+
+-- start test: Sender calls test() on 'channel' --
+
+sender.send("channel", "test", *0 [])
+
+-- end frame: Sender calls test() on 'channel' --
+
+sender received event StatusEvent.STATUS
+  bubbles: false
+  cancelable: false
+  code: null
+  currentTarget: sender
+  level: "status"
+  target: sender
+
+custom.test was called with 0 argument
+
+-- end test: Sender calls test() on 'channel' --
+
+
+-- start test: Client is used --
+
+sender.send("elsewhere", "test", *0 [])
+
+-- end frame: Client is used --
+
+sender received event StatusEvent.STATUS
+  bubbles: false
+  cancelable: false
+  code: null
+  currentTarget: sender
+  level: "status"
+  target: sender
+
+recvObject.test was called with 0 argument
+
+-- end test: Client is used --
+
+
+-- start test: Sender calls test() on 'channel'... after the listener is gone --
+
+custom.close()
+sender.send("channel", "test", *0 [])
+
+-- end frame: Sender calls test() on 'channel'... after the listener is gone --
+
+sender received event StatusEvent.STATUS
+  bubbles: false
+  cancelable: false
+  code: null
+  currentTarget: sender
+  level: "error"
+  target: sender
+
+
+-- end test: Sender calls test() on 'channel'... after the listener is gone --
+
+
+-- start test: Sender calls test() on 'elsewhere'... immediately before the listener is gone --
+
+sender.send("elsewhere", "test", *0 [])
+receiver.close()
+
+-- end frame: Sender calls test() on 'elsewhere'... immediately before the listener is gone --
+
+sender received event StatusEvent.STATUS
+  bubbles: false
+  cancelable: false
+  code: null
+  currentTarget: sender
+  level: "error"
+  target: sender
+
+
+-- end test: Sender calls test() on 'elsewhere'... immediately before the listener is gone --
+
+
+-- start test: Sender calls test() on 'channel'... before the listener connects --
+
+sender.send("channel", "test", *0 [])
+custom.connect("channel")
+
+-- end frame: Sender calls test() on 'channel'... before the listener connects --
+
+sender received event StatusEvent.STATUS
+  bubbles: false
+  cancelable: false
+  code: null
+  currentTarget: sender
+  level: "error"
+  target: sender
+
+
+-- end test: Sender calls test() on 'channel'... before the listener connects --
+
+
+-- start test: Sending to a channel that gets reassigned before end-of-frame --
+
+sender.send("channel", "test", *0 [])
+custom.close()
+receiver.connect("channel")
+
+-- end frame: Sending to a channel that gets reassigned before end-of-frame --
+
+sender received event StatusEvent.STATUS
+  bubbles: false
+  cancelable: false
+  code: null
+  currentTarget: sender
+  level: "status"
+  target: sender
+
+recvObject.test was called with 0 argument
+
+-- end test: Sending to a channel that gets reassigned before end-of-frame --
+
+
+-- start test: Channels reconnect and receive --
+
+custom.close(): ! ArgumentError: Error #2083: Close failed because the object is not connected.
+receiver.close()
+receiver.connect("elsewhere")
+sender.send("channel", "test", *0 [])
+sender.send("elsewhere", "test", *0 [])
+custom.connect("channel")
+
+-- end frame: Channels reconnect and receive --
+
+sender received event StatusEvent.STATUS
+  bubbles: false
+  cancelable: false
+  code: null
+  currentTarget: sender
+  level: "error"
+  target: sender
+
+sender received event StatusEvent.STATUS
+  bubbles: false
+  cancelable: false
+  code: null
+  currentTarget: sender
+  level: "status"
+  target: sender
+
+recvObject.test was called with 0 argument
+
+-- end test: Channels reconnect and receive --
+
+
+-- start test: A connected listener can also send --
+
+receiver.send("channel", "test", *0 [])
+receiver.send("elsewhere", "test", *0 [])
+
+-- end frame: A connected listener can also send --
+
+receiver received event StatusEvent.STATUS
+  bubbles: false
+  cancelable: false
+  code: null
+  currentTarget: receiver
+  level: "status"
+  target: receiver
+
+custom.test was called with 0 argument
+receiver received event StatusEvent.STATUS
+  bubbles: false
+  cancelable: false
+  code: null
+  currentTarget: receiver
+  level: "status"
+  target: receiver
+
+recvObject.test was called with 0 argument
+
+-- end test: A connected listener can also send --
+
+
+-- start test: A listener throws an error --
+
+sender.send("channel", "throwAnError", *0 [])
+
+-- end frame: A listener throws an error --
+
+sender received event StatusEvent.STATUS
+  bubbles: false
+  cancelable: false
+  code: null
+  currentTarget: sender
+  level: "status"
+  target: sender
+
+custom.throwAnError was called
+
+-- end test: A listener throws an error --
+
+
+-- start test: Close something's that's already closed --
+
+! test stopped with error: ArgumentError: Error #2083: Close failed because the object is not connected.
+
+-- end frame: Close something's that's already closed --
+
+
+-- end test: Close something's that's already closed --
+
+
+-- start test: Send to funky channel names --
+
+sender.send(null, "test", *0 []): ! TypeError: Error #2007: Parameter connectionName must be non-null.
+sender.send("0", "test", *0 [])
+sender.send("", "test", *0 []): ! ArgumentError: Error #2085: Parameter connectionName must be non-empty string.
+sender.send(" ??? ", "test", *0 [])
+
+-- end frame: Send to funky channel names --
+
+sender received event StatusEvent.STATUS
+  bubbles: false
+  cancelable: false
+  code: null
+  currentTarget: sender
+  level: "error"
+  target: sender
+
+sender received event StatusEvent.STATUS
+  bubbles: false
+  cancelable: false
+  code: null
+  currentTarget: sender
+  level: "error"
+  target: sender
+
+
+-- end test: Send to funky channel names --
+
+
+-- start test: Send to funky methods --
+
+sender.send("channel", null, *0 []): ! TypeError: Error #2007: Parameter methodName must be non-null.
+sender.send("channel", "0", *0 [])
+sender.send("channel", "", *0 []): ! ArgumentError: Error #2085: Parameter methodName must be non-empty string.
+sender.send("channel", " ??? ", *0 [])
+
+-- end frame: Send to funky methods --
+
+sender received event StatusEvent.STATUS
+  bubbles: false
+  cancelable: false
+  code: null
+  currentTarget: sender
+  level: "status"
+  target: sender
+
+custom received event AsyncErrorEvent.ASYNC_ERROR
+  bubbles: false
+  cancelable: false
+  error: ReferenceError: Error #1069: Property 0 not found on CustomLocalConnection and there is no default value.
+  currentTarget: custom
+  target: custom
+
+sender received event StatusEvent.STATUS
+  bubbles: false
+  cancelable: false
+  code: null
+  currentTarget: sender
+  level: "status"
+  target: sender
+
+custom received event AsyncErrorEvent.ASYNC_ERROR
+  bubbles: false
+  cancelable: false
+  error: ReferenceError: Error #1069: Property  ???  not found on CustomLocalConnection and there is no default value.
+  currentTarget: custom
+  target: custom
+
+
+-- end test: Send to funky methods --
+
+
+-- start test: Connect to funky names --
+
+sender.connect(null): ! TypeError: Error #2007: Parameter connectionName must be non-null.
+sender.close(): ! ArgumentError: Error #2083: Close failed because the object is not connected.
+sender.connect("0")
+sender.close()
+sender.connect(""): ! ArgumentError: Error #2085: Parameter connectionName must be non-empty string.
+sender.close(): ! ArgumentError: Error #2083: Close failed because the object is not connected.
+sender.connect(" ??? ")
+sender.close()
+
+-- end frame: Connect to funky names --
+
+
+-- end test: Connect to funky names --
+
+
+-- start test: Connect to something with a prefix --
+
+sender.connect("localhost:something"): ! ArgumentError: Error #2004: One of the parameters is invalid.
+sender.close(): ! ArgumentError: Error #2083: Close failed because the object is not connected.
+
+-- end frame: Connect to something with a prefix --
+
+
+-- end test: Connect to something with a prefix --
+
+
+-- start test: Send to protected methods --
+
+sender.send("channel", "send", *0 []): ! ArgumentError: Error #2004: One of the parameters is invalid.
+sender.send("channel", "connect", *0 []): ! ArgumentError: Error #2004: One of the parameters is invalid.
+sender.send("channel", "close", *0 []): ! ArgumentError: Error #2004: One of the parameters is invalid.
+sender.send("channel", "allowDomain", *0 []): ! ArgumentError: Error #2004: One of the parameters is invalid.
+sender.send("channel", "allowInsecureDomain", *0 []): ! ArgumentError: Error #2004: One of the parameters is invalid.
+sender.send("channel", "domain", *0 []): ! ArgumentError: Error #2004: One of the parameters is invalid.
+
+-- end frame: Send to protected methods --
+
+
+-- end test: Send to protected methods --
+
+
+-- start test: Arguments are sent --
+
+sender.send("elsewhere", "test", *0 [
+    1
+    "two"
+    *1 Object {
+      value = 3
+    }
+    *2 [
+      4
+      5
+    ]
+  ])
+
+-- end frame: Arguments are sent --
+
+sender received event StatusEvent.STATUS
+  bubbles: false
+  cancelable: false
+  code: null
+  currentTarget: sender
+  level: "status"
+  target: sender
+
+recvObject.test was called with 4 arguments
+  *0 [
+    1
+    "two"
+    *1 Object {
+      value = 3
+    }
+    *2 [
+      4
+      5
+    ]
+  ]
+
+-- end test: Arguments are sent --
+
+
+-- start test: Explicit host prefix --
+
+sender.send("localhost:channel", "test", *0 [])
+sender.send("notlocalhost:elsewhere", "test", *0 [])
+
+-- end frame: Explicit host prefix --
+
+sender received event StatusEvent.STATUS
+  bubbles: false
+  cancelable: false
+  code: null
+  currentTarget: sender
+  level: "status"
+  target: sender
+
+custom.test was called with 0 argument
+sender received event StatusEvent.STATUS
+  bubbles: false
+  cancelable: false
+  code: null
+  currentTarget: sender
+  level: "error"
+  target: sender
+
+
+-- end test: Explicit host prefix --
+
+
+-- start test: Underscores in names --
+
+custom.close()
+custom.connect("_channel")
+sender.send("_channel", "test", *0 [])
+
+-- end frame: Underscores in names --
+
+sender received event StatusEvent.STATUS
+  bubbles: false
+  cancelable: false
+  code: null
+  currentTarget: sender
+  level: "status"
+  target: sender
+
+custom.test was called with 0 argument
+
+-- end test: Underscores in names --
+
+
+-- start test: Underscores in name doesn't allow a prefix --
+
+sender.send("localhost:channel", "test", *0 [])
+sender.send("localhost:_channel", "test", *0 [])
+
+-- end frame: Underscores in name doesn't allow a prefix --
+
+sender received event StatusEvent.STATUS
+  bubbles: false
+  cancelable: false
+  code: null
+  currentTarget: sender
+  level: "error"
+  target: sender
+
+sender received event StatusEvent.STATUS
+  bubbles: false
+  cancelable: false
+  code: null
+  currentTarget: sender
+  level: "error"
+  target: sender
+
+
+-- end test: Underscores in name doesn't allow a prefix --
+
+
+-- start test: Case sensitivity --
+
+sender.send("ELSEWhere", "test", *0 [])
+sender.send("LOCalHOST:ElseWhere", "test", *0 [])
+
+-- end frame: Case sensitivity --
+
+sender received event StatusEvent.STATUS
+  bubbles: false
+  cancelable: false
+  code: null
+  currentTarget: sender
+  level: "status"
+  target: sender
+
+recvObject.test was called with 0 argument
+sender received event StatusEvent.STATUS
+  bubbles: false
+  cancelable: false
+  code: null
+  currentTarget: sender
+  level: "status"
+  target: sender
+
+recvObject.test was called with 0 argument
+
+-- end test: Case sensitivity --
+
+
+-- start test: Calling an AVM2 movie --
+
+sender.send("avm2_child", "test", *0 [])
+
+-- end frame: Calling an AVM2 movie --
+
+sender received event StatusEvent.STATUS
+  bubbles: false
+  cancelable: false
+  code: null
+  currentTarget: sender
+  level: "status"
+  target: sender
+
+avm2_child.test was called with 0 argument
+
+-- end test: Calling an AVM2 movie --
+
+
+-- start test: Calling an AVM1 movie --
+
+sender.send("avm1_child", "test", *0 [])
+
+-- end frame: Calling an AVM1 movie --
+
+sender received event StatusEvent.STATUS
+  bubbles: false
+  cancelable: false
+  code: null
+  currentTarget: sender
+  level: "status"
+  target: sender
+
+avm1_child.test was called with 0 argument
+
+-- end test: Calling an AVM1 movie --
+
+
+-- start test: Argument translations: primitives --
+
+sender.send("avm1_child", "test", *0 [
+    1
+    1.2
+    true
+    false
+    "string"
+    null
+    undefined
+  ])
+sender.send("avm2_child", "test", *0 [
+    1
+    1.2
+    true
+    false
+    "string"
+    null
+    undefined
+  ])
+sender.send("_channel", "test", *0 [
+    1
+    1.2
+    true
+    false
+    "string"
+    null
+    undefined
+  ])
+
+-- end frame: Argument translations: primitives --
+
+sender received event StatusEvent.STATUS
+  bubbles: false
+  cancelable: false
+  code: null
+  currentTarget: sender
+  level: "status"
+  target: sender
+
+avm1_child.test was called with 7 arguments
+  *0 [
+    1
+    1.2
+    true
+    false
+    "string"
+    null
+    undefined
+  ]
+sender received event StatusEvent.STATUS
+  bubbles: false
+  cancelable: false
+  code: null
+  currentTarget: sender
+  level: "status"
+  target: sender
+
+avm2_child.test was called with 7 arguments
+  *0 [
+    1
+    1.2
+    true
+    false
+    "string"
+    null
+    undefined
+  ]
+sender received event StatusEvent.STATUS
+  bubbles: false
+  cancelable: false
+  code: null
+  currentTarget: sender
+  level: "status"
+  target: sender
+
+custom.test was called with 7 arguments
+  *0 [
+    1
+    1.2
+    true
+    false
+    "string"
+    null
+    undefined
+  ]
+
+-- end test: Argument translations: primitives --
+
+
+-- start test: Argument translations: simple array --
+
+sender.send("avm1_child", "test", *0 [
+    *1 [
+      1
+      2
+      "three"
+      4.5
+      NaN
+      Infinity
+    ]
+  ])
+sender.send("avm2_child", "test", *0 [
+    *1 [
+      1
+      2
+      "three"
+      4.5
+      NaN
+      Infinity
+    ]
+  ])
+sender.send("_channel", "test", *0 [
+    *1 [
+      1
+      2
+      "three"
+      4.5
+      NaN
+      Infinity
+    ]
+  ])
+
+-- end frame: Argument translations: simple array --
+
+sender received event StatusEvent.STATUS
+  bubbles: false
+  cancelable: false
+  code: null
+  currentTarget: sender
+  level: "status"
+  target: sender
+
+avm1_child.test was called with 1 arguments
+  *0 [
+    *1 [
+      1
+      2
+      "three"
+      4.5
+      NaN
+      Infinity
+    ]
+  ]
+sender received event StatusEvent.STATUS
+  bubbles: false
+  cancelable: false
+  code: null
+  currentTarget: sender
+  level: "status"
+  target: sender
+
+avm2_child.test was called with 1 arguments
+  *0 [
+    *1 [
+      1
+      2
+      "three"
+      4.5
+      NaN
+      Infinity
+    ]
+  ]
+sender received event StatusEvent.STATUS
+  bubbles: false
+  cancelable: false
+  code: null
+  currentTarget: sender
+  level: "status"
+  target: sender
+
+custom.test was called with 1 arguments
+  *0 [
+    *1 [
+      1
+      2
+      "three"
+      4.5
+      NaN
+      Infinity
+    ]
+  ]
+
+-- end test: Argument translations: simple array --
+
+
+-- start test: Argument translations: simple object --
+
+sender.send("avm1_child", "test", *0 [
+    *1 Object {
+      nested = *2 Object {
+        numbers = *3 [
+          1
+          2
+        ]
+        string = "hello"
+      }
+    }
+  ])
+sender.send("avm2_child", "test", *0 [
+    *1 Object {
+      nested = *2 Object {
+        numbers = *3 [
+          1
+          2
+        ]
+        string = "hello"
+      }
+    }
+  ])
+sender.send("_channel", "test", *0 [
+    *1 Object {
+      nested = *2 Object {
+        numbers = *3 [
+          1
+          2
+        ]
+        string = "hello"
+      }
+    }
+  ])
+
+-- end frame: Argument translations: simple object --
+
+sender received event StatusEvent.STATUS
+  bubbles: false
+  cancelable: false
+  code: null
+  currentTarget: sender
+  level: "status"
+  target: sender
+
+avm1_child.test was called with 1 arguments
+  *0 [
+    *1 object {
+      nested = *2 object {
+        numbers = *3 [
+          1
+          2
+        ]
+        string = "hello"
+      }
+    }
+  ]
+sender received event StatusEvent.STATUS
+  bubbles: false
+  cancelable: false
+  code: null
+  currentTarget: sender
+  level: "status"
+  target: sender
+
+avm2_child.test was called with 1 arguments
+  *0 [
+    *1 Object {
+      nested = *2 Object {
+        numbers = *3 [
+          1
+          2
+        ]
+        string = "hello"
+      }
+    }
+  ]
+sender received event StatusEvent.STATUS
+  bubbles: false
+  cancelable: false
+  code: null
+  currentTarget: sender
+  level: "status"
+  target: sender
+
+custom.test was called with 1 arguments
+  *0 [
+    *1 Object {
+      nested = *2 Object {
+        numbers = *3 [
+          1
+          2
+        ]
+        string = "hello"
+      }
+    }
+  ]
+
+-- end test: Argument translations: simple object --
+
+
+-- start test: AVM1 movie throws an error --
+
+sender.send("avm1_child", "throwAnError", *0 [])
+
+-- end frame: AVM1 movie throws an error --
+
+sender received event StatusEvent.STATUS
+  bubbles: false
+  cancelable: false
+  code: null
+  currentTarget: sender
+  level: "status"
+  target: sender
+
+avm1_child.throwAnError was called
+
+-- end test: AVM1 movie throws an error --
+
+Finished after 125 frames

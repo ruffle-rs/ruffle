@@ -2,14 +2,12 @@
 
 use crate::avm2::activation::Activation;
 use crate::avm2::object::script_object::ScriptObjectData;
-use crate::avm2::object::{ClassObject, Object, ObjectPtr, TObject};
-use crate::avm2::value::Value;
+use crate::avm2::object::{ClassObject, Object, TObject};
 use crate::avm2::Error;
 use crate::net_connection::NetConnectionHandle;
-use gc_arena::barrier::unlock;
-use gc_arena::lock::RefLock;
-use gc_arena::{Collect, Gc, GcWeak, Mutation};
-use std::cell::{Cell, Ref, RefMut};
+use crate::utils::HasPrefixField;
+use gc_arena::{Collect, Gc, GcWeak};
+use std::cell::Cell;
 use std::fmt;
 use std::fmt::Debug;
 
@@ -17,9 +15,9 @@ pub fn net_connection_allocator<'gc>(
     class: ClassObject<'gc>,
     activation: &mut Activation<'_, 'gc>,
 ) -> Result<Object<'gc>, Error<'gc>> {
-    let base = ScriptObjectData::new(class).into();
+    let base = ScriptObjectData::new(class);
     let this: Object<'gc> = NetConnectionObject(Gc::new(
-        activation.context.gc_context,
+        activation.gc(),
         NetConnectionObjectData {
             base,
             handle: Cell::new(None),
@@ -38,37 +36,22 @@ pub struct NetConnectionObject<'gc>(pub Gc<'gc, NetConnectionObjectData<'gc>>);
 #[collect(no_drop)]
 pub struct NetConnectionObjectWeak<'gc>(pub GcWeak<'gc, NetConnectionObjectData<'gc>>);
 
-#[derive(Collect)]
+#[derive(Collect, HasPrefixField)]
 #[collect(no_drop)]
+#[repr(C, align(8))]
 pub struct NetConnectionObjectData<'gc> {
-    base: RefLock<ScriptObjectData<'gc>>,
-    #[collect(require_static)]
+    base: ScriptObjectData<'gc>,
+
     handle: Cell<Option<NetConnectionHandle>>,
 }
 
 impl<'gc> TObject<'gc> for NetConnectionObject<'gc> {
-    fn base(&self) -> Ref<ScriptObjectData<'gc>> {
-        self.0.base.borrow()
-    }
-
-    fn base_mut(&self, mc: &Mutation<'gc>) -> RefMut<ScriptObjectData<'gc>> {
-        unlock!(Gc::write(mc, self.0), NetConnectionObjectData, base).borrow_mut()
-    }
-
-    fn as_ptr(&self) -> *const ObjectPtr {
-        Gc::as_ptr(self.0) as *const ObjectPtr
-    }
-
-    fn value_of(&self, _mc: &Mutation<'gc>) -> Result<Value<'gc>, Error<'gc>> {
-        Ok(Value::Object(Object::from(*self)))
-    }
-
-    fn as_net_connection(self) -> Option<NetConnectionObject<'gc>> {
-        Some(self)
+    fn gc_base(&self) -> Gc<'gc, ScriptObjectData<'gc>> {
+        HasPrefixField::as_prefix_gc(self.0)
     }
 }
 
-impl<'gc> NetConnectionObject<'gc> {
+impl NetConnectionObject<'_> {
     pub fn handle(&self) -> Option<NetConnectionHandle> {
         self.0.handle.get()
     }
@@ -78,7 +61,7 @@ impl<'gc> NetConnectionObject<'gc> {
     }
 }
 
-impl<'gc> Debug for NetConnectionObject<'gc> {
+impl Debug for NetConnectionObject<'_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "NetConnectionObject")
     }

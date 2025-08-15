@@ -1,0 +1,9 @@
+Mouse down: 234,166
+Mouse up: 511,189
+Text: Lore<selection>etus.
+Mouse down: 343,166
+Mouse up: 764,523
+Text: Lore<selection>etu<selection>
+Mouse down: 207,163
+Mouse up: 7,13
+Text: <selection>ore<selection>etu<selection>

@@ -1,0 +1,47 @@
+Tabbable elements:
+  text1: false
+  text2: true
+  text3: false
+  text4: true
+  text5: true
+  text6: true
+  text7: true
+  clip8: false
+  clip8.text: true
+  clip9: false
+  clip9.text: false
+  button10: true
+  button11: false
+  text12: false
+Enabling tab
+Tabbable elements:
+  text1: false
+  text2: true
+  text3: false
+  text4: true
+  text5: true
+  text6: true
+  text7: true
+  clip8: true
+  clip8.text: true
+  clip9: false
+  clip9.text: false
+  button10: true
+  button11: false
+  text12: false
+Setting custom order
+Tabbable elements:
+  text1: false
+  text2: true
+  text3: false
+  text4: true
+  text5: true
+  text6: true
+  text7: true
+  clip8: true
+  clip8.text: true
+  clip9: false
+  clip9.text: true
+  button10: true
+  button11: false
+  text12: false

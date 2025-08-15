@@ -1,0 +1,11 @@
+about-ruffle = Про Ruffle
+about-ruffle-version = Версія
+about-ruffle-channel = Канал
+about-ruffle-build-time = Час збірки
+about-ruffle-build-features = Функції збірки
+about-ruffle-commit-ref = Commit посилання
+about-ruffle-commit-time = Commit час
+about-ruffle-visit-website = Вебсайт
+about-ruffle-visit-github = GitHub
+about-ruffle-visit-discord = Discord
+about-ruffle-visit-sponsor = Спонсорство

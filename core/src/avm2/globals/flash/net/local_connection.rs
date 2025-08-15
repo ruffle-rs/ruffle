@@ -1,74 +1,69 @@
-use crate::avm2::error::{argument_error, type_error};
-use crate::avm2::object::TObject;
+use crate::avm2::amf::serialize_value;
+use crate::avm2::error::{argument_error, make_error_2004, make_error_2085, Error2004Type};
 use crate::avm2::parameters::ParametersExt;
-use crate::avm2::{Activation, Avm2, Error, Object, Value};
+use crate::avm2::{Activation, Error, Value};
 use crate::string::AvmString;
-
-use crate::avm2_stub_method;
+use flash_lso::types::{AMFVersion, Value as AmfValue};
 
 pub use crate::avm2::object::local_connection_allocator;
+use crate::local_connection::LocalConnections;
 
 /// Implements `domain` getter
 pub fn get_domain<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    _this: Object<'gc>,
+    _this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let movie = &activation.context.swf;
+    let movie = &activation.context.root_swf;
+    let domain = LocalConnections::get_domain(movie.url());
 
-    let domain = if let Ok(url) = url::Url::parse(movie.url()) {
-        if url.scheme() == "file" {
-            "localhost".into()
-        } else if let Some(domain) = url.domain() {
-            AvmString::new_utf8(activation.context.gc_context, domain)
-        } else {
-            // no domain?
-            "localhost".into()
-        }
-    } else {
-        tracing::error!("LocalConnection::domain: Unable to parse movie URL");
-        return Ok(Value::Null);
-    };
-
-    Ok(Value::String(domain))
+    Ok(Value::String(AvmString::new_utf8(activation.gc(), domain)))
 }
 
 /// Implements `LocalConnection.send`
-pub fn send_internal<'gc>(
+pub fn send<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    // Already null-checked by the AS wrapper `LocalConnection.send`
-    let connection_name = args.get_value(0);
+    let this = this.as_object().unwrap();
 
-    let connection_name = connection_name.coerce_to_string(activation)?;
+    let connection_name = args.get_string_non_null(activation, 0, "connectionName")?;
+    let method_name = args.get_string_non_null(activation, 1, "methodName")?;
 
-    let event_name = if activation
-        .context
-        .local_connections
-        .all_by_name(connection_name)
-        .is_empty()
+    if connection_name.is_empty() {
+        return Err(make_error_2085(activation, "connectionName"));
+    }
+    if method_name.is_empty() {
+        return Err(make_error_2085(activation, "methodName"));
+    }
+    if &method_name == b"send"
+        || &method_name == b"connect"
+        || &method_name == b"close"
+        || &method_name == b"allowDomain"
+        || &method_name == b"allowInsecureDomain"
+        || &method_name == b"domain"
     {
-        "error"
-    } else {
-        avm2_stub_method!(activation, "flash.net.LocalConnection", "send");
+        return Err(make_error_2004(activation, Error2004Type::ArgumentError));
+    }
 
-        "status"
-    };
+    let mut amf_arguments = Vec::with_capacity(args.len() - 2);
+    for arg in &args[2..] {
+        amf_arguments.push(
+            serialize_value(activation, *arg, AMFVersion::AMF0, &mut Default::default())
+                .unwrap_or(AmfValue::Undefined),
+        );
+    }
 
-    let event = activation.avm2().classes().statusevent.construct(
-        activation,
-        &[
-            "status".into(),
-            false.into(),
-            false.into(),
-            Value::Null,
-            event_name.into(),
-        ],
-    )?;
-
-    Avm2::dispatch_event(&mut activation.context, event, this);
+    if let Some(local_connection) = this.as_local_connection_object() {
+        activation.context.local_connections.send(
+            &LocalConnections::get_domain(activation.context.root_swf.url()),
+            (activation.domain(), local_connection),
+            connection_name,
+            method_name,
+            amf_arguments,
+        );
+    }
 
     Ok(Value::Undefined)
 }
@@ -76,29 +71,29 @@ pub fn send_internal<'gc>(
 /// Implements `LocalConnection.connect`
 pub fn connect<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let connection_name = args.get_value(0);
-    if matches!(connection_name, Value::Null) {
-        return Err(Error::AvmError(type_error(
-            activation,
-            "Error #2007: Parameter connectionName must be non-null.",
-            2007,
-        )?));
-    };
+    let this = this.as_object().unwrap();
+
+    let connection_name = args.get_string_non_null(activation, 0, "connectionName")?;
+    if connection_name.is_empty() {
+        return Err(make_error_2085(activation, "connectionName"));
+    }
+    if connection_name.contains(b':') {
+        return Err(make_error_2004(activation, Error2004Type::ArgumentError));
+    }
 
     if let Some(local_connection) = this.as_local_connection_object() {
-        if local_connection.is_connected() {
-            return Err(Error::AvmError(argument_error(
+        if !local_connection.connect(activation, connection_name) {
+            // This triggers both if this object is already connected, OR there's something else taking the name
+            // (The error message is misleading, in that case!)
+            return Err(Error::avm_error(argument_error(
                 activation,
                 "Error #2082: Connect failed because the object is already connected.",
                 2082,
             )?));
         }
-
-        let connection_name = connection_name.coerce_to_string(activation)?;
-        local_connection.connect(activation, connection_name);
     }
 
     Ok(Value::Undefined)
@@ -107,12 +102,14 @@ pub fn connect<'gc>(
 /// Implements `LocalConnection.close`
 pub fn close<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     if let Some(local_connection) = this.as_local_connection_object() {
         if !local_connection.is_connected() {
-            return Err(Error::AvmError(argument_error(
+            return Err(Error::avm_error(argument_error(
                 activation,
                 "Error #2083: Close failed because the object is not connected.",
                 2083,
@@ -120,6 +117,40 @@ pub fn close<'gc>(
         }
 
         local_connection.disconnect(activation);
+    }
+
+    Ok(Value::Undefined)
+}
+
+pub fn get_client<'gc>(
+    _activation: &mut Activation<'_, 'gc>,
+    this: Value<'gc>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
+    if let Some(local_connection) = this.as_local_connection_object() {
+        Ok(local_connection.client().into())
+    } else {
+        Ok(Value::Undefined)
+    }
+}
+
+pub fn set_client<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    this: Value<'gc>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
+    if let Some(local_connection) = this.as_local_connection_object() {
+        let client_obj = args.try_get_object(0);
+
+        if let Some(client_obj) = client_obj {
+            local_connection.set_client(activation.gc(), client_obj);
+        } else {
+            return Err(make_error_2004(activation, Error2004Type::TypeError));
+        }
     }
 
     Ok(Value::Undefined)

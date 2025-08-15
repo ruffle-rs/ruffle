@@ -1,6 +1,9 @@
 message-cant-embed =
     Ruffle 无法运行嵌入在此页面中的 Flash。
     您可以尝试在单独的标签页中打开该文件，以回避此问题。
+message-restored-from-bfcache =
+    您的浏览器从之前的会话中恢复了这个Flash内容。
+    若要从头开始播放，请重新加载页面。
 panic-title = 出了些问题 :(
 more-info = 更多信息
 run-anyway = 仍然运行
@@ -10,10 +13,21 @@ update-ruffle = 更新 Ruffle
 ruffle-demo = 网页演示
 ruffle-desktop = 桌面应用程序
 ruffle-wiki = 查看 Ruffle Wiki
-enable-hardware-acceleration = 看起来硬件加速未启用。虽然 Ruffle 可能运行，但可能会非常慢。您可以通过此链接了解启用硬件加速的方法。
+enable-hardware-acceleration = 看起来硬件加速已被禁用。虽然Ruffle可能可以运行，但速度可能会非常慢。您可以通过下面的链接了解如何启用硬件加速：
+enable-hardware-acceleration-link = 常见问题 - Chrome 硬件加速
 view-error-details = 查看错误详情
 open-in-new-tab = 在新标签页中打开
 click-to-unmute = 点击取消静音
+clipboard-message-title = 在Ruffle中复制粘贴
+clipboard-message-description =
+    { $variant ->
+       *[unsupported] 您的浏览器不支持完全剪贴板访问,
+        [access-denied] 对剪贴板的访问已被拒绝,
+    } 但您仍然可以使用以下快捷键:
+clipboard-message-copy = { " " } 复制
+clipboard-message-cut = { " " } 剪切
+clipboard-message-paste = { " " } 粘贴
+error-canvas-reload = Canvas 渲染器已在使用中时，无法使用 Canvas 渲染器重新加载。
 error-file-protocol =
     看来您正在 "file:" 协议上使用 Ruffle。
     由于浏览器以安全原因阻止许多功能，因此这不起作用。
@@ -58,6 +72,10 @@ error-wasm-disabled-on-edge =
     要解决这个问题，请尝试打开您的浏览器设置，单击"隐私、搜索和服务"，向下滚动并关闭"增强 Web 安全性"。
     这将允许您的浏览器加载所需的 “.wasm” 文件。
     如果问题仍然存在，您可能必须使用不同的浏览器。
+error-wasm-unsupported-browser =
+    您使用的浏览器不支持 Ruffle 运行所需的 WebAssembly 扩展。
+    请切换到支持的浏览器。
+    您可以在 Wiki 上找到支持的浏览器列表。
 error-javascript-conflict =
     Ruffle 在试图初始化时遇到了一个重大问题。
     这个页面似乎使用了与 Ruffle 冲突的 JavaScript 代码。

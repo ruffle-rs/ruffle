@@ -1,0 +1,4 @@
+pressed: 65
+keyPress a
+pressed: 66
+text.onChanged

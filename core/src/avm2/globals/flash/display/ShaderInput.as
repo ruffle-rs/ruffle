@@ -1,10 +1,19 @@
 package flash.display {
     public final dynamic class ShaderInput {
-        internal var _channels: int;
-        internal var _height: int;
-        internal var _index: int;
-        internal var _object: Object;
-        internal var _width: int;
+        [Ruffle(NativeAccessible)]
+        private var _channels: int;
+
+        [Ruffle(NativeAccessible)]
+        private var _height: int;
+
+        [Ruffle(NativeAccessible)]
+        private var _index: int;
+
+        [Ruffle(NativeAccessible)]
+        private var _input: Object;
+
+        [Ruffle(NativeAccessible)]
+        private var _width: int;
 
         public function get channels():int {
             return _channels;
@@ -31,12 +40,12 @@ package flash.display {
         }
 
         public function get input():Object {
-            return _object;
+            return this._input;
         }
 
         public function set input(value:Object):void {
             // FIXME - validate
-            _object = value;
+            this._input = value;
         }
     }
 }

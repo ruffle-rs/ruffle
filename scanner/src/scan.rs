@@ -143,12 +143,10 @@ pub fn scan_main(opt: ScanOpt) -> Result<(), std::io::Error> {
             result
         })
         .ser_bridge()
-        .map(|result| {
+        .inspect(|result| {
             if let Err(e) = writer.serialize(result.clone()) {
                 eprintln!("{e}");
             };
-
-            result
         });
 
     analyze(result_iter);

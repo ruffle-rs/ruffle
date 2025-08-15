@@ -1,7 +1,8 @@
-/// This file is a Rust port of the C reference implementation of the
-/// feTurbulence element in the SVG specification. It's the usual Perlin noise.
-/// See: https://www.w3.org/TR/SVG11/filters.html#feTurbulenceElement
-/// The `octave_offsets` parameter of `turbulence` was added after porting.
+//! This file is a Rust port of the C reference implementation of the
+//! feTurbulence element in the SVG specification. It's the usual Perlin noise.
+//!
+//! See: <https://www.w3.org/TR/SVG11/filters.html#feTurbulenceElement>.
+//! The `octave_offsets` parameter of `turbulence` was added after porting.
 
 // Copyright © 2015 W3C® (MIT, ERCIM, Keio, Beihang).
 // This software or document includes material copied from or derived
@@ -38,9 +39,13 @@ fn random(seed: i64) -> i64 {
 
 #[derive(Copy, Clone)]
 struct StitchInfo {
-    width: i32, // How much to subtract to wrap for stitching.
+    /// How much width to subtract to wrap for stitching.
+    width: i32,
+    /// How much height to subtract to wrap for stitching.
     height: i32,
-    wrap_x: i32, // Minimum value to wrap.
+    /// Minimum value of x to wrap.
+    wrap_x: i32,
+    /// Minimum value of y to wrap.
     wrap_y: i32,
 }
 
@@ -63,7 +68,7 @@ pub struct Turbulence {
     gradient: [[[f64; 2]; B_SIZE + B_SIZE + 2]; 4],
 }
 
-#[allow(clippy::many_single_char_names, clippy::needless_range_loop)] // for the sake of similarity with the original
+#[expect(clippy::many_single_char_names, clippy::needless_range_loop)] // for the sake of similarity with the original
 impl Turbulence {
     pub fn from_seed(mut seed: i64) -> Self {
         let mut s: f64;
@@ -172,7 +177,7 @@ impl Turbulence {
         lerp(sy, a, b)
     }
 
-    #[allow(clippy::too_many_arguments)]
+    #[expect(clippy::too_many_arguments)]
     pub fn turbulence(
         &self,
         color_channel: usize,
@@ -229,15 +234,14 @@ impl Turbulence {
             let noise = self.noise2(color_channel, vec, stitch_info);
             sum += if fractal_sum { noise } else { noise.abs() } / ratio;
             ratio *= 2.0;
-            stitch_info.as_mut().map(|stitch_info| {
+            if let Some(ref mut stitch_info) = stitch_info {
                 // Update stitch values. Subtracting PerlinN before the multiplication and
                 // adding it afterward simplifies to subtracting it once.
                 stitch_info.width *= 2;
                 stitch_info.wrap_x = 2 * stitch_info.wrap_x - PERLIN_N;
                 stitch_info.height *= 2;
                 stitch_info.wrap_y = 2 * stitch_info.wrap_y - PERLIN_N;
-                stitch_info
-            });
+            }
         }
         sum
     }

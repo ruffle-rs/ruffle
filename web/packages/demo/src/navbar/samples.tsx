@@ -6,7 +6,7 @@ import {
     useEffect,
     useState,
 } from "react";
-import { BaseLoadOptions } from "ruffle-core";
+import type { Config } from "ruffle-core";
 
 type SampleCategory = "Animation" | "Game";
 
@@ -20,16 +20,16 @@ export interface DemoSwf {
     title?: string;
     author?: string;
     authorLink?: string;
-    config?: BaseLoadOptions;
-    type: SampleCategory | null;
+    config?: Config.BaseLoadOptions;
+    type?: SampleCategory;
 }
 
 interface SampleSelectionProperties {
-    sampleSelectionInput: RefObject<HTMLSelectElement>;
+    sampleSelectionInput: RefObject<HTMLSelectElement | null>;
     selectedSample: DemoSwf | null;
     setSelectedSample: (value: DemoSwf | null) => void;
     setSelectedFilename: (name: string | null) => void;
-    onSelectUrl: (url: string, config: BaseLoadOptions) => void;
+    onSelectUrl: (url: string, config: Config.BaseLoadOptions) => void;
 }
 
 export function SampleSelection({
@@ -76,7 +76,7 @@ export function SampleSelection({
     return (
         <div
             id="sample-swfs-container"
-            className={availableSamples.length == 0 ? "hidden" : ""}
+            className={availableSamples.length === 0 ? "hidden" : ""}
         >
             <span id="sample-swfs-label">Sample SWF:</span>
             <select
@@ -87,7 +87,7 @@ export function SampleSelection({
             >
                 {availableSamples.map((sample, i) => (
                     <Fragment key={i}>
-                        {sample.type == null && (
+                        {sample.type === undefined && (
                             <option value={i}>{sample.title}</option>
                         )}
                     </Fragment>
@@ -99,7 +99,7 @@ export function SampleSelection({
                     >
                         {availableSamples.map((sample, i) => (
                             <Fragment key={i}>
-                                {sample.type == category && (
+                                {sample.type === category && (
                                     <option value={i}>{sample.title}</option>
                                 )}
                             </Fragment>

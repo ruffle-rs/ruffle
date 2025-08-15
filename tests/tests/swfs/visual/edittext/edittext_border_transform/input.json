@@ -1,0 +1,14 @@
+[
+  { "type": "KeyDown", "key": { "Char": "1" } },
+  { "type": "Wait" },
+  { "type": "KeyDown", "key": { "Char": "2" } },
+  { "type": "Wait" },
+  { "type": "KeyDown", "key": { "Char": "3" } },
+  { "type": "Wait" },
+  { "type": "KeyDown", "key": { "Char": "4" } },
+  { "type": "Wait" },
+  { "type": "KeyDown", "key": { "Char": "5" } },
+  { "type": "Wait" },
+  { "type": "KeyDown", "key": { "Char": "6" } },
+  { "type": "Wait" }
+]

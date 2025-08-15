@@ -1,14 +1,23 @@
-use swf::avm2::types::{Class, Exception, Index, LookupSwitch, Method, Multiname, Namespace};
+use crate::avm2::class::Class;
+use crate::avm2::method::{Method, NativeMethodImpl};
+use crate::avm2::multiname::Multiname;
+use crate::avm2::namespace::Namespace;
+use crate::avm2::script::Script;
+use crate::string::AvmAtom;
 
-#[derive(Clone, Debug, PartialEq)]
-pub enum Op {
+use gc_arena::{Collect, Gc};
+use std::cell::Cell;
+
+#[derive(Clone, Collect, Copy, Debug)]
+#[collect(no_drop)]
+pub enum Op<'gc> {
     Add,
     AddI,
     ApplyType {
         num_types: u32,
     },
     AsType {
-        type_name: Index<Multiname>,
+        class: Class<'gc>,
     },
     AsTypeLate,
     BitAnd,
@@ -23,49 +32,67 @@ pub enum Op {
         num_args: u32,
     },
     CallMethod {
-        index: Index<Method>,
+        index: u32,
         num_args: u32,
+        push_return_value: bool,
+    },
+    CallNative {
+        #[collect(require_static)]
+        method: NativeMethodImpl,
+        num_args: u32,
+        push_return_value: bool,
     },
     CallProperty {
-        index: Index<Multiname>,
+        multiname: Gc<'gc, Multiname<'gc>>,
+
         num_args: u32,
     },
     CallPropLex {
-        index: Index<Multiname>,
+        multiname: Gc<'gc, Multiname<'gc>>,
+
         num_args: u32,
     },
     CallPropVoid {
-        index: Index<Multiname>,
+        multiname: Gc<'gc, Multiname<'gc>>,
+
         num_args: u32,
     },
     CallStatic {
-        index: Index<Method>,
+        method: Method<'gc>,
+
         num_args: u32,
     },
     CallSuper {
-        index: Index<Multiname>,
-        num_args: u32,
-    },
-    CallSuperVoid {
-        index: Index<Multiname>,
+        multiname: Gc<'gc, Multiname<'gc>>,
+
         num_args: u32,
     },
     CheckFilter,
     Coerce {
-        index: Index<Multiname>,
+        class: Class<'gc>,
+    },
+    CoerceSwapPop {
+        class: Class<'gc>,
     },
     CoerceA,
     CoerceB,
     CoerceD,
+    CoerceDSwapPop,
     CoerceI,
+    CoerceISwapPop,
     CoerceO,
     CoerceS,
     CoerceU,
+    CoerceUSwapPop,
     Construct {
         num_args: u32,
     },
     ConstructProp {
-        index: Index<Multiname>,
+        multiname: Gc<'gc, Multiname<'gc>>,
+        num_args: u32,
+    },
+    ConstructSlot {
+        index: u32,
         num_args: u32,
     },
     ConstructSuper {
@@ -75,11 +102,11 @@ pub enum Op {
     ConvertS,
     Debug {
         is_local_register: bool,
-        register_name: Index<String>,
+        register_name: AvmAtom<'gc>,
         register: u8,
     },
     DebugFile {
-        file_name: Index<String>,
+        file_name: AvmAtom<'gc>,
     },
     DebugLine {
         line_num: u32,
@@ -93,53 +120,64 @@ pub enum Op {
     Decrement,
     DecrementI,
     DeleteProperty {
-        index: Index<Multiname>,
+        multiname: Gc<'gc, Multiname<'gc>>,
     },
     Divide,
     Dup,
     Dxns {
-        index: Index<String>,
+        string: AvmAtom<'gc>,
     },
     DxnsLate,
     Equals,
     EscXAttr,
     EscXElem,
     FindDef {
-        index: Index<Multiname>,
+        multiname: Gc<'gc, Multiname<'gc>>,
     },
     FindProperty {
-        index: Index<Multiname>,
+        multiname: Gc<'gc, Multiname<'gc>>,
     },
     FindPropStrict {
-        index: Index<Multiname>,
+        multiname: Gc<'gc, Multiname<'gc>>,
     },
     GetDescendants {
-        index: Index<Multiname>,
-    },
-    GetGlobalScope,
-    GetGlobalSlot {
-        index: u32,
-    },
-    GetLex {
-        index: Index<Multiname>,
+        multiname: Gc<'gc, Multiname<'gc>>,
     },
     GetLocal {
         index: u32,
     },
     GetOuterScope {
-        index: u32,
+        index: usize,
     },
-    GetProperty {
-        index: Index<Multiname>,
+
+    // The GetProperty op is specialized into three different ops depending on the multiname.
+    //  - If the multiname is fully static, the verifier emits GetPropertyStatic.
+    //  - If the multiname has a lazy name, a static namespace, contains the
+    //    the public namespace, and is not an attribute multiname, the verifier
+    //    emits GetPropertyFast.
+    //  - If neither condition is met (i.e. the multiname has a lazy namespace),
+    //    the verifier emits GetPropertySlow.
+    GetPropertyStatic {
+        multiname: Gc<'gc, Multiname<'gc>>,
+    },
+    GetPropertyFast {
+        multiname: Gc<'gc, Multiname<'gc>>,
+    },
+    GetPropertySlow {
+        multiname: Gc<'gc, Multiname<'gc>>,
     },
     GetScopeObject {
-        index: u8,
+        index: usize,
+    },
+    GetScriptGlobals {
+        script: Script<'gc>,
     },
     GetSlot {
+        // note: 0-indexed, as opposed to FP.
         index: u32,
     },
     GetSuper {
-        index: Index<Multiname>,
+        multiname: Gc<'gc, Multiname<'gc>>,
     },
     GreaterEquals,
     GreaterThan,
@@ -148,47 +186,11 @@ pub enum Op {
         object_register: u32,
         index_register: u32,
     },
-    IfEq {
-        offset: i32,
-    },
     IfFalse {
-        offset: i32,
-    },
-    IfGe {
-        offset: i32,
-    },
-    IfGt {
-        offset: i32,
-    },
-    IfLe {
-        offset: i32,
-    },
-    IfLt {
-        offset: i32,
-    },
-    IfNe {
-        offset: i32,
-    },
-    IfNge {
-        offset: i32,
-    },
-    IfNgt {
-        offset: i32,
-    },
-    IfNle {
-        offset: i32,
-    },
-    IfNlt {
-        offset: i32,
-    },
-    IfStrictEq {
-        offset: i32,
-    },
-    IfStrictNe {
-        offset: i32,
+        offset: usize,
     },
     IfTrue {
-        offset: i32,
+        offset: usize,
     },
     In,
     IncLocal {
@@ -200,15 +202,15 @@ pub enum Op {
     Increment,
     IncrementI,
     InitProperty {
-        index: Index<Multiname>,
+        multiname: Gc<'gc, Multiname<'gc>>,
     },
     InstanceOf,
     IsType {
-        index: Index<Multiname>,
+        class: Class<'gc>,
     },
     IsTypeLate,
     Jump {
-        offset: i32,
+        offset: usize,
     },
     Kill {
         index: u32,
@@ -220,25 +222,27 @@ pub enum Op {
     Li16,
     Li32,
     Li8,
-    LookupSwitch(Box<LookupSwitch>),
+    LookupSwitch(Gc<'gc, LookupSwitch>),
     LShift,
     Modulo,
     Multiply,
     MultiplyI,
     Negate,
     NegateI,
-    NewActivation,
+    NewActivation {
+        activation_class: Class<'gc>,
+    },
     NewArray {
         num_args: u32,
     },
     NewCatch {
-        index: Index<Exception>,
+        index: usize,
     },
     NewClass {
-        index: Index<Class>,
+        class: Class<'gc>,
     },
     NewFunction {
-        index: Index<Method>,
+        method: Method<'gc>,
     },
     NewObject {
         num_args: u32,
@@ -249,9 +253,6 @@ pub enum Op {
     Not,
     Pop,
     PopScope,
-    PushByte {
-        value: u8,
-    },
     PushDouble {
         value: f64,
     },
@@ -260,16 +261,15 @@ pub enum Op {
         value: i32,
     },
     PushNamespace {
-        value: Index<Namespace>,
+        namespace: Namespace<'gc>,
     },
-    PushNaN,
     PushNull,
     PushScope,
     PushShort {
         value: i16,
     },
     PushString {
-        value: Index<String>,
+        string: AvmAtom<'gc>,
     },
     PushTrue,
     PushUint {
@@ -277,23 +277,41 @@ pub enum Op {
     },
     PushUndefined,
     PushWith,
-    ReturnValue,
-    ReturnVoid,
+    ReturnValue {
+        return_type: Option<Class<'gc>>,
+    },
+    ReturnVoid {
+        return_type: Option<Class<'gc>>,
+    },
     RShift,
     SetGlobalSlot {
+        // note: 0-indexed, as opposed to FP.
         index: u32,
     },
     SetLocal {
         index: u32,
     },
-    SetProperty {
-        index: Index<Multiname>,
+
+    // See the comments on the GetProperty op
+    SetPropertyStatic {
+        multiname: Gc<'gc, Multiname<'gc>>,
+    },
+    SetPropertyFast {
+        multiname: Gc<'gc, Multiname<'gc>>,
+    },
+    SetPropertySlow {
+        multiname: Gc<'gc, Multiname<'gc>>,
     },
     SetSlot {
+        // note: 0-indexed, as opposed to FP.
+        index: u32,
+    },
+    SetSlotNoCoerce {
+        // note: 0-indexed, as opposed to FP.
         index: u32,
     },
     SetSuper {
-        index: Index<Multiname>,
+        multiname: Gc<'gc, Multiname<'gc>>,
     },
     Sf32,
     Sf64,
@@ -311,6 +329,68 @@ pub enum Op {
     TypeOf,
     Timestamp,
     URShift,
+}
+
+impl Op<'_> {
+    pub fn can_throw_error(&self) -> bool {
+        !matches!(
+            self,
+            Op::AsType { .. }
+                | Op::Bkpt
+                | Op::BkptLine { .. }
+                | Op::CoerceO
+                | Op::Dup
+                | Op::GetScopeObject { .. }
+                | Op::GetOuterScope { .. }
+                | Op::GetLocal { .. }
+                | Op::IfTrue { .. }
+                | Op::IfFalse { .. }
+                | Op::IsType { .. }
+                | Op::Jump { .. }
+                | Op::Kill { .. }
+                | Op::LookupSwitch { .. }
+                | Op::Nop
+                | Op::Not
+                | Op::Pop
+                | Op::PopScope
+                | Op::PushDouble { .. }
+                | Op::PushFalse
+                | Op::PushInt { .. }
+                | Op::PushNamespace { .. }
+                | Op::PushNull
+                | Op::PushShort { .. }
+                | Op::PushString { .. }
+                | Op::PushTrue
+                | Op::PushUint { .. }
+                | Op::PushUndefined
+                | Op::SetLocal { .. }
+                | Op::StrictEquals
+                | Op::Swap
+                | Op::Timestamp
+                | Op::TypeOf
+                | Op::ReturnVoid { .. }
+        )
+    }
+
+    pub fn is_nop(&self) -> bool {
+        if cfg!(feature = "avm_debug") {
+            matches!(self, Op::Nop)
+        } else {
+            matches!(
+                self,
+                Op::Nop | Op::Debug { .. } | Op::DebugFile { .. } | Op::DebugLine { .. }
+            )
+        }
+    }
+}
+
+// This has interior mutability so that we can rewrite switch offsets from the
+// optimizer when we need to
+#[derive(Collect, Debug)]
+#[collect(require_static)]
+pub struct LookupSwitch {
+    pub default_offset: Cell<usize>,
+    pub case_offsets: Box<[Cell<usize>]>,
 }
 
 #[cfg(target_pointer_width = "64")]

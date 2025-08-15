@@ -1,0 +1,150 @@
+===== Setting focus manually
+Setting the focus to _level0.clip
+_level0.clip.onSetFocus
+Focus changed: null -> _level0.clip
+Focus set to _level0.clip
+Setting the focus to _level0.button
+_level0.clip.onKillFocus
+_level0.button.onSetFocus
+Focus changed: _level0.clip -> _level0.button
+Focus set to _level0.button
+Setting the focus to _level0.text
+_level0.button.onKillFocus
+_level0.text.onSetFocus
+Focus changed: _level0.button -> _level0.text
+Focus set to _level0.text
+Setting the focus to _level0.button2
+_level0.text.onKillFocus
+_level0.button2.onSetFocus
+Focus changed: _level0.text -> _level0.button2
+Focus set to _level0.button2
+Setting the focus to _level0.clip2
+_level0.button2.onKillFocus
+_level0.clip2.onSetFocus
+Focus changed: _level0.button2 -> _level0.clip2
+Focus set to _level0.clip2
+===== Starting with stage 0
+_level0.clip.onRollOver
+_level0.clip.onRollOut
+rollOver
+_level0.button.onRollOver
+rollOut
+_level0.button.onRollOut
+rollOver
+_level0.button2.onRollOver
+rollOut
+_level0.button2.onRollOut
+_level0.clip2.onRollOver
+_level0.clip2.onKeyDown
+Tab pressed
+_level0.clip2.onRollOut
+_level0.clip.onRollOver
+_level0.clip2.onKillFocus
+_level0.clip.onSetFocus
+Focus changed: _level0.clip2 -> _level0.clip
+_level0.clip.onKeyUp
+_level0.clip.onKeyDown
+Tab pressed
+_level0.clip.onRollOut
+rollOver
+_level0.button.onRollOver
+_level0.clip.onKillFocus
+_level0.button.onSetFocus
+Focus changed: _level0.clip -> _level0.button
+_level0.button.onKeyUp
+_level0.button.onKeyDown
+Tab pressed
+rollOut
+_level0.button.onRollOut
+_level0.button.onKillFocus
+_level0.text.onSetFocus
+Focus changed: _level0.button -> _level0.text
+Tab pressed
+rollOver
+_level0.button2.onRollOver
+_level0.text.onKillFocus
+_level0.button2.onSetFocus
+Focus changed: _level0.text -> _level0.button2
+_level0.button2.onKeyUp
+_level0.button2.onKeyDown
+Tab pressed
+rollOut
+_level0.button2.onRollOut
+_level0.clip2.onRollOver
+_level0.button2.onKillFocus
+_level0.clip2.onSetFocus
+Focus changed: _level0.button2 -> _level0.clip2
+_level0.clip2.onKeyUp
+_level0.clip2.onKeyDown
+Tab pressed
+_level0.clip2.onRollOut
+_level0.clip.onRollOver
+_level0.clip2.onKillFocus
+_level0.clip.onSetFocus
+Focus changed: _level0.clip2 -> _level0.clip
+_level0.clip.onKeyUp
+_level0.clip.onKeyDown
+Tab pressed
+_level0.clip.onRollOut
+rollOver
+_level0.button.onRollOver
+_level0.clip.onKillFocus
+_level0.button.onSetFocus
+Focus changed: _level0.clip -> _level0.button
+_level0.button.onKeyUp
+_level0.button.onKeyDown
+Tab pressed
+rollOut
+_level0.button.onRollOut
+_level0.button.onKillFocus
+_level0.text.onSetFocus
+Focus changed: _level0.button -> _level0.text
+Tab pressed
+rollOver
+_level0.button2.onRollOver
+_level0.text.onKillFocus
+_level0.button2.onSetFocus
+Focus changed: _level0.text -> _level0.button2
+_level0.button2.onKeyUp
+_level0.button2.onKeyDown
+Tab pressed
+rollOut
+_level0.button2.onRollOut
+_level0.clip2.onRollOver
+_level0.button2.onKillFocus
+_level0.clip2.onSetFocus
+Focus changed: _level0.button2 -> _level0.clip2
+_level0.clip2.onKeyUp
+_level0.clip2.onKeyDown
+===== Next test stage: 1
+_level0.clip2.onKeyUp
+_level0.clip2.onKeyDown
+Tab pressed
+_level0.clip2.onRollOut
+_level0.clip.onRollOver
+_level0.clip2.onKillFocus
+_level0.clip.onSetFocus
+Focus changed: _level0.clip2 -> _level0.clip
+_level0.clip.onKillFocus
+_level0.button.onSetFocus
+Focus changed: _level0.clip -> _level0.button
+_level0.button.onKillFocus
+_level0.text.onSetFocus
+Focus changed: _level0.button -> _level0.text
+_level0.text.onKillFocus
+_level0.button2.onSetFocus
+Focus changed: _level0.text -> _level0.button2
+_level0.button2.onKillFocus
+_level0.clip2.onSetFocus
+Focus changed: _level0.button2 -> _level0.clip2
+_level0.clip.onRollOut
+rollOver
+_level0.button.onRollOver
+rollOut
+_level0.button.onRollOut
+rollOver
+_level0.button2.onRollOver
+rollOut
+_level0.button2.onRollOut
+_level0.clip2.onRollOver
+_level0.clip2.onKeyUp

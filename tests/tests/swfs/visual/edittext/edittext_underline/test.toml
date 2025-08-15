@@ -1,0 +1,12 @@
+num_ticks = 1
+
+[[image_comparisons.output.checks]]
+tolerance = 0
+max_outliers = 16
+
+[[image_comparisons.output.checks]]
+tolerance = 144
+max_outliers = 0
+
+[player_options]
+with_renderer = { optional = false, sample_count = 1 }

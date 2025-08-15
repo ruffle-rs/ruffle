@@ -1,0 +1,9 @@
+MyText constructor
+my shape:
+40.35
+Main constructor
+constructing child:
+MyText constructor
+my shape:
+0
+0

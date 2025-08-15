@@ -10,10 +10,21 @@ update-ruffle = Ruffle frissítése
 ruffle-demo = Webes demó
 ruffle-desktop = Asztali alkalmazás
 ruffle-wiki = Ruffle Wiki megnyitása
-enable-hardware-acceleration = Úgy tűnik, a hardveres gyorsítás nincs engedélyezve. Bár a Ruffle működhet, nagyon lassú lehet. Ezt a hivatkozást követve megtudhatod, hogyan engedélyezd a hardveres gyorsítást.
+enable-hardware-acceleration = Úgy tűnik, a hardveres gyorsítás ki van kapcsolva. Bár a Ruffle működhet, nagyon lassú lehet. Az alábbi hivatkozást követve megtudhatod, hogyan engedélyezd a hardveres gyorsítást:
+enable-hardware-acceleration-link = GYIK - Chrome hardveres gyorsítás
 view-error-details = Hiba részletei
 open-in-new-tab = Megnyitás új lapon
 click-to-unmute = Kattints a némítás feloldásához
+clipboard-message-title = Másolás és beíllesztés a Ruffle-ben
+clipboard-message-description =
+    { $variant ->
+       *[unsupported] A böngésződ nem támogatja a vágólaphoz való teljes hozzáférést,
+        [access-denied] A vágólaphoz való hozzáférés el lett utasítva,
+    } de mindig használhatod ezeket a gyorsbillentyűket helyette:
+clipboard-message-copy = { " " } másoláshoz
+clipboard-message-cut = { " " } kivágáshoz
+clipboard-message-paste = { " " } beillesztéshez
+error-canvas-reload = Újratöltés a canvas megjelenítővel nem lehetséges, ha már az van használatban.
 error-file-protocol =
     Úgy tűnik, a Ruffle-t a "file:" protokollon futtatod.
     Ez nem működik, mivel így a böngészők biztonsági okokból számos funkció működését letiltják.
@@ -58,6 +69,10 @@ error-wasm-disabled-on-edge =
     A probléma megoldásához nyisd meg a böngésző beállításait, kattints az „Adatvédelem, keresés és szolgáltatások” elemre, görgess le, és kapcsold ki a „Fokozott biztonság a weben” opciót.
     Ez lehetővé teszi a böngésző számára, hogy betöltse a szükséges ".wasm" fájlokat.
     Ha a probléma továbbra is fennáll, lehet, hogy másik böngészőt kell használnod.
+error-wasm-unsupported-browser =
+    Az általad használt böngésző nem támogatja a Ruffle futtatásához szükséges WebAssembly kiegészítéseket.
+    Kérlek, válts egy támogatott böngészőre.
+    A támogatott böngészők listáját a Wikin találod.
 error-javascript-conflict =
     A Ruffle komoly problémába ütközött az inicializálás során.
     Úgy tűnik, ez az oldal olyan JavaScript-kódot használ, amely ütközik a Ruffle-lel.

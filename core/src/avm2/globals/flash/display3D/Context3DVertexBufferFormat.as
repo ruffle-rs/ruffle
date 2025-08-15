@@ -6,6 +6,7 @@
 package flash.display3D
 {
 
+    [API("674")]
     public final class Context3DVertexBufferFormat
     {
         public static const BYTES_4:String = "bytes4";

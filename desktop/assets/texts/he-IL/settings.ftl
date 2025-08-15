@@ -3,9 +3,10 @@ player-settings = הגדרות שחקן
 movie-parameters = משתני הסרט
 custom-base-url = כתובת בסיס אתר מותאמת אישית
 spoof-swf-url = זיוף כתובת SWF
+referer-url = כתובת אתר מפנה
+cookie = עוגיות
 proxy = פרוקסי
 upgrade-http = שדרג מ-HTTP ל-HTTPS
-upgrade-http-check = שדרג
 tcp-connections = חיבורי TCP
 tcp-connections-allow = אפשר
 tcp-connections-ask = שאל
@@ -45,13 +46,32 @@ align-top-right = ימנית עליונה
 align-bottom-right = ימנית תחתונה
 align-force = כפה
 scale-mode = מצב קנה-מידה
-scale-mode-exactfit = התאמה מדויקת
-scale-mode-noborder = ללא מסגרת
-scale-mode-noscale = ללא קנה-מידה
-scale-mode-showall = הצג הכול
+scale-mode-noscale = ללא קנה מידה (100%)
+scale-mode-noscale-tooltip =
+    מציג את הקובץ בגודל המקורי שלו, בלי שום הגדלה.
+    
+    מותאם לStageScaleMode.NO_SCALE
+scale-mode-showall = הגדלה עבור התאמה
+scale-mode-showall-tooltip =
+    מגדיל את הקובץ כדי למלא את החלון ככל האפשר מבלי לחתוך אותו, תוך שמירה על יחס רוחב-גובה.
+    
+    מותאם לStageScaleMode.SHOW_ALL
+scale-mode-exactfit = מתיחה עבור התאמה
+scale-mode-exactfit-tooltip =
+    מבטיח שהקובץ ימלא את כל החלון, בלי להתחשב ביחס גובה-רוחב.
+    
+    מותאם לStageScaleMode.EXACT_FIT
+scale-mode-noborder = חתיכה עבור התאמה
+scale-mode-noborder-tooltip =
+    ממלא את כל החלון תוך שמירה על יחס רוחב-גובה, יחתוך את גודל הקובץ במידת הצורך.
+    
+    מותאם לStageScaleMode.NO_BORDER
 scale-mode-force = כפה
+scale-mode-force-tooltip = מונע מהקובץ לשנות את מצב קנה המידה, נועל אותו להגדרה שנבחרה.
 player-version = גרסת שחקן
+player-runtime = הרצת נגן
+player-runtime-flash = נגן פלאש
+player-runtime-air = אדובי AIR
 custom-framerate = קצב פריימים מותאם אישית
 custom-framerate-suffix = { " " } פריימים לשנייה
 dummy-external-interface = ממשק חיצוני מדומה
-dummy-external-interface-check = אפשר

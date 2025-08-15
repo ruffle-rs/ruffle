@@ -1,0 +1,40 @@
+/// connection.close()
+
+/// connection.connect(null)
+-- NetConnection.onStatus start --
+typeof(event) == object
+event.level = status (string)
+event.code = NetConnection.Connect.Success (string)
+-- NetConnection.onStatus end --
+
+/// connection.connect(null)
+-- NetConnection.onStatus start --
+typeof(event) == object
+event.level = status (string)
+event.code = NetConnection.Connect.Closed (string)
+-- NetConnection.onStatus end --
+-- NetConnection.onStatus start --
+typeof(event) == object
+event.level = status (string)
+event.code = NetConnection.Connect.Success (string)
+-- NetConnection.onStatus end --
+
+/// connection.close()
+-- NetConnection.onStatus start --
+typeof(event) == object
+event.level = status (string)
+event.code = NetConnection.Connect.Closed (string)
+-- NetConnection.onStatus end --
+
+/// connection.connect("http://example.org")
+
+/// connection.close()
+-- NetConnection.onStatus start --
+typeof(event) == object
+event.level = status (string)
+event.code = NetConnection.Connect.Closed (string)
+-- NetConnection.onStatus end --
+-- NetConnection.onStatus start --
+typeof(event) == undefined
+-- NetConnection.onStatus end --
+

@@ -1,3 +1,2 @@
-volume-controls = Ovládání hlasitosti
 volume-controls-mute = Ztlumit
-volume-controls-volume = Hlasitost
+volume-controls-unmute = Zrušit ztlumení

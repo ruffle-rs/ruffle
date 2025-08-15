@@ -1,0 +1,22 @@
+onKeyDown: U+61
+onTextInput: U+61
+onChange
+ U+61
+onKeyDown: U+d
+onTextInput: U+a
+onChange
+ U+61
+ U+d
+onKeyDown: U+62
+onTextInput: U+62
+onChange
+ U+61
+ U+d
+ U+62
+onKeyDown: U+d
+onTextInput: U+a
+onChange
+ U+61
+ U+d
+ U+62
+ U+d

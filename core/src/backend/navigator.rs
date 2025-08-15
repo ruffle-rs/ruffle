@@ -3,9 +3,10 @@
 use crate::loader::Error;
 use crate::socket::{ConnectionState, SocketAction, SocketHandle};
 use crate::string::WStr;
-use async_channel::Receiver;
+use async_channel::{Receiver, Sender};
+use encoding_rs::Encoding;
 use indexmap::IndexMap;
-use serde::{Deserialize, Serialize};
+use std::any::Any;
 use std::borrow::Cow;
 use std::fmt;
 use std::fmt::Display;
@@ -14,7 +15,6 @@ use std::future::Future;
 use std::io::Read;
 use std::path::{Path, PathBuf};
 use std::pin::Pin;
-use std::sync::mpsc::Sender;
 use std::time::Duration;
 use swf::avm1::types::SendVarsMethod;
 use url::{ParseError, Url};
@@ -34,7 +34,7 @@ pub fn url_from_relative_url(base: &str, relative: &str) -> Result<Url, ParseErr
 }
 
 /// Enumerates all possible navigation methods.
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, PartialEq)]
 pub enum NavigationMethod {
     /// Indicates that navigation should generate a GET request.
     Get,
@@ -54,23 +54,6 @@ pub enum SocketMode {
 
     /// Ask the user every time a socket connection is requested
     Ask,
-}
-
-/// The handling mode of links opening a new website.
-#[cfg_attr(feature = "clap", derive(clap::ValueEnum))]
-#[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
-pub enum OpenURLMode {
-    /// Allow all links to open a new website.
-    #[serde(rename = "allow")]
-    Allow,
-
-    /// A confirmation dialog opens with every link trying to open a new website.
-    #[serde(rename = "confirm")]
-    Confirm,
-
-    /// Deny all links to open a new website.
-    #[serde(rename = "deny")]
-    Deny,
 }
 
 impl NavigationMethod {
@@ -150,7 +133,7 @@ impl Request {
     }
 
     /// Construct a request with the given method and data
-    #[allow(clippy::self_named_constructors)]
+    #[expect(clippy::self_named_constructors)]
     pub fn request(method: NavigationMethod, url: String, body: Option<(Vec<u8>, String)>) -> Self {
         Self {
             url,
@@ -191,12 +174,15 @@ impl Request {
 /// A response to a successful fetch request.
 pub trait SuccessResponse {
     /// The final URL obtained after any redirects.
-    fn url(&self) -> Cow<str>;
+    fn url(&self) -> Cow<'_, str>;
 
     /// Retrieve the contents of the response body.
     ///
     /// This method consumes the response.
     fn body(self: Box<Self>) -> OwnedFuture<Vec<u8>, Error>;
+
+    /// The text encoding listed in the HTTP response header if existing.
+    fn text_encoding(&self) -> Option<&'static Encoding>;
 
     /// The status code of the response.
     fn status(&self) -> u16;
@@ -241,7 +227,7 @@ pub struct ErrorResponse {
 pub type OwnedFuture<T, E> = Pin<Box<dyn Future<Output = Result<T, E>> + 'static>>;
 
 /// A backend interacting with a browser environment.
-pub trait NavigatorBackend {
+pub trait NavigatorBackend: Any {
     /// Cause a browser navigation to a given URL.
     ///
     /// The URL given may be any URL scheme a browser can support. This may not
@@ -455,7 +441,7 @@ impl NavigatorBackend for NullNavigatorBackend {
         sender: Sender<SocketAction>,
     ) {
         sender
-            .send(SocketAction::Connect(handle, ConnectionState::Failed))
+            .try_send(SocketAction::Connect(handle, ConnectionState::Failed))
             .expect("working channel send");
     }
 }
@@ -580,7 +566,7 @@ pub fn fetch_path<NavigatorType: NavigatorBackend>(
     }
 
     impl SuccessResponse for LocalResponse {
-        fn url(&self) -> Cow<str> {
+        fn url(&self) -> Cow<'_, str> {
             Cow::Borrowed(&self.url)
         }
 
@@ -588,6 +574,10 @@ pub fn fetch_path<NavigatorType: NavigatorBackend>(
             Box::pin(async move {
                 std::fs::read(self.path).map_err(|e| Error::FetchError(e.to_string()))
             })
+        }
+
+        fn text_encoding(&self) -> Option<&'static Encoding> {
+            None
         }
 
         fn status(&self) -> u16 {
@@ -682,4 +672,14 @@ pub fn fetch_path<NavigatorType: NavigatorBackend>(
 
         Ok(response)
     })
+}
+
+/// Parses and returns the encoding out of an HTTP header content type string
+/// if existing.
+pub fn get_encoding(content_type: &str) -> Option<&'static Encoding> {
+    if let Some((_, encoding_string)) = content_type.split_once("charset=") {
+        Encoding::for_label(encoding_string.as_bytes())
+    } else {
+        None
+    }
 }

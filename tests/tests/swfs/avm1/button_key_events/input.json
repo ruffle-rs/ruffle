@@ -1,0 +1,17 @@
+[
+  { "type": "KeyDown", "key": { "Char": "a" } },
+  { "type": "TextInput", "codepoint": "a" },
+  { "type": "KeyUp", "key": { "Char": "a" } },
+  { "type": "KeyDown", "key": { "Char": "b" } },
+  { "type": "TextInput", "codepoint": "b" },
+  { "type": "KeyDown", "key": { "Char": "a" } },
+  { "type": "TextInput", "codepoint": "a" },
+  { "type": "KeyUp", "key": { "Char": "b" } },
+  { "type": "KeyUp", "key": { "Char": "a" } },
+  { "type": "KeyDown", "key": "Tab" },
+  { "type": "TextInput", "codepoint": "\t" },
+  { "type": "KeyUp", "key": "Tab" },
+  { "type": "KeyDown", "key": { "Char": "a" } },
+  { "type": "TextInput", "codepoint": "a" },
+  { "type": "KeyUp", "key": { "Char": "a" } }
+]

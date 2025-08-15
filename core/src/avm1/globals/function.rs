@@ -4,9 +4,8 @@ use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
 use crate::avm1::function::{ExecutionName, ExecutionReason};
 use crate::avm1::property_decl::{define_properties_on, Declaration};
-use crate::avm1::{Object, ScriptObject, TObject, Value};
-use crate::context::GcContext;
-use crate::string::AvmString;
+use crate::avm1::{Object, Value};
+use crate::string::{AvmString, StringContext};
 
 const PROTO_DECLS: &[Declaration] = declare_properties! {
     "call" => method(call; DONT_ENUM | DONT_DELETE);
@@ -17,9 +16,9 @@ const PROTO_DECLS: &[Declaration] = declare_properties! {
 pub fn constructor<'gc>(
     _activation: &mut Activation<'_, 'gc>,
     this: Object<'gc>,
-    _args: &[Value<'gc>],
+    args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    Ok(this.into())
+    Ok(args.get(0).copied().unwrap_or_else(|| this.into()))
 }
 
 /// Implements `Function()`
@@ -28,12 +27,10 @@ pub fn function<'gc>(
     _this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(arg) = args.get(0) {
-        Ok(arg.to_owned())
-    } else {
+    Ok(args.get(0).copied().unwrap_or_else(|| {
         // Calling `Function()` seems to give a prototypeless bare object.
-        Ok(ScriptObject::new(activation.context.gc_context, None).into())
-    }
+        Object::new(&activation.context.strings, None).into()
+    }))
 }
 
 /// Implements `Function.prototype.call`
@@ -53,6 +50,7 @@ pub fn call<'gc>(
         _ => &myargs[1..],
     };
 
+    // NOTE: does not use `Object::call`, as `super()` only works with direct calls.
     match func.as_executable() {
         Some(exec) => exec.exec(
             ExecutionName::Static("[Anonymous]"),
@@ -79,7 +77,7 @@ pub fn apply<'gc>(
     };
     let args_object = myargs.get(1).cloned().unwrap_or(Value::Undefined);
     let length = match args_object {
-        Value::Object(a) => a.get("length", activation)?.coerce_to_f64(activation)? as usize,
+        Value::Object(a) => a.length(activation)? as usize,
         _ => 0,
     };
 
@@ -88,14 +86,12 @@ pub fn apply<'gc>(
         let args = args_object.coerce_to_object(activation);
         // TODO: why don't this use args_object.array_element?
         let next_arg = format!("{}", child_args.len());
-        let next_arg = args.get(
-            AvmString::new_utf8(activation.context.gc_context, next_arg),
-            activation,
-        )?;
+        let next_arg = args.get(AvmString::new_utf8(activation.gc(), next_arg), activation)?;
 
         child_args.push(next_arg);
     }
 
+    // NOTE: does not use `Object::call`, as `super()` only works with direct calls.
     match func.as_executable() {
         Some(exec) => exec.exec(
             ExecutionName::Static("[Anonymous]"),
@@ -117,8 +113,8 @@ pub fn apply<'gc>(
 /// them in order to obtain a valid ECMAScript `Function` prototype. The
 /// returned object is also a bare object, which will need to be linked into
 /// the prototype of `Object`.
-pub fn create_proto<'gc>(context: &mut GcContext<'_, 'gc>, proto: Object<'gc>) -> Object<'gc> {
-    let function_proto = ScriptObject::new(context.gc_context, Some(proto));
-    define_properties_on(PROTO_DECLS, context, function_proto, function_proto.into());
-    function_proto.into()
+pub fn create_proto<'gc>(context: &mut StringContext<'gc>, proto: Object<'gc>) -> Object<'gc> {
+    let function_proto = Object::new(context, Some(proto));
+    define_properties_on(PROTO_DECLS, context, function_proto, function_proto);
+    function_proto
 }

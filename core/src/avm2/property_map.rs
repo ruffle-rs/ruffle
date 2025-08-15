@@ -5,6 +5,7 @@ use crate::avm2::Multiname;
 use crate::avm2::Namespace;
 use crate::avm2::QName;
 use fnv::FnvBuildHasher;
+use gc_arena::collect::Trace;
 use gc_arena::Collect;
 use smallvec::SmallVec;
 use std::collections::HashMap;
@@ -29,23 +30,20 @@ pub struct PropertyMap<'gc, V>(
     HashMap<AvmString<'gc>, SmallVec<[(Namespace<'gc>, V); 2]>, FnvBuildHasher>,
 );
 
-unsafe impl<'gc, V> Collect for PropertyMap<'gc, V>
-where
-    V: Collect,
-{
+unsafe impl<'gc, V: Collect<'gc>> Collect<'gc> for PropertyMap<'gc, V> {
     #[inline]
-    fn trace(&self, cc: &gc_arena::Collection) {
+    fn trace<C: Trace<'gc>>(&self, cc: &mut C) {
         for (key, value) in self.0.iter() {
-            key.trace(cc);
+            cc.trace(key);
             for (ns, v) in value.iter() {
-                ns.trace(cc);
-                v.trace(cc);
+                cc.trace(ns);
+                cc.trace(v);
             }
         }
     }
 }
 
-impl<'gc, V> Default for PropertyMap<'gc, V> {
+impl<V> Default for PropertyMap<'_, V> {
     fn default() -> Self {
         Self::new()
     }
@@ -159,7 +157,6 @@ impl<'gc, V> PropertyMap<'gc, V> {
         }
     }
 
-    #[allow(dead_code)]
     pub fn remove(&mut self, name: QName<'gc>) -> Option<V> {
         let bucket = self.0.get_mut(&name.local_name());
 

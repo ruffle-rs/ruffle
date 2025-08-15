@@ -113,7 +113,7 @@ impl<'a> FlvReader<'a> {
     }
 }
 
-impl<'a> Seek for FlvReader<'a> {
+impl Seek for FlvReader<'_> {
     fn seek(&mut self, pos: SeekFrom) -> IoResult<u64> {
         let newpos = match pos {
             SeekFrom::Start(pos) => pos,
@@ -132,7 +132,7 @@ impl<'a> Seek for FlvReader<'a> {
 }
 
 #[cfg(test)]
-#[allow(clippy::seek_from_current, clippy::seek_to_start_instead_of_rewind)]
+#[expect(clippy::seek_from_current)]
 mod tests {
     use crate::reader::FlvReader;
     use std::io::{Seek, SeekFrom};

@@ -1,4 +1,4 @@
-#import filter
+// NOTE: The `shader_filter_common.wgsl` source is prepended to this before compilation.
 
 struct Filter {
     // Secretly a vec2<f32> but within alignment rules.
@@ -29,8 +29,8 @@ struct Filter {
 @group(0) @binding(2) var<uniform> filter_args: Filter;
 
 @vertex
-fn main_vertex(in: filter::VertexInput) -> filter::VertexOutput {
-    var result = filter::main_vertex(in);
+fn main_vertex(in: filter__VertexInput) -> filter__VertexOutput {
+    var result = filter__main_vertex(in);
 
     let direction = vec2<f32>(filter_args.dir_x, filter_args.dir_y);
     // Pre-shifting the UV coords to put the center of the first trivially
@@ -41,7 +41,7 @@ fn main_vertex(in: filter::VertexInput) -> filter::VertexOutput {
 }
 
 @fragment
-fn main_fragment(in: filter::VertexOutput) -> @location(0) vec4<f32> {
+fn main_fragment(in: filter__VertexOutput) -> @location(0) vec4<f32> {
     let direction = vec2<f32>(filter_args.dir_x, filter_args.dir_y);
 
     var total = vec4<f32>(0.0);

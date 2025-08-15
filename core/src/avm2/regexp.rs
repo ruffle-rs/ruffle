@@ -1,16 +1,20 @@
 //! RegExp Structure
 
 use std::borrow::Cow;
+use std::num::NonZero;
 
 use crate::avm2::activation::Activation;
 use crate::avm2::object::FunctionObject;
-use crate::avm2::object::TObject;
 use crate::avm2::Error;
-use crate::avm2::{ArrayObject, ArrayStorage, Object, Value};
+use crate::avm2::{ArrayObject, ArrayStorage, Value};
 use crate::string::WString;
 use crate::string::{AvmString, Units, WStrToUtf8};
 use bitflags::bitflags;
 use gc_arena::Collect;
+use ruffle_macros::istr;
+use ruffle_wstr::WStr;
+
+use super::object::RegExpObject;
 
 #[derive(Collect, Debug)]
 #[collect(no_drop)]
@@ -25,7 +29,7 @@ pub struct RegExp<'gc> {
     cached_text: Option<CachedText<'gc>>,
 }
 
-impl<'gc> Clone for RegExp<'gc> {
+impl Clone for RegExp<'_> {
     fn clone(&self) -> Self {
         Self {
             source: self.source,
@@ -49,12 +53,9 @@ bitflags! {
 }
 
 impl<'gc> RegExp<'gc> {
-    pub fn new<S>(source: S) -> Self
-    where
-        S: Into<AvmString<'gc>>,
-    {
+    pub fn new(source: AvmString<'gc>) -> Self {
         Self {
-            source: source.into(),
+            source,
             flags: RegExpFlags::empty(),
             last_index: 0,
             cached_regex: None,
@@ -66,12 +67,9 @@ impl<'gc> RegExp<'gc> {
         self.source
     }
 
-    pub fn set_source<S>(&mut self, source: S)
-    where
-        S: Into<AvmString<'gc>>,
-    {
+    pub fn set_source(&mut self, source: AvmString<'gc>) {
         self.cached_regex = None;
-        self.source = source.into();
+        self.source = source;
     }
 
     pub fn flags(&self) -> RegExpFlags {
@@ -102,8 +100,10 @@ impl<'gc> RegExp<'gc> {
                     icase: self.flags.contains(RegExpFlags::IGNORE_CASE),
                     multiline: self.flags.contains(RegExpFlags::MULTILINE),
                     dot_all: self.flags.contains(RegExpFlags::DOTALL),
+                    extended: self.flags.contains(RegExpFlags::EXTENDED),
                     no_opt: false,
                     unicode: false,
+                    unicode_sets: false,
                 },
             );
             self.cached_regex = Some(re.map_err(drop));
@@ -153,11 +153,15 @@ impl<'gc> RegExp<'gc> {
 
     /// Helper for replace_string. Evaluates the special $-sequences
     /// in `replacement`.
-    fn effective_replacement(
-        replacement: &AvmString<'gc>,
+    fn effective_replacement<'a>(
+        replacement: &'a AvmString<'gc>,
         text: &AvmString<'gc>,
         m: &regress::Match,
-    ) -> WString {
+    ) -> Cow<'a, WStr> {
+        if !replacement.contains(b'$') {
+            // Nothing to do if there's no $ replacement symbols
+            return Cow::Borrowed(replacement.as_wstr());
+        }
         let mut ret = WString::new();
         let s = replacement.as_wstr();
         let mut chars = s.chars().peekable();
@@ -180,18 +184,30 @@ impl<'gc> RegExp<'gc> {
                             continue;
                         }
                         let mut grp_index = d_u;
-                        if let Some(Ok(next_char)) = chars.peek() {
+                        let mut second_char = None;
+                        if let Some(&Ok(next_char)) = chars.peek() {
                             if let Some(d1) = next_char.to_digit(10) {
                                 let d1_u = usize::try_from(d1).unwrap_or(0);
                                 let two_digit_index = d_u * 10 + d1_u;
-                                if two_digit_index <= m.captures.len() {
+                                if two_digit_index <= m.captures.len() && two_digit_index != 0 {
                                     chars.next();
-                                    grp_index = two_digit_index
+                                    grp_index = two_digit_index;
+                                    second_char = Some(next_char);
                                 }
                             }
                         }
+                        if grp_index == 0 {
+                            ret.push_char('$');
+                            ret.push_char(n);
+                            continue;
+                        }
                         if let Some(Some(r)) = m.captures.get(grp_index - 1) {
                             ret.push_str(&text[r.start..r.end])
+                        }
+                        // two digit codes with a leading zero have the second digit appended after
+                        // the replacement text
+                        if let Some(c) = second_char.filter(|_| d_u == 0) {
+                            ret.push_char(c);
                         }
                         continue;
                     }
@@ -202,43 +218,43 @@ impl<'gc> RegExp<'gc> {
                 _ => ret.push_char('$'),
             }
         }
-        ret
+        Cow::Owned(ret)
     }
 
     /// Implements string.replace(regex, replacement) where the replacement is
     /// a function.
     pub fn replace_fn(
-        &mut self,
+        regexp: RegExpObject<'gc>,
         activation: &mut Activation<'_, 'gc>,
         text: AvmString<'gc>,
         f: &FunctionObject<'gc>,
     ) -> Result<AvmString<'gc>, Error<'gc>> {
-        self.replace_with_fn(activation, &text, |activation, txt, m| {
+        Self::replace_with_fn(regexp, activation, &text, |activation, txt, m| {
             let args = std::iter::once(Some(&m.range))
                 .chain((m.captures.iter()).map(|x| x.as_ref()))
                 .map(|o| match o {
-                    Some(r) => {
-                        AvmString::new(activation.context.gc_context, &txt[r.start..r.end]).into()
-                    }
-                    None => "".into(),
+                    Some(r) => activation.strings().substring(*txt, r.clone()).into(),
+                    None => istr!("").into(),
                 })
                 .chain(std::iter::once(m.range.start.into()))
                 .chain(std::iter::once((*txt).into()))
                 .collect::<Vec<_>>();
-            let r = f.call(Value::Null, &args, activation)?;
-            return Ok(WString::from(r.coerce_to_string(activation)?.as_wstr()));
+            let r = f.call(activation, Value::Null, &args)?;
+            return Ok(Cow::Owned(WString::from(
+                r.coerce_to_string(activation)?.as_wstr(),
+            )));
         })
     }
 
-    /// Implements string.replace(regex, replacement) where the replacement is
+    /// Implements string.replace(regex, replacement) where the replacement may be
     /// a string with $-sequences.
     pub fn replace_string(
-        &mut self,
+        regexp: RegExpObject<'gc>,
         activation: &mut Activation<'_, 'gc>,
         text: AvmString<'gc>,
         replacement: AvmString<'gc>,
     ) -> Result<AvmString<'gc>, Error<'gc>> {
-        self.replace_with_fn(activation, &text, |_activation, txt, m| {
+        RegExp::replace_with_fn(regexp, activation, &text, |_activation, txt, m| {
             Ok(Self::effective_replacement(&replacement, txt, m))
         })
     }
@@ -246,8 +262,9 @@ impl<'gc> RegExp<'gc> {
     // Helper for replace_string and replace_function.
     //
     // Replaces occurrences of regex with results of f(activation, &text, &match)
-    fn replace_with_fn<F>(
-        &mut self,
+    // Panics if regexp isn't a regexp
+    fn replace_with_fn<'a, F>(
+        regexp: RegExpObject<'gc>,
         activation: &mut Activation<'_, 'gc>,
         text: &AvmString<'gc>,
         mut f: F,
@@ -257,17 +274,32 @@ impl<'gc> RegExp<'gc> {
             &mut Activation<'_, 'gc>,
             &AvmString<'gc>,
             &regress::Match,
-        ) -> Result<WString, Error<'gc>>,
+        ) -> Result<Cow<'a, WStr>, Error<'gc>>,
     {
-        let mut ret = WString::new();
         let mut start = 0;
-        while let Some(m) = self.find_utf16_match(*text, start) {
-            ret.push_str(&text[start..m.range.start]);
-            ret.push_str(&f(activation, text, &m)?);
 
-            start = m.range.end;
+        let (is_global, mut m) = {
+            // we only hold onto a mutable lock on the regular expression
+            // for a small window, because f might refer to the RegExp
+            // (See https://github.com/ruffle-rs/ruffle/issues/17899)
+            let mut re = regexp.regexp_mut(activation.gc());
+            let global_flag = re.flags().contains(RegExpFlags::GLOBAL);
 
-            if m.range.is_empty() {
+            (global_flag, re.find_utf16_match(*text, start))
+        };
+        if m.is_none() {
+            // Nothing to do; short circuit and just return the original string, to avoid any allocs or functions
+            return Ok(*text);
+        }
+
+        let mut ret = WString::new();
+        while let Some(segment) = m {
+            ret.push_str(&text[start..segment.range.start]);
+            ret.push_str(&f(activation, text, &segment)?);
+
+            start = segment.range.end;
+
+            if segment.range.is_empty() {
                 if start == text.len() {
                     break;
                 }
@@ -275,32 +307,42 @@ impl<'gc> RegExp<'gc> {
                 start += 1;
             }
 
-            if !self.flags().contains(RegExpFlags::GLOBAL) {
+            if !is_global {
                 break;
             }
+            // Again, here we only hold onto a mutable lock for
+            // the RegExp long enough to do our matching, so that
+            // when we call f we don't have a lock
+            m = regexp
+                .regexp_mut(activation.gc())
+                .find_utf16_match(*text, start);
         }
 
         ret.push_str(&text[start..]);
-        Ok(AvmString::new(activation.context.gc_context, ret))
+        Ok(AvmString::new(activation.gc(), ret))
     }
 
     pub fn split(
         &mut self,
         activation: &mut Activation<'_, 'gc>,
         text: AvmString<'gc>,
-        limit: usize,
-    ) -> Result<Object<'gc>, Error<'gc>> {
-        let mut storage = ArrayStorage::new(0);
+        limit: NonZero<usize>,
+    ) -> ArrayObject<'gc> {
+        let limit = limit.get();
+
         // The empty regex is a special case which splits into characters.
         if self.source.is_empty() {
-            let mut it = text.chars().take(limit);
-            while let Some(Ok(c)) = it.next() {
-                storage.push(
-                    AvmString::new(activation.context.gc_context, WString::from_char(c)).into(),
-                );
-            }
+            let storage = text
+                .chars()
+                .take(limit)
+                .map_while(|c| c.ok())
+                .map(|c| AvmString::new(activation.gc(), WString::from_char(c)))
+                .collect();
+
             return ArrayObject::from_storage(activation, storage);
         }
+
+        let mut storage = ArrayStorage::new(0);
 
         let mut start = 0;
         while let Some(m) = self.find_utf16_match(text, start) {
@@ -308,15 +350,16 @@ impl<'gc> RegExp<'gc> {
                 break;
             }
             storage.push(
-                AvmString::new(activation.context.gc_context, &text[start..m.range.start]).into(),
+                activation
+                    .strings()
+                    .substring(text, start..m.range.start)
+                    .into(),
             );
             if storage.length() >= limit {
                 break;
             }
             for c in m.captures.iter().filter_map(Option::as_ref) {
-                storage.push(
-                    AvmString::new(activation.context.gc_context, &text[c.start..c.end]).into(),
-                );
+                storage.push(activation.strings().substring(text, c.clone()).into());
                 if storage.length() >= limit {
                     break; // Intentional bug to match Flash.
                            // Causes adding parts past limit.
@@ -325,13 +368,19 @@ impl<'gc> RegExp<'gc> {
 
             start = m.range.end;
         }
+
         if storage.length() < limit {
-            storage.push(AvmString::new(activation.context.gc_context, &text[start..]).into());
+            storage.push(AvmString::new(activation.gc(), &text[start..]).into());
         }
+
         ArrayObject::from_storage(activation, storage)
     }
 
-    fn find_utf16_match(&mut self, text: AvmString<'gc>, start: usize) -> Option<regress::Match> {
+    pub fn find_utf16_match(
+        &mut self,
+        text: AvmString<'gc>,
+        start: usize,
+    ) -> Option<regress::Match> {
         self.find_utf8_match_at(text, start, |text, mut re_match| {
             // Sort the capture endpoints by increasing index, so that CachedText::utf16_index is efficient.
             let mut utf8_indices = re_match

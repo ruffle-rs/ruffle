@@ -1,0 +1,208 @@
+Focus changed
+  old: null
+  new: _level0.text1
+Tab pressed
+Focus changed
+  old: _level0.text1
+  new: _level0.text2
+Tab pressed
+Focus changed
+  old: _level0.text2
+  new: _level0.clipOuter.text3
+Tab pressed
+Focus changed
+  old: _level0.clipOuter.text3
+  new: _level0.clipOuter.text4
+Tab pressed
+Focus changed
+  old: _level0.clipOuter.text4
+  new: _level0.clipOuter.clipInner.text5
+Tab pressed
+Focus changed
+  old: _level0.clipOuter.clipInner.text5
+  new: _level0.clipOuter.clipInner.text6
+Tab pressed
+Focus changed
+  old: _level0.clipOuter.clipInner.text6
+  new: _level0.text1
+Escape pressed, moving to stage 1
+Tab pressed
+Tab pressed
+Tab pressed
+Tab pressed
+Tab pressed
+Tab pressed
+Escape pressed, moving to stage 2
+Tab pressed
+Focus changed
+  old: _level0.text1
+  new: _level0.text2
+Tab pressed
+Focus changed
+  old: _level0.text2
+  new: _level0.text1
+Tab pressed
+Focus changed
+  old: _level0.text1
+  new: _level0.text2
+Tab pressed
+Focus changed
+  old: _level0.text2
+  new: _level0.text1
+Tab pressed
+Focus changed
+  old: _level0.text1
+  new: _level0.text2
+Tab pressed
+Focus changed
+  old: _level0.text2
+  new: _level0.text1
+Escape pressed, moving to stage 3
+Tab pressed
+Focus changed
+  old: _level0.text1
+  new: _level0.text2
+Tab pressed
+Focus changed
+  old: _level0.text2
+  new: _level0.clipOuter.text3
+Tab pressed
+Focus changed
+  old: _level0.clipOuter.text3
+  new: _level0.clipOuter.text4
+Tab pressed
+Focus changed
+  old: _level0.clipOuter.text4
+  new: _level0.text1
+Tab pressed
+Focus changed
+  old: _level0.text1
+  new: _level0.text2
+Tab pressed
+Focus changed
+  old: _level0.text2
+  new: _level0.clipOuter.text3
+Escape pressed, moving to stage 4
+Tab pressed
+Tab pressed
+Tab pressed
+Tab pressed
+Tab pressed
+Tab pressed
+Escape pressed, moving to stage 5
+Tab pressed
+Focus changed
+  old: _level0.clipOuter.text3
+  new: _level0.text1
+Tab pressed
+Focus changed
+  old: _level0.text1
+  new: _level0.text2
+Tab pressed
+Focus changed
+  old: _level0.text2
+  new: _level0.text1
+Tab pressed
+Focus changed
+  old: _level0.text1
+  new: _level0.text2
+Tab pressed
+Focus changed
+  old: _level0.text2
+  new: _level0.text1
+Tab pressed
+Focus changed
+  old: _level0.text1
+  new: _level0.text2
+Escape pressed, moving to stage 6
+Tab pressed
+Focus changed
+  old: _level0.text2
+  new: _level0.clipOuter
+Tab pressed
+Focus changed
+  old: _level0.clipOuter
+  new: _level0.text1
+Tab pressed
+Focus changed
+  old: _level0.text1
+  new: _level0.text2
+Tab pressed
+Focus changed
+  old: _level0.text2
+  new: _level0.clipOuter
+Tab pressed
+Focus changed
+  old: _level0.clipOuter
+  new: _level0.text1
+Tab pressed
+Focus changed
+  old: _level0.text1
+  new: _level0.text2
+Escape pressed, moving to stage 7
+Tab pressed
+Focus changed
+  old: _level0.text2
+  new: _level0.clipOuter
+Tab pressed
+Focus changed
+  old: _level0.clipOuter
+  new: _level0.text1
+Tab pressed
+Focus changed
+  old: _level0.text1
+  new: _level0.text2
+Tab pressed
+Focus changed
+  old: _level0.text2
+  new: _level0.clipOuter
+Tab pressed
+Focus changed
+  old: _level0.clipOuter
+  new: _level0.text1
+Tab pressed
+Focus changed
+  old: _level0.text1
+  new: _level0.text2
+Escape pressed, moving to stage 8
+Tab pressed
+Focus changed
+  old: _level0.text2
+  new: _level0.text1
+Tab pressed
+Tab pressed
+Tab pressed
+Tab pressed
+Tab pressed
+Escape pressed, moving to stage 9
+Tab pressed
+Focus changed
+  old: _level0.text1
+  new: _level0.clipOuter.text3
+Tab pressed
+Focus changed
+  old: _level0.clipOuter.text3
+  new: _level0.text1
+Tab pressed
+Focus changed
+  old: _level0.text1
+  new: _level0.clipOuter.text3
+Tab pressed
+Focus changed
+  old: _level0.clipOuter.text3
+  new: _level0.text1
+Tab pressed
+Focus changed
+  old: _level0.text1
+  new: _level0.clipOuter.text3
+Tab pressed
+Focus changed
+  old: _level0.clipOuter.text3
+  new: _level0.text1
+Escape pressed, moving to stage 10
+Tab pressed
+Tab pressed
+Tab pressed
+Tab pressed
+Tab pressed
+Tab pressed

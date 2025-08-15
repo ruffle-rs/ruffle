@@ -1,14 +1,15 @@
 //! `Number` class impl
 
+use ruffle_macros::istr;
+
 use crate::avm1::activation::Activation;
 use crate::avm1::clamp::Clamp;
 use crate::avm1::error::Error;
-use crate::avm1::function::{Executable, FunctionObject};
-use crate::avm1::object::value_object::ValueObject;
+use crate::avm1::function::FunctionObject;
+use crate::avm1::object::BoxedF64;
 use crate::avm1::property_decl::{define_properties_on, Declaration};
-use crate::avm1::{Object, TObject, Value};
-use crate::context::GcContext;
-use crate::string::AvmString;
+use crate::avm1::{NativeObject, Object, Value};
+use crate::string::{AvmString, StringContext};
 
 const PROTO_DECLS: &[Declaration] = declare_properties! {
     "toString" => method(to_string; DONT_ENUM | DONT_DELETE);
@@ -37,10 +38,9 @@ pub fn number<'gc>(
         0.0
     };
 
-    // If called from a constructor, populate `this`.
-    if let Some(mut vbox) = this.as_value_object() {
-        vbox.replace_value(activation.context.gc_context, value.into());
-    }
+    // Called from a constructor, populate `this`.
+    let value = BoxedF64::new(activation.gc(), value);
+    this.set_native(activation.gc(), NativeObject::Number(value));
 
     Ok(this.into())
 }
@@ -62,31 +62,29 @@ pub fn number_function<'gc>(
 }
 
 pub fn create_number_object<'gc>(
-    context: &mut GcContext<'_, 'gc>,
+    context: &mut StringContext<'gc>,
     number_proto: Object<'gc>,
     fn_proto: Object<'gc>,
 ) -> Object<'gc> {
     let number = FunctionObject::constructor(
-        context.gc_context,
-        Executable::Native(number),
-        Executable::Native(number_function),
+        context,
+        number,
+        Some(number_function),
         fn_proto,
         number_proto,
     );
-    let object = number.raw_script_object();
-    define_properties_on(OBJECT_DECLS, context, object, fn_proto);
+    define_properties_on(OBJECT_DECLS, context, number, fn_proto);
     number
 }
 
 /// Creates `Number.prototype`.
 pub fn create_proto<'gc>(
-    context: &mut GcContext<'_, 'gc>,
+    context: &mut StringContext<'gc>,
     proto: Object<'gc>,
     fn_proto: Object<'gc>,
 ) -> Object<'gc> {
-    let number_proto = ValueObject::empty_box(context.gc_context, proto);
-    let object = number_proto.raw_script_object();
-    define_properties_on(PROTO_DECLS, context, object, fn_proto);
+    let number_proto = Object::new(context, Some(proto));
+    define_properties_on(PROTO_DECLS, context, number_proto, fn_proto);
     number_proto
 }
 
@@ -96,15 +94,10 @@ fn to_string<'gc>(
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     // Boxed value must be a number. No coercion.
-    let number = if let Some(vbox) = this.as_value_object() {
-        if let Value::Number(number) = vbox.unbox() {
-            number
-        } else {
-            return Ok(Value::Undefined);
-        }
-    } else {
+    let NativeObject::Number(number) = this.native() else {
         return Ok(Value::Undefined);
     };
+    let number = number.value();
 
     let radix = match args {
         [] => 10,
@@ -136,7 +129,7 @@ fn to_string<'gc>(
             Ordering::Greater => (number, false),
             Ordering::Equal => {
                 // Bail out immediately if we're 0.
-                return Ok("0".into());
+                return Ok(istr!("0").into());
             }
         };
 
@@ -158,7 +151,7 @@ fn to_string<'gc>(
             i -= 1;
             digits[i] = b'-';
         }
-        Ok(AvmString::new_utf8_bytes(activation.context.gc_context, &digits[i..]).into())
+        Ok(AvmString::new_utf8_bytes(activation.gc(), &digits[i..]).into())
     }
 }
 
@@ -167,10 +160,9 @@ fn value_of<'gc>(
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(vbox) = this.as_value_object() {
-        if let Value::Number(n) = vbox.unbox() {
-            return Ok(n.into());
-        }
+    // Boxed value must be a number. No coercion.
+    if let NativeObject::Number(number) = this.native() {
+        return Ok(number.value().into());
     }
 
     Ok(Value::Undefined)

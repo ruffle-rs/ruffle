@@ -57,7 +57,7 @@ should work. Additionally, headless JREs should also work.
 
 Follow the instructions to [install Node.js](https://nodejs.org/) on your machine.
 
-We recommend using the currently active LTS 18, but we do also run tests with current Node.js 20.
+We recommend using the currently active LTS 22, but we do also run tests with current Node.js 24.
 
 Note that npm 7 or newer is required. It should come bundled with Node.js 15 or newer, but can be upgraded with older Node.js versions using `npm install -g npm` as root/Administrator.
 
@@ -65,7 +65,7 @@ Note that npm 7 or newer is required. It should come bundled with Node.js 15 or 
 
 <!-- Be sure to also update the wasm-bindgen-cli version in `.github/workflows/*.yml` and `web/Cargo.toml`. -->
 
-This can be installed with `cargo install wasm-bindgen-cli --version 0.2.90`. Be sure to install this specific version of `wasm-bindgen-cli` to match the version used by Ruffle.
+This can be installed with `cargo install wasm-bindgen-cli --version 0.2.100`. Be sure to install this specific version of `wasm-bindgen-cli` to match the version used by Ruffle.
 
 #### Binaryen
 
@@ -80,6 +80,18 @@ Some ways to install Binaryen:
 
 Just make sure the `wasm-opt` program is in `$PATH`, and that it works.
 
+#### Optional features
+
+##### `jpegxr`
+
+The release version of the extension is compiled with `jpegxr`.
+To enable it, set the env `CARGO_FEATURES="jpegxr"`.
+
+Windows dependencies:
+
+- Install LLVM and add the full path of its `bin` folder (example: `C:\Program Files\LLVM-18.1.6\bin`) to your env `PATH`.
+- Set env `LIBCLANG_PATH` with the same `bin` folder.
+
 ### Building
 
 In this project, you may run the following commands to build all packages:
@@ -91,18 +103,49 @@ In this project, you may run the following commands to build all packages:
     -   This will build the wasm binary and every node package (notably selfhosted and extension).
     -   Output will be available in the `dist/` folder of each package (for example, `./packages/selfhosted/dist`).
     -   You may also use `npm run build:debug` to disable Webpack optimizations and activate the (extremely verbose) ActionScript debugging output.
-    -   There is `npm run build:dual-wasm` as well, to build a second WebAssembly module that makes use of some WebAssembly extensions,
-        potentially resulting in better performance in browsers that support them, at the expense of longer build time.
-    -   `npm run build:repro` enables reproducible builds. Note that this also requires a `version_seal.json`, which is not provided in the normal Git repository - only specially-marked reproducible source archives. Running this without a version seal will generate one based on the current state of your environment.
+    -   There is `npm run build:dual-wasm` as well, to build a second WebAssembly module that disables all supported WebAssembly extensions,
+        potentially resulting in support for more browsers, at the expense of longer build time.
+    -   `npm run build:repro` enables reproducible builds with the default WASM module. Note that this also requires a `version_seal.json`, which is not provided in the normal Git repository - only specially-marked reproducible source archives. Running this without a version seal will generate one based on the current state of your environment.
+    -   `npm run build:dual-wasm-repro` enables reproducible builds with both WASM modules. Note that this also requires a `version_seal.json`, which is not provided in the normal Git repository - only specially-marked reproducible source archives. Running this without a version seal will generate one based on the current state of your environment.
+    -   You will also need to run `rustup component add rust-src` with either of the dual-wasm commands since we rebuild std for the vanilla WASM module.
 
 From here, you may follow the instructions to [use Ruffle on your website](packages/selfhosted/README.md),
 run a demo locally with `npm run demo`, or [install the extension in your browser](https://github.com/ruffle-rs/ruffle/wiki/Using-Ruffle#browser-extension).
 
 ### Testing
 
-To run all of the tests in this project, we currently require that you have [Chrome installed to its default location](https://www.google.com/chrome/).
+There are two parts of tests to this project:
+- Regular node tests, ran through `npm run test`. You must have built everything first as above. These have no special requirements.
+- Browser based tests, ran through `npm run wdio` with extra arguments as below. These take longer to run and require some setup.
 
-First, ensure you've build every package (see above), and then run `npm run test` to run the full suite of tests.
+## Browser Based Tests
+There are full integration tests that require a browser to run. We don't make any assumptions about your environment, and so you must specify it yourself.
+
+To run these tests, first build the project as above, then use `npm run wdio -- --arg1 --arg2` etc.
+
+### Local Browsers
+These are additive - you can specify multiple at the same time. You must have the given browsers installed locally though, or it will fail.
+
+- `--chrome` for Chrome
+- `--firefox` for Firefox
+- `--edge` for Edge
+
+### BrowserStack (Mobile Browsers)
+To run tests on mobile devices on BrowserStack, pass the `--browserstack` argument.
+We also have our "minimum supported desktop browsers" available too, by additionally passing `--oldVersions`.
+
+You will need a BrowserStack account (Maintainers may contact @Dinnerbone on Discord for an invite to the Ruffle team),
+and set the appropriate values to `BROWSERSTACK_USERNAME` and `BROWSERSTACK_ACCESS_KEY` environment variables.
+
+### Other Options
+Pass `--headless` to hide the browser windows. This is useful and recommended in almost every case, but if you want to debug why a test fails then it's very useful to not pass this.
+
+Pass `--spec <name>` to filter a test based on name. For example, `--spec external_interface` to tests with `external_interface` in the path.
+
+
+### Testing tips!
+If debugging a failing test, use `await browser.pause(100000);` in the test file to pause it, and don't start the test with `--headless`.
+That way you can actually see what's happening, and manually get involved to debug it.
 
 ## Structure
 

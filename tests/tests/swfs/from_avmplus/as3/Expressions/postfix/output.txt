@@ -1,0 +1,14 @@
+typeof super.x++ PASSED!
+super.x PASSED!
+super.intField++ PASSED!
+typeof super.intField PASSED!
+super.intField PASSED!
+intField2++ PASSED!
+intField2 PASSED!
+typeof super.x-- PASSED!
+super.x PASSED!
+super.intField-- PASSED!
+typeof super.intField PASSED!
+super.intField PASSED!
+intField2-- PASSED!
+intField2 PASSED!

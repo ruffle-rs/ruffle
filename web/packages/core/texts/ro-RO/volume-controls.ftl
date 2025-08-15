@@ -1,2 +1,2 @@
-volume-controls = Comenzi pentru volum
-volume-controls-volume = Volum
+volume-controls-mute = Mut
+volume-controls-unmute = Activare sunet

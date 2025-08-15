@@ -5,19 +5,16 @@
 
 package flash.text.engine
 {
-    
-    
+    [API("662")]
     public final class DigitWidth
     {
         // Used to specify default digit width.
         public static const DEFAULT:String = "default";
-        
+
         // Used to specify proportional digit width.
         public static const PROPORTIONAL:String = "proportional";
-        
+
         // Used to specify tabular digit width.
         public static const TABULAR:String = "tabular";
-        
-        
     }
 }

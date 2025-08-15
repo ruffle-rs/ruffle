@@ -1,11 +1,11 @@
 import { Player } from "./player.tsx";
 import { useRef, useState, DragEvent, useCallback } from "react";
-import { BaseLoadOptions, MovieMetadata } from "ruffle-core";
+import type { Config, Player as RufflePlayer } from "ruffle-core";
 import { Navbar } from "./navbar.tsx";
 import { MetadataPanel } from "./metadata.tsx";
 
 interface AppProperties {
-    ruffleBaseConfig: BaseLoadOptions;
+    ruffleBaseConfig: Config.BaseLoadOptions;
     allowUrlLoading: boolean;
     allowSampleSwfs: boolean;
 }
@@ -15,7 +15,9 @@ export function App({
     allowUrlLoading,
     allowSampleSwfs,
 }: AppProperties) {
-    const [metadata, setMetadata] = useState<MovieMetadata | null>(null);
+    const [metadata, setMetadata] = useState<RufflePlayer.MovieMetadata | null>(
+        null,
+    );
     const [metadataVisible, setMetadataVisible] = useState<boolean>(false);
     const [selectedFilename, setSelectedFilename] = useState<string | null>(
         null,
@@ -33,9 +35,12 @@ export function App({
     };
 
     // useCallback because this will be called from useEffect, we need this function to not change
-    const onSelectUrl = useCallback((url: string, options: BaseLoadOptions) => {
-        player.current?.loadUrl(url, options);
-    }, []);
+    const onSelectUrl = useCallback(
+        (url: string, options: Config.BaseLoadOptions) => {
+            player.current?.loadUrl(url, options);
+        },
+        [],
+    );
 
     const onSelectFile = (file: File) => {
         player.current?.loadFile(file);

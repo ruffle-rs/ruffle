@@ -1,4 +1,5 @@
 package flash.display {
+    [API("680")]
     public final class JPEGXREncoderOptions {
         public var quantization: uint;
         public var colorSpace: String;

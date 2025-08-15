@@ -1,0 +1,17 @@
+num_ticks = 12
+
+image_comparisons."output.01a".trigger = 1
+image_comparisons."output.01b".trigger = 2
+image_comparisons."output.02a".trigger = 3
+image_comparisons."output.02b".trigger = 4
+image_comparisons."output.03a".trigger = 5
+image_comparisons."output.03b".trigger = 6
+image_comparisons."output.04a".trigger = 7
+image_comparisons."output.04b".trigger = 8
+image_comparisons."output.05a".trigger = 9
+image_comparisons."output.05b".trigger = 10
+image_comparisons."output.06a".trigger = 11
+image_comparisons."output.06b".trigger = 12
+
+[player_options]
+with_renderer = { optional = false, sample_count = 1 }

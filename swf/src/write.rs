@@ -17,7 +17,12 @@ use std::io::{self, Write};
 /// let header = Header {
 ///     compression: Compression::Zlib,
 ///     version: 6,
-///     stage_size: Rectangle { x_min: Twips::from_pixels(0.0), x_max: Twips::from_pixels(400.0), y_min: Twips::from_pixels(0.0), y_max: Twips::from_pixels(400.0) },
+///     stage_size: Rectangle {
+///         x_min: Twips::ZERO,
+///         x_max: Twips::from_pixels(400.0),
+///         y_min: Twips::ZERO,
+///         y_max: Twips::from_pixels(400.0),
+///     },
 ///     frame_rate: Fixed8::from_f32(60.0),
 ///     num_frames: 1,
 /// };
@@ -91,16 +96,7 @@ fn write_zlib_swf<W: Write>(mut output: W, swf_body: &[u8]) -> Result<()> {
     Ok(())
 }
 
-#[cfg(all(feature = "libflate", not(feature = "flate2")))]
-fn write_zlib_swf<W: Write>(mut output: W, swf_body: &[u8]) -> Result<()> {
-    use libflate::zlib::Encoder;
-    let mut encoder = Encoder::new(&mut output)?;
-    encoder.write_all(&swf_body)?;
-    encoder.finish().into_result()?;
-    Ok(())
-}
-
-#[cfg(not(any(feature = "flate2", feature = "libflate")))]
+#[cfg(not(feature = "flate2"))]
 fn write_zlib_swf<W: Write>(_output: W, _swf_body: &[u8]) -> Result<()> {
     Err(Error::unsupported(
         "Support for Zlib compressed SWFs is not enabled.",
@@ -151,10 +147,22 @@ impl<W: Write> BitWriter<W> {
         self.bits.write_bit(bit)
     }
 
+    /// A variant of `write_ubits` for when the number of bits to write is
+    /// a *c*ompile-*t*ime constant. This should be more efficient.
+    #[inline]
+    fn write_ubits_ct<const NUM_BITS: u32>(&mut self, n: u32) -> io::Result<()> {
+        if NUM_BITS > 0 {
+            self.bits.write::<NUM_BITS, u32>(n)
+        } else {
+            Ok(())
+        }
+    }
+
+    /// If `num_bits` is a compile-time constant, consider `write_ubits_ct` instead.
     #[inline]
     fn write_ubits(&mut self, num_bits: u32, n: u32) -> io::Result<()> {
         if num_bits > 0 {
-            self.bits.write(num_bits, n)
+            self.bits.write_var(num_bits, n)
         } else {
             Ok(())
         }
@@ -163,7 +171,7 @@ impl<W: Write> BitWriter<W> {
     #[inline]
     fn write_sbits(&mut self, num_bits: u32, n: i32) -> io::Result<()> {
         if num_bits > 0 {
-            self.bits.write_signed(num_bits, n)
+            self.bits.write_signed_var(num_bits, n)
         } else {
             Ok(())
         }
@@ -311,7 +319,7 @@ impl<W: Write> Writer<W> {
         .max()
         .unwrap();
         let mut bits = self.bits();
-        bits.write_ubits(5, num_bits)?;
+        bits.write_ubits_ct::<5>(num_bits)?;
         bits.write_sbits_twips(num_bits, rectangle.x_min)?;
         bits.write_sbits_twips(num_bits, rectangle.x_max)?;
         bits.write_sbits_twips(num_bits, rectangle.y_min)?;
@@ -375,7 +383,7 @@ impl<W: Write> Writer<W> {
                 add.iter().map(|n| count_sbits((*n).into())).max().unwrap(),
             );
         }
-        bits.write_ubits(4, num_bits)?;
+        bits.write_ubits_ct::<4>(num_bits)?;
         if has_mult {
             bits.write_sbits_fixed8(num_bits, color_transform.r_multiply)?;
             bits.write_sbits_fixed8(num_bits, color_transform.g_multiply)?;
@@ -428,7 +436,7 @@ impl<W: Write> Writer<W> {
                 add.iter().map(|n| count_sbits((*n).into())).max().unwrap(),
             );
         }
-        bits.write_ubits(4, num_bits)?;
+        bits.write_ubits_ct::<4>(num_bits)?;
         if has_mult {
             bits.write_sbits_fixed8(num_bits, color_transform.r_multiply)?;
             bits.write_sbits_fixed8(num_bits, color_transform.g_multiply)?;
@@ -451,7 +459,7 @@ impl<W: Write> Writer<W> {
         bits.write_bit(has_scale)?;
         if has_scale {
             let num_bits = max(count_fbits(m.a), count_fbits(m.d));
-            bits.write_ubits(5, num_bits)?;
+            bits.write_ubits_ct::<5>(num_bits)?;
             bits.write_fbits(num_bits, m.a)?;
             bits.write_fbits(num_bits, m.d)?;
         }
@@ -460,13 +468,13 @@ impl<W: Write> Writer<W> {
         bits.write_bit(has_rotate_skew)?;
         if has_rotate_skew {
             let num_bits = max(count_fbits(m.b), count_fbits(m.c));
-            bits.write_ubits(5, num_bits)?;
+            bits.write_ubits_ct::<5>(num_bits)?;
             bits.write_fbits(num_bits, m.b)?;
             bits.write_fbits(num_bits, m.c)?;
         }
         // Translate (always written)
         let num_bits = max(count_sbits_twips(m.tx), count_sbits_twips(m.ty));
-        bits.write_ubits(5, num_bits)?;
+        bits.write_ubits_ct::<5>(num_bits)?;
         bits.write_sbits_twips(num_bits, m.tx)?;
         bits.write_sbits_twips(num_bits, m.ty)?;
         Ok(())
@@ -493,7 +501,6 @@ impl<W: Write> Writer<W> {
                 }
             }
 
-            #[allow(clippy::unusual_byte_groupings)]
             Tag::CsmTextSettings(ref settings) => {
                 self.write_tag_header(TagCode::CsmTextSettings, 12)?;
                 self.write_character_id(settings.id)?;
@@ -562,7 +569,7 @@ impl<W: Write> Writer<W> {
                 if let BitmapFormat::ColorMap8 { num_colors } = tag.format {
                     self.write_u8(num_colors)?;
                 }
-                self.output.write_all(tag.data)?;
+                self.output.write_all(&tag.data)?;
             }
 
             Tag::DefineButton(ref button) => self.write_define_button(button)?,
@@ -643,7 +650,7 @@ impl<W: Write> Writer<W> {
                             Self::write_shape_record(shape_record, &mut bits, &mut shape_context)?;
                         }
                         // End shape record.
-                        bits.write_ubits(6, 0)?;
+                        bits.write_ubits_ct::<6>(0)?;
                     }
                 }
 
@@ -659,7 +666,7 @@ impl<W: Write> Writer<W> {
             Tag::DefineFont2(ref font) => self.write_define_font_2(font)?,
             Tag::DefineFont4(ref font) => self.write_define_font_4(font)?,
 
-            #[allow(clippy::unusual_byte_groupings)]
+            #[expect(clippy::unusual_byte_groupings)]
             Tag::DefineFontAlignZones {
                 id,
                 thickness,
@@ -1067,7 +1074,7 @@ impl<W: Write> Writer<W> {
                 Self::write_shape_record(shape_record, &mut bits, &mut shape_context)?;
             }
             // End shape record.
-            bits.write_ubits(6, 0)?;
+            bits.write_ubits_ct::<6>(0)?;
         }
 
         let mut buf = Vec::new();
@@ -1100,7 +1107,7 @@ impl<W: Write> Writer<W> {
                 Self::write_shape_record(shape_record, &mut bits, &mut shape_context)?;
             }
             // End shape record.
-            bits.write_ubits(6, 0)?;
+            bits.write_ubits_ct::<6>(0)?;
         }
 
         let tag_code = if data.version == 1 {
@@ -1309,7 +1316,7 @@ impl<W: Write> Writer<W> {
                 Self::write_shape_record(shape_record, &mut bits, &mut shape_context)?;
             }
             // End shape record.
-            bits.write_ubits(6, 0)?;
+            bits.write_ubits_ct::<6>(0)?;
         }
 
         let tag_code = match shape.version {
@@ -1430,13 +1437,13 @@ impl<W: Write> Writer<W> {
     ) -> Result<()> {
         match record {
             ShapeRecord::StraightEdge { delta } => {
-                bits.write_ubits(2, 0b11)?; // Straight edge
-                                            // TODO: Check underflow?
+                bits.write_ubits_ct::<2>(0b11)?; // Straight edge
+                                                 // TODO: Check underflow?
                 let num_bits = count_sbits_twips(delta.dx)
                     .max(count_sbits_twips(delta.dy))
                     .max(2);
                 let is_axis_aligned = delta.dx == Twips::ZERO || delta.dy == Twips::ZERO;
-                bits.write_ubits(4, num_bits - 2)?;
+                bits.write_ubits_ct::<4>(num_bits - 2)?;
                 bits.write_bit(!is_axis_aligned)?;
                 let is_vertical = is_axis_aligned && delta.dx == Twips::ZERO;
                 if is_axis_aligned {
@@ -1453,13 +1460,13 @@ impl<W: Write> Writer<W> {
                 control_delta,
                 anchor_delta,
             } => {
-                bits.write_ubits(2, 0b10)?; // Curved edge
+                bits.write_ubits_ct::<2>(0b10)?; // Curved edge
                 let num_bits = count_sbits_twips(control_delta.dx)
                     .max(count_sbits_twips(control_delta.dy))
                     .max(count_sbits_twips(anchor_delta.dx))
                     .max(count_sbits_twips(anchor_delta.dy))
                     .max(2);
-                bits.write_ubits(4, num_bits - 2)?;
+                bits.write_ubits_ct::<4>(num_bits - 2)?;
                 bits.write_sbits_twips(num_bits, control_delta.dx)?;
                 bits.write_sbits_twips(num_bits, control_delta.dy)?;
                 bits.write_sbits_twips(num_bits, anchor_delta.dx)?;
@@ -1487,10 +1494,10 @@ impl<W: Write> Writer<W> {
                     ShapeRecordFlag::NEW_STYLES,
                     style_change.new_styles.is_some(),
                 );
-                bits.write_ubits(5, flags.bits().into())?;
+                bits.write_ubits_ct::<5>(flags.bits().into())?;
                 if let Some(move_to) = &style_change.move_to {
                     let num_bits = count_sbits_twips(move_to.x).max(count_sbits_twips(move_to.y));
-                    bits.write_ubits(5, num_bits)?;
+                    bits.write_ubits_ct::<5>(num_bits)?;
                     bits.write_sbits_twips(num_bits, move_to.x)?;
                     bits.write_sbits_twips(num_bits, move_to.y)?;
                 }
@@ -1969,24 +1976,21 @@ impl<W: Write> Writer<W> {
 
     fn write_sound_format(&mut self, sound_format: &SoundFormat) -> Result<()> {
         let mut bits = self.bits();
-        bits.write_ubits(4, sound_format.compression as u32)?;
-        bits.write_ubits(
-            2,
-            match sound_format.sample_rate {
-                5512 => 0,
-                11025 => 1,
-                22050 => 2,
-                44100 => 3,
-                _ => return Err(Error::invalid_data("Invalid sample rate.")),
-            },
-        )?;
+        bits.write_ubits_ct::<4>(sound_format.compression as u32)?;
+        bits.write_ubits_ct::<2>(match sound_format.sample_rate {
+            5512 => 0,
+            11025 => 1,
+            22050 => 2,
+            44100 => 3,
+            _ => return Err(Error::invalid_data("Invalid sample rate.")),
+        })?;
         bits.write_bit(sound_format.is_16_bit)?;
         bits.write_bit(sound_format.is_stereo)?;
         Ok(())
     }
 
     fn write_sound_info(&mut self, sound_info: &SoundInfo) -> Result<()> {
-        let flags = (sound_info.event as u8) << 4
+        let flags = ((sound_info.event as u8) << 4)
             | if sound_info.in_sample.is_some() {
                 0b1
             } else {
@@ -2062,7 +2066,7 @@ impl<W: Write> Writer<W> {
                         Self::write_shape_record(shape_record, &mut bits, &mut shape_context)?;
                     }
                     // End shape record.
-                    bits.write_ubits(6, 0)?;
+                    bits.write_ubits_ct::<6>(0)?;
                 }
             }
 
@@ -2118,7 +2122,7 @@ impl<W: Write> Writer<W> {
                 writer.write_u16(layout.descent)?;
                 writer.write_i16(layout.leading)?;
                 for glyph in &font.glyphs {
-                    writer.write_i16(glyph.advance)?;
+                    writer.write_u16(glyph.advance)?;
                 }
                 for glyph in &font.glyphs {
                     writer.write_rectangle(
@@ -2432,9 +2436,8 @@ fn count_fbits(n: Fixed16) -> u32 {
 }
 
 #[cfg(test)]
-#[allow(clippy::unusual_byte_groupings)]
+#[expect(clippy::unusual_byte_groupings)]
 mod tests {
-    use super::Writer;
     use super::*;
     use crate::test_data;
 
@@ -2446,9 +2449,9 @@ mod tests {
                 compression,
                 version: 13,
                 stage_size: Rectangle {
-                    x_min: Twips::from_pixels(0.0),
+                    x_min: Twips::ZERO,
                     x_max: Twips::from_pixels(640.0),
-                    y_min: Twips::from_pixels(0.0),
+                    y_min: Twips::ZERO,
                     y_max: Twips::from_pixels(480.0),
                 },
                 frame_rate: Fixed8::from_f32(60.0),
@@ -2534,6 +2537,21 @@ mod tests {
             let mut bits = writer.bits();
             for b in &out_bits {
                 bits.write_bit(*b).unwrap();
+            }
+        }
+        assert_eq!(buf, [0b01010101, 0b00100101]);
+    }
+
+    #[test]
+    fn write_ubits_ct() {
+        const NUM_BITS: u32 = 2;
+        let nums = [1, 1, 1, 1, 0, 2, 1, 1];
+        let mut buf = Vec::new();
+        {
+            let mut writer = Writer::new(&mut buf, 1);
+            let mut bits = writer.bits();
+            for n in &nums {
+                bits.write_ubits_ct::<NUM_BITS>(*n).unwrap();
             }
         }
         assert_eq!(buf, [0b01010101, 0b00100101]);
@@ -2655,10 +2673,10 @@ mod tests {
     #[test]
     fn write_rectangle_signed() {
         let rectangle = Rectangle {
-            x_min: Twips::from_pixels(-1.0),
-            x_max: Twips::from_pixels(1.0),
-            y_min: Twips::from_pixels(-1.0),
-            y_max: Twips::from_pixels(1.0),
+            x_min: -Twips::ONE_PX,
+            x_max: Twips::ONE_PX,
+            y_min: -Twips::ONE_PX,
+            y_max: Twips::ONE_PX,
         };
         let mut buf = Vec::new();
         {
@@ -2781,11 +2799,11 @@ mod tests {
             glyphs: vec![Glyph {
                 shape_records: vec![
                     ShapeRecord::StraightEdge {
-                        delta: PointDelta::new(Twips::ONE, -Twips::ONE),
+                        delta: PointDelta::new(Twips::ONE_PX, -Twips::ONE_PX),
                     },
                     ShapeRecord::CurvedEdge {
-                        control_delta: PointDelta::new(Twips::ONE, Twips::ONE),
-                        anchor_delta: PointDelta::new(Twips::ONE, -Twips::ONE),
+                        control_delta: PointDelta::new(Twips::ONE_PX, Twips::ONE_PX),
+                        anchor_delta: PointDelta::new(Twips::ONE_PX, -Twips::ONE_PX),
                     },
                     ShapeRecord::StraightEdge {
                         delta: PointDelta::new(Twips::ZERO, Twips::ZERO),

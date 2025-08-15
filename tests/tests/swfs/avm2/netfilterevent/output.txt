@@ -1,0 +1,10 @@
+[NetTransformEvent type="netfilter" bubbles=false cancelable=false eventPhase=2 header=null data=]
+[NetTransformEvent type="netfilter" bubbles=false cancelable=false eventPhase=2 header=null data=]
+[NetTransformEvent type="netfilter" bubbles=false cancelable=true eventPhase=2 header= data=null]
+[NetTransformEvent type="netfilter" bubbles=false cancelable=true eventPhase=2 header= data=null]
+[NetTransformEvent type="netfilter" bubbles=true cancelable=false eventPhase=2 header= data=]
+event.header === a: true
+event.data === b: true
+[NetTransformEvent type="netfilter" bubbles=true cancelable=false eventPhase=2 header= data=]
+clone.header === a: true
+clone.data === b: true

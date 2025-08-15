@@ -12,18 +12,16 @@ workspace = true
 
 [dependencies]
 clap = { workspace = true }
-futures = "0.3"
+futures = { workspace = true }
 ruffle_core = { path = "../core", features = ["deterministic", "default_font"] }
 ruffle_render_wgpu = { path = "../render/wgpu", features = ["clap"] }
-image = { version = "0.24.8", default-features = false, features = ["png"] }
-log = "0.4"
-walkdir = "2.4.0"
-indicatif = "0.17"
-rayon = "1.8.1"
+image = { workspace = true, features = ["png"] }
+walkdir = { workspace = true }
+indicatif = { workspace = true }
+rayon = { workspace = true }
 anyhow = { workspace = true }
 
 [features]
 avm_debug = ["ruffle_core/avm_debug"]
 render_debug_labels = ["ruffle_render_wgpu/render_debug_labels"]
-render_trace = ["ruffle_render_wgpu/render_trace"]
 lzma = ["ruffle_core/lzma"]

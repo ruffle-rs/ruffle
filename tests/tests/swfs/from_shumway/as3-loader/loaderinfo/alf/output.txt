@@ -1,0 +1,48 @@
+actionScriptVersion: Error: Error #2099: The loading object is not sufficiently loaded to provide this information.
+applicationDomain: null
+TODO: support `bytes` getter
+bytesLoaded: 0
+bytesTotal: 0
+childAllowsParent: Error: Error #2099: The loading object is not sufficiently loaded to provide this information.
+childSandboxBridge: null
+content: null
+contentType: null
+frameRate: Error: Error #2099: The loading object is not sufficiently loaded to provide this information.
+height: Error: Error #2099: The loading object is not sufficiently loaded to provide this information.
+isURLInaccessible: true
+loader: [object Loader]
+loaderURL: test.swf
+parameters: [object Object]
+parentAllowsChild: Error: Error #2099: The loading object is not sufficiently loaded to provide this information.
+parentSandboxBridge: null
+sameDomain: Error: Error #2099: The loading object is not sufficiently loaded to provide this information.
+sharedEvents: [object EventDispatcher]
+swfVersion: Error: Error #2099: The loading object is not sufficiently loaded to provide this information.
+uncaughtErrorEvents: [object UncaughtErrorEvents]
+url: null
+width: Error: Error #2099: The loading object is not sufficiently loaded to provide this information.
+
+complete
+actionScriptVersion: Error: Error #2098: The loading object is not a .swf file, you cannot request SWF properties from it.
+applicationDomain: [object ApplicationDomain]
+TODO: support `bytes` getter
+bytesLoaded: 8647
+bytesTotal: 8647
+childAllowsParent: true
+childSandboxBridge: null
+content: [object Bitmap]
+contentType: image/jpeg
+frameRate: Error: Error #2098: The loading object is not a .swf file, you cannot request SWF properties from it.
+height: 140
+isURLInaccessible: false
+loader: [object Loader]
+loaderURL: test.swf
+parameters: [object Object]
+parentAllowsChild: true
+parentSandboxBridge: null
+sameDomain: true
+sharedEvents: [object EventDispatcher]
+swfVersion: Error: Error #2098: The loading object is not a .swf file, you cannot request SWF properties from it.
+uncaughtErrorEvents: [object UncaughtErrorEvents]
+url: alf.jpg
+width: 140

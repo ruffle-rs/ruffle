@@ -9,6 +9,7 @@ package flash.net
     import __ruffle__.stub_getter;
     import __ruffle__.stub_setter;
 
+    [API("661")]
     public class URLRequestDefaults
     {
         // The default setting for the authenticate property of URLRequest objects.

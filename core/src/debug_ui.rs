@@ -1,5 +1,6 @@
 mod avm1;
 mod avm2;
+mod common;
 mod display_object;
 mod domain;
 mod handle;
@@ -15,11 +16,10 @@ use crate::debug_ui::handle::{
 };
 use crate::debug_ui::movie::{MovieListWindow, MovieWindow};
 use crate::display_object::TDisplayObject;
+use crate::prelude::DisplayObject;
 use crate::tag_utils::SwfMovie;
 use gc_arena::DynamicRootSet;
 use hashbrown::HashMap;
-use ruffle_render::commands::CommandHandler;
-use ruffle_render::matrix::Matrix;
 use std::fmt::{Debug, Formatter};
 use std::sync::{Arc, Weak};
 use swf::{Color, Rectangle, Twips};
@@ -52,6 +52,7 @@ pub enum Message {
     ShowDomains,
     SaveFile(ItemToSave),
     SearchForDisplayObject,
+    TrackRootMovieClip,
 }
 
 impl DebugUi {
@@ -114,7 +115,8 @@ impl DebugUi {
                     self.movies.insert(movie, Default::default());
                 }
                 Message::TrackTopLevelMovie => {
-                    self.movies.insert(context.swf.clone(), Default::default());
+                    self.movies
+                        .insert(context.root_swf.clone(), Default::default());
                 }
                 Message::TrackAVM1Object(object) => {
                     self.avm1_objects.insert(object, Default::default());
@@ -133,6 +135,15 @@ impl DebugUi {
                 }
                 Message::SearchForDisplayObject => {
                     self.display_object_search = Some(Default::default());
+                }
+                Message::TrackRootMovieClip => {
+                    // Convenience action to quickly access the root movie clip
+                    if let Some(obj @ DisplayObject::MovieClip(_)) = context.stage.root_clip() {
+                        let win =
+                            DisplayObjectWindow::with_panel(display_object::Panel::TypeSpecific);
+                        self.display_objects
+                            .insert(DisplayObjectHandle::new(context, obj), win);
+                    }
                 }
             }
         }
@@ -159,48 +170,53 @@ impl DebugUi {
         context: &mut RenderContext<'_, 'gc>,
         dynamic_root_set: DynamicRootSet<'gc>,
     ) {
-        let world_matrix = context.stage.view_matrix() * *context.stage.base().matrix();
+        let world_matrix = context.stage.view_matrix() * context.stage.base().matrix();
 
         for (object, window) in self.display_objects.iter() {
             if let Some(color) = window.debug_rect_color() {
                 let object = object.fetch(dynamic_root_set);
-                let bounds = world_matrix * object.world_bounds();
+                let bounds = world_matrix * object.debug_rect_bounds();
 
                 draw_debug_rect(context, color, bounds, 3.0);
             }
 
             if let Some(object) = window.hovered_debug_rect() {
                 let object = object.fetch(dynamic_root_set);
-                let bounds = world_matrix * object.world_bounds();
+                let bounds = world_matrix * object.debug_rect_bounds();
 
-                draw_debug_rect(context, swf::Color::RED, bounds, 5.0);
+                draw_debug_rect(context, Color::RED, bounds, 5.0);
+            }
+
+            if let Some(bounds) = window.hovered_bounds() {
+                let bounds = world_matrix * bounds;
+                draw_debug_rect(context, Color::RED, bounds, 5.0);
             }
         }
 
         if let Some(window) = &self.display_object_search {
-            for (color, object) in window.hovered_debug_rects() {
+            for (object, color) in window.hovered_debug_rects() {
                 let object = object.fetch(dynamic_root_set);
-                let bounds = world_matrix * object.world_bounds();
+                let bounds = world_matrix * object.debug_rect_bounds();
 
-                draw_debug_rect(context, color, bounds, 5.0);
+                draw_debug_rect(context, *color, bounds, 5.0);
             }
         }
 
         for (_object, window) in self.avm1_objects.iter() {
             if let Some(object) = window.hovered_debug_rect() {
                 let object = object.fetch(dynamic_root_set);
-                let bounds = world_matrix * object.world_bounds();
+                let bounds = world_matrix * object.debug_rect_bounds();
 
-                draw_debug_rect(context, swf::Color::RED, bounds, 5.0);
+                draw_debug_rect(context, Color::RED, bounds, 5.0);
             }
         }
 
         for (_object, window) in self.avm2_objects.iter() {
             if let Some(object) = window.hovered_debug_rect() {
                 let object = object.fetch(dynamic_root_set);
-                let bounds = world_matrix * object.world_bounds();
+                let bounds = world_matrix * object.debug_rect_bounds();
 
-                draw_debug_rect(context, swf::Color::RED, bounds, 5.0);
+                draw_debug_rect(context, Color::RED, bounds, 5.0);
             }
         }
     }
@@ -226,40 +242,7 @@ fn draw_debug_rect(
     bounds: Rectangle<Twips>,
     thickness: f32,
 ) {
-    let width = bounds.width().to_pixels() as f32;
-    let height = bounds.height().to_pixels() as f32;
-    let thickness_twips = Twips::from_pixels(thickness as f64);
-
-    // Top
-    context.commands.draw_rect(
-        color,
-        Matrix::create_box(
-            width,
-            thickness,
-            0.0,
-            bounds.x_min,
-            bounds.y_min - thickness_twips,
-        ),
-    );
-    // Bottom
-    context.commands.draw_rect(
-        color,
-        Matrix::create_box(width, thickness, 0.0, bounds.x_min, bounds.y_max),
-    );
-    // Left
-    context.commands.draw_rect(
-        color,
-        Matrix::create_box(
-            thickness,
-            height,
-            0.0,
-            bounds.x_min - thickness_twips,
-            bounds.y_min,
-        ),
-    );
-    // Right
-    context.commands.draw_rect(
-        color,
-        Matrix::create_box(thickness, height, 0.0, bounds.x_max, bounds.y_min),
-    );
+    let thickness = Twips::from_pixels(thickness as f64);
+    let bounds = bounds.grow(thickness);
+    context.draw_rect_outline(color, bounds, thickness);
 }

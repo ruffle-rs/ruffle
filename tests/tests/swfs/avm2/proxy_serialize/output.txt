@@ -1,0 +1,9 @@
+nextNameIndex: 0
+nextName: 1
+nextValue: 1
+nextNameIndex: 1
+nextName: 2
+nextValue: 2
+nextNameIndex: 2
+
+bytes: 0a0b010b6e616d6531060d76616c7565310b6e616d6532060d76616c75653201

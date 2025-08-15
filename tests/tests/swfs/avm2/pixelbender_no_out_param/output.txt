@@ -1,0 +1,6 @@
+ArgumentError: Error #2004: One of the parameters is invalid.
+	at flash.display::ShaderData/_setByteCode()
+	at flash.display::ShaderData()
+	at flash.display::Shader/set byteCode()
+	at flash.display::Shader()
+	at Test()

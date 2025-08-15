@@ -4,24 +4,18 @@ import "./common.css";
 import "./lato.css";
 import "./index.css";
 import { App } from "./App.tsx";
-import {
-    AutoPlay,
-    Letterbox,
-    LogLevel,
-    PublicAPI,
-    UnmuteOverlay,
-} from "ruffle-core";
+import { Config, Setup } from "ruffle-core";
 
-window.RufflePlayer = PublicAPI.negotiate(window.RufflePlayer, "local");
+Setup.installRuffle("local");
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
     <React.StrictMode>
         <App
             ruffleBaseConfig={{
-                autoplay: AutoPlay.On,
-                unmuteOverlay: UnmuteOverlay.Hidden,
-                logLevel: LogLevel.Warn,
-                letterbox: Letterbox.On,
+                autoplay: Config.AutoPlay.On,
+                unmuteOverlay: Config.UnmuteOverlay.Hidden,
+                logLevel: Config.LogLevel.Warn,
+                letterbox: Config.Letterbox.On,
                 forceScale: true,
                 forceAlign: true,
             }}

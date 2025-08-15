@@ -1,0 +1,8 @@
+URIError: Error #1052: Invalid URI passed to encodeURI function.
+URIError: Error #1052: Invalid URI passed to encodeURIComponent function.
+URIError: Error #1052: Invalid URI passed to encodeURI function.
+URIError: Error #1052: Invalid URI passed to encodeURIComponent function.
+URIError: Error #1052: Invalid URI passed to encodeURI function.
+URIError: Error #1052: Invalid URI passed to encodeURIComponent function.
+URIError: Error #1052: Invalid URI passed to encodeURI function.
+URIError: Error #1052: Invalid URI passed to encodeURIComponent function.

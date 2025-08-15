@@ -1,0 +1,45 @@
+_level0.clip.onMouseDown
+_level0.clip.onMouseUp
+_level0.clip.onMouseDown
+_level0.clip.onPress
+_level0.clip.onMouseUp
+_level0.clip.onRelease
+_level0.clip.onMouseDown
+_level0.clip.onMouseUp
+_level0.clip.onMouseDown
+press
+_level0.button.onPress
+_level0.clip.onMouseUp
+release
+_level0.button.onRelease
+_level0.clip.onMouseDown
+_level0.clip.onMouseUp
+_level0.clip.onMouseDown
+Focus at: _level0.text
+_level0.clip.onMouseUp
+_level0.clip.onMouseDown
+Focus at: null
+_level0.clip.onMouseUp
+_level0.clip.onMouseDown
+Focus at: _level0.text
+_level0.clip.onMouseUp
+_level0.clip.onMouseDown
+Focus at: null
+press
+_level0.button.onPress
+_level0.clip.onMouseUp
+release
+_level0.button.onRelease
+_level0.clip.onMouseDown
+Focus at: _level0.text
+_level0.clip.onMouseUp
+_level0.clip.onMouseDown
+Focus at: null
+_level0.clip.onPress
+_level0.clip.onMouseUp
+_level0.clip.onRelease
+_level0.clip.onMouseDown
+Focus at: _level0.text
+_level0.clip.onMouseUp
+_level0.clip.onMouseDown
+_level0.clip.onMouseUp

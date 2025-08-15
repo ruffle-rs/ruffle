@@ -6,6 +6,7 @@
 package flash.media
 {
 
+    [API("674")]
     public final class VideoCodec
     {
         // Constant value indicating that H.264/AVC codec is used for compressing video.

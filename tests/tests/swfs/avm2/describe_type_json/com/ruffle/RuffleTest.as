@@ -23,5 +23,12 @@
 
 		public function myMethod(first:String, second:ByteArray) {
 		}
+
+		public function interfaceMethod() {
+		}
+
+	    public function get interfaceGetter() {
+	        return null;
+	    }
 	}
 }

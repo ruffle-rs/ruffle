@@ -1,0 +1,14 @@
+[
+  { "type": "KeyDown", "key": "Tab" }, { "type": "TextInput", "codepoint": "\t" }, { "type": "KeyUp", "key": "Tab" },
+  { "type": "KeyDown", "key": "Tab" }, { "type": "TextInput", "codepoint": "\t" }, { "type": "KeyUp", "key": "Tab" },
+  { "type": "KeyDown", "key": "Tab" }, { "type": "TextInput", "codepoint": "\t" }, { "type": "KeyUp", "key": "Tab" },
+  { "type": "KeyDown", "key": "Tab" }, { "type": "TextInput", "codepoint": "\t" }, { "type": "KeyUp", "key": "Tab" },
+  { "type": "KeyDown", "key": "Tab" }, { "type": "TextInput", "codepoint": "\t" }, { "type": "KeyUp", "key": "Tab" },
+  { "type": "KeyDown", "key": "Tab" }, { "type": "TextInput", "codepoint": "\t" }, { "type": "KeyUp", "key": "Tab" },
+  { "type": "KeyDown", "key": "Tab" }, { "type": "TextInput", "codepoint": "\t" }, { "type": "KeyUp", "key": "Tab" },
+  { "type": "KeyDown", "key": "Tab" }, { "type": "TextInput", "codepoint": "\t" }, { "type": "KeyUp", "key": "Tab" },
+  { "type": "KeyDown", "key": "Tab" }, { "type": "TextInput", "codepoint": "\t" }, { "type": "KeyUp", "key": "Tab" },
+  { "type": "KeyDown", "key": "Tab" }, { "type": "TextInput", "codepoint": "\t" }, { "type": "KeyUp", "key": "Tab" },
+  { "type": "KeyDown", "key": "Escape" }, { "type": "KeyUp", "key": "Escape" },
+  { "type": "KeyDown", "key": "Tab" }, { "type": "TextInput", "codepoint": "\t" }, { "type": "KeyUp", "key": "Tab" }
+]

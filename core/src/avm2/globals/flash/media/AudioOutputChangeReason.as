@@ -6,6 +6,7 @@
 package flash.media
 {
 
+    // TODO: [API("724")]
     public final class AudioOutputChangeReason
     {
         // Audio Output is changed because system device has been added or removed.

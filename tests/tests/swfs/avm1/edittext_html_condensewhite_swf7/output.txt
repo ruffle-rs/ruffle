@@ -1,0 +1,311 @@
+condenseWhite: false
+condenseWhite = 'test': true
+condenseWhite = 5: true
+condenseWhite = 0: false
+condenseWhite = true: true
+  HTML set:    \n
+  HTML get:    
+  Text get:    
+  HTML get ml: <!-- the same -->
+  Text get:    
+===============
+  HTML set:    \n\n
+  HTML get:    
+  Text get:    
+  HTML get ml: <!-- the same -->
+  Text get:    
+===============
+  HTML set:     
+  HTML get:    
+  Text get:    
+  HTML get ml: <!-- the same -->
+  Text get:    
+===============
+  HTML set:      
+  HTML get:    
+  Text get:    
+  HTML get ml: <!-- the same -->
+  Text get:    
+===============
+  HTML set:     \n
+  HTML get:    
+  Text get:    
+  HTML get ml: <!-- the same -->
+  Text get:    
+===============
+  HTML set:    \n 
+  HTML get:    
+  Text get:    
+  HTML get ml: <!-- the same -->
+  Text get:    
+===============
+  HTML set:    \n 	asdf 	  \n
+  HTML get:    <P ALIGN="LEFT"><FONT FACE="Noto Sans" SIZE="6" COLOR="#000000" LETTERSPACING="0" KERNING="0"> asdf </FONT></P>
+  Text get:     asdf 
+  HTML get ml: <!-- the same -->
+  Text get:     asdf 
+===============
+  HTML set:     test 
+  HTML get:    <P ALIGN="LEFT"><FONT FACE="Noto Sans" SIZE="6" COLOR="#000000" LETTERSPACING="0" KERNING="0"> test </FONT></P>
+  Text get:     test 
+  HTML get ml: <!-- the same -->
+  Text get:     test 
+===============
+  HTML set:     test test 
+  HTML get:    <P ALIGN="LEFT"><FONT FACE="Noto Sans" SIZE="6" COLOR="#000000" LETTERSPACING="0" KERNING="0"> test test </FONT></P>
+  Text get:     test test 
+  HTML get ml: <!-- the same -->
+  Text get:     test test 
+===============
+  HTML set:    \ntest  \n
+  HTML get:    <P ALIGN="LEFT"><FONT FACE="Noto Sans" SIZE="6" COLOR="#000000" LETTERSPACING="0" KERNING="0"> test </FONT></P>
+  Text get:     test 
+  HTML get ml: <!-- the same -->
+  Text get:     test 
+===============
+  HTML set:    test \n
+  HTML get:    <P ALIGN="LEFT"><FONT FACE="Noto Sans" SIZE="6" COLOR="#000000" LETTERSPACING="0" KERNING="0">test </FONT></P>
+  Text get:    test 
+  HTML get ml: <!-- the same -->
+  Text get:    test 
+===============
+  HTML set:    test \ntest\n\ntest\n\n\ntest
+  HTML get:    <P ALIGN="LEFT"><FONT FACE="Noto Sans" SIZE="6" COLOR="#000000" LETTERSPACING="0" KERNING="0">test test test test</FONT></P>
+  Text get:    test test test test
+  HTML get ml: <!-- the same -->
+  Text get:    test test test test
+===============
+  HTML set:    test\n \ntest \n
+  HTML get:    <P ALIGN="LEFT"><FONT FACE="Noto Sans" SIZE="6" COLOR="#000000" LETTERSPACING="0" KERNING="0">test test </FONT></P>
+  Text get:    test test 
+  HTML get ml: <!-- the same -->
+  Text get:    test test 
+===============
+  HTML set:    <b>test</b> \n
+  HTML get:    <P ALIGN="LEFT"><FONT FACE="Noto Sans" SIZE="6" COLOR="#000000" LETTERSPACING="0" KERNING="0"><B>test</B></FONT></P>
+  Text get:    test
+  HTML get ml: <!-- the same -->
+  Text get:    test
+===============
+  HTML set:    \n <p>t\ne s	t </p> \n
+  HTML get:    <P ALIGN="LEFT"><FONT FACE="Noto Sans" SIZE="6" COLOR="#000000" LETTERSPACING="0" KERNING="0">t e s t </FONT></P>
+  Text get:    t e s t 
+  HTML get ml: <!-- the same -->
+  Text get:    t e s t \r
+===============
+  HTML set:    <li>test</li>\n
+  HTML get:    <LI><FONT FACE="Noto Sans" SIZE="6" COLOR="#000000" LETTERSPACING="0" KERNING="0">test</FONT></LI>
+  Text get:    test
+  HTML get ml: <!-- the same -->
+  Text get:    test\r
+===============
+  HTML set:    <b> \n </b>
+  HTML get:    
+  Text get:    
+  HTML get ml: <!-- the same -->
+  Text get:    
+===============
+  HTML set:    <b></b>\n
+  HTML get:    
+  Text get:    
+  HTML get ml: <!-- the same -->
+  Text get:    
+===============
+  HTML set:    <b> </b>
+  HTML get:    
+  Text get:    
+  HTML get ml: <!-- the same -->
+  Text get:    
+===============
+  HTML set:     <b> </b> 
+  HTML get:    
+  Text get:    
+  HTML get ml: <!-- the same -->
+  Text get:    
+===============
+  HTML set:     <p> </p> 
+  HTML get:    
+  Text get:    
+  HTML get ml: <P ALIGN="LEFT"><FONT FACE="Noto Sans" SIZE="6" COLOR="#000000" LETTERSPACING="0" KERNING="0"></FONT></P>
+  Text get:    \r
+===============
+  HTML set:    <b> test </b>
+  HTML get:    <P ALIGN="LEFT"><FONT FACE="Noto Sans" SIZE="6" COLOR="#000000" LETTERSPACING="0" KERNING="0"><B> test </B></FONT></P>
+  Text get:     test 
+  HTML get ml: <!-- the same -->
+  Text get:     test 
+===============
+  HTML set:    <b>\ntest\n</b>
+  HTML get:    <P ALIGN="LEFT"><FONT FACE="Noto Sans" SIZE="6" COLOR="#000000" LETTERSPACING="0" KERNING="0"><B> test </B></FONT></P>
+  Text get:     test 
+  HTML get ml: <!-- the same -->
+  Text get:     test 
+===============
+  HTML set:    \n<p>test</p>\n
+  HTML get:    <P ALIGN="LEFT"><FONT FACE="Noto Sans" SIZE="6" COLOR="#000000" LETTERSPACING="0" KERNING="0">test</FONT></P>
+  Text get:    test
+  HTML get ml: <!-- the same -->
+  Text get:    test\r
+===============
+  HTML set:     <p>test</p>  <p>test</p> 
+  HTML get:    <P ALIGN="LEFT"><FONT FACE="Noto Sans" SIZE="6" COLOR="#000000" LETTERSPACING="0" KERNING="0">testtest</FONT></P>
+  Text get:    testtest
+  HTML get ml: <P ALIGN="LEFT"><FONT FACE="Noto Sans" SIZE="6" COLOR="#000000" LETTERSPACING="0" KERNING="0">test</FONT></P><P ALIGN="LEFT"><FONT FACE="Noto Sans" SIZE="6" COLOR="#000000" LETTERSPACING="0" KERNING="0">test</FONT></P>
+  Text get:    test\rtest\r
+===============
+  HTML set:    <p></p>\n
+  HTML get:    
+  Text get:    
+  HTML get ml: <P ALIGN="LEFT"><FONT FACE="Noto Sans" SIZE="6" COLOR="#000000" LETTERSPACING="0" KERNING="0"></FONT></P>
+  Text get:    \r
+===============
+  HTML set:    <p>\n</p>
+  HTML get:    
+  Text get:    
+  HTML get ml: <P ALIGN="LEFT"><FONT FACE="Noto Sans" SIZE="6" COLOR="#000000" LETTERSPACING="0" KERNING="0"></FONT></P>
+  Text get:    \r
+===============
+  HTML set:    <p>  \n  </p>\n  
+  HTML get:    
+  Text get:    
+  HTML get ml: <P ALIGN="LEFT"><FONT FACE="Noto Sans" SIZE="6" COLOR="#000000" LETTERSPACING="0" KERNING="0"></FONT></P>
+  Text get:    \r
+===============
+  HTML set:    <p> </p> 
+  HTML get:    
+  Text get:    
+  HTML get ml: <P ALIGN="LEFT"><FONT FACE="Noto Sans" SIZE="6" COLOR="#000000" LETTERSPACING="0" KERNING="0"></FONT></P>
+  Text get:    \r
+===============
+  HTML set:    <p> test </p>
+  HTML get:    <P ALIGN="LEFT"><FONT FACE="Noto Sans" SIZE="6" COLOR="#000000" LETTERSPACING="0" KERNING="0"> test </FONT></P>
+  Text get:     test 
+  HTML get ml: <!-- the same -->
+  Text get:     test \r
+===============
+  HTML set:    <p>\ntest\n</p>
+  HTML get:    <P ALIGN="LEFT"><FONT FACE="Noto Sans" SIZE="6" COLOR="#000000" LETTERSPACING="0" KERNING="0"> test </FONT></P>
+  Text get:     test 
+  HTML get ml: <!-- the same -->
+  Text get:     test \r
+===============
+  HTML set:    <li></li>\n
+  HTML get:    
+  Text get:    
+  HTML get ml: <LI><FONT FACE="Noto Sans" SIZE="6" COLOR="#000000" LETTERSPACING="0" KERNING="0"></FONT></LI>
+  Text get:    \r
+===============
+  HTML set:    <li>\n</li>
+  HTML get:    
+  Text get:    
+  HTML get ml: <LI><FONT FACE="Noto Sans" SIZE="6" COLOR="#000000" LETTERSPACING="0" KERNING="0"></FONT></LI>
+  Text get:    \r
+===============
+  HTML set:    <li>test\n</li>
+  HTML get:    <LI><FONT FACE="Noto Sans" SIZE="6" COLOR="#000000" LETTERSPACING="0" KERNING="0">test </FONT></LI>
+  Text get:    test 
+  HTML get ml: <!-- the same -->
+  Text get:    test \r
+===============
+  HTML set:    <li> </li>
+  HTML get:    
+  Text get:    
+  HTML get ml: <LI><FONT FACE="Noto Sans" SIZE="6" COLOR="#000000" LETTERSPACING="0" KERNING="0"></FONT></LI>
+  Text get:    \r
+===============
+  HTML set:    <li> </li> 
+  HTML get:    
+  Text get:    
+  HTML get ml: <LI><FONT FACE="Noto Sans" SIZE="6" COLOR="#000000" LETTERSPACING="0" KERNING="0"></FONT></LI>
+  Text get:    \r
+===============
+  HTML set:    <li> test </li>
+  HTML get:    <LI><FONT FACE="Noto Sans" SIZE="6" COLOR="#000000" LETTERSPACING="0" KERNING="0"> test </FONT></LI>
+  Text get:     test 
+  HTML get ml: <!-- the same -->
+  Text get:     test \r
+===============
+  HTML set:    <li>\ntest\n</li>
+  HTML get:    <LI><FONT FACE="Noto Sans" SIZE="6" COLOR="#000000" LETTERSPACING="0" KERNING="0"> test </FONT></LI>
+  Text get:     test 
+  HTML get ml: <!-- the same -->
+  Text get:     test \r
+===============
+  HTML set:    a b  c    d
+  HTML get:    <P ALIGN="LEFT"><FONT FACE="Noto Sans" SIZE="6" COLOR="#000000" LETTERSPACING="0" KERNING="0">a b  c    d</FONT></P>
+  Text get:    a b  c    d
+  HTML get ml: <!-- the same -->
+  Text get:    a b  c    d
+===============
+  HTML set:    a     b
+  HTML get:    <P ALIGN="LEFT"><FONT FACE="Noto Sans" SIZE="6" COLOR="#000000" LETTERSPACING="0" KERNING="0">a     b</FONT></P>
+  Text get:    a     b
+  HTML get ml: <!-- the same -->
+  Text get:    a     b
+===============
+  HTML set:    a  	 \n  b
+  HTML get:    <P ALIGN="LEFT"><FONT FACE="Noto Sans" SIZE="6" COLOR="#000000" LETTERSPACING="0" KERNING="0">a   b</FONT></P>
+  Text get:    a   b
+  HTML get ml: <!-- the same -->
+  Text get:    a   b
+===============
+  HTML set:    a  \r   b
+  HTML get:    <P ALIGN="LEFT"><FONT FACE="Noto Sans" SIZE="6" COLOR="#000000" LETTERSPACING="0" KERNING="0">a    b</FONT></P>
+  Text get:    a    b
+  HTML get ml: <!-- the same -->
+  Text get:    a    b
+===============
+  HTML set:    a     b
+  HTML get:    <P ALIGN="LEFT"><FONT FACE="Noto Sans" SIZE="6" COLOR="#000000" LETTERSPACING="0" KERNING="0">a     b</FONT></P>
+  Text get:    a     b
+  HTML get ml: <!-- the same -->
+  Text get:    a     b
+===============
+  HTML set:    a     b
+  HTML get:    <P ALIGN="LEFT"><FONT FACE="Noto Sans" SIZE="6" COLOR="#000000" LETTERSPACING="0" KERNING="0">a     b</FONT></P>
+  Text get:    a     b
+  HTML get ml: <!-- the same -->
+  Text get:    a     b
+===============
+  HTML set:    a   b
+  HTML get:    <P ALIGN="LEFT"><FONT FACE="Noto Sans" SIZE="6" COLOR="#000000" LETTERSPACING="0" KERNING="0">a   b</FONT></P>
+  Text get:    a   b
+  HTML get ml: <!-- the same -->
+  Text get:    a   b
+===============
+  HTML set:      <p>  test  </p>  
+  HTML get:    <P ALIGN="LEFT"><FONT FACE="Noto Sans" SIZE="6" COLOR="#000000" LETTERSPACING="0" KERNING="0"> test </FONT></P>
+  Text get:     test 
+  HTML get ml: <!-- the same -->
+  Text get:     test \r
+===============
+  HTML set:      <p>\n test  </p>\n 
+  HTML get:    <P ALIGN="LEFT"><FONT FACE="Noto Sans" SIZE="6" COLOR="#000000" LETTERSPACING="0" KERNING="0"> test </FONT></P>
+  Text get:     test 
+  HTML get ml: <!-- the same -->
+  Text get:     test \r
+===============
+  HTML set:      <p>test</p>  
+  HTML get:    <P ALIGN="LEFT"><FONT FACE="Noto Sans" SIZE="6" COLOR="#000000" LETTERSPACING="0" KERNING="0">test</FONT></P>
+  Text get:    test
+  HTML get ml: <!-- the same -->
+  Text get:    test\r
+===============
+  HTML set:    <p>  test  </p>
+  HTML get:    <P ALIGN="LEFT"><FONT FACE="Noto Sans" SIZE="6" COLOR="#000000" LETTERSPACING="0" KERNING="0"> test </FONT></P>
+  Text get:     test 
+  HTML get ml: <!-- the same -->
+  Text get:     test \r
+===============
+  HTML set:     <b> test1 </b> <b> test2 </b> 
+  HTML get:    <P ALIGN="LEFT"><FONT FACE="Noto Sans" SIZE="6" COLOR="#000000" LETTERSPACING="0" KERNING="0"><B> test1  test2 </B></FONT></P>
+  Text get:     test1  test2 
+  HTML get ml: <!-- the same -->
+  Text get:     test1  test2 
+===============
+  HTML set:     <b> test1 </b> <i> test2 </i> 
+  HTML get:    <P ALIGN="LEFT"><FONT FACE="Noto Sans" SIZE="6" COLOR="#000000" LETTERSPACING="0" KERNING="0"><B> test1 </B><I> test2 </I></FONT></P>
+  Text get:     test1  test2 
+  HTML get ml: <!-- the same -->
+  Text get:     test1  test2 
+===============

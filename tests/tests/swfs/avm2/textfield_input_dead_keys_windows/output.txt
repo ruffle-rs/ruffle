@@ -1,0 +1,15 @@
+keyDown 16 0
+keyDown 222 34
+keyUp 222 34
+keyUp 16 0
+keyDown 65 97
+textInput ä
+keyUp 65 97
+keyDown 16 0
+keyDown 222 34
+keyUp 222 34
+keyUp 16 0
+keyDown 82 114
+textInput "
+textInput r
+keyUp 82 114

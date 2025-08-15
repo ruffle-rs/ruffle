@@ -1,0 +1,21 @@
+version 1i
+name "multiple_out"
+
+param.out "dst1", float4, f0.rgba
+param.out "dst2", float4, f2.rgba
+param.out "dst3", float4, f1.rgba
+
+ld f0.r, 1f
+ld f0.g, 1f
+ld f0.b, 1f
+ld f0.a, 1f
+
+ld f1.r, 0.6f
+ld f1.g, 0.6f
+ld f1.b, 0.6f
+ld f1.a, 1f
+
+ld f2.r, 0.1f
+ld f2.g, 0.1f
+ld f2.b, 0.1f
+ld f2.a, 1f

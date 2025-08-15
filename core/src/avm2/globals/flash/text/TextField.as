@@ -8,7 +8,6 @@ package flash.text {
 
     [Ruffle(InstanceAllocator)]
     public class TextField extends InteractiveObject {
-        internal var _styleSheet:StyleSheet;
         internal var _useRichTextClipboard:Boolean;
 
         public native function get alwaysShowSelection():Boolean;
@@ -73,13 +72,8 @@ package flash.text {
         public native function get selectable():Boolean;
         public native function set selectable(value:Boolean):void;
 
-        public function get styleSheet():StyleSheet {
-            return this._styleSheet;
-        }
-        public function set styleSheet(value:StyleSheet):void {
-            this._styleSheet = value;
-            stub_setter("flash.text.TextField", "styleSheet");
-        }
+        public native function get styleSheet():StyleSheet;
+        public native function set styleSheet(value:StyleSheet):void;
 
         public native function get text():String;
         public native function set text(value:String):void;
@@ -132,63 +126,43 @@ package flash.text {
         public native function replaceSelectedText(value:String):void;
         public native function replaceText(beginIndex:int, endIndex:int, newText:String):void;
         public native function setSelection(beginIndex:int, endIndex:int):void;
+        public native function getTextRuns():Array;
+
+        public native function get selectedText():String;
 
         public function insertXMLText(beginIndex:int, endIndex:int, text:String, paste:Boolean = false):void {
             stub_method("flash.text.TextField", "insertXMLText");
         }
 
-        public function getCharIndexAtPoint(x:Number, y:Number):int {
-            stub_method("flash.text.TextField", "getCharIndexAtPoint");
-            return 0;
-        }
+        public native function getCharIndexAtPoint(x:Number, y:Number):int;
 
-        public function getLineLength(lineIndex:int):int {
-            stub_method("flash.text.TextField", "getLineLength");
-            return 0;
-        }
+        public native function getLineLength(lineIndex:int):int;
 
         public native function getLineText(lineIndex:int):String;
 
-        public function getCharBoundaries(charIndex:int):Rectangle {
-            stub_method("flash.text.TextField", "getCharBoundaries");
-            return new Rectangle(0, 0, 1, 1);
-        }
+        public native function getLineOffset(lineIndex:int):int;
 
-        public function getFirstCharInParagraph(charIndex:int):int {
-            stub_method("flash.text.TextField", "getFirstCharInParagraph");
-            return 0;
-        }
+        public native function getCharBoundaries(charIndex:int):Rectangle;
+
+        public native function getFirstCharInParagraph(charIndex:int):int;
 
         public function getImageReference(id:String):DisplayObject {
             stub_method("flash.text.TextField", "getImageReference");
             return null;
         }
 
-        public function getLineIndexAtPoint(x:Number, y:Number):int {
-            stub_method("flash.text.TextField", "getLineIndexAtPoint");
-            return 0;
-        }
+        public native function getLineIndexAtPoint(x:Number, y:Number):int;
 
-        public function getLineIndexOfChar(charIndex:int):int {
-            stub_method("flash.text.TextField", "getLineIndexOfChar");
-            return 0;
-        }
+        public native function getLineIndexOfChar(charIndex:int):int;
 
-        public function getLineOffset(lineIndex:int):int {
-            stub_method("flash.text.TextField", "getLineOffset");
-            return 0;
-        }
-
-        public function getParagraphLength(charIndex:int):int {
-            stub_method("flash.text.TextField", "getParagraphLength");
-            return 0;
-        }
+        public native function getParagraphLength(charIndex:int):int;
 
         public static function isFontCompatible(fontName:String, fontStyle:String):Boolean {
             stub_method("flash.text.TextField", "isFontCompatible");
             return true;
         }
 
+        [API("670")]
         public function get textInteractionMode():String {
             stub_getter("flash.text.TextField", "textInteractionMode");
             return TextInteractionMode.NORMAL;

@@ -12,10 +12,10 @@ package flash.text
     public final class TextRenderer
     {
         // Controls the rendering of advanced anti-aliased text.
-        public static var _displayMode: String = "default";
+        private static var _displayMode: String = "default";
 
         // The adaptively sampled distance fields (ADFs) quality level for advanced anti-aliasing.
-        public static var _maxLevel: int = 4;
+        private static var _maxLevel: int = 4;
 
         // Sets a custom continuous stroke modulation (CSM) lookup table for a font.
         public static function setAdvancedAntiAliasingTable(fontName:String, fontStyle:String, colorType:String, advancedAntiAliasingTable:Array):void

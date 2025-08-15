@@ -1,0 +1,7 @@
+num_frames = 1
+
+[image_comparisons.output]
+tolerance = 5 # expected png generated from FP
+
+[player_options]
+with_renderer = { optional = false, sample_count = 1 }

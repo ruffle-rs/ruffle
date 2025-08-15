@@ -1,0 +1,3 @@
+mouseDown: target=[object Stage] null stageX=14 stageY=14
+mouseDown: target=[object Sprite] Target stageX=34 stageY=32
+mouseDown: target=[object Stage] null stageX=64 stageY=58

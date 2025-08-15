@@ -4,7 +4,7 @@ use std::num::NonZeroU32;
 use naga::{
     AddressSpace, ArraySize, Block, BuiltIn, Constant, DerivativeControl, EntryPoint,
     FunctionArgument, FunctionResult, GlobalVariable, ImageClass, ImageDimension, Literal,
-    Override, ResourceBinding, Scalar, ShaderStage, StructMember, SwizzleComponent, UnaryOperator,
+    ResourceBinding, Scalar, ShaderStage, StructMember, SwizzleComponent, UnaryOperator,
 };
 use naga::{BinaryOperator, MathFunction};
 use naga::{
@@ -185,13 +185,12 @@ impl VertexAttributeFormat {
 
                 let const_expr_f32_zero = builder
                     .module
-                    .const_expressions
+                    .global_expressions
                     .append(Expression::Literal(Literal::F32(0.0)), Span::UNDEFINED);
 
                 let constant_zero = builder.module.constants.append(
                     Constant {
                         name: None,
-                        r#override: Override::None,
                         ty: builder.f32_type,
                         init: const_expr_f32_zero,
                     },
@@ -209,13 +208,12 @@ impl VertexAttributeFormat {
 
                 let const_expr_f32_1 = builder
                     .module
-                    .const_expressions
+                    .global_expressions
                     .append(Expression::Literal(Literal::F32(1.0)), Span::UNDEFINED);
 
                 let constant_one = builder.module.constants.append(
                     Constant {
                         name: None,
-                        r#override: Override::None,
                         ty: builder.f32_type,
                         init: const_expr_f32_1,
                     },
@@ -247,6 +245,7 @@ impl VertexAttributeFormat {
 pub struct ShaderConfig<'a> {
     pub shader_type: ShaderType,
     pub vertex_attributes: &'a [Option<VertexAttributeFormat>; 8],
+    #[expect(dead_code)] // set but never read
     pub sampler_configs: &'a [SamplerConfig; 8],
     pub version: AgalVersion,
 }
@@ -510,7 +509,7 @@ impl<'a> NagaBuilder<'a> {
                             location: 0,
                             interpolation: None,
                             sampling: None,
-                            second_blend_source: false,
+                            blend_src: None,
                         }),
                         offset: 0,
                     }],
@@ -533,7 +532,7 @@ impl<'a> NagaBuilder<'a> {
                         location: 0,
                         interpolation: None,
                         sampling: None,
-                        second_blend_source: false,
+                        blend_src: None,
                     }),
                 });
             }
@@ -645,7 +644,7 @@ impl<'a> NagaBuilder<'a> {
                     location: index as u32,
                     interpolation: None,
                     sampling: None,
-                    second_blend_source: false,
+                    blend_src: None,
                 }),
             });
 
@@ -665,7 +664,7 @@ impl<'a> NagaBuilder<'a> {
         if self.temporary_registers[index].is_none() {
             let local = self.func.local_variables.append(
                 LocalVariable {
-                    name: Some(format!("temporary{}", index)),
+                    name: Some(format!("temporary{index}")),
                     ty: self.vec4f,
                     init: None,
                 },
@@ -682,14 +681,13 @@ impl<'a> NagaBuilder<'a> {
     }
 
     fn emit_const_register_load(&mut self, index: usize) -> Result<Handle<Expression>> {
-        let const_value_expr = self.module.const_expressions.append(
+        let const_value_expr = self.module.global_expressions.append(
             Expression::Literal(Literal::U32(index as u32)),
             Span::UNDEFINED,
         );
         let index_const = self.module.constants.append(
             Constant {
                 name: None,
-                r#override: Override::None,
                 ty: self.u32_type,
                 init: const_value_expr,
             },
@@ -732,7 +730,7 @@ impl<'a> NagaBuilder<'a> {
         if self.texture_bindings[index].is_none() {
             let global_var = self.module.global_variables.append(
                 GlobalVariable {
-                    name: Some(format!("texture{}", index)),
+                    name: Some(format!("texture{index}")),
                     space: AddressSpace::Handle,
                     binding: Some(ResourceBinding {
                         group: 0,
@@ -751,7 +749,7 @@ impl<'a> NagaBuilder<'a> {
 
             let sampler_var = self.module.global_variables.append(
                 GlobalVariable {
-                    name: Some(format!("sampler{}", index)),
+                    name: Some(format!("sampler{index}")),
                     space: naga::AddressSpace::Handle,
                     binding: Some(naga::ResourceBinding {
                         group: 0,
@@ -858,7 +856,7 @@ impl<'a> NagaBuilder<'a> {
                             convert: Some(4),
                         });
 
-                        let const_indirect_offset = self.module.const_expressions.append(
+                        let const_indirect_offset = self.module.global_expressions.append(
                             Expression::Literal(Literal::U32(source.indirect_offset as u32)),
                             Span::UNDEFINED,
                         );
@@ -866,7 +864,6 @@ impl<'a> NagaBuilder<'a> {
                         let offset_constant = self.module.constants.append(
                             Constant {
                                 name: None,
-                                r#override: Override::None,
                                 ty: self.u32_type,
                                 init: const_indirect_offset,
                             },
@@ -926,18 +923,13 @@ impl<'a> NagaBuilder<'a> {
             (source.swizzle >> 4) & 0b11,
             (source.swizzle >> 6) & 0b11,
         ];
-        let swizzle_components: [SwizzleComponent; 4] = swizzle_flags
-            .into_iter()
-            .map(|flag| match flag {
-                0b00 => SwizzleComponent::X,
-                0b01 => SwizzleComponent::Y,
-                0b10 => SwizzleComponent::Z,
-                0b11 => SwizzleComponent::W,
-                _ => unreachable!(),
-            })
-            .collect::<Vec<_>>()
-            .try_into()
-            .unwrap();
+        let swizzle_components = swizzle_flags.map(|flag| match flag {
+            0b00 => SwizzleComponent::X,
+            0b01 => SwizzleComponent::Y,
+            0b10 => SwizzleComponent::Z,
+            0b11 => SwizzleComponent::W,
+            _ => unreachable!(),
+        });
 
         Ok(self.evaluate_expr(Expression::Swizzle {
             size: output,
@@ -1157,7 +1149,7 @@ impl<'a> NagaBuilder<'a> {
 
                 let texture_id = sampler_field.reg_num;
                 if sampler_field.reg_type != RegisterType::Sampler {
-                    panic!("Invalid sample register type {:?}", sampler_field);
+                    panic!("Invalid sample register type {sampler_field:?}");
                 }
 
                 let coord = self.emit_source_field_load(source1, false)?;
@@ -1420,7 +1412,7 @@ impl<'a> NagaBuilder<'a> {
                         });
                     }
                     BlockStackEntry::Normal(block) => {
-                        panic!("Eif opcode without matching 'if': {:?}", block)
+                        panic!("Eif opcode without matching 'if': {block:?}")
                     }
                 }
             }
@@ -1601,14 +1593,13 @@ impl<'a> NagaBuilder<'a> {
 
                 let constant_f32_zero = self
                     .module
-                    .const_expressions
+                    .global_expressions
                     .append(Expression::Literal(Literal::F32(0.0)), Span::UNDEFINED);
 
                 // Check `source < 0.0`.
                 let constant_zero = self.module.constants.append(
                     Constant {
                         name: None,
-                        r#override: Override::None,
                         ty: self.f32_type,
                         init: constant_f32_zero,
                     },
@@ -1660,7 +1651,7 @@ impl<'a> NagaBuilder<'a> {
 
         let block = match self.blocks.pop().unwrap() {
             BlockStackEntry::Normal(block) => block,
-            block => panic!("Unfinished if statement: {:?}", block),
+            block => panic!("Unfinished if statement: {block:?}"),
         };
 
         if !self.blocks.is_empty() {
@@ -1679,6 +1670,7 @@ impl<'a> NagaBuilder<'a> {
             },
             early_depth_test: None,
             workgroup_size: [0; 3],
+            workgroup_size_overrides: None,
             function: self.func,
         };
 

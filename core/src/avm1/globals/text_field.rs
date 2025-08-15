@@ -3,13 +3,14 @@ use crate::avm1::error::Error;
 use crate::avm1::globals::bitmap_filter;
 use crate::avm1::object::NativeObject;
 use crate::avm1::property_decl::{define_properties_on, Declaration};
-use crate::avm1::{globals, ArrayObject, Object, ScriptObject, TObject, Value};
-use crate::context::GcContext;
-use crate::display_object::{AutoSizeMode, EditText, TDisplayObject, TextSelection};
-use crate::font::round_down_to_pixel;
+use crate::avm1::{globals, ArrayBuilder, Object, Value};
+use crate::display_object::{
+    AutoSizeMode, EditText, TDisplayObject, TInteractiveObject, TextSelection,
+};
 use crate::html::TextFormat;
-use crate::string::{AvmString, WStr};
+use crate::string::{AvmString, StringContext, WStr};
 use gc_arena::Gc;
+use ruffle_macros::istr;
 use swf::Color;
 
 macro_rules! tf_method {
@@ -72,10 +73,12 @@ const PROTO_DECLS: &[Declaration] = declare_properties! {
     "hscroll" => property(tf_getter!(hscroll), tf_setter!(set_hscroll));
     "html" => property(tf_getter!(html), tf_setter!(set_html));
     "htmlText" => property(tf_getter!(html_text), tf_setter!(set_html_text));
+    "condenseWhite" => property(tf_getter!(condense_white), tf_setter!(set_condense_white));
     "length" => property(tf_getter!(length));
     "maxhscroll" => property(tf_getter!(maxhscroll));
     "maxscroll" => property(tf_getter!(maxscroll));
     "maxChars" => property(tf_getter!(max_chars), tf_setter!(set_max_chars));
+    "mouseWheelEnabled" => property(tf_getter!(mouse_wheel_enabled), tf_setter!(set_mouse_wheel_enabled));
     "multiline" => property(tf_getter!(multiline), tf_setter!(set_multiline));
     "password" => property(tf_getter!(password), tf_setter!(set_password));
     "restrict" => property(tf_getter!(restrict), tf_setter!(set_restrict));
@@ -92,26 +95,21 @@ const PROTO_DECLS: &[Declaration] = declare_properties! {
     "gridFitType" => property(tf_getter!(grid_fit_type), tf_setter!(set_grid_fit_type));
     "sharpness" => property(tf_getter!(sharpness), tf_setter!(set_sharpness));
     "thickness" => property(tf_getter!(thickness), tf_setter!(set_thickness));
+    // NOTE: `tabEnabled` is not a built-in property of TextField.
+    "tabIndex" => property(tf_getter!(tab_index), tf_setter!(set_tab_index); VERSION_6);
+    "styleSheet" => property(tf_getter!(style_sheet), tf_setter!(set_style_sheet); VERSION_7);
 };
 
-/// Implements `TextField`
-pub fn constructor<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
-    _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error<'gc>> {
-    Ok(this.into())
-}
-
 pub fn create_proto<'gc>(
-    context: &mut GcContext<'_, 'gc>,
+    context: &mut StringContext<'gc>,
     proto: Object<'gc>,
     fn_proto: Object<'gc>,
 ) -> Object<'gc> {
-    let object = ScriptObject::new(context.gc_context, Some(proto));
+    let object = Object::new(context, Some(proto));
     define_properties_on(PROTO_DECLS, context, object, fn_proto);
-    object.into()
+    object
 }
+
 pub fn password<'gc>(
     this: EditText<'gc>,
     _activation: &mut Activation<'_, 'gc>,
@@ -124,22 +122,19 @@ pub fn set_password<'gc>(
     activation: &mut Activation<'_, 'gc>,
     value: Value<'gc>,
 ) -> Result<(), Error<'gc>> {
-    this.set_password(
-        value.as_bool(activation.swf_version()),
-        &mut activation.context,
-    );
+    this.set_password(value.as_bool(activation.swf_version()), activation.context);
     Ok(())
 }
 
 fn new_text_format<'gc>(
     activation: &mut Activation<'_, 'gc>,
     text_format: TextFormat,
-) -> ScriptObject<'gc> {
+) -> Object<'gc> {
     let proto = activation.context.avm1.prototypes().text_format;
-    let object = ScriptObject::new(activation.context.gc_context, Some(proto));
+    let object = Object::new(&activation.context.strings, Some(proto));
     object.set_native(
-        activation.context.gc_context,
-        NativeObject::TextFormat(Gc::new(activation.context.gc_context, text_format.into())),
+        activation.gc(),
+        NativeObject::TextFormat(Gc::new(activation.gc(), text_format.into())),
     );
     object
 }
@@ -155,12 +150,12 @@ fn get_new_text_format<'gc>(
 
 fn set_new_text_format<'gc>(
     text_field: EditText<'gc>,
-    activation: &mut Activation<'_, 'gc>,
+    _activation: &mut Activation<'_, 'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let [Value::Object(text_format), ..] = args {
         if let NativeObject::TextFormat(text_format) = text_format.native() {
-            text_field.set_new_text_format(text_format.borrow().clone(), &mut activation.context);
+            text_field.set_new_text_format(text_format.borrow().clone());
         }
     }
 
@@ -224,7 +219,7 @@ fn set_text_format<'gc>(
                 begin_index,
                 end_index,
                 text_format.borrow().clone(),
-                &mut activation.context,
+                activation.context,
             );
         }
     }
@@ -252,12 +247,11 @@ fn replace_sel<'gc>(
         selection.start(),
         selection.end(),
         &text,
-        &mut activation.context,
+        activation.context,
     );
-    text_field.set_selection(
-        Some(TextSelection::for_position(selection.start() + text.len())),
-        activation.context.gc_context,
-    );
+    text_field.set_selection(Some(TextSelection::for_position(
+        selection.start() + text.len(),
+    )));
 
     text_field.propagate_text_binding(activation);
 
@@ -285,7 +279,7 @@ fn replace_text<'gc>(
         .unwrap_or(Value::Undefined)
         .coerce_to_string(activation)?;
 
-    text_field.replace_text(from as usize, to as usize, &text, &mut activation.context);
+    text_field.replace_text(from as usize, to as usize, &text, activation.context);
 
     Ok(Value::Undefined)
 }
@@ -303,7 +297,7 @@ pub fn text<'gc>(
     this: EditText<'gc>,
     activation: &mut Activation<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
-    Ok(AvmString::new(activation.context.gc_context, this.text()).into())
+    Ok(AvmString::new(activation.gc(), this.text()).into())
 }
 
 pub fn set_text<'gc>(
@@ -311,10 +305,7 @@ pub fn set_text<'gc>(
     activation: &mut Activation<'_, 'gc>,
     value: Value<'gc>,
 ) -> Result<(), Error<'gc>> {
-    this.set_text(
-        &value.coerce_to_string(activation)?,
-        &mut activation.context,
-    );
+    this.set_text(&value.coerce_to_string(activation)?, activation.context);
     this.propagate_text_binding(activation);
 
     Ok(())
@@ -333,7 +324,7 @@ pub fn set_html<'gc>(
     value: Value<'gc>,
 ) -> Result<(), Error<'gc>> {
     let value = value.as_bool(activation.swf_version());
-    this.set_is_html(&mut activation.context, value);
+    this.set_is_html(value);
     Ok(())
 }
 
@@ -361,9 +352,9 @@ pub fn set_text_color<'gc>(
         0,
         this.text_length(),
         text_format.clone(),
-        &mut activation.context,
+        activation.context,
     );
-    this.set_new_text_format(text_format, &mut activation.context);
+    this.set_new_text_format(text_format);
     Ok(())
 }
 
@@ -371,7 +362,7 @@ pub fn html_text<'gc>(
     this: EditText<'gc>,
     activation: &mut Activation<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
-    Ok(AvmString::new(activation.context.gc_context, this.html_text()).into())
+    Ok(AvmString::new(activation.gc(), this.html_text()).into())
 }
 
 pub fn set_html_text<'gc>(
@@ -380,7 +371,7 @@ pub fn set_html_text<'gc>(
     value: Value<'gc>,
 ) -> Result<(), Error<'gc>> {
     let text = value.coerce_to_string(activation)?;
-    this.set_html_text(&text, &mut activation.context);
+    this.set_html_text(&text, activation.context);
     // Changing the htmlText does NOT update variable bindings (does not call EditText::propagate_text_binding).
     Ok(())
 }
@@ -398,7 +389,7 @@ pub fn set_background<'gc>(
     value: Value<'gc>,
 ) -> Result<(), Error<'gc>> {
     let has_background = value.as_bool(activation.swf_version());
-    this.set_has_background(activation.context.gc_context, has_background);
+    this.set_has_background(has_background);
     Ok(())
 }
 
@@ -416,7 +407,7 @@ pub fn set_background_color<'gc>(
 ) -> Result<(), Error<'gc>> {
     let rgb = value.coerce_to_u32(activation)?;
     let color = Color::from_rgb(rgb, 255);
-    this.set_background_color(activation.context.gc_context, color);
+    this.set_background_color(color);
     Ok(())
 }
 
@@ -433,7 +424,7 @@ pub fn set_border<'gc>(
     value: Value<'gc>,
 ) -> Result<(), Error<'gc>> {
     let has_border = value.as_bool(activation.swf_version());
-    this.set_has_border(activation.context.gc_context, has_border);
+    this.set_has_border(has_border);
     Ok(())
 }
 
@@ -451,7 +442,7 @@ pub fn set_border_color<'gc>(
 ) -> Result<(), Error<'gc>> {
     let rgb = value.coerce_to_u32(activation)?;
     let color = Color::from_rgb(rgb, 255);
-    this.set_border_color(activation.context.gc_context, color);
+    this.set_border_color(color);
     Ok(())
 }
 
@@ -468,7 +459,7 @@ pub fn set_embed_fonts<'gc>(
     value: Value<'gc>,
 ) -> Result<(), Error<'gc>> {
     let embed_fonts = value.as_bool(activation.swf_version());
-    this.set_is_device_font(&mut activation.context, !embed_fonts);
+    this.set_is_device_font(activation.context, !embed_fonts);
     Ok(())
 }
 
@@ -483,16 +474,33 @@ pub fn text_width<'gc>(
     this: EditText<'gc>,
     activation: &mut Activation<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let metrics = this.measure_text(&mut activation.context);
-    Ok(round_down_to_pixel(metrics.0).to_pixels().into())
+    let metrics = this.measure_text(activation.context);
+    Ok(metrics.0.trunc_to_pixel().to_pixels().into())
 }
 
 pub fn text_height<'gc>(
     this: EditText<'gc>,
     activation: &mut Activation<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let metrics = this.measure_text(&mut activation.context);
-    Ok(round_down_to_pixel(metrics.1).to_pixels().into())
+    let metrics = this.measure_text(activation.context);
+    Ok(metrics.1.trunc_to_pixel().to_pixels().into())
+}
+
+pub fn mouse_wheel_enabled<'gc>(
+    this: EditText<'gc>,
+    _activation: &mut Activation<'_, 'gc>,
+) -> Result<Value<'gc>, Error<'gc>> {
+    Ok(this.is_mouse_wheel_enabled().into())
+}
+
+pub fn set_mouse_wheel_enabled<'gc>(
+    this: EditText<'gc>,
+    activation: &mut Activation<'_, 'gc>,
+    value: Value<'gc>,
+) -> Result<(), Error<'gc>> {
+    let is_enabled = value.as_bool(activation.swf_version());
+    this.set_mouse_wheel_enabled(is_enabled);
+    Ok(())
 }
 
 pub fn multiline<'gc>(
@@ -508,7 +516,7 @@ pub fn set_multiline<'gc>(
     value: Value<'gc>,
 ) -> Result<(), Error<'gc>> {
     let is_multiline = value.as_bool(activation.swf_version());
-    this.set_multiline(is_multiline, &mut activation.context);
+    this.set_multiline(is_multiline, activation.context);
     Ok(())
 }
 
@@ -525,20 +533,16 @@ pub fn set_selectable<'gc>(
     value: Value<'gc>,
 ) -> Result<(), Error<'gc>> {
     let set_selectable = value.as_bool(activation.swf_version());
-    this.set_selectable(set_selectable, &mut activation.context);
+    this.set_selectable(set_selectable);
     Ok(())
 }
 
 fn variable<'gc>(
     this: EditText<'gc>,
-    activation: &mut Activation<'_, 'gc>,
+    _activation: &mut Activation<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(variable) = this.variable() {
-        return Ok(AvmString::new_utf8(activation.context.gc_context, &variable[..]).into());
-    }
-
     // Unset `variable` returns null, not undefined
-    Ok(Value::Null)
+    Ok(this.variable().map(Value::from).unwrap_or(Value::Null))
 }
 
 fn set_variable<'gc>(
@@ -550,7 +554,7 @@ fn set_variable<'gc>(
         Value::Undefined | Value::Null => None,
         v => Some(v.coerce_to_string(activation)?),
     };
-    this.set_variable(variable.map(|v| v.to_string()), activation);
+    this.set_variable(variable, activation);
     Ok(())
 }
 
@@ -567,20 +571,22 @@ pub fn set_word_wrap<'gc>(
     value: Value<'gc>,
 ) -> Result<(), Error<'gc>> {
     let is_word_wrap = value.as_bool(activation.swf_version());
-    this.set_word_wrap(is_word_wrap, &mut activation.context);
+    this.set_word_wrap(is_word_wrap, activation.context);
     Ok(())
 }
 
 pub fn auto_size<'gc>(
     this: EditText<'gc>,
-    _activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
-    Ok(match this.autosize() {
-        AutoSizeMode::None => "none".into(),
-        AutoSizeMode::Left => "left".into(),
-        AutoSizeMode::Center => "center".into(),
-        AutoSizeMode::Right => "right".into(),
-    })
+    let autosize = match this.autosize() {
+        AutoSizeMode::None => istr!("none"),
+        AutoSizeMode::Left => istr!("left"),
+        AutoSizeMode::Center => istr!("center"),
+        AutoSizeMode::Right => istr!("right"),
+    };
+
+    Ok(autosize.into())
 }
 
 pub fn set_auto_size<'gc>(
@@ -595,18 +601,18 @@ pub fn set_auto_size<'gc>(
         Value::Bool(true) => AutoSizeMode::Left,
         _ => AutoSizeMode::None,
     };
-    this.set_autosize(mode, &mut activation.context);
+    this.set_autosize(mode, activation.context);
 
     Ok(())
 }
 
 pub fn get_type<'gc>(
     this: EditText<'gc>,
-    _activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let tf_type = match this.is_editable() {
-        true => "input",
-        false => "dynamic",
+        true => istr!("input"),
+        false => istr!("dynamic"),
     };
     Ok(tf_type.into())
 }
@@ -619,9 +625,9 @@ pub fn set_type<'gc>(
     let value = value.coerce_to_string(activation)?;
 
     if value.eq_ignore_case(WStr::from_units(b"input")) {
-        this.set_editable(true, &mut activation.context);
+        this.set_editable(true);
     } else if value.eq_ignore_case(WStr::from_units(b"dynamic")) {
-        this.set_editable(false, &mut activation.context)
+        this.set_editable(false)
     } else {
         tracing::warn!("Invalid TextField.type: {}", value);
     }
@@ -644,7 +650,7 @@ pub fn set_hscroll<'gc>(
     // SWF v8 and earlier has the simple clamping behaviour below. SWF v9+ is much more complicated. See #4634.
     let hscroll_pixels = value.coerce_to_i32(activation)? as f64;
     let clamped = hscroll_pixels.clamp(0.0, this.maxhscroll());
-    this.set_hscroll(clamped, &mut activation.context);
+    this.set_hscroll(clamped);
     Ok(())
 }
 
@@ -668,7 +674,7 @@ pub fn set_scroll<'gc>(
     value: Value<'gc>,
 ) -> Result<(), Error<'gc>> {
     let input = value.coerce_to_f64(activation)?;
-    this.set_scroll(input, &mut activation.context);
+    this.set_scroll(input);
     Ok(())
 }
 
@@ -685,7 +691,7 @@ pub fn set_max_chars<'gc>(
     value: Value<'gc>,
 ) -> Result<(), Error<'gc>> {
     let input = value.coerce_to_i32(activation)?;
-    this.set_max_chars(input, &mut activation.context);
+    this.set_max_chars(input);
     Ok(())
 }
 
@@ -710,12 +716,12 @@ pub fn bottom_scroll<'gc>(
 
 pub fn anti_alias_type<'gc>(
     this: EditText<'gc>,
-    _activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     if this.render_settings().is_advanced() {
-        Ok("advanced".into())
+        Ok(istr!("advanced").into())
     } else {
-        Ok("normal".into())
+        Ok(istr!("normal").into())
     }
 }
 
@@ -728,15 +734,9 @@ pub fn set_anti_alias_type<'gc>(
     let new_type = value.coerce_to_string(activation)?;
 
     if &new_type == b"advanced" {
-        this.set_render_settings(
-            activation.context.gc_context,
-            old_settings.with_advanced_rendering(),
-        );
+        this.set_render_settings(old_settings.with_advanced_rendering());
     } else if &new_type == b"normal" {
-        this.set_render_settings(
-            activation.context.gc_context,
-            old_settings.with_normal_rendering(),
-        );
+        this.set_render_settings(old_settings.with_normal_rendering());
     }
 
     Ok(())
@@ -744,13 +744,15 @@ pub fn set_anti_alias_type<'gc>(
 
 pub fn grid_fit_type<'gc>(
     this: EditText<'gc>,
-    _activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
-    match this.render_settings().grid_fit() {
-        swf::TextGridFit::None => Ok("none".into()),
-        swf::TextGridFit::Pixel => Ok("pixel".into()),
-        swf::TextGridFit::SubPixel => Ok("subpixel".into()),
-    }
+    let grid_fit_type = match this.render_settings().grid_fit() {
+        swf::TextGridFit::None => istr!("none"),
+        swf::TextGridFit::Pixel => istr!("pixel"),
+        swf::TextGridFit::SubPixel => istr!("subpixel"),
+    };
+
+    Ok(grid_fit_type.into())
 }
 
 pub fn set_grid_fit_type<'gc>(
@@ -762,20 +764,11 @@ pub fn set_grid_fit_type<'gc>(
     let new_type = value.coerce_to_string(activation)?;
 
     if &new_type == b"pixel" {
-        this.set_render_settings(
-            activation.context.gc_context,
-            old_settings.with_grid_fit(swf::TextGridFit::Pixel),
-        );
+        this.set_render_settings(old_settings.with_grid_fit(swf::TextGridFit::Pixel));
     } else if &new_type == b"subpixel" {
-        this.set_render_settings(
-            activation.context.gc_context,
-            old_settings.with_grid_fit(swf::TextGridFit::SubPixel),
-        );
+        this.set_render_settings(old_settings.with_grid_fit(swf::TextGridFit::SubPixel));
     } else if &new_type == b"none" {
-        this.set_render_settings(
-            activation.context.gc_context,
-            old_settings.with_grid_fit(swf::TextGridFit::None),
-        );
+        this.set_render_settings(old_settings.with_grid_fit(swf::TextGridFit::None));
     } // NOTE: In AS2 invalid values do nothing.
 
     Ok(())
@@ -796,10 +789,7 @@ pub fn set_thickness<'gc>(
     let old_settings = this.render_settings();
     let new_thickness = value.coerce_to_f64(activation)?;
 
-    this.set_render_settings(
-        activation.context.gc_context,
-        old_settings.with_thickness(new_thickness as f32),
-    );
+    this.set_render_settings(old_settings.with_thickness(new_thickness as f32));
 
     Ok(())
 }
@@ -819,10 +809,7 @@ pub fn set_sharpness<'gc>(
     let old_settings = this.render_settings();
     let new_sharpness = value.coerce_to_f64(activation)?;
 
-    this.set_render_settings(
-        activation.context.gc_context,
-        old_settings.with_sharpness(new_sharpness as f32),
-    );
+    this.set_render_settings(old_settings.with_sharpness(new_sharpness as f32));
 
     Ok(())
 }
@@ -831,14 +818,13 @@ fn filters<'gc>(
     this: EditText<'gc>,
     activation: &mut Activation<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
-    Ok(ArrayObject::new(
-        activation.context.gc_context,
-        activation.context.avm1.prototypes().array,
-        this.filters()
-            .into_iter()
-            .map(|filter| bitmap_filter::filter_to_avm1(activation, filter)),
-    )
-    .into())
+    Ok(ArrayBuilder::new(activation)
+        .with(
+            this.filters()
+                .iter()
+                .map(|filter| bitmap_filter::filter_to_avm1(activation, filter.clone())),
+        )
+        .into())
 }
 
 fn set_filters<'gc>(
@@ -850,14 +836,12 @@ fn set_filters<'gc>(
     if let Value::Object(value) = value {
         for index in value.get_keys(activation, false).into_iter().rev() {
             let filter_object = value.get(index, activation)?.coerce_to_object(activation);
-            if let Some(filter) =
-                bitmap_filter::avm1_to_filter(filter_object, &mut activation.context)
-            {
+            if let Some(filter) = bitmap_filter::avm1_to_filter(filter_object, activation.context) {
                 filters.push(filter);
             }
         }
     }
-    this.set_filters(activation.context.gc_context, filters);
+    this.set_filters(filters.into_boxed_slice());
     Ok(())
 }
 
@@ -866,7 +850,7 @@ fn restrict<'gc>(
     activation: &mut Activation<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     match this.restrict() {
-        Some(value) => Ok(AvmString::new(activation.context.gc_context, value).into()),
+        Some(value) => Ok(AvmString::new(activation.gc(), value).into()),
         None => Ok(Value::Null),
     }
 }
@@ -878,18 +862,90 @@ fn set_restrict<'gc>(
 ) -> Result<(), Error<'gc>> {
     match value {
         Value::Undefined | Value::Null => {
-            this.set_restrict(None, &mut activation.context);
+            this.set_restrict(None);
         }
         _ => {
             let text = value.coerce_to_string(activation)?;
             if text.is_empty() {
                 // According to docs, an empty string means that you cannot enter any character,
                 // but according to reality, an empty string is equivalent to null in AVM1.
-                this.set_restrict(None, &mut activation.context);
+                this.set_restrict(None);
             } else {
-                this.set_restrict(Some(&text), &mut activation.context);
+                this.set_restrict(Some(&text));
             }
         }
     };
+    Ok(())
+}
+
+pub fn tab_index<'gc>(
+    this: EditText<'gc>,
+    _activation: &mut Activation<'_, 'gc>,
+) -> Result<Value<'gc>, Error<'gc>> {
+    if let Some(index) = this.as_interactive().and_then(|this| this.tab_index()) {
+        Ok(Value::Number(index as u32 as f64))
+    } else {
+        Ok(Value::Undefined)
+    }
+}
+
+pub fn set_tab_index<'gc>(
+    this: EditText<'gc>,
+    activation: &mut Activation<'_, 'gc>,
+    value: Value<'gc>,
+) -> Result<(), Error<'gc>> {
+    if let Some(this) = this.as_interactive() {
+        let value = match value {
+            Value::Undefined | Value::Null => None,
+            _ => {
+                // `tabIndex` is u32 in TextField, compared to i32 in Button and MovieClip,
+                // but that is only a data representation difference,
+                // as both are interpreted as i32.
+                let u32_value = value.coerce_to_u32(activation)?;
+                Some(u32_value as i32)
+            }
+        };
+        this.set_tab_index(value);
+    }
+    Ok(())
+}
+
+pub fn condense_white<'gc>(
+    this: EditText<'gc>,
+    _activation: &mut Activation<'_, 'gc>,
+) -> Result<Value<'gc>, Error<'gc>> {
+    Ok(this.condense_white().into())
+}
+
+pub fn set_condense_white<'gc>(
+    this: EditText<'gc>,
+    activation: &mut Activation<'_, 'gc>,
+    value: Value<'gc>,
+) -> Result<(), Error<'gc>> {
+    let condense_white = value.as_bool(activation.swf_version());
+    this.set_condense_white(condense_white);
+    Ok(())
+}
+
+pub fn style_sheet<'gc>(
+    this: EditText<'gc>,
+    _activation: &mut Activation<'_, 'gc>,
+) -> Result<Value<'gc>, Error<'gc>> {
+    Ok(match this.style_sheet_avm1() {
+        Some(style_sheet) => Value::Object(style_sheet),
+        None => Value::Undefined,
+    })
+}
+
+pub fn set_style_sheet<'gc>(
+    this: EditText<'gc>,
+    activation: &mut Activation<'_, 'gc>,
+    value: Value<'gc>,
+) -> Result<(), Error<'gc>> {
+    let style_sheet = match value {
+        Value::Object(object) => Some(object),
+        _ => None,
+    };
+    this.set_style_sheet_avm1(activation.context, style_sheet);
     Ok(())
 }

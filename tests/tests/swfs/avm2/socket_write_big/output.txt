@@ -9,6 +9,7 @@ writeMultiByte()
 writeShort()
 writeUnsignedInt()
 writeUTF()
+Cannot write string over 65536 bytes, error #2006
 writeUTFBytes()
 flush()
 close()

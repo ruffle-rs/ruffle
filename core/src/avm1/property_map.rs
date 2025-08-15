@@ -6,6 +6,7 @@
 
 use crate::string::{utils as string_utils, AvmString, WStr};
 use fnv::FnvBuildHasher;
+use gc_arena::collect::Trace;
 use gc_arena::Collect;
 use indexmap::{Equivalent, IndexMap};
 use std::hash::{Hash, Hasher};
@@ -108,11 +109,11 @@ impl<'gc, V> PropertyMap<'gc, V> {
     }
 }
 
-unsafe impl<'gc, V: Collect> Collect for PropertyMap<'gc, V> {
-    fn trace(&self, cc: &gc_arena::Collection) {
+unsafe impl<'gc, V: Collect<'gc>> Collect<'gc> for PropertyMap<'gc, V> {
+    fn trace<C: Trace<'gc>>(&self, cc: &mut C) {
         for (key, value) in &self.0 {
-            key.0.trace(cc);
-            value.trace(cc);
+            cc.trace(key);
+            cc.trace(value);
         }
     }
 }
@@ -127,7 +128,7 @@ pub struct OccupiedEntry<'gc, 'a, V> {
     index: usize,
 }
 
-impl<'gc, 'a, V> OccupiedEntry<'gc, 'a, V> {
+impl<'gc, V> OccupiedEntry<'gc, '_, V> {
     pub fn remove_entry(&mut self) -> (AvmString<'gc>, V) {
         let (k, v) = self.map.shift_remove_index(self.index).unwrap();
         (k.0, v)
@@ -151,7 +152,7 @@ pub struct VacantEntry<'gc, 'a, V> {
     key: AvmString<'gc>,
 }
 
-impl<'gc, 'a, V> VacantEntry<'gc, 'a, V> {
+impl<V> VacantEntry<'_, '_, V> {
     pub fn insert(self, value: V) {
         self.map.insert(PropertyName(self.key), value);
     }
@@ -160,13 +161,13 @@ impl<'gc, 'a, V> VacantEntry<'gc, 'a, V> {
 /// Wraps a str-like type, causing the hash map to use a case insensitive hash and equality.
 struct CaseInsensitive<T>(T);
 
-impl<'a> Hash for CaseInsensitive<&'a WStr> {
+impl Hash for CaseInsensitive<&WStr> {
     fn hash<H: Hasher>(&self, state: &mut H) {
         swf_hash_string_ignore_case(self.0, state);
     }
 }
 
-impl<'gc, 'a> Equivalent<PropertyName<'gc>> for CaseInsensitive<&'a WStr> {
+impl<'gc> Equivalent<PropertyName<'gc>> for CaseInsensitive<&WStr> {
     fn equivalent(&self, key: &PropertyName<'gc>) -> bool {
         key.0.eq_ignore_case(self.0)
     }
@@ -176,13 +177,13 @@ impl<'gc, 'a> Equivalent<PropertyName<'gc>> for CaseInsensitive<&'a WStr> {
 /// but case sensitive equality.
 struct CaseSensitive<T>(T);
 
-impl<'a> Hash for CaseSensitive<&'a WStr> {
+impl Hash for CaseSensitive<&WStr> {
     fn hash<H: Hasher>(&self, state: &mut H) {
         swf_hash_string_ignore_case(self.0, state);
     }
 }
 
-impl<'gc, 'a> Equivalent<PropertyName<'gc>> for CaseSensitive<&'a WStr> {
+impl<'gc> Equivalent<PropertyName<'gc>> for CaseSensitive<&WStr> {
     fn equivalent(&self, key: &PropertyName<'gc>) -> bool {
         key.0 == self.0
     }
@@ -194,11 +195,10 @@ impl<'gc, 'a> Equivalent<PropertyName<'gc>> for CaseSensitive<&'a WStr> {
 /// impls above, which allow it to be either case-sensitive or insensitive.
 /// Note that the property of if key1 == key2 -> hash(key1) == hash(key2) still holds.
 #[derive(Debug, Clone, PartialEq, Eq, Collect)]
-#[collect(require_static)]
+#[collect(no_drop)]
 struct PropertyName<'gc>(AvmString<'gc>);
 
-#[allow(clippy::derive_hash_xor_eq)]
-impl<'gc> Hash for PropertyName<'gc> {
+impl Hash for PropertyName<'_> {
     fn hash<H: Hasher>(&self, state: &mut H) {
         swf_hash_string_ignore_case(self.0.as_ref(), state);
     }

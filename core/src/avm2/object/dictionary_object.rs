@@ -3,13 +3,13 @@
 use crate::avm2::activation::Activation;
 use crate::avm2::dynamic_map::DynamicKey;
 use crate::avm2::object::script_object::ScriptObjectData;
-use crate::avm2::object::{ClassObject, Object, ObjectPtr, TObject};
+use crate::avm2::object::{ClassObject, Object, TObject};
 use crate::avm2::value::Value;
 use crate::avm2::Error;
 use crate::string::AvmString;
+use crate::utils::HasPrefixField;
 use core::fmt;
-use gc_arena::{Collect, GcCell, GcWeakCell, Mutation};
-use std::cell::{Ref, RefMut};
+use gc_arena::{Collect, Gc, GcWeak, Mutation};
 
 /// A class instance allocator that allocates Dictionary objects.
 pub fn dictionary_allocator<'gc>(
@@ -18,11 +18,7 @@ pub fn dictionary_allocator<'gc>(
 ) -> Result<Object<'gc>, Error<'gc>> {
     let base = ScriptObjectData::new(class);
 
-    Ok(DictionaryObject(GcCell::new(
-        activation.context.gc_context,
-        DictionaryObjectData { base },
-    ))
-    .into())
+    Ok(DictionaryObject(Gc::new(activation.gc(), DictionaryObjectData { base })).into())
 }
 
 /// An object that allows associations between objects and values.
@@ -32,22 +28,23 @@ pub fn dictionary_allocator<'gc>(
 /// keys are objects instead of strings.
 #[derive(Clone, Collect, Copy)]
 #[collect(no_drop)]
-pub struct DictionaryObject<'gc>(pub GcCell<'gc, DictionaryObjectData<'gc>>);
+pub struct DictionaryObject<'gc>(pub Gc<'gc, DictionaryObjectData<'gc>>);
 
 #[derive(Clone, Collect, Copy, Debug)]
 #[collect(no_drop)]
-pub struct DictionaryObjectWeak<'gc>(pub GcWeakCell<'gc, DictionaryObjectData<'gc>>);
+pub struct DictionaryObjectWeak<'gc>(pub GcWeak<'gc, DictionaryObjectData<'gc>>);
 
 impl fmt::Debug for DictionaryObject<'_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct("DictionaryObject")
-            .field("ptr", &self.0.as_ptr())
+            .field("ptr", &Gc::as_ptr(self.0))
             .finish()
     }
 }
 
-#[derive(Clone, Collect)]
+#[derive(Clone, Collect, HasPrefixField)]
 #[collect(no_drop)]
+#[repr(C, align(8))]
 pub struct DictionaryObjectData<'gc> {
     /// Base script object
     base: ScriptObjectData<'gc>,
@@ -56,10 +53,8 @@ pub struct DictionaryObjectData<'gc> {
 impl<'gc> DictionaryObject<'gc> {
     /// Retrieve a value in the dictionary's object space.
     pub fn get_property_by_object(self, name: Object<'gc>) -> Value<'gc> {
-        self.0
-            .read()
-            .base
-            .values
+        self.base()
+            .values()
             .as_hashmap()
             .get(&DynamicKey::Object(name))
             .cloned()
@@ -69,27 +64,19 @@ impl<'gc> DictionaryObject<'gc> {
 
     /// Set a value in the dictionary's object space.
     pub fn set_property_by_object(self, name: Object<'gc>, value: Value<'gc>, mc: &Mutation<'gc>) {
-        self.0
-            .write(mc)
-            .base
-            .values
+        self.base()
+            .values_mut(mc)
             .insert(DynamicKey::Object(name), value);
     }
 
     /// Delete a value from the dictionary's object space.
     pub fn delete_property_by_object(self, name: Object<'gc>, mc: &Mutation<'gc>) {
-        self.0
-            .write(mc)
-            .base
-            .values
-            .remove(&DynamicKey::Object(name));
+        self.base().values_mut(mc).remove(&DynamicKey::Object(name));
     }
 
     pub fn has_property_by_object(self, name: Object<'gc>) -> bool {
-        self.0
-            .read()
-            .base
-            .values
+        self.base()
+            .values()
             .as_hashmap()
             .get(&DynamicKey::Object(name))
             .is_some()
@@ -97,24 +84,8 @@ impl<'gc> DictionaryObject<'gc> {
 }
 
 impl<'gc> TObject<'gc> for DictionaryObject<'gc> {
-    fn base(&self) -> Ref<ScriptObjectData<'gc>> {
-        Ref::map(self.0.read(), |read| &read.base)
-    }
-
-    fn base_mut(&self, mc: &Mutation<'gc>) -> RefMut<ScriptObjectData<'gc>> {
-        RefMut::map(self.0.write(mc), |write| &mut write.base)
-    }
-
-    fn as_ptr(&self) -> *const ObjectPtr {
-        self.0.as_ptr() as *const ObjectPtr
-    }
-
-    fn value_of(&self, _mc: &Mutation<'gc>) -> Result<Value<'gc>, Error<'gc>> {
-        Ok(Object::from(*self).into())
-    }
-
-    fn as_dictionary_object(self) -> Option<DictionaryObject<'gc>> {
-        Some(self)
+    fn gc_base(&self) -> Gc<'gc, ScriptObjectData<'gc>> {
+        HasPrefixField::as_prefix_gc(self.0)
     }
 
     // Calling `setPropertyIsEnumerable` on a `Dictionary` has no effect -
@@ -130,13 +101,11 @@ impl<'gc> TObject<'gc> for DictionaryObject<'gc> {
     fn get_enumerant_value(
         self,
         index: u32,
-        activation: &mut Activation<'_, 'gc>,
+        _activation: &mut Activation<'_, 'gc>,
     ) -> Result<Value<'gc>, Error<'gc>> {
         Ok(*self
-            .0
-            .write(activation.context.gc_context)
-            .base
-            .values
+            .base()
+            .values()
             .value_at(index as usize)
             .unwrap_or(&Value::Undefined))
     }

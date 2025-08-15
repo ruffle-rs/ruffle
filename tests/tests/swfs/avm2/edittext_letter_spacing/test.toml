@@ -2,4 +2,4 @@ num_frames = 1
 
 [approximations]
 # TODO: Discrepancy in wrapping in letterSpacing = 0.1 test.
-epsilon = 15.0
+epsilon = 12.0

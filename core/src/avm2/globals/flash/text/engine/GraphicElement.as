@@ -6,6 +6,7 @@ package flash.text.engine {
     import __ruffle__.stub_getter;
     import __ruffle__.stub_setter;
 
+    [API("662")]
     public final class GraphicElement extends ContentElement {
         public function GraphicElement(graphic:DisplayObject = null, elementWidth:Number = 15.0, elementHeight:Number = 15.0, elementFormat:ElementFormat = null, eventMirror:EventDispatcher = null, textRotation:String = "rotate0") {
             stub_constructor("flash.text.engine.GraphicElement");

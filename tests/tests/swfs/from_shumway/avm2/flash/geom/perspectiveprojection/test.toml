@@ -1,0 +1,8 @@
+num_ticks = 1
+
+[approximations]
+number_patterns = [
+# Both FP 32,0,0,465 (for Linux) and FP 32 (for Windows) produced slightly different numbers in some environment. However, the original trace from mozilla/shumway is respected in the output file.
+    'focalLength: ([0-9.]+)'
+]
+max_relative = 0.0000001

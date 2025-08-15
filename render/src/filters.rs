@@ -1,9 +1,7 @@
-use crate::{
-    bitmap::BitmapHandle,
-    pixel_bender::{PixelBenderShaderArgument, PixelBenderShaderHandle},
-};
-use downcast_rs::{impl_downcast, Downcast};
-use std::fmt::Debug;
+use crate::bitmap::BitmapHandle;
+use crate::pixel_bender::PixelBenderShaderHandle;
+use crate::pixel_bender_support::PixelBenderShaderArgument;
+use std::{any::Any, fmt::Debug};
 use swf::{Color, Rectangle, Twips};
 
 #[derive(Debug, Clone, PartialEq)]
@@ -35,7 +33,7 @@ pub struct ShaderFilter<'a> {
     pub shader_args: Vec<PixelBenderShaderArgument<'a>>,
 }
 
-impl<'gc> PartialEq for ShaderFilter<'gc> {
+impl PartialEq for ShaderFilter<'_> {
     fn eq(&self, other: &Self) -> bool {
         self.bottom_extension == other.bottom_extension
             && self.left_extension == other.left_extension
@@ -47,12 +45,11 @@ impl<'gc> PartialEq for ShaderFilter<'gc> {
     }
 }
 
-pub trait ShaderObject: Downcast + Debug {
+pub trait ShaderObject: Any + Debug {
     fn clone_box(&self) -> Box<dyn ShaderObject>;
 
     fn equals(&self, other: &dyn ShaderObject) -> bool;
 }
-impl_downcast!(ShaderObject);
 
 impl Clone for Box<dyn ShaderObject> {
     fn clone(&self) -> Self {
@@ -138,15 +135,16 @@ pub enum DisplacementMapFilterComponent {
     Red,
 }
 
-#[derive(Debug, Clone, Copy, Eq, PartialEq)]
+#[derive(Debug, Clone, Copy, Default, Eq, PartialEq)]
 pub enum DisplacementMapFilterMode {
     Clamp,
     Color,
     Ignore,
+    #[default]
     Wrap,
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Clone, Debug, Default, PartialEq)]
 pub struct DisplacementMapFilter {
     pub color: Color,
     pub component_x: u8,
@@ -182,22 +180,5 @@ impl DisplacementMapFilter {
         // } else {
         //     source_rect
         // }
-    }
-}
-
-impl Default for DisplacementMapFilter {
-    fn default() -> Self {
-        Self {
-            color: Color::from_rgba(0),
-            component_x: 0,
-            component_y: 0,
-            map_bitmap: None,
-            map_point: (0, 0),
-            mode: DisplacementMapFilterMode::Wrap,
-            scale_x: 0.0,
-            scale_y: 0.0,
-            viewscale_x: 1.0,
-            viewscale_y: 1.0,
-        }
     }
 }

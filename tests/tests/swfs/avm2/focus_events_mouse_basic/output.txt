@@ -1,0 +1,260 @@
+  null, null: [MouseEvent type="mouseDown" cancelable=false eventPhase=2 relatedObject=null ctrlKey=false altKey=false shiftKey=false], focus: null
+  null, null: [MouseEvent type="mouseUp" cancelable=false eventPhase=2 relatedObject=null ctrlKey=false altKey=false shiftKey=false], focus: null
+  null, null: [MouseEvent type="click" cancelable=false eventPhase=2 relatedObject=null ctrlKey=false altKey=false shiftKey=false], focus: null
+Escape pressed
+  sprite1, sprite1: [MouseEvent type="rollOver" cancelable=false eventPhase=2 relatedObject=null ctrlKey=false altKey=false shiftKey=false], focus: null
+  sprite1, sprite1: [MouseEvent type="mouseOver" cancelable=false eventPhase=2 relatedObject=null ctrlKey=false altKey=false shiftKey=false], focus: null
+  null, sprite1: [MouseEvent type="mouseOver" cancelable=false eventPhase=3 relatedObject=null ctrlKey=false altKey=false shiftKey=false], focus: null
+  null, null: [FocusEvent type="mouseFocusChange" bubbles=true cancelable=true eventPhase=2 relatedObject=[object Sprite] shiftKey=false keyCode=0], focus: null
+  sprite1, sprite1: [FocusEvent type="focusIn" bubbles=true cancelable=false eventPhase=2 relatedObject=null shiftKey=false keyCode=0], focus: [object Sprite] (sprite1)
+  null, sprite1: [FocusEvent type="focusIn" bubbles=true cancelable=false eventPhase=3 relatedObject=null shiftKey=false keyCode=0], focus: [object Sprite] (sprite1)
+  sprite1, sprite1: [MouseEvent type="mouseDown" cancelable=false eventPhase=2 relatedObject=null ctrlKey=false altKey=false shiftKey=false], focus: [object Sprite] (sprite1)
+  null, sprite1: [MouseEvent type="mouseDown" cancelable=false eventPhase=3 relatedObject=null ctrlKey=false altKey=false shiftKey=false], focus: [object Sprite] (sprite1)
+  sprite1, sprite1: [MouseEvent type="mouseUp" cancelable=false eventPhase=2 relatedObject=null ctrlKey=false altKey=false shiftKey=false], focus: [object Sprite] (sprite1)
+  null, sprite1: [MouseEvent type="mouseUp" cancelable=false eventPhase=3 relatedObject=null ctrlKey=false altKey=false shiftKey=false], focus: [object Sprite] (sprite1)
+  sprite1, sprite1: [MouseEvent type="click" cancelable=false eventPhase=2 relatedObject=null ctrlKey=false altKey=false shiftKey=false], focus: [object Sprite] (sprite1)
+  null, sprite1: [MouseEvent type="click" cancelable=false eventPhase=3 relatedObject=null ctrlKey=false altKey=false shiftKey=false], focus: [object Sprite] (sprite1)
+Escape pressed
+  sprite1, sprite1: [MouseEvent type="rollOut" cancelable=false eventPhase=2 relatedObject=null ctrlKey=false altKey=false shiftKey=false], focus: [object Sprite] (sprite1)
+  sprite1, sprite1: [FocusEvent type="mouseFocusChange" bubbles=true cancelable=true eventPhase=2 relatedObject=null shiftKey=false keyCode=0], focus: [object Sprite] (sprite1)
+  null, sprite1: [FocusEvent type="mouseFocusChange" bubbles=true cancelable=true eventPhase=3 relatedObject=null shiftKey=false keyCode=0], focus: [object Sprite] (sprite1)
+  sprite1, sprite1: [FocusEvent type="focusOut" bubbles=true cancelable=false eventPhase=2 relatedObject=null shiftKey=false keyCode=0], focus: null
+  null, sprite1: [FocusEvent type="focusOut" bubbles=true cancelable=false eventPhase=3 relatedObject=null shiftKey=false keyCode=0], focus: null
+  null, null: [MouseEvent type="mouseDown" cancelable=false eventPhase=2 relatedObject=null ctrlKey=false altKey=false shiftKey=false], focus: null
+  null, null: [MouseEvent type="mouseUp" cancelable=false eventPhase=2 relatedObject=null ctrlKey=false altKey=false shiftKey=false], focus: null
+  null, null: [MouseEvent type="click" cancelable=false eventPhase=2 relatedObject=null ctrlKey=false altKey=false shiftKey=false], focus: null
+Escape pressed
+  sprite2, sprite2: [MouseEvent type="rollOver" cancelable=false eventPhase=2 relatedObject=null ctrlKey=false altKey=false shiftKey=false], focus: null
+  sprite2, sprite2: [MouseEvent type="mouseOver" cancelable=false eventPhase=2 relatedObject=null ctrlKey=false altKey=false shiftKey=false], focus: null
+  null, sprite2: [MouseEvent type="mouseOver" cancelable=false eventPhase=3 relatedObject=null ctrlKey=false altKey=false shiftKey=false], focus: null
+  null, null: [FocusEvent type="mouseFocusChange" bubbles=true cancelable=true eventPhase=2 relatedObject=[object Sprite] shiftKey=false keyCode=0], focus: null
+  sprite2, sprite2: [MouseEvent type="mouseDown" cancelable=false eventPhase=2 relatedObject=null ctrlKey=false altKey=false shiftKey=false], focus: null
+  null, sprite2: [MouseEvent type="mouseDown" cancelable=false eventPhase=3 relatedObject=null ctrlKey=false altKey=false shiftKey=false], focus: null
+  sprite2, sprite2: [MouseEvent type="mouseUp" cancelable=false eventPhase=2 relatedObject=null ctrlKey=false altKey=false shiftKey=false], focus: null
+  null, sprite2: [MouseEvent type="mouseUp" cancelable=false eventPhase=3 relatedObject=null ctrlKey=false altKey=false shiftKey=false], focus: null
+  sprite2, sprite2: [MouseEvent type="click" cancelable=false eventPhase=2 relatedObject=null ctrlKey=false altKey=false shiftKey=false], focus: null
+  null, sprite2: [MouseEvent type="click" cancelable=false eventPhase=3 relatedObject=null ctrlKey=false altKey=false shiftKey=false], focus: null
+Escape pressed
+  sprite2, sprite2: [MouseEvent type="rollOut" cancelable=false eventPhase=2 relatedObject=null ctrlKey=false altKey=false shiftKey=false], focus: null
+  null, null: [MouseEvent type="mouseDown" cancelable=false eventPhase=2 relatedObject=null ctrlKey=false altKey=false shiftKey=false], focus: null
+  null, null: [MouseEvent type="mouseUp" cancelable=false eventPhase=2 relatedObject=null ctrlKey=false altKey=false shiftKey=false], focus: null
+  null, null: [MouseEvent type="click" cancelable=false eventPhase=2 relatedObject=null ctrlKey=false altKey=false shiftKey=false], focus: null
+Escape pressed
+  mc1, mc1: [MouseEvent type="rollOver" cancelable=false eventPhase=2 relatedObject=null ctrlKey=false altKey=false shiftKey=false], focus: null
+  mc1, mc1: [MouseEvent type="mouseOver" cancelable=false eventPhase=2 relatedObject=null ctrlKey=false altKey=false shiftKey=false], focus: null
+  null, mc1: [MouseEvent type="mouseOver" cancelable=false eventPhase=3 relatedObject=null ctrlKey=false altKey=false shiftKey=false], focus: null
+  null, null: [FocusEvent type="mouseFocusChange" bubbles=true cancelable=true eventPhase=2 relatedObject=[object MovieClip] shiftKey=false keyCode=0], focus: null
+  mc1, mc1: [MouseEvent type="mouseDown" cancelable=false eventPhase=2 relatedObject=null ctrlKey=false altKey=false shiftKey=false], focus: null
+  null, mc1: [MouseEvent type="mouseDown" cancelable=false eventPhase=3 relatedObject=null ctrlKey=false altKey=false shiftKey=false], focus: null
+  mc1, mc1: [MouseEvent type="mouseUp" cancelable=false eventPhase=2 relatedObject=null ctrlKey=false altKey=false shiftKey=false], focus: null
+  null, mc1: [MouseEvent type="mouseUp" cancelable=false eventPhase=3 relatedObject=null ctrlKey=false altKey=false shiftKey=false], focus: null
+  mc1, mc1: [MouseEvent type="click" cancelable=false eventPhase=2 relatedObject=null ctrlKey=false altKey=false shiftKey=false], focus: null
+  null, mc1: [MouseEvent type="click" cancelable=false eventPhase=3 relatedObject=null ctrlKey=false altKey=false shiftKey=false], focus: null
+Escape pressed
+  mc1, mc1: [MouseEvent type="rollOut" cancelable=false eventPhase=2 relatedObject=null ctrlKey=false altKey=false shiftKey=false], focus: null
+  null, null: [MouseEvent type="mouseDown" cancelable=false eventPhase=2 relatedObject=null ctrlKey=false altKey=false shiftKey=false], focus: null
+  null, null: [MouseEvent type="mouseUp" cancelable=false eventPhase=2 relatedObject=null ctrlKey=false altKey=false shiftKey=false], focus: null
+  null, null: [MouseEvent type="click" cancelable=false eventPhase=2 relatedObject=null ctrlKey=false altKey=false shiftKey=false], focus: null
+Escape pressed
+  mc2, mc2: [MouseEvent type="rollOver" cancelable=false eventPhase=2 relatedObject=null ctrlKey=false altKey=false shiftKey=false], focus: null
+  mc2, mc2: [MouseEvent type="mouseOver" cancelable=false eventPhase=2 relatedObject=null ctrlKey=false altKey=false shiftKey=false], focus: null
+  null, mc2: [MouseEvent type="mouseOver" cancelable=false eventPhase=3 relatedObject=null ctrlKey=false altKey=false shiftKey=false], focus: null
+  null, null: [FocusEvent type="mouseFocusChange" bubbles=true cancelable=true eventPhase=2 relatedObject=[object MovieClip] shiftKey=false keyCode=0], focus: null
+  mc2, mc2: [FocusEvent type="focusIn" bubbles=true cancelable=false eventPhase=2 relatedObject=null shiftKey=false keyCode=0], focus: [object MovieClip] (mc2)
+  null, mc2: [FocusEvent type="focusIn" bubbles=true cancelable=false eventPhase=3 relatedObject=null shiftKey=false keyCode=0], focus: [object MovieClip] (mc2)
+  mc2, mc2: [MouseEvent type="mouseDown" cancelable=false eventPhase=2 relatedObject=null ctrlKey=false altKey=false shiftKey=false], focus: [object MovieClip] (mc2)
+  null, mc2: [MouseEvent type="mouseDown" cancelable=false eventPhase=3 relatedObject=null ctrlKey=false altKey=false shiftKey=false], focus: [object MovieClip] (mc2)
+  mc2, mc2: [MouseEvent type="mouseUp" cancelable=false eventPhase=2 relatedObject=null ctrlKey=false altKey=false shiftKey=false], focus: [object MovieClip] (mc2)
+  null, mc2: [MouseEvent type="mouseUp" cancelable=false eventPhase=3 relatedObject=null ctrlKey=false altKey=false shiftKey=false], focus: [object MovieClip] (mc2)
+  mc2, mc2: [MouseEvent type="click" cancelable=false eventPhase=2 relatedObject=null ctrlKey=false altKey=false shiftKey=false], focus: [object MovieClip] (mc2)
+  null, mc2: [MouseEvent type="click" cancelable=false eventPhase=3 relatedObject=null ctrlKey=false altKey=false shiftKey=false], focus: [object MovieClip] (mc2)
+Escape pressed
+  mc2, mc2: [MouseEvent type="rollOut" cancelable=false eventPhase=2 relatedObject=null ctrlKey=false altKey=false shiftKey=false], focus: [object MovieClip] (mc2)
+  mc2, mc2: [FocusEvent type="mouseFocusChange" bubbles=true cancelable=true eventPhase=2 relatedObject=null shiftKey=false keyCode=0], focus: [object MovieClip] (mc2)
+  null, mc2: [FocusEvent type="mouseFocusChange" bubbles=true cancelable=true eventPhase=3 relatedObject=null shiftKey=false keyCode=0], focus: [object MovieClip] (mc2)
+  mc2, mc2: [FocusEvent type="focusOut" bubbles=true cancelable=false eventPhase=2 relatedObject=null shiftKey=false keyCode=0], focus: null
+  null, mc2: [FocusEvent type="focusOut" bubbles=true cancelable=false eventPhase=3 relatedObject=null shiftKey=false keyCode=0], focus: null
+  null, null: [MouseEvent type="mouseDown" cancelable=false eventPhase=2 relatedObject=null ctrlKey=false altKey=false shiftKey=false], focus: null
+  null, null: [MouseEvent type="mouseUp" cancelable=false eventPhase=2 relatedObject=null ctrlKey=false altKey=false shiftKey=false], focus: null
+  null, null: [MouseEvent type="click" cancelable=false eventPhase=2 relatedObject=null ctrlKey=false altKey=false shiftKey=false], focus: null
+Escape pressed
+  textA, textA: [MouseEvent type="rollOver" cancelable=false eventPhase=2 relatedObject=null ctrlKey=false altKey=false shiftKey=false], focus: null
+  textA, textA: [MouseEvent type="mouseOver" cancelable=false eventPhase=2 relatedObject=null ctrlKey=false altKey=false shiftKey=false], focus: null
+  null, textA: [MouseEvent type="mouseOver" cancelable=false eventPhase=3 relatedObject=null ctrlKey=false altKey=false shiftKey=false], focus: null
+  null, null: [FocusEvent type="mouseFocusChange" bubbles=true cancelable=true eventPhase=2 relatedObject=[object TextField] shiftKey=false keyCode=0], focus: null
+  textA, textA: [FocusEvent type="focusIn" bubbles=true cancelable=false eventPhase=2 relatedObject=null shiftKey=false keyCode=0], focus: [object TextField] (textA)
+  null, textA: [FocusEvent type="focusIn" bubbles=true cancelable=false eventPhase=3 relatedObject=null shiftKey=false keyCode=0], focus: [object TextField] (textA)
+  textA, textA: [MouseEvent type="mouseDown" cancelable=false eventPhase=2 relatedObject=null ctrlKey=false altKey=false shiftKey=false], focus: [object TextField] (textA)
+  null, textA: [MouseEvent type="mouseDown" cancelable=false eventPhase=3 relatedObject=null ctrlKey=false altKey=false shiftKey=false], focus: [object TextField] (textA)
+  textA, textA: [MouseEvent type="mouseUp" cancelable=false eventPhase=2 relatedObject=null ctrlKey=false altKey=false shiftKey=false], focus: [object TextField] (textA)
+  null, textA: [MouseEvent type="mouseUp" cancelable=false eventPhase=3 relatedObject=null ctrlKey=false altKey=false shiftKey=false], focus: [object TextField] (textA)
+  textA, textA: [MouseEvent type="click" cancelable=false eventPhase=2 relatedObject=null ctrlKey=false altKey=false shiftKey=false], focus: [object TextField] (textA)
+  null, textA: [MouseEvent type="click" cancelable=false eventPhase=3 relatedObject=null ctrlKey=false altKey=false shiftKey=false], focus: [object TextField] (textA)
+Escape pressed
+  textA, textA: [MouseEvent type="rollOut" cancelable=false eventPhase=2 relatedObject=null ctrlKey=false altKey=false shiftKey=false], focus: [object TextField] (textA)
+  textA, textA: [FocusEvent type="mouseFocusChange" bubbles=true cancelable=true eventPhase=2 relatedObject=null shiftKey=false keyCode=0], focus: [object TextField] (textA)
+  null, textA: [FocusEvent type="mouseFocusChange" bubbles=true cancelable=true eventPhase=3 relatedObject=null shiftKey=false keyCode=0], focus: [object TextField] (textA)
+  textA, textA: [FocusEvent type="focusOut" bubbles=true cancelable=false eventPhase=2 relatedObject=null shiftKey=false keyCode=0], focus: null
+  null, textA: [FocusEvent type="focusOut" bubbles=true cancelable=false eventPhase=3 relatedObject=null shiftKey=false keyCode=0], focus: null
+  null, null: [MouseEvent type="mouseDown" cancelable=false eventPhase=2 relatedObject=null ctrlKey=false altKey=false shiftKey=false], focus: null
+  null, null: [MouseEvent type="mouseUp" cancelable=false eventPhase=2 relatedObject=null ctrlKey=false altKey=false shiftKey=false], focus: null
+  null, null: [MouseEvent type="click" cancelable=false eventPhase=2 relatedObject=null ctrlKey=false altKey=false shiftKey=false], focus: null
+Escape pressed
+  button1, button1: [MouseEvent type="rollOver" cancelable=false eventPhase=2 relatedObject=null ctrlKey=false altKey=false shiftKey=false], focus: null
+  button1, button1: [MouseEvent type="mouseOver" cancelable=false eventPhase=2 relatedObject=null ctrlKey=false altKey=false shiftKey=false], focus: null
+  null, button1: [MouseEvent type="mouseOver" cancelable=false eventPhase=3 relatedObject=null ctrlKey=false altKey=false shiftKey=false], focus: null
+  null, null: [FocusEvent type="mouseFocusChange" bubbles=true cancelable=true eventPhase=2 relatedObject=[object SimpleButton] shiftKey=false keyCode=0], focus: null
+  button1, button1: [FocusEvent type="focusIn" bubbles=true cancelable=false eventPhase=2 relatedObject=null shiftKey=false keyCode=0], focus: [object SimpleButton] (button1)
+  null, button1: [FocusEvent type="focusIn" bubbles=true cancelable=false eventPhase=3 relatedObject=null shiftKey=false keyCode=0], focus: [object SimpleButton] (button1)
+  button1, button1: [MouseEvent type="mouseDown" cancelable=false eventPhase=2 relatedObject=null ctrlKey=false altKey=false shiftKey=false], focus: [object SimpleButton] (button1)
+  null, button1: [MouseEvent type="mouseDown" cancelable=false eventPhase=3 relatedObject=null ctrlKey=false altKey=false shiftKey=false], focus: [object SimpleButton] (button1)
+  button1, button1: [MouseEvent type="mouseUp" cancelable=false eventPhase=2 relatedObject=null ctrlKey=false altKey=false shiftKey=false], focus: [object SimpleButton] (button1)
+  null, button1: [MouseEvent type="mouseUp" cancelable=false eventPhase=3 relatedObject=null ctrlKey=false altKey=false shiftKey=false], focus: [object SimpleButton] (button1)
+  button1, button1: [MouseEvent type="click" cancelable=false eventPhase=2 relatedObject=null ctrlKey=false altKey=false shiftKey=false], focus: [object SimpleButton] (button1)
+  null, button1: [MouseEvent type="click" cancelable=false eventPhase=3 relatedObject=null ctrlKey=false altKey=false shiftKey=false], focus: [object SimpleButton] (button1)
+Escape pressed
+  button1, button1: [MouseEvent type="rollOut" cancelable=false eventPhase=2 relatedObject=null ctrlKey=false altKey=false shiftKey=false], focus: [object SimpleButton] (button1)
+  button1, button1: [FocusEvent type="mouseFocusChange" bubbles=true cancelable=true eventPhase=2 relatedObject=null shiftKey=false keyCode=0], focus: [object SimpleButton] (button1)
+  null, button1: [FocusEvent type="mouseFocusChange" bubbles=true cancelable=true eventPhase=3 relatedObject=null shiftKey=false keyCode=0], focus: [object SimpleButton] (button1)
+  button1, button1: [FocusEvent type="focusOut" bubbles=true cancelable=false eventPhase=2 relatedObject=null shiftKey=false keyCode=0], focus: null
+  null, button1: [FocusEvent type="focusOut" bubbles=true cancelable=false eventPhase=3 relatedObject=null shiftKey=false keyCode=0], focus: null
+  null, null: [MouseEvent type="mouseDown" cancelable=false eventPhase=2 relatedObject=null ctrlKey=false altKey=false shiftKey=false], focus: null
+  null, null: [MouseEvent type="mouseUp" cancelable=false eventPhase=2 relatedObject=null ctrlKey=false altKey=false shiftKey=false], focus: null
+  null, null: [MouseEvent type="click" cancelable=false eventPhase=2 relatedObject=null ctrlKey=false altKey=false shiftKey=false], focus: null
+Escape pressed
+  button2, button2: [MouseEvent type="rollOver" cancelable=false eventPhase=2 relatedObject=null ctrlKey=false altKey=false shiftKey=false], focus: null
+  button2, button2: [MouseEvent type="mouseOver" cancelable=false eventPhase=2 relatedObject=null ctrlKey=false altKey=false shiftKey=false], focus: null
+  null, button2: [MouseEvent type="mouseOver" cancelable=false eventPhase=3 relatedObject=null ctrlKey=false altKey=false shiftKey=false], focus: null
+  null, null: [FocusEvent type="mouseFocusChange" bubbles=true cancelable=true eventPhase=2 relatedObject=[object SimpleButton] shiftKey=false keyCode=0], focus: null
+  button2, button2: [FocusEvent type="focusIn" bubbles=true cancelable=false eventPhase=2 relatedObject=null shiftKey=false keyCode=0], focus: [object SimpleButton] (button2)
+  null, button2: [FocusEvent type="focusIn" bubbles=true cancelable=false eventPhase=3 relatedObject=null shiftKey=false keyCode=0], focus: [object SimpleButton] (button2)
+  button2, button2: [MouseEvent type="mouseDown" cancelable=false eventPhase=2 relatedObject=null ctrlKey=false altKey=false shiftKey=false], focus: [object SimpleButton] (button2)
+  null, button2: [MouseEvent type="mouseDown" cancelable=false eventPhase=3 relatedObject=null ctrlKey=false altKey=false shiftKey=false], focus: [object SimpleButton] (button2)
+  button2, button2: [MouseEvent type="mouseUp" cancelable=false eventPhase=2 relatedObject=null ctrlKey=false altKey=false shiftKey=false], focus: [object SimpleButton] (button2)
+  null, button2: [MouseEvent type="mouseUp" cancelable=false eventPhase=3 relatedObject=null ctrlKey=false altKey=false shiftKey=false], focus: [object SimpleButton] (button2)
+  button2, button2: [MouseEvent type="click" cancelable=false eventPhase=2 relatedObject=null ctrlKey=false altKey=false shiftKey=false], focus: [object SimpleButton] (button2)
+  null, button2: [MouseEvent type="click" cancelable=false eventPhase=3 relatedObject=null ctrlKey=false altKey=false shiftKey=false], focus: [object SimpleButton] (button2)
+Escape pressed
+  button2, button2: [MouseEvent type="rollOut" cancelable=false eventPhase=2 relatedObject=null ctrlKey=false altKey=false shiftKey=false], focus: [object SimpleButton] (button2)
+  button2, button2: [FocusEvent type="mouseFocusChange" bubbles=true cancelable=true eventPhase=2 relatedObject=null shiftKey=false keyCode=0], focus: [object SimpleButton] (button2)
+  null, button2: [FocusEvent type="mouseFocusChange" bubbles=true cancelable=true eventPhase=3 relatedObject=null shiftKey=false keyCode=0], focus: [object SimpleButton] (button2)
+  button2, button2: [FocusEvent type="focusOut" bubbles=true cancelable=false eventPhase=2 relatedObject=null shiftKey=false keyCode=0], focus: null
+  null, button2: [FocusEvent type="focusOut" bubbles=true cancelable=false eventPhase=3 relatedObject=null shiftKey=false keyCode=0], focus: null
+  null, null: [MouseEvent type="mouseDown" cancelable=false eventPhase=2 relatedObject=null ctrlKey=false altKey=false shiftKey=false], focus: null
+  null, null: [MouseEvent type="mouseUp" cancelable=false eventPhase=2 relatedObject=null ctrlKey=false altKey=false shiftKey=false], focus: null
+  null, null: [MouseEvent type="click" cancelable=false eventPhase=2 relatedObject=null ctrlKey=false altKey=false shiftKey=false], focus: null
+Escape pressed
+  sprite1, sprite1: [MouseEvent type="rollOver" cancelable=false eventPhase=2 relatedObject=null ctrlKey=false altKey=false shiftKey=false], focus: null
+  sprite1, sprite1: [MouseEvent type="mouseOver" cancelable=false eventPhase=2 relatedObject=null ctrlKey=false altKey=false shiftKey=false], focus: null
+  null, sprite1: [MouseEvent type="mouseOver" cancelable=false eventPhase=3 relatedObject=null ctrlKey=false altKey=false shiftKey=false], focus: null
+  null, null: [FocusEvent type="mouseFocusChange" bubbles=true cancelable=true eventPhase=2 relatedObject=[object Sprite] shiftKey=false keyCode=0], focus: null
+  sprite1, sprite1: [FocusEvent type="focusIn" bubbles=true cancelable=false eventPhase=2 relatedObject=null shiftKey=false keyCode=0], focus: [object Sprite] (sprite1)
+  null, sprite1: [FocusEvent type="focusIn" bubbles=true cancelable=false eventPhase=3 relatedObject=null shiftKey=false keyCode=0], focus: [object Sprite] (sprite1)
+  sprite1, sprite1: [MouseEvent type="mouseDown" cancelable=false eventPhase=2 relatedObject=null ctrlKey=false altKey=false shiftKey=false], focus: [object Sprite] (sprite1)
+  null, sprite1: [MouseEvent type="mouseDown" cancelable=false eventPhase=3 relatedObject=null ctrlKey=false altKey=false shiftKey=false], focus: [object Sprite] (sprite1)
+  sprite1, sprite1: [MouseEvent type="mouseUp" cancelable=false eventPhase=2 relatedObject=null ctrlKey=false altKey=false shiftKey=false], focus: [object Sprite] (sprite1)
+  null, sprite1: [MouseEvent type="mouseUp" cancelable=false eventPhase=3 relatedObject=null ctrlKey=false altKey=false shiftKey=false], focus: [object Sprite] (sprite1)
+  sprite1, sprite1: [MouseEvent type="click" cancelable=false eventPhase=2 relatedObject=null ctrlKey=false altKey=false shiftKey=false], focus: [object Sprite] (sprite1)
+  null, sprite1: [MouseEvent type="click" cancelable=false eventPhase=3 relatedObject=null ctrlKey=false altKey=false shiftKey=false], focus: [object Sprite] (sprite1)
+Escape pressed
+  sprite1, sprite1: [MouseEvent type="rollOut" cancelable=false eventPhase=2 relatedObject=[object Sprite] ctrlKey=false altKey=false shiftKey=false], focus: [object Sprite] (sprite1)
+  sprite2, sprite2: [MouseEvent type="rollOver" cancelable=false eventPhase=2 relatedObject=[object Sprite] ctrlKey=false altKey=false shiftKey=false], focus: [object Sprite] (sprite1)
+  sprite2, sprite2: [MouseEvent type="mouseOver" cancelable=false eventPhase=2 relatedObject=[object Sprite] ctrlKey=false altKey=false shiftKey=false], focus: [object Sprite] (sprite1)
+  null, sprite2: [MouseEvent type="mouseOver" cancelable=false eventPhase=3 relatedObject=[object Sprite] ctrlKey=false altKey=false shiftKey=false], focus: [object Sprite] (sprite1)
+  sprite1, sprite1: [FocusEvent type="mouseFocusChange" bubbles=true cancelable=true eventPhase=2 relatedObject=[object Sprite] shiftKey=false keyCode=0], focus: [object Sprite] (sprite1)
+  null, sprite1: [FocusEvent type="mouseFocusChange" bubbles=true cancelable=true eventPhase=3 relatedObject=[object Sprite] shiftKey=false keyCode=0], focus: [object Sprite] (sprite1)
+  sprite1, sprite1: [FocusEvent type="focusOut" bubbles=true cancelable=false eventPhase=2 relatedObject=null shiftKey=false keyCode=0], focus: null
+  null, sprite1: [FocusEvent type="focusOut" bubbles=true cancelable=false eventPhase=3 relatedObject=null shiftKey=false keyCode=0], focus: null
+  sprite2, sprite2: [MouseEvent type="mouseDown" cancelable=false eventPhase=2 relatedObject=null ctrlKey=false altKey=false shiftKey=false], focus: null
+  null, sprite2: [MouseEvent type="mouseDown" cancelable=false eventPhase=3 relatedObject=null ctrlKey=false altKey=false shiftKey=false], focus: null
+  sprite2, sprite2: [MouseEvent type="mouseUp" cancelable=false eventPhase=2 relatedObject=null ctrlKey=false altKey=false shiftKey=false], focus: null
+  null, sprite2: [MouseEvent type="mouseUp" cancelable=false eventPhase=3 relatedObject=null ctrlKey=false altKey=false shiftKey=false], focus: null
+  sprite2, sprite2: [MouseEvent type="click" cancelable=false eventPhase=2 relatedObject=null ctrlKey=false altKey=false shiftKey=false], focus: null
+  null, sprite2: [MouseEvent type="click" cancelable=false eventPhase=3 relatedObject=null ctrlKey=false altKey=false shiftKey=false], focus: null
+Escape pressed
+  sprite2, sprite2: [MouseEvent type="rollOut" cancelable=false eventPhase=2 relatedObject=[object MovieClip] ctrlKey=false altKey=false shiftKey=false], focus: null
+  mc1, mc1: [MouseEvent type="rollOver" cancelable=false eventPhase=2 relatedObject=[object Sprite] ctrlKey=false altKey=false shiftKey=false], focus: null
+  mc1, mc1: [MouseEvent type="mouseOver" cancelable=false eventPhase=2 relatedObject=[object Sprite] ctrlKey=false altKey=false shiftKey=false], focus: null
+  null, mc1: [MouseEvent type="mouseOver" cancelable=false eventPhase=3 relatedObject=[object Sprite] ctrlKey=false altKey=false shiftKey=false], focus: null
+  null, null: [FocusEvent type="mouseFocusChange" bubbles=true cancelable=true eventPhase=2 relatedObject=[object MovieClip] shiftKey=false keyCode=0], focus: null
+  mc1, mc1: [MouseEvent type="mouseDown" cancelable=false eventPhase=2 relatedObject=null ctrlKey=false altKey=false shiftKey=false], focus: null
+  null, mc1: [MouseEvent type="mouseDown" cancelable=false eventPhase=3 relatedObject=null ctrlKey=false altKey=false shiftKey=false], focus: null
+  mc1, mc1: [MouseEvent type="mouseUp" cancelable=false eventPhase=2 relatedObject=null ctrlKey=false altKey=false shiftKey=false], focus: null
+  null, mc1: [MouseEvent type="mouseUp" cancelable=false eventPhase=3 relatedObject=null ctrlKey=false altKey=false shiftKey=false], focus: null
+  mc1, mc1: [MouseEvent type="click" cancelable=false eventPhase=2 relatedObject=null ctrlKey=false altKey=false shiftKey=false], focus: null
+  null, mc1: [MouseEvent type="click" cancelable=false eventPhase=3 relatedObject=null ctrlKey=false altKey=false shiftKey=false], focus: null
+Escape pressed
+  mc1, mc1: [MouseEvent type="rollOut" cancelable=false eventPhase=2 relatedObject=[object MovieClip] ctrlKey=false altKey=false shiftKey=false], focus: null
+  mc2, mc2: [MouseEvent type="rollOver" cancelable=false eventPhase=2 relatedObject=[object MovieClip] ctrlKey=false altKey=false shiftKey=false], focus: null
+  mc2, mc2: [MouseEvent type="mouseOver" cancelable=false eventPhase=2 relatedObject=[object MovieClip] ctrlKey=false altKey=false shiftKey=false], focus: null
+  null, mc2: [MouseEvent type="mouseOver" cancelable=false eventPhase=3 relatedObject=[object MovieClip] ctrlKey=false altKey=false shiftKey=false], focus: null
+  null, null: [FocusEvent type="mouseFocusChange" bubbles=true cancelable=true eventPhase=2 relatedObject=[object MovieClip] shiftKey=false keyCode=0], focus: null
+  mc2, mc2: [FocusEvent type="focusIn" bubbles=true cancelable=false eventPhase=2 relatedObject=null shiftKey=false keyCode=0], focus: [object MovieClip] (mc2)
+  null, mc2: [FocusEvent type="focusIn" bubbles=true cancelable=false eventPhase=3 relatedObject=null shiftKey=false keyCode=0], focus: [object MovieClip] (mc2)
+  mc2, mc2: [MouseEvent type="mouseDown" cancelable=false eventPhase=2 relatedObject=null ctrlKey=false altKey=false shiftKey=false], focus: [object MovieClip] (mc2)
+  null, mc2: [MouseEvent type="mouseDown" cancelable=false eventPhase=3 relatedObject=null ctrlKey=false altKey=false shiftKey=false], focus: [object MovieClip] (mc2)
+  mc2, mc2: [MouseEvent type="mouseUp" cancelable=false eventPhase=2 relatedObject=null ctrlKey=false altKey=false shiftKey=false], focus: [object MovieClip] (mc2)
+  null, mc2: [MouseEvent type="mouseUp" cancelable=false eventPhase=3 relatedObject=null ctrlKey=false altKey=false shiftKey=false], focus: [object MovieClip] (mc2)
+  mc2, mc2: [MouseEvent type="click" cancelable=false eventPhase=2 relatedObject=null ctrlKey=false altKey=false shiftKey=false], focus: [object MovieClip] (mc2)
+  null, mc2: [MouseEvent type="click" cancelable=false eventPhase=3 relatedObject=null ctrlKey=false altKey=false shiftKey=false], focus: [object MovieClip] (mc2)
+Escape pressed
+  mc2, mc2: [MouseEvent type="rollOut" cancelable=false eventPhase=2 relatedObject=[object TextField] ctrlKey=false altKey=false shiftKey=false], focus: [object MovieClip] (mc2)
+  textA, textA: [MouseEvent type="rollOver" cancelable=false eventPhase=2 relatedObject=[object MovieClip] ctrlKey=false altKey=false shiftKey=false], focus: [object MovieClip] (mc2)
+  textA, textA: [MouseEvent type="mouseOver" cancelable=false eventPhase=2 relatedObject=[object MovieClip] ctrlKey=false altKey=false shiftKey=false], focus: [object MovieClip] (mc2)
+  null, textA: [MouseEvent type="mouseOver" cancelable=false eventPhase=3 relatedObject=[object MovieClip] ctrlKey=false altKey=false shiftKey=false], focus: [object MovieClip] (mc2)
+  mc2, mc2: [FocusEvent type="mouseFocusChange" bubbles=true cancelable=true eventPhase=2 relatedObject=[object TextField] shiftKey=false keyCode=0], focus: [object MovieClip] (mc2)
+  null, mc2: [FocusEvent type="mouseFocusChange" bubbles=true cancelable=true eventPhase=3 relatedObject=[object TextField] shiftKey=false keyCode=0], focus: [object MovieClip] (mc2)
+  mc2, mc2: [FocusEvent type="focusOut" bubbles=true cancelable=false eventPhase=2 relatedObject=[object TextField] shiftKey=false keyCode=0], focus: [object TextField] (textA)
+  null, mc2: [FocusEvent type="focusOut" bubbles=true cancelable=false eventPhase=3 relatedObject=[object TextField] shiftKey=false keyCode=0], focus: [object TextField] (textA)
+  textA, textA: [FocusEvent type="focusIn" bubbles=true cancelable=false eventPhase=2 relatedObject=[object MovieClip] shiftKey=false keyCode=0], focus: [object TextField] (textA)
+  null, textA: [FocusEvent type="focusIn" bubbles=true cancelable=false eventPhase=3 relatedObject=[object MovieClip] shiftKey=false keyCode=0], focus: [object TextField] (textA)
+  textA, textA: [MouseEvent type="mouseDown" cancelable=false eventPhase=2 relatedObject=null ctrlKey=false altKey=false shiftKey=false], focus: [object TextField] (textA)
+  null, textA: [MouseEvent type="mouseDown" cancelable=false eventPhase=3 relatedObject=null ctrlKey=false altKey=false shiftKey=false], focus: [object TextField] (textA)
+  textA, textA: [MouseEvent type="mouseUp" cancelable=false eventPhase=2 relatedObject=null ctrlKey=false altKey=false shiftKey=false], focus: [object TextField] (textA)
+  null, textA: [MouseEvent type="mouseUp" cancelable=false eventPhase=3 relatedObject=null ctrlKey=false altKey=false shiftKey=false], focus: [object TextField] (textA)
+  textA, textA: [MouseEvent type="click" cancelable=false eventPhase=2 relatedObject=null ctrlKey=false altKey=false shiftKey=false], focus: [object TextField] (textA)
+  null, textA: [MouseEvent type="click" cancelable=false eventPhase=3 relatedObject=null ctrlKey=false altKey=false shiftKey=false], focus: [object TextField] (textA)
+Escape pressed
+  textA, textA: [MouseEvent type="rollOut" cancelable=false eventPhase=2 relatedObject=[object SimpleButton] ctrlKey=false altKey=false shiftKey=false], focus: [object TextField] (textA)
+  button1, button1: [MouseEvent type="rollOver" cancelable=false eventPhase=2 relatedObject=[object TextField] ctrlKey=false altKey=false shiftKey=false], focus: [object TextField] (textA)
+  button1, button1: [MouseEvent type="mouseOver" cancelable=false eventPhase=2 relatedObject=[object TextField] ctrlKey=false altKey=false shiftKey=false], focus: [object TextField] (textA)
+  null, button1: [MouseEvent type="mouseOver" cancelable=false eventPhase=3 relatedObject=[object TextField] ctrlKey=false altKey=false shiftKey=false], focus: [object TextField] (textA)
+  textA, textA: [FocusEvent type="mouseFocusChange" bubbles=true cancelable=true eventPhase=2 relatedObject=[object SimpleButton] shiftKey=false keyCode=0], focus: [object TextField] (textA)
+  null, textA: [FocusEvent type="mouseFocusChange" bubbles=true cancelable=true eventPhase=3 relatedObject=[object SimpleButton] shiftKey=false keyCode=0], focus: [object TextField] (textA)
+  textA, textA: [FocusEvent type="focusOut" bubbles=true cancelable=false eventPhase=2 relatedObject=[object SimpleButton] shiftKey=false keyCode=0], focus: [object SimpleButton] (button1)
+  null, textA: [FocusEvent type="focusOut" bubbles=true cancelable=false eventPhase=3 relatedObject=[object SimpleButton] shiftKey=false keyCode=0], focus: [object SimpleButton] (button1)
+  button1, button1: [FocusEvent type="focusIn" bubbles=true cancelable=false eventPhase=2 relatedObject=[object TextField] shiftKey=false keyCode=0], focus: [object SimpleButton] (button1)
+  null, button1: [FocusEvent type="focusIn" bubbles=true cancelable=false eventPhase=3 relatedObject=[object TextField] shiftKey=false keyCode=0], focus: [object SimpleButton] (button1)
+  button1, button1: [MouseEvent type="mouseDown" cancelable=false eventPhase=2 relatedObject=null ctrlKey=false altKey=false shiftKey=false], focus: [object SimpleButton] (button1)
+  null, button1: [MouseEvent type="mouseDown" cancelable=false eventPhase=3 relatedObject=null ctrlKey=false altKey=false shiftKey=false], focus: [object SimpleButton] (button1)
+  button1, button1: [MouseEvent type="mouseUp" cancelable=false eventPhase=2 relatedObject=null ctrlKey=false altKey=false shiftKey=false], focus: [object SimpleButton] (button1)
+  null, button1: [MouseEvent type="mouseUp" cancelable=false eventPhase=3 relatedObject=null ctrlKey=false altKey=false shiftKey=false], focus: [object SimpleButton] (button1)
+  button1, button1: [MouseEvent type="click" cancelable=false eventPhase=2 relatedObject=null ctrlKey=false altKey=false shiftKey=false], focus: [object SimpleButton] (button1)
+  null, button1: [MouseEvent type="click" cancelable=false eventPhase=3 relatedObject=null ctrlKey=false altKey=false shiftKey=false], focus: [object SimpleButton] (button1)
+Escape pressed
+  button1, button1: [MouseEvent type="rollOut" cancelable=false eventPhase=2 relatedObject=[object SimpleButton] ctrlKey=false altKey=false shiftKey=false], focus: [object SimpleButton] (button1)
+  button2, button2: [MouseEvent type="rollOver" cancelable=false eventPhase=2 relatedObject=[object SimpleButton] ctrlKey=false altKey=false shiftKey=false], focus: [object SimpleButton] (button1)
+  button2, button2: [MouseEvent type="mouseOver" cancelable=false eventPhase=2 relatedObject=[object SimpleButton] ctrlKey=false altKey=false shiftKey=false], focus: [object SimpleButton] (button1)
+  null, button2: [MouseEvent type="mouseOver" cancelable=false eventPhase=3 relatedObject=[object SimpleButton] ctrlKey=false altKey=false shiftKey=false], focus: [object SimpleButton] (button1)
+  button1, button1: [FocusEvent type="mouseFocusChange" bubbles=true cancelable=true eventPhase=2 relatedObject=[object SimpleButton] shiftKey=false keyCode=0], focus: [object SimpleButton] (button1)
+  null, button1: [FocusEvent type="mouseFocusChange" bubbles=true cancelable=true eventPhase=3 relatedObject=[object SimpleButton] shiftKey=false keyCode=0], focus: [object SimpleButton] (button1)
+  button1, button1: [FocusEvent type="focusOut" bubbles=true cancelable=false eventPhase=2 relatedObject=[object SimpleButton] shiftKey=false keyCode=0], focus: [object SimpleButton] (button2)
+  null, button1: [FocusEvent type="focusOut" bubbles=true cancelable=false eventPhase=3 relatedObject=[object SimpleButton] shiftKey=false keyCode=0], focus: [object SimpleButton] (button2)
+  button2, button2: [FocusEvent type="focusIn" bubbles=true cancelable=false eventPhase=2 relatedObject=[object SimpleButton] shiftKey=false keyCode=0], focus: [object SimpleButton] (button2)
+  null, button2: [FocusEvent type="focusIn" bubbles=true cancelable=false eventPhase=3 relatedObject=[object SimpleButton] shiftKey=false keyCode=0], focus: [object SimpleButton] (button2)
+  button2, button2: [MouseEvent type="mouseDown" cancelable=false eventPhase=2 relatedObject=null ctrlKey=false altKey=false shiftKey=false], focus: [object SimpleButton] (button2)
+  null, button2: [MouseEvent type="mouseDown" cancelable=false eventPhase=3 relatedObject=null ctrlKey=false altKey=false shiftKey=false], focus: [object SimpleButton] (button2)
+  button2, button2: [MouseEvent type="mouseUp" cancelable=false eventPhase=2 relatedObject=null ctrlKey=false altKey=false shiftKey=false], focus: [object SimpleButton] (button2)
+  null, button2: [MouseEvent type="mouseUp" cancelable=false eventPhase=3 relatedObject=null ctrlKey=false altKey=false shiftKey=false], focus: [object SimpleButton] (button2)
+  button2, button2: [MouseEvent type="click" cancelable=false eventPhase=2 relatedObject=null ctrlKey=false altKey=false shiftKey=false], focus: [object SimpleButton] (button2)
+  null, button2: [MouseEvent type="click" cancelable=false eventPhase=3 relatedObject=null ctrlKey=false altKey=false shiftKey=false], focus: [object SimpleButton] (button2)
+Escape pressed
+  button2, button2: [MouseEvent type="rollOut" cancelable=false eventPhase=2 relatedObject=null ctrlKey=false altKey=false shiftKey=false], focus: [object SimpleButton] (button2)
+  button2, button2: [FocusEvent type="mouseFocusChange" bubbles=true cancelable=true eventPhase=2 relatedObject=null shiftKey=false keyCode=0], focus: [object SimpleButton] (button2)
+  null, button2: [FocusEvent type="mouseFocusChange" bubbles=true cancelable=true eventPhase=3 relatedObject=null shiftKey=false keyCode=0], focus: [object SimpleButton] (button2)
+  button2, button2: [FocusEvent type="focusOut" bubbles=true cancelable=false eventPhase=2 relatedObject=null shiftKey=false keyCode=0], focus: null
+  null, button2: [FocusEvent type="focusOut" bubbles=true cancelable=false eventPhase=3 relatedObject=null shiftKey=false keyCode=0], focus: null
+  null, null: [MouseEvent type="mouseDown" cancelable=false eventPhase=2 relatedObject=null ctrlKey=false altKey=false shiftKey=false], focus: null
+  null, null: [MouseEvent type="mouseUp" cancelable=false eventPhase=2 relatedObject=null ctrlKey=false altKey=false shiftKey=false], focus: null
+  null, null: [MouseEvent type="click" cancelable=false eventPhase=2 relatedObject=null ctrlKey=false altKey=false shiftKey=false], focus: null
+Escape pressed

@@ -2,22 +2,21 @@
 
 use crate::avm2::activation::Activation;
 use crate::avm2::object::script_object::ScriptObjectData;
-use crate::avm2::object::{Object, ObjectPtr, TObject};
+use crate::avm2::object::{Object, TObject};
 use crate::avm2::value::Value;
 use crate::avm2::Error;
 use crate::avm2_stub_method;
-use crate::bitmap::bitmap_data::BitmapData;
+use crate::bitmap::bitmap_data::BitmapRawData;
 use crate::context::RenderContext;
-use gc_arena::barrier::unlock;
-use gc_arena::lock::RefLock;
-use gc_arena::{Collect, Gc, GcCell, GcWeak, Mutation};
+use crate::utils::HasPrefixField;
+use gc_arena::{Collect, Gc, GcCell, GcWeak};
 use ruffle_render::backend::{
     BufferUsage, Context3D, Context3DBlendFactor, Context3DCommand, Context3DCompareMode,
     Context3DTextureFormat, Context3DTriangleFace, Context3DVertexBufferFormat, ProgramType,
     Texture,
 };
 use ruffle_render::commands::CommandHandler;
-use std::cell::{Cell, Ref, RefMut};
+use std::cell::Cell;
 use std::rc::Rc;
 use swf::{Rectangle, Twips};
 
@@ -44,15 +43,14 @@ impl<'gc> Context3DObject<'gc> {
         let this: Object<'gc> = Context3DObject(Gc::new(
             activation.gc(),
             Context3DData {
-                base: RefLock::new(ScriptObjectData::new(class)),
+                base: ScriptObjectData::new(class),
                 render_context: Cell::new(Some(context)),
                 stage3d,
             },
         ))
         .into();
-        this.install_instance_slots(activation.gc());
 
-        class.call_native_init(this.into(), &[], activation)?;
+        class.call_init(this.into(), &[], activation)?;
 
         Ok(this)
     }
@@ -106,7 +104,7 @@ impl<'gc> Context3DObject<'gc> {
         )?))
     }
 
-    #[allow(clippy::too_many_arguments)]
+    #[expect(clippy::too_many_arguments)]
     pub fn create_texture(
         &self,
         width: u32,
@@ -154,7 +152,7 @@ impl<'gc> Context3DObject<'gc> {
     pub fn upload_vertex_buffer_data(
         &self,
         buffer: VertexBuffer3DObject<'gc>,
-        data: Vec<u8>,
+        data: &[u8],
         start_vertex: usize,
         data32_per_vertex: u8,
     ) {
@@ -171,7 +169,7 @@ impl<'gc> Context3DObject<'gc> {
     pub fn upload_index_buffer_data(
         &self,
         buffer: IndexBuffer3DObject<'gc>,
-        data: Vec<u8>,
+        data: &[u8],
         start_offset: usize,
     ) {
         let mut handle = buffer.handle();
@@ -322,7 +320,7 @@ impl<'gc> Context3DObject<'gc> {
         });
     }
 
-    #[allow(clippy::too_many_arguments)]
+    #[expect(clippy::too_many_arguments)]
     pub fn set_clear(
         &self,
         red: f64,
@@ -347,7 +345,7 @@ impl<'gc> Context3DObject<'gc> {
     }
     pub(crate) fn copy_bitmapdata_to_texture(
         &self,
-        source: GcCell<'gc, BitmapData<'gc>>,
+        source: GcCell<'gc, BitmapRawData<'gc>>,
         dest: Rc<dyn Texture>,
         layer: u32,
     ) {
@@ -389,7 +387,7 @@ impl<'gc> Context3DObject<'gc> {
     ) {
         self.with_context_3d(|ctx| {
             ctx.process_command(Context3DCommand::CopyBitmapToTexture {
-                source,
+                source: &source,
                 source_width: dest.width(),
                 source_height: dest.height(),
                 dest,
@@ -480,11 +478,12 @@ impl<'gc> Context3DObject<'gc> {
     }
 }
 
-#[derive(Collect)]
+#[derive(Collect, HasPrefixField)]
 #[collect(no_drop)]
+#[repr(C, align(8))]
 pub struct Context3DData<'gc> {
     /// Base script object
-    base: RefLock<ScriptObjectData<'gc>>,
+    base: ScriptObjectData<'gc>,
 
     #[collect(require_static)]
     render_context: Cell<Option<Box<dyn Context3D>>>,
@@ -493,24 +492,8 @@ pub struct Context3DData<'gc> {
 }
 
 impl<'gc> TObject<'gc> for Context3DObject<'gc> {
-    fn base(&self) -> Ref<ScriptObjectData<'gc>> {
-        self.0.base.borrow()
-    }
-
-    fn base_mut(&self, mc: &Mutation<'gc>) -> RefMut<ScriptObjectData<'gc>> {
-        unlock!(Gc::write(mc, self.0), Context3DData, base).borrow_mut()
-    }
-
-    fn as_ptr(&self) -> *const ObjectPtr {
-        Gc::as_ptr(self.0) as *const ObjectPtr
-    }
-
-    fn value_of(&self, _mc: &Mutation<'gc>) -> Result<Value<'gc>, Error<'gc>> {
-        Ok(Value::Object(Object::from(*self)))
-    }
-
-    fn as_context_3d(&self) -> Option<Context3DObject<'gc>> {
-        Some(*self)
+    fn gc_base(&self) -> Gc<'gc, ScriptObjectData<'gc>> {
+        HasPrefixField::as_prefix_gc(self.0)
     }
 }
 

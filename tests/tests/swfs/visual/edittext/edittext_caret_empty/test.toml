@@ -1,0 +1,52 @@
+num_ticks = 12
+
+[image_comparisons."output.01"]
+trigger = 1
+tolerance = 128
+
+[image_comparisons."output.02"]
+trigger = 2
+tolerance = 128
+
+[image_comparisons."output.03"]
+trigger = 3
+tolerance = 128
+
+[image_comparisons."output.04"]
+trigger = 4
+tolerance = 128
+
+[image_comparisons."output.05"]
+trigger = 5
+tolerance = 128
+
+[image_comparisons."output.06"]
+trigger = 6
+tolerance = 128
+
+[image_comparisons."output.07"]
+trigger = 7
+tolerance = 128
+
+[image_comparisons."output.08"]
+trigger = 8
+tolerance = 128
+
+[image_comparisons."output.09"]
+trigger = 9
+tolerance = 128
+
+[image_comparisons."output.10"]
+trigger = 10
+tolerance = 128
+
+[image_comparisons."output.11"]
+trigger = 11
+tolerance = 128
+
+[image_comparisons."output.12"]
+trigger = 12
+tolerance = 128
+
+[player_options]
+with_renderer = { optional = false, sample_count = 4 }

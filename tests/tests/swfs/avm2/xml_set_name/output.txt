@@ -1,17 +1,34 @@
 <outer attrib="value">
   <inner>innerText</inner>
 </outer>
+// "newOuterName"
 <newOuterName attrib="value">
   <inner>innerText</inner>
 </newOuterName>
+// new QName(null,"someOuterName")
 <someOuterName attrib="value">
   <inner>innerText</inner>
 </someOuterName>
+// new QName("","otherOuterName")
 <otherOuterName attrib="value">
   <inner>innerText</inner>
 </otherOuterName>
-<otherOuterName newattribname="value">
+// new QName("http://example.org", "nameWithNs")
+<nameWithNs attrib="value" xmlns="http://example.org">
   <inner>innerText</inner>
-</otherOuterName>
+</nameWithNs>
+// "simpleName"
+<simpleName attrib="value">
+  <inner>innerText</inner>
+</simpleName>
+// "newattribname" 
+<simpleName newattribname="value">
+  <inner>innerText</inner>
+</simpleName>
+// new QName("http://foo.bar", "otherattribname")
+<simpleName otherattribname="value" xmlns="http://foo.bar">
+  <inner>innerText</inner>
+</simpleName>
+// 
 justText
 justText

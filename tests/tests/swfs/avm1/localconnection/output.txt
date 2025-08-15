@@ -1,0 +1,580 @@
+
+-- start test: A message to nowhere! --
+
+sender.send("nowhere", "test", *0 []): true
+
+-- end frame: A message to nowhere! --
+
+sender.onStatus was called
+  *0 Object {
+      level = "error"
+    }
+
+-- end test: A message to nowhere! --
+
+
+-- start test: Both receivers try to connect to the same channel --
+
+receiver.connect("channel"): true
+custom.connect("channel"): false
+
+-- end frame: Both receivers try to connect to the same channel --
+
+
+-- end test: Both receivers try to connect to the same channel --
+
+
+-- start test: A message to an unimplemented function --
+
+sender.send("channel", "unimplemented", *0 []): true
+
+-- end frame: A message to an unimplemented function --
+
+sender.onStatus was called
+  *0 Object {
+      level = "status"
+    }
+
+-- end test: A message to an unimplemented function --
+
+
+-- start test: Receiver tries to connect elsewhere, but can't --
+
+receiver.connect("elsewhere"): false
+
+-- end frame: Receiver tries to connect elsewhere, but can't --
+
+
+-- end test: Receiver tries to connect elsewhere, but can't --
+
+
+-- start test: Receiver actually connects elsewhere, and custom is allowed to connect to channel --
+
+receiver.close()
+receiver.connect("elsewhere"): true
+custom.connect("channel"): true
+
+-- end frame: Receiver actually connects elsewhere, and custom is allowed to connect to channel --
+
+
+-- end test: Receiver actually connects elsewhere, and custom is allowed to connect to channel --
+
+
+-- start test: Sender calls test() on 'channel' --
+
+sender.send("channel", "test", *0 []): true
+
+-- end frame: Sender calls test() on 'channel' --
+
+sender.onStatus was called
+  *0 Object {
+      level = "status"
+    }
+custom.test was called with 0 argument
+
+-- end test: Sender calls test() on 'channel' --
+
+
+-- start test: Sender calls test() on 'channel'... after the listener is gone --
+
+custom.close()
+sender.send("channel", "test", *0 []): true
+
+-- end frame: Sender calls test() on 'channel'... after the listener is gone --
+
+sender.onStatus was called
+  *0 Object {
+      level = "error"
+    }
+
+-- end test: Sender calls test() on 'channel'... after the listener is gone --
+
+
+-- start test: Sender calls test() on 'elsewhere'... immediately before the listener is gone --
+
+sender.send("elsewhere", "test", *0 []): true
+receiver.close()
+
+-- end frame: Sender calls test() on 'elsewhere'... immediately before the listener is gone --
+
+sender.onStatus was called
+  *0 Object {
+      level = "error"
+    }
+
+-- end test: Sender calls test() on 'elsewhere'... immediately before the listener is gone --
+
+
+-- start test: Sender calls test() on 'channel'... before the listener connects --
+
+sender.send("channel", "test", *0 []): true
+custom.connect("channel"): true
+
+-- end frame: Sender calls test() on 'channel'... before the listener connects --
+
+sender.onStatus was called
+  *0 Object {
+      level = "error"
+    }
+
+-- end test: Sender calls test() on 'channel'... before the listener connects --
+
+
+-- start test: Sending to a channel that gets reassigned before end-of-frame --
+
+sender.send("channel", "test", *0 []): true
+custom.close()
+receiver.connect("channel"): true
+
+-- end frame: Sending to a channel that gets reassigned before end-of-frame --
+
+sender.onStatus was called
+  *0 Object {
+      level = "status"
+    }
+receiver.test was called with 0 argument
+
+-- end test: Sending to a channel that gets reassigned before end-of-frame --
+
+
+-- start test: Channels reconnect and receive --
+
+custom.close()
+receiver.close()
+receiver.connect("elsewhere"): true
+sender.send("channel", "test", *0 []): true
+sender.send("elsewhere", "test", *0 []): true
+custom.connect("channel"): true
+
+-- end frame: Channels reconnect and receive --
+
+sender.onStatus was called
+  *0 Object {
+      level = "error"
+    }
+sender.onStatus was called
+  *0 Object {
+      level = "status"
+    }
+receiver.test was called with 0 argument
+
+-- end test: Channels reconnect and receive --
+
+
+-- start test: A connected listener can also send --
+
+receiver.send("channel", "test", *0 []): true
+receiver.send("elsewhere", "test", *0 []): true
+
+-- end frame: A connected listener can also send --
+
+receiver.onStatus was called
+  *0 Object {
+      level = "status"
+    }
+custom.test was called with 0 argument
+receiver.onStatus was called
+  *0 Object {
+      level = "status"
+    }
+receiver.test was called with 0 argument
+
+-- end test: A connected listener can also send --
+
+
+-- start test: A listener throws an error --
+
+sender.send("channel", "throwAnError", *0 []): true
+
+-- end frame: A listener throws an error --
+
+sender.onStatus was called
+  *0 Object {
+      level = "status"
+    }
+custom.throwAnError was called
+
+-- end test: A listener throws an error --
+
+
+-- start test: Close something's that's already closed --
+
+
+-- end frame: Close something's that's already closed --
+
+
+-- end test: Close something's that's already closed --
+
+
+-- start test: Send to funky channel names --
+
+sender.send(null, "test", *0 []): false
+sender.send(0, "test", *0 []): false
+sender.send("", "test", *0 []): false
+sender.send(" ??? ", "test", *0 []): true
+
+-- end frame: Send to funky channel names --
+
+sender.onStatus was called
+  *0 Object {
+      level = "error"
+    }
+
+-- end test: Send to funky channel names --
+
+
+-- start test: Send to funky methods --
+
+sender.send("channel", null, *0 []): false
+sender.send("channel", 0, *0 []): false
+sender.send("channel", "", *0 []): false
+sender.send("channel", " ??? ", *0 []): true
+
+-- end frame: Send to funky methods --
+
+sender.onStatus was called
+  *0 Object {
+      level = "status"
+    }
+
+-- end test: Send to funky methods --
+
+
+-- start test: Connect to funky names --
+
+sender.connect(null): false
+sender.close()
+sender.connect(0): false
+sender.close()
+sender.connect(""): false
+sender.close()
+sender.connect(" ??? "): true
+sender.close()
+
+-- end frame: Connect to funky names --
+
+
+-- end test: Connect to funky names --
+
+
+-- start test: Connect to something with a prefix --
+
+sender.connect("localhost:something"): false
+sender.close()
+
+-- end frame: Connect to something with a prefix --
+
+
+-- end test: Connect to something with a prefix --
+
+
+-- start test: Send to protected methods --
+
+sender.send("channel", "send", *0 []): false
+sender.send("channel", "connect", *0 []): false
+sender.send("channel", "close", *0 []): false
+sender.send("channel", "allowDomain", *0 []): false
+sender.send("channel", "allowInsecureDomain", *0 []): false
+sender.send("channel", "domain", *0 []): false
+
+-- end frame: Send to protected methods --
+
+
+-- end test: Send to protected methods --
+
+
+-- start test: Arguments are sent --
+
+sender.send("elsewhere", "test", *0 [
+    1
+    "two"
+    *1 Object {
+      value = 3
+    }
+  ]): true
+
+-- end frame: Arguments are sent --
+
+sender.onStatus was called
+  *0 Object {
+      level = "status"
+    }
+receiver.test was called with 3 arguments
+  *0 [
+    1
+    "two"
+    *1 Object {
+      value = 3
+    }
+  ]
+
+-- end test: Arguments are sent --
+
+
+-- start test: Explicit host prefix --
+
+sender.send("localhost:channel", "test", *0 []): true
+sender.send("notlocalhost:elsewhere", "test", *0 []): true
+
+-- end frame: Explicit host prefix --
+
+sender.onStatus was called
+  *0 Object {
+      level = "status"
+    }
+custom.test was called with 0 argument
+sender.onStatus was called
+  *0 Object {
+      level = "error"
+    }
+
+-- end test: Explicit host prefix --
+
+
+-- start test: Underscores in names --
+
+custom.close()
+custom.connect("_channel"): true
+sender.send("_channel", "test", *0 []): true
+
+-- end frame: Underscores in names --
+
+sender.onStatus was called
+  *0 Object {
+      level = "status"
+    }
+custom.test was called with 0 argument
+
+-- end test: Underscores in names --
+
+
+-- start test: Underscores in name doesn't allow a prefix --
+
+sender.send("localhost:channel", "test", *0 []): true
+sender.send("localhost:_channel", "test", *0 []): true
+
+-- end frame: Underscores in name doesn't allow a prefix --
+
+sender.onStatus was called
+  *0 Object {
+      level = "error"
+    }
+sender.onStatus was called
+  *0 Object {
+      level = "error"
+    }
+
+-- end test: Underscores in name doesn't allow a prefix --
+
+
+-- start test: Case sensitivity --
+
+sender.send("ELSEWhere", "test", *0 []): true
+sender.send("LOCalHOST:ElseWhere", "test", *0 []): true
+
+-- end frame: Case sensitivity --
+
+sender.onStatus was called
+  *0 Object {
+      level = "status"
+    }
+receiver.test was called with 0 argument
+sender.onStatus was called
+  *0 Object {
+      level = "status"
+    }
+receiver.test was called with 0 argument
+
+-- end test: Case sensitivity --
+
+
+-- start test: Calling an AVM2 movie --
+
+sender.send("avm2_child", "test", *0 []): true
+
+-- end frame: Calling an AVM2 movie --
+
+sender.onStatus was called
+  *0 Object {
+      level = "error"
+    }
+
+-- end test: Calling an AVM2 movie --
+
+
+-- start test: Calling an AVM1 movie --
+
+sender.send("avm1_child", "test", *0 []): true
+
+-- end frame: Calling an AVM1 movie --
+
+sender.onStatus was called
+  *0 Object {
+      level = "status"
+    }
+avm1_child.test was called with 0 argument
+
+-- end test: Calling an AVM1 movie --
+
+
+-- start test: Argument translations: primitives --
+
+sender.send("avm1_child", "test", *0 [
+    1
+    1.2
+    true
+    false
+    "string"
+    null
+    undefined
+  ]): true
+sender.send("avm2_child", "test", *0 [
+    1
+    1.2
+    true
+    false
+    "string"
+    null
+    undefined
+  ]): true
+sender.send("_channel", "test", *0 [
+    1
+    1.2
+    true
+    false
+    "string"
+    null
+    undefined
+  ]): true
+
+-- end frame: Argument translations: primitives --
+
+sender.onStatus was called
+  *0 Object {
+      level = "status"
+    }
+avm1_child.test was called with 7 arguments
+  *0 [
+    1
+    1.2
+    true
+    false
+    "string"
+    null
+    undefined
+  ]
+sender.onStatus was called
+  *0 Object {
+      level = "error"
+    }
+sender.onStatus was called
+  *0 Object {
+      level = "status"
+    }
+custom.test was called with 7 arguments
+  *0 [
+    1
+    1.2
+    true
+    false
+    "string"
+    null
+    undefined
+  ]
+
+-- end test: Argument translations: primitives --
+
+
+-- start test: Argument translations: simple object --
+
+sender.send("avm1_child", "test", *0 [
+    *1 Object {
+      nested = *2 Object {
+        numbers = *3 [
+          1
+          2
+        ]
+        string = "hello"
+      }
+    }
+  ]): true
+sender.send("avm2_child", "test", *0 [
+    *1 Object {
+      nested = *2 Object {
+        numbers = *3 [
+          1
+          2
+        ]
+        string = "hello"
+      }
+    }
+  ]): true
+sender.send("_channel", "test", *0 [
+    *1 Object {
+      nested = *2 Object {
+        numbers = *3 [
+          1
+          2
+        ]
+        string = "hello"
+      }
+    }
+  ]): true
+
+-- end frame: Argument translations: simple object --
+
+sender.onStatus was called
+  *0 Object {
+      level = "status"
+    }
+avm1_child.test was called with 1 arguments
+  *0 [
+    *1 object {
+      nested = *2 object {
+        numbers = *3 [
+          1
+          2
+        ]
+        string = "hello"
+      }
+    }
+  ]
+sender.onStatus was called
+  *0 Object {
+      level = "error"
+    }
+sender.onStatus was called
+  *0 Object {
+      level = "status"
+    }
+custom.test was called with 1 arguments
+  *0 [
+    *1 Object {
+      nested = *2 Object {
+        numbers = *3 [
+          1
+          2
+        ]
+        string = "hello"
+      }
+    }
+  ]
+
+-- end test: Argument translations: simple object --
+
+
+-- start test: AVM1 movie throws an error --
+
+sender.send("avm1_child", "throwAnError", *0 []): true
+
+-- end frame: AVM1 movie throws an error --
+
+sender.onStatus was called
+  *0 Object {
+      level = "status"
+    }
+avm1_child.throwAnError was called
+
+-- end test: AVM1 movie throws an error --
+
+Finished after 117 frames

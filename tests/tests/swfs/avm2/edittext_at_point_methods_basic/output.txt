@@ -1,0 +1,16 @@
+Mouse down at: 40, 43
+Clicked: text1
+  text1.getCharIndexAtPoint(20, 23) = 0
+  text1.getLineIndexAtPoint(20, 23) = 0
+Mouse down at: 61, 44
+Clicked: text1
+  text1.getCharIndexAtPoint(41, 24) = 1
+  text1.getLineIndexAtPoint(41, 24) = 0
+Mouse down at: 80, 43
+Clicked: text1
+  text1.getCharIndexAtPoint(60, 23) = 2
+  text1.getLineIndexAtPoint(60, 23) = 0
+Mouse down at: 101, 42
+Clicked: text1
+  text1.getCharIndexAtPoint(81, 22) = 3
+  text1.getLineIndexAtPoint(81, 22) = 0

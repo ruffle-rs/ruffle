@@ -1,0 +1,10 @@
+textInput á
+keyDown 16 0
+keyUp 16 0
+textInput ä
+keyDown 16 0
+keyUp 16 0
+textInput ¨r
+keyDown 81 113
+textInput q
+keyUp 81 113

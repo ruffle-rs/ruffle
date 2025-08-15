@@ -1,0 +1,6 @@
+trace([activation object])
+Threw error, code 1069
+[activation object].AS3::hasOwnProperty:
+Threw error, code 1069
+[activation object].dynamicProp = 3
+Threw error, code 1056

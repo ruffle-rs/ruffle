@@ -6,21 +6,20 @@ use crate::avm1::globals::matrix::gradient_object_to_matrix;
 use crate::avm1::globals::{self, bitmap_filter, AVM_DEPTH_BIAS, AVM_MAX_DEPTH};
 use crate::avm1::object::NativeObject;
 use crate::avm1::property_decl::{define_properties_on, Declaration};
-use crate::avm1::{self, ArrayObject, Object, ScriptObject, TObject, Value};
+use crate::avm1::{self, ArrayBuilder, Object, Value};
 use crate::backend::navigator::NavigationMethod;
-use crate::context::{GcContext, UpdateContext};
-use crate::display_object::{
-    Bitmap, DisplayObject, EditText, MovieClip, TDisplayObject, TDisplayObjectContainer,
-};
+use crate::context::UpdateContext;
+use crate::display_object::{Bitmap, EditText, MovieClip, TInteractiveObject};
 use crate::ecma_conversions::f64_to_wrapping_i32;
 use crate::prelude::*;
-use crate::string::AvmString;
+use crate::string::{AvmString, StringContext};
 use crate::vminterface::Instantiator;
 use crate::{avm1_stub, avm_error, avm_warn};
+use ruffle_macros::istr;
 use ruffle_render::shape_utils::{DrawCommand, GradientType};
 use swf::{
     FillStyle, Fixed8, Gradient, GradientInterpolation, GradientRecord, GradientSpread,
-    LineCapStyle, LineJoinStyle, LineStyle, Rectangle, Twips,
+    LineCapStyle, LineJoinStyle, LineStyle,
 };
 
 macro_rules! mc_method {
@@ -118,16 +117,11 @@ const PROTO_DECLS: &[Declaration] = declare_properties! {
     "transform" => property(mc_getter!(transform), mc_setter!(set_transform); DONT_ENUM | VERSION_8);
     "useHandCursor" => bool(true; DONT_ENUM);
     // NOTE: `focusEnabled` is not a built-in property of MovieClip.
+    // NOTE: `tabEnabled` is not a built-in property of MovieClip.
+    // NOTE: `tabIndex` is not enumerable in MovieClip, contrary to Button and TextField
+    "tabIndex" => property(mc_getter!(tab_index), mc_setter!(set_tab_index); DONT_ENUM | VERSION_6);
+    // NOTE: `tabChildren` is not a built-in property of MovieClip.
 };
-
-/// Implements `MovieClip`
-pub fn constructor<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
-    _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error<'gc>> {
-    Ok(this.into())
-}
 
 pub fn new_rectangle<'gc>(
     activation: &mut Activation<'_, 'gc>,
@@ -146,9 +140,10 @@ pub fn object_to_rectangle<'gc>(
     activation: &mut Activation<'_, 'gc>,
     object: Object<'gc>,
 ) -> Result<Option<Rectangle<Twips>>, Error<'gc>> {
-    const NAMES: &[&str] = &["x", "y", "width", "height"];
+    let names = &[istr!("x"), istr!("y"), istr!("width"), istr!("height")];
     let mut values = [0; 4];
-    for (&name, value) in NAMES.iter().zip(&mut values) {
+
+    for (&name, value) in names.iter().zip(&mut values) {
         *value = match object.get_local_stored(name, activation, false) {
             Some(value) => value.coerce_to_i32(activation)?,
             None => return Ok(None),
@@ -180,12 +175,12 @@ fn set_scroll_rect<'gc>(
     value: Value<'gc>,
 ) -> Result<(), Error<'gc>> {
     if let Value::Object(object) = value {
-        this.set_has_scroll_rect(activation.context.gc_context, true);
+        this.set_has_scroll_rect(true);
         if let Some(rectangle) = object_to_rectangle(activation, object)? {
-            this.set_next_scroll_rect(activation.context.gc_context, rectangle);
+            this.set_next_scroll_rect(rectangle);
         }
     } else {
-        this.set_has_scroll_rect(activation.context.gc_context, false);
+        this.set_has_scroll_rect(false);
     };
     Ok(())
 }
@@ -211,15 +206,14 @@ fn set_scale_9_grid<'gc>(
     avm1_stub!(activation, "MovieClip", "scale9Grid");
     if let Value::Object(object) = value {
         if let Some(rectangle) = object_to_rectangle(activation, object)? {
-            this.set_scaling_grid(activation.context.gc_context, rectangle);
+            this.set_scaling_grid(rectangle);
         }
     } else {
-        this.set_scaling_grid(activation.context.gc_context, Rectangle::default());
+        this.set_scaling_grid(Rectangle::default());
     };
     Ok(())
 }
 
-#[allow(clippy::comparison_chain)]
 pub fn hit_test<'gc>(
     movie_clip: MovieClip<'gc>,
     activation: &mut Activation<'_, 'gc>,
@@ -236,13 +230,9 @@ pub fn hit_test<'gc>(
             // The docs say the point is in "Stage coordinates", but actually they are in root coordinates.
             // root can be moved via _root._x etc., so we actually have to transform from root to world space.
             let local = Point::from_pixels(x, y);
-            let point = movie_clip.avm1_root().local_to_global(local);
+            let point = movie_clip.avm1_root_no_lock().local_to_global(local);
             let ret = if shape {
-                movie_clip.hit_test_shape(
-                    &mut activation.context,
-                    point,
-                    HitTestOptions::AVM_HIT_TEST,
-                )
+                movie_clip.hit_test_shape(activation.context, point, HitTestOptions::AVM_HIT_TEST)
             } else {
                 movie_clip.hit_test_bounds(point)
             };
@@ -263,13 +253,13 @@ pub fn hit_test<'gc>(
 }
 
 pub fn create_proto<'gc>(
-    context: &mut GcContext<'_, 'gc>,
+    context: &mut StringContext<'gc>,
     proto: Object<'gc>,
     fn_proto: Object<'gc>,
 ) -> Object<'gc> {
-    let object = ScriptObject::new(context.gc_context, Some(proto));
+    let object = Object::new(context, Some(proto));
     define_properties_on(PROTO_DECLS, context, object, fn_proto);
-    object.into()
+    object
 }
 
 fn attach_bitmap<'gc>(
@@ -297,15 +287,15 @@ fn attach_bitmap<'gc>(
 
                 //TODO: do attached BitmapDatas have character ids?
                 let display_object = Bitmap::new_with_bitmap_data(
-                    activation.context.gc_context,
+                    activation.gc(),
                     0,
                     bitmap_data,
                     smoothing,
                     &movie_clip.movie(),
                 );
-                movie_clip.replace_at_depth(&mut activation.context, display_object.into(), depth);
+                movie_clip.replace_at_depth(activation.context, display_object.into(), depth);
                 display_object.post_instantiation(
-                    &mut activation.context,
+                    activation.context,
                     None,
                     Instantiator::Avm1,
                     true,
@@ -324,10 +314,10 @@ fn attach_audio<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let [Value::Object(netstream_obj), ..] = args {
         if let NativeObject::NetStream(netstream) = netstream_obj.native() {
-            movie_clip.attach_audio(&mut activation.context, Some(netstream));
+            movie_clip.attach_audio(activation.context, Some(netstream));
         }
     } else if let [Value::Bool(false), ..] = args {
-        movie_clip.attach_audio(&mut activation.context, None);
+        movie_clip.attach_audio(activation.context, None);
     }
 
     Ok(Value::Undefined)
@@ -355,7 +345,7 @@ fn line_style<'gc>(
         };
         let is_pixel_hinted = args
             .get(3)
-            .map_or(false, |v| v.as_bool(activation.swf_version()));
+            .is_some_and(|v| v.as_bool(activation.swf_version()));
         let (allow_scale_x, allow_scale_y) = match args
             .get(4)
             .and_then(|v| v.coerce_to_string(activation).ok())
@@ -401,13 +391,9 @@ fn line_style<'gc>(
             .with_allow_scale_y(allow_scale_y)
             .with_is_pixel_hinted(is_pixel_hinted)
             .with_allow_close(false);
-        movie_clip
-            .drawing(activation.context.gc_context)
-            .set_line_style(Some(line_style));
+        movie_clip.drawing_mut().set_line_style(Some(line_style));
     } else {
-        movie_clip
-            .drawing(activation.context.gc_context)
-            .set_line_style(None);
+        movie_clip.drawing_mut().set_line_style(None);
     }
     Ok(Value::Undefined)
 }
@@ -487,9 +473,7 @@ fn line_gradient_style<'gc>(
                 focal_point: Fixed8::from_f64(focal_point),
             },
         };
-        movie_clip
-            .drawing(activation.context.gc_context)
-            .set_line_fill_style(style);
+        movie_clip.drawing_mut().set_line_fill_style(style);
     }
     Ok(Value::Undefined)
 }
@@ -581,12 +565,10 @@ fn begin_fill<'gc>(
             / 100.0
             * 255.0;
         movie_clip
-            .drawing(activation.context.gc_context)
+            .drawing_mut()
             .set_fill_style(Some(FillStyle::Color(Color::from_rgb(rgb, alpha as u8))));
     } else {
-        movie_clip
-            .drawing(activation.context.gc_context)
-            .set_fill_style(None);
+        movie_clip.drawing_mut().set_fill_style(None);
     }
     Ok(Value::Undefined)
 }
@@ -599,16 +581,13 @@ fn begin_bitmap_fill<'gc>(
     let fill_style = if let [Value::Object(bitmap_data), ..] = args {
         if let NativeObject::BitmapData(bitmap_data) = bitmap_data.native() {
             // Register the bitmap data with the drawing.
-            let handle = bitmap_data
-                .bitmap_handle(activation.context.gc_context, activation.context.renderer);
+            let handle = bitmap_data.bitmap_handle(activation.gc(), activation.context.renderer);
             let bitmap = ruffle_render::bitmap::BitmapInfo {
                 handle,
                 width: bitmap_data.width() as u16,
                 height: bitmap_data.height() as u16,
             };
-            let id = movie_clip
-                .drawing(activation.context.gc_context)
-                .add_bitmap(bitmap);
+            let id = movie_clip.drawing_mut().add_bitmap(bitmap);
 
             let mut matrix = avm1::globals::matrix::object_to_matrix_or_default(
                 args.get(1)
@@ -641,9 +620,7 @@ fn begin_bitmap_fill<'gc>(
     } else {
         None
     };
-    movie_clip
-        .drawing(activation.context.gc_context)
-        .set_fill_style(fill_style);
+    movie_clip.drawing_mut().set_fill_style(fill_style);
     Ok(Value::Undefined)
 }
 
@@ -654,9 +631,7 @@ fn begin_gradient_fill<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     if Value::Undefined == *args.get(0).unwrap_or(&Value::Undefined) {
         // The path has no fill if the first parameter is `undefined`, or if no parameters are passed.
-        movie_clip
-            .drawing(activation.context.gc_context)
-            .set_fill_style(None);
+        movie_clip.drawing_mut().set_fill_style(None);
     } else if let (Some(gradient_type), Some(colors), Some(alphas), Some(ratios), Some(matrix)) = (
         args.get(0),
         args.get(1),
@@ -719,9 +694,7 @@ fn begin_gradient_fill<'gc>(
                 focal_point: Fixed8::from_f64(focal_point),
             },
         };
-        movie_clip
-            .drawing(activation.context.gc_context)
-            .set_fill_style(Some(style));
+        movie_clip.drawing_mut().set_fill_style(Some(style));
     }
     Ok(Value::Undefined)
 }
@@ -735,7 +708,7 @@ fn move_to<'gc>(
         let x = x.coerce_to_f64(activation)?;
         let y = y.coerce_to_f64(activation)?;
         movie_clip
-            .drawing(activation.context.gc_context)
+            .drawing_mut()
             .draw_command(DrawCommand::MoveTo(Point::from_pixels(x, y)));
     }
     Ok(Value::Undefined)
@@ -750,7 +723,7 @@ fn line_to<'gc>(
         let x = x.coerce_to_f64(activation)?;
         let y = y.coerce_to_f64(activation)?;
         movie_clip
-            .drawing(activation.context.gc_context)
+            .drawing_mut()
             .draw_command(DrawCommand::LineTo(Point::from_pixels(x, y)));
     }
     Ok(Value::Undefined)
@@ -767,7 +740,7 @@ fn curve_to<'gc>(
         let anchor_x = anchor_x.coerce_to_f64(activation)?;
         let anchor_y = anchor_y.coerce_to_f64(activation)?;
         movie_clip
-            .drawing(activation.context.gc_context)
+            .drawing_mut()
             .draw_command(DrawCommand::QuadraticCurveTo {
                 control: Point::from_pixels(control_x, control_y),
                 anchor: Point::from_pixels(anchor_x, anchor_y),
@@ -778,21 +751,19 @@ fn curve_to<'gc>(
 
 fn end_fill<'gc>(
     movie_clip: MovieClip<'gc>,
-    activation: &mut Activation<'_, 'gc>,
+    _activation: &mut Activation<'_, 'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    movie_clip
-        .drawing(activation.context.gc_context)
-        .set_fill_style(None);
+    movie_clip.drawing_mut().set_fill_style(None);
     Ok(Value::Undefined)
 }
 
 fn clear<'gc>(
     movie_clip: MovieClip<'gc>,
-    activation: &mut Activation<'_, 'gc>,
+    _activation: &mut Activation<'_, 'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    movie_clip.drawing(activation.context.gc_context).clear();
+    movie_clip.drawing_mut().clear();
     Ok(Value::Undefined)
 }
 
@@ -822,27 +793,21 @@ fn attach_movie<'gc>(
         return Ok(Value::Undefined);
     }
 
-    if let Ok(new_clip) = activation
+    if let Some(new_clip) = activation
         .context
         .library
         .library_for_movie(movie_clip.movie())
-        .ok_or("Movie is missing!")
-        .and_then(|l| l.instantiate_by_export_name(export_name, activation.context.gc_context))
+        .and_then(|l| l.instantiate_by_export_name(export_name, activation.gc()))
     {
         // Set name and attach to parent.
-        new_clip.set_name(activation.context.gc_context, new_instance_name);
-        movie_clip.replace_at_depth(&mut activation.context, new_clip, depth);
+        new_clip.set_name(activation.gc(), new_instance_name);
+        movie_clip.replace_at_depth(activation.context, new_clip, depth);
         let init_object = if let Some(Value::Object(init_object)) = init_object {
             Some(init_object.to_owned())
         } else {
             None
         };
-        new_clip.post_instantiation(
-            &mut activation.context,
-            init_object,
-            Instantiator::Avm1,
-            true,
-        );
+        new_clip.post_instantiation(activation.context, init_object, Instantiator::Avm1, true);
 
         Ok(new_clip.object().coerce_to_object(activation).into())
     } else {
@@ -874,12 +839,12 @@ fn create_empty_movie_clip<'gc>(
 
     // Create empty movie clip.
     let swf_movie = movie_clip.movie();
-    let new_clip = MovieClip::new(swf_movie, activation.context.gc_context);
+    let new_clip = MovieClip::new(swf_movie, activation.gc());
 
     // Set name and attach to parent.
-    new_clip.set_name(activation.context.gc_context, new_instance_name);
-    movie_clip.replace_at_depth(&mut activation.context, new_clip.into(), depth);
-    new_clip.post_instantiation(&mut activation.context, None, Instantiator::Avm1, true);
+    new_clip.set_name(activation.gc(), new_instance_name);
+    movie_clip.replace_at_depth(activation.context, new_clip.into(), depth);
+    new_clip.post_instantiation(activation.context, None, Instantiator::Avm1, true);
 
     Ok(new_clip.object())
 }
@@ -896,39 +861,38 @@ fn create_text_field<'gc>(
         .cloned()
         .unwrap_or(Value::Undefined)
         .coerce_to_f64(activation)?;
+
+    // x, y, width, and height are integers here
     let x = args
         .get(2)
         .cloned()
         .unwrap_or(Value::Undefined)
-        .coerce_to_f64(activation)?;
+        .coerce_to_i32(activation)? as f64;
     let y = args
         .get(3)
         .cloned()
         .unwrap_or(Value::Undefined)
-        .coerce_to_f64(activation)?;
+        .coerce_to_i32(activation)? as f64;
     let width = args
         .get(4)
         .cloned()
         .unwrap_or(Value::Undefined)
-        .coerce_to_f64(activation)?;
+        .coerce_to_i32(activation)? as f64;
     let height = args
         .get(5)
         .cloned()
         .unwrap_or(Value::Undefined)
-        .coerce_to_f64(activation)?;
+        .coerce_to_i32(activation)? as f64;
 
     let text_field: DisplayObject<'gc> =
-        EditText::new(&mut activation.context, movie, x, y, width, height).into();
-    text_field.set_name(
-        activation.context.gc_context,
-        instance_name.coerce_to_string(activation)?,
-    );
+        EditText::new(activation.context, movie, x, y, width, height).into();
+    text_field.set_name(activation.gc(), instance_name.coerce_to_string(activation)?);
     movie_clip.replace_at_depth(
-        &mut activation.context,
+        activation.context,
         text_field,
         (depth as Depth).wrapping_add(AVM_DEPTH_BIAS),
     );
-    text_field.post_instantiation(&mut activation.context, None, Instantiator::Avm1, false);
+    text_field.post_instantiation(activation.context, None, Instantiator::Avm1, false);
 
     if activation.swf_version() >= 8 {
         //SWF8+ returns the `TextField` instance here
@@ -964,13 +928,7 @@ fn duplicate_movie_clip<'gc>(
     // `duplicateMovieClip` method uses biased depth compared to `CloneSprite`.
     let depth = depth.wrapping_add(AVM_DEPTH_BIAS);
 
-    let new_clip = clone_sprite(
-        movie_clip,
-        &mut activation.context,
-        name,
-        depth,
-        init_object,
-    );
+    let new_clip = clone_sprite(movie_clip, activation.context, name, depth, init_object);
 
     // On SWF<6 undefined is returned.
     if activation.swf_version() < 6 {
@@ -982,7 +940,7 @@ fn duplicate_movie_clip<'gc>(
 
 pub fn clone_sprite<'gc>(
     movie_clip: MovieClip<'gc>,
-    context: &mut UpdateContext<'_, 'gc>,
+    context: &mut UpdateContext<'gc>,
     target: AvmString<'gc>,
     depth: Depth,
     init_object: Option<Object<'gc>>,
@@ -1003,28 +961,30 @@ pub fn clone_sprite<'gc>(
         // Clip from SWF; instantiate a new copy.
         let library = context.library.library_for_movie(movie).unwrap();
         library
-            .instantiate_by_id(movie_clip.id(), context.gc_context)
+            .instantiate_by_id(movie_clip.id(), context.gc())
             .unwrap()
             .as_movie_clip()
             .unwrap()
     } else {
         // Dynamically created clip; create a new empty movie clip.
-        MovieClip::new(movie, context.gc_context)
+        MovieClip::new(movie, context.gc())
     };
 
     // Set name and attach to parent.
-    new_clip.set_name(context.gc_context, target);
+    new_clip.set_name(context.gc(), target);
     parent.replace_at_depth(context, new_clip.into(), depth);
 
     // Copy display properties from previous clip to new clip.
-    new_clip.set_matrix(context.gc_context, *movie_clip.base().matrix());
-    new_clip.set_color_transform(context.gc_context, *movie_clip.base().color_transform());
+    new_clip.set_matrix(movie_clip.base().matrix());
+    new_clip.set_color_transform(movie_clip.base().color_transform());
 
-    new_clip.set_clip_event_handlers(context.gc_context, movie_clip.clip_actions().to_vec());
+    new_clip.init_clip_event_handlers(movie_clip.clip_actions().into());
 
-    *new_clip.drawing(context.gc_context) = movie_clip.drawing(context.gc_context).clone();
+    if let Some(drawing) = movie_clip.drawing().as_deref().cloned() {
+        *new_clip.drawing_mut() = drawing;
+    }
     // TODO: Any other properties we should copy...?
-    // Definitely not ScriptObject properties.
+    // Definitely not Object properties.
 
     new_clip.post_instantiation(context, init_object, Instantiator::Avm1, true);
 
@@ -1147,7 +1107,7 @@ pub fn goto_frame<'gc>(
                         // First try to parse as a frame number.
                         call_frame = Some((clip, frame));
                     } else if let Some(frame) =
-                        clip.frame_label_to_number(frame, &activation.context)
+                        clip.frame_label_to_number(frame, activation.context)
                     {
                         // Otherwise, it's a frame label.
                         call_frame = Some((clip, frame as i32));
@@ -1162,7 +1122,7 @@ pub fn goto_frame<'gc>(
         let frame = frame.wrapping_add(i32::from(scene_offset));
         let frame = frame.saturating_add(1);
         if frame > 0 {
-            clip.goto_frame(&mut activation.context, frame as u16, stop);
+            clip.goto_frame(activation.context, frame as u16, stop);
         }
     }
     Ok(Value::Undefined)
@@ -1173,16 +1133,16 @@ fn next_frame<'gc>(
     activation: &mut Activation<'_, 'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    movie_clip.next_frame(&mut activation.context);
+    movie_clip.next_frame(activation.context);
     Ok(Value::Undefined)
 }
 
 fn play<'gc>(
     movie_clip: MovieClip<'gc>,
-    activation: &mut Activation<'_, 'gc>,
+    _activation: &mut Activation<'_, 'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    movie_clip.play(&mut activation.context);
+    movie_clip.play();
     Ok(Value::Undefined)
 }
 
@@ -1191,7 +1151,7 @@ fn prev_frame<'gc>(
     activation: &mut Activation<'_, 'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    movie_clip.prev_frame(&mut activation.context);
+    movie_clip.prev_frame(activation.context);
     Ok(Value::Undefined)
 }
 
@@ -1226,12 +1186,12 @@ fn set_mask<'gc>(
             mask
         }
     };
-    let mc = DisplayObject::MovieClip(movie_clip);
-    let context = &mut activation.context;
-    mc.set_clip_depth(context.gc_context, 0);
-    mc.set_masker(context.gc_context, mask, true);
+    let movie_clip = DisplayObject::MovieClip(movie_clip);
+    let mc = activation.gc();
+    movie_clip.set_clip_depth(0);
+    movie_clip.set_masker(mc, mask, true);
     if let Some(m) = mask {
-        m.set_maskee(context.gc_context, Some(mc), true);
+        m.set_maskee(mc, Some(movie_clip), true);
     }
     Ok(Value::Bool(true))
 }
@@ -1335,7 +1295,7 @@ fn stop<'gc>(
     activation: &mut Activation<'_, 'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    movie_clip.stop(&mut activation.context);
+    movie_clip.stop(activation.context);
     Ok(Value::Undefined)
 }
 
@@ -1349,7 +1309,7 @@ fn stop_drag<'gc>(
     // We might not have had an opportunity to call `update_drag`
     // if AS did `startDrag(mc); stopDrag();` in one go,
     // so let's do it here.
-    crate::player::Player::update_drag(&mut activation.context);
+    crate::player::Player::update_drag(activation.context);
 
     *activation.context.drag_object = None;
     Ok(Value::Undefined)
@@ -1400,8 +1360,8 @@ fn swap_depths<'gc>(
         }
 
         if depth != movie_clip.depth() {
-            parent.swap_at_depth(&mut activation.context, movie_clip.into(), depth);
-            movie_clip.set_transformed_by_script(activation.context.gc_context, true);
+            parent.swap_at_depth(activation.context, movie_clip.into(), depth);
+            movie_clip.set_transformed_by_script(true);
         }
     }
 
@@ -1418,16 +1378,16 @@ fn local_to_global<'gc>(
         // It does not search the prototype chain and ignores virtual properties.
         if let (Value::Number(x), Value::Number(y)) = (
             point
-                .get_local_stored("x", activation, false)
+                .get_local_stored(istr!("x"), activation, false)
                 .unwrap_or(Value::Undefined),
             point
-                .get_local_stored("y", activation, false)
+                .get_local_stored(istr!("y"), activation, false)
                 .unwrap_or(Value::Undefined),
         ) {
             let local = Point::from_pixels(x, y);
             let global = movie_clip.local_to_global(local);
-            point.set("x", global.x.to_pixels().into(), activation)?;
-            point.set("y", global.y.to_pixels().into(), activation)?;
+            point.set(istr!("x"), global.x.to_pixels().into(), activation)?;
+            point.set(istr!("y"), global.y.to_pixels().into(), activation)?;
         } else {
             avm_warn!(
                 activation,
@@ -1458,7 +1418,7 @@ fn get_bounds<'gc>(
         if !activation.context.avm1.get_use_new_invalid_bounds_value() {
             // The value is set to true if the activation SWF version is >= 8 or if the SWF
             // version of the root movie is >= 8.
-            if activation.swf_version() >= 8 || activation.context.swf.version() >= 8 {
+            if activation.swf_version() >= 8 || activation.context.root_swf.version() >= 8 {
                 // If only the activation SWF version (and not the root movie SWF version)
                 // is >= 8 and the movie clip equals the target, the value sometimes isn't set
                 // in Flash Player 10.
@@ -1480,7 +1440,7 @@ fn get_bounds<'gc>(
             // the final matrix, but this matches Flash's behavior.
             let to_global_matrix = movie_clip.local_to_global_matrix();
             let to_target_matrix = target.global_to_local_matrix().unwrap_or_default();
-            let target_bounds = to_target_matrix * to_global_matrix * bounds.clone();
+            let target_bounds = to_target_matrix * to_global_matrix * bounds;
 
             // If the bounds are invalid, the target space is identical to the origin space and
             // use_new_invalid_bounds_value is true, the returned bounds use a specific invalid value.
@@ -1499,14 +1459,30 @@ fn get_bounds<'gc>(
             }
         };
 
-        let out = ScriptObject::new(
-            activation.context.gc_context,
+        let out = Object::new(
+            &activation.context.strings,
             Some(activation.context.avm1.prototypes().object),
         );
-        out.set("xMin", out_bounds.x_min.to_pixels().into(), activation)?;
-        out.set("yMin", out_bounds.y_min.to_pixels().into(), activation)?;
-        out.set("xMax", out_bounds.x_max.to_pixels().into(), activation)?;
-        out.set("yMax", out_bounds.y_max.to_pixels().into(), activation)?;
+        out.set(
+            istr!("xMin"),
+            out_bounds.x_min.to_pixels().into(),
+            activation,
+        )?;
+        out.set(
+            istr!("xMax"),
+            out_bounds.x_max.to_pixels().into(),
+            activation,
+        )?;
+        out.set(
+            istr!("yMin"),
+            out_bounds.y_min.to_pixels().into(),
+            activation,
+        )?;
+        out.set(
+            istr!("yMax"),
+            out_bounds.y_max.to_pixels().into(),
+            activation,
+        )?;
         Ok(out.into())
     } else {
         Ok(Value::Undefined)
@@ -1555,7 +1531,7 @@ pub fn get_url<'gc>(
 
         let window = match args.get(1) {
             Some(window) => window.coerce_to_string(activation)?,
-            None => "".into(),
+            None => istr!(""),
         };
 
         let method = match args.get(2) {
@@ -1584,16 +1560,16 @@ fn global_to_local<'gc>(
         // It does not search the prototype chain and ignores virtual properties.
         if let (Value::Number(x), Value::Number(y)) = (
             point
-                .get_local_stored("x", activation, false)
+                .get_local_stored(istr!("x"), activation, false)
                 .unwrap_or(Value::Undefined),
             point
-                .get_local_stored("y", activation, false)
+                .get_local_stored(istr!("y"), activation, false)
                 .unwrap_or(Value::Undefined),
         ) {
             let global = Point::from_pixels(x, y);
             let local = movie_clip.global_to_local(global).unwrap_or(global);
-            point.set("x", local.x.to_pixels().into(), activation)?;
-            point.set("y", local.y.to_pixels().into(), activation)?;
+            point.set(istr!("x"), local.x.to_pixels().into(), activation)?;
+            point.set(istr!("y"), local.y.to_pixels().into(), activation)?;
         } else {
             avm_warn!(
                 activation,
@@ -1659,7 +1635,7 @@ fn unload_movie<'gc>(
     activation: &mut Activation<'_, 'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    target.avm1_unload_movie(&mut activation.context);
+    target.avm1_unload_movie(activation.context);
 
     Ok(Value::Undefined)
 }
@@ -1681,19 +1657,19 @@ fn set_transform<'gc>(
     if let Value::Object(object) = value {
         if let NativeObject::Transform(transform) = object.native() {
             if let Some(clip) = transform.clip(activation) {
-                let matrix = *clip.base().matrix();
-                this.set_matrix(activation.context.gc_context, matrix);
+                let matrix = clip.base().matrix();
+                this.set_matrix(matrix);
 
-                let color_transform = *clip.base().color_transform();
-                this.set_color_transform(activation.context.gc_context, color_transform);
+                let color_transform = clip.base().color_transform();
+                this.set_color_transform(color_transform);
 
                 if let Some(parent) = this.parent() {
                     // Self-transform changes are automatically handled,
                     // we only want to inform ancestors to avoid unnecessary invalidations for tx/ty
-                    parent.invalidate_cached_bitmap(activation.context.gc_context);
+                    parent.invalidate_cached_bitmap();
                 }
 
-                this.set_transformed_by_script(activation.context.gc_context, true);
+                this.set_transformed_by_script(true);
             }
         }
     }
@@ -1714,7 +1690,7 @@ fn set_lock_root<'gc>(
     value: Value<'gc>,
 ) -> Result<(), Error<'gc>> {
     let lock_root = value.as_bool(activation.swf_version());
-    this.set_lock_root(activation.context.gc_context, lock_root);
+    this.set_lock_root(lock_root);
     Ok(())
 }
 
@@ -1722,18 +1698,18 @@ fn blend_mode<'gc>(
     this: MovieClip<'gc>,
     activation: &mut Activation<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let mode = AvmString::new_utf8(activation.context.gc_context, this.blend_mode().to_string());
+    let mode = AvmString::new_utf8(activation.gc(), this.blend_mode().to_string());
     Ok(mode.into())
 }
 
 fn set_blend_mode<'gc>(
     this: MovieClip<'gc>,
-    activation: &mut Activation<'_, 'gc>,
+    _activation: &mut Activation<'_, 'gc>,
     value: Value<'gc>,
 ) -> Result<(), Error<'gc>> {
     // No-op if value is not a valid blend mode.
     if let Some(mode) = value.as_blend_mode() {
-        this.set_blend_mode(activation.context.gc_context, mode.into());
+        this.set_blend_mode(mode.into());
     } else {
         tracing::error!("Unknown blend mode {value:?}");
     }
@@ -1754,10 +1730,7 @@ fn set_cache_as_bitmap<'gc>(
     value: Value<'gc>,
 ) -> Result<(), Error<'gc>> {
     // Note that the *getter* returns actual, and *setter* is preference
-    this.set_bitmap_cached_preference(
-        activation.context.gc_context,
-        value.as_bool(activation.swf_version()),
-    );
+    this.set_bitmap_cached_preference(value.as_bool(activation.swf_version()));
     Ok(())
 }
 
@@ -1778,12 +1751,9 @@ fn set_opaque_background<'gc>(
     value: Value<'gc>,
 ) -> Result<(), Error<'gc>> {
     if matches!(value, Value::Undefined | Value::Null) {
-        this.set_opaque_background(activation.context.gc_context, None);
+        this.set_opaque_background(None);
     } else {
-        this.set_opaque_background(
-            activation.context.gc_context,
-            Some(Color::from_rgb(value.coerce_to_u32(activation)?, 255)),
-        );
+        this.set_opaque_background(Some(Color::from_rgb(value.coerce_to_u32(activation)?, 255)));
     }
     Ok(())
 }
@@ -1792,14 +1762,13 @@ fn filters<'gc>(
     this: MovieClip<'gc>,
     activation: &mut Activation<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
-    Ok(ArrayObject::new(
-        activation.context.gc_context,
-        activation.context.avm1.prototypes().array,
-        this.filters()
-            .into_iter()
-            .map(|filter| bitmap_filter::filter_to_avm1(activation, filter)),
-    )
-    .into())
+    Ok(ArrayBuilder::new(activation)
+        .with(
+            this.filters()
+                .iter()
+                .map(|filter| bitmap_filter::filter_to_avm1(activation, filter.clone())),
+        )
+        .into())
 }
 
 fn set_filters<'gc>(
@@ -1811,13 +1780,43 @@ fn set_filters<'gc>(
     if let Value::Object(value) = value {
         for index in value.get_keys(activation, false).into_iter().rev() {
             let filter_object = value.get(index, activation)?.coerce_to_object(activation);
-            if let Some(filter) =
-                bitmap_filter::avm1_to_filter(filter_object, &mut activation.context)
-            {
+            if let Some(filter) = bitmap_filter::avm1_to_filter(filter_object, activation.context) {
                 filters.push(filter);
             }
         }
     }
-    this.set_filters(activation.context.gc_context, filters);
+    this.set_filters(filters.into_boxed_slice());
+    Ok(())
+}
+
+fn tab_index<'gc>(
+    this: MovieClip<'gc>,
+    _activation: &mut Activation<'_, 'gc>,
+) -> Result<Value<'gc>, Error<'gc>> {
+    if let Some(index) = this.as_interactive().and_then(|this| this.tab_index()) {
+        Ok(Value::Number(index as f64))
+    } else {
+        Ok(Value::Undefined)
+    }
+}
+
+fn set_tab_index<'gc>(
+    this: MovieClip<'gc>,
+    activation: &mut Activation<'_, 'gc>,
+    value: Value<'gc>,
+) -> Result<(), Error<'gc>> {
+    if let Some(this) = this.as_interactive() {
+        let value = match value {
+            Value::Undefined | Value::Null => None,
+            Value::Bool(_) | Value::Number(_) => {
+                // FIXME This coercion is not perfect, as it wraps
+                //       instead of falling back to MIN, as FP does
+                let i32_value = value.coerce_to_i32(activation)?;
+                Some(i32_value)
+            }
+            _ => Some(i32::MIN),
+        };
+        this.set_tab_index(value);
+    }
     Ok(())
 }

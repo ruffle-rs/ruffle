@@ -1,0 +1,14 @@
+[
+  { "type": "MouseMove", "pos": [14, 12] },
+  { "type": "MouseDown", "pos": [14, 12], "btn": "Left" },
+  { "type": "MouseUp", "pos": [14, 12], "btn": "Left" },
+  { "type": "MouseMove", "pos": [38, 13] },
+  { "type": "MouseDown", "pos": [38, 13], "btn": "Left" },
+  { "type": "MouseUp", "pos": [38, 13], "btn": "Left" },
+  { "type": "MouseMove", "pos": [14, 38] },
+  { "type": "MouseDown", "pos": [14, 38], "btn": "Left" },
+  { "type": "MouseUp", "pos": [14, 38], "btn": "Left" },
+  { "type": "MouseMove", "pos": [37, 36] },
+  { "type": "MouseDown", "pos": [37, 36], "btn": "Left" },
+  { "type": "MouseUp", "pos": [37, 36], "btn": "Left" }
+]

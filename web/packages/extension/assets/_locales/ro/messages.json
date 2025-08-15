@@ -11,6 +11,9 @@
     "settings_autostart": {
         "message": "Redă automat conținut Flash (dă clic pentru a dezmuți)"
     },
+    "settings_swf_takeover": {
+        "message": "Redați fișiere SWF în browser în loc să le descărcați"
+    },
     "settings_log_level": {
         "message": "Nivel pentru jurnale"
     },
@@ -22,6 +25,12 @@
     },
     "settings_log_level_info": {
         "message": "Informații"
+    },
+    "settings_log_level_debug": {
+        "message": "Depanare"
+    },
+    "settings_log_level_trace": {
+        "message": "Urmărire"
     },
     "settings_max_execution_duration": {
         "message": "Durată maximă permisă de execuție pentru ActionScript (în secunde)"
@@ -59,6 +68,9 @@
     "status_result_running": {
         "message": "Ruffle este pregătit să ruleze conținut Flash în fila actuală."
     },
+    "status_result_running_protected": {
+        "message": "Ruffle este gata să ruleze conținutul Flash pe care îl solicitați."
+    },
     "status_result_optout": {
         "message": "Ruffle nu se poate încărca deoarece pagina actuală s-a marcat ca fiind incompatibilă."
     },
@@ -74,6 +86,9 @@
     "action_reload": {
         "message": "Reîncarcă fila pentru a aplica modificările"
     },
+    "open_player_page": {
+        "message": "Deschideți playerul SWF"
+    },
     "open_settings_page": {
         "message": "Deschide pagina cu setări"
     },
@@ -88,5 +103,23 @@
     },
     "settings_saved": {
         "message": "Setări salvate"
+    },
+    "onboarding_page": {
+        "message": "Pagina de integrare"
+    },
+    "permissions_grant": {
+        "message": "Îi acord lui Ruffle permisiunea de a accesa datele mele pe toate site-urile"
+    },
+    "permissions_not_granted": {
+        "message": "Va trebui să dați clic pe pictograma Ruffle pe fiecare site pe care doriți să utilizați Ruffle"
+    },
+    "grant_single_site_permission": {
+        "message": "Activați permanent pentru acest site"
+    },
+    "permissions_explanation": {
+        "message": "Extensia Ruffle funcționează cel mai bine când are posibilitatea să acceseze datele de pe toate site-urile web. Acest lucru îi permite să ruleze atunci când se încarcă pentru prima dată un site web, deoarece a convins site-urile web care detectează Flash Player să permită imediat rularea conținutului Flash. De asemenea, îi oferă posibilitatea de a încărca fișiere SWF în pagina internă a playerului din alte locații de pe web și îi permite să încarce automat link-uri SWF directe în pagina respectivă. Dacă nu acordați această permisiune, va trebui să activați Ruffle manual pe fiecare site web pe care doriți să îl utilizați, făcând clic pe pictograma extensiei și activând-o pentru site-ul web respectiv."
+    },
+    "swf_player_permissions": {
+        "message": "Trebuie să acordați permisiunea acestei origini URL pentru a încărca fișiere SWF de la aceasta."
     }
 }

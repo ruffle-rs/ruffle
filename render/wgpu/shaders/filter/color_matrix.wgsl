@@ -1,4 +1,4 @@
-#import filter
+// NOTE: The `shader_filter_common.wgsl` source is prepended to this before compilation.
 
 struct Filter {
     r_to_r: f32,
@@ -31,12 +31,12 @@ struct Filter {
 @group(0) @binding(2) var<uniform> filter_args: Filter;
 
 @vertex
-fn main_vertex(in: filter::VertexInput) -> filter::VertexOutput {
-    return filter::main_vertex(in);
+fn main_vertex(in: filter__VertexInput) -> filter__VertexOutput {
+    return filter__main_vertex(in);
 }
 
 @fragment
-fn main_fragment(in: filter::VertexOutput) -> @location(0) vec4<f32> {
+fn main_fragment(in: filter__VertexOutput) -> @location(0) vec4<f32> {
     var src = textureSample(texture, texture_sampler, in.uv);
     var f = filter_args;
     var color = vec4<f32>(

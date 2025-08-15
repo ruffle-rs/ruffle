@@ -1,5 +1,6 @@
 use fluent_templates::fluent_bundle::FluentValue;
 use fluent_templates::{static_loader, LanguageIdentifier, Loader};
+use std::borrow::Cow;
 use std::collections::HashMap;
 
 static_loader! {
@@ -10,19 +11,19 @@ static_loader! {
 }
 
 pub fn core_text(language: &LanguageIdentifier, id: &str) -> String {
-    TEXTS.lookup(language, id).unwrap_or_else(|| {
+    TEXTS.try_lookup(language, id).unwrap_or_else(|| {
         tracing::error!("Unknown core text id '{id}'");
         id.to_string()
     })
 }
 
-pub fn core_text_with_args<T: AsRef<str>>(
+pub fn core_text_with_args(
     language: &LanguageIdentifier,
     id: &str,
-    args: &HashMap<T, FluentValue>,
+    args: &HashMap<Cow<'static, str>, FluentValue>,
 ) -> String {
     TEXTS
-        .lookup_with_args(language, id, args)
+        .try_lookup_with_args(language, id, args)
         .unwrap_or_else(|| {
             tracing::error!("Unknown core text id '{id}'");
             id.to_string()

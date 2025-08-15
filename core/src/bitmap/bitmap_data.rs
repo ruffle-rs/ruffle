@@ -1,10 +1,14 @@
 use crate::avm2::{Object as Avm2Object, Value as Avm2Value};
+use crate::context::RenderContext;
 use crate::display_object::{DisplayObject, DisplayObjectWeak, TDisplayObject};
 use bitflags::bitflags;
-use gc_arena::{Collect, Mutation};
+use gc_arena::{Collect, GcCell, Mutation};
 use ruffle_render::backend::RenderBackend;
-use ruffle_render::bitmap::{Bitmap, BitmapFormat, BitmapHandle, PixelRegion, SyncHandle};
+use ruffle_render::bitmap::{
+    Bitmap, BitmapFormat, BitmapHandle, PixelRegion, PixelSnapping, SyncHandle,
+};
 use ruffle_wstr::WStr;
+use std::cell::Ref;
 use std::fmt::Debug;
 use std::ops::Range;
 use swf::{Rectangle, Twips};
@@ -23,13 +27,13 @@ impl LehmerRng {
 
     /// Generate the next value in the sequence via the following formula
     /// X_(k+1) = a * X_k mod m
-    pub fn gen(&mut self) -> u32 {
+    pub fn random(&mut self) -> u32 {
         self.x = ((self.x as u64).overflowing_mul(16_807).0 % 2_147_483_647) as u32;
         self.x
     }
 
-    pub fn gen_range(&mut self, rng: Range<u8>) -> u8 {
-        rng.start + (self.gen() % ((rng.end - rng.start) as u32 + 1)) as u8
+    pub fn random_range(&mut self, rng: Range<u8>) -> u8 {
+        rng.start + (self.random() % ((rng.end - rng.start) as u32 + 1)) as u8
     }
 }
 
@@ -40,9 +44,17 @@ impl LehmerRng {
 /// unmultiplied values. Make sure to convert the color to the correct form beforehand.
 // TODO: Maybe split the type into `PremultipliedColor(u32)` and
 //   `UnmultipliedColor(u32)`?
-#[derive(Debug, Default, Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Collect)]
-#[collect(no_drop)]
-pub struct Color(u32);
+#[derive(Debug, Default, Copy, Clone, Eq, PartialEq, Ord, PartialOrd, bytemuck::NoUninit)]
+#[repr(C, align(4))]
+pub struct Color {
+    // Note: even though AS2/AS3 represent colors as (little-endian) BGRA `u32`s, this is stored
+    // in RGBA order to be compatible with what the render backend expects.
+    // TODO: consider switching renderers to use BGRA to avoid byteswaps when talking to ActionScript?
+    r: u8,
+    g: u8,
+    b: u8,
+    a: u8,
+}
 
 #[derive(Debug, Clone)]
 pub enum BitmapDataDrawError {
@@ -50,20 +62,35 @@ pub enum BitmapDataDrawError {
 }
 
 impl Color {
+    #[must_use]
+    pub fn rgba(r: u8, g: u8, b: u8, a: u8) -> Self {
+        Self { r, g, b, a }
+    }
+
+    #[must_use]
+    pub fn bgra_u32(bgra: u32) -> Self {
+        let [b, g, r, a] = bgra.to_le_bytes();
+        Self { r, g, b, a }
+    }
+
+    pub fn to_bgra_u32(&self) -> u32 {
+        u32::from_le_bytes([self.b, self.g, self.r, self.a])
+    }
+
     pub fn blue(&self) -> u8 {
-        (self.0 & 0xFF) as u8
+        self.b
     }
 
     pub fn green(&self) -> u8 {
-        ((self.0 >> 8) & 0xFF) as u8
+        self.g
     }
 
     pub fn red(&self) -> u8 {
-        ((self.0 >> 16) & 0xFF) as u8
+        self.r
     }
 
     pub fn alpha(&self) -> u8 {
-        ((self.0 >> 24) & 0xFF) as u8
+        self.a
     }
 
     #[must_use]
@@ -77,7 +104,7 @@ impl Color {
         let g = ((self.green() as u32 * a + 127) / 255) as u8;
         let b = ((self.blue() as u32 * a + 127) / 255) as u8;
 
-        Self::argb(old_alpha, r, g, b)
+        Self::rgba(r, g, b, old_alpha)
     }
 
     #[must_use]
@@ -120,17 +147,12 @@ impl Color {
         let g = unmultiply(self.green());
         let b = unmultiply(self.blue());
 
-        Self::argb(self.alpha(), r, g, b)
-    }
-
-    #[must_use]
-    pub fn argb(alpha: u8, red: u8, green: u8, blue: u8) -> Self {
-        Self(u32::from_le_bytes([blue, green, red, alpha]))
+        Self::rgba(r, g, b, self.alpha())
     }
 
     #[must_use]
     pub fn with_alpha(&self, alpha: u8) -> Self {
-        Self::argb(alpha, self.red(), self.green(), self.blue())
+        Self::rgba(self.red(), self.green(), self.blue(), alpha)
     }
 
     /// # Arguments
@@ -145,31 +167,35 @@ impl Color {
         let g = source.green() + ((self.green() as u16 * (255 - sa as u16)) / 255) as u8;
         let b = source.blue() + ((self.blue() as u16 * (255 - sa as u16)) / 255) as u8;
         let a = source.alpha() + ((self.alpha() as u16 * (255 - sa as u16)) / 255) as u8;
-        Self::argb(a, r, g, b)
+        Self::rgba(r, g, b, a)
+    }
+
+    fn slice_as_rgba(slice: &[Self]) -> &[u8] {
+        bytemuck::cast_slice(slice)
     }
 }
 
 impl std::fmt::Display for Color {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.write_str(&format!("{:#x}", self.0))
+        f.write_str(&format!("{:#x}", self.to_bgra_u32()))
     }
 }
 
 impl From<Color> for u32 {
     fn from(c: Color) -> Self {
-        c.0
+        c.to_bgra_u32()
     }
 }
 
 impl From<u32> for Color {
     fn from(i: u32) -> Self {
-        Color(i)
+        Color::bgra_u32(i)
     }
 }
 
 impl From<swf::Color> for Color {
     fn from(c: swf::Color) -> Self {
-        Self::argb(c.a, c.r, c.g, c.b)
+        Self::rgba(c.r, c.g, c.b, c.a)
     }
 }
 
@@ -193,11 +219,155 @@ bitflags! {
     }
 }
 
+#[derive(Copy, Clone, Collect, Debug)]
+#[collect(no_drop)]
+pub struct BitmapData<'gc>(BitmapRawDataWrapper<'gc>);
+
+impl<'gc> BitmapData<'gc> {
+    pub fn new(
+        mc: &Mutation<'gc>,
+        width: u32,
+        height: u32,
+        transparency: bool,
+        fill_color: u32,
+    ) -> Self {
+        let data = BitmapRawData::new(width, height, transparency, fill_color);
+        let data = BitmapRawDataWrapper::new(GcCell::new(mc, data));
+
+        Self(data)
+    }
+
+    pub fn new_with_pixels(
+        mc: &Mutation<'gc>,
+        width: u32,
+        height: u32,
+        transparency: bool,
+        pixels: Vec<Color>,
+    ) -> Self {
+        let data = BitmapRawData::new_with_pixels(width, height, transparency, pixels);
+        let data = BitmapRawDataWrapper::new(GcCell::new(mc, data));
+
+        Self(data)
+    }
+
+    pub fn dummy(mc: &Mutation<'gc>) -> Self {
+        Self(BitmapRawDataWrapper::dummy(mc))
+    }
+
+    pub fn clone_data(
+        &self,
+        mc: &Mutation<'gc>,
+        renderer: &mut dyn RenderBackend,
+    ) -> BitmapData<'gc> {
+        let data = self.0.clone_data(renderer);
+        let data = BitmapRawDataWrapper::new(GcCell::new(mc, data));
+        Self(data)
+    }
+
+    pub fn sync(&self, renderer: &mut dyn RenderBackend) -> GcCell<'gc, BitmapRawData<'gc>> {
+        self.0.sync(renderer)
+    }
+
+    pub fn bitmap_handle(
+        &self,
+        gc_context: &Mutation<'gc>,
+        renderer: &mut dyn RenderBackend,
+    ) -> BitmapHandle {
+        self.0.bitmap_handle(gc_context, renderer)
+    }
+
+    pub fn overwrite_cpu_pixels_from_gpu(
+        &self,
+        mc: &Mutation<'gc>,
+    ) -> (GcCell<'gc, BitmapRawData<'gc>>, Option<PixelRegion>) {
+        self.0.overwrite_cpu_pixels_from_gpu(mc)
+    }
+
+    pub fn read_area(
+        &self,
+        read_area: PixelRegion,
+        renderer: &mut dyn RenderBackend,
+    ) -> Ref<'_, BitmapRawData<'gc>> {
+        self.0.read_area(read_area, renderer)
+    }
+
+    pub fn height(&self) -> u32 {
+        self.0.height()
+    }
+
+    pub fn width(&self) -> u32 {
+        self.0.width()
+    }
+
+    pub fn object2(&self) -> Avm2Value<'gc> {
+        self.0.object2()
+    }
+
+    pub fn disposed(&self) -> bool {
+        self.0.disposed()
+    }
+
+    pub fn transparency(&self) -> bool {
+        self.0.transparency()
+    }
+
+    pub fn check_valid(
+        &self,
+        activation: &mut crate::avm2::Activation<'_, 'gc>,
+    ) -> Result<(), crate::avm2::Error<'gc>> {
+        self.0.check_valid(activation)
+    }
+
+    pub fn dispose(&self, mc: &Mutation<'gc>) {
+        self.0.dispose(mc);
+    }
+
+    pub fn init_object2(&self, mc: &Mutation<'gc>, object: Avm2Object<'gc>) {
+        self.0.init_object2(mc, object);
+    }
+
+    pub fn remove_display_object(&self, mc: &Mutation<'gc>, callback: DisplayObjectWeak<'gc>) {
+        self.0.remove_display_object(mc, callback);
+    }
+
+    pub fn add_display_object(&self, mc: &Mutation<'gc>, callback: DisplayObjectWeak<'gc>) {
+        self.0.add_display_object(mc, callback);
+    }
+
+    pub fn render(
+        &self,
+        smoothing: bool,
+        context: &mut RenderContext<'_, 'gc>,
+        pixel_snapping: PixelSnapping,
+    ) {
+        self.0.render(smoothing, context, pixel_snapping);
+    }
+
+    pub fn can_read(&self, read_area: PixelRegion) -> bool {
+        self.0.can_read(read_area)
+    }
+
+    #[cfg(feature = "egui")]
+    pub fn debug_sync_status(&self) -> std::borrow::Cow<'static, str> {
+        self.0.debug_sync_status()
+    }
+
+    pub fn is_point_in_bounds(&self, x: i32, y: i32) -> bool {
+        self.0.is_point_in_bounds(x, y)
+    }
+
+    pub fn ptr_eq(&self, other: BitmapData<'gc>) -> bool {
+        self.0.ptr_eq(other.0)
+    }
+}
+
 #[derive(Collect)]
 #[collect(no_drop)]
-pub struct BitmapData<'gc> {
+pub struct BitmapRawData<'gc> {
     /// The pixels in the bitmap, stored as a array of pre-multiplied ARGB colour values
+    #[collect(require_static)]
     pixels: Vec<Color>,
+
     width: u32,
     height: u32,
     transparency: bool,
@@ -223,19 +393,25 @@ pub struct BitmapData<'gc> {
     /// A list of display objects that are backed by this BitmapData
     display_objects: Vec<DisplayObjectWeak<'gc>>,
 
+    #[collect(require_static)]
     dirty_state: DirtyState,
+
+    /// Holds an egui texture handle, used for rendering this Bitmap in the debug ui.
+    /// This is automatically set to `None` when the texture is updated (either from
+    /// marking the CPU side dirty, or from performing a GPU -> CPU sync).
+    #[cfg(feature = "egui")]
+    pub egui_texture: std::cell::RefCell<Option<egui::TextureHandle>>,
 }
 
-#[derive(Clone, Collect, Debug)]
-#[collect(require_static)]
-enum DirtyState {
+#[derive(Clone, Debug)]
+pub enum DirtyState {
     // Both the CPU and GPU pixels are up to date. We do not need to wait for any syncs to complete
     Clean,
 
     // The CPU pixels have been modified, and need to be synced to the GPU via `update_dirty_texture`
     CpuModified(PixelRegion),
 
-    // The GPU pixels have been modified, and need to be synced to the CPU via `BitmapDataWrapper::sync`
+    // The GPU pixels have been modified, and need to be synced to the CPU via `BitmapRawDataWrapper::sync`
     GpuModified(Box<dyn SyncHandle>, PixelRegion),
 }
 
@@ -249,7 +425,7 @@ mod wrapper {
     use ruffle_render::commands::CommandHandler;
     use std::cell::Ref;
 
-    use super::{copy_pixels_to_bitmapdata, BitmapData, DirtyState};
+    use super::{copy_pixels_to_bitmapdata, BitmapRawData, DirtyState};
 
     /// A wrapper type that ensures that we always wait for a pending
     /// GPU -> CPU sync to complete (using `sync_handle`) before accessing
@@ -281,11 +457,11 @@ mod wrapper {
     /// `sync_handle` and `dirty` can never be set at the same time - we can only have one of them set, or none of them set.
     #[derive(Copy, Clone, Collect, Debug)]
     #[collect(no_drop)]
-    pub struct BitmapDataWrapper<'gc>(GcCell<'gc, BitmapData<'gc>>);
+    pub struct BitmapRawDataWrapper<'gc>(GcCell<'gc, BitmapRawData<'gc>>);
 
-    impl<'gc> BitmapDataWrapper<'gc> {
-        pub fn new(data: GcCell<'gc, BitmapData<'gc>>) -> Self {
-            BitmapDataWrapper(data)
+    impl<'gc> BitmapRawDataWrapper<'gc> {
+        pub fn new(data: GcCell<'gc, BitmapRawData<'gc>>) -> Self {
+            BitmapRawDataWrapper(data)
         }
 
         // Creates a dummy BitmapData with no pixels or handle, marked as disposed.
@@ -293,9 +469,9 @@ mod wrapper {
         // Marking it as disposed skips rendering, and the unset `avm2_object` will cause this to
         // be inaccessible to AS3 code.
         pub fn dummy(mc: &Mutation<'gc>) -> Self {
-            BitmapDataWrapper(GcCell::new(
+            BitmapRawDataWrapper(GcCell::new(
                 mc,
-                BitmapData {
+                BitmapRawData {
                     pixels: Vec::new(),
                     width: 0,
                     height: 0,
@@ -305,18 +481,20 @@ mod wrapper {
                     avm2_object: None,
                     display_objects: vec![],
                     dirty_state: DirtyState::Clean,
+                    #[cfg(feature = "egui")]
+                    egui_texture: Default::default(),
                 },
             ))
         }
 
         /// Clones the underlying data, producing a new `BitmapData`
         /// that has no GPU texture or associated display objects
-        pub fn clone_data(&self, renderer: &mut dyn RenderBackend) -> BitmapData<'gc> {
+        pub fn clone_data(&self, renderer: &mut dyn RenderBackend) -> BitmapRawData<'gc> {
             // Sync from the GPU to CPU, since our new BitmapData starts out
             // with no GPU texture
             let data = self.sync(renderer);
             let data = data.read();
-            BitmapData {
+            BitmapRawData {
                 pixels: data.pixels.clone(),
                 width: data.width,
                 height: data.height,
@@ -327,12 +505,14 @@ mod wrapper {
                 display_objects: vec![],
                 // We have no GPU texture, so there's no need to mark as dirty
                 dirty_state: DirtyState::Clean,
+                #[cfg(feature = "egui")]
+                egui_texture: Default::default(),
             }
         }
 
         // Provides access to the underlying `BitmapData`. If a GPU -> CPU sync
         // is in progress, waits for it to complete
-        pub fn sync(&self, renderer: &mut dyn RenderBackend) -> GcCell<'gc, BitmapData<'gc>> {
+        pub fn sync(&self, renderer: &mut dyn RenderBackend) -> GcCell<'gc, BitmapRawData<'gc>> {
             // SAFETY: The only fields that can store gc pointers are `avm2_object` and `dirty_callbacks`,
             // which we don't update here. Ideally, we would refactor this so that
             // `BitmapData` doesn't contain any gc pointers, allowing us to use a normal
@@ -348,7 +528,9 @@ mod wrapper {
                             }),
                         )
                         .expect("Failed to sync BitmapData");
-                    write.dirty_state = DirtyState::Clean
+                    write.dirty_state = DirtyState::Clean;
+                    #[cfg(feature = "egui")]
+                    write.egui_texture.borrow_mut().take();
                 }
                 old_state => write.dirty_state = old_state,
             }
@@ -375,11 +557,10 @@ mod wrapper {
         /// This should only be used when you will be overwriting the entire
         /// `pixels` vec without reading from it. Cancels any in-progress GPU -> CPU sync.
         /// This does not sync from cpu to gpu.
-        #[allow(clippy::type_complexity)]
         pub fn overwrite_cpu_pixels_from_gpu(
             &self,
             mc: &Mutation<'gc>,
-        ) -> (GcCell<'gc, BitmapData<'gc>>, Option<PixelRegion>) {
+        ) -> (GcCell<'gc, BitmapRawData<'gc>>, Option<PixelRegion>) {
             let mut write = self.0.write(mc);
             let dirty_rect = match write.dirty_state {
                 DirtyState::GpuModified(_, rect) => {
@@ -388,6 +569,8 @@ mod wrapper {
                 }
                 DirtyState::CpuModified(_) | DirtyState::Clean => None,
             };
+            #[cfg(feature = "egui")]
+            write.egui_texture.borrow_mut().take();
             (self.0, dirty_rect)
         }
 
@@ -398,7 +581,7 @@ mod wrapper {
             &self,
             read_area: PixelRegion,
             renderer: &mut dyn RenderBackend,
-        ) -> Ref<'_, BitmapData<'gc>> {
+        ) -> Ref<'_, BitmapRawData<'gc>> {
             let needs_update = if let DirtyState::GpuModified(_, area) = self.0.read().dirty_state {
                 area.intersects(read_area)
             } else {
@@ -411,7 +594,7 @@ mod wrapper {
         }
 
         // These methods do not require a sync to complete, as they do not depend on the
-        // CPU-side pixels. They are implemented directly on `BitmapDataWrapper`, allowing
+        // CPU-side pixels. They are implemented directly on `BitmapRawDataWrapper`, allowing
         // callers to avoid calling sync()
 
         pub fn height(&self) -> u32 {
@@ -439,7 +622,7 @@ mod wrapper {
             activation: &mut crate::avm2::Activation<'_, 'gc>,
         ) -> Result<(), crate::avm2::Error<'gc>> {
             if self.disposed() {
-                return Err(crate::avm2::Error::AvmError(
+                return Err(crate::avm2::Error::avm_error(
                     crate::avm2::error::argument_error(
                         activation,
                         "Error #2015: Invalid BitmapData.",
@@ -464,7 +647,7 @@ mod wrapper {
             self.0
                 .write(mc)
                 .display_objects
-                .retain(|c| c.as_ptr() != callback.as_ptr())
+                .retain(|c| !std::ptr::eq(c.as_ptr(), callback.as_ptr()))
         }
 
         pub fn add_display_object(&self, mc: &Mutation<'gc>, callback: DisplayObjectWeak<'gc>) {
@@ -477,7 +660,7 @@ mod wrapper {
             context: &mut RenderContext<'_, 'gc>,
             pixel_snapping: PixelSnapping,
         ) {
-            let mut inner_bitmap_data = self.0.write(context.gc_context);
+            let mut inner_bitmap_data = self.0.write(context.gc());
             if inner_bitmap_data.disposed() {
                 return;
             }
@@ -524,17 +707,17 @@ mod wrapper {
             x >= 0 && x < self.width() as i32 && y >= 0 && y < self.height() as i32
         }
 
-        pub fn ptr_eq(&self, other: BitmapDataWrapper<'gc>) -> bool {
+        pub fn ptr_eq(&self, other: BitmapRawDataWrapper<'gc>) -> bool {
             GcCell::ptr_eq(self.0, other.0)
         }
     }
 }
 
-pub use wrapper::BitmapDataWrapper;
+pub use wrapper::BitmapRawDataWrapper;
 
-impl std::fmt::Debug for BitmapData<'_> {
+impl std::fmt::Debug for BitmapRawData<'_> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("BitmapData")
+        f.debug_struct("BitmapRawData")
             .field("dirty_state", &self.dirty_state)
             .field("width", &self.width)
             .field("height", &self.height)
@@ -545,11 +728,11 @@ impl std::fmt::Debug for BitmapData<'_> {
     }
 }
 
-impl<'gc> BitmapData<'gc> {
+impl<'gc> BitmapRawData<'gc> {
     pub fn new(width: u32, height: u32, transparency: bool, fill_color: u32) -> Self {
         Self {
             pixels: vec![
-                Color(fill_color).to_premultiplied_alpha(transparency);
+                Color::bgra_u32(fill_color).to_premultiplied_alpha(transparency);
                 width as usize * height as usize
             ],
             width,
@@ -560,6 +743,8 @@ impl<'gc> BitmapData<'gc> {
             avm2_object: None,
             display_objects: vec![],
             dirty_state: DirtyState::Clean,
+            #[cfg(feature = "egui")]
+            egui_texture: Default::default(),
         }
     }
 
@@ -579,6 +764,8 @@ impl<'gc> BitmapData<'gc> {
             disposed: false,
             dirty_state: DirtyState::Clean,
             display_objects: vec![],
+            #[cfg(feature = "egui")]
+            egui_texture: Default::default(),
         }
     }
 
@@ -589,7 +776,7 @@ impl<'gc> BitmapData<'gc> {
     pub fn dispose(&mut self) {
         self.width = 0;
         self.height = 0;
-        self.pixels.clear();
+        self.pixels = Vec::new(); // free the CPU pixel buffer
         self.bitmap_handle = None;
         // There's no longer a handle to update
         self.dirty_state = DirtyState::Clean;
@@ -606,7 +793,9 @@ impl<'gc> BitmapData<'gc> {
             );
             let bitmap_handle = renderer.register_bitmap(bitmap);
             if let Err(e) = &bitmap_handle {
-                tracing::warn!("Failed to register raw bitmap for BitmapData: {:?}", e);
+                tracing::warn!("Failed to register raw bitmap for BitmapRawData: {:?}", e);
+            } else {
+                self.dirty_state = DirtyState::Clean;
             }
             self.bitmap_handle = bitmap_handle.ok();
         }
@@ -616,6 +805,10 @@ impl<'gc> BitmapData<'gc> {
 
     pub fn transparency(&self) -> bool {
         self.transparency
+    }
+
+    pub fn dirty_state(&self) -> &DirtyState {
+        &self.dirty_state
     }
 
     pub fn set_gpu_dirty(
@@ -631,6 +824,10 @@ impl<'gc> BitmapData<'gc> {
     pub fn set_cpu_dirty(&mut self, gc_context: &Mutation<'gc>, region: PixelRegion) {
         debug_assert!(region.x_max <= self.width);
         debug_assert!(region.y_max <= self.height);
+
+        #[cfg(feature = "egui")]
+        self.egui_texture.borrow_mut().take();
+
         let inform_changes = match &mut self.dirty_state {
             DirtyState::CpuModified(old_region) => {
                 old_region.union(region);
@@ -653,22 +850,8 @@ impl<'gc> BitmapData<'gc> {
         &self.pixels
     }
 
-    pub fn pixels_rgba(&self) -> Vec<u8> {
-        // TODO: This could have been implemented as follows:
-        //
-        // self.pixels
-        //     .iter()
-        //     .flat_map(|p| [p.red(), p.green(), p.blue(), p.alpha()])
-        //     .collect()
-        //
-        // But currently Rust emits suboptimal code in that case. For now we use
-        // `Vec::with_capacity` manually to avoid unnecessary re-allocations.
-
-        let mut output = Vec::with_capacity(self.pixels.len() * 4);
-        for p in &self.pixels {
-            output.extend_from_slice(&[p.red(), p.green(), p.blue(), p.alpha()])
-        }
-        output
+    pub fn pixels_rgba(&self) -> &[u8] {
+        Color::slice_as_rgba(&self.pixels)
     }
 
     pub fn width(&self) -> u32 {
@@ -688,6 +871,19 @@ impl<'gc> BitmapData<'gc> {
     }
 
     #[inline]
+    pub fn set_pixel32_row_raw(&mut self, x1: u32, x2: u32, y: u32, color: Color) {
+        let p1 = (x1 + y * self.width) as usize;
+        let p2 = (x2 + y * self.width) as usize;
+        let slice = &mut self.pixels[p1..p2];
+        slice.fill(color);
+    }
+
+    #[inline]
+    pub fn fill(&mut self, color: Color) {
+        self.pixels.fill(color);
+    }
+
+    #[inline]
     pub fn get_pixel32_raw(&self, x: u32, y: u32) -> Color {
         self.pixels[(x + y * self.width()) as usize]
     }
@@ -700,7 +896,7 @@ impl<'gc> BitmapData<'gc> {
         &self.pixels
     }
 
-    // Updates the data stored with our `BitmapHandle` if this `BitmapData`
+    // Updates the data stored with our `BitmapHandle` if this `BitmapRawData`
     // is dirty
     pub fn update_dirty_texture(&mut self, renderer: &mut dyn RenderBackend) {
         let handle = self.bitmap_handle(renderer).unwrap();
@@ -727,7 +923,7 @@ impl<'gc> BitmapData<'gc> {
     fn inform_display_objects(&self, gc_context: &Mutation<'gc>) {
         for object in &self.display_objects {
             if let Some(object) = object.upgrade(gc_context) {
-                object.invalidate_cached_bitmap(gc_context);
+                object.invalidate_cached_bitmap();
             }
         }
     }
@@ -744,7 +940,7 @@ impl<'gc> BitmapData<'gc> {
 }
 
 pub enum IBitmapDrawable<'gc> {
-    BitmapData(BitmapDataWrapper<'gc>),
+    BitmapData(BitmapData<'gc>),
     DisplayObject(DisplayObject<'gc>),
 }
 
@@ -764,7 +960,7 @@ impl IBitmapDrawable<'_> {
 
 #[instrument(level = "debug", skip_all)]
 fn copy_pixels_to_bitmapdata(
-    write: &mut BitmapData,
+    write: &mut BitmapRawData,
     buffer: &[u8],
     buffer_width: u32,
     area: PixelRegion,
@@ -786,8 +982,7 @@ fn copy_pixels_to_bitmapdata(
                 255
             };
 
-            // TODO(later): we might want to swap Color storage from argb to rgba, to make it cheaper
-            let nc = Color::argb(a, r, g, b);
+            let nc = Color::rgba(r, g, b, a);
 
             // Ignore the original color entirely - the blending (including alpha)
             // was done by the renderer when it wrote over the previous texture contents.

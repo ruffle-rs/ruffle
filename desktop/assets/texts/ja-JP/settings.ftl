@@ -3,9 +3,10 @@ player-settings = プレイヤー設定
 movie-parameters = 映像パラメーター
 custom-base-url = カスタムベースURL
 spoof-swf-url = SWFのURLを偽装
+referer-url = リファラ URL
+cookie = Cookie
 proxy = プロキシ
 upgrade-http = HTTPをHTTPSに置き換え
-upgrade-http-check = 置き換える
 tcp-connections = TCP接続
 tcp-connections-allow = 許可する
 tcp-connections-ask = 要求する
@@ -45,13 +46,32 @@ align-top-right = 右上
 align-bottom-right = 右下
 align-force = 強制
 scale-mode = スケールモード
-scale-mode-exactfit = フィット
-scale-mode-noborder = ふちなし
-scale-mode-noscale = スケールなし
-scale-mode-showall = すべて表示
+scale-mode-noscale = 拡大しない(100%)
+scale-mode-noscale-tooltip =
+    ムービーを拡大せず、オリジナルのサイズで表示する。
+    
+    StageScaleMode.NO_SCALEに対応します
+scale-mode-showall = ウィンドウに合わせて拡大
+scale-mode-showall-tooltip =
+    アスペクト比を維持したまま、見切れない範囲でウィンドウに合わせ拡大する。
+    
+    StageScaleMode.SHOW_ALLに対応します
+scale-mode-exactfit = 引き伸ばす
+scale-mode-exactfit-tooltip =
+    アスペクト比を無視した拡大によって、ムービーでウィンドウ全体を埋める。
+    
+    StageScaleMode.EXACT_FITに対応します
+scale-mode-noborder = ウィンドウに合わせて切り抜き
+scale-mode-noborder-tooltip =
+    アスペクト比を維持したまま、ムービーがウィンドウ全体を埋めるよう拡大し、切り抜く。
+    
+    StageScaleMode.NO_BORDERに対応します
 scale-mode-force = 強制
+scale-mode-force-tooltip = ムービーによるスケールモードの変更を抑制し、現在の設定に固定する。
 player-version = プレイヤーのバージョン
+player-runtime = プレイヤーのランタイム環境
+player-runtime-flash = Flash Player
+player-runtime-air = Adobe AIR
 custom-framerate = カスタムフレームレート
 custom-framerate-suffix = { " " } fps
 dummy-external-interface = ダミー外部インターフェース
-dummy-external-interface-check = 有効

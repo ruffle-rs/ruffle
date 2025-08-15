@@ -1,6 +1,8 @@
 use std::borrow::Cow;
 
 mod avm_string;
+mod common;
+mod context;
 mod interner;
 mod repr;
 
@@ -9,6 +11,8 @@ use repr::AvmStringRepr;
 pub use ruffle_wstr::*;
 
 pub use avm_string::AvmString;
+pub use common::CommonStrings;
+pub use context::{HasStringContext, StringContext};
 pub use interner::{AvmAtom, AvmStringInterner};
 
 pub trait SwfStrExt {

@@ -1,0 +1,34 @@
+Tab pressed
+Focus changed: text1 -> text3
+Tab pressed
+Focus changed: text3 -> text2
+Tab pressed
+Focus changed: text2 -> text5
+Tab pressed
+Focus changed: text5 -> text6
+Tab pressed
+Focus changed: text6 -> text3
+Tab pressed
+Focus changed: text3 -> text2
+Tab pressed
+Focus changed: text2 -> text5
+Tab pressed
+Focus changed: text5 -> text6
+Escape pressed
+Focus changed: text6 -> text5
+Tab pressed
+Focus changed: text5 -> text6
+Tab pressed
+Focus changed: text6 -> text3
+Tab pressed
+Focus changed: text3 -> text2
+Tab pressed
+Focus changed: text2 -> text5
+Tab pressed
+Focus changed: text5 -> text6
+Tab pressed
+Focus changed: text6 -> text3
+Tab pressed
+Focus changed: text3 -> text2
+Tab pressed
+Focus changed: text2 -> text5

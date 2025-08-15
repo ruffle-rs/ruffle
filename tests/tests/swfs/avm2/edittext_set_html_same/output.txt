@@ -1,0 +1,17 @@
+Before newline removal:
+  2
+After newline removal:
+  1
+  <P ALIGN="CENTER"><FONT FACE="Unknown Font" SIZE="12" COLOR="#000000" LETTERSPACING="0" KERNING="0">x</FONT></P>
+After setting to the same value:
+  1
+  <P ALIGN="CENTER"><FONT FACE="Unknown Font" SIZE="12" COLOR="#000000" LETTERSPACING="0" KERNING="0">x</FONT></P>
+After setting to a slightly different value:
+  2
+  <P ALIGN="CENTER"><FONT FACE="Unknown Font" SIZE="12" COLOR="#000000" LETTERSPACING="0" KERNING="0">x</FONT></P>
+After setting to HTML x:
+  1
+  <P ALIGN="LEFT"><FONT FACE="Unknown Font 2" SIZE="12" COLOR="#000000" LETTERSPACING="0" KERNING="0"><B>x</B></FONT></P>
+After setting text to x:
+  1
+  <P ALIGN="LEFT"><FONT FACE="Unknown Font 2" SIZE="12" COLOR="#000000" LETTERSPACING="0" KERNING="0"><B>x</B></FONT></P>

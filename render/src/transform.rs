@@ -1,4 +1,5 @@
 use crate::matrix::Matrix;
+use crate::perspective_projection::PerspectiveProjection;
 use swf::ColorTransform;
 
 /// Represents the transform for a DisplayObject.
@@ -7,6 +8,7 @@ use swf::ColorTransform;
 pub struct Transform {
     pub matrix: Matrix,
     pub color_transform: ColorTransform,
+    pub perspective_projection: Option<PerspectiveProjection>,
 }
 
 pub struct TransformStack(Vec<Transform>);
@@ -23,6 +25,8 @@ impl TransformStack {
         self.0.push(Transform {
             matrix,
             color_transform,
+            // TODO: Merge perspective_projections from cur_transform and transform properly
+            perspective_projection: Default::default(),
         });
     }
 

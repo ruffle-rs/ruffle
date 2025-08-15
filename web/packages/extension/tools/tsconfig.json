@@ -1,0 +1,11 @@
+{
+    "extends": "@tsconfig/strictest/tsconfig.json",
+    "compilerOptions": {
+        "composite": true,
+        "module": "nodenext",
+        "target": "ES2021",
+        "rootDir": "."
+    },
+    "include": ["."],
+
+}

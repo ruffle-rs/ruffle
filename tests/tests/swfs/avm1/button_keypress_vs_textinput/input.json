@@ -1,0 +1,8 @@
+[
+  { "type": "KeyDown", "key": { "Char": "a" } },
+  { "type": "TextInput", "codepoint": "a" },
+  { "type": "KeyUp", "key": { "Char": "a" } },
+  { "type": "KeyDown", "key": { "Char": "b" } },
+  { "type": "TextInput", "codepoint": "b" },
+  { "type": "KeyUp", "key": { "Char": "b" } }
+]

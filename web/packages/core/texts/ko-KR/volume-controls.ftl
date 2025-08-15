@@ -1,3 +1,2 @@
-volume-controls = 음량 조절
 volume-controls-mute = 음소거
-volume-controls-volume = 음량
+volume-controls-unmute = 음소거 해제

@@ -1,0 +1,3 @@
+XML settings: function Function() {}
+XML setSettings: function Function() {}
+XML defaultSettings: function Function() {}

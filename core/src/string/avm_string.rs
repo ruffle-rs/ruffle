@@ -8,34 +8,22 @@ use crate::string::{AvmAtom, AvmStringRepr};
 
 #[derive(Clone, Copy, Collect)]
 #[collect(no_drop)]
-enum Source<'gc> {
-    Owned(Gc<'gc, AvmStringRepr<'gc>>),
-    Static(&'static WStr),
-}
-
-#[derive(Clone, Copy, Collect)]
-#[collect(no_drop)]
-pub struct AvmString<'gc> {
-    source: Source<'gc>,
-}
+pub struct AvmString<'gc>(Gc<'gc, AvmStringRepr<'gc>>);
 
 impl<'gc> AvmString<'gc> {
     /// Turns a string to a fully owned (non-dependent) managed string.
-    pub(super) fn to_fully_owned(self, gc_context: &Mutation<'gc>) -> Gc<'gc, AvmStringRepr<'gc>> {
-        match self.source {
-            Source::Owned(s) => {
-                if s.is_dependent() {
-                    let repr = AvmStringRepr::from_raw(WString::from(self.as_wstr()), false);
-                    Gc::new(gc_context, repr)
-                } else {
-                    s
-                }
-            }
-            Source::Static(s) => {
-                let repr = AvmStringRepr::from_raw(s.into(), false);
-                Gc::new(gc_context, repr)
-            }
+    pub(super) fn to_fully_owned(self, mc: &Mutation<'gc>) -> Gc<'gc, AvmStringRepr<'gc>> {
+        if self.0.is_dependent() {
+            let repr = AvmStringRepr::from_raw(WString::from(self.as_wstr()), false);
+            Gc::new(mc, repr)
+        } else {
+            self.0
         }
+    }
+
+    pub fn new_ascii_static(gc_context: &Mutation<'gc>, bytes: &'static [u8]) -> Self {
+        let repr = AvmStringRepr::from_raw_static(WStr::from_units(bytes), false);
+        Self(Gc::new(gc_context, repr))
     }
 
     pub fn new_utf8<'s, S: Into<Cow<'s, str>>>(gc_context: &Mutation<'gc>, string: S) -> Self {
@@ -44,9 +32,7 @@ impl<'gc> AvmString<'gc> {
             Cow::Borrowed(utf8) => WString::from_utf8(utf8),
         };
         let repr = AvmStringRepr::from_raw(buf, false);
-        Self {
-            source: Source::Owned(Gc::new(gc_context, repr)),
-        }
+        Self(Gc::new(gc_context, repr))
     }
 
     pub fn new_utf8_bytes(gc_context: &Mutation<'gc>, bytes: &[u8]) -> Self {
@@ -56,47 +42,32 @@ impl<'gc> AvmString<'gc> {
 
     pub fn new<S: Into<WString>>(gc_context: &Mutation<'gc>, string: S) -> Self {
         let repr = AvmStringRepr::from_raw(string.into(), false);
-        Self {
-            source: Source::Owned(Gc::new(gc_context, repr)),
-        }
+        Self(Gc::new(gc_context, repr))
     }
 
-    pub fn new_dependent(
-        gc_context: &Mutation<'gc>,
-        string: AvmString<'gc>,
-        start: usize,
-        end: usize,
-    ) -> Self {
-        // TODO?: if string is static, just make a new static AvmString
-        let repr = AvmStringRepr::new_dependent(string, start, end);
-        Self {
-            source: Source::Owned(Gc::new(gc_context, repr)),
-        }
+    pub fn substring(mc: &Mutation<'gc>, string: AvmString<'gc>, start: usize, end: usize) -> Self {
+        let repr = AvmStringRepr::new_dependent(string.0, start, end);
+        Self(Gc::new(mc, repr))
     }
 
-    pub fn owner(&self) -> Option<AvmString<'gc>> {
-        match &self.source {
-            Source::Owned(s) => s.owner(),
-            Source::Static(_) => None,
-        }
+    pub fn is_dependent(&self) -> bool {
+        self.0.is_dependent()
     }
 
-    pub fn as_wstr(&self) -> &WStr {
-        match &self.source {
-            Source::Owned(s) => s,
-            Source::Static(s) => s,
-        }
+    pub fn as_wstr(&self) -> &'gc WStr {
+        Gc::as_ref(self.0).as_wstr()
     }
 
     pub fn as_interned(&self) -> Option<AvmAtom<'gc>> {
-        match self.source {
-            Source::Owned(s) if s.is_interned() => Some(AvmAtom(s)),
-            _ => None,
+        if self.0.is_interned() {
+            Some(AvmAtom(self.0))
+        } else {
+            None
         }
     }
 
     pub fn concat(
-        gc_context: &Mutation<'gc>,
+        mc: &Mutation<'gc>,
         left: AvmString<'gc>,
         right: AvmString<'gc>,
     ) -> AvmString<'gc> {
@@ -104,10 +75,27 @@ impl<'gc> AvmString<'gc> {
             right
         } else if right.is_empty() {
             left
+        } else if let Some(repr) = AvmStringRepr::try_append_inline(left.0, &right) {
+            Self(Gc::new(mc, repr))
         } else {
-            let mut out = WString::from(left.as_wstr());
+            // When doing a non-in-place append,
+            // Overallocate a bit so that further appends can be in-place.
+            // (Note that this means that all first-time appends will happen here and
+            // overallocate, even if done only once)
+            // This growth logic should be equivalent to AVM's, except I capped the growth at 1MB instead of 4MB.
+            let new_size = left.len() + right.len();
+            let new_capacity = if new_size < 32 {
+                32
+            } else if new_size > 1024 * 1024 {
+                new_size + 1024 * 1024
+            } else {
+                new_size * 2
+            };
+
+            let mut out = WString::with_capacity(new_capacity, left.is_wide() || right.is_wide());
+            out.push_str(&left);
             out.push_str(&right);
-            Self::new(gc_context, out)
+            Self::new(mc, out)
         }
     }
 
@@ -120,49 +108,18 @@ impl<'gc> AvmString<'gc> {
 impl<'gc> From<AvmAtom<'gc>> for AvmString<'gc> {
     #[inline]
     fn from(atom: AvmAtom<'gc>) -> Self {
-        Self {
-            source: Source::Owned(atom.0),
-        }
+        Self(atom.0)
     }
 }
 
 impl<'gc> From<Gc<'gc, AvmStringRepr<'gc>>> for AvmString<'gc> {
     #[inline]
     fn from(repr: Gc<'gc, AvmStringRepr<'gc>>) -> Self {
-        Self {
-            source: Source::Owned(repr),
-        }
+        Self(repr)
     }
 }
 
-impl Default for AvmString<'_> {
-    fn default() -> Self {
-        Self {
-            source: Source::Static(WStr::empty()),
-        }
-    }
-}
-
-impl<'gc> From<&'static str> for AvmString<'gc> {
-    #[inline]
-    fn from(str: &'static str) -> Self {
-        // TODO(moulins): actually check that `str` is valid ASCII.
-        Self {
-            source: Source::Static(WStr::from_units(str.as_bytes())),
-        }
-    }
-}
-
-impl<'gc> From<&'static WStr> for AvmString<'gc> {
-    #[inline]
-    fn from(str: &'static WStr) -> Self {
-        Self {
-            source: Source::Static(str),
-        }
-    }
-}
-
-impl<'gc> Deref for AvmString<'gc> {
+impl Deref for AvmString<'_> {
     type Target = WStr;
     #[inline]
     fn deref(&self) -> &Self::Target {
@@ -171,20 +128,18 @@ impl<'gc> Deref for AvmString<'gc> {
 }
 
 // Manual equality implementation with fast paths for owned strings.
-impl<'gc> PartialEq for AvmString<'gc> {
+impl PartialEq for AvmString<'_> {
     fn eq(&self, other: &Self) -> bool {
-        if let (Source::Owned(left), Source::Owned(right)) = (self.source, other.source) {
+        if Gc::ptr_eq(self.0, other.0) {
             // Fast accept for identical strings.
-            if Gc::ptr_eq(left, right) {
-                return true;
+            true
+        } else if self.0.is_interned() && other.0.is_interned() {
             // Fast reject for distinct interned strings.
-            } else if left.is_interned() && right.is_interned() {
-                return false;
-            }
+            false
+        } else {
+            // Fallback case.
+            self.as_wstr() == other.as_wstr()
         }
-
-        // Fallback case.
-        self.as_wstr() == other.as_wstr()
     }
 }
 
@@ -205,6 +160,6 @@ impl<'gc> PartialEq<AvmAtom<'gc>> for AvmString<'gc> {
     }
 }
 
-impl<'gc> Eq for AvmString<'gc> {}
+impl Eq for AvmString<'_> {}
 
 wstr_impl_traits!(impl['gc] manual_eq for AvmString<'gc>);

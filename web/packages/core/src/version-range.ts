@@ -43,7 +43,7 @@ export class VersionRange {
      * Constructs a range of versions as specified by the given requirements.
      *
      * If you wish to construct this object from a string representation,
-     * then use [[fromRequirementString]].
+     * then use {@link fromRequirementString}.
      *
      * @param requirements Requirements to set this range by
      */

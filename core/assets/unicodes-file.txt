@@ -1,0 +1,16 @@
+# Download Noto Sans from https://fonts.google.com/noto/specimen/Noto+Sans
+# Run `pyftsubset --unicodes-file=unicodes-file.txt NotoSans-Regular.ttf`
+0000-007F, # Basic Latin
+0080-00FF, # Latin-1 Supplement
+0100-017F, # Latin Extended-A
+0180-024F, # Latin Extended-B
+02B0-02FF, # Spacing Modifier Letters
+0370-03FF, # Greek and Coptic
+0400-04FF, # Cyrillic
+2000-206F, # General Punctuation
+2070-209F, # Superscripts and Subscripts
+20A0-20CF, # Currency Symbols
+2100-214F, # Letterlike Symbols
+2150-218F, # Number Forms
+2200-22FF, # Mathematical Operators
+# Compress with `cat NotoSans-Regular.subset.ttf | gzip --best --no-name | tail --bytes=+11 | head --bytes=-8 > notosans-regular.subset.ttf.gz`

@@ -1,5 +1,7 @@
 package flash.display {
-    public final class FrameLabel {
+    import flash.events.EventDispatcher;
+
+    public final class FrameLabel extends EventDispatcher {
         private var _name: String;
         private var _frame: int;
 

@@ -10,10 +10,21 @@ update-ruffle = Uppdatera Ruffle
 ruffle-demo = Webbdemo
 ruffle-desktop = Skrivbordsprogram
 ruffle-wiki = Se Ruffle-wiki
-enable-hardware-acceleration = Det verkar som att hårdvaruacceleration inte är på. Ruffle kan fortfarande fungera men kan vara orimligt långsam. Du kan ta reda på hur man sätter på hårdvaruacceleration genom att följa denna länk.
+enable-hardware-acceleration = Det ser ut som att hårdvaruacceleration är avstängt. På grund av det kan Ruffle fungera långsamt. Du kan ta reda på hur man sätter på hårdvaruacceleration genom länken nedan:
+enable-hardware-acceleration-link = FAQ - Chrome Hårdvaruacceleration
 view-error-details = Visa Felinformation
 open-in-new-tab = Öppna i en ny flik
 click-to-unmute = Klicka för ljud
+clipboard-message-title = Kopierar och klistrar in i Ruffle
+clipboard-message-description =
+    { $variant ->
+       *[unsupported] Din webbläsare har inte fullständig åtkomst till urklipp,
+        [access-denied] Urklippsåtkomst har nekats,
+    } men du kan använda dom här kortkommandon istället:
+clipboard-message-copy = { " " } för att kopiera
+clipboard-message-cut = { " " } för att klippa
+clipboard-message-paste = { " " } för att klistra in
+error-canvas-reload = Kan inte ladda om med canvas render:aren när den redan används.
 error-file-protocol =
     Det verkar som att du kör Ruffle på "fil:"-protokollet.
     Detta fungerar inte eftersom webbläsare blockerar många funktioner från att fungera av säkerhetsskäl.
@@ -31,7 +42,7 @@ error-wasm-mime-type =
     Denna webbserver serverar inte ".wasm"-filer med korrekt MIME-typ.
     Om du är serveradministratören konsultera vänligen Ruffle-wikin för hjälp.
 error-invalid-swf =
-    Ruffle kan ej läsa den begärda filen.
+    Ruffle kan inte läsa den begärda filen.
     Det mest sannolika skälet är att den begärda filen inte är en giltig SWF.
 error-swf-fetch =
     Ruffle misslyckades ladda SWF-filen.
@@ -56,8 +67,12 @@ error-wasm-download =
 error-wasm-disabled-on-edge =
     Ruffle misslyckades ladda ".wasm"-filkomponenten.
     För att åtgärda detta försök att öppna webbläsarens inställningar, klicka på "Sekretess, sökning och tjänster", bläddra ner och stäng av "Förbättra säkerheten på webben".
-    Detta tillåter din webbläsare ladda ".wasm"-filerna.
+    Detta tillåter din webbläsare att ladda ".wasm"-filerna.
     Om problemet kvarstår kan du behöva använda en annan webbläsare.
+error-wasm-unsupported-browser =
+    Webbläsaren du använder stöder inte de WebAssembly tilläggen som Ruffle behöver för att köra.
+    Vänligen byt till en webbläsare som stöds.
+    Du kan hitta en lista över webbläsare som stöds på Wikin.
 error-javascript-conflict =
     Ruffle har stött på ett stort fel under initialiseringen.
     Det verkar som att den här sidan använder JavaScript-kod som stör Ruffle.
@@ -65,7 +80,7 @@ error-javascript-conflict =
 error-javascript-conflict-outdated = Du kan också försöka ladda upp en nyare version av Ruffle, vilket kan kringgå problemet (nuvarande version är utdaterad: { $buildDate }).
 error-csp-conflict =
     Ruffle har stött på ett stort fel under initialiseringen.
-    Denna webbservers Content Security Policy tillåter inte ".wasm"-komponenten att köra.
+    Webbserverns Content Security Policy tillåter inte ".wasm"-komponenten att köra.
     Om du är serveradministratören konsultera vänligen Ruffle-wikin för hjälp.
 error-unknown =
     Ruffle har stött på ett stort fel medan den försökte visa Flashinnehållet.

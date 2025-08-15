@@ -1,7 +1,12 @@
-context-menu-play = 플레이
-context-menu-rewind = 뒤로 감기
-context-menu-forward = 전달
-context-menu-back = 후방
+context-menu-play = 재생
+context-menu-rewind = 되감기
+context-menu-forward = 앞으로
+context-menu-back = 뒤로
 context-menu-quality-low = 품질: 낮음
 context-menu-quality-medium = 품질: 중간
 context-menu-quality-high = 품질: 높음
+context-menu-cut = 잘라내기
+context-menu-copy = 복사
+context-menu-paste = 붙여넣기
+context-menu-delete = 삭제
+context-menu-select-all = 모두 선택

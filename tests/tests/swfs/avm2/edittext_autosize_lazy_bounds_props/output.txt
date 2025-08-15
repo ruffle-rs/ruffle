@@ -1,0 +1,490 @@
+// get alwaysShowSelection: false
+Testing: get alwaysShowSelection
+  0,0,100,4
+Testing: set alwaysShowSelection
+  0,0,100,4
+// get antiAliasType: normal
+Testing: get antiAliasType
+  0,0,100,4
+Testing: set antiAliasType
+  0,0,100,4
+// get autoSize: center
+Testing: get autoSize
+  0,0,100,4
+Testing: set autoSize
+  0,0,100,4
+// get background: false
+Testing: get background
+  0,0,100,4
+Testing: set background
+  0,0,100,4
+// get backgroundColor: 16777215
+Testing: get backgroundColor
+  0,0,100,4
+Testing: set backgroundColor
+  0,0,100,4
+// get border: false
+Testing: get border
+  0,0,100,4
+Testing: set border
+  0,0,100,4
+// get borderColor: 0
+Testing: get borderColor
+  0,0,100,4
+Testing: set borderColor
+  0,0,100,4
+// get bottomScrollV: 1
+Testing: get bottomScrollV
+  0,0,100,4
+// get caretIndex: 0
+Testing: get caretIndex
+  0,0,100,4
+// get condenseWhite: false
+Testing: get condenseWhite
+  0,0,100,4
+Testing: set condenseWhite
+  0,0,100,4
+// get defaultTextFormat: [object TextFormat]
+Testing: get defaultTextFormat
+  0,0,100,4
+Testing: set defaultTextFormat
+  0,0,100,4
+// get displayAsPassword: false
+Testing: get displayAsPassword
+  0,0,100,4
+Testing: set displayAsPassword
+  0,0,100,4
+// get embedFonts: false
+Testing: get embedFonts
+  0,0,100,4
+Testing: set embedFonts
+  0,0,100,4
+// get gridFitType: pixel
+Testing: get gridFitType
+  0,0,100,4
+Testing: set gridFitType
+  0,0,100,4
+// get htmlText: 
+Testing: get htmlText
+  0,0,100,4
+Testing: set htmlText
+  0,0,100,24
+// get length: 0
+Testing: get length
+  0,0,100,4
+// get maxChars: 0
+Testing: get maxChars
+  0,0,100,4
+Testing: set maxChars
+  0,0,100,4
+// get maxScrollH: 0
+Testing: get maxScrollH
+  0,0,100,4
+// get maxScrollV: 1
+Testing: get maxScrollV
+  0,0,100,4
+// get mouseWheelEnabled: true
+Testing: get mouseWheelEnabled
+  0,0,100,4
+Testing: set mouseWheelEnabled
+  0,0,100,4
+// get multiline: false
+Testing: get multiline
+  0,0,100,4
+Testing: set multiline
+  0,0,100,4
+// get numLines: 1
+Testing: get numLines
+  0,0,100,4
+// get restrict: null
+Testing: get restrict
+  0,0,100,4
+Testing: set restrict
+  0,0,100,4
+// get scrollH: 0
+Testing: get scrollH
+  0,0,100,4
+Testing: set scrollH
+  0,0,100,4
+// get scrollV: 1
+Testing: get scrollV
+  0,0,100,4
+Testing: set scrollV
+  0,0,100,4
+// get selectable: true
+Testing: get selectable
+  0,0,100,4
+Testing: set selectable
+  0,0,100,4
+// get selectionBeginIndex: 0
+Testing: get selectionBeginIndex
+  0,0,100,4
+// get selectionEndIndex: 0
+Testing: get selectionEndIndex
+  0,0,100,4
+// get sharpness: 0
+Testing: get sharpness
+  0,0,100,4
+Testing: set sharpness
+  0,0,100,4
+// get styleSheet: null
+Testing: get styleSheet
+  0,0,100,4
+Testing: set styleSheet
+  0,0,100,4
+// get text: 
+Testing: get text
+  0,0,100,4
+Testing: set text
+  0,0,100,24
+// get textColor: 0
+Testing: get textColor
+  0,0,100,4
+Testing: set textColor
+  0,0,100,4
+// get textHeight: 0
+Testing: get textHeight
+  0,0,100,4
+// get textInteractionMode: normal
+Testing: get textInteractionMode
+  0,0,100,4
+// get textWidth: 0
+Testing: get textWidth
+  0,0,100,4
+// get thickness: 0
+Testing: get thickness
+  0,0,100,4
+Testing: set thickness
+  0,0,100,4
+// get type: dynamic
+Testing: get type
+  0,0,100,4
+Testing: set type
+  0,0,100,24
+// get useRichTextClipboard: false
+Testing: get useRichTextClipboard
+  0,0,100,4
+Testing: set useRichTextClipboard
+  0,0,100,4
+// get wordWrap: false
+Testing: get wordWrap
+  0,0,100,4
+Testing: set wordWrap
+  0,0,100,4
+// get accessibilityImplementation: null
+Testing: get accessibilityImplementation
+  0,0,100,4
+Testing: set accessibilityImplementation
+  0,0,100,4
+// get accessibilityProperties: null
+Testing: get accessibilityProperties
+  0,0,100,4
+Testing: set accessibilityProperties
+  0,0,100,4
+// get alpha: 1
+Testing: get alpha
+  0,0,100,4
+Testing: set alpha
+  0,0,100,4
+// get blendMode: normal
+Testing: get blendMode
+  0,0,100,4
+Testing: set blendMode
+  0,0,100,4
+// get cacheAsBitmap: false
+Testing: get cacheAsBitmap
+  0,0,100,4
+Testing: set cacheAsBitmap
+  0,0,100,4
+// get contextMenu: null
+Testing: get contextMenu
+  0,0,100,4
+Testing: set contextMenu
+  0,0,100,4
+// get doubleClickEnabled: false
+Testing: get doubleClickEnabled
+  0,0,100,4
+Testing: set doubleClickEnabled
+  0,0,100,4
+// get filters: 
+Testing: get filters
+  0,0,100,4
+Testing: set filters
+  0,0,100,4
+// get focusRect: null
+Testing: get focusRect
+  0,0,100,4
+Testing: set focusRect
+  0,0,100,4
+// get height: 4
+Testing: get height
+  48,0,4,4
+Testing: set height
+  48,0,4,4
+// set height 2: 4
+Testing: set height 2
+  48,0,4,4
+// get loaderInfo: null
+Testing: get loaderInfo
+  0,0,100,4
+// get mask: null
+Testing: get mask
+  0,0,100,4
+Testing: set mask
+  0,0,100,4
+Testing: set mask in tree
+  0,0,100,4
+// get metaData: null
+Testing: get metaData
+  0,0,100,4
+Testing: set metaData
+  0,0,100,4
+// get mouseEnabled: true
+Testing: get mouseEnabled
+  0,0,100,4
+Testing: set mouseEnabled
+  0,0,100,4
+// get mouseX: 0
+Testing: get mouseX
+  0,0,100,4
+// get mouseY: 0
+Testing: get mouseY
+  0,0,100,4
+// get name: instance101
+Testing: get name
+  0,0,100,4
+Testing: set name
+  0,0,100,4
+// get needsSoftKeyboard: false
+Testing: get needsSoftKeyboard
+  0,0,100,4
+Testing: set needsSoftKeyboard
+  0,0,100,4
+// get opaqueBackground: null
+Testing: get opaqueBackground
+  0,0,100,4
+Testing: set opaqueBackground
+  0,0,100,4
+// get parent: null
+Testing: get parent
+  0,0,100,4
+// get root: null
+Testing: get root
+  0,0,100,4
+// get rotation: 0
+Testing: get rotation
+  0,0,100,4
+Testing: set rotation
+  0,0,100.05,5.75
+// get rotationX: 0
+Testing: get rotationX
+  0,0,100,4
+Testing: set rotationX
+  0,0,100,4
+// get rotationY: 0
+Testing: get rotationY
+  0,0,100,4
+Testing: set rotationY
+  0,0,100,4
+// get rotationZ: 0
+Testing: get rotationZ
+  0,0,100,4
+Testing: set rotationZ
+  0,0,100,4
+// get scale9Grid: null
+Testing: get scale9Grid
+  0,0,100,4
+// get scaleX: 1
+Testing: get scaleX
+  0,0,100,4
+Testing: set scaleX
+  0,0,200,4
+// get scaleY: 1
+Testing: get scaleY
+  0,0,100,4
+Testing: set scaleY
+  0,0,100,8
+// get scaleZ: 1
+Testing: get scaleZ
+  0,0,100,4
+Testing: set scaleZ
+  0,0,100,4
+// get scrollRect: null
+Testing: get scrollRect
+  0,0,100,4
+Testing: set scrollRect
+  0,0,100,4
+// get softKeyboardInputAreaOfInterest: null
+Testing: get softKeyboardInputAreaOfInterest
+  0,0,100,4
+Testing: set softKeyboardInputAreaOfInterest
+  0,0,100,4
+// get stage: null
+Testing: get stage
+  0,0,100,4
+// get tabEnabled: false
+Testing: get tabEnabled
+  0,0,100,4
+Testing: set tabEnabled
+  0,0,100,4
+// get tabIndex: -1
+Testing: get tabIndex
+  0,0,100,4
+Testing: set tabIndex
+  0,0,100,4
+// get transform.colorTransform: (redMultiplier=1, greenMultiplier=1, blueMultiplier=1, alphaMultiplier=1, redOffset=0, greenOffset=0, blueOffset=0, alphaOffset=0)
+Testing: get transform.colorTransform
+  0,0,100,4
+Testing: set transform.colorTransform
+  0,0,100,4
+// get transform.concatenatedColorTransform: (redMultiplier=1, greenMultiplier=1, blueMultiplier=1, alphaMultiplier=1, redOffset=0, greenOffset=0, blueOffset=0, alphaOffset=0)
+Testing: get transform.concatenatedColorTransform
+  0,0,100,4
+// get transform.concatenatedMatrix: (a=5, b=0, c=0, d=5, tx=0, ty=0)
+Testing: get transform.concatenatedMatrix
+  0,0,100,4
+// get transform.matrix: (a=1, b=0, c=0, d=1, tx=0, ty=0)
+Testing: get transform.matrix
+  0,0,100,4
+Testing: set transform.matrix
+  1,0,100,4
+// get transform.matrix3D: null
+Testing: get transform.matrix3D
+  0,0,100,4
+Testing: set transform.matrix3D
+  0,0,100,4
+// get transform.perspectiveProjection: null
+Testing: get transform.perspectiveProjection
+  0,0,100,4
+Testing: set transform.perspectiveProjection
+  0,0,100,4
+// get transform.pixelBounds: 0
+Testing: get transform.pixelBounds
+  0,0,100,4
+// get visible: true
+Testing: get visible
+  0,0,100,4
+Testing: set visible
+  0,0,100,4
+// get width: 4
+Testing: get width
+  48,0,4,4
+Testing: set width
+  48,0,200,4
+// set width 2: 4
+Testing: set width 2
+  146,0,200,4
+// get x: 48
+Testing: get x
+  48,0,4,4
+Testing: set x
+  1,0,4,4
+// get y: 0
+Testing: get y
+  48,0,4,4
+Testing: set y
+  48,1,4,4
+// get z: 0
+Testing: get z
+  0,0,100,4
+Testing: set z
+  0,0,100,4
+Testing: appendText
+  0,0,100,4
+Testing: appendText 2
+  0,0,100,24
+Testing: getCharBoundaries
+  0,0,100,4
+Testing: getCharBoundaries 2
+  0,0,100,24
+Testing: getCharIndexAtPoint
+  0,0,100,4
+Testing: getCharIndexAtPoint 2
+  0,0,100,24
+Testing: getFirstCharInParagraph
+  0,0,100,4
+Testing: getFirstCharInParagraph 2
+  0,0,100,24
+Testing: getImageReference
+  0,0,100,4
+Testing: getLineIndexAtPoint
+  0,0,100,4
+Testing: getLineIndexAtPoint 2
+  0,0,100,24
+Testing: getLineIndexOfChar
+  0,0,100,4
+Testing: getLineIndexOfChar 2
+  0,0,100,24
+Testing: getLineLength
+  0,0,100,4
+Testing: getLineLength 2
+  0,0,100,24
+Testing: getLineMetrics
+  0,0,100,4
+Testing: getLineMetrics 2
+  0,0,100,24
+Testing: getLineOffset
+  0,0,100,4
+Testing: getLineOffset 2
+  0,0,100,24
+Testing: getLineText
+  0,0,100,4
+Testing: getLineText 2
+  0,0,100,24
+Testing: getParagraphLength
+  0,0,100,4
+Testing: getParagraphLength 2
+  0,0,100,24
+Testing: getTextFormat
+  0,0,100,24
+Testing: replaceSelectedText
+  0,0,100,4
+Testing: replaceText
+  0,0,100,4
+Testing: replaceText 2
+  0,0,100,24
+Testing: setSelection
+  0,0,100,4
+Testing: setSelection 2
+  0,0,100,24
+Testing: setTextFormat
+  0,0,100,24
+Testing: addEventListener
+  0,0,100,4
+Testing: dispatchEvent
+  0,0,100,4
+Testing: getBounds
+  48,0,4,4
+Testing: getRect
+  48,0,4,4
+Testing: globalToLocal
+  0,0,100,4
+Testing: hasEventListener
+  0,0,100,4
+Testing: hasOwnProperty
+  0,0,100,4
+Testing: hitTestObject
+  48,0,4,4
+Testing: hitTestPoint
+  48,0,4,4
+Testing: isPrototypeOf
+  0,0,100,4
+Testing: local3DToGlobal
+  0,0,100,4
+Testing: localToGlobal
+  0,0,100,4
+Testing: propertyIsEnumerable
+  0,0,100,4
+Testing: removeEventListener
+  0,0,100,4
+Testing: requestSoftKeyboard
+  0,0,100,4
+Testing: toLocaleString
+  0,0,100,4
+Testing: toString
+  0,0,100,4
+Testing: valueOf
+  0,0,100,4
+Testing: willTrigger
+  0,0,100,4
+Tests finished

@@ -1,0 +1,4 @@
+interpreter mode, normal access: 1
+interpreter mode, failing access: 1
+JIT mode, normal access: 1
+JIT mode, failing access failed with code 1081

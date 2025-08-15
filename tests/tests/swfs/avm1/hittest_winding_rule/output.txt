@@ -1,0 +1,12 @@
+// hitTest inside (even-odd)
+true
+// hitTest in hole (even-odd)
+false
+// hitTest outside (even-odd)
+false
+// hitTest inside (non-zero)
+true
+// hitTest in hole (non-zero)
+true
+// hitTest outside (non-zero)
+false

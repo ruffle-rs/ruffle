@@ -98,6 +98,8 @@ pub struct Method {
     pub params: Vec<MethodParam>,
     pub return_type: Index<Multiname>,
     pub flags: MethodFlags,
+    // not an ABC MethodInfo property; bound when parsing MethodBodies
+    pub body: Option<Index<MethodBody>>,
 }
 
 bitflags! {
@@ -275,7 +277,7 @@ pub enum Op {
         num_args: u32,
     },
     CallMethod {
-        index: Index<Method>,
+        index: u32,
         num_args: u32,
     },
     CallProperty {

@@ -3,12 +3,12 @@
 use crate::avm2::activation::Activation;
 use crate::avm2::domain::Domain;
 use crate::avm2::object::script_object::ScriptObjectData;
-use crate::avm2::object::{ClassObject, Object, ObjectPtr, TObject};
-use crate::avm2::value::Value;
+use crate::avm2::object::{ClassObject, Object, TObject};
 use crate::avm2::Error;
+use crate::utils::HasPrefixField;
 use core::fmt;
-use gc_arena::{Collect, GcCell, GcWeakCell, Mutation};
-use std::cell::{Ref, RefMut};
+use gc_arena::barrier::unlock;
+use gc_arena::{lock::Lock, Collect, Gc, GcWeak, Mutation};
 
 /// A class instance allocator that allocates AppDomain objects.
 pub fn application_domain_allocator<'gc>(
@@ -18,37 +18,41 @@ pub fn application_domain_allocator<'gc>(
     let domain = activation.domain();
     let base = ScriptObjectData::new(class);
 
-    Ok(DomainObject(GcCell::new(
-        activation.context.gc_context,
-        DomainObjectData { base, domain },
+    Ok(DomainObject(Gc::new(
+        activation.gc(),
+        DomainObjectData {
+            base,
+            domain: Lock::new(domain),
+        },
     ))
     .into())
 }
 
 #[derive(Clone, Collect, Copy)]
 #[collect(no_drop)]
-pub struct DomainObject<'gc>(pub GcCell<'gc, DomainObjectData<'gc>>);
+pub struct DomainObject<'gc>(pub Gc<'gc, DomainObjectData<'gc>>);
 
 #[derive(Clone, Collect, Copy, Debug)]
 #[collect(no_drop)]
-pub struct DomainObjectWeak<'gc>(pub GcWeakCell<'gc, DomainObjectData<'gc>>);
+pub struct DomainObjectWeak<'gc>(pub GcWeak<'gc, DomainObjectData<'gc>>);
 
 impl fmt::Debug for DomainObject<'_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct("DomainObject")
-            .field("ptr", &self.0.as_ptr())
+            .field("ptr", &Gc::as_ptr(self.0))
             .finish()
     }
 }
 
-#[derive(Clone, Collect)]
+#[derive(Clone, Collect, HasPrefixField)]
 #[collect(no_drop)]
+#[repr(C, align(8))]
 pub struct DomainObjectData<'gc> {
     /// Base script object
     base: ScriptObjectData<'gc>,
 
     /// The domain this object holds
-    domain: Domain<'gc>,
+    domain: Lock<Domain<'gc>>,
 }
 
 impl<'gc> DomainObject<'gc> {
@@ -56,53 +60,29 @@ impl<'gc> DomainObject<'gc> {
     ///
     /// This function will call instance initializers. You do not need to do so
     /// yourself.
-    pub fn from_domain(
-        activation: &mut Activation<'_, 'gc>,
-        domain: Domain<'gc>,
-    ) -> Result<Object<'gc>, Error<'gc>> {
+    pub fn from_domain(activation: &mut Activation<'_, 'gc>, domain: Domain<'gc>) -> Self {
         let class = activation.avm2().classes().application_domain;
         let base = ScriptObjectData::new(class);
-        let this: Object<'gc> = DomainObject(GcCell::new(
-            activation.context.gc_context,
-            DomainObjectData { base, domain },
+        DomainObject(Gc::new(
+            activation.gc(),
+            DomainObjectData {
+                base,
+                domain: Lock::new(domain),
+            },
         ))
-        .into();
-        this.install_instance_slots(activation.context.gc_context);
+    }
 
-        // Note - we do *not* call the normal constructor, since that
-        // creates a new domain using the system domain as a parent.
-        class
-            .superclass_object()
-            .unwrap()
-            .call_native_init(this.into(), &[], activation)?;
-        Ok(this)
+    pub fn domain(self) -> Domain<'gc> {
+        self.0.domain.get()
+    }
+
+    pub fn init_domain(self, mc: &Mutation<'gc>, domain: Domain<'gc>) {
+        unlock!(Gc::write(mc, self.0), DomainObjectData, domain).set(domain);
     }
 }
 
 impl<'gc> TObject<'gc> for DomainObject<'gc> {
-    fn base(&self) -> Ref<ScriptObjectData<'gc>> {
-        Ref::map(self.0.read(), |read| &read.base)
-    }
-
-    fn base_mut(&self, mc: &Mutation<'gc>) -> RefMut<ScriptObjectData<'gc>> {
-        RefMut::map(self.0.write(mc), |write| &mut write.base)
-    }
-
-    fn as_ptr(&self) -> *const ObjectPtr {
-        self.0.as_ptr() as *const ObjectPtr
-    }
-
-    fn as_application_domain(&self) -> Option<Domain<'gc>> {
-        Some(self.0.read().domain)
-    }
-
-    fn init_application_domain(&self, mc: &Mutation<'gc>, domain: Domain<'gc>) {
-        self.0.write(mc).domain = domain;
-    }
-
-    fn value_of(&self, _mc: &Mutation<'gc>) -> Result<Value<'gc>, Error<'gc>> {
-        let this: Object<'gc> = Object::DomainObject(*self);
-
-        Ok(this.into())
+    fn gc_base(&self) -> Gc<'gc, ScriptObjectData<'gc>> {
+        HasPrefixField::as_prefix_gc(self.0)
     }
 }

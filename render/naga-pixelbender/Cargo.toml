@@ -13,8 +13,4 @@ workspace = true
 [dependencies]
 ruffle_render = { path = "../" }
 naga = { workspace = true }
-naga_oil = { workspace = true }
-tracing = { workspace = true }
-anyhow = "1.0.79"
-bitflags = "2.4.2"
-
+anyhow = { workspace = true }

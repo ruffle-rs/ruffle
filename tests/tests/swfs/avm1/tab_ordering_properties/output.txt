@@ -1,0 +1,293 @@
+===== text =====
+  default
+    tabEnabled = undefined
+    tabIndex = undefined
+    tabChildren = undefined
+    enumerated tabIndex
+  after set 1
+    tabEnabled = true
+    tabIndex = 0
+    tabChildren = true
+    enumerated tabEnabled
+    enumerated tabIndex
+    enumerated tabChildren
+  after set 2
+    tabEnabled = false
+    tabIndex = 4
+    tabChildren = false
+    enumerated tabEnabled
+    enumerated tabIndex
+    enumerated tabChildren
+  after set 3
+    tabEnabled = undefined
+    tabIndex = undefined
+    tabChildren = undefined
+    enumerated tabEnabled
+    enumerated tabIndex
+    enumerated tabChildren
+  after set 4
+    tabEnabled = -4
+    tabIndex = 4294967292
+    tabChildren = -4
+    enumerated tabEnabled
+    enumerated tabIndex
+    enumerated tabChildren
+  after set 5
+    tabEnabled = 2147483647
+    tabIndex = 2147483647
+    tabChildren = 2147483647
+    enumerated tabEnabled
+    enumerated tabIndex
+    enumerated tabChildren
+  after set 6
+    tabEnabled = 2147483648
+    tabIndex = 2147483648
+    tabChildren = 2147483648
+    enumerated tabEnabled
+    enumerated tabIndex
+    enumerated tabChildren
+  after set 7
+    tabEnabled = x
+    tabIndex = 0
+    tabChildren = x
+    enumerated tabEnabled
+    enumerated tabIndex
+    enumerated tabChildren
+  after set 8
+    tabEnabled = -2147483648
+    tabIndex = 2147483648
+    tabChildren = -2147483648
+    enumerated tabEnabled
+    enumerated tabIndex
+    enumerated tabChildren
+  after set 9
+    tabEnabled = [object Object]
+    tabIndex = 0
+    tabChildren = [object Object]
+    enumerated tabEnabled
+    enumerated tabIndex
+    enumerated tabChildren
+  after set 10
+    tabEnabled = 1.1
+    tabIndex = 1
+    tabChildren = 1.1
+    enumerated tabEnabled
+    enumerated tabIndex
+    enumerated tabChildren
+===== non-editable text =====
+  default
+    tabEnabled = undefined
+    tabIndex = undefined
+    tabChildren = undefined
+    enumerated tabIndex
+  after set 1
+    tabEnabled = true
+    tabIndex = 0
+    tabChildren = true
+    enumerated tabEnabled
+    enumerated tabIndex
+    enumerated tabChildren
+  after set 2
+    tabEnabled = false
+    tabIndex = 4
+    tabChildren = false
+    enumerated tabEnabled
+    enumerated tabIndex
+    enumerated tabChildren
+  after set 3
+    tabEnabled = undefined
+    tabIndex = undefined
+    tabChildren = undefined
+    enumerated tabEnabled
+    enumerated tabIndex
+    enumerated tabChildren
+  after set 4
+    tabEnabled = -4
+    tabIndex = 4294967292
+    tabChildren = -4
+    enumerated tabEnabled
+    enumerated tabIndex
+    enumerated tabChildren
+  after set 5
+    tabEnabled = 2147483647
+    tabIndex = 2147483647
+    tabChildren = 2147483647
+    enumerated tabEnabled
+    enumerated tabIndex
+    enumerated tabChildren
+  after set 6
+    tabEnabled = 2147483648
+    tabIndex = 2147483648
+    tabChildren = 2147483648
+    enumerated tabEnabled
+    enumerated tabIndex
+    enumerated tabChildren
+  after set 7
+    tabEnabled = x
+    tabIndex = 0
+    tabChildren = x
+    enumerated tabEnabled
+    enumerated tabIndex
+    enumerated tabChildren
+  after set 8
+    tabEnabled = -2147483648
+    tabIndex = 2147483648
+    tabChildren = -2147483648
+    enumerated tabEnabled
+    enumerated tabIndex
+    enumerated tabChildren
+  after set 9
+    tabEnabled = [object Object]
+    tabIndex = 0
+    tabChildren = [object Object]
+    enumerated tabEnabled
+    enumerated tabIndex
+    enumerated tabChildren
+  after set 10
+    tabEnabled = 1.1
+    tabIndex = 1
+    tabChildren = 1.1
+    enumerated tabEnabled
+    enumerated tabIndex
+    enumerated tabChildren
+===== button =====
+  default
+    tabEnabled = undefined
+    tabIndex = undefined
+    tabChildren = undefined
+    enumerated tabIndex
+  after set 1
+    tabEnabled = true
+    tabIndex = 0
+    tabChildren = true
+    enumerated tabEnabled
+    enumerated tabIndex
+    enumerated tabChildren
+  after set 2
+    tabEnabled = false
+    tabIndex = 4
+    tabChildren = false
+    enumerated tabEnabled
+    enumerated tabIndex
+    enumerated tabChildren
+  after set 3
+    tabEnabled = undefined
+    tabIndex = undefined
+    tabChildren = undefined
+    enumerated tabEnabled
+    enumerated tabIndex
+    enumerated tabChildren
+  after set 4
+    tabEnabled = -4
+    tabIndex = -4
+    tabChildren = -4
+    enumerated tabEnabled
+    enumerated tabIndex
+    enumerated tabChildren
+  after set 5
+    tabEnabled = 2147483647
+    tabIndex = 2147483647
+    tabChildren = 2147483647
+    enumerated tabEnabled
+    enumerated tabIndex
+    enumerated tabChildren
+  after set 6
+    tabEnabled = 2147483648
+    tabIndex = -2147483648
+    tabChildren = 2147483648
+    enumerated tabEnabled
+    enumerated tabIndex
+    enumerated tabChildren
+  after set 7
+    tabEnabled = x
+    tabIndex = -2147483648
+    tabChildren = x
+    enumerated tabEnabled
+    enumerated tabIndex
+    enumerated tabChildren
+  after set 8
+    tabEnabled = -2147483648
+    tabIndex = -2147483648
+    tabChildren = -2147483648
+    enumerated tabEnabled
+    enumerated tabIndex
+    enumerated tabChildren
+  after set 9
+    tabEnabled = [object Object]
+    tabIndex = -2147483648
+    tabChildren = [object Object]
+    enumerated tabEnabled
+    enumerated tabIndex
+    enumerated tabChildren
+  after set 10
+    tabEnabled = 1.1
+    tabIndex = 1
+    tabChildren = 1.1
+    enumerated tabEnabled
+    enumerated tabIndex
+    enumerated tabChildren
+===== movie clip =====
+  default
+    tabEnabled = undefined
+    tabIndex = undefined
+    tabChildren = undefined
+  after set 1
+    tabEnabled = true
+    tabIndex = 0
+    tabChildren = true
+    enumerated tabEnabled
+    enumerated tabChildren
+  after set 2
+    tabEnabled = false
+    tabIndex = 4
+    tabChildren = false
+    enumerated tabEnabled
+    enumerated tabChildren
+  after set 3
+    tabEnabled = undefined
+    tabIndex = undefined
+    tabChildren = undefined
+    enumerated tabEnabled
+    enumerated tabChildren
+  after set 4
+    tabEnabled = -4
+    tabIndex = -4
+    tabChildren = -4
+    enumerated tabEnabled
+    enumerated tabChildren
+  after set 5
+    tabEnabled = 2147483647
+    tabIndex = 2147483647
+    tabChildren = 2147483647
+    enumerated tabEnabled
+    enumerated tabChildren
+  after set 6
+    tabEnabled = 2147483648
+    tabIndex = -2147483648
+    tabChildren = 2147483648
+    enumerated tabEnabled
+    enumerated tabChildren
+  after set 7
+    tabEnabled = x
+    tabIndex = -2147483648
+    tabChildren = x
+    enumerated tabEnabled
+    enumerated tabChildren
+  after set 8
+    tabEnabled = -2147483648
+    tabIndex = -2147483648
+    tabChildren = -2147483648
+    enumerated tabEnabled
+    enumerated tabChildren
+  after set 9
+    tabEnabled = [object Object]
+    tabIndex = -2147483648
+    tabChildren = [object Object]
+    enumerated tabEnabled
+    enumerated tabChildren
+  after set 10
+    tabEnabled = 1.1
+    tabIndex = 1
+    tabChildren = 1.1
+    enumerated tabEnabled
+    enumerated tabChildren

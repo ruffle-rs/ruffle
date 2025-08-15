@@ -1,0 +1,34 @@
+===== drawPath
+Odd number of data coordinates
+  Error thrown: ArgumentError: Error #2004: One of the parameters is invalid.
+Even number of data coordinates
+  No error thrown
+Odd number of data coordinates with no commands
+  No error thrown
+Odd number of superfluous data coordinates
+  Error thrown: ArgumentError: Error #2004: One of the parameters is invalid.
+Unknown commands
+  No error thrown
+Unknown winding rule
+  Error thrown: ArgumentError: Error #2008: Parameter winding must be one of the accepted values.
+Uppercase winding rule
+  Error thrown: ArgumentError: Error #2008: Parameter winding must be one of the accepted values.
+Lowercase winding rule
+  Error thrown: ArgumentError: Error #2008: Parameter winding must be one of the accepted values.
+===== GraphicsPath
+Odd number of data coordinates
+  Error thrown: ArgumentError: Error #2004: One of the parameters is invalid.
+Even number of data coordinates
+  No error thrown
+Odd number of data coordinates with no commands
+  No error thrown
+Odd number of superfluous data coordinates
+  Error thrown: ArgumentError: Error #2004: One of the parameters is invalid.
+Unknown commands
+  No error thrown
+Unknown winding rule
+  Error thrown: ArgumentError: Error #2008: Parameter winding must be one of the accepted values.
+Uppercase winding rule
+  Error thrown: ArgumentError: Error #2008: Parameter winding must be one of the accepted values.
+Lowercase winding rule
+  Error thrown: ArgumentError: Error #2008: Parameter winding must be one of the accepted values.

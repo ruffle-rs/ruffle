@@ -1,0 +1,14 @@
+EXTDCLASS.setPubArray(arr), EXTDCLASS.pubArray PASSED!
+EXTDCLASS.setPubBoolean(true), EXTDCLASS.pubBoolean PASSED!
+EXTDCLASS.setPubFunction(func), EXTDCLASS.pubFunction PASSED!
+EXTDCLASS.setPubNumber(num), EXTDCLASS.pubNumber PASSED!
+EXTDCLASS.setPubObject(obj), EXTDCLASS.pubObject PASSED!
+EXTDCLASS.setPubString(str), EXTDCLASS.pubString PASSED!
+access public method from a default method of a sub class PASSED!
+Access public method from public method of sub class PASSED!
+Access public method from private method of sub class PASSED!
+Access public method from a public static method of sub class PASSED!
+Access public property from outside the class PASSED!
+Access public property from default method of sub class PASSED!
+Access public property from public method in sub class PASSED!
+Access public property from public static method of sub class PASSED!

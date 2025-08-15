@@ -1,15 +1,14 @@
-use crate::avm1::function::{ExecutionReason, FunctionObject};
+use crate::avm1::function::ExecutionReason;
 use crate::avm1::globals::as_broadcaster::BroadcasterFunctions;
 use crate::avm1::globals::{as_broadcaster, create_globals};
 use crate::avm1::object::stage_object;
-use crate::avm1::object::TObject;
 use crate::avm1::property_map::PropertyMap;
 use crate::avm1::scope::Scope;
 use crate::avm1::{scope, Activation, ActivationIdentifier, Error, Object, Value};
-use crate::context::{GcContext, UpdateContext};
+use crate::context::UpdateContext;
+use crate::display_object::{DisplayObject, MovieClip, TDisplayObject, TDisplayObjectContainer};
 use crate::frame_lifecycle::FramePhase;
-use crate::prelude::*;
-use crate::string::AvmString;
+use crate::string::{AvmString, StringContext};
 use crate::tag_utils::SwfSlice;
 use crate::{avm1, avm_debug};
 use gc_arena::{Collect, Gc, Mutation};
@@ -59,14 +58,14 @@ pub struct Avm1<'gc> {
     has_mouse_listener: bool,
 
     /// The list of all movie clips in execution order.
-    clip_exec_list: Option<DisplayObject<'gc>>,
+    clip_exec_list: Option<MovieClip<'gc>>,
 
     /// The mappings between symbol names and constructors registered
     /// with `Object.registerClass()`.
     /// Because SWFs v6 and v7+ use different case-sensitivity rules, Flash
     /// keeps two separate registries, one case-sensitive, the other not.
-    constructor_registry_case_insensitive: PropertyMap<'gc, FunctionObject<'gc>>,
-    constructor_registry_case_sensitive: PropertyMap<'gc, FunctionObject<'gc>>,
+    constructor_registry_case_insensitive: PropertyMap<'gc, Object<'gc>>,
+    constructor_registry_case_sensitive: PropertyMap<'gc, Object<'gc>>,
 
     /// If getBounds / getRect is called on a MovieClip with invalid bounds and the
     /// target space is identical to the origin space, but the target is not the
@@ -90,8 +89,8 @@ pub struct Avm1<'gc> {
 }
 
 impl<'gc> Avm1<'gc> {
-    pub fn new(context: &mut GcContext<'_, 'gc>, player_version: u8) -> Self {
-        let gc_context = context.gc_context;
+    pub fn new(context: &mut StringContext<'gc>, player_version: u8) -> Self {
+        let gc_context = context.gc();
         let (prototypes, globals, broadcaster_functions) = create_globals(context);
 
         Self {
@@ -100,7 +99,7 @@ impl<'gc> Avm1<'gc> {
             global_scope: Gc::new(gc_context, Scope::from_global_object(globals)),
             prototypes,
             broadcaster_functions,
-            display_properties: stage_object::DisplayPropertyMap::new(),
+            display_properties: stage_object::DisplayPropertyMap::new(context),
             stack: vec![],
             registers: [
                 Value::Undefined,
@@ -128,7 +127,7 @@ impl<'gc> Avm1<'gc> {
         active_clip: DisplayObject<'gc>,
         name: S,
         code: SwfSlice,
-        context: &mut UpdateContext<'_, 'gc>,
+        context: &mut UpdateContext<'gc>,
     ) {
         if context.avm1.halted {
             // We've been told to ignore all future execution.
@@ -136,7 +135,7 @@ impl<'gc> Avm1<'gc> {
         }
 
         let mut parent_activation = Activation::from_nothing(
-            context.reborrow(),
+            context,
             ActivationIdentifier::root("[Actions Parent]"),
             active_clip,
         );
@@ -145,7 +144,7 @@ impl<'gc> Avm1<'gc> {
             .object()
             .coerce_to_object(&mut parent_activation);
         let child_scope = Gc::new(
-            parent_activation.context.gc_context,
+            parent_activation.gc(),
             Scope::new(
                 parent_activation.scope(),
                 scope::ScopeClass::Target,
@@ -155,7 +154,7 @@ impl<'gc> Avm1<'gc> {
         let constant_pool = parent_activation.context.avm1.constant_pool;
         let child_name = parent_activation.id.child(name);
         let mut child_activation = Activation::from_action(
-            parent_activation.context.reborrow(),
+            parent_activation.context,
             child_name,
             active_clip.swf_version(),
             child_scope,
@@ -174,7 +173,7 @@ impl<'gc> Avm1<'gc> {
     /// This creates a new frame stack.
     pub fn run_with_stack_frame_for_display_object<'a, F, R>(
         active_clip: DisplayObject<'gc>,
-        action_context: &mut UpdateContext<'_, 'gc>,
+        action_context: &mut UpdateContext<'gc>,
         function: F,
     ) -> R
     where
@@ -185,7 +184,7 @@ impl<'gc> Avm1<'gc> {
             _ => panic!("No script object for display object"),
         };
         let child_scope = Gc::new(
-            action_context.gc_context,
+            action_context.gc(),
             Scope::new(
                 action_context.avm1.global_scope,
                 scope::ScopeClass::Target,
@@ -194,7 +193,7 @@ impl<'gc> Avm1<'gc> {
         );
         let constant_pool = action_context.avm1.constant_pool;
         let mut activation = Activation::from_action(
-            action_context.reborrow(),
+            action_context,
             ActivationIdentifier::root("[Display Object]"),
             active_clip.swf_version(),
             child_scope,
@@ -212,7 +211,7 @@ impl<'gc> Avm1<'gc> {
     pub fn run_stack_frame_for_init_action(
         active_clip: DisplayObject<'gc>,
         code: SwfSlice,
-        context: &mut UpdateContext<'_, 'gc>,
+        context: &mut UpdateContext<'gc>,
     ) {
         if context.avm1.halted {
             // We've been told to ignore all future execution.
@@ -220,7 +219,7 @@ impl<'gc> Avm1<'gc> {
         }
 
         let mut parent_activation = Activation::from_nothing(
-            context.reborrow(),
+            context,
             ActivationIdentifier::root("[Init Parent]"),
             active_clip,
         );
@@ -229,7 +228,7 @@ impl<'gc> Avm1<'gc> {
             .object()
             .coerce_to_object(&mut parent_activation);
         let child_scope = Gc::new(
-            parent_activation.context.gc_context,
+            parent_activation.gc(),
             Scope::new(
                 parent_activation.scope(),
                 scope::ScopeClass::Target,
@@ -240,7 +239,7 @@ impl<'gc> Avm1<'gc> {
         let constant_pool = parent_activation.context.avm1.constant_pool;
         let child_name = parent_activation.id.child("[Init]");
         let mut child_activation = Activation::from_action(
-            parent_activation.context.reborrow(),
+            parent_activation.context,
             child_name,
             active_clip.swf_version(),
             child_scope,
@@ -258,12 +257,12 @@ impl<'gc> Avm1<'gc> {
     /// method, such as an event handler.
     ///
     /// This creates a new frame stack.
-    pub fn run_stack_frame_for_method<'a, 'b>(
+    pub fn run_stack_frame_for_method(
         active_clip: DisplayObject<'gc>,
         obj: Object<'gc>,
-        context: &'a mut UpdateContext<'b, 'gc>,
         name: AvmString<'gc>,
         args: &[Value<'gc>],
+        context: &mut UpdateContext<'gc>,
     ) {
         if context.avm1.halted {
             // We've been told to ignore all future execution.
@@ -271,7 +270,7 @@ impl<'gc> Avm1<'gc> {
         }
 
         let mut activation = Activation::from_nothing(
-            context.reborrow(),
+            context,
             ActivationIdentifier::root(name.to_string()),
             active_clip,
         );
@@ -281,13 +280,13 @@ impl<'gc> Avm1<'gc> {
 
     pub fn notify_system_listeners(
         active_clip: DisplayObject<'gc>,
-        context: &mut UpdateContext<'_, 'gc>,
         broadcaster_name: AvmString<'gc>,
         method: AvmString<'gc>,
         args: &[Value<'gc>],
+        context: &mut UpdateContext<'gc>,
     ) {
         let mut activation = Activation::from_nothing(
-            context.reborrow(),
+            context,
             ActivationIdentifier::root("[System Listeners]"),
             active_clip,
         );
@@ -301,7 +300,7 @@ impl<'gc> Avm1<'gc> {
             .coerce_to_object(&mut activation);
 
         let has_listener =
-            as_broadcaster::broadcast_internal(&mut activation, broadcaster, args, method)
+            as_broadcaster::broadcast_internal(broadcaster, args, method, &mut activation)
                 .unwrap_or(false);
         drop(activation);
 
@@ -342,7 +341,6 @@ impl<'gc> Avm1<'gc> {
         self.stack.push(value);
     }
 
-    #[allow(clippy::let_and_return)]
     pub fn pop(&mut self) -> Value<'gc> {
         let value = self.stack.pop().unwrap_or_else(|| {
             tracing::warn!("Avm1::pop: Stack underflow");
@@ -434,7 +432,7 @@ impl<'gc> Avm1<'gc> {
 
     /// Remove all display objects pending removal
     /// See [`find_display_objects_pending_removal`] for details
-    fn remove_pending(context: &mut UpdateContext<'_, 'gc>) {
+    fn remove_pending(context: &mut UpdateContext<'gc>) {
         // Storage for objects to remove
         // Have to do this in two passes to avoid borrow-mut while already borrowed
         let mut out = Vec::new();
@@ -444,24 +442,26 @@ impl<'gc> Avm1<'gc> {
             Self::find_display_objects_pending_removal(root_clip, &mut out);
         }
 
-        for child in out {
+        for &child in &out {
             // Get the parent of this object
-            let parent = child.parent().unwrap();
-            let parent_container = parent.as_container().unwrap();
+            if let Some(parent_container) = child.parent().and_then(|p| p.as_container()) {
+                // Remove it
+                parent_container.remove_child_directly(context, child);
 
-            // Remove it
-            parent_container.remove_child_directly(context, child);
-
-            // Update pending removal state
-            parent_container
-                .raw_container_mut(context.gc_context)
-                .update_pending_removals();
+                // Update pending removal state
+                parent_container
+                    .raw_container_mut(context.gc())
+                    .update_pending_removals();
+            } else {
+                // TODO Investigate it. This situation seems impossible, yet it happens.
+                tracing::warn!("AVM1 object pending removal doesn't have a parent, object={:?}, pending removal={:?}", child, out);
+            }
         }
     }
 
     // Run a single frame.
     #[instrument(level = "debug", skip_all)]
-    pub fn run_frame(context: &mut UpdateContext<'_, 'gc>) {
+    pub fn run_frame(context: &mut UpdateContext<'gc>) {
         // Remove pending objects
         Self::remove_pending(context);
 
@@ -471,18 +471,18 @@ impl<'gc> Avm1<'gc> {
         *context.frame_phase = FramePhase::Idle;
 
         // AVM1 execution order is determined by the global execution list, based on instantiation order.
-        let mut prev: Option<DisplayObject<'gc>> = None;
+        let mut prev: Option<MovieClip<'gc>> = None;
         let mut next = context.avm1.clip_exec_list;
         while let Some(clip) = next {
             next = clip.next_avm1_clip();
             if clip.avm1_removed() {
                 // Clean up removed clips from this frame or a previous frame.
                 if let Some(prev) = prev {
-                    prev.set_next_avm1_clip(context.gc_context, next);
+                    prev.set_next_avm1_clip(context.gc(), next);
                 } else {
                     context.avm1.clip_exec_list = next;
                 }
-                clip.set_next_avm1_clip(context.gc_context, None);
+                clip.set_next_avm1_clip(context.gc(), None);
             } else {
                 clip.run_frame_avm1(context);
                 prev = Some(clip);
@@ -492,7 +492,7 @@ impl<'gc> Avm1<'gc> {
         // Fire "onLoadInit" events and remove completed movie loaders.
         context
             .load_manager
-            .movie_clip_on_load(context.action_queue);
+            .movie_clip_on_load(context.action_queue, &context.strings);
 
         *context.frame_phase = FramePhase::Idle;
     }
@@ -501,7 +501,7 @@ impl<'gc> Avm1<'gc> {
     ///
     /// This should be called whenever a movie clip is created, and controls the order of
     /// execution for AVM1 movies.
-    pub fn add_to_exec_list(&mut self, gc_context: &Mutation<'gc>, clip: DisplayObject<'gc>) {
+    pub fn add_to_exec_list(&mut self, gc_context: &Mutation<'gc>, clip: MovieClip<'gc>) {
         // Adding while iterating is safe, as this does not modify any active nodes.
         if clip.next_avm1_clip().is_none() {
             clip.set_next_avm1_clip(gc_context, self.clip_exec_list);
@@ -513,21 +513,21 @@ impl<'gc> Avm1<'gc> {
         &self,
         swf_version: u8,
         symbol: AvmString<'gc>,
-    ) -> Option<&FunctionObject<'gc>> {
+    ) -> Option<Object<'gc>> {
         let is_case_sensitive = swf_version >= 7;
         let registry = if is_case_sensitive {
             &self.constructor_registry_case_sensitive
         } else {
             &self.constructor_registry_case_insensitive
         };
-        registry.get(symbol, is_case_sensitive)
+        registry.get(symbol, is_case_sensitive).copied()
     }
 
     pub fn register_constructor(
         &mut self,
         swf_version: u8,
         symbol: AvmString<'gc>,
-        constructor: Option<FunctionObject<'gc>>,
+        constructor: Option<Object<'gc>>,
     ) {
         let is_case_sensitive = swf_version >= 7;
         let registry = if is_case_sensitive {
@@ -585,10 +585,13 @@ pub fn skip_actions(reader: &mut Reader<'_>, num_actions_to_skip: u8) {
 pub fn root_error_handler<'gc>(activation: &mut Activation<'_, 'gc>, error: Error<'gc>) {
     match &error {
         Error::ThrownValue(value) => {
-            let message = value
-                .coerce_to_string(activation)
-                .unwrap_or_else(|_| "undefined".into());
-            activation.context.avm_trace(&message.to_utf8_lossy());
+            if let Ok(message) = value.coerce_to_string(activation) {
+                activation.context.avm_trace(&message.to_utf8_lossy());
+            } else {
+                // The only Value variant that can throw an error when being stringified
+                // is Object, so just print "[type Object]".
+                activation.context.avm_trace("[type Object]");
+            }
             // Continue execution without halting.
             return;
         }

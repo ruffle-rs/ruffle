@@ -1,34 +1,22 @@
-// note: this should be a ClassObject-less class,
-// with only the instance side.
-
 use crate::avm2::activation::Activation;
-use crate::avm2::class::Class;
-use crate::avm2::method::Method;
-use crate::avm2::object::Object;
-use crate::avm2::value::Value;
-use crate::avm2::Error;
+use crate::avm2::class::{Class, ClassAttributes};
 use crate::avm2::QName;
-use gc_arena::GcCell;
+use ruffle_macros::istr;
 
-fn void_init<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
-    _this: Object<'gc>,
-    _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error<'gc>> {
-    // note: after class refactor, this method should be unreachable!()
-    // or not exist at all.
-    Ok(Value::Undefined)
-}
-
-pub fn create_class<'gc>(activation: &mut Activation<'_, 'gc>) -> GcCell<'gc, Class<'gc>> {
-    let mc = activation.context.gc_context;
-    let class = Class::new(
-        QName::new(activation.avm2().public_namespace_base_version, "void"),
+pub fn create_class<'gc>(activation: &mut Activation<'_, 'gc>) -> Class<'gc> {
+    let mc = activation.gc();
+    let class = Class::custom_new(
+        QName::new(activation.avm2().namespaces.public_all(), istr!("void")),
         None,
-        Method::from_builtin(void_init, "", mc),
-        Method::from_builtin(void_init, "", mc),
+        None,
+        Box::new([]),
         mc,
     );
+    class.set_attributes(ClassAttributes::FINAL | ClassAttributes::SEALED);
+
+    // The `void` class has no interfaces, so use `init_vtable_with_interfaces`
+    // and pass an empty list
+    class.init_vtable_with_interfaces(activation.context, Box::new([]));
 
     class
 }

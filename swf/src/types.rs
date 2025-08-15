@@ -7,6 +7,7 @@
 use crate::string::SwfStr;
 use bitflags::bitflags;
 use enum_map::Enum;
+use std::borrow::Cow;
 use std::fmt::{self, Display, Formatter};
 use std::num::NonZeroU8;
 use std::str::FromStr;
@@ -275,7 +276,7 @@ bitflags! {
 
         /// Whether this SWF should be placed in the network sandbox when run locally.
         ///
-        /// SWFs in the network sandbox can only access network resources,  not local resources.
+        /// SWFs in the network sandbox can only access network resources, not local resources.
         /// SWFs in the local sandbox can only access local resources, not network resources.
         const USE_NETWORK_SANDBOX = 1 << 0;
     }
@@ -1025,6 +1026,7 @@ pub enum AudioCompression {
     Nellymoser16Khz = 4,
     Nellymoser8Khz = 5,
     Nellymoser = 6,
+    Aac = 10,
     Speex = 11,
 }
 
@@ -1215,7 +1217,7 @@ pub struct Font4<'a> {
 pub struct Glyph {
     pub shape_records: Vec<ShapeRecord>,
     pub code: u16,
-    pub advance: i16,
+    pub advance: u16,
     pub bounds: Option<Rectangle<Twips>>,
 }
 
@@ -1574,7 +1576,7 @@ impl<'a> EditText<'a> {
     }
 }
 
-impl<'a> Default for EditText<'a> {
+impl Default for EditText<'_> {
     fn default() -> Self {
         Self {
             id: Default::default(),
@@ -1696,7 +1698,7 @@ pub struct DefineBitsLossless<'a> {
     pub format: BitmapFormat,
     pub width: u16,
     pub height: u16,
-    pub data: &'a [u8],
+    pub data: Cow<'a, [u8]>,
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -1741,6 +1743,7 @@ pub enum VideoCodec {
     Vp6 = 4,
     Vp6WithAlpha = 5,
     ScreenVideoV2 = 6,
+    H264 = 7,
 }
 
 impl VideoCodec {
@@ -1783,7 +1786,8 @@ pub type DoAction<'a> = &'a [u8];
 
 pub type JpegTables<'a> = &'a [u8];
 
-/// `ProductInfo` contains information about the software used to generate the SWF.
+/// Contains information about the software used to generate the SWF.
+///
 /// Not documented in the SWF19 reference. Emitted by mxmlc.
 /// See <http://wahlers.com.br/claus/blog/undocumented-swf-tags-written-by-mxmlc/>
 #[derive(Clone, Debug, Eq, PartialEq)]

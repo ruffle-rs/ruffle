@@ -1,4 +1,9 @@
 package flash.text.engine {
+    import __ruffle__.stub_method;
+
+    import flash.geom.Rectangle;
+
+    [API("662")]
     public final class ElementFormat {
         private var _alignmentBaseline:String;
 
@@ -8,6 +13,7 @@ package flash.text.engine {
 
         private var _breakOpportunity:String;
 
+        [Ruffle(NativeAccessible)]
         private var _color:uint;
 
         private var _digitCase:String;
@@ -16,8 +22,10 @@ package flash.text.engine {
 
         private var _dominantBaseline:String;
 
+        [Ruffle(NativeAccessible)]
         private var _fontDescription:FontDescription;
 
+        [Ruffle(NativeAccessible)]
         private var _fontSize:Number;
 
         private var _kerning:String;
@@ -35,12 +43,14 @@ package flash.text.engine {
         private var _typographicCase:String;
 
 
-        public function ElementFormat(fontDescription:FontDescription = null, fontSize:Number = 12, color:uint = 0, alpha:Number = 1,
-                                      textRotation:String = "auto", dominantBaseline:String = "roman",
-                                      alignmentBaseline:String = "useDominantBaseline", baselineShift:Number = 0, kerning:String = "on",
-                                      trackingRight:Number = 0, trackingLeft:Number = 0, locale:String = "en", breakOpportunity:String = "auto",
-                                      digitCase:String = "default", digitWidth:String = "default", ligatureLevel:String = "common",
-                                      typographicCase:String = "default") {
+        public function ElementFormat(
+            fontDescription:FontDescription = null, fontSize:Number = 12, color:uint = 0, alpha:Number = 1,
+            textRotation:String = "auto", dominantBaseline:String = "roman",
+            alignmentBaseline:String = "useDominantBaseline", baselineShift:Number = 0, kerning:String = "on",
+            trackingRight:Number = 0, trackingLeft:Number = 0, locale:String = "en", breakOpportunity:String = "auto",
+            digitCase:String = "default", digitWidth:String = "default", ligatureLevel:String = "common",
+            typographicCase:String = "default"
+        ) {
             this.fontDescription = (fontDescription != null) ? fontDescription : new FontDescription();
 
             this.alignmentBaseline = alignmentBaseline;
@@ -195,6 +205,14 @@ package flash.text.engine {
 
         public function set typographicCase(value:String):void {
             this._typographicCase = value;
+        }
+
+        public function getFontMetrics():FontMetrics {
+            stub_method("flash.text.engine.ElementFormat", "getFontMetrics");
+            var emBox:Rectangle = new Rectangle(0, _fontSize * -0.8, _fontSize, _fontSize);
+            return new FontMetrics(
+                emBox, -5, 1.2, 1.8, 1.2, 0.075, 0.6, -0.35, 0.6, 0.0
+            );
         }
     }
 }

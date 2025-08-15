@@ -1,0 +1,326 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+   Compiled with:
+   swfmill xml2swf test/swfs/doubleAndRegister.xml test/swfs/doubleAndRegister.swf
+-->
+<swf version="17" compressed="0">
+  <Header framerate="24" frames="1">
+    <size>
+      <Rectangle left="0" right="11000" top="0" bottom="8000"/>
+    </size>
+    <tags>
+      <FileAttributes hasMetaData="0" allowABC="0" suppressCrossDomainCaching="0" swfRelativeURLs="0" useNetwork="0"/>
+      <SetBackgroundColor>
+        <color>
+          <Color red="255" green="255" blue="255"/>
+        </color>
+      </SetBackgroundColor>
+      <DefineShape5 objectID="1" nonScalingStrokes="0" scalingStrokes="1">
+        <bounds>
+          <Rectangle left="-1890" right="3770" top="-1050" bottom="1990"/>
+        </bounds>
+        <strokeBounds>
+          <Rectangle left="-1880" right="3760" top="-1040" bottom="1980"/>
+        </strokeBounds>
+        <styles>
+          <StyleList>
+            <fillStyles>
+              <Solid>
+                <color>
+                  <Color red="0" green="255" blue="51" alpha="255"/>
+                </color>
+              </Solid>
+            </fillStyles>
+            <lineStyles>
+              <LineStyle width="20" startCapStyle="0" jointStyle="0" hasFill="0" noHScale="0" noVScale="0" pixelHinting="0" noClose="0" endCapStyle="0">
+                <fillColor>
+                  <Color red="255" green="255" blue="255" alpha="255"/>
+                </fillColor>
+              </LineStyle>
+            </lineStyles>
+          </StyleList>
+        </styles>
+        <shapes>
+          <Shape>
+            <edges>
+              <ShapeSetup x="2934" y="-598" fillStyle1="1" lineStyle="1"/>
+              <CurveTo x1="826" y1="443" x2="0" y2="625"/>
+              <CurveTo x1="0" y1="625" x2="-826" y2="442"/>
+              <CurveTo x1="-826" y1="443" x2="-1168" y2="0"/>
+              <CurveTo x1="-1168" y1="0" x2="-826" y2="-443"/>
+              <CurveTo x1="-826" y1="-442" x2="0" y2="-625"/>
+              <CurveTo x1="0" y1="-625" x2="826" y2="-443"/>
+              <CurveTo x1="826" y1="-442" x2="1168" y2="0"/>
+              <CurveTo x1="1168" y1="0" x2="826" y2="442"/>
+              <ShapeSetup/>
+            </edges>
+          </Shape>
+        </shapes>
+      </DefineShape5>
+      <DefineSprite objectID="2" frames="1">
+        <tags>
+          <PlaceObject2 replace="0" depth="1" objectID="1">
+            <transform>
+              <Transform transX="0" transY="0"/>
+            </transform>
+          </PlaceObject2>
+          <ShowFrame/>
+          <End/>
+        </tags>
+      </DefineSprite>
+      <DefineShape5 objectID="3" nonScalingStrokes="0" scalingStrokes="1">
+        <bounds>
+          <Rectangle left="-1790" right="1450" top="-2050" bottom="1430"/>
+        </bounds>
+        <strokeBounds>
+          <Rectangle left="-1780" right="1440" top="-2040" bottom="1420"/>
+        </strokeBounds>
+        <styles>
+          <StyleList>
+            <fillStyles>
+              <Solid>
+                <color>
+                  <Color red="0" green="255" blue="51" alpha="255"/>
+                </color>
+              </Solid>
+            </fillStyles>
+            <lineStyles>
+              <LineStyle width="20" startCapStyle="0" jointStyle="0" hasFill="0" noHScale="0" noVScale="0" pixelHinting="0" noClose="0" endCapStyle="0">
+                <fillColor>
+                  <Color red="255" green="255" blue="255" alpha="255"/>
+                </fillColor>
+              </LineStyle>
+            </lineStyles>
+          </StyleList>
+        </styles>
+        <shapes>
+          <Shape>
+            <edges>
+              <ShapeSetup x="1440" y="-2040" fillStyle1="1" lineStyle="1"/>
+              <LineTo x="0" y="3460"/>
+              <LineTo x="-3220" y="0"/>
+              <LineTo x="0" y="-3460"/>
+              <LineTo x="3220" y="0"/>
+              <ShapeSetup/>
+            </edges>
+          </Shape>
+        </shapes>
+      </DefineShape5>
+      <DefineSprite objectID="4" frames="1">
+        <tags>
+          <PlaceObject2 replace="0" depth="1" objectID="3">
+            <transform>
+              <Transform transX="0" transY="0"/>
+            </transform>
+          </PlaceObject2>
+          <ShowFrame/>
+          <End/>
+        </tags>
+      </DefineSprite>
+      <Export>
+        <symbols>
+          <Symbol objectID="2" name="DDD"/>
+        </symbols>
+      </Export>
+      <Export>
+        <symbols>
+          <Symbol objectID="2" name="CCC"/>
+        </symbols>
+      </Export>
+      <DoAction>
+        <actions>
+          <Dictionary>
+            <strings>
+              <String value="AAA"/>
+              <String value="DDD"/>
+              <String value="attachMovie"/>
+              <String value="foo"/>
+            </strings>
+          </Dictionary>
+          <PushData>
+            <items>
+              <StackInteger value="2"/>
+              <StackDictionaryLookup index="0"/>
+              <StackDictionaryLookup index="1"/>
+              <StackInteger value="3"/>
+              <StackDictionaryLookup index="2"/>
+            </items>
+          </PushData>
+          <CallFunction/>
+          <Pop/>
+          <PushData>
+            <items>
+              <StackDouble value="0.0000000000000000"/>
+              <StackDictionaryLookup index="0"/>
+            </items>
+          </PushData>
+          <GetVariable/>
+          <PushData>
+            <items>
+              <StackDictionaryLookup index="3"/>
+            </items>
+          </PushData>
+          <CallMethod/>
+          <Pop/>
+          <EndAction/>
+        </actions>
+      </DoAction>
+      <DefineShape5 objectID="5" nonScalingStrokes="0" scalingStrokes="1">
+        <bounds>
+          <Rectangle left="-10" right="4930" top="-10" bottom="2530"/>
+        </bounds>
+        <strokeBounds>
+          <Rectangle left="0" right="4920" top="0" bottom="2520"/>
+        </strokeBounds>
+        <styles>
+          <StyleList>
+            <fillStyles/>
+            <lineStyles>
+              <LineStyle width="20" startCapStyle="0" jointStyle="0" hasFill="0" noHScale="0" noVScale="0" pixelHinting="0" noClose="0" endCapStyle="0">
+                <fillColor>
+                  <Color red="255" green="255" blue="255" alpha="255"/>
+                </fillColor>
+              </LineStyle>
+            </lineStyles>
+          </StyleList>
+        </styles>
+        <shapes>
+          <Shape>
+            <edges>
+              <ShapeSetup lineStyle="1"/>
+              <LineTo x="4920" y="2520"/>
+              <ShapeSetup/>
+            </edges>
+          </Shape>
+        </shapes>
+      </DefineShape5>
+      <DefineSprite objectID="6" frames="1">
+        <tags>
+          <DoAction>
+            <actions>
+              <EndAction/>
+            </actions>
+          </DoAction>
+          <PlaceObject2 replace="0" depth="1" objectID="5">
+            <transform>
+              <Transform transX="0" transY="0"/>
+            </transform>
+          </PlaceObject2>
+          <ShowFrame/>
+          <End/>
+        </tags>
+      </DefineSprite>
+      <PlaceObject2 replace="0" depth="1" objectID="6" name="init">
+        <transform>
+          <Transform transX="4419" transY="2760"/>
+        </transform>
+      </PlaceObject2>
+      <DoInitAction sprite="6">
+        <actions>
+          <Dictionary>
+            <strings>
+              <String value="CCC"/>
+              <String value="Constr CCC"/>
+              <String value="prototype"/>
+              <String value="MovieClip"/>
+              <String value="foo"/>
+              <String value="bar"/>
+              <String value=""/>
+              <String value="Object"/>
+              <String value="registerClass"/>
+            </strings>
+          </Dictionary>
+          <PushData>
+            <items>
+              <StackDictionaryLookup index="0"/>
+            </items>
+          </PushData>
+          <DeclareFunction name="" argc="0" length="6">
+            <args/>
+          </DeclareFunction>
+          <PushData>
+            <items>
+              <StackDictionaryLookup index="1"/>
+            </items>
+          </PushData>
+          <Trace/>
+          <SetLocalVariable/>
+          <PushData>
+            <items>
+              <StackDictionaryLookup index="0"/>
+            </items>
+          </PushData>
+          <GetVariable/>
+          <PushData>
+            <items>
+              <StackDictionaryLookup index="2"/>
+              <StackDouble value="0.0000000000000000"/>
+              <StackDictionaryLookup index="3"/>
+            </items>
+          </PushData>
+          <New/>
+          <SetMember/>
+          <PushData>
+            <items>
+              <StackDictionaryLookup index="0"/>
+            </items>
+          </PushData>
+          <GetVariable/>
+          <PushData>
+            <items>
+              <StackDictionaryLookup index="2"/>
+            </items>
+          </PushData>
+          <GetMember/>
+          <PushData>
+            <items>
+              <StackDictionaryLookup index="4"/>
+            </items>
+          </PushData>
+          <DeclareFunction name="" argc="0" length="26">
+            <args/>
+          </DeclareFunction>
+          <PushData>
+            <items>
+              <StackDictionaryLookup index="5"/>
+            </items>
+          </PushData>
+          <Trace/>
+          <PushData>
+            <items>
+              <StackDictionaryLookup index="6"/>
+              <StackDouble value="0.0000000000000000"/>
+              <StackInteger value="200"/>
+            </items>
+          </PushData>
+          <SetProperty/>
+          <SetMember/>
+          <PushData>
+            <items>
+              <StackDictionaryLookup index="0"/>
+            </items>
+          </PushData>
+          <GetVariable/>
+          <PushData>
+            <items>
+              <StackDictionaryLookup index="0"/>
+              <StackInteger value="2"/>
+              <StackDictionaryLookup index="7"/>
+            </items>
+          </PushData>
+          <GetVariable/>
+          <PushData>
+            <items>
+              <StackDictionaryLookup index="8"/>
+            </items>
+          </PushData>
+          <CallMethod/>
+          <Pop/>
+          <EndAction/>
+        </actions>
+      </DoInitAction>
+      <ShowFrame/>
+      <End/>
+    </tags>
+  </Header>
+</swf>

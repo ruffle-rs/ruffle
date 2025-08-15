@@ -1,0 +1,36 @@
+constructed root1
+added root1
+added instance1
+added instance3
+exitFrame 1
+root loader: init 1293
+root loader: progress 1293
+root loader: complete 1293
+enterFrame 2
+run frame 2 in root1
+exitFrame 2
+child 1 loader: open 0
+child 1 loader: progress 0
+child 1 loader: progress 8700
+child 2 loader: open 0
+child 2 loader: progress 0
+child 2 loader: progress 8700
+enterFrame 3
+construct instance4, parent: null
+added instance4
+construct instance2, parent: null
+added instance2
+run frame 3 in root1
+run frame 1 in instance2
+run frame 1 in instance4
+exitFrame 3
+child 2 loader: init 8700
+child 2 loader: httpStatus 8700
+child 2 loader: complete 8700
+child 1 loader: init 8700
+child 1 loader: httpStatus 8700
+child 1 loader: complete 8700
+enterFrame 4
+run frame 4 in root1
+instance4
+exitFrame 4

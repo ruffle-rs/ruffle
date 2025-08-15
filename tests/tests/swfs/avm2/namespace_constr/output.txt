@@ -1,5 +1,254 @@
-new Namespace() 
-new Namespace("prefix", "uri") uri
-new Namespace("uri") uri
-var q = new QName("test");
-new Namespace(q) uri
+namespace example = "value"
+ prefix: undefined
+ uri: "value"
+
+new Namespace()
+ prefix: ""
+ uri: ""
+
+new Namespace(null)
+ prefix: undefined
+ uri: "null"
+
+Namespace(null)
+ prefix: undefined
+ uri: "null"
+
+new Namespace(undefined)
+ prefix: undefined
+ uri: "undefined"
+
+Namespace(undefined)
+ prefix: undefined
+ uri: "undefined"
+
+new Namespace("test")
+ prefix: undefined
+ uri: "test"
+
+Namespace("test")
+ prefix: undefined
+ uri: "test"
+
+new Namespace("")
+ prefix: ""
+ uri: ""
+
+Namespace("")
+ prefix: ""
+ uri: ""
+
+new Namespace("NOT A VALID PREFIX")
+ prefix: undefined
+ uri: "NOT A VALID PREFIX"
+
+Namespace("NOT A VALID PREFIX")
+ prefix: undefined
+ uri: "NOT A VALID PREFIX"
+
+new Namespace(otherNS)
+ prefix: "otherPrefix"
+ uri: "otherUri"
+
+Namespace(otherNS)
+ prefix: "otherPrefix"
+ uri: "otherUri"
+
+new Namespace(qName)
+ prefix: undefined
+ uri: "namespace"
+
+Namespace(qName)
+ prefix: undefined
+ uri: "namespace"
+
+new Namespace(null, null)
+ prefix: undefined
+ uri: "null"
+
+new Namespace(null, undefined)
+ prefix: undefined
+ uri: "undefined"
+
+new Namespace(null, "test")
+ prefix: undefined
+ uri: "test"
+
+new Namespace(null, "")
+! TypeError: Error #1098: Illegal prefix null for no namespace.
+
+new Namespace(null, "NOT A VALID PREFIX")
+ prefix: undefined
+ uri: "NOT A VALID PREFIX"
+
+new Namespace(null, otherNS)
+ prefix: undefined
+ uri: "otherUri"
+
+new Namespace(null, qName)
+ prefix: undefined
+ uri: "namespace"
+
+new Namespace(undefined, null)
+ prefix: undefined
+ uri: "null"
+
+new Namespace(undefined, undefined)
+ prefix: undefined
+ uri: "undefined"
+
+new Namespace(undefined, "test")
+ prefix: undefined
+ uri: "test"
+
+new Namespace(undefined, "")
+! TypeError: Error #1098: Illegal prefix undefined for no namespace.
+
+new Namespace(undefined, "NOT A VALID PREFIX")
+ prefix: undefined
+ uri: "NOT A VALID PREFIX"
+
+new Namespace(undefined, otherNS)
+ prefix: undefined
+ uri: "otherUri"
+
+new Namespace(undefined, qName)
+ prefix: undefined
+ uri: "namespace"
+
+new Namespace("test", null)
+ prefix: "test"
+ uri: "null"
+
+new Namespace("test", undefined)
+ prefix: "test"
+ uri: "undefined"
+
+new Namespace("test", "test")
+ prefix: "test"
+ uri: "test"
+
+new Namespace("test", "")
+! TypeError: Error #1098: Illegal prefix test for no namespace.
+
+new Namespace("test", "NOT A VALID PREFIX")
+ prefix: "test"
+ uri: "NOT A VALID PREFIX"
+
+new Namespace("test", otherNS)
+ prefix: "test"
+ uri: "otherUri"
+
+new Namespace("test", qName)
+ prefix: "test"
+ uri: "namespace"
+
+new Namespace("", null)
+ prefix: ""
+ uri: "null"
+
+new Namespace("", undefined)
+ prefix: ""
+ uri: "undefined"
+
+new Namespace("", "test")
+ prefix: ""
+ uri: "test"
+
+new Namespace("", "")
+ prefix: ""
+ uri: ""
+
+new Namespace("", "NOT A VALID PREFIX")
+ prefix: ""
+ uri: "NOT A VALID PREFIX"
+
+new Namespace("", otherNS)
+ prefix: ""
+ uri: "otherUri"
+
+new Namespace("", qName)
+ prefix: ""
+ uri: "namespace"
+
+new Namespace("NOT A VALID PREFIX", null)
+ prefix: undefined
+ uri: "null"
+
+new Namespace("NOT A VALID PREFIX", undefined)
+ prefix: undefined
+ uri: "undefined"
+
+new Namespace("NOT A VALID PREFIX", "test")
+ prefix: undefined
+ uri: "test"
+
+new Namespace("NOT A VALID PREFIX", "")
+! TypeError: Error #1098: Illegal prefix NOT A VALID PREFIX for no namespace.
+
+new Namespace("NOT A VALID PREFIX", "NOT A VALID PREFIX")
+ prefix: undefined
+ uri: "NOT A VALID PREFIX"
+
+new Namespace("NOT A VALID PREFIX", otherNS)
+ prefix: undefined
+ uri: "otherUri"
+
+new Namespace("NOT A VALID PREFIX", qName)
+ prefix: undefined
+ uri: "namespace"
+
+new Namespace(otherNS, null)
+ prefix: "otherUri"
+ uri: "null"
+
+new Namespace(otherNS, undefined)
+ prefix: "otherUri"
+ uri: "undefined"
+
+new Namespace(otherNS, "test")
+ prefix: "otherUri"
+ uri: "test"
+
+new Namespace(otherNS, "")
+! TypeError: Error #1098: Illegal prefix otherUri for no namespace.
+
+new Namespace(otherNS, "NOT A VALID PREFIX")
+ prefix: "otherUri"
+ uri: "NOT A VALID PREFIX"
+
+new Namespace(otherNS, otherNS)
+ prefix: "otherUri"
+ uri: "otherUri"
+
+new Namespace(otherNS, qName)
+ prefix: "otherUri"
+ uri: "namespace"
+
+new Namespace(qName, null)
+ prefix: undefined
+ uri: "null"
+
+new Namespace(qName, undefined)
+ prefix: undefined
+ uri: "undefined"
+
+new Namespace(qName, "test")
+ prefix: undefined
+ uri: "test"
+
+new Namespace(qName, "")
+! TypeError: Error #1098: Illegal prefix namespace::name for no namespace.
+
+new Namespace(qName, "NOT A VALID PREFIX")
+ prefix: undefined
+ uri: "NOT A VALID PREFIX"
+
+new Namespace(qName, otherNS)
+ prefix: undefined
+ uri: "otherUri"
+
+new Namespace(qName, qName)
+ prefix: undefined
+ uri: "namespace"
+

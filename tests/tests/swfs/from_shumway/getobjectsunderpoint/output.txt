@@ -1,0 +1,34 @@
+shapes in MovieClips are hit:
+[object Shape]
+
+textfields are hit:
+[object TextField]
+
+bitmaps are hit:
+[object Bitmap]
+
+sprite includes self in results:
+[object Sprite]
+
+button's up state is hit, but not the parents:
+count: 1
+elements: [object Shape]
+hits[0].parent: null
+
+mouseChildren and mouseEnabled don't affect the result:
+count: 1
+elements: [object Shape]
+hits[0].parent: null
+
+hitArea doesn't affect the result:
+count: 1
+elements: [object Shape]
+hits[0].parent: null
+mask: null
+mask: null
+
+invisible elements aren't included:
+count: 0
+
+masks *do* affect the result:
+count: 0

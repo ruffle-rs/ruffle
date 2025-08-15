@@ -1,6 +1,6 @@
 use crate::backends::TestLogBackend;
 use crate::util::read_bytes;
-use async_channel::Receiver;
+use async_channel::{Receiver, Sender};
 use percent_encoding::percent_decode_str;
 use ruffle_core::backend::log::LogBackend;
 use ruffle_core::backend::navigator::{
@@ -10,9 +10,9 @@ use ruffle_core::backend::navigator::{
 use ruffle_core::indexmap::IndexMap;
 use ruffle_core::loader::Error;
 use ruffle_core::socket::{ConnectionState, SocketAction, SocketHandle};
+use ruffle_core::swf::Encoding;
 use ruffle_socket_format::SocketEvent;
 use std::borrow::Cow;
-use std::sync::mpsc::Sender;
 use std::time::Duration;
 use url::{ParseError, Url};
 use vfs::VfsPath;
@@ -26,12 +26,24 @@ struct TestResponse {
 }
 
 impl SuccessResponse for TestResponse {
-    fn url(&self) -> Cow<str> {
+    fn url(&self) -> Cow<'_, str> {
         Cow::Borrowed(&self.url)
     }
 
     fn body(self: Box<Self>) -> OwnedFuture<Vec<u8>, Error> {
         Box::pin(async move { Ok(self.body) })
+    }
+
+    fn text_encoding(&self) -> Option<&'static Encoding> {
+        None
+    }
+
+    fn status(&self) -> u16 {
+        self.status
+    }
+
+    fn redirected(&self) -> bool {
+        self.redirected
     }
 
     fn next_chunk(&mut self) -> OwnedFuture<Option<Vec<u8>>, Error> {
@@ -42,14 +54,6 @@ impl SuccessResponse for TestResponse {
         } else {
             Box::pin(async move { Ok(None) })
         }
-    }
-
-    fn status(&self) -> u16 {
-        self.status
-    }
-
-    fn redirected(&self) -> bool {
-        self.redirected
     }
 
     fn expected_length(&self) -> Result<Option<u64>, Error> {
@@ -101,12 +105,12 @@ impl NavigatorBackend for TestNavigatorBackend {
         // Log request.
         if let Some(log) = &self.log {
             log.avm_trace("Navigator::navigate_to_url:");
-            log.avm_trace(&format!("  URL: {}", url));
-            log.avm_trace(&format!("  Target: {}", target));
+            log.avm_trace(&format!("  URL: {url}"));
+            log.avm_trace(&format!("  Target: {target}"));
             if let Some((method, vars)) = vars_method {
-                log.avm_trace(&format!("  Method: {}", method));
+                log.avm_trace(&format!("  Method: {method}"));
                 for (key, value) in vars {
-                    log.avm_trace(&format!("  Param: {}={}", key, value));
+                    log.avm_trace(&format!("  Param: {key}={value}"));
                 }
             }
         }
@@ -162,11 +166,11 @@ impl NavigatorBackend for TestNavigatorBackend {
                 ))
             }
             if let Some((body, mime_type)) = request.body() {
-                log.avm_trace(&format!("  Mime-Type: {}", mime_type));
+                log.avm_trace(&format!("  Mime-Type: {mime_type}"));
                 if mime_type == "application/x-www-form-urlencoded" {
                     log.avm_trace(&format!("  Body: {}", String::from_utf8_lossy(body)));
                 } else {
-                    log.avm_trace(&format!("  Body: {:02X?}", body));
+                    log.avm_trace(&format!("  Body: {body:02X?}"));
                 }
             }
         }
@@ -276,40 +280,40 @@ impl NavigatorBackend for TestNavigatorBackend {
     ) {
         if let Some(log) = &self.log {
             log.avm_trace("Navigator::connect_socket");
-            log.avm_trace(&format!("    Host: {}; Port: {}", host, port));
+            log.avm_trace(&format!("    Host: {host}; Port: {port}"));
         }
 
         if let Some(events) = self.socket_events.clone() {
             self.spawn_future(Box::pin(async move {
                 sender
-                                .send(SocketAction::Connect(handle, ConnectionState::Connected))
-                                .expect("working channel send");
+                    .try_send(SocketAction::Connect(handle, ConnectionState::Connected))
+                    .expect("working channel send");
 
                 for event in events {
                     match event {
                         SocketEvent::Disconnect => {
                             sender
-                                .send(SocketAction::Close(handle))
+                                .try_send(SocketAction::Close(handle))
                                 .expect("working channel send");
-                        },
+                        }
                         SocketEvent::WaitForDisconnect => {
                             match receiver.recv().await {
                                 Err(_) => break,
                                 Ok(_) => panic!("Expected client to disconnect, data was sent instead"),
                             }
-                        },
+                        }
                         SocketEvent::Receive { expected } => {
                             match receiver.recv().await {
                                 Ok(val) => {
                                     if expected != val {
-                                        panic!("Received data did not match expected data\nExpected: {:?}\nActual: {:?}", expected, val);
+                                        panic!("Received data did not match expected data\nExpected: {expected:?}\nActual: {val:?}");
                                     }
                                 }
                                 Err(_) => panic!("Expected client to send data, but connection was closed instead"),
                             }
-                        },
+                        }
                         SocketEvent::Send { payload } => {
-                            sender.send(SocketAction::Data(handle, payload)).expect("working channel send");
+                            sender.try_send(SocketAction::Data(handle, payload)).expect("working channel send");
                         }
                     }
                 }

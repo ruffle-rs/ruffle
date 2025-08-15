@@ -1,13 +1,18 @@
 package flash.text.engine {
     import __ruffle__.stub_method;
 
+    [API("662")]
     public final class FontDescription {
+        [Ruffle(NativeAccessible)]
         private var _fontName:String;
 
+        [Ruffle(NativeAccessible)]
         private var _fontWeight:String;
 
+        [Ruffle(NativeAccessible)]
         private var _fontPosture:String;
 
+        [Ruffle(NativeAccessible)]
         private var _fontLookup:String;
 
         private var _renderingMode:String;

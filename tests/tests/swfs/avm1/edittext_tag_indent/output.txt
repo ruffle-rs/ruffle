@@ -1,0 +1,31 @@
+Indent for _level0.text1:
+1638
+1638
+Indent for _level0.text2:
+-1638
+-1638
+Indent for _level0.text3:
+-10
+-10
+Indent for _level0.text4:
+2
+2
+Indent for _level0.text5:
+-4
+-4
+Setting 0 -> 0
+Setting 0.1 -> 0
+Setting 0.4 -> 0
+Setting 0.5 -> 0
+Setting 0.6 -> 1
+Setting 0.8 -> 1
+Setting 1 -> 1
+Setting 1.1 -> 1
+Setting 1.4 -> 1
+Setting 1.5 -> 2
+Setting 1.6 -> 2
+Setting 1.8 -> 2
+Setting 2 -> 2
+Setting -10 -> -10
+Setting 100 -> 100
+Setting 64010 -> 64010

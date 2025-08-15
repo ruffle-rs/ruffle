@@ -18,11 +18,59 @@ package {
 
     public native function isXMLName(string:* = undefined):Boolean;
 
+    [Ruffle(FastCall)]
     public native function isFinite(value:Number = undefined):Boolean;
+    [Ruffle(FastCall)]
     public native function isNaN(value:Number = undefined):Boolean;
 
+    [Ruffle(FastCall)]
     public native function parseFloat(number:String = "NaN"):Number;
+    [Ruffle(FastCall)]
     public native function parseInt(string:String = "NaN", base:int = 0):Number;
 
     public native function trace(... rest):void;
 }
+
+// These classes are required by other core code, so we put them here. Toplevel.as
+// is loaded before the rest of the global code.
+
+// None of the other classes can load before Object and Class
+include "Object.as"
+include "Class.as"
+
+// Function must go first because prototype methods can't be created without it
+include "Function.as"
+
+include "Error.as"
+
+include "Array.as"
+include "Boolean.as"
+include "int.as"
+include "Number.as"
+include "String.as"
+include "uint.as"
+
+include "Vector.as"
+
+include "VectorDouble.as"
+include "VectorInt.as"
+include "VectorObject.as"
+include "VectorUint.as"
+
+include "ArgumentError.as"
+include "DefinitionError.as"
+include "EvalError.as"
+include "TypeError.as"
+include "RangeError.as"
+include "ReferenceError.as"
+include "SecurityError.as"
+include "SyntaxError.as"
+include "UninitializedError.as"
+include "URIError.as"
+include "VerifyError.as"
+
+include "JSON.as"
+include "Namespace.as"
+include "QName.as"
+include "XML.as"
+include "XMLList.as"

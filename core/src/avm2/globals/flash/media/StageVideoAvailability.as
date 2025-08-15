@@ -6,6 +6,7 @@
 package flash.media
 {
 
+    [API("670")]
     public final class StageVideoAvailability
     {
         // Stage video is currently available.

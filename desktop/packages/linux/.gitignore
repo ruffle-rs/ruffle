@@ -1,0 +1,3 @@
+# The locale dir is used for Crowdin synchronization currently,
+# and we do not want co commit anything from there.
+locale/

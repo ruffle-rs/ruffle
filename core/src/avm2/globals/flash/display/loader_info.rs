@@ -3,43 +3,32 @@
 use crate::avm2::activation::Activation;
 use crate::avm2::bytearray::Endian;
 use crate::avm2::error::error;
-use crate::avm2::object::{DomainObject, LoaderStream, Object, TObject};
+use crate::avm2::object::{DomainObject, LoaderStream, ScriptObject, TObject as _};
 use crate::avm2::value::Value;
-use crate::avm2::{AvmString, Error};
+use crate::avm2::Error;
 use crate::display_object::TDisplayObject;
 use crate::loader::ContentType;
+use crate::string::AvmString;
 use crate::{avm2_stub_getter, avm2_stub_method};
+use std::sync::Arc;
 use swf::{write_swf, Compression};
-
-pub use crate::avm2::object::loader_info_allocator;
+use url::Url;
 
 const INSUFFICIENT: &str =
     "Error #2099: The loading object is not sufficiently loaded to provide this information.";
 
-/// Implements `flash.display.LoaderInfo`'s native instance constructor.
-pub fn native_instance_init<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
-    _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error<'gc>> {
-    activation.super_init(this, &[])?;
-
-    Ok(Value::Undefined)
-}
-
 /// `actionScriptVersion` getter
 pub fn get_action_script_version<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    activation: &mut Activation<'_, 'gc>,
+    this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(loader_stream) = this
-        .as_loader_info_object()
-        .and_then(|o| o.as_loader_stream())
-    {
+    let this = this.as_object().unwrap();
+
+    if let Some(loader_stream) = this.as_loader_info_object().map(|o| o.loader_stream()) {
         match &*loader_stream {
             LoaderStream::NotYetLoaded(_, _, _) => {
-                return Err(Error::AvmError(error(_activation, INSUFFICIENT, 2099)?));
+                return Err(Error::avm_error(error(activation, INSUFFICIENT, 2099)?));
             }
             LoaderStream::Swf(movie, _) => {
                 let version = if movie.is_action_script_3() { 3 } else { 2 };
@@ -54,13 +43,12 @@ pub fn get_action_script_version<'gc>(
 /// `applicationDomain` getter
 pub fn get_application_domain<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(loader_stream) = this
-        .as_loader_info_object()
-        .and_then(|o| o.as_loader_stream())
-    {
+    let this = this.as_object().unwrap();
+
+    if let Some(loader_stream) = this.as_loader_info_object().map(|o| o.loader_stream()) {
         match &*loader_stream {
             LoaderStream::NotYetLoaded(movie, _, _) => {
                 let domain = activation
@@ -70,7 +58,7 @@ pub fn get_application_domain<'gc>(
                     .try_avm2_domain();
 
                 if let Some(domain) = domain {
-                    return Ok(DomainObject::from_domain(activation, domain)?.into());
+                    return Ok(DomainObject::from_domain(activation, domain).into());
                 } else {
                     return Ok(Value::Null);
                 }
@@ -83,7 +71,7 @@ pub fn get_application_domain<'gc>(
                     .library
                     .library_for_movie_mut(movie.clone())
                     .avm2_domain();
-                return Ok(DomainObject::from_domain(activation, domain)?.into());
+                return Ok(DomainObject::from_domain(activation, domain).into());
             }
         }
     }
@@ -94,13 +82,12 @@ pub fn get_application_domain<'gc>(
 /// `bytesTotal` getter
 pub fn get_bytes_total<'gc>(
     _activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(loader_stream) = this
-        .as_loader_info_object()
-        .and_then(|o| o.as_loader_stream())
-    {
+    let this = this.as_object().unwrap();
+
+    if let Some(loader_stream) = this.as_loader_info_object().map(|o| o.loader_stream()) {
         match &*loader_stream {
             LoaderStream::NotYetLoaded(swf, _, _) => return Ok(swf.compressed_len().into()),
             LoaderStream::Swf(movie, _) => {
@@ -115,11 +102,13 @@ pub fn get_bytes_total<'gc>(
 /// `bytesLoaded` getter
 pub fn get_bytes_loaded<'gc>(
     _activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     let loader_info = this.as_loader_info_object().unwrap();
-    let loader_stream = loader_info.as_loader_stream().unwrap();
+    let loader_stream = loader_info.loader_stream();
     match &*loader_stream {
         LoaderStream::NotYetLoaded(swf, None, _) => {
             if loader_info.errored() {
@@ -143,52 +132,54 @@ pub fn get_bytes_loaded<'gc>(
 /// `content` getter
 pub fn get_content<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     let loader_info = this.as_loader_info_object().unwrap();
     if !loader_info.expose_content() {
         return Ok(Value::Null);
     }
 
-    if let Some(loader_stream) = loader_info.as_loader_stream() {
-        match &*loader_stream {
-            LoaderStream::Swf(_, root) | LoaderStream::NotYetLoaded(_, Some(root), _) => {
-                if root.movie().is_action_script_3() || !root.movie().is_movie() {
-                    return Ok(root.object2());
-                } else {
-                    let root_obj = *root;
-                    drop(loader_stream);
+    let loader_stream = loader_info.loader_stream();
+    match &*loader_stream {
+        LoaderStream::Swf(_, root) | LoaderStream::NotYetLoaded(_, Some(root), _) => {
+            if root.movie().is_action_script_3() || !root.movie().is_movie() {
+                Ok(root.object2())
+            } else {
+                // The movie was an AVM1 movie, return an AVM1Movie object
+                let root_obj = *root;
+                drop(loader_stream);
 
-                    let loader_info = this.as_loader_info_object().unwrap();
-                    return Ok(loader_info
-                        .get_or_init_avm1movie(activation, root_obj)
-                        .into());
-                }
-            }
-            _ => {
-                return Ok(Value::Null);
+                let loader_info = this.as_loader_info_object().unwrap();
+                Ok(loader_info
+                    .get_or_init_avm1movie(activation, root_obj)
+                    .into())
             }
         }
+        _ => Ok(Value::Null),
     }
-
-    Ok(Value::Undefined)
 }
 
 /// `contentType` getter
 pub fn get_content_type<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    activation: &mut Activation<'_, 'gc>,
+    this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     if let Some(loader_info) = this.as_loader_info_object() {
-        return match loader_info.content_type_hide_before_init() {
-            ContentType::Swf => Ok("application/x-shockwave-flash".into()),
-            ContentType::Jpeg => Ok("image/jpeg".into()),
-            ContentType::Png => Ok("image/png".into()),
-            ContentType::Gif => Ok("image/gif".into()),
-            ContentType::Unknown => Ok(Value::Null),
+        let content_type = match loader_info.content_type_hide_before_init() {
+            ContentType::Swf => "application/x-shockwave-flash",
+            ContentType::Jpeg => "image/jpeg",
+            ContentType::Png => "image/png",
+            ContentType::Gif => "image/gif",
+            ContentType::Unknown => return Ok(Value::Null),
         };
+
+        return Ok(AvmString::new_utf8(activation.gc(), content_type).into());
     }
 
     Ok(Value::Undefined)
@@ -196,17 +187,16 @@ pub fn get_content_type<'gc>(
 
 /// `frameRate` getter
 pub fn get_frame_rate<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    activation: &mut Activation<'_, 'gc>,
+    this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(loader_stream) = this
-        .as_loader_info_object()
-        .and_then(|o| o.as_loader_stream())
-    {
+    let this = this.as_object().unwrap();
+
+    if let Some(loader_stream) = this.as_loader_info_object().map(|o| o.loader_stream()) {
         match &*loader_stream {
             LoaderStream::NotYetLoaded(_, _, _) => {
-                return Err(Error::AvmError(error(_activation, INSUFFICIENT, 2099)?));
+                return Err(Error::avm_error(error(activation, INSUFFICIENT, 2099)?));
             }
             LoaderStream::Swf(root, _) => {
                 return Ok(root.frame_rate().to_f64().into());
@@ -219,17 +209,16 @@ pub fn get_frame_rate<'gc>(
 
 /// `height` getter
 pub fn get_height<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    activation: &mut Activation<'_, 'gc>,
+    this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(loader_stream) = this
-        .as_loader_info_object()
-        .and_then(|o| o.as_loader_stream())
-    {
+    let this = this.as_object().unwrap();
+
+    if let Some(loader_stream) = this.as_loader_info_object().map(|o| o.loader_stream()) {
         match &*loader_stream {
             LoaderStream::NotYetLoaded(_, _, _) => {
-                return Err(Error::AvmError(error(_activation, INSUFFICIENT, 2099)?));
+                return Err(Error::avm_error(error(activation, INSUFFICIENT, 2099)?));
             }
             LoaderStream::Swf(root, _) => {
                 return Ok(root.height().to_pixels().into());
@@ -243,7 +232,7 @@ pub fn get_height<'gc>(
 /// `isURLInaccessible` getter
 pub fn get_is_url_inaccessible<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    _this: Object<'gc>,
+    _this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     avm2_stub_getter!(activation, "flash.display.LoaderInfo", "isURLInaccessible");
@@ -253,16 +242,15 @@ pub fn get_is_url_inaccessible<'gc>(
 /// `sameDomain` getter
 pub fn get_same_domain<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(loader_stream) = this
-        .as_loader_info_object()
-        .and_then(|o| o.as_loader_stream())
-    {
+    let this = this.as_object().unwrap();
+
+    if let Some(loader_stream) = this.as_loader_info_object().map(|o| o.loader_stream()) {
         match &*loader_stream {
             LoaderStream::NotYetLoaded(_, _, _) => {
-                return Err(Error::AvmError(error(activation, INSUFFICIENT, 2099)?));
+                return Err(Error::avm_error(error(activation, INSUFFICIENT, 2099)?));
             }
             LoaderStream::Swf(_root, _) => {
                 avm2_stub_getter!(activation, "flash.display.LoaderInfo", "sameDomain");
@@ -277,64 +265,100 @@ pub fn get_same_domain<'gc>(
 /// `childAllowsParent` getter
 pub fn get_child_allows_parent<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(loader_stream) = this
-        .as_loader_info_object()
-        .and_then(|o| o.as_loader_stream())
-    {
-        match &*loader_stream {
-            LoaderStream::NotYetLoaded(_, _, _) => {
-                return Err(Error::AvmError(error(activation, INSUFFICIENT, 2099)?));
-            }
-            LoaderStream::Swf(_root, _) => {
-                avm2_stub_getter!(activation, "flash.display.LoaderInfo", "childAllowsParent");
-                return Ok(false.into());
+    let this = this.as_object().unwrap();
+
+    let loader_info = this.as_loader_info_object().unwrap();
+    let loader_stream = loader_info.loader_stream();
+    match &*loader_stream {
+        LoaderStream::NotYetLoaded(_, _, _) => {
+            Err(Error::avm_error(error(activation, INSUFFICIENT, 2099)?))
+        }
+        LoaderStream::Swf(root, dobj) => {
+            // TODO: respect allowDomain() and polices.
+            avm2_stub_getter!(activation, "flash.display.LoaderInfo", "childAllowsParent");
+
+            if let Some(loader) = loader_info.loader() {
+                let loader = loader.as_display_object().expect("Loader is a DO");
+                let parent_movie = loader.movie();
+
+                if let Ok(child_url) = Url::parse(root.url()) {
+                    if let Ok(parent_url) = Url::parse(parent_movie.url()) {
+                        if child_url.host() == parent_url.host() {
+                            return Ok(true.into());
+                        }
+                    }
+                }
+                Ok(false.into())
+            } else {
+                // Only the root movie is LoaderStream::Swf but missing a loader.
+                // In that case, return true.
+                assert!(
+                    Arc::ptr_eq(root, activation.context.root_swf)
+                        && dobj.as_movie_clip().is_some()
+                );
+                Ok(true.into())
             }
         }
     }
-
-    Ok(Value::Undefined)
 }
 
 /// `parentAllowsChild` getter
 pub fn get_parent_allows_child<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(loader_stream) = this
-        .as_loader_info_object()
-        .and_then(|o| o.as_loader_stream())
-    {
-        match &*loader_stream {
-            LoaderStream::NotYetLoaded(_, _, _) => {
-                return Err(Error::AvmError(error(activation, INSUFFICIENT, 2099)?));
-            }
-            LoaderStream::Swf(_root, _) => {
-                avm2_stub_getter!(activation, "flash.display.LoaderInfo", "parentAllowsChild");
-                return Ok(false.into());
+    let this = this.as_object().unwrap();
+
+    let loader_info = this.as_loader_info_object().unwrap();
+    let loader_stream = loader_info.loader_stream();
+    match &*loader_stream {
+        LoaderStream::NotYetLoaded(_, _, _) => {
+            Err(Error::avm_error(error(activation, INSUFFICIENT, 2099)?))
+        }
+        LoaderStream::Swf(root, dobj) => {
+            // TODO: respect allowDomain() and polices.
+            avm2_stub_getter!(activation, "flash.display.LoaderInfo", "parentAllowsChild");
+
+            if let Some(loader) = loader_info.loader() {
+                let loader = loader.as_display_object().expect("Loader is a DO");
+                let parent_movie = loader.movie();
+
+                if let Ok(child_url) = Url::parse(root.url()) {
+                    if let Ok(parent_url) = Url::parse(parent_movie.url()) {
+                        if child_url.host() == parent_url.host() {
+                            return Ok(true.into());
+                        }
+                    }
+                }
+                Ok(false.into())
+            } else {
+                // See comment on childAllowsParent
+                assert!(
+                    Arc::ptr_eq(root, activation.context.root_swf)
+                        && dobj.as_movie_clip().is_some()
+                );
+                Ok(true.into())
             }
         }
     }
-
-    Ok(Value::Undefined)
 }
 
 /// `swfVersion` getter
 pub fn get_swf_version<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(loader_stream) = this
-        .as_loader_info_object()
-        .and_then(|o| o.as_loader_stream())
-    {
+    let this = this.as_object().unwrap();
+
+    if let Some(loader_stream) = this.as_loader_info_object().map(|o| o.loader_stream()) {
         match &*loader_stream {
             LoaderStream::NotYetLoaded(_, _, _) => {
-                return Err(Error::AvmError(error(activation, INSUFFICIENT, 2099)?));
+                return Err(Error::avm_error(error(activation, INSUFFICIENT, 2099)?));
             }
             LoaderStream::Swf(root, _) => {
                 return Ok(root.version().into());
@@ -348,18 +372,21 @@ pub fn get_swf_version<'gc>(
 /// `url` getter
 pub fn get_url<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(loader_stream) = this
-        .as_loader_info_object()
-        .and_then(|o| o.as_loader_stream())
-    {
+    let this = this.as_object().unwrap();
+
+    if let Some(loader_info) = this.as_loader_info_object() {
+        if !loader_info.expose_content() {
+            return Ok(Value::Null);
+        }
+
+        let loader_stream = loader_info.loader_stream();
         let root = match &*loader_stream {
-            LoaderStream::NotYetLoaded(_, _, false) => return Ok(Value::Null),
-            LoaderStream::NotYetLoaded(root, _, true) | LoaderStream::Swf(root, _) => root,
+            LoaderStream::NotYetLoaded(root, _, _) | LoaderStream::Swf(root, _) => root,
         };
-        return Ok(AvmString::new_utf8(activation.context.gc_context, root.url()).into());
+        return Ok(AvmString::new_utf8(activation.gc(), root.url()).into());
     }
 
     Ok(Value::Undefined)
@@ -367,17 +394,16 @@ pub fn get_url<'gc>(
 
 /// `width` getter
 pub fn get_width<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    activation: &mut Activation<'_, 'gc>,
+    this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(loader_stream) = this
-        .as_loader_info_object()
-        .and_then(|o| o.as_loader_stream())
-    {
+    let this = this.as_object().unwrap();
+
+    if let Some(loader_stream) = this.as_loader_info_object().map(|o| o.loader_stream()) {
         match &*loader_stream {
             LoaderStream::NotYetLoaded(_, _, _) => {
-                return Err(Error::AvmError(error(_activation, INSUFFICIENT, 2099)?));
+                return Err(Error::avm_error(error(activation, INSUFFICIENT, 2099)?));
             }
             LoaderStream::Swf(root, _) => {
                 return Ok(root.width().to_pixels().into());
@@ -391,21 +417,21 @@ pub fn get_width<'gc>(
 /// `bytes` getter
 pub fn get_bytes<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     let loader_info = this.as_loader_info_object().unwrap();
-    let loader_stream = loader_info.as_loader_stream().unwrap();
+    let loader_stream = loader_info.loader_stream();
     let (root, dobj) = match &*loader_stream {
         LoaderStream::NotYetLoaded(_, None, _) => {
             if loader_info.errored() {
-                return Ok(activation
-                    .context
-                    .avm2
+                return activation
+                    .avm2()
                     .classes()
                     .bytearray
-                    .construct(activation, &[])?
-                    .into());
+                    .construct(activation, &[]);
             }
             // If we haven't even started loading yet (we have no root clip),
             // then return null. FIXME - we should probably store the ByteArray
@@ -416,8 +442,13 @@ pub fn get_bytes<'gc>(
         LoaderStream::Swf(root, dobj) => (root, dobj),
     };
 
-    let ba_class = activation.context.avm2.classes().bytearray;
-    let ba = ba_class.construct(activation, &[])?;
+    let ba = activation
+        .avm2()
+        .classes()
+        .bytearray
+        .construct(activation, &[])?
+        .as_object()
+        .unwrap();
 
     if root.data().is_empty() {
         return Ok(ba.into());
@@ -433,7 +464,7 @@ pub fn get_bytes<'gc>(
         );
     }
 
-    let mut ba_write = ba.as_bytearray_mut(activation.context.gc_context).unwrap();
+    let mut ba_write = ba.as_bytearray_mut().unwrap();
 
     // First, write a fake header corresponding to an
     // uncompressed SWF
@@ -470,9 +501,11 @@ pub fn get_bytes<'gc>(
 /// `loader` getter
 pub fn get_loader<'gc>(
     _activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     if let Some(loader_info) = this.as_loader_info_object() {
         Ok(loader_info.loader().map_or(Value::Null, |v| v.into()))
     } else {
@@ -483,20 +516,19 @@ pub fn get_loader<'gc>(
 /// `loaderURL` getter
 pub fn get_loader_url<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(loader_stream) = this
-        .as_loader_info_object()
-        .and_then(|o| o.as_loader_stream())
-    {
+    let this = this.as_object().unwrap();
+
+    if let Some(loader_stream) = this.as_loader_info_object().map(|o| o.loader_stream()) {
         let root = match &*loader_stream {
             LoaderStream::NotYetLoaded(swf, _, _) => swf,
             LoaderStream::Swf(root, _) => root,
         };
 
         let loader_url = root.loader_url().unwrap_or_else(|| root.url());
-        return Ok(AvmString::new_utf8(activation.context.gc_context, loader_url).into());
+        return Ok(AvmString::new_utf8(activation.gc(), loader_url).into());
     }
 
     Ok(Value::Undefined)
@@ -505,29 +537,24 @@ pub fn get_loader_url<'gc>(
 /// `parameters` getter
 pub fn get_parameters<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(loader_stream) = this
-        .as_loader_info_object()
-        .and_then(|o| o.as_loader_stream())
-    {
+    let this = this.as_object().unwrap();
+
+    if let Some(loader_stream) = this.as_loader_info_object().map(|o| o.loader_stream()) {
         let root = match &*loader_stream {
             LoaderStream::NotYetLoaded(root, _, _) => root,
             LoaderStream::Swf(root, _) => root,
         };
 
-        let params_obj = activation
-            .avm2()
-            .classes()
-            .object
-            .construct(activation, &[])?;
+        let params_obj = ScriptObject::new_object(activation);
         let parameters = root.parameters();
 
         for (k, v) in parameters.iter() {
-            let avm_k = AvmString::new_utf8(activation.context.gc_context, k);
-            let avm_v = AvmString::new_utf8(activation.context.gc_context, v);
-            params_obj.set_public_property(avm_k, avm_v.into(), activation)?;
+            let avm_k = AvmString::new_utf8(activation.gc(), k);
+            let avm_v = AvmString::new_utf8(activation.gc(), v);
+            params_obj.set_dynamic_property(avm_k, avm_v.into(), activation.gc());
         }
 
         return Ok(params_obj.into());
@@ -539,9 +566,11 @@ pub fn get_parameters<'gc>(
 /// `sharedEvents` getter
 pub fn get_shared_events<'gc>(
     _activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     if let Some(loader_info) = this.as_loader_info_object() {
         return Ok(loader_info.shared_events().into());
     }
@@ -551,9 +580,11 @@ pub fn get_shared_events<'gc>(
 /// `uncaughtErrorEvents` getter
 pub fn get_uncaught_error_events<'gc>(
     _activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     if let Some(loader_info) = this.as_loader_info_object() {
         return Ok(loader_info.uncaught_error_events().into());
     }

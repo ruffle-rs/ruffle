@@ -1,6 +1,6 @@
 use crate::avm2::activation::Activation;
 use crate::avm2::error::Error;
-use crate::avm2::object::Object;
+use crate::avm2::parameters::ParametersExt;
 use crate::avm2::value::Value;
 use crate::string::WStr;
 use crate::stub::Stub;
@@ -8,7 +8,7 @@ use std::borrow::Cow;
 
 pub fn stub_method<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    _this: Object<'gc>,
+    _this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     match args {
@@ -45,7 +45,7 @@ pub fn stub_method<'gc>(
 
 pub fn stub_getter<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    _this: Object<'gc>,
+    _this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     match args {
@@ -68,7 +68,7 @@ pub fn stub_getter<'gc>(
 
 pub fn stub_setter<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    _this: Object<'gc>,
+    _this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     match args {
@@ -91,7 +91,7 @@ pub fn stub_setter<'gc>(
 
 pub fn stub_constructor<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    _this: Object<'gc>,
+    _this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     match args {
@@ -124,7 +124,7 @@ pub fn stub_constructor<'gc>(
 
 pub fn log_warn<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    _this: Object<'gc>,
+    _this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     match args {
@@ -144,4 +144,16 @@ pub fn log_warn<'gc>(
     }
 
     Ok(Value::Undefined)
+}
+
+pub fn is_dependent<'gc>(
+    _activation: &mut Activation<'_, 'gc>,
+    _this: Value<'gc>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    if let Some(s) = args.try_get_string(0) {
+        return Ok(s.is_dependent().into());
+    }
+
+    panic!();
 }

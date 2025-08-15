@@ -1,0 +1,2 @@
+# The test observes dispatcher accessing `.target` to check if event is being re-dispatched.
+num_frames = 1

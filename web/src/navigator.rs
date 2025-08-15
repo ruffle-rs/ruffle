@@ -1,22 +1,24 @@
 //! Navigator backend for web
 use crate::SocketProxy;
-use async_channel::Receiver;
-use futures_util::{SinkExt, StreamExt};
+use async_channel::{Receiver, Sender};
+use futures_util::future::Either;
+use futures_util::{future, SinkExt, StreamExt};
 use gloo_net::websocket::{futures::WebSocket, Message};
-use js_sys::{Array, Uint8Array};
+use js_sys::{Array, Promise, RegExp, Uint8Array};
 use ruffle_core::backend::navigator::{
-    async_return, create_fetch_error, create_specific_fetch_error, ErrorResponse, NavigationMethod,
-    NavigatorBackend, OpenURLMode, OwnedFuture, Request, SuccessResponse,
+    async_return, create_fetch_error, create_specific_fetch_error, get_encoding, ErrorResponse,
+    NavigationMethod, NavigatorBackend, OwnedFuture, Request, SuccessResponse,
 };
 use ruffle_core::config::NetworkingAccessMode;
 use ruffle_core::indexmap::IndexMap;
 use ruffle_core::loader::Error;
 use ruffle_core::socket::{ConnectionState, SocketAction, SocketHandle};
+use ruffle_core::swf::Encoding;
+use ruffle_core::Player;
 use std::borrow::Cow;
 use std::cell::RefCell;
 use std::rc::Rc;
-use std::sync::mpsc::Sender;
-use std::sync::Arc;
+use std::sync::{Arc, Mutex, Weak};
 use std::time::Duration;
 use tracing_subscriber::layer::Layered;
 use tracing_subscriber::Registry;
@@ -30,26 +32,45 @@ use web_sys::{
     RequestCredentials, RequestInit, Response as WebResponse,
 };
 
+/// The handling mode of links opening a new website.
+#[derive(Clone, Copy, Debug, PartialEq, serde::Serialize, serde::Deserialize)]
+pub enum OpenUrlMode {
+    /// Allow all links to open a new website.
+    #[serde(rename = "allow")]
+    Allow,
+
+    /// A confirmation dialog opens with every link trying to open a new website.
+    #[serde(rename = "confirm")]
+    Confirm,
+
+    /// Deny all links to open a new website.
+    #[serde(rename = "deny")]
+    Deny,
+}
+
 pub struct WebNavigatorBackend {
     log_subscriber: Arc<Layered<WASMLayer, Registry>>,
     allow_script_access: bool,
     allow_networking: NetworkingAccessMode,
     upgrade_to_https: bool,
+    url_rewrite_rules: Vec<(RegExp, String)>,
     base_url: Option<Url>,
-    open_url_mode: OpenURLMode,
+    open_url_mode: OpenUrlMode,
     socket_proxies: Vec<SocketProxy>,
     credential_allow_list: Vec<String>,
+    player: Weak<Mutex<Player>>,
 }
 
-#[allow(clippy::too_many_arguments)]
+#[expect(clippy::too_many_arguments)]
 impl WebNavigatorBackend {
     pub fn new(
         allow_script_access: bool,
         allow_networking: NetworkingAccessMode,
         upgrade_to_https: bool,
+        url_rewrite_rules: Vec<(RegExp, String)>,
         base_url: Option<String>,
         log_subscriber: Arc<Layered<WASMLayer, Registry>>,
-        open_url_mode: OpenURLMode,
+        open_url_mode: OpenUrlMode,
         socket_proxies: Vec<SocketProxy>,
         credential_allow_list: Vec<String>,
     ) -> Self {
@@ -90,12 +111,69 @@ impl WebNavigatorBackend {
             allow_script_access,
             allow_networking,
             upgrade_to_https,
+            url_rewrite_rules,
             base_url,
             log_subscriber,
             open_url_mode,
             socket_proxies,
             credential_allow_list,
+            player: Weak::new(),
         }
+    }
+
+    /// We need to set the player after construction because the player is created after the navigator.
+    pub fn set_player(&mut self, player: Weak<Mutex<Player>>) {
+        self.player = player;
+    }
+
+    /// Try to rewrite the URL using URL rewrite rules.
+    fn rewrite_url(&self, url: &Url) -> Option<Url> {
+        let url_string: js_sys::JsString = url.to_string().into();
+        for (regexp, replacement) in &self.url_rewrite_rules {
+            if !url_string.search(regexp) >= 0 {
+                continue;
+            }
+
+            tracing::info!(
+                "URL rewrite rule triggered ({:?} -> {}) for URL {}",
+                regexp,
+                replacement,
+                url
+            );
+
+            let replaced = url_string.replace_by_pattern(regexp, replacement);
+            let replaced = replaced.as_string()?;
+            match Url::parse(&replaced) {
+                Ok(new_url) => {
+                    return Some(new_url);
+                }
+                // Handle relative rewrite URLs
+                Err(ParseError::RelativeUrlWithoutBase) if self.base_url.is_some() => {
+                    let base_url = self.base_url.as_ref().expect("condition");
+                    match base_url.join(&replaced) {
+                        Ok(new_url) => {
+                            return Some(new_url);
+                        }
+                        Err(err) => {
+                            tracing::error!(
+                                "Rewritten URL (relative) is not valid: {}, {}",
+                                replaced,
+                                err
+                            );
+                        }
+                    }
+                }
+                Err(err) => {
+                    tracing::error!(
+                        "Rewritten URL (absolute) is not valid: {}, {}",
+                        replaced,
+                        err
+                    );
+                }
+            }
+            break;
+        }
+        None
     }
 }
 
@@ -159,7 +237,7 @@ impl NavigatorBackend for WebNavigatorBackend {
         let window = window().expect("window()");
 
         if url.scheme() != "javascript" {
-            if self.open_url_mode == OpenURLMode::Confirm {
+            if self.open_url_mode == OpenUrlMode::Confirm {
                 let message = format!("The SWF file wants to open the website {}", &url);
                 // TODO: Add a checkbox with a GUI toolkit
                 let confirm = window
@@ -171,7 +249,7 @@ impl NavigatorBackend for WebNavigatorBackend {
                     );
                     return;
                 }
-            } else if self.open_url_mode == OpenURLMode::Deny {
+            } else if self.open_url_mode == OpenUrlMode::Deny {
                 tracing::warn!("SWF tried to open a website, but opening a website is not allowed");
                 return;
             }
@@ -260,15 +338,17 @@ impl NavigatorBackend for WebNavigatorBackend {
         };
 
         Box::pin(async move {
-            let mut init = RequestInit::new();
+            let init = RequestInit::new();
 
-            init.method(&request.method().to_string());
-            init.credentials(credentials);
+            init.set_method(&request.method().to_string());
+            init.set_credentials(credentials);
 
             if let Some((data, mime)) = request.body() {
+                let options = BlobPropertyBag::new();
+                options.set_type(mime);
                 let blob = Blob::new_with_buffer_source_sequence_and_options(
                     &Array::from_iter([Uint8Array::from(data.as_slice()).buffer()]),
-                    BlobPropertyBag::new().type_(mime),
+                    &options,
                 )
                 .map_err(|_| ErrorResponse {
                     url: url.to_string(),
@@ -280,7 +360,7 @@ impl NavigatorBackend for WebNavigatorBackend {
                     error: Error::FetchError("Got JS error".to_string()),
                 })?;
 
-                init.body(Some(&blob));
+                init.set_body(&blob);
             }
 
             let web_request = match WebRequest::new_with_str_and_init(url.as_str(), &init) {
@@ -290,7 +370,7 @@ impl NavigatorBackend for WebNavigatorBackend {
                         "Unable to create request for",
                         url.as_str(),
                         "",
-                    )
+                    );
                 }
             };
 
@@ -322,7 +402,7 @@ impl NavigatorBackend for WebNavigatorBackend {
             let redirected = response.redirected();
             if !response.ok() {
                 let error = Error::HttpNotOk(
-                    format!("HTTP status is not ok, got {}", response.status_text()),
+                    format!("Got {}", response.status_text()),
                     status,
                     redirected,
                     0,
@@ -355,8 +435,34 @@ impl NavigatorBackend for WebNavigatorBackend {
 
     fn spawn_future(&mut self, future: OwnedFuture<(), Error>) {
         let subscriber = self.log_subscriber.clone();
+        let player = self.player.clone();
+
         spawn_local(async move {
-            let _subscriber = tracing::subscriber::set_default(subscriber);
+            let _subscriber = tracing::subscriber::set_default(subscriber.clone());
+            if player
+                .upgrade()
+                .expect("Called spawn_future after player was dropped")
+                .try_lock()
+                .is_err()
+            {
+                // The player is locked - this can occur due to 'wasm-bindgen-futures' using
+                // 'queueMicroTask', which may result in one of our future's getting polled
+                // while we're still inside of our 'requestAnimationFrame' callback (e.g.
+                // when we call into javascript).
+                //
+                // When this happens, we 'reschedule' this future by waiting for a 'setTimeout'
+                // callback to be resolved. This will cause our future to get woken up from
+                // inside the 'setTimeout' JavaScript task (which is a new top-level call stack),
+                // outside of the 'requestAnimationFrame' callback, which will allow us to lock
+                // the Player.
+                let promise = Promise::new(&mut |resolve, _reject| {
+                    web_sys::window()
+                        .expect("window")
+                        .set_timeout_with_callback(&resolve)
+                        .expect("Failed to call setTimeout with dummy promise");
+                });
+                let _ = JsFuture::from(promise).await;
+            }
             if let Err(e) = future.await {
                 tracing::error!("Asynchronous error occurred: {}", e);
             }
@@ -364,9 +470,14 @@ impl NavigatorBackend for WebNavigatorBackend {
     }
 
     fn pre_process_url(&self, mut url: Url) -> Url {
+        if let Some(rewritten_url) = self.rewrite_url(&url) {
+            url = rewritten_url;
+        }
+
         if self.upgrade_to_https && url.scheme() == "http" && url.set_scheme("https").is_err() {
             tracing::error!("Url::set_scheme failed on: {}", url);
         }
+
         url
     }
 
@@ -387,7 +498,7 @@ impl NavigatorBackend for WebNavigatorBackend {
         else {
             tracing::warn!("Missing WebSocket proxy for host {}, port {}", host, port);
             sender
-                .send(SocketAction::Connect(handle, ConnectionState::Failed))
+                .try_send(SocketAction::Connect(handle, ConnectionState::Failed))
                 .expect("working channel send");
             return;
         };
@@ -399,48 +510,51 @@ impl NavigatorBackend for WebNavigatorBackend {
             Err(e) => {
                 tracing::error!("Failed to create WebSocket, reason {:?}", e);
                 sender
-                    .send(SocketAction::Connect(handle, ConnectionState::Failed))
+                    .try_send(SocketAction::Connect(handle, ConnectionState::Failed))
                     .expect("working channel send");
                 return;
             }
         };
 
-        let (mut sink, mut stream) = ws.split();
+        let (mut ws_write, mut ws_read) = ws.split();
         sender
-            .send(SocketAction::Connect(handle, ConnectionState::Connected))
+            .try_send(SocketAction::Connect(handle, ConnectionState::Connected))
             .expect("working channel send");
 
-        // Spawn future to handle incoming messages.
-        let stream_sender = sender.clone();
         self.spawn_future(Box::pin(async move {
-            while let Some(msg) = stream.next().await {
-                match msg {
-                    Ok(Message::Bytes(buf)) => stream_sender
-                        .send(SocketAction::Data(handle, buf))
-                        .expect("working channel send"),
-                    Ok(_) => tracing::warn!("Server sent unexpected text message"),
-                    Err(_) => {
-                        stream_sender
-                            .send(SocketAction::Close(handle))
-                            .expect("working channel send");
-                        return Ok(());
+            loop {
+                match future::select(ws_read.next(), std::pin::pin!(receiver.recv())).await {
+                    // Handle incoming messages.
+                    Either::Left((Some(msg), _)) => match msg {
+                        Ok(Message::Bytes(buf)) => sender
+                            .try_send(SocketAction::Data(handle, buf))
+                            .expect("working channel send"),
+                        Ok(_) => tracing::warn!("Server sent an unexpected text message"),
+                        Err(_) => {
+                            sender
+                                .try_send(SocketAction::Close(handle))
+                                .expect("working channel send");
+                            break;
+                        }
+                    },
+                    // Handle outgoing messages.
+                    Either::Right((Ok(msg), _)) => {
+                        if let Err(e) = ws_write.send(Message::Bytes(msg)).await {
+                            tracing::warn!("Failed to send message to WebSocket {}", e);
+                            sender
+                                .try_send(SocketAction::Close(handle))
+                                .expect("working channel send");
+                        }
                     }
-                }
+                    // The connection was closed.
+                    _ => break,
+                };
             }
 
-            Ok(())
-        }));
-
-        // Spawn future to handle outgoing messages.
-        self.spawn_future(Box::pin(async move {
-            while let Ok(msg) = receiver.recv().await {
-                if let Err(e) = sink.send(Message::Bytes(msg)).await {
-                    tracing::warn!("Failed to send message to WebSocket {}", e);
-                    sender
-                        .send(SocketAction::Close(handle))
-                        .expect("working channel send");
-                }
-            }
+            let ws = ws_write
+                .reunite(ws_read)
+                .expect("both originate from the same websocket");
+            let _ = ws.close(None, None);
 
             Ok(())
         }));
@@ -453,7 +567,7 @@ struct WebResponseWrapper {
 }
 
 impl SuccessResponse for WebResponseWrapper {
-    fn url(&self) -> Cow<str> {
+    fn url(&self) -> Cow<'_, str> {
         Cow::Owned(self.response.url())
     }
 
@@ -478,6 +592,14 @@ impl SuccessResponse for WebResponseWrapper {
         })
     }
 
+    fn text_encoding(&self) -> Option<&'static Encoding> {
+        if let Ok(Some(content_type)) = self.response.headers().get("Content-Type") {
+            get_encoding(&content_type)
+        } else {
+            None
+        }
+    }
+
     fn status(&self) -> u16 {
         self.response.status()
     }
@@ -486,7 +608,7 @@ impl SuccessResponse for WebResponseWrapper {
         self.response.redirected()
     }
 
-    #[allow(clippy::await_holding_refcell_ref)]
+    #[expect(clippy::await_holding_refcell_ref)]
     fn next_chunk(&mut self) -> OwnedFuture<Option<Vec<u8>>, Error> {
         if self.body_stream.is_none() {
             let body = self.response.body();

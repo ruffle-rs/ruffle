@@ -1,0 +1,12 @@
+element1.tabEnabled = true;
+element1.tabIndex = 1;
+element2.tabEnabled = true;
+element2.tabIndex = 2;
+element3.tabEnabled = true;
+element3.tabIndex = 3;
+element4.tabEnabled = true;
+element4.tabIndex = 4;
+element5.tabEnabled = true;
+element5.tabIndex = 5;
+element6.tabEnabled = true;
+element6.tabIndex = 6;

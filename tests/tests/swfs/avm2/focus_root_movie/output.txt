@@ -1,0 +1,4 @@
+After set: [object MovieClip]
+Focus changed at null: instance2 -> root1
+After set: [object Test]
+=====

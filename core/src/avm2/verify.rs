@@ -1,328 +1,202 @@
+use crate::avm2::class::Class;
 use crate::avm2::error::{
-    make_error_1025, make_error_1032, make_error_1054, make_error_1107, verify_error,
+    make_error_1014, make_error_1021, make_error_1025, make_error_1032, make_error_1054,
+    make_error_1107, verify_error, Error1014Type,
 };
-use crate::avm2::method::BytecodeMethod;
-use crate::avm2::op::Op;
-use crate::avm2::property::Property;
+use crate::avm2::method::Method;
+use crate::avm2::multiname::Multiname;
+use crate::avm2::namespace::Namespace;
+use crate::avm2::op::{LookupSwitch, Op};
 use crate::avm2::script::TranslationUnit;
-use crate::avm2::{Activation, Error};
-use gc_arena::GcCell;
+use crate::avm2::{Activation, Error, QName};
+use crate::string::{AvmAtom, AvmString};
+
+use gc_arena::{Collect, Gc};
+use std::cell::Cell;
 use std::collections::{HashMap, HashSet};
 use swf::avm2::read::Reader;
-use swf::avm2::types::{Index, MethodFlags as AbcMethodFlags, Multiname, Op as AbcOp};
+use swf::avm2::types::{
+    Class as AbcClass, Index, Method as AbcMethod, MethodFlags as AbcMethodFlags,
+    Multiname as AbcMultiname, Namespace as AbcNamespace, Op as AbcOp,
+};
 use swf::error::Error as AbcReadError;
 
-pub struct VerifiedMethodInfo {
-    pub parsed_code: Vec<Op>,
-    pub exceptions: Vec<Exception>,
+#[derive(Collect)]
+#[collect(no_drop)]
+pub struct VerifiedMethodInfo<'gc> {
+    pub parsed_code: Vec<Op<'gc>>,
+
+    pub exceptions: Vec<Exception<'gc>>,
 }
 
-pub struct Exception {
-    pub from_offset: u32,
-    pub to_offset: u32,
-    pub target_offset: u32,
+#[derive(Collect)]
+#[collect(no_drop)]
+pub struct Exception<'gc> {
+    pub from_offset: usize,
+    pub to_offset: usize,
+    pub target_offset: usize,
 
-    pub variable_name: Index<Multiname>,
-    pub type_name: Index<Multiname>,
+    pub catch_class: Option<Class<'gc>>,
+    pub target_class: Option<Class<'gc>>,
+}
+
+#[derive(Clone, Copy, Debug)]
+enum ByteInfo<'gc> {
+    OpStart(Op<'gc>),
+    OpStartNonJumpable(Op<'gc>),
+
+    OpContinue,
+
+    NotYetReached,
+}
+
+impl<'gc> ByteInfo<'gc> {
+    fn get_op(self) -> Option<Op<'gc>> {
+        match self {
+            ByteInfo::OpStart(op) | ByteInfo::OpStartNonJumpable(op) => Some(op),
+            _ => None,
+        }
+    }
 }
 
 pub fn verify_method<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    method: &BytecodeMethod<'gc>,
-) -> Result<VerifiedMethodInfo, Error<'gc>> {
+    method: Method<'gc>,
+) -> Result<VerifiedMethodInfo<'gc>, Error<'gc>> {
+    let mc = activation.gc();
     let body = method
         .body()
         .expect("Cannot verify non-native method without body!");
-    let translation_unit = method.translation_unit();
 
     let param_count = method.method().params.len();
-    let locals_count = body.num_locals;
+    let max_locals = body.num_locals;
 
     // Ensure there are enough local variables
     // to fit the parameters in.
-    if (locals_count as usize) < param_count + 1 {
+    if (max_locals as usize) < 1 + param_count {
         return Err(make_error_1107(activation));
     }
 
-    let mut new_code = Vec::new();
-
-    let mut byte_offset_to_idx = HashMap::new();
-    let mut idx_to_byte_offset = vec![0];
-    byte_offset_to_idx.insert(0, 0);
+    if (max_locals as usize) < 1 + param_count + if method.is_variadic() { 1 } else { 0 } {
+        // This matches FP's error message
+        return Err(make_error_1025(activation, 1 + param_count as u32));
+    }
 
     use swf::extensions::ReadSwfExt;
 
     if body.code.is_empty() {
-        return Err(Error::AvmError(verify_error(
+        return Err(Error::avm_error(verify_error(
             activation,
             "Error #1043: Invalid code_length=0.",
             1043,
         )?));
     }
 
-    // FIXME: This is wrong, verification/control flow handling should happen at the same
-    // time as reading. A side effect of this is that avmplus allows for holes in bytecode,
-    // while this implementation throws errors #1011 or #1021 in those cases.
-    let mut reader = Reader::new(&body.code);
-    loop {
-        let op = match reader.read_op() {
-            Ok(op) => op,
+    let activation_class = create_activation_class(activation, method)?;
 
-            Err(AbcReadError::InvalidData(_)) => {
-                return Err(Error::AvmError(verify_error(
-                    activation,
-                    "Error #1011: Method contained illegal opcode.",
-                    1011,
-                )?));
-            }
-            Err(AbcReadError::IoError(_)) => break,
-            Err(unknown) => {
-                tracing::error!(
-                    "Encountered unexpected error while verifying AVM2 method body: {unknown:?}"
-                );
+    let resolved_return_type = method.resolved_return_type();
+    let resolved_param_config = method.resolved_param_config();
+
+    let mut seen_exception_indices = HashSet::new();
+
+    let mut worklist = vec![0];
+
+    let mut byte_info = vec![ByteInfo::NotYetReached; body.code.len()];
+    let mut seen_targets = HashSet::new();
+
+    let mut reader = Reader::new(&body.code);
+    while let Some(i) = worklist.pop() {
+        reader.seek_absolute(&body.code, i as usize);
+        loop {
+            let previous_position = reader.pos(&body.code) as i32;
+
+            // We've already verified this chunk of code, let's not run the logic again
+            if matches!(
+                byte_info.get(previous_position as usize),
+                Some(ByteInfo::OpStart(_))
+            ) {
                 break;
             }
-        };
-        let byte_offset = reader.as_slice().as_ptr() as usize - body.code.as_ptr() as usize;
 
-        new_code.push(op);
+            let op = match reader.read_op() {
+                Ok(op) => op,
 
-        byte_offset_to_idx.insert(byte_offset as i32, new_code.len() as i32);
-        idx_to_byte_offset.push(byte_offset as i32);
-    }
-
-    // Avoid verifying the same blocks again.
-    let mut verified_blocks = Vec::new();
-
-    verify_code_starting_from(
-        activation,
-        method,
-        idx_to_byte_offset.as_slice(),
-        &byte_offset_to_idx,
-        &mut verified_blocks,
-        new_code.as_slice(),
-        0,
-    )?;
-
-    // Record a list of possible places the code could
-    // jump to- this will be used for optimization.
-    let mut potential_jump_targets = HashSet::new();
-
-    // Handle exceptions
-    let mut new_exceptions = Vec::new();
-    for exception in body.exceptions.iter() {
-        // FIXME: This is actually wrong, we should be using the byte offsets in
-        // `Activation::handle_err`, not the opcode offsets. avmplus allows for from/to
-        // (but not targets) that aren't on a opcode, and some obfuscated SWFs have them.
-        // FFDEC handles them correctly, stepping forward byte-by-byte until it reaches
-        // the next opcode. This does the same (stepping byte-by-byte), but it would
-        // be better to directly use the byte offsets when handling exceptions.
-        let mut from_offset = None;
-
-        let mut offs = 0;
-        while from_offset.is_none() {
-            from_offset = byte_offset_to_idx
-                .get(&((exception.from_offset + offs) as i32))
-                .copied();
-
-            offs += 1;
-            if (exception.from_offset + offs) as usize >= body.code.len() {
-                return Err(make_error_1054(activation));
-            }
-        }
-
-        // Now for the `to_offset`.
-        let mut to_offset = None;
-
-        let mut offs = 0;
-        while to_offset.is_none() {
-            to_offset = byte_offset_to_idx
-                .get(&((exception.to_offset + offs) as i32))
-                .copied();
-
-            offs += 1;
-            if (exception.to_offset + offs) as usize >= body.code.len() {
-                return Err(make_error_1054(activation));
-            }
-        }
-
-        let new_from_offset = from_offset.unwrap() as u32;
-        let new_to_offset = to_offset.unwrap() as u32;
-
-        if new_to_offset < new_from_offset {
-            return Err(make_error_1054(activation));
-        }
-
-        // FIXME: Use correct error instead of `.unwrap()`
-        let new_target_offset = byte_offset_to_idx
-            .get(&(exception.target_offset as i32))
-            .copied()
-            .unwrap();
-
-        if exception.target_offset < exception.to_offset {
-            return Err(make_error_1054(activation));
-        }
-
-        if new_target_offset as usize >= new_code.len() {
-            return Err(make_error_1054(activation));
-        }
-
-        new_exceptions.push(Exception {
-            from_offset: new_from_offset,
-            to_offset: new_to_offset,
-            target_offset: new_target_offset as u32,
-            variable_name: exception.variable_name,
-            type_name: exception.type_name,
-        });
-
-        if ops_can_throw_error(&new_code[new_from_offset as usize..new_to_offset as usize]) {
-            verify_code_starting_from(
-                activation,
-                method,
-                idx_to_byte_offset.as_slice(),
-                &byte_offset_to_idx,
-                &mut verified_blocks,
-                new_code.as_slice(),
-                new_target_offset,
-            )?;
-
-            potential_jump_targets.insert(new_target_offset);
-        }
-    }
-
-    // Adjust jump offsets from byte-based to idx-based
-    for (i, op) in new_code.iter_mut().enumerate() {
-        let i = i as i32;
-        let adjusted = |i, offset, one_off| {
-            let byte_offset = if one_off {
-                idx_to_byte_offset.get((i + 1) as usize).unwrap()
-            } else {
-                idx_to_byte_offset.get(i as usize).unwrap()
+                Err(AbcReadError::InvalidData(_)) => {
+                    return Err(Error::avm_error(verify_error(
+                        activation,
+                        "Error #1011: Method contained illegal opcode.",
+                        1011,
+                    )?));
+                }
+                Err(AbcReadError::IoError(_)) => {
+                    return Err(Error::avm_error(verify_error(
+                        activation,
+                        "Error #1020: Code cannot fall off the end of a method.",
+                        1020,
+                    )?));
+                }
+                Err(_) => unreachable!(),
             };
-            let new_byte_offset = byte_offset + offset;
-            let new_idx = byte_offset_to_idx
-                .get(&new_byte_offset)
-                .copied()
-                .unwrap_or(0);
-            // Verification should have confirmed that this `unwrap_or` is from an unreachable instruction;
-            // if it were reachable, then verification would have thrown a VerifyError
 
-            (new_idx, new_idx - i - 1)
-        };
-        match op {
-            AbcOp::IfEq { offset }
-            | AbcOp::IfFalse { offset }
-            | AbcOp::IfGe { offset }
-            | AbcOp::IfGt { offset }
-            | AbcOp::IfLe { offset }
-            | AbcOp::IfLt { offset }
-            | AbcOp::IfNe { offset }
-            | AbcOp::IfNge { offset }
-            | AbcOp::IfNgt { offset }
-            | AbcOp::IfNle { offset }
-            | AbcOp::IfNlt { offset }
-            | AbcOp::IfStrictEq { offset }
-            | AbcOp::IfStrictNe { offset }
-            | AbcOp::IfTrue { offset }
-            | AbcOp::Jump { offset } => {
-                let adjusted_result = adjusted(i, *offset, true);
-                *offset = adjusted_result.1;
-                potential_jump_targets.insert(adjusted_result.0);
-            }
-            AbcOp::LookupSwitch(ref mut lookup_switch) => {
-                let adjusted_default = adjusted(i, lookup_switch.default_offset, false);
-                lookup_switch.default_offset = adjusted_default.1;
-                potential_jump_targets.insert(adjusted_default.0);
+            if op_can_throw_error(&op) {
+                for (exception_index, exception) in body.exceptions.iter().enumerate() {
+                    // If this op is in the to..from and it can throw an error,
+                    // add the exception's target to the worklist.
+                    if exception.from_offset as i32 <= previous_position
+                        && previous_position < exception.to_offset as i32
+                    {
+                        if !seen_targets.contains(&(exception.target_offset as i32)) {
+                            worklist.push(exception.target_offset);
+                            seen_targets.insert(exception.target_offset as i32);
+                        }
 
-                for case in lookup_switch.case_offsets.iter_mut() {
-                    let adjusted_case = adjusted(i, *case, false);
-                    *case = adjusted_case.1;
-                    potential_jump_targets.insert(adjusted_case.0);
+                        // Keep track of all the valid exceptions, and only verify
+                        // them- this is more lenient than avmplus, but still safe.
+                        seen_exception_indices.insert(exception_index);
+                    }
                 }
             }
-            _ => {}
-        }
-    }
 
-    let mut verified_code = Vec::new();
-    for abc_op in new_code {
-        let resolved_op = resolve_op(activation, translation_unit, abc_op)?;
+            let new_position = reader.pos(&body.code) as i32;
 
-        verified_code.push(resolved_op);
-    }
+            let mut check_target = |seen_targets: &HashSet<i32>, offs: i32, is_jump: bool| {
+                let target_position = if is_jump {
+                    offs + new_position
+                } else {
+                    offs + previous_position
+                };
 
-    optimize(
-        activation,
-        method,
-        &mut verified_code,
-        potential_jump_targets,
-    );
+                let lookedup_target_info = byte_info.get(target_position as usize);
 
-    Ok(VerifiedMethodInfo {
-        parsed_code: verified_code,
-        exceptions: new_exceptions,
-    })
-}
+                if matches!(
+                    lookedup_target_info,
+                    Some(ByteInfo::OpContinue | ByteInfo::OpStartNonJumpable(_))
+                ) {
+                    return Err(make_error_1021(activation));
+                }
 
-fn resolve_jump_target<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    i: i32,
-    offset: i32,
-    one_off: bool,
-    idx_to_byte_offset: &[i32],
-    byte_offset_to_idx: &HashMap<i32, i32>,
-) -> Result<i32, Error<'gc>> {
-    let byte_offset = if one_off {
-        idx_to_byte_offset.get((i + 1) as usize).unwrap()
-    } else {
-        idx_to_byte_offset.get(i as usize).unwrap()
-    };
-    let new_byte_offset = byte_offset + offset;
-    let new_idx = byte_offset_to_idx
-        .get(&new_byte_offset)
-        .copied()
-        .ok_or_else(|| {
-            Error::AvmError(verify_error(
-                activation,
-                "Error #1021: At least one branch target was not on a valid instruction in the method.",
-                1021,
-            ).expect("Error should construct"))
-        })?;
+                if target_position < 0 || target_position as usize >= body.code.len() {
+                    return Err(make_error_1021(activation));
+                }
 
-    Ok(new_idx)
-}
+                // Ensure backwards jumps to not-yet-jumped-to code target a `Label` op
+                if !seen_targets.contains(&target_position) && offs < 0 {
+                    reader.seek_absolute(&body.code, target_position as usize);
+                    let read_op = reader.read_op();
 
-fn verify_code_starting_from<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    method: &BytecodeMethod<'gc>,
-    idx_to_byte_offset: &[i32],
-    byte_offset_to_idx: &HashMap<i32, i32>,
-    verified_blocks: &mut Vec<i32>,
-    ops: &[AbcOp],
-    start_idx: i32,
-) -> Result<(), Error<'gc>> {
-    let body = method
-        .body()
-        .expect("Cannot verify non-native method without body!");
-    let max_locals = body.num_locals;
+                    // Seek back to the original position
+                    reader.seek_absolute(&body.code, new_position as usize);
 
-    let mut worklist = Vec::new();
-    worklist.push(start_idx);
+                    if !matches!(read_op, Ok(AbcOp::Label)) {
+                        return Err(make_error_1021(activation));
+                    }
+                }
 
-    while let Some(mut i) = worklist.pop() {
-        loop {
-            if (i as usize) >= ops.len() {
-                return Err(Error::AvmError(verify_error(
-                    activation,
-                    "Error #1020: Code cannot fall off the end of a method.",
-                    1020,
-                )?));
-            }
+                Ok(())
+            };
 
-            let op = &ops[i as usize];
-
-            // Special control flow ops
-            match op {
+            // Special control flow ops: handle the worklist
+            match &op {
                 AbcOp::IfEq { offset }
                 | AbcOp::IfFalse { offset }
                 | AbcOp::IfGe { offset }
@@ -338,509 +212,352 @@ fn verify_code_starting_from<'gc>(
                 | AbcOp::IfStrictNe { offset }
                 | AbcOp::IfTrue { offset }
                 | AbcOp::Jump { offset } => {
-                    let op_idx = resolve_jump_target(
-                        activation,
-                        i,
-                        *offset,
-                        true,
-                        idx_to_byte_offset,
-                        byte_offset_to_idx,
-                    )?;
+                    check_target(&seen_targets, *offset, true)?;
 
-                    if !verified_blocks.iter().any(|o| *o == op_idx) {
-                        worklist.push(op_idx);
-                        verified_blocks.push(op_idx);
+                    let offset = offset + new_position;
+                    if !seen_targets.contains(&offset) {
+                        worklist.push(offset as u32);
+                        seen_targets.insert(offset);
                     }
-                    if matches!(op, AbcOp::Jump { .. }) {
-                        break;
-                    }
-                }
-
-                // Terminal opcodes
-                AbcOp::Throw | AbcOp::ReturnValue | AbcOp::ReturnVoid => {
-                    break;
                 }
 
                 AbcOp::LookupSwitch(ref lookup_switch) => {
-                    // A LookupSwitch is terminal
-                    let default_idx = resolve_jump_target(
-                        activation,
-                        i,
-                        lookup_switch.default_offset,
-                        false,
-                        idx_to_byte_offset,
-                        byte_offset_to_idx,
-                    )?;
+                    check_target(&seen_targets, lookup_switch.default_offset, false)?;
+                    let default_offset = lookup_switch.default_offset + previous_position;
 
-                    if !verified_blocks.iter().any(|o| *o == default_idx) {
-                        verified_blocks.push(default_idx);
+                    if !seen_targets.contains(&default_offset) {
+                        seen_targets.insert(default_offset);
 
-                        worklist.push(default_idx);
+                        worklist.push(default_offset as u32);
                     }
 
-                    for case in lookup_switch.case_offsets.iter() {
-                        let case_idx = resolve_jump_target(
-                            activation,
-                            i,
-                            *case,
-                            false,
-                            idx_to_byte_offset,
-                            byte_offset_to_idx,
-                        )?;
+                    for case_offset in lookup_switch.case_offsets.iter() {
+                        check_target(&seen_targets, *case_offset, false)?;
 
-                        if !verified_blocks.iter().any(|o| *o == case_idx) {
-                            verified_blocks.push(case_idx);
+                        let case_offset = case_offset + previous_position;
+                        if !seen_targets.contains(&case_offset) {
+                            seen_targets.insert(case_offset);
 
-                            worklist.push(case_idx);
+                            worklist.push(case_offset as u32);
                         }
-                    }
-
-                    // A LookupSwitch is terminal
-                    break;
-                }
-
-                // Verifications
-
-                // Local register verifications
-                AbcOp::GetLocal { index }
-                | AbcOp::SetLocal { index }
-                | AbcOp::Kill { index }
-                | AbcOp::DecLocal { index }
-                | AbcOp::DecLocalI { index }
-                | AbcOp::IncLocal { index }
-                | AbcOp::IncLocalI { index } => {
-                    if *index >= max_locals {
-                        return Err(make_error_1025(activation, *index));
-                    }
-                }
-
-                AbcOp::HasNext2 {
-                    object_register,
-                    index_register,
-                } => {
-                    // NOTE: This is the correct order (first check object register, then check index register)
-                    if *object_register >= max_locals {
-                        return Err(make_error_1025(activation, *object_register));
-                    } else if *index_register >= max_locals {
-                        return Err(make_error_1025(activation, *index_register));
-                    }
-                }
-
-                // Misc opcode verification
-                AbcOp::CallMethod { index, .. } => {
-                    return Err(Error::AvmError(if index.as_u30() == 0 {
-                        verify_error(activation, "Error #1072: Disp_id 0 is illegal.", 1072)?
-                    } else {
-                        verify_error(
-                            activation,
-                            "Error #1051: Illegal early binding access.",
-                            1051,
-                        )?
-                    }));
-                }
-
-                AbcOp::NewActivation => {
-                    if !method
-                        .method()
-                        .flags
-                        .contains(AbcMethodFlags::NEED_ACTIVATION)
-                    {
-                        return Err(Error::AvmError(verify_error(
-                            activation,
-                            "Error #1113: OP_newactivation used in method without NEED_ACTIVATION flag.",
-                            1113,
-                        )?));
-                    }
-                }
-
-                AbcOp::GetLex { index } => {
-                    let multiname = method
-                        .translation_unit()
-                        .pool_maybe_uninitialized_multiname(*index, &mut activation.context)?;
-
-                    if multiname.has_lazy_component() {
-                        return Err(Error::AvmError(verify_error(
-                            activation,
-                            "Error #1078: Illegal opcode/multiname combination.",
-                            1078,
-                        )?));
-                    }
-                }
-
-                AbcOp::AsType {
-                    type_name: name_index,
-                }
-                | AbcOp::Coerce { index: name_index } => {
-                    let multiname = method
-                        .translation_unit()
-                        .pool_maybe_uninitialized_multiname(*name_index, &mut activation.context);
-
-                    if let Ok(multiname) = multiname {
-                        if multiname.has_lazy_component() {
-                            // This matches FP's error message
-                            return Err(Error::AvmError(verify_error(
-                                activation,
-                                "Error #1014: Class [] could not be found.",
-                                1014,
-                            )?));
-                        }
-
-                        activation
-                            .domain()
-                            .get_class(&multiname, activation.context.gc_context)
-                            .ok_or_else(|| {
-                                Error::AvmError(
-                                    verify_error(
-                                        activation,
-                                        &format!(
-                                            "Error #1014: Class {} could not be found.",
-                                            multiname
-                                                .to_qualified_name(activation.context.gc_context)
-                                        ),
-                                        1014,
-                                    )
-                                    .expect("Error should construct"),
-                                )
-                            })?;
-                    } else {
-                        return Err(make_error_1032(activation, name_index.0));
                     }
                 }
 
                 _ => {}
             }
 
-            i += 1;
+            let is_terminator_op = matches!(
+                op,
+                AbcOp::Jump { .. }
+                    | AbcOp::LookupSwitch(_)
+                    | AbcOp::Throw
+                    | AbcOp::ReturnValue
+                    | AbcOp::ReturnVoid
+            );
+
+            // Actually translate the AbcOp into an Op
+
+            let bytes_read = new_position - previous_position;
+            assert!(bytes_read > 0);
+
+            for j in 0..bytes_read {
+                byte_info[(previous_position + j) as usize] = ByteInfo::OpContinue;
+            }
+
+            let translated_ops = translate_op(
+                activation,
+                method,
+                max_locals,
+                activation_class,
+                resolved_return_type,
+                op,
+            )?;
+
+            byte_info[previous_position as usize] = ByteInfo::OpStart(translated_ops.0);
+            if let Some(second_op) = translated_ops.1 {
+                assert!(bytes_read > 1);
+
+                // Split this op into two.
+                // This op must be guaranteed to take up at least 2 bytes. We
+                // simply register a non-jumpable second op at the next byte.
+                // This isn't the best way to do it, but it's simpler than
+                // actually emitting ops and rewriting the jump offsets to match.
+                byte_info[previous_position as usize + 1] = ByteInfo::OpStartNonJumpable(second_op);
+            }
+
+            if is_terminator_op {
+                break;
+            }
         }
     }
 
-    Ok(())
-}
+    let mut byte_offset_to_idx = HashMap::new();
+    let mut idx_to_byte_offset = Vec::new();
 
-fn optimize<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    method: &BytecodeMethod<'gc>,
-    code: &mut Vec<Op>,
-    jump_targets: HashSet<i32>,
-) {
-    // These make the code less readable
-    #![allow(clippy::manual_filter)]
-    #![allow(clippy::single_match)]
-
-    let method_body = method
-        .body()
-        .expect("Cannot verify non-native method without body!");
-
-    // This can probably be done better by recording the receiver in `Activation`,
-    // but this works since it's guaranteed to be set in `Activation::from_method`.
-    let this_value = activation.local_register(0);
-
-    let this_class = if let Some(this_class) = activation.subclass_object() {
-        if this_value.is_of_type(activation, this_class.inner_class_definition()) {
-            Some(this_class)
-        } else {
-            None
+    let mut verified_code = Vec::new();
+    for (i, info) in byte_info.iter().enumerate() {
+        if let Some(op) = info.get_op() {
+            byte_offset_to_idx.insert(i, verified_code.len());
+            verified_code.push(op);
+            idx_to_byte_offset.push(i);
         }
-    } else {
-        None
+    }
+
+    // Record a target->sources mapping of all jump
+    // targets- this will be used in the optimizer.
+    let mut jump_targets = HashSet::new();
+
+    // Handle exceptions
+    let mut new_exceptions = Vec::new();
+    for (exception_index, exception) in body.exceptions.iter().enumerate() {
+        // Resolve the variable name and target class.
+
+        let target_class = if exception.type_name.0 == 0 {
+            None
+        } else {
+            let pooled_type_name = method
+                .translation_unit()
+                .pool_maybe_uninitialized_multiname(activation, exception.type_name)?;
+
+            if pooled_type_name.has_lazy_component() {
+                // This matches FP's error message
+                return Err(make_error_1014(
+                    activation,
+                    Error1014Type::VerifyError,
+                    AvmString::new_utf8(mc, "[]"),
+                ));
+            }
+
+            let resolved_type = activation
+                .domain()
+                .get_class(activation.context, &pooled_type_name)
+                .ok_or_else(|| {
+                    make_error_1014(
+                        activation,
+                        Error1014Type::VerifyError,
+                        pooled_type_name.to_qualified_name(mc),
+                    )
+                })?;
+
+            Some(resolved_type)
+        };
+
+        let catch_class = if exception.variable_name.0 == 0 {
+            None
+        } else {
+            let pooled_variable_name = method
+                .translation_unit()
+                .pool_maybe_uninitialized_multiname(activation, exception.variable_name)?;
+
+            // FIXME: avmplus also seems to check the namespace(s)?
+            if pooled_variable_name.has_lazy_component()
+                || pooled_variable_name.is_attribute()
+                || pooled_variable_name.is_any_name()
+            {
+                // This matches FP's error message
+                return Err(make_error_1107(activation));
+            }
+
+            let namespaces = pooled_variable_name.namespace_set();
+
+            if namespaces.is_empty() {
+                // NOTE: avmplus segfaults here
+                panic!("Should have at least one namespace for QName in exception variable name");
+            }
+
+            let name = pooled_variable_name.local_name().expect("Just checked");
+
+            // avmplus uses the first namespace, regardless of how many namespaces there are.
+            let variable_name = QName::new(namespaces[0], name);
+
+            Some(Class::for_catch(activation, variable_name)?)
+        };
+
+        if !seen_exception_indices.contains(&exception_index) {
+            // We need to push an exception because `newcatch` ops can try to read
+            // it, but we can give it dummy from/to/target offsets because no code
+            // can actually trigger it (and we might not even have valid offsets anyway).
+            new_exceptions.push(Exception {
+                from_offset: 0,
+                to_offset: 0,
+                target_offset: 0,
+                catch_class,
+                target_class,
+            });
+            continue;
+        }
+
+        // Now resolve the offsets.
+
+        // NOTE: This is actually wrong, we should be using the byte offsets in
+        // `Activation::handle_err`, not the opcode offsets. avmplus allows for from/to
+        // (but not targets) that aren't on a opcode, and some obfuscated SWFs have them.
+        // FFDEC handles them correctly, stepping forward byte-by-byte until it reaches
+        // the next opcode. This does the same (stepping byte-by-byte), but it would
+        // be better to directly use the byte offsets when handling exceptions.
+        let mut from_offset = None;
+
+        let mut offs = 0;
+        while from_offset.is_none() {
+            from_offset = byte_offset_to_idx
+                .get(&((exception.from_offset + offs) as usize))
+                .copied();
+
+            offs += 1;
+            if (exception.from_offset + offs) as usize >= body.code.len() {
+                return Err(make_error_1054(activation));
+            }
+        }
+
+        // Now for the `to_offset`.
+        let mut to_offset = None;
+
+        let mut offs = 0;
+        while to_offset.is_none() {
+            to_offset = byte_offset_to_idx
+                .get(&((exception.to_offset + offs) as usize))
+                .copied();
+
+            offs += 1;
+            if (exception.to_offset + offs) as usize >= body.code.len() {
+                return Err(make_error_1054(activation));
+            }
+        }
+
+        let new_from_offset = from_offset.unwrap();
+        let new_to_offset = to_offset.unwrap();
+
+        if new_to_offset < new_from_offset {
+            return Err(make_error_1054(activation));
+        }
+
+        let maybe_new_target_offset = byte_offset_to_idx
+            .get(&(exception.target_offset as usize))
+            .copied();
+
+        // The large "NOTE" comment below is also relevant here
+        if let Some(new_target_offset) = maybe_new_target_offset {
+            // If this is a reachable target offset, insert it into the list
+            // of potential jump targets.
+            jump_targets.insert(new_target_offset);
+        }
+
+        let new_target_offset = maybe_new_target_offset.unwrap_or(0);
+
+        // NOTE: That `unwrap_or` is definitely reachable, e.g. in a case where
+        // the target offset is unreachable (see the test "verification"), but it
+        // might also be reachable in cases where the target offset will actually
+        // be jumped to. Any SWF that does this is extremely cursed and should
+        // VerifyError in FP (though I haven't been able to confirm that it does),
+        // so we probably don't need to worry about that case.
+
+        if exception.target_offset < exception.to_offset {
+            return Err(make_error_1054(activation));
+        }
+
+        if new_target_offset >= verified_code.len() {
+            return Err(make_error_1054(activation));
+        }
+
+        new_exceptions.push(Exception {
+            from_offset: new_from_offset,
+            to_offset: new_to_offset,
+            target_offset: new_target_offset,
+            catch_class,
+            target_class,
+        });
+    }
+
+    // We have to deal with AbcOp storing branch offsets as i32 offsets, while Op
+    // stores them as usize absolute positions. When initially converting AbcOps
+    // to Ops, we convert the values without processing them at all. Now we
+    // convert them back, and get the correct absolute positions.
+    let mut adjust_jump_to_idx = |i, offset, is_jump| -> Result<usize, Error<'gc>> {
+        const JUMP_INSTRUCTION_LENGTH: usize = 4;
+
+        let mut byte_offset = idx_to_byte_offset
+            .get(i)
+            .copied()
+            .ok_or_else(|| make_error_1021(activation))?; // This is still reachable with some weird bytecode, see the `verify_jump_to_middle_of_op` test
+
+        if is_jump {
+            byte_offset += JUMP_INSTRUCTION_LENGTH;
+        }
+
+        let new_byte_offset = byte_offset as i32 + offset;
+        let new_idx = byte_offset_to_idx
+            .get(&(new_byte_offset as usize))
+            .copied()
+            .ok_or_else(|| make_error_1021(activation))?; // See above comment
+
+        Ok(new_idx)
     };
 
-    // Initial set of local types
-    let mut local_types = vec![None; method_body.num_locals as usize];
-    local_types[0] = this_class;
-
-    // Logic to only allow for type-based optimizations on types that
-    // we're absolutely sure about- invalidate the local register's
-    // known type if any other register-modifying opcodes mention them
-    // anywhere else in the function.
-    for op in &*code {
+    // Adjust jump offsets from byte-based to idx-based
+    for (i, op) in verified_code.iter_mut().enumerate() {
         match op {
-            Op::SetLocal { index }
-            | Op::Kill { index }
-            | Op::IncLocal { index }
-            | Op::IncLocalI { index }
-            | Op::DecLocal { index }
-            | Op::DecLocalI { index } => {
-                if (*index as usize) < local_types.len() {
-                    local_types[*index as usize] = None;
-                }
+            Op::IfFalse { offset } | Op::IfTrue { offset } | Op::Jump { offset } => {
+                let adjusted_result = adjust_jump_to_idx(i, *offset as i32, true)?;
+                *offset = adjusted_result;
+
+                jump_targets.insert(adjusted_result);
             }
-            Op::HasNext2 {
-                object_register,
-                index_register,
-            } => {
-                if (*object_register as usize) < local_types.len() {
-                    local_types[*object_register as usize] = None;
-                }
-                if (*index_register as usize) < local_types.len() {
-                    local_types[*index_register as usize] = None;
+            Op::LookupSwitch(lookup_switch) => {
+                for target in lookup_switch
+                    .case_offsets
+                    .iter()
+                    .chain(std::slice::from_ref(&lookup_switch.default_offset))
+                {
+                    let adjusted_target = adjust_jump_to_idx(i, target.get() as i32, false)?;
+                    target.set(adjusted_target);
+
+                    jump_targets.insert(adjusted_target);
                 }
             }
             _ => {}
         }
     }
 
-    let mut previous_op = None;
-    for (i, op) in code.iter_mut().enumerate() {
-        if let Some(previous_op_some) = previous_op {
-            if !jump_targets.contains(&(i as i32)) {
-                match op {
-                    Op::CoerceB => match previous_op_some {
-                        Op::CoerceB
-                        | Op::Equals
-                        | Op::GreaterEquals
-                        | Op::GreaterThan
-                        | Op::LessEquals
-                        | Op::LessThan
-                        | Op::PushTrue
-                        | Op::PushFalse
-                        | Op::Not
-                        | Op::IsType { .. }
-                        | Op::IsTypeLate => {
-                            previous_op = Some(op.clone());
-                            *op = Op::Nop;
-                            continue;
-                        }
-                        _ => {}
-                    },
-                    Op::CoerceD => match previous_op_some {
-                        Op::CoerceD
-                        | Op::PushDouble { .. }
-                        | Op::Multiply
-                        | Op::Divide
-                        | Op::Modulo
-                        | Op::Increment
-                        | Op::Decrement
-                        | Op::Negate => {
-                            previous_op = Some(op.clone());
-                            *op = Op::Nop;
-                            continue;
-                        }
-                        _ => {}
-                    },
-                    Op::CoerceI => match previous_op_some {
-                        Op::CoerceI | Op::PushByte { .. } | Op::PushShort { .. } => {
-                            previous_op = Some(op.clone());
-                            *op = Op::Nop;
-                            continue;
-                        }
-                        Op::PushInt { value } => {
-                            if value >= -(1 << 28) && value < (1 << 28) {
-                                previous_op = Some(op.clone());
-                                *op = Op::Nop;
-                                continue;
-                            }
-                        }
-                        _ => {}
-                    },
-                    Op::CoerceU => match previous_op_some {
-                        Op::CoerceU => {
-                            previous_op = Some(op.clone());
-                            *op = Op::Nop;
-                            continue;
-                        }
-                        Op::PushByte { value } => {
-                            if (value as i8) >= 0 {
-                                previous_op = Some(op.clone());
-                                *op = Op::Nop;
-                                continue;
-                            }
-                        }
-                        Op::PushShort { value } => {
-                            if value >= 0 {
-                                previous_op = Some(op.clone());
-                                *op = Op::Nop;
-                                continue;
-                            }
-                        }
-                        Op::PushInt { value } => {
-                            if value >= 0 && value < (1 << 28) {
-                                previous_op = Some(op.clone());
-                                *op = Op::Nop;
-                                continue;
-                            }
-                        }
-                        _ => {}
-                    },
-                    Op::GetProperty { index: name_index } => match previous_op_some {
-                        Op::GetLocal { index: local_index } => {
-                            let class = local_types[local_index as usize];
-                            if let Some(class) = class {
-                                let multiname = method
-                                    .translation_unit()
-                                    .pool_maybe_uninitialized_multiname(
-                                        *name_index,
-                                        &mut activation.context,
-                                    );
+    crate::avm2::optimizer::optimize(
+        activation,
+        method,
+        &mut verified_code,
+        &mut new_exceptions,
+        resolved_param_config,
+        &jump_targets,
+    )?;
 
-                                if let Ok(multiname) = multiname {
-                                    if !multiname.has_lazy_component() {
-                                        match class.instance_vtable().get_trait(&multiname) {
-                                            Some(Property::Slot { slot_id })
-                                            | Some(Property::ConstSlot { slot_id }) => {
-                                                previous_op = Some(op.clone());
-                                                *op = Op::GetSlot { index: slot_id };
-                                                continue;
-                                            }
-                                            Some(Property::Virtual { get: Some(get), .. }) => {
-                                                previous_op = Some(op.clone());
-                                                *op = Op::CallMethod {
-                                                    num_args: 0,
-                                                    index: Index::new(get),
-                                                };
-                                                continue;
-                                            }
-                                            _ => {}
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                        _ => {}
-                    },
-                    Op::AsType {
-                        type_name: name_index,
-                    } => {
-                        let multiname = method
-                            .translation_unit()
-                            .pool_maybe_uninitialized_multiname(
-                                *name_index,
-                                &mut activation.context,
-                            );
+    Ok(VerifiedMethodInfo {
+        parsed_code: verified_code,
+        exceptions: new_exceptions,
+    })
+}
 
-                        let resolved_type = if let Ok(multiname) = multiname {
-                            if !multiname.has_lazy_component() {
-                                activation
-                                    .domain()
-                                    .get_class(&multiname, activation.context.gc_context)
-                            } else {
-                                None
-                            }
-                        } else {
-                            None
-                        };
+fn create_activation_class<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    method: Method<'gc>,
+) -> Result<Option<Class<'gc>>, Error<'gc>> {
+    let translation_unit = method.translation_unit();
+    let abc_method = method.method();
+    let body = method
+        .body()
+        .expect("Cannot verify non-native method without body!");
 
-                        if resolved_type.is_some() {
-                            match previous_op_some {
-                                Op::PushNull => {
-                                    previous_op = Some(op.clone());
-                                    *op = Op::Nop;
-                                    continue;
-                                }
-                                _ => {}
-                            }
-                        }
-                    }
-                    Op::Coerce { index: name_index } => {
-                        let multiname = method
-                            .translation_unit()
-                            .pool_maybe_uninitialized_multiname(
-                                *name_index,
-                                &mut activation.context,
-                            );
+    if abc_method.flags.contains(AbcMethodFlags::NEED_ACTIVATION) {
+        let activation_class =
+            Class::for_activation(activation, translation_unit, abc_method, body)?;
 
-                        let resolved_type = if let Ok(multiname) = multiname {
-                            if !multiname.has_lazy_component() {
-                                activation
-                                    .domain()
-                                    .get_class(&multiname, activation.context.gc_context)
-                            } else {
-                                None
-                            }
-                        } else {
-                            None
-                        };
-
-                        if let Some(class) = resolved_type {
-                            match previous_op_some {
-                                Op::PushNull => {
-                                    // As long as this Coerce isn't coercing to one
-                                    // of these special classes, we can remove it.
-                                    if !GcCell::ptr_eq(
-                                        class,
-                                        activation.avm2().classes().int.inner_class_definition(),
-                                    ) && !GcCell::ptr_eq(
-                                        class,
-                                        activation.avm2().classes().uint.inner_class_definition(),
-                                    ) && !GcCell::ptr_eq(
-                                        class,
-                                        activation.avm2().classes().number.inner_class_definition(),
-                                    ) && !GcCell::ptr_eq(
-                                        class,
-                                        activation
-                                            .avm2()
-                                            .classes()
-                                            .boolean
-                                            .inner_class_definition(),
-                                    ) && !GcCell::ptr_eq(
-                                        class,
-                                        activation.avm2().classes().void.inner_class_definition(),
-                                    ) {
-                                        previous_op = Some(op.clone());
-                                        *op = Op::Nop;
-                                        continue;
-                                    }
-                                }
-                                Op::PushString { .. } => {
-                                    if GcCell::ptr_eq(
-                                        class,
-                                        activation.avm2().classes().string.inner_class_definition(),
-                                    ) {
-                                        previous_op = Some(op.clone());
-                                        *op = Op::Nop;
-                                        continue;
-                                    }
-                                }
-                                Op::NewArray { .. } => {
-                                    if GcCell::ptr_eq(
-                                        class,
-                                        activation.avm2().classes().array.inner_class_definition(),
-                                    ) {
-                                        previous_op = Some(op.clone());
-                                        *op = Op::Nop;
-                                        continue;
-                                    }
-                                }
-                                Op::NewFunction { .. } => {
-                                    if GcCell::ptr_eq(
-                                        class,
-                                        activation
-                                            .avm2()
-                                            .classes()
-                                            .function
-                                            .inner_class_definition(),
-                                    ) {
-                                        previous_op = Some(op.clone());
-                                        *op = Op::Nop;
-                                        continue;
-                                    }
-                                }
-                                Op::Coerce {
-                                    index: previous_name_index,
-                                } => {
-                                    if name_index.as_u30() == previous_name_index.as_u30() {
-                                        previous_op = Some(op.clone());
-                                        *op = Op::Nop;
-                                        continue;
-                                    }
-                                }
-                                _ => {}
-                            }
-                        }
-                    }
-                    _ => {}
-                }
-            }
-        }
-
-        previous_op = Some(op.clone());
+        Ok(Some(activation_class))
+    } else {
+        Ok(None)
     }
 }
 
-fn ops_can_throw_error(ops: &[AbcOp]) -> bool {
-    for op in ops {
-        match op {
-            AbcOp::Bkpt
+// Taken from avmplus's opcodes.tbl
+fn op_can_throw_error(op: &AbcOp) -> bool {
+    !matches!(
+        op,
+        AbcOp::Bkpt
             | AbcOp::BkptLine { .. }
             | AbcOp::Timestamp
             | AbcOp::PushByte { .. }
@@ -876,12 +593,8 @@ fn ops_can_throw_error(ops: &[AbcOp]) -> bool {
             | AbcOp::Nop
             | AbcOp::Not
             | AbcOp::PopScope
-            | AbcOp::ReturnVoid => {}
-            _ => return true,
-        }
-    }
-
-    false
+            | AbcOp::ReturnVoid
+    )
 }
 
 fn pool_int<'gc>(
@@ -938,13 +651,180 @@ fn pool_double<'gc>(
         .ok_or_else(|| make_error_1032(activation, index.0))
 }
 
-fn resolve_op<'gc>(
+fn pool_multiname<'gc>(
     activation: &mut Activation<'_, 'gc>,
     translation_unit: TranslationUnit<'gc>,
+    index: Index<AbcMultiname>,
+) -> Result<Gc<'gc, Multiname<'gc>>, Error<'gc>> {
+    // `Multiname::from_abc_index` will do constant pool range checks anyway, so
+    // don't perform an extra one here
+    translation_unit.pool_maybe_uninitialized_multiname(activation, index)
+}
+
+fn pool_string<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    translation_unit: TranslationUnit<'gc>,
+    index: Index<String>,
+) -> Result<AvmAtom<'gc>, Error<'gc>> {
+    if index.0 == 0 {
+        return Err(make_error_1032(activation, 0));
+    }
+
+    translation_unit.pool_string(index.0, activation.strings())
+}
+
+fn pool_class<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    translation_unit: TranslationUnit<'gc>,
+    index: Index<AbcClass>,
+) -> Result<Class<'gc>, Error<'gc>> {
+    translation_unit.load_class(index.0, activation)
+}
+
+fn pool_namespace<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    translation_unit: TranslationUnit<'gc>,
+    index: Index<AbcNamespace>,
+) -> Result<Namespace<'gc>, Error<'gc>> {
+    translation_unit.pool_namespace(activation, index)
+}
+
+fn pool_method<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    translation_unit: TranslationUnit<'gc>,
+    index: Index<AbcMethod>,
+    is_function: bool,
+) -> Result<Method<'gc>, Error<'gc>> {
+    translation_unit.load_method(index, is_function, activation)
+}
+
+fn lookup_class<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    translation_unit: TranslationUnit<'gc>,
+    multiname_index: Index<AbcMultiname>,
+) -> Result<Class<'gc>, Error<'gc>> {
+    let multiname = pool_multiname(activation, translation_unit, multiname_index)?;
+
+    if multiname.has_lazy_component() {
+        // This matches FP's error message
+        return Err(make_error_1014(
+            activation,
+            Error1014Type::VerifyError,
+            AvmString::new_utf8(activation.gc(), "[]"),
+        ));
+    }
+
+    activation
+        .domain()
+        .get_class(activation.context, &multiname)
+        .ok_or_else(|| {
+            make_error_1014(
+                activation,
+                Error1014Type::VerifyError,
+                multiname.to_qualified_name(activation.gc()),
+            )
+        })
+}
+
+fn translate_op<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    method: Method<'gc>,
+    max_locals: u32,
+    activation_class: Option<Class<'gc>>,
+    resolved_return_type: Option<Class<'gc>>,
     op: AbcOp,
-) -> Result<Op, Error<'gc>> {
-    Ok(match op {
-        AbcOp::PushByte { value } => Op::PushByte { value },
+) -> Result<(Op<'gc>, Option<Op<'gc>>), Error<'gc>> {
+    let translation_unit = method.translation_unit();
+
+    // Some quick verifications
+    match op {
+        // Local register verifications
+        AbcOp::GetLocal { index }
+        | AbcOp::SetLocal { index }
+        | AbcOp::Kill { index }
+        | AbcOp::DecLocal { index }
+        | AbcOp::DecLocalI { index }
+        | AbcOp::IncLocal { index }
+        | AbcOp::IncLocalI { index } => {
+            if index >= max_locals {
+                return Err(make_error_1025(activation, index));
+            }
+        }
+
+        AbcOp::HasNext2 {
+            object_register,
+            index_register,
+        } => {
+            // NOTE: This is the correct order (first check object register, then check index register)
+            if object_register >= max_locals {
+                return Err(make_error_1025(activation, object_register));
+            } else if index_register >= max_locals {
+                return Err(make_error_1025(activation, index_register));
+            } else if index_register == object_register {
+                return Err(Error::avm_error(verify_error(
+                    activation,
+                    "Error #1124: OP_hasnext2 requires object and index to be distinct registers.",
+                    1124,
+                )?));
+            }
+        }
+
+        // Misc opcode verification
+        AbcOp::CallMethod { index, .. } => {
+            return Err(Error::avm_error(if index == 0 {
+                verify_error(activation, "Error #1072: Disp_id 0 is illegal.", 1072)?
+            } else {
+                verify_error(
+                    activation,
+                    "Error #1051: Illegal early binding access.",
+                    1051,
+                )?
+            }));
+        }
+
+        AbcOp::FindDef { index } | AbcOp::GetLex { index } => {
+            let multiname =
+                translation_unit.pool_maybe_uninitialized_multiname(activation, index)?;
+
+            if multiname.has_lazy_component() {
+                return Err(Error::avm_error(verify_error(
+                    activation,
+                    "Error #1078: Illegal opcode/multiname combination.",
+                    1078,
+                )?));
+            }
+        }
+
+        AbcOp::GetOuterScope { index } => {
+            if activation.outer().get(index as usize).is_none() {
+                return Err(Error::avm_error(verify_error(
+                    activation,
+                    "Error #1019: Getscopeobject  is out of bounds.",
+                    1019,
+                )?));
+            }
+        }
+
+        AbcOp::GetSlot { index }
+        | AbcOp::SetSlot { index }
+        | AbcOp::GetGlobalSlot { index }
+        | AbcOp::SetGlobalSlot { index } => {
+            if index == 0 {
+                return Err(Error::avm_error(verify_error(
+                    activation,
+                    "Error #1026: Slot 0 exceeds slotCount",
+                    1026,
+                )?));
+            }
+        }
+
+        _ => {}
+    }
+
+    let op = match op {
+        AbcOp::PushByte { value } => Op::PushShort {
+            value: value as i8 as i16,
+        },
         AbcOp::PushDouble { value } => {
             let value = pool_double(activation, translation_unit, value)?;
 
@@ -956,11 +836,19 @@ fn resolve_op<'gc>(
 
             Op::PushInt { value }
         }
-        AbcOp::PushNamespace { value } => Op::PushNamespace { value },
-        AbcOp::PushNaN => Op::PushNaN,
+        AbcOp::PushNamespace { value } => {
+            let namespace = pool_namespace(activation, translation_unit, value)?;
+
+            Op::PushNamespace { namespace }
+        }
+        AbcOp::PushNaN => Op::PushDouble { value: f64::NAN },
         AbcOp::PushNull => Op::PushNull,
         AbcOp::PushShort { value } => Op::PushShort { value },
-        AbcOp::PushString { value } => Op::PushString { value },
+        AbcOp::PushString { value } => {
+            let string = pool_string(activation, translation_unit, value)?;
+
+            Op::PushString { string }
+        }
         AbcOp::PushTrue => Op::PushTrue,
         AbcOp::PushUint { value } => {
             let value = pool_uint(activation, translation_unit, value)?;
@@ -974,45 +862,232 @@ fn resolve_op<'gc>(
         AbcOp::SetLocal { index } => Op::SetLocal { index },
         AbcOp::Kill { index } => Op::Kill { index },
         AbcOp::Call { num_args } => Op::Call { num_args },
-        AbcOp::CallMethod { index, num_args } => Op::CallMethod { index, num_args },
-        AbcOp::CallProperty { index, num_args } => Op::CallProperty { index, num_args },
-        AbcOp::CallPropLex { index, num_args } => Op::CallPropLex { index, num_args },
-        AbcOp::CallPropVoid { index, num_args } => Op::CallPropVoid { index, num_args },
-        AbcOp::CallStatic { index, num_args } => Op::CallStatic { index, num_args },
-        AbcOp::CallSuper { index, num_args } => Op::CallSuper { index, num_args },
-        AbcOp::CallSuperVoid { index, num_args } => Op::CallSuperVoid { index, num_args },
-        AbcOp::ReturnValue => Op::ReturnValue,
-        AbcOp::ReturnVoid => Op::ReturnVoid,
-        AbcOp::GetProperty { index } => Op::GetProperty { index },
-        AbcOp::SetProperty { index } => Op::SetProperty { index },
-        AbcOp::InitProperty { index } => Op::InitProperty { index },
-        AbcOp::DeleteProperty { index } => Op::DeleteProperty { index },
-        AbcOp::GetSuper { index } => Op::GetSuper { index },
-        AbcOp::SetSuper { index } => Op::SetSuper { index },
+        AbcOp::CallMethod { index, num_args } => Op::CallMethod {
+            index,
+            num_args,
+            push_return_value: true,
+        },
+        AbcOp::CallProperty { index, num_args } => {
+            let multiname = pool_multiname(activation, translation_unit, index)?;
+
+            Op::CallProperty {
+                multiname,
+                num_args,
+            }
+        }
+        AbcOp::CallPropLex { index, num_args } => {
+            let multiname = pool_multiname(activation, translation_unit, index)?;
+
+            Op::CallPropLex {
+                multiname,
+                num_args,
+            }
+        }
+        AbcOp::CallPropVoid { index, num_args } => {
+            let multiname = pool_multiname(activation, translation_unit, index)?;
+
+            Op::CallPropVoid {
+                multiname,
+                num_args,
+            }
+        }
+        AbcOp::CallStatic { index, num_args } => {
+            let method = pool_method(activation, translation_unit, index, false)?;
+
+            Op::CallStatic { method, num_args }
+        }
+        AbcOp::CallSuper { index, num_args } => {
+            let multiname = pool_multiname(activation, translation_unit, index)?;
+
+            Op::CallSuper {
+                multiname,
+                num_args,
+            }
+        }
+        AbcOp::CallSuperVoid { index, num_args } => {
+            let multiname = pool_multiname(activation, translation_unit, index)?;
+
+            // CallSuperVoid is split into two ops
+            return Ok((
+                Op::CallSuper {
+                    multiname,
+                    num_args,
+                },
+                Some(Op::Pop),
+            ));
+        }
+        AbcOp::ReturnValue => Op::ReturnValue {
+            return_type: resolved_return_type,
+        },
+        AbcOp::ReturnVoid => Op::ReturnVoid {
+            return_type: resolved_return_type,
+        },
+        AbcOp::GetProperty { index } => {
+            let multiname = pool_multiname(activation, translation_unit, index)?;
+
+            if !multiname.has_lazy_component() {
+                Op::GetPropertyStatic { multiname }
+            } else if multiname.has_lazy_name() && !multiname.has_lazy_ns() {
+                // The fast-path path usually doesn't activate when the public
+                // namespace isn't included in the multiname's namespace set.
+                // However, it does still activate when this Activation is
+                // running in interpreter mode
+                if multiname.valid_dynamic_name() || activation.is_interpreter() {
+                    Op::GetPropertyFast { multiname }
+                } else {
+                    Op::GetPropertySlow { multiname }
+                }
+            } else {
+                Op::GetPropertySlow { multiname }
+            }
+        }
+        AbcOp::SetProperty { index } => {
+            let multiname = pool_multiname(activation, translation_unit, index)?;
+
+            if !multiname.has_lazy_component() {
+                Op::SetPropertyStatic { multiname }
+            } else if multiname.has_lazy_name() && !multiname.has_lazy_ns() {
+                // The fast-path path usually doesn't activate when the public
+                // namespace isn't included in the multiname's namespace set.
+                // However, it does still activate when this Activation is
+                // running in interpreter mode
+                if multiname.valid_dynamic_name() || activation.is_interpreter() {
+                    Op::SetPropertyFast { multiname }
+                } else {
+                    Op::SetPropertySlow { multiname }
+                }
+            } else {
+                Op::SetPropertySlow { multiname }
+            }
+        }
+        AbcOp::InitProperty { index } => {
+            let multiname = pool_multiname(activation, translation_unit, index)?;
+
+            Op::InitProperty { multiname }
+        }
+        AbcOp::DeleteProperty { index } => {
+            let multiname = pool_multiname(activation, translation_unit, index)?;
+
+            Op::DeleteProperty { multiname }
+        }
+        AbcOp::GetSuper { index } => {
+            let multiname = pool_multiname(activation, translation_unit, index)?;
+
+            Op::GetSuper { multiname }
+        }
+        AbcOp::SetSuper { index } => {
+            let multiname = pool_multiname(activation, translation_unit, index)?;
+
+            Op::SetSuper { multiname }
+        }
         AbcOp::In => Op::In,
         AbcOp::PushScope => Op::PushScope,
-        AbcOp::NewCatch { index } => Op::NewCatch { index },
+        AbcOp::NewCatch { index } => Op::NewCatch {
+            index: index.0 as usize,
+        },
         AbcOp::PushWith => Op::PushWith,
         AbcOp::PopScope => Op::PopScope,
-        AbcOp::GetOuterScope { index } => Op::GetOuterScope { index },
-        AbcOp::GetScopeObject { index } => Op::GetScopeObject { index },
-        AbcOp::GetGlobalScope => Op::GetGlobalScope,
-        AbcOp::FindDef { index } => Op::FindDef { index },
-        AbcOp::FindProperty { index } => Op::FindProperty { index },
-        AbcOp::FindPropStrict { index } => Op::FindPropStrict { index },
-        AbcOp::GetLex { index } => Op::GetLex { index },
-        AbcOp::GetDescendants { index } => Op::GetDescendants { index },
-        AbcOp::GetSlot { index } => Op::GetSlot { index },
-        AbcOp::SetSlot { index } => Op::SetSlot { index },
-        AbcOp::GetGlobalSlot { index } => Op::GetGlobalSlot { index },
-        AbcOp::SetGlobalSlot { index } => Op::SetGlobalSlot { index },
+        AbcOp::GetOuterScope { index } => Op::GetOuterScope {
+            index: index as usize,
+        },
+        AbcOp::GetScopeObject { index } => Op::GetScopeObject {
+            index: index as usize,
+        },
+        AbcOp::GetGlobalScope => {
+            // GetGlobalScope is equivalent to either GetScopeObject or GetOuterScope,
+            // depending on the outer scope stack size. Do this check here in the
+            // verifier instead of doing it at runtime.
+
+            if activation.outer().is_empty() {
+                Op::GetScopeObject { index: 0 }
+            } else {
+                Op::GetOuterScope { index: 0 }
+            }
+        }
+        AbcOp::FindDef { index } => {
+            let multiname = pool_multiname(activation, translation_unit, index)?;
+            // Verifier guarantees that multiname was non-lazy
+
+            Op::FindDef { multiname }
+        }
+        AbcOp::FindProperty { index } => {
+            let multiname = pool_multiname(activation, translation_unit, index)?;
+
+            Op::FindProperty { multiname }
+        }
+        AbcOp::FindPropStrict { index } => {
+            let multiname = pool_multiname(activation, translation_unit, index)?;
+
+            Op::FindPropStrict { multiname }
+        }
+        AbcOp::GetLex { index } => {
+            let multiname = pool_multiname(activation, translation_unit, index)?;
+
+            // GetLex is split into two ops; multiname is guaranteed static
+            return Ok((
+                Op::FindPropStrict { multiname },
+                Some(Op::GetPropertyStatic { multiname }),
+            ));
+        }
+        AbcOp::GetDescendants { index } => {
+            let multiname = pool_multiname(activation, translation_unit, index)?;
+
+            Op::GetDescendants { multiname }
+        }
+        // Turn 1-based representation into 0-based representation
+        AbcOp::GetSlot { index } => Op::GetSlot { index: index - 1 },
+        AbcOp::SetSlot { index } => Op::SetSlot { index: index - 1 },
+        AbcOp::GetGlobalSlot { index } => {
+            let first_op = if activation.outer().is_empty() {
+                Op::GetScopeObject { index: 0 }
+            } else {
+                Op::GetOuterScope { index: 0 }
+            };
+
+            // GetGlobalSlot is split into two ops
+            return Ok((first_op, Some(Op::GetSlot { index })));
+        }
+        AbcOp::SetGlobalSlot { index } => Op::SetGlobalSlot { index: index - 1 },
+
         AbcOp::Construct { num_args } => Op::Construct { num_args },
-        AbcOp::ConstructProp { index, num_args } => Op::ConstructProp { index, num_args },
+        AbcOp::ConstructProp { index, num_args } => {
+            let multiname = pool_multiname(activation, translation_unit, index)?;
+            // Verifier guarantees that multiname was non-lazy
+
+            Op::ConstructProp {
+                multiname,
+                num_args,
+            }
+        }
         AbcOp::ConstructSuper { num_args } => Op::ConstructSuper { num_args },
-        AbcOp::NewActivation => Op::NewActivation,
+        AbcOp::NewActivation => {
+            if let Some(activation_class) = activation_class {
+                Op::NewActivation { activation_class }
+            } else {
+                // When a method's flags don't include NEED_ACTIVATION, we
+                // purposefully don't construct an `activation_class` in
+                // `create_activation_class`, which results in the
+                // `activation_class` being passed to `translate_op` being None.
+                // This results in this VerifyError being thrown upon
+                // encountering any `newactivation` op in the bytecode.
+
+                return Err(Error::avm_error(verify_error(
+                    activation,
+                    "Error #1113: OP_newactivation used in method without NEED_ACTIVATION flag.",
+                    1113,
+                )?));
+            }
+        }
         AbcOp::NewObject { num_args } => Op::NewObject { num_args },
-        AbcOp::NewFunction { index } => Op::NewFunction { index },
-        AbcOp::NewClass { index } => Op::NewClass { index },
+        AbcOp::NewFunction { index } => {
+            let method = pool_method(activation, translation_unit, index, true)?;
+
+            Op::NewFunction { method }
+        }
+        AbcOp::NewClass { index } => {
+            let class = pool_class(activation, translation_unit, index)?;
+            Op::NewClass { class }
+        }
         AbcOp::ApplyType { num_types } => Op::ApplyType { num_types },
         AbcOp::NewArray { num_args } => Op::NewArray { num_args },
         AbcOp::CoerceA => Op::CoerceA,
@@ -1050,21 +1125,111 @@ fn resolve_op<'gc>(
         AbcOp::SubtractI => Op::SubtractI,
         AbcOp::Swap => Op::Swap,
         AbcOp::URShift => Op::URShift,
-        AbcOp::Jump { offset } => Op::Jump { offset },
-        AbcOp::IfTrue { offset } => Op::IfTrue { offset },
-        AbcOp::IfFalse { offset } => Op::IfFalse { offset },
-        AbcOp::IfStrictEq { offset } => Op::IfStrictEq { offset },
-        AbcOp::IfStrictNe { offset } => Op::IfStrictNe { offset },
-        AbcOp::IfEq { offset } => Op::IfEq { offset },
-        AbcOp::IfNe { offset } => Op::IfNe { offset },
-        AbcOp::IfGe { offset } => Op::IfGe { offset },
-        AbcOp::IfGt { offset } => Op::IfGt { offset },
-        AbcOp::IfLe { offset } => Op::IfLe { offset },
-        AbcOp::IfLt { offset } => Op::IfLt { offset },
-        AbcOp::IfNge { offset } => Op::IfNge { offset },
-        AbcOp::IfNgt { offset } => Op::IfNgt { offset },
-        AbcOp::IfNle { offset } => Op::IfNle { offset },
-        AbcOp::IfNlt { offset } => Op::IfNlt { offset },
+        AbcOp::Jump { offset } => Op::Jump {
+            offset: offset as usize,
+        },
+        AbcOp::IfTrue { offset } => Op::IfTrue {
+            offset: offset as usize,
+        },
+        AbcOp::IfFalse { offset } => Op::IfFalse {
+            offset: offset as usize,
+        },
+        AbcOp::IfStrictEq { offset } => {
+            return Ok((
+                Op::StrictEquals,
+                Some(Op::IfTrue {
+                    offset: (offset - 1) as usize,
+                }),
+            ));
+        }
+        AbcOp::IfStrictNe { offset } => {
+            return Ok((
+                Op::StrictEquals,
+                Some(Op::IfFalse {
+                    offset: (offset - 1) as usize,
+                }),
+            ));
+        }
+        AbcOp::IfEq { offset } => {
+            return Ok((
+                Op::Equals,
+                Some(Op::IfTrue {
+                    offset: (offset - 1) as usize,
+                }),
+            ));
+        }
+        AbcOp::IfNe { offset } => {
+            return Ok((
+                Op::Equals,
+                Some(Op::IfFalse {
+                    offset: (offset - 1) as usize,
+                }),
+            ));
+        }
+        AbcOp::IfGe { offset } => {
+            return Ok((
+                Op::GreaterEquals,
+                Some(Op::IfTrue {
+                    offset: (offset - 1) as usize,
+                }),
+            ));
+        }
+        AbcOp::IfGt { offset } => {
+            return Ok((
+                Op::GreaterThan,
+                Some(Op::IfTrue {
+                    offset: (offset - 1) as usize,
+                }),
+            ));
+        }
+        AbcOp::IfLe { offset } => {
+            return Ok((
+                Op::LessEquals,
+                Some(Op::IfTrue {
+                    offset: (offset - 1) as usize,
+                }),
+            ));
+        }
+        AbcOp::IfLt { offset } => {
+            return Ok((
+                Op::LessThan,
+                Some(Op::IfTrue {
+                    offset: (offset - 1) as usize,
+                }),
+            ));
+        }
+        AbcOp::IfNge { offset } => {
+            return Ok((
+                Op::GreaterEquals,
+                Some(Op::IfFalse {
+                    offset: (offset - 1) as usize,
+                }),
+            ));
+        }
+        AbcOp::IfNgt { offset } => {
+            return Ok((
+                Op::GreaterThan,
+                Some(Op::IfFalse {
+                    offset: (offset - 1) as usize,
+                }),
+            ));
+        }
+        AbcOp::IfNle { offset } => {
+            return Ok((
+                Op::LessEquals,
+                Some(Op::IfFalse {
+                    offset: (offset - 1) as usize,
+                }),
+            ));
+        }
+        AbcOp::IfNlt { offset } => {
+            return Ok((
+                Op::LessThan,
+                Some(Op::IfFalse {
+                    offset: (offset - 1) as usize,
+                }),
+            ));
+        }
         AbcOp::StrictEquals => Op::StrictEquals,
         AbcOp::Equals => Op::Equals,
         AbcOp::GreaterEquals => Op::GreaterEquals,
@@ -1083,9 +1248,17 @@ fn resolve_op<'gc>(
         },
         AbcOp::NextName => Op::NextName,
         AbcOp::NextValue => Op::NextValue,
-        AbcOp::IsType { index } => Op::IsType { index },
+        AbcOp::IsType { index } => {
+            let class = lookup_class(activation, translation_unit, index)?;
+
+            Op::IsType { class }
+        }
         AbcOp::IsTypeLate => Op::IsTypeLate,
-        AbcOp::AsType { type_name } => Op::AsType { type_name },
+        AbcOp::AsType { type_name } => {
+            let class = lookup_class(activation, translation_unit, type_name)?;
+
+            Op::AsType { class }
+        }
         AbcOp::AsTypeLate => Op::AsTypeLate,
         AbcOp::InstanceOf => Op::InstanceOf,
         AbcOp::Label => Op::Nop,
@@ -1093,12 +1266,20 @@ fn resolve_op<'gc>(
             is_local_register,
             register_name,
             register,
-        } => Op::Debug {
-            is_local_register,
-            register_name,
-            register,
-        },
-        AbcOp::DebugFile { file_name } => Op::DebugFile { file_name },
+        } => {
+            let register_name = pool_string(activation, translation_unit, register_name)?;
+
+            Op::Debug {
+                is_local_register,
+                register_name,
+                register,
+            }
+        }
+        AbcOp::DebugFile { file_name } => {
+            let file_name = pool_string(activation, translation_unit, file_name)?;
+
+            Op::DebugFile { file_name }
+        }
         AbcOp::DebugLine { line_num } => Op::DebugLine { line_num },
         AbcOp::Bkpt => Op::Bkpt,
         AbcOp::BkptLine { line_num } => Op::BkptLine { line_num },
@@ -1106,10 +1287,29 @@ fn resolve_op<'gc>(
         AbcOp::TypeOf => Op::TypeOf,
         AbcOp::EscXAttr => Op::EscXAttr,
         AbcOp::EscXElem => Op::EscXElem,
-        AbcOp::Dxns { index } => Op::Dxns { index },
+        AbcOp::Dxns { index } => {
+            let string = pool_string(activation, translation_unit, index)?;
+
+            Op::Dxns { string }
+        }
         AbcOp::DxnsLate => Op::DxnsLate,
-        AbcOp::LookupSwitch(lookup_switch) => Op::LookupSwitch(lookup_switch),
-        AbcOp::Coerce { index } => Op::Coerce { index },
+        AbcOp::LookupSwitch(lookup_switch) => {
+            let created_lookup_switch = LookupSwitch {
+                default_offset: Cell::new(lookup_switch.default_offset as usize),
+                case_offsets: lookup_switch
+                    .case_offsets
+                    .iter()
+                    .map(|o| Cell::new(*o as usize))
+                    .collect(),
+            };
+
+            Op::LookupSwitch(Gc::new(activation.gc(), created_lookup_switch))
+        }
+        AbcOp::Coerce { index } => {
+            let class = lookup_class(activation, translation_unit, index)?;
+
+            Op::Coerce { class }
+        }
         AbcOp::CheckFilter => Op::CheckFilter,
         AbcOp::Si8 => Op::Si8,
         AbcOp::Si16 => Op::Si16,
@@ -1125,5 +1325,7 @@ fn resolve_op<'gc>(
         AbcOp::Sxi8 => Op::Sxi8,
         AbcOp::Sxi16 => Op::Sxi16,
         AbcOp::Throw => Op::Throw,
-    })
+    };
+
+    Ok((op, None))
 }

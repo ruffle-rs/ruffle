@@ -1,13 +1,14 @@
 use crate::avm1::function::FunctionObject;
-use crate::avm1::object::{NativeObject, Object};
+use crate::avm1::object::NativeObject;
 use crate::avm1::property_decl::define_properties_on;
-use crate::avm1::{property_decl::Declaration, ScriptObject};
-use crate::avm1::{Activation, Error, Executable, ExecutionReason, TObject, Value};
-use crate::context::{GcContext, UpdateContext};
+use crate::avm1::{property_decl::Declaration, Object};
+use crate::avm1::{Activation, Error, ExecutionReason, Value};
+use crate::context::UpdateContext;
 use crate::display_object::TDisplayObject;
 use crate::socket::SocketHandle;
-use crate::string::AvmString;
+use crate::string::{AvmString, StringContext};
 use gc_arena::{Collect, Gc};
+use ruffle_macros::istr;
 use std::cell::{Cell, RefCell, RefMut};
 
 #[derive(Clone, Debug, Collect)]
@@ -19,7 +20,7 @@ struct XmlSocketData {
     read_buffer: RefCell<Vec<u8>>,
 }
 
-#[derive(Clone, Debug, Collect)]
+#[derive(Copy, Clone, Debug, Collect)]
 #[collect(no_drop)]
 pub struct XmlSocket<'gc>(Gc<'gc, XmlSocketData>);
 
@@ -123,12 +124,12 @@ pub fn connect<'gc>(
 
                 if let Ok(url) = url::Url::parse(movie.url()) {
                     if url.scheme() == "file" {
-                        "localhost".into()
+                        istr!("localhost").into()
                     } else if let Some(domain) = url.domain() {
-                        AvmString::new_utf8(activation.context.gc_context, domain).into()
+                        AvmString::new_utf8(activation.gc(), domain).into()
                     } else {
                         // no domain?
-                        "localhost".into()
+                        istr!("localhost").into()
                     }
                 } else {
                     Value::Undefined
@@ -142,7 +143,7 @@ pub fn connect<'gc>(
 
         let UpdateContext {
             sockets, navigator, ..
-        } = &mut activation.context;
+        } = activation.context;
 
         sockets.connect_avm1(*navigator, this, host.to_utf8_lossy().into_owned(), port);
 
@@ -204,12 +205,7 @@ fn on_data<'gc>(
     let xml_constructor = activation.context.avm1.prototypes().xml_constructor;
 
     if let Ok(xml) = xml_constructor.construct(activation, args) {
-        let _ = this.call_method(
-            "onXML".into(),
-            &[xml],
-            activation,
-            ExecutionReason::FunctionCall,
-        )?;
+        let _ = this.call_method(istr!("onXML"), &[xml], activation, ExecutionReason::Special)?;
     } else {
         tracing::warn!("default XMLSocket.onData() received invalid XML; message ignored");
     }
@@ -243,29 +239,23 @@ pub fn constructor<'gc>(
 
     this.set_native(activation.gc(), NativeObject::XmlSocket(xml_socket));
 
-    Ok(this.into())
+    Ok(Value::Undefined)
 }
 
 pub fn create_proto<'gc>(
-    context: &mut GcContext<'_, 'gc>,
+    context: &mut StringContext<'gc>,
     proto: Object<'gc>,
     fn_proto: Object<'gc>,
 ) -> Object<'gc> {
-    let xml_socket_proto = ScriptObject::new(context.gc_context, Some(proto));
+    let xml_socket_proto = Object::new(context, Some(proto));
     define_properties_on(PROTO_DECLS, context, xml_socket_proto, fn_proto);
-    xml_socket_proto.into()
+    xml_socket_proto
 }
 
 pub fn create_class<'gc>(
-    context: &mut GcContext<'_, 'gc>,
+    context: &mut StringContext<'gc>,
     xml_socket_proto: Object<'gc>,
     fn_proto: Object<'gc>,
 ) -> Object<'gc> {
-    FunctionObject::constructor(
-        context.gc_context,
-        Executable::Native(constructor),
-        constructor_to_fn!(constructor),
-        fn_proto,
-        xml_socket_proto,
-    )
+    FunctionObject::native(context, constructor, fn_proto, xml_socket_proto)
 }

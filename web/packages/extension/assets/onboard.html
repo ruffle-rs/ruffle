@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+
+<html>
+    <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <title>Onboarding Page</title>
+        <link rel="icon" type="image/png" href="images/icon32.png" />
+        <link rel="stylesheet" href="css/common.css" />
+        <link rel="stylesheet" href="css/onboard.css" />
+    </head>
+    <body>
+        <div class="header">
+            <a href="https://ruffle.rs/" target="_blank">
+                <img src="images/logo.svg" alt="Ruffle" data-canonical-src="images/logo.svg" class="logo" />
+            </a>
+            <div id="version-text">nightly YYYY-MM-DD</div>
+        </div>
+        <div class="options container">
+            <div class="option">
+                <p id="permissions-explanation">The Ruffle extension works best with the ability to access data on all websites. This allows it to run when any website first loads, therefore allowing it to convince websites that do Flash Player detection immediately to let the Flash content run. It also gives it the ability to load SWF files into its internal player page from other locations on the web. If you do not grant this permission, you will need to enable Ruffle manually on every website on which you wish to use it by clicking the icon for the extension and enabling it for that website.</p>
+            </div>
+            <button id="grant-permissions">Grant Ruffle permission to access my data on all sites</button>
+        </div>
+        <script src="dist/onboard.js"></script>
+    </body>
+</html>

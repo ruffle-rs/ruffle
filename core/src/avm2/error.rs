@@ -1,20 +1,18 @@
 use ruffle_wstr::WString;
 
-use crate::avm2::object::TObject;
-use crate::avm2::Activation;
-use crate::avm2::AvmString;
-use crate::avm2::Multiname;
-use crate::avm2::Value;
-use std::fmt::Debug;
+use crate::avm2::{Activation, AvmString, Class, Multiname, Value};
+use std::fmt::{Debug, Display};
 use std::mem::size_of;
 
 use super::function::display_function;
 use super::method::Method;
 use super::ClassObject;
-use super::Object;
 
 /// An error generated while handling AVM2 logic
-pub enum Error<'gc> {
+#[repr(transparent)]
+pub struct Error<'gc>(Box<ErrorData<'gc>>);
+
+enum ErrorData<'gc> {
     /// A thrown error. This can be produced by an explicit 'throw'
     /// opcode, or by a native implementation that throws an exception.
     /// This can be caught by any catch blocks created by ActionScript code
@@ -25,31 +23,40 @@ pub enum Error<'gc> {
     RustError(Box<dyn std::error::Error>),
 }
 
-impl<'gc> Debug for Error<'gc> {
+impl<'gc> Error<'gc> {
+    pub fn avm_error(error: Value<'gc>) -> Self {
+        Error(Box::new(ErrorData::AvmError(error)))
+    }
+
+    pub fn rust_error(error: Box<dyn std::error::Error>) -> Self {
+        Error(Box::new(ErrorData::RustError(error)))
+    }
+
+    pub fn as_avm_error(&self) -> Option<Value<'gc>> {
+        match &*self.0 {
+            ErrorData::AvmError(value) => Some(*value),
+            _ => None,
+        }
+    }
+}
+
+impl Debug for Error<'_> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        if let Error::AvmError(error) = self {
+        if let ErrorData::AvmError(error) = &*self.0 {
             if let Some(error) = error.as_object().and_then(|obj| obj.as_error_object()) {
-                return write!(
-                    f,
-                    "{}",
-                    error.display_full().expect("Failed to display error")
-                );
+                return write!(f, "{}", error.display_full());
             }
         }
 
-        match self {
-            Error::AvmError(error) => write!(f, "AvmError({:?})", error),
-            Error::RustError(error) => write!(f, "RustError({:?})", error),
+        match &*self.0 {
+            ErrorData::AvmError(error) => write!(f, "AvmError({error:?})"),
+            ErrorData::RustError(error) => write!(f, "RustError({error:?})"),
         }
     }
 }
 
 // This type is used very frequently, so make sure it doesn't unexpectedly grow.
-#[cfg(target_family = "wasm")]
-const _: () = assert!(size_of::<Result<Value<'_>, Error<'_>>>() == 24);
-
-#[cfg(target_pointer_width = "64")]
-const _: () = assert!(size_of::<Result<Value<'_>, Error<'_>>>() == 32);
+const _: () = assert!(size_of::<Result<Value<'_>, Error<'_>>>() <= 16);
 
 #[inline(never)]
 #[cold]
@@ -67,11 +74,11 @@ pub fn make_null_or_undefined_error<'gc>(
         if let Some(name) = name {
             msg.push_str(&format!(
                 " (accessing field: {})",
-                name.to_qualified_name(activation.context.gc_context)
+                name.to_qualified_name(activation.gc())
             ));
         }
         match error_constructor(activation, class, &msg, 1009) {
-            Ok(err) => Error::AvmError(err),
+            Ok(err) => Error::avm_error(err),
             Err(err) => err,
         }
     }
@@ -80,10 +87,10 @@ pub fn make_null_or_undefined_error<'gc>(
 pub enum ReferenceErrorCode {
     AssignToMethod = 1037,
     InvalidWrite = 1056,
-    InvalidLookup = 1065,
     InvalidRead = 1069,
     WriteToReadOnly = 1074,
     ReadFromWriteOnly = 1077,
+    InvalidNsRead = 1081,
     InvalidDelete = 1120,
 }
 
@@ -93,17 +100,12 @@ pub fn make_reference_error<'gc>(
     activation: &mut Activation<'_, 'gc>,
     code: ReferenceErrorCode,
     multiname: &Multiname<'gc>,
-    object_class: Option<ClassObject<'gc>>,
+    object_class: Class<'gc>,
 ) -> Error<'gc> {
-    let qualified_name = multiname.as_uri(activation.context.gc_context);
+    let qualified_name = multiname.as_uri(activation.strings());
     let class_name = object_class
-        .map(|cls| {
-            cls.inner_class_definition()
-                .read()
-                .name()
-                .to_qualified_name_err_message(activation.context.gc_context)
-        })
-        .unwrap_or_else(|| AvmString::from("<UNKNOWN>"));
+        .name()
+        .to_qualified_name_err_message(activation.gc());
 
     let msg = match code {
         ReferenceErrorCode::AssignToMethod => format!(
@@ -112,7 +114,6 @@ pub fn make_reference_error<'gc>(
         ReferenceErrorCode::InvalidWrite => format!(
             "Error #1056: Cannot create property {qualified_name} on {class_name}.",
         ),
-        ReferenceErrorCode::InvalidLookup => format!("Error #1065: Variable {qualified_name} is not defined."),
         ReferenceErrorCode::InvalidRead => format!(
             "Error #1069: Property {qualified_name} not found on {class_name} and there is no default value.",
         ),
@@ -122,6 +123,9 @@ pub fn make_reference_error<'gc>(
         ReferenceErrorCode::ReadFromWriteOnly => format!(
             "Error #1077: Illegal read of write-only property {qualified_name} on {class_name}.",
         ),
+        ReferenceErrorCode::InvalidNsRead => format!(
+            "Error #1081: Property {qualified_name} not found on {class_name} and there is no default value.",
+        ),
         ReferenceErrorCode::InvalidDelete => format!(
             "Error #1120: Cannot delete property {qualified_name} on {class_name}.",
         ),
@@ -130,7 +134,7 @@ pub fn make_reference_error<'gc>(
     let class = activation.avm2().classes().referenceerror;
     let error = error_constructor(activation, class, &msg, code as u32);
     match error {
-        Ok(err) => Error::AvmError(err),
+        Ok(err) => Error::avm_error(err),
         Err(err) => err,
     }
 }
@@ -144,7 +148,7 @@ pub fn make_error_1002<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> 
         1002,
     );
     match err {
-        Ok(err) => Error::AvmError(err),
+        Ok(err) => Error::avm_error(err),
         Err(err) => err,
     }
 }
@@ -154,31 +158,21 @@ pub fn make_error_1002<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> 
 pub fn make_error_1003<'gc>(activation: &mut Activation<'_, 'gc>, radix: i32) -> Error<'gc> {
     let err = range_error(
         activation,
-        &format!(
-            "Error #1003: The radix argument must be between 2 and 36; got {}.",
-            radix
-        ),
+        &format!("Error #1003: The radix argument must be between 2 and 36; got {radix}."),
         1003,
     );
     match err {
-        Ok(err) => Error::AvmError(err),
+        Ok(err) => Error::avm_error(err),
         Err(err) => err,
     }
 }
 
 #[inline(never)]
 #[cold]
-pub fn make_error_1004<'gc>(activation: &mut Activation<'_, 'gc>, method_name: &str) -> Error<'gc> {
-    let err = type_error(
-        activation,
-        &format!(
-            "Error #1004: Method {} was invoked on an incompatible object.",
-            method_name
-        ),
-        1004,
-    );
+pub fn make_error_1006<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
+    let err = type_error(activation, "Error #1006: value is not a function.", 1006);
     match err {
-        Ok(err) => Error::AvmError(err),
+        Ok(err) => Error::avm_error(err),
         Err(err) => err,
     }
 }
@@ -193,13 +187,50 @@ pub fn make_error_1010<'gc>(
     if let Some(name) = name {
         msg.push_str(&format!(
             " (accessing field: {})",
-            name.to_qualified_name(activation.context.gc_context)
+            name.to_qualified_name(activation.gc())
         ));
     }
     let error = type_error(activation, &msg, 1010);
     match error {
-        Ok(e) => Error::AvmError(e),
+        Ok(e) => Error::avm_error(e),
         Err(e) => e,
+    }
+}
+
+pub enum Error1014Type {
+    ReferenceError,
+    VerifyError,
+}
+
+#[inline(never)]
+#[cold]
+pub fn make_error_1014<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    kind: Error1014Type,
+    class_name: AvmString<'gc>,
+) -> Error<'gc> {
+    let message = &format!("Error #1014: Class {class_name} could not be found.");
+    let err = match kind {
+        Error1014Type::ReferenceError => reference_error(activation, message, 1014),
+        Error1014Type::VerifyError => verify_error(activation, message, 1014),
+    };
+    match err {
+        Ok(err) => Error::avm_error(err),
+        Err(err) => err,
+    }
+}
+
+#[inline(never)]
+#[cold]
+pub fn make_error_1021<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
+    let err = verify_error(
+        activation,
+        "Error #1021: At least one branch target was not on a valid instruction in the method.",
+        1021,
+    );
+    match err {
+        Ok(err) => Error::avm_error(err),
+        Err(err) => err,
     }
 }
 
@@ -208,11 +239,11 @@ pub fn make_error_1010<'gc>(
 pub fn make_error_1025<'gc>(activation: &mut Activation<'_, 'gc>, index: u32) -> Error<'gc> {
     let err = verify_error(
         activation,
-        &format!("Error #1025: An invalid register {} was accessed.", index),
+        &format!("Error #1025: An invalid register {index} was accessed."),
         1025,
     );
     match err {
-        Ok(err) => Error::AvmError(err),
+        Ok(err) => Error::avm_error(err),
         Err(err) => err,
     }
 }
@@ -222,11 +253,49 @@ pub fn make_error_1025<'gc>(activation: &mut Activation<'_, 'gc>, index: u32) ->
 pub fn make_error_1032<'gc>(activation: &mut Activation<'_, 'gc>, index: u32) -> Error<'gc> {
     let err = verify_error(
         activation,
-        &format!("Error #1032: Cpool index {} is out of range.", index),
+        &format!("Error #1032: Cpool index {index} is out of range."),
         1032,
     );
     match err {
-        Ok(err) => Error::AvmError(err),
+        Ok(err) => Error::avm_error(err),
+        Err(err) => err,
+    }
+}
+
+#[inline(never)]
+#[cold]
+pub fn make_error_1033<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
+    let err = verify_error(activation, "Error #1033: Cpool entry is wrong type.", 1033);
+    match err {
+        Ok(err) => Error::avm_error(err),
+        Err(err) => err,
+    }
+}
+
+pub fn make_error_1052<'gc>(activation: &mut Activation<'_, 'gc>, func_name: &str) -> Error<'gc> {
+    let err = uri_error(
+        activation,
+        &format!("Error #1052: Invalid URI passed to {func_name} function."),
+        1052,
+    );
+    match err {
+        Ok(err) => Error::avm_error(err),
+        Err(err) => err,
+    }
+}
+
+pub fn make_error_1053<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    trait_name: AvmString<'gc>,
+    class_name: AvmString<'gc>,
+) -> Error<'gc> {
+    let err = verify_error(
+        activation,
+        &format!("Error #1053: Illegal override of {trait_name} in {class_name}."),
+        1053,
+    );
+    match err {
+        Ok(err) => Error::avm_error(err),
         Err(err) => err,
     }
 }
@@ -240,7 +309,68 @@ pub fn make_error_1054<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> 
         1054,
     );
     match err {
-        Ok(err) => Error::AvmError(err),
+        Ok(err) => Error::avm_error(err),
+        Err(err) => err,
+    }
+}
+
+#[inline(never)]
+#[cold]
+pub fn make_error_1065<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    name: &Multiname<'gc>,
+) -> Error<'gc> {
+    let qualified_name = name.as_uri(activation.strings());
+
+    let err = reference_error(
+        activation,
+        &format!("Error #1065: Variable {qualified_name} is not defined."),
+        1065,
+    );
+    match err {
+        Ok(err) => Error::avm_error(err),
+        Err(err) => err,
+    }
+}
+
+#[inline(never)]
+#[cold]
+pub fn make_error_1080<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
+    let err = type_error(
+        activation,
+        "Error #1080: Illegal value for namespace.",
+        1080,
+    );
+    match err {
+        Ok(err) => Error::avm_error(err),
+        Err(err) => err,
+    }
+}
+
+#[inline(never)]
+#[cold]
+pub fn make_error_1085<'gc>(activation: &mut Activation<'_, 'gc>, tag: &str) -> Error<'gc> {
+    let err = type_error(
+        activation,
+        &format!("Error #1085: The element type \"{tag}\" must be terminated by the matching end-tag \"</{tag}>\"."),
+        1085,
+    );
+    match err {
+        Ok(err) => Error::avm_error(err),
+        Err(err) => err,
+    }
+}
+
+#[inline(never)]
+#[cold]
+pub fn make_error_1086<'gc>(activation: &mut Activation<'_, 'gc>, method_name: &str) -> Error<'gc> {
+    let err = type_error(
+        activation,
+        &format!("Error #1086: The {method_name} method only works on lists containing one item."),
+        1086,
+    );
+    match err {
+        Ok(err) => Error::avm_error(err),
         Err(err) => err,
     }
 }
@@ -254,7 +384,7 @@ pub fn make_error_1087<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> 
         1087,
     );
     match err {
-        Ok(err) => Error::AvmError(err),
+        Ok(err) => Error::avm_error(err),
         Err(err) => err,
     }
 }
@@ -268,7 +398,24 @@ pub fn make_error_1089<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> 
         1089,
     );
     match err {
-        Ok(err) => Error::AvmError(err),
+        Ok(err) => Error::avm_error(err),
+        Err(err) => err,
+    }
+}
+
+#[inline(never)]
+#[cold]
+pub fn make_error_1098<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    prefix: &AvmString<'gc>,
+) -> Error<'gc> {
+    let err = type_error(
+        activation,
+        &format!("Error #1098: Illegal prefix {prefix} for no namespace."),
+        1098,
+    );
+    match err {
+        Ok(err) => Error::avm_error(err),
         Err(err) => err,
     }
 }
@@ -282,7 +429,7 @@ pub fn make_error_1107<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> 
         1107,
     );
     match err {
-        Ok(err) => Error::AvmError(err),
+        Ok(err) => Error::avm_error(err),
         Err(err) => err,
     }
 }
@@ -300,7 +447,7 @@ pub fn make_error_1117<'gc>(
     );
 
     match err {
-        Ok(err) => Error::AvmError(err),
+        Ok(err) => Error::avm_error(err),
         Err(err) => err,
     }
 }
@@ -314,7 +461,25 @@ pub fn make_error_1118<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> 
         1118,
     );
     match err {
-        Ok(err) => Error::AvmError(err),
+        Ok(err) => Error::avm_error(err),
+        Err(err) => err,
+    }
+}
+
+#[inline(never)]
+#[cold]
+pub fn make_error_1125<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    index: f64,
+    range: usize,
+) -> Error<'gc> {
+    let err = range_error(
+        activation,
+        &format!("Error #1125: The index {index} is out of range {range}."),
+        1125,
+    );
+    match err {
+        Ok(err) => Error::avm_error(err),
         Err(err) => err,
     }
 }
@@ -328,7 +493,17 @@ pub fn make_error_1127<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> 
         1127,
     );
     match err {
-        Ok(err) => Error::AvmError(err),
+        Ok(err) => Error::avm_error(err),
+        Err(err) => err,
+    }
+}
+
+#[inline(never)]
+#[cold]
+pub fn make_error_1132<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
+    let err = syntax_error(activation, "Error #1132: Invalid JSON parse input.", 1132);
+    match err {
+        Ok(err) => Error::avm_error(err),
         Err(err) => err,
     }
 }
@@ -342,7 +517,7 @@ pub fn make_error_1506<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> 
         1506,
     );
     match err {
-        Ok(err) => Error::AvmError(err),
+        Ok(err) => Error::avm_error(err),
         Err(err) => err,
     }
 }
@@ -352,14 +527,35 @@ pub fn make_error_1506<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> 
 pub fn make_error_1508<'gc>(activation: &mut Activation<'_, 'gc>, param_name: &str) -> Error<'gc> {
     let err = argument_error(
         activation,
-        &format!(
-            "Error #1508: The value specified for argument {} is invalid.",
-            param_name
-        ),
+        &format!("Error #1508: The value specified for argument {param_name} is invalid."),
         1508,
     );
     match err {
-        Ok(err) => Error::AvmError(err),
+        Ok(err) => Error::avm_error(err),
+        Err(err) => err,
+    }
+}
+
+pub enum Error2004Type {
+    Error,
+    ArgumentError,
+    TypeError,
+}
+
+#[inline(never)]
+#[cold]
+pub fn make_error_2004<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    kind: Error2004Type,
+) -> Error<'gc> {
+    let message = "Error #2004: One of the parameters is invalid.";
+    let err = match kind {
+        Error2004Type::Error => error(activation, message, 2004),
+        Error2004Type::ArgumentError => argument_error(activation, message, 2004),
+        Error2004Type::TypeError => type_error(activation, message, 2004),
+    };
+    match err {
+        Ok(err) => Error::avm_error(err),
         Err(err) => err,
     }
 }
@@ -373,7 +569,21 @@ pub fn make_error_2006<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> 
         2006,
     );
     match err {
-        Ok(err) => Error::AvmError(err),
+        Ok(err) => Error::avm_error(err),
+        Err(err) => err,
+    }
+}
+
+#[inline(never)]
+#[cold]
+pub fn make_error_2007<'gc>(activation: &mut Activation<'_, 'gc>, param_name: &str) -> Error<'gc> {
+    let err = type_error(
+        activation,
+        &format!("Error #2007: Parameter {param_name} must be non-null."),
+        2007,
+    );
+    match err {
+        Ok(err) => Error::avm_error(err),
         Err(err) => err,
     }
 }
@@ -383,42 +593,28 @@ pub fn make_error_2006<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> 
 pub fn make_error_2008<'gc>(activation: &mut Activation<'_, 'gc>, param_name: &str) -> Error<'gc> {
     let err = argument_error(
         activation,
-        &format!(
-            "Error #2008: Parameter {} must be one of the accepted values.",
-            param_name
-        ),
+        &format!("Error #2008: Parameter {param_name} must be one of the accepted values."),
         2008,
     );
     match err {
-        Ok(err) => Error::AvmError(err),
+        Ok(err) => Error::avm_error(err),
         Err(err) => err,
     }
 }
 
 #[inline(never)]
 #[cold]
-pub fn make_error_2037<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
-    let err = error(
-        activation,
-        "Error #2037: Functions called in incorrect sequence, or earlier call was unsuccessful.",
-        2037,
-    );
-    match err {
-        Ok(err) => Error::AvmError(err),
-        Err(err) => err,
-    }
-}
-
-#[inline(never)]
-#[cold]
-pub fn make_error_2097<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
+pub fn make_error_2012<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    class_name: impl Display,
+) -> Error<'gc> {
     let err = argument_error(
         activation,
-        "Error #2097: The FileFilter Array is not in the correct format.",
-        2097,
+        &format!("Error #2012: {class_name} class cannot be instantiated."),
+        2012,
     );
     match err {
-        Ok(err) => Error::AvmError(err),
+        Ok(err) => Error::avm_error(err),
         Err(err) => err,
     }
 }
@@ -432,7 +628,77 @@ pub fn make_error_2025<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> 
         2025,
     );
     match err {
-        Ok(err) => Error::AvmError(err),
+        Ok(err) => Error::avm_error(err),
+        Err(err) => err,
+    }
+}
+
+#[inline(never)]
+#[cold]
+pub fn make_error_2027<'gc>(activation: &mut Activation<'_, 'gc>, value: i32) -> Error<'gc> {
+    let err = range_error(
+        activation,
+        &format!("Error #2027: Parameter tabIndex must be a non-negative number; got {value}."),
+        2027,
+    );
+    match err {
+        Ok(err) => Error::avm_error(err),
+        Err(err) => err,
+    }
+}
+
+#[inline(never)]
+#[cold]
+pub fn make_error_2030<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
+    let err = error(
+        activation,
+        "Error #2030: End of file was encountered.",
+        2030,
+    );
+    match err {
+        Ok(err) => Error::avm_error(err),
+        Err(err) => err,
+    }
+}
+
+#[inline(never)]
+#[cold]
+pub fn make_error_2037<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
+    let err = error(
+        activation,
+        "Error #2037: Functions called in incorrect sequence, or earlier call was unsuccessful.",
+        2037,
+    );
+    match err {
+        Ok(err) => Error::avm_error(err),
+        Err(err) => err,
+    }
+}
+
+#[inline(never)]
+#[cold]
+pub fn make_error_2085<'gc>(activation: &mut Activation<'_, 'gc>, param_name: &str) -> Error<'gc> {
+    let err = argument_error(
+        activation,
+        &format!("Error #2085: Parameter {param_name} must be non-empty string."),
+        2007,
+    );
+    match err {
+        Ok(err) => Error::avm_error(err),
+        Err(err) => err,
+    }
+}
+
+#[inline(never)]
+#[cold]
+pub fn make_error_2097<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
+    let err = argument_error(
+        activation,
+        "Error #2097: The FileFilter Array is not in the correct format.",
+        2097,
+    );
+    match err {
+        Ok(err) => Error::avm_error(err),
         Err(err) => err,
     }
 }
@@ -446,7 +712,35 @@ pub fn make_error_2126<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> 
         2126,
     );
     match err {
-        Ok(err) => Error::AvmError(err),
+        Ok(err) => Error::avm_error(err),
+        Err(err) => err,
+    }
+}
+
+#[inline(never)]
+#[cold]
+pub fn make_error_2136<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
+    let err = error(
+        activation,
+        "Error #2136: The SWF file contains invalid data.",
+        2136,
+    );
+    match err {
+        Ok(err) => Error::avm_error(err),
+        Err(err) => err,
+    }
+}
+
+#[inline(never)]
+#[cold]
+pub fn make_error_2162<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
+    let err = argument_error(
+        activation,
+        "Error #2162: The Shader output type is not compatible for this operation.",
+        2162,
+    );
+    match err {
+        Ok(err) => Error::avm_error(err),
         Err(err) => err,
     }
 }
@@ -599,8 +893,8 @@ pub fn error<'gc>(
 pub fn make_mismatch_error<'gc>(
     activation: &mut Activation<'_, 'gc>,
     method: Method<'gc>,
-    user_arguments: &[Value<'gc>],
-    callee: Option<Object<'gc>>,
+    passed_arg_count: usize,
+    bound_class: Option<Class<'gc>>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let expected_num_params = method
         .signature()
@@ -609,24 +903,13 @@ pub fn make_mismatch_error<'gc>(
         .count();
 
     let mut function_name = WString::new();
-    let bound_superclass = callee.and_then(|callee| {
-        if let Some(cls) = callee.as_class_object() {
-            Some(cls)
-        } else {
-            callee
-                .as_function_object()
-                .and_then(|f| f.as_executable().and_then(|e| e.bound_superclass()))
-        }
-    });
 
-    display_function(&mut function_name, &method, bound_superclass);
+    display_function(&mut function_name, method, bound_class);
 
-    return Err(Error::AvmError(argument_error(
+    return Err(Error::avm_error(argument_error(
         activation,
         &format!(
-            "Error #1063: Argument count mismatch on {function_name}. Expected {}, got {}.",
-            expected_num_params,
-            user_arguments.len(),
+            "Error #1063: Argument count mismatch on {function_name}. Expected {expected_num_params}, got {passed_arg_count}.",
         ),
         1063,
     )?));
@@ -638,13 +921,12 @@ fn error_constructor<'gc>(
     message: &str,
     code: u32,
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let message = AvmString::new_utf8(activation.context.gc_context, message);
-    Ok(class
-        .construct(activation, &[message.into(), code.into()])?
-        .into())
+    let message = AvmString::new_utf8(activation.gc(), message);
+
+    class.construct(activation, &[message.into(), code.into()])
 }
 
-impl<'gc> std::fmt::Display for Error<'gc> {
+impl std::fmt::Display for Error<'_> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{self:?}")
     }
@@ -657,18 +939,18 @@ impl<'gc> std::fmt::Display for Error<'gc> {
 
 impl<'gc, 'a> From<&'a str> for Error<'gc> {
     fn from(val: &'a str) -> Error<'gc> {
-        Error::RustError(val.into())
+        Error::rust_error(val.into())
     }
 }
 
 impl<'gc> From<String> for Error<'gc> {
     fn from(val: String) -> Error<'gc> {
-        Error::RustError(val.into())
+        Error::rust_error(val.into())
     }
 }
 
 impl<'gc> From<ruffle_render::error::Error> for Error<'gc> {
     fn from(val: ruffle_render::error::Error) -> Error<'gc> {
-        Error::RustError(val.into())
+        Error::rust_error(val.into())
     }
 }

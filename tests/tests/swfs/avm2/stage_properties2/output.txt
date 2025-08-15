@@ -1,0 +1,8 @@
+===== height
+0
+Error: Error: Error #2071: The Stage class does not implement this property or method.
+===== width
+0
+Error: Error: Error #2071: The Stage class does not implement this property or method.
+===== textSnapshot
+Error: Error: Error #2071: The Stage class does not implement this property or method.

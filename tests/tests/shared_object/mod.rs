@@ -36,7 +36,7 @@ pub fn shared_object_avm1(environment: &impl Environment) -> Result<(), libtest_
     // Save the storage backend for next run.
     {
         let mut player = runner.player().lock().unwrap();
-        std::mem::swap(player.storage_mut(), &mut memory_storage_backend);
+        player.swap_storage(&mut memory_storage_backend);
     }
 
     // Verify that the flash cookie matches the expected one
@@ -63,7 +63,7 @@ pub fn shared_object_avm1(environment: &impl Environment) -> Result<(), libtest_
     {
         // Swap in the previous storage backend.
         let mut player = runner.player().lock().unwrap();
-        std::mem::swap(player.storage_mut(), &mut memory_storage_backend);
+        player.swap_storage(&mut memory_storage_backend);
     }
 
     loop {
@@ -110,7 +110,7 @@ pub fn shared_object_self_ref_avm1(
     {
         // Save the storage backend for next run.
         let mut player = runner.player().lock().unwrap();
-        std::mem::swap(player.storage_mut(), &mut memory_storage_backend);
+        player.swap_storage(&mut memory_storage_backend);
     }
 
     // Verify that the flash cookie matches the expected one
@@ -136,7 +136,7 @@ pub fn shared_object_self_ref_avm1(
     {
         // Swap in the previous storage backend.
         let mut player = runner.player().lock().unwrap();
-        std::mem::swap(player.storage_mut(), &mut memory_storage_backend);
+        player.swap_storage(&mut memory_storage_backend);
     }
 
     loop {
@@ -181,7 +181,7 @@ pub fn shared_object_avm2(environment: &impl Environment) -> Result<(), libtest_
     {
         // Save the storage backend for next run.
         let mut player = runner.player().lock().unwrap();
-        std::mem::swap(player.storage_mut(), &mut memory_storage_backend);
+        player.swap_storage(&mut memory_storage_backend);
     }
 
     // Verify that the flash cookie matches the expected one
@@ -207,7 +207,7 @@ pub fn shared_object_avm2(environment: &impl Environment) -> Result<(), libtest_
     {
         // Swap in the previous storage backend.
         let mut player = runner.player().lock().unwrap();
-        std::mem::swap(player.storage_mut(), &mut memory_storage_backend);
+        player.swap_storage(&mut memory_storage_backend);
     }
 
     loop {

@@ -28,7 +28,7 @@ impl MovieListWindow {
 
         Window::new("Known Movie List")
             .open(&mut keep_open)
-            .scroll2([true, true])
+            .scroll([true, true])
             .show(egui_ctx, |ui| {
                 let movies = context.library.known_movies();
 
@@ -81,7 +81,7 @@ impl MovieWindow {
         Window::new(movie_name(&movie))
             .id(Id::new(Arc::as_ptr(&movie)))
             .open(&mut keep_open)
-            .scroll2([true, true])
+            .scroll([true, true])
             .show(egui_ctx, |ui| {
                 ui.horizontal(|ui| {
                     ui.selectable_value(&mut self.open_panel, Panel::Information, "Information");
@@ -125,15 +125,15 @@ impl MovieWindow {
                 sorted_keys.sort();
 
                 for id in sorted_keys {
-                    let character = characters
+                    let character = *characters
                         .get(&id)
                         .expect("Value must exist as we're iterating known keys");
 
                     let name = export_characters
                         .iter()
                         .find_map(|(k, v)| if *v == id { Some(k) } else { None })
-                        .unwrap_or_default()
-                        .to_string();
+                        .map(|s| s.to_string())
+                        .unwrap_or_default();
 
                     let search = self.character_search.to_ascii_lowercase();
                     if !id.to_string().to_ascii_lowercase().contains(&search)
@@ -229,7 +229,7 @@ impl MovieWindow {
 
         if !movie.parameters().is_empty() {
             CollapsingHeader::new("Parameters")
-                .id_source(ui.id().with("parameters"))
+                .id_salt(ui.id().with("parameters"))
                 .default_open(false)
                 .show(ui, |ui| {
                     Grid::new(ui.id().with("parameters"))
@@ -256,12 +256,12 @@ pub fn open_movie_button(ui: &mut Ui, movie: &Arc<SwfMovie>, messages: &mut Vec<
     }
 }
 
-pub fn open_character_button(ui: &mut Ui, character: &Character) {
+pub fn open_character_button(ui: &mut Ui, character: Character) {
     let name = match character {
         Character::EditText(_) => "EditText",
         Character::Graphic(_) => "Graphic",
         Character::MovieClip(_) => "MovieClip",
-        Character::Bitmap(_) => "Bitmap",
+        Character::Bitmap { .. } => "Bitmap",
         Character::Avm1Button(_) => "Avm1Button",
         Character::Avm2Button(_) => "Avm2Button",
         Character::Font(_) => "Font",
@@ -277,7 +277,7 @@ pub fn open_character_button(ui: &mut Ui, character: &Character) {
 fn save_swf(movie: &Arc<SwfMovie>, messages: &mut Vec<Message>) {
     let suggested_name = if let Ok(url) = Url::parse(movie.url()) {
         url.path_segments()
-            .and_then(|segments| segments.last())
+            .and_then(|mut segments| segments.next_back())
             .map(|str| str.to_string())
     } else {
         None

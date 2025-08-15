@@ -1,0 +1,21 @@
+[
+  {
+    "id": 1,
+    "priority": 1,
+    "condition": {
+      "initiatorDomains": ["4399.com"],
+      "urlFilter": "|*.swf",
+      "resourceTypes": ["xmlhttprequest"]
+    },
+    "action": {
+      "type": "modifyHeaders",
+      "responseHeaders": [
+        {
+          "header": "Access-Control-Allow-Origin",
+          "operation": "set",
+          "value": "https://www.4399.com"
+        }
+      ]
+    }
+  }
+]

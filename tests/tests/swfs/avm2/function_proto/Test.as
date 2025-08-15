@@ -17,3 +17,4 @@ trace(f())
 var p = Function.prototype;
 trace(p());
 trace(Function.prototype.call.call());
+trace(uint.prototype.toString.prototype);

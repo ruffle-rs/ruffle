@@ -4,13 +4,9 @@
         "lib": ["es2021"],
         "module": "es2022",
         "moduleResolution": "node",
-        "target": "es2017",
+        "target": "es2021",
         "resolveJsonModule": true,
         "maxNodeModuleJsDepth": 0,
-
-        // Disable some checks for `sign-addon`.
-        "noUnusedLocals": false,
-        "noUncheckedIndexedAccess": false,
     },
-    "include": ["webpack.config.js", "tools/**/*", "../../node_modules/sign-addon/**/*"],
+    "include": ["webpack.config.js", "tools/**/*"],
 }

@@ -1,6 +1,5 @@
 //! `flash.display` namespace
 
-pub mod avm1movie;
 pub mod bitmap;
 pub mod bitmap_data;
 pub mod display_object;
@@ -9,7 +8,6 @@ pub mod graphics;
 pub mod interactive_object;
 pub mod loader;
 pub mod loader_info;
-pub mod morph_shape;
 pub mod movie_clip;
 pub mod shader_data;
 pub mod shader_job;

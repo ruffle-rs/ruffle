@@ -1,9 +1,13 @@
 package flash.display {
     public final dynamic class ShaderParameter {
+        [Ruffle(NativeAccessible)]
+        private var _index:int;
 
-        internal var _index:int;
-        internal var _type:String;
-        internal var _value:Array;
+        [Ruffle(NativeAccessible)]
+        private var _type:String;
+
+        [Ruffle(NativeAccessible)]
+        private var _value:Array;
 
         public function get index():int {
             return this._index;
@@ -12,11 +16,11 @@ package flash.display {
             return this._type;
         }
         public function get value():Array {
-            return this._value.concat();
+            return this._value;
         }
         public function set value(value:Array):void {
-            // FIXME - perform validation
-            this._value = value.concat();
+            // FIXME - Is there some validation here?
+            this._value = value;
         }
     }
 }

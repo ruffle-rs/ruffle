@@ -1,9 +1,9 @@
 //! Container mix-in for display objects
 
-use crate::avm1::{Activation, ActivationIdentifier, TObject};
+use crate::avm1::{Activation, ActivationIdentifier};
 use crate::avm2::{
     Activation as Avm2Activation, Avm2, EventObject as Avm2EventObject, Multiname as Avm2Multiname,
-    TObject as _, Value as Avm2Value,
+    Value as Avm2Value,
 };
 use crate::context::{RenderContext, UpdateContext};
 use crate::display_object::avm1_button::Avm1Button;
@@ -11,10 +11,11 @@ use crate::display_object::loader_display::LoaderDisplay;
 use crate::display_object::movie_clip::MovieClip;
 use crate::display_object::stage::Stage;
 use crate::display_object::{Depth, DisplayObject, TDisplayObject, TInteractiveObject};
+use crate::focus_tracker::TabOrder;
 use crate::string::WStr;
 use crate::tag_utils::SwfMovie;
 use gc_arena::{Collect, Mutation};
-use ruffle_macros::enum_trait_object;
+use ruffle_macros::{enum_trait_object, istr};
 use ruffle_render::commands::CommandHandler;
 use std::cell::{Ref, RefMut};
 use std::cmp::Ordering;
@@ -22,13 +23,12 @@ use std::collections::BTreeMap;
 use std::fmt::Debug;
 use std::ops::{Bound, RangeBounds};
 use std::rc::Rc;
-use std::sync::Arc;
 
 /// Dispatch the `removedFromStage` event on a child and all of it's
 /// grandchildren, recursively.
 pub fn dispatch_removed_from_stage_event<'gc>(
     child: DisplayObject<'gc>,
-    context: &mut UpdateContext<'_, 'gc>,
+    context: &mut UpdateContext<'gc>,
 ) {
     if let Avm2Value::Object(object) = child.object2() {
         let removed_evt = Avm2EventObject::bare_default_event(context, "removedFromStage");
@@ -44,10 +44,7 @@ pub fn dispatch_removed_from_stage_event<'gc>(
 
 /// Dispatch the `removed` event on a child and log any errors encountered
 /// whilst doing so.
-pub fn dispatch_removed_event<'gc>(
-    child: DisplayObject<'gc>,
-    context: &mut UpdateContext<'_, 'gc>,
-) {
+pub fn dispatch_removed_event<'gc>(child: DisplayObject<'gc>, context: &mut UpdateContext<'gc>) {
     if let Avm2Value::Object(object) = child.object2() {
         let removed_evt = Avm2EventObject::bare_event(context, "removed", true, false);
         Avm2::dispatch_event(context, removed_evt, object);
@@ -61,7 +58,7 @@ pub fn dispatch_removed_event<'gc>(
 /// Dispatch the `addedToStage` event on a child, ignoring it's grandchildren.
 pub fn dispatch_added_to_stage_event_only<'gc>(
     child: DisplayObject<'gc>,
-    context: &mut UpdateContext<'_, 'gc>,
+    context: &mut UpdateContext<'gc>,
 ) {
     if let Avm2Value::Object(object) = child.object2() {
         let added_evt = Avm2EventObject::bare_default_event(context, "addedToStage");
@@ -73,7 +70,7 @@ pub fn dispatch_added_to_stage_event_only<'gc>(
 /// recursively.
 pub fn dispatch_added_to_stage_event<'gc>(
     child: DisplayObject<'gc>,
-    context: &mut UpdateContext<'_, 'gc>,
+    context: &mut UpdateContext<'gc>,
 ) {
     dispatch_added_to_stage_event_only(child, context);
 
@@ -82,14 +79,16 @@ pub fn dispatch_added_to_stage_event<'gc>(
             dispatch_added_to_stage_event(grandchild, context)
         }
     }
+    if let Some(button) = child.as_avm2_button() {
+        if let Some(child) = button.get_state_child(button.state().into()) {
+            dispatch_added_to_stage_event(child, context);
+        }
+    }
 }
 
 /// Dispatch an `added` event to one object, and log any errors encountered
 /// whilst doing so.
-pub fn dispatch_added_event_only<'gc>(
-    child: DisplayObject<'gc>,
-    context: &mut UpdateContext<'_, 'gc>,
-) {
+pub fn dispatch_added_event_only<'gc>(child: DisplayObject<'gc>, context: &mut UpdateContext<'gc>) {
     if let Avm2Value::Object(object) = child.object2() {
         let added_evt = Avm2EventObject::bare_event(context, "added", true, false);
         Avm2::dispatch_event(context, added_evt, object);
@@ -106,7 +105,7 @@ pub fn dispatch_added_event<'gc>(
     parent: DisplayObject<'gc>,
     child: DisplayObject<'gc>,
     child_was_on_stage: bool,
-    context: &mut UpdateContext<'_, 'gc>,
+    context: &mut UpdateContext<'gc>,
 ) {
     dispatch_added_event_only(child, context);
 
@@ -126,7 +125,13 @@ pub fn dispatch_added_event<'gc>(
     }
 )]
 pub trait TDisplayObjectContainer<'gc>:
-    'gc + Clone + Copy + Collect + Debug + Into<DisplayObjectContainer<'gc>> + Into<DisplayObject<'gc>>
+    'gc
+    + Clone
+    + Copy
+    + Collect<'gc>
+    + Debug
+    + Into<DisplayObjectContainer<'gc>>
+    + Into<DisplayObject<'gc>>
 {
     /// Get read-only access to the raw container.
     fn raw_container(&self) -> Ref<'_, ChildContainer<'gc>>;
@@ -134,23 +139,31 @@ pub trait TDisplayObjectContainer<'gc>:
     /// Get mutable access to the raw container.
     fn raw_container_mut(&self, gc_context: &Mutation<'gc>) -> RefMut<'_, ChildContainer<'gc>>;
 
-    /// Get a child display object by it's position in the render list.
+    /// Get a child display object by its position in the render list.
     ///
     /// The `index` provided here should not be confused with the `Depth`s used
     /// to index the depth list.
+    #[no_dynamic]
     fn child_by_index(self, index: usize) -> Option<DisplayObject<'gc>> {
         self.raw_container().get_id(index)
     }
 
-    /// Get a child display object by it's position in the depth list.
+    /// Get a child display object by its position in the depth list.
     ///
     /// The `Depth` provided here should not be confused with the `index`s used
     /// to index the render list.
+    #[no_dynamic]
     fn child_by_depth(self, depth: Depth) -> Option<DisplayObject<'gc>> {
         self.raw_container().get_depth(depth)
     }
 
-    /// Get a child display object by it's instance/timeline name.
+    /// Checks if there's a child at a given depth.
+    #[no_dynamic]
+    fn has_child_at_depth(self, depth: Depth) -> bool {
+        self.raw_container().has_depth(depth)
+    }
+
+    /// Get a child display object by its instance/timeline name.
     ///
     /// The `case_sensitive` parameter determines if we should consider
     /// children with different capitalizations as being distinct names.
@@ -158,16 +171,19 @@ pub trait TDisplayObjectContainer<'gc>:
     /// If multiple children with the same name exist, the one with the lowest
     /// depth wins. Children not on the depth list will not be accessible via
     /// this mechanism.
+    #[no_dynamic]
     fn child_by_name(self, name: &WStr, case_sensitive: bool) -> Option<DisplayObject<'gc>> {
         self.raw_container().get_name(name, case_sensitive)
     }
 
     /// Returns the number of children on the render list.
+    #[no_dynamic]
     fn num_children(self) -> usize {
         self.raw_container().num_children()
     }
 
     /// Returns the highest depth among children.
+    #[no_dynamic]
     fn highest_depth(self) -> Depth {
         self.raw_container().highest_depth()
     }
@@ -187,29 +203,30 @@ pub trait TDisplayObjectContainer<'gc>:
     ///
     /// Note: this method specifically does *not* dispatch events on any
     /// children it modifies. You must do this yourself.
+    #[no_dynamic]
     fn replace_at_depth(
         self,
-        context: &mut UpdateContext<'_, 'gc>,
+        context: &mut UpdateContext<'gc>,
         child: DisplayObject<'gc>,
         depth: Depth,
     ) -> Option<DisplayObject<'gc>> {
         let removed_child = self
-            .raw_container_mut(context.gc_context)
+            .raw_container_mut(context.gc())
             .replace_at_depth(child, depth);
 
         child.set_parent(context, Some(self.into()));
-        child.set_place_frame(context.gc_context, 0);
-        child.set_depth(context.gc_context, depth);
+        child.set_place_frame(0);
+        child.set_depth(depth);
 
         if let Some(removed_child) = removed_child {
-            if !self.raw_container().movie().is_action_script_3() {
+            if !self.raw_container().is_action_script_3() {
                 removed_child.avm1_unload(context);
             }
             removed_child.set_parent(context, None);
         }
 
         let this: DisplayObject<'_> = self.into();
-        this.invalidate_cached_bitmap(context.gc_context);
+        this.invalidate_cached_bitmap();
 
         removed_child
     }
@@ -221,9 +238,10 @@ pub trait TDisplayObjectContainer<'gc>:
     /// also be swapped. If no child has been displaced by the swap operation,
     /// then the render list position of the child will be determined in the same
     /// way as `replace_at_depth`.
+    #[no_dynamic]
     fn swap_at_depth(
         &mut self,
-        context: &mut UpdateContext<'_, 'gc>,
+        context: &mut UpdateContext<'gc>,
         child: DisplayObject<'gc>,
         depth: Depth,
     ) {
@@ -233,10 +251,10 @@ pub trait TDisplayObjectContainer<'gc>:
         // are allowed to be used in ways that would trip this assert).
         debug_assert!(DisplayObject::ptr_eq(child.parent().unwrap(), this));
 
-        self.raw_container_mut(context.gc_context)
+        self.raw_container_mut(context.gc())
             .swap_at_depth(context, this, child, depth);
 
-        this.invalidate_cached_bitmap(context.gc_context);
+        this.invalidate_cached_bitmap();
     }
 
     /// Insert a child display object into the container at a specific position
@@ -245,9 +263,10 @@ pub trait TDisplayObjectContainer<'gc>:
     /// Callers of this method should be aware that reordering items onto or off of the
     /// render list can make further depth list manipulations (e.g. from the
     /// timeline) produce unusual results.
+    #[no_dynamic]
     fn insert_at_index(
         &mut self,
-        context: &mut UpdateContext<'_, 'gc>,
+        context: &mut UpdateContext<'gc>,
         child: DisplayObject<'gc>,
         index: usize,
     ) {
@@ -268,41 +287,38 @@ pub trait TDisplayObjectContainer<'gc>:
 
         let child_was_on_stage = child.is_on_stage(context);
 
-        child.set_place_frame(context.gc_context, 0);
+        child.set_place_frame(0);
         child.set_parent(context, Some(this));
-        if !self.raw_container().movie().is_action_script_3() {
-            child.set_avm1_removed(context.gc_context, false);
+        if !self.raw_container().is_action_script_3() {
+            child.set_avm1_removed(false);
         }
 
-        self.raw_container_mut(context.gc_context)
+        self.raw_container_mut(context.gc())
             .insert_at_id(child, index);
 
         if parent_changed {
             dispatch_added_event(this, child, child_was_on_stage, context);
         }
 
-        this.invalidate_cached_bitmap(context.gc_context);
+        this.invalidate_cached_bitmap();
     }
 
     /// Swap two children in the render list.
     ///
     /// No changes to the depth or render lists are made by this function.
-    fn swap_at_index(
-        &mut self,
-        context: &mut UpdateContext<'_, 'gc>,
-        index1: usize,
-        index2: usize,
-    ) {
-        self.raw_container_mut(context.gc_context)
+    #[no_dynamic]
+    fn swap_at_index(&mut self, context: &mut UpdateContext<'gc>, index1: usize, index2: usize) {
+        self.raw_container_mut(context.gc())
             .swap_at_id(index1, index2);
         let this: DisplayObject<'_> = (*self).into();
-        this.invalidate_cached_bitmap(context.gc_context);
+        this.invalidate_cached_bitmap();
     }
 
     /// Remove (and unloads) a child display object from this container's render and depth lists.
     ///
     /// Will also handle AVM1 delayed clip removal, when a unload listener is present
-    fn remove_child(&mut self, context: &mut UpdateContext<'_, 'gc>, child: DisplayObject<'gc>) {
+    #[no_dynamic]
+    fn remove_child(&mut self, context: &mut UpdateContext<'gc>, child: DisplayObject<'gc>) {
         let this: DisplayObject<'_> = (*self).into();
 
         // We should always be the parent of this child
@@ -312,10 +328,10 @@ pub trait TDisplayObjectContainer<'gc>:
         ));
 
         // Check if this child should have delayed removal (AVM1 only)
-        if !self.raw_container().movie().is_action_script_3() {
+        if !self.raw_container().is_action_script_3() {
             let should_delay_removal = {
                 let mut activation = Activation::from_nothing(
-                    context.reborrow(),
+                    context,
                     ActivationIdentifier::root("[Unload Handler Check]"),
                     this.avm1_root(),
                 );
@@ -324,7 +340,7 @@ pub trait TDisplayObjectContainer<'gc>:
             };
 
             if should_delay_removal {
-                let mut raw_container = self.raw_container_mut(context.gc_context);
+                let mut raw_container = self.raw_container_mut(context.gc());
 
                 // Remove the child from the depth list, before moving it to a negative depth
                 raw_container.remove_child_from_depth_list(child);
@@ -339,7 +355,7 @@ pub trait TDisplayObjectContainer<'gc>:
                 raw_container.insert_child_into_depth_list(child.depth(), child);
 
                 drop(raw_container);
-                this.invalidate_cached_bitmap(context.gc_context);
+                this.invalidate_cached_bitmap();
 
                 return;
             }
@@ -349,14 +365,11 @@ pub trait TDisplayObjectContainer<'gc>:
     }
 
     /// Remove (and unloads) a child display object from this container's render and depth lists.
-    fn remove_child_directly(
-        &self,
-        context: &mut UpdateContext<'_, 'gc>,
-        child: DisplayObject<'gc>,
-    ) {
+    #[no_dynamic]
+    fn remove_child_directly(&self, context: &mut UpdateContext<'gc>, child: DisplayObject<'gc>) {
         dispatch_removed_event(child, context);
-        let this: DisplayObjectContainer<'gc> = (*self).into();
-        let mut write = self.raw_container_mut(context.gc_context);
+        let this: DisplayObjectContainer<'gc> = *self;
+        let mut write = self.raw_container_mut(context.gc());
         write.remove_child_from_depth_list(child);
         drop(write);
 
@@ -364,7 +377,7 @@ pub trait TDisplayObjectContainer<'gc>:
             ChildContainer::remove_child_from_render_list(this, child, context);
 
         if removed_from_render_list {
-            if !self.raw_container().movie.is_action_script_3() {
+            if !self.raw_container().is_action_script_3() {
                 child.avm1_unload(context);
             } else if !matches!(child.object2(), Avm2Value::Null) {
                 //TODO: This is an awful, *awful* hack to deal with the fact
@@ -374,31 +387,33 @@ pub trait TDisplayObjectContainer<'gc>:
             }
 
             let this: DisplayObject<'_> = (*self).into();
-            this.invalidate_cached_bitmap(context.gc_context);
+            this.invalidate_cached_bitmap();
         }
     }
 
     /// Insert a child directly into this container's depth list.
+    #[no_dynamic]
     fn insert_child_into_depth_list(
         &mut self,
-        context: &mut UpdateContext<'_, 'gc>,
+        context: &mut UpdateContext<'gc>,
         depth: Depth,
         child: DisplayObject<'gc>,
     ) {
         let this: DisplayObject<'_> = (*self).into();
 
-        child.set_depth(context.gc_context, depth);
+        child.set_depth(depth);
         child.set_parent(context, Some(this));
-        self.raw_container_mut(context.gc_context)
+        self.raw_container_mut(context.gc())
             .insert_child_into_depth_list(depth, child);
 
-        this.invalidate_cached_bitmap(context.gc_context);
+        this.invalidate_cached_bitmap();
     }
 
     /// Removes (without unloading) a child display object from this container's depth list.
+    #[no_dynamic]
     fn remove_child_from_depth_list(
         &mut self,
-        context: &mut UpdateContext<'_, 'gc>,
+        context: &mut UpdateContext<'gc>,
         child: DisplayObject<'gc>,
     ) {
         debug_assert!(DisplayObject::ptr_eq(
@@ -406,16 +421,17 @@ pub trait TDisplayObjectContainer<'gc>:
             (*self).into()
         ));
 
-        self.raw_container_mut(context.gc_context)
+        self.raw_container_mut(context.gc())
             .remove_child_from_depth_list(child);
 
         let this: DisplayObject<'_> = (*self).into();
-        this.invalidate_cached_bitmap(context.gc_context);
+        this.invalidate_cached_bitmap();
     }
 
     /// Remove a set of children identified by their render list indices from
     /// this container's render and depth lists.
-    fn remove_range<R>(&mut self, context: &mut UpdateContext<'_, 'gc>, range: R)
+    #[no_dynamic]
+    fn remove_range<R>(&mut self, context: &mut UpdateContext<'gc>, range: R)
     where
         R: RangeBounds<usize>,
     {
@@ -431,33 +447,34 @@ pub trait TDisplayObjectContainer<'gc>:
             dispatch_removed_event(*removed, context);
         }
 
-        let mut write = self.raw_container_mut(context.gc_context);
+        let mut write = self.raw_container_mut(context.gc());
 
         for removed in removed_list {
             // The `remove_range` method is only ever called as a result of an ActionScript
             // call
-            removed.set_placed_by_script(context.gc_context, true);
+            removed.set_placed_by_script(true);
             write.remove_child_from_depth_list(removed);
             drop(write);
 
-            let this: DisplayObjectContainer<'gc> = (*self).into();
+            let this: DisplayObjectContainer<'gc> = *self;
             ChildContainer::remove_child_from_render_list(this, removed, context);
 
-            if !self.raw_container().movie.is_action_script_3() {
+            if !self.raw_container().is_action_script_3() {
                 removed.avm1_unload(context);
             } else if !matches!(removed.object2(), Avm2Value::Null) {
                 removed.set_parent(context, None);
             }
 
-            write = self.raw_container_mut(context.gc_context);
+            write = self.raw_container_mut(context.gc());
         }
 
         drop(write);
         let this: DisplayObject<'_> = (*self).into();
-        this.invalidate_cached_bitmap(context.gc_context);
+        this.invalidate_cached_bitmap();
     }
 
     /// Determine if the container is empty.
+    #[no_dynamic]
     fn is_empty(self) -> bool {
         self.raw_container().is_empty()
     }
@@ -471,11 +488,70 @@ pub trait TDisplayObjectContainer<'gc>:
     ///
     /// The iterator's concrete type is stated here due to Rust language
     /// limitations.
+    #[no_dynamic]
     fn iter_render_list(self) -> RenderIter<'gc> {
-        RenderIter::from_container(self.into())
+        RenderIter::from_container(self)
+    }
+
+    fn is_tab_children_avm1(self, _context: &mut UpdateContext<'gc>) -> bool {
+        true
+    }
+
+    /// The property `tabChildren` allows changing the behavior of
+    /// tab ordering hierarchically.
+    /// When set to `false`, it excludes the whole subtree represented by
+    /// the container from tab ordering.
+    ///
+    /// _NOTE:_
+    /// According to the AS2 documentation, it should affect only automatic tab ordering.
+    /// However, that does not seem to be the case, as it also affects custom ordering.
+    #[no_dynamic]
+    fn is_tab_children(&self, context: &mut UpdateContext<'gc>) -> bool {
+        let container = self.raw_container();
+        if container.is_action_script_3() {
+            container.tab_children
+        } else {
+            self.is_tab_children_avm1(context)
+        }
+    }
+
+    #[no_dynamic]
+    fn set_tab_children(&self, context: &mut UpdateContext<'gc>, value: bool) {
+        let this: DisplayObject<'_> = (*self).into();
+        if self.raw_container().is_action_script_3() {
+            self.raw_container_mut(context.gc()).tab_children = value;
+        } else {
+            this.set_avm1_property(istr!(context, "tabChildren"), value.into(), context);
+        }
+    }
+
+    #[no_dynamic]
+    fn fill_tab_order(&self, tab_order: &mut TabOrder<'gc>, context: &mut UpdateContext<'gc>) {
+        if !self.is_tab_children(context) {
+            // AS3 docs say that objects with custom ordering (tabIndex set)
+            // are included even when tabChildren is false.
+            // Do not be fooled for that is untrue!
+            return;
+        }
+
+        for child in self.iter_render_list() {
+            if !child.visible() {
+                // Non-visible objects and their children are excluded from tab ordering.
+                continue;
+            }
+            if let Some(child) = child.as_interactive() {
+                if child.is_tabbable(context) {
+                    tab_order.add_object(child);
+                }
+            }
+            if let Some(container) = child.as_container() {
+                container.fill_tab_order(tab_order, context);
+            }
+        }
     }
 
     /// Renders the children of this container in render list order.
+    #[no_dynamic]
     fn render_children(self, context: &mut RenderContext<'_, 'gc>) {
         let mut clip_depth = 0;
         let mut clip_depth_stack: Vec<(Depth, DisplayObject<'_>)> = vec![];
@@ -519,9 +595,11 @@ pub trait TDisplayObjectContainer<'gc>:
     }
 
     #[cfg(not(feature = "avm_debug"))]
+    #[no_dynamic]
     fn recurse_render_tree(&self, _depth: usize) {}
 
     #[cfg(feature = "avm_debug")]
+    #[no_dynamic]
     fn recurse_render_tree(&self, depth: usize) {
         for child in self.iter_render_list() {
             child.display_render_tree(depth);
@@ -597,18 +675,22 @@ pub struct ChildContainer<'gc> {
 
     mouse_children: bool,
 
-    /// The movie this ChildContainer belongs to.
-    movie: Arc<SwfMovie>,
+    /// Specifies whether this container uses AVM1 or AVM2 semantics.
+    is_action_script_3: bool,
+
+    /// Specifies whether children are present in the tab ordering.
+    tab_children: bool,
 }
 
 impl<'gc> ChildContainer<'gc> {
-    pub fn new(movie: Arc<SwfMovie>) -> Self {
+    pub fn new(movie: &SwfMovie) -> Self {
         Self {
             render_list: Rc::new(Vec::new()),
             depth_list: BTreeMap::new(),
             has_pending_removals: false,
             mouse_children: true,
-            movie,
+            is_action_script_3: movie.is_action_script_3(),
+            tab_children: true,
         }
     }
 
@@ -650,9 +732,9 @@ impl<'gc> ChildContainer<'gc> {
     fn remove_child_from_render_list(
         container: DisplayObjectContainer<'gc>,
         child: DisplayObject<'gc>,
-        context: &mut UpdateContext<'_, 'gc>,
+        context: &mut UpdateContext<'gc>,
     ) -> bool {
-        let mut this = container.raw_container_mut(context.gc_context);
+        let mut this = container.raw_container_mut(context.gc());
 
         let render_list_position = this
             .render_list
@@ -669,27 +751,29 @@ impl<'gc> ChildContainer<'gc> {
                     "Parent must be removed *after* calling `remove_child_from_render_list`",
                 );
                 if child.has_explicit_name() {
-                    if let Avm2Value::Object(parent_obj) = parent.object2() {
-                        let mut activation = Avm2Activation::from_nothing(context.reborrow());
-                        let name = Avm2Multiname::new(
-                            activation.avm2().find_public_namespace(),
-                            child.name(),
-                        );
-                        let current_val = parent_obj.get_property(&name, &mut activation);
-                        match current_val {
-                            Ok(Avm2Value::Null) | Ok(Avm2Value::Undefined) => {}
-                            Ok(_other) => {
-                                let res = parent_obj.set_property(
-                                    &name,
-                                    Avm2Value::Null,
-                                    &mut activation,
-                                );
-                                if let Err(e) = res {
-                                    tracing::error!("Failed to set child {} ({:?}) to null on parent obj {:?}: {:?}", child.name(), child, parent_obj, e);
+                    if let Some(name) = child.name() {
+                        if let Avm2Value::Object(parent_obj) = parent.object2() {
+                            let parent_obj = Avm2Value::from(parent_obj);
+
+                            let mut activation = Avm2Activation::from_nothing(context);
+                            let multiname =
+                                Avm2Multiname::new(activation.avm2().find_public_namespace(), name);
+                            let current_val = parent_obj.get_property(&multiname, &mut activation);
+                            match current_val {
+                                Ok(Avm2Value::Null) | Ok(Avm2Value::Undefined) => {}
+                                Ok(_other) => {
+                                    let res = parent_obj.set_property(
+                                        &multiname,
+                                        Avm2Value::Null,
+                                        &mut activation,
+                                    );
+                                    if let Err(e) = res {
+                                        tracing::error!("Failed to set child {} ({:?}) to null on parent obj {:?}: {:?}", name, child, parent_obj, e);
+                                    }
                                 }
-                            }
-                            Err(e) => {
-                                tracing::error!("Failed to get current value of child {} ({:?}) on parent obj {:?}: {:?}", child.name(), child, parent_obj, e);
+                                Err(e) => {
+                                    tracing::error!("Failed to get current value of child {} ({:?}) on parent obj {:?}: {:?}", name, child, parent_obj, e);
+                                }
                             }
                         }
                     }
@@ -780,6 +864,11 @@ impl<'gc> ChildContainer<'gc> {
         self.depth_list.get(&depth).copied()
     }
 
+    /// Checks if there's a child at a given depth.
+    fn has_depth(&self, depth: Depth) -> bool {
+        self.depth_list.contains_key(&depth)
+    }
+
     /// Get a child by it's instance/timeline name.
     ///
     /// The `case_sensitive` parameter determines if we should consider
@@ -793,16 +882,12 @@ impl<'gc> ChildContainer<'gc> {
             let mut matching_render_children = if case_sensitive {
                 self.depth_list
                     .iter()
-                    .filter(|(_, child)| child.name_optional().map_or(false, |n| n == name))
+                    .filter(|(_, child)| child.name().is_some_and(|n| n == name))
                     .collect::<Vec<_>>()
             } else {
                 self.depth_list
                     .iter()
-                    .filter(|(_, child)| {
-                        child
-                            .name_optional()
-                            .map_or(false, |n| n.eq_ignore_case(name))
-                    })
+                    .filter(|(_, child)| child.name().is_some_and(|n| n.eq_ignore_case(name)))
                     .collect::<Vec<_>>()
             };
 
@@ -810,10 +895,10 @@ impl<'gc> ChildContainer<'gc> {
             matching_render_children.sort_by_key(|&(depth, _child)| *depth);
 
             // First child will have the lowest depth
-            return matching_render_children
+            matching_render_children
                 .first()
                 .map(|&(_depth, child)| child)
-                .copied();
+                .copied()
         } else {
             // TODO: Make a HashMap from name -> child?
             // But need to handle conflicting names (lowest in depth order takes priority).
@@ -821,13 +906,12 @@ impl<'gc> ChildContainer<'gc> {
                 self.render_list
                     .iter()
                     .copied()
-                    .find(|child| child.name_optional().map_or(false, |n| n == name))
+                    .find(|child| child.name().is_some_and(|n| n == name))
             } else {
-                self.render_list.iter().copied().find(|child| {
-                    child
-                        .name_optional()
-                        .map_or(false, |n| n.eq_ignore_case(name))
-                })
+                self.render_list
+                    .iter()
+                    .copied()
+                    .find(|child| child.name().is_some_and(|n| n.eq_ignore_case(name)))
             }
         }
     }
@@ -866,12 +950,12 @@ impl<'gc> ChildContainer<'gc> {
         self.mouse_children = mouse_children;
     }
 
-    pub fn movie(&self) -> Arc<SwfMovie> {
-        self.movie.clone()
+    pub fn is_action_script_3(&self) -> bool {
+        self.is_action_script_3
     }
 
-    pub fn set_movie(&mut self, movie: Arc<SwfMovie>) {
-        self.movie = movie;
+    pub fn set_is_action_script_3(&mut self, is_action_script_3: bool) {
+        self.is_action_script_3 = is_action_script_3;
     }
 
     /// Insert a child at a given render list position.
@@ -928,50 +1012,65 @@ impl<'gc> ChildContainer<'gc> {
     /// `parent` should be the display object that owns this container.
     fn swap_at_depth(
         &mut self,
-        context: &mut UpdateContext<'_, 'gc>,
+        context: &mut UpdateContext<'gc>,
         parent: DisplayObject<'gc>,
         child: DisplayObject<'gc>,
         depth: Depth,
     ) {
         let prev_depth = child.depth();
-        child.set_depth(context.gc_context, depth);
+        child.set_depth(depth);
         child.set_parent(context, Some(parent));
 
         if let Some(prev_child) = self.depth_list.insert(depth, child) {
-            child.set_clip_depth(context.gc_context, 0);
-            prev_child.set_depth(context.gc_context, prev_depth);
-            prev_child.set_clip_depth(context.gc_context, 0);
-            prev_child.set_transformed_by_script(context.gc_context, true);
+            child.set_clip_depth(0);
+            prev_child.set_depth(prev_depth);
+            prev_child.set_clip_depth(0);
+            prev_child.set_transformed_by_script(true);
             self.depth_list.insert(prev_depth, prev_child);
 
             let prev_position = self
                 .render_list
                 .iter()
-                .position(|x| DisplayObject::ptr_eq(*x, prev_child))
-                .unwrap();
+                .position(|x| DisplayObject::ptr_eq(*x, prev_child));
             let next_position = self
                 .render_list
                 .iter()
-                .position(|x| DisplayObject::ptr_eq(*x, child))
-                .unwrap();
-            self.render_list_mut().swap(prev_position, next_position);
+                .position(|x| DisplayObject::ptr_eq(*x, child));
+
+            match (prev_position, next_position) {
+                (Some(prev_position), Some(next_position)) => {
+                    self.render_list_mut().swap(prev_position, next_position);
+                }
+                _ => {
+                    tracing::error!(
+                        "ChildContainer::swap_at_depth: A child is missing in the render list"
+                    );
+                }
+            }
         } else {
             self.depth_list.remove(&prev_depth);
 
-            let old_position = self
+            if let Some(old_position) = self
                 .render_list
                 .iter()
                 .position(|x| DisplayObject::ptr_eq(*x, child))
-                .unwrap();
-            self.render_list_mut().remove(old_position);
+            {
+                self.render_list_mut().remove(old_position);
+            }
 
             if let Some((_, below_child)) = self.depth_list.range(..depth).next_back() {
                 let new_position = self
                     .render_list
                     .iter()
                     .position(|x| DisplayObject::ptr_eq(*x, *below_child))
-                    .unwrap();
-                self.render_list_mut().insert(new_position + 1, child);
+                    .map(|pos| pos + 1)
+                    .unwrap_or_else(|| {
+                        tracing::error!(
+                            "ChildContainer::swap_at_depth: below_child is missing in the render list"
+                        );
+                        0
+                    });
+                self.render_list_mut().insert(new_position, child);
             } else {
                 self.render_list_mut().insert(0, child);
             }
@@ -1008,7 +1107,7 @@ impl<'gc> ChildContainer<'gc> {
             // otherwise, check for a dynamic unload handler
             } else {
                 let obj = child.object().coerce_to_object(activation);
-                if obj.has_property(activation, "onUnload".into()) {
+                if obj.has_property(activation, istr!("onUnload")) {
                     return true;
                 }
             }
@@ -1030,7 +1129,7 @@ impl<'gc> ChildContainer<'gc> {
     ///
     /// This just moves the children to a negative depth
     /// Will also fire unload events, as they should occur when the removal is queued, not when it actually occurs
-    fn queue_removal(child: DisplayObject<'gc>, context: &mut UpdateContext<'_, 'gc>) {
+    fn queue_removal(child: DisplayObject<'gc>, context: &mut UpdateContext<'gc>) {
         if let Some(c) = child.as_container() {
             for child in c.iter_render_list() {
                 Self::queue_removal(child, context);
@@ -1039,8 +1138,8 @@ impl<'gc> ChildContainer<'gc> {
 
         let cur_depth = child.depth();
         // Note that the depth returned by AS will be offset by the `AVM_DEPTH_BIAS`, so this is really `-(cur_depth+1+AVM_DEPTH_BIAS)`
-        child.set_depth(context.gc_context, -cur_depth - 1);
-        child.set_avm1_pending_removal(context.gc_context, true);
+        child.set_depth(-cur_depth - 1);
+        child.set_avm1_pending_removal(true);
 
         if let Some(mc) = child.as_movie_clip() {
             // Clip events should still fire
@@ -1108,4 +1207,4 @@ impl<'gc> DoubleEndedIterator for RenderIter<'gc> {
     }
 }
 
-impl<'gc> ExactSizeIterator for RenderIter<'gc> {}
+impl ExactSizeIterator for RenderIter<'_> {}

@@ -1,0 +1,161 @@
+Resetting focus
+Setting focus to sprite1
+  sprite1, sprite1: [FocusEvent type="focusIn" bubbles=true cancelable=false eventPhase=2 relatedObject=null shiftKey=false keyCode=0], focus: [object Sprite] (sprite1)
+  null, sprite1: [FocusEvent type="focusIn" bubbles=true cancelable=false eventPhase=3 relatedObject=null shiftKey=false keyCode=0], focus: [object Sprite] (sprite1)
+Resetting focus
+  sprite1, sprite1: [FocusEvent type="focusOut" bubbles=true cancelable=false eventPhase=2 relatedObject=null shiftKey=false keyCode=0], focus: null
+  null, sprite1: [FocusEvent type="focusOut" bubbles=true cancelable=false eventPhase=3 relatedObject=null shiftKey=false keyCode=0], focus: null
+Setting focus to sprite2
+  sprite2, sprite2: [FocusEvent type="focusIn" bubbles=true cancelable=false eventPhase=2 relatedObject=null shiftKey=false keyCode=0], focus: [object Sprite] (sprite2)
+  null, sprite2: [FocusEvent type="focusIn" bubbles=true cancelable=false eventPhase=3 relatedObject=null shiftKey=false keyCode=0], focus: [object Sprite] (sprite2)
+Resetting focus
+  sprite2, sprite2: [FocusEvent type="focusOut" bubbles=true cancelable=false eventPhase=2 relatedObject=null shiftKey=false keyCode=0], focus: null
+  null, sprite2: [FocusEvent type="focusOut" bubbles=true cancelable=false eventPhase=3 relatedObject=null shiftKey=false keyCode=0], focus: null
+Setting focus to mc1
+  mc1, mc1: [FocusEvent type="focusIn" bubbles=true cancelable=false eventPhase=2 relatedObject=null shiftKey=false keyCode=0], focus: [object MovieClip] (mc1)
+  null, mc1: [FocusEvent type="focusIn" bubbles=true cancelable=false eventPhase=3 relatedObject=null shiftKey=false keyCode=0], focus: [object MovieClip] (mc1)
+Resetting focus
+  mc1, mc1: [FocusEvent type="focusOut" bubbles=true cancelable=false eventPhase=2 relatedObject=null shiftKey=false keyCode=0], focus: null
+  null, mc1: [FocusEvent type="focusOut" bubbles=true cancelable=false eventPhase=3 relatedObject=null shiftKey=false keyCode=0], focus: null
+Setting focus to mc2
+  mc2, mc2: [FocusEvent type="focusIn" bubbles=true cancelable=false eventPhase=2 relatedObject=null shiftKey=false keyCode=0], focus: [object MovieClip] (mc2)
+  null, mc2: [FocusEvent type="focusIn" bubbles=true cancelable=false eventPhase=3 relatedObject=null shiftKey=false keyCode=0], focus: [object MovieClip] (mc2)
+Resetting focus
+  mc2, mc2: [FocusEvent type="focusOut" bubbles=true cancelable=false eventPhase=2 relatedObject=null shiftKey=false keyCode=0], focus: null
+  null, mc2: [FocusEvent type="focusOut" bubbles=true cancelable=false eventPhase=3 relatedObject=null shiftKey=false keyCode=0], focus: null
+Setting focus to textA
+  textA, textA: [FocusEvent type="focusIn" bubbles=true cancelable=false eventPhase=2 relatedObject=null shiftKey=false keyCode=0], focus: [object TextField] (textA)
+  null, textA: [FocusEvent type="focusIn" bubbles=true cancelable=false eventPhase=3 relatedObject=null shiftKey=false keyCode=0], focus: [object TextField] (textA)
+Resetting focus
+  textA, textA: [FocusEvent type="focusOut" bubbles=true cancelable=false eventPhase=2 relatedObject=null shiftKey=false keyCode=0], focus: null
+  null, textA: [FocusEvent type="focusOut" bubbles=true cancelable=false eventPhase=3 relatedObject=null shiftKey=false keyCode=0], focus: null
+Setting focus to button1
+  button1, button1: [FocusEvent type="focusIn" bubbles=true cancelable=false eventPhase=2 relatedObject=null shiftKey=false keyCode=0], focus: [object SimpleButton] (button1)
+  null, button1: [FocusEvent type="focusIn" bubbles=true cancelable=false eventPhase=3 relatedObject=null shiftKey=false keyCode=0], focus: [object SimpleButton] (button1)
+Resetting focus
+  button1, button1: [FocusEvent type="focusOut" bubbles=true cancelable=false eventPhase=2 relatedObject=null shiftKey=false keyCode=0], focus: null
+  null, button1: [FocusEvent type="focusOut" bubbles=true cancelable=false eventPhase=3 relatedObject=null shiftKey=false keyCode=0], focus: null
+Setting focus to button2
+  button2, button2: [FocusEvent type="focusIn" bubbles=true cancelable=false eventPhase=2 relatedObject=null shiftKey=false keyCode=0], focus: [object SimpleButton] (button2)
+  null, button2: [FocusEvent type="focusIn" bubbles=true cancelable=false eventPhase=3 relatedObject=null shiftKey=false keyCode=0], focus: [object SimpleButton] (button2)
+Resetting focus
+  button2, button2: [FocusEvent type="focusOut" bubbles=true cancelable=false eventPhase=2 relatedObject=null shiftKey=false keyCode=0], focus: null
+  null, button2: [FocusEvent type="focusOut" bubbles=true cancelable=false eventPhase=3 relatedObject=null shiftKey=false keyCode=0], focus: null
+Setting focus to sprite1
+  sprite1, sprite1: [FocusEvent type="focusIn" bubbles=true cancelable=false eventPhase=2 relatedObject=null shiftKey=false keyCode=0], focus: [object Sprite] (sprite1)
+  null, sprite1: [FocusEvent type="focusIn" bubbles=true cancelable=false eventPhase=3 relatedObject=null shiftKey=false keyCode=0], focus: [object Sprite] (sprite1)
+Setting focus to sprite2
+  sprite1, sprite1: [FocusEvent type="focusOut" bubbles=true cancelable=false eventPhase=2 relatedObject=[object Sprite] shiftKey=false keyCode=0], focus: [object Sprite] (sprite2)
+  null, sprite1: [FocusEvent type="focusOut" bubbles=true cancelable=false eventPhase=3 relatedObject=[object Sprite] shiftKey=false keyCode=0], focus: [object Sprite] (sprite2)
+  sprite2, sprite2: [FocusEvent type="focusIn" bubbles=true cancelable=false eventPhase=2 relatedObject=[object Sprite] shiftKey=false keyCode=0], focus: [object Sprite] (sprite2)
+  null, sprite2: [FocusEvent type="focusIn" bubbles=true cancelable=false eventPhase=3 relatedObject=[object Sprite] shiftKey=false keyCode=0], focus: [object Sprite] (sprite2)
+Setting focus to mc1
+  sprite2, sprite2: [FocusEvent type="focusOut" bubbles=true cancelable=false eventPhase=2 relatedObject=[object MovieClip] shiftKey=false keyCode=0], focus: [object MovieClip] (mc1)
+  null, sprite2: [FocusEvent type="focusOut" bubbles=true cancelable=false eventPhase=3 relatedObject=[object MovieClip] shiftKey=false keyCode=0], focus: [object MovieClip] (mc1)
+  mc1, mc1: [FocusEvent type="focusIn" bubbles=true cancelable=false eventPhase=2 relatedObject=[object Sprite] shiftKey=false keyCode=0], focus: [object MovieClip] (mc1)
+  null, mc1: [FocusEvent type="focusIn" bubbles=true cancelable=false eventPhase=3 relatedObject=[object Sprite] shiftKey=false keyCode=0], focus: [object MovieClip] (mc1)
+Setting focus to mc2
+  mc1, mc1: [FocusEvent type="focusOut" bubbles=true cancelable=false eventPhase=2 relatedObject=[object MovieClip] shiftKey=false keyCode=0], focus: [object MovieClip] (mc2)
+  null, mc1: [FocusEvent type="focusOut" bubbles=true cancelable=false eventPhase=3 relatedObject=[object MovieClip] shiftKey=false keyCode=0], focus: [object MovieClip] (mc2)
+  mc2, mc2: [FocusEvent type="focusIn" bubbles=true cancelable=false eventPhase=2 relatedObject=[object MovieClip] shiftKey=false keyCode=0], focus: [object MovieClip] (mc2)
+  null, mc2: [FocusEvent type="focusIn" bubbles=true cancelable=false eventPhase=3 relatedObject=[object MovieClip] shiftKey=false keyCode=0], focus: [object MovieClip] (mc2)
+Setting focus to textA
+  mc2, mc2: [FocusEvent type="focusOut" bubbles=true cancelable=false eventPhase=2 relatedObject=[object TextField] shiftKey=false keyCode=0], focus: [object TextField] (textA)
+  null, mc2: [FocusEvent type="focusOut" bubbles=true cancelable=false eventPhase=3 relatedObject=[object TextField] shiftKey=false keyCode=0], focus: [object TextField] (textA)
+  textA, textA: [FocusEvent type="focusIn" bubbles=true cancelable=false eventPhase=2 relatedObject=[object MovieClip] shiftKey=false keyCode=0], focus: [object TextField] (textA)
+  null, textA: [FocusEvent type="focusIn" bubbles=true cancelable=false eventPhase=3 relatedObject=[object MovieClip] shiftKey=false keyCode=0], focus: [object TextField] (textA)
+Setting focus to button1
+  textA, textA: [FocusEvent type="focusOut" bubbles=true cancelable=false eventPhase=2 relatedObject=[object SimpleButton] shiftKey=false keyCode=0], focus: [object SimpleButton] (button1)
+  null, textA: [FocusEvent type="focusOut" bubbles=true cancelable=false eventPhase=3 relatedObject=[object SimpleButton] shiftKey=false keyCode=0], focus: [object SimpleButton] (button1)
+  button1, button1: [FocusEvent type="focusIn" bubbles=true cancelable=false eventPhase=2 relatedObject=[object TextField] shiftKey=false keyCode=0], focus: [object SimpleButton] (button1)
+  null, button1: [FocusEvent type="focusIn" bubbles=true cancelable=false eventPhase=3 relatedObject=[object TextField] shiftKey=false keyCode=0], focus: [object SimpleButton] (button1)
+Setting focus to button2
+  button1, button1: [FocusEvent type="focusOut" bubbles=true cancelable=false eventPhase=2 relatedObject=[object SimpleButton] shiftKey=false keyCode=0], focus: [object SimpleButton] (button2)
+  null, button1: [FocusEvent type="focusOut" bubbles=true cancelable=false eventPhase=3 relatedObject=[object SimpleButton] shiftKey=false keyCode=0], focus: [object SimpleButton] (button2)
+  button2, button2: [FocusEvent type="focusIn" bubbles=true cancelable=false eventPhase=2 relatedObject=[object SimpleButton] shiftKey=false keyCode=0], focus: [object SimpleButton] (button2)
+  null, button2: [FocusEvent type="focusIn" bubbles=true cancelable=false eventPhase=3 relatedObject=[object SimpleButton] shiftKey=false keyCode=0], focus: [object SimpleButton] (button2)
+Resetting focus
+  button2, button2: [FocusEvent type="focusOut" bubbles=true cancelable=false eventPhase=2 relatedObject=null shiftKey=false keyCode=0], focus: null
+  null, button2: [FocusEvent type="focusOut" bubbles=true cancelable=false eventPhase=3 relatedObject=null shiftKey=false keyCode=0], focus: null
+Setting focus to sprite1
+  sprite1, sprite1: [FocusEvent type="focusIn" bubbles=true cancelable=false eventPhase=2 relatedObject=null shiftKey=false keyCode=0], focus: [object Sprite] (sprite1)
+  null, sprite1: [FocusEvent type="focusIn" bubbles=true cancelable=false eventPhase=3 relatedObject=null shiftKey=false keyCode=0], focus: [object Sprite] (sprite1)
+Setting focus to sprite1
+Resetting focus
+  sprite1, sprite1: [FocusEvent type="focusOut" bubbles=true cancelable=false eventPhase=2 relatedObject=null shiftKey=false keyCode=0], focus: null
+  null, sprite1: [FocusEvent type="focusOut" bubbles=true cancelable=false eventPhase=3 relatedObject=null shiftKey=false keyCode=0], focus: null
+Setting focus to sprite2
+  sprite2, sprite2: [FocusEvent type="focusIn" bubbles=true cancelable=false eventPhase=2 relatedObject=null shiftKey=false keyCode=0], focus: [object Sprite] (sprite2)
+  null, sprite2: [FocusEvent type="focusIn" bubbles=true cancelable=false eventPhase=3 relatedObject=null shiftKey=false keyCode=0], focus: [object Sprite] (sprite2)
+Setting focus to sprite2
+Resetting focus
+  sprite2, sprite2: [FocusEvent type="focusOut" bubbles=true cancelable=false eventPhase=2 relatedObject=null shiftKey=false keyCode=0], focus: null
+  null, sprite2: [FocusEvent type="focusOut" bubbles=true cancelable=false eventPhase=3 relatedObject=null shiftKey=false keyCode=0], focus: null
+Setting focus to mc1
+  mc1, mc1: [FocusEvent type="focusIn" bubbles=true cancelable=false eventPhase=2 relatedObject=null shiftKey=false keyCode=0], focus: [object MovieClip] (mc1)
+  null, mc1: [FocusEvent type="focusIn" bubbles=true cancelable=false eventPhase=3 relatedObject=null shiftKey=false keyCode=0], focus: [object MovieClip] (mc1)
+Setting focus to mc1
+Resetting focus
+  mc1, mc1: [FocusEvent type="focusOut" bubbles=true cancelable=false eventPhase=2 relatedObject=null shiftKey=false keyCode=0], focus: null
+  null, mc1: [FocusEvent type="focusOut" bubbles=true cancelable=false eventPhase=3 relatedObject=null shiftKey=false keyCode=0], focus: null
+Setting focus to mc2
+  mc2, mc2: [FocusEvent type="focusIn" bubbles=true cancelable=false eventPhase=2 relatedObject=null shiftKey=false keyCode=0], focus: [object MovieClip] (mc2)
+  null, mc2: [FocusEvent type="focusIn" bubbles=true cancelable=false eventPhase=3 relatedObject=null shiftKey=false keyCode=0], focus: [object MovieClip] (mc2)
+Setting focus to mc2
+Resetting focus
+  mc2, mc2: [FocusEvent type="focusOut" bubbles=true cancelable=false eventPhase=2 relatedObject=null shiftKey=false keyCode=0], focus: null
+  null, mc2: [FocusEvent type="focusOut" bubbles=true cancelable=false eventPhase=3 relatedObject=null shiftKey=false keyCode=0], focus: null
+Setting focus to textA
+  textA, textA: [FocusEvent type="focusIn" bubbles=true cancelable=false eventPhase=2 relatedObject=null shiftKey=false keyCode=0], focus: [object TextField] (textA)
+  null, textA: [FocusEvent type="focusIn" bubbles=true cancelable=false eventPhase=3 relatedObject=null shiftKey=false keyCode=0], focus: [object TextField] (textA)
+Setting focus to textA
+Resetting focus
+  textA, textA: [FocusEvent type="focusOut" bubbles=true cancelable=false eventPhase=2 relatedObject=null shiftKey=false keyCode=0], focus: null
+  null, textA: [FocusEvent type="focusOut" bubbles=true cancelable=false eventPhase=3 relatedObject=null shiftKey=false keyCode=0], focus: null
+Setting focus to button1
+  button1, button1: [FocusEvent type="focusIn" bubbles=true cancelable=false eventPhase=2 relatedObject=null shiftKey=false keyCode=0], focus: [object SimpleButton] (button1)
+  null, button1: [FocusEvent type="focusIn" bubbles=true cancelable=false eventPhase=3 relatedObject=null shiftKey=false keyCode=0], focus: [object SimpleButton] (button1)
+Setting focus to button1
+Resetting focus
+  button1, button1: [FocusEvent type="focusOut" bubbles=true cancelable=false eventPhase=2 relatedObject=null shiftKey=false keyCode=0], focus: null
+  null, button1: [FocusEvent type="focusOut" bubbles=true cancelable=false eventPhase=3 relatedObject=null shiftKey=false keyCode=0], focus: null
+Setting focus to button2
+  button2, button2: [FocusEvent type="focusIn" bubbles=true cancelable=false eventPhase=2 relatedObject=null shiftKey=false keyCode=0], focus: [object SimpleButton] (button2)
+  null, button2: [FocusEvent type="focusIn" bubbles=true cancelable=false eventPhase=3 relatedObject=null shiftKey=false keyCode=0], focus: [object SimpleButton] (button2)
+Setting focus to button2
+Resetting focus
+  button2, button2: [FocusEvent type="focusOut" bubbles=true cancelable=false eventPhase=2 relatedObject=null shiftKey=false keyCode=0], focus: null
+  null, button2: [FocusEvent type="focusOut" bubbles=true cancelable=false eventPhase=3 relatedObject=null shiftKey=false keyCode=0], focus: null
+Setting focus to mc2
+  mc2, mc2: [FocusEvent type="focusIn" bubbles=true cancelable=false eventPhase=2 relatedObject=null shiftKey=false keyCode=0], focus: [object MovieClip] (mc2)
+  null, mc2: [FocusEvent type="focusIn" bubbles=true cancelable=false eventPhase=3 relatedObject=null shiftKey=false keyCode=0], focus: [object MovieClip] (mc2)
+Setting focus to sprite1
+  mc2, mc2: [FocusEvent type="focusOut" bubbles=true cancelable=false eventPhase=2 relatedObject=[object Sprite] shiftKey=false keyCode=0], focus: [object Sprite] (sprite1)
+  null, mc2: [FocusEvent type="focusOut" bubbles=true cancelable=false eventPhase=3 relatedObject=[object Sprite] shiftKey=false keyCode=0], focus: [object Sprite] (sprite1)
+  sprite1, sprite1: [FocusEvent type="focusIn" bubbles=true cancelable=false eventPhase=2 relatedObject=[object MovieClip] shiftKey=false keyCode=0], focus: [object Sprite] (sprite1)
+  null, sprite1: [FocusEvent type="focusIn" bubbles=true cancelable=false eventPhase=3 relatedObject=[object MovieClip] shiftKey=false keyCode=0], focus: [object Sprite] (sprite1)
+Resetting focus
+  sprite1, sprite1: [FocusEvent type="focusOut" bubbles=true cancelable=false eventPhase=2 relatedObject=null shiftKey=false keyCode=0], focus: null
+  null, sprite1: [FocusEvent type="focusOut" bubbles=true cancelable=false eventPhase=3 relatedObject=null shiftKey=false keyCode=0], focus: null
+Setting focus to textA
+  textA, textA: [FocusEvent type="focusIn" bubbles=true cancelable=false eventPhase=2 relatedObject=null shiftKey=false keyCode=0], focus: [object TextField] (textA)
+  null, textA: [FocusEvent type="focusIn" bubbles=true cancelable=false eventPhase=3 relatedObject=null shiftKey=false keyCode=0], focus: [object TextField] (textA)
+Setting focus to button2
+  textA, textA: [FocusEvent type="focusOut" bubbles=true cancelable=false eventPhase=2 relatedObject=[object SimpleButton] shiftKey=false keyCode=0], focus: [object SimpleButton] (button2)
+  null, textA: [FocusEvent type="focusOut" bubbles=true cancelable=false eventPhase=3 relatedObject=[object SimpleButton] shiftKey=false keyCode=0], focus: [object SimpleButton] (button2)
+  button2, button2: [FocusEvent type="focusIn" bubbles=true cancelable=false eventPhase=2 relatedObject=[object TextField] shiftKey=false keyCode=0], focus: [object SimpleButton] (button2)
+  null, button2: [FocusEvent type="focusIn" bubbles=true cancelable=false eventPhase=3 relatedObject=[object TextField] shiftKey=false keyCode=0], focus: [object SimpleButton] (button2)
+Resetting focus
+  button2, button2: [FocusEvent type="focusOut" bubbles=true cancelable=false eventPhase=2 relatedObject=null shiftKey=false keyCode=0], focus: null
+  null, button2: [FocusEvent type="focusOut" bubbles=true cancelable=false eventPhase=3 relatedObject=null shiftKey=false keyCode=0], focus: null
+Setting focus to button1
+  button1, button1: [FocusEvent type="focusIn" bubbles=true cancelable=false eventPhase=2 relatedObject=null shiftKey=false keyCode=0], focus: [object SimpleButton] (button1)
+  null, button1: [FocusEvent type="focusIn" bubbles=true cancelable=false eventPhase=3 relatedObject=null shiftKey=false keyCode=0], focus: [object SimpleButton] (button1)
+Setting focus to sprite2
+  button1, button1: [FocusEvent type="focusOut" bubbles=true cancelable=false eventPhase=2 relatedObject=[object Sprite] shiftKey=false keyCode=0], focus: [object Sprite] (sprite2)
+  null, button1: [FocusEvent type="focusOut" bubbles=true cancelable=false eventPhase=3 relatedObject=[object Sprite] shiftKey=false keyCode=0], focus: [object Sprite] (sprite2)
+  sprite2, sprite2: [FocusEvent type="focusIn" bubbles=true cancelable=false eventPhase=2 relatedObject=[object SimpleButton] shiftKey=false keyCode=0], focus: [object Sprite] (sprite2)
+  null, sprite2: [FocusEvent type="focusIn" bubbles=true cancelable=false eventPhase=3 relatedObject=[object SimpleButton] shiftKey=false keyCode=0], focus: [object Sprite] (sprite2)
+Resetting focus
+  sprite2, sprite2: [FocusEvent type="focusOut" bubbles=true cancelable=false eventPhase=2 relatedObject=null shiftKey=false keyCode=0], focus: null
+  null, sprite2: [FocusEvent type="focusOut" bubbles=true cancelable=false eventPhase=3 relatedObject=null shiftKey=false keyCode=0], focus: null

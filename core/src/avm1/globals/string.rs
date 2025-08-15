@@ -1,14 +1,14 @@
 //! `String` class impl
 
+use ruffle_macros::istr;
+
 use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
-use crate::avm1::function::{Executable, FunctionObject};
-use crate::avm1::object::value_object::ValueObject;
+use crate::avm1::function::FunctionObject;
 use crate::avm1::property::Attribute;
 use crate::avm1::property_decl::{define_properties_on, Declaration};
-use crate::avm1::{ArrayObject, Object, TObject, Value};
-use crate::context::GcContext;
-use crate::string::{utils as string_utils, AvmString, WString};
+use crate::avm1::{ArrayBuilder, NativeObject, Object, Value};
+use crate::string::{utils as string_utils, AvmString, StringContext, WString};
 
 const PROTO_DECLS: &[Declaration] = declare_properties! {
     "toString" => method(to_string_value_of; DONT_ENUM | DONT_DELETE);
@@ -39,19 +39,19 @@ pub fn string<'gc>(
     let value = match args.get(0).cloned() {
         Some(Value::String(s)) => s,
         Some(v) => v.coerce_to_string(activation)?,
-        _ => AvmString::default(),
+        None => istr!(""),
     };
 
-    if let Some(mut vbox) = this.as_value_object() {
-        let len = value.len();
-        vbox.define_value(
-            activation.context.gc_context,
-            "length",
-            len.into(),
-            Attribute::empty(),
-        );
-        vbox.replace_value(activation.context.gc_context, value.into());
-    }
+    // Called from a constructor, populate `this`.
+    this.set_native(activation.gc(), NativeObject::String(value));
+
+    // The `length` property lives on the object itself, not its prototype.
+    this.define_value(
+        activation.gc(),
+        istr!("length"),
+        value.len().into(),
+        Attribute::DONT_ENUM | Attribute::DONT_DELETE,
+    );
 
     Ok(this.into())
 }
@@ -65,38 +65,36 @@ pub fn string_function<'gc>(
     let value = match args.get(0).cloned() {
         Some(Value::String(s)) => s,
         Some(v) => v.coerce_to_string(activation)?,
-        _ => AvmString::new_utf8(activation.context.gc_context, String::new()),
+        None => istr!(""),
     };
 
     Ok(value.into())
 }
 
 pub fn create_string_object<'gc>(
-    context: &mut GcContext<'_, 'gc>,
+    context: &mut StringContext<'gc>,
     string_proto: Object<'gc>,
     fn_proto: Object<'gc>,
 ) -> Object<'gc> {
     let string = FunctionObject::constructor(
-        context.gc_context,
-        Executable::Native(string),
-        Executable::Native(string_function),
+        context,
+        string,
+        Some(string_function),
         fn_proto,
         string_proto,
     );
-    let object = string.raw_script_object();
-    define_properties_on(OBJECT_DECLS, context, object, fn_proto);
+    define_properties_on(OBJECT_DECLS, context, string, fn_proto);
     string
 }
 
 /// Creates `String.prototype`.
 pub fn create_proto<'gc>(
-    context: &mut GcContext<'_, 'gc>,
+    context: &mut StringContext<'gc>,
     proto: Object<'gc>,
     fn_proto: Object<'gc>,
 ) -> Object<'gc> {
-    let string_proto = ValueObject::empty_box(context.gc_context, proto);
-    let object = string_proto.raw_script_object();
-    define_properties_on(PROTO_DECLS, context, object, fn_proto);
+    let string_proto = Object::new(context, Some(proto));
+    define_properties_on(PROTO_DECLS, context, string_proto, fn_proto);
     string_proto
 }
 
@@ -116,8 +114,8 @@ fn char_at<'gc>(
         .ok()
         .and_then(|i| string.get(i))
         .map(WString::from_unit)
-        .map(|ret| AvmString::new(activation.context.gc_context, ret))
-        .unwrap_or_else(|| "".into());
+        .map(|ret| AvmString::new(activation.gc(), ret))
+        .unwrap_or_else(|| istr!(""));
 
     Ok(ret.into())
 }
@@ -157,7 +155,7 @@ fn concat<'gc>(
         let s = arg.coerce_to_string(activation)?;
         ret.push_str(&s);
     }
-    Ok(AvmString::new(activation.context.gc_context, ret).into())
+    Ok(AvmString::new(activation.gc(), ret).into())
 }
 
 fn from_char_code<'gc>(
@@ -174,7 +172,7 @@ fn from_char_code<'gc>(
         }
         out.push(i);
     }
-    Ok(AvmString::new(activation.context.gc_context, out).into())
+    Ok(AvmString::new(activation.gc(), out).into())
 }
 
 fn index_of<'gc>(
@@ -249,9 +247,9 @@ fn slice<'gc>(
     };
     if start_index < end_index {
         let ret = WString::from(&this[start_index..end_index]);
-        Ok(AvmString::new(activation.context.gc_context, ret).into())
+        Ok(AvmString::new(activation.gc(), ret).into())
     } else {
-        Ok("".into())
+        Ok(istr!("").into())
     }
 }
 
@@ -269,7 +267,7 @@ fn split<'gc>(
     // and the empty string behaves the same as undefined does in later SWF versions.
     let is_swf5 = activation.swf_version() == 5;
     if let Some(delimiter) = match args.get(0).unwrap_or(&Value::Undefined) {
-        &Value::Undefined => is_swf5.then_some(",".into()),
+        &Value::Undefined => is_swf5.then_some(istr!(",")),
         v => Some(v.coerce_to_string(activation)?).filter(|s| !(is_swf5 && s.is_empty())),
     } {
         if delimiter.is_empty() {
@@ -277,31 +275,25 @@ fn split<'gc>(
             // but Flash does not.
             // e.g., split("foo", "") returns ["", "f", "o", "o", ""] in Rust but ["f, "o", "o"] in Flash.
             // Special case this to match Flash's behavior.
-            Ok(ArrayObject::new(
-                activation.context.gc_context,
-                activation.context.avm1.prototypes().array,
-                this.iter().take(limit).map(|c| {
-                    AvmString::new(activation.context.gc_context, WString::from_unit(c)).into()
-                }),
-            )
-            .into())
+            Ok(ArrayBuilder::new(activation)
+                .with(
+                    this.iter()
+                        .take(limit)
+                        .map(|c| activation.strings().make_char(c).into()),
+                )
+                .into())
         } else {
-            Ok(ArrayObject::new(
-                activation.context.gc_context,
-                activation.context.avm1.prototypes().array,
-                this.split(&delimiter)
-                    .take(limit)
-                    .map(|c| AvmString::new(activation.context.gc_context, c).into()),
-            )
-            .into())
+            // TODO(moulins): make dependent AvmStrings instead of reallocating.
+            Ok(ArrayBuilder::new(activation)
+                .with(
+                    this.split(&delimiter)
+                        .take(limit)
+                        .map(|c| AvmString::new(activation.gc(), c).into()),
+                )
+                .into())
         }
     } else {
-        Ok(ArrayObject::new(
-            activation.context.gc_context,
-            activation.context.avm1.prototypes().array,
-            [this.into()],
-        )
-        .into())
+        Ok(ArrayBuilder::new(activation).with([this.into()]).into())
     }
 }
 
@@ -331,9 +323,9 @@ fn substr<'gc>(
 
     if start_index < end_index {
         let ret = WString::from(&this[start_index..end_index]);
-        Ok(AvmString::new(activation.context.gc_context, ret).into())
+        Ok(AvmString::new(activation.gc(), ret).into())
     } else {
-        Ok("".into())
+        Ok(istr!("").into())
     }
 }
 
@@ -360,7 +352,7 @@ fn substring<'gc>(
         std::mem::swap(&mut end_index, &mut start_index);
     }
     let ret = WString::from(&this[start_index..end_index]);
-    Ok(AvmString::new(activation.context.gc_context, ret).into())
+    Ok(AvmString::new(activation.gc(), ret).into())
 }
 
 fn to_lower_case<'gc>(
@@ -371,7 +363,7 @@ fn to_lower_case<'gc>(
     let this_val = Value::from(this);
     let this = this_val.coerce_to_string(activation)?;
     Ok(AvmString::new(
-        activation.context.gc_context,
+        activation.gc(),
         this.iter()
             .map(string_utils::swf_to_lowercase)
             .collect::<WString>(),
@@ -385,10 +377,8 @@ pub fn to_string_value_of<'gc>(
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(vbox) = this.as_value_object() {
-        if let Value::String(s) = vbox.unbox() {
-            return Ok(s.into());
-        }
+    if let NativeObject::String(string) = this.native() {
+        return Ok(string.into());
     }
 
     //TODO: This normally falls back to `[object Object]` or `[type Function]`,
@@ -405,7 +395,7 @@ fn to_upper_case<'gc>(
     let this_val = Value::from(this);
     let this = this_val.coerce_to_string(activation)?;
     Ok(AvmString::new(
-        activation.context.gc_context,
+        activation.gc(),
         this.iter()
             .map(string_utils::swf_to_uppercase)
             .collect::<WString>(),

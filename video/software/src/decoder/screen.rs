@@ -66,7 +66,7 @@ impl<'a> ByteReader<'a> {
     fn read_u16be(&mut self) -> Result<u16, ScreenError> {
         let byte1 = self.read_byte()?;
         let byte2 = self.read_byte()?;
-        Ok((byte1 as u16) << 8 | (byte2 as u16))
+        Ok(((byte1 as u16) << 8) | (byte2 as u16))
     }
 
     fn read_buf_ref(&mut self, length: usize) -> Result<&[u8], ScreenError> {

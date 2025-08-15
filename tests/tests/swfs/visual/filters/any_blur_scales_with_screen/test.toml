@@ -1,0 +1,8 @@
+num_ticks = 1
+
+[image_comparisons.output]
+tolerance = 2
+
+[player_options]
+with_renderer = { optional = false, sample_count = 4 }
+viewport_dimensions = { width = 160, height = 160, scale_factor = 1 }

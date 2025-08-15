@@ -5,3 +5,5 @@ rules:
   # Range syntax from media queries level 4 has only been supported since Safari 16.4.
   # We still want to support older Safari versions.
   media-feature-range-notation: "prefix"
+  selector-no-vendor-prefix: [true, {ignoreSelectors: [":-webkit-full-screen"]}]
+  color-function-notation: ["modern", {ignore: ["with-var-inside"]}]

@@ -3,8 +3,7 @@
 use ruffle_wstr::Units;
 
 use crate::avm2::activation::Activation;
-use crate::avm2::error::{uri_error, Error};
-use crate::avm2::object::Object;
+use crate::avm2::error::{make_error_1052, Error};
 use crate::avm2::parameters::ParametersExt;
 use crate::avm2::value::Value;
 use crate::string::{AvmString, WStr, WString};
@@ -13,7 +12,7 @@ use std::fmt::Write;
 
 pub fn trace<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    _this: Object<'gc>,
+    _this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     match args {
@@ -36,32 +35,32 @@ pub fn trace<'gc>(
 }
 
 pub fn is_finite<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    _this: Object<'gc>,
+    _activation: &mut Activation<'_, 'gc>,
+    _this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let val = args.get_f64(activation, 0)?;
+    let val = args.get_f64(0);
 
     Ok(val.is_finite().into())
 }
 
 pub fn is_na_n<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    _this: Object<'gc>,
+    _activation: &mut Activation<'_, 'gc>,
+    _this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let val = args.get_f64(activation, 0)?;
+    let val = args.get_f64(0);
 
     Ok(val.is_nan().into())
 }
 
 pub fn parse_int<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    _this: Object<'gc>,
+    _this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let string = args.get_string(activation, 0)?;
-    let radix = args.get_i32(activation, 1)?;
+    let string = args.get_string(activation, 0);
+    let radix = args.get_i32(1);
 
     let result = crate::avm2::value::string_to_int(&string, radix, false);
     Ok(result.into())
@@ -69,11 +68,11 @@ pub fn parse_int<'gc>(
 
 pub fn parse_float<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    _this: Object<'gc>,
+    _this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let string = args.get_string(activation, 0)?;
-    let swf_version = activation.context.swf.version();
+    let string = args.get_string(activation, 0);
+    let swf_version = activation.context.root_swf.version();
 
     if let Some(result) = crate::avm2::value::string_to_f64(&string, swf_version, false) {
         Ok(result.into())
@@ -84,7 +83,7 @@ pub fn parse_float<'gc>(
 
 pub fn is_xml_name<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    _this: Object<'gc>,
+    _this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     let name = args.get_value(0);
@@ -99,10 +98,10 @@ pub fn is_xml_name<'gc>(
 
 pub fn escape<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    _this: Object<'gc>,
+    _this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let value = args.get_string(activation, 0)?;
+    let value = args.get_string(activation, 0);
 
     let mut output = WString::new();
 
@@ -114,7 +113,7 @@ pub fn escape<'gc>(
         if not_converted.contains(x) {
             output.push(x);
         } else {
-            let encode = if x <= u8::MAX.into() {
+            let encode = if x <= u8::MAX as u16 {
                 format!("%{x:02X}")
             } else {
                 format!("%u{x:04X}")
@@ -123,15 +122,15 @@ pub fn escape<'gc>(
         }
     }
 
-    Ok(AvmString::new(activation.context.gc_context, output).into())
+    Ok(AvmString::new(activation.gc(), output).into())
 }
 
 pub fn unescape<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    _this: Object<'gc>,
+    _this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let value = args.get_string(activation, 0)?;
+    let value = args.get_string(activation, 0);
 
     let mut output = WString::new();
     let mut index = 0;
@@ -166,12 +165,12 @@ pub fn unescape<'gc>(
             index = prev_index;
         }
     }
-    Ok(AvmString::new(activation.context.gc_context, output).into())
+    Ok(AvmString::new(activation.gc(), output).into())
 }
 
 pub fn encode_uri<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    _this: Object<'gc>,
+    _this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     encode_utf8_with_exclusions(
@@ -184,7 +183,7 @@ pub fn encode_uri<'gc>(
 
 pub fn encode_uri_component<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    _this: Object<'gc>,
+    _this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     encode_utf8_with_exclusions(
@@ -200,7 +199,7 @@ fn encode_utf8_with_exclusions<'gc>(
     args: &[Value<'gc>],
     not_converted: &str,
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let input = args.get_string(activation, 0)?;
+    let input = args.get_string(activation, 0);
     let mut output = String::new();
 
     let input_string = match input.units() {
@@ -219,18 +218,18 @@ fn encode_utf8_with_exclusions<'gc>(
             let mut encoded = String::new();
             // Each byte in the utf-8 encoding is encoded as a hex value
             for byte in utf8_bytes.bytes() {
-                write!(encoded, "%{x:02X}", x = byte).unwrap();
+                write!(encoded, "%{byte:02X}").unwrap();
             }
             output.push_str(&encoded);
         }
     }
 
-    Ok(AvmString::new_utf8(activation.context.gc_context, output).into())
+    Ok(AvmString::new_utf8(activation.gc(), output).into())
 }
 
 pub fn decode_uri<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    _this: Object<'gc>,
+    _this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     decode(
@@ -244,7 +243,7 @@ pub fn decode_uri<'gc>(
 
 pub fn decode_uri_component<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    _this: Object<'gc>,
+    _this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     decode(activation, args, "", "decodeURIComponent")
@@ -260,14 +259,13 @@ where
 }
 
 // code derived from flash.utils.unescapeMultiByte
-// FIXME: support bugzilla #538107
 fn decode<'gc>(
     activation: &mut Activation<'_, 'gc>,
     args: &[Value<'gc>],
     reserved_set: &str,
     func_name: &str,
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let value = args.get_string(activation, 0)?;
+    let value = args.get_string(activation, 0);
 
     let mut output = WString::new();
     let mut chars = value.chars();
@@ -275,11 +273,7 @@ fn decode<'gc>(
 
     while let Some(c) = chars.next() {
         let Ok(c) = c else {
-            return Err(Error::AvmError(uri_error(
-                activation,
-                &format!("Error #1052: Invalid URI passed to {func_name} function."),
-                1052,
-            )?));
+            return Err(make_error_1052(activation, func_name));
         };
 
         if c != '%' {
@@ -289,68 +283,48 @@ fn decode<'gc>(
 
         bytes.clear();
         let Some(byte) = handle_percent(&mut chars) else {
-            return Err(Error::AvmError(uri_error(
-                activation,
-                &format!("Error #1052: Invalid URI passed to {func_name} function."),
-                1052,
-            )?));
+            return Err(make_error_1052(activation, func_name));
         };
         bytes.push(byte);
         if (byte & 0x80) != 0 {
             let n = byte.leading_ones();
 
             if n == 1 || n > 4 {
-                return Err(Error::AvmError(uri_error(
-                    activation,
-                    &format!("Error #1052: Invalid URI passed to {func_name} function."),
-                    1052,
-                )?));
+                return Err(make_error_1052(activation, func_name));
             }
 
             for _ in 1..n {
                 if chars.next() != Some(Ok('%')) {
-                    return Err(Error::AvmError(uri_error(
-                        activation,
-                        &format!("Error #1052: Invalid URI passed to {func_name} function."),
-                        1052,
-                    )?));
+                    return Err(make_error_1052(activation, func_name));
                 }; // consume %
 
                 let Some(byte) = handle_percent(&mut chars) else {
-                    return Err(Error::AvmError(uri_error(
-                        activation,
-                        &format!("Error #1052: Invalid URI passed to {func_name} function."),
-                        1052,
-                    )?));
+                    return Err(make_error_1052(activation, func_name));
                 };
 
                 if (byte & 0xC0) != 0x80 {
-                    return Err(Error::AvmError(uri_error(
-                        activation,
-                        &format!("Error #1052: Invalid URI passed to {func_name} function."),
-                        1052,
-                    )?));
+                    return Err(make_error_1052(activation, func_name));
                 }
 
                 bytes.push(byte);
             }
         }
 
-        let Ok(decoded) = std::str::from_utf8(&bytes) else {
-            return Err(Error::AvmError(uri_error(
-                activation,
-                &format!("Error #1052: Invalid URI passed to {func_name} function."),
-                1052,
-            )?));
+        let is_reserved = if bytes.len() == 1 {
+            reserved_set.contains(bytes[0] as char)
+        } else {
+            // Multi-byte string cannot be reserved
+            false
         };
-        if reserved_set.contains(decoded) {
+
+        if is_reserved {
             for byte in &bytes {
-                write!(output, "%{x:02X}", x = byte).unwrap();
+                write!(output, "%{byte:02X}").unwrap();
             }
         } else {
-            output.push_utf8(decoded);
+            output.push_utf8_bytes(&bytes);
         }
     }
 
-    Ok(AvmString::new(activation.context.gc_context, output).into())
+    Ok(AvmString::new(activation.gc(), output).into())
 }

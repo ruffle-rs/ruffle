@@ -2,14 +2,12 @@
 
 use crate::avm2::activation::Activation;
 use crate::avm2::object::script_object::ScriptObjectData;
-use crate::avm2::object::{ClassObject, Object, ObjectPtr, TObject};
-use crate::avm2::value::Value;
+use crate::avm2::object::{ClassObject, Object, TObject};
 use crate::avm2::Error;
-use crate::html::TextFormat;
+use crate::html::{TextDisplay, TextFormat};
+use crate::utils::HasPrefixField;
 use core::fmt;
-use gc_arena::barrier::unlock;
-use gc_arena::lock::RefLock;
-use gc_arena::{Collect, Gc, GcWeak, Mutation};
+use gc_arena::{Collect, Gc, GcWeak};
 use std::cell::{Ref, RefCell, RefMut};
 
 /// A class instance allocator that allocates TextFormat objects.
@@ -20,8 +18,11 @@ pub fn textformat_allocator<'gc>(
     Ok(TextFormatObject(Gc::new(
         activation.gc(),
         TextFormatObjectData {
-            base: RefLock::new(ScriptObjectData::new(class)),
-            text_format: Default::default(),
+            base: ScriptObjectData::new(class),
+            text_format: RefCell::new(TextFormat {
+                display: Some(TextDisplay::Block),
+                ..Default::default()
+            }),
         },
     ))
     .into())
@@ -43,11 +44,12 @@ impl fmt::Debug for TextFormatObject<'_> {
     }
 }
 
-#[derive(Clone, Collect)]
+#[derive(Clone, Collect, HasPrefixField)]
 #[collect(no_drop)]
+#[repr(C, align(8))]
 pub struct TextFormatObjectData<'gc> {
     /// Base script object
-    base: RefLock<ScriptObjectData<'gc>>,
+    base: ScriptObjectData<'gc>,
 
     text_format: RefCell<TextFormat>,
 }
@@ -62,41 +64,26 @@ impl<'gc> TextFormatObject<'gc> {
         let this: Object<'gc> = Self(Gc::new(
             activation.gc(),
             TextFormatObjectData {
-                base: RefLock::new(ScriptObjectData::new(class)),
+                base: ScriptObjectData::new(class),
                 text_format: RefCell::new(text_format),
             },
         ))
         .into();
-        this.install_instance_slots(activation.gc());
 
         Ok(this)
+    }
+
+    pub fn text_format(&self) -> Ref<'gc, TextFormat> {
+        Gc::as_ref(self.0).text_format.borrow()
+    }
+
+    pub fn text_format_mut(&self) -> RefMut<'gc, TextFormat> {
+        Gc::as_ref(self.0).text_format.borrow_mut()
     }
 }
 
 impl<'gc> TObject<'gc> for TextFormatObject<'gc> {
-    fn base(&self) -> Ref<ScriptObjectData<'gc>> {
-        self.0.base.borrow()
-    }
-
-    fn base_mut(&self, mc: &Mutation<'gc>) -> RefMut<ScriptObjectData<'gc>> {
-        unlock!(Gc::write(mc, self.0), TextFormatObjectData, base).borrow_mut()
-    }
-
-    fn as_ptr(&self) -> *const ObjectPtr {
-        Gc::as_ptr(self.0) as *const ObjectPtr
-    }
-
-    fn value_of(&self, _mc: &Mutation<'gc>) -> Result<Value<'gc>, Error<'gc>> {
-        Ok(Value::Object(Object::from(*self)))
-    }
-
-    /// Unwrap this object as a text format.
-    fn as_text_format(&self) -> Option<Ref<TextFormat>> {
-        Some(self.0.text_format.borrow())
-    }
-
-    /// Unwrap this object as a mutable text format.
-    fn as_text_format_mut(&self) -> Option<RefMut<TextFormat>> {
-        Some(self.0.text_format.borrow_mut())
+    fn gc_base(&self) -> Gc<'gc, ScriptObjectData<'gc>> {
+        HasPrefixField::as_prefix_gc(self.0)
     }
 }

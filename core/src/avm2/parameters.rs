@@ -1,97 +1,121 @@
-use crate::avm2::error::type_error;
-use crate::avm2::object::PrimitiveObject;
+use crate::avm2::error::make_error_2007;
 use crate::avm2::Object;
 use crate::avm2::{Activation, Error, Value};
 use crate::string::AvmString;
 
+use ruffle_macros::istr;
+
 /// Extensions over parameters that are passed into AS-defined, Rust-implemented methods.
 ///
 /// It is expected that the AS signature is correct and you only operate on values defined from it.
-/// These values will be `expect()`ed to exist, and any method here will panic if they're missing.  
+/// These values will be `expect()`ed to exist, and any method here will panic if they're missing.
+///
+/// The rules for ActionScript type coercion may be surprising. Here is a table mapping
+/// ParametersExt functions to the corresponding ActionScript types:
+///
+/// `ParametersExt::get_value`: All parameter types work
+/// `ParametersExt::get_f64`: `Number`, `int`, or `uint` type
+/// `ParametersExt::get_i32`: `Number`, `int`, or `uint` type
+/// `ParametersExt::get_u32`: `Number`, `int`, or `uint` type
+/// `ParametersExt::get_bool`: `Boolean` type only
+/// `ParametersExt::get_string` and family: `String` type only
+/// `ParametersExt::get_object` and family: Any non-primitive type; i.e. any type *except* the following:
+///   - `*` (aka "any") type
+///   - `Object` type (as `Object` can represent any primitive value except `undefined`)
+///   - `Boolean` type
+///   - `int` type
+///   - `uint` type
+///   - `Number` type
+///   - `String` type
 pub trait ParametersExt<'gc> {
     /// Gets the value at the given index.
     fn get_value(&self, index: usize) -> Value<'gc>;
 
-    /// Gets the value at the given index and coerces it to an Object.
+    /// Gets the value at the given index, if it exists.
+    fn get_optional(&self, index: usize) -> Option<Value<'gc>>;
+
+    /// Gets the value at the given index as an Object. It is expected that the
+    /// value is either Object or Null.
     ///
-    /// If the value is null or is undefined, a TypeError 2007 is raised.
+    /// If the value is null, a TypeError 2007 is raised.
     fn get_object(
         &self,
         activation: &mut Activation<'_, 'gc>,
         index: usize,
         name: &'static str,
-    ) -> Result<Object<'gc>, Error<'gc>>;
+    ) -> Result<Object<'gc>, Error<'gc>> {
+        self.try_get_object(index)
+            .ok_or_else(|| make_error_2007(activation, name))
+    }
 
-    /// Tries to get the value at the given index and coerce it to an Object.
+    /// Gets the value at the given index as an Object. It is expected that the
+    /// value is either Object or Null.
     ///
-    /// If the value is null or is undefined, None is returned.
-    fn try_get_object(
-        &self,
-        activation: &mut Activation<'_, 'gc>,
-        index: usize,
-    ) -> Option<Object<'gc>>;
+    /// If the value is null, None is returned.
+    fn try_get_object(&self, index: usize) -> Option<Object<'gc>> {
+        match self.get_value(index) {
+            Value::Null => None,
+            Value::Object(o) => Some(o),
+            _ => panic!("Expected Object or null as parameter"),
+        }
+    }
 
-    /// Gets the value at the given index and coerces it to an f64.
-    ///
-    /// If the value is null or is undefined, 0.0 is returned.
-    /// If the object cannot be coerced to an f64, a TypeError 1050 is raised.
-    fn get_f64(
-        &self,
-        activation: &mut Activation<'_, 'gc>,
-        index: usize,
-    ) -> Result<f64, Error<'gc>>;
+    /// Gets the Number-typed value at the given index. It is expected that the
+    /// value is numerical.
+    fn get_f64(&self, index: usize) -> f64 {
+        self.get_value(index).as_f64()
+    }
 
-    /// Gets the value at the given index and coerces it to a u32.
-    ///
-    /// If the value is null or is undefined, 0 is returned.
-    /// If the object cannot be coerced to a u32, a TypeError 1050 is raised.
-    fn get_u32(
-        &self,
-        activation: &mut Activation<'_, 'gc>,
-        index: usize,
-    ) -> Result<u32, Error<'gc>>;
+    /// Gets the uint-typed value at the given index. It is expected that the
+    /// value is numerical.
+    fn get_u32(&self, index: usize) -> u32 {
+        self.get_value(index).as_u32()
+    }
 
-    /// Gets the value at the given index and coerces it to a i32.
-    ///
-    /// If the value is null or is undefined, 0 is returned.
-    /// If the object cannot be coerced to an i32, a TypeError 1050 is raised.
-    fn get_i32(
-        &self,
-        activation: &mut Activation<'_, 'gc>,
-        index: usize,
-    ) -> Result<i32, Error<'gc>>;
+    /// Gets the int-typed value at the given index. It is expected that the
+    /// value is numerical.
+    fn get_i32(&self, index: usize) -> i32 {
+        self.get_value(index).as_i32()
+    }
 
-    /// Gets the value at the given index and coerces it to a bool.
-    ///
-    /// If the value is null or is undefined, false is returned.
-    fn get_bool(&self, index: usize) -> bool;
+    /// Gets the Boolean-typed value at the given index. It is expected that the
+    /// value is of the Boolean type.
+    fn get_bool(&self, index: usize) -> bool {
+        match self.get_value(index) {
+            Value::Bool(b) => b,
+            _ => unreachable!("Expected Boolean-typed parameter"),
+        }
+    }
 
-    /// Gets the value at the given index and coerces it to an AvmString.
+    /// Gets the String-typed value at the given index. It is expected that the
+    /// value is either String or Null.
     ///
-    /// If the value is undefined, "undefined" is returned.
-    /// If the value is null, "null" is returned.
-    /// If the object cannot be coerced to a string, a TypeError 1050 is raised.
-    fn get_string(
-        &self,
-        activation: &mut Activation<'_, 'gc>,
-        index: usize,
-    ) -> Result<AvmString<'gc>, Error<'gc>>;
+    /// If the value is null, None is returned.
+    fn try_get_string(&self, index: usize) -> Option<AvmString<'gc>> {
+        match self.get_value(index) {
+            Value::Null => None,
+            Value::String(s) => Some(s),
+            _ => unreachable!("Expected String-typed parameter"),
+        }
+    }
+
+    /// Like `try_get_string`, but returns "null" for null values instead
+    /// of returning `None`.
+    fn get_string(&self, activation: &mut Activation<'_, 'gc>, index: usize) -> AvmString<'gc> {
+        self.try_get_string(index).unwrap_or_else(|| istr!("null"))
+    }
+
+    /// Like `try_get_string`, but throws TypeError 2007 for null values instead
+    /// of returning `None`.
     fn get_string_non_null(
         &self,
         activation: &mut Activation<'_, 'gc>,
         index: usize,
         name: &'static str,
-    ) -> Result<AvmString<'gc>, Error<'gc>>;
-
-    /// Gets the value at the given index and coerces it to an AvmString.
-    ///
-    /// If the value is null or is undefined, Ok(None) is returned.
-    /// If the object cannot be coerced to a string, a TypeError 1050 is raised.
-    fn try_get_string(
-        &self,
-        activation: &mut Activation<'_, 'gc>,
-        index: usize,
-    ) -> Result<Option<AvmString<'gc>>, Error<'gc>>;
+    ) -> Result<AvmString<'gc>, Error<'gc>> {
+        self.try_get_string(index)
+            .ok_or_else(|| make_error_2007(activation, name))
+    }
 }
 
 impl<'gc> ParametersExt<'gc> for &[Value<'gc>] {
@@ -100,103 +124,8 @@ impl<'gc> ParametersExt<'gc> for &[Value<'gc>] {
         self[index]
     }
 
-    fn get_object(
-        &self,
-        activation: &mut Activation<'_, 'gc>,
-        index: usize,
-        name: &'static str,
-    ) -> Result<Object<'gc>, Error<'gc>> {
-        match self[index] {
-            Value::Null | Value::Undefined => Err(null_parameter_error(activation, name)),
-            Value::Object(o) => Ok(o),
-            primitive => Ok(PrimitiveObject::from_primitive(primitive, activation)
-                .expect("Primitive object is infallible at this point")),
-        }
-    }
-
-    fn try_get_object(
-        &self,
-        activation: &mut Activation<'_, 'gc>,
-        index: usize,
-    ) -> Option<Object<'gc>> {
-        match self[index] {
-            Value::Null | Value::Undefined => None,
-            Value::Object(o) => Some(o),
-            primitive => Some(
-                PrimitiveObject::from_primitive(primitive, activation)
-                    .expect("Primitive object is infallible at this point"),
-            ),
-        }
-    }
-
-    fn get_f64(
-        &self,
-        activation: &mut Activation<'_, 'gc>,
-        index: usize,
-    ) -> Result<f64, Error<'gc>> {
-        self[index].coerce_to_number(activation)
-    }
-
-    fn get_u32(
-        &self,
-        activation: &mut Activation<'_, 'gc>,
-        index: usize,
-    ) -> Result<u32, Error<'gc>> {
-        self[index].coerce_to_u32(activation)
-    }
-
-    fn get_i32(
-        &self,
-        activation: &mut Activation<'_, 'gc>,
-        index: usize,
-    ) -> Result<i32, Error<'gc>> {
-        self[index].coerce_to_i32(activation)
-    }
-
-    fn get_bool(&self, index: usize) -> bool {
-        self[index].coerce_to_boolean()
-    }
-
-    fn get_string(
-        &self,
-        activation: &mut Activation<'_, 'gc>,
-        index: usize,
-    ) -> Result<AvmString<'gc>, Error<'gc>> {
-        self[index].coerce_to_string(activation)
-    }
-
-    fn get_string_non_null(
-        &self,
-        activation: &mut Activation<'_, 'gc>,
-        index: usize,
-        name: &'static str,
-    ) -> Result<AvmString<'gc>, Error<'gc>> {
-        match self[index] {
-            Value::Null | Value::Undefined => Err(null_parameter_error(activation, name)),
-            other => other.coerce_to_string(activation),
-        }
-    }
-
-    fn try_get_string(
-        &self,
-        activation: &mut Activation<'_, 'gc>,
-        index: usize,
-    ) -> Result<Option<AvmString<'gc>>, Error<'gc>> {
-        match self[index] {
-            Value::Null | Value::Undefined => Ok(None),
-            other => Ok(Some(other.coerce_to_string(activation)?)),
-        }
-    }
-}
-
-pub fn null_parameter_error<'gc>(activation: &mut Activation<'_, 'gc>, name: &str) -> Error<'gc> {
-    let error = type_error(
-        activation,
-        &format!("Error #2007: Parameter {name} must be non-null."),
-        2007,
-    );
-    match error {
-        Err(e) => e,
-        Ok(e) => Error::AvmError(e),
+    #[inline]
+    fn get_optional(&self, index: usize) -> Option<Value<'gc>> {
+        self.get(index).copied()
     }
 }

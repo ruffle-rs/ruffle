@@ -6,6 +6,7 @@
 package flash.media
 {
 
+    [API("674")]
     public final class AudioDecoder
     {
         // Dolby Digital Audio, which is also known as AC-3.

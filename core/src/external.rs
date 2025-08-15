@@ -1,20 +1,22 @@
-use crate::avm1::TObject as _;
+use crate::avm1::NativeObject;
 use crate::avm1::Value as Avm1Value;
 use crate::avm1::{Activation as Avm1Activation, ActivationIdentifier as Avm1ActivationIdentifier};
-use crate::avm1::{
-    ArrayObject as Avm1ArrayObject, Error as Avm1Error, Object as Avm1Object,
-    ScriptObject as Avm1ScriptObject,
-};
+use crate::avm1::{ArrayBuilder as Avm1ArrayBuilder, Error as Avm1Error, Object as Avm1Object};
 use crate::avm2::activation::Activation as Avm2Activation;
-use crate::avm2::object::TObject as _;
+use crate::avm2::error::Error as Avm2Error;
+use crate::avm2::object::{
+    ArrayObject as Avm2ArrayObject, Object as Avm2Object, ScriptObject as Avm2ScriptObject,
+    TObject as _,
+};
 use crate::avm2::Value as Avm2Value;
-use crate::avm2::{ArrayObject as Avm2ArrayObject, Object as Avm2Object};
 use crate::context::UpdateContext;
 use crate::string::AvmString;
 use gc_arena::Collect;
 use std::collections::BTreeMap;
+use std::rc::Rc;
 
 /// An intermediate format of representing shared data between ActionScript and elsewhere.
+///
 /// Regardless of the capabilities of both sides, all data will be translated to this potentially
 /// lossy format. Any recursion or additional metadata in ActionScript will not be translated.
 #[derive(Debug, Clone, PartialEq)]
@@ -130,25 +132,24 @@ impl Value {
             Avm1Value::Number(value) => value.into(),
             Avm1Value::String(value) => Value::String(value.to_string()),
             Avm1Value::MovieClip(_) => Value::Null,
+            Avm1Value::Object(object) if matches!(object.native(), NativeObject::Array(_)) => {
+                let length = object.length(activation)?;
+                let values: Result<Vec<_>, Avm1Error<'gc>> = (0..length)
+                    .map(|i| {
+                        let element = object.get_element(activation, i);
+                        Value::from_avm1(activation, element)
+                    })
+                    .collect();
+                Value::List(values?)
+            }
             Avm1Value::Object(object) => {
-                if object.as_array_object().is_some() {
-                    let length = object.length(activation)?;
-                    let values: Result<Vec<_>, Avm1Error<'gc>> = (0..length)
-                        .map(|i| {
-                            let element = object.get_element(activation, i);
-                            Value::from_avm1(activation, element)
-                        })
-                        .collect();
-                    Value::List(values?)
-                } else {
-                    let keys = object.get_keys(activation, false);
-                    let mut values = BTreeMap::new();
-                    for key in keys {
-                        let value = object.get(key, activation)?;
-                        values.insert(key.to_string(), Value::from_avm1(activation, value)?);
-                    }
-                    Value::Object(values)
+                let keys = object.get_keys(activation, false);
+                let mut values = BTreeMap::new();
+                for key in keys {
+                    let value = object.get(key, activation)?;
+                    values.insert(key.to_string(), Value::from_avm1(activation, value)?);
                 }
+                Value::Object(values)
             }
         })
     }
@@ -165,55 +166,73 @@ impl Value {
                 } else {
                     &value
                 };
-                Avm1Value::String(AvmString::new_utf8(activation.context.gc_context, value))
+                Avm1Value::String(AvmString::new_utf8(activation.gc(), value))
             }
             Value::Object(values) => {
-                let object = Avm1ScriptObject::new(
-                    activation.context.gc_context,
+                let object = Avm1Object::new(
+                    &activation.context.strings,
                     Some(activation.context.avm1.prototypes().object),
                 );
                 for (key, value) in values {
-                    let key = AvmString::new_utf8(activation.context.gc_context, key);
+                    let key = AvmString::new_utf8(activation.gc(), key);
                     let _ = object.set(key, value.into_avm1(activation), activation);
                 }
                 object.into()
             }
-            Value::List(values) => Avm1ArrayObject::new(
-                activation.context.gc_context,
-                activation.context.avm1.prototypes().array,
-                values
-                    .iter()
-                    .map(|value| value.to_owned().into_avm1(activation)),
-            )
-            .into(),
+            Value::List(values) => Avm1ArrayBuilder::new(activation)
+                .with(
+                    values
+                        .iter()
+                        .map(|value| value.to_owned().into_avm1(activation)),
+                )
+                .into(),
         }
     }
 
-    pub fn from_avm2(value: Avm2Value) -> Value {
-        match value {
+    pub fn from_avm2<'gc>(
+        activation: &mut Avm2Activation<'_, 'gc>,
+        value: Avm2Value<'gc>,
+    ) -> Result<Value, Avm2Error<'gc>> {
+        Ok(match value {
             Avm2Value::Undefined => Value::Undefined,
             Avm2Value::Null => Value::Null,
             Avm2Value::Bool(value) => value.into(),
             Avm2Value::Number(value) => value.into(),
             Avm2Value::Integer(value) => value.into(),
             Avm2Value::String(value) => Value::String(value.to_string()),
-            Avm2Value::Object(object) => {
-                if let Some(array) = object.as_array_storage() {
+            Avm2Value::Object(obj) => {
+                if let Some(array) = obj.as_array_storage() {
                     let length = array.length();
                     let values = (0..length)
                         .map(|i| {
                             // FIXME - is this right?
                             let element = array.get(i).unwrap_or(Avm2Value::Null);
-                            Value::from_avm2(element)
+                            Value::from_avm2(activation, element)
                         })
-                        .collect();
+                        .collect::<Result<Vec<Value>, Avm2Error>>()?;
                     Value::List(values)
+                } else if matches!(obj, Avm2Object::ScriptObject(_)) {
+                    let mut values = BTreeMap::new();
+
+                    let mut last_index = obj.get_next_enumerant(0, activation)?;
+                    while last_index != 0 {
+                        let name = obj
+                            .get_enumerant_name(last_index, activation)?
+                            .coerce_to_string(activation)?;
+                        let value = obj.get_enumerant_value(last_index, activation)?;
+
+                        values.insert(name.to_string(), Value::from_avm2(activation, value)?);
+
+                        last_index = obj.get_next_enumerant(last_index, activation)?;
+                    }
+
+                    Value::Object(values)
                 } else {
                     tracing::warn!("from_avm2 needs to be implemented for Avm2Value::Object");
                     Value::Null
                 }
             }
-        }
+        })
     }
 
     pub fn into_avm2<'gc>(self, activation: &mut Avm2Activation<'_, 'gc>) -> Avm2Value<'gc> {
@@ -222,12 +241,16 @@ impl Value {
             Value::Null => Avm2Value::Null,
             Value::Bool(value) => Avm2Value::Bool(value),
             Value::Number(value) => Avm2Value::Number(value),
-            Value::String(value) => {
-                Avm2Value::String(AvmString::new_utf8(activation.context.gc_context, value))
-            }
-            Value::Object(_values) => {
-                tracing::warn!("into_avm2 needs to be implemented for Value::Object");
-                Avm2Value::Undefined
+            Value::String(value) => Avm2Value::String(AvmString::new_utf8(activation.gc(), value)),
+            Value::Object(values) => {
+                let obj = Avm2ScriptObject::new_object(activation);
+
+                for (key, value) in values.into_iter() {
+                    let key = AvmString::new_utf8(activation.gc(), key);
+                    let value = value.into_avm2(activation);
+                    obj.set_dynamic_property(key, value, activation.gc());
+                }
+                Avm2Value::Object(obj)
             }
             Value::List(values) => {
                 let storage = values
@@ -235,7 +258,7 @@ impl Value {
                     .map(|value| value.to_owned().into_avm2(activation))
                     .collect();
 
-                Avm2Value::Object(Avm2ArrayObject::from_storage(activation, storage).unwrap())
+                Avm2ArrayObject::from_storage(activation, storage).into()
             }
         }
     }
@@ -256,7 +279,7 @@ pub enum Callback<'gc> {
 impl<'gc> Callback<'gc> {
     pub fn call(
         &self,
-        context: &mut UpdateContext<'_, 'gc>,
+        context: &mut UpdateContext<'gc>,
         name: &str,
         args: impl IntoIterator<Item = Value>,
     ) -> Value {
@@ -264,7 +287,7 @@ impl<'gc> Callback<'gc> {
             Callback::Avm1 { this, method } => {
                 if let Some(base_clip) = context.stage.root_clip() {
                     let mut activation = Avm1Activation::from_nothing(
-                        context.reborrow(),
+                        context,
                         Avm1ActivationIdentifier::root("[ExternalInterface]"),
                         base_clip,
                     );
@@ -273,7 +296,7 @@ impl<'gc> Callback<'gc> {
                         .into_iter()
                         .map(|v| v.into_avm1(&mut activation))
                         .collect();
-                    let name = AvmString::new_utf8(activation.context.gc_context, name);
+                    let name = AvmString::new_utf8(activation.gc(), name);
                     if let Ok(result) = method
                         .call(name, &mut activation, this.into(), &args)
                         .and_then(|value| Value::from_avm1(&mut activation, value))
@@ -284,18 +307,23 @@ impl<'gc> Callback<'gc> {
                 Value::Null
             }
             Callback::Avm2 { method } => {
+                let method = Avm2Value::from(*method);
+
                 let domain = context
                     .library
-                    .library_for_movie(context.swf.clone())
+                    .library_for_movie(context.root_swf.clone())
                     .unwrap()
                     .avm2_domain();
-                let mut activation = Avm2Activation::from_domain(context.reborrow(), domain);
+                let mut activation = Avm2Activation::from_domain(context, domain);
                 let args: Vec<Avm2Value> = args
                     .into_iter()
                     .map(|v| v.into_avm2(&mut activation))
                     .collect();
-                match method.call(Avm2Value::Null, &args, &mut activation) {
-                    Ok(result) => Value::from_avm2(result),
+                match method
+                    .call(&mut activation, Avm2Value::Null, &args)
+                    .and_then(|value| Value::from_avm2(&mut activation, value))
+                {
+                    Ok(result) => result,
                     Err(e) => {
                         tracing::error!(
                             "Unhandled error in External Interface callback {name}: {:?}",
@@ -322,29 +350,20 @@ impl FsCommandProvider for NullFsCommandProvider {
 }
 
 pub trait ExternalInterfaceProvider {
-    fn get_method(&self, name: &str) -> Option<Box<dyn ExternalInterfaceMethod>>;
+    fn call_method(&self, context: &mut UpdateContext<'_>, name: &str, args: &[Value]) -> Value;
 
     fn on_callback_available(&self, name: &str);
+
+    fn get_id(&self) -> Option<String>;
 }
 
-pub trait ExternalInterfaceMethod {
-    fn call(&self, context: &mut UpdateContext<'_, '_>, args: &[Value]) -> Value;
-}
-
-impl<F> ExternalInterfaceMethod for F
-where
-    F: Fn(&mut UpdateContext<'_, '_>, &[Value]) -> Value,
-{
-    fn call(&self, context: &mut UpdateContext<'_, '_>, args: &[Value]) -> Value {
-        self(context, args)
-    }
-}
+pub struct NullExternalInterfaceProvider;
 
 #[derive(Collect)]
 #[collect(no_drop)]
 pub struct ExternalInterface<'gc> {
     #[collect(require_static)]
-    providers: Vec<Box<dyn ExternalInterfaceProvider>>,
+    provider: Option<Rc<Box<dyn ExternalInterfaceProvider>>>,
     callbacks: BTreeMap<String, Callback<'gc>>,
     #[collect(require_static)]
     fs_commands: Box<dyn FsCommandProvider>,
@@ -352,23 +371,23 @@ pub struct ExternalInterface<'gc> {
 
 impl<'gc> ExternalInterface<'gc> {
     pub fn new(
-        providers: Vec<Box<dyn ExternalInterfaceProvider>>,
+        provider: Option<Box<dyn ExternalInterfaceProvider>>,
         fs_commands: Box<dyn FsCommandProvider>,
     ) -> Self {
         Self {
-            providers,
+            provider: provider.map(Rc::new),
             callbacks: Default::default(),
             fs_commands,
         }
     }
 
-    pub fn add_provider(&mut self, provider: Box<dyn ExternalInterfaceProvider>) {
-        self.providers.push(provider);
+    pub fn set_provider(&mut self, provider: Option<Box<dyn ExternalInterfaceProvider>>) {
+        self.provider = provider.map(Rc::new);
     }
 
     pub fn add_callback(&mut self, name: String, callback: Callback<'gc>) {
         self.callbacks.insert(name.clone(), callback);
-        for provider in &self.providers {
+        if let Some(provider) = &self.provider {
             provider.on_callback_available(&name);
         }
     }
@@ -377,17 +396,21 @@ impl<'gc> ExternalInterface<'gc> {
         self.callbacks.get(name).cloned()
     }
 
-    pub fn get_method_for(&self, name: &str) -> Option<Box<dyn ExternalInterfaceMethod>> {
-        for provider in &self.providers {
-            if let Some(method) = provider.get_method(name) {
-                return Some(method);
-            }
+    pub fn call_method(context: &mut UpdateContext<'gc>, name: &str, args: &[Value]) -> Value {
+        let provider = context.external_interface.provider.clone();
+        if let Some(provider) = &provider {
+            provider.call_method(context, name, args)
+        } else {
+            Value::Undefined
         }
-        None
     }
 
     pub fn available(&self) -> bool {
-        !self.providers.is_empty()
+        self.provider.is_some()
+    }
+
+    pub fn get_id(&self) -> Option<String> {
+        self.provider.as_ref().and_then(|p| p.get_id())
     }
 
     pub fn invoke_fs_command(&self, command: &str, args: &str) -> bool {

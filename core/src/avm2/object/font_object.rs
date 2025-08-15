@@ -1,12 +1,10 @@
 use crate::avm2::object::script_object::ScriptObjectData;
-use crate::avm2::object::{Object, ObjectPtr, TObject};
-use crate::avm2::value::Value;
+use crate::avm2::object::{Object, TObject};
 use crate::avm2::{Activation, ClassObject, Error};
 use crate::character::Character;
 use crate::font::Font;
-use gc_arena::Mutation;
-use gc_arena::{Collect, GcCell, GcWeakCell};
-use std::cell::{Ref, RefMut};
+use crate::utils::HasPrefixField;
+use gc_arena::{Collect, Gc, GcWeak, Mutation};
 use std::fmt;
 
 /// A class instance allocator that allocates Font objects.
@@ -20,11 +18,11 @@ pub fn font_allocator<'gc>(
         .context
         .library
         .avm2_class_registry()
-        .class_symbol(class)
+        .class_symbol(class.inner_class_definition())
     {
         if let Some(lib) = activation.context.library.library_for_movie(movie) {
             if let Some(Character::Font(font)) = lib.character_by_id(id) {
-                Some(*font)
+                Some(font)
             } else {
                 None
             }
@@ -35,21 +33,21 @@ pub fn font_allocator<'gc>(
         None
     };
 
-    Ok(FontObject(GcCell::new(
-        activation.context.gc_context,
-        FontObjectData { base, font },
-    ))
-    .into())
+    Ok(FontObject(Gc::new(activation.gc(), FontObjectData { base, font })).into())
 }
 
 #[derive(Clone, Collect, Copy)]
 #[collect(no_drop)]
-pub struct FontObject<'gc>(pub GcCell<'gc, FontObjectData<'gc>>);
+pub struct FontObject<'gc>(pub Gc<'gc, FontObjectData<'gc>>);
+
+#[derive(Clone, Collect, Copy, Debug)]
+#[collect(no_drop)]
+pub struct FontObjectWeak<'gc>(pub GcWeak<'gc, FontObjectData<'gc>>);
 
 impl<'gc> FontObject<'gc> {
     pub fn for_font(mc: &Mutation<'gc>, class: ClassObject<'gc>, font: Font<'gc>) -> Object<'gc> {
         let base = ScriptObjectData::new(class);
-        FontObject(GcCell::new(
+        FontObject(Gc::new(
             mc,
             FontObjectData {
                 base,
@@ -58,36 +56,21 @@ impl<'gc> FontObject<'gc> {
         ))
         .into()
     }
-}
 
-#[derive(Clone, Collect, Copy, Debug)]
-#[collect(no_drop)]
-pub struct FontObjectWeak<'gc>(pub GcWeakCell<'gc, FontObjectData<'gc>>);
+    pub fn font(self) -> Option<Font<'gc>> {
+        self.0.font
+    }
+}
 
 impl<'gc> TObject<'gc> for FontObject<'gc> {
-    fn base(&self) -> Ref<ScriptObjectData<'gc>> {
-        Ref::map(self.0.read(), |read| &read.base)
-    }
-
-    fn base_mut(&self, mc: &Mutation<'gc>) -> RefMut<ScriptObjectData<'gc>> {
-        RefMut::map(self.0.write(mc), |write| &mut write.base)
-    }
-
-    fn as_ptr(&self) -> *const ObjectPtr {
-        self.0.as_ptr() as *const ObjectPtr
-    }
-
-    fn value_of(&self, _mc: &Mutation<'gc>) -> Result<Value<'gc>, Error<'gc>> {
-        Ok(Value::Object(Object::from(*self)))
-    }
-
-    fn as_font(&self) -> Option<Font<'gc>> {
-        self.0.read().font
+    fn gc_base(&self) -> Gc<'gc, ScriptObjectData<'gc>> {
+        HasPrefixField::as_prefix_gc(self.0)
     }
 }
 
-#[derive(Collect)]
+#[derive(Collect, HasPrefixField)]
 #[collect(no_drop)]
+#[repr(C, align(8))]
 pub struct FontObjectData<'gc> {
     /// Base script object
     base: ScriptObjectData<'gc>,

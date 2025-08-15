@@ -1,0 +1,6 @@
+// stage.frameRate (SWF header = 0.0)
+0
+// stage.frameRate = 0;
+0.01
+// stage.frameRate = 2000;
+1000

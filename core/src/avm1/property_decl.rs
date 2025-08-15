@@ -2,15 +2,15 @@
 
 use crate::avm1::function::{Executable, FunctionObject, NativeFunction};
 use crate::avm1::property::Attribute;
-use crate::avm1::{Object, ScriptObject, TObject, Value};
-use crate::context::GcContext;
+use crate::avm1::{Object, Value};
+use crate::string::{StringContext, WStr};
 
-/// Defines a list of properties on a [`ScriptObject`].
+/// Defines a list of properties on a [`Object`].
 #[inline(never)]
 pub fn define_properties_on<'gc>(
     decls: &[Declaration],
-    context: &mut GcContext<'_, 'gc>,
-    this: ScriptObject<'gc>,
+    context: &mut StringContext<'gc>,
+    this: Object<'gc>,
     fn_proto: Object<'gc>,
 ) {
     for decl in decls {
@@ -19,10 +19,10 @@ pub fn define_properties_on<'gc>(
 }
 
 /// The declaration of a property, method, or simple field, that
-/// can be defined on a [`ScriptObject`].
+/// can be defined on a [`Object`].
 #[derive(Copy, Clone)]
 pub struct Declaration {
-    pub name: &'static str,
+    pub name: &'static [u8],
     pub kind: DeclKind,
     pub attributes: Attribute,
 }
@@ -45,7 +45,7 @@ pub enum DeclKind {
     /// Prefer using [`Self::Method`] when defining host functions.
     Function(NativeFunction),
     /// Declares a static string value.
-    String(&'static str),
+    String(&'static [u8]),
     /// Declares a static bool value.
     Bool(bool),
     /// Declares a static int value.
@@ -56,41 +56,34 @@ pub enum DeclKind {
 
 impl Declaration {
     #[inline(never)]
-    /// Defines the field represented by this declaration on a [`ScriptObject`].
+    /// Defines the field represented by this declaration on a [`Object`].
     /// Returns the value defined on the object, or `undefined` if this declaration
     /// defined a property.
     pub fn define_on<'gc>(
         &self,
-        context: &mut GcContext<'_, 'gc>,
-        this: ScriptObject<'gc>,
+        context: &mut StringContext<'gc>,
+        this: Object<'gc>,
         fn_proto: Object<'gc>,
     ) -> Value<'gc> {
-        let mc = context.gc_context;
+        let mc = context.gc();
 
-        let name = ruffle_wstr::from_utf8(self.name);
-        let name = context.interner.intern_wstr(mc, name);
-
+        let name = context.intern_static(WStr::from_units(self.name));
         let value = match self.kind {
             DeclKind::Property { getter, setter } => {
-                let getter =
-                    FunctionObject::function(mc, Executable::Native(getter), fn_proto, fn_proto);
-                let setter = setter.map(|setter| {
-                    FunctionObject::function(mc, Executable::Native(setter), fn_proto, fn_proto)
-                });
+                let getter = FunctionObject::native(context, getter, fn_proto, fn_proto);
+                let setter = setter
+                    .map(|setter| FunctionObject::native(context, setter, fn_proto, fn_proto));
                 this.add_property(mc, name.into(), getter, setter, self.attributes);
                 return Value::Undefined;
             }
             DeclKind::Method(func) => {
-                FunctionObject::bare_function(mc, Some(Executable::Native(func)), None, fn_proto)
+                FunctionObject::bare_function(context, Executable::Native(func), None, fn_proto)
                     .into()
             }
             DeclKind::Function(func) => {
-                FunctionObject::function(mc, Executable::Native(func), fn_proto, fn_proto).into()
+                FunctionObject::native(context, func, fn_proto, fn_proto).into()
             }
-            DeclKind::String(s) => {
-                let s = ruffle_wstr::from_utf8(s);
-                context.interner.intern_wstr(mc, s).into()
-            }
+            DeclKind::String(s) => context.intern_static(WStr::from_units(s)).into(),
             DeclKind::Bool(b) => b.into(),
             DeclKind::Int(i) => i.into(),
             DeclKind::Float(f) => f.into(),
@@ -101,7 +94,7 @@ impl Declaration {
     }
 }
 
-/// Declares a list of property [`Declaration`]s that can be later defined on [`ScriptObject`]s.
+/// Declares a list of property [`Declaration`]s that can be later defined on [`Object`]s.
 ///
 /// # Usage:
 ///
@@ -122,20 +115,27 @@ impl Declaration {
 #[allow(unused_macro_rules)]
 macro_rules! declare_properties {
     ( $($name:literal => $kind:ident($($args:tt)*);)* ) => {
-        &[ $(
-            declare_properties!(@__prop $kind($name, $($args)*))
-        ),* ]
+        const {
+            const fn __assert_ascii(s: &str) -> &[u8] {
+                assert!(s.is_ascii());
+                s.as_bytes()
+            }
+
+            &[ $(
+                declare_properties!(@__prop $kind($name, $($args)*))
+            ),* ]
+        }
     };
     (@__prop $kind:ident($name:literal $(,$args:expr)*) ) => {
         crate::avm1::property_decl::Declaration {
-            name: $name,
+            name: __assert_ascii($name),
             kind: declare_properties!(@__kind $kind ($($args),*)),
             attributes: crate::avm1::property::Attribute::empty(),
         }
     };
     (@__prop $kind:ident($name:literal $(,$args:expr)*; $($attributes:ident)|*) ) => {
         crate::avm1::property_decl::Declaration {
-            name: $name,
+            name: __assert_ascii($name),
             kind: declare_properties!(@__kind $kind ($($args),*)),
             attributes: crate::avm1::property::Attribute::from_bits_truncate(
                 0 $(| crate::avm1::property::Attribute::$attributes.bits())*
@@ -161,7 +161,7 @@ macro_rules! declare_properties {
         crate::avm1::property_decl::DeclKind::Function($function)
     };
     (@__kind string($string:expr)) => {
-        crate::avm1::property_decl::DeclKind::String($string)
+        crate::avm1::property_decl::DeclKind::String(__assert_ascii($string))
     };
     (@__kind bool($boolean:expr)) => {
         crate::avm1::property_decl::DeclKind::Bool($boolean)

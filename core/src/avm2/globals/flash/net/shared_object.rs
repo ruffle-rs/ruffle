@@ -1,14 +1,12 @@
 //! `flash.net.SharedObject` builtin/prototype
 
-use crate::avm2::api_version::ApiVersion;
 use crate::avm2::error::error;
-use crate::avm2::object::TObject;
-use crate::avm2::Error::AvmError;
-use crate::avm2::Multiname;
-use crate::avm2::{Activation, Error, Namespace, Object, Value};
-use crate::string::AvmString;
+use crate::avm2::object::{ScriptObject, SharedObjectObject};
+use crate::avm2::parameters::ParametersExt;
+use crate::avm2::{Activation, Error, Object, Value};
 use crate::{avm2_stub_getter, avm2_stub_method, avm2_stub_setter};
 use flash_lso::types::{AMFVersion, Lso};
+use ruffle_macros::istr;
 use std::borrow::Cow;
 
 fn new_lso<'gc>(
@@ -28,7 +26,7 @@ fn new_lso<'gc>(
     Ok(Lso::new(
         elements,
         name.split('/')
-            .last()
+            .next_back()
             .map(|e| e.to_string())
             .unwrap_or_else(|| "<unknown>".to_string()),
         AMFVersion::AMF3,
@@ -37,16 +35,13 @@ fn new_lso<'gc>(
 
 pub fn get_local<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    _this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     // TODO: It appears that Flash does some kind of escaping here:
     // the name "foo\uD800" correspond to a file named "fooE#FB#FB#D.sol".
 
-    let name = args
-        .get(0)
-        .unwrap_or(&Value::Undefined)
-        .coerce_to_string(activation)?;
+    let name = args.get_string_non_null(activation, 0, "name")?;
     let name = name.to_utf8_lossy();
 
     const INVALID_CHARS: &str = "~%&\\;:\"',<>?# ";
@@ -55,7 +50,7 @@ pub fn get_local<'gc>(
         return Ok(Value::Null);
     }
 
-    let mut movie_url = if let Ok(url) = url::Url::parse(activation.context.swf.url()) {
+    let mut movie_url = if let Ok(url) = url::Url::parse(activation.context.root_swf.url()) {
         url
     } else {
         tracing::error!("SharedObject::get_local: Unable to parse movie URL");
@@ -64,7 +59,7 @@ pub fn get_local<'gc>(
     movie_url.set_query(None);
     movie_url.set_fragment(None);
 
-    let secure = args.get(2).unwrap_or(&Value::Undefined).coerce_to_boolean();
+    let secure = args.get_bool(2);
 
     // Secure parameter disallows using the shared object from non-HTTPS.
     if secure && movie_url.scheme() != "https" {
@@ -91,7 +86,8 @@ pub fn get_local<'gc>(
         movie_url.host_str().unwrap_or_default()
     };
 
-    let local_path = if let Some(Value::String(local_path)) = args.get(1) {
+    let local_path = &args.try_get_string(1);
+    let local_path = if let Some(local_path) = local_path {
         // Empty local path always fails.
         if local_path.is_empty() {
             return Ok(Value::Null);
@@ -149,26 +145,7 @@ pub fn get_local<'gc>(
         return Ok((*so).into());
     }
 
-    // Data property only should exist when created with getLocal/Remote
-    let sharedobject_cls = this; // `this` of a static method is the class
-    let this = sharedobject_cls.construct(activation, &[])?;
-
-    // Set the internal name
-    let ruffle_name = Multiname::new(
-        Namespace::package(
-            "__ruffle__",
-            ApiVersion::AllVersions,
-            &mut activation.borrow_gc(),
-        ),
-        "_ruffleName",
-    );
-    this.set_property(
-        &ruffle_name,
-        AvmString::new_utf8(activation.context.gc_context, &full_name).into(),
-        activation,
-    )?;
-
-    let mut data = Value::Undefined;
+    let mut data = None;
 
     // Load the data object from storage if it existed prior
     if let Some(saved) = activation.context.storage.get(&full_name) {
@@ -177,57 +154,58 @@ pub fn get_local<'gc>(
         }
     }
 
-    if data == Value::Undefined {
+    let data = if let Some(data) = data {
+        data
+    } else {
         // No data; create a fresh data object.
-        data = activation
-            .avm2()
-            .classes()
-            .object
-            .construct(activation, &[])?
-            .into();
-    }
+        ScriptObject::new_object(activation)
+    };
 
-    this.set_public_property("data", data, activation)?;
+    let created_shared_object =
+        SharedObjectObject::from_data_and_name(activation, data, full_name.clone());
+
     activation
         .context
         .avm2_shared_objects
-        .insert(full_name, this);
+        .insert(full_name, created_shared_object.into());
 
-    Ok(this.into())
+    Ok(created_shared_object.into())
+}
+
+pub fn get_data<'gc>(
+    _activation: &mut Activation<'_, 'gc>,
+    this: Value<'gc>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
+    let shared_object = this.as_shared_object().unwrap();
+
+    Ok(shared_object.data().into())
 }
 
 pub fn flush<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let data = this
-        .get_public_property("data", activation)?
-        .coerce_to_object(activation)?;
+    let this = this.as_object().unwrap();
 
-    let ruffle_name = Multiname::new(
-        Namespace::package(
-            "__ruffle__",
-            ApiVersion::AllVersions,
-            &mut activation.borrow_gc(),
-        ),
-        "_ruffleName",
-    );
-    let name = this
-        .get_property(&ruffle_name, activation)?
-        .coerce_to_string(activation)?;
-    let name = name.to_utf8_lossy();
+    let shared_object = this.as_shared_object().unwrap();
 
-    let mut lso = new_lso(activation, &name, data)?;
+    let data = shared_object.data();
+    let name = shared_object.name();
+
+    let mut lso = new_lso(activation, name, data)?;
     // Flash does not write empty LSOs to disk
     if lso.body.is_empty() {
-        Ok("flushed".into())
+        Ok(istr!("flushed").into())
     } else {
         let bytes = flash_lso::write::write_to_bytes(&mut lso).unwrap_or_default();
-        if activation.context.storage.put(&name, &bytes) {
-            Ok("flushed".into())
+        if activation.context.storage.put(name, &bytes) {
+            Ok(istr!("flushed").into())
         } else {
-            Err(AvmError(error(
+            Err(Error::avm_error(error(
                 activation,
                 "Error #2130: Unable to flush SharedObject.",
                 2130,
@@ -239,27 +217,17 @@ pub fn flush<'gc>(
 
 pub fn get_size<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let data = this
-        .get_public_property("data", activation)?
-        .coerce_to_object(activation)?;
+    let this = this.as_object().unwrap();
 
-    let ruffle_name = Multiname::new(
-        Namespace::package(
-            "__ruffle__",
-            ApiVersion::AllVersions,
-            &mut activation.borrow_gc(),
-        ),
-        "_ruffleName",
-    );
-    let name = this
-        .get_property(&ruffle_name, activation)?
-        .coerce_to_string(activation)?;
-    let name = name.to_utf8_lossy();
+    let shared_object = this.as_shared_object().unwrap();
 
-    let mut lso = new_lso(activation, &name, data)?;
+    let data = shared_object.data();
+    let name = shared_object.name();
+
+    let mut lso = new_lso(activation, name, data)?;
     // Flash returns 0 for empty LSOs, but the actual number of bytes (including the header) otherwise
     if lso.body.is_empty() {
         Ok(0.into())
@@ -271,7 +239,7 @@ pub fn get_size<'gc>(
 
 pub fn close<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    _this: Object<'gc>,
+    _this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     avm2_stub_method!(activation, "flash.net.SharedObject", "close");
@@ -280,39 +248,26 @@ pub fn close<'gc>(
 
 pub fn clear<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    // Create a fresh data object.
-    let data = activation
-        .avm2()
-        .classes()
-        .object
-        .construct(activation, &[])?
-        .into();
-    this.set_public_property("data", data, activation)?;
+    let this = this.as_object().unwrap();
+
+    let shared_object = this.as_shared_object().unwrap();
+
+    // Clear the local data object.
+    shared_object.reset_data(activation);
 
     // Delete data from storage backend.
-    let ruffle_name = Multiname::new(
-        Namespace::package(
-            "__ruffle__",
-            ApiVersion::AllVersions,
-            &mut activation.borrow_gc(),
-        ),
-        "_ruffleName",
-    );
-    let name = this
-        .get_property(&ruffle_name, activation)?
-        .coerce_to_string(activation)?;
-    let name = name.to_utf8_lossy();
-    activation.context.storage.remove_key(&name);
+    let name = shared_object.name();
+    activation.context.storage.remove_key(name);
 
     Ok(Value::Undefined)
 }
 
 pub fn get_object_encoding<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    _this: Object<'gc>,
+    _this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     avm2_stub_getter!(activation, "flash.net.SharedObject", "objectEncoding");
@@ -321,7 +276,7 @@ pub fn get_object_encoding<'gc>(
 
 pub fn set_object_encoding<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    _this: Object<'gc>,
+    _this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     avm2_stub_setter!(activation, "flash.net.SharedObject", "objectEncoding");

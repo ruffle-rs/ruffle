@@ -1,0 +1,28 @@
+num_ticks = 6
+
+[image_comparisons."output.01"]
+trigger = 1
+
+[image_comparisons."output.02"]
+trigger = 2
+
+[image_comparisons."output.03"]
+trigger = 3
+
+[image_comparisons."output.04"]
+trigger = 4
+tolerance = 128
+max_outliers = 20
+
+[image_comparisons."output.05"]
+trigger = 5
+tolerance = 128
+max_outliers = 20
+
+[image_comparisons."output.06"]
+trigger = 6
+tolerance = 128
+max_outliers = 20
+
+[player_options]
+with_renderer = { optional = false, sample_count = 4 }

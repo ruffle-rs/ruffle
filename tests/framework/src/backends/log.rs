@@ -26,4 +26,11 @@ impl LogBackend for TestLogBackend {
         self.trace_output.borrow_mut().push_str(message);
         self.trace_output.borrow_mut().push('\n');
     }
+
+    fn avm_warning(&self, message: &str) {
+        // Match the format used by Flash Player
+        self.trace_output.borrow_mut().push_str("Warning: ");
+        self.trace_output.borrow_mut().push_str(message);
+        self.trace_output.borrow_mut().push('\n');
+    }
 }

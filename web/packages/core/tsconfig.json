@@ -4,9 +4,12 @@
         "composite": true,
         "module": "es2020",
         "moduleResolution": "node",
-        "target": "es2017",
+        "target": "es2021",
         "rootDir": "src",
         "outDir": "dist",
+        "jsx": "react-jsx",
+        "jsxImportSource": "tsx-dom",
+        "types": ["node", "tsx-dom"]
     },
     "include": ["src/**/*"],
 }

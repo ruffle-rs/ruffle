@@ -1,5 +1,3 @@
-/* eslint-env node */
-
 import fs from "fs";
 import url from "url";
 import json5 from "json5";
@@ -14,9 +12,8 @@ function transformManifest(content, env) {
     const manifest = json5.parse(content.toString());
 
     let packageVersion = process.env["npm_package_version"];
-    let versionChannel = process.env["CFG_RELEASE_CHANNEL"] || "nightly";
-    let buildDate = new Date().toISOString().substring(0, 10);
-    let buildId = process.env["BUILD_ID"];
+    let versionChannel = process.env["CFG_RELEASE_CHANNEL"] || "local";
+    let version4 = process.env["VERSION4"];
     let firefoxExtensionId =
         process.env["FIREFOX_EXTENSION_ID"] || "ruffle@ruffle.rs";
 
@@ -28,8 +25,7 @@ function transformManifest(content, env) {
 
             packageVersion = versionSeal.version_number;
             versionChannel = versionSeal.version_channel;
-            buildDate = versionSeal.build_date.substring(0, 10);
-            buildId = versionSeal.build_id;
+            version4 = versionSeal.version4;
             firefoxExtensionId = versionSeal.firefox_extension_id;
         } else {
             throw new Error(
@@ -43,11 +39,9 @@ function transformManifest(content, env) {
     // when it gets generated in web/packages/core/tools/set_version.js and then
     // load it in the code above.
 
-    // The extension marketplaces require the version to monotonically increase,
-    // so append the build number onto the end of the manifest version.
-    manifest.version = buildId
-        ? `${packageVersion}.${buildId}`
-        : packageVersion;
+    // The extension marketplaces require the version to monotonically increase
+    // and to be in the format of A.B.C.D.
+    manifest.version = version4 ? version4 : packageVersion;
 
     if (env["firefox"]) {
         manifest.browser_specific_settings = {
@@ -55,18 +49,33 @@ function transformManifest(content, env) {
                 id: firefoxExtensionId,
             },
         };
+        manifest.background = {
+            scripts: ["dist/background.js"],
+        };
     } else {
-        manifest.version_name =
-            versionChannel === "nightly"
-                ? `${packageVersion} nightly ${buildDate}`
-                : packageVersion;
+        if (
+            versionChannel === "stable" ||
+            packageVersion?.includes(versionChannel)
+        ) {
+            manifest.version_name = packageVersion;
+        } else {
+            manifest.version_name = `${versionChannel} ${packageVersion}`;
+        }
+
+        manifest.background = {
+            service_worker: "dist/background.js",
+        };
+
+        // Chrome runs the extension in a single shared process by default,
+        // which prevents extension pages from loading in Incognito tabs
+        manifest.incognito = "split";
     }
 
     return JSON.stringify(manifest);
 }
 
 /**
- * @type {import("webpack-cli").CallableOption}
+ * @type {import("webpack-cli").CallableWebpackConfiguration}
  */
 export default function (/** @type {Record<string, any>} */ env, _argv) {
     const mode =
@@ -80,16 +89,21 @@ export default function (/** @type {Record<string, any>} */ env, _argv) {
         entry: {
             popup: "./src/popup.ts",
             options: "./src/options.ts",
+            onboard: "./src/onboard.ts",
             content: "./src/content.ts",
             ruffle: "./src/ruffle.ts",
             background: "./src/background.ts",
             player: "./src/player.ts",
             pluginPolyfill: "./src/plugin-polyfill.ts",
+            siteContentScript4399: "./src/4399-content-script.ts",
         },
         output: {
             path: url.fileURLToPath(new URL("assets/dist/", import.meta.url)),
-            publicPath: "",
+            // publicPath: "auto" throws for content scripts, which lack a script src
+            // This is changed at runtime to the full URL of the extension's /dist/ folder
+            publicPath: "/dist/",
             clean: true,
+            assetModuleFilename: "assets/[name][ext][query]",
         },
         module: {
             rules: [
@@ -113,13 +127,12 @@ export default function (/** @type {Record<string, any>} */ env, _argv) {
         optimization: {
             minimize: false,
         },
+        devtool: mode === "development" ? "source-map" : false,
         plugins: [
             new CopyPlugin({
                 patterns: [
                     {
-                        from: env["firefox"]
-                            ? "manifest_firefox.json5"
-                            : "manifest_other.json5",
+                        from: "manifest.json5",
                         to: "../manifest.json",
                         transform: (content) =>
                             transformManifest(
@@ -129,6 +142,7 @@ export default function (/** @type {Record<string, any>} */ env, _argv) {
                     },
                     { from: "LICENSE*" },
                     { from: "README.md" },
+                    { from: "4399_rules.json" },
                 ],
             }),
         ],

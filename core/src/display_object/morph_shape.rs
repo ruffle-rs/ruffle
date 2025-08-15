@@ -2,38 +2,42 @@ use crate::avm2::{
     Activation as Avm2Activation, Object as Avm2Object, StageObject as Avm2StageObject,
 };
 use crate::context::{RenderContext, UpdateContext};
-use crate::display_object::{DisplayObjectBase, DisplayObjectPtr, TDisplayObject};
+use crate::display_object::{DisplayObjectBase, DisplayObjectPtr};
 use crate::library::{Library, MovieLibrarySource};
 use crate::prelude::*;
 use crate::tag_utils::SwfMovie;
+use crate::utils::HasPrefixField;
 use core::fmt;
-use gc_arena::{Collect, Gc, GcCell, Mutation};
+use gc_arena::barrier::unlock;
+use gc_arena::lock::Lock;
+use gc_arena::{Collect, Gc, Mutation};
 use ruffle_render::backend::ShapeHandle;
 use ruffle_render::commands::CommandHandler;
-use std::cell::{Ref, RefCell, RefMut};
+use std::cell::{Cell, RefCell, RefMut};
 use std::sync::Arc;
-use swf::{Fixed16, Fixed8, Twips};
+use swf::{Fixed16, Fixed8};
 
 #[derive(Clone, Collect, Copy)]
 #[collect(no_drop)]
-pub struct MorphShape<'gc>(GcCell<'gc, MorphShapeData<'gc>>);
+pub struct MorphShape<'gc>(Gc<'gc, MorphShapeData<'gc>>);
 
 impl fmt::Debug for MorphShape<'_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct("MorphShape")
-            .field("ptr", &self.0.as_ptr())
+            .field("ptr", &Gc::as_ptr(self.0))
             .finish()
     }
 }
 
-#[derive(Clone, Collect)]
+#[derive(Clone, Collect, HasPrefixField)]
 #[collect(no_drop)]
+#[repr(C, align(8))]
 pub struct MorphShapeData<'gc> {
     base: DisplayObjectBase<'gc>,
-    static_data: Gc<'gc, MorphShapeStatic>,
-    ratio: u16,
+    shared: Lock<Gc<'gc, MorphShapeShared>>,
     /// The AVM2 representation of this MorphShape.
-    object: Option<Avm2Object<'gc>>,
+    object: Lock<Option<Avm2Object<'gc>>>,
+    ratio: Cell<u16>,
 }
 
 impl<'gc> MorphShape<'gc> {
@@ -42,127 +46,116 @@ impl<'gc> MorphShape<'gc> {
         tag: swf::DefineMorphShape,
         movie: Arc<SwfMovie>,
     ) -> Self {
-        let static_data = MorphShapeStatic::from_swf_tag(&tag, movie);
-        MorphShape(GcCell::new(
+        let shared = MorphShapeShared::from_swf_tag(&tag, movie);
+        MorphShape(Gc::new(
             gc_context,
             MorphShapeData {
                 base: Default::default(),
-                static_data: Gc::new(gc_context, static_data),
-                ratio: 0,
-                object: None,
+                shared: Lock::new(Gc::new(gc_context, shared)),
+                ratio: Cell::new(0),
+                object: Lock::new(None),
             },
         ))
     }
 
     pub fn ratio(self) -> u16 {
-        self.0.read().ratio
+        self.0.ratio.get()
     }
 
-    pub fn set_ratio(&mut self, gc_context: &Mutation<'gc>, ratio: u16) {
-        self.0.write(gc_context).ratio = ratio;
-        self.invalidate_cached_bitmap(gc_context);
+    pub fn set_ratio(self, ratio: u16) {
+        self.0.ratio.set(ratio);
+        self.invalidate_cached_bitmap();
     }
 }
 
 impl<'gc> TDisplayObject<'gc> for MorphShape<'gc> {
-    fn base(&self) -> Ref<DisplayObjectBase<'gc>> {
-        Ref::map(self.0.read(), |r| &r.base)
+    fn base(self) -> Gc<'gc, DisplayObjectBase<'gc>> {
+        HasPrefixField::as_prefix_gc(self.0)
     }
 
-    fn base_mut<'a>(&'a self, mc: &Mutation<'gc>) -> RefMut<'a, DisplayObjectBase<'gc>> {
-        RefMut::map(self.0.write(mc), |w| &mut w.base)
+    fn instantiate(self, gc_context: &Mutation<'gc>) -> DisplayObject<'gc> {
+        Self(Gc::new(gc_context, self.0.as_ref().clone())).into()
     }
 
-    fn instantiate(&self, gc_context: &Mutation<'gc>) -> DisplayObject<'gc> {
-        Self(GcCell::new(gc_context, self.0.read().clone())).into()
+    fn as_ptr(self) -> *const DisplayObjectPtr {
+        Gc::as_ptr(self.0) as *const DisplayObjectPtr
     }
 
-    fn as_ptr(&self) -> *const DisplayObjectPtr {
-        self.0.as_ptr() as *const DisplayObjectPtr
+    fn id(self) -> CharacterId {
+        self.0.shared.get().id
     }
 
-    fn id(&self) -> CharacterId {
-        self.0.read().static_data.id
+    fn as_morph_shape(self) -> Option<Self> {
+        Some(self)
     }
 
-    fn as_morph_shape(&self) -> Option<Self> {
-        Some(*self)
-    }
-
-    fn replace_with(&self, context: &mut UpdateContext<'_, 'gc>, id: CharacterId) {
+    fn replace_with(self, context: &mut UpdateContext<'gc>, id: CharacterId) {
         if let Some(new_morph_shape) = context
             .library
             .library_for_movie_mut(self.movie())
             .get_morph_shape(id)
         {
-            self.0.write(context.gc_context).static_data = new_morph_shape.0.read().static_data;
+            unlock!(Gc::write(context.gc(), self.0), MorphShapeData, shared)
+                .set(new_morph_shape.0.shared.get())
         } else {
             tracing::warn!("PlaceObject: expected morph shape at character ID {}", id);
         }
-        self.invalidate_cached_bitmap(context.gc_context);
+        self.invalidate_cached_bitmap();
     }
 
-    fn run_frame_avm1(&self, _context: &mut UpdateContext) {
-        // Noop
-    }
-
-    fn object2(&self) -> Avm2Value<'gc> {
+    fn object2(self) -> Avm2Value<'gc> {
         self.0
-            .read()
             .object
+            .get()
             .map(Avm2Value::from)
             .unwrap_or(Avm2Value::Null)
     }
 
-    fn set_object2(&self, context: &mut UpdateContext<'_, 'gc>, to: Avm2Object<'gc>) {
-        self.0.write(context.gc_context).object = Some(to);
+    fn set_object2(self, context: &mut UpdateContext<'gc>, to: Avm2Object<'gc>) {
+        let mc = context.gc();
+        unlock!(Gc::write(mc, self.0), MorphShapeData, object).set(Some(to))
     }
 
     /// Construct objects placed on this frame.
-    fn construct_frame(&self, context: &mut UpdateContext<'_, 'gc>) {
+    fn construct_frame(self, context: &mut UpdateContext<'gc>) {
         if self.movie().is_action_script_3() && matches!(self.object2(), Avm2Value::Null) {
             let class = context.avm2.classes().morphshape;
-            let mut activation = Avm2Activation::from_nothing(context.reborrow());
-            match Avm2StageObject::for_display_object_childless(
-                &mut activation,
-                (*self).into(),
-                class,
-            ) {
-                Ok(object) => self.0.write(context.gc_context).object = Some(object.into()),
+            let mut activation = Avm2Activation::from_nothing(context);
+            match Avm2StageObject::for_display_object_childless(&mut activation, self.into(), class)
+            {
+                Ok(object) => self.set_object2(context, object.into()),
                 Err(e) => tracing::error!("Got {} when constructing AVM2 side of MorphShape", e),
             };
             self.on_construction_complete(context);
         }
     }
 
-    fn render_self(&self, context: &mut RenderContext) {
-        let this = self.0.read();
-        let ratio = this.ratio;
-        let static_data = this.static_data;
-        let shape_handle = static_data.get_shape(context, context.library, ratio);
+    fn render_self(self, context: &mut RenderContext) {
+        let ratio = self.0.ratio.get();
+        let shared = self.0.shared.get();
+        let shape_handle = shared.get_shape(context, context.library, ratio);
         context
             .commands
             .render_shape(shape_handle, context.transform_stack.transform());
     }
 
-    fn self_bounds(&self) -> Rectangle<Twips> {
-        let this = self.0.read();
-        let ratio = this.ratio;
-        let static_data = this.static_data;
-        let frame = static_data.get_frame(ratio);
-        frame.bounds.clone()
+    fn self_bounds(self) -> Rectangle<Twips> {
+        let ratio = self.0.ratio.get();
+        let shared = self.0.shared.get();
+        let frame = shared.get_frame(ratio);
+        frame.bounds
     }
 
     fn hit_test_shape(
-        &self,
-        _context: &mut UpdateContext<'_, 'gc>,
+        self,
+        _context: &mut UpdateContext<'gc>,
         point: Point<Twips>,
         options: HitTestOptions,
     ) -> bool {
         if (!options.contains(HitTestOptions::SKIP_INVISIBLE) || self.visible())
             && self.world_bounds().contains(point)
         {
-            if let Some(frame) = self.0.read().static_data.frames.borrow().get(&self.ratio()) {
+            if let Some(frame) = self.0.shared.get().frames.borrow().get(&self.ratio()) {
                 let Some(local_matrix) = self.global_to_local_matrix() else {
                     return false;
                 };
@@ -179,8 +172,8 @@ impl<'gc> TDisplayObject<'gc> for MorphShape<'gc> {
         false
     }
 
-    fn movie(&self) -> Arc<SwfMovie> {
-        self.0.read().static_data.movie.clone()
+    fn movie(self) -> Arc<SwfMovie> {
+        self.0.shared.get().movie.clone()
     }
 }
 
@@ -191,11 +184,10 @@ struct Frame {
     bounds: Rectangle<Twips>,
 }
 
-/// Static data shared between all instances of a morph shape.
-#[allow(dead_code)]
+/// Data shared between all instances of a morph shape.
 #[derive(Collect)]
 #[collect(require_static)]
-pub struct MorphShapeStatic {
+pub struct MorphShapeShared {
     id: CharacterId,
     start: swf::MorphShape,
     end: swf::MorphShape,
@@ -203,7 +195,7 @@ pub struct MorphShapeStatic {
     movie: Arc<SwfMovie>,
 }
 
-impl MorphShapeStatic {
+impl MorphShapeShared {
     pub fn from_swf_tag(swf_tag: &swf::DefineMorphShape, movie: Arc<SwfMovie>) -> Self {
         Self {
             id: swf_tag.id,
@@ -238,13 +230,9 @@ impl MorphShapeStatic {
             handle
         } else {
             let library = library.library_for_movie(self.movie.clone()).unwrap();
-            let handle = context.renderer.register_shape(
-                (&frame.shape).into(),
-                &MovieLibrarySource {
-                    library,
-                    gc_context: context.gc_context,
-                },
-            );
+            let handle = context
+                .renderer
+                .register_shape((&frame.shape).into(), &MovieLibrarySource { library });
             frame.shape_handle = Some(handle.clone());
             handle
         }
@@ -368,8 +356,8 @@ impl MorphShapeStatic {
         let shape = swf::Shape {
             version: 4,
             id: 0,
-            shape_bounds: bounds.clone(),
-            edge_bounds: bounds.clone(),
+            shape_bounds: bounds,
+            edge_bounds: bounds,
             flags: swf::ShapeFlag::HAS_SCALING_STROKES,
             styles,
             shape,

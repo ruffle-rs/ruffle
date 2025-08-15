@@ -1,7 +1,15 @@
 num_ticks = 1
 
-[image_comparisons.output]
+[[image_comparisons.output.checks]]
+filter = 'not(arch = "aarch64")'
 tolerance = 2
+
+[[image_comparisons.output.checks]]
+filter = 'arch = "aarch64"'
+tolerance = 2
+
+# TODO There's an off-by-1-pixel line on AArch64
+max_outliers = 340
 
 [player_options]
 with_renderer = { optional = false, sample_count = 1 }

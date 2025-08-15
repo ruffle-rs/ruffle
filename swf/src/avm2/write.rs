@@ -109,7 +109,6 @@ impl<W: Write> Writer<W> {
         self.write_u32(n)
     }
 
-    #[allow(clippy::unusual_byte_groupings)]
     fn write_u32(&mut self, mut n: u32) -> Result<()> {
         loop {
             let byte = (n as u8) & 0x7f;
@@ -477,7 +476,6 @@ impl<W: Write> Writer<W> {
         Ok(())
     }
 
-    #[allow(clippy::unusual_byte_groupings)]
     fn write_trait(&mut self, t: &Trait) -> Result<()> {
         self.write_index(&t.name)?;
         let flags = if !t.metadata.is_empty() {
@@ -615,12 +613,9 @@ impl<W: Write> Writer<W> {
                 self.write_opcode(OpCode::Call)?;
                 self.write_u30(num_args)?;
             }
-            Op::CallMethod {
-                ref index,
-                num_args,
-            } => {
+            Op::CallMethod { index, num_args } => {
                 self.write_opcode(OpCode::CallMethod)?;
-                self.write_index(index)?;
+                self.write_u30(index)?;
                 self.write_u30(num_args)?;
             }
             Op::CallProperty {
@@ -1119,7 +1114,7 @@ pub mod tests {
 
         assert_eq!(
             write(Op::CallMethod {
-                index: Index::new(1),
+                index: 1,
                 num_args: 2
             }),
             b"\x43\x01\x02"

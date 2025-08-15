@@ -1,10 +1,12 @@
 #![deny(clippy::unwrap_used)]
 
-use generational_arena::Index;
+use slotmap::new_key_type;
 
 pub mod backend;
 pub mod error;
 pub mod frame;
 pub mod null;
 
-pub type VideoStreamHandle = Index;
+new_key_type! {
+    pub struct VideoStreamHandle;
+}

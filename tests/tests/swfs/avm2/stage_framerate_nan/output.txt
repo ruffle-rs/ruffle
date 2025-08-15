@@ -1,0 +1,7 @@
+// stage.frameRate (SWF header = 30)
+30
+// stage.frameRate = NaN;
+NaN
+// Event.ENTER_FRAME
+// Event.ENTER_FRAME
+// Event.ENTER_FRAME

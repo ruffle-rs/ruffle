@@ -25,7 +25,7 @@ pub fn external_interface_avm1(
         .player()
         .lock()
         .unwrap()
-        .add_external_interface(Box::new(ExternalInterfaceTestProvider::new()));
+        .set_external_interface_provider(Some(Box::new(ExternalInterfaceTestProvider::new())));
 
     let mut first = true;
 
@@ -93,7 +93,7 @@ pub fn external_interface_avm2(
         .player()
         .lock()
         .unwrap()
-        .add_external_interface(Box::new(ExternalInterfaceTestProvider::new()));
+        .set_external_interface_provider(Some(Box::new(ExternalInterfaceTestProvider::new())));
 
     let mut first = true;
 
@@ -113,6 +113,13 @@ pub fn external_interface_avm2(
                 player_locked.call_internal_interface("parrot", vec!["Hello World!".into()]);
             player_locked.log_backend().avm_trace(&format!(
                 "After calling `parrot` with a string: {parroted:?}",
+            ));
+
+            let map = BTreeMap::from([("a".into(), 100.into()), ("b".into(), "string".into())]);
+            let parroted =
+                player_locked.call_internal_interface("parrot", vec![ExternalValue::Object(map)]);
+            player_locked.log_backend().avm_trace(&format!(
+                "After calling `parrot` with an object: {parroted:?}",
             ));
 
             player_locked.call_internal_interface("freestanding", vec!["Hello World!".into()]);

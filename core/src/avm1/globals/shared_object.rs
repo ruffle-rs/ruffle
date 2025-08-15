@@ -1,16 +1,14 @@
 use crate::avm1::function::FunctionObject;
 use crate::avm1::property_decl::{define_properties_on, Declaration};
-use crate::avm1::{
-    Activation, Attribute, Error, Executable, NativeObject, Object, ScriptObject, TObject, Value,
-};
+use crate::avm1::{Activation, Attribute, Error, NativeObject, Object, Value};
 use crate::avm1_stub;
-use crate::context::GcContext;
 use crate::display_object::TDisplayObject;
-use crate::string::AvmString;
+use crate::string::{AvmString, StringContext};
 use flash_lso::amf0::read::AMF0Decoder;
 use flash_lso::amf0::writer::{Amf0Writer, CacheKey, ObjWriter};
-use flash_lso::types::{Lso, Reference, Value as AmfValue};
-use gc_arena::{Collect, GcCell};
+use flash_lso::types::{Lso, ObjectId, Reference, Value as AmfValue};
+use gc_arena::{Collect, Gc};
+use ruffle_macros::istr;
 use std::borrow::Cow;
 use std::collections::BTreeMap;
 
@@ -69,6 +67,21 @@ fn get_disk_usage<'gc>(
     Ok(Value::Undefined)
 }
 
+pub fn serialize<'gc>(activation: &mut Activation<'_, 'gc>, value: Value<'gc>) -> AmfValue {
+    match value {
+        Value::Undefined => AmfValue::Undefined,
+        Value::Null => AmfValue::Null,
+        Value::Bool(bool) => AmfValue::Bool(bool),
+        Value::Number(number) => AmfValue::Number(number),
+        Value::String(string) => AmfValue::String(string.to_string()),
+        Value::Object(object) => {
+            let lso = new_lso(activation, "root", object);
+            AmfValue::Object(ObjectId::INVALID, lso.into_iter().collect(), None)
+        }
+        Value::MovieClip(_) => AmfValue::Undefined,
+    }
+}
+
 /// Serialize an Object and any children to a JSON object
 fn recursive_serialize<'gc>(
     activation: &mut Activation<'_, 'gc>,
@@ -85,7 +98,7 @@ fn recursive_serialize<'gc>(
                     if o.as_executable().is_some() {
                     } else if o.as_display_object().is_some() {
                         writer.undefined(name.as_ref())
-                    } else if o.as_array_object().is_some() {
+                    } else if let NativeObject::Array(_) = o.native() {
                         let (aw, token) = writer.array(CacheKey::from_ptr(o.as_ptr()));
 
                         if let Some(mut aw) = aw {
@@ -130,7 +143,7 @@ fn recursive_serialize<'gc>(
 }
 
 /// Deserialize a AmfValue to a Value
-fn deserialize_value<'gc>(
+pub fn deserialize_value<'gc>(
     activation: &mut Activation<'_, 'gc>,
     val: &AmfValue,
     lso: &AMF0Decoder,
@@ -140,9 +153,9 @@ fn deserialize_value<'gc>(
         AmfValue::Null => Value::Null,
         AmfValue::Undefined => Value::Undefined,
         AmfValue::Number(f) => (*f).into(),
-        AmfValue::String(s) => Value::String(AvmString::new_utf8(activation.context.gc_context, s)),
+        AmfValue::String(s) => Value::String(AvmString::new_utf8(activation.gc(), s)),
         AmfValue::Bool(b) => (*b).into(),
-        AmfValue::ECMAArray(_, associative, len) => {
+        AmfValue::ECMAArray(_, _, associative, len) => {
             let array_constructor = activation.context.avm1.prototypes().array_constructor;
             if let Ok(Value::Object(obj)) =
                 array_constructor.construct(activation, &[(*len).into()])
@@ -161,8 +174,8 @@ fn deserialize_value<'gc>(
                         obj.set_element(activation, i, value).unwrap();
                     } else {
                         obj.define_value(
-                            activation.context.gc_context,
-                            AvmString::new_utf8(activation.context.gc_context, &entry.name),
+                            activation.gc(),
+                            AvmString::new_utf8(activation.gc(), &entry.name),
                             value,
                             Attribute::empty(),
                         );
@@ -174,10 +187,10 @@ fn deserialize_value<'gc>(
                 Value::Undefined
             }
         }
-        AmfValue::Object(elements, _) => {
+        AmfValue::Object(_, elements, _) => {
             // Deserialize Object
-            let obj = ScriptObject::new(
-                activation.context.gc_context,
+            let obj = Object::new(
+                &activation.context.strings,
                 Some(activation.context.avm1.prototypes().object),
             );
 
@@ -190,13 +203,8 @@ fn deserialize_value<'gc>(
 
             for entry in elements {
                 let value = deserialize_value(activation, entry.value(), lso, reference_cache);
-                let name = AvmString::new_utf8(activation.context.gc_context, &entry.name);
-                obj.define_value(
-                    activation.context.gc_context,
-                    name,
-                    value,
-                    Attribute::empty(),
-                );
+                let name = AvmString::new_utf8(activation.gc(), &entry.name);
+                obj.define_value(activation.gc(), name, value, Attribute::empty());
             }
 
             v
@@ -215,10 +223,7 @@ fn deserialize_value<'gc>(
 
             if let Ok(Value::Object(obj)) = xml_proto.construct(
                 activation,
-                &[Value::String(AvmString::new_utf8(
-                    activation.context.gc_context,
-                    content,
-                ))],
+                &[Value::String(AvmString::new_utf8(activation.gc(), content))],
             ) {
                 Value::Object(obj)
             } else {
@@ -241,8 +246,8 @@ fn deserialize_lso<'gc>(
     lso: &Lso,
     decoder: &AMF0Decoder,
 ) -> Result<Object<'gc>, Error<'gc>> {
-    let obj = ScriptObject::new(
-        activation.context.gc_context,
+    let obj = Object::new(
+        &activation.context.strings,
         Some(activation.context.avm1.prototypes().object),
     );
 
@@ -250,14 +255,14 @@ fn deserialize_lso<'gc>(
 
     for child in &lso.body {
         obj.define_value(
-            activation.context.gc_context,
-            AvmString::new_utf8(activation.context.gc_context, &child.name),
+            activation.gc(),
+            AvmString::new_utf8(activation.gc(), &child.name),
             deserialize_value(activation, child.value(), decoder, &mut reference_cache),
             Attribute::empty(),
         );
     }
 
-    Ok(obj.into())
+    Ok(obj)
 }
 
 fn new_lso<'gc>(activation: &mut Activation<'_, 'gc>, name: &str, data: Object<'gc>) -> Lso {
@@ -266,7 +271,7 @@ fn new_lso<'gc>(activation: &mut Activation<'_, 'gc>, name: &str, data: Object<'
     w.commit_lso(
         &name
             .split('/')
-            .last()
+            .next_back()
             .map(|e| e.to_string())
             .unwrap_or_else(|| "<unknown>".to_string()),
     )
@@ -403,9 +408,7 @@ fn get_local<'gc>(
 
     // Set the internal name
     if let NativeObject::SharedObject(shared_object) = this.native() {
-        shared_object
-            .write(activation.context.gc_context)
-            .set_name(full_name.clone());
+        shared_object.borrow_mut().set_name(full_name.clone());
     }
 
     let mut data = Value::Undefined;
@@ -420,19 +423,14 @@ fn get_local<'gc>(
 
     if data == Value::Undefined {
         // No data; create a fresh data object.
-        data = ScriptObject::new(
-            activation.context.gc_context,
+        data = Object::new(
+            &activation.context.strings,
             Some(activation.context.avm1.prototypes().object),
         )
         .into();
     }
 
-    this.define_value(
-        activation.context.gc_context,
-        "data",
-        data,
-        Attribute::DONT_DELETE,
-    );
+    this.define_value(activation.gc(), istr!("data"), data, Attribute::DONT_DELETE);
 
     activation
         .context
@@ -456,14 +454,16 @@ fn clear<'gc>(
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let data = this.get("data", activation)?.coerce_to_object(activation);
+    let data = this
+        .get(istr!("data"), activation)?
+        .coerce_to_object(activation);
 
     for k in &data.get_keys(activation, false) {
         data.delete(activation, *k);
     }
 
     if let NativeObject::SharedObject(shared_object) = this.native() {
-        let name = shared_object.read().name();
+        let name = shared_object.borrow().name();
         activation.context.storage.remove_key(&name);
     }
 
@@ -496,8 +496,10 @@ pub(crate) fn flush<'gc>(
     let NativeObject::SharedObject(shared_object) = this.native() else {
         return Ok(Value::Undefined);
     };
-    let name = shared_object.read().name();
-    let data = this.get("data", activation)?.coerce_to_object(activation);
+    let name = shared_object.borrow().name();
+    let data = this
+        .get(istr!("data"), activation)?
+        .coerce_to_object(activation);
     let mut lso = new_lso(activation, &name, data);
     flash_lso::write::write_to_bytes(&mut lso).unwrap_or_default();
     // Flash does not write empty LSOs to disk
@@ -517,8 +519,10 @@ fn get_size<'gc>(
     let NativeObject::SharedObject(shared_object) = this.native() else {
         return Ok(Value::Undefined);
     };
-    let name = shared_object.read().name();
-    let data = this.get("data", activation)?.coerce_to_object(activation);
+    let name = shared_object.borrow().name();
+    let data = this
+        .get(istr!("data"), activation)?
+        .coerce_to_object(activation);
     let mut lso = new_lso(activation, &name, data);
     // Flash returns 0 for empty LSOs, but the actual number of bytes (including the header) otherwise
     if lso.body.is_empty() {
@@ -571,34 +575,20 @@ fn constructor<'gc>(
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     this.set_native(
-        activation.context.gc_context,
-        NativeObject::SharedObject(GcCell::new(
-            activation.context.gc_context,
-            Default::default(),
-        )),
+        activation.gc(),
+        NativeObject::SharedObject(Gc::new(activation.gc(), Default::default())),
     );
-    Ok(this.into())
+    Ok(Value::Undefined)
 }
 
 pub fn create_constructor<'gc>(
-    context: &mut GcContext<'_, 'gc>,
+    context: &mut StringContext<'gc>,
     proto: Object<'gc>,
     fn_proto: Object<'gc>,
 ) -> Object<'gc> {
-    let shared_object_proto = ScriptObject::new(context.gc_context, Some(proto));
+    let shared_object_proto = Object::new(context, Some(proto));
     define_properties_on(PROTO_DECLS, context, shared_object_proto, fn_proto);
-    let constructor = FunctionObject::constructor(
-        context.gc_context,
-        Executable::Native(constructor),
-        constructor_to_fn!(constructor),
-        fn_proto,
-        shared_object_proto.into(),
-    );
-    define_properties_on(
-        OBJECT_DECLS,
-        context,
-        constructor.raw_script_object(),
-        fn_proto,
-    );
+    let constructor = FunctionObject::native(context, constructor, fn_proto, shared_object_proto);
+    define_properties_on(OBJECT_DECLS, context, constructor, fn_proto);
     constructor
 }

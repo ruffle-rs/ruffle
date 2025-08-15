@@ -1,0 +1,6 @@
+*** Check the static property of the sub class *** PASSED!
+AccStatPropSubClassInit.aStat PASSED!
+AccStatPropSubClassInit.aStat2 PASSED!
+*** Check the property of the sub class *** PASSED!
+obj.aVar PASSED!
+obj.aVar2 PASSED!

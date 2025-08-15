@@ -1,0 +1,44 @@
+[package]
+name = "ruffle_video_external"
+authors.workspace = true
+edition.workspace = true
+homepage.workspace = true
+license.workspace = true
+repository.workspace = true
+version.workspace = true
+
+[dependencies]
+ruffle_render = { path = "../../render" }
+ruffle_video = { path = ".." }
+swf = { path = "../../swf" }
+slotmap = { workspace = true }
+tracing = { workspace = true }
+ruffle_video_software = { path = "../software" }
+thiserror = { workspace = true }
+
+# Needed for OpenH264:
+libloading = { version = "0.8.8", optional = true }
+reqwest = { version = "0.12.22", default-features = false, features = ["blocking"], optional = true }
+hex = { version = "0.4.3", optional = true }
+bzip2 = { version = "0.6.0", features = ["static"], optional = true }
+tempfile = { workspace = true, optional = true }
+sha2 = { workspace = true, optional = true }
+
+# Needed for WebCodecs:
+js-sys = { workspace = true, optional = true }
+wasm-bindgen = { workspace = true, optional = true }
+tracing-subscriber = { workspace = true, features = ["registry"], optional = true }
+tracing-wasm = { workspace = true, optional = true }
+
+[dependencies.web-sys]
+workspace = true
+optional = true
+features = [
+    "CodecState", "DomException", "DomRectReadOnly", "EncodedVideoChunk",
+    "EncodedVideoChunkInit", "EncodedVideoChunkType", "VideoDecoder",
+    "VideoDecoderConfig", "VideoDecoderInit", "VideoFrame", "VideoPixelFormat",
+]
+
+[features]
+openh264 = ["libloading", "reqwest", "hex", "bzip2", "tempfile", "sha2"]
+webcodecs = ["web-sys", "js-sys", "wasm-bindgen", "tracing-subscriber", "tracing-wasm"]

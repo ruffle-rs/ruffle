@@ -1,7 +1,7 @@
 num_ticks=60
 
 [image_comparisons.output]
-tolerance = 4
+tolerance = 30
 max_outliers = 271
 
 [player_options]

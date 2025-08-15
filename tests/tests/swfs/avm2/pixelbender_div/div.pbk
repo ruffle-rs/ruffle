@@ -1,0 +1,27 @@
+<languageVersion : 1.0;>
+
+kernel div
+<   namespace : "Ruffle Tests";
+    vendor : "Kamil Jarosz";
+    version : 1;
+>
+{
+    input image4 src;
+    output pixel4 dst;
+
+    parameter float inputLeft
+    <
+        defaultValue:1.0;
+    >;
+
+    parameter float inputRight
+    <
+        defaultValue:1.0;
+    >;
+
+    void
+    evaluatePixel()
+    {
+        dst = pixel4(float(int(inputLeft)/int(inputRight))/256.0, inputLeft/inputRight, inputLeft/2.0, 1);
+    }
+}

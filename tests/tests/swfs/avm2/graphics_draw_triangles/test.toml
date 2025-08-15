@@ -1,0 +1,9 @@
+num_ticks = 1
+
+# TODO This output differs from FP due to the
+#   winding behavior not being implemented.
+[image_comparisons.output]
+trigger = 1
+
+[player_options]
+with_renderer = { optional = false, sample_count = 1 }

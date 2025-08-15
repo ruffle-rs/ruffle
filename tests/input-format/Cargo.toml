@@ -11,6 +11,6 @@ version.workspace = true
 workspace = true
 
 [dependencies]
-serde = { version = "1.0.196", features = ["derive"] }
-serde_json = "1.0.113"
-bitflags = "2.4.2"
+serde = { workspace = true, features = ["derive"] }
+serde_json = { workspace = true }
+bitflags = { workspace = true }

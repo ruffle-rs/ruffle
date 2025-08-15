@@ -1,0 +1,12 @@
+Before connect
+After connect
+Connecting a second time fails:
+ArgumentError: Error #2082: Connect failed because the object is already connected.
+Before send
+After send
+First send fails, but doesn't throw an asyncError
+Second and third sends succeed
+AsyncError caught. Text: Error #2095: flash.net.LocalConnection was unable to invoke callback lcHandler_failing., error: ReferenceError: Error #1069: Property lcHandler_failing not found on LCReceive and there is no default value.
+Second and third sends succeed
+Received via LocalConnection: Message sent via LocalConnection
+AsyncError caught. Text: Error #2095: flash.net.LocalConnection was unable to invoke callback lcHandler., error: Error: fooo

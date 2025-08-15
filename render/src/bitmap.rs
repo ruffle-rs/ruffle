@@ -1,9 +1,9 @@
 use h263_rs_yuv::bt601::yuv420_to_rgba;
+use std::any::Any;
+use std::borrow::Cow;
 use std::fmt::Debug;
 use std::sync::Arc;
 
-use downcast_rs::{impl_downcast, Downcast};
-use ruffle_wstr::WStr;
 use swf::{Rectangle, Twips};
 
 use crate::backend::RenderBackend;
@@ -18,8 +18,7 @@ impl PartialEq for BitmapHandle {
     }
 }
 
-pub trait BitmapHandleImpl: Downcast + Debug {}
-impl_downcast!(BitmapHandleImpl);
+pub trait BitmapHandleImpl: Any + Debug {}
 
 /// Info returned by the `register_bitmap` methods.
 #[derive(Clone, Debug)]
@@ -46,8 +45,7 @@ pub trait BitmapSource {
 
 pub type RgbaBufRead<'a> = Box<dyn FnOnce(&[u8], u32) + 'a>;
 
-pub trait SyncHandle: Downcast + Debug {}
-impl_downcast!(SyncHandle);
+pub trait SyncHandle: Any + Debug {}
 
 impl Clone for Box<dyn SyncHandle> {
     fn clone(&self) -> Box<dyn SyncHandle> {
@@ -68,29 +66,7 @@ pub enum PixelSnapping {
     Never,
 }
 
-impl From<PixelSnapping> for &'static WStr {
-    fn from(value: PixelSnapping) -> &'static WStr {
-        match value {
-            PixelSnapping::Always => WStr::from_units(b"always"),
-            PixelSnapping::Auto => WStr::from_units(b"auto"),
-            PixelSnapping::Never => WStr::from_units(b"never"),
-        }
-    }
-}
-
 impl PixelSnapping {
-    pub fn from_wstr(str: &WStr) -> Option<Self> {
-        if str == b"always" {
-            Some(PixelSnapping::Always)
-        } else if str == b"auto" {
-            Some(PixelSnapping::Auto)
-        } else if str == b"never" {
-            Some(PixelSnapping::Never)
-        } else {
-            None
-        }
-    }
-
     pub fn apply(&self, matrix: &mut Matrix) {
         match self {
             PixelSnapping::Always => {
@@ -116,16 +92,24 @@ impl PixelSnapping {
 
 /// Decoded bitmap data from an SWF tag.
 #[derive(Clone, Debug)]
-pub struct Bitmap {
+pub struct Bitmap<'a> {
     width: u32,
     height: u32,
     format: BitmapFormat,
-    data: Vec<u8>,
+    data: Cow<'a, [u8]>,
 }
 
-impl Bitmap {
+impl<'a> Bitmap<'a> {
     /// Ensures that `data` is the correct size for the given `width` and `height`.
-    pub fn new(width: u32, height: u32, format: BitmapFormat, mut data: Vec<u8>) -> Self {
+    #[inline]
+    pub fn new<D>(width: u32, height: u32, format: BitmapFormat, data: D) -> Self
+    where
+        D: Into<Cow<'a, [u8]>>,
+    {
+        Self::new_impl(width, height, format, data.into())
+    }
+
+    fn new_impl(width: u32, height: u32, format: BitmapFormat, mut data: Cow<'a, [u8]>) -> Self {
         // If the size is incorrect, either we screwed up or the decoder screwed up.
         let expected_len = format.length_for_size(width as usize, height as usize);
         if data.len() != expected_len {
@@ -134,9 +118,21 @@ impl Bitmap {
                 expected_len,
                 data.len(),
             );
-            // Truncate or zero pad to the expected size.
-            data.resize(expected_len, 0);
+
+            // Truncate or zero-pad to the expected size.
+            if let Cow::Borrowed(slice) = &data {
+                // Allocate the owned buffer ourselves instead of using `Cow::to_mut`, to avoid
+                // a reallocation if the buffer needs to be padded.
+                let mut vec = Vec::with_capacity(expected_len);
+                vec.extend_from_slice(&slice[..expected_len]);
+                data = Cow::Owned(vec);
+            }
+            match &mut data {
+                Cow::Owned(data) => data.resize(expected_len, 0),
+                Cow::Borrowed(_) => unreachable!(),
+            }
         }
+
         Self {
             width,
             height,
@@ -190,7 +186,7 @@ impl Bitmap {
                 let u = &self.data[luma_len..luma_len + chroma_len];
                 let v = &self.data[luma_len + chroma_len..luma_len + 2 * chroma_len];
 
-                self.data = yuv420_to_rgba(y, u, v, self.width as usize);
+                self.data = Cow::Owned(yuv420_to_rgba(y, u, v, self.width as usize));
             }
             BitmapFormat::Yuva420p => {
                 let luma_len = (self.width * self.height) as usize;
@@ -229,14 +225,14 @@ impl Bitmap {
 
     pub fn chroma_width(&self) -> u32 {
         match self.format {
-            BitmapFormat::Yuv420p | BitmapFormat::Yuva420p => (self.width + 1) / 2,
+            BitmapFormat::Yuv420p | BitmapFormat::Yuva420p => self.width.div_ceil(2),
             _ => unreachable!("Can't get chroma width for non-YUV bitmap"),
         }
     }
 
     pub fn chroma_height(&self) -> u32 {
         match self.format {
-            BitmapFormat::Yuv420p | BitmapFormat::Yuva420p => (self.height + 1) / 2,
+            BitmapFormat::Yuv420p | BitmapFormat::Yuva420p => self.height.div_ceil(2),
             _ => unreachable!("Can't get chroma height for non-YUV bitmap"),
         }
     }
@@ -249,11 +245,6 @@ impl Bitmap {
     #[inline]
     pub fn data(&self) -> &[u8] {
         &self.data
-    }
-
-    #[inline]
-    pub fn data_mut(&mut self) -> &mut [u8] {
-        &mut self.data
     }
 
     pub fn as_colors(&self) -> impl Iterator<Item = u32> + '_ {
@@ -296,9 +287,9 @@ impl BitmapFormat {
         match self {
             BitmapFormat::Rgb => width * height * 3,
             BitmapFormat::Rgba => width * height * 4,
-            BitmapFormat::Yuv420p => width * height + ((width + 1) / 2) * ((height + 1) / 2) * 2,
+            BitmapFormat::Yuv420p => width * height + width.div_ceil(2) * height.div_ceil(2) * 2,
             BitmapFormat::Yuva420p => {
-                width * height * 2 + ((width + 1) / 2) * ((height + 1) / 2) * 2
+                width * height * 2 + width.div_ceil(2) * height.div_ceil(2) * 2
             }
         }
     }
@@ -355,10 +346,7 @@ impl PixelRegion {
         let (min, max) = ((a.0.min(b.0), a.1.min(b.1)), (a.0.max(b.0), a.1.max(b.1)));
 
         // Increase max by one pixel as we've calculated the *encompassed* max
-        let max = (
-            max.0 + Twips::from_pixels_i32(1),
-            max.1 + Twips::from_pixels_i32(1),
-        );
+        let max = (max.0 + Twips::ONE_PX, max.1 + Twips::ONE_PX);
 
         // Make sure we're never going below 0
         Self {

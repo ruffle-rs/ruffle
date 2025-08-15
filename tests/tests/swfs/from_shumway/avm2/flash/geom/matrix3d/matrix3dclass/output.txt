@@ -1,0 +1,56 @@
+SUCCESS | Identity matrix correct
+SUCCESS | Identity matrix has no effect
+SUCCESS | Identity matrix has no effect
+SUCCESS | Construct correct
+SUCCESS | Clone equals original
+SUCCESS | Cloned matrices are not the same
+SUCCESS | Scale vector correct
+SUCCESS | Scale point correct
+SUCCESS | Scale vector correct
+SUCCESS | Scale point correct
+SUCCESS | New rotation doesn't transform own axis
+SUCCESS | New rotation doesn't transform point on axis
+SUCCESS | New rotation doesn't transform point on axis
+SUCCESS | New rotation axis length is irrelevant
+SUCCESS | New rotation 360 degrees doesn't transform point
+SUCCESS | New rotation transform on x axis
+SUCCESS | New rotation transform on y axis
+SUCCESS | New rotation transform on z axis
+SUCCESS | New rotation transform on p + x axis
+SUCCESS | New rotation transform on p + y axis
+SUCCESS | New rotation transform on p + z axis
+SUCCESS | Append 1 success
+SUCCESS | Append 2 success
+SUCCESS | Append scale success
+SUCCESS | Append translation success
+SUCCESS | Append rotation success
+SUCCESS | Prepend 3 success
+SUCCESS | Prepend scale success
+SUCCESS | Prepend translation success
+SUCCESS | Prepend rotation success
+SUCCESS | Matrix 1 determinant correct
+SUCCESS | Matrix 2 determinant correct
+SUCCESS | Random inverse correct
+SUCCESS | Matrix 1 inverse correct
+SUCCESS | Matrix 2 inverse correct
+SUCCESS | Vector transform one correct
+SUCCESS | Vector transform two correct
+SUCCESS | Point transform one correct
+SUCCESS | Point transform two correct
+SUCCESS | Points transform 0
+SUCCESS | Points transform 1
+SUCCESS | Points transform 2
+SUCCESS | Points transform 3
+SUCCESS | Points transform 4
+SUCCESS | Points transform 5
+SUCCESS | Points transform 6
+SUCCESS | Points transform 7
+SUCCESS | Points transform 8
+SUCCESS | Position x get correct
+SUCCESS | Position y get correct
+SUCCESS | Position z get correct
+SUCCESS | Position x set correct
+SUCCESS | Position y set correct
+SUCCESS | Position z set correct
+SUCCESS | Get raw data correct
+SUCCESS | Set raw data with 12 parameters

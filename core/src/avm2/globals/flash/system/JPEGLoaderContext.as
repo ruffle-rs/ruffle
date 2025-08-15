@@ -5,6 +5,8 @@
 
 package flash.system
 {
+    // Both the docs and playerglobal.swc says this is "663", but it's actually available in regular Flash Player
+    [API("662")]
     public class JPEGLoaderContext extends LoaderContext
     {
         // Specifies the strength of the deblocking filter.

@@ -1,42 +1,110 @@
-/// doc.childNodes[0].toString()
-<xml:a />
-/// doc.childNodes[0].prefix
-xml
-/// doc.childNodes[0].localName
-a
-/// doc.childNodes[0].namespaceURI
-null
-/// doc.childNodes[1].toString()
-<foo xml:bar="hello" />
-/// doc.childNodes[1].prefix
 
-/// doc.childNodes[1].localName
-foo
-/// doc.childNodes[1].namespaceURI
-null
-/// doc.childNodes[2].toString()
-<a xmlns:example="http://example.org"><b /><example:c /></a>
-/// doc.childNodes[2].prefix
+// doc.toString()
+<root />
+// node.toString()
+<root />
+// node.prefix
 
-/// doc.childNodes[2].localName
-a
-/// doc.childNodes[2].namespaceURI
+// node.localName
+root
+// node.namespaceURI
 null
-/// doc.childNodes[2].childNodes[0].toString()
-<b />
-/// doc.childNodes[2].childNodes[0].prefix
+// attributes
+// node.getNamespaceForPrefix('ns1')
+null
+// node.getPrefixForNamespace('http://ns1.invalid')
+null
 
-/// doc.childNodes[2].childNodes[0].localName
-b
-/// doc.childNodes[2].childNodes[0].namespaceURI
-null
-/// doc.childNodes[2].childNodes[1].toString()
-<example:c />
-/// doc.childNodes[2].childNodes[1].prefix
-example
-/// doc.childNodes[2].childNodes[1].localName
-c
-/// doc.childNodes[2].childNodes[1].namespaceURI
+// doc.toString()
+<root xmlns="http://example.org"><foo hello="world" /></root>
+// node.toString()
+<root xmlns="http://example.org"><foo hello="world" /></root>
+// node.prefix
+
+// node.localName
+root
+// node.namespaceURI
 http://example.org
-/// attribute name
-xml:bar
+// attributes
+xmlns = http://example.org
+// node.getNamespaceForPrefix('ns1')
+null
+// node.getPrefixForNamespace('http://ns1.invalid')
+null
+// node.toString()
+<foo hello="world" />
+// node.prefix
+
+// node.localName
+foo
+// node.namespaceURI
+http://example.org
+// attributes
+hello = world
+// node.getNamespaceForPrefix('ns1')
+null
+// node.getPrefixForNamespace('http://ns1.invalid')
+null
+
+// doc.toString()
+<root xmlns="http://example.org" xmlns:ns1="http://ns1.invalid"><ns1:foo hello="world"><bar ns1:attr="hey" /></ns1:foo></root>
+// node.toString()
+<root xmlns="http://example.org" xmlns:ns1="http://ns1.invalid"><ns1:foo hello="world"><bar ns1:attr="hey" /></ns1:foo></root>
+// node.prefix
+
+// node.localName
+root
+// node.namespaceURI
+http://example.org
+// attributes
+xmlns = http://example.org
+xmlns:ns1 = http://ns1.invalid
+// node.getNamespaceForPrefix('ns1')
+http://ns1.invalid
+// node.getPrefixForNamespace('http://ns1.invalid')
+ns1
+// node.toString()
+<ns1:foo hello="world"><bar ns1:attr="hey" /></ns1:foo>
+// node.prefix
+ns1
+// node.localName
+foo
+// node.namespaceURI
+http://ns1.invalid
+// attributes
+hello = world
+// node.getNamespaceForPrefix('ns1')
+http://ns1.invalid
+// node.getPrefixForNamespace('http://ns1.invalid')
+ns1
+// node.toString()
+<bar ns1:attr="hey" />
+// node.prefix
+
+// node.localName
+bar
+// node.namespaceURI
+http://example.org
+// attributes
+ns1:attr = hey
+// node.getNamespaceForPrefix('ns1')
+http://ns1.invalid
+// node.getPrefixForNamespace('http://ns1.invalid')
+ns1
+
+// doc.toString()
+<ns1:root xmlns:ns1="http://ns1.invalid" />
+// node.toString()
+<ns1:root xmlns:ns1="http://ns1.invalid" />
+// node.prefix
+ns1
+// node.localName
+root
+// node.namespaceURI
+http://ns1.invalid
+// attributes
+xmlns:ns1 = http://ns1.invalid
+// node.getNamespaceForPrefix('ns1')
+http://ns1.invalid
+// node.getPrefixForNamespace('http://ns1.invalid')
+ns1

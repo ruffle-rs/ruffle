@@ -1,7 +1,9 @@
 //! `flash.utils` namespace
 
-use crate::avm2::object::TObject;
-use crate::avm2::{Activation, Error, Object, Value};
+use crate::avm2::error::argument_error;
+use crate::avm2::globals::avmplus::instance_class_describe_type;
+use crate::avm2::parameters::ParametersExt;
+use crate::avm2::{Activation, Error, Value};
 use crate::string::AvmString;
 use crate::string::WString;
 use std::fmt::Write;
@@ -15,7 +17,7 @@ pub mod timer;
 /// Implements `flash.utils.getTimer`
 pub fn get_timer<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    _this: Object<'gc>,
+    _this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     Ok((Instant::now()
@@ -27,25 +29,18 @@ pub fn get_timer<'gc>(
 /// Implements `flash.utils.setInterval`
 pub fn set_interval<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    _this: Object<'gc>,
+    _this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if args.len() < 2 {
-        return Err(Error::from("setInterval: not enough arguments"));
-    }
-    let (args, params) = args.split_at(2);
+    let closure = args.try_get_object(0);
+    let interval = args.get_f64(1);
+    let params = &args[2..];
+
     let callback = crate::timer::TimerCallback::Avm2Callback {
-        closure: args
-            .get(0)
-            .expect("setInterval: not enough arguments")
-            .as_object()
-            .ok_or("setInterval: argument 0 is not an object")?,
+        closure,
         params: params.to_vec(),
     };
-    let interval = args
-        .get(1)
-        .expect("setInterval: not enough arguments")
-        .coerce_to_number(activation)?;
+
     Ok(Value::Integer(activation.context.timers.add_timer(
         callback,
         interval as i32,
@@ -56,13 +51,10 @@ pub fn set_interval<'gc>(
 /// Implements `flash.utils.clearInterval`
 pub fn clear_interval<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    _this: Object<'gc>,
+    _this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let id = args
-        .get(0)
-        .ok_or("clearInterval: not enough arguments")?
-        .coerce_to_number(activation)?;
+    let id = args.get_u32(0);
     activation.context.timers.remove(id as i32);
     Ok(Value::Undefined)
 }
@@ -70,25 +62,18 @@ pub fn clear_interval<'gc>(
 /// Implements `flash.utils.setTimeout`
 pub fn set_timeout<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    _this: Object<'gc>,
+    _this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if args.len() < 2 {
-        return Err(Error::from("setTimeout: not enough arguments"));
-    }
-    let (args, params) = args.split_at(2);
+    let closure = args.try_get_object(0);
+    let interval = args.get_f64(1);
+    let params = &args[2..];
+
     let callback = crate::timer::TimerCallback::Avm2Callback {
-        closure: args
-            .get(0)
-            .expect("setTimeout: not enough arguments")
-            .as_object()
-            .ok_or("setTimeout: argument 0 is not an object")?,
+        closure,
         params: params.to_vec(),
     };
-    let interval = args
-        .get(1)
-        .expect("setTimeout: not enough arguments")
-        .coerce_to_number(activation)?;
+
     Ok(Value::Integer(activation.context.timers.add_timer(
         callback,
         interval as i32,
@@ -99,13 +84,10 @@ pub fn set_timeout<'gc>(
 /// Implements `flash.utils.clearTimeout`
 pub fn clear_timeout<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    _this: Object<'gc>,
+    _this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let id = args
-        .get(0)
-        .ok_or("clearTimeout: not enough arguments")?
-        .coerce_to_number(activation)?;
+    let id = args.get_u32(0);
     activation.context.timers.remove(id as i32);
     Ok(Value::Undefined)
 }
@@ -113,13 +95,11 @@ pub fn clear_timeout<'gc>(
 /// Implements `flash.utils.escapeMultiByte`
 pub fn escape_multi_byte<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    _this: Object<'gc>,
+    _this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let s = args
-        .get(0)
-        .unwrap_or(&Value::Undefined)
-        .coerce_to_string(activation)?;
+    let s = args.get_string(activation, 0);
+
     let utf8 = s.as_wstr().to_utf8_lossy();
     let mut result = WString::new();
     for byte in utf8.as_bytes() {
@@ -132,7 +112,7 @@ pub fn escape_multi_byte<'gc>(
             let _ = write!(&mut result, "%{byte:02X}");
         }
     }
-    Ok(AvmString::new(activation.context.gc_context, result).into())
+    Ok(AvmString::new(activation.gc(), result).into())
 }
 
 fn handle_percent<I>(chars: &mut I) -> Option<u8>
@@ -147,13 +127,11 @@ where
 /// Implements `flash.utils.unescapeMultiByte`
 pub fn unescape_multi_byte<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    _this: Object<'gc>,
+    _this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let s = args
-        .get(0)
-        .unwrap_or(&Value::Undefined)
-        .coerce_to_string(activation)?;
+    let s = args.get_string(activation, 0);
+
     let bs = s.as_wstr();
     let mut buf = WString::new();
     let chars = bs.chars().map(|c| c.unwrap_or(char::REPLACEMENT_CHARACTER));
@@ -179,67 +157,38 @@ pub fn unescape_multi_byte<'gc>(
 
         buf.push_char(c);
     }
-    let v = AvmString::new(activation.context.gc_context, buf);
+    let v = AvmString::new(activation.gc(), buf);
     Ok(v.into())
 }
 
 /// Implements `flash.utils.getQualifiedClassName`
 pub fn get_qualified_class_name<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    _this: Object<'gc>,
+    _this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    // This is a native method, which enforces the argument count.
-    let val = args[0];
-    match val {
-        Value::Null => return Ok("null".into()),
-        Value::Undefined => return Ok("void".into()),
-        _ => {}
-    }
-    let obj = val.coerce_to_object(activation)?;
+    let value = args.get_value(0);
+    let class = instance_class_describe_type(activation, value);
 
-    let class = match obj.as_class_object() {
-        Some(class) => class,
-        None => match obj.instance_of() {
-            Some(cls) => cls,
-            None => return Ok(Value::Null),
-        },
-    };
-
-    Ok(class
-        .inner_class_definition()
-        .read()
-        .name()
-        .to_qualified_name(activation.context.gc_context)
-        .into())
+    let mc = activation.gc();
+    Ok(class.dollar_removed_name(mc).to_qualified_name(mc).into())
 }
 
 /// Implements `flash.utils.getQualifiedSuperclassName`
 pub fn get_qualified_superclass_name<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    _this: Object<'gc>,
+    _this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let obj = args
-        .get(0)
-        .unwrap_or(&Value::Undefined)
-        .coerce_to_object(activation)?;
+    let value = args.get_value(0);
 
-    let class = match obj.as_class_object() {
-        Some(class) => class,
-        None => match obj.instance_of() {
-            Some(cls) => cls,
-            None => return Ok(Value::Null),
-        },
+    let class = match value.as_object().and_then(|o| o.as_class_object()) {
+        Some(class) => class.inner_class_definition(),
+        None => instance_class_describe_type(activation, value),
     };
 
-    if let Some(super_class) = class.superclass_object() {
-        Ok(super_class
-            .inner_class_definition()
-            .read()
-            .name()
-            .to_qualified_name(activation.context.gc_context)
-            .into())
+    if let Some(super_class) = class.super_class() {
+        Ok(super_class.name().to_qualified_name(activation.gc()).into())
     } else {
         Ok(Value::Null)
     }
@@ -248,15 +197,23 @@ pub fn get_qualified_superclass_name<'gc>(
 /// Implements native method `flash.utils.getDefinitionByName`
 pub fn get_definition_by_name<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    _this: Object<'gc>,
+    _this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     let appdomain = activation
         .caller_domain()
         .expect("Missing caller domain in getDefinitionByName");
-    let name = args
-        .get(0)
-        .unwrap_or(&Value::Undefined)
-        .coerce_to_string(activation)?;
-    appdomain.get_defined_value_handling_vector(activation, name)
+    let name = args.try_get_string(0);
+
+    if let Some(name) = name {
+        appdomain.get_defined_value_handling_vector(activation, name)
+    } else {
+        // For some reason this throws error #1507, so we can't use
+        // `get_string_non_null` to get the argument
+        Err(Error::avm_error(argument_error(
+            activation,
+            "Error #1507: Argument name cannot be null.",
+            1507,
+        )?))
+    }
 }

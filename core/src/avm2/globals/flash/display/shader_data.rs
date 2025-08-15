@@ -1,40 +1,52 @@
-use ruffle_render::pixel_bender::{
-    parse_shader, PixelBenderParam, PixelBenderParamQualifier, OUT_COORD_NAME,
-};
+use crate::avm2::activation::Activation;
+use crate::avm2::error::{make_error_2004, make_error_2030, Error2004Type};
+use crate::avm2::object::TObject as _;
+use crate::avm2::parameters::ParametersExt;
+use crate::avm2::value::Value;
+use crate::avm2::Error;
+use crate::pixel_bender::PixelBenderTypeExt;
+use crate::string::AvmString;
 
-use crate::{
-    avm2::{
-        parameters::ParametersExt, string::AvmString, Activation, Error, Object, TObject, Value,
-    },
-    pixel_bender::PixelBenderTypeExt,
+use ruffle_macros::istr;
+use ruffle_render::pixel_bender::{
+    parse_shader, PixelBenderParam, PixelBenderParamQualifier, PixelBenderParsingError,
+    OUT_COORD_NAME,
 };
 
 use super::shader_parameter::make_shader_parameter;
 
 pub use crate::avm2::object::shader_data_allocator;
 
-/// Implements `ShaderData.init`, which is called from the constructor
-pub fn init<'gc>(
+/// Implements `ShaderData._setByteCode`, which is called from the constructor
+pub fn _set_byte_code<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     let bytecode = args.get_object(activation, 0, "bytecode")?;
     let bytecode = bytecode.as_bytearray().unwrap();
-    let shader = parse_shader(bytecode.bytes()).expect("Failed to parse PixelBender");
+    let shader = parse_shader(bytecode.bytes(), true).map_err(|err| {
+        tracing::warn!("Failed to parse a Pixel Bender shader: {err}");
+        match err {
+            PixelBenderParsingError::IoError(_) => make_error_2030(activation),
+            _ => make_error_2004(activation, Error2004Type::ArgumentError),
+        }
+    })?;
 
     for meta in &shader.metadata {
-        let name = AvmString::new_utf8(activation.context.gc_context, &meta.key);
+        let name = AvmString::new_utf8(activation.gc(), &meta.key);
         // Top-level metadata appears to turn `TInt` into a plain integer value,
         // rather than a single-element array.
         let value = meta.value.as_avm2_value(activation, true)?;
-        this.set_public_property(name, value, activation)?;
+        this.set_dynamic_property(name, value, activation.gc());
     }
-    this.set_public_property(
-        "name",
-        AvmString::new_utf8(activation.context.gc_context, &shader.name).into(),
-        activation,
-    )?;
+    this.set_dynamic_property(
+        istr!("name"),
+        AvmString::new_utf8(activation.gc(), &shader.name).into(),
+        activation.gc(),
+    );
 
     let mut normal_index = 0;
     let mut texture_index = 0;
@@ -60,9 +72,9 @@ pub fn init<'gc>(
             }
         };
 
-        let name = AvmString::new_utf8(activation.context.gc_context, name);
+        let name = AvmString::new_utf8(activation.gc(), name);
         let param_obj = make_shader_parameter(activation, param, index)?;
-        this.set_public_property(name, param_obj, activation)?;
+        this.set_dynamic_property(name, param_obj, activation.gc());
     }
 
     let shader_handle = activation

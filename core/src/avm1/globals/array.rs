@@ -3,13 +3,14 @@
 use crate::avm1::activation::Activation;
 use crate::avm1::clamp::Clamp;
 use crate::avm1::error::Error;
-use crate::avm1::function::{Executable, FunctionObject};
+use crate::avm1::function::FunctionObject;
 use crate::avm1::property_decl::{define_properties_on, Declaration};
-use crate::avm1::{ArrayObject, Object, TObject, Value};
-use crate::context::GcContext;
+use crate::avm1::{Attribute, NativeObject, Object, Value};
 use crate::ecma_conversions::f64_to_wrapping_i32;
-use crate::string::AvmString;
+use crate::string::{AvmString, StringContext};
 use bitflags::bitflags;
+use gc_arena::Mutation;
+use ruffle_macros::istr;
 use std::cmp::Ordering;
 
 bitflags! {
@@ -61,44 +62,111 @@ const OBJECT_DECLS: &[Declaration] = declare_properties! {
     "NUMERIC" => int(SortOptions::NUMERIC.bits());
 };
 
+/// Intermediate builder for constructing `ArrayObject`,
+/// used to work around borrow-checker issues.
+pub struct ArrayBuilder<'gc> {
+    mc: &'gc Mutation<'gc>,
+    length_prop: AvmString<'gc>,
+    proto_prop: AvmString<'gc>,
+    proto: Object<'gc>,
+}
+
+impl<'gc> ArrayBuilder<'gc> {
+    pub fn empty(activation: &Activation<'_, 'gc>) -> Object<'gc> {
+        Self::new(activation).with([])
+    }
+
+    pub fn new(activation: &Activation<'_, 'gc>) -> Self {
+        let proto = activation.context.avm1.prototypes().array;
+        Self::new_with_proto(&activation.context.strings, proto)
+    }
+
+    pub fn new_with_proto(context: &StringContext<'gc>, proto: Object<'gc>) -> Self {
+        Self {
+            mc: context.gc(),
+            length_prop: istr!(context, "length"),
+            proto_prop: istr!(context, "__proto__"),
+            proto,
+        }
+    }
+
+    fn init_with(self, this: Object<'gc>, elements: impl IntoIterator<Item = Value<'gc>>) {
+        let mut length: i32 = 0;
+        for value in elements.into_iter() {
+            let length_str = AvmString::new_utf8(self.mc, length.to_string());
+            this.define_value(self.mc, length_str, value, Attribute::empty());
+            length += 1;
+        }
+        this.define_value(
+            self.mc,
+            self.length_prop,
+            length.into(),
+            Attribute::DONT_ENUM | Attribute::DONT_DELETE,
+        );
+
+        this.set_native(self.mc, NativeObject::Array(()));
+    }
+
+    pub fn with(self, elements: impl IntoIterator<Item = Value<'gc>>) -> Object<'gc> {
+        let obj = Object::new_without_proto(self.mc);
+        obj.define_value(
+            self.mc,
+            self.proto_prop,
+            self.proto.into(),
+            Attribute::DONT_ENUM | Attribute::DONT_DELETE,
+        );
+
+        self.init_with(obj, elements);
+        obj
+    }
+}
+
 pub fn create_array_object<'gc>(
-    context: &mut GcContext<'_, 'gc>,
+    context: &mut StringContext<'gc>,
     array_proto: Object<'gc>,
     fn_proto: Object<'gc>,
 ) -> Object<'gc> {
-    let array = FunctionObject::constructor(
-        context.gc_context,
-        Executable::Native(constructor),
-        Executable::Native(constructor),
-        fn_proto,
-        array_proto,
-    );
-    let object = array.raw_script_object();
+    let array =
+        FunctionObject::constructor(context, constructor, Some(array), fn_proto, array_proto);
 
     // TODO: These were added in Flash Player 7, but are available even to SWFv6 and lower
     // when run in Flash Player 7. Make these conditional if we add a parameter to control
     // target Flash Player version.
-    define_properties_on(OBJECT_DECLS, context, object, fn_proto);
+    define_properties_on(OBJECT_DECLS, context, array, fn_proto);
     array
 }
 
-/// Implements `Array` constructor and function
+/// Implements `Array` constructor
 pub fn constructor<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    this: Object<'gc>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    let builder = ArrayBuilder::new(activation);
+    if let [Value::Number(length)] = *args {
+        builder.init_with(this, []);
+        this.set_length(activation, length.clamp_to_i32())?;
+    } else {
+        builder.init_with(this, args.iter().cloned());
+    }
+
+    Ok(this.into())
+}
+
+/// Implements `Array` function
+pub fn array<'gc>(
     activation: &mut Activation<'_, 'gc>,
     _this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let [Value::Number(length)] = *args {
-        let array = ArrayObject::empty(activation);
+        let array = ArrayBuilder::empty(activation);
         array.set_length(activation, length.clamp_to_i32())?;
         Ok(array.into())
     } else {
-        Ok(ArrayObject::new(
-            activation.context.gc_context,
-            activation.context.avm1.prototypes().array,
-            args.iter().cloned(),
-        )
-        .into())
+        Ok(ArrayBuilder::new(activation)
+            .with(args.iter().cloned())
+            .into())
     }
 }
 
@@ -139,7 +207,7 @@ pub fn unshift<'gc>(
         this.set_element(activation, i as i32, arg)?;
     }
 
-    if this.as_array_object().is_some() {
+    if let NativeObject::Array(_) = this.native() {
         this.set_length(activation, new_length)?;
     }
 
@@ -169,7 +237,7 @@ pub fn shift<'gc>(
 
     this.delete_element(activation, length - 1);
 
-    if this.as_array_object().is_some() {
+    if let NativeObject::Array(_) = this.native() {
         this.set_length(activation, length - 1)?;
     }
 
@@ -190,7 +258,7 @@ pub fn pop<'gc>(
 
     this.delete_element(activation, length - 1);
 
-    if this.as_array_object().is_some() {
+    if let NativeObject::Array(_) = this.native() {
         this.set_length(activation, length - 1)?;
     }
 
@@ -253,11 +321,11 @@ pub fn join<'gc>(
     let separator = if let Some(v) = args.get(0) {
         v.coerce_to_string(activation)?
     } else {
-        ",".into()
+        istr!(",")
     };
 
     if length <= 0 {
-        return Ok("".into());
+        return Ok(istr!("").into());
     }
 
     let parts = (0..length)
@@ -268,7 +336,7 @@ pub fn join<'gc>(
         .collect::<Result<Vec<_>, _>>()?;
 
     let joined = crate::string::join(&parts, &separator);
-    Ok(AvmString::new(activation.context.gc_context, joined).into())
+    Ok(AvmString::new(activation.gc(), joined).into())
 }
 
 /// Handles an index parameter that may be positive (starting from beginning) or negaitve (starting from end).
@@ -302,12 +370,9 @@ pub fn slice<'gc>(
         make_index_absolute(end.coerce_to_i32(activation)?, length)
     };
 
-    Ok(ArrayObject::new(
-        activation.context.gc_context,
-        activation.context.avm1.prototypes().array,
-        (start..end).map(|i| this.get_element(activation, i)),
-    )
-    .into())
+    Ok(ArrayBuilder::new(activation)
+        .with((start..end).map(|i| this.get_element(activation, i)))
+        .into())
 }
 
 pub fn splice<'gc>(
@@ -315,12 +380,12 @@ pub fn splice<'gc>(
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if args.is_empty() {
+    let Some(start) = args.get(0) else {
         return Ok(Value::Undefined);
-    }
+    };
 
     let length = this.length(activation)?;
-    let start = make_index_absolute(args.get(0).unwrap().coerce_to_i32(activation)?, length);
+    let start = make_index_absolute(start.coerce_to_i32(activation)?, length);
     let delete_count = if let Some(arg) = args.get(1) {
         let delete_count = arg.coerce_to_i32(activation)?;
         if delete_count < 0 {
@@ -331,9 +396,8 @@ pub fn splice<'gc>(
         length - start
     };
 
-    let result_elements: Vec<_> = (0..delete_count)
-        .map(|i| this.get_element(activation, start + i))
-        .collect();
+    let result = ArrayBuilder::new(activation)
+        .with((0..delete_count).map(|i| this.get_element(activation, start + i)));
 
     let items = if args.len() > 2 { &args[2..] } else { &[] };
     if items.len() as i32 > delete_count {
@@ -367,12 +431,7 @@ pub fn splice<'gc>(
     }
     this.set_length(activation, length - delete_count + items.len() as i32)?;
 
-    Ok(ArrayObject::new(
-        activation.context.gc_context,
-        activation.context.avm1.prototypes().array,
-        result_elements,
-    )
-    .into())
+    Ok(result.into())
 }
 
 pub fn concat<'gc>(
@@ -380,34 +439,38 @@ pub fn concat<'gc>(
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let mut elements = vec![];
-    for &value in [this.into()].iter().chain(args) {
-        let array_object = if let Value::Object(object) = value {
-            if object.as_array_object().is_some() {
-                Some(object)
-            } else {
-                None
-            }
-        } else {
-            None
-        };
+    let this_value = this.into();
 
-        if let Some(array_object) = array_object {
-            let length = array_object.length(activation)?;
-            for i in 0..length {
-                let element = array_object.get_element(activation, i);
-                elements.push(element);
+    let mut elements = vec![];
+
+    std::iter::once(&this_value)
+        .chain(args)
+        .enumerate()
+        .try_for_each(|(index, value)| -> Result<(), Error<'gc>> {
+            if let Value::Object(object) = value {
+                match (object.native(), index) {
+                    // When Array.prototype.concat is called directly with the first argument being an object,
+                    // such as in the avm1/from_shumway/array test, the this value (i.e. index 0 in the iterator) will be NativeObject::None instead of NativeObject::Array
+                    (NativeObject::None, 0) | (NativeObject::Array(()), _) => {
+                        let length = object.length(activation)?;
+
+                        let object_elements =
+                            (0..length).map(|index| object.get_element(activation, index));
+
+                        elements.extend(object_elements);
+
+                        return Ok(());
+                    }
+                    _ => {}
+                }
             }
-        } else {
-            elements.push(value);
-        }
-    }
-    Ok(ArrayObject::new(
-        activation.context.gc_context,
-        activation.context.avm1.prototypes().array,
-        elements,
-    )
-    .into())
+
+            elements.push(*value);
+
+            Ok(())
+        })?;
+
+    Ok(ArrayBuilder::new(activation).with(elements).into())
 }
 
 pub fn to_string<'gc>(
@@ -460,7 +523,7 @@ fn sort_on<'gc>(
 
     let fields = match args.get(0) {
         Some(Value::Object(field_names_array)) => {
-            if field_names_array.as_array_object().is_none() {
+            if !matches!(field_names_array.native(), NativeObject::Array(_)) {
                 // Non-Array fields.
                 // Fallback to standard sort.
                 return sort_internal(
@@ -492,7 +555,7 @@ fn sort_on<'gc>(
 
             match args.get(1) {
                 Some(Value::Object(options_array))
-                    if options_array.as_array_object().is_some()
+                    if matches!(options_array.native(), NativeObject::Array(_))
                         && options_array.length(activation)? == length =>
                 {
                     // Array of options.
@@ -570,7 +633,7 @@ fn sort_compare_custom<'a, 'gc>(compare_fn: &'a Object<'gc>) -> CompareFn<'a, 'g
     Box::new(move |activation, a, b, _options| {
         let this = Value::Undefined;
         let args = [*a, *b];
-        let result = compare_fn.call("[Compare]".into(), activation, this, &args)?;
+        let result = compare_fn.call("[Compare]", activation, this, &args)?;
         let result = result.coerce_to_f64(activation)?;
         Ok(result.partial_cmp(&0.0).unwrap_or(DEFAULT_ORDERING))
     })
@@ -647,12 +710,9 @@ fn sort_internal<'gc>(
     if options.contains(SortOptions::RETURN_INDEXED_ARRAY) {
         // Array.RETURNINDEXEDARRAY returns an array containing the sorted indices, and does not modify
         // the original array.
-        Ok(ArrayObject::new(
-            activation.context.gc_context,
-            activation.context.avm1.prototypes().array,
-            elements.into_iter().map(|(index, _)| index.into()),
-        )
-        .into())
+        Ok(ArrayBuilder::new(activation)
+            .with(elements.into_iter().map(|(index, _)| index.into()))
+            .into())
     } else {
         // Standard sort modifies the original array, and returns it.
         // AS2 reference incorrectly states this returns nothing, but it returns the original array, sorted.
@@ -675,80 +735,70 @@ fn qsort<'gc>(
         return Ok(());
     }
 
-    // Fast-path for 2 elements.
-    if let [(_, a), (_, b)] = &elements {
-        if compare_fn(activation, a, b, options)?.is_gt() {
-            elements.swap(0, 1);
+    // Stack for storing inclusive subarray boundaries (start and end).
+    let mut stack: Vec<(usize, usize)> = Vec::new();
+
+    stack.push((0, elements.len() - 1));
+
+    while let Some((low, high)) = stack.pop() {
+        if low >= high {
+            continue;
         }
-        return Ok(());
-    }
 
-    // Flash always chooses the leftmost element as the pivot.
-    let (_, pivot) = elements[0];
+        // Flash always chooses the leftmost element as the pivot.
+        let pivot = elements[low].1;
 
-    // Order the elements (excluding the pivot) such that all elements lower
-    // than the pivot come before all elements greater than the pivot.
-    //
-    // This is done by iterating from both ends, swapping greater elements with
-    // lower ones along the way.
-    let mut left = 1;
-    let mut right = elements.len() - 1;
-    loop {
-        // Find an element greater than the pivot from the left.
-        while left < elements.len() - 1 {
-            let (_, item) = &elements[left];
-            if compare_fn(activation, &pivot, item, options)?.is_le() {
+        let mut left = low + 1;
+        let mut right = high;
+
+        loop {
+            // Find an element greater than the pivot from the left.
+            while left < right {
+                let (_, item) = &elements[left];
+                if compare_fn(activation, &pivot, item, options)?.is_le() {
+                    break;
+                }
+                left += 1;
+            }
+
+            // Find an element lower than the pivot from the right.
+            while right > low {
+                let (_, item) = &elements[right];
+                if compare_fn(activation, &pivot, item, options)?.is_gt() {
+                    break;
+                }
+                right -= 1;
+            }
+
+            // When left and right cross, then no element greater than
+            // the pivot comes before an element lower than the pivot.
+            if left >= right {
                 break;
             }
-            left += 1;
+
+            // Otherwise, swap left and right, and keep going.
+            elements.swap(left, right);
         }
 
-        // Find an element lower than the pivot from the right.
-        while right > 0 {
-            let (_, item) = &elements[right];
-            if compare_fn(activation, &pivot, item, options)?.is_gt() {
-                break;
-            }
-            right -= 1;
-        }
+        // Move the pivot element to its position between the partitions.
+        elements.swap(low, right);
 
-        // When left and right cross, then no element greater than
-        // the pivot comes before an element lower than the pivot.
-        if left >= right {
-            break;
+        // Push subarrays onto the stack for further sorting.
+        stack.push((right + 1, high));
+        if right > 0 {
+            stack.push((low, right - 1));
         }
-
-        // Otherwise, swap left and right, and keep going.
-        elements.swap(left, right);
     }
 
-    // The elements are now ordered as follows:
-    // [0]: pivot
-    // [1..=right]: lower partition (empty if right == 0)
-    // [right + 1..]: higher partition
-
-    // Swap the pivot with the last element in the lower partition,
-    // moving it in between the lower and higher partitions.
-    elements.swap(0, right);
-
-    // The elements are now ordered as follows:
-    // [..right]: lower partition
-    // [right]: pivot
-    // [right + 1..]: higher partition
-
-    // Recursively sort the lower and higher partitions.
-    qsort(activation, &mut elements[..right], compare_fn, options)?;
-    qsort(activation, &mut elements[right + 1..], compare_fn, options)?;
     Ok(())
 }
 
 pub fn create_proto<'gc>(
-    context: &mut GcContext<'_, 'gc>,
+    context: &mut StringContext<'gc>,
     proto: Object<'gc>,
     fn_proto: Object<'gc>,
 ) -> Object<'gc> {
-    let array = ArrayObject::empty_with_proto(context.gc_context, proto);
-    let object = array.raw_script_object();
-    define_properties_on(PROTO_DECLS, context, object, fn_proto);
-    object.into()
+    let array = ArrayBuilder::new_with_proto(context, proto).with([]);
+    define_properties_on(PROTO_DECLS, context, array, fn_proto);
+    array
 }

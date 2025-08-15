@@ -1,0 +1,17 @@
+version 1i
+name "c"
+
+param.out "dst", float4, f0.rgba
+
+ld      f2.r, 1f
+ld      f2.g, 1f
+ld      f2.b, 1f
+ld      f2.a, 1f
+ld      i2.r, 0i
+ld      i2.g, 0i
+ld      i2.b, 0i
+ld      i2.a, 0i
+
+select  f0.g, i1.g, f2.r, i2.g
+
+ld      f0.a, 1f

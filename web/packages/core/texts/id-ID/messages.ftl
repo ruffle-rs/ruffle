@@ -10,12 +10,11 @@ update-ruffle = Perbarui Ruffle
 ruffle-demo = Demo Web
 ruffle-desktop = Aplikasi Desktop
 ruffle-wiki = Kunjungi Wiki Ruffle
-enable-hardware-acceleration = Sepertinya akselerasi perangkat keras tidak aktif. Ruffle tetap akan bekerja, Namun dapat bekerja dengan sangat lambat. Anda dapat mengaktifkan akselerasi perangkat keras dengan menggunakan link berikut.
 view-error-details = Tunjukan Detail Error
 open-in-new-tab = Buka di Tab Baru
 click-to-unmute = Tekan untuk menyalakan suara
 error-file-protocol =
-    Sepertinya anda menjalankan Ruffle di protokol "file:". 
+    Sepertinya anda menjalankan Ruffle di protokol "file:".
     Ini tidak berfungsi karena browser memblokir fitur ini dengan alasan keamanan.
     Sebagai gantinya, kami mengajak anda untuk membuat server lokal, menggunakan demo web atau aplikasi desktop.
 error-javascript-config =

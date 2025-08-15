@@ -1,0 +1,35 @@
+preferences-dialog = Параметры Ruffle
+preference-locked-by-cli = Только чтение (установлено CLI)
+graphics-backend = Обработка графики
+graphics-backend-default = По умолчанию
+graphics-power = Предпочитаемая нагрузка
+graphics-power-low = Низкая (iGPU)
+graphics-power-high = Высокая (GPU)
+language = Язык
+audio-output-device = Устройство вывода звука
+audio-output-device-default = Как в системе
+enable-openh264 = Включить OpenH264
+show-license = Показать лицензию
+openh264-license = Лицензия OpenH264
+log-filename-pattern = Имя файла журнала
+log-filename-pattern-single-file = Только имя (ruffle.log)
+log-filename-pattern-with-timestamp = С временной меткой
+storage-backend = Место сохранения файла
+storage-backend-disk = Диск
+storage-backend-memory = Память
+recent-limit = Лимит недавних
+recent-clear = Очистить
+theme = Тема
+theme-system = Как в системе
+theme-light = Светлая
+theme-dark = Тёмная
+# See for context https://github.com/FeralInteractive/gamemode
+gamemode = GameMode
+gamemode-tooltip = GameMode временно добавляет набор оптимизации в твоем компьютере и/или в Ruffle. Ruffle запрашивает GameMode только когда ролик играет.
+gamemode-default = По умолчанию
+gamemode-default-tooltip = GameMode будет включён только при выборе высокой производительности в настройках питания.
+# See for context https://wiki.archlinux.org/title/Input_method
+ime-enabled = Метод ввода
+ime-enabled-experimental = (экспериментальный)
+ime-enabled-tooltip = Метод ввода позволяет вводить символы, которые не доступны на клавиатуре, например, китайские, японские или корейские иероглифы.
+ime-enabled-default = По умолчанию

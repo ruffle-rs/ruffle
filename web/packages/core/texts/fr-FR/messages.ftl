@@ -1,6 +1,9 @@
 message-cant-embed =
     Ruffle n'a pas été en mesure de lire le fichier Flash intégré dans cette page.
     Vous pouvez essayer d'ouvrir le fichier dans un onglet isolé, pour contourner le problème.
+message-restored-from-bfcache =
+    Votre navigateur a restauré ce contenu Flash d'une session antérieure.
+    Rechargez la page pour repartir de zéro.
 panic-title = Une erreur est survenue :(
 more-info = Plus d'infos
 run-anyway = Exécuter quand même
@@ -10,10 +13,21 @@ update-ruffle = Mettre à jour Ruffle
 ruffle-demo = Démo en ligne
 ruffle-desktop = Application de bureau
 ruffle-wiki = Wiki de Ruffle
-enable-hardware-acceleration = Il semblerait que l'accélération matérielle ne soit pas activée. Cela n'empêche généralement pas Ruffle de fonctionner, mais il peut être beaucoup plus lent. Vous pouvez trouver comment activer l'accélération matérielle en suivant ce lien.
+enable-hardware-acceleration = Il semblerait que l'accélération matérielle soit désactivée. Cela n'empêche généralement pas Ruffle de fonctionner, mais il peut être beaucoup plus lent. Vous pouvez trouver comment activer l'accélération matérielle en suivant le lien ci-dessous :
+enable-hardware-acceleration-link = FAQ - Accélération matérielle dans Chrome
 view-error-details = Détails de l'erreur
 open-in-new-tab = Ouvrir dans un nouvel onglet
 click-to-unmute = Cliquez pour activer le son
+clipboard-message-title = Copier et coller dans Ruffle
+clipboard-message-description =
+    { $variant ->
+       *[unsupported] Votre navigateur ne prend pas en charge l'accès au presse-papiers,
+        [access-denied] L'accès au presse-papiers a été refusé,
+    } mais vous pouvez toujours utiliser ces raccourcis clavier à la place :
+clipboard-message-copy = { " " } pour copier
+clipboard-message-cut = { " " } pour couper
+clipboard-message-paste = { " " } pour coller
+error-canvas-reload = Impossible de recharger avec le moteur de rendu canvas lorsque celui-ci est déjà en cours d'utilisation.
 error-file-protocol =
     Il semblerait que vous exécutiez Ruffle sur le protocole "file:".
     Cela ne fonctionne pas car les navigateurs bloquent de nombreuses fonctionnalités pour des raisons de sécurité.
@@ -58,6 +72,10 @@ error-wasm-disabled-on-edge =
     Pour résoudre ce problème, essayez d'ouvrir les paramètres de votre navigateur et de cliquer sur "Confidentialité, recherche et services". Puis, vers le bas de la page, désactivez l'option "Améliorez votre sécurité sur le web".
     Cela permettra à votre navigateur de charger les fichiers ".wasm".
     Si le problème persiste, vous devrez peut-être utiliser un autre navigateur.
+error-wasm-unsupported-browser =
+    Votre navigateur ne prend pas en charge les extensions WebAssembly nécessaires au fonctionnement de Ruffle.
+    Veuillez utiliser un navigateur les prenant en charge.
+    Vous pouvez trouver une liste de navigateurs fonctionnant avec Ruffle sur le wiki.
 error-javascript-conflict =
     Ruffle a rencontré un problème majeur durant sa phase d'initialisation.
     Il semblerait que cette page contienne du code JavaScript qui entre en conflit avec Ruffle.
