@@ -507,6 +507,9 @@ pub fn init_early_classes<'gc>(
     class_class.into_finished_class(activation);
     object_class.into_finished_class(activation);
 
+    // We don't need to validate the classes, as we already know that the
+    // `Object` and `Class` classes are valid
+
     // Reset the Activation's outer scope.
     activation.set_outer(empty_scope);
 
