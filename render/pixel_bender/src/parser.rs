@@ -94,7 +94,7 @@ pixel_bender_type_with_opcode! {
     }
 }
 
-#[derive(Debug, PartialEq, Copy, Clone)]
+#[derive(Debug, PartialEq, Eq, Copy, Clone, PartialOrd, Ord)]
 pub enum PixelBenderRegChannel {
     R = 0,
     G = 1,
@@ -350,6 +350,7 @@ pub enum PixelBenderParam {
 pub struct PixelBenderMetadata {
     pub key: String,
     pub value: PixelBenderType,
+    pub is_meta2: bool,
 }
 
 /// Parses PixelBender bytecode
@@ -469,6 +470,7 @@ fn read_op<R: Read>(
             metadata.push(PixelBenderMetadata {
                 key: meta_key,
                 value: meta_value,
+                is_meta2: matches!(opcode, Opcode::PBJMeta2),
             });
         }
         Opcode::PBJParam => {
