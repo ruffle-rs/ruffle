@@ -1378,6 +1378,10 @@ impl<'gc> LayoutBox<'gc> {
         }
     }
 
+    pub fn text_range(&self) -> Range<usize> {
+        self.start()..self.end()
+    }
+
     /// Return x-axis char bounds of the given char relative to the whole layout.
     pub fn char_x_bounds(&self, position: usize) -> Option<(Twips, Twips)> {
         let relative_position = position.checked_sub(self.start())?;

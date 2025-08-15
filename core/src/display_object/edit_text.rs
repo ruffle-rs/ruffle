@@ -1541,6 +1541,10 @@ impl<'gc> EditText<'gc> {
         self.0.text_spans.borrow()
     }
 
+    pub fn layout(&self) -> Ref<'_, Layout<'gc>> {
+        self.0.layout.borrow()
+    }
+
     pub fn render_settings(self) -> TextRenderSettings {
         self.0.render_settings.get()
     }
