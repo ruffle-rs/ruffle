@@ -192,6 +192,8 @@ impl BitmapCache {
 
 #[derive(Clone, Collect)]
 #[collect(no_drop)]
+// Ensure this always has the same alignment as its subclasses (needed for `Gc` casts).
+#[repr(align(8))]
 pub struct DisplayObjectBase<'gc> {
     cell: RefCell<DisplayObjectBaseMut>,
     parent: Lock<Option<DisplayObject<'gc>>>,

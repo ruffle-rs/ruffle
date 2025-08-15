@@ -1,0 +1,27 @@
+version 1i
+name "Test"
+
+mov     i1.rgba, i0.rgba
+mov     i1.rgb, i0.rgb
+mov     i1.rga, i0.rgb
+mov     i1.rba, i0.rgb
+mov     i1.gba, i0.rgb
+mov     i1.rg, i0.rg
+mov     i1.rb, i0.rg
+mov     i1.ra, i0.rg
+mov     i1.gb, i0.rg
+mov     i1.ga, i0.rg
+mov     i1.ba, i0.rg
+mov     i1.r, i0.r
+mov     i1.g, i0.r
+mov     i1.b, i0.r
+mov     i1.a, i0.r
+mov     i1.rgb, i0.rgba
+mov     i1.rgb, i0.rg
+mov     i1.rgb, i0.r
+mov     i1.rg, i0.rgba
+mov     i1.rg, i0.rgb
+mov     i1.rg, i0.r
+mov     i1.r, i0.rgba
+mov     i1.r, i0.rgb
+mov     i1.r, i0.rg
