@@ -652,8 +652,8 @@ impl<'gc> Font<'gc> {
     }
 }
 
-impl FontLike for Font<'_> {
-    fn get_glyph_render_data(&self, c: char) -> Option<GlyphRenderData<'_>> {
+impl<'gc> FontLike<'gc> for Font<'gc> {
+    fn get_glyph_render_data(&self, c: char) -> Option<GlyphRenderData<'_, 'gc>> {
         self.get_glyph_for_char(c)
             .map(|glyph| GlyphRenderData::new(glyph, *self))
     }
@@ -693,9 +693,9 @@ impl FontLike for Font<'_> {
     }
 }
 
-pub trait FontLike {
+pub trait FontLike<'gc> {
     /// Returns data required to render a glyph.
-    fn get_glyph_render_data(&self, c: char) -> Option<GlyphRenderData<'_>>;
+    fn get_glyph_render_data(&self, c: char) -> Option<GlyphRenderData<'_, 'gc>>;
 
     /// Returns whether this font contains kerning information.
     fn has_kerning_info(&self) -> bool;
@@ -750,7 +750,7 @@ pub trait FontLike {
             let c = c.unwrap_or(char::REPLACEMENT_CHARACTER);
             if let Some(render_data) = self.get_glyph_render_data(c) {
                 let glyph = render_data.glyph;
-                let scale = params.height.get() as f32 / render_data.scale;
+                let scale = params.height.get() as f32 / render_data.font.scale();
                 let mut advance = glyph.advance();
                 if has_kerning_info && params.kerning {
                     let next_char = char_indices.peek().cloned().unwrap_or((0, Ok('\0'))).1;
@@ -993,17 +993,14 @@ impl Glyph {
     }
 }
 
-pub struct GlyphRenderData<'a> {
-    glyph: &'a Glyph,
-    scale: f32,
+pub struct GlyphRenderData<'a, 'gc> {
+    pub glyph: &'a Glyph,
+    pub font: Font<'gc>,
 }
 
-impl<'a> GlyphRenderData<'a> {
-    fn new(glyph: &'a Glyph, font: Font<'_>) -> Self {
-        Self {
-            glyph,
-            scale: font.scale(),
-        }
+impl<'a, 'gc> GlyphRenderData<'a, 'gc> {
+    fn new(glyph: &'a Glyph, font: Font<'gc>) -> Self {
+        Self { glyph, font }
     }
 }
 
@@ -1320,8 +1317,8 @@ impl<'gc> FontSet<'gc> {
     }
 }
 
-impl FontLike for FontSet<'_> {
-    fn get_glyph_render_data(&self, c: char) -> Option<GlyphRenderData<'_>> {
+impl<'gc> FontLike<'gc> for FontSet<'gc> {
+    fn get_glyph_render_data(&self, c: char) -> Option<GlyphRenderData<'_, 'gc>> {
         if let Some(glyph) = self.0.main_font.get_glyph_for_char(c) {
             return Some(GlyphRenderData::new(glyph, self.0.main_font));
         }
