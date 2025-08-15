@@ -1270,7 +1270,7 @@ impl<'gc> LayoutBox<'gc> {
     ///
     /// TODO It's currently unused, but will be useful when adding support for
     /// images embedded in HTML.
-    #[expect(unused)]
+    #[allow(unused)]
     pub fn from_drawing(position: usize, drawing: Drawing) -> Self {
         Self {
             bounds: Default::default(),
