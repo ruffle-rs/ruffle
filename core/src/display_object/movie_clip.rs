@@ -1,4 +1,5 @@
 //! `MovieClip` display object and support code.
+use crate::avm1::globals::AVM_DEPTH_BIAS;
 use crate::avm1::Avm1;
 use crate::avm1::{Activation as Avm1Activation, ActivationIdentifier};
 use crate::avm1::{NativeObject as Avm1NativeObject, Object as Avm1Object, Value as Avm1Value};
@@ -1550,21 +1551,33 @@ impl<'gc> MovieClip<'gc> {
             }
         }
         let hit_target_frame = self.0.current_frame() == frame;
-
         if is_rewind {
-            // Remove all display objects that were created after the
-            // destination frame.
-            //
-            // We do this after reading the clip timeline so that AS3 can't
-            // observe side effects of the rewinding process.
-            //
-            // TODO: We want to do something like self.children.retain here,
-            // but BTreeMap::retain does not exist.
-            // TODO: Should AS3 children ignore GOTOs?
+            let cleaned_depths: std::collections::HashSet<Depth> = goto_commands
+                .iter()
+                .filter(|p| p.frame == frame)
+                .map(|p| p.depth())
+                .collect();
+
             let children: SmallVec<[_; 16]> = self
                 .iter_render_list()
-                .filter(|clip| clip.place_frame() > frame)
+                .filter(|child| {
+                    if self.movie().is_action_script_3() {
+                        return child.place_frame() > frame;
+                    }
+
+                    let is_script_owned =
+                        child.placed_by_avm1_script() || child.depth() >= AVM_DEPTH_BIAS;
+
+                    if is_script_owned {
+                        child.depth() < AVM_DEPTH_BIAS
+                    } else {
+                        child.place_frame() > frame
+                            || (cleaned_depths.contains(&child.depth())
+                                && child.place_frame() != frame)
+                    }
+                })
                 .collect();
+
             for child in children {
                 if !child.placed_by_script() {
                     self.remove_child(context, child);
@@ -1573,7 +1586,6 @@ impl<'gc> MovieClip<'gc> {
                 }
             }
         }
-
         // Run the list of goto commands to actually create and update the display objects.
         let run_goto_command = |clip: MovieClip<'gc>,
                                 context: &mut UpdateContext<'gc>,

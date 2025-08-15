@@ -799,6 +799,7 @@ fn attach_movie<'gc>(
         .library_for_movie(movie_clip.movie())
         .and_then(|l| l.instantiate_by_export_name(export_name, activation.gc()))
     {
+        new_clip.set_placed_by_avm1_script(true);
         // Set name and attach to parent.
         new_clip.set_name(activation.gc(), new_instance_name);
         movie_clip.replace_at_depth(activation.context, new_clip, depth);
@@ -840,6 +841,7 @@ fn create_empty_movie_clip<'gc>(
     // Create empty movie clip.
     let swf_movie = movie_clip.movie();
     let new_clip = MovieClip::new(swf_movie, activation.gc());
+    new_clip.set_placed_by_avm1_script(true);
 
     // Set name and attach to parent.
     new_clip.set_name(activation.gc(), new_instance_name);
@@ -928,14 +930,14 @@ fn duplicate_movie_clip<'gc>(
     // `duplicateMovieClip` method uses biased depth compared to `CloneSprite`.
     let depth = depth.wrapping_add(AVM_DEPTH_BIAS);
 
-    let new_clip = clone_sprite(movie_clip, activation.context, name, depth, init_object);
-
-    // On SWF<6 undefined is returned.
-    if activation.swf_version() < 6 {
-        return Ok(Value::Undefined);
+    if let Some(new_clip) = clone_sprite(movie_clip, activation.context, name, depth, init_object) {
+        // On SWF<6 undefined is returned.
+        if activation.swf_version() < 6 {
+            return Ok(Value::Undefined);
+        }
+        return Ok(new_clip.object());
     }
-
-    Ok(new_clip.map_or(Value::Undefined, |clip| clip.object()))
+    Ok(Value::Undefined)
 }
 
 pub fn clone_sprite<'gc>(
@@ -973,7 +975,7 @@ pub fn clone_sprite<'gc>(
     // Set name and attach to parent.
     new_clip.set_name(context.gc(), target);
     parent.replace_at_depth(context, new_clip.into(), depth);
-
+    new_clip.set_placed_by_avm1_script(true);
     // Copy display properties from previous clip to new clip.
     new_clip.set_matrix(movie_clip.base().matrix());
     new_clip.set_color_transform(movie_clip.base().color_transform());
