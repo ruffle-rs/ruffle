@@ -427,14 +427,19 @@ pub fn split<'gc>(
         // When using an empty delimiter, Str::split adds an extra beginning and trailing item, but Flash does not.
         // e.g., split("foo", "") returns ["", "f", "o", "o", ""] in Rust but ["f, "o", "o"] in Flash.
         // Special case this to match Flash's behavior.
-        this.iter()
-            .take(limit.get())
-            .map(|c| Value::from(activation.strings().make_char(c)))
-            .collect()
+        if this.is_empty() {
+            // Empty string with empty delimiter should return [""]
+            std::iter::once(activation.strings().empty()).collect()
+        } else {
+            this.iter()
+                .take(limit.get())
+                .map(|c| activation.strings().make_char(c))
+                .collect()
+        }
     } else {
         this.split(&delimiter)
             .take(limit.get())
-            .map(|c| Value::from(AvmString::new(activation.gc(), c)))
+            .map(|c| AvmString::new(activation.gc(), c))
             .collect()
     };
 
