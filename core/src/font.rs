@@ -1315,6 +1315,14 @@ impl<'gc> FontSet<'gc> {
             },
         ))
     }
+
+    pub fn main_font(&self) -> Font<'gc> {
+        self.0.main_font
+    }
+
+    pub fn fallback_fonts(&self) -> &[Font<'gc>] {
+        &self.0.fallback_fonts
+    }
 }
 
 impl<'gc> FontLike<'gc> for FontSet<'gc> {
