@@ -154,11 +154,14 @@ pub fn last_index_of<'gc>(
 
     let pattern = args.get_string(activation, 0);
 
-    let start_index = args.get_i32(1);
-
-    let start_index = match usize::try_from(start_index) {
-        Ok(n) => n + pattern.len(),
-        Err(_) => return Ok((-1).into()), // Bail out on negative indices.
+    let start_index = match args.get_f64(1) {
+        float if float.is_nan() => this.len(),
+        f64::INFINITY => this.len(),
+        f64::NEG_INFINITY => return Ok((-1).into()),
+        float => match usize::try_from(float as i32) {
+            Ok(n) => n + pattern.len(),
+            Err(_) => return Ok((-1).into()), // Bail out on negative indices.
+        },
     };
 
     this.slice(..start_index)
