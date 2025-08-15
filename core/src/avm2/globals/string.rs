@@ -233,7 +233,9 @@ fn last_index_of<'gc>(
     };
 
     let start_index = match args.get(1) {
-        None | Some(Value::Undefined) => this.len(),
+        None | Some(Value::Undefined) | Some(Value::Number(f64::INFINITY)) => this.len(),
+        Some(Value::Number(float)) if float.is_nan() => this.len(),
+        Some(Value::Number(f64::NEG_INFINITY)) => return Ok((-1).into()),
         Some(n) => match usize::try_from(n.coerce_to_i32(activation)?) {
             Ok(n) => n + pattern.len(),
             Err(_) => return Ok((-1).into()), // Bail out on negative indices.
@@ -486,21 +488,24 @@ fn split<'gc>(
         // When using an empty delimiter, Str::split adds an extra beginning and trailing item, but Flash does not.
         // e.g., split("foo", "") returns ["", "f", "o", "o", ""] in Rust but ["f, "o", "o"] in Flash.
         // Special case this to match Flash's behavior.
-        this.iter()
-            .take(limit)
-            .map(|c| {
-                Value::from(
+        if this.is_empty() {
+            // Empty string with empty delimiter should return [""]
+            std::iter::once(activation.context.interner.empty()).collect()
+        } else {
+            this.iter()
+                .take(limit)
+                .map(|c| {
                     activation
                         .context
                         .interner
-                        .get_char(activation.context.gc_context, c),
-                )
-            })
-            .collect()
+                        .get_char(activation.context.gc_context, c)
+                })
+                .collect()
+        }
     } else {
         this.split(&delimiter)
             .take(limit)
-            .map(|c| Value::from(AvmString::new(activation.context.gc_context, c)))
+            .map(|c| AvmString::new(activation.context.gc_context, c))
             .collect()
     };
 
