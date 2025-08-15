@@ -565,13 +565,13 @@ impl std::fmt::Debug for PrettyString<'_> {
 }
 
 fn assert_text_matches(ruffle: &str, flash: &str) -> Result<()> {
-    if flash != ruffle {
+    if ruffle != flash {
         let left_pretty = PrettyString(ruffle);
         let right_pretty = PrettyString(flash);
         let comparison = Comparison::new(&left_pretty, &right_pretty);
 
         Err(anyhow!(
-            "assertion failed: `(flash_expected == ruffle_actual)`\
+            "assertion failed: `(ruffle_actual == flash_expected)`\
                        \n\
                        \n{}\
                        \n",
