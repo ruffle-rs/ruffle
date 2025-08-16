@@ -272,6 +272,20 @@ pub fn make_error_1033<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> 
     }
 }
 
+#[inline(never)]
+#[cold]
+pub fn make_error_1035<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
+    let err = verify_error(
+        activation,
+        "Error #1035: Illegal super expression found in method.",
+        1035,
+    );
+    match err {
+        Ok(err) => Error::avm_error(err),
+        Err(err) => err,
+    }
+}
+
 pub fn make_error_1052<'gc>(activation: &mut Activation<'_, 'gc>, func_name: &str) -> Error<'gc> {
     let err = uri_error(
         activation,

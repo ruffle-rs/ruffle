@@ -1,4 +1,4 @@
-use crate::avm2::error::verify_error;
+use crate::avm2::error::{make_error_1035, verify_error};
 use crate::avm2::method::{Method, MethodKind, ResolvedParamConfig};
 use crate::avm2::multiname::Multiname;
 use crate::avm2::op::Op;
@@ -1578,6 +1578,10 @@ fn abstract_interpret_ops<'gc>(
                 }
             }
             Op::ConstructSuper { num_args } => {
+                let Some(bound_superclass_object) = activation.bound_superclass_object() else {
+                    return Err(make_error_1035(activation));
+                };
+
                 // Arguments
                 stack.popn(activation, num_args)?;
 
@@ -1588,12 +1592,7 @@ fn abstract_interpret_ops<'gc>(
                 // are noops anyway.
                 if num_args == 0 {
                     let object_class = activation.avm2().class_defs().object;
-                    // TODO: A `None` superclass should throw a VerifyError
-                    if activation
-                        .bound_class()
-                        .and_then(|c| c.super_class())
-                        .is_some_and(|c| c == object_class)
-                    {
+                    if bound_superclass_object.inner_class_definition() == object_class {
                         // When the receiver is null, this op can still throw an
                         // error, so let's ensure it's guaranteed nonnull before
                         // optimizing it
@@ -1743,26 +1742,76 @@ fn abstract_interpret_ops<'gc>(
                 }
             }
             Op::GetSuper { multiname } => {
+                let Some(bound_superclass_object) = activation.bound_superclass_object() else {
+                    return Err(make_error_1035(activation));
+                };
+
                 stack.pop_for_multiname(activation, multiname)?;
 
                 // Receiver
                 stack.pop(activation)?;
 
-                // TODO use correct type when known
-                stack.push_any(activation)?;
+                // Push return value to the stack
+                let vtable = bound_superclass_object.instance_vtable();
+                match vtable.get_trait(&multiname) {
+                    Some(Property::Slot { slot_id }) | Some(Property::ConstSlot { slot_id }) => {
+                        let mut value_class =
+                            vtable.slot_class(slot_id).expect("Slot should exist");
+                        let resolved_value_class = value_class.get_class(activation)?;
+
+                        vtable.set_slot_class(activation.gc(), slot_id, value_class);
+
+                        // TODO: We can optimize the op to GetSlot here
+
+                        if let Some(resolved_value_class) = resolved_value_class {
+                            stack.push_class(activation, resolved_value_class)?;
+                        } else {
+                            stack.push_any(activation)?;
+                        }
+                    }
+                    Some(Property::Virtual {
+                        get: Some(disp_id), ..
+                    }) => {
+                        let method = vtable.get_method(disp_id).expect("Method should exist");
+
+                        method.resolve_info(activation)?;
+
+                        // TODO: Use `maybe_optimize_static_call` here
+
+                        let return_type = method.resolved_return_type();
+                        if let Some(return_type) = return_type {
+                            stack.push_class(activation, return_type)?;
+                        } else {
+                            stack.push_any(activation)?;
+                        }
+                    }
+                    _ => {
+                        stack.push_any(activation)?;
+                    }
+                }
             }
             Op::SetSuper { multiname } => {
+                if activation.bound_superclass_object().is_none() {
+                    return Err(make_error_1035(activation));
+                }
+
                 stack.pop(activation)?;
 
                 stack.pop_for_multiname(activation, multiname)?;
 
                 // Receiver
                 stack.pop(activation)?;
+
+                // TODO: Optimize the op when possible
             }
             Op::CallSuper {
                 multiname,
                 num_args,
             } => {
+                let Some(bound_superclass_object) = activation.bound_superclass_object() else {
+                    return Err(make_error_1035(activation));
+                };
+
                 // Arguments
                 stack.popn(activation, num_args)?;
 
@@ -1771,8 +1820,27 @@ fn abstract_interpret_ops<'gc>(
                 // Then receiver.
                 stack.pop(activation)?;
 
-                // TODO use correct type when known
-                stack.push_any(activation)?;
+                // Push return value to the stack
+                let vtable = bound_superclass_object.instance_vtable();
+                match vtable.get_trait(&multiname) {
+                    Some(Property::Method { disp_id }) => {
+                        let method = vtable.get_method(disp_id).expect("Method should exist");
+
+                        method.resolve_info(activation)?;
+
+                        // TODO: Use `maybe_optimize_static_call` here
+
+                        let return_type = method.resolved_return_type();
+                        if let Some(return_type) = return_type {
+                            stack.push_class(activation, return_type)?;
+                        } else {
+                            stack.push_any(activation)?;
+                        }
+                    }
+                    _ => {
+                        stack.push_any(activation)?;
+                    }
+                }
             }
             Op::SetGlobalSlot { .. } => {
                 let outer_scope = activation.outer();
