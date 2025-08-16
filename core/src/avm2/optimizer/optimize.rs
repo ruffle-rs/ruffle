@@ -1,4 +1,6 @@
-use crate::avm2::error::verify_error;
+use crate::avm2::error::{
+    make_error_1026, make_error_1035, make_error_1051, make_error_1058, verify_error,
+};
 use crate::avm2::method::{Method, MethodKind, ResolvedParamConfig};
 use crate::avm2::multiname::Multiname;
 use crate::avm2::op::Op;
@@ -99,7 +101,6 @@ impl<'gc> OptValue<'gc> {
     pub fn merged_with(self, other: OptValue<'gc>) -> OptValue<'gc> {
         let mut created_value = OptValue::any();
 
-        // TODO: Also check common superclasses.
         if self.class == other.class {
             created_value.class = self.class;
         } else if matches!(other.null_state, NullState::IsNull) {
@@ -116,6 +117,31 @@ impl<'gc> OptValue<'gc> {
                 if !other_class.is_builtin_non_null() {
                     created_value.class = other.class;
                 }
+            }
+        } else if let (Some(self_class), Some(other_class)) = (self.class, other.class) {
+            // Check for a common superclass.
+            // FIXME: This is slow, but it's cheaper than allocating a Vec in
+            // most cases
+            let mut used_other_class = other_class;
+            'outer: loop {
+                let mut used_self_class = self_class;
+                loop {
+                    if used_other_class == used_self_class {
+                        // Found a common superclass; we're done
+                        created_value.class = Some(used_self_class);
+                        break 'outer;
+                    }
+
+                    let Some(new_self_class) = used_self_class.super_class() else {
+                        break;
+                    };
+                    used_self_class = new_self_class;
+                }
+
+                let Some(new_other_class) = used_other_class.super_class() else {
+                    break;
+                };
+                used_other_class = new_other_class;
             }
         }
 
@@ -1066,13 +1092,7 @@ fn abstract_interpret_ops<'gc>(
                 let mut new_value = OptValue::any();
 
                 if let Some(class) = type_c_class.class.and_then(|c| c.i_class()) {
-                    let class_is_primitive = class == types.int
-                        || class == types.uint
-                        || class == types.number
-                        || class == types.boolean
-                        || class == types.void;
-
-                    if !class_is_primitive {
+                    if !class.is_builtin_non_null() {
                         // If the type on the stack was a c_class with a non-primitive
                         // i_class, we can use the type
                         new_value = OptValue::of_type(class);
@@ -1084,15 +1104,9 @@ fn abstract_interpret_ops<'gc>(
             Op::AsType { class } => {
                 let stack_value = stack.pop(activation)?;
 
-                let class_is_primitive = class == types.int
-                    || class == types.uint
-                    || class == types.number
-                    || class == types.boolean
-                    || class == types.void;
-
                 let mut new_value = OptValue::any();
-                if !class_is_primitive {
-                    // if T is non-nullable, we can assume the result is typed T
+                if !class.is_builtin_non_null() {
+                    // if T is not non-nullable, we can assume the result is typed T
                     new_value = OptValue::of_type(class);
                 }
                 if let Some(stack_class) = stack_value.class {
@@ -1332,32 +1346,55 @@ fn abstract_interpret_ops<'gc>(
                 locals.set_any(object_register as usize);
             }
             Op::GetSlot { index: slot_id } => {
-                let mut stack_push_done = false;
                 let stack_value = stack.pop(activation)?;
 
-                if let Some(vtable) = stack_value.vtable() {
-                    if let Some(mut value_class) = vtable.slot_class(slot_id) {
-                        stack_push_done = true;
+                // The value must have a vtable
+                let Some(vtable) = stack_value.vtable() else {
+                    return Err(make_error_1051(activation));
+                };
 
-                        let resolved_value_class = value_class.get_class(activation)?;
+                // The slot must be a valid slot
+                let Some(mut value_class) = vtable.slot_class(slot_id) else {
+                    // We store slots 0-indexed, but FP stores them 1-indexed; add
+                    // 1 to the slot id to make the error message match FP
+                    return Err(make_error_1026(
+                        activation,
+                        slot_id + 1,
+                        vtable.default_slots().len(),
+                    ));
+                };
 
-                        if let Some(class) = resolved_value_class {
-                            stack.push_class(activation, class)?;
-                        } else {
-                            stack.push_any(activation)?;
-                        }
+                let resolved_value_class = value_class.get_class(activation)?;
 
-                        vtable.set_slot_class(activation.gc(), slot_id, value_class);
-                    }
-                }
+                vtable.set_slot_class(activation.gc(), slot_id, value_class);
 
-                if !stack_push_done {
+                if let Some(class) = resolved_value_class {
+                    stack.push_class(activation, class)?;
+                } else {
                     stack.push_any(activation)?;
                 }
             }
-            Op::SetSlot { .. } => {
-                stack.pop(activation)?;
-                stack.pop(activation)?;
+            Op::SetSlot { index: slot_id } => {
+                let _set_value = stack.pop(activation)?;
+                let stack_value = stack.pop(activation)?;
+
+                // The value must have a vtable
+                let Some(vtable) = stack_value.vtable() else {
+                    return Err(make_error_1051(activation));
+                };
+
+                // The slot must be a valid slot
+                let Some(_value_class) = vtable.slot_class(slot_id) else {
+                    // We store slots 0-indexed, but FP stores them 1-indexed; add
+                    // 1 to the slot id to make the error message match FP
+                    return Err(make_error_1026(
+                        activation,
+                        slot_id + 1,
+                        vtable.default_slots().len(),
+                    ));
+                };
+
+                // TODO: Optimize the op to SetSlotNoCoerce when possible
             }
             Op::GetPropertyStatic { multiname } => {
                 // Verifier only emits this op when the multiname is static
@@ -1573,6 +1610,10 @@ fn abstract_interpret_ops<'gc>(
                 }
             }
             Op::ConstructSuper { num_args } => {
+                let Some(bound_superclass_object) = activation.bound_superclass_object() else {
+                    return Err(make_error_1035(activation));
+                };
+
                 // Arguments
                 stack.popn(activation, num_args)?;
 
@@ -1583,12 +1624,7 @@ fn abstract_interpret_ops<'gc>(
                 // are noops anyway.
                 if num_args == 0 {
                     let object_class = activation.avm2().class_defs().object;
-                    // TODO: A `None` superclass should throw a VerifyError
-                    if activation
-                        .bound_class()
-                        .and_then(|c| c.super_class())
-                        .is_some_and(|c| c == object_class)
-                    {
+                    if bound_superclass_object.inner_class_definition() == object_class {
                         // When the receiver is null, this op can still throw an
                         // error, so let's ensure it's guaranteed nonnull before
                         // optimizing it
@@ -1738,26 +1774,76 @@ fn abstract_interpret_ops<'gc>(
                 }
             }
             Op::GetSuper { multiname } => {
+                let Some(bound_superclass_object) = activation.bound_superclass_object() else {
+                    return Err(make_error_1035(activation));
+                };
+
                 stack.pop_for_multiname(activation, multiname)?;
 
                 // Receiver
                 stack.pop(activation)?;
 
-                // TODO use correct type when known
-                stack.push_any(activation)?;
+                // Push return value to the stack
+                let vtable = bound_superclass_object.instance_vtable();
+                match vtable.get_trait(&multiname) {
+                    Some(Property::Slot { slot_id }) | Some(Property::ConstSlot { slot_id }) => {
+                        let mut value_class =
+                            vtable.slot_class(slot_id).expect("Slot should exist");
+                        let resolved_value_class = value_class.get_class(activation)?;
+
+                        vtable.set_slot_class(activation.gc(), slot_id, value_class);
+
+                        // TODO: We can optimize the op to GetSlot here
+
+                        if let Some(resolved_value_class) = resolved_value_class {
+                            stack.push_class(activation, resolved_value_class)?;
+                        } else {
+                            stack.push_any(activation)?;
+                        }
+                    }
+                    Some(Property::Virtual {
+                        get: Some(disp_id), ..
+                    }) => {
+                        let method = vtable.get_method(disp_id).expect("Method should exist");
+
+                        method.resolve_info(activation)?;
+
+                        // TODO: Use `maybe_optimize_static_call` here
+
+                        let return_type = method.resolved_return_type();
+                        if let Some(return_type) = return_type {
+                            stack.push_class(activation, return_type)?;
+                        } else {
+                            stack.push_any(activation)?;
+                        }
+                    }
+                    _ => {
+                        stack.push_any(activation)?;
+                    }
+                }
             }
             Op::SetSuper { multiname } => {
+                if activation.bound_superclass_object().is_none() {
+                    return Err(make_error_1035(activation));
+                }
+
                 stack.pop(activation)?;
 
                 stack.pop_for_multiname(activation, multiname)?;
 
                 // Receiver
                 stack.pop(activation)?;
+
+                // TODO: Optimize the op when possible
             }
             Op::CallSuper {
                 multiname,
                 num_args,
             } => {
+                let Some(bound_superclass_object) = activation.bound_superclass_object() else {
+                    return Err(make_error_1035(activation));
+                };
+
                 // Arguments
                 stack.popn(activation, num_args)?;
 
@@ -1766,8 +1852,27 @@ fn abstract_interpret_ops<'gc>(
                 // Then receiver.
                 stack.pop(activation)?;
 
-                // TODO use correct type when known
-                stack.push_any(activation)?;
+                // Push return value to the stack
+                let vtable = bound_superclass_object.instance_vtable();
+                match vtable.get_trait(&multiname) {
+                    Some(Property::Method { disp_id }) => {
+                        let method = vtable.get_method(disp_id).expect("Method should exist");
+
+                        method.resolve_info(activation)?;
+
+                        // TODO: Use `maybe_optimize_static_call` here
+
+                        let return_type = method.resolved_return_type();
+                        if let Some(return_type) = return_type {
+                            stack.push_class(activation, return_type)?;
+                        } else {
+                            stack.push_any(activation)?;
+                        }
+                    }
+                    _ => {
+                        stack.push_any(activation)?;
+                    }
+                }
             }
             Op::SetGlobalSlot { .. } => {
                 let outer_scope = activation.outer();
@@ -1868,7 +1973,12 @@ fn abstract_interpret_ops<'gc>(
                 )?;
             }
             Op::LookupSwitch(lookup_switch) => {
-                stack.pop(activation)?;
+                let value = stack.pop(activation)?;
+
+                if value.class.is_none_or(|c| !c.is_builtin_int()) {
+                    // LookupSwitch expects an int
+                    return Err(make_error_1058(activation));
+                }
 
                 let current_state = AbstractStateRef {
                     locals: &locals,

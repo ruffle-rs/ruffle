@@ -125,6 +125,7 @@ impl<'gc> ClassObject<'gc> {
 
         class_object.into_finished_class(activation);
 
+        class_object.validate_class(activation)?;
         class_object.run_class_initializer(activation)?;
 
         Ok(class_object)
@@ -137,7 +138,7 @@ impl<'gc> ClassObject<'gc> {
     /// object graph. The resulting class will be a bare object and should not
     /// be used or presented to user code until you finish initializing it. You
     /// do that by calling `link_prototype`, `link_type`, `into_finished_class`,
-    /// and `run_class_initializer` in that order.
+    /// `validate_class`, and `run_class_initializer` in that order.
     ///
     /// This returns the class object directly (*not* an `Object`), to allow
     /// further manipulation of the class once it's dependent types have been
@@ -257,16 +258,26 @@ impl<'gc> ClassObject<'gc> {
         self.base().set_proto(gc_context, proto);
     }
 
-    /// Validate signatures of the class and run the class's initializer method.
-    pub fn run_class_initializer(
-        self,
-        activation: &mut Activation<'_, 'gc>,
-    ) -> Result<(), Error<'gc>> {
+    /// Validate signatures of the class.
+    pub fn validate_class(self, activation: &mut Activation<'_, 'gc>) -> Result<(), Error<'gc>> {
         let class = self.inner_class_definition();
         let c_class = class.c_class().expect("ClassObject stores an i_class");
 
         class.validate_signatures(activation)?;
         c_class.validate_signatures(activation)?;
+
+        Ok(())
+    }
+
+    /// Run the class's initializer method.
+    pub fn run_class_initializer(
+        self,
+        activation: &mut Activation<'_, 'gc>,
+    ) -> Result<(), Error<'gc>> {
+        let c_class = self
+            .inner_class_definition()
+            .c_class()
+            .expect("ClassObject stores an i_class");
 
         let self_value: Value<'gc> = self.into();
         let class_classobject = activation.avm2().classes().class;
