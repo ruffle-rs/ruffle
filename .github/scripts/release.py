@@ -48,6 +48,32 @@ def log(msg):
     print(msg, file=sys.stderr)
 
 
+def add_release_to_metainfo(path, tag_name, version):
+    url = f'https://github.com/ruffle-rs/ruffle/releases/tag/{tag_name}'
+    xml_release = xml.Element('release')
+    xml_release.set('version', version)
+    xml_release.set('date', get_current_date())
+    xml_url = xml.Element('url')
+    xml_url.text = url
+    xml_release.append(xml_url)
+    xml_doc = xml.parse(path)
+    xml_releases = xml_doc.getroot().find('releases')
+    xml_releases.insert(0, xml_release)
+    xml.indent(xml_doc, space="    ")
+
+    xml_bytes = xml.tostring(xml_doc.getroot(), encoding='utf-8', xml_declaration=False)
+
+    # We don't want a space before closing XML brackets.
+    # It's the easiest way to do this, and unlikely to break the XML,
+    # as we don't have any such content within metainfo.
+    xml_bytes = xml_bytes.replace(b' />\n', b'/>\n')
+
+    with open(path, 'wb') as fd:
+        fd.write(b'<?xml version="1.0" encoding="utf-8"?>\n')
+        fd.write(xml_bytes)
+        fd.write(b'\n')
+
+
 # ===== Commands to execute ================================
 
 def run_command(args, cwd=REPO_DIR):
@@ -121,6 +147,15 @@ def bump():
     github_output('version4', version4)
 
 
+def metainfo():
+    metainfo_path1 = f'{REPO_DIR}/desktop/packages/linux/rs.ruffle.Ruffle.metainfo.xml'
+    metainfo_path2 = f'{REPO_DIR}/desktop/packages/linux/rs.ruffle.Ruffle.metainfo.xml.in'
+    version = cargo_get_version()
+    tag_name = get_tag_name()
+    add_release_to_metainfo(metainfo_path1, tag_name, version)
+    add_release_to_metainfo(metainfo_path2, tag_name, version)
+
+
 def commit():
     commit_message = f'Release {cargo_get_version()}'
     run_command(['git', 'config', 'user.name', 'RuffleBuild'])
@@ -173,6 +208,8 @@ def main():
     log(f'Running command {cmd}')
     if cmd == 'bump':
         bump()
+    elif cmd == 'metainfo':
+        metainfo()
     elif cmd == 'commit':
         commit()
     elif cmd == 'tag-and-push':
