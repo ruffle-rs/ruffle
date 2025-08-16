@@ -1,2 +1,2 @@
-timerHandler: [TimerEvent type="timer" bubbles=true cancelable=false eventPhase=2]
+timerHandler: [TimerEvent type="timer" bubbles=false cancelable=false eventPhase=2]
 get running: true
