@@ -457,6 +457,11 @@ impl TextSpan {
 
         data.set_text_format(tf);
 
+        // [KJ] Looks like you cannot get any value other than display:block
+        // when parsing HTML.  This property is being applied during parsing
+        // and not styling, so that kinda makes sense... I guess?
+        data.display = TextDisplay::Block;
+
         data
     }
 
@@ -671,6 +676,9 @@ impl FormatSpans {
         // For the weird behaviors of <p>
         let mut p_open = false;
         let mut last_closed_font: Option<TextSpanFont> = None;
+
+        // For applying display: block at the end of the tag
+        let mut display_block = false;
 
         let mut reader = Reader::from_reader(&raw_bytes[..]);
         let reader_config = reader.config_mut();
@@ -919,10 +927,18 @@ impl FormatSpans {
                             }
                         }
                         tag => {
-                            // TODO Add 'display' style support, Flash adds a newline on 'display: block'
+                            // Flash Player applies "display" only when the style is defined.
+                            // For unstyled tags, display: inline is assumed.
+                            format.display = None;
+
                             format = apply_style(style_sheet, format, WStr::from_units(tag));
+
+                            if let Some(TextDisplay::Block | TextDisplay::None) = format.display {
+                                display_block = true;
+                            }
                         }
                     }
+
                     opened_starts.push(opened_buffer.len());
                     opened_buffer.extend(tag_name);
                     format_stack.push(format);
@@ -931,6 +947,10 @@ impl FormatSpans {
                     let e = decode_to_wstr(&e.into_inner());
                     let e = process_html_entity(&e).unwrap_or(e);
                     let format = format_stack.last().unwrap().clone();
+                    if let Some(TextDisplay::None) = format.display {
+                        break 'text;
+                    }
+
                     if swf_version <= 7 && e.trim().is_empty() {
                         // SWFs version 6,7 ignore whitespace-only text.
                         // But whitespace is preserved when there
@@ -958,6 +978,13 @@ impl FormatSpans {
                             }
                         }
                         None => continue,
+                    }
+
+                    if display_block {
+                        display_block = false;
+                        let format = format_stack.last().unwrap().clone();
+                        text.push_str(WStr::from_units(b"\r"));
+                        spans.push(TextSpan::with_length_and_format(1, &format));
                     }
 
                     match tag_name {
