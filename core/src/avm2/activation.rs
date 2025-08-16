@@ -607,7 +607,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     ///
     /// If the currently-executing method is not part of a class, then this
     /// returns `None`.
-    fn bound_superclass_object(&self) -> Option<ClassObject<'gc>> {
+    pub fn bound_superclass_object(&self) -> Option<ClassObject<'gc>> {
         self.bound_superclass_object
     }
 
@@ -1130,15 +1130,20 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     ) -> Result<(), Error<'gc>> {
         let args = self.stack.get_args(arg_count as usize);
         let multiname = multiname.fill_with_runtime_params(self)?;
-        let receiver = self
-            .pop_stack()
-            .null_check(self, Some(&multiname))?
-            .as_object()
-            .expect("Super ops should not appear in primitive functions");
 
         let bound_superclass_object = self
             .bound_superclass_object()
             .expect("Expected a superclass when running callsuper");
+
+        // Ensure the receiver is of the correct type
+        let receiver = self
+            .pop_stack()
+            .coerce_to_type(self, bound_superclass_object.inner_class_definition())?;
+
+        let receiver = receiver
+            .null_check(self, Some(&multiname))?
+            .as_object()
+            .expect("Super ops should not appear in primitive functions");
 
         let value = bound_superclass_object.call_super(&multiname, receiver, args, self)?;
 
@@ -1389,17 +1394,22 @@ impl<'a, 'gc> Activation<'a, 'gc> {
 
     fn op_get_super(&mut self, multiname: Gc<'gc, Multiname<'gc>>) -> Result<(), Error<'gc>> {
         let multiname = multiname.fill_with_runtime_params(self)?;
-        let object = self
+
+        let bound_superclass_object = self
+            .bound_superclass_object()
+            .expect("Expected a superclass when running callsuper");
+
+        // Ensure the receiver is of the correct type
+        let receiver = self
             .pop_stack()
+            .coerce_to_type(self, bound_superclass_object.inner_class_definition())?;
+
+        let receiver = receiver
             .null_check(self, Some(&multiname))?
             .as_object()
             .expect("Super ops should not appear in primitive functions");
 
-        let bound_superclass_object = self
-            .bound_superclass_object()
-            .expect("Expected a superclass when running getsuper");
-
-        let value = bound_superclass_object.get_super(&multiname, object, self)?;
+        let value = bound_superclass_object.get_super(&multiname, receiver, self)?;
 
         self.push_stack(value);
 
@@ -1409,17 +1419,22 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     fn op_set_super(&mut self, multiname: Gc<'gc, Multiname<'gc>>) -> Result<(), Error<'gc>> {
         let value = self.pop_stack();
         let multiname = multiname.fill_with_runtime_params(self)?;
-        let object = self
+
+        let bound_superclass_object = self
+            .bound_superclass_object()
+            .expect("Expected a superclass when running callsuper");
+
+        // Ensure the receiver is of the correct type
+        let receiver = self
             .pop_stack()
+            .coerce_to_type(self, bound_superclass_object.inner_class_definition())?;
+
+        let receiver = receiver
             .null_check(self, Some(&multiname))?
             .as_object()
             .expect("Super ops should not appear in primitive functions");
 
-        let bound_superclass_object = self
-            .bound_superclass_object()
-            .expect("Expected a superclass when running setsuper");
-
-        bound_superclass_object.set_super(&multiname, value, object, self)?;
+        bound_superclass_object.set_super(&multiname, value, receiver, self)?;
 
         Ok(())
     }
