@@ -15,7 +15,8 @@ use crate::display_object::{
     TInteractiveObject,
 };
 use crate::focus_tracker::Highlight;
-use crate::html::TextFormat;
+use crate::font::{FontDescriptor, FontLike};
+use crate::html::{LayoutBox, LayoutContent, LayoutLine, TextFormat};
 use egui::collapsing_header::CollapsingState;
 use egui::{
     Button, Checkbox, CollapsingHeader, ComboBox, DragValue, Grid, Id, Label, Sense, TextEdit, Ui,
@@ -628,6 +629,37 @@ impl DisplayObjectWindow {
                     });
             });
 
+        CollapsingHeader::new("Layout")
+            .id_salt(ui.id().with("layout"))
+            .show(ui, |ui| {
+                let text = object.spans().text().to_owned();
+                let layout = object.layout();
+
+                Grid::new(ui.id().with("layout-props"))
+                    .num_columns(2)
+                    .striped(true)
+                    .show(ui, |ui| {
+                        let text_bounds = layout.bounds();
+                        let text_size = layout.text_size();
+
+                        ui.label("Bounds");
+                        bounds_label(ui, text_bounds.into(), &mut None);
+                        ui.end_row();
+
+                        ui.label("Text Size");
+                        ui.label(format!(
+                            "{:.2}, {:.2}",
+                            text_size.width(),
+                            text_size.height()
+                        ));
+                        ui.end_row();
+                    });
+
+                for line in layout.lines() {
+                    self.show_edit_text_layout_line(ui, &text, line);
+                }
+            });
+
         let html_text_response = CollapsingHeader::new("HTML Text")
             .id_salt(ui.id().with("html-text"))
             .show(ui, |ui| {
@@ -647,6 +679,168 @@ impl DisplayObjectWindow {
         if html_text_response.fully_closed() {
             self.html_text = object.html_text().to_string();
         }
+    }
+
+    fn show_edit_text_layout_line<'gc>(
+        &mut self,
+        ui: &mut Ui,
+        text: &WStr,
+        line: &LayoutLine<'gc>,
+    ) {
+        let line_index = line.index();
+        let line_text = serde_json::to_string(
+            &text
+                .slice(line.text_range())
+                .map(|s| s.to_string())
+                .unwrap_or_default(),
+        )
+        .expect("Serializing string shouldn't fail");
+        CollapsingHeader::new(format!("Line {line_index:0>2} ({line_text})"))
+            .id_salt(ui.id().with("line").with(line_index))
+            .show(ui, |ui| {
+                Grid::new(ui.id().with("line-props"))
+                    .num_columns(2)
+                    .striped(true)
+                    .show(ui, |ui| {
+                        let line_bounds = line.bounds();
+
+                        ui.label("Bounds");
+                        bounds_label(ui, line_bounds.into(), &mut None);
+                        ui.end_row();
+
+                        ui.label("Range");
+                        ui.label(format!("{}–{}", line.start(), line.end()));
+                        ui.end_row();
+
+                        ui.label("Ascent");
+                        ui.label(format!("{:.2}", line.ascent()));
+                        ui.end_row();
+
+                        ui.label("Descent");
+                        ui.label(format!("{:.2}", line.descent()));
+                        ui.end_row();
+
+                        ui.label("Leading");
+                        ui.label(format!("{:.2}", line.leading()));
+                        ui.end_row();
+                    });
+
+                self.show_edit_text_layout_characters(ui, text, line);
+
+                for (index, lbox) in line.boxes_iter().enumerate() {
+                    self.show_edit_text_layout_box(ui, text, index, lbox);
+                }
+            });
+    }
+
+    fn show_edit_text_layout_characters<'gc>(
+        &mut self,
+        ui: &mut Ui,
+        text: &WStr,
+        line: &LayoutLine<'gc>,
+    ) {
+        CollapsingHeader::new("Characters")
+            .id_salt(ui.id().with("chars"))
+            .show(ui, |ui| {
+                Grid::new(ui.id().with("box-props"))
+                    .num_columns(2)
+                    .striped(true)
+                    .show(ui, |ui| {
+                        ui.label("Index");
+                        ui.label("Code");
+                        ui.label("Char");
+                        ui.label("Font");
+                        ui.label("Text Format");
+                        ui.end_row();
+
+                        for lbox in line.boxes_iter() {
+                            if let Some((text, format, font_set, _, _)) =
+                                lbox.as_renderable_text(text)
+                            {
+                                for i in 0..text.len() {
+                                    let code = text.at(i);
+                                    let ch = char::from_u32(code as u32).unwrap_or_default();
+                                    ui.label(format!("{}", line.start() + i));
+                                    ui.label(
+                                        egui::RichText::new(format!("{code:#x}"))
+                                            .text_style(egui::TextStyle::Monospace),
+                                    );
+                                    ui.label(format!("{ch}"));
+                                    if let Some(glyph_data) = font_set.get_glyph_render_data(ch) {
+                                        ui.label(format_font_descriptor(
+                                            glyph_data.font.descriptor(),
+                                        ));
+                                    } else {
+                                        ui.weak("None");
+                                    }
+                                    ui.horizontal(|ui| {
+                                        show_text_format_hover(ui, format);
+                                    });
+                                    ui.end_row();
+                                }
+                            }
+                        }
+                    });
+            });
+    }
+
+    fn show_edit_text_layout_box<'gc>(
+        &mut self,
+        ui: &mut Ui,
+        text: &WStr,
+        index: usize,
+        lbox: &LayoutBox<'gc>,
+    ) {
+        let box_type = match lbox.content() {
+            LayoutContent::Text { .. } => "Text box",
+            LayoutContent::Bullet { .. } => "Bullet box",
+            LayoutContent::Drawing { .. } => "Drawing box",
+        };
+
+        let box_text = serde_json::to_string(
+            &text
+                .slice(lbox.text_range())
+                .map(|s| s.to_string())
+                .unwrap_or_default(),
+        )
+        .expect("Serializing string shouldn't fail");
+
+        CollapsingHeader::new(format!("{box_type} {index:0>2} ({box_text})"))
+            .id_salt(ui.id().with("box").with(index))
+            .show(ui, |ui| {
+                Grid::new(ui.id().with("box-props"))
+                    .num_columns(2)
+                    .striped(true)
+                    .show(ui, |ui| {
+                        let line_bounds = lbox.bounds();
+
+                        ui.label("Bounds");
+                        bounds_label(ui, line_bounds.into(), &mut None);
+                        ui.end_row();
+
+                        ui.label("Range");
+                        ui.label(format!("{}–{}", lbox.start(), lbox.end()));
+                        ui.end_row();
+
+                        if let Some((_, _, font_set, _, _)) = lbox.as_renderable_text(text) {
+                            ui.label("Main Font");
+                            ui.label(format_font_descriptor(font_set.main_font().descriptor()));
+                            ui.end_row();
+
+                            for (i, fallback_font) in font_set.fallback_fonts().iter().enumerate() {
+                                ui.label(format!("Fallback Font {i}"));
+                                ui.label(format_font_descriptor(fallback_font.descriptor()));
+                                ui.end_row();
+                            }
+
+                            if font_set.fallback_fonts().is_empty() {
+                                ui.label("Fallback Fonts");
+                                ui.weak("None");
+                                ui.end_row();
+                            }
+                        }
+                    });
+            });
     }
 
     pub fn show_avm2_button<'gc>(
@@ -1644,5 +1838,15 @@ pub fn open_display_object_button<'gc>(
         messages.push(Message::TrackDisplayObject(DisplayObjectHandle::new(
             context, object,
         )));
+    }
+}
+
+fn format_font_descriptor(desc: &FontDescriptor) -> Cow<'_, str> {
+    let name = desc.name();
+    match (desc.bold(), desc.italic()) {
+        (true, true) => Cow::Owned(format!("{name} (bold, italic)")),
+        (true, false) => Cow::Owned(format!("{name} (bold)")),
+        (false, true) => Cow::Owned(format!("{name} (italic)")),
+        (false, false) => Cow::Borrowed(name),
     }
 }

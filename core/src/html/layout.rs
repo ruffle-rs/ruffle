@@ -1270,7 +1270,7 @@ impl<'gc> LayoutBox<'gc> {
     ///
     /// TODO It's currently unused, but will be useful when adding support for
     /// images embedded in HTML.
-    #[expect(unused)]
+    #[allow(unused)]
     pub fn from_drawing(position: usize, drawing: Drawing) -> Self {
         Self {
             bounds: Default::default(),
@@ -1376,6 +1376,10 @@ impl<'gc> LayoutBox<'gc> {
             LayoutContent::Bullet { position, .. } => *position,
             LayoutContent::Drawing { position, .. } => *position,
         }
+    }
+
+    pub fn text_range(&self) -> Range<usize> {
+        self.start()..self.end()
     }
 
     /// Return x-axis char bounds of the given char relative to the whole layout.
