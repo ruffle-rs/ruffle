@@ -63,6 +63,11 @@ jobs:
           shopt -s globstar
           sed -i -e '$a\' **/package.json
 
+      - name: Update metainfo
+        if: steps.activity.outputs.is_active == 'true'
+        run: |
+          $RELEASE_SCRIPT metainfo
+
       - name: Create release commit
         if: steps.activity.outputs.is_active == 'true'
         id: commit
