@@ -250,6 +250,27 @@ pub fn make_error_1025<'gc>(activation: &mut Activation<'_, 'gc>, index: u32) ->
 
 #[inline(never)]
 #[cold]
+pub fn make_error_1026<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    slot_id: u32,
+    slot_count: usize,
+) -> Error<'gc> {
+    let err = verify_error(
+        activation,
+        &format!(
+            "Error #1026: Slot {} exceeds slotCount={} of global.",
+            slot_id, slot_count
+        ),
+        1026,
+    );
+    match err {
+        Ok(err) => Error::avm_error(err),
+        Err(err) => err,
+    }
+}
+
+#[inline(never)]
+#[cold]
 pub fn make_error_1032<'gc>(activation: &mut Activation<'_, 'gc>, index: u32) -> Error<'gc> {
     let err = verify_error(
         activation,
@@ -279,6 +300,20 @@ pub fn make_error_1035<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> 
         activation,
         "Error #1035: Illegal super expression found in method.",
         1035,
+    );
+    match err {
+        Ok(err) => Error::avm_error(err),
+        Err(err) => err,
+    }
+}
+
+#[inline(never)]
+#[cold]
+pub fn make_error_1051<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
+    let err = verify_error(
+        activation,
+        "Error #1051: Illegal early binding access.",
+        1051,
     );
     match err {
         Ok(err) => Error::avm_error(err),
@@ -322,6 +357,16 @@ pub fn make_error_1054<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> 
         "Error #1054: Illegal range or target offsets in exception handler.",
         1054,
     );
+    match err {
+        Ok(err) => Error::avm_error(err),
+        Err(err) => err,
+    }
+}
+
+#[inline(never)]
+#[cold]
+pub fn make_error_1058<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
+    let err = verify_error(activation, "#1058: Illegal operand type.", 1058);
     match err {
         Ok(err) => Error::avm_error(err),
         Err(err) => err,
