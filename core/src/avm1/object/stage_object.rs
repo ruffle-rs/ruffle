@@ -150,7 +150,7 @@ fn resolve_path_property<'gc>(
 ) -> Option<Value<'gc>> {
     let case_sensitive = activation.is_case_sensitive();
     if name.eq_with_case(b"_root", case_sensitive) {
-        return Some(activation.root_object());
+        return Some(dobj.avm1_root().object());
     } else if name.eq_with_case(b"_parent", case_sensitive) {
         return Some(
             dobj.avm1_parent()
