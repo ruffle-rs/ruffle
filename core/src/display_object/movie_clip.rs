@@ -205,6 +205,8 @@ pub struct MovieClipData<'gc> {
 
     /// Show a hand cursor when the clip is in button mode.
     avm2_use_hand_cursor: Cell<bool>,
+
+    queued_legacy_next_frame: Cell<bool>,
 }
 
 #[derive(Clone, Collect)]
@@ -247,6 +249,7 @@ impl<'gc> MovieClipData<'gc> {
             attached_audio: Lock::new(None),
             next_avm1_clip: Lock::new(None),
             importer_movie: None,
+            queued_legacy_next_frame: Cell::new(false),
         }
     }
 
@@ -701,7 +704,13 @@ impl<'gc> MovieClip<'gc> {
     }
 
     pub fn next_frame(self, context: &mut UpdateContext<'gc>) {
-        if self.current_frame() < self.total_frames() {
+        let is_legacy_script_call = self.movie().version() < 10
+            && self
+                .0
+                .contains_flag(MovieClipFlags::EXECUTING_AVM2_FRAME_SCRIPT);
+        if is_legacy_script_call && self.movie().is_action_script_3() {
+            self.0.queued_legacy_next_frame.set(true);
+        } else if self.current_frame() < self.total_frames() {
             self.goto_frame(context, self.current_frame() + 1, true);
         }
     }
@@ -2238,6 +2247,13 @@ impl<'gc> MovieClip<'gc> {
         let goto_frame = self.0.queued_goto_frame.take();
         if let Some(frame) = goto_frame {
             self.run_goto(context, frame, false);
+        }
+        if self.0.queued_legacy_next_frame.take() {
+            let new_frame = self.current_frame() + 1;
+            if new_frame <= self.total_frames() {
+                self.run_goto(context, new_frame, false);
+                self.run_local_frame_scripts(context);
+            }
         }
     }
 }
