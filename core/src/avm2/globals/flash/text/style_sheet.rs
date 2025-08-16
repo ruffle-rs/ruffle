@@ -46,6 +46,7 @@ pub fn inner_parse_color<'gc>(
     let input = args.get_string(activation, 0);
 
     if let Some(stripped) = input.strip_prefix(WStr::from_units(b"#")) {
+        let stripped = stripped.trim_end();
         if stripped.len() <= 6 {
             if let Ok(number) = u32::from_str_radix(&stripped.to_string(), 16) {
                 return Ok(number.into());
