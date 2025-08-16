@@ -99,7 +99,6 @@ impl<'gc> OptValue<'gc> {
     pub fn merged_with(self, other: OptValue<'gc>) -> OptValue<'gc> {
         let mut created_value = OptValue::any();
 
-        // TODO: Also check common superclasses.
         if self.class == other.class {
             created_value.class = self.class;
         } else if matches!(other.null_state, NullState::IsNull) {
@@ -116,6 +115,24 @@ impl<'gc> OptValue<'gc> {
                 if !other_class.is_builtin_non_null() {
                     created_value.class = other.class;
                 }
+            }
+        } else if let (Some(self_class), Some(other_class)) = (self.class, other.class) {
+            // Check for a common superclass.
+            // FIXME: Make this faster?
+            let mut other_class = Some(other_class);
+            'outer: while let Some(current_other_class) = other_class {
+                let mut self_class = Some(self_class);
+                while let Some(current_self_class) = self_class {
+                    if current_other_class == current_self_class {
+                        // Found a common superclass; we're done
+                        created_value.class = Some(current_self_class);
+                        break 'outer;
+                    }
+
+                    self_class = current_self_class.super_class();
+                }
+
+                other_class = current_other_class.super_class();
             }
         }
 
@@ -1066,13 +1083,7 @@ fn abstract_interpret_ops<'gc>(
                 let mut new_value = OptValue::any();
 
                 if let Some(class) = type_c_class.class.and_then(|c| c.i_class()) {
-                    let class_is_primitive = class == types.int
-                        || class == types.uint
-                        || class == types.number
-                        || class == types.boolean
-                        || class == types.void;
-
-                    if !class_is_primitive {
+                    if !class.is_builtin_non_null() {
                         // If the type on the stack was a c_class with a non-primitive
                         // i_class, we can use the type
                         new_value = OptValue::of_type(class);
@@ -1084,15 +1095,9 @@ fn abstract_interpret_ops<'gc>(
             Op::AsType { class } => {
                 let stack_value = stack.pop(activation)?;
 
-                let class_is_primitive = class == types.int
-                    || class == types.uint
-                    || class == types.number
-                    || class == types.boolean
-                    || class == types.void;
-
                 let mut new_value = OptValue::any();
-                if !class_is_primitive {
-                    // if T is non-nullable, we can assume the result is typed T
+                if !class.is_builtin_non_null() {
+                    // if T is not non-nullable, we can assume the result is typed T
                     new_value = OptValue::of_type(class);
                 }
                 if let Some(stack_class) = stack_value.class {
