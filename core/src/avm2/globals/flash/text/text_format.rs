@@ -1,5 +1,5 @@
 use crate::avm2::activation::Activation;
-use crate::avm2::error::make_error_2008;
+use crate::avm2::error::{make_error_2007, make_error_2008};
 use crate::avm2::object::ArrayObject;
 use crate::avm2::parameters::ParametersExt;
 use crate::avm2::value::Value;
@@ -243,10 +243,7 @@ pub fn set_display<'gc>(
         let value = args.get_value(0);
         let value = match value {
             Value::Undefined => unreachable!("Object parameter is never Undefined"),
-            Value::Null => {
-                text_format.display = None;
-                return Ok(Value::Undefined);
-            }
+            Value::Null => return Err(make_error_2007(activation, "display")),
             value => value.coerce_to_string(activation)?,
         };
 
