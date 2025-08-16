@@ -121,6 +121,10 @@ impl<'gc> Avm2ClassRegistry<'gc> {
 pub struct MovieLibrary<'gc> {
     swf: Arc<SwfMovie>,
     characters: HashMap<CharacterId, Character<'gc>>,
+    /// Tracks the timeline position where each character was defined
+    character_definition_positions: HashMap<CharacterId, u64>,
+    /// Tracks the frame number where each character was defined
+    character_definition_frames: HashMap<CharacterId, u16>,
     export_characters: Avm1PropertyMap<'gc, CharacterId>,
     imported_assets: HashMap<AvmString<'gc>, CharacterId>,
     jpeg_tables: Option<Vec<u8>>,
@@ -133,6 +137,8 @@ impl<'gc> MovieLibrary<'gc> {
         Self {
             swf,
             characters: HashMap::new(),
+            character_definition_positions: HashMap::new(),
+            character_definition_frames: HashMap::new(),
             imported_assets: HashMap::new(),
             export_characters: Avm1PropertyMap::new(),
             jpeg_tables: None,
@@ -158,6 +164,57 @@ impl<'gc> MovieLibrary<'gc> {
                 false
             }
         }
+    }
+
+    pub fn register_character_with_position_and_frame(
+        &mut self,
+        id: CharacterId,
+        character: Character<'gc>,
+        position: u64,
+        frame: u16,
+    ) -> bool {
+        tracing::debug!(
+            "Registering character ID {} at position {} and frame {}",
+            id,
+            position,
+            frame
+        );
+        use std::collections::hash_map::Entry;
+        match self.characters.entry(id) {
+            Entry::Vacant(e) => {
+                if let Character::Font(font) = character {
+                    self.fonts.register(font);
+                }
+                e.insert(character);
+                self.character_definition_positions.insert(id, position);
+                self.character_definition_frames.insert(id, frame);
+                true
+            }
+            Entry::Occupied(_) => {
+                tracing::error!("Character ID collision: Tried to register ID {} twice", id);
+                false
+            }
+        }
+    }
+
+    pub fn is_character_defined_before(&self, id: CharacterId, position: u64) -> bool {
+        if let Some(definition_position) = self.character_definition_positions.get(&id) {
+            *definition_position < position
+        } else {
+            false
+        }
+    }
+
+    pub fn is_character_defined_before_frame_number(&self, id: CharacterId, frame: u16) -> bool {
+        if let Some(definition_frame) = self.character_definition_frames.get(&id) {
+            *definition_frame <= frame
+        } else {
+            true
+        }
+    }
+
+    pub fn character_definition_position(&self, id: CharacterId) -> Option<u64> {
+        self.character_definition_positions.get(&id).copied()
     }
 
     /// Registers an export name for a given character ID.
