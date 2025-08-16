@@ -117,7 +117,7 @@ impl<'gc> LoaderInfoObject<'gc> {
         let base = ScriptObjectData::new(class);
         let loaded_stream = LoaderStream::Swf(movie, root);
 
-        let this: Object<'gc> = LoaderInfoObject(Gc::new(
+        let object = LoaderInfoObject(Gc::new(
             activation.gc(),
             LoaderInfoObjectData {
                 base,
@@ -146,12 +146,9 @@ impl<'gc> LoaderInfoObject<'gc> {
                 expose_content: Cell::new(false),
                 errored: Cell::new(false),
             },
-        ))
-        .into();
+        ));
 
-        class.call_init(this.into(), &[], activation)?;
-
-        Ok(this)
+        Ok(object.into())
     }
 
     /// Create a loader info object that has not yet been loaded.
@@ -168,7 +165,7 @@ impl<'gc> LoaderInfoObject<'gc> {
         let class = activation.avm2().classes().loaderinfo;
         let base = ScriptObjectData::new(class);
 
-        let this: Object<'gc> = LoaderInfoObject(Gc::new(
+        let object = LoaderInfoObject(Gc::new(
             activation.gc(),
             LoaderInfoObjectData {
                 base,
@@ -197,12 +194,9 @@ impl<'gc> LoaderInfoObject<'gc> {
                 expose_content: Cell::new(false),
                 errored: Cell::new(false),
             },
-        ))
-        .into();
+        ));
 
-        class.call_init(this.into(), &[], activation)?;
-
-        Ok(this)
+        Ok(object.into())
     }
 
     pub fn loader(&self) -> Option<Object<'gc>> {
@@ -330,12 +324,7 @@ impl<'gc> LoaderInfoObject<'gc> {
         let cached_avm1movie = self.0.cached_avm1movie.get();
         if cached_avm1movie.is_none() {
             let class_object = activation.avm2().classes().avm1movie;
-            let object = StageObject::for_display_object(activation, obj, class_object)
-                .expect("for_display_object cannot return Err");
-
-            class_object
-                .call_init(object.into(), &[], activation)
-                .expect("Native init should succeed");
+            let object = StageObject::for_display_object(activation.gc(), obj, class_object);
 
             unlock!(
                 Gc::write(activation.gc(), self.0),
