@@ -2146,6 +2146,14 @@ impl Player {
                     Avm1::run_stack_frame_for_method(action.clip, object, name, &args, context);
                 }
 
+                ActionType::OnLoad { object, name, args } => {
+                    Avm1::run_stack_frame_for_method(action.clip, object, name, &args, context);
+                }
+
+                ActionType::OnLoadInit { object, name, args } => {
+                    Avm1::run_stack_frame_for_method(action.clip, object, name, &args, context);
+                }
+
                 // Event handler method call (e.g. onEnterFrame).
                 ActionType::NotifyListeners {
                     listener,

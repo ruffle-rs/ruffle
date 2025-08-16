@@ -2703,7 +2703,7 @@ impl<'gc> Loader<'gc> {
                 {
                     queue.queue_action(
                         clip,
-                        ActionType::Method {
+                        ActionType::OnLoadInit {
                             object: broadcaster,
                             name: istr!(strings, "broadcastMessage"),
                             args: vec![istr!(strings, "onLoadInit").into(), clip.object()],

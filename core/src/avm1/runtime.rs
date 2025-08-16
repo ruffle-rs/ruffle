@@ -84,6 +84,9 @@ pub struct Avm1<'gc> {
     /// More examples of this are in the movieclip_invalid_get_bounds_X tests.
     use_new_invalid_bounds_value: bool,
 
+    #[collect(require_static)]
+    pub deferred_loads: Vec<crate::backend::navigator::OwnedFuture<(), crate::loader::Error>>,
+
     #[cfg(feature = "avm_debug")]
     pub debug_output: bool,
 }
@@ -117,6 +120,7 @@ impl<'gc> Avm1<'gc> {
             #[cfg(feature = "avm_debug")]
             debug_output: false,
             use_new_invalid_bounds_value: false,
+            deferred_loads: Vec::new(),
         }
     }
 
@@ -462,6 +466,12 @@ impl<'gc> Avm1<'gc> {
     // Run a single frame.
     #[instrument(level = "debug", skip_all)]
     pub fn run_frame(context: &mut UpdateContext<'gc>) {
+        if !context.avm1.deferred_loads.is_empty() {
+            let loads = std::mem::take(&mut context.avm1.deferred_loads);
+            for future in loads {
+                context.navigator.spawn_future(future);
+            }
+        }
         // Remove pending objects
         Self::remove_pending(context);
 

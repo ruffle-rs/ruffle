@@ -64,7 +64,7 @@ fn load_clip<'gc>(
                         broadcaster: Some(this),
                     },
                 );
-                activation.context.navigator.spawn_future(future);
+                activation.context.avm1.deferred_loads.push(future);
 
                 return Ok(true.into());
             }
