@@ -1378,7 +1378,7 @@ mod tests {
     use std::io::Read;
     use swf::Twips;
 
-    const DEVICE_FONT: &[u8] = include_bytes!("../assets/notosans-regular.subset.ttf.gz");
+    const DEVICE_FONT: &[u8] = include_bytes!("../assets/notosans.subset.ttf.gz");
 
     /// Construct eval parameters from their individual parts.
     fn eval_parameters_from_parts(
