@@ -36,6 +36,7 @@ impl From<Matrix> for Matrix3D {
         }
     }
 }
+
 impl From<Matrix3D> for Matrix {
     fn from(matrix: Matrix3D) -> Self {
         Self {
