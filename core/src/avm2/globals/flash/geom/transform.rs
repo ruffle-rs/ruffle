@@ -10,7 +10,7 @@ use crate::avm2::vector::VectorStorage;
 use crate::avm2::{Activation, Error, Object, TObject as _, Value};
 use crate::display_object::TDisplayObject;
 use crate::prelude::{DisplayObject, Matrix, Twips};
-use crate::{avm2_stub_getter, avm2_stub_setter};
+use crate::{avm2_stub_getter, avm2_stub_method, avm2_stub_setter};
 use ruffle_render::matrix3d::Matrix3D;
 use ruffle_render::perspective_projection::PerspectiveProjection;
 use ruffle_render::quality::StageQuality;
@@ -458,4 +458,23 @@ pub fn set_perspective_projection<'gc>(
     get_display_object(this).set_perspective_projection(perspective_projection);
 
     Ok(Value::Undefined)
+}
+
+pub fn get_relative_matrix_3d<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    this: Value<'gc>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
+    let _relative_to = args.get_object(activation, 0, "relativeTo")?;
+
+    avm2_stub_method!(activation, "flash.geom.Transform", "getRelativeMatrix3D");
+
+    let display_object = get_display_object(this);
+    if !display_object.base().has_matrix3d_stub() {
+        return Ok(Value::Null);
+    }
+
+    matrix3d_to_object(Matrix3D::from(Matrix::IDENTITY), activation)
 }
