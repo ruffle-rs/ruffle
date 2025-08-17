@@ -367,7 +367,7 @@ pub fn get_matrix_3d<'gc>(
     let display_object = get_display_object(this);
     if display_object.base().has_matrix3d_stub() {
         let matrix = get_display_object(this).base().matrix();
-        let matrix3d = Matrix3D::from(matrix);
+        let matrix3d = Matrix3D::from_matrix(matrix);
         matrix3d_to_object(matrix3d, activation)
     } else {
         Ok(Value::Null)
@@ -391,7 +391,7 @@ pub fn set_matrix_3d<'gc>(
         match args.try_get_object(0) {
             Some(obj) => {
                 let matrix3d = object_to_matrix3d(obj, activation)?;
-                let matrix = Matrix::from(matrix3d);
+                let matrix = matrix3d.to_matrix();
                 (matrix, true)
             }
             None => (Matrix::IDENTITY, false),
@@ -476,5 +476,5 @@ pub fn get_relative_matrix_3d<'gc>(
         return Ok(Value::Null);
     }
 
-    matrix3d_to_object(Matrix3D::from(Matrix::IDENTITY), activation)
+    matrix3d_to_object(Matrix3D::from_matrix(Matrix::IDENTITY), activation)
 }
