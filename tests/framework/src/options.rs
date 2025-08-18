@@ -156,6 +156,7 @@ pub struct PlayerOptions {
     with_video: bool,
     runtime: PlayerRuntime,
     mode: Option<PlayerMode>,
+    with_default_font: bool,
 }
 
 impl PlayerOptions {
@@ -181,7 +182,8 @@ impl PlayerOptions {
         player_builder = player_builder
             .with_player_runtime(self.runtime)
             // Assume flashplayerdebugger is used in tests
-            .with_player_mode(self.mode.unwrap_or(PlayerMode::Debug));
+            .with_player_mode(self.mode.unwrap_or(PlayerMode::Debug))
+            .with_default_font(self.with_default_font);
 
         if self.with_video {
             #[cfg(feature = "ruffle_video_external")]

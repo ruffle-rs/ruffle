@@ -7,3 +7,5 @@ max_outliers = 25
 [player_options]
 max_execution_duration = { secs = 1000, nanos = 0 }
 with_renderer = { optional = false, sample_count = 1 }
+# TODO Fix this test. It shouldn't depend on the default font.
+with_default_font = true
