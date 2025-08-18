@@ -5,3 +5,5 @@ tolerance = 8
 
 [player_options]
 with_renderer = { sample_count = 1 }
+# TODO Fix this test. It shouldn't depend on the default font.
+with_default_font = true

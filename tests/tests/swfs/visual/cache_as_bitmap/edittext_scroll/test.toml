@@ -10,3 +10,5 @@ max_outliers = 5
 
 [player_options]
 with_renderer = { optional = false, sample_count = 1 }
+# TODO Fix this test. It shouldn't depend on the default font.
+with_default_font = true

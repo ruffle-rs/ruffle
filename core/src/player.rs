@@ -2495,6 +2495,8 @@ pub struct PlayerBuilder {
     #[cfg(feature = "known_stubs")]
     stub_report_output: Option<std::path::PathBuf>,
     avm2_optimizer_enabled: bool,
+    #[cfg(feature = "default_font")]
+    default_font: bool,
 }
 
 impl PlayerBuilder {
@@ -2549,6 +2551,8 @@ impl PlayerBuilder {
             #[cfg(feature = "known_stubs")]
             stub_report_output: None,
             avm2_optimizer_enabled: true,
+            #[cfg(feature = "default_font")]
+            default_font: true,
         }
     }
 
@@ -2770,6 +2774,12 @@ impl PlayerBuilder {
         self
     }
 
+    #[cfg(feature = "default_font")]
+    pub fn with_default_font(mut self, value: bool) -> Self {
+        self.default_font = value;
+        self
+    }
+
     fn create_gc_root<'gc>(
         gc_context: &'gc Mutation<'gc>,
         player_version: u8,
@@ -2944,7 +2954,7 @@ impl PlayerBuilder {
         let mut player_lock = player.lock().unwrap();
 
         #[cfg(feature = "default_font")]
-        {
+        if self.default_font {
             use crate::font::FontFileData;
             use flate2::read::DeflateDecoder;
             use std::io::Read;
