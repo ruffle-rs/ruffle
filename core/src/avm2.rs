@@ -75,6 +75,7 @@ pub mod specification;
 mod stack;
 mod string;
 mod stubs;
+mod super_ops;
 mod traits;
 mod value;
 pub mod vector;

@@ -19,6 +19,7 @@ use crate::avm2::op::{LookupSwitch, Op, SuperOpInfo};
 use crate::avm2::scope::{search_scope_stack, Scope, ScopeChain};
 use crate::avm2::script::Script;
 use crate::avm2::stack::StackFrame;
+use crate::avm2::super_ops;
 use crate::avm2::value::Value;
 use crate::avm2::Multiname;
 use crate::avm2::Namespace;
@@ -1134,17 +1135,14 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         let args = self.stack.get_args(arg_count as usize);
         let multiname = multiname.fill_with_runtime_params(self)?;
 
+        let receiver = self.pop_stack();
+
         // Ensure the receiver is of the correct type
-        let receiver = self
-            .pop_stack()
-            .coerce_to_type(self, superclass.inner_class_definition())?;
-
         let receiver = receiver
-            .null_check(self, Some(&multiname))?
-            .as_object()
-            .expect("Super ops should not appear in primitive functions");
+            .coerce_to_type(self, superclass.inner_class_definition())?
+            .null_check(self, Some(&multiname))?;
 
-        let value = superclass.call_super(&multiname, receiver, args, self)?;
+        let value = super_ops::call_super(superclass, &multiname, receiver, args, self)?;
 
         self.push_stack(value);
 
@@ -1397,17 +1395,14 @@ impl<'a, 'gc> Activation<'a, 'gc> {
 
         let multiname = multiname.fill_with_runtime_params(self)?;
 
+        let receiver = self.pop_stack();
+
         // Ensure the receiver is of the correct type
-        let receiver = self
-            .pop_stack()
-            .coerce_to_type(self, superclass.inner_class_definition())?;
-
         let receiver = receiver
-            .null_check(self, Some(&multiname))?
-            .as_object()
-            .expect("Super ops should not appear in primitive functions");
+            .coerce_to_type(self, superclass.inner_class_definition())?
+            .null_check(self, Some(&multiname))?;
 
-        let value = superclass.get_super(&multiname, receiver, self)?;
+        let value = super_ops::get_super(superclass, &multiname, receiver, self)?;
 
         self.push_stack(value);
 
@@ -1421,17 +1416,14 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         let value = self.pop_stack();
         let multiname = multiname.fill_with_runtime_params(self)?;
 
+        let receiver = self.pop_stack();
+
         // Ensure the receiver is of the correct type
-        let receiver = self
-            .pop_stack()
-            .coerce_to_type(self, superclass.inner_class_definition())?;
-
         let receiver = receiver
-            .null_check(self, Some(&multiname))?
-            .as_object()
-            .expect("Super ops should not appear in primitive functions");
+            .coerce_to_type(self, superclass.inner_class_definition())?
+            .null_check(self, Some(&multiname))?;
 
-        superclass.set_super(&multiname, value, receiver, self)?;
+        super_ops::set_super(superclass, &multiname, value, receiver, self)?;
 
         Ok(())
     }
@@ -1721,6 +1713,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         let args = self.stack.get_args(arg_count as usize);
         let receiver = self.pop_stack();
 
+        // Ensure the receiver is of the correct type
         let receiver = receiver
             .coerce_to_type(self, superclass.inner_class_definition())?
             .null_check(self, None)?;
