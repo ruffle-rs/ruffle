@@ -742,4 +742,4 @@ jobs:
           commit_username: RuffleBuild
           commit_email: ruffle@ruffle.rs
           ssh_private_key: ${{ secrets.AUR_SSH_PRIVATE_KEY }}
-          commit_message: Update to Nightly ${{ steps.current_time_dashes.outputs.formattedTime }}
+          commit_message: Update to ${{ needs.create-nightly-release.outputs.tag_name }}
