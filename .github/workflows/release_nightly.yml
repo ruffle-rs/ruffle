@@ -718,7 +718,7 @@ jobs:
         uses: josStorer/get-current-time@v2.1.2
         id: current_time_dots
         with:
-          format: YYYY.MM.DD
+          format: YYYY.M.D
 
       - name: Download package
         run: gh release download "${{ needs.create-nightly-release.outputs.tag_name }}" --pattern "${{ needs.create-nightly-release.outputs.package_prefix }}-linux-x86_64.tar.gz"
