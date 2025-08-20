@@ -2,6 +2,7 @@ use crate::avm2::class::Class;
 use crate::avm2::method::{Method, NativeMethodImpl};
 use crate::avm2::multiname::Multiname;
 use crate::avm2::namespace::Namespace;
+use crate::avm2::object::ClassObject;
 use crate::avm2::script::Script;
 use crate::string::AvmAtom;
 
@@ -63,7 +64,7 @@ pub enum Op<'gc> {
         num_args: u32,
     },
     CallSuper {
-        multiname: Gc<'gc, Multiname<'gc>>,
+        info: Gc<'gc, SuperOpInfo<'gc>>,
 
         num_args: u32,
     },
@@ -96,6 +97,7 @@ pub enum Op<'gc> {
         num_args: u32,
     },
     ConstructSuper {
+        superclass: ClassObject<'gc>,
         num_args: u32,
     },
     ConvertO,
@@ -177,7 +179,7 @@ pub enum Op<'gc> {
         index: u32,
     },
     GetSuper {
-        multiname: Gc<'gc, Multiname<'gc>>,
+        info: Gc<'gc, SuperOpInfo<'gc>>,
     },
     GreaterEquals,
     GreaterThan,
@@ -311,7 +313,7 @@ pub enum Op<'gc> {
         index: u32,
     },
     SetSuper {
-        multiname: Gc<'gc, Multiname<'gc>>,
+        info: Gc<'gc, SuperOpInfo<'gc>>,
     },
     Sf32,
     Sf64,
@@ -391,6 +393,25 @@ impl Op<'_> {
 pub struct LookupSwitch {
     pub default_offset: Cell<usize>,
     pub case_offsets: Box<[Cell<usize>]>,
+}
+
+// This is used to make it easier for us to box super op info, which allows us
+// to keep the size of the Op enum at 16 bytes while still storing the
+// superclass in the Op
+#[derive(Collect, Debug)]
+#[collect(no_drop)]
+pub struct SuperOpInfo<'gc> {
+    pub superclass: ClassObject<'gc>,
+    pub multiname: Gc<'gc, Multiname<'gc>>,
+}
+
+impl<'gc> SuperOpInfo<'gc> {
+    pub fn new(superclass: ClassObject<'gc>, multiname: Gc<'gc, Multiname<'gc>>) -> Self {
+        Self {
+            superclass,
+            multiname,
+        }
+    }
 }
 
 #[cfg(target_pointer_width = "64")]

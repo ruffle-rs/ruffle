@@ -1,12 +1,12 @@
 use crate::avm2::class::Class;
 use crate::avm2::error::{
-    make_error_1014, make_error_1021, make_error_1025, make_error_1032, make_error_1054,
-    make_error_1107, verify_error, Error1014Type,
+    make_error_1014, make_error_1021, make_error_1025, make_error_1032, make_error_1035,
+    make_error_1054, make_error_1107, verify_error, Error1014Type,
 };
 use crate::avm2::method::Method;
 use crate::avm2::multiname::Multiname;
 use crate::avm2::namespace::Namespace;
-use crate::avm2::op::{LookupSwitch, Op};
+use crate::avm2::op::{LookupSwitch, Op, SuperOpInfo};
 use crate::avm2::script::TranslationUnit;
 use crate::avm2::{Activation, Error, QName};
 use crate::string::{AvmAtom, AvmString};
@@ -899,18 +899,28 @@ fn translate_op<'gc>(
         AbcOp::CallSuper { index, num_args } => {
             let multiname = pool_multiname(activation, translation_unit, index)?;
 
+            let Some(superclass) = activation.bound_superclass_object() else {
+                return Err(make_error_1035(activation));
+            };
+            let info = SuperOpInfo::new(superclass, multiname);
+
             Op::CallSuper {
-                multiname,
+                info: Gc::new(activation.gc(), info),
                 num_args,
             }
         }
         AbcOp::CallSuperVoid { index, num_args } => {
             let multiname = pool_multiname(activation, translation_unit, index)?;
 
+            let Some(superclass) = activation.bound_superclass_object() else {
+                return Err(make_error_1035(activation));
+            };
+            let info = SuperOpInfo::new(superclass, multiname);
+
             // CallSuperVoid is split into two ops
             return Ok((
                 Op::CallSuper {
-                    multiname,
+                    info: Gc::new(activation.gc(), info),
                     num_args,
                 },
                 Some(Op::Pop),
@@ -973,12 +983,26 @@ fn translate_op<'gc>(
         AbcOp::GetSuper { index } => {
             let multiname = pool_multiname(activation, translation_unit, index)?;
 
-            Op::GetSuper { multiname }
+            let Some(superclass) = activation.bound_superclass_object() else {
+                return Err(make_error_1035(activation));
+            };
+            let info = SuperOpInfo::new(superclass, multiname);
+
+            Op::GetSuper {
+                info: Gc::new(activation.gc(), info),
+            }
         }
         AbcOp::SetSuper { index } => {
             let multiname = pool_multiname(activation, translation_unit, index)?;
 
-            Op::SetSuper { multiname }
+            let Some(superclass) = activation.bound_superclass_object() else {
+                return Err(make_error_1035(activation));
+            };
+            let info = SuperOpInfo::new(superclass, multiname);
+
+            Op::SetSuper {
+                info: Gc::new(activation.gc(), info),
+            }
         }
         AbcOp::In => Op::In,
         AbcOp::PushScope => Op::PushScope,
@@ -1059,7 +1083,16 @@ fn translate_op<'gc>(
                 num_args,
             }
         }
-        AbcOp::ConstructSuper { num_args } => Op::ConstructSuper { num_args },
+        AbcOp::ConstructSuper { num_args } => {
+            let Some(superclass) = activation.bound_superclass_object() else {
+                return Err(make_error_1035(activation));
+            };
+
+            Op::ConstructSuper {
+                superclass,
+                num_args,
+            }
+        }
         AbcOp::NewActivation => {
             if let Some(activation_class) = activation_class {
                 Op::NewActivation { activation_class }

@@ -1,6 +1,4 @@
-use crate::avm2::error::{
-    make_error_1026, make_error_1035, make_error_1051, make_error_1058, verify_error,
-};
+use crate::avm2::error::{make_error_1026, make_error_1051, make_error_1058, verify_error};
 use crate::avm2::method::{Method, MethodKind, ResolvedParamConfig};
 use crate::avm2::multiname::Multiname;
 use crate::avm2::op::Op;
@@ -1602,11 +1600,10 @@ fn abstract_interpret_ops<'gc>(
                     stack.push_any(activation)?;
                 }
             }
-            Op::ConstructSuper { num_args } => {
-                let Some(bound_superclass_object) = activation.bound_superclass_object() else {
-                    return Err(make_error_1035(activation));
-                };
-
+            Op::ConstructSuper {
+                superclass,
+                num_args,
+            } => {
                 // Arguments
                 stack.popn(activation, num_args)?;
 
@@ -1617,7 +1614,7 @@ fn abstract_interpret_ops<'gc>(
                 // are noops anyway.
                 if num_args == 0 {
                     let object_class = activation.avm2().class_defs().object;
-                    if bound_superclass_object.inner_class_definition() == object_class {
+                    if superclass.inner_class_definition() == object_class {
                         // When the receiver is null, this op can still throw an
                         // error, so let's ensure it's guaranteed nonnull before
                         // optimizing it
@@ -1766,10 +1763,9 @@ fn abstract_interpret_ops<'gc>(
                     }
                 }
             }
-            Op::GetSuper { multiname } => {
-                let Some(bound_superclass_object) = activation.bound_superclass_object() else {
-                    return Err(make_error_1035(activation));
-                };
+            Op::GetSuper { info } => {
+                let superclass = info.superclass;
+                let multiname = info.multiname;
 
                 stack.pop_for_multiname(activation, multiname)?;
 
@@ -1778,7 +1774,7 @@ fn abstract_interpret_ops<'gc>(
 
                 // Push return value to the stack
                 if !multiname.has_lazy_component() {
-                    let vtable = bound_superclass_object.instance_vtable();
+                    let vtable = superclass.instance_vtable();
                     match vtable.get_trait(&multiname) {
                         Some(Property::Slot { slot_id })
                         | Some(Property::ConstSlot { slot_id }) => {
@@ -1820,10 +1816,8 @@ fn abstract_interpret_ops<'gc>(
                     stack.push_any(activation)?;
                 }
             }
-            Op::SetSuper { multiname } => {
-                if activation.bound_superclass_object().is_none() {
-                    return Err(make_error_1035(activation));
-                }
+            Op::SetSuper { info } => {
+                let multiname = info.multiname;
 
                 stack.pop(activation)?;
 
@@ -1834,13 +1828,9 @@ fn abstract_interpret_ops<'gc>(
 
                 // TODO: Optimize the op when possible
             }
-            Op::CallSuper {
-                multiname,
-                num_args,
-            } => {
-                let Some(bound_superclass_object) = activation.bound_superclass_object() else {
-                    return Err(make_error_1035(activation));
-                };
+            Op::CallSuper { info, num_args } => {
+                let superclass = info.superclass;
+                let multiname = info.multiname;
 
                 // Arguments
                 stack.popn(activation, num_args)?;
@@ -1852,7 +1842,7 @@ fn abstract_interpret_ops<'gc>(
 
                 // Push return value to the stack
                 if !multiname.has_lazy_component() {
-                    let vtable = bound_superclass_object.instance_vtable();
+                    let vtable = superclass.instance_vtable();
                     match vtable.get_trait(&multiname) {
                         Some(Property::Method { disp_id }) => {
                             let method = vtable.get_method(disp_id).expect("Method should exist");
