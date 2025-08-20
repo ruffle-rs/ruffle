@@ -119,6 +119,39 @@ pub fn serialize_value<'gc>(
                 ))
             } else if let Some(bytearray) = o.as_bytearray() {
                 Some(AmfValue::ByteArray(bytearray.bytes().to_vec()))
+            } else if let Some(dictionary) = o.as_dictionary_object() {
+                // FIXME change this once weak keys are implemented
+                let has_weak_keys = false;
+
+                let mut dictionary_body = Vec::new();
+
+                let mut last_index = dictionary.get_next_enumerant(0, activation).unwrap();
+                while last_index != 0 {
+                    let name = dictionary
+                        .get_enumerant_name(last_index, activation)
+                        .unwrap();
+                    let value = dictionary
+                        .get_enumerant_value(last_index, activation)
+                        .unwrap();
+
+                    // Serialize both name and value
+                    let name = get_or_create_value(activation, name, object_table, amf_version);
+                    let value = get_or_create_value(activation, value, object_table, amf_version);
+
+                    if let (Some(name), Some(value)) = (name, value) {
+                        dictionary_body.push((name, value));
+                    }
+
+                    last_index = dictionary
+                        .get_next_enumerant(last_index, activation)
+                        .unwrap();
+                }
+
+                Some(AmfValue::Dictionary(
+                    ObjectId::INVALID,
+                    dictionary_body,
+                    has_weak_keys,
+                ))
             } else {
                 let class = o.instance_class();
                 let name = class_to_alias(activation, class);
@@ -240,8 +273,22 @@ fn get_or_create_element<'gc>(
     object_table: &mut ObjectTable<'gc>,
     amf_version: AMFVersion,
 ) -> Option<Element> {
+    let value = get_or_create_value(activation, val, object_table, amf_version);
+    if let Some(value) = value {
+        Some(Element::new(name, value))
+    } else {
+        None
+    }
+}
+
+fn get_or_create_value<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    val: Value<'gc>,
+    object_table: &mut ObjectTable<'gc>,
+    amf_version: AMFVersion,
+) -> Option<Rc<AmfValue>> {
     if let Some(obj) = val.as_object() {
-        let rc_val = match object_table.get(&obj) {
+        match object_table.get(&obj) {
             Some(rc_val) => {
                 // Even though we'll clone the same 'Rc<AmfValue>' for each occurrence
                 // of 'Object', flash_lso doesn't serialize this correctly yet.
@@ -263,12 +310,12 @@ fn get_or_create_element<'gc>(
                     None
                 }
             }
-        };
-        return rc_val.map(|val| Element::new(name, val));
+        }
     } else if let Some(value) = serialize_value(activation, val, amf_version, object_table) {
-        return Some(Element::new(name, Rc::new(value)));
+        Some(Rc::new(value))
+    } else {
+        None
     }
-    None
 }
 
 /// Deserialize a AmfValue to a Value
