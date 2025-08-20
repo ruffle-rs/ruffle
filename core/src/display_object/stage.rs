@@ -88,6 +88,13 @@ pub struct StageData<'gc> {
     /// identity matrix unless explicitly set from ActionScript)
     viewport_matrix: Cell<Matrix>,
 
+    /// Matrix used for rendering the letterbox.
+    ///
+    /// It represents the transformation of the whole window into the
+    /// letterboxed area.  Note that it's different from the viewport matrix, as
+    /// it doesn't include any additional transformations of the content.
+    letterbox_matrix: Cell<Matrix>,
+
     /// The bounds of the current viewport in twips, used for culling.
     view_bounds: Cell<Rectangle<Twips>>,
 
@@ -180,6 +187,7 @@ impl<'gc> Stage<'gc> {
                 stage3ds: RefLock::new(vec![]),
                 movie: RefCell::new(movie),
                 viewport_matrix: Cell::new(Matrix::IDENTITY),
+                letterbox_matrix: Cell::new(Matrix::IDENTITY),
                 focus_tracker: FocusTracker::new(gc_context),
             },
         ));
@@ -547,14 +555,25 @@ impl<'gc> Stage<'gc> {
             height_delta / 2.0
         };
 
-        self.0.viewport_matrix.set(Matrix {
+        // The viewport can be additionally translated from within the SWF header.
+        let stage_tx = {
+            let movie = self.movie();
+            let stage_size = movie.stage_size();
+            Matrix::translate(stage_size.x_min, stage_size.y_min)
+        };
+
+        let letterbox_matrix = Matrix {
             a: scale_x as f32,
             b: 0.0,
             c: 0.0,
             d: scale_y as f32,
             tx: Twips::from_pixels(tx),
             ty: Twips::from_pixels(ty),
-        });
+        };
+        self.0.letterbox_matrix.set(letterbox_matrix);
+        self.0
+            .viewport_matrix
+            .set(letterbox_matrix * stage_tx.inverse().unwrap());
 
         let view_bounds = if self.should_letterbox() {
             // Letterbox: movie area
@@ -577,7 +596,8 @@ impl<'gc> Stage<'gc> {
                 y_max: Twips::from_pixels(movie_height + margin_bottom),
             }
         };
-        self.0.view_bounds.set(view_bounds);
+
+        self.0.view_bounds.set(stage_tx * view_bounds);
 
         // Fire resize handler if stage size has changed.
         if scale_mode == StageScaleMode::NoScale && stage_size_changed {
@@ -595,15 +615,15 @@ impl<'gc> Stage<'gc> {
         let viewport_width = viewport_width as f32;
         let viewport_height = viewport_height as f32;
 
-        let view_matrix = self.0.viewport_matrix.get();
+        let letterbox_matrix = self.0.letterbox_matrix.get();
 
         let (movie_width, movie_height) = self.0.movie_size.get();
-        let movie_width = movie_width as f32 * view_matrix.a;
-        let movie_height = movie_height as f32 * view_matrix.d;
+        let movie_width = movie_width as f32 * letterbox_matrix.a;
+        let movie_height = movie_height as f32 * letterbox_matrix.d;
 
-        let margin_left = view_matrix.tx.to_pixels() as f32;
+        let margin_left = letterbox_matrix.tx.to_pixels() as f32;
         let margin_right = viewport_width - movie_width - margin_left;
-        let margin_top = view_matrix.ty.to_pixels() as f32;
+        let margin_top = letterbox_matrix.ty.to_pixels() as f32;
         let margin_bottom = viewport_height - movie_height - margin_top;
 
         // Letterboxing only occurs in `StageScaleMode::ShowAll`, and they would only appear on the top+bottom or left+right.
