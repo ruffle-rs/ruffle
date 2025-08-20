@@ -1764,7 +1764,7 @@ fn abstract_interpret_ops<'gc>(
                 }
             }
             Op::GetSuper { info } => {
-                let superclass = info.superclass;
+                let vtable = info.vtable;
                 let multiname = info.multiname;
 
                 stack.pop_for_multiname(activation, multiname)?;
@@ -1774,7 +1774,6 @@ fn abstract_interpret_ops<'gc>(
 
                 // Push return value to the stack
                 if !multiname.has_lazy_component() {
-                    let vtable = superclass.instance_vtable();
                     match vtable.get_trait(&multiname) {
                         Some(Property::Slot { slot_id })
                         | Some(Property::ConstSlot { slot_id }) => {
@@ -1829,7 +1828,7 @@ fn abstract_interpret_ops<'gc>(
                 // TODO: Optimize the op when possible
             }
             Op::CallSuper { info, num_args } => {
-                let superclass = info.superclass;
+                let vtable = info.vtable;
                 let multiname = info.multiname;
 
                 // Arguments
@@ -1842,7 +1841,6 @@ fn abstract_interpret_ops<'gc>(
 
                 // Push return value to the stack
                 if !multiname.has_lazy_component() {
-                    let vtable = superclass.instance_vtable();
                     match vtable.get_trait(&multiname) {
                         Some(Property::Method { disp_id }) => {
                             let method = vtable.get_method(disp_id).expect("Method should exist");

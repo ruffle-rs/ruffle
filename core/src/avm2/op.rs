@@ -4,6 +4,7 @@ use crate::avm2::multiname::Multiname;
 use crate::avm2::namespace::Namespace;
 use crate::avm2::object::ClassObject;
 use crate::avm2::script::Script;
+use crate::avm2::vtable::VTable;
 use crate::string::AvmAtom;
 
 use gc_arena::{Collect, Gc};
@@ -401,14 +402,14 @@ pub struct LookupSwitch {
 #[derive(Collect, Debug)]
 #[collect(no_drop)]
 pub struct SuperOpInfo<'gc> {
-    pub superclass: ClassObject<'gc>,
+    pub vtable: VTable<'gc>,
     pub multiname: Gc<'gc, Multiname<'gc>>,
 }
 
 impl<'gc> SuperOpInfo<'gc> {
     pub fn new(superclass: ClassObject<'gc>, multiname: Gc<'gc, Multiname<'gc>>) -> Self {
         Self {
-            superclass,
+            vtable: superclass.instance_vtable(),
             multiname,
         }
     }

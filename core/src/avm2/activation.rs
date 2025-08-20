@@ -1129,7 +1129,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         info: Gc<'gc, SuperOpInfo<'gc>>,
         arg_count: u32,
     ) -> Result<(), Error<'gc>> {
-        let superclass = info.superclass;
+        let super_vtable = info.vtable;
         let multiname = info.multiname;
 
         let args = self.stack.get_args(arg_count as usize);
@@ -1139,10 +1139,10 @@ impl<'a, 'gc> Activation<'a, 'gc> {
 
         // Ensure the receiver is of the correct type
         let receiver = receiver
-            .coerce_to_type(self, superclass.inner_class_definition())?
+            .coerce_to_type(self, super_vtable.defining_class())?
             .null_check(self, Some(&multiname))?;
 
-        let value = super_ops::call_super(superclass, &multiname, receiver, args, self)?;
+        let value = super_ops::call_super(super_vtable, &multiname, receiver, args, self)?;
 
         self.push_stack(value);
 
@@ -1390,7 +1390,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     }
 
     fn op_get_super(&mut self, info: Gc<'gc, SuperOpInfo<'gc>>) -> Result<(), Error<'gc>> {
-        let superclass = info.superclass;
+        let super_vtable = info.vtable;
         let multiname = info.multiname;
 
         let multiname = multiname.fill_with_runtime_params(self)?;
@@ -1399,10 +1399,10 @@ impl<'a, 'gc> Activation<'a, 'gc> {
 
         // Ensure the receiver is of the correct type
         let receiver = receiver
-            .coerce_to_type(self, superclass.inner_class_definition())?
+            .coerce_to_type(self, super_vtable.defining_class())?
             .null_check(self, Some(&multiname))?;
 
-        let value = super_ops::get_super(superclass, &multiname, receiver, self)?;
+        let value = super_ops::get_super(super_vtable, &multiname, receiver, self)?;
 
         self.push_stack(value);
 
@@ -1410,7 +1410,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     }
 
     fn op_set_super(&mut self, info: Gc<'gc, SuperOpInfo<'gc>>) -> Result<(), Error<'gc>> {
-        let superclass = info.superclass;
+        let super_vtable = info.vtable;
         let multiname = info.multiname;
 
         let value = self.pop_stack();
@@ -1420,10 +1420,10 @@ impl<'a, 'gc> Activation<'a, 'gc> {
 
         // Ensure the receiver is of the correct type
         let receiver = receiver
-            .coerce_to_type(self, superclass.inner_class_definition())?
+            .coerce_to_type(self, super_vtable.defining_class())?
             .null_check(self, Some(&multiname))?;
 
-        super_ops::set_super(superclass, &multiname, value, receiver, self)?;
+        super_ops::set_super(super_vtable, &multiname, value, receiver, self)?;
 
         Ok(())
     }

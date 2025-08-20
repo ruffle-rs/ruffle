@@ -4,20 +4,22 @@ use crate::avm2::activation::Activation;
 use crate::avm2::error::{self, reference_error, Error};
 use crate::avm2::function::{exec, FunctionArgs};
 use crate::avm2::multiname::Multiname;
-use crate::avm2::object::{ClassObject, FunctionObject, TObject};
+use crate::avm2::object::{FunctionObject, TObject};
 use crate::avm2::property::Property;
 use crate::avm2::value::Value;
+use crate::avm2::vtable::VTable;
 
-/// Like `Value::call_property`, but uses the instance vtable of `superclass`
-/// for property lookups.
+/// Like `Value::call_property`, but specifically does a lookup of the property
+/// on the provided vtable instead of the receiver's instance vtable. This is
+/// intended to be used to implement the `callsuper` operation.
 pub fn call_super<'gc>(
-    superclass: ClassObject<'gc>,
+    vtable: VTable<'gc>,
     multiname: &Multiname<'gc>,
     receiver: Value<'gc>,
     arguments: FunctionArgs<'_, 'gc>,
     activation: &mut Activation<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let property = superclass.instance_vtable().get_trait(multiname);
+    let property = vtable.get_trait(multiname);
     match property {
         Some(Property::Slot { slot_id }) | Some(Property::ConstSlot { slot_id }) => {
             let arguments = &arguments.to_slice();
@@ -29,12 +31,11 @@ pub fn call_super<'gc>(
             func.call(activation, receiver, arguments)
         }
         Some(Property::Method { disp_id }) => {
-            call_method_super(activation, superclass, receiver, disp_id, arguments)
+            call_method_super(activation, vtable, receiver, disp_id, arguments)
         }
         Some(Property::Virtual { get: Some(get), .. }) => {
             // Call the getter, then `Value::call` the result
-            let obj =
-                call_method_super(activation, superclass, receiver, get, FunctionArgs::empty())?;
+            let obj = call_method_super(activation, vtable, receiver, get, FunctionArgs::empty())?;
 
             let arguments = &arguments.to_slice();
             obj.call(activation, receiver.into(), arguments)
@@ -43,12 +44,12 @@ pub fn call_super<'gc>(
             activation,
             error::ReferenceErrorCode::ReadFromWriteOnly,
             multiname,
-            superclass.inner_class_definition(),
+            vtable.defining_class(),
         )),
         None => {
             let qualified_multiname_name = multiname.as_uri(activation.strings());
-            let qualified_class_name = superclass
-                .inner_class_definition()
+            let qualified_class_name = vtable
+                .defining_class()
                 .name()
                 .to_qualified_name_err_message(activation.gc());
 
@@ -63,16 +64,16 @@ pub fn call_super<'gc>(
     }
 }
 
-/// Like `Value::get_property`, but uses the instance vtable of `superclass`
-/// for property lookups.
+/// Like `Value::get_property`, but specifically does a lookup of the property
+/// on the provided vtable instead of the receiver's instance vtable. This is
+/// intended to be used to implement the `getsuper` operation.
 pub fn get_super<'gc>(
-    superclass: ClassObject<'gc>,
+    vtable: VTable<'gc>,
     multiname: &Multiname<'gc>,
     receiver: Value<'gc>,
     activation: &mut Activation<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let property = superclass.instance_vtable().get_trait(multiname);
-
+    let property = vtable.get_trait(multiname);
     match property {
         Some(Property::Slot { slot_id }) | Some(Property::ConstSlot { slot_id }) => {
             // Only objects can have slots
@@ -81,10 +82,8 @@ pub fn get_super<'gc>(
             Ok(receiver.get_slot(slot_id))
         }
         Some(Property::Method { disp_id }) => {
-            let full_method = superclass
-                .instance_vtable()
-                .get_full_method(disp_id)
-                .unwrap();
+            let full_method = vtable.get_full_method(disp_id).unwrap();
+
             let callee = FunctionObject::from_method(
                 activation,
                 full_method.method,
@@ -98,38 +97,33 @@ pub fn get_super<'gc>(
         }
         Some(Property::Virtual {
             get: Some(disp_id), ..
-        }) => call_method_super(
-            activation,
-            superclass,
-            receiver,
-            disp_id,
-            FunctionArgs::empty(),
-        ),
+        }) => call_method_super(activation, vtable, receiver, disp_id, FunctionArgs::empty()),
         Some(Property::Virtual { get: None, .. }) => Err(error::make_reference_error(
             activation,
             error::ReferenceErrorCode::ReadFromWriteOnly,
             multiname,
-            superclass.inner_class_definition(),
+            vtable.defining_class(),
         )),
         None => Err(error::make_reference_error(
             activation,
             error::ReferenceErrorCode::InvalidRead,
             multiname,
-            superclass.inner_class_definition(),
+            vtable.defining_class(),
         )),
     }
 }
 
-/// Like `Value::set_property`, but uses the instance vtable of `superclass`
-/// for property lookups.
+/// Like `Value::set_property`, but specifically does a lookup of the property
+/// on the provided vtable instead of the receiver's instance vtable. This is
+/// intended to be used to implement the `setsuper` operation.
 pub fn set_super<'gc>(
-    superclass: ClassObject<'gc>,
+    vtable: VTable<'gc>,
     multiname: &Multiname<'gc>,
     value: Value<'gc>,
     receiver: Value<'gc>,
     activation: &mut Activation<'_, 'gc>,
 ) -> Result<(), Error<'gc>> {
-    let property = superclass.instance_vtable().get_trait(multiname);
+    let property = vtable.get_trait(multiname);
     match property {
         Some(Property::Slot { slot_id }) => {
             // Only objects can have slots
@@ -141,7 +135,7 @@ pub fn set_super<'gc>(
             activation,
             error::ReferenceErrorCode::AssignToMethod,
             multiname,
-            superclass.inner_class_definition(),
+            vtable.defining_class(),
         )),
         Some(Property::Virtual {
             set: Some(disp_id), ..
@@ -150,7 +144,7 @@ pub fn set_super<'gc>(
                 arguments: &[value],
             };
 
-            call_method_super(activation, superclass, receiver, disp_id, args)?;
+            call_method_super(activation, vtable, receiver, disp_id, args)?;
 
             Ok(())
         }
@@ -160,7 +154,7 @@ pub fn set_super<'gc>(
                     activation,
                     error::ReferenceErrorCode::WriteToReadOnly,
                     multiname,
-                    superclass.inner_class_definition(),
+                    vtable.defining_class(),
                 ))
             } else {
                 // In JIT mode in FP, setsuper on const slots and
@@ -172,25 +166,22 @@ pub fn set_super<'gc>(
             activation,
             error::ReferenceErrorCode::InvalidWrite,
             multiname,
-            superclass.inner_class_definition(),
+            vtable.defining_class(),
         )),
     }
 }
 
-/// Like `Value::call_method`, but uses the method specifically on the class's
-/// instance vtable, not the instance vtable of the receiver. This is intended
-/// to be used for supercalls.
+/// Like `Value::call_method`, but specifically uses the method defined on the
+/// provided vtable instead of the receiver's instance vtable. This is intended
+/// to be used to implement supercalling.
 fn call_method_super<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    superclass: ClassObject<'gc>,
+    vtable: VTable<'gc>,
     receiver: Value<'gc>,
     disp_id: u32,
     arguments: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let full_method = superclass
-        .instance_vtable()
-        .get_full_method(disp_id)
-        .unwrap();
+    let full_method = vtable.get_full_method(disp_id).unwrap();
 
     // Only create callee if the method needs it
     let callee = if full_method.method.needs_arguments_object() {

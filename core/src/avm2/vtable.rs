@@ -22,6 +22,8 @@ pub struct VTable<'gc>(Gc<'gc, VTableData<'gc>>);
 #[derive(Collect, Default)]
 #[collect(no_drop)]
 struct VTableData<'gc> {
+    defining_class: Option<Class<'gc>>,
+
     scope: Option<ScopeChain<'gc>>,
 
     protected_namespace: Option<Namespace<'gc>>,
@@ -106,6 +108,12 @@ impl<'gc> VTable<'gc> {
         );
         Self::copy_interface_properties(&mut this, defining_class_def, context);
         VTable(Gc::new(context.gc(), this))
+    }
+
+    pub fn defining_class(self) -> Class<'gc> {
+        self.0
+            .defining_class
+            .expect("Expected defining_class to exist when accessing it")
     }
 
     pub fn resolved_traits(self) -> &'gc PropertyMap<'gc, Property> {
@@ -472,6 +480,7 @@ impl<'gc> VTable<'gc> {
         }
 
         VTableData {
+            defining_class: Some(defining_class_def),
             scope,
             protected_namespace: defining_class_def.protected_namespace(),
             resolved_traits,
@@ -553,6 +562,14 @@ impl<'gc> VTable<'gc> {
             .iter()
             .filter(|(_, ns, _)| ns.is_public())
             .map(|(name, _, prop)| (name, *prop))
+    }
+}
+
+impl std::fmt::Debug for VTable<'_> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
+        f.debug_struct("VTable")
+            .field("ptr", &Gc::as_ptr(self.0))
+            .finish()
     }
 }
 
