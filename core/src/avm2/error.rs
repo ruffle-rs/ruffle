@@ -257,10 +257,7 @@ pub fn make_error_1026<'gc>(
 ) -> Error<'gc> {
     let err = verify_error(
         activation,
-        &format!(
-            "Error #1026: Slot {} exceeds slotCount={} of global.",
-            slot_id, slot_count
-        ),
+        &format!("Error #1026: Slot {slot_id} exceeds slotCount={slot_count} of global."),
         1026,
     );
     match err {
