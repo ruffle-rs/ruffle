@@ -113,6 +113,10 @@ impl TestRunner {
             .with_autoplay(true) //.tick() requires playback
             .build();
 
+        test.options
+            .default_fonts
+            .apply(&mut player.lock().unwrap());
+
         let images = test.options.image_comparisons.clone();
 
         let remaining_iterations = test

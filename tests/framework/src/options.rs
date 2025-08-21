@@ -8,7 +8,8 @@ use image::ImageFormat;
 use regex::Regex;
 use ruffle_core::tag_utils::SwfMovie;
 use ruffle_core::{
-    FontQuery, FontType, PlayerBuilder, PlayerMode, PlayerRuntime, ViewportDimensions,
+    DefaultFont, FontQuery, FontType, Player, PlayerBuilder, PlayerMode, PlayerRuntime,
+    ViewportDimensions,
 };
 use ruffle_render::backend::RenderBackend;
 use ruffle_render::quality::StageQuality;
@@ -35,6 +36,7 @@ pub struct TestOptions {
     pub required_features: RequiredFeatures,
     pub fonts: HashMap<String, FontOptions>,
     pub font_sorts: HashMap<String, FontSortOptions>,
+    pub default_fonts: DefaultFontsOptions,
 }
 
 impl Default for TestOptions {
@@ -54,6 +56,7 @@ impl Default for TestOptions {
             required_features: RequiredFeatures::default(),
             fonts: Default::default(),
             font_sorts: Default::default(),
+            default_fonts: Default::default(),
         }
     }
 }
@@ -558,5 +561,37 @@ impl TestExpression {
             return Err(anyhow!("Unknown predicate used in expression: {pred}"));
         }
         Ok(cfg_matches)
+    }
+}
+
+#[derive(Clone, Default, Deserialize)]
+#[serde(default, deny_unknown_fields)]
+pub struct DefaultFontsOptions {
+    pub sans: Vec<String>,
+    pub serif: Vec<String>,
+    pub typewriter: Vec<String>,
+    pub japanese_gothic: Vec<String>,
+    pub japanese_gothic_mono: Vec<String>,
+    pub japanese_mincho: Vec<String>,
+}
+
+impl DefaultFontsOptions {
+    pub fn apply(&self, player: &mut Player) {
+        self.apply_default_font(player, DefaultFont::Sans, &self.sans);
+        self.apply_default_font(player, DefaultFont::Serif, &self.serif);
+        self.apply_default_font(player, DefaultFont::Typewriter, &self.typewriter);
+        self.apply_default_font(player, DefaultFont::JapaneseGothic, &self.japanese_gothic);
+        self.apply_default_font(
+            player,
+            DefaultFont::JapaneseGothicMono,
+            &self.japanese_gothic_mono,
+        );
+        self.apply_default_font(player, DefaultFont::JapaneseMincho, &self.japanese_mincho);
+    }
+
+    fn apply_default_font(&self, player: &mut Player, font: DefaultFont, names: &[String]) {
+        if !names.is_empty() {
+            player.set_default_font(font, names.to_owned());
+        }
     }
 }
