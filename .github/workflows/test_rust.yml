@@ -13,7 +13,8 @@ concurrency:
 env:
   FEATURES: lzma,jpegxr
   TEST_OPTS: --workspace --locked --no-fail-fast -j 4
-  LLVM_COV_OPTS: --branch --profile ci ${TEST_OPTS} --features ${FEATURES},imgtests
+  LLVM_COV_OPTS: --branch --profile ci
+  LLVM_COV_TEST_OPTS: ${LLVM_COV_OPTS} ${TEST_OPTS} --features ${FEATURES},imgtests
 
   LINUX_DEPENDENCIES: libasound2-dev mesa-vulkan-drivers libudev-dev
 
@@ -163,6 +164,37 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v5
+        with:
+          # We need history for delta coverage, but we also don't want to fetch
+          # the whole repo. 42 commits seem reasonable
+          fetch-depth: 42
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Install diff-cover
+        run: pip install diff-cover==9.6.0
+
+      - name: Calculate base ref
+        id: base_ref
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ] || [ "${{ github.event_name }}" = "pull_request_target" ]; then
+            # For PRs always compute delta with base ref
+            git fetch origin ${{ github.base_ref }}
+            echo "::notice::Using the PR base as base ref for delta coverage."
+            echo "value=origin/${{ github.base_ref }}" | tee -a $GITHUB_OUTPUT
+          elif git merge-base --is-ancestor ${{ github.event.before }} HEAD; then
+            # Use the before SHA if it's an ancestor of HEAD
+            echo "::notice::Using the last pushed commit as base ref for delta coverage."
+            echo "value=${{ github.event.before }}" | tee -a $GITHUB_OUTPUT
+          else
+            # If not, someone force pushed and just use the parent
+            echo "::warning::Failed to compute the base ref for delta coverage. Using parent commit."
+            parent=$(git rev-parse HEAD~1)
+            echo "value=${parent}" | tee -a $GITHUB_OUTPUT
+          fi
 
       - name: Install Rust toolchain
         # We need nightly for coverage due to:
@@ -192,14 +224,40 @@ jobs:
         working-directory: tests
         env:
           RUFFLE_TEST_OPTS: --ignore-known-failures
-        run: cargo llvm-cov --html ${{ env.LLVM_COV_OPTS }}
+        run: cargo llvm-cov --no-report ${{ env.LLVM_COV_TEST_OPTS }}
 
-      - name: Upload report
+      - name: Generate llvm-cov reports
+        run: |
+          mkdir -p target/llvm-cov
+          cargo llvm-cov report --html --output-dir  target/llvm-cov/ ${{ env.LLVM_COV_OPTS }}
+          cargo llvm-cov report --lcov --output-path target/llvm-cov/coverage.lcov ${{ env.LLVM_COV_OPTS }}
+
+      - name: Upload llvm-cov reports
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: llvm-cov
           path: target/llvm-cov
+
+      - name: Run diff-cover
+        run: |
+          mkdir -p target/diff-cover
+          diff-cover target/llvm-cov/coverage.lcov \
+            --html-report target/diff-cover/report.html \
+            --json-report target/diff-cover/report.json \
+            --markdown-report target/diff-cover/report.md \
+            --compare-branch ${{ steps.base_ref.outputs.value }}
+
+      - name: Upload diff-cover reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: diff-cover
+          path: target/diff-cover
+
+      - name: Upload diff-cover summary
+        if: always()
+        run: cat target/diff-cover/report.md >> $GITHUB_STEP_SUMMARY
 
   dependencies:
     needs: changes
