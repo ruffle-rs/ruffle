@@ -190,6 +190,8 @@ jobs:
 
       - name: Run llvm-cov for SWF tests
         working-directory: tests
+        env:
+          RUFFLE_TEST_OPTS: --ignore-known-failures
         run: cargo llvm-cov --html ${{ env.LLVM_COV_OPTS }}
 
       - name: Upload report
