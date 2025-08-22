@@ -132,8 +132,16 @@ impl Test {
             .collect()
     }
 
-    pub fn should_run(&self, check_renderer: bool, environment: &impl Environment) -> bool {
+    pub fn should_run(
+        &self,
+        ignore_known_failures: bool,
+        check_renderer: bool,
+        environment: &impl Environment,
+    ) -> bool {
         if self.options.ignore {
+            return false;
+        }
+        if ignore_known_failures && self.options.known_failure {
             return false;
         }
         self.options.required_features.can_run()
