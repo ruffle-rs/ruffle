@@ -9,7 +9,7 @@ use ruffle_render_wgpu::{backend::WgpuRenderBackend, target::TextureTarget};
 pub trait PlayerExporterExt {
     fn capture_frame(&self) -> Option<image::RgbaImage>;
 
-    fn header_frames(&self) -> u32;
+    fn header_frames(&self) -> u16;
 
     fn force_root_clip_play(&self);
 }
@@ -23,13 +23,10 @@ impl PlayerExporterExt for Arc<Mutex<Player>> {
         renderer.capture_frame()
     }
 
-    fn header_frames(&self) -> u32 {
-        self.lock().unwrap().mutate_with_update_context(|ctx| {
-            ctx.stage
-                .root_clip()
-                .and_then(|root_clip| root_clip.as_movie_clip())
-                .map_or(1, |movie_clip| movie_clip.header_frames() as u32)
-        })
+    fn header_frames(&self) -> u16 {
+        self.lock()
+            .unwrap()
+            .mutate_with_update_context(|ctx| ctx.root_swf.num_frames())
     }
 
     fn force_root_clip_play(&self) {
