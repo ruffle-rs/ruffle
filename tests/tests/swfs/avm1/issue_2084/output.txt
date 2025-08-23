@@ -1,3 +1,5 @@
+Warning: Reference to undeclared variable, 'Main'
+Warning: Reference to undeclared variable, 'Column'
 onLoad
 col_mc_1 0,0
 col_mc_2 0,0

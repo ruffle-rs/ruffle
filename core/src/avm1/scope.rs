@@ -130,7 +130,7 @@ impl<'gc> Scope<'gc> {
         &self,
         name: AvmString<'gc>,
         activation: &mut Activation<'_, 'gc>,
-    ) -> Result<CallableValue<'gc>, Error<'gc>> {
+    ) -> Result<Option<CallableValue<'gc>>, Error<'gc>> {
         self.resolve_recursive(name, activation, true)
     }
 
@@ -141,32 +141,29 @@ impl<'gc> Scope<'gc> {
         name: AvmString<'gc>,
         activation: &mut Activation<'_, 'gc>,
         top_level: bool,
-    ) -> Result<CallableValue<'gc>, Error<'gc>> {
+    ) -> Result<Option<CallableValue<'gc>>, Error<'gc>> {
         if self.locals().has_property(activation, name) {
             return self
                 .locals()
                 .get_non_slash_path(name, activation)
-                .map(|v| CallableValue::Callable(self.locals_cell(), v));
+                .map(|v| Some(CallableValue::Callable(self.locals_cell(), v)));
         }
         if let Some(scope) = self.parent() {
             let res = scope.resolve(name, activation)?;
 
             // If we failed to find the value in the scope chain, but it *would* resolve on `self.locals()` if it wasn't
             // a removed clip, then try resolving on root instead
-            if top_level
-                && matches!(res, CallableValue::UnCallable(Value::Undefined))
-                && self.locals().has_own_property(activation, name)
-            {
+            if top_level && res.is_none() && self.locals().has_own_property(activation, name) {
                 return activation
                     .root_object()
                     .coerce_to_object(activation)
                     .get_non_slash_path(name, activation)
-                    .map(|v| CallableValue::Callable(self.locals_cell(), v));
+                    .map(|v| Some(CallableValue::Callable(self.locals_cell(), v)));
             }
 
             Ok(res)
         } else {
-            Ok(CallableValue::UnCallable(Value::Undefined))
+            Ok(None)
         }
     }
 

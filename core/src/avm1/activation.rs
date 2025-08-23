@@ -2755,6 +2755,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         // Find the right-most : or . in the path.
         // If we have one, we must resolve as a target path.
         if let Some(separator) = path.rfind(b":.".as_ref()) {
+            let original_path = path;
             // We have a . or :, so this is a path to an object plus a variable name.
             // We resolve it directly on the targeted object.
             let (path, var_name) = (&path[..separator], &path[separator + 1..]);
@@ -2776,6 +2777,10 @@ impl<'a, 'gc> Activation<'a, 'gc> {
                 }
             }
 
+            self.context.avm_warning(&format!(
+                "Reference to undeclared variable, '{}'",
+                original_path.to_string()
+            ));
             return Ok(CallableValue::UnCallable(Value::Undefined));
         }
 
@@ -2936,7 +2941,14 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             return Ok(CallableValue::UnCallable(self.this_cell()));
         }
 
-        self.scope().resolve(name, self)
+        Ok(self.scope().resolve(name, self)?.unwrap_or_else(|| {
+            self.context.avm_warning(&format!(
+                "Reference to undeclared variable, '{}'",
+                name.to_string()
+            ));
+
+            CallableValue::UnCallable(Value::Undefined)
+        }))
     }
 
     /// Returns the suggested string encoding for actions.

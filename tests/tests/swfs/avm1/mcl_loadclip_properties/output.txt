@@ -1,6 +1,8 @@
+Warning: Reference to undeclared variable, 'Test'
 onLoadStart
 undefined
 onLoadComplete
 message from onLoadStart
+Warning: Reference to undeclared variable, 'Child'
 onLoadInit
 message from onLoadComplete

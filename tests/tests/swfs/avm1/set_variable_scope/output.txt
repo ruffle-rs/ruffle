@@ -1,4 +1,5 @@
 // foo:
+Warning: Reference to undeclared variable, 'foo'
 undefined
 
 // _global.foo = 'global';
@@ -37,6 +38,7 @@ f
 // mc.foo:
 mc foo
 // blah:
+Warning: Reference to undeclared variable, 'blah'
 undefined
 // mc.blah:
 mc blah

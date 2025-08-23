@@ -1,16 +1,26 @@
 // trace('FOO')
+Warning: Reference to undeclared variable, 'FOO'
+-- Probably a case mismatch.
 undefined
+Warning: Reference to undeclared variable, 'FoO'
+-- Probably a case mismatch.
 undefined
 
 // trace(this['ä'])
+Warning: Reference to undeclared property, '�'
+-- Probably a case mismatch.
 undefined
 
 // trace(this['ӥ'])
+Warning: Reference to undeclared property, '-- Probably a case mismatch.
 undefined
 
 // trace(this['ǳǳǳ'])
+Warning: Reference to undeclared property, '-- Probably a case mismatch.
 undefined
+Warning: Reference to undeclared property, '-- Probably a case mismatch.
 undefined
+Warning: Reference to undeclared property, '-- Probably a case mismatch.
 undefined
 
 // trace(this['ⱥ'])
@@ -21,10 +31,14 @@ undefined
 
 // trace(clip)
 _level0.clip
+Warning: Reference to undeclared variable, 'CLIP'
+-- Probably a case mismatch.
 undefined
 
 // trace(this['clipÄ'])
+Warning: Reference to undeclared property, 'clip�-- Probably a case mismatch.
 undefined
+Warning: Reference to undeclared property, 'clip�-- Probably a case mismatch.
 undefined
 
 // trace(clip._X)
@@ -34,6 +48,8 @@ undefined
 0
 
 // trace(_LeVeL0)
+Warning: Reference to undeclared variable, '_LeVeL0'
+-- Probably a case mismatch.
 undefined
 
 // obj keys:

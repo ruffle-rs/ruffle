@@ -16,11 +16,15 @@ Unload clip5
 Frame 2
 clip = _level0.clip
 clip._x = 125.5
+Warning: Reference to undeclared variable, 'clip2'
 clip2 = undefined
+Warning: Reference to undeclared variable, 'clip3'
 clip3 = undefined
+Warning: Reference to undeclared variable, 'clip4'
 clip4 = undefined
 clip5 = _level0.clip5
 clip.depth = -16386
+Warning: Reference to undeclared variable, 'clip2'
 clip2.depth = undefined
 Fixme(5492)
 clip5.depth = -16390
@@ -30,23 +34,36 @@ unload clipEvent 2
 Frame 3
 clip = _level0.clip
 clip._x = 429.95
+Warning: Reference to undeclared variable, 'clip2'
 clip2 = undefined
+Warning: Reference to undeclared variable, 'clip3'
 clip3 = undefined
+Warning: Reference to undeclared variable, 'clip4'
 clip4 = undefined
+Warning: Reference to undeclared variable, 'clip5'
 clip5 = undefined
 clip.depth = -16386
+Warning: Reference to undeclared variable, 'clip2'
 clip2.depth = undefined
 Fixme(5492)
+Warning: Reference to undeclared variable, 'clip5'
 clip5.depth = undefined
 End frame 3
 Frame 4
+Warning: Reference to undeclared variable, 'clip'
 clip = undefined
+Warning: Reference to undeclared variable, 'clip'
 clip._x = undefined
+Warning: Reference to undeclared variable, 'clip2'
 clip2 = undefined
 Fixme(5492)
+Warning: Reference to undeclared variable, 'clip5'
 clip5 = undefined
+Warning: Reference to undeclared variable, 'clip'
 clip.depth = undefined
+Warning: Reference to undeclared variable, 'clip2'
 clip2.depth = undefined
 Fixme(5492)
+Warning: Reference to undeclared variable, 'clip5'
 clip5.depth = undefined
 End frame 4

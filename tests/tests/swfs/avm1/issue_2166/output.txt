@@ -4,6 +4,9 @@ f:
  arg2: undefined
 
 root:
+Warning: Reference to undeclared variable, 'arg0'
  arg0: undefined
+Warning: Reference to undeclared variable, 'arg1'
  arg1: undefined
+Warning: Reference to undeclared variable, 'arg2'
  arg2: undefined

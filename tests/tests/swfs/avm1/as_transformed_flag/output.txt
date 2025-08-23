@@ -12,9 +12,15 @@
 // clip_alpha._alpha
 25
 // Frame 3
+Warning: Reference to undeclared variable, 'clip_x'
 undefined
+Warning: Reference to undeclared variable, 'clip_y'
 undefined
+Warning: Reference to undeclared variable, 'clip_rotation'
 undefined
+Warning: Reference to undeclared variable, 'clip_xscale'
 undefined
+Warning: Reference to undeclared variable, 'clip_yscale'
 undefined
+Warning: Reference to undeclared variable, 'clip_alpha'
 undefined

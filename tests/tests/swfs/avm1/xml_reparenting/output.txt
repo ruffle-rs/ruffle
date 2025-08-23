@@ -1,3 +1,4 @@
+Warning: Reference to undeclared variable, 'Test'
 // reparenting in self
 <a><b /></a><c />
 // after

@@ -1,3 +1,4 @@
+Warning: Edit is not a function
 ct
 16718080
 (redMultiplier=1, greenMultiplier=1, blueMultiplier=1, alphaMultiplier=1, redOffset=255, greenOffset=25, blueOffset=0, alphaOffset=0)

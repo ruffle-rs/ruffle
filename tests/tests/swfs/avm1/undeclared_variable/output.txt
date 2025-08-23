@@ -1,0 +1,10 @@
+Warning: Reference to undeclared variable, 'undeclaredVariable'
+undefined
+Warning: Reference to undeclared variable, 'a/undeclaredVariable'
+undefined
+Warning: Reference to undeclared variable, 'a/b/c/undeclaredVariable'
+undefined
+Warning: Reference to undeclared variable, 'a/b:c/d'
+undefined
+Warning: Reference to undeclared variable, ''
+undefined
