@@ -6,7 +6,7 @@ use crate::avm2::class::Class;
 use crate::avm2::domain::Domain;
 use crate::avm2::error::Error;
 use crate::avm2::globals::global_scope;
-use crate::avm2::method::Method;
+use crate::avm2::method::{Method, MethodAssociation};
 use crate::avm2::object::{Object, ScriptObject, TObject};
 use crate::avm2::scope::ScopeChain;
 use crate::avm2::traits::{Trait, TraitKind};
@@ -409,8 +409,6 @@ impl<'gc> Script<'gc> {
             .expect("Script index should be valid");
 
         let init = unit.load_method(script.init_method, false, activation)?;
-        // Script initializers are always run in "interpreter mode"
-        init.mark_as_interpreted();
 
         let globals = Script::create_globals_object(unit, script, domain, init, activation)?;
 
@@ -470,6 +468,16 @@ impl<'gc> Script<'gc> {
             Some(object_class.instance_vtable()),
             mc,
         );
+
+        // Script initializers are always run in "interpreter mode"
+        let script_init_assoc = MethodAssociation::classbound(global_class, true);
+        init_method.associate(activation, script_init_assoc)?;
+
+        // Associate all the methods on the script
+        global_class.bind_methods(
+            activation,
+            MethodAssociation::classbound(global_class, false),
+        )?;
 
         Ok(ScriptObject::custom_object(
             mc,

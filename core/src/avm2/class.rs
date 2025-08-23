@@ -4,7 +4,7 @@ use crate::avm2::activation::Activation;
 use crate::avm2::error::{
     make_error_1014, make_error_1053, make_error_1107, verify_error, Error1014Type,
 };
-use crate::avm2::method::{Method, NativeMethodImpl};
+use crate::avm2::method::{Method, MethodAssociation, NativeMethodImpl};
 use crate::avm2::object::{scriptobject_allocator, ClassObject, Object};
 use crate::avm2::script::TranslationUnit;
 use crate::avm2::traits::{Trait, TraitKind};
@@ -512,8 +512,6 @@ impl<'gc> Class<'gc> {
         };
 
         let class_init = unit.load_method(abc_class.init_method, false, activation)?;
-        // Class initializers are always run in "interpreter mode"
-        class_init.mark_as_interpreted();
 
         let name_namespace = name.namespace();
         let mut local_name_buf = WString::from(name.local_name().as_wstr());
@@ -866,6 +864,21 @@ impl<'gc> Class<'gc> {
             self.0.super_class.map(|c| c.vtable()),
             context,
         ));
+    }
+
+    /// Associate all the methods defined on this class with the specified
+    /// MethodAssociation.
+    pub fn bind_methods(
+        self,
+        activation: &mut Activation<'_, 'gc>,
+        association: MethodAssociation<'gc>,
+    ) -> Result<(), Error<'gc>> {
+        let methods = self.traits().iter().filter_map(|t| t.as_method());
+        for method in methods {
+            method.associate(activation, association)?;
+        }
+
+        Ok(())
     }
 
     fn gather_interfaces(
