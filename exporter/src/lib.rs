@@ -207,18 +207,10 @@ fn take_screenshot(
 }
 
 fn force_root_clip_play(player: &Arc<Mutex<Player>>) {
-    let mut player_guard = player.lock().unwrap();
-
-    // Check and resume if suspended
-    if !player_guard.is_playing() {
-        player_guard.set_is_playing(true);
-    }
-
-    // Also resume the root MovieClip if stopped
-    player_guard.mutate_with_update_context(|ctx| {
+    player.lock().unwrap().mutate_with_update_context(|ctx| {
         if let Some(root_clip) = ctx.stage.root_clip() {
             if let Some(movie_clip) = root_clip.as_movie_clip() {
-                if !movie_clip.playing() {
+                if !movie_clip.playing() && movie_clip.current_frame() < movie_clip.total_frames() {
                     movie_clip.play();
                 }
             }
