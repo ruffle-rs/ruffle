@@ -1096,6 +1096,13 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     fn op_call_static(&mut self, method: Method<'gc>, arg_count: u32) -> Result<(), Error<'gc>> {
         let args = self.pop_stack_args(arg_count);
         let receiver = self.pop_stack();
+
+        // Ensure receiver is of the correct type
+        let bound_class = method
+            .bound_class()
+            .expect("Verifier ensures callstatic methods are classbound");
+        let receiver = receiver.coerce_to_type(self, bound_class)?;
+
         // TODO: What scope should the function be executed with?
         let scope = self.create_scopechain();
         let function = FunctionObject::from_method(self, method, scope, None, None);
