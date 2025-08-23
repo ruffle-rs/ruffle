@@ -200,6 +200,15 @@ pub struct SystemClassDefs<'gc> {
     pub xml: Class<'gc>,
     pub xml_list: Class<'gc>,
 
+    // Vector.<Number> aka Vector$double
+    pub number_vector: Class<'gc>,
+    // Vector.<int> aka Vector$int
+    pub int_vector: Class<'gc>,
+    // Vector.<uint> aka Vector$uint
+    pub uint_vector: Class<'gc>,
+    // Vector.<*> aka Vector$object
+    pub object_vector: Class<'gc>,
+
     pub bitmap: Class<'gc>,
     pub bitmapdata: Class<'gc>,
     pub igraphicsdata: Class<'gc>,
@@ -371,6 +380,11 @@ impl<'gc> SystemClassDefs<'gc> {
             uint: object,
             xml: object,
             xml_list: object,
+
+            number_vector: object,
+            int_vector: object,
+            uint_vector: object,
+            object_vector: object,
 
             bitmap: object,
             bitmapdata: object,

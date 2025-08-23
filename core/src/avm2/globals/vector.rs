@@ -166,9 +166,11 @@ pub fn set_fixed<'gc>(
     Ok(Value::Undefined)
 }
 
-/// `Vector.concat` impl
-pub fn concat<'gc>(
+/// Helper function for `Vector.concat` impl
+#[inline(always)]
+pub fn concat_helper<'gc>(
     activation: &mut Activation<'_, 'gc>,
+    my_base_vector_class: Class<'gc>,
     this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -188,11 +190,6 @@ pub fn concat<'gc>(
     for arg in args {
         let arg = arg.null_check(activation, None)?;
 
-        // this is Vector.<int/uint/Number/*>
-        let my_base_vector_class = activation
-            .bound_class()
-            .expect("Method call without bound class?");
-
         if !arg.is_of_type(my_base_vector_class) {
             let base_vector_name = my_base_vector_class
                 .name()
@@ -209,15 +206,8 @@ pub fn concat<'gc>(
             )?));
         }
 
-        let old_vec: Vec<Value<'gc>> = if let Some(old_vec) = arg.as_object() {
-            if let Some(old_vec) = old_vec.as_vector_storage() {
-                old_vec.iter().collect()
-            } else {
-                continue;
-            }
-        } else {
-            continue;
-        };
+        let old_vec = arg.as_object().expect("Type was just checked");
+        let old_vec = old_vec.as_vector_storage().expect("Type was just checked");
 
         for (i, val) in old_vec.iter().enumerate() {
             let insertion_index = (original_length + i) as i32;
@@ -766,7 +756,7 @@ pub fn init_vector_class_defs(activation: &mut Activation<'_, '_>) {
     // Setup the four builtin vector classes
 
     let number_cls = activation.avm2().class_defs().number;
-    setup_vector_class(
+    let number_vector = setup_vector_class(
         activation,
         "Vector$double",
         "Vector.<Number>",
@@ -774,12 +764,22 @@ pub fn init_vector_class_defs(activation: &mut Activation<'_, '_>) {
     );
 
     let int_cls = activation.avm2().class_defs().int;
-    setup_vector_class(activation, "Vector$int", "Vector.<int>", Some(int_cls));
+    let int_vector = setup_vector_class(activation, "Vector$int", "Vector.<int>", Some(int_cls));
 
     let uint_cls = activation.avm2().class_defs().uint;
-    setup_vector_class(activation, "Vector$uint", "Vector.<uint>", Some(uint_cls));
+    let uint_vector =
+        setup_vector_class(activation, "Vector$uint", "Vector.<uint>", Some(uint_cls));
 
-    setup_vector_class(activation, "Vector$object", "Vector.<*>", None);
+    let object_vector = setup_vector_class(activation, "Vector$object", "Vector.<*>", None);
+
+    // Store the vector classes in class defs- see comment in
+    // `init_vector_class_objects` for why we can't do this automatically
+    let class_defs_mut = activation.avm2().system_class_defs.as_mut().unwrap();
+
+    class_defs_mut.number_vector = number_vector;
+    class_defs_mut.int_vector = int_vector;
+    class_defs_mut.uint_vector = uint_vector;
+    class_defs_mut.object_vector = object_vector;
 }
 
 /// Set up a builtin vector's ClassObject. This marks it as a specialization of
