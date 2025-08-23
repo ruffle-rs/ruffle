@@ -247,13 +247,16 @@ fn describe_internal_body<'gc>(
                 if !flags.contains(DescribeTypeFlags::INCLUDE_METHODS) {
                     continue;
                 }
+
                 let method = vtable
-                    .get_full_method(*disp_id)
+                    .get_method(*disp_id)
                     .unwrap_or_else(|| panic!("Missing method for id {disp_id:?}"));
+                let declared_by = method
+                    .bound_class()
+                    .expect("Method on vtable is classbound");
 
                 // Don't include methods that also exist in any interface
-                if method
-                    .class
+                if declared_by
                     .all_interfaces()
                     .iter()
                     .any(|interface| interface.vtable().has_trait(&Multiname::new(ns, prop_name)))
@@ -261,9 +264,7 @@ fn describe_internal_body<'gc>(
                     continue;
                 }
 
-                let return_type_name =
-                    display_name(activation.strings(), method.method.return_type());
-                let declared_by = method.class;
+                let return_type_name = display_name(activation.strings(), method.return_type());
 
                 if flags.contains(DescribeTypeFlags::HIDE_OBJECT)
                     && declared_by == activation.avm2().class_defs().object
@@ -295,7 +296,7 @@ fn describe_internal_body<'gc>(
                     activation.gc(),
                 );
 
-                let params = write_params(method.method, activation);
+                let params = write_params(method, activation);
                 method_obj.set_dynamic_property(
                     istr!("parameters"),
                     params.into(),
@@ -331,15 +332,23 @@ fn describe_internal_body<'gc>(
                 // For getters, obtain the type by looking at the getter return type.
                 // For setters, obtain the type by looking at the setter's first parameter.
                 let (method_type, defining_class) = if let Some(get) = get {
-                    let getter = vtable
-                        .get_full_method(*get)
+                    let get_method = vtable
+                        .get_method(*get)
                         .unwrap_or_else(|| panic!("Missing 'get' method for id {get:?}"));
-                    (getter.method.return_type(), getter.class)
+                    let bound_class = get_method
+                        .bound_class()
+                        .expect("Method on vtable is classbound");
+
+                    (get_method.return_type(), bound_class)
                 } else if let Some(set) = set {
-                    let setter = vtable
-                        .get_full_method(*set)
+                    let set_method = vtable
+                        .get_method(*set)
                         .unwrap_or_else(|| panic!("Missing 'set' method for id {set:?}"));
-                    (setter.method.signature()[0].param_type_name, setter.class)
+                    let bound_class = set_method
+                        .bound_class()
+                        .expect("Method on vtable is classbound");
+
+                    (set_method.signature()[0].param_type_name, bound_class)
                 } else {
                     unreachable!();
                 };

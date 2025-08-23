@@ -496,12 +496,12 @@ pub fn init_early_classes<'gc>(
 
     // Finally, we can actually create the ClassObjects for `Object` and `Class`.
 
-    let object_class = ClassObject::from_class_partial(activation, object_i_class, None);
+    let object_class = ClassObject::from_class_minimal(activation, object_i_class, None);
     let object_proto =
         ScriptObject::custom_object(mc, object_i_class, None, object_class.instance_vtable());
 
     let class_class =
-        ClassObject::from_class_partial(activation, class_i_class, Some(object_class));
+        ClassObject::from_class_minimal(activation, class_i_class, Some(object_class));
     let class_proto = ScriptObject::custom_object(
         mc,
         object_i_class,
@@ -527,6 +527,10 @@ pub fn init_early_classes<'gc>(
 
     // We don't need to validate the classes, as we already know that the
     // `Object` and `Class` classes are valid
+
+    // However, we do need to bind their methods
+    object_class.bind_methods(activation)?;
+    class_class.bind_methods(activation)?;
 
     // Reset the Activation's outer scope.
     activation.set_outer(empty_scope);

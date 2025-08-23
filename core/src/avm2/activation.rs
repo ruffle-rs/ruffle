@@ -71,8 +71,6 @@ pub struct Activation<'a, 'gc: 'a> {
     /// This will not be available outside of method, setter, or getter calls.
     bound_superclass_object: Option<ClassObject<'gc>>,
 
-    bound_class: Option<Class<'gc>>,
-
     /// The stack frame.
     stack: StackFrame<'a, 'gc>,
 
@@ -125,7 +123,6 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             caller_domain: None,
             caller_movie: None,
             bound_superclass_object: None,
-            bound_class: None,
             stack: StackFrame::empty(),
             scope_depth: context.avm2.scope_stack.len(),
             is_interpreter: false,
@@ -149,7 +146,6 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             caller_domain: Some(domain),
             caller_movie: None,
             bound_superclass_object: None,
-            bound_class: None,
             stack: StackFrame::empty(),
             scope_depth: context.avm2.scope_stack.len(),
             is_interpreter: false,
@@ -194,7 +190,6 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         method: Method<'gc>,
         user_arguments: FunctionArgs<'_, 'gc>,
         signature: &[ResolvedParamConfig<'gc>],
-        bound_class: Option<Class<'gc>>,
     ) -> Result<Vec<Value<'gc>>, Error<'gc>> {
         let mut arguments_list = Vec::new();
         for (arg, param_config) in user_arguments.iter().zip(signature.iter()) {
@@ -223,7 +218,6 @@ impl<'a, 'gc> Activation<'a, 'gc> {
                             self,
                             method,
                             user_arguments.len(),
-                            bound_class,
                         )?));
                     };
 
@@ -319,7 +313,6 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         user_arguments: FunctionArgs<'_, 'gc>,
         stack_frame: StackFrame<'a, 'gc>,
         bound_superclass_object: Option<ClassObject<'gc>>,
-        bound_class: Option<Class<'gc>>,
         callee: Option<FunctionObject<'gc>>,
     ) -> Result<(), Error<'gc>> {
         let body = method
@@ -329,7 +322,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         let num_locals = body.num_locals as usize;
         let has_rest_or_args = method.is_variadic();
 
-        if let Some(bound_class) = bound_class {
+        if let Some(bound_class) = method.bound_class() {
             assert!(this.is_of_type(bound_class));
         }
 
@@ -338,7 +331,6 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         self.caller_domain = Some(outer.domain());
         self.caller_movie = Some(method.owner_movie());
         self.bound_superclass_object = bound_superclass_object;
-        self.bound_class = bound_class;
         self.stack = stack_frame;
         self.scope_depth = self.context.avm2.scope_stack.len();
         self.is_interpreter = method.is_interpreted();
@@ -356,7 +348,6 @@ impl<'a, 'gc> Activation<'a, 'gc> {
                 self,
                 method,
                 user_arguments.len(),
-                bound_class,
             )?));
         }
 
@@ -390,7 +381,6 @@ impl<'a, 'gc> Activation<'a, 'gc> {
                         self,
                         method,
                         user_arguments.len(),
-                        bound_class,
                     )?));
                 };
 
@@ -427,7 +417,6 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     pub fn from_builtin(
         context: &'a mut UpdateContext<'gc>,
         bound_superclass_object: Option<ClassObject<'gc>>,
-        bound_class: Option<Class<'gc>>,
         outer: ScopeChain<'gc>,
         caller_domain: Option<Domain<'gc>>,
         caller_movie: Option<Arc<SwfMovie>>,
@@ -438,7 +427,6 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             caller_domain,
             caller_movie,
             bound_superclass_object,
-            bound_class,
             stack: StackFrame::empty(),
             scope_depth: context.avm2.scope_stack.len(),
             is_interpreter: false,
@@ -610,11 +598,6 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     /// returns `None`.
     pub fn bound_superclass_object(&self) -> Option<ClassObject<'gc>> {
         self.bound_superclass_object
-    }
-
-    /// Get the class that defined the currently-executing method, if it exists.
-    pub fn bound_class(&self) -> Option<Class<'gc>> {
-        self.bound_class
     }
 
     pub fn run_actions(&mut self, method: Method<'gc>) -> Result<Value<'gc>, Error<'gc>> {
@@ -1116,7 +1099,8 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         let receiver = self.pop_stack();
         // TODO: What scope should the function be executed with?
         let scope = self.create_scopechain();
-        let function = FunctionObject::from_method(self, method, scope, None, None, None);
+
+        let function = FunctionObject::from_method(self, method, scope, None, None);
         let value = function.call(self, receiver, args)?;
 
         self.push_stack(value);
@@ -1763,7 +1747,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     fn op_new_function(&mut self, method: Method<'gc>) -> Result<(), Error<'gc>> {
         let scope = self.create_scopechain();
 
-        let new_fn = FunctionObject::from_method(self, method, scope, None, None, None);
+        let new_fn = FunctionObject::from_method(self, method, scope, None, None);
 
         self.push_stack(new_fn);
 

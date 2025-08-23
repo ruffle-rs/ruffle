@@ -1,20 +1,12 @@
-use crate::avm2::class::Class;
 use crate::avm2::function::display_function;
 use crate::avm2::method::Method;
 use crate::string::WString;
 use gc_arena::Collect;
 
-#[derive(Clone, Collect, Copy)]
-#[collect(no_drop)]
-pub struct CallNode<'gc> {
-    method: Method<'gc>,
-    class: Option<Class<'gc>>,
-}
-
 #[derive(Collect, Clone)]
 #[collect(no_drop)]
 pub struct CallStack<'gc> {
-    stack: Vec<CallNode<'gc>>,
+    stack: Vec<Method<'gc>>,
 }
 
 impl<'gc> CallStack<'gc> {
@@ -22,27 +14,29 @@ impl<'gc> CallStack<'gc> {
         Self { stack: Vec::new() }
     }
 
-    pub fn push(&mut self, method: Method<'gc>, class: Option<Class<'gc>>) {
-        self.stack.push(CallNode { method, class })
+    pub fn push(&mut self, method: Method<'gc>) {
+        self.stack.push(method)
     }
 
-    pub fn pop(&mut self) -> Option<CallNode<'gc>> {
-        self.stack.pop()
+    pub fn pop(&mut self) {
+        self.stack.pop();
     }
 
     pub fn display(&self, output: &mut WString) {
-        for call in self.stack.iter().rev() {
+        for method in self.stack.iter().rev() {
             output.push_utf8("\n\tat ");
 
-            let is_global_init = call.class.is_some_and(|c| {
+            let bound_class = method.bound_class();
+
+            let is_global_init = bound_class.is_some_and(|c| {
                 // If the class is a script `global` class and its instance
                 // initializer is this method, then this is a script initializer
-                c.is_script_traits() && c.instance_init() == Some(call.method)
+                c.is_script_traits() && c.instance_init() == Some(*method)
             });
 
             // Special-case the printed message for script initializers
             if is_global_init {
-                let tunit = call.method.translation_unit();
+                let tunit = method.translation_unit();
                 let name = if let Some(name) = tunit.name() {
                     name.to_utf8_lossy().to_string()
                 } else {
@@ -54,7 +48,7 @@ impl<'gc> CallStack<'gc> {
                 // added by Ruffle
                 output.push_utf8(&format!("global$init() [TU={name}]"));
             } else {
-                display_function(output, call.method, call.class);
+                display_function(output, *method);
             }
         }
     }

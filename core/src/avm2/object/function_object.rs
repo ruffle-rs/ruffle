@@ -1,7 +1,6 @@
 //! Function object impl
 
 use crate::avm2::activation::Activation;
-use crate::avm2::class::Class;
 use crate::avm2::function::{BoundMethod, FunctionArgs};
 use crate::avm2::method::Method;
 use crate::avm2::object::script_object::{ScriptObject, ScriptObjectData};
@@ -63,16 +62,9 @@ impl<'gc> FunctionObject<'gc> {
         scope: ScopeChain<'gc>,
         receiver: Option<Value<'gc>>,
         bound_superclass_object: Option<ClassObject<'gc>>,
-        bound_class: Option<Class<'gc>>,
     ) -> FunctionObject<'gc> {
         let fn_class = activation.avm2().classes().function;
-        let exec = BoundMethod::from_method(
-            method,
-            scope,
-            receiver,
-            bound_superclass_object,
-            bound_class,
-        );
+        let exec = BoundMethod::from_method(method, scope, receiver, bound_superclass_object);
 
         let es3_proto = ScriptObject::new_object(activation);
 
