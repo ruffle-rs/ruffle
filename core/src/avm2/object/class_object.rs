@@ -649,11 +649,11 @@ impl<'gc> ClassObject<'gc> {
         &self,
         activation: &mut Activation<'_, 'gc>,
         class_param: Option<Class<'gc>>,
-    ) -> Result<ClassObject<'gc>, Error<'gc>> {
+    ) -> ClassObject<'gc> {
         let self_class = self.inner_class_definition();
 
         if let Some(application) = self.0.applications.borrow().get(&class_param) {
-            return Ok(*application);
+            return *application;
         }
 
         // if it's not a known application, then it's not int/uint/Number/*,
@@ -678,7 +678,7 @@ impl<'gc> ClassObject<'gc> {
         .borrow_mut()
         .insert(class_param, class_object);
 
-        Ok(class_object)
+        class_object
     }
 
     pub fn call(
@@ -844,7 +844,7 @@ impl<'gc> TObject<'gc> for ClassObject<'gc> {
             ),
         };
 
-        self.parametrize(activation, class_param)
+        Ok(self.parametrize(activation, class_param))
     }
 }
 

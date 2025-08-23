@@ -69,22 +69,19 @@ impl<'gc> VectorObject<'gc> {
     pub fn from_vector(
         vector: VectorStorage<'gc>,
         activation: &mut Activation<'_, 'gc>,
-    ) -> Result<Object<'gc>, Error<'gc>> {
+    ) -> VectorObject<'gc> {
         let value_type = vector.value_type();
         let vector_class = activation.avm2().classes().generic_vector;
 
-        let applied_class = vector_class.parametrize(activation, value_type)?;
+        let applied_class = vector_class.parametrize(activation, value_type);
 
-        let object: Object<'gc> = VectorObject(Gc::new(
+        VectorObject(Gc::new(
             activation.gc(),
             VectorObjectData {
                 base: ScriptObjectData::new(applied_class),
                 vector: RefLock::new(vector),
             },
         ))
-        .into();
-
-        Ok(object)
     }
 
     fn as_vector_index(local_name: &WStr) -> Option<f64> {
