@@ -1,18 +1,19 @@
+mod player_ext;
+
 use anyhow::{anyhow, Result};
 use clap::Parser;
 use image::RgbaImage;
 use indicatif::{ProgressBar, ProgressStyle};
+use player_ext::PlayerExporterExt;
 use rayon::prelude::*;
 use ruffle_core::limits::ExecutionLimit;
 use ruffle_core::tag_utils::SwfMovie;
-use ruffle_core::Player;
 use ruffle_core::PlayerBuilder;
 use ruffle_render_wgpu::backend::{request_adapter_and_device, WgpuRenderBackend};
 use ruffle_render_wgpu::clap::{GraphicsBackend, PowerPreference};
 use ruffle_render_wgpu::descriptors::Descriptors;
 use ruffle_render_wgpu::target::TextureTarget;
 use ruffle_render_wgpu::wgpu;
-use std::any::Any;
 use std::fs::create_dir_all;
 use std::io::{self, Write};
 use std::num::NonZeroUsize;
@@ -20,7 +21,6 @@ use std::panic::catch_unwind;
 use std::path::{Path, PathBuf};
 use std::str::FromStr;
 use std::sync::Arc;
-use std::sync::Mutex;
 use walkdir::{DirEntry, WalkDir};
 
 #[derive(Parser, Debug, Copy, Clone)]
@@ -148,12 +148,7 @@ fn take_screenshot(
 
     let mut result = Vec::new();
     let totalframes = match frames {
-        FrameSelection::All => player.lock().unwrap().mutate_with_update_context(|ctx| {
-            ctx.stage
-                .root_clip()
-                .and_then(|root_clip| root_clip.as_movie_clip())
-                .map_or(1, |movie_clip| movie_clip.header_frames() as u32)
-        }),
+        FrameSelection::All => player.header_frames(),
         FrameSelection::Count(n) => n.get() as u32 + skipframes,
     };
 
@@ -167,7 +162,7 @@ fn take_screenshot(
         }
 
         if force_play {
-            force_root_clip_play(&player);
+            player.force_root_clip_play();
         }
 
         player.lock().unwrap().preload(&mut ExecutionLimit::none());
@@ -176,12 +171,7 @@ fn take_screenshot(
         if i >= skipframes {
             let image = || {
                 player.lock().unwrap().render();
-                let mut player = player.lock().unwrap();
-                let renderer = <dyn Any>::downcast_mut::<WgpuRenderBackend<TextureTarget>>(
-                    player.renderer_mut(),
-                )
-                .unwrap();
-                renderer.capture_frame()
+                player.capture_frame()
             };
             match catch_unwind(image) {
                 Ok(Some(image)) => result.push(image),
@@ -204,26 +194,6 @@ fn take_screenshot(
         }
     }
     Ok(result)
-}
-
-fn force_root_clip_play(player: &Arc<Mutex<Player>>) {
-    let mut player_guard = player.lock().unwrap();
-
-    // Check and resume if suspended
-    if !player_guard.is_playing() {
-        player_guard.set_is_playing(true);
-    }
-
-    // Also resume the root MovieClip if stopped
-    player_guard.mutate_with_update_context(|ctx| {
-        if let Some(root_clip) = ctx.stage.root_clip() {
-            if let Some(movie_clip) = root_clip.as_movie_clip() {
-                if !movie_clip.playing() {
-                    movie_clip.play();
-                }
-            }
-        }
-    });
 }
 
 fn find_files(root: &Path, with_progress: bool) -> Vec<DirEntry> {
