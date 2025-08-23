@@ -9,7 +9,7 @@ use ruffle_render_wgpu::{backend::WgpuRenderBackend, target::TextureTarget};
 pub trait PlayerExporterExt {
     fn capture_frame(&self) -> Option<image::RgbaImage>;
 
-    fn total_frames(&self) -> u32;
+    fn total_frames(&self) -> u16;
 
     fn force_root_clip_play(&self);
 }
@@ -23,12 +23,16 @@ impl PlayerExporterExt for Arc<Mutex<Player>> {
         renderer.capture_frame()
     }
 
-    fn total_frames(&self) -> u32 {
+    fn total_frames(&self) -> u16 {
         self.lock().unwrap().mutate_with_update_context(|ctx| {
-            ctx.stage
+            let total_frames_from_root_clip = ctx
+                .stage
                 .root_clip()
                 .and_then(|root_clip| root_clip.as_movie_clip())
-                .map_or(1, |movie_clip| movie_clip.total_frames() as u32)
+                .map(|movie_clip| movie_clip.total_frames());
+
+            // TODO Can we just use num_frames from the movie here?
+            total_frames_from_root_clip.unwrap_or_else(|| ctx.root_swf.num_frames())
         })
     }
 

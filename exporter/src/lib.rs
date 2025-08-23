@@ -54,7 +54,7 @@ impl FrameSelection {
 
     fn total_frames(self, player: &Arc<Mutex<Player>>, skipframes: u32) -> u32 {
         match self {
-            FrameSelection::All => player.total_frames(),
+            FrameSelection::All => player.total_frames() as u32,
             FrameSelection::Count(n) => n.get() + skipframes,
         }
     }
@@ -240,16 +240,17 @@ fn find_files(root: &Path, with_progress: bool) -> Vec<DirEntry> {
 }
 
 fn capture_single_swf(descriptors: Arc<Descriptors>, opt: &Opt) -> Result<()> {
+    let is_single_frame = opt.frames.is_single_frame();
     let output = opt.output_path.clone().unwrap_or_else(|| {
         let mut result = PathBuf::new();
         result.set_file_name(opt.swf.file_stem().unwrap());
-        if opt.frames.is_single_frame() {
+        if is_single_frame {
             result.set_extension("png");
         }
         result
     });
 
-    if !opt.frames.is_single_frame() {
+    if !is_single_frame {
         let _ = create_dir_all(&output);
     }
 
@@ -284,7 +285,7 @@ fn capture_single_swf(descriptors: Arc<Descriptors>, opt: &Opt) -> Result<()> {
         progress.set_message(opt.swf.file_stem().unwrap().to_string_lossy().into_owned());
     }
 
-    if frames.len() == 1 {
+    if is_single_frame {
         let image = frames.first().unwrap();
         if opt.output_path == Some(PathBuf::from("-")) {
             let mut bytes: Vec<u8> = Vec::new();
