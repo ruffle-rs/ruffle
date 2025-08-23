@@ -98,7 +98,7 @@ pub fn call_handler<'gc>(
         new_storage.push(coerced_item, activation)?;
     }
 
-    Ok(VectorObject::from_vector(new_storage, activation)?.into())
+    Ok(VectorObject::from_vector(new_storage, activation).into())
 }
 
 /// `Vector.length` getter
@@ -222,7 +222,7 @@ pub fn concat_helper<'gc>(
         }
     }
 
-    Ok(VectorObject::from_vector(new_vector_storage, activation)?.into())
+    Ok(VectorObject::from_vector(new_vector_storage, activation).into())
 }
 
 /// Implements `Vector.join`
@@ -293,7 +293,7 @@ pub fn filter<'gc>(
     let mut new_storage = VectorStorage::new(0, false, value_type);
 
     let callback = match args.get_value(0) {
-        Value::Null => return Ok(VectorObject::from_vector(new_storage, activation)?.into()),
+        Value::Null => return Ok(VectorObject::from_vector(new_storage, activation).into()),
         value => value,
     };
     let receiver = args.get_value(1);
@@ -310,7 +310,7 @@ pub fn filter<'gc>(
         }
     }
 
-    Ok(VectorObject::from_vector(new_storage, activation)?.into())
+    Ok(VectorObject::from_vector(new_storage, activation).into())
 }
 
 /// Implements `Vector.indexOf`
@@ -399,7 +399,7 @@ pub fn map<'gc>(
         new_storage.push(coerced_item, activation)?;
     }
 
-    Ok(VectorObject::from_vector(new_storage, activation)?.into())
+    Ok(VectorObject::from_vector(new_storage, activation).into())
 }
 
 /// Implements `Vector.pop`
@@ -560,7 +560,7 @@ pub fn slice<'gc>(
             }
         }
 
-        let new_vector = VectorObject::from_vector(new_vs, activation)?;
+        let new_vector = VectorObject::from_vector(new_vs, activation);
 
         return Ok(new_vector.into());
     }
@@ -683,7 +683,7 @@ pub fn splice<'gc>(
 
         let new_vs =
             VectorStorage::from_values(vs.splice(start..end, to_coerce)?, false, value_type);
-        let new_vector = VectorObject::from_vector(new_vs, activation)?;
+        let new_vector = VectorObject::from_vector(new_vs, activation);
 
         return Ok(new_vector.into());
     }
