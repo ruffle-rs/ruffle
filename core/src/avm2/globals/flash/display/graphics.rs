@@ -1353,7 +1353,7 @@ pub fn read_graphics_data<'gc>(
     avm2_stub_method!(activation, "flash.display.Graphics", "readGraphicsData");
     let value_type = activation.avm2().class_defs().igraphicsdata;
     let new_storage = VectorStorage::new(0, false, Some(value_type));
-    Ok(VectorObject::from_vector(new_storage, activation)?.into())
+    Ok(VectorObject::from_vector(new_storage, activation).into())
 }
 
 fn read_point<'gc>(
