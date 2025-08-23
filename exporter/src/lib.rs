@@ -8,7 +8,7 @@ use player_ext::PlayerExporterExt;
 use rayon::prelude::*;
 use ruffle_core::limits::ExecutionLimit;
 use ruffle_core::tag_utils::SwfMovie;
-use ruffle_core::PlayerBuilder;
+use ruffle_core::{Player, PlayerBuilder};
 use ruffle_render_wgpu::backend::{request_adapter_and_device, WgpuRenderBackend};
 use ruffle_render_wgpu::clap::{GraphicsBackend, PowerPreference};
 use ruffle_render_wgpu::descriptors::Descriptors;
@@ -16,11 +16,11 @@ use ruffle_render_wgpu::target::TextureTarget;
 use ruffle_render_wgpu::wgpu;
 use std::fs::create_dir_all;
 use std::io::{self, Write};
-use std::num::NonZeroUsize;
+use std::num::NonZeroU32;
 use std::panic::catch_unwind;
 use std::path::{Path, PathBuf};
 use std::str::FromStr;
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 use walkdir::{DirEntry, WalkDir};
 
 #[derive(Parser, Debug, Copy, Clone)]
@@ -41,7 +41,23 @@ pub struct SizeOpt {
 #[derive(Debug, Clone, Copy)]
 enum FrameSelection {
     All,
-    Count(NonZeroUsize),
+    Count(NonZeroU32),
+}
+
+impl FrameSelection {
+    fn is_single_frame(self) -> bool {
+        match self {
+            FrameSelection::All => false,
+            FrameSelection::Count(n) => n.get() == 1,
+        }
+    }
+
+    fn total_frames(self, player: &Arc<Mutex<Player>>, skipframes: u32) -> u32 {
+        match self {
+            FrameSelection::All => player.header_frames(),
+            FrameSelection::Count(n) => n.get() + skipframes,
+        }
+    }
 }
 
 impl FromStr for FrameSelection {
@@ -52,7 +68,7 @@ impl FromStr for FrameSelection {
         if s_lower == "all" {
             Ok(FrameSelection::All)
         } else if let Ok(n) = s.parse::<u32>() {
-            let non_zero = NonZeroUsize::new(n as usize)
+            let non_zero = NonZeroU32::new(n)
                 .ok_or_else(|| "Frame count must be greater than 0".to_string())?;
             Ok(FrameSelection::Count(non_zero))
         } else {
@@ -147,10 +163,7 @@ fn take_screenshot(
         .build();
 
     let mut result = Vec::new();
-    let totalframes = match frames {
-        FrameSelection::All => player.header_frames(),
-        FrameSelection::Count(n) => n.get() as u32 + skipframes,
-    };
+    let totalframes = frames.total_frames(&player, skipframes);
 
     for i in 0..totalframes {
         if let Some(progress) = &progress {
@@ -230,13 +243,13 @@ fn capture_single_swf(descriptors: Arc<Descriptors>, opt: &Opt) -> Result<()> {
     let output = opt.output_path.clone().unwrap_or_else(|| {
         let mut result = PathBuf::new();
         result.set_file_name(opt.swf.file_stem().unwrap());
-        if matches!(opt.frames, FrameSelection::Count(n) if n.get() == 1) {
+        if opt.frames.is_single_frame() {
             result.set_extension("png");
         }
         result
     });
 
-    if !matches!(opt.frames, FrameSelection::Count(n) if n.get() == 1) {
+    if !opt.frames.is_single_frame() {
         let _ = create_dir_all(&output);
     }
 
