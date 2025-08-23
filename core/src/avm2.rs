@@ -82,7 +82,7 @@ mod vtable;
 
 pub use crate::avm2::activation::Activation;
 pub use crate::avm2::array::ArrayStorage;
-pub use crate::avm2::call_stack::{CallNode, CallStack};
+pub use crate::avm2::call_stack::CallStack;
 pub use crate::avm2::class::Class;
 #[allow(unused)] // For debug_ui
 pub use crate::avm2::domain::{Domain, DomainPtr};
@@ -297,7 +297,6 @@ impl<'gc> Avm2<'gc> {
         let scope = ScopeChain::new(domain);
         // Script `global` classes extend Object
         let bound_superclass = Some(activation.avm2().classes().object);
-        let bound_class = Some(script.global_class());
 
         // Provide a callee object if necessary
         let callee = if method.needs_arguments_object() {
@@ -307,7 +306,6 @@ impl<'gc> Avm2<'gc> {
                 scope,
                 Some(global_object.into()),
                 bound_superclass,
-                bound_class,
             ))
         } else {
             None
@@ -318,7 +316,6 @@ impl<'gc> Avm2<'gc> {
             scope,
             global_object.into(),
             bound_superclass,
-            bound_class,
             FunctionArgs::empty(),
             &mut activation,
             callee,
@@ -669,13 +666,13 @@ impl<'gc> Avm2<'gc> {
     }
 
     /// Pushes an executable on the call stack
-    pub fn push_call(&self, mc: &Mutation<'gc>, method: Method<'gc>, class: Option<Class<'gc>>) {
-        self.call_stack.borrow_mut(mc).push(method, class)
+    pub fn push_call(&self, mc: &Mutation<'gc>, method: Method<'gc>) {
+        self.call_stack.borrow_mut(mc).push(method)
     }
 
     /// Pops an executable off the call stack
-    pub fn pop_call(&self, mc: &Mutation<'gc>) -> Option<CallNode<'gc>> {
-        self.call_stack.borrow_mut(mc).pop()
+    pub fn pop_call(&self, mc: &Mutation<'gc>) {
+        self.call_stack.borrow_mut(mc).pop();
     }
 
     pub fn call_stack(&self) -> GcRefLock<'gc, CallStack<'gc>> {

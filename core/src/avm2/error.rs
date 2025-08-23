@@ -950,7 +950,6 @@ pub fn make_mismatch_error<'gc>(
     activation: &mut Activation<'_, 'gc>,
     method: Method<'gc>,
     passed_arg_count: usize,
-    bound_class: Option<Class<'gc>>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let expected_num_params = method
         .signature()
@@ -960,7 +959,7 @@ pub fn make_mismatch_error<'gc>(
 
     let mut function_name = WString::new();
 
-    display_function(&mut function_name, method, bound_class);
+    display_function(&mut function_name, method);
 
     return Err(Error::avm_error(argument_error(
         activation,

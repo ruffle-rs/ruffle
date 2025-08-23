@@ -1,5 +1,4 @@
 use crate::avm2::activation::Activation;
-use crate::avm2::class::Class;
 use crate::avm2::error::{make_mismatch_error, Error};
 use crate::avm2::method::{Method, MethodKind, ParamConfig};
 use crate::avm2::object::{ClassObject, FunctionObject};
@@ -37,8 +36,6 @@ pub struct BoundMethod<'gc> {
     /// this method. If `None`, then there is no defining class and `super`
     /// operations should be invalid.
     bound_superclass: Option<ClassObject<'gc>>,
-
-    bound_class: Option<Class<'gc>>,
 }
 
 impl<'gc> BoundMethod<'gc> {
@@ -47,14 +44,12 @@ impl<'gc> BoundMethod<'gc> {
         scope: ScopeChain<'gc>,
         receiver: Option<Value<'gc>>,
         superclass: Option<ClassObject<'gc>>,
-        class: Option<Class<'gc>>,
     ) -> Self {
         Self {
             method,
             scope,
             bound_receiver: receiver,
             bound_superclass: superclass,
-            bound_class: class,
         }
     }
 
@@ -81,15 +76,10 @@ impl<'gc> BoundMethod<'gc> {
             self.scope,
             receiver,
             self.bound_superclass,
-            self.bound_class,
             arguments,
             activation,
             callee,
         )
-    }
-
-    pub fn bound_class(&self) -> Option<Class<'gc>> {
-        self.bound_class
     }
 
     pub fn as_method(&self) -> Method<'gc> {
@@ -98,7 +88,7 @@ impl<'gc> BoundMethod<'gc> {
 
     pub fn debug_full_name(&self) -> WString {
         let mut output = WString::new();
-        display_function(&mut output, self.as_method(), self.bound_class());
+        display_function(&mut output, self.as_method());
         output
     }
 
@@ -197,13 +187,11 @@ impl<'a, 'gc> Iterator for FunctionArgsIter<'a, 'gc> {
 ///
 /// It is the caller's responsibility to ensure that the `receiver` passed
 /// to this method is not Value::Null or Value::Undefined.
-#[expect(clippy::too_many_arguments)]
 pub fn exec<'gc>(
     method: Method<'gc>,
     scope: ScopeChain<'gc>,
     receiver: Value<'gc>,
     bound_superclass: Option<ClassObject<'gc>>,
-    bound_class: Option<Class<'gc>>,
     arguments: FunctionArgs<'_, 'gc>,
     activation: &mut Activation<'_, 'gc>,
     callee: Option<FunctionObject<'gc>>,
@@ -217,7 +205,6 @@ pub fn exec<'gc>(
             let mut activation = Activation::from_builtin(
                 activation.context,
                 bound_superclass,
-                bound_class,
                 scope,
                 caller_domain,
                 caller_movie,
@@ -234,17 +221,15 @@ pub fn exec<'gc>(
                     &mut activation,
                     method,
                     arguments.len(),
-                    bound_class,
                 )?));
             }
 
-            let arguments =
-                activation.resolve_parameters(method, arguments, signature, bound_class)?;
+            let arguments = activation.resolve_parameters(method, arguments, signature)?;
 
             #[cfg(feature = "tracy_avm")]
             let _span = {
                 let mut name = WString::new();
-                display_function(&mut name, method, bound_class);
+                display_function(&mut name, method);
                 let span = tracy_client::Client::running()
                     .expect("tracy_client should be running")
                     .span_alloc(None, &name.to_utf8_lossy(), "rust", 0, 0);
@@ -252,7 +237,7 @@ pub fn exec<'gc>(
                 span
             };
 
-            activation.context.avm2.push_call(mc, method, bound_class);
+            activation.context.avm2.push_call(mc, method);
 
             native_method(&mut activation, receiver, &arguments)
         }
@@ -271,7 +256,6 @@ pub fn exec<'gc>(
                 arguments,
                 stack_frame,
                 bound_superclass,
-                bound_class,
                 callee,
             ) {
                 // If an error is thrown during verification or argument coercion,
@@ -283,7 +267,7 @@ pub fn exec<'gc>(
             #[cfg(feature = "tracy_avm")]
             let _span = {
                 let mut name = WString::new();
-                display_function(&mut name, method, bound_class);
+                display_function(&mut name, method);
                 let option = tracy_client::Client::running();
                 let span = option.expect("tracy_client should be running").span_alloc(
                     None,
@@ -296,7 +280,7 @@ pub fn exec<'gc>(
                 span
             };
 
-            activation.context.avm2.push_call(mc, method, bound_class);
+            activation.context.avm2.push_call(mc, method);
 
             let result = activation.run_actions(method);
 
@@ -319,11 +303,9 @@ impl fmt::Debug for BoundMethod<'_> {
     }
 }
 
-pub fn display_function<'gc>(
-    output: &mut WString,
-    method: Method<'gc>,
-    bound_class: Option<Class<'gc>>,
-) {
+pub fn display_function<'gc>(output: &mut WString, method: Method<'gc>) {
+    let bound_class = method.bound_class();
+
     if let Some(bound_class) = bound_class {
         let name = bound_class.name().to_qualified_name_no_mc();
         output.push_str(&name);

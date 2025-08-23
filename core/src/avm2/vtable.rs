@@ -49,13 +49,11 @@ impl PartialEq for VTable<'_> {
     }
 }
 
-// TODO: it might make more sense to just bind the Method to the VTable (and this its class and scope) directly
-// would also be nice to somehow remove the Option-ness from `defining_class` and `scope` fields for this
+// TODO: it would be nice to remove the Option-ness from `scope` field for this
 // to be more intuitive and cheaper
 #[derive(Collect, Clone)]
 #[collect(no_drop)]
 pub struct ClassBoundMethod<'gc> {
-    pub class: Class<'gc>,
     pub super_class_obj: Option<ClassObject<'gc>>,
     scope: Lock<Option<ScopeChain<'gc>>>,
     pub method: Method<'gc>,
@@ -301,7 +299,6 @@ impl<'gc> VTable<'gc> {
             match trait_data.kind() {
                 TraitKind::Method { method, .. } => {
                     let entry = ClassBoundMethod {
-                        class: defining_class_def,
                         super_class_obj,
                         scope: Lock::new(scope),
                         method: *method,
@@ -330,7 +327,6 @@ impl<'gc> VTable<'gc> {
                 }
                 TraitKind::Getter { method, .. } => {
                     let entry = ClassBoundMethod {
-                        class: defining_class_def,
                         super_class_obj,
                         scope: Lock::new(scope),
                         method: *method,
@@ -368,7 +364,6 @@ impl<'gc> VTable<'gc> {
                 }
                 TraitKind::Setter { method, .. } => {
                     let entry = ClassBoundMethod {
-                        class: defining_class_def,
                         super_class_obj,
                         scope: Lock::new(scope),
                         method: *method,
@@ -544,7 +539,6 @@ impl<'gc> VTable<'gc> {
             method.scope(),
             Some(receiver),
             method.super_class_obj,
-            Some(method.class),
         )
     }
 

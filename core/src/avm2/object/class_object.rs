@@ -4,7 +4,7 @@ use crate::avm2::activation::Activation;
 use crate::avm2::class::{AllocatorFn, Class, CustomConstructorFn};
 use crate::avm2::error::{self, argument_error, make_error_1127, reference_error, type_error};
 use crate::avm2::function::{exec, FunctionArgs};
-use crate::avm2::method::{Method, NativeMethodImpl};
+use crate::avm2::method::{Method, MethodAssociation, NativeMethodImpl};
 use crate::avm2::object::function_object::FunctionObject;
 use crate::avm2::object::script_object::ScriptObjectData;
 use crate::avm2::object::{Object, ScriptObject, TObject};
@@ -117,6 +117,25 @@ impl<'gc> ClassObject<'gc> {
     ) -> Result<Self, Error<'gc>> {
         let class_object = Self::from_class_partial(activation, class, superclass_object);
 
+        class_object.bind_methods(activation)?;
+        class_object.validate_class(activation)?;
+        class_object.run_class_initializer(activation)?;
+
+        Ok(class_object)
+    }
+
+    /// Like `from_class`, but skips the method binding, class validation, and
+    /// class initializer execution steps. This method is used for Vector.<T>
+    /// ClassObject creation, since Vector.<T> classes have their methods
+    /// already bound and do not need to be validated or have their initializers
+    /// run.
+    fn from_class_partial(
+        activation: &mut Activation<'_, 'gc>,
+        class: Class<'gc>,
+        superclass_object: Option<ClassObject<'gc>>,
+    ) -> Self {
+        let class_object = Self::from_class_minimal(activation, class, superclass_object);
+
         let class_proto = class_object.allocate_prototype(activation, superclass_object);
         class_object.link_prototype(activation, class_proto);
 
@@ -125,10 +144,7 @@ impl<'gc> ClassObject<'gc> {
 
         class_object.into_finished_class(activation);
 
-        class_object.validate_class(activation)?;
-        class_object.run_class_initializer(activation)?;
-
-        Ok(class_object)
+        class_object
     }
 
     /// Allocate a class but do not properly construct it.
@@ -138,12 +154,12 @@ impl<'gc> ClassObject<'gc> {
     /// object graph. The resulting class will be a bare object and should not
     /// be used or presented to user code until you finish initializing it. You
     /// do that by calling `link_prototype`, `link_type`, `into_finished_class`,
-    /// `validate_class`, and `run_class_initializer` in that order.
+    /// `bind_methods`, `validate_class`, and `run_class_initializer` in that order.
     ///
     /// This returns the class object directly (*not* an `Object`), to allow
     /// further manipulation of the class once it's dependent types have been
     /// allocated.
-    pub fn from_class_partial(
+    pub fn from_class_minimal(
         activation: &mut Activation<'_, 'gc>,
         class: Class<'gc>,
         superclass_object: Option<ClassObject<'gc>>,
@@ -269,6 +285,32 @@ impl<'gc> ClassObject<'gc> {
         Ok(())
     }
 
+    /// Bind all the methods declared by the ClassObject to itself.
+    pub fn bind_methods(self, activation: &mut Activation<'_, 'gc>) -> Result<(), Error<'gc>> {
+        let i_class = self.inner_class_definition();
+        let c_class = i_class
+            .c_class()
+            .expect("ClassObject should have an i_class");
+
+        // Bind all the methods that are declared on the i_class and c_class
+        i_class.bind_methods(activation, MethodAssociation::classbound(i_class, false))?;
+        c_class.bind_methods(activation, MethodAssociation::classbound(c_class, false))?;
+
+        i_class
+            .instance_init()
+            .expect("Cannot create ClassObject for Class without init")
+            .associate(activation, MethodAssociation::classbound(i_class, false))?;
+
+        // The class initializer (but not the instance initializer) is always
+        // in "interpreter mode"
+        c_class
+            .instance_init()
+            .expect("c_class always has initializer")
+            .associate(activation, MethodAssociation::classbound(c_class, true))?;
+
+        Ok(())
+    }
+
     /// Run the class's initializer method.
     pub fn run_class_initializer(
         self,
@@ -294,7 +336,6 @@ impl<'gc> ClassObject<'gc> {
             scope,
             Some(self_value),
             Some(class_classobject),
-            Some(c_class),
         );
 
         class_init_fn.call(activation, self_value, FunctionArgs::empty())?;
@@ -323,7 +364,6 @@ impl<'gc> ClassObject<'gc> {
                     scope,
                     Some(receiver),
                     self.superclass_object(),
-                    Some(self.inner_class_definition()),
                 ))
             } else {
                 None
@@ -334,7 +374,6 @@ impl<'gc> ClassObject<'gc> {
                 scope,
                 receiver,
                 self.superclass_object(),
-                Some(self.inner_class_definition()),
                 arguments,
                 activation,
                 callee,
@@ -460,7 +499,6 @@ impl<'gc> ClassObject<'gc> {
                     full_method.scope(),
                     Some(receiver.into()),
                     full_method.super_class_obj,
-                    Some(full_method.class),
                 );
 
                 Ok(callee.into())
@@ -579,7 +617,6 @@ impl<'gc> ClassObject<'gc> {
                 full_method.scope(),
                 Some(receiver.into()),
                 full_method.super_class_obj,
-                Some(full_method.class),
             ))
         } else {
             None
@@ -590,7 +627,6 @@ impl<'gc> ClassObject<'gc> {
             full_method.scope(),
             receiver.into(),
             full_method.super_class_obj,
-            Some(full_method.class),
             arguments,
             activation,
             callee,
@@ -632,7 +668,7 @@ impl<'gc> ClassObject<'gc> {
 
         let vector_star_cls = activation.avm2().classes().object_vector;
         let class_object =
-            Self::from_class(activation, parameterized_class, Some(vector_star_cls))?;
+            Self::from_class_partial(activation, parameterized_class, Some(vector_star_cls));
 
         unlock!(
             Gc::write(activation.gc(), self.0),
