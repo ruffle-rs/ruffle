@@ -405,18 +405,11 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
     fn create_context3d(
         &mut self,
         profile: Context3DProfile,
-    ) -> Result<Box<dyn ruffle_render::backend::Context3D>, BitmapError> {
+    ) -> Result<Box<dyn Context3D>, BitmapError> {
         Ok(Box::new(WgpuContext3D::new(
             self.descriptors.clone(),
             profile,
         )))
-    }
-
-    #[instrument(level = "debug", skip_all)]
-    fn context3d_present(&mut self, context: &mut dyn Context3D) -> Result<(), BitmapError> {
-        let context = <dyn Any>::downcast_mut::<WgpuContext3D>(context).unwrap();
-        context.present();
-        Ok(())
     }
 
     fn debug_info(&self) -> Cow<'static, str> {

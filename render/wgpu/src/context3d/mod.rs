@@ -24,6 +24,7 @@ use crate::Texture;
 use std::num::NonZeroU64;
 use std::rc::Rc;
 use std::sync::Arc;
+use tracing::instrument;
 
 mod current_pipeline;
 mod shader_pair;
@@ -197,29 +198,6 @@ impl WgpuContext3D {
             .update_sample_count(self.back_buffer_sample_count);
         self.current_pipeline
             .update_target_format(TextureFormat::Rgba8Unorm);
-    }
-
-    pub(crate) fn present(&mut self) {
-        std::mem::swap(
-            &mut self.back_buffer_raw_texture_handle,
-            &mut self.front_buffer_raw_texture_handle,
-        );
-        std::mem::swap(
-            &mut self.back_buffer_texture_view,
-            &mut self.front_buffer_texture_view,
-        );
-        std::mem::swap(
-            &mut self.back_buffer_resolve_texture_view,
-            &mut self.front_buffer_resolve_texture_view,
-        );
-        std::mem::swap(
-            &mut self.back_buffer_depth_texture_view,
-            &mut self.front_buffer_depth_texture_view,
-        );
-
-        self.set_render_to_back_buffer();
-        self.seen_clear_command = false;
-        self.clear_color = None;
     }
 
     fn make_render_pass<'a>(
@@ -1195,6 +1173,30 @@ impl Context3D for WgpuContext3D {
                 self.scissor_rectangle = rect;
             }
         }
+    }
+
+    #[instrument(level = "debug", skip_all)]
+    fn present(&mut self) {
+        std::mem::swap(
+            &mut self.back_buffer_raw_texture_handle,
+            &mut self.front_buffer_raw_texture_handle,
+        );
+        std::mem::swap(
+            &mut self.back_buffer_texture_view,
+            &mut self.front_buffer_texture_view,
+        );
+        std::mem::swap(
+            &mut self.back_buffer_resolve_texture_view,
+            &mut self.front_buffer_resolve_texture_view,
+        );
+        std::mem::swap(
+            &mut self.back_buffer_depth_texture_view,
+            &mut self.front_buffer_depth_texture_view,
+        );
+
+        self.set_render_to_back_buffer();
+        self.seen_clear_command = false;
+        self.clear_color = None;
     }
 }
 

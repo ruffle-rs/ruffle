@@ -87,7 +87,6 @@ pub trait RenderBackend: Any {
     ) -> Result<(), Error>;
 
     fn create_context3d(&mut self, profile: Context3DProfile) -> Result<Box<dyn Context3D>, Error>;
-    fn context3d_present(&mut self, context: &mut dyn Context3D) -> Result<(), Error>;
 
     fn debug_info(&self) -> Cow<'static, str>;
     /// An internal name that is used to identify the render-backend.
@@ -278,6 +277,8 @@ pub trait Context3D: Any {
     ) -> Result<Rc<dyn Texture>, Error>;
 
     fn process_command(&mut self, command: Context3DCommand<'_>);
+
+    fn present(&mut self);
 }
 
 #[derive(Copy, Clone, Debug)]
