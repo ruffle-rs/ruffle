@@ -448,7 +448,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     /// Call the superclass's instance initializer.
     ///
     /// This method may panic if called with a Null or Undefined receiver.
-    pub fn super_init(
+    fn super_init(
         &mut self,
         receiver: Value<'gc>,
         args: FunctionArgs<'_, 'gc>,

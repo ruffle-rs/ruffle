@@ -3,7 +3,6 @@
 use crate::avm2::activation::Activation;
 use crate::avm2::object::script_object::ScriptObjectData;
 use crate::avm2::object::{Object, TObject};
-use crate::avm2::Error;
 use crate::utils::HasPrefixField;
 use gc_arena::{Collect, Gc, GcWeak};
 use ruffle_render::backend::ShaderModule;
@@ -24,11 +23,11 @@ impl<'gc> Program3DObject<'gc> {
     pub fn from_context(
         activation: &mut Activation<'_, 'gc>,
         context3d: Context3DObject<'gc>,
-    ) -> Result<Object<'gc>, Error<'gc>> {
+    ) -> Object<'gc> {
         let class = activation.avm2().classes().program3d;
         let base = ScriptObjectData::new(class);
 
-        let this: Object<'gc> = Program3DObject(Gc::new(
+        Program3DObject(Gc::new(
             activation.gc(),
             Program3DObjectData {
                 base,
@@ -36,11 +35,7 @@ impl<'gc> Program3DObject<'gc> {
                 shader_module_handle: RefCell::new(None),
             },
         ))
-        .into();
-
-        class.call_init(this.into(), &[], activation)?;
-
-        Ok(this)
+        .into()
     }
 
     pub fn shader_module_handle(&self) -> &RefCell<Option<Rc<dyn ShaderModule>>> {

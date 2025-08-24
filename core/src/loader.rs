@@ -1609,8 +1609,8 @@ impl<'gc> Loader<'gc> {
                         .expect("The dataFormat field is typed String");
 
                     let data_object = if &data_format == b"binary" {
-                        let storage = ByteArrayStorage::from_vec(body);
-                        let bytearray = ByteArrayObject::from_storage(activation, storage).unwrap();
+                        let storage = ByteArrayStorage::from_vec(activation.context, body);
+                        let bytearray = ByteArrayObject::from_storage(activation, storage);
 
                         Some(bytearray.into())
                     } else if &data_format == b"variables" {
@@ -2193,13 +2193,9 @@ impl<'gc> Loader<'gc> {
                     transparency,
                     bitmap.as_colors().map(Color::from).collect(),
                 );
-                let bitmapdata_class = activation.context.avm2.classes().bitmapdata;
-                let bitmapdata_avm2 = BitmapDataObject::from_bitmap_data_internal(
-                    &mut activation,
-                    bitmapdata,
-                    bitmapdata_class,
-                )
-                .unwrap();
+
+                let bitmapdata_avm2 =
+                    BitmapDataObject::from_bitmap_data(activation.context, bitmapdata);
 
                 let bitmap_avm2 = activation
                     .avm2()

@@ -14,7 +14,11 @@ pub fn shape_allocator<'gc>(
 ) -> Result<Object<'gc>, Error<'gc>> {
     let display_object = Graphic::empty(activation.context).into();
 
-    initialize_for_allocator(activation, display_object, class)
+    Ok(initialize_for_allocator(
+        activation.context,
+        display_object,
+        class,
+    ))
 }
 
 /// Implements `graphics`.
@@ -29,7 +33,7 @@ pub fn get_graphics<'gc>(
         // Lazily initialize the `Graphics` object in a hidden property.
         let graphics = match this.get_slot(slots::_GRAPHICS) {
             Value::Undefined | Value::Null => {
-                let graphics = Value::from(StageObject::graphics(activation, dobj)?);
+                let graphics = Value::from(StageObject::graphics(activation, dobj));
                 this.set_slot(slots::_GRAPHICS, graphics, activation)?;
                 graphics
             }

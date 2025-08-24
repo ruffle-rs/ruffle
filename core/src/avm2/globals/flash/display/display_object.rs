@@ -3,7 +3,6 @@
 use crate::avm2::activation::Activation;
 use crate::avm2::error::{illegal_operation_error, make_error_2007, make_error_2008};
 use crate::avm2::filters::FilterAvm2Ext;
-use crate::avm2::function::FunctionArgs;
 use crate::avm2::globals::flash::geom::transform::color_transform_from_transform_object;
 use crate::avm2::globals::flash::geom::transform::has_matrix3d_from_transform_object;
 use crate::avm2::globals::flash::geom::transform::matrix_from_transform_object;
@@ -16,6 +15,7 @@ use crate::avm2::value::Value;
 use crate::avm2::StageObject;
 use crate::avm2::{ArrayObject, ArrayStorage};
 use crate::avm2::{ClassObject, Error};
+use crate::context::UpdateContext;
 use crate::ecma_conversions::round_to_even;
 use crate::prelude::*;
 use crate::string::AvmString;
@@ -31,27 +31,27 @@ use std::str::FromStr;
 /// This should be called from the AVM2 class's native allocator
 /// (e.g. `sprite_allocator`)
 pub fn initialize_for_allocator<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    context: &mut UpdateContext<'gc>,
     dobj: DisplayObject<'gc>,
     class: ClassObject<'gc>,
-) -> Result<Object<'gc>, Error<'gc>> {
-    let obj: StageObject = StageObject::for_display_object(activation, dobj, class)?;
+) -> Object<'gc> {
+    let obj = StageObject::for_display_object(context.gc(), dobj, class);
     dobj.set_placed_by_script(true);
-    dobj.set_object2(activation.context, obj.into());
+    dobj.set_object2(context, obj.into());
 
     // [NA] Should these run for everything?
-    dobj.post_instantiation(activation.context, None, Instantiator::Avm2, false);
-    dobj.enter_frame(activation.context);
-    dobj.construct_frame(activation.context);
+    dobj.post_instantiation(context, None, Instantiator::Avm2, false);
+    dobj.enter_frame(context);
+    dobj.construct_frame(context);
 
     // Movie clips created from ActionScript skip the next enterFrame,
     // and consequently are observed to have their currentFrame lag one
     // frame behind objects placed by the timeline (even if they were
     // both placed in the same frame to begin with).
     dobj.base().set_skip_next_enter_frame(true);
-    dobj.on_construction_complete(activation.context);
+    dobj.on_construction_complete(context);
 
-    Ok(obj.into())
+    obj.into()
 }
 
 /// Implements `flash.display.DisplayObject`'s native instance constructor.
@@ -60,7 +60,7 @@ pub fn display_object_initializer<'gc>(
     this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    activation.super_init(this, FunctionArgs::empty())?;
+    // No need to call `super()`, it wouldn't do anything
 
     let this = this.as_object().unwrap();
 

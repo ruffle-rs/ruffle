@@ -5,6 +5,7 @@ use crate::avm2::object::script_object::ScriptObjectData;
 use crate::avm2::object::{ClassObject, Object, TObject};
 use crate::avm2::Error;
 use crate::bitmap::bitmap_data::BitmapData;
+use crate::context::UpdateContext;
 use crate::utils::HasPrefixField;
 use core::fmt;
 use gc_arena::barrier::unlock;
@@ -66,31 +67,33 @@ impl<'gc> BitmapDataObject<'gc> {
     // (from ActionScript or from the timeline), or when we need
     // to produce a new BitmapData object from a `BitmapData` method
     // like `clone()`
-    pub fn from_bitmap_data_internal(
-        activation: &mut Activation<'_, 'gc>,
+    pub fn from_bitmap_data_and_class(
+        mc: &Mutation<'gc>,
         bitmap_data: BitmapData<'gc>,
         class: ClassObject<'gc>,
-    ) -> Result<Self, Error<'gc>> {
+    ) -> Self {
         let instance = Self(Gc::new(
-            activation.gc(),
+            mc,
             BitmapDataObjectData {
                 base: ScriptObjectData::new(class),
                 bitmap_data: Lock::new(bitmap_data),
             },
         ));
 
-        bitmap_data.init_object2(activation.gc(), instance.into());
+        bitmap_data.init_object2(mc, instance.into());
 
-        // We call the custom BitmapData class with width and height...
-        // but, it always seems to be 1 in Flash Player when constructed from timeline?
-        // This will not actually cause us to create a BitmapData with dimensions (1, 1) -
-        // when the custom class makes a super() call, the BitmapData constructor will
-        // load in the real data from the linked SymbolClass.
-        if class != activation.avm2().classes().bitmapdata {
-            class.call_init(instance.into(), &[1.into(), 1.into()], activation)?;
-        }
+        instance
+    }
 
-        Ok(instance)
+    /// Construct a BitmapData for a given BitmapDataWrapper. The resulting
+    /// object will have the BitmapData class.
+    pub fn from_bitmap_data(
+        context: &mut UpdateContext<'gc>,
+        bitmap_data: BitmapData<'gc>,
+    ) -> Self {
+        let bitmapdata_class = context.avm2.classes().bitmapdata;
+
+        Self::from_bitmap_data_and_class(context.gc(), bitmap_data, bitmapdata_class)
     }
 
     pub fn get_bitmap_data(self) -> BitmapData<'gc> {

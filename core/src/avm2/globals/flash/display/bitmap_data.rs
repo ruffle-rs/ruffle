@@ -311,7 +311,7 @@ pub fn get_pixels<'gc>(
         bitmap_data.check_valid(activation)?;
         let rectangle = args.get_object(activation, 0, "rect")?;
         let (x, y, width, height) = get_rectangle_x_y_width_height(activation, rectangle)?;
-        let mut storage = ByteArrayStorage::new();
+        let mut storage = ByteArrayStorage::new(activation.context);
 
         operations::get_pixels_as_byte_array(
             activation,
@@ -323,7 +323,7 @@ pub fn get_pixels<'gc>(
             &mut storage,
         )?;
 
-        let bytearray = ByteArrayObject::from_storage(activation, storage)?;
+        let bytearray = ByteArrayObject::from_storage(activation, storage);
         return Ok(bytearray.into());
     }
 
@@ -1236,9 +1236,8 @@ pub fn clone<'gc>(
             let new_bitmap_data =
                 bitmap_data.clone_data(activation.context.gc_context, activation.context.renderer);
 
-            let class = activation.avm2().classes().bitmapdata;
             let new_bitmap_data_object =
-                BitmapDataObject::from_bitmap_data_internal(activation, new_bitmap_data, class)?;
+                BitmapDataObject::from_bitmap_data(activation.context, new_bitmap_data);
 
             return Ok(new_bitmap_data_object.into());
         }
@@ -1516,8 +1515,7 @@ pub fn compare<'gc>(
         other_bitmap_data,
     ) {
         Some(bitmap_data) => {
-            let class = activation.avm2().classes().bitmapdata;
-            Ok(BitmapDataObject::from_bitmap_data_internal(activation, bitmap_data, class)?.into())
+            Ok(BitmapDataObject::from_bitmap_data(activation.context, bitmap_data).into())
         }
         None => Ok(EQUIVALENT.into()),
     }
