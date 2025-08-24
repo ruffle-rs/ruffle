@@ -1,3 +1,1 @@
 num_frames = 6
-# FIXME - Ruffle doesn't handle AVM1 'goto's correctly
-known_failure = true
