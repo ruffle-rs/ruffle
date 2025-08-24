@@ -3,7 +3,6 @@
 use crate::avm2::activation::Activation;
 use crate::avm2::error::{illegal_operation_error, make_error_2007, make_error_2008};
 use crate::avm2::filters::FilterAvm2Ext;
-use crate::avm2::function::FunctionArgs;
 use crate::avm2::globals::flash::geom::transform::color_transform_from_transform_object;
 use crate::avm2::globals::flash::geom::transform::has_matrix3d_from_transform_object;
 use crate::avm2::globals::flash::geom::transform::matrix_from_transform_object;
@@ -61,7 +60,7 @@ pub fn display_object_initializer<'gc>(
     this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    activation.super_init(this, FunctionArgs::empty())?;
+    // No need to call `super()`, it wouldn't do anything
 
     let this = this.as_object().unwrap();
 
