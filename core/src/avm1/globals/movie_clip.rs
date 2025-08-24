@@ -1604,7 +1604,7 @@ fn load_movie<'gc>(
         None,
         crate::loader::MovieLoaderVMData::Avm1 { broadcaster: None },
     );
-    activation.context.navigator.spawn_future(future);
+    activation.context.avm1.deferred_loads.push(future);
 
     Ok(Value::Undefined)
 }
@@ -1625,7 +1625,7 @@ fn load_variables<'gc>(
         target,
         request,
     );
-    activation.context.navigator.spawn_future(future);
+    activation.context.avm1.deferred_loads.push(future);
 
     Ok(Value::Undefined)
 }

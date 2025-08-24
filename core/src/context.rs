@@ -503,7 +503,7 @@ pub struct ActionQueue<'gc> {
 
 impl<'gc> ActionQueue<'gc> {
     const DEFAULT_CAPACITY: usize = 32;
-    const NUM_PRIORITIES: usize = 3;
+    const NUM_PRIORITIES: usize = 5;
 
     /// Crates a new `ActionQueue` with an empty queue.
     pub fn new() -> Self {
@@ -652,6 +652,18 @@ pub enum ActionType<'gc> {
         args: Vec<Avm1Value<'gc>>,
     },
 
+    OnLoad {
+        object: Avm1Object<'gc>,
+        name: AvmString<'gc>,
+        args: Vec<Avm1Value<'gc>>,
+    },
+
+    OnLoadInit {
+        object: Avm1Object<'gc>,
+        name: AvmString<'gc>,
+        args: Vec<Avm1Value<'gc>>,
+    },
+
     /// A system listener method.
     NotifyListeners {
         listener: AvmString<'gc>,
@@ -663,9 +675,11 @@ pub enum ActionType<'gc> {
 impl ActionType<'_> {
     fn priority(&self) -> usize {
         match self {
-            ActionType::Initialize { .. } => 2,
-            ActionType::Construct { .. } => 1,
-            _ => 0,
+            ActionType::Initialize { .. } => 4,
+            ActionType::Construct { .. } => 3,
+            ActionType::OnLoadInit { .. } => 1,
+            ActionType::OnLoad { .. } => 0,
+            _ => 2,
         }
     }
 }
@@ -691,6 +705,18 @@ impl fmt::Debug for ActionType<'_> {
                 .finish(),
             ActionType::Method { object, name, args } => f
                 .debug_struct("ActionType::Method")
+                .field("object", object)
+                .field("name", name)
+                .field("args", args)
+                .finish(),
+            ActionType::OnLoad { object, name, args } => f
+                .debug_struct("ActionType::OnLoad")
+                .field("object", object)
+                .field("name", name)
+                .field("args", args)
+                .finish(),
+            ActionType::OnLoadInit { object, name, args } => f
+                .debug_struct("ActionType::OnLoadInit")
                 .field("object", object)
                 .field("name", name)
                 .field("args", args)
