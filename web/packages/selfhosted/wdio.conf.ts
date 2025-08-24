@@ -191,6 +191,15 @@ if (browserstack) {
     };
 }
 
+if (!browserstack) {
+    setupLogging = async () => {
+        await browser.sessionSubscribe({ events: ["log.entryAdded"] });
+        browser.on("log.entryAdded", (entryAdded) =>
+            console.log("[Console] [%s] %s", entryAdded.level, entryAdded.text),
+        );
+    };
+}
+
 services.push([
     "static-server",
     {
