@@ -1,3 +1,8 @@
+use crate::avm2::activation::Activation;
+use crate::avm2::error::Error;
+use crate::avm2::globals::vector::concat_helper;
+use crate::avm2::value::Value;
+
 #[rustfmt::skip]
 pub use crate::avm2::globals::vector::{
     call_handler,
@@ -8,7 +13,6 @@ pub use crate::avm2::globals::vector::{
     get_length,
     set_length,
 
-    concat,
     every,
     filter,
     for_each,
@@ -30,3 +34,14 @@ pub use crate::avm2::globals::vector::{
 };
 
 pub use crate::avm2::object::vector_allocator as vector_double_allocator;
+
+/// `Vector.concat` impl
+pub fn concat<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    this: Value<'gc>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    let vector_class = activation.avm2().class_defs().number_vector;
+
+    concat_helper(activation, vector_class, this, args)
+}

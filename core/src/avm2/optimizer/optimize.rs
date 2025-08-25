@@ -1,7 +1,7 @@
 use crate::avm2::error::{
     make_error_1026, make_error_1035, make_error_1051, make_error_1058, verify_error,
 };
-use crate::avm2::method::{Method, MethodKind, ResolvedParamConfig};
+use crate::avm2::method::{Method, MethodAssociation, MethodKind, ResolvedParamConfig};
 use crate::avm2::multiname::Multiname;
 use crate::avm2::op::Op;
 use crate::avm2::optimizer::blocks::assemble_blocks;
@@ -574,7 +574,7 @@ pub fn optimize<'gc>(
         .body()
         .expect("Cannot verify non-native method without body!");
 
-    let this_class = activation.bound_class();
+    let this_class = method.bound_class();
 
     let this_value = OptValue {
         class: this_class,
@@ -1015,7 +1015,10 @@ fn abstract_interpret_ops<'gc>(
 
                 stack.push_class_not_null(activation, types.object)?;
             }
-            Op::NewFunction { .. } => {
+            Op::NewFunction { method } => {
+                // The method must be suitable for use as a freestanding method.
+                method.associate(activation, MethodAssociation::freestanding())?;
+
                 stack.push_class_not_null(activation, types.function)?;
             }
             Op::NewClass { class } => {
@@ -1683,13 +1686,18 @@ fn abstract_interpret_ops<'gc>(
                 stack.push_any(activation)?;
             }
             Op::CallStatic { method, num_args } => {
+                // The method must be already be a class-bound method.
+                method.check_classbound(activation)?;
+
                 // Arguments
                 stack.popn(activation, num_args)?;
 
                 // Then receiver.
                 stack.pop(activation)?;
 
+                method.resolve_info(activation)?;
                 let return_type = method.resolved_return_type();
+
                 if let Some(return_type) = return_type {
                     stack.push_class(activation, return_type)?;
                 } else {

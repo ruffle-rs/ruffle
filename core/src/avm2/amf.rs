@@ -442,7 +442,7 @@ pub fn deserialize_value_impl<'gc>(
                 *is_fixed,
                 Some(activation.avm2().class_defs().number),
             );
-            VectorObject::from_vector(storage, activation)?.into()
+            VectorObject::from_vector(storage, activation).into()
         }
         AmfValue::VectorUInt(vec, is_fixed) => {
             let storage = VectorStorage::from_values(
@@ -450,7 +450,7 @@ pub fn deserialize_value_impl<'gc>(
                 *is_fixed,
                 Some(activation.avm2().class_defs().uint),
             );
-            VectorObject::from_vector(storage, activation)?.into()
+            VectorObject::from_vector(storage, activation).into()
         }
         AmfValue::VectorInt(vec, is_fixed) => {
             let storage = VectorStorage::from_values(
@@ -458,7 +458,7 @@ pub fn deserialize_value_impl<'gc>(
                 *is_fixed,
                 Some(activation.avm2().class_defs().int),
             );
-            VectorObject::from_vector(storage, activation)?.into()
+            VectorObject::from_vector(storage, activation).into()
         }
         AmfValue::VectorObject(id, vec, ty_name, is_fixed) => {
             let name = AvmString::new_utf8(activation.gc(), ty_name);
@@ -467,8 +467,8 @@ pub fn deserialize_value_impl<'gc>(
             // Create an empty vector, as it has to exist in the map before reading children, in case they reference it
             let empty_storage =
                 VectorStorage::new(0, *is_fixed, Some(class.inner_class_definition()));
-            let obj = VectorObject::from_vector(empty_storage, activation)?;
-            object_map.insert(*id, obj);
+            let obj = VectorObject::from_vector(empty_storage, activation);
+            object_map.insert(*id, obj.into());
 
             let new_values = vec
                 .iter()
@@ -486,9 +486,7 @@ pub fn deserialize_value_impl<'gc>(
                 .collect::<Result<Vec<_>, _>>()?;
 
             // Swap in the actual values
-            obj.as_vector_storage_mut(activation.gc())
-                .expect("Failed to get vector storage from VectorObject")
-                .replace_storage(new_values);
+            obj.storage_mut(activation.gc()).replace_storage(new_values);
 
             obj.into()
         }

@@ -382,7 +382,7 @@ pub fn get_vector<'gc>(
         let value_type = activation.avm2().class_defs().uint;
         let new_storage = VectorStorage::from_values(pixels, false, Some(value_type));
 
-        return Ok(VectorObject::from_vector(new_storage, activation)?.into());
+        return Ok(VectorObject::from_vector(new_storage, activation).into());
     }
 
     Ok(Value::Undefined)
