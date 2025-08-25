@@ -1,6 +1,9 @@
 message-cant-embed =
     O Ruffle não conseguiu abrir o Flash integrado nesta página.
     Para tentar resolver o problema, pode abrir o ficheiro num novo separador.
+message-restored-from-bfcache =
+    O seu navegador restaurou este conteúdo Flash de uma sessão anterior.
+    Para começar do zero, recarregue a página.
 panic-title = Algo correu mal :(
 more-info = Mais informações
 run-anyway = Executar mesmo assim
