@@ -26,6 +26,12 @@
     "settings_log_level_info": {
         "message": "Informação"
     },
+    "settings_log_level_debug": {
+        "message": "Depurar"
+    },
+    "settings_log_level_trace": {
+        "message": "Rastrear"
+    },
     "settings_max_execution_duration": {
         "message": "Duração máxima permitida para execução de ActionScript (em segundos)"
     },
