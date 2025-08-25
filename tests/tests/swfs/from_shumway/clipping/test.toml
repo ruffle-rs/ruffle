@@ -1,0 +1,9 @@
+# Adapted from https://github.com/mozilla/shumway/blob/master/test/swfs/clipping.swf
+
+num_ticks = 1
+
+[image_comparisons.output]
+tolerance = 2
+
+[player_options]
+with_renderer = { optional = false, sample_count = 4 }
