@@ -1,0 +1,8 @@
+# Adapted from https://github.com/mozilla/shumway/blob/master/test/swfs/esc.swf
+
+num_ticks = 1
+known_failure = true
+
+[approximations]
+number_patterns = [" [\\d.]+ ms"]
+epsilon = 1000
