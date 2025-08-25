@@ -1,0 +1,9 @@
+# Adapted from https://github.com/mozilla/shumway/blob/master/test/swfs/bitmapbuttons.swf
+
+num_ticks = 1
+
+[image_comparisons.output]
+tolerance = 4
+
+[player_options]
+with_renderer = { optional = false, sample_count = 4 }
