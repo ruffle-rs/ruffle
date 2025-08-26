@@ -255,11 +255,8 @@ pub fn start<'gc>(
             let mut target_bitmap_data = target_bitmap.borrow_mut(activation.gc());
             let width = target_bitmap_data.width();
             let height = target_bitmap_data.height();
-            target_bitmap_data.set_gpu_dirty(
-                activation.gc(),
-                sync_handle,
-                PixelRegion::for_whole_size(width, height),
-            );
+            target_bitmap_data
+                .set_gpu_dirty(sync_handle, PixelRegion::for_whole_size(width, height));
         }
         PixelBenderOutput::Bytes(pixels) => {
             if let Some(mut bytearray) = target.as_bytearray_mut() {

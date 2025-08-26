@@ -1,6 +1,7 @@
 use gc_arena::Collect;
 use std::fmt::{Debug, Formatter};
 use std::sync::Arc;
+use std::sync::Weak;
 use swf::{CharacterId, Fixed8, HeaderExt, Rectangle, TagCode, Twips};
 use thiserror::Error;
 use url::Url;
@@ -357,171 +358,207 @@ impl Debug for SwfMovie {
 #[derive(Debug, Clone, Collect)]
 #[collect(no_drop)]
 pub struct SwfSlice {
-    pub movie: Arc<SwfMovie>,
+    /// An optional strong reference to the movie.
+    /// This is `Some` only when this slice is responsible for keeping the movie data alive.
+    /// Sub-slices created from this one will have `None` and rely on this original reference.
+    #[collect(require_static)]
+    movie_owner: Option<Arc<SwfMovie>>,
+
+    #[collect(require_static)]
+    pub movie: Weak<SwfMovie>,
     pub start: usize,
     pub end: usize,
 }
 
 impl From<Arc<SwfMovie>> for SwfSlice {
+    /// Creates a new `SwfSlice` that encompasses the entire movie data and takes ownership.
     fn from(movie: Arc<SwfMovie>) -> Self {
         let end = movie.data().len();
-
         Self {
-            movie,
+            movie: Arc::downgrade(&movie),
+            movie_owner: Some(movie),
             start: 0,
             end,
         }
     }
 }
 
-impl AsRef<[u8]> for SwfSlice {
-    #[inline]
-    fn as_ref(&self) -> &[u8] {
-        self.data()
-    }
-}
-
 impl SwfSlice {
-    /// Creates an empty SwfSlice.
+    /// Helper to get a strong reference to the movie, either from the owner or by upgrading the weak ref.
+    pub fn get_movie_arc(&self) -> Option<Arc<SwfMovie>> {
+        if let Some(owner) = &self.movie_owner {
+            return Some(owner.clone());
+        }
+        self.movie.upgrade()
+    }
+
+    /// Creates an empty `SwfSlice` from a given movie `Arc`, taking ownership to keep it alive.
     #[inline]
     pub fn empty(movie: Arc<SwfMovie>) -> Self {
         Self {
-            movie,
+            movie: Arc::downgrade(&movie),
+            movie_owner: Some(movie),
             start: 0,
             end: 0,
         }
     }
 
-    /// Creates an empty SwfSlice of the same movie.
+    /// Creates an empty `SwfSlice` that refers to the same movie as `self`, but does not own the data.
     #[inline]
     pub fn copy_empty(&self) -> Self {
-        Self::empty(self.movie.clone())
-    }
-
-    /// Construct a new SwfSlice from a regular slice.
-    ///
-    /// This function returns None if the given slice is not a subslice of the
-    /// current slice.
-    pub fn to_subslice(&self, slice: &[u8]) -> Self {
-        let self_pval = self.movie.data().as_ptr() as usize;
-        let slice_pval = slice.as_ptr() as usize;
-
-        if (self_pval + self.start) <= slice_pval && slice_pval < (self_pval + self.end) {
-            Self {
-                movie: self.movie.clone(),
-                start: slice_pval - self_pval,
-                end: (slice_pval - self_pval) + slice.len(),
-            }
-        } else {
-            self.copy_empty()
+        Self {
+            movie_owner: None,
+            movie: self.movie.clone(),
+            start: 0,
+            end: 0,
         }
     }
 
-    /// Construct a new SwfSlice from a movie subslice.
+    /// Executes a closure with the slice's data, if the parent movie still exists.
     ///
-    /// This function allows subslices outside the current slice to be formed,
-    /// as long as they are valid subslices of the movie itself.
-    pub fn to_unbounded_subslice(&self, slice: &[u8]) -> Self {
-        let self_pval = self.movie.data().as_ptr() as usize;
-        let self_len = self.movie.data().len();
-        let slice_pval = slice.as_ptr() as usize;
-
-        if self_pval <= slice_pval && slice_pval < (self_pval + self_len) {
-            Self {
-                movie: self.movie.clone(),
-                start: slice_pval - self_pval,
-                end: (slice_pval - self_pval) + slice.len(),
-            }
-        } else {
-            self.copy_empty()
-        }
-    }
-
-    /// Construct a new SwfSlice from a Reader and a size.
-    ///
-    /// This is intended to allow constructing references to the contents of a
-    /// given SWF tag. You just need the current reader and the size of the tag
-    /// you want to reference.
-    ///
-    /// The returned slice may or may not be a subslice of the current slice.
-    /// If the resulting slice would be outside the bounds of the underlying
-    /// movie, or the given reader refers to a different underlying movie, this
-    /// function returns an empty slice.
-    pub fn resize_to_reader(&self, reader: &mut SwfStream<'_>, size: usize) -> Self {
-        if self.movie.data().as_ptr() as usize <= reader.get_ref().as_ptr() as usize
-            && (reader.get_ref().as_ptr() as usize)
-                < self.movie.data().as_ptr() as usize + self.movie.data().len()
-        {
-            let outer_offset =
-                reader.get_ref().as_ptr() as usize - self.movie.data().as_ptr() as usize;
-            let new_start = outer_offset;
-            let new_end = outer_offset + size;
-
-            let len = self.movie.data().len();
-
-            if new_start < len && new_end < len {
-                Self {
-                    movie: self.movie.clone(),
-                    start: new_start,
-                    end: new_end,
-                }
-            } else {
-                self.copy_empty()
-            }
-        } else {
-            self.copy_empty()
-        }
-    }
-
-    /// Construct a new SwfSlice from a start and an end.
-    ///
-    /// The start and end values will be relative to the current slice.
-    /// Furthermore, this function will yield an empty slice if the calculated slice
-    /// would be invalid (e.g. negative length) or would extend past the end of
-    /// the current slice.
-    pub fn to_start_and_end(&self, start: usize, end: usize) -> Self {
-        let new_start = self.start + start;
-        let new_end = self.start + end;
-
-        if new_start <= new_end {
-            if let Some(result) = self.movie.data().get(new_start..new_end) {
-                self.to_subslice(result)
-            } else {
-                self.copy_empty()
-            }
-        } else {
-            self.copy_empty()
-        }
-    }
-
-    /// Convert the SwfSlice into a standard data slice.
-    pub fn data(&self) -> &[u8] {
-        &self.movie.data()[self.start..self.end]
+    /// This is the primary safe way to access the byte data of the slice.
+    /// It returns `None` if the `SwfMovie` has been dropped.
+    pub fn with_data<T>(&self, f: impl FnOnce(&[u8]) -> T) -> Option<T> {
+        self.get_movie_arc()
+            .map(|movie| f(&movie.data()[self.start..self.end]))
     }
 
     /// Get the version of the SWF this data comes from.
-    pub fn version(&self) -> u8 {
-        self.movie.header().version()
+    ///
+    /// Returns `None` if the parent movie has been deallocated.
+    pub fn version(&self) -> Option<u8> {
+        self.get_movie_arc().map(|movie| movie.version())
     }
 
-    /// Checks if this slice is empty
+    /// Construct a new `SwfSlice` from a regular slice.
+    ///
+    /// This function returns an empty slice if the given `slice` is not a valid
+    /// subslice of this `SwfSlice`'s movie data, or if the movie has been deallocated.
+    pub fn to_subslice(&self, slice: &[u8]) -> Self {
+        if let Some(movie) = self.get_movie_arc() {
+            let movie_ptr = movie.data().as_ptr() as usize;
+            let slice_ptr = slice.as_ptr() as usize;
+
+            // Check if the slice lives within the movie's data range.
+            if slice_ptr >= movie_ptr
+                && (slice_ptr + slice.len()) <= (movie_ptr + movie.data().len())
+            {
+                let new_start = slice_ptr - movie_ptr;
+                let new_end = new_start + slice.len();
+                // Check if the new slice is a sub-slice of the *current* slice.
+                if new_start >= self.start && new_end <= self.end {
+                    return Self {
+                        movie_owner: None,
+                        movie: Arc::downgrade(&movie),
+                        start: new_start,
+                        end: new_end,
+                    };
+                }
+            }
+        }
+        self.copy_empty()
+    }
+
+    /// Construct a new `SwfSlice` from a movie subslice.
+    ///
+    /// This is similar to `to_subslice`, but allows creating a slice that is
+    /// outside the bounds of the current slice, as long as it's within the
+    /// bounds of the parent `SwfMovie`'s data.
+    pub fn to_unbounded_subslice(&self, slice: &[u8]) -> Self {
+        if let Some(movie) = self.get_movie_arc() {
+            let movie_ptr = movie.data().as_ptr() as usize;
+            let slice_ptr = slice.as_ptr() as usize;
+
+            if slice_ptr >= movie_ptr
+                && (slice_ptr + slice.len()) <= (movie_ptr + movie.data().len())
+            {
+                return Self {
+                    movie_owner: None,
+                    movie: Arc::downgrade(&movie),
+                    start: slice_ptr - movie_ptr,
+                    end: (slice_ptr - movie_ptr) + slice.len(),
+                };
+            }
+        }
+        self.copy_empty()
+    }
+
+    /// Construct a new `SwfSlice` from a `Reader` and a size.
+    ///
+    /// This is intended for creating a slice that refers to the content of an SWF tag.
+    /// Returns an empty slice if the bounds are invalid or the movie is deallocated.
+    pub fn resize_to_reader(&self, reader: &SwfStream<'_>, size: usize) -> Self {
+        if let Some(movie) = self.get_movie_arc() {
+            let movie_data = movie.data();
+            let movie_ptr = movie_data.as_ptr() as usize;
+            let reader_ptr = reader.get_ref().as_ptr() as usize;
+
+            if reader_ptr >= movie_ptr && (reader_ptr + size) <= (movie_ptr + movie_data.len()) {
+                let new_start = reader_ptr - movie_ptr;
+                let new_end = new_start + size;
+                return Self {
+                    movie_owner: None,
+                    movie: Arc::downgrade(&movie),
+                    start: new_start,
+                    end: new_end,
+                };
+            }
+        }
+        self.copy_empty()
+    }
+
+    /// Construct a new `SwfSlice` from a start and an end relative to the current slice.
+    ///
+    /// Yields an empty slice if the new bounds are invalid or would extend past
+    /// the end of the current slice.
+    pub fn to_start_and_end(&self, start: usize, end: usize) -> Self {
+        if start > end {
+            return self.copy_empty();
+        }
+
+        let new_start = self.start + start;
+        let new_end = self.start + end;
+
+        if new_end > self.end {
+            return self.copy_empty();
+        }
+
+        Self {
+            movie_owner: None,
+            movie: self.movie.clone(),
+            start: new_start,
+            end: new_end,
+        }
+    }
+
+    /// Checks if this slice has a length of zero.
     pub fn is_empty(&self) -> bool {
-        self.end == self.start
+        self.len() == 0
     }
 
-    /// Construct a reader for this slice.
+    /// Get the length of the `SwfSlice`.
+    pub fn len(&self) -> usize {
+        self.end.saturating_sub(self.start)
+    }
+
+    /// Executes a closure with a `swf::Reader` for this slice's data.
     ///
     /// The `from` parameter is the offset to start reading the slice from.
-    pub fn read_from(&self, from: u64) -> swf::read::Reader<'_> {
-        swf::read::Reader::new(&self.data()[from as usize..], self.movie.version())
-    }
-
-    /// Get the length of the SwfSlice.
-    pub fn len(&self) -> usize {
-        self.end - self.start
+    /// Returns `None` if the `SwfMovie` has been dropped.
+    pub fn with_reader_from<T>(
+        &self,
+        from: u64,
+        f: impl FnOnce(&mut swf::read::Reader<'_>) -> T,
+    ) -> Option<T> {
+        self.with_data(|data| {
+            let reader_data = data.get(from as usize..).unwrap_or_default();
+            // We can safely unwrap `version` here because we are inside `with_data`
+            let version = self.version().unwrap();
+            let mut reader = swf::read::Reader::new(reader_data, version);
+            f(&mut reader)
+        })
     }
 }
-
 /// Decode tags from a SWF stream reader.
 ///
 /// The given `tag_callback` will be called for each decoded tag. It will be
@@ -546,6 +583,11 @@ where
     F: for<'b> FnMut(&'b mut SwfStream<'a>, TagCode, usize) -> Result<ControlFlow, Error>,
 {
     loop {
+        // This check handles an empty reader, which can happen if the loop reaches the end.
+        if reader.get_ref().is_empty() {
+            break;
+        }
+
         let (tag_code, tag_len) = reader.read_tag_code_and_length()?;
         if tag_len > reader.get_ref().len() {
             tracing::error!("Unexpected EOF when reading tag");

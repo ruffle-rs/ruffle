@@ -44,12 +44,16 @@ pub fn dispatch_removed_from_stage_event<'gc>(
 
 /// Dispatch the `removed` event on a child and log any errors encountered
 /// whilst doing so.
-pub fn dispatch_removed_event<'gc>(child: DisplayObject<'gc>, context: &mut UpdateContext<'gc>) {
+pub fn dispatch_removed_event<'gc>(
+    parent: DisplayObject<'gc>,
+    child: DisplayObject<'gc>,
+    context: &mut UpdateContext<'gc>,
+) {
     if let Avm2Value::Object(object) = child.object2() {
         let removed_evt = Avm2EventObject::bare_event(context, "removed", true, false);
         Avm2::dispatch_event(context, removed_evt, object);
 
-        if child.is_on_stage(context) {
+        if parent.is_on_stage(context) {
             dispatch_removed_from_stage_event(child, context)
         }
     }
@@ -367,7 +371,8 @@ pub trait TDisplayObjectContainer<'gc>:
     /// Remove (and unloads) a child display object from this container's render and depth lists.
     #[no_dynamic]
     fn remove_child_directly(&self, context: &mut UpdateContext<'gc>, child: DisplayObject<'gc>) {
-        dispatch_removed_event(child, context);
+        let parent: DisplayObject<'_> = (*self).into();
+        dispatch_removed_event(parent, child, context);
         let this: DisplayObjectContainer<'gc> = *self;
         let mut write = self.raw_container_mut(context.gc());
         write.remove_child_from_depth_list(child);
@@ -443,8 +448,9 @@ pub trait TDisplayObjectContainer<'gc>:
             .map(|(_, child)| child)
             .collect();
 
+        let parent: DisplayObject<'_> = (*self).into();
         for removed in removed_list.iter() {
-            dispatch_removed_event(*removed, context);
+            dispatch_removed_event(parent, *removed, context);
         }
 
         let mut write = self.raw_container_mut(context.gc());

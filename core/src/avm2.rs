@@ -100,7 +100,6 @@ pub use crate::avm2::qname::QName;
 pub use crate::avm2::value::Value;
 
 use self::api_version::ApiVersion;
-use self::object::WeakObject;
 use self::scope::Scope;
 
 const BROADCAST_WHITELIST: [&[u8]; 4] =
@@ -166,7 +165,7 @@ pub struct Avm2<'gc> {
     /// Certain types of events are "broadcast events" that are emitted on all
     /// constructed objects in order of their creation, whether or not they are
     /// currently present on the display list. This list keeps track of that.
-    broadcast_list: FnvHashMap<AvmString<'gc>, Vec<WeakObject<'gc>>>,
+    broadcast_list: FnvHashMap<AvmString<'gc>, Vec<Object<'gc>>>,
 
     /// The list of 'orphan' objects - these objects have no parent,
     /// so we need to manually run their frames in `run_all_phases_avm2` to match
@@ -489,7 +488,7 @@ impl<'gc> Avm2<'gc> {
             }
         }
 
-        bucket.push(object.downgrade());
+        bucket.push(object);
     }
 
     /// Dispatch an event on all objects in the current execution list.
@@ -530,7 +529,7 @@ impl<'gc> Avm2<'gc> {
                 .get(i)
                 .copied();
 
-            if let Some(object) = object.and_then(|obj| obj.upgrade(context.gc())) {
+            if let Some(object) = object {
                 let mut activation = Activation::from_nothing(context);
 
                 if object.is_of_type(on_type.inner_class_definition()) {
@@ -546,12 +545,7 @@ impl<'gc> Avm2<'gc> {
             }
         }
         // Once we're done iterating, remove dead weak references from the list.
-        context
-            .avm2
-            .broadcast_list
-            .entry(event_name)
-            .or_default()
-            .retain(|x| x.upgrade(context.gc_context).is_some());
+        context.avm2.broadcast_list.entry(event_name).or_default();
     }
 
     pub fn run_stack_frame_for_callable(

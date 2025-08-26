@@ -808,21 +808,24 @@ pub fn load_playerglobal<'gc>(
 
     let slice = SwfSlice::from(movie.clone());
 
-    let mut reader = slice.read_from(0);
+    slice
+        .with_reader_from(0, |reader| {
+            let tag_callback = |reader: &mut SwfStream<'_>, tag_code, _tag_len| {
+                if tag_code == TagCode::DoAbc2 {
+                    let do_abc = reader
+                        .read_do_abc_2()
+                        .expect("playerglobal.swf should be valid");
+                    Avm2::load_builtin_abc(activation.context, do_abc.data, domain, movie.clone());
+                } else if tag_code != TagCode::End {
+                    panic!("playerglobal should only contain `DoAbc2` tag - found tag {tag_code:?}")
+                }
+                Ok(ControlFlow::Continue)
+            };
 
-    let tag_callback = |reader: &mut SwfStream<'_>, tag_code, _tag_len| {
-        if tag_code == TagCode::DoAbc2 {
-            let do_abc = reader
-                .read_do_abc_2()
-                .expect("playerglobal.swf should be valid");
-            Avm2::load_builtin_abc(activation.context, do_abc.data, domain, movie.clone());
-        } else if tag_code != TagCode::End {
-            panic!("playerglobal should only contain `DoAbc2` tag - found tag {tag_code:?}")
-        }
-        Ok(ControlFlow::Continue)
-    };
-
-    let _ = tag_utils::decode_tags(&mut reader, tag_callback);
+            tag_utils::decode_tags(reader, tag_callback)
+        })
+        .expect("In-memory playerglobal movie should be present")
+        .expect("playerglobal.swf is invalid");
 
     // Domain memory must be initialized after playerglobals is loaded because it relies on ByteArray.
     domain.init_default_domain_memory(activation)?;

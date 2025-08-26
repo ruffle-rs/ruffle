@@ -298,7 +298,7 @@ impl Default for DispatchList<'_> {
 /// A single instance of an event handler.
 #[derive(Clone, Collect)]
 #[collect(no_drop)]
-struct EventHandler<'gc> {
+pub struct EventHandler<'gc> {
     /// The event handler to call.
     handler: Object<'gc>,
 

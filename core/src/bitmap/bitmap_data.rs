@@ -1,6 +1,6 @@
 use crate::avm2::{Object as Avm2Object, Value as Avm2Value};
 use crate::context::RenderContext;
-use crate::display_object::{DisplayObject, DisplayObjectWeak, TDisplayObject};
+use crate::display_object::{DisplayObject, TDisplayObject};
 use bitflags::bitflags;
 use gc_arena::lock::GcRefLock;
 use gc_arena::{Collect, Gc, Mutation};
@@ -327,11 +327,11 @@ impl<'gc> BitmapData<'gc> {
         self.0.init_object2(mc, object);
     }
 
-    pub fn remove_display_object(&self, mc: &Mutation<'gc>, callback: DisplayObjectWeak<'gc>) {
+    pub fn remove_display_object(&self, mc: &Mutation<'gc>, callback: DisplayObject<'gc>) {
         self.0.remove_display_object(mc, callback);
     }
 
-    pub fn add_display_object(&self, mc: &Mutation<'gc>, callback: DisplayObjectWeak<'gc>) {
+    pub fn add_display_object(&self, mc: &Mutation<'gc>, callback: DisplayObject<'gc>) {
         self.0.add_display_object(mc, callback);
     }
 
@@ -392,7 +392,7 @@ pub struct BitmapRawData<'gc> {
     avm2_object: Option<Avm2Object<'gc>>,
 
     /// A list of display objects that are backed by this BitmapData
-    display_objects: Vec<DisplayObjectWeak<'gc>>,
+    display_objects: Vec<DisplayObject<'gc>>,
 
     #[collect(require_static)]
     dirty_state: DirtyState,
@@ -419,7 +419,7 @@ pub enum DirtyState {
 mod wrapper {
     use crate::avm2::{Object as Avm2Object, Value as Avm2Value};
     use crate::context::RenderContext;
-    use crate::display_object::DisplayObjectWeak;
+    use crate::prelude::DisplayObject;
     use gc_arena::barrier::Write;
     use gc_arena::lock::GcRefLock;
     use gc_arena::{Collect, Gc, Mutation};
@@ -647,16 +647,16 @@ mod wrapper {
             self.0.borrow_mut(mc).avm2_object = Some(object)
         }
 
-        pub fn remove_display_object(&self, mc: &Mutation<'gc>, callback: DisplayObjectWeak<'gc>) {
+        pub fn remove_display_object(&self, mc: &Mutation<'gc>, callback: DisplayObject<'gc>) {
             // [NA] Removing is a rare operation, whereas insert is often, and iteration is extremely frequent.
             // The list will typically be 0-1 entries long too, so I think retain is fine for quick iteration.
             self.0
                 .borrow_mut(mc)
                 .display_objects
-                .retain(|c| !std::ptr::eq(c.as_ptr(), callback.as_ptr()))
+                .retain(|c| !DisplayObject::ptr_eq(*c, callback));
         }
 
-        pub fn add_display_object(&self, mc: &Mutation<'gc>, callback: DisplayObjectWeak<'gc>) {
+        pub fn add_display_object(&self, mc: &Mutation<'gc>, callback: DisplayObject<'gc>) {
             self.0.borrow_mut(mc).display_objects.push(callback);
         }
 
@@ -817,17 +817,12 @@ impl<'gc> BitmapRawData<'gc> {
         &self.dirty_state
     }
 
-    pub fn set_gpu_dirty(
-        &mut self,
-        gc_context: &Mutation<'gc>,
-        sync_handle: Box<dyn SyncHandle>,
-        region: PixelRegion,
-    ) {
+    pub fn set_gpu_dirty(&mut self, sync_handle: Box<dyn SyncHandle>, region: PixelRegion) {
         self.dirty_state = DirtyState::GpuModified(sync_handle, region);
-        self.inform_display_objects(gc_context);
+        self.inform_display_objects();
     }
 
-    pub fn set_cpu_dirty(&mut self, gc_context: &Mutation<'gc>, region: PixelRegion) {
+    pub fn set_cpu_dirty(&mut self, region: PixelRegion) {
         debug_assert!(region.x_max <= self.width);
         debug_assert!(region.y_max <= self.height);
 
@@ -848,7 +843,7 @@ impl<'gc> BitmapRawData<'gc> {
             }
         };
         if inform_changes {
-            self.inform_display_objects(gc_context);
+            self.inform_display_objects();
         }
     }
 
@@ -926,11 +921,9 @@ impl<'gc> BitmapRawData<'gc> {
         }
     }
 
-    fn inform_display_objects(&self, gc_context: &Mutation<'gc>) {
+    fn inform_display_objects(&self) {
         for object in &self.display_objects {
-            if let Some(object) = object.upgrade(gc_context) {
-                object.invalidate_cached_bitmap();
-            }
+            object.invalidate_cached_bitmap();
         }
     }
 

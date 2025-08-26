@@ -400,23 +400,27 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     }
 
     pub fn run_actions(&mut self, code: SwfSlice) -> Result<ReturnType<'gc>, Error<'gc>> {
-        let mut read = Reader::new(&code.movie.data()[code.start..], self.swf_version());
+        let result = code.with_data(|slice_data| {
+            let mut reader = Reader::new(slice_data, self.swf_version());
 
-        loop {
-            let result = self.do_action(&code, &mut read);
-            match result {
-                Ok(FrameControl::Return(return_type)) => break Ok(return_type),
-                Ok(FrameControl::Continue) => {}
-                Err(e) => break Err(e),
+            loop {
+                // Pass the original slice data to do_action for seeking.
+                match self.do_action(&code, &mut reader, slice_data) {
+                    Ok(FrameControl::Return(return_type)) => break Ok(return_type),
+                    Ok(FrameControl::Continue) => {}
+                    Err(e) => break Err(e),
+                }
             }
-        }
+        });
+        result.unwrap_or(Ok(ReturnType::Implicit))
     }
 
     /// Run a single action from a given action reader.
     fn do_action<'b>(
         &mut self,
-        data: &'b SwfSlice,
+        swf_slice: &'b SwfSlice,
         reader: &mut Reader<'b>,
+        reader_data: &'b [u8],
     ) -> Result<FrameControl<'gc>, Error<'gc>> {
         *self.context.actions_since_timeout_check += 1;
         if *self.context.actions_since_timeout_check >= 2000 {
@@ -426,7 +430,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             }
         }
 
-        if reader.get_ref().as_ptr() as usize >= data.as_ref().as_ptr_range().end as usize {
+        if reader.get_ref().is_empty() {
             //Executing beyond the end of a function constitutes an implicit return.
             Ok(FrameControl::Return(ReturnType::Implicit))
         } else {
@@ -456,8 +460,10 @@ impl<'a, 'gc> Activation<'a, 'gc> {
                 Action::CloneSprite => self.action_clone_sprite(),
                 Action::ConstantPool(action) => self.action_constant_pool(action),
                 Action::Decrement => self.action_decrement(),
-                Action::DefineFunction(action) => self.action_define_function(action.into(), data),
-                Action::DefineFunction2(action) => self.action_define_function(action, data),
+                Action::DefineFunction(action) => {
+                    self.action_define_function(action.into(), swf_slice)
+                }
+                Action::DefineFunction2(action) => self.action_define_function(action, swf_slice),
                 Action::DefineLocal => self.action_define_local(),
                 Action::DefineLocal2 => self.action_define_local_2(),
                 Action::Delete => self.action_delete(),
@@ -480,13 +486,13 @@ impl<'a, 'gc> Activation<'a, 'gc> {
                 Action::GotoFrame2(action) => self.action_goto_frame_2(action),
                 Action::Greater => self.action_greater(),
                 Action::GotoLabel(action) => self.action_goto_label(action),
-                Action::If(action) => self.action_if(action, reader, data),
+                Action::If(action) => self.action_if(action, reader, reader_data),
                 Action::Increment => self.action_increment(),
                 Action::InitArray => self.action_init_array(),
                 Action::InitObject => self.action_init_object(),
                 Action::ImplementsOp => self.action_implements_op(),
                 Action::InstanceOf => self.action_instance_of(),
-                Action::Jump(action) => self.action_jump(action, reader, data),
+                Action::Jump(action) => self.action_jump(action, reader, reader_data),
                 Action::Less => self.action_less(),
                 Action::Less2 => self.action_less_2(),
                 Action::MBAsciiToChar => self.action_mb_ascii_to_char(),
@@ -533,11 +539,11 @@ impl<'a, 'gc> Activation<'a, 'gc> {
                 Action::ToNumber => self.action_to_number(),
                 Action::ToString => self.action_to_string(),
                 Action::Trace => self.action_trace(),
-                Action::Try(action) => self.action_try(&action, data),
+                Action::Try(action) => self.action_try(&action, swf_slice),
                 Action::TypeOf => self.action_type_of(),
                 Action::WaitForFrame(action) => self.action_wait_for_frame(action, reader),
                 Action::WaitForFrame2(action) => self.action_wait_for_frame_2(action, reader),
-                Action::With(action) => self.action_with(action, data),
+                Action::With(action) => self.action_with(action, swf_slice),
                 Action::Unknown(action) => self.action_unknown(action),
             }
         }
@@ -1414,11 +1420,11 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         &mut self,
         action: If,
         reader: &mut Reader<'b>,
-        data: &'b SwfSlice,
+        reader_data: &'b [u8],
     ) -> Result<FrameControl<'gc>, Error<'gc>> {
         let val = self.context.avm1.pop();
         if val.as_bool(self.swf_version()) {
-            reader.seek(data.movie.data(), action.offset);
+            reader.seek(reader_data, action.offset);
         }
         Ok(FrameControl::Continue)
     }
@@ -1525,9 +1531,9 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         &mut self,
         action: Jump,
         reader: &mut Reader<'b>,
-        data: &'b SwfSlice,
+        reader_data: &'b [u8],
     ) -> Result<FrameControl<'gc>, Error<'gc>> {
-        reader.seek(data.movie.data(), action.offset);
+        reader.seek(reader_data, action.offset);
         Ok(FrameControl::Continue)
     }
 
