@@ -335,7 +335,7 @@ impl<'gc> TObject<'gc> for XmlObject<'gc> {
     fn call_property_local(
         self,
         multiname: &Multiname<'gc>,
-        arguments: &[Value<'gc>],
+        arguments: FunctionArgs<'_, 'gc>,
         activation: &mut Activation<'_, 'gc>,
     ) -> Result<Value<'gc>, Error<'gc>> {
         let method = Value::from(self.proto().expect("XMLList missing prototype"))
@@ -355,11 +355,7 @@ impl<'gc> TObject<'gc> for XmlObject<'gc> {
                 if list.length() == 0 && self.node().has_simple_content() {
                     let receiver = Value::String(self.node().xml_to_string(activation));
 
-                    return receiver.call_property(
-                        multiname,
-                        FunctionArgs::from_slice(arguments),
-                        activation,
-                    );
+                    return receiver.call_property(multiname, arguments, activation);
                 }
             }
         }

@@ -1131,8 +1131,6 @@ impl<'gc> Value<'gc> {
 
         match vtable.get_trait(multiname) {
             Some(Property::Slot { slot_id }) | Some(Property::ConstSlot { slot_id }) => {
-                let arguments = &arguments.to_slice();
-
                 // Only objects can have slots
                 let object = self.as_object().unwrap();
 
@@ -1145,7 +1143,6 @@ impl<'gc> Value<'gc> {
             Some(Property::Virtual { get: Some(get), .. }) => {
                 let obj = self.call_method_with_args(get, FunctionArgs::empty(), activation)?;
 
-                let arguments = &arguments.to_slice();
                 obj.call(activation, *self, arguments)
             }
             Some(Property::Virtual { get: None, .. }) => {
@@ -1159,8 +1156,6 @@ impl<'gc> Value<'gc> {
                 ))
             }
             None => {
-                let arguments = &arguments.to_slice();
-
                 if let Some(object) = self.as_object() {
                     object.call_property_local(multiname, arguments, activation)
                 } else {
@@ -1355,9 +1350,8 @@ impl<'gc> Value<'gc> {
         &self,
         activation: &mut Activation<'_, 'gc>,
         receiver: Value<'gc>,
-        args: &[Value<'gc>],
+        args: FunctionArgs<'_, 'gc>,
     ) -> Result<Value<'gc>, Error<'gc>> {
-        let args = FunctionArgs::from_slice(args);
         match self.as_object() {
             Some(Object::ClassObject(class_object)) => class_object.call(activation, args),
             Some(Object::FunctionObject(function_object)) => {

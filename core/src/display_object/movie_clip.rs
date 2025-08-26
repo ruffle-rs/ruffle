@@ -2202,7 +2202,6 @@ impl<'gc> MovieClip<'gc> {
                             if let Err(e) = Avm2::run_stack_frame_for_callable(
                                 callable,
                                 avm2_object.into(),
-                                &[],
                                 domain,
                                 context,
                             ) {

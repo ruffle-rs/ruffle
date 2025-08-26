@@ -3,6 +3,7 @@
 use crate::avm2::activation::Activation;
 use crate::avm2::array::ArrayStorage;
 use crate::avm2::error::{make_error_1125, range_error};
+use crate::avm2::function::FunctionArgs;
 use crate::avm2::object::{ArrayObject, Object, TObject};
 use crate::avm2::parameters::ParametersExt;
 use crate::avm2::value::Value;
@@ -317,7 +318,8 @@ pub fn for_each<'gc>(
     let mut iter = ArrayIter::new(activation, this)?;
 
     while let Some((i, item)) = iter.next(activation)? {
-        callback.call(activation, receiver, &[item, i.into(), this.into()])?;
+        let args = &[item, i.into(), this.into()];
+        callback.call(activation, receiver, FunctionArgs::from_slice(args))?;
     }
 
     Ok(Value::Undefined)
@@ -337,7 +339,8 @@ pub fn map<'gc>(
     let mut iter = ArrayIter::new(activation, this)?;
 
     while let Some((i, item)) = iter.next(activation)? {
-        let new_item = callback.call(activation, receiver, &[item, i.into(), this.into()])?;
+        let args = &[item, i.into(), this.into()];
+        let new_item = callback.call(activation, receiver, FunctionArgs::from_slice(args))?;
 
         new_array.push(new_item);
     }
@@ -362,8 +365,9 @@ pub fn filter<'gc>(
     let mut iter = ArrayIter::new(activation, this)?;
 
     while let Some((i, item)) = iter.next(activation)? {
+        let args = &[item, i.into(), this.into()];
         let is_allowed = callback
-            .call(activation, receiver, &[item, i.into(), this.into()])?
+            .call(activation, receiver, FunctionArgs::from_slice(args))?
             .coerce_to_boolean();
 
         if is_allowed {
@@ -390,8 +394,9 @@ pub fn every<'gc>(
     let mut iter = ArrayIter::new(activation, this)?;
 
     while let Some((i, item)) = iter.next(activation)? {
+        let args = &[item, i.into(), this.into()];
         let result = callback
-            .call(activation, receiver, &[item, i.into(), this.into()])?
+            .call(activation, receiver, FunctionArgs::from_slice(args))?
             .coerce_to_boolean();
 
         if !result {
@@ -417,8 +422,9 @@ pub fn some<'gc>(
     let mut iter = ArrayIter::new(activation, this)?;
 
     while let Some((i, item)) = iter.next(activation)? {
+        let args = &[item, i.into(), this.into()];
         let result = callback
-            .call(activation, receiver, &[item, i.into(), this.into()])?
+            .call(activation, receiver, FunctionArgs::from_slice(args))?
             .coerce_to_boolean();
 
         if result {
@@ -1079,8 +1085,9 @@ pub fn sort<'gc>(
                 &mut values,
                 options,
                 constrain(|activation, a, b| {
+                    let args = &[a, b];
                     let order = v
-                        .call(activation, this.into(), &[a, b])?
+                        .call(activation, this.into(), FunctionArgs::from_slice(args))?
                         .coerce_to_i32(activation)?;
 
                     Ok(order.cmp(&0))
@@ -1092,8 +1099,9 @@ pub fn sort<'gc>(
                 &mut values,
                 options,
                 constrain(|activation, a, b| {
+                    let args = &[a, b];
                     let order = v
-                        .call(activation, this.into(), &[a, b])?
+                        .call(activation, this.into(), FunctionArgs::from_slice(args))?
                         .coerce_to_number(activation)?;
 
                     if order > 0.0 {

@@ -8,7 +8,7 @@ use crate::avm2::object::{
     ArrayObject as Avm2ArrayObject, Object as Avm2Object, ScriptObject as Avm2ScriptObject,
     TObject as _,
 };
-use crate::avm2::Value as Avm2Value;
+use crate::avm2::{FunctionArgs, Value as Avm2Value};
 use crate::context::UpdateContext;
 use crate::string::AvmString;
 use gc_arena::Collect;
@@ -319,10 +319,13 @@ impl<'gc> Callback<'gc> {
                     .into_iter()
                     .map(|v| v.into_avm2(&mut activation))
                     .collect();
-                match method
-                    .call(&mut activation, Avm2Value::Null, &args)
-                    .and_then(|value| Value::from_avm2(&mut activation, value))
-                {
+
+                let result = method.call(
+                    &mut activation,
+                    Avm2Value::Null,
+                    FunctionArgs::from_slice(&args),
+                );
+                match result.and_then(|value| Value::from_avm2(&mut activation, value)) {
                     Ok(result) => result,
                     Err(e) => {
                         tracing::error!(
