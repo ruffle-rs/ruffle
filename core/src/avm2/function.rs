@@ -117,35 +117,43 @@ impl<'gc> BoundMethod<'gc> {
 
 #[derive(Clone, Copy)]
 pub enum FunctionArgs<'a, 'gc> {
-    AsCellArgSlice { arguments: &'a [Cell<Value<'gc>>] },
-    AsArgSlice { arguments: &'a [Value<'gc>] },
+    AsCellArgs(&'a [Cell<Value<'gc>>]),
+    AsArgs(&'a [Value<'gc>]),
 }
 
 impl<'a, 'gc> FunctionArgs<'a, 'gc> {
     pub fn empty() -> Self {
-        FunctionArgs::AsArgSlice { arguments: &[] }
+        FunctionArgs::AsArgs(&[])
+    }
+
+    pub fn from_slice(args: &'a [Value<'gc>]) -> Self {
+        FunctionArgs::AsArgs(args)
+    }
+
+    pub fn from_cell_slice(args: &'a [Cell<Value<'gc>>]) -> Self {
+        FunctionArgs::AsCellArgs(args)
     }
 
     pub fn to_slice(self) -> Cow<'a, [Value<'gc>]> {
         match self {
-            FunctionArgs::AsCellArgSlice { arguments } => {
+            FunctionArgs::AsCellArgs(arguments) => {
                 Cow::Owned(arguments.iter().map(|o| o.get()).collect::<Vec<_>>())
             }
-            FunctionArgs::AsArgSlice { arguments } => Cow::Borrowed(arguments),
+            FunctionArgs::AsArgs(arguments) => Cow::Borrowed(arguments),
         }
     }
 
     pub fn get_at(&self, index: usize) -> Value<'gc> {
         match self {
-            FunctionArgs::AsCellArgSlice { arguments } => arguments[index].get(),
-            FunctionArgs::AsArgSlice { arguments } => arguments[index],
+            FunctionArgs::AsCellArgs(arguments) => arguments[index].get(),
+            FunctionArgs::AsArgs(arguments) => arguments[index],
         }
     }
 
     pub fn len(&self) -> usize {
         match self {
-            FunctionArgs::AsCellArgSlice { arguments } => arguments.len(),
-            FunctionArgs::AsArgSlice { arguments } => arguments.len(),
+            FunctionArgs::AsCellArgs(arguments) => arguments.len(),
+            FunctionArgs::AsArgs(arguments) => arguments.len(),
         }
     }
 }

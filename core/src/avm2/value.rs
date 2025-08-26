@@ -1192,7 +1192,7 @@ impl<'gc> Value<'gc> {
         arguments: &[Value<'gc>],
         activation: &mut Activation<'_, 'gc>,
     ) -> Result<Value<'gc>, Error<'gc>> {
-        let arguments = FunctionArgs::AsArgSlice { arguments };
+        let arguments = FunctionArgs::from_slice(arguments);
         self.call_property(
             &Multiname::new(activation.avm2().find_public_namespace(), name),
             arguments,
@@ -1211,7 +1211,7 @@ impl<'gc> Value<'gc> {
         arguments: &[Value<'gc>],
         activation: &mut Activation<'_, 'gc>,
     ) -> Result<Value<'gc>, Error<'gc>> {
-        self.call_method_with_args(id, FunctionArgs::AsArgSlice { arguments }, activation)
+        self.call_method_with_args(id, FunctionArgs::from_slice(arguments), activation)
     }
 
     pub fn call_method_with_args(

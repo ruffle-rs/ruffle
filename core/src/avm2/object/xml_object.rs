@@ -357,7 +357,7 @@ impl<'gc> TObject<'gc> for XmlObject<'gc> {
 
                     return receiver.call_property(
                         multiname,
-                        FunctionArgs::AsArgSlice { arguments },
+                        FunctionArgs::from_slice(arguments),
                         activation,
                     );
                 }

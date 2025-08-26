@@ -594,7 +594,7 @@ impl<'gc> TObject<'gc> for XmlListObject<'gc> {
 
                     return Value::from(child).call_property(
                         multiname,
-                        FunctionArgs::AsArgSlice { arguments },
+                        FunctionArgs::from_slice(arguments),
                         activation,
                     );
                 }
