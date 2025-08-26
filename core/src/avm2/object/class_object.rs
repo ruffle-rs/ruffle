@@ -311,7 +311,7 @@ impl<'gc> ClassObject<'gc> {
         arguments: &[Value<'gc>],
         activation: &mut Activation<'_, 'gc>,
     ) -> Result<Value<'gc>, Error<'gc>> {
-        self.call_init_with_args(receiver, FunctionArgs::AsArgSlice { arguments }, activation)
+        self.call_init_with_args(receiver, FunctionArgs::from_slice(arguments), activation)
     }
 
     pub fn call_init_with_args(
@@ -540,9 +540,8 @@ impl<'gc> ClassObject<'gc> {
             Some(Property::Virtual {
                 set: Some(disp_id), ..
             }) => {
-                let args = FunctionArgs::AsArgSlice {
-                    arguments: &[value],
-                };
+                let args = &[value];
+                let args = FunctionArgs::from_slice(args);
 
                 self.call_method_super(activation, receiver, disp_id, args)?;
 
@@ -683,7 +682,7 @@ impl<'gc> ClassObject<'gc> {
         activation: &mut Activation<'_, 'gc>,
         arguments: &[Value<'gc>],
     ) -> Result<Value<'gc>, Error<'gc>> {
-        self.construct_with_args(activation, FunctionArgs::AsArgSlice { arguments })
+        self.construct_with_args(activation, FunctionArgs::from_slice(arguments))
     }
 
     pub fn construct_with_args(
