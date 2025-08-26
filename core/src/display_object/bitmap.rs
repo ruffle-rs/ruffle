@@ -3,8 +3,8 @@
 use crate::avm1;
 use crate::avm2::{
     Activation as Avm2Activation, BitmapDataObject as Avm2BitmapDataObject,
-    ClassObject as Avm2ClassObject, Object as Avm2Object, StageObject as Avm2StageObject,
-    Value as Avm2Value,
+    ClassObject as Avm2ClassObject, FunctionArgs as Avm2FunctionArgs, Object as Avm2Object,
+    StageObject as Avm2StageObject, Value as Avm2Value,
 };
 use crate::bitmap::bitmap_data::BitmapData;
 use crate::context::{RenderContext, UpdateContext};
@@ -353,9 +353,10 @@ impl<'gc> TDisplayObject<'gc> for Bitmap<'gc> {
                 // BitmapData with dimensions (1, 1) - when the custom class
                 // makes a super() call, the BitmapData constructor will load
                 // in the real data from the linked SymbolClass.
+                let args = &[1.into(), 1.into()];
                 let call_result = bitmapdata_cls.call_init(
                     bitmap_data_obj.into(),
-                    &[1.into(), 1.into()],
+                    Avm2FunctionArgs::from_slice(args),
                     &mut activation,
                 );
                 if let Err(e) = call_result {

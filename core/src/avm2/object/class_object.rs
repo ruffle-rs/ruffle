@@ -308,15 +308,6 @@ impl<'gc> ClassObject<'gc> {
     pub fn call_init(
         self,
         receiver: Value<'gc>,
-        arguments: &[Value<'gc>],
-        activation: &mut Activation<'_, 'gc>,
-    ) -> Result<Value<'gc>, Error<'gc>> {
-        self.call_init_with_args(receiver, FunctionArgs::from_slice(arguments), activation)
-    }
-
-    pub fn call_init_with_args(
-        self,
-        receiver: Value<'gc>,
         arguments: FunctionArgs<'_, 'gc>,
         activation: &mut Activation<'_, 'gc>,
     ) -> Result<Value<'gc>, Error<'gc>> {
@@ -698,7 +689,7 @@ impl<'gc> ClassObject<'gc> {
 
             let instance = instance_allocator(self, activation)?;
 
-            self.call_init_with_args(instance.into(), arguments, activation)?;
+            self.call_init(instance.into(), arguments, activation)?;
 
             Ok(instance.into())
         }

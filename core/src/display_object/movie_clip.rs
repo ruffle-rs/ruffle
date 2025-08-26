@@ -7,7 +7,7 @@ use crate::avm2::object::LoaderStream;
 use crate::avm2::script::Script;
 use crate::avm2::Activation as Avm2Activation;
 use crate::avm2::{
-    Avm2, ClassObject as Avm2ClassObject, Error as Avm2Error, Object as Avm2Object,
+    Avm2, ClassObject as Avm2ClassObject, FunctionArgs as Avm2FunctionArgs, Object as Avm2Object,
     QName as Avm2QName, StageObject as Avm2StageObject, Value as Avm2Value,
 };
 use crate::backend::audio::{AudioManager, SoundInstanceHandle};
@@ -1838,13 +1838,9 @@ impl<'gc> MovieClip<'gc> {
         let class_object = class_object.unwrap_or_else(|| context.avm2.classes().movieclip);
 
         if let Avm2Value::Object(object) = self.object2() {
-            let mut constr_thing = || {
-                let mut activation = Avm2Activation::from_nothing(context);
-                class_object.call_init(object.into(), &[], &mut activation)?;
-
-                Ok(())
-            };
-            let result: Result<(), Avm2Error> = constr_thing();
+            let mut activation = Avm2Activation::from_nothing(context);
+            let result =
+                class_object.call_init(object.into(), Avm2FunctionArgs::empty(), &mut activation);
 
             if let Err(e) = result {
                 tracing::error!(
