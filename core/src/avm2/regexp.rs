@@ -4,6 +4,7 @@ use std::borrow::Cow;
 use std::num::NonZero;
 
 use crate::avm2::activation::Activation;
+use crate::avm2::function::FunctionArgs;
 use crate::avm2::object::FunctionObject;
 use crate::avm2::Error;
 use crate::avm2::{ArrayObject, ArrayStorage, Value};
@@ -239,7 +240,9 @@ impl<'gc> RegExp<'gc> {
                 .chain(std::iter::once(m.range.start.into()))
                 .chain(std::iter::once((*txt).into()))
                 .collect::<Vec<_>>();
-            let r = f.call(activation, Value::Null, &args)?;
+
+            let args = FunctionArgs::from_slice(&args);
+            let r = f.call(activation, Value::Null, args)?;
             return Ok(Cow::Owned(WString::from(
                 r.coerce_to_string(activation)?.as_wstr(),
             )));

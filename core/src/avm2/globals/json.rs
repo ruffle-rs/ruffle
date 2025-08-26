@@ -3,6 +3,7 @@
 use crate::avm2::activation::Activation;
 use crate::avm2::array::ArrayStorage;
 use crate::avm2::error::{make_error_1132, type_error};
+use crate::avm2::function::FunctionArgs;
 use crate::avm2::globals::array::ArrayIter;
 use crate::avm2::object::{ArrayObject, FunctionObject, Object, ScriptObject, TObject};
 use crate::avm2::parameters::ParametersExt;
@@ -38,10 +39,15 @@ fn deserialize_json_inner<'gc>(
             for entry in js_obj.iter() {
                 let key = AvmString::new_utf8(activation.gc(), entry.0);
                 let val = deserialize_json_inner(activation, entry.1.clone(), reviver)?;
+                let args = &[key.into(), val];
+
                 let mapped_val = match reviver {
                     None => val,
-                    Some(reviver) => reviver.call(activation, Value::Null, &[key.into(), val])?,
+                    Some(reviver) => {
+                        reviver.call(activation, Value::Null, FunctionArgs::from_slice(args))?
+                    }
                 };
+
                 if matches!(mapped_val, Value::Undefined) {
                     obj.delete_dynamic_property(key, activation.gc());
                 } else {
@@ -54,10 +60,15 @@ fn deserialize_json_inner<'gc>(
             let mut arr: Vec<Option<Value<'gc>>> = Vec::with_capacity(js_arr.len());
             for (key, val) in js_arr.iter().enumerate() {
                 let val = deserialize_json_inner(activation, val.clone(), reviver)?;
+                let args = &[key.into(), val];
+
                 let mapped_val = match reviver {
                     None => val,
-                    Some(reviver) => reviver.call(activation, Value::Null, &[key.into(), val])?,
+                    Some(reviver) => {
+                        reviver.call(activation, Value::Null, FunctionArgs::from_slice(args))?
+                    }
                 };
+
                 arr.push(Some(mapped_val));
             }
             let storage = ArrayStorage::from_storage(arr);
@@ -76,8 +87,8 @@ fn deserialize_json<'gc>(
     match reviver {
         None => Ok(val),
         Some(reviver) => {
-            let args = [istr!("").into(), val];
-            reviver.call(activation, Value::Null, &args)
+            let args = &[istr!("").into(), val];
+            reviver.call(activation, Value::Null, FunctionArgs::from_slice(args))
         }
     }
 }
@@ -133,11 +144,8 @@ impl<'gc> AvmSerializer<'gc> {
         };
 
         if let Some(Replacer::Function(replacer)) = self.replacer {
-            replacer.call(
-                activation,
-                Value::Null,
-                &[eval_key.unwrap_or_else(key).into(), value],
-            )
+            let args = &[eval_key.unwrap_or_else(key).into(), value];
+            replacer.call(activation, Value::Null, FunctionArgs::from_slice(args))
         } else {
             Ok(value)
         }

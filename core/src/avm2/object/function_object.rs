@@ -89,16 +89,11 @@ impl<'gc> FunctionObject<'gc> {
         self,
         activation: &mut Activation<'_, 'gc>,
         receiver: Value<'gc>,
-        arguments: &[Value<'gc>],
+        arguments: FunctionArgs<'_, 'gc>,
     ) -> Result<Value<'gc>, Error<'gc>> {
         let exec = &self.0.exec;
 
-        exec.exec(
-            receiver,
-            FunctionArgs::from_slice(arguments),
-            activation,
-            Some(self),
-        )
+        exec.exec(receiver, arguments, activation, Some(self))
     }
 
     pub fn construct(
@@ -106,8 +101,6 @@ impl<'gc> FunctionObject<'gc> {
         activation: &mut Activation<'_, 'gc>,
         arguments: FunctionArgs<'_, 'gc>,
     ) -> Result<Object<'gc>, Error<'gc>> {
-        let arguments = &arguments.to_slice();
-
         let object_class = activation.avm2().classes().object;
 
         let prototype = if let Some(proto) = self.prototype() {
