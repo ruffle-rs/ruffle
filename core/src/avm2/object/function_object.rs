@@ -95,7 +95,7 @@ impl<'gc> FunctionObject<'gc> {
 
         exec.exec(
             receiver,
-            FunctionArgs::AsArgSlice { arguments },
+            FunctionArgs::from_slice(arguments),
             activation,
             Some(self),
         )
