@@ -161,19 +161,24 @@ impl Iterator for StandardStreamDecoder {
 pub struct AdpcmStreamDecoder {
     format: SoundFormat,
     tag_reader: StreamTagReader,
-    decoder: AdpcmDecoder<Cursor<SwfSlice>>,
+    decoder: AdpcmDecoder<Cursor<Vec<u8>>>,
 }
 
 impl AdpcmStreamDecoder {
     fn new(stream_info: &swf::SoundStreamHead, swf_data: SwfSlice) -> Result<Self, Error> {
-        let movie = swf_data.movie.clone();
         let mut tag_reader = StreamTagReader::new(stream_info, swf_data);
-        let audio_data = tag_reader.next().unwrap_or_else(|| SwfSlice::empty(movie));
+        let audio_data = if let Some(slice) = tag_reader.next() {
+            slice.with_data(|d| d.to_vec()).unwrap_or_default()
+        } else {
+            Vec::new()
+        };
+
         let decoder = AdpcmDecoder::new(
             Cursor::new(audio_data),
             stream_info.stream_format.is_stereo,
             stream_info.stream_format.sample_rate,
         )?;
+
         Ok(Self {
             format: stream_info.stream_format.clone(),
             tag_reader,
@@ -199,22 +204,22 @@ impl Iterator for AdpcmStreamDecoder {
         if let Some(sample_frame) = self.decoder.next() {
             // Return sample frames until the decoder has exhausted
             // the SoundStreamBlock tag.
-            Some(sample_frame)
-        } else if let Some(audio_data) = self.tag_reader.next() {
-            // We've reached the end of the sound stream block tag, so
-            // read the next one and recreate the decoder.
-            // `AdpcmDecoder` read the ADPCM header when it is created.
-            self.decoder = AdpcmDecoder::new(
-                Cursor::new(audio_data),
-                self.format.is_stereo,
-                self.format.sample_rate,
-            )
-            .ok()?;
-            self.decoder.next()
-        } else {
-            // No more SoundStreamBlock tags.
-            None
+            return Some(sample_frame);
         }
+
+        // We've reached the end of the sound stream block tag, so
+        // read the next one and recreate the decoder.
+        let audio_data = self.tag_reader.next()?;
+
+        // `AdpcmDecoder` reads the ADPCM header when it is created.
+        let data_vec = audio_data.with_data(|d| d.to_vec())?;
+        self.decoder = AdpcmDecoder::new(
+            Cursor::new(data_vec),
+            self.format.is_stereo,
+            self.format.sample_rate,
+        )
+        .ok()?;
+        self.decoder.next()
     }
 }
 
@@ -281,7 +286,8 @@ impl StreamTagReader {
     /// Builds a new `StreamTagReader` from the given SWF data.
     /// `swf_data` should be the tag data of a MovieClip.
     fn new(stream_info: &swf::SoundStreamHead, swf_data: SwfSlice) -> Self {
-        let current_audio_data = SwfSlice::empty(swf_data.movie.clone());
+        // We need an empty slice that still refers to the same movie.
+        let current_audio_data = swf_data.copy_empty();
         Self {
             swf_data,
             pos: 0,
@@ -297,62 +303,78 @@ impl Iterator for StreamTagReader {
     type Item = SwfSlice;
 
     fn next(&mut self) -> Option<Self::Item> {
-        let audio_data = &mut self.current_audio_data;
-        let compression = self.compression;
-        let mut found = false;
-
-        let swf_data = &self.swf_data;
         loop {
-            let tag_callback =
-                |reader: &mut swf::read::Reader<'_>, tag_code, tag_len| match tag_code {
-                    TagCode::SoundStreamBlock if !found => {
-                        found = true;
-                        let mut audio_block = &reader.get_ref()[..tag_len];
-                        // MP3 audio blocks start with a header indicating sample count + seek offset (SWF19 p.184).
-                        if compression == AudioCompression::Mp3 && audio_block.len() >= 4 {
-                            // MP3s deliver audio in frames of 576 samples, which means we may have SoundStreamBlocks with
-                            // lots of extra samples, followed by a block with 0 samples. Worse, there may be frames without
-                            // blocks at all despite SWF19 saying this shouldn't happen. This may or may not indicate a gap
-                            // in the audio depending on the number of empty frames.
-                            // Keep a tally of the # of samples we've seen compared to the number of samples that will be
-                            // played in each timeline frame. Only stop an MP3 sound if we've exhausted all of the samples.
-                            // RESEARCHME: How does Flash Player actually determine when there is an audio gap or not?
-                            // If an MP3 audio track has gaps, Flash Player will often play it out of sync (too early).
-                            // Seems closely related to `stream_info.num_samples_per_block`.
-                            let num_samples = u16::from_le_bytes(
-                                audio_block[..2].try_into().expect("2 bytes fit into a u16"),
-                            );
-                            self.mp3_samples_buffered += i32::from(num_samples);
-                            audio_block = &audio_block[4..];
-                        }
-                        *audio_data = swf_data.to_subslice(audio_block);
-                        Ok(ControlFlow::Continue)
+            let (was_found, bytes_read) = self
+                .swf_data
+                .with_reader_from(self.pos as u64, |reader| {
+                    let initial_len = reader.get_ref().len();
+                    if initial_len == 0 {
+                        return (false, 0);
                     }
-                    TagCode::ShowFrame if compression == AudioCompression::Mp3 => {
-                        self.mp3_samples_buffered -= i32::from(self.mp3_samples_per_block);
-                        Ok(ControlFlow::Exit)
-                    }
-                    TagCode::ShowFrame => Ok(ControlFlow::Exit),
-                    _ => Ok(ControlFlow::Continue),
-                };
 
-            let mut reader = self.swf_data.read_from(self.pos as u64);
-            let _ = crate::tag_utils::decode_tags(&mut reader, tag_callback);
-            self.pos = reader.get_ref().as_ptr() as usize - swf_data.as_ref().as_ptr() as usize;
+                    let mut found_in_frame = false;
+                    let tag_callback =
+                        |reader: &mut swf::read::Reader<'_>,
+                         tag_code,
+                         tag_len|
+                         -> Result<ControlFlow, crate::tag_utils::Error> {
+                            match tag_code {
+                                TagCode::SoundStreamBlock if !found_in_frame => {
+                                    found_in_frame = true;
+                                    let mut audio_block = &reader.get_ref()[..tag_len];
+                                    // MP3 audio blocks start with a header indicating sample count + seek offset (SWF19 p.184).
+                                    if self.compression == AudioCompression::Mp3
+                                        && audio_block.len() >= 4
+                                    {
+                                        let num_samples = u16::from_le_bytes(
+                                            audio_block[..2]
+                                                .try_into()
+                                                .expect("2 bytes fit into a u16"),
+                                        );
+                                        self.mp3_samples_buffered += i32::from(num_samples);
+                                        audio_block = &audio_block[4..];
+                                    }
+                                    self.current_audio_data =
+                                        self.swf_data.to_subslice(audio_block);
+                                    Ok(ControlFlow::Continue)
+                                }
+                                TagCode::ShowFrame if self.compression == AudioCompression::Mp3 => {
+                                    self.mp3_samples_buffered -=
+                                        i32::from(self.mp3_samples_per_block);
+                                    Ok(ControlFlow::Exit)
+                                }
+                                TagCode::ShowFrame => Ok(ControlFlow::Exit),
+                                _ => Ok(ControlFlow::Continue),
+                            }
+                        };
 
-            // If we hit a SoundStreamBlock within this frame, return it. Otherwise, the stream should end.
-            // The exception is MP3 streaming sounds, which will continue to play even when a few frames
-            // are missing SoundStreamBlock tags (see above).
-            if found {
-                break Some(self.current_audio_data.clone());
-            } else if compression != AudioCompression::Mp3
-                // FIXME: The next condition should logically end with `<= 0`.
-                // It was changed as a quick HACK to fix #7524 by not detecting an
-                // underrun too soon. We are still not yet sure what exactly to do here.
-                || self.mp3_samples_buffered <= -(self.mp3_samples_per_block as i32)
-                || reader.get_ref().is_empty()
-            {
-                break None;
+                    // Ignore errors, as per original logic.
+                    let _ = crate::tag_utils::decode_tags(reader, tag_callback);
+
+                    (found_in_frame, initial_len - reader.get_ref().len())
+                })
+                .unwrap_or_default();
+
+            self.pos += bytes_read;
+
+            if was_found {
+                return Some(self.current_audio_data.clone());
+            }
+
+            if bytes_read == 0 {
+                // Reached end of stream.
+                return None;
+            }
+
+            // For non-MP3, if we processed a frame's worth of tags but found no
+            // sound block, the stream ends.
+            if self.compression != AudioCompression::Mp3 {
+                return None;
+            }
+
+            // For MP3, end the stream if our sample buffer is depleted.
+            if self.mp3_samples_buffered <= -(self.mp3_samples_per_block as i32) {
+                return None;
             }
         }
     }
@@ -362,18 +384,25 @@ impl Iterator for StreamTagReader {
 /// audio stream data for `SoundStreamBlock` tags.
 impl Read for StreamTagReader {
     fn read(&mut self, buf: &mut [u8]) -> std::io::Result<usize> {
-        while self.current_audio_data.as_ref().is_empty() {
-            self.current_audio_data = if let Some(audio_data) = self.next() {
-                audio_data
+        while self.current_audio_data.is_empty() {
+            if let Some(audio_data) = self.next() {
+                self.current_audio_data = audio_data;
             } else {
                 return Ok(0);
             }
         }
 
-        let len = std::cmp::min(buf.len(), self.current_audio_data.as_ref().len());
-        buf[..len].copy_from_slice(&self.current_audio_data.as_ref()[..len]);
-        self.current_audio_data.start += len;
-        Ok(len)
+        let bytes_copied = self
+            .current_audio_data
+            .with_data(|data| {
+                let len = std::cmp::min(buf.len(), data.len());
+                buf[..len].copy_from_slice(&data[..len]);
+                len
+            })
+            .unwrap_or(0); // Should not be None, we checked is_empty.
+
+        self.current_audio_data.start += bytes_copied;
+        Ok(bytes_copied)
     }
 }
 

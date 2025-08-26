@@ -63,7 +63,7 @@ pub fn fill_rect<'gc>(
             write.set_pixel32_row_raw(rect.x_min, rect.x_max, y, color);
         }
     }
-    write.set_cpu_dirty(mc, rect);
+    write.set_cpu_dirty(rect);
 }
 
 pub fn set_pixel32<'gc>(
@@ -85,7 +85,7 @@ pub fn set_pixel32<'gc>(
         y,
         Color::from(color).to_premultiplied_alpha(transparency),
     );
-    write.set_cpu_dirty(mc, PixelRegion::for_pixel(x, y));
+    write.set_cpu_dirty(PixelRegion::for_pixel(x, y));
 }
 
 pub fn get_pixel32(target: BitmapData, renderer: &mut dyn RenderBackend, x: u32, y: u32) -> u32 {
@@ -117,7 +117,7 @@ pub fn set_pixel<'gc>(
     } else {
         write.set_pixel32_raw(x, y, color.with_alpha(0xFF));
     }
-    write.set_cpu_dirty(mc, PixelRegion::for_pixel(x, y));
+    write.set_cpu_dirty(PixelRegion::for_pixel(x, y));
 }
 
 pub fn get_pixel(target: BitmapData, renderer: &mut dyn RenderBackend, x: u32, y: u32) -> u32 {
@@ -175,7 +175,7 @@ pub fn flood_fill<'gc>(
             }
         }
     }
-    write.set_cpu_dirty(mc, dirty_region);
+    write.set_cpu_dirty(dirty_region);
 }
 
 pub fn noise<'gc>(
@@ -241,7 +241,7 @@ pub fn noise<'gc>(
         }
     }
     let region = PixelRegion::for_whole_size(write.width(), write.height());
-    write.set_cpu_dirty(mc, region)
+    write.set_cpu_dirty(region)
 }
 
 #[expect(clippy::too_many_arguments)]
@@ -358,7 +358,7 @@ pub fn perlin_noise<'gc>(
         }
     }
     let region = PixelRegion::for_whole_size(write.width(), write.height());
-    write.set_cpu_dirty(mc, region)
+    write.set_cpu_dirty(region)
 }
 
 #[expect(clippy::too_many_arguments)]
@@ -457,7 +457,7 @@ pub fn copy_channel<'gc>(
         }
     }
 
-    write.set_cpu_dirty(mc, dest_region);
+    write.set_cpu_dirty(dest_region);
 }
 
 #[expect(clippy::too_many_arguments)]
@@ -511,10 +511,10 @@ pub fn color_transform<'gc>(
             )
         }
     }
-    write.set_cpu_dirty(
-        mc,
-        PixelRegion::encompassing_pixels((x_min, y_min), (x_max - 1, y_max - 1)),
-    );
+    write.set_cpu_dirty(PixelRegion::encompassing_pixels(
+        (x_min, y_min),
+        (x_max - 1, y_max - 1),
+    ));
 }
 
 #[expect(clippy::too_many_arguments)]
@@ -612,7 +612,7 @@ pub fn threshold<'gc>(
     }
 
     if let Some(dirty_area) = dirty_area {
-        write.set_cpu_dirty(mc, dirty_area);
+        write.set_cpu_dirty(dirty_area);
     }
 
     modified_count
@@ -669,7 +669,7 @@ pub fn scroll<'gc>(
     }
 
     let region = PixelRegion::for_whole_size(write.width(), write.height());
-    write.set_cpu_dirty(mc, region)
+    write.set_cpu_dirty(region)
 }
 
 pub fn palette_map<'gc>(
@@ -734,7 +734,7 @@ pub fn palette_map<'gc>(
         }
     }
 
-    write.set_cpu_dirty(mc, dest_region);
+    write.set_cpu_dirty(dest_region);
 }
 
 /// Compare two BitmapData objects.
@@ -1020,7 +1020,7 @@ pub fn merge<'gc>(
         }
     }
 
-    write.set_cpu_dirty(mc, dest_region);
+    write.set_cpu_dirty(dest_region);
 }
 
 pub fn copy_pixels<'gc>(
@@ -1197,7 +1197,7 @@ pub fn copy_pixels_with_alpha_source<'gc>(
         ((dest_min_x + src_width), (dest_min_y + src_height)),
     );
     dirty_region.clamp(write.width(), write.height());
-    write.set_cpu_dirty(context.gc(), dirty_region);
+    write.set_cpu_dirty(dirty_region);
 }
 
 pub fn apply_filter<'gc>(
@@ -1262,7 +1262,7 @@ pub fn apply_filter<'gc>(
     );
     let region = PixelRegion::for_whole_size(write.width(), write.height());
     match sync_handle {
-        Some(sync_handle) => write.set_gpu_dirty(context.gc(), sync_handle, region),
+        Some(sync_handle) => write.set_gpu_dirty(sync_handle, region),
         None => {
             tracing::warn!("BitmapData.apply_filter: Renderer not yet implemented")
         }
@@ -1304,7 +1304,7 @@ fn copy_on_cpu<'gc>(
             }
         }
 
-        write.set_cpu_dirty(context, dest_region);
+        write.set_cpu_dirty(dest_region);
     } else {
         let dest = dest.sync(renderer);
         let mut dest_write = dest.borrow_mut(context);
@@ -1361,7 +1361,7 @@ fn copy_on_cpu<'gc>(
             }
         }
 
-        dest_write.set_cpu_dirty(context, dest_region);
+        dest_write.set_cpu_dirty(dest_region);
     }
 }
 
@@ -1393,7 +1393,7 @@ fn blend_and_transform<'gc>(
             }
         }
 
-        write.set_cpu_dirty(context.gc(), dest_region);
+        write.set_cpu_dirty(dest_region);
     } else {
         let dest = dest.sync(context.renderer);
         let mut dest_write = dest.borrow_mut(context.gc());
@@ -1416,7 +1416,7 @@ fn blend_and_transform<'gc>(
             }
         }
 
-        dest_write.set_cpu_dirty(context.gc(), dest_region);
+        dest_write.set_cpu_dirty(dest_region);
     }
 }
 
@@ -1605,7 +1605,7 @@ pub fn draw<'gc>(
 
     match image {
         Some(sync_handle) => {
-            write.set_gpu_dirty(context.gc(), sync_handle, dirty_region);
+            write.set_gpu_dirty(sync_handle, dirty_region);
             Ok(())
         }
         None => Err(BitmapDataDrawError::Unimplemented),
@@ -1660,7 +1660,7 @@ pub fn set_vector<'gc>(
     let mut bitmap_data = bitmap_data.borrow_mut(activation.gc());
     let transparency = bitmap_data.transparency();
     let mut iter = vector.iter();
-    bitmap_data.set_cpu_dirty(activation.gc(), region);
+    bitmap_data.set_cpu_dirty(region);
     for y in region.y_min..region.y_max {
         for x in region.x_min..region.x_max {
             let color = iter
@@ -1740,7 +1740,7 @@ pub fn set_pixels_from_byte_array<'gc>(
             }
         }
 
-        write.set_cpu_dirty(mc, region)
+        write.set_cpu_dirty(region)
     }
 
     Ok(())
@@ -1961,7 +1961,7 @@ pub fn pixel_dissolve<'gc>(
         );
     }
 
-    write.set_cpu_dirty(mc, dest_region);
+    write.set_cpu_dirty(dest_region);
 
     raw_perm_index as i32
 }

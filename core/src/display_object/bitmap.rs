@@ -8,7 +8,7 @@ use crate::avm2::{
 };
 use crate::bitmap::bitmap_data::BitmapData;
 use crate::context::{RenderContext, UpdateContext};
-use crate::display_object::{DisplayObjectBase, DisplayObjectPtr, DisplayObjectWeak};
+use crate::display_object::{DisplayObjectBase, DisplayObjectPtr};
 use crate::prelude::*;
 use crate::tag_utils::SwfMovie;
 use crate::utils::HasPrefixField;
@@ -167,7 +167,7 @@ impl<'gc> Bitmap<'gc> {
             },
         ));
 
-        bitmap_data.add_display_object(mc, DisplayObjectWeak::Bitmap(bitmap.downgrade()));
+        bitmap_data.add_display_object(mc, DisplayObject::Bitmap(bitmap));
 
         bitmap
     }
@@ -230,12 +230,12 @@ impl<'gc> Bitmap<'gc> {
     /// This also forces the `BitmapData` to be sent to the rendering backend,
     /// if that has not already been done.
     pub fn set_bitmap_data(self, context: &mut UpdateContext<'gc>, bitmap_data: BitmapData<'gc>) {
-        let weak_self = DisplayObjectWeak::Bitmap(self.downgrade());
+        let bitmap = DisplayObject::Bitmap(self);
 
         self.0
             .bitmap_data
             .get()
-            .remove_display_object(context.gc(), weak_self);
+            .remove_display_object(context.gc(), bitmap);
 
         // Refresh our cached values, even if we're writing the same BitmapData
         // that we currently have stored. This will update them to '0' if the
@@ -249,7 +249,7 @@ impl<'gc> Bitmap<'gc> {
         )
         .set(bitmap_data);
 
-        bitmap_data.add_display_object(context.gc(), weak_self);
+        bitmap_data.add_display_object(context.gc(), bitmap);
     }
 
     pub fn avm2_bitmapdata_class(self) -> Option<Avm2ClassObject<'gc>> {

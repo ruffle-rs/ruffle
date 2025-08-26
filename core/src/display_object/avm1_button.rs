@@ -77,7 +77,7 @@ impl<'gc> Avm1Button<'gc> {
             Avm1ButtonData {
                 base: Default::default(),
                 cell: RefLock::new(Avm1ButtonDataMut {
-                    container: ChildContainer::new(&source_movie.movie),
+                    container: ChildContainer::new(&source_movie.movie.upgrade().unwrap().clone()),
                     hit_area: BTreeMap::new(),
                     hit_bounds: Default::default(),
                     text_field_bindings: Vec::new(),
@@ -85,7 +85,7 @@ impl<'gc> Avm1Button<'gc> {
                 shared: Gc::new(
                     mc,
                     ButtonShared {
-                        swf: source_movie.movie.clone(),
+                        swf: source_movie.movie.upgrade().unwrap().clone(),
                         id: button.id,
                         actions,
                         cell: RefCell::new(ButtonSharedMut {
@@ -198,7 +198,7 @@ impl<'gc> Avm1Button<'gc> {
             let removed_child = self.replace_at_depth(context, child, depth.into());
             dispatch_added_event(self.into(), child, false, context);
             if let Some(removed_child) = removed_child {
-                dispatch_removed_event(removed_child, context);
+                dispatch_removed_event(self.into(), removed_child, context);
             }
         }
 

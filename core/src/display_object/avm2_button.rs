@@ -111,7 +111,7 @@ impl<'gc> Avm2Button<'gc> {
                 shared: Gc::new(
                     context.gc(),
                     ButtonShared {
-                        swf: source_movie.movie.clone(),
+                        swf: source_movie.movie.upgrade().unwrap().clone(),
                         id: button.id,
                         cell: RefCell::new(ButtonSharedMut {
                             records: button.records.clone(),
@@ -360,7 +360,7 @@ impl<'gc> Avm2Button<'gc> {
             }
 
             if let Some(old_state_child) = old_state_child {
-                dispatch_removed_event(old_state_child, context);
+                dispatch_removed_event(self.into(), old_state_child, context);
             }
 
             if let Some(child) = child {
