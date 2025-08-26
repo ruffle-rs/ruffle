@@ -1,6 +1,7 @@
 //! AVM2 object impl for the display hierarchy.
 
 use crate::avm2::activation::Activation;
+use crate::avm2::function::FunctionArgs;
 use crate::avm2::object::script_object::ScriptObjectData;
 use crate::avm2::object::{ClassObject, TObject};
 use crate::avm2::Error;
@@ -65,7 +66,7 @@ impl<'gc> StageObject<'gc> {
     ) -> Result<Self, Error<'gc>> {
         let this = Self::for_display_object(activation.gc(), display_object, class);
 
-        class.call_init(this.into(), &[], activation)?;
+        class.call_init(this.into(), FunctionArgs::empty(), activation)?;
 
         Ok(this)
     }
