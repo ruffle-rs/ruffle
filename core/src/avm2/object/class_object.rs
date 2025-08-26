@@ -650,12 +650,15 @@ impl<'gc> ClassObject<'gc> {
     pub fn call(
         self,
         activation: &mut Activation<'_, 'gc>,
-        arguments: &[Value<'gc>],
+        arguments: FunctionArgs<'_, 'gc>,
     ) -> Result<Value<'gc>, Error<'gc>> {
         if let Some(call_handler) = self.call_handler() {
+            let arguments = &arguments.to_slice();
             call_handler(activation, self.into(), arguments)
         } else if arguments.len() == 1 {
-            arguments[0].coerce_to_type(activation, self.inner_class_definition())
+            arguments
+                .get_at(0)
+                .coerce_to_type(activation, self.inner_class_definition())
         } else {
             Err(Error::avm_error(argument_error(
                 activation,
