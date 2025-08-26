@@ -8,7 +8,7 @@ use crate::avm2::e4x::XmlSettings;
 use crate::avm2::error::{
     make_error_1014, make_error_1107, type_error, verify_error, Error1014Type,
 };
-use crate::avm2::function::{exec, FunctionArgs};
+use crate::avm2::function::exec;
 use crate::avm2::globals::{
     init_builtin_system_class_defs, init_builtin_system_classes, init_native_system_classes,
     SystemClassDefs, SystemClasses,
@@ -90,6 +90,7 @@ pub use crate::avm2::class::Class;
 pub use crate::avm2::domain::{Domain, DomainPtr};
 pub use crate::avm2::error::Error;
 pub use crate::avm2::flv::FlvValueAvm2Ext;
+pub use crate::avm2::function::FunctionArgs;
 pub use crate::avm2::globals::flash::ui::context_menu::make_context_menu_state;
 pub use crate::avm2::multiname::Multiname;
 pub use crate::avm2::namespace::{CommonNamespaces, Namespace};
