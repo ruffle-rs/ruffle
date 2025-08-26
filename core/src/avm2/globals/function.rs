@@ -2,6 +2,7 @@
 
 use crate::avm2::activation::Activation;
 use crate::avm2::error::{eval_error, type_error};
+use crate::avm2::function::FunctionArgs;
 use crate::avm2::globals::array::resolve_array_hole;
 use crate::avm2::globals::methods::function as function_class_methods;
 use crate::avm2::object::FunctionObject;
@@ -87,9 +88,10 @@ pub fn call<'gc>(
     let this = args.get_value(0);
 
     if args.len() > 1 {
-        Ok(func.call(activation, this, &args[1..])?)
+        let passed_args = &args[1..];
+        Ok(func.call(activation, this, FunctionArgs::from_slice(passed_args))?)
     } else {
-        Ok(func.call(activation, this, &[])?)
+        Ok(func.call(activation, this, FunctionArgs::empty())?)
     }
 }
 
@@ -126,7 +128,7 @@ pub fn apply<'gc>(
         Vec::new()
     };
 
-    func.call(activation, this, &resolved_args)
+    func.call(activation, this, FunctionArgs::from_slice(&resolved_args))
 }
 
 pub fn get_length<'gc>(
