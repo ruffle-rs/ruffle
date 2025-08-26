@@ -18,7 +18,7 @@
         "ruffle-core": "^0.1.0"
     },
     "devDependencies": {
-        "@types/react": "^19.1.10",
+        "@types/react": "^19.1.11",
         "@types/react-dom": "^19.1.7",
         "@vitejs/plugin-react": "^5.0.1",
         "typescript": "^5.9.2",
