@@ -1111,12 +1111,12 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     }
 
     fn op_call_static(&mut self, method: Method<'gc>, arg_count: u32) -> Result<(), Error<'gc>> {
-        let args = self.pop_stack_args(arg_count);
+        let args = self.stack.get_args(arg_count as usize);
         let receiver = self.pop_stack();
         // TODO: What scope should the function be executed with?
         let scope = self.create_scopechain();
         let function = FunctionObject::from_method(self, method, scope, None, None, None);
-        let value = function.call(self, receiver, &args)?;
+        let value = function.call(self, receiver, args)?;
 
         self.push_stack(value);
 

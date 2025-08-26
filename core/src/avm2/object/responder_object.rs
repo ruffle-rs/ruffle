@@ -1,3 +1,4 @@
+use crate::avm2::function::FunctionArgs;
 use crate::avm2::object::script_object::ScriptObjectData;
 use crate::avm2::object::{ClassObject, FunctionObject, Object, TObject};
 use crate::avm2::{Activation, Error};
@@ -75,7 +76,12 @@ impl<'gc> ResponderObject<'gc> {
         if let Some(function) = function {
             let mut activation = Activation::from_nothing(context);
             let value = crate::avm2::amf::deserialize_value(&mut activation, message)?;
-            function.call(&mut activation, (*self).into(), &[value])?;
+            let args = &[value];
+            function.call(
+                &mut activation,
+                (*self).into(),
+                FunctionArgs::from_slice(args),
+            )?;
         }
 
         Ok(())

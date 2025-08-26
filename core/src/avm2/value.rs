@@ -1224,7 +1224,6 @@ impl<'gc> Value<'gc> {
         // WeakKeyHashMap<Value, FunctionObject>, not on the Object
         if let Some(object) = self.as_object() {
             if let Some(bound_method) = object.get_bound_method(id) {
-                let arguments = &arguments.to_slice();
                 return bound_method.call(activation, *self, arguments);
             }
         }
@@ -1255,7 +1254,6 @@ impl<'gc> Value<'gc> {
             object.install_bound_method(activation.gc(), id, bound_method);
         }
 
-        let arguments = &arguments.to_slice();
         bound_method.call(activation, *self, arguments)
     }
 
@@ -1362,6 +1360,7 @@ impl<'gc> Value<'gc> {
         match self.as_object() {
             Some(Object::ClassObject(class_object)) => class_object.call(activation, args),
             Some(Object::FunctionObject(function_object)) => {
+                let args = FunctionArgs::from_slice(args);
                 function_object.call(activation, receiver, args)
             }
             _ => Err(make_error_1006(activation)),

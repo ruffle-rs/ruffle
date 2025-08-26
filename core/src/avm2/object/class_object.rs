@@ -297,7 +297,7 @@ impl<'gc> ClassObject<'gc> {
             Some(c_class),
         );
 
-        class_init_fn.call(activation, self_value, &[])?;
+        class_init_fn.call(activation, self_value, FunctionArgs::empty())?;
 
         Ok(())
     }
