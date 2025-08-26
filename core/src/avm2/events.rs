@@ -1,6 +1,7 @@
 //! Core event structure
 
 use crate::avm2::activation::Activation;
+use crate::avm2::function::FunctionArgs;
 use crate::avm2::globals::slots::flash_events_event_dispatcher as slots;
 use crate::avm2::object::{EventObject, Object, TObject as _};
 use crate::avm2::value::Value;
@@ -407,7 +408,10 @@ fn dispatch_event_to_target<'gc>(
 
         let global = activation.context.avm2.toplevel_global_object().unwrap();
 
-        if let Err(err) = Value::from(*handler).call(activation, global.into(), &[event.into()]) {
+        let args = &[event.into()];
+        let result =
+            Value::from(*handler).call(activation, global.into(), FunctionArgs::from_slice(args));
+        if let Err(err) = result {
             tracing::error!(
                 "Error dispatching event {:?} to handler {:?} : {:?}",
                 event,

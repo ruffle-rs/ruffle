@@ -556,7 +556,7 @@ impl<'gc> TObject<'gc> for XmlListObject<'gc> {
     fn call_property_local(
         self,
         multiname: &Multiname<'gc>,
-        arguments: &[Value<'gc>],
+        arguments: FunctionArgs<'_, 'gc>,
         activation: &mut Activation<'_, 'gc>,
     ) -> Result<Value<'gc>, Error<'gc>> {
         let method = Value::from(self.proto().expect("XMLList missing prototype"))
@@ -592,11 +592,7 @@ impl<'gc> TObject<'gc> for XmlListObject<'gc> {
 
                     let child = children.first_mut().unwrap().get_or_create_xml(activation);
 
-                    return Value::from(child).call_property(
-                        multiname,
-                        FunctionArgs::from_slice(arguments),
-                        activation,
-                    );
+                    return Value::from(child).call_property(multiname, arguments, activation);
                 }
             }
         }

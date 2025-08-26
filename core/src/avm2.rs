@@ -562,13 +562,12 @@ impl<'gc> Avm2<'gc> {
     pub fn run_stack_frame_for_callable(
         callable: Object<'gc>,
         receiver: Value<'gc>,
-        args: &[Value<'gc>],
         domain: Domain<'gc>,
         context: &mut UpdateContext<'gc>,
     ) -> Result<(), String> {
         let mut evt_activation = Activation::from_domain(context, domain);
         Value::from(callable)
-            .call(&mut evt_activation, receiver, args)
+            .call(&mut evt_activation, receiver, FunctionArgs::empty())
             .map_err(|e| format!("{e:?}"))?;
 
         Ok(())

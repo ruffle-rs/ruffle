@@ -3,6 +3,7 @@
 use crate::avm2::activation::Activation;
 use crate::avm2::class::{Class, ClassAttributes};
 use crate::avm2::error::{argument_error, type_error};
+use crate::avm2::function::FunctionArgs;
 use crate::avm2::globals::array::{
     compare_numeric_slow, compare_string_case_insensitive, compare_string_case_sensitive,
     ArrayIter, SortOptions,
@@ -311,8 +312,9 @@ pub fn filter<'gc>(
     let mut iter = ArrayIter::new(activation, this)?;
 
     while let Some((i, item)) = iter.next(activation)? {
+        let args = &[item, i.into(), this.into()];
         let result = callback
-            .call(activation, receiver, &[item, i.into(), this.into()])?
+            .call(activation, receiver, FunctionArgs::from_slice(args))?
             .coerce_to_boolean();
 
         if result {
@@ -403,7 +405,8 @@ pub fn map<'gc>(
     let mut iter = ArrayIter::new(activation, this)?;
 
     while let Some((i, item)) = iter.next(activation)? {
-        let new_item = callback.call(activation, receiver, &[item, i.into(), this.into()])?;
+        let args = &[item, i.into(), this.into()];
+        let new_item = callback.call(activation, receiver, FunctionArgs::from_slice(args))?;
         let coerced_item = new_item.coerce_to_type(activation, value_type_for_coercion)?;
 
         new_storage.push(coerced_item, activation)?;
@@ -605,8 +608,9 @@ pub fn sort<'gc>(
 
         let compare = move |activation: &mut Activation<'_, 'gc>, a, b| {
             if let Some(compare_fnc) = compare_fnc {
+                let args = &[a, b];
                 let order = compare_fnc
-                    .call(activation, this.into(), &[a, b])?
+                    .call(activation, this.into(), FunctionArgs::from_slice(args))?
                     .coerce_to_number(activation)?;
 
                 if order > 0.0 {

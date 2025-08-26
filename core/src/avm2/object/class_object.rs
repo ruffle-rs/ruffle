@@ -378,9 +378,8 @@ impl<'gc> ClassObject<'gc> {
         let property = self.instance_vtable().get_trait(multiname);
         match property {
             Some(Property::Slot { slot_id }) | Some(Property::ConstSlot { slot_id }) => {
-                let arguments = &arguments.to_slice();
-
                 let func = receiver.get_slot(slot_id);
+
                 func.call(activation, receiver.into(), arguments)
             }
             Some(Property::Method { disp_id }) => {
@@ -391,7 +390,6 @@ impl<'gc> ClassObject<'gc> {
                 let obj =
                     self.call_method_super(activation, receiver, get, FunctionArgs::empty())?;
 
-                let arguments = &arguments.to_slice();
                 obj.call(activation, receiver.into(), arguments)
             }
             Some(Property::Virtual { get: None, .. }) => Err(error::make_reference_error(

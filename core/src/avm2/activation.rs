@@ -1005,11 +1005,11 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     }
 
     fn op_call(&mut self, arg_count: u32) -> Result<(), Error<'gc>> {
-        let args = self.pop_stack_args(arg_count);
+        let args = self.stack.get_args(arg_count as usize);
         let receiver = self.pop_stack();
         let function = self.pop_stack();
 
-        let value = function.call(self, receiver, &args)?;
+        let value = function.call(self, receiver, args)?;
 
         self.push_stack(value);
 
@@ -1085,11 +1085,11 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         multiname: Gc<'gc, Multiname<'gc>>,
         arg_count: u32,
     ) -> Result<(), Error<'gc>> {
-        let args = self.pop_stack_args(arg_count);
+        let args = self.stack.get_args(arg_count as usize);
         let multiname = multiname.fill_with_runtime_params(self)?;
         let receiver = self.pop_stack().null_check(self, Some(&multiname))?;
         let function = receiver.get_property(&multiname, self)?;
-        let value = function.call(self, Value::Null, &args)?;
+        let value = function.call(self, Value::Null, args)?;
 
         self.push_stack(value);
 
