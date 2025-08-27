@@ -401,7 +401,19 @@ pub fn map<'gc>(
     let mut new_storage = VectorStorage::new(0, false, value_type);
 
     let callback = match args.try_get_function(0) {
-        None => return Ok(VectorObject::from_vector(new_storage, activation)?.into()),
+        None => {
+            // `myVector.map(null)` returns an empty vector with the same
+            // `length` as `myVector`
+            let own_length = this
+                .as_vector_storage()
+                .expect("Receiver is vector")
+                .length();
+            new_storage
+                .resize(own_length, activation)
+                .expect("Vector isn't fixed");
+
+            return Ok(VectorObject::from_vector(new_storage, activation)?.into());
+        }
         Some(callback) => callback,
     };
     let receiver = args.get_value(1);
