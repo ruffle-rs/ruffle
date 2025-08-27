@@ -15,6 +15,7 @@ pub struct Shaders {
     pub gradient_shader: wgpu::ShaderModule,
     pub copy_srgb_shader: wgpu::ShaderModule,
     pub copy_shader: wgpu::ShaderModule,
+    pub alpha_mask_shader: wgpu::ShaderModule,
     pub blend_shaders: EnumMap<ComplexBlend, wgpu::ShaderModule>,
     pub color_matrix_filter: wgpu::ShaderModule,
     pub blur_filter: wgpu::ShaderModule,
@@ -67,6 +68,11 @@ impl Shaders {
             "gradient.wgsl",
             include_str!("../shaders/gradient.wgsl"),
         );
+        let alpha_mask_shader = make_shader(
+            device,
+            "alpha_mask.wgsl",
+            include_str!("../shaders/alpha_mask.wgsl"),
+        );
 
         let blend_shaders = enum_map! {
             ComplexBlend::Multiply => make_shader(device, "blend/multiply.wgsl", include_str!("../shaders/blend/multiply.wgsl")),
@@ -86,6 +92,7 @@ impl Shaders {
             gradient_shader,
             copy_srgb_shader,
             copy_shader,
+            alpha_mask_shader,
             blend_shaders,
             color_matrix_filter,
             blur_filter,
