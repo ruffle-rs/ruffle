@@ -25,6 +25,8 @@ pub fn add_frame_script<'gc>(
     {
         for (frame_id, callable) in args.chunks_exact(2).map(|s| (s[0], s[1])) {
             let frame_id = frame_id.coerce_to_u32(activation)? as u16 + 1;
+            // This is correct; FP will attempt to call any Object when running
+            // frame scripts
             let callable = callable.as_object();
 
             mc.register_frame_script(frame_id, callable, activation.context);
