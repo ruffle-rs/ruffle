@@ -192,7 +192,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     pub fn resolve_parameters(
         &mut self,
         method: Method<'gc>,
-        user_arguments: &[Value<'gc>],
+        user_arguments: FunctionArgs<'_, 'gc>,
         signature: &[ResolvedParamConfig<'gc>],
         bound_class: Option<Class<'gc>>,
     ) -> Result<Vec<Value<'gc>>, Error<'gc>> {
@@ -201,7 +201,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             let coerced_arg = if let Some(param_class) = param_config.param_type {
                 arg.coerce_to_type(self, param_class)?
             } else {
-                *arg
+                arg
             };
 
             arguments_list.push(coerced_arg);
@@ -209,6 +209,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
 
         match user_arguments.len().cmp(&signature.len()) {
             Ordering::Greater => {
+                let user_arguments = &user_arguments.to_slice();
                 // Variadic parameters exist, just push them into the list
                 arguments_list.extend_from_slice(&user_arguments[signature.len()..])
             }
