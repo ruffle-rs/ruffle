@@ -1191,6 +1191,7 @@ fn set_mask<'gc>(
     movie_clip.set_clip_depth(0);
     movie_clip.set_masker(mc, mask, true);
     if let Some(m) = mask {
+        m.set_clip_depth(0);
         m.set_maskee(mc, Some(movie_clip), true);
     }
     Ok(Value::Bool(true))
