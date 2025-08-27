@@ -303,6 +303,7 @@ impl<'gc> ArrayIter<'gc> {
 }
 
 /// Implements `Array.forEach`
+/// NOTE: This is also the implementation for `Vector.forEach`
 pub fn for_each<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
@@ -310,9 +311,9 @@ pub fn for_each<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
-    let callback = match args.get_value(0) {
-        Value::Null => return Ok(Value::Undefined),
-        value => value,
+    let callback = match args.try_get_function(0) {
+        None => return Ok(Value::Undefined),
+        Some(callback) => callback,
     };
     let receiver = args.get_value(1);
     let mut iter = ArrayIter::new(activation, this)?;
@@ -333,7 +334,10 @@ pub fn map<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
-    let callback = args.get_value(0);
+    let callback = match args.try_get_function(0) {
+        None => return Ok(ArrayObject::empty(activation).into()),
+        Some(callback) => callback,
+    };
     let receiver = args.get_value(1);
     let mut new_array = ArrayStorage::new(0);
     let mut iter = ArrayIter::new(activation, this)?;
@@ -356,9 +360,9 @@ pub fn filter<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
-    let callback = match args.get_value(0) {
-        Value::Null => return Ok(ArrayObject::empty(activation).into()),
-        value => value,
+    let callback = match args.try_get_function(0) {
+        None => return Ok(ArrayObject::empty(activation).into()),
+        Some(callback) => callback,
     };
     let receiver = args.get_value(1);
     let mut new_array = ArrayStorage::new(0);
@@ -379,6 +383,7 @@ pub fn filter<'gc>(
 }
 
 /// Implements `Array.every`
+/// NOTE: This is also the implementation for `Vector.every`
 pub fn every<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
@@ -386,9 +391,9 @@ pub fn every<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
-    let callback = match args.get_value(0) {
-        Value::Null => return Ok(true.into()),
-        value => value,
+    let callback = match args.try_get_function(0) {
+        None => return Ok(true.into()),
+        Some(callback) => callback,
     };
     let receiver = args.get_value(1);
     let mut iter = ArrayIter::new(activation, this)?;
@@ -414,9 +419,9 @@ pub fn some<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
-    let callback = match args.get_value(0) {
-        Value::Null => return Ok(false.into()),
-        value => value,
+    let callback = match args.try_get_function(0) {
+        None => return Ok(false.into()),
+        Some(callback) => callback,
     };
     let receiver = args.get_value(1);
     let mut iter = ArrayIter::new(activation, this)?;

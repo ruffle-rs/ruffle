@@ -303,9 +303,9 @@ pub fn filter<'gc>(
 
     let mut new_storage = VectorStorage::new(0, false, value_type);
 
-    let callback = match args.get_value(0) {
-        Value::Null => return Ok(VectorObject::from_vector(new_storage, activation)?.into()),
-        value => value,
+    let callback = match args.try_get_function(0) {
+        None => return Ok(VectorObject::from_vector(new_storage, activation)?.into()),
+        Some(callback) => callback,
     };
     let receiver = args.get_value(1);
 
@@ -393,14 +393,19 @@ pub fn map<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
-    let callback = args.get_value(0);
-    let receiver = args.get_value(1);
-
     let value_type = this
         .instance_class()
         .param()
         .expect("Receiver is parametrized vector"); // technically unreachable
+
     let mut new_storage = VectorStorage::new(0, false, value_type);
+
+    let callback = match args.try_get_function(0) {
+        None => return Ok(VectorObject::from_vector(new_storage, activation)?.into()),
+        Some(callback) => callback,
+    };
+    let receiver = args.get_value(1);
+
     let value_type_for_coercion = new_storage.value_type_for_coercion(activation);
     let mut iter = ArrayIter::new(activation, this)?;
 
