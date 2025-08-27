@@ -7,9 +7,9 @@
 use crate::avm1::ExecutionReason;
 use crate::avm1::{Activation, ActivationIdentifier, Object as Avm1Object, Value as Avm1Value};
 use crate::avm2::error::make_null_or_undefined_error;
+use crate::avm2::object::FunctionObject as Avm2FunctionObject;
 use crate::avm2::{
-    Activation as Avm2Activation, Error as Avm2Error, FunctionArgs, Object as Avm2Object,
-    Value as Avm2Value,
+    Activation as Avm2Activation, Error as Avm2Error, FunctionArgs, Value as Avm2Value,
 };
 use crate::context::UpdateContext;
 use crate::display_object::{DisplayObject, TDisplayObject};
@@ -154,7 +154,7 @@ impl<'gc> Timers<'gc> {
                         };
 
                         let params = FunctionArgs::from_slice(&params);
-                        Avm2Value::from(closure).call(&mut avm2_activation, Avm2Value::Null, params)
+                        closure.call(&mut avm2_activation, Avm2Value::Null, params)
                     };
 
                     match run_closure() {
@@ -379,7 +379,7 @@ pub enum TimerCallback<'gc> {
     },
 
     Avm2Callback {
-        closure: Option<Avm2Object<'gc>>,
+        closure: Option<Avm2FunctionObject<'gc>>,
         params: Vec<Avm2Value<'gc>>,
     },
 }

@@ -1,5 +1,5 @@
 use crate::avm2::error::make_error_2007;
-use crate::avm2::Object;
+use crate::avm2::object::{FunctionObject, Object};
 use crate::avm2::{Activation, Error, Value};
 use crate::string::AvmString;
 
@@ -19,6 +19,7 @@ use ruffle_macros::istr;
 /// `ParametersExt::get_u32`: `Number`, `int`, or `uint` type
 /// `ParametersExt::get_bool`: `Boolean` type only
 /// `ParametersExt::get_string` and family: `String` type only
+/// `ParametersExt::get_function` and family: `Function` type only
 /// `ParametersExt::get_object` and family: Any non-primitive type; i.e. any type *except* the following:
 ///   - `*` (aka "any") type
 ///   - `Object` type (as `Object` can represent any primitive value except `undefined`)
@@ -57,6 +58,32 @@ pub trait ParametersExt<'gc> {
             Value::Null => None,
             Value::Object(o) => Some(o),
             _ => panic!("Expected Object or null as parameter"),
+        }
+    }
+
+    /// Gets the value at the given index as a FunctionObject. It is expected
+    /// that the value is either FunctionObject or Null.
+    ///
+    /// If the value is null, a TypeError 2007 is raised.
+    fn get_function(
+        &self,
+        activation: &mut Activation<'_, 'gc>,
+        index: usize,
+        name: &'static str,
+    ) -> Result<FunctionObject<'gc>, Error<'gc>> {
+        self.try_get_function(index)
+            .ok_or_else(|| make_error_2007(activation, name))
+    }
+
+    /// Gets the value at the given index as an FunctionObject. It is expected
+    /// that the value is either FunctionObject or Null.
+    ///
+    /// If the value is null, None is returned.
+    fn try_get_function(&self, index: usize) -> Option<FunctionObject<'gc>> {
+        match self.get_value(index) {
+            Value::Null => None,
+            Value::Object(Object::FunctionObject(f)) => Some(f),
+            _ => panic!("Expected FunctionObject or null as parameter"),
         }
     }
 

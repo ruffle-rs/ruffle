@@ -5,8 +5,8 @@ use crate::avm1::{ArrayBuilder as Avm1ArrayBuilder, Error as Avm1Error, Object a
 use crate::avm2::activation::Activation as Avm2Activation;
 use crate::avm2::error::Error as Avm2Error;
 use crate::avm2::object::{
-    ArrayObject as Avm2ArrayObject, Object as Avm2Object, ScriptObject as Avm2ScriptObject,
-    TObject as _,
+    ArrayObject as Avm2ArrayObject, FunctionObject as Avm2FunctionObject, Object as Avm2Object,
+    ScriptObject as Avm2ScriptObject, TObject as _,
 };
 use crate::avm2::{FunctionArgs, Value as Avm2Value};
 use crate::context::UpdateContext;
@@ -272,7 +272,7 @@ pub enum Callback<'gc> {
         method: Avm1Object<'gc>,
     },
     Avm2 {
-        method: Avm2Object<'gc>,
+        method: Avm2FunctionObject<'gc>,
     },
 }
 
@@ -307,8 +307,6 @@ impl<'gc> Callback<'gc> {
                 Value::Null
             }
             Callback::Avm2 { method } => {
-                let method = Avm2Value::from(*method);
-
                 let domain = context
                     .library
                     .library_for_movie(context.root_swf.clone())

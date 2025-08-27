@@ -32,7 +32,7 @@ pub fn set_interval<'gc>(
     _this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let closure = args.try_get_object(0);
+    let closure = args.try_get_function(0);
     let interval = args.get_f64(1);
     let params = &args[2..];
 
@@ -65,7 +65,7 @@ pub fn set_timeout<'gc>(
     _this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let closure = args.try_get_object(0);
+    let closure = args.try_get_function(0);
     let interval = args.get_f64(1);
     let params = &args[2..];
 
