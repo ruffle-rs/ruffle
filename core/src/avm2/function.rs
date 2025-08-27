@@ -150,10 +150,35 @@ impl<'a, 'gc> FunctionArgs<'a, 'gc> {
         }
     }
 
+    pub fn iter(&'a self) -> FunctionArgsIter<'a, 'gc> {
+        FunctionArgsIter {
+            args: self,
+            next: 0,
+        }
+    }
+
     pub fn len(&self) -> usize {
         match self {
             FunctionArgs::AsCellArgs(arguments) => arguments.len(),
             FunctionArgs::AsArgs(arguments) => arguments.len(),
+        }
+    }
+}
+
+pub struct FunctionArgsIter<'a, 'gc> {
+    args: &'a FunctionArgs<'a, 'gc>,
+    next: usize,
+}
+
+impl<'a, 'gc> Iterator for FunctionArgsIter<'a, 'gc> {
+    type Item = Value<'gc>;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.next == self.args.len() {
+            None
+        } else {
+            self.next += 1;
+            Some(self.args.get_at(self.next - 1))
         }
     }
 }
@@ -187,8 +212,6 @@ pub fn exec<'gc>(
 
     let ret = match method.method_kind() {
         MethodKind::Native { native_method, .. } => {
-            let arguments = &arguments.to_slice();
-
             let caller_domain = activation.caller_domain();
             let caller_movie = activation.caller_movie();
             let mut activation = Activation::from_builtin(
