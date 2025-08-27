@@ -1,0 +1,10 @@
+true
+
+undefined
+
+false
+true
+
+undefined
+0
+false
