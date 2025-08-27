@@ -1,4 +1,5 @@
 use crate::avm2::error::{make_error_1010, make_error_1085, make_error_1118, type_error};
+use crate::avm2::function::FunctionArgs;
 use crate::avm2::object::{E4XOrXml, FunctionObject, NamespaceObject};
 use crate::avm2::{Activation, Error, Multiname, Value};
 use crate::string::{AvmString, StringContext, WStr, WString};
@@ -735,7 +736,11 @@ impl<'gc> E4XNode<'gc> {
             val => {
                 if let Some(obj) = val.as_object() {
                     if obj.as_xml_object().is_some() || obj.as_xml_list_object().is_some() {
-                        value = val.call_public_property(istr!("toXMLString"), &[], activation)?;
+                        value = val.call_public_property(
+                            istr!("toXMLString"),
+                            FunctionArgs::empty(),
+                            activation,
+                        )?;
                     }
                 }
                 value.coerce_to_string(activation)?

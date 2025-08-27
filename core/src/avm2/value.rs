@@ -625,12 +625,17 @@ impl<'gc> Value<'gc> {
 
         match self {
             Value::Object(_) if hint == Hint::String => {
-                let prim = self.call_public_property(istr!("toString"), &[], activation)?;
+                let prim = self.call_public_property(
+                    istr!("toString"),
+                    FunctionArgs::empty(),
+                    activation,
+                )?;
                 if prim.is_primitive() {
                     return Ok(prim);
                 }
 
-                let prim = self.call_public_property(istr!("valueOf"), &[], activation)?;
+                let prim =
+                    self.call_public_property(istr!("valueOf"), FunctionArgs::empty(), activation)?;
                 if prim.is_primitive() {
                     return Ok(prim);
                 }
@@ -644,12 +649,17 @@ impl<'gc> Value<'gc> {
                 )?))
             }
             Value::Object(_) if hint == Hint::Number => {
-                let prim = self.call_public_property(istr!("valueOf"), &[], activation)?;
+                let prim =
+                    self.call_public_property(istr!("valueOf"), FunctionArgs::empty(), activation)?;
                 if prim.is_primitive() {
                     return Ok(prim);
                 }
 
-                let prim = self.call_public_property(istr!("toString"), &[], activation)?;
+                let prim = self.call_public_property(
+                    istr!("toString"),
+                    FunctionArgs::empty(),
+                    activation,
+                )?;
                 if prim.is_primitive() {
                     return Ok(prim);
                 }
@@ -1184,10 +1194,9 @@ impl<'gc> Value<'gc> {
     pub fn call_public_property(
         &self,
         name: AvmString<'gc>,
-        arguments: &[Value<'gc>],
+        arguments: FunctionArgs<'_, 'gc>,
         activation: &mut Activation<'_, 'gc>,
     ) -> Result<Value<'gc>, Error<'gc>> {
-        let arguments = FunctionArgs::from_slice(arguments);
         self.call_property(
             &Multiname::new(activation.avm2().find_public_namespace(), name),
             arguments,

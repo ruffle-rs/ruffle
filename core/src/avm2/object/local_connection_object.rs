@@ -1,5 +1,6 @@
 use crate::avm2::activation::Activation;
 use crate::avm2::amf::deserialize_value;
+use crate::avm2::function::FunctionArgs;
 use crate::avm2::object::script_object::ScriptObjectData;
 use crate::avm2::object::{ClassObject, EventObject, Object, TObject};
 use crate::avm2::value::Value;
@@ -134,9 +135,10 @@ impl<'gc> LocalConnectionObject<'gc> {
             arguments
                 .push(deserialize_value(&mut activation, &argument).unwrap_or(Value::Undefined));
         }
+        let arguments = FunctionArgs::from_slice(&arguments);
 
         let client = Value::from(self.client());
-        if let Err(e) = client.call_public_property(method_name, &arguments, &mut activation) {
+        if let Err(e) = client.call_public_property(method_name, arguments, &mut activation) {
             match e.as_avm_error() {
                 Some(error) => {
                     let event_name = istr!("asyncError");
