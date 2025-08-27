@@ -132,9 +132,14 @@ impl<'gc> AvmSerializer<'gc> {
         let (eval_key, value) = if value.as_object().is_some() {
             if value.has_public_property(istr!("toJSON"), activation) {
                 let key = key();
+                let args = &[key.into()];
                 (
                     Some(key),
-                    value.call_public_property(istr!("toJSON"), &[key.into()], activation)?,
+                    value.call_public_property(
+                        istr!("toJSON"),
+                        FunctionArgs::from_slice(args),
+                        activation,
+                    )?,
                 )
             } else {
                 (None, value)
