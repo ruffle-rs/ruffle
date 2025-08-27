@@ -3,7 +3,7 @@
 use crate::avm2::activation::Activation;
 use crate::avm2::function::FunctionArgs;
 use crate::avm2::globals::slots::flash_events_event_dispatcher as slots;
-use crate::avm2::object::{EventObject, Object, TObject as _};
+use crate::avm2::object::{EventObject, FunctionObject, Object, TObject as _};
 use crate::avm2::value::Value;
 use crate::avm2::Error;
 use crate::display_object::TDisplayObject;
@@ -219,7 +219,7 @@ impl<'gc> DispatchList<'gc> {
         &mut self,
         event: AvmString<'gc>,
         priority: i32,
-        handler: Object<'gc>,
+        handler: FunctionObject<'gc>,
         use_capture: bool,
     ) {
         let new_handler = EventHandler::new(handler, use_capture);
@@ -243,7 +243,7 @@ impl<'gc> DispatchList<'gc> {
     pub fn remove_event_listener(
         &mut self,
         event: AvmString<'gc>,
-        handler: Object<'gc>,
+        handler: FunctionObject<'gc>,
         use_capture: bool,
     ) {
         let old_handler = EventHandler::new(handler, use_capture);
@@ -280,7 +280,7 @@ impl<'gc> DispatchList<'gc> {
         &'a mut self,
         event: AvmString<'gc>,
         use_capture: bool,
-    ) -> impl 'a + Iterator<Item = Object<'gc>> {
+    ) -> impl 'a + Iterator<Item = FunctionObject<'gc>> {
         self.get_event_mut(event)
             .iter()
             .rev()
@@ -301,7 +301,7 @@ impl Default for DispatchList<'_> {
 #[collect(no_drop)]
 struct EventHandler<'gc> {
     /// The event handler to call.
-    handler: Object<'gc>,
+    handler: FunctionObject<'gc>,
 
     /// Indicates if this handler should only be called for capturing events
     /// (when `true`), or if it should only be called for bubbling and
@@ -310,7 +310,7 @@ struct EventHandler<'gc> {
 }
 
 impl<'gc> EventHandler<'gc> {
-    fn new(handler: Object<'gc>, use_capture: bool) -> Self {
+    fn new(handler: FunctionObject<'gc>, use_capture: bool) -> Self {
         Self {
             handler,
             use_capture,
@@ -320,7 +320,8 @@ impl<'gc> EventHandler<'gc> {
 
 impl PartialEq for EventHandler<'_> {
     fn eq(&self, rhs: &Self) -> bool {
-        self.use_capture == rhs.use_capture && Object::ptr_eq(self.handler, rhs.handler)
+        self.use_capture == rhs.use_capture
+            && std::ptr::eq(self.handler.as_ptr(), rhs.handler.as_ptr())
     }
 }
 
@@ -384,7 +385,7 @@ fn dispatch_event_to_target<'gc>(
     let name = evtmut.event_type();
     let use_capture = evtmut.phase() == EventPhase::Capturing;
 
-    let handlers: Vec<Object<'gc>> = dispatch_list
+    let handlers: Vec<FunctionObject<'gc>> = dispatch_list
         .as_dispatch_mut(activation.gc())
         .expect("Internal dispatch list is missing during dispatch!")
         .iter_event_handlers(name, use_capture)
@@ -409,8 +410,7 @@ fn dispatch_event_to_target<'gc>(
         let global = activation.context.avm2.toplevel_global_object().unwrap();
 
         let args = &[event.into()];
-        let result =
-            Value::from(*handler).call(activation, global.into(), FunctionArgs::from_slice(args));
+        let result = handler.call(activation, global.into(), FunctionArgs::from_slice(args));
         if let Err(err) = result {
             tracing::error!(
                 "Error dispatching event {:?} to handler {:?} : {:?}",
