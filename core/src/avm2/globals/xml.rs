@@ -1338,8 +1338,8 @@ pub fn set_notification<'gc>(
     avm2_stub_method!(activation, "XML", "setNotification");
     let xml = this.as_xml_object().unwrap();
     let node = xml.node();
-    let fun = args.try_get_object(0);
-    node.set_notification(fun.and_then(|f| f.as_function_object()), activation.gc());
+    let func = args.try_get_function(0);
+    node.set_notification(func, activation.gc());
     Ok(Value::Undefined)
 }
 

@@ -276,10 +276,7 @@ pub fn parse<'gc>(
         return Err(make_error_1132(activation));
     };
 
-    let reviver = args
-        .get_value(1)
-        .as_object()
-        .map(|o| o.as_function_object().unwrap());
+    let reviver = args.try_get_function(1);
 
     let parsed = if let Ok(parsed) = serde_json::from_str(&input.to_utf8_lossy()) {
         parsed
