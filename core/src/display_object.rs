@@ -193,13 +193,38 @@ impl BitmapCache {
 
 #[derive(Clone)]
 pub struct RenderOptions {
+    /// Whether to skip rendering masks.
+    ///
+    /// Masks are usually skipped when rendering, but when e.g. rendering
+    /// the mask itself, it can't be skipped.
+    ///
+    /// Masks are skipped by default.
+    pub skip_masks: bool,
+
+    /// Whether to apply object's base transform.
+    ///
+    /// For instance, when calling BitmapData.draw, object's transform is not
+    /// applied.
+    ///
+    /// Transform is applied by default.
     pub apply_transform: bool,
+
+    /// Whether to apply base transform's matrix when rendering.
+    ///
+    /// Sometimes we need to render an object without applying its matrix, but
+    /// with applying other parts of its transform (e.g. color transform).
+    /// This happens e.g. when rendering alpha masks.
+    ///
+    /// Matrix is applied by default.
+    pub apply_matrix: bool,
 }
 
 impl Default for RenderOptions {
     fn default() -> Self {
         Self {
             apply_transform: true,
+            skip_masks: true,
+            apply_matrix: true,
         }
     }
 }
@@ -347,9 +372,13 @@ impl<'gc> DisplayObjectBase<'gc> {
         self.place_frame.set(frame);
     }
 
-    fn transform(&self) -> Transform {
+    fn transform(&self, apply_matrix: bool) -> Transform {
         Transform {
-            matrix: self.matrix.get(),
+            matrix: if apply_matrix {
+                self.matrix.get()
+            } else {
+                Matrix::IDENTITY
+            },
             color_transform: self.color_transform.get(),
             perspective_projection: self.perspective_projection.get(),
         }
@@ -850,12 +879,16 @@ pub fn render_base<'gc>(
     context: &mut RenderContext<'_, 'gc>,
     options: RenderOptions,
 ) {
-    if this.maskee().is_some() {
+    if options.skip_masks && this.maskee().is_some() {
+        // Skip rendering masks (unless we are rendering one explicitly).
         return;
     }
+
     if options.apply_transform {
-        context.transform_stack.push(&this.base().transform());
+        let transform = this.base().transform(options.apply_matrix);
+        context.transform_stack.push(&transform);
     }
+
     let blend_mode = this.blend_mode();
     let original_commands = if blend_mode != ExtendedBlendMode::Normal {
         Some(std::mem::take(&mut context.commands))
@@ -1141,9 +1174,13 @@ pub fn apply_standard_mask_and_scroll<'gc, F>(
 
         let maskee_commands = std::mem::take(&mut context.commands);
 
-        // TODO We should use m.render() here, but it needs to be adapted for rendering masks.
         context.transform_stack.push(&mask_transform);
-        m.render_self(context);
+        let options = RenderOptions {
+            skip_masks: false,
+            apply_matrix: false,
+            ..Default::default()
+        };
+        m.render_with_options(context, options);
         context.transform_stack.pop();
 
         let mask_commands = std::mem::replace(&mut context.commands, original_commands);
@@ -2293,6 +2330,7 @@ pub trait TDisplayObject<'gc>:
 
     fn render_self(self, _context: &mut RenderContext<'_, 'gc>) {}
 
+    #[no_dynamic]
     fn render(self, context: &mut RenderContext<'_, 'gc>) {
         self.render_with_options(context, Default::default())
     }

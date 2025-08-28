@@ -3,7 +3,7 @@
 use crate::avm1::{NativeObject as Avm1NativeObject, Object as Avm1Object, Value as Avm1Value};
 use crate::avm2::StageObject as Avm2StageObject;
 use crate::context::{RenderContext, UpdateContext};
-use crate::display_object::{Avm1TextFieldBinding, DisplayObjectBase};
+use crate::display_object::{Avm1TextFieldBinding, DisplayObjectBase, RenderOptions};
 use crate::prelude::*;
 use crate::streams::NetStream;
 use crate::tag_utils::{SwfMovie, SwfSlice};
@@ -472,13 +472,16 @@ impl<'gc> TDisplayObject<'gc> for Video<'gc> {
         }
     }
 
-    fn render(self, context: &mut RenderContext) {
+    fn render_with_options(self, context: &mut RenderContext<'_, 'gc>, options: RenderOptions) {
         if !context.is_offscreen && !self.world_bounds().intersects(&context.stage.view_bounds()) {
             // Off-screen; culled
             return;
         }
 
-        context.transform_stack.push(&self.base().transform());
+        if options.apply_transform {
+            let transform = self.base().transform(options.apply_matrix);
+            context.transform_stack.push(&transform);
+        }
 
         let mut transform = context.transform_stack.transform();
         let bounds = self.self_bounds();
@@ -528,7 +531,9 @@ impl<'gc> TDisplayObject<'gc> for Video<'gc> {
             tracing::warn!("Video has no decoded frame to render.");
         }
 
-        context.transform_stack.pop();
+        if options.apply_transform {
+            context.transform_stack.pop();
+        }
     }
 
     fn movie(self) -> Arc<SwfMovie> {

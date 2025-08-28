@@ -1561,6 +1561,7 @@ pub fn draw<'gc>(
         IBitmapDrawable::DisplayObject(object) => {
             let options = RenderOptions {
                 apply_transform: false,
+                ..Default::default()
             };
             object.render_with_options(&mut render_context, options);
         }
