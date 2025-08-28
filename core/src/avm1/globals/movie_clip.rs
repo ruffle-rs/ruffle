@@ -1186,14 +1186,9 @@ fn set_mask<'gc>(
             mask
         }
     };
-    let movie_clip = DisplayObject::MovieClip(movie_clip);
-    let mc = activation.gc();
-    movie_clip.set_clip_depth(0);
-    movie_clip.set_masker(mc, mask, true);
-    if let Some(m) = mask {
-        m.set_clip_depth(0);
-        m.set_maskee(mc, Some(movie_clip), true);
-    }
+    movie_clip
+        .as_displayobject()
+        .set_mask(mask, activation.gc());
     Ok(Value::Bool(true))
 }
 
