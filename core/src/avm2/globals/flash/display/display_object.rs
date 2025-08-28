@@ -1103,18 +1103,8 @@ pub fn set_mask<'gc>(
     let this = this.as_object().unwrap();
 
     if let Some(this) = this.as_display_object() {
-        let mask = args.try_get_object(0);
-
-        if let Some(mask) = mask {
-            let mask = mask.as_display_object().ok_or_else(|| -> Error {
-                format!("Mask is not a DisplayObject: {mask:?}").into()
-            })?;
-
-            this.set_masker(activation.gc(), Some(mask), true);
-            mask.set_maskee(activation.gc(), Some(this), true);
-        } else {
-            this.set_masker(activation.gc(), None, true);
-        }
+        let mask = args.try_get_object(0).and_then(|o| o.as_display_object());
+        this.set_mask(mask, activation.gc());
     }
     Ok(Value::Undefined)
 }

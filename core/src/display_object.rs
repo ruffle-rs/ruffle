@@ -1780,6 +1780,19 @@ pub trait TDisplayObject<'gc>:
         DisplayObjectBase::set_maskee(Gc::write(mc, self.base()), node);
     }
 
+    /// High level method for setting the mask. Sets both masker and maskee.
+    ///
+    /// Equivalent to setting the mask from AVM.
+    #[no_dynamic]
+    fn set_mask(self, mask: Option<DisplayObject<'gc>>, mc: &Mutation<'gc>) {
+        self.set_clip_depth(0);
+        self.set_masker(mc, mask, true);
+        if let Some(mask) = mask {
+            mask.set_clip_depth(0);
+            mask.set_maskee(mc, Some(self), true);
+        }
+    }
+
     #[no_dynamic]
     fn scroll_rect(self) -> Option<Rectangle<Twips>> {
         self.base().scroll_rect.get()
