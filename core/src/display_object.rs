@@ -831,11 +831,24 @@ struct DrawCacheInfo {
     filters: Vec<Filter>,
 }
 
-pub fn render_base<'gc>(this: DisplayObject<'gc>, context: &mut RenderContext<'_, 'gc>) {
-    if this.maskee().is_some() {
+pub fn render_base<'gc>(
+    this: DisplayObject<'gc>,
+    as_mask: bool,
+    context: &mut RenderContext<'_, 'gc>,
+) {
+    if !as_mask && this.maskee().is_some() {
+        // Skip rendering masks (unless we are rendering one explicitly).
         return;
     }
-    context.transform_stack.push(&this.base().transform());
+
+    let mut transform = this.base().transform();
+    if as_mask {
+        // TODO This doesn't seem right, we should perhaps prepare
+        //   differently before rendering the mask.
+        transform.matrix = Matrix::IDENTITY;
+    }
+    context.transform_stack.push(&transform);
+
     let blend_mode = this.blend_mode();
     let original_commands = if blend_mode != ExtendedBlendMode::Normal {
         Some(std::mem::take(&mut context.commands))
@@ -1106,9 +1119,8 @@ pub fn apply_standard_mask_and_scroll<'gc, F>(
 
         let maskee_commands = std::mem::take(&mut context.commands);
 
-        // TODO We should use m.render() here, but it needs to be adapted for rendering masks.
         context.transform_stack.push(&mask_transform);
-        m.render_self(context);
+        m.render(context, true);
         context.transform_stack.pop();
 
         let mask_commands = std::mem::replace(&mut context.commands, original_commands);
@@ -2257,8 +2269,8 @@ pub trait TDisplayObject<'gc>:
 
     fn render_self(self, _context: &mut RenderContext<'_, 'gc>) {}
 
-    fn render(self, context: &mut RenderContext<'_, 'gc>) {
-        render_base(self.into(), context)
+    fn render(self, context: &mut RenderContext<'_, 'gc>, as_mask: bool) {
+        render_base(self.into(), as_mask, context)
     }
 
     #[cfg(not(feature = "avm_debug"))]
