@@ -332,6 +332,7 @@ package flash.display {
             stub_method("flash.display.Stage", "setAspectRatio");
         }
 
+        // TODO: Construct the NativeWindow as a native object
         [API("661")]
         public function get nativeWindow():NativeWindow {
             stub_getter("flash.display.Stage", "nativeWindow");
