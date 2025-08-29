@@ -50,7 +50,7 @@ version = "0.1.0"
 
 [workspace.dependencies]
 tracing = "0.1.41"
-tracing-subscriber = { version = "0.3.19", features = ["env-filter"] }
+tracing-subscriber = { version = "0.3.20", features = ["env-filter"] }
 naga = { version = "25.0.1", features = ["wgsl-out"] }
 wgpu = "25.0.2"
 egui = { git = "https://github.com/emilk/egui.git", branch = "main" }
