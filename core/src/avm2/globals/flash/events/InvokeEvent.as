@@ -24,7 +24,7 @@ package flash.events {
         }
 
         override public function clone():Event {
-            return new InvokeEvent(this.type, this.bubbles, this.cancelable, this.arguments, this.reason);
+            return new InvokeEvent(this.type, this.bubbles, this.cancelable, this._currentDirectory, this._arguments, this._reason);
         }
 
         public function get arguments():Array {

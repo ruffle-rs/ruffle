@@ -30,6 +30,8 @@ package flash.display {
         private var _closed:Boolean = false;
         private var _stage:Stage;
 
+        // TODO: FP does not have the `_stage` parameter, we should be constructing
+        // the NativeWindow as a native object
         public function NativeWindow(initOptions:NativeWindowInitOptions, _stage:Stage = null) {
             stub_constructor("flash.display.NativeWindow");
             NativeApplication.nativeApplication.openedWindows.push(this);
