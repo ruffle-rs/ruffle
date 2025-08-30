@@ -3,8 +3,8 @@ use super::dispatch_added_event_only;
 use super::interactive::Avm2MousePick;
 use crate::avm1::Object as Avm1Object;
 use crate::avm2::{
-    Activation as Avm2Activation, ClassObject as Avm2ClassObject, Object as Avm2Object,
-    StageObject as Avm2StageObject, Value as Avm2Value,
+    Activation as Avm2Activation, ClassObject as Avm2ClassObject, FunctionArgs as Avm2FunctionArgs,
+    Object as Avm2Object, StageObject as Avm2StageObject, Value as Avm2Value,
 };
 use crate::backend::audio::AudioManager;
 use crate::backend::ui::MouseCursor;
@@ -535,7 +535,13 @@ impl<'gc> TDisplayObject<'gc> for Avm2Button<'gc> {
 
                 if let Some(avm2_object) = self.0.object.get() {
                     let mut activation = Avm2Activation::from_nothing(context);
-                    if let Err(e) = class.call_init(avm2_object.into(), &[], &mut activation) {
+                    let result = class.call_init(
+                        avm2_object.into(),
+                        Avm2FunctionArgs::empty(),
+                        &mut activation,
+                    );
+
+                    if let Err(e) = result {
                         tracing::error!("Got {} when constructing AVM2 side of button", e);
                     }
                 }

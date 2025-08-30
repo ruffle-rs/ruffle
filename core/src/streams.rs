@@ -7,7 +7,7 @@ use crate::avm1::{
 };
 use crate::avm2::{
     Activation as Avm2Activation, Avm2, Error as Avm2Error, EventObject as Avm2EventObject,
-    FlvValueAvm2Ext, Object as Avm2Object, Value as Avm2Value,
+    FlvValueAvm2Ext, FunctionArgs, Object as Avm2Object, Value as Avm2Value,
 };
 use crate::backend::audio::{
     DecodeError, SoundInstanceHandle, SoundStreamInfo, SoundStreamWrapping,
@@ -1369,10 +1369,11 @@ impl<'gc> NetStream<'gc> {
                     .expect("Client should be initialized if script data is being accessed");
 
                 let data_object = variable_data.to_avm2_value(&mut activation);
+                let args = &[data_object];
 
                 Avm2Value::from(client_object).call_public_property(
                     AvmString::new_utf8_bytes(activation.gc(), variable_name),
-                    &[data_object],
+                    FunctionArgs::from_slice(args),
                     &mut activation,
                 )?;
             }

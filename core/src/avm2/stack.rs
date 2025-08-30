@@ -153,9 +153,7 @@ impl<'a, 'gc> StackFrame<'a, 'gc> {
 
         self.stack_pointer.set(base);
 
-        FunctionArgs::AsCellArgSlice {
-            arguments: &self.data[base..base + num_args],
-        }
+        FunctionArgs::from_cell_slice(&self.data[base..base + num_args])
     }
 
     pub fn pop_args(&self, arg_count: u32) -> Vec<Value<'gc>> {

@@ -297,7 +297,7 @@ impl<'gc> ClassObject<'gc> {
             Some(c_class),
         );
 
-        class_init_fn.call(activation, self_value, &[])?;
+        class_init_fn.call(activation, self_value, FunctionArgs::empty())?;
 
         Ok(())
     }
@@ -306,15 +306,6 @@ impl<'gc> ClassObject<'gc> {
     ///
     /// This method may panic if called with a Null or Undefined receiver.
     pub fn call_init(
-        self,
-        receiver: Value<'gc>,
-        arguments: &[Value<'gc>],
-        activation: &mut Activation<'_, 'gc>,
-    ) -> Result<Value<'gc>, Error<'gc>> {
-        self.call_init_with_args(receiver, FunctionArgs::AsArgSlice { arguments }, activation)
-    }
-
-    pub fn call_init_with_args(
         self,
         receiver: Value<'gc>,
         arguments: FunctionArgs<'_, 'gc>,
@@ -387,9 +378,8 @@ impl<'gc> ClassObject<'gc> {
         let property = self.instance_vtable().get_trait(multiname);
         match property {
             Some(Property::Slot { slot_id }) | Some(Property::ConstSlot { slot_id }) => {
-                let arguments = &arguments.to_slice();
-
                 let func = receiver.get_slot(slot_id);
+
                 func.call(activation, receiver.into(), arguments)
             }
             Some(Property::Method { disp_id }) => {
@@ -400,7 +390,6 @@ impl<'gc> ClassObject<'gc> {
                 let obj =
                     self.call_method_super(activation, receiver, get, FunctionArgs::empty())?;
 
-                let arguments = &arguments.to_slice();
                 obj.call(activation, receiver.into(), arguments)
             }
             Some(Property::Virtual { get: None, .. }) => Err(error::make_reference_error(
@@ -540,9 +529,8 @@ impl<'gc> ClassObject<'gc> {
             Some(Property::Virtual {
                 set: Some(disp_id), ..
             }) => {
-                let args = FunctionArgs::AsArgSlice {
-                    arguments: &[value],
-                };
+                let args = &[value];
+                let args = FunctionArgs::from_slice(args);
 
                 self.call_method_super(activation, receiver, disp_id, args)?;
 
@@ -660,12 +648,15 @@ impl<'gc> ClassObject<'gc> {
     pub fn call(
         self,
         activation: &mut Activation<'_, 'gc>,
-        arguments: &[Value<'gc>],
+        arguments: FunctionArgs<'_, 'gc>,
     ) -> Result<Value<'gc>, Error<'gc>> {
         if let Some(call_handler) = self.call_handler() {
+            let arguments = &arguments.to_slice();
             call_handler(activation, self.into(), arguments)
         } else if arguments.len() == 1 {
-            arguments[0].coerce_to_type(activation, self.inner_class_definition())
+            arguments
+                .get_at(0)
+                .coerce_to_type(activation, self.inner_class_definition())
         } else {
             Err(Error::avm_error(argument_error(
                 activation,
@@ -683,7 +674,7 @@ impl<'gc> ClassObject<'gc> {
         activation: &mut Activation<'_, 'gc>,
         arguments: &[Value<'gc>],
     ) -> Result<Value<'gc>, Error<'gc>> {
-        self.construct_with_args(activation, FunctionArgs::AsArgSlice { arguments })
+        self.construct_with_args(activation, FunctionArgs::from_slice(arguments))
     }
 
     pub fn construct_with_args(
@@ -699,7 +690,7 @@ impl<'gc> ClassObject<'gc> {
 
             let instance = instance_allocator(self, activation)?;
 
-            self.call_init_with_args(instance.into(), arguments, activation)?;
+            self.call_init(instance.into(), arguments, activation)?;
 
             Ok(instance.into())
         }

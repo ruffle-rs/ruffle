@@ -3,6 +3,7 @@
 use crate::avm2::activation::Activation;
 use crate::avm2::array::ArrayStorage;
 use crate::avm2::error::{make_error_1125, range_error};
+use crate::avm2::function::FunctionArgs;
 use crate::avm2::object::{ArrayObject, Object, TObject};
 use crate::avm2::parameters::ParametersExt;
 use crate::avm2::value::Value;
@@ -302,6 +303,7 @@ impl<'gc> ArrayIter<'gc> {
 }
 
 /// Implements `Array.forEach`
+/// NOTE: This is also the implementation for `Vector.forEach`
 pub fn for_each<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
@@ -309,15 +311,16 @@ pub fn for_each<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
-    let callback = match args.get_value(0) {
-        Value::Null => return Ok(Value::Undefined),
-        value => value,
+    let callback = match args.try_get_function(0) {
+        None => return Ok(Value::Undefined),
+        Some(callback) => callback,
     };
     let receiver = args.get_value(1);
     let mut iter = ArrayIter::new(activation, this)?;
 
     while let Some((i, item)) = iter.next(activation)? {
-        callback.call(activation, receiver, &[item, i.into(), this.into()])?;
+        let args = &[item, i.into(), this.into()];
+        callback.call(activation, receiver, FunctionArgs::from_slice(args))?;
     }
 
     Ok(Value::Undefined)
@@ -331,13 +334,17 @@ pub fn map<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
-    let callback = args.get_value(0);
+    let callback = match args.try_get_function(0) {
+        None => return Ok(ArrayObject::empty(activation).into()),
+        Some(callback) => callback,
+    };
     let receiver = args.get_value(1);
     let mut new_array = ArrayStorage::new(0);
     let mut iter = ArrayIter::new(activation, this)?;
 
     while let Some((i, item)) = iter.next(activation)? {
-        let new_item = callback.call(activation, receiver, &[item, i.into(), this.into()])?;
+        let args = &[item, i.into(), this.into()];
+        let new_item = callback.call(activation, receiver, FunctionArgs::from_slice(args))?;
 
         new_array.push(new_item);
     }
@@ -353,17 +360,18 @@ pub fn filter<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
-    let callback = match args.get_value(0) {
-        Value::Null => return Ok(ArrayObject::empty(activation).into()),
-        value => value,
+    let callback = match args.try_get_function(0) {
+        None => return Ok(ArrayObject::empty(activation).into()),
+        Some(callback) => callback,
     };
     let receiver = args.get_value(1);
     let mut new_array = ArrayStorage::new(0);
     let mut iter = ArrayIter::new(activation, this)?;
 
     while let Some((i, item)) = iter.next(activation)? {
+        let args = &[item, i.into(), this.into()];
         let is_allowed = callback
-            .call(activation, receiver, &[item, i.into(), this.into()])?
+            .call(activation, receiver, FunctionArgs::from_slice(args))?
             .coerce_to_boolean();
 
         if is_allowed {
@@ -375,6 +383,7 @@ pub fn filter<'gc>(
 }
 
 /// Implements `Array.every`
+/// NOTE: This is also the implementation for `Vector.every`
 pub fn every<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
@@ -382,16 +391,17 @@ pub fn every<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
-    let callback = match args.get_value(0) {
-        Value::Null => return Ok(true.into()),
-        value => value,
+    let callback = match args.try_get_function(0) {
+        None => return Ok(true.into()),
+        Some(callback) => callback,
     };
     let receiver = args.get_value(1);
     let mut iter = ArrayIter::new(activation, this)?;
 
     while let Some((i, item)) = iter.next(activation)? {
+        let args = &[item, i.into(), this.into()];
         let result = callback
-            .call(activation, receiver, &[item, i.into(), this.into()])?
+            .call(activation, receiver, FunctionArgs::from_slice(args))?
             .coerce_to_boolean();
 
         if !result {
@@ -409,16 +419,17 @@ pub fn some<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
-    let callback = match args.get_value(0) {
-        Value::Null => return Ok(false.into()),
-        value => value,
+    let callback = match args.try_get_function(0) {
+        None => return Ok(false.into()),
+        Some(callback) => callback,
     };
     let receiver = args.get_value(1);
     let mut iter = ArrayIter::new(activation, this)?;
 
     while let Some((i, item)) = iter.next(activation)? {
+        let args = &[item, i.into(), this.into()];
         let result = callback
-            .call(activation, receiver, &[item, i.into(), this.into()])?
+            .call(activation, receiver, FunctionArgs::from_slice(args))?
             .coerce_to_boolean();
 
         if result {
@@ -1079,8 +1090,9 @@ pub fn sort<'gc>(
                 &mut values,
                 options,
                 constrain(|activation, a, b| {
+                    let args = &[a, b];
                     let order = v
-                        .call(activation, this.into(), &[a, b])?
+                        .call(activation, this.into(), FunctionArgs::from_slice(args))?
                         .coerce_to_i32(activation)?;
 
                     Ok(order.cmp(&0))
@@ -1092,8 +1104,9 @@ pub fn sort<'gc>(
                 &mut values,
                 options,
                 constrain(|activation, a, b| {
+                    let args = &[a, b];
                     let order = v
-                        .call(activation, this.into(), &[a, b])?
+                        .call(activation, this.into(), FunctionArgs::from_slice(args))?
                         .coerce_to_number(activation)?;
 
                     if order > 0.0 {

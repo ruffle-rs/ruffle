@@ -625,12 +625,17 @@ impl<'gc> Value<'gc> {
 
         match self {
             Value::Object(_) if hint == Hint::String => {
-                let prim = self.call_public_property(istr!("toString"), &[], activation)?;
+                let prim = self.call_public_property(
+                    istr!("toString"),
+                    FunctionArgs::empty(),
+                    activation,
+                )?;
                 if prim.is_primitive() {
                     return Ok(prim);
                 }
 
-                let prim = self.call_public_property(istr!("valueOf"), &[], activation)?;
+                let prim =
+                    self.call_public_property(istr!("valueOf"), FunctionArgs::empty(), activation)?;
                 if prim.is_primitive() {
                     return Ok(prim);
                 }
@@ -644,12 +649,17 @@ impl<'gc> Value<'gc> {
                 )?))
             }
             Value::Object(_) if hint == Hint::Number => {
-                let prim = self.call_public_property(istr!("valueOf"), &[], activation)?;
+                let prim =
+                    self.call_public_property(istr!("valueOf"), FunctionArgs::empty(), activation)?;
                 if prim.is_primitive() {
                     return Ok(prim);
                 }
 
-                let prim = self.call_public_property(istr!("toString"), &[], activation)?;
+                let prim = self.call_public_property(
+                    istr!("toString"),
+                    FunctionArgs::empty(),
+                    activation,
+                )?;
                 if prim.is_primitive() {
                     return Ok(prim);
                 }
@@ -1131,8 +1141,6 @@ impl<'gc> Value<'gc> {
 
         match vtable.get_trait(multiname) {
             Some(Property::Slot { slot_id }) | Some(Property::ConstSlot { slot_id }) => {
-                let arguments = &arguments.to_slice();
-
                 // Only objects can have slots
                 let object = self.as_object().unwrap();
 
@@ -1145,7 +1153,6 @@ impl<'gc> Value<'gc> {
             Some(Property::Virtual { get: Some(get), .. }) => {
                 let obj = self.call_method_with_args(get, FunctionArgs::empty(), activation)?;
 
-                let arguments = &arguments.to_slice();
                 obj.call(activation, *self, arguments)
             }
             Some(Property::Virtual { get: None, .. }) => {
@@ -1159,8 +1166,6 @@ impl<'gc> Value<'gc> {
                 ))
             }
             None => {
-                let arguments = &arguments.to_slice();
-
                 if let Some(object) = self.as_object() {
                     object.call_property_local(multiname, arguments, activation)
                 } else {
@@ -1189,10 +1194,9 @@ impl<'gc> Value<'gc> {
     pub fn call_public_property(
         &self,
         name: AvmString<'gc>,
-        arguments: &[Value<'gc>],
+        arguments: FunctionArgs<'_, 'gc>,
         activation: &mut Activation<'_, 'gc>,
     ) -> Result<Value<'gc>, Error<'gc>> {
-        let arguments = FunctionArgs::AsArgSlice { arguments };
         self.call_property(
             &Multiname::new(activation.avm2().find_public_namespace(), name),
             arguments,
@@ -1211,7 +1215,7 @@ impl<'gc> Value<'gc> {
         arguments: &[Value<'gc>],
         activation: &mut Activation<'_, 'gc>,
     ) -> Result<Value<'gc>, Error<'gc>> {
-        self.call_method_with_args(id, FunctionArgs::AsArgSlice { arguments }, activation)
+        self.call_method_with_args(id, FunctionArgs::from_slice(arguments), activation)
     }
 
     pub fn call_method_with_args(
@@ -1224,7 +1228,6 @@ impl<'gc> Value<'gc> {
         // WeakKeyHashMap<Value, FunctionObject>, not on the Object
         if let Some(object) = self.as_object() {
             if let Some(bound_method) = object.get_bound_method(id) {
-                let arguments = &arguments.to_slice();
                 return bound_method.call(activation, *self, arguments);
             }
         }
@@ -1255,7 +1258,6 @@ impl<'gc> Value<'gc> {
             object.install_bound_method(activation.gc(), id, bound_method);
         }
 
-        let arguments = &arguments.to_slice();
         bound_method.call(activation, *self, arguments)
     }
 
@@ -1357,7 +1359,7 @@ impl<'gc> Value<'gc> {
         &self,
         activation: &mut Activation<'_, 'gc>,
         receiver: Value<'gc>,
-        args: &[Value<'gc>],
+        args: FunctionArgs<'_, 'gc>,
     ) -> Result<Value<'gc>, Error<'gc>> {
         match self.as_object() {
             Some(Object::ClassObject(class_object)) => class_object.call(activation, args),

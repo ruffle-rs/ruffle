@@ -49,7 +49,7 @@ pub fn add_callback<'gc>(
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     let name = args.get_string(activation, 0);
-    let method = args.get_object(activation, 1, "closure")?;
+    let method = args.get_function(activation, 1, "closure")?;
 
     check_available(activation)?;
 

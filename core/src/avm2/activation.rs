@@ -192,7 +192,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     pub fn resolve_parameters(
         &mut self,
         method: Method<'gc>,
-        user_arguments: &[Value<'gc>],
+        user_arguments: FunctionArgs<'_, 'gc>,
         signature: &[ResolvedParamConfig<'gc>],
         bound_class: Option<Class<'gc>>,
     ) -> Result<Vec<Value<'gc>>, Error<'gc>> {
@@ -201,7 +201,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             let coerced_arg = if let Some(param_class) = param_config.param_type {
                 arg.coerce_to_type(self, param_class)?
             } else {
-                *arg
+                arg
             };
 
             arguments_list.push(coerced_arg);
@@ -209,6 +209,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
 
         match user_arguments.len().cmp(&signature.len()) {
             Ordering::Greater => {
+                let user_arguments = &user_arguments.to_slice();
                 // Variadic parameters exist, just push them into the list
                 arguments_list.extend_from_slice(&user_arguments[signature.len()..])
             }
@@ -457,7 +458,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             .bound_superclass_object
             .expect("Superclass object is required to run super_init");
 
-        bound_superclass_object.call_init_with_args(receiver, args, self)
+        bound_superclass_object.call_init(receiver, args, self)
     }
 
     /// Retrieve a local register.
@@ -1005,11 +1006,11 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     }
 
     fn op_call(&mut self, arg_count: u32) -> Result<(), Error<'gc>> {
-        let args = self.pop_stack_args(arg_count);
+        let args = self.stack.get_args(arg_count as usize);
         let receiver = self.pop_stack();
         let function = self.pop_stack();
 
-        let value = function.call(self, receiver, &args)?;
+        let value = function.call(self, receiver, args)?;
 
         self.push_stack(value);
 
@@ -1085,11 +1086,11 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         multiname: Gc<'gc, Multiname<'gc>>,
         arg_count: u32,
     ) -> Result<(), Error<'gc>> {
-        let args = self.pop_stack_args(arg_count);
+        let args = self.stack.get_args(arg_count as usize);
         let multiname = multiname.fill_with_runtime_params(self)?;
         let receiver = self.pop_stack().null_check(self, Some(&multiname))?;
         let function = receiver.get_property(&multiname, self)?;
-        let value = function.call(self, Value::Null, &args)?;
+        let value = function.call(self, Value::Null, args)?;
 
         self.push_stack(value);
 
@@ -1111,12 +1112,12 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     }
 
     fn op_call_static(&mut self, method: Method<'gc>, arg_count: u32) -> Result<(), Error<'gc>> {
-        let args = self.pop_stack_args(arg_count);
+        let args = self.stack.get_args(arg_count as usize);
         let receiver = self.pop_stack();
         // TODO: What scope should the function be executed with?
         let scope = self.create_scopechain();
         let function = FunctionObject::from_method(self, method, scope, None, None, None);
-        let value = function.call(self, receiver, &args)?;
+        let value = function.call(self, receiver, args)?;
 
         self.push_stack(value);
 
