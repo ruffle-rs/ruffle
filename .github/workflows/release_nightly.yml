@@ -718,7 +718,7 @@ jobs:
         uses: josStorer/get-current-time@v2.1.2
         id: current_time_dots
         with:
-          format: YYYY.MM.DD
+          format: YYYY.M.D
 
       - name: Download package
         run: gh release download "${{ needs.create-nightly-release.outputs.tag_name }}" --pattern "${{ needs.create-nightly-release.outputs.package_prefix }}-linux-x86_64.tar.gz"
@@ -729,6 +729,8 @@ jobs:
         run: >
           sed -i desktop/packages/linux/aur/ruffle-nightly-bin/PKGBUILD
           -e "s/@VERSION@/${{ steps.current_time_dots.outputs.formattedTime }}/"
+          -e "s/@TAG_NAME@/${{ needs.create-nightly-release.outputs.tag_name }}/"
+          -e "s/@PACKAGE_PREFIX@/${{ needs.create-nightly-release.outputs.package_prefix }}/"
           -e "s/@SHA512SUM_x86_64@/$(sha512sum ${{ needs.create-nightly-release.outputs.package_prefix }}-linux-x86_64.tar.gz | cut -d' ' -f1)/"
           -e "s/@SHA512SUM_aarch64@/$(sha512sum ${{ needs.create-nightly-release.outputs.package_prefix }}-linux-aarch64.tar.gz | cut -d' ' -f1)/"
 
@@ -740,4 +742,4 @@ jobs:
           commit_username: RuffleBuild
           commit_email: ruffle@ruffle.rs
           ssh_private_key: ${{ secrets.AUR_SSH_PRIVATE_KEY }}
-          commit_message: Update to Nightly ${{ steps.current_time_dashes.outputs.formattedTime }}
+          commit_message: Update to ${{ needs.create-nightly-release.outputs.tag_name }}
