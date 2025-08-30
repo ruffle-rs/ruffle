@@ -1240,7 +1240,6 @@ impl<'gc> Value<'gc> {
                 full_method.scope(),
                 *self,
                 full_method.super_class_obj,
-                Some(full_method.class),
                 arguments,
                 activation,
                 None,
