@@ -4544,7 +4544,7 @@ dependencies = [
  "vergen",
  "webbrowser",
  "wgpu",
- "winapi",
+ "windows-sys 0.59.0",
  "winit",
 ]
 

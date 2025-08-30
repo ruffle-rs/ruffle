@@ -58,7 +58,7 @@ memmap2.workspace = true
 ashpd = "0.11.0"
 
 [target.'cfg(windows)'.dependencies]
-winapi = { version = "0.3.9", features = ["wincon"] }
+windows-sys = { version = "0.59.0", features = ["Win32_System_Console"] }
 
 [build-dependencies]
 embed-resource = "3"
