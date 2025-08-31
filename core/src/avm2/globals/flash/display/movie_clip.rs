@@ -162,7 +162,7 @@ pub fn get_current_labels<'gc>(
         let scene = mc.current_scene().unwrap_or_else(|| Scene {
             name: WString::default(),
             start: 1,
-            length: mc.total_frames(),
+            length: mc.header_frames(),
         });
         return Ok(labels_for_scene(activation, mc, &scene)?.2.into());
     }
@@ -185,7 +185,7 @@ pub fn get_current_scene<'gc>(
         let scene = mc.current_scene().unwrap_or_else(|| Scene {
             name: WString::default(),
             start: 1,
-            length: mc.total_frames(),
+            length: mc.header_frames(),
         });
         let (scene_name, scene_length, scene_labels) = labels_for_scene(activation, mc, &scene)?;
         let scene_class = activation.context.avm2.classes().scene;
@@ -256,7 +256,7 @@ pub fn get_scenes<'gc>(
             mc_scenes.push(Scene {
                 name: WString::default(),
                 start: 1,
-                length: mc.total_frames(),
+                length: mc.header_frames(),
             });
         }
 
@@ -334,7 +334,7 @@ pub fn get_total_frames<'gc>(
         .as_display_object()
         .and_then(|dobj| dobj.as_movie_clip())
     {
-        return Ok(mc.total_frames().into());
+        return Ok(mc.header_frames().into());
     }
 
     Ok(Value::Undefined)

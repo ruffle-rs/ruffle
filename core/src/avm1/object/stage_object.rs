@@ -389,7 +389,7 @@ fn total_frames<'gc>(
     this: DisplayObject<'gc>,
 ) -> Value<'gc> {
     this.as_movie_clip()
-        .map(MovieClip::total_frames)
+        .map(MovieClip::header_frames)
         .map_or(Value::Undefined, Value::from)
 }
 
