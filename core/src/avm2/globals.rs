@@ -198,6 +198,15 @@ pub struct SystemClassDefs<'gc> {
     pub xml: Class<'gc>,
     pub xml_list: Class<'gc>,
 
+    // Vector.<Number> aka Vector$double
+    pub number_vector: Class<'gc>,
+    // Vector.<int> aka Vector$int
+    pub int_vector: Class<'gc>,
+    // Vector.<uint> aka Vector$uint
+    pub uint_vector: Class<'gc>,
+    // Vector.<*> aka Vector$object
+    pub object_vector: Class<'gc>,
+
     pub bitmap: Class<'gc>,
     pub bitmapdata: Class<'gc>,
     pub igraphicsdata: Class<'gc>,
@@ -368,6 +377,11 @@ impl<'gc> SystemClassDefs<'gc> {
             xml: object,
             xml_list: object,
 
+            number_vector: object,
+            int_vector: object,
+            uint_vector: object,
+            object_vector: object,
+
             bitmap: object,
             bitmapdata: object,
             igraphicsdata: object,
@@ -478,12 +492,12 @@ pub fn init_early_classes<'gc>(
 
     // Finally, we can actually create the ClassObjects for `Object` and `Class`.
 
-    let object_class = ClassObject::from_class_partial(activation, object_i_class, None);
+    let object_class = ClassObject::from_class_minimal(activation, object_i_class, None);
     let object_proto =
         ScriptObject::custom_object(mc, object_i_class, None, object_class.instance_vtable());
 
     let class_class =
-        ClassObject::from_class_partial(activation, class_i_class, Some(object_class));
+        ClassObject::from_class_minimal(activation, class_i_class, Some(object_class));
     let class_proto = ScriptObject::custom_object(
         mc,
         object_i_class,
@@ -509,6 +523,10 @@ pub fn init_early_classes<'gc>(
 
     // We don't need to validate the classes, as we already know that the
     // `Object` and `Class` classes are valid
+
+    // However, we do need to bind their methods
+    object_class.bind_methods(activation)?;
+    class_class.bind_methods(activation)?;
 
     // Reset the Activation's outer scope.
     activation.set_outer(empty_scope);
