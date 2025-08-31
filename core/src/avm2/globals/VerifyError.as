@@ -5,6 +5,7 @@
 
 package
 {
+    [Ruffle(CallHandler)]
     public dynamic class VerifyError extends Error
     {
         prototype.name = "VerifyError";

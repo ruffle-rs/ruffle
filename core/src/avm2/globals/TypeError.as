@@ -1,4 +1,5 @@
 package {
+    [Ruffle(CallHandler)]
     public dynamic class TypeError extends Error {
         TypeError.prototype.name = "TypeError"
 

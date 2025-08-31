@@ -1,4 +1,5 @@
 package {
+    [Ruffle(CallHandler)]
     public dynamic class ReferenceError extends Error {
         ReferenceError.prototype.name = "ReferenceError";
 
