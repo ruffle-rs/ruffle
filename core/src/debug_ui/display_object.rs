@@ -1017,7 +1017,7 @@ impl DisplayObjectWindow {
                 ui.end_row();
 
                 ui.label("Total Frames");
-                ui.label(object.total_frames().to_string());
+                ui.label(object.header_frames().to_string());
                 ui.end_row();
 
                 ui.label("Flags");
@@ -1122,7 +1122,7 @@ impl DisplayObjectWindow {
                 });
                 table.ui_mut().separator();
                 table.body(|body| {
-                    body.rows(row_h, usize::from(object.total_frames()), |mut row| {
+                    body.rows(row_h, usize::from(object.header_frames()), |mut row| {
                         let frame = (row.index() + 1) as u16;
                         row.set_selected(object.current_frame() == frame);
                         row.col(|ui| {

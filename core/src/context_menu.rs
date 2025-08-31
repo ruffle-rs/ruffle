@@ -262,7 +262,7 @@ pub struct BuiltInItemFlags {
 impl BuiltInItemFlags {
     pub fn for_stage(stage: Stage<'_>) -> Self {
         let root_mc = stage.root_clip().and_then(|c| c.as_movie_clip());
-        let is_multiframe_movie = root_mc.map(|mc| mc.total_frames() > 1).unwrap_or(false);
+        let is_multiframe_movie = root_mc.map(|mc| mc.header_frames() > 1).unwrap_or(false);
         if is_multiframe_movie {
             Self {
                 forward_and_back: true,
