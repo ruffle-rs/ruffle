@@ -565,7 +565,9 @@ impl<'gc> MovieClip<'gc> {
             shared.show_frame(reader, 0).unwrap();
 
             // Flag the movie as fully preloaded when we hit the end of the tag stream.
-            progress.cur_preload_frame.set(shared.total_frames + 1);
+            progress
+                .cur_preload_frame
+                .set(progress.cur_preload_frame.get() - 1);
             progress.next_preload_chunk.set(u64::MAX);
         } else {
             let next_chunk =
@@ -697,11 +699,13 @@ impl<'gc> MovieClip<'gc> {
     }
 
     pub fn set_programmatically_played(self) {
-        self.0.set_programmatically_played()
+        if self.header_frames() > 1 {
+            self.0.set_programmatically_played()
+        }
     }
 
     pub fn next_frame(self, context: &mut UpdateContext<'gc>) {
-        if self.current_frame() < self.total_frames() {
+        if self.current_frame() < self.header_frames() {
             self.goto_frame(context, self.current_frame() + 1, true);
         }
     }
@@ -925,8 +929,10 @@ impl<'gc> MovieClip<'gc> {
         values
     }
 
-    pub fn total_frames(self) -> FrameNumber {
-        self.0.total_frames()
+    /// Returns the frame count defined in the header.
+    /// Note that this may not be how many frames there actually are.
+    pub fn header_frames(self) -> FrameNumber {
+        self.0.header_frames()
     }
 
     pub fn has_frame_script(self, frame: FrameNumber) -> bool {
@@ -958,6 +964,8 @@ impl<'gc> MovieClip<'gc> {
         self.0.current_frame.set(current_frame);
     }
 
+    /// The amount of frames loaded in this movieclip.
+    /// This is independent of the frame count defined in the header.
     pub fn frames_loaded(self) -> i32 {
         self.0.frames_loaded()
     }
@@ -1071,7 +1079,7 @@ impl<'gc> MovieClip<'gc> {
         let frame = frame.unwrap();
 
         if scene <= frame {
-            let mut end = self.total_frames() + 1;
+            let mut end = self.header_frames() + 1;
             for Scene {
                 start: new_scene_start,
                 ..
@@ -1120,7 +1128,7 @@ impl<'gc> MovieClip<'gc> {
         let mut actions: SmallVec<[SwfSlice; 2]> = SmallVec::new();
 
         // Iterate through this clip's tags, counting frames until we reach the target frame.
-        if frame > 0 && frame <= self.total_frames() {
+        if frame > 0 && frame <= self.header_frames() {
             let mut cur_frame = 1;
             let shared = self.0.shared.get();
             let mut reader = shared.swf.read_from(0);
@@ -1152,12 +1160,25 @@ impl<'gc> MovieClip<'gc> {
 
     /// Determine what the clip's next frame should be.
     fn determine_next_frame(self) -> NextFrame {
-        if self.current_frame() < self.total_frames() {
+        let mc = self.0.shared.get();
+        let mut reader = mc.swf.read_from(self.0.tag_stream_pos.get());
+
+        // We ignore the frame count from the header, and instead continue
+        // until we reach the end of the stream or a `TagCode::End`.
+        // Flash Player ignores the frame count, and just executes the full
+        // tag stream before returning to the first frame.
+        if !reader.as_slice().is_empty()
+            && reader.read_tag_code().expect("Failed to read tag") != TagCode::End as u16
+        {
             NextFrame::Next
-        } else if self.total_frames() > 1 {
-            NextFrame::First
-        } else {
+        // The `current_frame` can be larger than `header_frames` if the SWF header
+        // declared fewer frames than we actually have. We only stop the swf if there
+        // was *really* at most a single frame (we declared at most 1 frame, and reached the end
+        // of the stream after executing 0 or 1 frames)
+        } else if self.header_frames() <= 1 && self.current_frame() <= 1 {
             NextFrame::Same
+        } else {
+            NextFrame::First
         }
     }
 
@@ -2296,7 +2317,7 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
         // AVM1 code expects to execute in line with timeline instructions, so
         // it's exempted from frame construction.
         if self.movie().is_action_script_3()
-            && (self.frames_loaded() >= 1 || self.total_frames() == 0)
+            && (self.frames_loaded() >= 1 || self.header_frames() == 0)
         {
             let is_load_frame = !self.0.initialized();
             let needs_construction = if matches!(self.object2(), Avm2Value::Null) {
@@ -3007,8 +3028,8 @@ impl<'gc> MovieClipData<'gc> {
         self.current_frame.set(frame - 1);
     }
 
-    fn total_frames(&self) -> FrameNumber {
-        self.shared.get().total_frames
+    fn header_frames(&self) -> FrameNumber {
+        self.shared.get().header_frames
     }
 
     fn frames_loaded(&self) -> i32 {
@@ -3044,10 +3065,7 @@ impl<'gc> MovieClipData<'gc> {
     }
 
     fn play(&self) {
-        // Can only play clips with multiple frames.
-        if self.total_frames() > 1 {
-            self.set_playing(true);
-        }
+        self.set_playing(true);
     }
 
     fn stop(&self, context: &mut UpdateContext<'gc>) {
@@ -3866,7 +3884,7 @@ impl<'gc, 'a> MovieClipShared<'gc> {
                 .scenes
                 .get(i + 1)
                 .map(|fld| fld.frame_num as u16 + 1)
-                .unwrap_or_else(|| self.total_frames + 1);
+                .unwrap_or_else(|| self.header_frames + 1);
 
             let scene = Scene {
                 name: label.decode(reader.encoding()).into_owned(),
@@ -4386,7 +4404,7 @@ struct MovieClipShared<'gc> {
     cell: RefCell<MovieClipSharedMut>,
     id: CharacterId,
     swf: SwfSlice,
-    total_frames: FrameNumber,
+    header_frames: FrameNumber,
     /// Preload progress for the given clip's tag stream.
     #[collect(require_static)]
     preload_progress: PreloadProgress,
@@ -4432,7 +4450,7 @@ impl<'gc> MovieClipShared<'gc> {
     fn empty(movie: Arc<SwfMovie>) -> Self {
         let mut s = Self::with_data(0, SwfSlice::empty(movie), 1, None);
 
-        *s.preload_progress.cur_preload_frame.get_mut() = s.total_frames + 1;
+        *s.preload_progress.cur_preload_frame.get_mut() = s.header_frames + 1;
 
         s
     }
@@ -4440,14 +4458,14 @@ impl<'gc> MovieClipShared<'gc> {
     fn with_data(
         id: CharacterId,
         swf: SwfSlice,
-        total_frames: FrameNumber,
+        header_frames: FrameNumber,
         loader_info: Option<Avm2Object<'gc>>,
     ) -> Self {
         Self {
             cell: Default::default(),
             id,
             swf,
-            total_frames,
+            header_frames,
             preload_progress: Default::default(),
             exported_name: Lock::new(None),
             avm2_class: Lock::new(None),
