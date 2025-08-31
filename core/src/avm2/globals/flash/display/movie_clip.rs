@@ -298,7 +298,7 @@ pub fn get_frames_loaded<'gc>(
         .as_display_object()
         .and_then(|dobj| dobj.as_movie_clip())
     {
-        return Ok(mc.frames_loaded().into());
+        return Ok(mc.frames_loaded().min(mc.header_frames() as i32).into());
     }
 
     Ok(Value::Undefined)
