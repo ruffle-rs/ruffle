@@ -486,9 +486,10 @@ fn frames_loaded<'gc>(
     _activation: &mut Activation<'_, 'gc>,
     this: DisplayObject<'gc>,
 ) -> Value<'gc> {
-    this.as_movie_clip()
-        .map(MovieClip::frames_loaded)
-        .map_or(Value::Undefined, Value::from)
+    if let Some(mc) = this.as_movie_clip() {
+        return mc.frames_loaded().min(mc.header_frames() as i32).into();
+    }
+    Value::Undefined
 }
 
 fn name<'gc>(activation: &mut Activation<'_, 'gc>, this: DisplayObject<'gc>) -> Value<'gc> {
