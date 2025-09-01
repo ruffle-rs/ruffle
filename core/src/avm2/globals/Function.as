@@ -1,6 +1,6 @@
 package {
+    [Ruffle(ConstructOnCall)]
     [Ruffle(CustomConstructor)]
-    [Ruffle(CallHandler)]
     public final dynamic class Function {
         private static native function _initFunctionClass():void;
 

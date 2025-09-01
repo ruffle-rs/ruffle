@@ -48,18 +48,6 @@ pub fn function_constructor<'gc>(
     Ok(function_object.into())
 }
 
-pub fn call_handler<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    _this: Value<'gc>,
-    args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error<'gc>> {
-    activation
-        .avm2()
-        .classes()
-        .function
-        .construct(activation, args)
-}
-
 pub fn _init_function_class<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,

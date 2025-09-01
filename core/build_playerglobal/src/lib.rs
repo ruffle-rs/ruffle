@@ -31,6 +31,9 @@ const METADATA_INSTANCE_ALLOCATOR: &str = "InstanceAllocator";
 /// Indicates that we should generate a reference to a class call handler
 /// method (used as a metadata key with `Ruffle` metadata)
 const METADATA_CALL_HANDLER: &str = "CallHandler";
+/// Indicates that we should generate a class call handler that constructs the
+/// class being called.
+const METADATA_CONSTRUCT_ON_CALL: &str = "ConstructOnCall";
 /// Indicates that we should generate a reference to a custom constructor
 /// method (used as a metadata key with `Ruffle` metadata)
 const METADATA_CUSTOM_CONSTRUCTOR: &str = "CustomConstructor";
@@ -652,6 +655,13 @@ fn write_native_table(data: &[u8], out_dir: &Path) -> Result<Vec<u8>, Box<dyn st
                     (None, METADATA_ABSTRACT) if !is_versioning => {
                         rust_instance_allocators[class_id as usize] = {
                             let path = "crate::avm2::object::abstract_class_allocator";
+                            let path_tokens = TokenStream::from_str(path).unwrap();
+                            quote! { Some(#path_tokens) }
+                        };
+                    }
+                    (None, METADATA_CONSTRUCT_ON_CALL) if !is_versioning => {
+                        rust_call_handlers[class_id as usize] = {
+                            let path = "crate::avm2::object::construct_call_handler";
                             let path_tokens = TokenStream::from_str(path).unwrap();
                             quote! { Some(#path_tokens) }
                         };

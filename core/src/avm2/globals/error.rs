@@ -5,18 +5,6 @@ use crate::avm2::value::Value;
 use crate::avm2::Error;
 use crate::PlayerMode;
 
-pub fn call_handler<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    _this: Value<'gc>,
-    args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error<'gc>> {
-    activation
-        .avm2()
-        .classes()
-        .error
-        .construct(activation, args)
-}
-
 pub fn get_stack_trace<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
