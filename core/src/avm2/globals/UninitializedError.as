@@ -1,4 +1,5 @@
 package {
+    [Ruffle(CallHandler)]
     public dynamic class UninitializedError extends Error {
         UninitializedError.prototype.name = "UninitializedError";
 

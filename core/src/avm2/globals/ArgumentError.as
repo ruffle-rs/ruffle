@@ -1,4 +1,5 @@
 package {
+    [Ruffle(CallHandler)]
     public dynamic class ArgumentError extends Error {
         ArgumentError.prototype.name = "ArgumentError"
 

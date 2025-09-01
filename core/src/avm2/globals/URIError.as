@@ -6,6 +6,7 @@
 package
 {
 
+    [Ruffle(CallHandler)]
     public dynamic class URIError extends Error
     {
         prototype.name = "URIError";

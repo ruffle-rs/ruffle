@@ -6,6 +6,7 @@
 package
 {
 
+    [Ruffle(CallHandler)]
     public dynamic class SyntaxError extends Error
     {
         prototype.name = "SyntaxError";

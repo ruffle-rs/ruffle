@@ -5,6 +5,7 @@
 
 package
 {
+    [Ruffle(CallHandler)]
     public dynamic class DefinitionError extends Error
     {
         prototype.name = "DefinitionError";

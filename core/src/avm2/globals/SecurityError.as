@@ -6,6 +6,7 @@
 package
 {
 
+    [Ruffle(CallHandler)]
     public dynamic class SecurityError extends Error
     {
         prototype.name = "SecurityError";

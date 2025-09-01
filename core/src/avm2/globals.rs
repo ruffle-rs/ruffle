@@ -13,12 +13,15 @@ use std::sync::Arc;
 use swf::TagCode;
 
 mod __ruffle__;
+mod argument_error;
 mod array;
 mod avmplus;
 mod boolean;
 mod class;
 mod date;
+mod definition_error;
 mod error;
+mod eval_error;
 pub mod flash;
 mod function;
 pub mod global_scope;
@@ -30,15 +33,23 @@ mod null;
 mod number;
 mod object;
 mod q_name;
+mod range_error;
+mod reference_error;
 mod reg_exp;
+mod security_error;
 mod string;
+mod syntax_error;
 mod toplevel;
+mod type_error;
 mod r#uint;
+mod uninitialized_error;
+mod uri_error;
 mod vector;
 mod vector_double;
 mod vector_int;
 mod vector_object;
 mod vector_uint;
+mod verify_error;
 mod void;
 mod xml;
 mod xml_list;
@@ -125,6 +136,8 @@ pub struct SystemClasses<'gc> {
     pub syntaxerror: ClassObject<'gc>,
     pub typeerror: ClassObject<'gc>,
     pub verifyerror: ClassObject<'gc>,
+    pub definitionerror: ClassObject<'gc>,
+    pub uninitializederror: ClassObject<'gc>,
     pub ioerror: ClassObject<'gc>,
     pub eoferror: ClassObject<'gc>,
     pub urierror: ClassObject<'gc>,
@@ -292,6 +305,8 @@ impl<'gc> SystemClasses<'gc> {
             syntaxerror: object,
             typeerror: object,
             verifyerror: object,
+            definitionerror: object,
+            uninitializederror: object,
             ioerror: object,
             eoferror: object,
             urierror: object,
@@ -592,6 +607,7 @@ pub fn init_builtin_system_classes(activation: &mut Activation<'_, '_>) {
             ("", "ArgumentError", argumenterror),
             ("", "Array", array),
             ("", "Boolean", boolean),
+            ("", "DefinitionError", definitionerror),
             ("", "Error", error),
             ("", "EvalError", evalerror),
             ("", "int", int),
@@ -605,6 +621,7 @@ pub fn init_builtin_system_classes(activation: &mut Activation<'_, '_>) {
             ("", "SyntaxError", syntaxerror),
             ("", "TypeError", typeerror),
             ("", "uint", uint),
+            ("", "UninitializedError", uninitializederror),
             ("", "URIError", urierror),
             ("", "VerifyError", verifyerror),
             ("", "XML", xml),

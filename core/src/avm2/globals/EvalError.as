@@ -5,7 +5,7 @@
 
 package
 {
-
+    [Ruffle(CallHandler)]
     public dynamic class EvalError extends Error
     {
         prototype.name = "EvalError";
