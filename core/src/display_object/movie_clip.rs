@@ -37,7 +37,7 @@ use crate::streams::NetStream;
 use crate::string::{AvmString, SwfStrExt as _, WStr, WString};
 use crate::tag_utils::{self, ControlFlow, DecodeResult, Error, SwfMovie, SwfSlice, SwfStream};
 use crate::utils::HasPrefixField;
-use crate::vminterface::{AvmObject, Instantiator};
+use crate::vminterface::Instantiator;
 use bitflags::bitflags;
 use core::fmt;
 use gc_arena::barrier::unlock;
@@ -160,7 +160,10 @@ pub struct MovieClipData<'gc> {
     // If this movie was loaded from ImportAssets(2), this will be the parent movie.
     importer_movie: Option<Arc<SwfMovie>>,
 
-    object: Lock<Option<AvmObject<'gc>>>,
+    // Unlike most other DisplayObjects, a MovieClip can have an AVM1
+    // side and an AVM2 side simultaneously.
+    object1: Lock<Option<Avm1Object<'gc>>>,
+    object2: Lock<Option<Avm2StageObject<'gc>>>,
 
     drop_target: Lock<Option<DisplayObject<'gc>>>,
 
@@ -229,7 +232,8 @@ impl<'gc> MovieClipData<'gc> {
             tag_stream_pos: Cell::new(0),
             current_frame: Cell::new(0),
             audio_stream: Cell::new(None),
-            object: Lock::new(None),
+            object1: Lock::new(None),
+            object2: Lock::new(None),
             clip_event_handlers: OnceCell::new(),
             clip_event_flags: Cell::new(ClipEventFlag::empty()),
             flags: Cell::new(MovieClipFlags::empty()),
@@ -275,7 +279,7 @@ impl<'gc> MovieClip<'gc> {
         let mut shared = MovieClipShared::empty(movie);
         *shared.avm2_class.get_mut() = Some(class);
         let mut data = MovieClipData::new(shared, mc);
-        data.object = Some(this.into()).into();
+        data.object2 = Lock::new(Some(this));
         MovieClip(Gc::new(mc, data))
     }
 
@@ -1712,8 +1716,7 @@ impl<'gc> MovieClip<'gc> {
         instantiated_by: Instantiator,
         run_frame: bool,
     ) {
-        //TODO: This will break horribly when AVM2 starts touching the display list
-        if self.0.object.get().is_none() {
+        if self.0.object1.get().is_none() {
             let avm1_constructor = self.0.get_registered_avm1_constructor(context);
 
             // If we are running within the AVM, this must be an immediate action.
@@ -1735,7 +1738,7 @@ impl<'gc> MovieClip<'gc> {
                         Avm1NativeObject::MovieClip(self),
                     );
                     let write = Gc::write(activation.gc(), self.0);
-                    unlock!(write, MovieClipData, object).set(Some(object.into()));
+                    unlock!(write, MovieClipData, object1).set(Some(object));
 
                     if run_frame {
                         self.run_frame_avm1(activation.context);
@@ -1766,7 +1769,7 @@ impl<'gc> MovieClip<'gc> {
                 Avm1NativeObject::MovieClip(self),
             );
             let write = Gc::write(context.gc(), self.0);
-            unlock!(write, MovieClipData, object).set(Some(object.into()));
+            unlock!(write, MovieClipData, object1).set(Some(object));
 
             if run_frame {
                 self.run_frame_avm1(context);
@@ -1853,7 +1856,7 @@ impl<'gc> MovieClip<'gc> {
         let class_object = self.0.shared.get().avm2_class.get();
         let class_object = class_object.unwrap_or_else(|| context.avm2.classes().movieclip);
 
-        if let Avm2Value::Object(object) = self.object2() {
+        if let Some(object) = self.0.object2.get() {
             let mut activation = Avm2Activation::from_nothing(context);
             let result =
                 class_object.call_init(object.into(), Avm2FunctionArgs::empty(), &mut activation);
@@ -2027,25 +2030,22 @@ impl<'gc> MovieClip<'gc> {
             true
         } else if self.avm1_parent().is_none() {
             false
-        } else {
-            let object = self.object();
-            if let Avm1Value::Object(object) = object {
-                let mut activation = Avm1Activation::from_nothing(
-                    context,
-                    ActivationIdentifier::root("[Mouse Pick]"),
-                    self.avm1_root(),
-                );
+        } else if let Some(object) = self.0.object1.get() {
+            let mut activation = Avm1Activation::from_nothing(
+                context,
+                ActivationIdentifier::root("[Mouse Pick]"),
+                self.avm1_root(),
+            );
 
-                ClipEvent::BUTTON_EVENT_METHODS
-                    .iter()
-                    .copied()
-                    .any(|handler| {
-                        let handler = AvmString::new_utf8(activation.gc(), handler);
-                        object.has_property(&mut activation, handler)
-                    })
-            } else {
-                false
-            }
+            ClipEvent::BUTTON_EVENT_METHODS
+                .iter()
+                .copied()
+                .any(|handler| {
+                    let handler = AvmString::new_utf8(activation.gc(), handler);
+                    object.has_property(&mut activation, handler)
+                })
+        } else {
+            false
         }
     }
 
@@ -2184,7 +2184,7 @@ impl<'gc> MovieClip<'gc> {
     }
 
     fn run_local_frame_scripts(self, context: &mut UpdateContext<'gc>) {
-        let avm2_object = self.0.object.get().and_then(|o| o.as_avm2_object());
+        let avm2_object = self.0.object2.get();
 
         if let Some(avm2_object) = avm2_object {
             if self.0.has_pending_script.get() {
@@ -2319,7 +2319,7 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
             && (self.frames_loaded() >= 1 || self.header_frames() == 0)
         {
             let is_load_frame = !self.0.initialized();
-            let needs_construction = if matches!(self.object2(), Avm2Value::Null) {
+            let needs_construction = if self.0.object2.get().is_none() {
                 self.allocate_as_avm2_object(context, self.into());
                 true
             } else {
@@ -2468,25 +2468,23 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
 
     fn object(self) -> Avm1Value<'gc> {
         self.0
-            .object
+            .object1
             .get()
-            .and_then(|o| o.as_avm1_object())
             .map(Avm1Value::from)
             .unwrap_or(Avm1Value::Undefined)
     }
 
     fn object2(self) -> Avm2Value<'gc> {
         self.0
-            .object
+            .object2
             .get()
-            .and_then(|o| o.as_avm2_object())
             .map(Avm2Value::from)
             .unwrap_or(Avm2Value::Null)
     }
 
     fn set_object2(self, context: &mut UpdateContext<'gc>, to: Avm2StageObject<'gc>) {
         let write = Gc::write(context.gc(), self.0);
-        unlock!(write, MovieClipData, object).set(Some(to.into()));
+        unlock!(write, MovieClipData, object2).set(Some(to));
         if self.parent().is_none() {
             context.avm2.add_orphan_obj(self.into());
         }
@@ -2555,7 +2553,7 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
     }
 
     fn avm1_text_field_bindings(&self) -> Option<Ref<'_, [Avm1TextFieldBinding<'gc>]>> {
-        let obj = self.0.object.get().and_then(|o| o.as_avm1_object());
+        let obj = self.0.object1.get();
         obj.map(|_| {
             let read = self.0.cell.borrow();
             Ref::map(read, |r| r.avm1_text_field_bindings.as_slice())
@@ -2566,7 +2564,7 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
         &self,
         mc: &Mutation<'gc>,
     ) -> Option<RefMut<'_, Vec<Avm1TextFieldBinding<'gc>>>> {
-        let obj = self.0.object.get().and_then(|o| o.as_avm1_object());
+        let obj = self.0.object1.get();
         obj.map(|_| {
             let write = unlock!(Gc::write(mc, self.0), MovieClipData, cell);
             RefMut::map(write.borrow_mut(), |r| &mut r.avm1_text_field_bindings)
@@ -2649,7 +2647,7 @@ impl<'gc> TInteractiveObject<'gc> for MovieClip<'gc> {
         }
 
         let mut handled = ClipEventResult::NotHandled;
-        if let Some(AvmObject::Avm1(object)) = self.0.object.get() {
+        if let Some(object) = self.0.object1.get() {
             let swf_version = self.0.movie().version();
             if swf_version >= 5 {
                 if let Some(flag) = event.flag() {
