@@ -563,16 +563,10 @@ impl<'gc> MovieClip<'gc> {
         if is_finished {
             if progress.cur_preload_frame.get() == 1 {
                 // If this clip did not have any show frame tags,
-                // we can just pretend that it did.
+                // treat the end-of-clip as a ShowFrame
                 shared.show_frame(reader, 0).unwrap();
             }
-            // End-of-clip should be treated as ShowFrame
-            shared.show_frame(reader, 0).unwrap();
-
             // Flag the movie as fully preloaded when we hit the end of the tag stream.
-            progress
-                .cur_preload_frame
-                .set(progress.cur_preload_frame.get() - 1);
             progress.next_preload_chunk.set(u64::MAX);
         } else {
             let next_chunk =
