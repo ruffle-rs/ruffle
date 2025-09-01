@@ -561,6 +561,11 @@ impl<'gc> MovieClip<'gc> {
         }
 
         if is_finished {
+            if progress.cur_preload_frame.get() == 1 {
+                // If this clip did not have any show frame tags,
+                // we can just pretend that it did.
+                shared.show_frame(reader, 0).unwrap();
+            }
             // End-of-clip should be treated as ShowFrame
             shared.show_frame(reader, 0).unwrap();
 
