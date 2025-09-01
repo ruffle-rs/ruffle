@@ -1162,8 +1162,8 @@ impl<'gc> MovieClip<'gc> {
         let mc = self.0.shared.get();
         let mut reader = mc.swf.read_from(self.0.tag_stream_pos.get());
 
-        // We ignore the frame count from the header, and instead continue
-        // until we reach the end of the stream or a `TagCode::End`.
+        // We ignore the frame count from the header, and instead continue as long as
+        // we haven't reached the end of the stream and the next tag isn't a `TagCode::End`.
         // Flash Player ignores the frame count, and just executes the full
         // tag stream before returning to the first frame.
         if !reader.as_slice().is_empty()
