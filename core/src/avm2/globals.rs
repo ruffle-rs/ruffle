@@ -19,6 +19,7 @@ mod avmplus;
 mod boolean;
 mod class;
 mod date;
+mod definition_error;
 mod error;
 mod eval_error;
 pub mod flash;
@@ -41,6 +42,7 @@ mod syntax_error;
 mod toplevel;
 mod type_error;
 mod r#uint;
+mod uninitialized_error;
 mod uri_error;
 mod vector;
 mod vector_double;
@@ -134,6 +136,8 @@ pub struct SystemClasses<'gc> {
     pub syntaxerror: ClassObject<'gc>,
     pub typeerror: ClassObject<'gc>,
     pub verifyerror: ClassObject<'gc>,
+    pub definitionerror: ClassObject<'gc>,
+    pub uninitializederror: ClassObject<'gc>,
     pub ioerror: ClassObject<'gc>,
     pub eoferror: ClassObject<'gc>,
     pub urierror: ClassObject<'gc>,
@@ -301,6 +305,8 @@ impl<'gc> SystemClasses<'gc> {
             syntaxerror: object,
             typeerror: object,
             verifyerror: object,
+            definitionerror: object,
+            uninitializederror: object,
             ioerror: object,
             eoferror: object,
             urierror: object,
@@ -601,6 +607,7 @@ pub fn init_builtin_system_classes(activation: &mut Activation<'_, '_>) {
             ("", "ArgumentError", argumenterror),
             ("", "Array", array),
             ("", "Boolean", boolean),
+            ("", "DefinitionError", definitionerror),
             ("", "Error", error),
             ("", "EvalError", evalerror),
             ("", "int", int),
@@ -614,6 +621,7 @@ pub fn init_builtin_system_classes(activation: &mut Activation<'_, '_>) {
             ("", "SyntaxError", syntaxerror),
             ("", "TypeError", typeerror),
             ("", "uint", uint),
+            ("", "UninitializedError", uninitializederror),
             ("", "URIError", urierror),
             ("", "VerifyError", verifyerror),
             ("", "XML", xml),
