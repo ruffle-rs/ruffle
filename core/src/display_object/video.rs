@@ -1,7 +1,7 @@
 //! Video player display object
 
 use crate::avm1::{NativeObject as Avm1NativeObject, Object as Avm1Object, Value as Avm1Value};
-use crate::avm2::{Object as Avm2Object, StageObject as Avm2StageObject, Value as Avm2Value};
+use crate::avm2::{StageObject as Avm2StageObject, Value as Avm2Value};
 use crate::context::{RenderContext, UpdateContext};
 use crate::display_object::{Avm1TextFieldBinding, DisplayObjectBase};
 use crate::prelude::*;
@@ -448,7 +448,7 @@ impl<'gc> TDisplayObject<'gc> for Video<'gc> {
             // itself only sets the size of the Video- the Video already has the
             // correct size at this point.
 
-            self.set_object2(context, object.into());
+            self.set_object2(context, object);
 
             self.on_construction_complete(context);
         }
@@ -531,7 +531,7 @@ impl<'gc> TDisplayObject<'gc> for Video<'gc> {
         context.transform_stack.pop();
     }
 
-    fn set_object2(self, context: &mut UpdateContext<'gc>, to: Avm2Object<'gc>) {
+    fn set_object2(self, context: &mut UpdateContext<'gc>, to: Avm2StageObject<'gc>) {
         self.set_object(context, to.into());
     }
 

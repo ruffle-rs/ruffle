@@ -64,7 +64,7 @@ pub struct StageData<'gc> {
     child: RefLock<ChildContainer<'gc>>,
 
     /// The AVM2 view of this stage object.
-    avm2_object: Lock<Option<Avm2Object<'gc>>>,
+    avm2_object: Lock<Option<Avm2StageObject<'gc>>>,
 
     /// The AVM2 'LoaderInfo' object for this stage object
     loader_info: Lock<Option<Avm2Object<'gc>>>,
@@ -797,7 +797,7 @@ impl<'gc> TDisplayObject<'gc> for Stage<'gc> {
                     .collect();
 
                 let write = Gc::write(activation.gc(), self.0);
-                unlock!(write, StageData, avm2_object).set(Some(avm2_stage.into()));
+                unlock!(write, StageData, avm2_object).set(Some(avm2_stage));
                 unlock!(write, StageData, stage3ds).replace(stage3ds);
             }
             Err(e) => tracing::error!("Unable to construct AVM2 Stage: {}", e),
