@@ -31,7 +31,7 @@ pub fn bitmap_allocator<'gc>(
                 0,
                 bitmap_data,
                 false,
-                &activation.caller_movie_or_root(),
+                activation.caller_movie_or_root(),
             )
             .into();
             return Ok(initialize_for_allocator(
@@ -41,16 +41,9 @@ pub fn bitmap_allocator<'gc>(
             ));
         }
 
-        if let Some((movie, symbol)) = activation
-            .context
-            .library
-            .avm2_class_registry()
-            .class_symbol(class)
+        if let Some(symbol) = class.translation_unit().unwrap().movie().0.borrow().avm2_class_registry.class_symbol(class)
         {
-            if let Some(Character::Bitmap(bitmap)) = activation
-                .context
-                .library
-                .library_for_movie_mut(movie)
+            if let Some(Character::Bitmap(bitmap)) =  class.translation_unit().unwrap().movie().0.borrow()
                 .character_by_id(symbol)
             {
                 let new_bitmap_data = fill_bitmap_data_from_symbol(activation, bitmap.compressed());
@@ -63,7 +56,7 @@ pub fn bitmap_allocator<'gc>(
                     0,
                     new_bitmap_data,
                     false,
-                    &activation.caller_movie_or_root(),
+                    activation.caller_movie_or_root(),
                 );
 
                 return Ok(initialize_for_allocator(

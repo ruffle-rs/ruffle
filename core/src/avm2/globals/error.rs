@@ -27,7 +27,7 @@ pub fn get_stack_trace<'gc>(
     // See <https://docs.ruffle.rs/en_US/FlashPlatform/reference/actionscript/3/Error.html#getStackTrace()>
     // But note that the behavior also depends on SWF version.
     let stack_trace_enabled = if activation.context.player_version >= 18
-        && activation.caller_movie_or_root().version() >= 18
+        && activation.caller_movie_or_root().swf().version() >= 18
     {
         // For Flash Player 11.5+ and SWF>=18, stack traces are always enabled.
         true

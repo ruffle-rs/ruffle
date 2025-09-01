@@ -7,6 +7,7 @@ use crate::avm2::{
 };
 use crate::context::{RenderContext, UpdateContext};
 use crate::drawing::Drawing;
+use crate::library::MovieLibrary;
 use crate::loader::LoadManager;
 use crate::prelude::*;
 use crate::string::{AvmString, WString};
@@ -1110,6 +1111,7 @@ pub fn apply_standard_mask_and_scroll<'gc, F>(
     }
 }
 
+
 #[enum_trait_object(
     #[derive(Clone, Collect, Debug, Copy)]
     #[collect(no_drop)]
@@ -2160,10 +2162,7 @@ pub trait TDisplayObject<'gc>:
             if let Some(parent @ Avm2Value::Object(_)) = self.parent().map(|p| p.object2()) {
                 if let Avm2Value::Object(child) = self.object2() {
                     if let Some(name) = self.name() {
-                        let domain = context
-                            .library
-                            .library_for_movie(self.movie())
-                            .unwrap()
+                        let domain = self.movie_library().0.borrow()
                             .avm2_domain();
                         let mut activation = Avm2Activation::from_domain(context, domain);
                         let multiname =
@@ -2411,6 +2410,8 @@ pub trait TDisplayObject<'gc>:
 
     /// Return the SWF that defines this display object.
     fn movie(self) -> Arc<SwfMovie>;
+
+    fn movie_library(self) -> MovieLibrary<'gc>;
 
     fn loader_info(self) -> Option<Avm2Object<'gc>> {
         None

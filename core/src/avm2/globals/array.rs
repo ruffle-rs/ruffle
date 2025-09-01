@@ -922,7 +922,7 @@ pub fn compare_numeric_slow<'gc>(
     a: Value<'gc>,
     b: Value<'gc>,
 ) -> Result<Ordering, Error<'gc>> {
-    if activation.caller_movie_or_root().version() < 11 {
+    if activation.caller_movie_or_root().swf().version() < 11 {
         compare_numeric::<true>(activation, a, b)
     } else {
         compare_numeric::<false>(activation, a, b)
@@ -1084,7 +1084,7 @@ pub fn sort<'gc>(
     let unique_satisfied = if let Some(v) = compare_fnc {
         // See <https://github.com/adobe/avmplus/blob/858d034a3bd3a54d9b70909386435cf4aec81d21/core/ArrayClass.cpp#L821>
         // See <https://bugzilla.mozilla.org/show_bug.cgi?id=532454>
-        if activation.caller_movie_or_root().version() < 13 {
+        if activation.caller_movie_or_root().swf().version() < 13 {
             sort_inner(
                 activation,
                 &mut values,
@@ -1120,7 +1120,7 @@ pub fn sort<'gc>(
             )?
         }
     } else if options.contains(SortOptions::NUMERIC) {
-        if activation.caller_movie_or_root().version() < 11 {
+        if activation.caller_movie_or_root().swf().version() < 11 {
             sort_inner(activation, &mut values, options, compare_numeric::<true>)?
         } else {
             sort_inner(activation, &mut values, options, compare_numeric::<false>)?

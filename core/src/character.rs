@@ -6,6 +6,7 @@ use crate::display_object::{
     Avm1Button, Avm2Button, BitmapClass, EditText, Graphic, MorphShape, MovieClip, Text, Video,
 };
 use crate::font::Font;
+use crate::library::MovieLibrary;
 use gc_arena::barrier::unlock;
 use gc_arena::lock::Lock;
 use gc_arena::{Collect, Gc, Mutation};
@@ -42,14 +43,16 @@ pub struct BitmapCharacter<'gc> {
     /// The bitmap class set by `SymbolClass` - this is used when we instantaite
     /// a `Bitmap` displayobject.
     avm2_class: Lock<BitmapClass<'gc>>,
+    pub library: MovieLibrary<'gc>,
 }
 
 impl<'gc> BitmapCharacter<'gc> {
-    pub fn new(compressed: CompressedBitmap) -> Self {
+    pub fn new(compressed: CompressedBitmap, library: MovieLibrary<'gc>) -> Self {
         Self {
             compressed,
             handle: OnceCell::default(),
             avm2_class: Lock::new(BitmapClass::NoSubclass),
+            library,
         }
     }
 

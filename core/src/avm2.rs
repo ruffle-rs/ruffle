@@ -21,6 +21,7 @@ use crate::avm2::stack::Stack;
 use crate::character::Character;
 use crate::context::UpdateContext;
 use crate::display_object::{DisplayObject, DisplayObjectWeak, MovieClip, TDisplayObject};
+use crate::library::MovieLibrary;
 use crate::string::{AvmString, StringContext};
 use crate::tag_utils::SwfMovie;
 use crate::PlayerRuntime;
@@ -179,7 +180,7 @@ pub struct Avm2<'gc> {
     /// alive if they would otherwise be garbage-collected. The movie will
     /// stop ticking whenever garbage collection runs if there are no more
     /// strong references around (this matches Flash's behavior).
-    orphan_objects: Rc<Vec<DisplayObjectWeak<'gc>>>,
+    orphan_objects: Rc<Vec<DisplayObject<'gc>>>,
 
     alias_to_class_map: FnvHashMap<AvmString<'gc>, ClassObject<'gc>>,
     class_to_alias_map: FnvHashMap<Class<'gc>, AvmString<'gc>>,
@@ -342,7 +343,7 @@ impl<'gc> Avm2<'gc> {
         Ok(())
     }
 
-    fn orphan_objects_mut(&mut self) -> &mut Vec<DisplayObjectWeak<'gc>> {
+    fn orphan_objects_mut(&mut self) -> &mut Vec<DisplayObject<'gc>> {
         Rc::make_mut(&mut self.orphan_objects)
     }
 
@@ -359,7 +360,7 @@ impl<'gc> Avm2<'gc> {
             .iter()
             .all(|d| !std::ptr::eq(d.as_ptr(), dobj.as_ptr()))
         {
-            self.orphan_objects_mut().push(dobj.downgrade());
+            self.orphan_objects_mut().push(dobj);
         }
     }
 
@@ -385,7 +386,7 @@ impl<'gc> Avm2<'gc> {
     /// (they've since acquired a parent).
     pub fn cleanup_dead_orphans(context: &mut UpdateContext<'gc>) {
         context.avm2.orphan_objects_mut().retain(|d| {
-            if let Some(dobj) = valid_orphan(*d, context.gc_context) {
+            if let Some(dobj) = valid_orphan_timeline(*d, context.gc_context) {
                 // All clips that become orphaned (have their parent removed, or start out with no parent)
                 // get added to the orphan list. However, there's a distinction between clips
                 // that are removed from a RemoveObject tag, and clips that are removed from ActionScript.
@@ -406,7 +407,7 @@ impl<'gc> Avm2<'gc> {
                 // which have not been moved in the displaylist by ActionScript. Therefore,
                 // any orphan we see that has 'placed_by_script()' should stay on the orphan
                 // list, because it was not removed by a RemoveObject tag.
-                dobj.placed_by_script()
+                true
             } else {
                 false
             }
@@ -580,7 +581,7 @@ impl<'gc> Avm2<'gc> {
         name: QName<'gc>,
         id: u16,
     ) -> Result<ClassObject<'gc>, Error<'gc>> {
-        let movie = movie_clip.movie().clone();
+        let movie = movie_clip.movie_library();
 
         let class_object = domain
             .get_defined_value(activation, name)?
@@ -596,7 +597,7 @@ impl<'gc> Avm2<'gc> {
 
         let class = class_object.inner_class_definition();
 
-        let library = activation.context.library.library_for_movie_mut(movie);
+        let library = movie.0.borrow();
         let character = library.character_by_id(id);
 
         if let Some(character) = character {
@@ -644,7 +645,7 @@ impl<'gc> Avm2<'gc> {
         name: Option<AvmString<'gc>>,
         flags: DoAbc2Flag,
         domain: Domain<'gc>,
-        movie: Arc<SwfMovie>,
+        movie: MovieLibrary<'gc>,
     ) -> Result<Option<Script<'gc>>, Error<'gc>> {
         let mut reader = Reader::new(data);
         let abc = match reader.read() {
@@ -686,7 +687,7 @@ impl<'gc> Avm2<'gc> {
         context: &mut UpdateContext<'gc>,
         data: &[u8],
         domain: Domain<'gc>,
-        movie: Arc<SwfMovie>,
+        movie: MovieLibrary<'gc>,
     ) {
         let mut reader = Reader::new(data);
         let abc = match reader.read() {
@@ -814,14 +815,27 @@ impl<'gc> Avm2<'gc> {
 /// If the provided `DisplayObjectWeak` should have frames run, returns
 /// Some(clip) with an upgraded `MovieClip`.
 /// If this returns `None`, the entry should be removed from the orphan list.
-fn valid_orphan<'gc>(
-    dobj: DisplayObjectWeak<'gc>,
+fn valid_orphan<'gc>(_dobj: DisplayObject<'gc>, _mc: &Mutation<'gc>) -> Option<DisplayObject<'gc>> {
+    //if let Some(dobj) = dobj.upgrade(mc) {
+    // An object should remain on the orphan list if it has no parent, and it falls into
+    // one of two categories:
+    // 1. It was not created by the timeline (and thus must have been created by ActionScript)
+    // 2. It was moved on the timeline by ActionScript (`placed_by_script` is true)
+    if _dobj.parent().is_none() && (!_dobj.instantiated_by_timeline() || _dobj.placed_by_script()) {
+        Some(_dobj)
+    } else {
+        None
+    }
+}
+
+fn valid_orphan_timeline<'gc>(
+    dobj: DisplayObject<'gc>,
     mc: &Mutation<'gc>,
 ) -> Option<DisplayObject<'gc>> {
-    if let Some(dobj) = dobj.upgrade(mc) {
-        if dobj.parent().is_none() {
-            return Some(dobj);
-        }
+    //if let Some(dobj) = dobj.upgrade(mc) {
+    if dobj.parent().is_none() {
+        return Some(dobj);
     }
+    //}
     None
 }

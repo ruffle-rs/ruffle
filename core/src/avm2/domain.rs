@@ -21,18 +21,18 @@ use ruffle_wstr::WStr;
 
 /// Represents a set of scripts and movies that share traits across different
 /// script-global scopes.
-#[derive(Copy, Clone, Collect)]
+#[derive(Copy, Clone, Collect, Debug)]
 #[collect(no_drop)]
 pub struct Domain<'gc>(Gc<'gc, DomainData<'gc>>);
 
 /// Weak version of the Domain struct, used to mark children of a Domain when
 /// the egui feature is enabled
 #[allow(dead_code)]
-#[derive(Copy, Clone, Collect)]
+#[derive(Copy, Clone, Collect, Debug)]
 #[collect(no_drop)]
 pub struct DomainWeak<'gc>(GcWeak<'gc, DomainData<'gc>>);
 
-#[derive(Collect)]
+#[derive(Collect, Debug)]
 #[collect(no_drop)]
 struct DomainData<'gc> {
     cell: RefLock<DomainDataMut<'gc>>,
@@ -51,7 +51,7 @@ struct DomainData<'gc> {
     default_domain_memory: OnceLock<ByteArrayObject<'gc>>,
 }
 
-#[derive(Collect)]
+#[derive(Collect, Debug)]
 #[collect(no_drop)]
 struct DomainDataMut<'gc> {
     /// A list of all exported definitions and the script that exported them.

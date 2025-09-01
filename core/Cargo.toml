@@ -68,6 +68,7 @@ id3 = "1.16.3"
 either = "1.15.0"
 chardetng = "0.1.17"
 tracy-client = { version = "0.17.6", optional = true, default-features = false }
+xxhash-rust = { version = "0.8.15", features = ["xxh3"] }
 
 [target.'cfg(not(target_family = "wasm"))'.dependencies.futures]
 workspace = true

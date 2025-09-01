@@ -12,7 +12,7 @@ pub fn get_domain<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let movie = &activation.context.root_swf;
 
-    let domain = if let Ok(url) = url::Url::parse(movie.url()) {
+    let domain = if let Ok(url) = url::Url::parse(movie.swf().url()) {
         if url.scheme() == "file" {
             istr!("localhost")
         } else if let Some(domain) = url.domain() {

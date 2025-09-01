@@ -6,6 +6,7 @@ use crate::avm2::object::{ClassObject, ScriptObject};
 use crate::avm2::scope::{Scope, ScopeChain};
 use crate::avm2::script::TranslationUnit;
 use crate::avm2::{Avm2, Error, Multiname, Namespace, QName};
+use crate::library::MovieLibrary;
 use crate::string::WStr;
 use crate::tag_utils::{self, ControlFlow, SwfMovie, SwfSlice, SwfStream};
 use gc_arena::Collect;
@@ -798,10 +799,10 @@ pub fn load_playerglobal<'gc>(activation: &mut Activation<'_, 'gc>, domain: Doma
     activation.avm2().native_custom_constructor_table = native::NATIVE_CUSTOM_CONSTRUCTOR_TABLE;
     activation.avm2().native_fast_call_list = native::NATIVE_FAST_CALL_LIST;
 
-    let movie = Arc::new(
+    let movie = MovieLibrary::from_swf_movie(Arc::new(
         SwfMovie::from_data(PLAYERGLOBAL, "file:///".into(), None)
             .expect("playerglobal.swf should be valid"),
-    );
+    ), activation.gc());
 
     let slice = SwfSlice::from(movie.clone());
 
@@ -812,7 +813,7 @@ pub fn load_playerglobal<'gc>(activation: &mut Activation<'_, 'gc>, domain: Doma
             let do_abc = reader
                 .read_do_abc_2()
                 .expect("playerglobal.swf should be valid");
-            Avm2::load_builtin_abc(activation.context, do_abc.data, domain, movie.clone());
+            Avm2::load_builtin_abc(activation.context, do_abc.data, domain, movie);
         } else if tag_code != TagCode::End {
             panic!("playerglobal should only contain `DoAbc2` tag - found tag {tag_code:?}")
         }

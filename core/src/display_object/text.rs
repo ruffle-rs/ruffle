@@ -2,6 +2,7 @@ use crate::avm2::{Object as Avm2Object, StageObject as Avm2StageObject};
 use crate::context::{RenderContext, UpdateContext};
 use crate::display_object::DisplayObjectBase;
 use crate::font::{FontLike, TextRenderSettings};
+use crate::library::MovieLibrary;
 use crate::prelude::*;
 use crate::tag_utils::SwfMovie;
 use crate::utils::HasPrefixField;
@@ -33,7 +34,7 @@ impl fmt::Debug for Text<'_> {
 #[repr(C, align(8))]
 pub struct TextData<'gc> {
     base: DisplayObjectBase<'gc>,
-    shared: Lock<Gc<'gc, TextShared>>,
+    shared: Lock<Gc<'gc, TextShared<'gc>>>,
     render_settings: RefCell<TextRenderSettings>,
     avm2_object: Lock<Option<Avm2Object<'gc>>>,
 }
@@ -41,7 +42,7 @@ pub struct TextData<'gc> {
 impl<'gc> Text<'gc> {
     pub fn from_swf_tag(
         context: &mut UpdateContext<'gc>,
-        swf: Arc<SwfMovie>,
+        swf: MovieLibrary<'gc>,
         tag: &swf::Text,
     ) -> Self {
         Text(Gc::new(
@@ -64,7 +65,7 @@ impl<'gc> Text<'gc> {
         ))
     }
 
-    fn set_shared(&self, context: &mut UpdateContext<'gc>, to: Gc<'gc, TextShared>) {
+    fn set_shared(&self, context: &mut UpdateContext<'gc>, to: Gc<'gc, TextShared<'gc>>) {
         let mc = context.gc();
         unlock!(Gc::write(mc, self.0), TextData, shared).set(to);
     }
@@ -79,10 +80,7 @@ impl<'gc> Text<'gc> {
 
         for block in &self.0.shared.get().text_blocks {
             let font_id = block.font_id.unwrap_or_default();
-            if let Some(font) = context
-                .library
-                .library_for_movie(self.movie())
-                .unwrap()
+            if let Some(font) = self.movie_library().0.borrow()
                 .get_font(font_id)
             {
                 for glyph in &block.glyphs {
@@ -111,13 +109,11 @@ impl<'gc> TDisplayObject<'gc> for Text<'gc> {
     }
 
     fn movie(self) -> Arc<SwfMovie> {
-        self.0.shared.get().swf.clone()
+        self.0.shared.get().swf.swf().clone()
     }
 
     fn replace_with(self, context: &mut UpdateContext<'gc>, id: CharacterId) {
-        if let Some(new_text) = context
-            .library
-            .library_for_movie_mut(self.movie())
+        if let Some(new_text) = self.movie_library().0.borrow()
             .get_text(id)
         {
             self.set_shared(context, new_text.0.shared.get());
@@ -153,12 +149,7 @@ impl<'gc> TDisplayObject<'gc> for Text<'gc> {
             color = block.color.unwrap_or(color);
             font_id = block.font_id.unwrap_or(font_id);
             height = block.height.unwrap_or(height);
-            if let Some(font) = context
-                .library
-                .library_for_movie(self.movie())
-                .unwrap()
-                .get_font(font_id)
-            {
+            if let Some(font) = self.movie_library().0.borrow().get_font(font_id) {
                 let scale = (height.get() as f32) / font.scale();
                 transform.matrix.a = scale;
                 transform.matrix.d = scale;
@@ -224,12 +215,7 @@ impl<'gc> TDisplayObject<'gc> for Text<'gc> {
                 font_id = block.font_id.unwrap_or(font_id);
                 height = block.height.unwrap_or(height);
 
-                if let Some(font) = context
-                    .library
-                    .library_for_movie(self.movie())
-                    .unwrap()
-                    .get_font(font_id)
-                {
+                if let Some(font) = self.movie_library().0.borrow().get_font(font_id) {
                     let scale = (height.get() as f32) / font.scale();
                     glyph_matrix.a = scale;
                     glyph_matrix.d = scale;
@@ -285,15 +271,22 @@ impl<'gc> TDisplayObject<'gc> for Text<'gc> {
         let mc = context.gc();
         unlock!(Gc::write(mc, self.0), TextData, avm2_object).set(Some(to));
     }
+
+    fn movie_library(self) -> MovieLibrary<'gc> {
+        self.0.shared.get().swf
+    }
 }
 
 /// Data shared between all instances of a text object.
 #[derive(Debug, Clone, Collect)]
-#[collect(require_static)]
-struct TextShared {
-    swf: Arc<SwfMovie>,
+#[collect(no_drop)]
+struct TextShared<'gc> {
+    swf: MovieLibrary<'gc>,
     id: CharacterId,
+    #[collect(require_static)]
     bounds: Rectangle<Twips>,
+    #[collect(require_static)]
     text_transform: Matrix,
+    #[collect(require_static)]
     text_blocks: Vec<swf::TextRecord>,
 }

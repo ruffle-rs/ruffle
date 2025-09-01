@@ -25,6 +25,7 @@ use crate::display_object::{
 };
 use crate::events::ClipEvent;
 use crate::frame_lifecycle::catchup_display_object_to_frame;
+use crate::library::MovieLibrary;
 use crate::limits::ExecutionLimit;
 use crate::player::{Player, PostFrameCallback};
 use crate::streams::NetStream;
@@ -282,6 +283,7 @@ impl<'gc> LoadManager<'gc> {
             | Loader::DownloadFileDialog { self_handle, .. }
             | Loader::UploadFile { self_handle, .. }
             | Loader::StyleSheet { self_handle, .. }
+            | Loader::AssetMovie { self_handle, .. }
             | Loader::MovieUnloader { self_handle, .. } => *self_handle = Some(handle),
         }
         handle
@@ -367,62 +369,18 @@ impl<'gc> LoadManager<'gc> {
     }
 
     pub fn load_asset_movie(
+        &mut self,
         player: Weak<Mutex<Player>>,
         request: Request,
-        importer_movie: Arc<SwfMovie>,
+        importer_movie: MovieLibrary<'gc>,
     ) -> OwnedFuture<(), Error> {
-        let player = player
-            .upgrade()
-            .expect("Could not upgrade weak reference to player");
-
-        Box::pin(async move {
-            let fetch = player.lock().unwrap().navigator().fetch(request);
-
-            match Loader::wait_for_full_response(fetch).await {
-                Ok((body, url, _status, _redirected)) => {
-                    let content_type = ContentType::sniff(&body);
-                    tracing::info!("Loading imported movie: {:?}", url);
-                    match content_type {
-                        ContentType::Swf => {
-                            let movie = SwfMovie::from_data(&body, url.clone(), Some(url.clone()))
-                                .expect("Could not load movie");
-
-                            let movie = Arc::new(movie);
-
-                            player.lock().unwrap().mutate_with_update_context(|uc| {
-                                let clip = MovieClip::new_import_assets(uc, movie, importer_movie);
-
-                                clip.set_cur_preload_frame(0);
-                                let mut execution_limit = ExecutionLimit::none();
-
-                                tracing::debug!("Preloading swf to run exports {:?}", url);
-
-                                // Create library for exports before preloading
-                                uc.library.library_for_movie_mut(clip.movie());
-                                let res = clip.preload(uc, &mut execution_limit);
-                                tracing::debug!(
-                                    "Preloaded swf to run exports result {:?} {}",
-                                    url,
-                                    res
-                                );
-                            });
-                            Ok(())
-                        }
-                        _ => {
-                            tracing::warn!(
-                                "Unsupported content type for ImportAssets: {:?}",
-                                content_type
-                            );
-                            Ok(())
-                        }
-                    }
-                }
-                Err(e) => Err(Error::FetchError(format!(
-                    "Could not fetch: {:?} because {:?}",
-                    e.url, e.error
-                ))),
-            }
-        })
+        let loader = Loader::AssetMovie {
+            self_handle: None,
+            importer_movie,
+        };
+        let handle = self.add_loader(loader);
+        let loader = self.get_loader_mut(handle).unwrap();
+        loader.asset_movie_loader(player, request)
     }
 
     /// Kick off a movie clip load.
@@ -820,7 +778,7 @@ pub enum Loader<'gc> {
         /// This is only available if the asynchronous loader path has
         /// completed and we expect the Player to periodically tick preload
         /// until loading completes.
-        movie: Option<Arc<SwfMovie>>,
+        movie: Option<MovieLibrary<'gc>>,
 
         /// Whether or not this was loaded as a result of a `Loader.loadBytes` call
         from_bytes: bool,
@@ -956,9 +914,85 @@ pub enum Loader<'gc> {
         /// The target AVM1 object to submit the styles to
         target_object: Object<'gc>,
     },
+
+    AssetMovie {
+        /// The handle to refer to this loader instance.
+        #[collect(require_static)]
+        self_handle: Option<LoaderHandle>,
+
+        /// The movie that is importing the asset.
+        importer_movie: MovieLibrary<'gc>,
+    },
 }
 
 impl<'gc> Loader<'gc> {
+    fn asset_movie_loader(
+        &mut self,
+        player: Weak<Mutex<Player>>,
+        request: Request,
+    ) -> OwnedFuture<(), Error> {
+        let handle = match self {
+            Loader::AssetMovie { self_handle, .. } => {
+                self_handle.expect("Loader not self-introduced")
+            }
+            _ => return Box::pin(async { Err(Error::NotMovieLoader) }),
+        };
+
+        let player = player
+            .upgrade()
+            .expect("Could not upgrade weak reference to player");
+
+        Box::pin(async move {
+            let fetch = player.lock().unwrap().navigator().fetch(request);
+
+            match Loader::wait_for_full_response(fetch).await {
+                Ok((body, url, _status, _redirected)) => {
+                    let load_result = player.lock().unwrap().mutate_with_update_context(|uc| {
+                        let importer_movie = match uc.load_manager.get_loader(handle) {
+                            Some(&Loader::AssetMovie { importer_movie, .. }) => importer_movie,
+                            _ => return Err(Error::Cancelled),
+                        };
+
+                        let content_type = ContentType::sniff(&body);
+                        tracing::info!("Loading imported movie: {:?}", url);
+                        if let ContentType::Swf = content_type {
+                            let movie = SwfMovie::from_data(&body, url.clone(), Some(url.clone()))?;
+                            let swf = uc.library.register_movie(MovieLibrary::from_swf_movie(Arc::new(movie), uc.gc_context), uc.gc());
+                            let clip = MovieClip::new_import_assets(uc, swf.upgrade(uc.gc()).expect("This probably shouldn't happen"), importer_movie);
+
+                            clip.set_cur_preload_frame(0);
+                            let mut execution_limit = ExecutionLimit::none();
+
+                            tracing::debug!("Preloading swf to run exports {:?}", url);
+                            let res = clip.preload(uc, &mut execution_limit);
+                            tracing::debug!(
+                                "Preloaded swf to run exports result {:?} {}",
+                                url,
+                                res
+                            );
+                        } else {
+                            tracing::warn!(
+                                "Unsupported content type for ImportAssets: {:?}",
+                                content_type
+                            );
+                        }
+                        Ok(())
+                    });
+
+                    player.lock().unwrap().update(|uc| {
+                        uc.load_manager.remove_loader(handle);
+                    });
+
+                    load_result
+                }
+                Err(e) => Err(Error::FetchError(format!(
+                    "Could not fetch: {:?} because {:?}",
+                    e.url, e.error
+                ))),
+            }
+        })
+    }
+
     /// Process tags on a loaded movie.
     ///
     /// Is only callable on Movie loaders, panics otherwise. Will
@@ -1097,6 +1131,7 @@ impl<'gc> Loader<'gc> {
                         .ui()
                         .display_root_movie_download_failed_message(true, error.to_string());
                 })?;
+            
             on_metadata(movie.header());
             movie.append_parameters(parameters);
             player.lock().unwrap().mutate_with_update_context(|uc| {
@@ -1290,7 +1325,7 @@ impl<'gc> Loader<'gc> {
             mc.replace_with_movie(uc, None, false, None);
         }
 
-        let loader_url = Some(uc.root_swf.url().to_string());
+        let loader_url = Some(uc.root_swf.0.borrow().swf.url().to_string());
 
         if replacing_root_movie {
             ContentType::sniff(&bytes).expect(ContentType::Swf)?;
@@ -1356,7 +1391,7 @@ impl<'gc> Loader<'gc> {
                     // Convert the text into UTF-8
                     utf8_string = encoding.decode(&body).0;
                     utf8_string.as_bytes()
-                } else if activation.context.root_swf.version() <= 5 {
+                } else if activation.context.root_swf.0.borrow().swf.version() <= 5 {
                     utf8_string = WINDOWS_1252.decode(&body).0;
                     utf8_string.as_bytes()
                 } else {
@@ -2053,14 +2088,17 @@ impl<'gc> Loader<'gc> {
         };
 
         let movie = match sniffed_type {
-            ContentType::Swf => {
-                Arc::new(SwfMovie::from_data(data, url.clone(), loader_url.clone())?)
-            }
+            ContentType::Swf => MovieLibrary::from_swf_movie(
+                Arc::new(SwfMovie::from_data(data, url.clone(), loader_url.clone())?),
+                activation.gc(),
+            ),
             ContentType::Gif | ContentType::Jpeg | ContentType::Png => {
-                Arc::new(SwfMovie::from_loaded_image(url.clone(), length))
+                MovieLibrary::from_swf_movie(Arc::new(SwfMovie::from_loaded_image(url.clone(), length)), activation.gc())
             }
-            ContentType::Unknown => Arc::new(SwfMovie::error_movie(url.clone())),
+            ContentType::Unknown => MovieLibrary::from_swf_movie(Arc::new(SwfMovie::error_movie(url.clone())), activation.gc()),
         };
+
+        let movie = activation.context.library.register_movie(movie, activation.gc()).upgrade(activation.gc()).expect("Registered movie should not be dropped");
 
         match activation.context.load_manager.get_loader_mut(handle) {
             Some(Loader::Movie {
@@ -2076,11 +2114,11 @@ impl<'gc> Loader<'gc> {
 
         if let MovieLoaderVMData::Avm2 { loader_info, .. } = vm_data {
             loader_info.set_content_type(sniffed_type);
-            let fake_movie = Arc::new(SwfMovie::fake_with_compressed_len(
-                activation.context.root_swf.version(),
+            let fake_movie = MovieLibrary::from_swf_movie(Arc::new(SwfMovie::fake_with_compressed_len(
+                activation.context.root_swf.0.borrow().swf.version(),
                 loader_url.clone(),
                 data.len(),
-            ));
+            )), activation.gc());
 
             // Expose 'bytesTotal' (via the fake movie) during the first 'progress' event,
             // but nothing else (in particular, the `parameters` and `url` properties are not set
@@ -2106,13 +2144,8 @@ impl<'gc> Loader<'gc> {
 
         match sniffed_type {
             ContentType::Swf => {
-                let library = activation
-                    .context
-                    .library
-                    .library_for_movie_mut(movie.clone());
-
-                library.set_avm2_domain(domain);
-
+                let library = movie.0.borrow_mut(activation.gc()).set_avm2_domain(domain);
+                drop(library);
                 if let Some(mc) = clip.as_movie_clip() {
                     let loader_info = if let MovieLoaderVMData::Avm2 { loader_info, .. } = vm_data {
                         Some(loader_info)
@@ -2131,7 +2164,7 @@ impl<'gc> Loader<'gc> {
                     );
 
                     if matches!(vm_data, MovieLoaderVMData::Avm2 { .. })
-                        && !movie.is_action_script_3()
+                        && !movie.0.borrow().swf.is_action_script_3()
                     {
                         // When an AVM2 movie loads an AVM1 movie, we need to call `post_instantiation` here.
                         mc.post_instantiation(uc, None, Instantiator::Movie, false);
@@ -2174,12 +2207,10 @@ impl<'gc> Loader<'gc> {
                 return Ok(());
             }
             ContentType::Gif | ContentType::Jpeg | ContentType::Png => {
-                let library = activation
-                    .context
-                    .library
-                    .library_for_movie_mut(movie.clone());
+                let mut library = movie.0.borrow_mut(activation.gc());
 
                 library.set_avm2_domain(domain);
+                drop(library);
 
                 // This will construct AVM2-side objects even under AVM1, but it doesn't matter,
                 // since Bitmap and BitmapData never have AVM1-side objects.
@@ -2209,11 +2240,11 @@ impl<'gc> Loader<'gc> {
                 let bitmap_dobj = bitmap_avm2.as_display_object().unwrap();
 
                 if let MovieLoaderVMData::Avm2 { loader_info, .. } = vm_data {
-                    let fake_movie = Arc::new(SwfMovie::fake_with_compressed_len(
-                        activation.context.root_swf.version(),
+                    let fake_movie = MovieLibrary::from_swf_movie(Arc::new(SwfMovie::fake_with_compressed_len(
+                        activation.context.root_swf.0.borrow().swf.version(),
                         loader_url.clone(),
                         data.len(),
-                    ));
+                    )), activation.gc());
 
                     loader_info.set_loader_stream(
                         LoaderStream::NotYetLoaded(fake_movie, Some(bitmap_dobj), false),
@@ -2224,11 +2255,11 @@ impl<'gc> Loader<'gc> {
                 Loader::movie_loader_progress(handle, activation.context, length, length)?;
 
                 if let MovieLoaderVMData::Avm2 { loader_info, .. } = vm_data {
-                    let fake_movie = Arc::new(SwfMovie::fake_with_compressed_data(
-                        activation.context.root_swf.version(),
+                    let fake_movie = MovieLibrary::from_swf_movie(Arc::new(SwfMovie::fake_with_compressed_data(
+                        activation.context.root_swf.0.borrow().swf.version(),
                         loader_url,
                         data.to_vec(),
-                    ));
+                    )), activation.gc());
 
                     loader_info.set_loader_stream(
                         LoaderStream::NotYetLoaded(fake_movie, Some(bitmap_dobj), false),
@@ -2286,11 +2317,11 @@ impl<'gc> Loader<'gc> {
                         )?;
                     }
                     MovieLoaderVMData::Avm2 { loader_info, .. } => {
-                        let fake_movie = Arc::new(SwfMovie::fake_with_compressed_len(
-                            activation.context.root_swf.version(),
+                        let fake_movie = MovieLibrary::from_swf_movie(Arc::new(SwfMovie::fake_with_compressed_len(
+                            activation.context.root_swf.0.borrow().swf.version(),
                             loader_url,
                             data.len(),
-                        ));
+                        )), activation.gc());
 
                         loader_info.set_errored(true);
 
@@ -2425,7 +2456,7 @@ impl<'gc> Loader<'gc> {
                 // both placed in the same frame to begin with).
                 dobj.base().set_skip_next_enter_frame(true);
 
-                let flashvars = movie.clone().unwrap().parameters().to_owned();
+                let flashvars = movie.clone().unwrap().0.borrow().swf.parameters().to_owned();
                 if !flashvars.is_empty() {
                     let mut activation =
                         Activation::from_nothing(uc, ActivationIdentifier::root("[Loader]"), dobj);
@@ -2472,7 +2503,7 @@ impl<'gc> Loader<'gc> {
             // when we add the movie as a child of the loader.
             loader.insert_at_index(uc, dobj.unwrap(), 0);
 
-            if !movie.unwrap().is_action_script_3() {
+            if !movie.unwrap().0.borrow().swf.is_action_script_3() {
                 loader.insert_child_into_depth_list(uc, LOADER_INSERTED_AVM1_DEPTH, dobj.unwrap());
             }
         } else if let Some(dobj) = dobj {
@@ -2508,7 +2539,7 @@ impl<'gc> Loader<'gc> {
             // This is fired after we process the movie's first frame,
             // in `MovieClip.on_exit_frame`
             MovieLoaderVMData::Avm2 { loader_info, .. } => {
-                let current_movie = { loader_info.loader_stream().movie().clone() };
+                let current_movie = { loader_info.loader_stream().clone().movie().clone() };
                 loader_info
                     .set_loader_stream(LoaderStream::Swf(current_movie, dobj.unwrap()), uc.gc());
 
@@ -2630,7 +2661,7 @@ impl<'gc> Loader<'gc> {
                     let mut initial_loading_movie = SwfMovie::empty(current_version, None);
                     initial_loading_movie.set_url(current_url.to_string());
 
-                    mc.replace_with_movie(uc, Some(Arc::new(initial_loading_movie)), true, None);
+                    mc.replace_with_movie(uc, Some(MovieLibrary::from_swf_movie(Arc::new(initial_loading_movie), uc.gc())), true, None);
 
                     // Maybe this (keeping the current URL) should be the default behaviour
                     // of replace_with_movie?
@@ -2663,7 +2694,7 @@ impl<'gc> Loader<'gc> {
 
         let error_movie = SwfMovie::error_movie(swf_url);
         // This also sets total_frames correctly
-        mc.replace_with_movie(uc, Some(Arc::new(error_movie)), true, None);
+        mc.replace_with_movie(uc, Some(MovieLibrary::from_swf_movie(Arc::new(error_movie), uc.gc())), true, None);
         mc.set_cur_preload_frame(0);
     }
 

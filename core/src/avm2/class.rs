@@ -15,6 +15,7 @@ use crate::avm2::Multiname;
 use crate::avm2::Namespace;
 use crate::avm2::QName;
 use crate::context::UpdateContext;
+use crate::library::MovieLibrary;
 use crate::string::{AvmString, WString};
 use bitflags::bitflags;
 use fnv::FnvHashMap;
@@ -174,6 +175,8 @@ pub struct ClassData<'gc> {
     #[collect(require_static)]
     builtin_type: Cell<Option<BuiltinType>>,
 
+    translation_unit: Option<TranslationUnit<'gc>>,
+
     cell: RefLock<ClassDataMut<'gc>>,
 }
 
@@ -235,6 +238,7 @@ impl<'gc> ClassData<'gc> {
                 applications: FnvHashMap::default(),
                 class_objects: Vec::new(),
             }),
+            translation_unit: None,
         }
     }
 }
@@ -480,6 +484,7 @@ impl<'gc> Class<'gc> {
         class.instance_init = Some(instance_init);
         class.call_handler = call_handler;
         class.custom_constructor = custom_constructor.map(CustomConstructor);
+        class.translation_unit = Some(unit);
         Ok(Class(Gc::new(activation.gc(), class)))
     }
 
@@ -529,6 +534,7 @@ impl<'gc> Class<'gc> {
         class.attributes = Cell::new(ClassAttributes::FINAL);
         class.protected_namespace = protected_namespace;
         class.instance_init = Some(class_init);
+        class.translation_unit = Some(unit);
         Ok(Class(Gc::new(activation.gc(), class)))
     }
 
@@ -1013,6 +1019,21 @@ impl<'gc> Class<'gc> {
         } else {
             name
         }
+    }
+
+    /// Get the TranslationUnit this class was defined in.
+    ///
+    /// This will be `None` for classes that are not defined in an ABC file
+    /// (e.g. dynamically generated for a `catch` block).
+    pub fn translation_unit(self) -> Option<TranslationUnit<'gc>> {
+        self.0.translation_unit
+    }
+
+    /// Get a reference to the SWF movie this class was defined in.
+    ///
+    /// This will be `None` for classes that do not have an associated movie.
+    pub fn owner_movie(self) -> Option<MovieLibrary<'gc>> {
+        self.0.translation_unit.map(|tu| tu.movie())
     }
 
     pub fn name(self) -> QName<'gc> {

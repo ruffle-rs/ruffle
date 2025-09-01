@@ -31,16 +31,15 @@ pub fn sprite_allocator<'gc>(
             ));
         }
 
-        if let Some((movie, symbol)) = activation
-            .context
-            .library
-            .avm2_class_registry()
+        if let Some(symbol) = class
+            .owner_movie()
+            .unwrap()
+            .0
+            .borrow()
+            .avm2_class_registry
             .class_symbol(class)
         {
-            let child = activation
-                .context
-                .library
-                .library_for_movie_mut(movie)
+            let child = class.owner_movie().unwrap().0.borrow()
                 .instantiate_by_id(symbol, activation.context.gc_context);
 
             if let Some(child) = child {

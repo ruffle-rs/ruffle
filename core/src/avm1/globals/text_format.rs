@@ -503,7 +503,7 @@ fn get_text_extent<'gc>(
     text_format: &TextFormat,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let movie = activation.base_clip().movie();
+    let movie = activation.base_clip().movie_library();
     let text = args
         .get(0)
         .cloned()

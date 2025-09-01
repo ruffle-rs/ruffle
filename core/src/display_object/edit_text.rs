@@ -25,6 +25,7 @@ use crate::html::StyleSheet;
 use crate::html::{
     FormatSpans, Layout, LayoutBox, LayoutContent, LayoutLine, LayoutMetrics, Position, TextFormat,
 };
+use crate::library::MovieLibrary;
 use crate::prelude::*;
 use crate::string::{utils as string_utils, AvmString, SwfStrExt as _, WStr, WString};
 use crate::tag_utils::SwfMovie;
@@ -89,7 +90,7 @@ pub struct EditTextData<'gc> {
     base: InteractiveObjectBase<'gc>,
 
     /// Data shared among all instances of this `EditText`.
-    shared: Gc<'gc, EditTextShared>,
+    shared: Gc<'gc, EditTextShared<'gc>>,
 
     /// The AVM1 object handle
     object: Lock<Option<AvmObject<'gc>>>,
@@ -232,7 +233,7 @@ impl EditTextData<'_> {
             self.style_sheet.get().style_sheet(),
             self.flags.get().contains(EditTextFlag::MULTILINE),
             self.flags.get().contains(EditTextFlag::CONDENSE_WHITE),
-            self.shared.swf.version(),
+            self.shared.swf.swf().version(),
         ));
         self.original_html_text
             .replace(if self.style_sheet.get().is_some() {
@@ -259,11 +260,11 @@ impl<'gc> EditText<'gc> {
     /// Creates a new `EditText` from an SWF `DefineEditText` tag.
     pub fn from_swf_tag(
         context: &mut UpdateContext<'gc>,
-        swf_movie: Arc<SwfMovie>,
+        swf_movie: MovieLibrary<'gc>,
         swf_tag: swf::EditText,
     ) -> Self {
         let default_format = TextFormat::from_swf_tag(swf_tag.clone(), swf_movie.clone(), context);
-        let encoding = swf_movie.encoding();
+        let encoding = swf_movie.swf().encoding();
         let text = swf_tag.initial_text().unwrap_or_default().decode(encoding);
 
         let mut text_spans = if swf_tag.is_html() {
@@ -273,7 +274,7 @@ impl<'gc> EditText<'gc> {
                 None,
                 swf_tag.is_multiline(),
                 false,
-                swf_movie.version(),
+                swf_movie.swf().version(),
             )
         } else {
             FormatSpans::from_text(text.into_owned(), default_format)
@@ -305,7 +306,7 @@ impl<'gc> EditText<'gc> {
         let layout = html::lower_from_text_spans(
             &text_spans,
             context,
-            swf_movie.clone(),
+            &swf_movie,
             content_width,
             !swf_tag.is_read_only(),
             is_word_wrap,
@@ -329,7 +330,7 @@ impl<'gc> EditText<'gc> {
         );
 
         // Selections are mandatory in AS3.
-        let selection = if swf_movie.is_action_script_3() {
+        let selection = if swf_movie.swf().is_action_script_3() {
             Some(TextSelection::for_position(text_spans.text().len()))
         } else {
             None
@@ -388,7 +389,7 @@ impl<'gc> EditText<'gc> {
     /// Create a new, dynamic `EditText`.
     pub fn new(
         context: &mut UpdateContext<'gc>,
-        swf_movie: Arc<SwfMovie>,
+        swf_movie: MovieLibrary<'gc>,
         x: f64,
         y: f64,
         width: f64,
@@ -423,7 +424,7 @@ impl<'gc> EditText<'gc> {
     /// Create a new, dynamic `EditText` representing an AVM2 TextLine.
     pub fn new_fte(
         context: &mut UpdateContext<'gc>,
-        swf_movie: Arc<SwfMovie>,
+        swf_movie: MovieLibrary<'gc>,
         x: f64,
         y: f64,
         width: f64,
@@ -898,7 +899,7 @@ impl<'gc> EditText<'gc> {
         let new_layout = html::lower_from_text_spans(
             &text_spans,
             context,
-            movie,
+            &movie,
             content_width,
             !self.0.flags.get().contains(EditTextFlag::READ_ONLY),
             is_word_wrap,
@@ -2534,7 +2535,7 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
     }
 
     fn movie(self) -> Arc<SwfMovie> {
-        self.0.shared.swf.clone()
+        self.0.shared.swf.swf().clone()
     }
 
     /// Construct objects placed on this frame.
@@ -2795,6 +2796,10 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
                 )
                 .borrow_mut()
             })
+    }
+
+    fn movie_library(self) -> MovieLibrary<'gc> {
+        self.0.shared.swf
     }
 }
 
@@ -3190,10 +3195,11 @@ bitflags::bitflags! {
 
 /// Data shared between all instances of a text object.
 #[derive(Debug, Clone, Collect)]
-#[collect(require_static)]
-struct EditTextShared {
-    swf: Arc<SwfMovie>,
+#[collect(no_drop)]
+struct EditTextShared<'gc> {
+    swf: MovieLibrary<'gc>,
     id: CharacterId,
+    #[collect(require_static)]
     initial_text: Option<WString>,
 }
 

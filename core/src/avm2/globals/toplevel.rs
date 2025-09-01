@@ -72,7 +72,7 @@ pub fn parse_float<'gc>(
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     let string = args.get_string(activation, 0);
-    let swf_version = activation.context.root_swf.version();
+    let swf_version = activation.context.root_swf.swf().version();
 
     if let Some(result) = crate::avm2::value::string_to_f64(&string, swf_version, false) {
         Ok(result.into())

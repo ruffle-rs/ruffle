@@ -3,13 +3,14 @@ use crate::avm2::{Class as Avm2Class, Domain as Avm2Domain};
 use crate::backend::audio::SoundHandle;
 use crate::character::Character;
 
+use crate::context::UpdateContext;
 use crate::display_object::{Bitmap, Graphic, MorphShape, Text};
 use crate::font::{Font, FontDescriptor, FontLike, FontQuery, FontType};
 use crate::prelude::*;
 use crate::string::AvmString;
-use crate::tag_utils::SwfMovie;
+use crate::tag_utils::{SwfHash, SwfMovie};
 use gc_arena::collect::Trace;
-use gc_arena::{Collect, Mutation};
+use gc_arena::{Collect, Gc, GcWeak, Mutation, RefLock};
 use ruffle_render::backend::RenderBackend;
 use ruffle_render::bitmap::BitmapHandle;
 use ruffle_render::utils::remove_invalid_jpeg_data;
@@ -45,10 +46,11 @@ impl WeakElement for WeakMovieSymbol {
 
 /// The mappings between class objects and library characters defined by
 /// `SymbolClass`.
+#[derive(Debug)]
 pub struct Avm2ClassRegistry<'gc> {
     /// A list of AVM2 class objects and the character IDs they are expected to
     /// instantiate.
-    class_map: WeakValueHashMap<Avm2Class<'gc>, WeakMovieSymbol>,
+    class_map: HashMap<Avm2Class<'gc>, CharacterId>,
 }
 
 unsafe impl<'gc> Collect<'gc> for Avm2ClassRegistry<'gc> {
@@ -68,7 +70,7 @@ impl Default for Avm2ClassRegistry<'_> {
 impl<'gc> Avm2ClassRegistry<'gc> {
     pub fn new() -> Self {
         Self {
-            class_map: WeakValueHashMap::new(),
+            class_map: HashMap::new(),
         }
     }
 
@@ -76,9 +78,9 @@ impl<'gc> Avm2ClassRegistry<'gc> {
     ///
     /// A value of `None` indicates that this AVM2 class is not associated with
     /// a library symbol.
-    pub fn class_symbol(&self, class_def: Avm2Class<'gc>) -> Option<(Arc<SwfMovie>, CharacterId)> {
+    pub fn class_symbol(&self, class_def: Avm2Class<'gc>) -> Option<CharacterId> {
         match self.class_map.get(&class_def) {
-            Some(MovieSymbol(movie, symbol)) => Some((movie, symbol)),
+            Some(symbol) => Some(*symbol),
             None => None,
         }
     }
@@ -91,7 +93,7 @@ impl<'gc> Avm2ClassRegistry<'gc> {
         symbol: CharacterId,
     ) {
         if let Some(old) = self.class_map.get(&class_def) {
-            if Arc::ptr_eq(&movie, &old.0) && symbol != old.1 {
+            /*if Arc::ptr_eq(&movie, &old.0) && symbol != old.1 {
                 // Flash player actually allows using the same class in multiple SymbolClass
                 // entries in the same swf, with *different* symbol ids. Whichever one
                 // is processed first will *win*, and the second one will be ignored.
@@ -103,7 +105,7 @@ impl<'gc> Avm2ClassRegistry<'gc> {
                     old.1,
                     symbol,
                 );
-            }
+            }*/
             // If we're trying to overwrite the class with a symbol from a *different* SwfMovie,
             // then just ignore it. This handles the case where a Loader has a class that shadows
             // a class in the main swf (possibly with a different ApplicationDomain). This will
@@ -111,24 +113,72 @@ impl<'gc> Avm2ClassRegistry<'gc> {
             // instantiates the clip on the timeline.
             return;
         }
-        self.class_map.insert(class_def, MovieSymbol(movie, symbol));
+        self.class_map.insert(class_def, symbol);
+    }
+}
+
+#[derive(Collect, Clone, Copy, Debug)]
+#[collect(no_drop)]
+pub struct MovieLibrary<'gc>(pub Gc<'gc, RefLock<MovieLibraryData<'gc>>>);
+
+impl<'gc> MovieLibrary<'gc> {
+    pub fn new(data: MovieLibraryData<'gc>, mutation: &Mutation<'gc>) -> Self {
+        Self(Gc::new(mutation, RefLock::new(data)))
+    }
+
+    pub fn from_swf_movie(swf: Arc<SwfMovie>, mutation: &Mutation<'gc>) -> Self {
+        Self(Gc::new(mutation, RefLock::new(MovieLibraryData::new(swf))))
+    }
+
+    pub fn downgrade(&self) -> MovieLibraryWeak<'gc> {
+        MovieLibraryWeak(Gc::downgrade(self.0))
+    }
+
+    pub fn as_ptr(self) -> *const MovieLibraryPtr {
+        self.0.as_ptr() as *const MovieLibraryPtr
+    }
+}
+
+pub struct MovieLibraryPtr {}
+
+
+#[derive(Collect, Clone, Copy, Debug)]
+#[collect(no_drop)]
+pub struct MovieLibraryWeak<'gc>(pub GcWeak<'gc, RefLock<MovieLibraryData<'gc>>>);
+
+impl<'gc> MovieLibraryWeak<'gc> {
+    pub fn upgrade(&self, mc: &Mutation<'gc>) -> Option<MovieLibrary<'gc>> {
+        self.0.upgrade(mc).map(|gc| MovieLibrary(gc))
+    }
+
+    pub fn as_ptr(self) -> *const MovieLibraryPtr {
+        self.0.as_ptr() as *const MovieLibraryPtr
     }
 }
 
 /// Symbol library for a single given SWF.
-#[derive(Collect)]
+#[derive(Collect, Debug)]
 #[collect(no_drop)]
-pub struct MovieLibrary<'gc> {
-    swf: Arc<SwfMovie>,
+pub struct MovieLibraryData<'gc> {
+    pub swf: Arc<SwfMovie>,
     characters: HashMap<CharacterId, Character<'gc>>,
     export_characters: Avm1PropertyMap<'gc, CharacterId>,
     imported_assets: HashMap<AvmString<'gc>, CharacterId>,
     jpeg_tables: Option<Vec<u8>>,
     fonts: FontMap<'gc>,
     avm2_domain: Option<Avm2Domain<'gc>>,
+    /// A list of the symbols associated with specific AVM2 constructor
+    /// prototypes.
+    pub avm2_class_registry: Avm2ClassRegistry<'gc>,
 }
 
-impl<'gc> MovieLibrary<'gc> {
+impl MovieLibrary<'_> {
+    pub fn swf(&self) -> Arc<SwfMovie> {
+        self.0.borrow().swf.clone()
+    }
+}
+
+impl<'gc> MovieLibraryData<'gc> {
     pub fn new(swf: Arc<SwfMovie>) -> Self {
         Self {
             swf,
@@ -138,6 +188,7 @@ impl<'gc> MovieLibrary<'gc> {
             jpeg_tables: None,
             fonts: Default::default(),
             avm2_domain: None,
+            avm2_class_registry: Default::default(),
         }
     }
 
@@ -253,10 +304,10 @@ impl<'gc> MovieLibrary<'gc> {
         mc: &Mutation<'gc>,
     ) -> Option<DisplayObject<'gc>> {
         match character {
-            Character::Bitmap(bitmap) => {
-                let avm2_class = bitmap.avm2_class();
-                let bitmap = bitmap.compressed().decode().unwrap();
-                let bitmap = Bitmap::new(mc, id, bitmap, self.swf.clone());
+            Character::Bitmap(compressed_bitmap) => {
+                let avm2_class = compressed_bitmap.avm2_class();
+                let bitmap = compressed_bitmap.compressed().decode().unwrap();
+                let bitmap = Bitmap::new(mc, id, bitmap, compressed_bitmap.library);
                 bitmap.set_avm2_bitmapdata_class(mc, avm2_class);
                 Some(bitmap.instantiate(mc))
             }
@@ -370,7 +421,7 @@ pub struct MovieLibrarySource<'a, 'gc> {
 
 impl ruffle_render::bitmap::BitmapSource for MovieLibrarySource<'_, '_> {
     fn bitmap_size(&self, id: u16) -> Option<ruffle_render::bitmap::BitmapSize> {
-        if let Some(Character::Bitmap(bitmap)) = self.library.characters.get(&id) {
+        if let Some(Character::Bitmap(bitmap)) = self.library.0.borrow().characters.get(&id) {
             Some(bitmap.compressed().size())
         } else {
             None
@@ -378,7 +429,8 @@ impl ruffle_render::bitmap::BitmapSource for MovieLibrarySource<'_, '_> {
     }
 
     fn bitmap_handle(&self, id: u16, backend: &mut dyn RenderBackend) -> Option<BitmapHandle> {
-        let Some(Character::Bitmap(bitmap)) = self.library.characters.get(&id) else {
+        let library = self.library.0.borrow();
+        let Some(Character::Bitmap(bitmap)) = library.characters.get(&id) else {
             return None;
         };
 
@@ -408,7 +460,7 @@ impl<'gc> MovieLibraries<'gc> {
         Self(PtrWeakKeyHashMap::new())
     }
 
-    fn get(&self, key: &Arc<SwfMovie>) -> Option<&MovieLibrary<'gc>> {
+    /*fn get(&self, key: &Arc<SwfMovie>) -> Option<&MovieLibrary<'gc>> {
         self.0.get(key)
     }
 
@@ -417,7 +469,7 @@ impl<'gc> MovieLibraries<'gc> {
         self.0
             .entry(movie.clone())
             .or_insert_with(|| MovieLibrary::new(movie))
-    }
+    }*/
 
     fn known_movies(&self) -> Vec<Arc<SwfMovie>> {
         self.0.keys().collect()
@@ -429,7 +481,11 @@ impl<'gc> MovieLibraries<'gc> {
 #[collect(no_drop)]
 pub struct Library<'gc> {
     /// All the movie libraries.
-    movie_libraries: MovieLibraries<'gc>,
+    //movie_libraries: MovieLibraries<'gc>,
+
+    /// A cache of previously loaded movies, allowing us to avoid loading and parsing
+    /// the same SWF twice. The key is the SHA-256 hash of the compressed SWF data.
+    pub known_movies: FnvHashMap<SwfHash, MovieLibraryWeak<'gc>>,
 
     /// A cache of seen device fonts.
     // TODO: Descriptors shouldn't be stored in fonts. Fonts should be a list that we iterate and ask "do you match". A font can have zero or many names.
@@ -451,36 +507,51 @@ pub struct Library<'gc> {
 
     /// The cached list of implementations per default font.
     default_font_cache: FnvHashMap<(DefaultFont, bool, bool), Vec<Font<'gc>>>,
-
-    /// A list of the symbols associated with specific AVM2 constructor
-    /// prototypes.
-    avm2_class_registry: Avm2ClassRegistry<'gc>,
 }
 
 impl<'gc> Library<'gc> {
     pub fn empty() -> Self {
         Self {
-            movie_libraries: MovieLibraries::new(),
+            //movie_libraries: MovieLibraries::new(),
+            known_movies: FnvHashMap::default(),
             device_fonts: Default::default(),
             global_fonts: Default::default(),
             font_lookup_cache: Default::default(),
             font_sort_cache: Default::default(),
             default_font_names: Default::default(),
             default_font_cache: Default::default(),
-            avm2_class_registry: Default::default(),
         }
     }
 
-    pub fn library_for_movie(&self, movie: Arc<SwfMovie>) -> Option<&MovieLibrary<'gc>> {
+    /// Registers a movie in the cache.
+    pub fn register_movie(&mut self, movie: MovieLibrary<'gc>, mc: &Mutation<'gc>) -> MovieLibraryWeak<'gc> {
+        let hash = movie.swf().hash();
+        if let Some(movie) = self.get_movie_by_hash(hash, mc) {
+            return movie.downgrade();
+        }
+
+        self.known_movies.insert(hash, movie.downgrade());
+        movie.downgrade()
+    }
+
+    /// Attempts to retrieve a movie from the cache by its hash.
+    ///
+    /// Returns `Some(movie)` if the movie is still in memory.
+    /// Returns `None` if the movie was never loaded or has been garbage collected.
+    pub fn get_movie_by_hash(&self, hash: SwfHash, mc: &Mutation<'gc>) -> Option<MovieLibrary<'gc>> {
+        self.known_movies.get(&hash).and_then(|weak| weak.upgrade(mc))
+    }
+
+    /*pub fn library_for_movie(&self, movie: Arc<SwfMovie>) -> Option<&MovieLibrary<'gc>> {
         self.movie_libraries.get(&movie)
     }
 
     pub fn library_for_movie_mut(&mut self, movie: Arc<SwfMovie>) -> &mut MovieLibrary<'gc> {
         self.movie_libraries.get_or_insert_mut(movie)
-    }
+    }*/
 
-    pub fn known_movies(&self) -> Vec<Arc<SwfMovie>> {
-        self.movie_libraries.known_movies()
+    pub fn known_movies(&self) -> Vec<&MovieLibraryWeak<'gc>> {
+        self.known_movies.values().collect()
     }
 
     /// Returns the default Font implementations behind the built in names (ie `_sans`)
@@ -692,18 +763,14 @@ impl<'gc> Library<'gc> {
         font_type: FontType,
         is_bold: bool,
         is_italic: bool,
-        movie: Option<Arc<SwfMovie>>,
+        movie: MovieLibrary<'gc>,
     ) -> Option<Font<'gc>> {
         let query = FontQuery::new(font_type, name.to_owned(), is_bold, is_italic);
         if let Some(font) = self.global_fonts.find(&query) {
             return Some(font);
         }
-        if let Some(movie) = movie {
-            if let Some(library) = self.library_for_movie(movie) {
-                if let Some(font) = library.fonts.find(&query) {
-                    return Some(font);
-                }
-            }
+        if let Some(font) = movie.0.borrow().fonts.find(&query) {
+            return Some(font);
         }
         None
     }
@@ -715,7 +782,7 @@ impl<'gc> Library<'gc> {
     pub fn register_global_font(&mut self, font: Font<'gc>) {
         self.global_fonts.register(font);
     }
-
+    /*
     /// Get the AVM2 class registry.
     pub fn avm2_class_registry(&self) -> &Avm2ClassRegistry<'gc> {
         &self.avm2_class_registry
@@ -724,10 +791,10 @@ impl<'gc> Library<'gc> {
     /// Mutate the AVM2 class registry.
     pub fn avm2_class_registry_mut(&mut self) -> &mut Avm2ClassRegistry<'gc> {
         &mut self.avm2_class_registry
-    }
+    }*/
 }
 
-#[derive(Collect, Default)]
+#[derive(Collect, Default, Debug)]
 #[collect(no_drop)]
 struct FontMap<'gc>(FnvHashMap<FontQuery, Font<'gc>>);
 

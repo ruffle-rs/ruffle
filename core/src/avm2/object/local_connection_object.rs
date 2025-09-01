@@ -84,7 +84,7 @@ impl<'gc> LocalConnectionObject<'gc> {
         }
 
         let connection_handle = activation.context.local_connections.connect(
-            &LocalConnections::get_domain(activation.context.root_swf.url()),
+            &LocalConnections::get_domain(activation.context.root_swf.swf().url()),
             (activation.domain(), *self),
             &name,
         );

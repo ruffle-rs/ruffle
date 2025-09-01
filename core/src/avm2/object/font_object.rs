@@ -14,13 +14,22 @@ pub fn font_allocator<'gc>(
 ) -> Result<Object<'gc>, Error<'gc>> {
     let base = ScriptObjectData::new(class);
 
-    let font = if let Some((movie, id)) = activation
-        .context
-        .library
-        .avm2_class_registry()
+    let font = if let Some(id) = class
+        .inner_class_definition()
+        .owner_movie()
+        .unwrap()
+        .0
+        .borrow()
+        .avm2_class_registry
         .class_symbol(class.inner_class_definition())
     {
-        if let Some(lib) = activation.context.library.library_for_movie(movie) {
+        if let lib = class
+            .inner_class_definition()
+            .owner_movie()
+            .unwrap()
+            .0
+            .borrow()
+        {
             if let Some(Character::Font(font)) = lib.character_by_id(id) {
                 Some(font)
             } else {

@@ -7,6 +7,7 @@ use crate::avm2::script::TranslationUnit;
 use crate::avm2::value::{abc_default_value, Value};
 use crate::avm2::verify::VerifiedMethodInfo;
 use crate::avm2::Multiname;
+use crate::library::MovieLibrary;
 use crate::string::AvmString;
 use crate::tag_utils::SwfMovie;
 use gc_arena::barrier::{unlock, Write};
@@ -252,7 +253,7 @@ impl<'gc> Method<'gc> {
     }
 
     /// Get a reference to the SwfMovie this method came from.
-    pub fn owner_movie(&self) -> Arc<SwfMovie> {
+    pub fn owner_movie(&self) -> MovieLibrary<'gc> {
         self.0.txunit.movie()
     }
 

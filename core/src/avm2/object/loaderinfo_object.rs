@@ -6,6 +6,7 @@ use crate::avm2::object::{EventObject, Object, StageObject, TObject};
 use crate::avm2::{Avm2, Error, Value};
 use crate::context::UpdateContext;
 use crate::display_object::DisplayObject;
+use crate::library::MovieLibrary;
 use crate::loader::ContentType;
 use crate::tag_utils::SwfMovie;
 use crate::utils::HasPrefixField;
@@ -36,16 +37,16 @@ pub enum LoaderStream<'gc> {
     /// The `bool` parameter indicates if this is the `Stage`'s loader info;
     /// this is because certain `Stage` properties are accessible even when the
     /// associated movie is not yet loaded.
-    NotYetLoaded(Arc<SwfMovie>, Option<DisplayObject<'gc>>, bool),
+    NotYetLoaded(MovieLibrary<'gc>, Option<DisplayObject<'gc>>, bool),
 
     /// A loaded SWF movie.
     ///
     /// The associated `DisplayObject` is the root movieclip.
-    Swf(Arc<SwfMovie>, DisplayObject<'gc>),
+    Swf(MovieLibrary<'gc>, DisplayObject<'gc>),
 }
 
-impl LoaderStream<'_> {
-    pub fn movie(&self) -> &Arc<SwfMovie> {
+impl<'gc> LoaderStream<'gc> {
+    pub fn movie(self) -> MovieLibrary<'gc> {
         match self {
             LoaderStream::NotYetLoaded(movie, _, _) => movie,
             LoaderStream::Swf(movie, _) => movie,
@@ -107,7 +108,7 @@ pub struct LoaderInfoObjectData<'gc> {
 
 impl<'gc> LoaderInfoObject<'gc> {
     /// Box a movie into a loader info object.
-    pub fn from_movie(
+    /*pub fn from_movie(
         activation: &mut Activation<'_, 'gc>,
         movie: Arc<SwfMovie>,
         root: DisplayObject<'gc>,
@@ -149,7 +150,7 @@ impl<'gc> LoaderInfoObject<'gc> {
         ));
 
         Ok(object.into())
-    }
+    }*/
 
     /// Create a loader info object that has not yet been loaded.
     ///
@@ -157,7 +158,7 @@ impl<'gc> LoaderInfoObject<'gc> {
     /// info.
     pub fn not_yet_loaded(
         activation: &mut Activation<'_, 'gc>,
-        movie: Arc<SwfMovie>,
+        movie: MovieLibrary<'gc>,
         loader: Option<Object<'gc>>,
         root_clip: Option<DisplayObject<'gc>>,
         is_stage: bool,
@@ -266,7 +267,7 @@ impl<'gc> LoaderInfoObject<'gc> {
                     root.as_movie_clip()
                         .map(|mc| mc.loaded_bytes() as i32 >= mc.total_bytes())
                         .unwrap_or(true),
-                    movie.url() != "file:///",
+                    movie.swf().url() != "file:///",
                 ),
                 _ => (false, false),
             };
@@ -340,7 +341,7 @@ impl<'gc> LoaderInfoObject<'gc> {
     pub fn unload(&self, activation: &mut Activation<'_, 'gc>) {
         // Reset properties
         let movie = &activation.context.root_swf;
-        let empty_swf = Arc::new(SwfMovie::empty(movie.version(), Some(movie.url().into())));
+        let empty_swf = MovieLibrary::from_swf_movie(Arc::new(SwfMovie::empty(movie.swf().version(), Some(movie.swf().url().into()))), activation.gc());
         let loader_stream = LoaderStream::NotYetLoaded(empty_swf, None, false);
         self.set_loader_stream(loader_stream, activation.gc());
         self.set_errored(false);

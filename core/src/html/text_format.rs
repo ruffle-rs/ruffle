@@ -2,6 +2,7 @@
 
 use crate::context::UpdateContext;
 use crate::html::iterators::TextSpanIter;
+use crate::library::MovieLibrary;
 use crate::string::{Integer, SwfStrExt as _, Units, WStr, WString};
 use crate::tag_utils::SwfMovie;
 use gc_arena::Collect;
@@ -148,13 +149,13 @@ impl TextFormat {
     ///
     /// This requires an `UpdateContext` as we will need to retrieve some font
     /// information from the actually-referenced font.
-    pub fn from_swf_tag(
+    pub fn from_swf_tag<'a>(
         et: swf::EditText<'_>,
-        swf_movie: Arc<SwfMovie>,
-        context: &mut UpdateContext<'_>,
+        swf_movie: MovieLibrary<'a>,
+        context: &mut UpdateContext<'a>,
     ) -> Self {
-        let encoding = swf_movie.encoding();
-        let movie_library = context.library.library_for_movie_mut(swf_movie);
+        let encoding = swf_movie.swf().encoding();
+        let movie_library = swf_movie.0.borrow();
         let font = et.font_id().and_then(|fid| movie_library.get_font(fid));
         let font_class = et
             .font_class()

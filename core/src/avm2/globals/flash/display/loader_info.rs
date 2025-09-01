@@ -11,6 +11,7 @@ use crate::loader::ContentType;
 use crate::string::AvmString;
 use crate::{avm2_stub_getter, avm2_stub_method};
 use std::sync::Arc;
+use gc_arena::Gc;
 use swf::{write_swf, Compression};
 use url::Url;
 
@@ -31,7 +32,7 @@ pub fn get_action_script_version<'gc>(
                 return Err(Error::avm_error(error(activation, INSUFFICIENT, 2099)?));
             }
             LoaderStream::Swf(movie, _) => {
-                let version = if movie.is_action_script_3() { 3 } else { 2 };
+                let version = if movie.swf().is_action_script_3() { 3 } else { 2 };
                 return Ok(version.into());
             }
         }
@@ -51,10 +52,7 @@ pub fn get_application_domain<'gc>(
     if let Some(loader_stream) = this.as_loader_info_object().map(|o| o.loader_stream()) {
         match &*loader_stream {
             LoaderStream::NotYetLoaded(movie, _, _) => {
-                let domain = activation
-                    .context
-                    .library
-                    .library_for_movie_mut(movie.clone())
+                let domain = movie.0.borrow()
                     .try_avm2_domain();
 
                 if let Some(domain) = domain {
@@ -66,11 +64,7 @@ pub fn get_application_domain<'gc>(
 
             // A loaded SWF will always have an AVM2 domain present.
             LoaderStream::Swf(movie, _) => {
-                let domain = activation
-                    .context
-                    .library
-                    .library_for_movie_mut(movie.clone())
-                    .avm2_domain();
+                let domain = movie.0.borrow().avm2_domain();
                 return Ok(DomainObject::from_domain(activation, domain).into());
             }
         }
@@ -89,9 +83,9 @@ pub fn get_bytes_total<'gc>(
 
     if let Some(loader_stream) = this.as_loader_info_object().map(|o| o.loader_stream()) {
         match &*loader_stream {
-            LoaderStream::NotYetLoaded(swf, _, _) => return Ok(swf.compressed_len().into()),
+            LoaderStream::NotYetLoaded(swf, _, _) => return Ok(swf.swf().compressed_len().into()),
             LoaderStream::Swf(movie, _) => {
-                return Ok(movie.compressed_len().into());
+                return Ok(movie.swf().compressed_len().into());
             }
         }
     }
@@ -112,13 +106,13 @@ pub fn get_bytes_loaded<'gc>(
     match &*loader_stream {
         LoaderStream::NotYetLoaded(swf, None, _) => {
             if loader_info.errored() {
-                return Ok(swf.compressed_len().into());
+                return Ok(swf.swf().compressed_len().into());
             }
             Ok(0.into())
         }
         LoaderStream::Swf(swf, root) | LoaderStream::NotYetLoaded(swf, Some(root), _) => {
             if root.as_bitmap().is_some() {
-                return Ok(swf.compressed_len().into());
+                return Ok(swf.swf().compressed_len().into());
             }
             Ok(root
                 .as_movie_clip()
@@ -199,7 +193,7 @@ pub fn get_frame_rate<'gc>(
                 return Err(Error::avm_error(error(activation, INSUFFICIENT, 2099)?));
             }
             LoaderStream::Swf(root, _) => {
-                return Ok(root.frame_rate().to_f64().into());
+                return Ok(root.swf().frame_rate().to_f64().into());
             }
         }
     }
@@ -221,7 +215,7 @@ pub fn get_height<'gc>(
                 return Err(Error::avm_error(error(activation, INSUFFICIENT, 2099)?));
             }
             LoaderStream::Swf(root, _) => {
-                return Ok(root.height().to_pixels().into());
+                return Ok(root.swf().height().to_pixels().into());
             }
         }
     }
@@ -282,10 +276,10 @@ pub fn get_child_allows_parent<'gc>(
 
             if let Some(loader) = loader_info.loader() {
                 let loader = loader.as_display_object().expect("Loader is a DO");
-                let parent_movie = loader.movie();
+                let parent_movie = loader.movie_library();
 
-                if let Ok(child_url) = Url::parse(root.url()) {
-                    if let Ok(parent_url) = Url::parse(parent_movie.url()) {
+                if let Ok(child_url) = Url::parse(root.swf().url()) {
+                    if let Ok(parent_url) = Url::parse(parent_movie.swf().url()) {
                         if child_url.host() == parent_url.host() {
                             return Ok(true.into());
                         }
@@ -296,7 +290,7 @@ pub fn get_child_allows_parent<'gc>(
                 // Only the root movie is LoaderStream::Swf but missing a loader.
                 // In that case, return true.
                 assert!(
-                    Arc::ptr_eq(root, activation.context.root_swf)
+                    Gc::ptr_eq(root.0, activation.context.root_swf.0)
                         && dobj.as_movie_clip().is_some()
                 );
                 Ok(true.into())
@@ -325,10 +319,10 @@ pub fn get_parent_allows_child<'gc>(
 
             if let Some(loader) = loader_info.loader() {
                 let loader = loader.as_display_object().expect("Loader is a DO");
-                let parent_movie = loader.movie();
+                let parent_movie = loader.movie_library();
 
-                if let Ok(child_url) = Url::parse(root.url()) {
-                    if let Ok(parent_url) = Url::parse(parent_movie.url()) {
+                if let Ok(child_url) = Url::parse(root.swf().url()) {
+                    if let Ok(parent_url) = Url::parse(parent_movie.swf().url()) {
                         if child_url.host() == parent_url.host() {
                             return Ok(true.into());
                         }
@@ -338,7 +332,7 @@ pub fn get_parent_allows_child<'gc>(
             } else {
                 // See comment on childAllowsParent
                 assert!(
-                    Arc::ptr_eq(root, activation.context.root_swf)
+                    Gc::ptr_eq(root.0, activation.context.root_swf.0)
                         && dobj.as_movie_clip().is_some()
                 );
                 Ok(true.into())
@@ -361,7 +355,7 @@ pub fn get_swf_version<'gc>(
                 return Err(Error::avm_error(error(activation, INSUFFICIENT, 2099)?));
             }
             LoaderStream::Swf(root, _) => {
-                return Ok(root.version().into());
+                return Ok(root.swf().version().into());
             }
         }
     }
@@ -386,7 +380,7 @@ pub fn get_url<'gc>(
         let root = match &*loader_stream {
             LoaderStream::NotYetLoaded(root, _, _) | LoaderStream::Swf(root, _) => root,
         };
-        return Ok(AvmString::new_utf8(activation.gc(), root.url()).into());
+        return Ok(AvmString::new_utf8(activation.gc(), root.swf().url()).into());
     }
 
     Ok(Value::Undefined)
@@ -406,7 +400,7 @@ pub fn get_width<'gc>(
                 return Err(Error::avm_error(error(activation, INSUFFICIENT, 2099)?));
             }
             LoaderStream::Swf(root, _) => {
-                return Ok(root.width().to_pixels().into());
+                return Ok(root.swf().width().to_pixels().into());
             }
         }
     }
@@ -450,7 +444,7 @@ pub fn get_bytes<'gc>(
         .as_object()
         .unwrap();
 
-    if root.data().is_empty() {
+    if root.swf().data().is_empty() {
         return Ok(ba.into());
     }
 
@@ -468,7 +462,7 @@ pub fn get_bytes<'gc>(
 
     // First, write a fake header corresponding to an
     // uncompressed SWF
-    let mut header = root.header().swf_header().clone();
+    let mut header = root.swf().header().swf_header().clone();
     header.compression = Compression::None;
 
     write_swf(&header, &[], &mut *ba_write).unwrap();
@@ -480,7 +474,7 @@ pub fn get_bytes<'gc>(
     let correct_header_length = ba_write.len() - 2;
     ba_write.set_position(correct_header_length);
     ba_write
-        .write_bytes(root.data())
+        .write_bytes(root.swf().data())
         .map_err(|e| e.to_avm(activation))?;
 
     // `swf` wrote the wrong length (since we wrote the data
@@ -488,7 +482,7 @@ pub fn get_bytes<'gc>(
     ba_write.set_position(4);
     ba_write.set_endian(Endian::Little);
     ba_write
-        .write_unsigned_int((root.data().len() + correct_header_length) as u32)
+        .write_unsigned_int((root.swf().data().len() + correct_header_length) as u32)
         .map_err(|e| e.to_avm(activation))?;
 
     // Finally, reset the array to the correct state.
@@ -526,8 +520,8 @@ pub fn get_loader_url<'gc>(
             LoaderStream::NotYetLoaded(swf, _, _) => swf,
             LoaderStream::Swf(root, _) => root,
         };
-
-        let loader_url = root.loader_url().unwrap_or_else(|| root.url());
+        let library = root.swf();
+        let loader_url = library.loader_url().unwrap_or_else(|| library.url());
         return Ok(AvmString::new_utf8(activation.gc(), loader_url).into());
     }
 
@@ -549,7 +543,8 @@ pub fn get_parameters<'gc>(
         };
 
         let params_obj = ScriptObject::new_object(activation);
-        let parameters = root.parameters();
+        let library = root.swf().clone();
+        let parameters = library.parameters();
 
         for (k, v) in parameters.iter() {
             let avm_k = AvmString::new_utf8(activation.gc(), k);

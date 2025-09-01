@@ -6,6 +6,7 @@ use crate::display_object::InteractiveObject;
 use crate::display_object::TInteractiveObject;
 use crate::display_object::{DisplayObjectBase, DisplayObjectPtr};
 use crate::events::{ClipEvent, ClipEventResult};
+use crate::library::MovieLibrary;
 use crate::prelude::*;
 
 use crate::display_object::container::ChildContainer;
@@ -40,16 +41,16 @@ pub struct LoaderDisplayData<'gc> {
     base: InteractiveObjectBase<'gc>,
     container: RefLock<ChildContainer<'gc>>,
     avm2_object: Lock<Option<Avm2Object<'gc>>>,
-    movie: Arc<SwfMovie>,
+    movie: MovieLibrary<'gc>,
 }
 
 impl<'gc> LoaderDisplay<'gc> {
-    pub fn empty(activation: &mut Activation<'_, 'gc>, movie: Arc<SwfMovie>) -> Self {
+    pub fn empty(activation: &mut Activation<'_, 'gc>, movie: MovieLibrary<'gc>) -> Self {
         let obj = LoaderDisplay(Gc::new(
             activation.gc(),
             LoaderDisplayData {
                 base: Default::default(),
-                container: RefLock::new(ChildContainer::new(&movie)),
+                container: RefLock::new(ChildContainer::new(&movie.swf())),
                 avm2_object: Lock::new(None),
                 movie,
             },
@@ -118,7 +119,11 @@ impl<'gc> TDisplayObject<'gc> for LoaderDisplay<'gc> {
     }
 
     fn movie(self) -> Arc<SwfMovie> {
-        self.0.movie.clone()
+        self.0.movie.swf().clone()
+    }
+
+    fn movie_library(self) -> MovieLibrary<'gc> {
+        self.0.movie
     }
 
     fn on_parent_removed(self, context: &mut UpdateContext<'gc>) {

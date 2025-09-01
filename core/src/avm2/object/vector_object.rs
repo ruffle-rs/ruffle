@@ -103,7 +103,7 @@ impl<'gc> VectorObject<'gc> {
     ) -> Option<Error<'gc>> {
         // TODO the error thrown sometimes depends on JIT behavior
 
-        if activation.caller_movie_or_root().version() >= 11 {
+        if activation.caller_movie_or_root().swf().version() >= 11 {
             // When in >=SWFv11, a RangeError is always thrown.
             let storage_len = self.0.vector.borrow().length();
             Some(make_error_1125(activation, index, storage_len))
@@ -131,7 +131,7 @@ impl<'gc> VectorObject<'gc> {
     ) -> Error<'gc> {
         // TODO the error thrown sometimes depends on JIT behavior
 
-        if activation.caller_movie_or_root().version() >= 11 {
+        if activation.caller_movie_or_root().swf().version() >= 11 {
             // When in >=SWFv11, a RangeError is always thrown.
             let storage_len = self.0.vector.borrow().length();
             make_error_1125(activation, index, storage_len)

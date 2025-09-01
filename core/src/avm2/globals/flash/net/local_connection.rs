@@ -15,7 +15,7 @@ pub fn get_domain<'gc>(
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     let movie = &activation.context.root_swf;
-    let domain = LocalConnections::get_domain(movie.url());
+    let domain = LocalConnections::get_domain(movie.swf().url());
 
     Ok(Value::String(AvmString::new_utf8(activation.gc(), domain)))
 }
@@ -57,7 +57,7 @@ pub fn send<'gc>(
 
     if let Some(local_connection) = this.as_local_connection_object() {
         activation.context.local_connections.send(
-            &LocalConnections::get_domain(activation.context.root_swf.url()),
+            &LocalConnections::get_domain(activation.context.root_swf.swf().url()),
             (activation.domain(), local_connection),
             connection_name,
             method_name,

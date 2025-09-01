@@ -1490,19 +1490,13 @@ impl DisplayObjectWindow {
 
                 ui.label("Character");
                 let id = object.id();
-                if let Some(name) =
-                    context
-                        .library
-                        .library_for_movie(object.movie())
-                        .and_then(|l| {
-                            l.export_characters().iter().find_map(|(k, v)| {
-                                if *v == id {
-                                    Some(k)
-                                } else {
-                                    None
-                                }
-                            })
-                        })
+                if let Some(name) = object
+                    .movie_library()
+                    .0
+                    .borrow()
+                    .export_characters()
+                    .iter()
+                    .find_map(|(k, v)| if *v == id { Some(k) } else { None })
                 {
                     ui.label(format!("{id} {name}"));
                 } else {
@@ -1511,7 +1505,7 @@ impl DisplayObjectWindow {
                 ui.end_row();
 
                 ui.label("Movie");
-                open_movie_button(ui, &object.movie(), messages);
+                open_movie_button(ui, object.movie_library(), messages, context);
                 ui.end_row();
 
                 ui.label("AVM1 Path");

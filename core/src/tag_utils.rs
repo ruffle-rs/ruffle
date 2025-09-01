@@ -1,10 +1,12 @@
 use gc_arena::Collect;
 use std::fmt::{Debug, Formatter};
 use std::sync::Arc;
-use swf::{CharacterId, Fixed8, HeaderExt, Rectangle, TagCode, Twips};
+use swf::{CharacterId, Fixed8, HeaderExt, Rectangle, Swf, TagCode, Twips};
 use thiserror::Error;
 use url::Url;
+use xxhash_rust::xxh3::Xxh3;
 
+use crate::library::MovieLibrary;
 use crate::sandbox::SandboxType;
 
 #[derive(Error, Debug)]
@@ -100,6 +102,10 @@ impl SwfMovie {
             is_movie: false,
             sandbox_type,
         }
+    }
+
+    pub fn hash(&self) -> SwfHash {
+        SwfHash::from_data(&self.data)
     }
 
     /// Construct an empty movie with a fake `compressed_len`.
@@ -235,7 +241,7 @@ impl SwfMovie {
         movie
     }
 
-    fn append_parameters_from_url(&mut self) {
+    pub fn append_parameters_from_url(&mut self) {
         match Url::parse(&self.url) {
             Ok(url) => {
                 for (key, value) in url.query_pairs() {
@@ -353,6 +359,33 @@ impl Debug for SwfMovie {
     }
 }
 
+// +
+// + ## Add the SwfHash struct
+// + A SHA-256 hash of the original, compressed SWF data.
+#[derive(Clone, Copy, PartialEq, Eq, Hash, Collect)]
+#[collect(no_drop)]
+pub struct SwfHash([u8; 8]); // Changed from [u8; 32] to [u8; 8]
+
+
+impl SwfHash {
+    /// Creates a new hash from the given data using the XXH3 algorithm.
+    pub fn from_data(data: &[u8]) -> Self {
+        let mut hasher = Xxh3::new();
+        hasher.update(data);
+        Self(hasher.digest().to_le_bytes())
+    }
+}
+
+// The Debug implementation can remain the same.
+impl Debug for SwfHash {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        for &byte in self.0.iter() {
+            write!(f, "{:02x}", byte)?;
+        }
+        Ok(())
+    }
+}
+
 /// A shared-ownership reference to some portion of an SWF datastream.
 #[derive(Debug, Clone, Collect)]
 #[collect(no_drop)]
@@ -368,6 +401,18 @@ impl From<Arc<SwfMovie>> for SwfSlice {
 
         Self {
             movie,
+            start: 0,
+            end,
+        }
+    }
+}
+
+impl From<MovieLibrary<'_>> for SwfSlice {
+    fn from(movie: MovieLibrary<'_>) -> Self {
+        let end = movie.swf().data().len();
+
+        Self {
+            movie: movie.swf().clone(),
             start: 0,
             end,
         }
