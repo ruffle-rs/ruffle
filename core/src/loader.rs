@@ -2137,6 +2137,9 @@ impl<'gc> Loader<'gc> {
                         mc.post_instantiation(uc, None, Instantiator::Movie, false);
 
                         mc.set_depth(LOADER_INSERTED_AVM1_DEPTH);
+
+                        // We also need to create its AVM2-side object, the `AVM1Movie`.
+                        mc.set_avm1movie(uc);
                     }
 
                     if from_bytes {

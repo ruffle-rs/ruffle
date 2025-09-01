@@ -1874,6 +1874,15 @@ impl<'gc> MovieClip<'gc> {
         }
     }
 
+    /// Called on an AVM1 MovieClip that has been loaded by AVM2 (i.e. a
+    /// mixed-AVM MovieClip) to create its AVM2-side `AVM1Movie` object.
+    pub fn set_avm1movie(self, context: &mut UpdateContext<'gc>) {
+        let class_object = context.avm2.classes().avm1movie;
+        let object = Avm2StageObject::for_display_object(context.gc(), self.into(), class_object);
+
+        self.set_object2(context, object);
+    }
+
     pub fn register_frame_script(
         self,
         frame_id: FrameNumber,
