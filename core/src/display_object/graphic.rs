@@ -1,7 +1,6 @@
 use crate::avm1::Object as Avm1Object;
 use crate::avm2::{
-    Activation as Avm2Activation, ClassObject as Avm2ClassObject, Object as Avm2Object,
-    StageObject as Avm2StageObject,
+    Activation as Avm2Activation, ClassObject as Avm2ClassObject, StageObject as Avm2StageObject,
 };
 use crate::context::{RenderContext, UpdateContext};
 use crate::display_object::DisplayObjectBase;
@@ -39,7 +38,7 @@ pub struct GraphicData<'gc> {
     base: DisplayObjectBase<'gc>,
     shared: Lock<Gc<'gc, GraphicShared>>,
     class: Lock<Option<Avm2ClassObject<'gc>>>,
-    avm2_object: Lock<Option<Avm2Object<'gc>>>,
+    avm2_object: Lock<Option<Avm2StageObject<'gc>>>,
     /// This is lazily allocated on demand, to make `GraphicData` smaller in the common case.
     #[collect(require_static)]
     drawing: OnceCell<Box<RefCell<Drawing>>>,
@@ -159,7 +158,7 @@ impl<'gc> TDisplayObject<'gc> for Graphic<'gc> {
                 self.into(),
                 class_object,
             ) {
-                Ok(object) => self.set_object2(activation.context, object.into()),
+                Ok(object) => self.set_object2(activation.context, object),
                 Err(e) => {
                     tracing::error!("Got error when constructing AVM2 side of shape: {}", e)
                 }
@@ -250,7 +249,7 @@ impl<'gc> TDisplayObject<'gc> for Graphic<'gc> {
             .unwrap_or(Avm2Value::Null)
     }
 
-    fn set_object2(self, context: &mut UpdateContext<'gc>, to: Avm2Object<'gc>) {
+    fn set_object2(self, context: &mut UpdateContext<'gc>, to: Avm2StageObject<'gc>) {
         let mc = context.gc();
         unlock!(Gc::write(mc, self.0), GraphicData, avm2_object).set(Some(to));
     }

@@ -34,7 +34,7 @@ pub fn simple_button_allocator<'gc>(
             button.post_instantiation(activation.context, None, Instantiator::Avm2, false);
             let display_object = button.into();
             let obj = StageObject::for_display_object(activation.gc(), display_object, orig_class);
-            display_object.set_object2(activation.context, obj.into());
+            display_object.set_object2(activation.context, obj);
             return Ok(obj.into());
         }
 

@@ -268,7 +268,7 @@ impl<'gc> MovieClip<'gc> {
 
     pub fn new_with_avm2(
         movie: Arc<SwfMovie>,
-        this: Avm2Object<'gc>,
+        this: Avm2StageObject<'gc>,
         class: Avm2ClassObject<'gc>,
         mc: &Mutation<'gc>,
     ) -> Self {
@@ -1840,7 +1840,7 @@ impl<'gc> MovieClip<'gc> {
         let object =
             Avm2StageObject::for_display_object(context.gc(), display_object, class_object);
 
-        self.set_object2(context, object.into());
+        self.set_object2(context, object);
     }
 
     /// Construct the AVM2 side of this object.
@@ -2484,7 +2484,7 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
             .unwrap_or(Avm2Value::Null)
     }
 
-    fn set_object2(self, context: &mut UpdateContext<'gc>, to: Avm2Object<'gc>) {
+    fn set_object2(self, context: &mut UpdateContext<'gc>, to: Avm2StageObject<'gc>) {
         let write = Gc::write(context.gc(), self.0);
         unlock!(write, MovieClipData, object).set(Some(to.into()));
         if self.parent().is_none() {
