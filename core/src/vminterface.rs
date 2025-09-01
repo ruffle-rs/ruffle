@@ -38,7 +38,7 @@ pub enum Instantiator {
     Avm1,
 
     /// This object was instantiated by AVM2 code constructing the object. All
-    /// objects should be created as AVM1 objects and any custom constructors
+    /// objects should be created as AVM2 objects and any custom constructors
     /// should resolve on-stack.
     Avm2,
 }
