@@ -1,5 +1,5 @@
 use crate::avm2::Activation;
-use crate::avm2::Object as Avm2Object;
+use crate::avm2::StageObject as Avm2StageObject;
 use crate::context::RenderContext;
 use crate::context::UpdateContext;
 use crate::display_object::InteractiveObject;
@@ -39,7 +39,7 @@ impl fmt::Debug for LoaderDisplay<'_> {
 pub struct LoaderDisplayData<'gc> {
     base: InteractiveObjectBase<'gc>,
     container: RefLock<ChildContainer<'gc>>,
-    avm2_object: Lock<Option<Avm2Object<'gc>>>,
+    avm2_object: Lock<Option<Avm2StageObject<'gc>>>,
     movie: Arc<SwfMovie>,
 }
 
@@ -94,7 +94,7 @@ impl<'gc> TDisplayObject<'gc> for LoaderDisplay<'gc> {
             .unwrap_or(Avm2Value::Null)
     }
 
-    fn set_object2(self, context: &mut UpdateContext<'gc>, to: Avm2Object<'gc>) {
+    fn set_object2(self, context: &mut UpdateContext<'gc>, to: Avm2StageObject<'gc>) {
         let mc = context.gc();
         unlock!(Gc::write(mc, self.0), LoaderDisplayData, avm2_object).set(Some(to))
     }

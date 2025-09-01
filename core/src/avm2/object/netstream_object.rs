@@ -15,15 +15,14 @@ pub fn netstream_allocator<'gc>(
 ) -> Result<Object<'gc>, Error<'gc>> {
     let base = ScriptObjectData::new(class);
 
-    let ns = NetStream::new(activation.gc(), None);
-    let this: Object<'gc> =
-        NetStreamObject(Gc::new(activation.gc(), NetStreamObjectData { base, ns })).into();
+    let ns = NetStream::new_avm2(activation.gc());
+    let this = NetStreamObject(Gc::new(activation.gc(), NetStreamObjectData { base, ns }));
 
-    ns.set_avm_object(activation.gc(), this.into());
+    ns.set_avm2_object(activation.gc(), this);
 
-    ns.set_client(activation.gc(), this);
+    ns.set_client(activation.gc(), this.into());
 
-    Ok(this)
+    Ok(this.into())
 }
 
 #[derive(Clone, Collect, Copy)]

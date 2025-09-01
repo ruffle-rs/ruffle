@@ -1,4 +1,4 @@
-use crate::avm2::{Object as Avm2Object, StageObject as Avm2StageObject};
+use crate::avm2::StageObject as Avm2StageObject;
 use crate::context::{RenderContext, UpdateContext};
 use crate::display_object::DisplayObjectBase;
 use crate::font::{FontLike, TextRenderSettings};
@@ -35,7 +35,7 @@ pub struct TextData<'gc> {
     base: DisplayObjectBase<'gc>,
     shared: Lock<Gc<'gc, TextShared>>,
     render_settings: RefCell<TextRenderSettings>,
-    avm2_object: Lock<Option<Avm2Object<'gc>>>,
+    avm2_object: Lock<Option<Avm2StageObject<'gc>>>,
 }
 
 impl<'gc> Text<'gc> {
@@ -267,7 +267,7 @@ impl<'gc> TDisplayObject<'gc> for Text<'gc> {
             // We don't need to call the initializer method, as AVM2 can't link
             // a custom class to a StaticText, and the initializer method for
             // StaticText itself is a no-op
-            self.set_object2(context, object.into());
+            self.set_object2(context, object);
 
             self.on_construction_complete(context);
         }
@@ -281,7 +281,7 @@ impl<'gc> TDisplayObject<'gc> for Text<'gc> {
             .unwrap_or(Avm2Value::Null)
     }
 
-    fn set_object2(self, context: &mut UpdateContext<'gc>, to: Avm2Object<'gc>) {
+    fn set_object2(self, context: &mut UpdateContext<'gc>, to: Avm2StageObject<'gc>) {
         let mc = context.gc();
         unlock!(Gc::write(mc, self.0), TextData, avm2_object).set(Some(to));
     }

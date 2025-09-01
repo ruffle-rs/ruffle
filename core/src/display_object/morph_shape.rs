@@ -1,4 +1,4 @@
-use crate::avm2::{Object as Avm2Object, StageObject as Avm2StageObject};
+use crate::avm2::StageObject as Avm2StageObject;
 use crate::context::{RenderContext, UpdateContext};
 use crate::display_object::DisplayObjectBase;
 use crate::library::{Library, MovieLibrarySource};
@@ -34,7 +34,7 @@ pub struct MorphShapeData<'gc> {
     base: DisplayObjectBase<'gc>,
     shared: Lock<Gc<'gc, MorphShapeShared>>,
     /// The AVM2 representation of this MorphShape.
-    object: Lock<Option<Avm2Object<'gc>>>,
+    object: Lock<Option<Avm2StageObject<'gc>>>,
     ratio: Cell<u16>,
 }
 
@@ -101,7 +101,7 @@ impl<'gc> TDisplayObject<'gc> for MorphShape<'gc> {
             .unwrap_or(Avm2Value::Null)
     }
 
-    fn set_object2(self, context: &mut UpdateContext<'gc>, to: Avm2Object<'gc>) {
+    fn set_object2(self, context: &mut UpdateContext<'gc>, to: Avm2StageObject<'gc>) {
         let mc = context.gc();
         unlock!(Gc::write(mc, self.0), MorphShapeData, object).set(Some(to))
     }
@@ -114,7 +114,7 @@ impl<'gc> TDisplayObject<'gc> for MorphShape<'gc> {
             // We don't need to call the initializer method, as AVM2 can't link
             // a custom class to a MorphShape, and the initializer method for
             // MorphShape itself is a no-op
-            self.set_object2(context, object.into());
+            self.set_object2(context, object);
 
             self.on_construction_complete(context);
         }

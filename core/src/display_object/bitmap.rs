@@ -3,7 +3,7 @@
 use crate::avm1;
 use crate::avm2::{
     Activation as Avm2Activation, BitmapDataObject as Avm2BitmapDataObject,
-    ClassObject as Avm2ClassObject, FunctionArgs as Avm2FunctionArgs, Object as Avm2Object,
+    ClassObject as Avm2ClassObject, FunctionArgs as Avm2FunctionArgs,
     StageObject as Avm2StageObject, Value as Avm2Value,
 };
 use crate::bitmap::bitmap_data::BitmapData;
@@ -107,7 +107,7 @@ pub struct BitmapGraphicData<'gc> {
     ///
     /// AVM1 code cannot directly reference `Bitmap`s, so this does not support
     /// storing an AVM1 object.
-    avm2_object: Lock<Option<Avm2Object<'gc>>>,
+    avm2_object: Lock<Option<Avm2StageObject<'gc>>>,
 
     /// The class associated with this Bitmap.
     avm2_bitmap_class: Lock<BitmapClass<'gc>>,
@@ -270,7 +270,7 @@ impl<'gc> Bitmap<'gc> {
         unlock!(Gc::write(mc, self.0), BitmapGraphicData, avm2_bitmap_class).set(class);
     }
 
-    fn set_avm2_object(self, mc: &Mutation<'gc>, object: Option<Avm2Object<'gc>>) {
+    fn set_avm2_object(self, mc: &Mutation<'gc>, object: Option<Avm2StageObject<'gc>>) {
         unlock!(Gc::write(mc, self.0), BitmapGraphicData, avm2_object).set(object);
     }
 
@@ -335,7 +335,7 @@ impl<'gc> TDisplayObject<'gc> for Bitmap<'gc> {
                     bitmap_cls,
                 )
                 .expect("can't throw from post_instantiation -_-");
-                self.set_avm2_object(activation.gc(), Some(bitmap.into()));
+                self.set_avm2_object(activation.gc(), Some(bitmap));
 
                 // Use a dummy BitmapData when calling the constructor on the user subclass
                 // - the constructor should see an invalid BitmapData before calling 'super',
@@ -391,7 +391,7 @@ impl<'gc> TDisplayObject<'gc> for Bitmap<'gc> {
             .unwrap_or(Avm2Value::Null)
     }
 
-    fn set_object2(self, context: &mut UpdateContext<'gc>, to: Avm2Object<'gc>) {
+    fn set_object2(self, context: &mut UpdateContext<'gc>, to: Avm2StageObject<'gc>) {
         self.set_avm2_object(context.gc(), Some(to));
     }
 

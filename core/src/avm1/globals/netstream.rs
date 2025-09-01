@@ -11,7 +11,7 @@ pub fn constructor<'gc>(
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let netstream = NetStream::new(activation.gc(), Some(this.into()));
+    let netstream = NetStream::new_avm1(activation.gc(), this);
     this.set_native(activation.gc(), NativeObject::NetStream(netstream));
 
     Ok(Value::Undefined)
