@@ -2,7 +2,7 @@
 
 use crate::avm2::activation::Activation;
 use crate::avm2::object::script_object::ScriptObjectData;
-use crate::avm2::object::{EventObject, Object, StageObject, TObject};
+use crate::avm2::object::{EventObject, Object, TObject};
 use crate::avm2::{Avm2, Error, Value};
 use crate::context::UpdateContext;
 use crate::display_object::DisplayObject;
@@ -312,29 +312,6 @@ impl<'gc> LoaderInfoObject<'gc> {
 
     pub fn set_content_type(&self, content_type: ContentType) {
         self.0.content_type.set(content_type);
-    }
-
-    /// Returns the AVM1Movie corresponding to the loaded movie- if
-    /// it doesn't exist yet, creates it.
-    pub fn get_or_init_avm1movie(
-        &self,
-        activation: &mut Activation<'_, 'gc>,
-        obj: DisplayObject<'gc>,
-    ) -> Object<'gc> {
-        let cached_avm1movie = self.0.cached_avm1movie.get();
-        if cached_avm1movie.is_none() {
-            let class_object = activation.avm2().classes().avm1movie;
-            let object = StageObject::for_display_object(activation.gc(), obj, class_object);
-
-            unlock!(
-                Gc::write(activation.gc(), self.0),
-                LoaderInfoObjectData,
-                cached_avm1movie
-            )
-            .set(Some(object.into()));
-        }
-
-        self.0.cached_avm1movie.get().unwrap()
     }
 
     pub fn unload(&self, activation: &mut Activation<'_, 'gc>) {

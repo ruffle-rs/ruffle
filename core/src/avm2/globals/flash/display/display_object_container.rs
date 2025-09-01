@@ -40,7 +40,7 @@ fn validate_add_operation<'gc>(
         )?));
     }
 
-    if !proposed_child.movie().is_action_script_3() {
+    if !proposed_child.movie().is_action_script_3() && activation.context.root_swf.version() > 9 {
         return Err(Error::avm_error(argument_error(
             activation,
             "Error #2180: It is illegal to move AVM1 content (AS1 or AS2) to a different part of the displayList when it has been loaded into AVM2 (AS3) content.",
