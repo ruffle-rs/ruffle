@@ -76,18 +76,6 @@ pub fn namespace_constructor<'gc>(
     Ok(NamespaceObject::from_ns_and_prefix(activation, namespace, prefix).into())
 }
 
-pub fn call_handler<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    _this: Value<'gc>,
-    args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error<'gc>> {
-    activation
-        .avm2()
-        .classes()
-        .namespace
-        .construct(activation, args)
-}
-
 /// Implements `Namespace.prefix`'s getter
 pub fn get_prefix<'gc>(
     _activation: &mut Activation<'_, 'gc>,

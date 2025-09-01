@@ -1,5 +1,5 @@
 package {
-    [Ruffle(CallHandler)]
+    [Ruffle(ConstructOnCall)]
     [Ruffle(InstanceAllocator)]
     public dynamic class Array {
         public static const CASEINSENSITIVE:uint = 1;

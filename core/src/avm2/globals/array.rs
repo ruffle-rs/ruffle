@@ -51,18 +51,6 @@ pub fn array_initializer<'gc>(
     Ok(Value::Undefined)
 }
 
-pub fn call_handler<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    _this: Value<'gc>,
-    args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error<'gc>> {
-    activation
-        .avm2()
-        .classes()
-        .array
-        .construct(activation, args)
-}
-
 /// Implements `Array.length`'s getter
 pub fn get_length<'gc>(
     _activation: &mut Activation<'_, 'gc>,

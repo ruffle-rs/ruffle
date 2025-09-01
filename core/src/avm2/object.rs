@@ -1002,3 +1002,17 @@ pub fn abstract_class_allocator<'gc>(
     let class_name = class.instance_class().name().local_name();
     Err(make_error_2012(activation, class_name))
 }
+
+/// Implements a custom call handler for classes that are constructed when
+/// called.
+pub fn construct_call_handler<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    this: Value<'gc>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    this.as_object()
+        .unwrap()
+        .as_class_object()
+        .unwrap()
+        .construct(activation, args)
+}

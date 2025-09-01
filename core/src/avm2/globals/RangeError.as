@@ -1,5 +1,5 @@
 package {
-    [Ruffle(CallHandler)]
+    [Ruffle(ConstructOnCall)]
     public dynamic class RangeError extends Error {
         RangeError.prototype.name = "RangeError"
 
