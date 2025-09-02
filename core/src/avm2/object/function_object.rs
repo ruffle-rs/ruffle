@@ -14,6 +14,7 @@ use crate::utils::HasPrefixField;
 use core::fmt;
 use gc_arena::barrier::unlock;
 use gc_arena::{lock::Lock, Collect, Gc, GcWeak, Mutation};
+use ruffle_macros::istr;
 
 /// An Object which can be called to execute its function code.
 #[derive(Collect, Clone, Copy)]
@@ -75,14 +76,22 @@ impl<'gc> FunctionObject<'gc> {
 
         let es3_proto = ScriptObject::new_object(activation);
 
-        FunctionObject(Gc::new(
+        let function_object = FunctionObject(Gc::new(
             activation.gc(),
             FunctionObjectData {
                 base: ScriptObjectData::new(fn_class),
                 exec,
                 prototype: Lock::new(Some(es3_proto)),
             },
-        ))
+        ));
+
+        let constructor_prop = istr!("constructor");
+
+        // Set the constructor property on the prototype to point back to this function
+        es3_proto.set_dynamic_property(constructor_prop, function_object.into(), activation.gc());
+        es3_proto.set_local_property_is_enumerable(activation.gc(), constructor_prop, false);
+
+        function_object
     }
 
     pub fn call(
