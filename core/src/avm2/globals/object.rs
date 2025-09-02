@@ -24,15 +24,6 @@ pub fn object_constructor<'gc>(
     Ok(constructed_object.into())
 }
 
-pub fn call_handler<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    _this: Value<'gc>,
-    args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error<'gc>> {
-    // Calling `Object(...)` is equivalent to constructing `new Object(...)`
-    object_constructor(activation, args)
-}
-
 /// Implements `Object.prototype.toString`
 pub fn _to_string<'gc>(
     activation: &mut Activation<'_, 'gc>,
