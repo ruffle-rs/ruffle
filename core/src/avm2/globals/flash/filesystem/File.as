@@ -17,6 +17,8 @@ package flash.filesystem {
         }
 
         public static function get applicationDirectory():File {
+            stub_getter("flash.filesystem.File", "applicationDirectory");
+
             if (_applicationDirectory === null) {
                 _applicationDirectory = new File();
             }
@@ -25,6 +27,8 @@ package flash.filesystem {
         }
 
         public static function get applicationStorageDirectory():File {
+            stub_getter("flash.filesystem.File", "applicationStorageDirectory");
+
             if (_applicationStorageDirectory === null) {
                 _applicationStorageDirectory = new File();
             }
@@ -33,6 +37,8 @@ package flash.filesystem {
         }
 
         public static function get documentsDirectory():File {
+            stub_getter("flash.filesystem.File", "documentsDirectory");
+
             if (_documentsDirectory === null) {
                 _documentsDirectory = new File();
             }
@@ -41,6 +47,8 @@ package flash.filesystem {
         }
 
         public static function get userDirectory():File {
+            stub_getter("flash.filesystem.File", "userDirectory");
+
             if (_userDirectory === null) {
                 _userDirectory = new File();
             }
