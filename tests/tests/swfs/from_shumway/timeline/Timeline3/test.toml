@@ -1,0 +1,10 @@
+# Test adapted from Shumway at https://github.com/mozilla/shumway/tree/master/test/swfs/timeline
+
+num_frames = 20
+
+[image_comparisons.output]
+tolerance = 0
+max_outliers = 0
+
+[player_options]
+with_renderer = { optional = true, sample_count = 4 }
