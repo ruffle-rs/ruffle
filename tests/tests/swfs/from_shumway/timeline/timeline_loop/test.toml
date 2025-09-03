@@ -1,0 +1,41 @@
+# Test adapted from Shumway at https://github.com/mozilla/shumway/tree/master/test/swfs/timeline
+
+num_frames = 20
+
+image_comparisons."output.02".trigger = 2
+image_comparisons."output.06".trigger = 6
+image_comparisons."output.07".trigger = 7
+image_comparisons."output.11".trigger = 11
+image_comparisons."output.15".trigger = 15
+image_comparisons."output.16".trigger = 16
+
+[[image_comparisons."output.02".checks]]
+tolerance = 32
+max_outliers = 70
+
+[[image_comparisons."output.06".checks]]
+tolerance = 32
+max_outliers = 90
+
+[[image_comparisons."output.07".checks]]
+tolerance = 32
+max_outliers = 70
+
+[[image_comparisons."output.11".checks]]
+tolerance = 32
+max_outliers = 90
+
+[[image_comparisons."output.12".checks]]
+tolerance = 32
+max_outliers = 70
+
+[[image_comparisons."output.15".checks]]
+tolerance = 32
+max_outliers = 90
+
+[[image_comparisons."output.16".checks]]
+tolerance = 32
+max_outliers = 90
+
+[player_options]
+with_renderer = { optional = true, sample_count = 4 }
