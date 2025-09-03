@@ -10,6 +10,8 @@ package flash.display {
         private static var _mainScreen:Screen = null;
 
         public static function get mainScreen():Screen {
+            stub_getter("flash.display.Screen", "mainScreen");
+
             if (_mainScreen === null) {
                 _mainScreen = new Screen();
             }
