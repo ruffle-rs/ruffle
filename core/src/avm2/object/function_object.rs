@@ -127,9 +127,15 @@ impl<'gc> FunctionObject<'gc> {
             object_class.instance_vtable(),
         );
 
-        self.call(activation, instance.into(), arguments)?;
+        let result = self.call(activation, instance.into(), arguments)?;
 
-        Ok(instance)
+        // If the constructor returns an object, use that instead of the created instance
+        // TODO: avmplus returns null here if the constructor returns null
+        if let Value::Object(obj) = result {
+            Ok(obj)
+        } else {
+            Ok(instance)
+        }
     }
 
     pub fn prototype(&self) -> Option<Object<'gc>> {
