@@ -224,7 +224,17 @@ jobs:
         working-directory: tests
         env:
           RUFFLE_TEST_OPTS: --ignore-known-failures
-        run: cargo llvm-cov --no-report ${{ env.LLVM_COV_TEST_OPTS }}
+          LLVM_COV_EXCLUDE: >
+            --exclude ruffle_desktop
+            --exclude exporter
+            --exclude ruffle_scanner
+            --exclude ruffle_frontend_utils
+            --exclude ruffle_render_canvas
+            --exclude ruffle_web
+            --exclude ruffle_web_common
+            --exclude ruffle_web_safari
+            --exclude build_playerglobal
+        run: cargo llvm-cov --no-report ${{ env.LLVM_COV_TEST_OPTS }} ${LLVM_COV_EXCLUDE}
 
       - name: Generate llvm-cov reports
         run: |
