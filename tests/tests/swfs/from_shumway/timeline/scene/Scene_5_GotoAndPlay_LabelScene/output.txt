@@ -1,0 +1,15 @@
+FRAME 1
+currentFrameLabel: null
+currentLabel: null
+currentLabels: [FrameLabel 'S1F2':2], [FrameLabel 'S1F5':5]
+currentScene: [Scene 'Scene 1', frames: 5, labels: [FrameLabel 'S1F2':2], [FrameLabel 'S1F5':5]]
+FRAME 2
+currentFrameLabel: S1F2
+currentLabel: S1F2
+currentLabels: [FrameLabel 'S1F2':2], [FrameLabel 'S1F5':5]
+currentScene: [Scene 'Scene 1', frames: 5, labels: [FrameLabel 'S1F2':2], [FrameLabel 'S1F5':5]]
+FRAME 5
+currentFrameLabel: S2F5
+currentLabel: S2F5
+currentLabels: [FrameLabel 'S2F1':1], [FrameLabel 'S2F5':5], [FrameLabel 'S2F9':9], [FrameLabel 'S2F10':10]
+currentScene: [Scene 'Scene 2', frames: 10, labels: [FrameLabel 'S2F1':1], [FrameLabel 'S2F5':5], [FrameLabel 'S2F9':9], [FrameLabel 'S2F10':10]]

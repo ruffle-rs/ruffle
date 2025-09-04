@@ -1,0 +1,7 @@
+currentFrame: 1, currentScene: [Scene 'Scene 1']
+currentFrame: 2, currentScene: [Scene 'Scene 1'] S1 nextScene()
+currentFrame: 1, currentScene: [Scene 'Scene 2'] S2 nextScene()
+currentFrame: 2, currentScene: [Scene 'Scene 2']
+currentFrame: 5, currentScene: [Scene 'Scene 2'] S2 prevScene()
+currentFrame: 1, currentScene: [Scene 'Scene 1']
+currentFrame: 2, currentScene: [Scene 'Scene 1'] S1 stop()
