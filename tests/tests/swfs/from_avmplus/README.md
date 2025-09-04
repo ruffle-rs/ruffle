@@ -1,9 +1,11 @@
+# Tests from avmplus
+
 All files here are copied and adapted from Adobe's [avmplus repo](https://github.com/adobe/avmplus/tree/65a05927767f3735db37823eebf7d743531f5d37/test/acceptance).
 
-# License
+## License
 The original tests are licensed [MPL 2.0](http://mozilla.org/MPL/2.0/), and therefore these adaptions are too.
 
-# Adapting a new test
+## Adapting a new test
 To adapt a new test:
 - Take the AS file from the above repo, and put it in an appropriate folder somewhere here.
 - If the test is conditional on, for example, `swfVersion()` - separate it manually into multiple tests.
@@ -18,7 +20,7 @@ public class Test extends MovieClip {}
 }
 ```
 
-# Compiling
+## Compiling
 Unless there's a fla, all tests are compiled with mxmlc. To compile, use `mxmlc -load-config+=config.xml Test.as`
 
 If you need to make a fla then:
