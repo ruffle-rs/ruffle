@@ -1,0 +1,8 @@
+Element placed on frame 1
+Blend mode: normal
+New object placed on frame 2: false
+Blend mode: invert
+New object placed on frame 3: false
+Blend mode: invert
+New object placed on frame 1: false
+Blend mode: normal

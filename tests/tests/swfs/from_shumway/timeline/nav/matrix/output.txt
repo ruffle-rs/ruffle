@@ -1,0 +1,8 @@
+Element placed on frame 1
+Matrix transform: (a=1, b=0, c=0, d=1, tx=0, ty=0)
+New object placed on frame 2: false
+Matrix: (a=1, b=0, c=0, d=1, tx=225, ty=150)
+New object placed on frame 3: false
+Matrix: (a=1, b=0, c=0, d=1, tx=225, ty=150)
+New object placed on frame 1: false
+Matrix transform: (a=1, b=0, c=0, d=1, tx=0, ty=0)
