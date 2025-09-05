@@ -152,7 +152,7 @@ fn take_screenshot(
             ctx.stage
                 .root_clip()
                 .and_then(|root_clip| root_clip.as_movie_clip())
-                .map_or(1, |movie_clip| movie_clip.total_frames() as u32)
+                .map_or(1, |movie_clip| movie_clip.header_frames() as u32)
         }),
         FrameSelection::Count(n) => n.get() as u32 + skipframes,
     };
