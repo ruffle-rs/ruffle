@@ -17,13 +17,9 @@ pub fn byte_array_allocator<'gc>(
     class: ClassObject<'gc>,
     activation: &mut Activation<'_, 'gc>,
 ) -> Result<Object<'gc>, Error<'gc>> {
-    let storage = if let Some((movie, id)) = activation
-        .context
-        .library
-        .avm2_class_registry()
-        .class_symbol(class.inner_class_definition())
+    let storage = if let Some(id) = class.inner_class_definition().owner_movie().unwrap().0.borrow().avm2_class_registry.class_symbol(class.inner_class_definition())
     {
-        if let Some(lib) = activation.context.library.library_for_movie(movie) {
+        if let lib =  class.inner_class_definition().owner_movie().unwrap().0.borrow() {
             if let Some(Character::BinaryData(binary_data)) = lib.character_by_id(id) {
                 Some(ByteArrayStorage::from_vec(
                     activation.context,

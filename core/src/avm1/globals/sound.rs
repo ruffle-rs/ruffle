@@ -277,11 +277,8 @@ fn attach_sound<'gc>(
         let movie = sound
             .owner()
             .unwrap_or_else(|| activation.base_clip().avm1_root())
-            .movie();
-        if let Some((_, Character::Sound(sound_handle))) = activation
-            .context
-            .library
-            .library_for_movie_mut(movie)
+            .movie_library();
+        if let Some((_, Character::Sound(sound_handle))) = movie.0.borrow()
             .character_by_export_name(name)
         {
             sound.load_sound(sound_handle, activation.context);
@@ -610,11 +607,8 @@ fn stop<'gc>(
             let movie = sound
                 .owner()
                 .unwrap_or_else(|| activation.base_clip().avm1_root())
-                .movie();
-            if let Some((_, Character::Sound(sound))) = activation
-                .context
-                .library
-                .library_for_movie_mut(movie)
+                .movie_library();
+            if let Some((_, Character::Sound(sound))) = movie.0.borrow()
                 .character_by_export_name(name)
             {
                 // Stop all sounds with the given name.

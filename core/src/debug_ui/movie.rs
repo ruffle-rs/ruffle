@@ -1,9 +1,11 @@
 use crate::character::Character;
 use crate::context::UpdateContext;
-use crate::debug_ui::{ItemToSave, Message};
+use crate::debug_ui::handle::MovieLibraryHandle;
+use crate::debug_ui::{movie, ItemToSave, Message};
+use crate::library::{MovieLibrary, MovieLibraryWeak};
 use crate::tag_utils::SwfMovie;
 use egui::{CollapsingHeader, Grid, Id, TextEdit, Ui, Window};
-use std::sync::Arc;
+use std::sync::{Arc, Weak};
 use swf::CharacterId;
 use url::Url;
 
@@ -41,7 +43,9 @@ impl MovieListWindow {
                     ui.end_row();
 
                     for movie in movies {
-                        open_movie_button(ui, &movie, messages);
+                        let library = movie.upgrade(&context.gc()).expect("Movie must still be alive");
+                        let movie = library.swf();
+                        open_movie_button(ui, library, messages, &context);
                         ui.label(movie.url());
                         if movie.is_action_script_3() {
                             ui.label("AVM 2");
@@ -52,7 +56,7 @@ impl MovieListWindow {
                         if movie.data().is_empty() {
                             ui.weak("(Empty)");
                         } else if ui.button("Save File...").clicked() {
-                            save_swf(&movie, messages);
+                            save_swf(library, messages);
                         }
                         ui.end_row();
                     }
@@ -73,46 +77,36 @@ impl MovieWindow {
         &mut self,
         egui_ctx: &egui::Context,
         context: &mut UpdateContext,
-        movie: Arc<SwfMovie>,
+        movie: MovieLibrary<'_>,
         messages: &mut Vec<Message>,
     ) -> bool {
         let mut keep_open = true;
 
-        Window::new(movie_name(&movie))
-            .id(Id::new(Arc::as_ptr(&movie)))
+        Window::new(movie_name(&Arc::downgrade(&movie.swf())))
+            .id(Id::new(Weak::as_ptr(&Arc::downgrade(&movie.swf()))))
             .open(&mut keep_open)
             .scroll([true, true])
             .show(egui_ctx, |ui| {
                 ui.horizontal(|ui| {
                     ui.selectable_value(&mut self.open_panel, Panel::Information, "Information");
 
-                    if let Some(library) = context.library.library_for_movie(movie.clone()) {
-                        if !library.characters().is_empty() {
-                            ui.selectable_value(
-                                &mut self.open_panel,
-                                Panel::Characters,
-                                "Characters",
-                            );
-                        }
+                    if !movie.0.borrow().characters().is_empty() {
+                        ui.selectable_value(&mut self.open_panel, Panel::Characters, "Characters");
                     }
                 });
                 ui.separator();
 
                 match self.open_panel {
-                    Panel::Information => self.show_information(ui, &movie, messages),
-                    Panel::Characters => self.show_characters(ui, context, &movie),
+                    Panel::Information => self.show_information(ui, movie, messages),
+                    Panel::Characters => self.show_characters(ui, context, movie),
                 }
             });
         keep_open
     }
 
-    fn show_characters(&mut self, ui: &mut Ui, context: &mut UpdateContext, movie: &Arc<SwfMovie>) {
+    fn show_characters(&mut self, ui: &mut Ui, context: &mut UpdateContext, movie: MovieLibrary<'_>) {
         // Cloned up here so we can still use context afterwards
-        let (characters, export_characters) = context
-            .library
-            .library_for_movie(movie.clone())
-            .map(|l| (l.characters().clone(), l.export_characters().clone()))
-            .unwrap_or_default();
+        let (characters, export_characters) = (movie.0.borrow().characters().clone(), movie.0.borrow().export_characters().clone());
 
         TextEdit::singleline(&mut self.character_search)
             .hint_text("Search for name or ID")
@@ -154,12 +148,14 @@ impl MovieWindow {
     fn show_information(
         &mut self,
         ui: &mut Ui,
-        movie: &Arc<SwfMovie>,
+        movie: MovieLibrary<'_>,
         messages: &mut Vec<Message>,
     ) {
-        if !movie.data().is_empty() && ui.button("Save File...").clicked() {
+        if !movie.swf().data().is_empty() && ui.button("Save File...").clicked() {
             save_swf(movie, messages);
         }
+
+        let movie = movie.swf();
 
         Grid::new(ui.id().with("information"))
             .num_columns(2)
@@ -246,13 +242,13 @@ impl MovieWindow {
     }
 }
 
-pub fn movie_name(movie: &Arc<SwfMovie>) -> String {
-    format!("SWF {:p}", Arc::as_ptr(movie))
+pub fn movie_name(movie: &Weak<SwfMovie>) -> String {
+    format!("SWF {:p}", Weak::as_ptr(movie))
 }
 
-pub fn open_movie_button(ui: &mut Ui, movie: &Arc<SwfMovie>, messages: &mut Vec<Message>) {
-    if ui.button(movie_name(movie)).clicked() {
-        messages.push(Message::TrackMovie(movie.clone()));
+pub fn open_movie_button<'a>(ui: &mut Ui, movie: MovieLibrary<'a>, messages: &mut Vec<Message>, context: &UpdateContext<'a>) {
+    if ui.button(movie_name(&Arc::downgrade(&movie.swf()))).clicked() {
+        messages.push(Message::TrackMovie(MovieLibraryHandle::new(context, movie.downgrade())));
     }
 }
 
@@ -274,8 +270,8 @@ pub fn open_character_button(ui: &mut Ui, character: Character) {
     ui.label(name);
 }
 
-fn save_swf(movie: &Arc<SwfMovie>, messages: &mut Vec<Message>) {
-    let suggested_name = if let Ok(url) = Url::parse(movie.url()) {
+fn save_swf(movie: MovieLibrary<'_>, messages: &mut Vec<Message>) {
+    let suggested_name = if let Ok(url) = Url::parse(movie.swf().url()) {
         url.path_segments()
             .and_then(|mut segments| segments.next_back())
             .map(|str| str.to_string())
@@ -284,13 +280,13 @@ fn save_swf(movie: &Arc<SwfMovie>, messages: &mut Vec<Message>) {
     };
     let mut data = Vec::new();
     if let Err(e) =
-        swf::write::write_swf_raw_tags(movie.header().swf_header(), movie.data(), &mut data)
+        swf::write::write_swf_raw_tags(movie.swf().header().swf_header(), movie.swf().data(), &mut data)
     {
         tracing::error!("Couldn't write swf: {e}");
     } else {
         messages.push(Message::SaveFile(ItemToSave {
             suggested_name: suggested_name
-                .unwrap_or_else(|| format!("{:p}.swf", Arc::as_ptr(movie))),
+                .unwrap_or_else(|| format!("{:p}.swf", Arc::as_ptr(&movie.swf()))),
             data,
         }));
     }

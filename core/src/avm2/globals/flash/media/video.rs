@@ -23,16 +23,8 @@ pub fn video_allocator<'gc>(
             ));
         }
 
-        if let Some((movie, symbol)) = activation
-            .context
-            .library
-            .avm2_class_registry()
-            .class_symbol(target)
-        {
-            let child = activation
-                .context
-                .library
-                .library_for_movie_mut(movie)
+        if let Some(symbol) = target.owner_movie().unwrap().0.borrow().avm2_class_registry.class_symbol(target) {
+            let child = target.owner_movie().unwrap().0.borrow()
                 .instantiate_by_id(symbol, activation.context.gc_context);
 
             if let Some(child) = child {

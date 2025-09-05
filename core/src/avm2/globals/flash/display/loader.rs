@@ -19,6 +19,7 @@ use crate::avm2_stub_method;
 use crate::backend::navigator::{NavigationMethod, Request};
 use crate::display_object::LoaderDisplay;
 use crate::display_object::MovieClip;
+use crate::library::MovieLibrary;
 use crate::loader::LoadManager;
 use crate::loader::MovieLoaderVMData;
 use crate::tag_utils::SwfMovie;
@@ -31,7 +32,7 @@ pub fn loader_allocator<'gc>(
     // Loader does not have an associated `Character` variant, and can never be
     // instantiated from the timeline.
     let display_object =
-        LoaderDisplay::empty(activation, activation.context.root_swf.clone()).into();
+        LoaderDisplay::empty(activation, *activation.context.root_swf).into();
     let loader = initialize_for_allocator(activation.context, display_object, class);
 
     // Note that the initialization of `_contentLoaderInfo` is intentionally done here,
@@ -44,7 +45,7 @@ pub fn loader_allocator<'gc>(
     let movie = &activation.context.root_swf;
     let loader_info = LoaderInfoObject::not_yet_loaded(
         activation,
-        Arc::new(SwfMovie::empty(movie.version(), Some(movie.url().into()))),
+        MovieLibrary::from_swf_movie(Arc::new(SwfMovie::empty(movie.swf().version(), Some(movie.swf().url().into()))), activation.gc()),
         Some(loader),
         None,
         false,
@@ -90,15 +91,17 @@ pub fn load<'gc>(
 
     // This is a dummy MovieClip, which will get overwritten in `Loader`
     let movie = &activation.context.root_swf;
+    let swf_movie = MovieLibrary::from_swf_movie(Arc::new(SwfMovie::empty(movie.0.borrow().swf.version(), Some(movie.0.borrow().swf.url().into()))), activation.gc());
+
     let content = MovieClip::new(
-        Arc::new(SwfMovie::empty(movie.version(), Some(movie.url().into()))),
+        swf_movie,
         activation.gc(),
     );
 
     // Update the LoaderStream - we still have a fake SwfMovie, but we now have the real target clip.
     loader_info.set_loader_stream(
         LoaderStream::NotYetLoaded(
-            Arc::new(SwfMovie::empty(movie.version(), Some(movie.url().into()))),
+            swf_movie,
             Some(content.into()),
             false,
         ),
@@ -261,8 +264,10 @@ pub fn load_bytes<'gc>(
 
     // This is a dummy MovieClip, which will get overwritten in `Loader`
     let movie = &activation.context.root_swf;
+    
+    let library = MovieLibrary::from_swf_movie(Arc::new(SwfMovie::empty(movie.swf().version(), Some(movie.swf().url().into()))), activation.gc());
     let content = MovieClip::new(
-        Arc::new(SwfMovie::empty(movie.version(), Some(movie.url().into()))),
+        library,
         activation.gc(),
     );
 

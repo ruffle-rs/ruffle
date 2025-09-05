@@ -15,7 +15,7 @@ use crate::avm2::parameters::ParametersExt;
 use crate::avm2::value::Value;
 use crate::avm2::vector::VectorStorage;
 use crate::avm2::Error;
-use crate::avm2_stub_method;
+use crate::{avm2_stub_method, character};
 use crate::bitmap::bitmap_data::{BitmapData, ChannelOptions, ThresholdOperation};
 use crate::bitmap::bitmap_data::{BitmapDataDrawError, IBitmapDrawable};
 use crate::bitmap::{is_size_valid, operations};
@@ -94,18 +94,10 @@ pub fn init<'gc>(
     // We set the underlying BitmapData instance - we start out with a dummy BitmapData,
     // which makes custom classes see a disposed BitmapData before they call super()
     let name = this.instance_class().name();
-    let character = activation
-        .context
-        .library
-        .avm2_class_registry()
-        .class_symbol(this.instance_class())
-        .and_then(|(movie, chara_id)| {
-            activation
-                .context
-                .library
-                .library_for_movie_mut(movie)
-                .character_by_id(chara_id)
-        });
+    let library = this.instance_class().translation_unit().unwrap().movie().0.borrow();
+    let character = library.avm2_class_registry.class_symbol(this.instance_class()).and_then(|chara_id| {
+        library.character_by_id(chara_id)
+    });
 
     let new_bitmap_data = if let Some(Character::Bitmap(bitmap)) = character {
         // Instantiating BitmapData from an Animate-style bitmap asset
@@ -125,7 +117,7 @@ pub fn init<'gc>(
         let transparency = args.get_bool(2);
         let fill_color = args.get_u32(3);
 
-        if !is_size_valid(activation.context.root_swf.version(), width, height) {
+        if !is_size_valid(activation.context.root_swf.swf().version(), width, height) {
             return Err(Error::avm_error(argument_error(
                 activation,
                 "Error #2015: Invalid BitmapData.",

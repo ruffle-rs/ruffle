@@ -1,7 +1,8 @@
 use crate::avm2::object::TObject as _;
 use crate::context::UpdateContext;
 use crate::display_object::{DisplayObject, DisplayObjectPtr, TDisplayObject};
-use gc_arena::{DynamicRoot, DynamicRootSet, Gc, Rootable};
+use crate::library::{MovieLibrary, MovieLibraryPtr, MovieLibraryWeak};
+use gc_arena::{DynamicRoot, DynamicRootSet, Gc, GcWeak, Rootable};
 use std::fmt::{Debug, Formatter};
 use std::hash::{Hash, Hasher};
 
@@ -58,6 +59,60 @@ impl Hash for DisplayObjectHandle {
 }
 
 impl Eq for DisplayObjectHandle {}
+
+
+#[derive(Clone)]
+pub struct MovieLibraryHandle {
+    root: DynamicRoot<Rootable![MovieLibraryWeak<'_>]>,
+    ptr: *const MovieLibraryPtr,
+}
+
+impl MovieLibraryHandle {
+    pub fn new<'gc>(
+        context: &UpdateContext<'gc>,
+        object: impl Into<MovieLibraryWeak<'gc>>,
+    ) -> Self {
+        let object = object.into();
+        Self {
+            // TODO(moulins): it'd be nice to avoid the double indirection here...
+            root: context
+                .dynamic_root
+                .stash(context.gc(), Gc::new(context.gc(), object)),
+            ptr: object.as_ptr(),
+        }
+    }
+
+    pub fn fetch<'gc>(&self, context: &UpdateContext<'gc>) -> MovieLibrary<'gc> {
+        context.dynamic_root.fetch(&self.root ).upgrade(context.gc()).unwrap()
+    }
+
+    pub fn as_ptr(&self) -> *const MovieLibraryPtr {
+        self.ptr
+    }
+}
+
+impl Debug for MovieLibraryHandle {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        f.debug_tuple("MovieLibraryHandle")
+            .field(&self.ptr)
+            .finish()
+    }
+}
+
+impl PartialEq<MovieLibraryHandle> for MovieLibraryHandle {
+    #[inline(always)]
+    fn eq(&self, other: &MovieLibraryHandle) -> bool {
+        std::ptr::eq(self.ptr, other.ptr)
+    }
+}
+
+impl Hash for MovieLibraryHandle {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        self.ptr.hash(state);
+    }
+}
+
+impl Eq for MovieLibraryHandle {}
 
 #[derive(Clone)]
 pub struct AVM1ObjectHandle {

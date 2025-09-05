@@ -1,7 +1,7 @@
 use crate::avm2::{Object as Avm2Object, StageObject as Avm2StageObject};
 use crate::context::{RenderContext, UpdateContext};
 use crate::display_object::DisplayObjectBase;
-use crate::library::{Library, MovieLibrarySource};
+use crate::library::{Library, MovieLibrary, MovieLibrarySource};
 use crate::prelude::*;
 use crate::tag_utils::SwfMovie;
 use crate::utils::HasPrefixField;
@@ -32,7 +32,7 @@ impl fmt::Debug for MorphShape<'_> {
 #[repr(C, align(8))]
 pub struct MorphShapeData<'gc> {
     base: DisplayObjectBase<'gc>,
-    shared: Lock<Gc<'gc, MorphShapeShared>>,
+    shared: Lock<Gc<'gc, MorphShapeShared<'gc>>>,
     /// The AVM2 representation of this MorphShape.
     object: Lock<Option<Avm2Object<'gc>>>,
     ratio: Cell<u16>,
@@ -42,7 +42,7 @@ impl<'gc> MorphShape<'gc> {
     pub fn from_swf_tag(
         gc_context: &Mutation<'gc>,
         tag: swf::DefineMorphShape,
-        movie: Arc<SwfMovie>,
+        movie: MovieLibrary<'gc>,
     ) -> Self {
         let shared = MorphShapeShared::from_swf_tag(&tag, movie);
         MorphShape(Gc::new(
@@ -80,9 +80,7 @@ impl<'gc> TDisplayObject<'gc> for MorphShape<'gc> {
     }
 
     fn replace_with(self, context: &mut UpdateContext<'gc>, id: CharacterId) {
-        if let Some(new_morph_shape) = context
-            .library
-            .library_for_movie_mut(self.movie())
+        if let Some(new_morph_shape) = self.movie_library().0.borrow()
             .get_morph_shape(id)
         {
             unlock!(Gc::write(context.gc(), self.0), MorphShapeData, shared)
@@ -120,10 +118,10 @@ impl<'gc> TDisplayObject<'gc> for MorphShape<'gc> {
         }
     }
 
-    fn render_self(self, context: &mut RenderContext) {
+    fn render_self<'a>(self, context: &mut RenderContext<'a, 'gc>) {
         let ratio = self.0.ratio.get();
         let shared = self.0.shared.get();
-        let shape_handle = shared.get_shape(context, context.library, ratio);
+        let shape_handle = shared.get_shape(context, &shared.movie, ratio);
         context
             .commands
             .render_shape(shape_handle, context.transform_stack.transform());
@@ -163,7 +161,11 @@ impl<'gc> TDisplayObject<'gc> for MorphShape<'gc> {
     }
 
     fn movie(self) -> Arc<SwfMovie> {
-        self.0.shared.get().movie.clone()
+        self.0.shared.get().movie.swf().clone()
+    }
+
+    fn movie_library(self) -> MovieLibrary<'gc> {
+        self.0.shared.get().movie
     }
 }
 
@@ -176,17 +178,19 @@ struct Frame {
 
 /// Data shared between all instances of a morph shape.
 #[derive(Collect)]
-#[collect(require_static)]
-pub struct MorphShapeShared {
+#[collect(no_drop)]
+pub struct MorphShapeShared<'gc> {
     id: CharacterId,
+    #[collect(require_static)]
     start: swf::MorphShape,
+    #[collect(require_static)]
     end: swf::MorphShape,
     frames: RefCell<fnv::FnvHashMap<u16, Frame>>,
-    movie: Arc<SwfMovie>,
+    movie: MovieLibrary<'gc>,
 }
 
-impl MorphShapeShared {
-    pub fn from_swf_tag(swf_tag: &swf::DefineMorphShape, movie: Arc<SwfMovie>) -> Self {
+impl<'gc> MorphShapeShared<'gc> {
+    pub fn from_swf_tag(swf_tag: &swf::DefineMorphShape, movie: MovieLibrary<'gc>) -> Self {
         Self {
             id: swf_tag.id,
             start: swf_tag.start.clone(),
@@ -209,17 +213,17 @@ impl MorphShapeShared {
 
     /// Retrieves the `ShapeHandle` for the given ratio.
     /// Lazily initializes and tessellates the shape if it does not yet exist.
-    fn get_shape<'gc>(
+    fn get_shape(
         &self,
         context: &mut RenderContext<'_, 'gc>,
-        library: &Library<'gc>,
+        library: &MovieLibrary<'gc>,
         ratio: u16,
     ) -> ShapeHandle {
         let mut frame = self.get_frame(ratio);
         if let Some(handle) = frame.shape_handle.clone() {
             handle
         } else {
-            let library = library.library_for_movie(self.movie.clone()).unwrap();
+            let library = library;
             let handle = context
                 .renderer
                 .register_shape((&frame.shape).into(), &MovieLibrarySource { library });

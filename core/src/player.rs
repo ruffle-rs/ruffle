@@ -35,6 +35,7 @@ use crate::frame_lifecycle::{run_all_phases_avm2, FramePhase};
 use crate::input::InputEvent;
 use crate::input::InputManager;
 use crate::library::Library;
+use crate::library::MovieLibrary;
 use crate::limits::ExecutionLimit;
 use crate::loader::{LoadBehavior, LoadManager};
 use crate::local_connection::LocalConnections;
@@ -197,6 +198,8 @@ struct GcRootData<'gc> {
     dynamic_root: DynamicRootSet<'gc>,
 
     post_frame_callbacks: Vec<PostFrameCallback<'gc>>,
+
+    root_swf: MovieLibrary<'gc>,
 }
 
 #[derive(Collect)]
@@ -236,6 +239,7 @@ impl<'gc> GcRootData<'gc> {
         &mut LocalConnections<'gc>,
         &mut Vec<PostFrameCallback<'gc>>,
         &mut MouseData<'gc>,
+        &mut MovieLibrary<'gc>,
         DynamicRootSet<'gc>,
     ) {
         (
@@ -260,6 +264,7 @@ impl<'gc> GcRootData<'gc> {
             &mut self.local_connections,
             &mut self.post_frame_callbacks,
             &mut self.mouse_data,
+            &mut self.root_swf,
             self.dynamic_root,
         )
     }
@@ -294,8 +299,6 @@ pub struct Player {
 
     /// Whether we're emulating the release or the debug build.
     player_mode: PlayerMode,
-
-    swf: Arc<SwfMovie>,
 
     run_state: RunState,
     needs_render: bool,
@@ -1414,16 +1417,16 @@ impl Player {
             }
         }
 
-        if self.should_reset_highlight(event) {
-            self.mutate_with_update_context(|context| {
+        self.mutate_with_update_context(|context| {
+            if Self::should_reset_highlight(event, context) {
                 context.focus_tracker.reset_highlight();
-            });
-        }
+            }
+        });
 
         player_event_handled
     }
 
-    fn should_reset_highlight(&self, event: InputEvent) -> bool {
+    fn should_reset_highlight(event: InputEvent, context: &mut UpdateContext<'_>) -> bool {
         if matches!(
             event,
             InputEvent::MouseDown {
@@ -1435,7 +1438,7 @@ impl Player {
             return true;
         }
 
-        if self.swf.version() < 9
+        if context.root_swf.0.borrow().swf.version() < 9
             && matches!(
                 event,
                 InputEvent::MouseDown {
@@ -2194,13 +2197,14 @@ impl Player {
                 local_connections,
                 post_frame_callbacks,
                 mouse_data,
+                root_swf,
                 dynamic_root,
             ) = gc_root.update_context_params();
 
             let mut update_context = UpdateContext {
                 player_version: this.player_version,
                 player_mode: this.player_mode,
-                root_swf: &mut this.swf,
+                root_swf,
                 library,
                 rng: &mut this.rng,
                 renderer: this.renderer.deref_mut(),
@@ -2319,7 +2323,7 @@ impl Player {
         self.update_mouse_state(&HashSet::new(), false, &mut false);
 
         // GC
-        self.gc_arena.borrow_mut().collect_debt();
+        self.gc_arena.borrow_mut().finish_cycle();
 
         rval
     }
@@ -2785,7 +2789,7 @@ impl PlayerBuilder {
         player_version: u8,
         player_runtime: PlayerRuntime,
         fullscreen: bool,
-        fake_movie: Arc<SwfMovie>,
+        fake_movie: MovieLibrary<'gc>,
         external_interface_provider: Option<Box<dyn ExternalInterfaceProvider>>,
         fs_command_provider: Box<dyn FsCommandProvider>,
     ) -> GcRoot<'gc> {
@@ -2832,6 +2836,7 @@ impl PlayerBuilder {
             local_connections: LocalConnections::empty(),
             dynamic_root: DynamicRootSet::new(gc_context),
             post_frame_callbacks: Vec::new(),
+            root_swf: fake_movie,
         };
 
         GcRoot {
@@ -2889,7 +2894,6 @@ impl PlayerBuilder {
                 video,
 
                 // SWF info
-                swf: fake_movie.clone(),
                 current_frame: None,
 
                 // Timing
@@ -2942,7 +2946,7 @@ impl PlayerBuilder {
                         player_version,
                         self.player_runtime,
                         self.fullscreen,
-                        fake_movie.clone(),
+                        MovieLibrary::from_swf_movie(fake_movie, gc_context),
                         self.external_interface_provider,
                         self.fs_command_provider,
                     )

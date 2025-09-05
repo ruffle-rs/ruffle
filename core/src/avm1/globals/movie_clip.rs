@@ -291,7 +291,7 @@ fn attach_bitmap<'gc>(
                     0,
                     bitmap_data,
                     smoothing,
-                    &movie_clip.movie(),
+                    movie_clip.movie_library(),
                 );
                 movie_clip.replace_at_depth(activation.context, display_object.into(), depth);
                 display_object.post_instantiation(
@@ -793,11 +793,7 @@ fn attach_movie<'gc>(
         return Ok(Value::Undefined);
     }
 
-    if let Some(new_clip) = activation
-        .context
-        .library
-        .library_for_movie(movie_clip.movie())
-        .and_then(|l| l.instantiate_by_export_name(export_name, activation.gc()))
+    if let Some(new_clip) = movie_clip.movie_library().0.borrow().instantiate_by_export_name(export_name, activation.gc())
     {
         // Set name and attach to parent.
         new_clip.set_name(activation.gc(), new_instance_name);
@@ -838,7 +834,7 @@ fn create_empty_movie_clip<'gc>(
     };
 
     // Create empty movie clip.
-    let swf_movie = movie_clip.movie();
+    let swf_movie = movie_clip.movie_library();
     let new_clip = MovieClip::new(swf_movie, activation.gc());
 
     // Set name and attach to parent.
@@ -854,7 +850,7 @@ fn create_text_field<'gc>(
     activation: &mut Activation<'_, 'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let movie = activation.base_clip().movie();
+    let movie = activation.base_clip().movie_library();
     let instance_name = args.get(0).cloned().unwrap_or(Value::Undefined);
     let depth = args
         .get(1)
@@ -956,10 +952,10 @@ pub fn clone_sprite<'gc>(
         return None;
     }
 
-    let movie = parent.movie();
+    let movie = parent.movie_library();
     let new_clip = if movie_clip.id() != 0 {
         // Clip from SWF; instantiate a new copy.
-        let library = context.library.library_for_movie(movie).unwrap();
+        let library = movie.0.borrow();
         library
             .instantiate_by_id(movie_clip.id(), context.gc())
             .unwrap()
@@ -1414,7 +1410,7 @@ fn get_bounds<'gc>(
         if !activation.context.avm1.get_use_new_invalid_bounds_value() {
             // The value is set to true if the activation SWF version is >= 8 or if the SWF
             // version of the root movie is >= 8.
-            if activation.swf_version() >= 8 || activation.context.root_swf.version() >= 8 {
+            if activation.swf_version() >= 8 || activation.context.root_swf.swf().version() >= 8 {
                 // If only the activation SWF version (and not the root movie SWF version)
                 // is >= 8 and the movie clip equals the target, the value sometimes isn't set
                 // in Flash Player 10.

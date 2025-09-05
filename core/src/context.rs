@@ -24,6 +24,7 @@ use crate::focus_tracker::FocusTracker;
 use crate::frame_lifecycle::FramePhase;
 use crate::input::InputManager;
 use crate::library::Library;
+use crate::library::MovieLibrary;
 use crate::loader::LoadManager;
 use crate::local_connection::LocalConnections;
 use crate::net_connection::NetConnections;
@@ -90,7 +91,7 @@ pub struct UpdateContext<'gc> {
     pub needs_render: &'gc mut bool,
 
     /// The root SWF file.
-    pub root_swf: &'gc mut Arc<SwfMovie>,
+    pub root_swf: &'gc mut MovieLibrary<'gc>,
 
     /// The audio backend, used by display objects and AVM to play audio.
     pub audio: &'gc mut dyn AudioBackend,
@@ -351,28 +352,26 @@ impl<'gc> UpdateContext<'gc> {
             movie.height(),
             self.frame_rate,
         );
+        let swf = self.library.register_movie(MovieLibrary::from_swf_movie(Arc::new(movie), self.gc()), self.gc());
+        *self.root_swf = swf.upgrade(self.gc()).expect("This probably shouldn't happen");
 
-        *self.root_swf = Arc::new(movie);
         *self.instance_counter = 0;
 
-        if self.root_swf.is_action_script_3() {
+        if self.root_swf.swf().is_action_script_3() {
             self.avm2.root_api_version =
-                ApiVersion::from_swf_version(self.root_swf.version(), self.avm2.player_runtime);
+                ApiVersion::from_swf_version(self.root_swf.swf().version(), self.avm2.player_runtime);
         }
 
         self.stage.set_movie_size(
-            self.root_swf.width().to_pixels() as u32,
-            self.root_swf.height().to_pixels() as u32,
+            self.root_swf.swf().width().to_pixels() as u32,
+            self.root_swf.swf().height().to_pixels() as u32,
         );
-        self.stage.set_movie(self.gc(), self.root_swf.clone());
+        self.stage.set_movie(self.gc(), *self.root_swf);
 
         let stage_domain = self.avm2.stage_domain();
         let mut activation = Avm2Activation::from_domain(self, stage_domain);
 
-        activation
-            .context
-            .library
-            .library_for_movie_mut(activation.context.root_swf.clone())
+        activation.context.root_swf.0.borrow_mut(activation.gc())
             .set_avm2_domain(stage_domain);
         activation.context.ui.set_mouse_visible(true);
 
@@ -400,9 +399,9 @@ impl<'gc> UpdateContext<'gc> {
         root.set_depth(0);
         root.set_perspective_projection(None); // Set default PerspectiveProjection
 
-        let flashvars = if !self.root_swf.parameters().is_empty() {
+        let flashvars = if !self.root_swf.swf().parameters().is_empty() {
             let object = Avm1Object::new(&self.strings, None);
-            for (key, value) in self.root_swf.parameters().iter() {
+            for (key, value) in self.root_swf.swf().parameters().iter() {
                 object.define_value(
                     self.gc(),
                     AvmString::new_utf8(self.gc(), key),

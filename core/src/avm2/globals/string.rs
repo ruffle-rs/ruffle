@@ -183,7 +183,7 @@ pub fn locale_compare<'gc>(
 
     let other_value = args.get_value(0);
 
-    if activation.caller_movie_or_root().version() < 11 {
+    if activation.caller_movie_or_root().swf().version() < 11 {
         match other_value {
             Value::Null | Value::Undefined => {
                 if this.is_empty() {

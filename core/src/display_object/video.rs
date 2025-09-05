@@ -4,6 +4,7 @@ use crate::avm1::{NativeObject as Avm1NativeObject, Object as Avm1Object, Value 
 use crate::avm2::{Object as Avm2Object, StageObject as Avm2StageObject, Value as Avm2Value};
 use crate::context::{RenderContext, UpdateContext};
 use crate::display_object::{Avm1TextFieldBinding, DisplayObjectBase};
+use crate::library::MovieLibrary;
 use crate::prelude::*;
 use crate::streams::NetStream;
 use crate::tag_utils::{SwfMovie, SwfSlice};
@@ -68,7 +69,7 @@ pub struct VideoData<'gc> {
     keyframes: RefCell<BTreeSet<u32>>,
 
     /// The movie whose tagstream or code created the Video object.
-    movie: Arc<SwfMovie>,
+    movie: MovieLibrary<'gc>,
     /// The last decoded frame in the video stream.
     ///
     /// NOTE: This is only used for SWF-source video streams.
@@ -127,7 +128,7 @@ pub struct SwfVideoSource {
 impl<'gc> Video<'gc> {
     /// Construct a Video object that is tied to a SWF file's video stream.
     pub fn from_swf_tag(
-        movie: Arc<SwfMovie>,
+        movie: MovieLibrary<'gc>,
         streamdef: DefineVideoStream,
         mc: &Mutation<'gc>,
     ) -> Self {
@@ -158,7 +159,7 @@ impl<'gc> Video<'gc> {
 
     pub fn new(
         mc: &Mutation<'gc>,
-        movie: Arc<SwfMovie>,
+        movie: MovieLibrary<'gc>,
         width: i32,
         height: i32,
         object: Option<AvmObject<'gc>>,
@@ -308,13 +309,14 @@ impl<'gc> Video<'gc> {
             tracing::error!("Attempted to seek uninstantiated video stream.");
             return;
         };
-
+                        let movie = self.0.movie.swf();
         let res = match self.0.source.get() {
             VideoSource::Swf(swf_source) => match swf_source.frames.borrow().get(&frame_id) {
+
                 Some((slice_start, slice_end)) => {
                     let encframe = EncodedFrame {
                         codec: swf_source.streamdef.codec,
-                        data: &self.0.movie.data()[*slice_start..*slice_end],
+                        data: &movie.data()[*slice_start..*slice_end],
                         frame_id,
                     };
                     context
@@ -360,7 +362,7 @@ impl<'gc> TDisplayObject<'gc> for Video<'gc> {
         _instantiated_by: Instantiator,
         _run_frame: bool,
     ) {
-        let movie = self.0.movie.clone();
+        let movie = self.0.movie.swf();
 
         let (stream, keyframes) = match self.0.source.get() {
             VideoSource::Swf(swf_source) => {
@@ -488,14 +490,14 @@ impl<'gc> TDisplayObject<'gc> for Video<'gc> {
             VideoSource::Swf(swf_source) => (
                 swf_source.streamdef.is_smoothed,
                 Some(swf_source.frames.borrow().len()),
-                self.0.movie.version(),
+                self.0.movie.swf().version(),
                 self.0.decoded_frame.borrow().clone().map(|df| df.1),
                 Some(swf_source.streamdef.codec),
             ),
             VideoSource::NetStream { stream, .. } => (
                 false,
                 None,
-                self.0.movie.version(),
+                self.0.movie.swf().version(),
                 stream.last_decoded_bitmap(),
                 None,
             ),
@@ -536,7 +538,7 @@ impl<'gc> TDisplayObject<'gc> for Video<'gc> {
     }
 
     fn movie(self) -> Arc<SwfMovie> {
-        self.0.movie.clone()
+        self.0.movie.swf().clone()
     }
 
     fn object(self) -> Avm1Value<'gc> {
@@ -576,5 +578,9 @@ impl<'gc> TDisplayObject<'gc> for Video<'gc> {
             .map(|_| {
                 unlock!(Gc::write(mc, self.0), VideoData, avm1_text_field_bindings).borrow_mut()
             })
+    }
+
+    fn movie_library(self) -> MovieLibrary<'gc> {
+        self.0.movie
     }
 }

@@ -1700,7 +1700,7 @@ pub fn maybe_escape_child<'gc>(
     child: Value<'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     // NOTE: This depends on root SWF version, not caller movie version.
-    if activation.context.root_swf.version() <= 9 {
+    if activation.context.root_swf.swf().version() <= 9 {
         if child
             .as_object()
             .is_some_and(|x| x.as_xml_object().is_some() || x.as_xml_list_object().is_some())
@@ -1717,7 +1717,7 @@ pub fn maybe_escape_child<'gc>(
         }
     }
 
-    if activation.caller_movie_or_root().version() >= 21 {
+    if activation.caller_movie_or_root().swf().version() >= 21 {
         if let Some(xml) = child.as_object().and_then(|x| x.as_xml_object()) {
             let node = xml.node();
             let parent = node.parent();

@@ -28,7 +28,7 @@ use crate::drawing::Drawing;
 use crate::events::{ButtonKeyCode, ClipEvent, ClipEventResult};
 use crate::font::{Font, FontType};
 use crate::frame_lifecycle::{run_inner_goto_frame, FramePhase};
-use crate::library::MovieLibrary;
+use crate::library::{MovieLibrary, MovieLibraryData};
 use crate::limits::ExecutionLimit;
 use crate::loader::{self, ContentType};
 use crate::loader::{LoadManager, Loader};
@@ -158,7 +158,7 @@ pub struct MovieClipData<'gc> {
     tag_stream_pos: Cell<u64>,
 
     // If this movie was loaded from ImportAssets(2), this will be the parent movie.
-    importer_movie: Option<Arc<SwfMovie>>,
+    importer_movie: Option<MovieLibrary<'gc>>,
 
     object: Lock<Option<AvmObject<'gc>>>,
 
@@ -261,13 +261,13 @@ impl<'gc> MovieClip<'gc> {
         MovieClipWeak(Gc::downgrade(self.0))
     }
 
-    pub fn new(movie: Arc<SwfMovie>, mc: &Mutation<'gc>) -> Self {
+    pub fn new(movie: MovieLibrary<'gc>, mc: &Mutation<'gc>) -> Self {
         let shared = MovieClipShared::empty(movie);
         MovieClip(Gc::new(mc, MovieClipData::new(shared, mc)))
     }
 
     pub fn new_with_avm2(
-        movie: Arc<SwfMovie>,
+        movie: MovieLibrary<'gc>,
         this: Avm2Object<'gc>,
         class: Avm2ClassObject<'gc>,
         mc: &Mutation<'gc>,
@@ -284,9 +284,10 @@ impl<'gc> MovieClip<'gc> {
         mc: &Mutation<'gc>,
         id: CharacterId,
         swf: SwfSlice,
+        movie: MovieLibrary<'gc>,
         num_frames: u16,
     ) -> Self {
-        let shared = MovieClipShared::with_data(id, swf, num_frames, None);
+        let shared = MovieClipShared::with_data(id, swf, movie, num_frames, None);
         let data = MovieClipData::new(shared, mc);
         data.flags.set(MovieClipFlags::PLAYING);
         MovieClip(Gc::new(mc, data))
@@ -294,12 +295,12 @@ impl<'gc> MovieClip<'gc> {
 
     pub fn new_import_assets(
         context: &mut UpdateContext<'gc>,
-        movie: Arc<SwfMovie>,
-        parent: Arc<SwfMovie>,
+        movie: MovieLibrary<'gc>,
+        parent: MovieLibrary<'gc>,
     ) -> Self {
-        let num_frames = movie.num_frames();
+        let num_frames = movie.swf().num_frames();
         let loader_info = None;
-        let shared = MovieClipShared::with_data(0, movie.into(), num_frames, loader_info);
+        let shared = MovieClipShared::with_data(0, movie.into(), movie, num_frames, loader_info);
 
         let mut data = MovieClipData::new(shared, context.gc());
         data.flags.set(MovieClipFlags::PLAYING);
@@ -311,13 +312,13 @@ impl<'gc> MovieClip<'gc> {
     /// for the entire `Player`.
     pub fn player_root_movie(
         activation: &mut Avm2Activation<'_, 'gc>,
-        movie: Arc<SwfMovie>,
+        movie: MovieLibrary<'gc>,
     ) -> Self {
-        let loader_info = if movie.is_action_script_3() {
+        let loader_info = if movie.swf().is_action_script_3() {
             // The root movie doesn't have a `Loader`
             // We will replace this with a `LoaderStream::Swf` later in this function
             let loader_info =
-                LoaderInfoObject::not_yet_loaded(activation, movie.clone(), None, None, false)
+                LoaderInfoObject::not_yet_loaded(activation, movie, None, None, false)
                     .expect("Failed to construct LoaderInfoObject");
             let loader_info_obj = loader_info.as_loader_info_object().unwrap();
             loader_info_obj.set_expose_content();
@@ -329,8 +330,9 @@ impl<'gc> MovieClip<'gc> {
 
         let shared = MovieClipShared::with_data(
             0,
-            movie.clone().into(),
-            movie.num_frames(),
+            movie.swf().clone().into(),
+            movie,
+            movie.swf().num_frames(),
             loader_info.map(|l| l.0),
         );
         let data = MovieClipData::new(shared, activation.gc());
@@ -355,14 +357,18 @@ impl<'gc> MovieClip<'gc> {
     pub fn replace_with_movie(
         self,
         context: &mut UpdateContext<'gc>,
-        movie: Option<Arc<SwfMovie>>,
+        movie: Option<MovieLibrary<'gc>>,
         is_root: bool,
         loader_info: Option<LoaderInfoObject<'gc>>,
     ) {
         let write = Gc::write(context.gc(), self.0);
-        let movie =
-            movie.unwrap_or_else(|| Arc::new(SwfMovie::empty(write.movie().version(), None)));
-        let total_frames = movie.num_frames();
+        let movie = movie.unwrap_or_else(|| {
+            MovieLibrary::from_swf_movie(
+                Arc::new(SwfMovie::empty(write.movie().version(), None)),
+                context.gc(),
+            )
+        });
+        let total_frames = movie.swf().num_frames();
         assert_eq!(
             write.shared.get().loader_info,
             None,
@@ -372,13 +378,15 @@ impl<'gc> MovieClip<'gc> {
         write.base.base.reset_for_movie_load();
         write.base.base.set_is_root(is_root);
 
-        unlock!(write, MovieClipData, cell).borrow_mut().container = ChildContainer::new(&movie);
+        unlock!(write, MovieClipData, cell).borrow_mut().container =
+            ChildContainer::new(&movie.swf());
 
         unlock!(write, MovieClipData, shared).set(Gc::new(
             context.gc(),
             MovieClipShared::with_data(
                 0,
-                movie.into(),
+                movie.swf().clone().into(),
+                movie,
                 total_frames,
                 loader_info.map(|l| l.into()),
             ),
@@ -464,12 +472,12 @@ impl<'gc> MovieClip<'gc> {
 
         let mut sub_preload_done = true;
         if let Some(symbol) = progress.cur_preload_symbol.take() {
-            match context
-                .library
-                .library_for_movie_mut(swf.movie.clone())
-                .character_by_id(symbol)
-            {
+            let lib = shared.library();
+            let character_to_preload = lib.character_by_id(symbol); // <-- The borrow from `library()` is dropped here.
+            drop(lib);
+            match character_to_preload {
                 Some(Character::MovieClip(mc)) => {
+                    // Now we can safely recurse without holding a borrow.
                     sub_preload_done = mc.preload(context, chunk_limit);
                     if !sub_preload_done {
                         progress.cur_preload_symbol.set(Some(symbol));
@@ -519,9 +527,12 @@ impl<'gc> MovieClip<'gc> {
                 TagCode::DefineText2 => shared.define_text(context, reader, 2),
                 TagCode::DoInitAction => self.do_init_action(context, reader, tag_len),
                 TagCode::DefineSceneAndFrameLabelData => shared.scene_and_frame_labels(reader),
-                TagCode::ExportAssets => {
-                    shared.export_assets(context, reader, self.0.importer_movie.as_ref())
-                }
+                TagCode::ExportAssets => MovieClipShared::export_assets(
+                    shared.library,
+                    context,
+                    reader,
+                    self.0.importer_movie,
+                ),
                 TagCode::FrameLabel => shared.frame_label(reader),
                 TagCode::JpegTables => shared.jpeg_tables(context, reader),
                 TagCode::ShowFrame => shared.show_frame(reader, tag_len),
@@ -615,15 +626,15 @@ impl<'gc> MovieClip<'gc> {
         context: &mut UpdateContext<'gc>,
         reader: &mut SwfStream<'_>,
     ) -> Result<Option<Script<'gc>>, Error> {
-        if !context.root_swf.is_action_script_3() {
+        if !context.root_swf.swf().is_action_script_3() {
             tracing::warn!("DoABC tag with non-AVM2 root");
             return Ok(None);
         }
 
         let data = reader.read_slice_to_end();
         if !data.is_empty() {
-            let movie = self.movie();
-            let domain = context.library.library_for_movie_mut(movie).avm2_domain();
+            let movie = self.0.shared.get().library();
+            let domain = movie.avm2_domain();
 
             // DoAbc tag seems to be equivalent to a DoAbc2 with Lazy flag set
             match Avm2::do_abc(
@@ -632,7 +643,7 @@ impl<'gc> MovieClip<'gc> {
                 None,
                 swf::DoAbc2Flag::LAZY_INITIALIZE,
                 domain,
-                self.movie(),
+                self.0.shared.get().library,
             ) {
                 Ok(res) => return Ok(res),
                 Err(e) => {
@@ -651,15 +662,15 @@ impl<'gc> MovieClip<'gc> {
         context: &mut UpdateContext<'gc>,
         reader: &mut SwfStream<'_>,
     ) -> Result<Option<Script<'gc>>, Error> {
-        if !context.root_swf.is_action_script_3() {
+        if !context.root_swf.swf().is_action_script_3() {
             tracing::warn!("DoABC2 tag with non-AVM2 root");
             return Ok(None);
         }
 
         let do_abc = reader.read_do_abc_2()?;
         if !do_abc.data.is_empty() {
-            let movie = self.movie();
-            let domain = context.library.library_for_movie_mut(movie).avm2_domain();
+            let movie = self.0.shared.get().library();
+            let domain = movie.avm2_domain();
             let name = AvmString::new(context.gc(), do_abc.name.decode(reader.encoding()));
 
             match Avm2::do_abc(
@@ -668,7 +679,7 @@ impl<'gc> MovieClip<'gc> {
                 Some(name),
                 do_abc.flags,
                 domain,
-                self.movie(),
+                self.0.shared.get().library,
             ) {
                 Ok(res) => return Ok(res),
                 Err(e) => {
@@ -1305,8 +1316,8 @@ impl<'gc> MovieClip<'gc> {
             return None;
         }
 
-        let movie = self.movie();
-        let library = context.library.library_for_movie_mut(movie.clone());
+        let movie = self.movie_library();
+        let library = movie.0.borrow();
         match library.instantiate_by_id(id, context.gc_context) {
             Some(child) => {
                 // Remove previous child from children list,
@@ -1339,7 +1350,12 @@ impl<'gc> MovieClip<'gc> {
                             clip_actions
                                 .iter()
                                 .cloned()
-                                .map(|a| ClipEventHandler::from_action_and_movie(a, movie.clone()))
+                                .map(|a| {
+                                    ClipEventHandler::from_action_and_movie(
+                                        a,
+                                        movie.swf().clone(),
+                                    )
+                                })
                                 .collect(),
                         );
                     }
@@ -1352,7 +1368,7 @@ impl<'gc> MovieClip<'gc> {
                     // In AVM2 we add them in `construct_frame` so calling this causes
                     // duplicate frames
                     if let Some(child) = child.as_movie_clip() {
-                        if !movie.is_action_script_3() {
+                        if !movie.swf().is_action_script_3() {
                             child.run_frame_avm1(context);
                         }
                     }
@@ -2134,7 +2150,10 @@ impl<'gc> MovieClip<'gc> {
             let mut unloaded_movie = SwfMovie::empty(parent_version, None);
             unloaded_movie.set_url(parent_url.to_string());
 
-            Some(Arc::new(unloaded_movie))
+            Some(MovieLibrary::from_swf_movie(
+                Arc::new(unloaded_movie),
+                context.gc(),
+            ))
         } else {
             None
         };
@@ -2193,11 +2212,7 @@ impl<'gc> MovieClip<'gc> {
                                 .set_flag(MovieClipFlags::EXECUTING_AVM2_FRAME_SCRIPT, true);
 
                             let movie = self.movie();
-                            let domain = context
-                                .library
-                                .library_for_movie(movie)
-                                .unwrap()
-                                .avm2_domain();
+                            let domain = self.0.shared.get().library.0.borrow().avm2_domain();
 
                             if let Err(e) = Avm2::run_stack_frame_for_callable(
                                 callable,
@@ -2241,6 +2256,10 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
 
     fn movie(self) -> Arc<SwfMovie> {
         self.0.movie()
+    }
+
+    fn movie_library(self) -> MovieLibrary<'gc> {
+        self.0.shared.get().library
     }
 
     fn enter_frame(self, context: &mut UpdateContext<'gc>) {
@@ -3147,14 +3166,17 @@ impl<'gc, 'a> MovieClipShared<'gc> {
         let define_bits_lossless = reader.read_define_bits_lossless(version)?;
         let bitmap = Gc::new(
             context.gc(),
-            BitmapCharacter::new(CompressedBitmap::Lossless(DefineBitsLossless {
-                id: define_bits_lossless.id,
-                format: define_bits_lossless.format,
-                width: define_bits_lossless.width,
-                height: define_bits_lossless.height,
-                version: define_bits_lossless.version,
-                data: Cow::Owned(define_bits_lossless.data.into_owned()),
-            })),
+            BitmapCharacter::new(
+                CompressedBitmap::Lossless(DefineBitsLossless {
+                    id: define_bits_lossless.id,
+                    format: define_bits_lossless.format,
+                    width: define_bits_lossless.width,
+                    height: define_bits_lossless.height,
+                    version: define_bits_lossless.version,
+                    data: Cow::Owned(define_bits_lossless.data.into_owned()),
+                }),
+                self.library,
+            ),
         );
         self.library_mut(context)
             .register_character(define_bits_lossless.id, Character::Bitmap(bitmap));
@@ -3169,7 +3191,7 @@ impl<'gc, 'a> MovieClipShared<'gc> {
     ) -> Result<(), Error> {
         let id = reader.read_u16()?;
         let rect = reader.read_rectangle()?;
-        if let Some(character) = self.library_mut(context).character_by_id(id) {
+        if let Some(character) = self.library().character_by_id(id) {
             if let Character::MovieClip(clip) = character {
                 clip.set_scaling_grid(rect);
             } else {
@@ -3188,7 +3210,7 @@ impl<'gc, 'a> MovieClipShared<'gc> {
     ) -> Result<(), Error> {
         let tag = reader.read_define_morph_shape(version)?;
         let id = tag.id;
-        let morph_shape = MorphShape::from_swf_tag(context.gc(), tag, self.movie());
+        let morph_shape = MorphShape::from_swf_tag(context.gc(), tag, self.library);
         self.library_mut(context)
             .register_character(id, Character::MorphShape(morph_shape));
         Ok(())
@@ -3203,7 +3225,7 @@ impl<'gc, 'a> MovieClipShared<'gc> {
     ) -> Result<(), Error> {
         let swf_shape = reader.read_define_shape(version)?;
         let id = swf_shape.id;
-        let graphic = Graphic::from_swf_tag(context, swf_shape, self.movie());
+        let graphic = Graphic::from_swf_tag(context, swf_shape, self.library);
         self.library_mut(context)
             .register_character(id, Character::Graphic(graphic));
         Ok(())
@@ -3223,7 +3245,7 @@ impl<'gc, 'a> MovieClipShared<'gc> {
         reader: &mut SwfStream<'a>,
     ) -> Result<(), Error> {
         let settings = reader.read_csm_text_settings()?;
-        match self.library_mut(context).character_by_id(settings.id) {
+        match self.library().character_by_id(settings.id) {
             Some(Character::Text(text)) => {
                 text.set_render_settings(settings.into());
             }
@@ -3253,7 +3275,7 @@ impl<'gc, 'a> MovieClipShared<'gc> {
         reader: &mut SwfStream,
     ) -> Result<(), Error> {
         let vframe = reader.read_video_frame()?;
-        match self.library_mut(context).character_by_id(vframe.stream_id) {
+        match self.library().character_by_id(vframe.stream_id) {
             Some(Character::Video(v)) => {
                 v.preload_swf_frame(vframe);
                 Ok(())
@@ -3269,7 +3291,7 @@ impl<'gc, 'a> MovieClipShared<'gc> {
         reader: &mut SwfStream<'a>,
     ) -> Result<(), Error> {
         let mc = context.gc();
-        let library = self.library_mut(context);
+        let mut library = self.library_mut(context);
         let (id, jpeg_data) = reader.read_define_bits()?;
         let jpeg_tables = library.jpeg_tables();
         let jpeg_data =
@@ -3277,12 +3299,15 @@ impl<'gc, 'a> MovieClipShared<'gc> {
         let (width, height) = ruffle_render::utils::decode_define_bits_jpeg_dimensions(&jpeg_data)?;
         let bitmap = Character::Bitmap(Gc::new(
             mc,
-            BitmapCharacter::new(CompressedBitmap::Jpeg {
-                data: jpeg_data,
-                alpha: None,
-                width,
-                height,
-            }),
+            BitmapCharacter::new(
+                CompressedBitmap::Jpeg {
+                    data: jpeg_data,
+                    alpha: None,
+                    width,
+                    height,
+                },
+                self.library,
+            ),
         ));
         library.register_character(id, bitmap);
         Ok(())
@@ -3298,12 +3323,15 @@ impl<'gc, 'a> MovieClipShared<'gc> {
         let (width, height) = ruffle_render::utils::decode_define_bits_jpeg_dimensions(jpeg_data)?;
         let bitmap = Character::Bitmap(Gc::new(
             context.gc(),
-            BitmapCharacter::new(CompressedBitmap::Jpeg {
-                data: jpeg_data.to_owned(),
-                alpha: None,
-                width,
-                height,
-            }),
+            BitmapCharacter::new(
+                CompressedBitmap::Jpeg {
+                    data: jpeg_data.to_owned(),
+                    alpha: None,
+                    width,
+                    height,
+                },
+                self.library,
+            ),
         ));
         self.library_mut(context).register_character(id, bitmap);
         Ok(())
@@ -3321,12 +3349,15 @@ impl<'gc, 'a> MovieClipShared<'gc> {
 
         let bitmap = Character::Bitmap(Gc::new(
             context.gc(),
-            BitmapCharacter::new(CompressedBitmap::Jpeg {
-                data: jpeg.data.to_owned(),
-                alpha: Some(jpeg.alpha_data.to_owned()),
-                width,
-                height,
-            }),
+            BitmapCharacter::new(
+                CompressedBitmap::Jpeg {
+                    data: jpeg.data.to_owned(),
+                    alpha: Some(jpeg.alpha_data.to_owned()),
+                    width,
+                    height,
+                },
+                self.library,
+            ),
         ));
         self.library_mut(context)
             .register_character(jpeg.id, bitmap);
@@ -3364,7 +3395,7 @@ impl<'gc, 'a> MovieClipShared<'gc> {
         let button = if self.swf.movie.is_action_script_3() {
             Character::Avm2Button(Avm2Button::from_swf_tag(
                 &swf_button,
-                &self.swf,
+                self.library,
                 context,
                 true,
             ))
@@ -3372,6 +3403,7 @@ impl<'gc, 'a> MovieClipShared<'gc> {
             Character::Avm1Button(Avm1Button::from_swf_tag(
                 &swf_button,
                 &self.swf,
+                self.library,
                 context.gc(),
             ))
         };
@@ -3387,7 +3419,7 @@ impl<'gc, 'a> MovieClipShared<'gc> {
         reader: &mut SwfStream<'a>,
     ) -> Result<(), Error> {
         let button_colors = reader.read_define_button_cxform()?;
-        match self.library_mut(context).character_by_id(button_colors.id) {
+        match self.library().character_by_id(button_colors.id) {
             Some(Character::Avm1Button(button)) => {
                 button.set_colors(&button_colors.color_transforms);
             }
@@ -3414,7 +3446,7 @@ impl<'gc, 'a> MovieClipShared<'gc> {
         reader: &mut SwfStream<'a>,
     ) -> Result<(), Error> {
         let button_sounds = reader.read_define_button_sound()?;
-        match self.library_mut(context).character_by_id(button_sounds.id) {
+        match self.library().character_by_id(button_sounds.id) {
             Some(Character::Avm1Button(button)) => {
                 button.set_sounds(button_sounds);
             }
@@ -3445,7 +3477,7 @@ impl<'gc, 'a> MovieClipShared<'gc> {
         reader: &mut SwfStream<'a>,
     ) -> Result<(), Error> {
         let swf_edit_text = reader.read_define_edit_text()?;
-        let edit_text = EditText::from_swf_tag(context, self.movie(), swf_edit_text);
+        let edit_text = EditText::from_swf_tag(context, self.library, swf_edit_text);
         self.library_mut(context)
             .register_character(edit_text.id(), Character::EditText(edit_text));
         Ok(())
@@ -3572,7 +3604,7 @@ impl<'gc, 'a> MovieClipShared<'gc> {
     ) -> Result<(), Error> {
         let streamdef = reader.read_define_video_stream()?;
         let id = streamdef.id;
-        let video = Video::from_swf_tag(self.movie(), streamdef, context.gc());
+        let video = Video::from_swf_tag(self.library, streamdef, context.gc());
         self.library_mut(context)
             .register_character(id, Character::Video(video));
         Ok(())
@@ -3594,6 +3626,7 @@ impl<'gc, 'a> MovieClipShared<'gc> {
             context.gc(),
             id,
             self.swf.resize_to_reader(reader, tag_len - num_read),
+            self.library,
             num_frames,
         );
 
@@ -3630,7 +3663,7 @@ impl<'gc, 'a> MovieClipShared<'gc> {
         version: u8,
     ) -> Result<(), Error> {
         let text = reader.read_define_text(version)?;
-        let text_object = Text::from_swf_tag(context, self.movie(), &text);
+        let text_object = Text::from_swf_tag(context, self.library, &text);
         self.library_mut(context)
             .register_character(text.id, Character::Text(text_object));
         Ok(())
@@ -3654,11 +3687,9 @@ impl<'gc, 'a> MovieClipShared<'gc> {
     fn import_exports_of_importer(
         &self,
         context: &mut UpdateContext<'gc>,
-        importer: Arc<SwfMovie>,
+        importer: MovieLibrary<'gc>,
     ) {
-        let Some(importer_library) = context.library.library_for_movie(importer) else {
-            return;
-        };
+        let importer_library = importer.0.borrow();
 
         let exported_from_importer = importer_library
             .export_characters()
@@ -3669,7 +3700,7 @@ impl<'gc, 'a> MovieClipShared<'gc> {
             })
             .collect::<HashMap<AvmString<'gc>, (CharacterId, Character<'gc>)>>();
 
-        let self_library = self.library_mut(context);
+        let mut self_library = self.library_mut(context);
         for (name, (id, character)) in exported_from_importer {
             if self_library.character_by_id(id).is_none() {
                 self_library.register_character(id, character);
@@ -3722,7 +3753,7 @@ impl<'gc, 'a> MovieClipShared<'gc> {
         _chunk_limit: &mut ExecutionLimit,
     ) -> Result<(), Error> {
         let mc = context.gc();
-        let library = self.library_mut(context);
+        let mut library = self.library_mut(context);
 
         let asset_url = url.to_string_lossy(UTF_8);
 
@@ -3737,8 +3768,12 @@ impl<'gc, 'a> MovieClipShared<'gc> {
             library.register_import(name, id);
         }
 
+        drop(library);
+
         let player = context.player.clone();
-        let fut = LoadManager::load_asset_movie(player, request, self.movie());
+        let fut = context
+            .load_manager
+            .load_asset_movie(player, request, self.library);
 
         context.navigator.spawn_future(fut);
 
@@ -3759,10 +3794,10 @@ impl<'gc, 'a> MovieClipShared<'gc> {
         context: &mut UpdateContext<'gc>,
         id: CharacterId,
         name: &AvmString<'gc>,
-        movie: Arc<SwfMovie>,
+        movie: MovieLibrary<'gc>,
     ) {
         let mc = context.gc();
-        let library = context.library.library_for_movie_mut(movie);
+        let mut library = movie.0.borrow_mut(context.gc());
         library.register_export(id, *name);
 
         // TODO: do other types of Character need to know their exported name?
@@ -3784,30 +3819,30 @@ impl<'gc, 'a> MovieClipShared<'gc> {
 
     #[inline]
     fn export_assets(
-        &self,
+        library: MovieLibrary<'gc>, // <-- Changed: Pass library directly
         context: &mut UpdateContext<'gc>,
         reader: &mut SwfStream<'a>,
-        importer_movie: Option<&Arc<SwfMovie>>,
+        importer_movie: Option<MovieLibrary<'gc>>,
     ) -> Result<(), Error> {
         let exports = reader.read_export_assets()?;
         for export in exports {
             let name = export.name.decode(reader.encoding());
             let name = AvmString::new(context.gc(), name);
-
-            if let Some(character) = self
-                .library(context)
-                .and_then(|l| l.character_by_id(export.id))
-            {
-                Self::register_export(context, export.id, &name, self.movie());
+            let inner_library = library // <-- Changed: Use the passed-in library
+                .0
+                .borrow();
+            if let Some(character) = inner_library.character_by_id(export.id) {
+                drop(inner_library);
+                Self::register_export(context, export.id, &name, library);
                 tracing::debug!("register_export asset: {} (ID: {})", name, export.id);
 
                 if let Some(parent) = importer_movie {
-                    let parent_library = context.library.library_for_movie_mut(parent.clone());
+                    let mut parent_library = parent.0.borrow_mut(context.gc());
 
                     if let Some(id) = parent_library.character_id_by_import_name(name) {
                         parent_library.register_character(id, character);
-
-                        Self::register_export(context, id, &name, parent.clone());
+                        drop(parent_library);
+                        Self::register_export(context, id, &name, parent);
                         tracing::debug!(
                             "Registering parent asset: {} (Parent ID: {})(ID: {})",
                             name,
@@ -4054,11 +4089,9 @@ impl<'gc, 'a> MovieClip<'gc> {
 
             let movie = self.movie();
 
-            let library = activation
-                .context
-                .library
-                .library_for_movie_mut(movie.clone());
+            let library = self.movie_library().0.borrow();
             let domain = library.avm2_domain();
+            drop(library); // release borrow
             let api_version = activation.context.avm2.root_api_version;
 
             for (class_name, id) in eager_tags.symbolclass_names {
@@ -4067,20 +4100,20 @@ impl<'gc, 'a> MovieClip<'gc> {
                     Avm2QName::from_qualified_name(class_name, api_version, activation.context);
                 match Avm2::lookup_class_for_character(&mut activation, self, domain, name, id) {
                     Ok(class_object) => {
-                        activation
-                            .context
-                            .library
-                            .avm2_class_registry_mut()
+                        class_object
+                            .inner_class_definition()
+                            .owner_movie()
+                            .unwrap()
+                            .0
+                            .borrow_mut(activation.gc())
+                            .avm2_class_registry
                             .set_class_symbol(
                                 class_object.inner_class_definition(),
                                 movie.clone(),
                                 id,
                             );
 
-                        let library = activation
-                            .context
-                            .library
-                            .library_for_movie_mut(movie.clone());
+                        let library = self.movie_library().0.borrow();
 
                         match library.character_by_id(id) {
                             Some(Character::EditText(edit_text)) => {
@@ -4103,10 +4136,7 @@ impl<'gc, 'a> MovieClip<'gc> {
                                     BitmapClass::from_class_object(class_object, activation.context)
                                 {
                                     // We need to re-fetch the library and character to satisfy the borrow checker
-                                    let library = activation
-                                        .context
-                                        .library
-                                        .library_for_movie_mut(movie.clone());
+                                    let library = self.movie_library().0.borrow();
 
                                     let Some(Character::Bitmap(bitmap)) =
                                         library.character_by_id(id)
@@ -4135,13 +4165,12 @@ impl<'gc, 'a> MovieClip<'gc> {
 
                                 let instantiated =
                                     self.instantiate(activation.gc()).as_movie_clip().unwrap();
-
-                                let library = activation
-                                    .context
-                                    .library
-                                    .library_for_movie_mut(movie.clone());
+                                drop(library);
+                                let mut library =
+                                    self.movie_library().0.borrow_mut(activation.gc());
 
                                 library.register_character(id, Character::MovieClip(instantiated));
+                                drop(library);
                             }
                             _ => {
                                 tracing::warn!(
@@ -4388,6 +4417,7 @@ struct MovieClipShared<'gc> {
     cell: RefCell<MovieClipSharedMut>,
     id: CharacterId,
     swf: SwfSlice,
+    library: MovieLibrary<'gc>,
     total_frames: FrameNumber,
     /// Preload progress for the given clip's tag stream.
     #[collect(require_static)]
@@ -4431,8 +4461,14 @@ struct EagerTags {
 }
 
 impl<'gc> MovieClipShared<'gc> {
-    fn empty(movie: Arc<SwfMovie>) -> Self {
-        let mut s = Self::with_data(0, SwfSlice::empty(movie), 1, None);
+    fn empty(movie: MovieLibrary<'gc>) -> Self {
+        let mut s = Self::with_data(
+            0,
+            SwfSlice::empty(movie.swf().clone()),
+            movie,
+            1,
+            None,
+        );
 
         *s.preload_progress.cur_preload_frame.get_mut() = s.total_frames + 1;
 
@@ -4442,6 +4478,7 @@ impl<'gc> MovieClipShared<'gc> {
     fn with_data(
         id: CharacterId,
         swf: SwfSlice,
+        library: MovieLibrary<'gc>,
         total_frames: FrameNumber,
         loader_info: Option<Avm2Object<'gc>>,
     ) -> Self {
@@ -4449,6 +4486,7 @@ impl<'gc> MovieClipShared<'gc> {
             cell: Default::default(),
             id,
             swf,
+            library,
             total_frames,
             preload_progress: Default::default(),
             exported_name: Lock::new(None),
@@ -4461,12 +4499,15 @@ impl<'gc> MovieClipShared<'gc> {
         self.swf.movie.clone()
     }
 
-    fn library<'a>(&self, context: &'a UpdateContext<'gc>) -> Option<&'a MovieLibrary<'gc>> {
-        context.library.library_for_movie(self.movie())
+    fn library<'a>(&self) -> Ref<'gc, MovieLibraryData<'gc>> {
+        self.library.0.borrow()
     }
 
-    fn library_mut<'a>(&self, context: &'a mut UpdateContext<'gc>) -> &'a mut MovieLibrary<'gc> {
-        context.library.library_for_movie_mut(self.movie())
+    fn library_mut<'a>(
+        &self,
+        context: &'a mut UpdateContext<'gc>,
+    ) -> RefMut<'gc, MovieLibraryData<'gc>> {
+        self.library.0.borrow_mut(context.gc())
     }
 
     fn take_eager_tags(&self, frame: FrameNumber) -> Option<EagerTags> {

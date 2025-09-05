@@ -1442,7 +1442,7 @@ fn abstract_interpret_ops<'gc>(
                             {
                                 stack_push_done = true;
                                 stack.push_class(activation, param)?;
-                            } else if activation.caller_movie_or_root().version() >= 14 {
+                            } else if activation.caller_movie_or_root().swf().version() >= 14 {
                                 // The general case, meanwhile, *is* correctly
                                 // version-gated.
                                 stack_push_done = true;

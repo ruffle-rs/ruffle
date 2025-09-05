@@ -28,16 +28,9 @@ pub fn init<'gc>(
     if let Some(sound_object) = this.as_object().and_then(|o| o.as_sound_object()) {
         let class_def = this.instance_class(activation);
 
-        if let Some((movie, symbol)) = activation
-            .context
-            .library
-            .avm2_class_registry()
-            .class_symbol(class_def)
+        if let Some(symbol) = class_def.owner_movie().unwrap().0.borrow().avm2_class_registry.class_symbol(class_def)
         {
-            if let Some(Character::Sound(sound)) = activation
-                .context
-                .library
-                .library_for_movie_mut(movie)
+            if let Some(Character::Sound(sound)) = class_def.owner_movie().unwrap().0.borrow()
                 .character_by_id(symbol)
             {
                 sound_object.set_sound(activation.context, sound)?;

@@ -5,9 +5,10 @@ use crate::drawing::Drawing;
 use crate::font::{EvalParameters, Font, FontLike, FontSet, FontType};
 use crate::html::dimensions::{BoxBounds, Position, Size};
 use crate::html::text_format::{FormatSpans, TextFormat, TextSpan};
+use crate::library::MovieLibrary;
 use crate::string::{utils as string_utils, WStr};
 use crate::tag_utils::SwfMovie;
-use crate::DefaultFont;
+use crate::{library, DefaultFont};
 use gc_arena::Collect;
 use std::cmp::{max, min, Ordering};
 use std::fmt::{Debug, Formatter};
@@ -134,9 +135,9 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
         }
     }
 
-    fn lay_out_spans(&mut self, context: &mut UpdateContext<'gc>, fs: &'a FormatSpans) {
+    fn lay_out_spans(&mut self, context: &mut UpdateContext<'gc>, fs: &'a FormatSpans, library: &MovieLibrary<'gc>) {
         for (span_start, _end, span_text, span) in fs.iter_spans() {
-            self.lay_out_span(context, span_start, span_text, span);
+            self.lay_out_span(context, span_start, span_text, span, library);
         }
     }
 
@@ -146,8 +147,9 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
         span_start: usize,
         span_text: &'a WStr,
         span: &TextSpan,
+        library: &MovieLibrary<'gc>,
     ) {
-        let font_set = self.resolve_font(context, span);
+        let font_set = self.resolve_font(context, span, library);
         self.font_set = Some(font_set);
         self.newspan(span);
 
@@ -165,7 +167,7 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
 
             match delimiter {
                 Some(b'\n' | b'\r') => {
-                    self.newline(context, span_start + slice_start - 1, span, true)
+                    self.newline(context, span_start + slice_start - 1, span, true, library)
                 }
                 Some(b'\t') => self.tab(),
                 _ => {}
@@ -198,7 +200,7 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
                     if breakpoint == 0 && self.is_start_of_line() {
                         break;
                     } else if breakpoint == 0 {
-                        self.newline(context, start + next_breakpoint, span, false);
+                        self.newline(context, start + next_breakpoint, span, false, library);
 
                         let next_dim = self.wrap_dimensions(span);
 
@@ -224,7 +226,7 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
                         break;
                     }
 
-                    self.newline(context, start + next_breakpoint, span, false);
+                    self.newline(context, start + next_breakpoint, span, false, library);
                     let next_dim = self.wrap_dimensions(span);
 
                     width = next_dim.0;
@@ -284,6 +286,7 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
         final_line_of_para: bool,
         end: usize,
         span: &TextSpan,
+        library: &MovieLibrary<'gc>,
     ) {
         if self.boxes.is_empty() {
             self.append_text(WStr::empty(), end, end, span);
@@ -339,7 +342,7 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
         );
 
         if self.current_line_span.bullet && self.is_first_line && box_count > 0 {
-            self.append_bullet(context, &self.current_line_span.clone());
+            self.append_bullet(context, &self.current_line_span.clone(), library);
         }
 
         let baseline_adjustment = self.max_ascent;
@@ -440,8 +443,9 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
         end: usize,
         span: &TextSpan,
         end_of_para: bool,
+        library: &MovieLibrary<'gc>,
     ) {
-        self.fixup_line(context, false, end_of_para, end, span);
+        self.fixup_line(context, false, end_of_para, end, span, library);
 
         self.cursor.set_x(Twips::ZERO);
         self.cursor += (
@@ -507,7 +511,7 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
         }
     }
 
-    fn resolve_font(&mut self, context: &mut UpdateContext<'gc>, span: &TextSpan) -> FontSet<'gc> {
+    fn resolve_font(&mut self, context: &mut UpdateContext<'gc>, span: &TextSpan, library: &MovieLibrary<'gc>) -> FontSet<'gc> {
         fn new_empty_font<'gc>(
             context: &mut UpdateContext<'gc>,
             span: &TextSpan,
@@ -546,7 +550,7 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
                     self.font_type,
                     span.style.bold,
                     span.style.italic,
-                    Some(self.movie.clone()),
+                    *library
                 )
                 .filter(|f| f.has_glyphs())
             {
@@ -699,8 +703,8 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
     /// The bullet will always be placed at the start of the current line. It
     /// should be appended after line fixup has completed, but before the text
     /// cursor is moved down.
-    fn append_bullet(&mut self, context: &mut UpdateContext<'gc>, span: &TextSpan) {
-        let bullet_font = self.resolve_font(context, span);
+    fn append_bullet(&mut self, context: &mut UpdateContext<'gc>, span: &TextSpan, library: &MovieLibrary<'gc>) {
+        let bullet_font = self.resolve_font(context, span, library);
         let mut bullet_cursor = self.cursor;
 
         bullet_cursor.set_x(
@@ -781,9 +785,9 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
     }
 
     /// Destroy the layout context, returning the newly constructed layout list.
-    fn end_layout(mut self, context: &mut UpdateContext<'gc>, fs: &'a FormatSpans) -> Layout<'gc> {
+    fn end_layout(mut self, context: &mut UpdateContext<'gc>, fs: &'a FormatSpans, library: &MovieLibrary<'gc>) -> Layout<'gc> {
         let last_span = fs.last_span().expect("At least one span should be present");
-        self.fixup_line(context, true, true, fs.displayed_text().len(), last_span);
+        self.fixup_line(context, true, true, fs.displayed_text().len(), last_span, library);
 
         let text_size = self.text_size_bounds.unwrap_or_default();
         Layout {
@@ -802,7 +806,7 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
 pub fn lower_from_text_spans<'gc>(
     fs: &FormatSpans,
     context: &mut UpdateContext<'gc>,
-    movie: Arc<SwfMovie>,
+    movie: &MovieLibrary<'gc>,
     requested_width: Option<Twips>,
     is_input: bool,
     is_word_wrap: bool,
@@ -815,7 +819,7 @@ pub fn lower_from_text_spans<'gc>(
         let layout = lower_from_text_spans_known_width(
             fs,
             context,
-            movie.clone(),
+            &movie,
             Twips::ZERO,
             is_input,
             false,
@@ -842,14 +846,14 @@ pub fn lower_from_text_spans<'gc>(
 fn lower_from_text_spans_known_width<'gc>(
     fs: &FormatSpans,
     context: &mut UpdateContext<'gc>,
-    movie: Arc<SwfMovie>,
+    library: &MovieLibrary<'gc>,
     bounds: Twips,
     is_input: bool,
     is_word_wrap: bool,
     font_type: FontType,
 ) -> Layout<'gc> {
     let mut layout_context = LayoutContext::new(
-        movie,
+        library.swf().clone(),
         bounds,
         fs.displayed_text(),
         is_input,
@@ -857,9 +861,9 @@ fn lower_from_text_spans_known_width<'gc>(
         font_type,
     );
 
-    layout_context.lay_out_spans(context, fs);
+    layout_context.lay_out_spans(context, fs, library);
 
-    layout_context.end_layout(context, fs)
+    layout_context.end_layout(context, fs, library)
 }
 
 /// A `Layout` represents a fully laid-out text field.

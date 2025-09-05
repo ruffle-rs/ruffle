@@ -1530,13 +1530,11 @@ fn load_bitmap<'gc>(
 
     let library = &*activation.context.library;
 
-    let movie = <DisplayObject as crate::display_object::TDisplayObject>::movie(
+    let movie = <DisplayObject as crate::display_object::TDisplayObject>::movie_library(
         activation.target_clip_or_root(),
     );
 
-    let character = library
-        .library_for_movie(movie)
-        .and_then(|l| l.character_by_export_name(name));
+    let character = movie.0.borrow().character_by_export_name(name);
 
     let Some((_id, Character::Bitmap(bitmap))) = character else {
         return Ok(Value::Undefined);

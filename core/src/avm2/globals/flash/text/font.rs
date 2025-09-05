@@ -109,10 +109,7 @@ pub fn enumerate_fonts<'gc>(
 
     fonts.append(&mut activation.context.library.global_fonts());
 
-    if let Some(library) = activation
-        .context
-        .library
-        .library_for_movie(activation.caller_movie_or_root())
+    if let library = activation.caller_movie_or_root().0.borrow()
     {
         for font in library.embedded_fonts() {
             // TODO: EmbeddedCFF isn't supposed to show until it's been used (some kind of internal initialization method?)
@@ -150,13 +147,9 @@ pub fn register_font<'gc>(
     let object = args.get_object(activation, 0, "font")?;
 
     if let Some(class) = object.as_class_object() {
-        if let Some((movie, id)) = activation
-            .context
-            .library
-            .avm2_class_registry()
-            .class_symbol(class.inner_class_definition())
+        if let Some(id) = class.inner_class_definition().owner_movie().unwrap().0.borrow().avm2_class_registry.class_symbol(class.inner_class_definition())
         {
-            if let Some(lib) = activation.context.library.library_for_movie(movie) {
+            if let lib = class.inner_class_definition().owner_movie().unwrap().0.borrow() {
                 if let Some(Character::Font(font)) = lib.character_by_id(id) {
                     activation.context.library.register_global_font(font);
                     return Ok(Value::Undefined);

@@ -24,6 +24,7 @@ use crate::avm2::Multiname;
 use crate::avm2::Namespace;
 use crate::avm2::{Avm2, Error};
 use crate::context::UpdateContext;
+use crate::library::MovieLibrary;
 use crate::string::{AvmAtom, AvmString, HasStringContext, StringContext};
 use crate::tag_utils::SwfMovie;
 use gc_arena::Gc;
@@ -57,7 +58,7 @@ pub struct Activation<'a, 'gc: 'a> {
     /// The movie that called this builtin method.
     /// This is intended to be used only for builtin methods- if this activation's method
     /// is a bytecode method, the movie will instead be the movie that the bytecode method came from.
-    caller_movie: Option<Arc<SwfMovie>>,
+    caller_movie: Option<MovieLibrary<'gc>>,
 
     /// The superclass of the class that yielded the currently executing method.
     ///
@@ -430,7 +431,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         bound_class: Option<Class<'gc>>,
         outer: ScopeChain<'gc>,
         caller_domain: Option<Domain<'gc>>,
-        caller_movie: Option<Arc<SwfMovie>>,
+        caller_movie: Option<MovieLibrary<'gc>>,
     ) -> Self {
         Self {
             num_locals: 0,
@@ -504,13 +505,13 @@ impl<'a, 'gc> Activation<'a, 'gc> {
 
     /// Returns the movie of the original AS3 caller. This will be `None`
     /// if this activation was constructed with `from_nothing`
-    pub fn caller_movie(&self) -> Option<Arc<SwfMovie>> {
+    pub fn caller_movie(&self) -> Option<MovieLibrary<'gc>> {
         self.caller_movie.clone()
     }
 
     /// Like `caller_movie()`, but returns the root movie if `caller_movie`
     /// is `None`. This matches what FP does in most cases.
-    pub fn caller_movie_or_root(&self) -> Arc<SwfMovie> {
+    pub fn caller_movie_or_root(&self) -> MovieLibrary<'gc> {
         self.caller_movie().unwrap_or(self.context.root_swf.clone())
     }
 

@@ -41,7 +41,7 @@ pub fn get_sandbox_type<'gc>(
     let movie = activation
         .caller_movie()
         .expect("Caller movie expected for sandboxType");
-    let sandbox_type = match movie.sandbox_type() {
+    let sandbox_type = match movie.swf().sandbox_type() {
         SandboxType::Remote => "remote",
         SandboxType::LocalWithFile => "localWithFile",
         SandboxType::LocalWithNetwork => "localWithNetwork",
