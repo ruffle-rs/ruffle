@@ -56,7 +56,7 @@ impl<'gc> LoaderDisplay<'gc> {
         ));
 
         obj.set_placed_by_script(true);
-        activation.context.avm2.add_orphan_obj(obj.into());
+        activation.context.orphan_manager.add_orphan_obj(obj.into());
         obj
     }
 
@@ -123,7 +123,7 @@ impl<'gc> TDisplayObject<'gc> for LoaderDisplay<'gc> {
 
     fn on_parent_removed(self, context: &mut UpdateContext<'gc>) {
         if self.movie().is_action_script_3() {
-            context.avm2.add_orphan_obj(self.into())
+            context.orphan_manager.add_orphan_obj(self.into())
         }
     }
 }

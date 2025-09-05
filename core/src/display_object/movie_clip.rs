@@ -2479,7 +2479,7 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
         let write = Gc::write(context.gc(), self.0);
         unlock!(write, MovieClipData, object2).set(Some(to));
         if self.parent().is_none() {
-            context.avm2.add_orphan_obj(self.into());
+            context.orphan_manager.add_orphan_obj(self.into());
         }
     }
 
@@ -2509,7 +2509,7 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
 
     fn on_parent_removed(self, context: &mut UpdateContext<'gc>) {
         if self.movie().is_action_script_3() {
-            context.avm2.add_orphan_obj(self.into())
+            context.orphan_manager.add_orphan_obj(self.into())
         }
     }
 

@@ -40,6 +40,7 @@ use crate::loader::{LoadBehavior, LoadManager};
 use crate::local_connection::LocalConnections;
 use crate::locale::get_current_date_time;
 use crate::net_connection::NetConnections;
+use crate::orphan_manager::OrphanManager;
 use crate::prelude::*;
 use crate::socket::Sockets;
 use crate::streams::StreamManager;
@@ -193,6 +194,8 @@ struct GcRootData<'gc> {
 
     local_connections: LocalConnections<'gc>,
 
+    orphan_manager: OrphanManager<'gc>,
+
     /// Dynamic root for allowing handles to GC objects to exist outside of the GC.
     dynamic_root: DynamicRootSet<'gc>,
 
@@ -234,6 +237,7 @@ impl<'gc> GcRootData<'gc> {
         &mut Sockets<'gc>,
         &mut NetConnections<'gc>,
         &mut LocalConnections<'gc>,
+        &mut OrphanManager<'gc>,
         &mut Vec<PostFrameCallback<'gc>>,
         &mut MouseData<'gc>,
         DynamicRootSet<'gc>,
@@ -258,6 +262,7 @@ impl<'gc> GcRootData<'gc> {
             &mut self.sockets,
             &mut self.net_connections,
             &mut self.local_connections,
+            &mut self.orphan_manager,
             &mut self.post_frame_callbacks,
             &mut self.mouse_data,
             self.dynamic_root,
@@ -2192,6 +2197,7 @@ impl Player {
                 sockets,
                 net_connections,
                 local_connections,
+                orphan_manager,
                 post_frame_callbacks,
                 mouse_data,
                 dynamic_root,
@@ -2248,6 +2254,7 @@ impl Player {
                 sockets,
                 net_connections,
                 local_connections,
+                orphan_manager,
                 dynamic_root,
                 post_frame_callbacks,
                 notification_sender: this.notification_sender.as_ref(),
@@ -2830,6 +2837,7 @@ impl PlayerBuilder {
             sockets: Sockets::empty(),
             net_connections: NetConnections::default(),
             local_connections: LocalConnections::empty(),
+            orphan_manager: OrphanManager::default(),
             dynamic_root: DynamicRootSet::new(gc_context),
             post_frame_callbacks: Vec::new(),
         };

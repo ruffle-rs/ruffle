@@ -11,10 +11,10 @@
 //! runs in one phase, with timeline operations executing with all phases
 //! inline in the order that clips were originally created.
 
-use crate::avm2::Avm2;
 use crate::avm2_stub_method_context;
 use crate::context::UpdateContext;
 use crate::display_object::{DisplayObject, MovieClip, TDisplayObject};
+use crate::orphan_manager::OrphanManager;
 use tracing::instrument;
 
 /// Which phase of the frame we're currently in.
@@ -77,20 +77,20 @@ pub fn run_all_phases_avm2(context: &mut UpdateContext<'_>) {
     }
 
     *context.frame_phase = FramePhase::Enter;
-    Avm2::each_orphan_obj(context, |orphan, context| {
+    OrphanManager::each_orphan_obj(context, |orphan, context| {
         orphan.enter_frame(context);
     });
     stage.enter_frame(context);
 
     *context.frame_phase = FramePhase::Construct;
-    Avm2::each_orphan_obj(context, |orphan, context| {
+    OrphanManager::each_orphan_obj(context, |orphan, context| {
         orphan.construct_frame(context);
     });
     stage.construct_frame(context);
     stage.frame_constructed(context);
 
     *context.frame_phase = FramePhase::FrameScripts;
-    Avm2::each_orphan_obj(context, |orphan, context| {
+    OrphanManager::each_orphan_obj(context, |orphan, context| {
         orphan.run_frame_scripts(context);
     });
     stage.run_frame_scripts(context);
@@ -104,7 +104,7 @@ pub fn run_all_phases_avm2(context: &mut UpdateContext<'_>) {
     // Instead, we do one cleanup at the end of the frame.
     // This performs special handling of clips which became orphaned as
     // a result of a RemoveObject tag - see `cleanup_dead_orphans` for details.
-    Avm2::cleanup_dead_orphans(context);
+    context.orphan_manager.cleanup_dead_orphans(context.gc());
 
     *context.frame_phase = FramePhase::Idle;
 }
@@ -152,7 +152,7 @@ pub fn run_inner_goto_frame<'gc>(
     // Note - we do *not* call `enter_frame` or dispatch an `enterFrame` event
 
     *context.frame_phase = FramePhase::Construct;
-    Avm2::each_orphan_obj(context, |orphan, context| {
+    OrphanManager::each_orphan_obj(context, |orphan, context| {
         orphan.construct_frame(context);
     });
     stage.construct_frame(context);
@@ -160,7 +160,7 @@ pub fn run_inner_goto_frame<'gc>(
 
     *context.frame_phase = FramePhase::FrameScripts;
     stage.run_frame_scripts(context);
-    Avm2::each_orphan_obj(context, |orphan, context| {
+    OrphanManager::each_orphan_obj(context, |orphan, context| {
         orphan.run_frame_scripts(context);
     });
 
@@ -176,7 +176,7 @@ pub fn run_inner_goto_frame<'gc>(
     // Instead, we do one cleanup at the end of the frame.
     // This performs special handling of clips which became orphaned as
     // a result of a RemoveObject tag - see `cleanup_dead_orphans` for details.
-    Avm2::cleanup_dead_orphans(context);
+    context.orphan_manager.cleanup_dead_orphans(context.gc());
 
     *context.frame_phase = old_phase;
 }
