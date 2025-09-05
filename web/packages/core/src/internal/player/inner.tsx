@@ -187,8 +187,11 @@ export class InnerPlayer {
     // not show the context menu.
     private _suppressContextMenu = false;
 
-    // The effective config loaded upon `.load()`.
-    public loadedConfig?: URLLoadOptions | DataLoadOptions;
+    // The options loaded upon `.load()`.
+    private options?: URLLoadOptions | DataLoadOptions;
+
+    // Whether or not `.load()` is called as a result of a polyfill.
+    private isPolyfillElement?: boolean;
 
     private swfUrl?: URL;
     private instance: RuffleHandle | null;
@@ -838,7 +841,8 @@ export class InnerPlayer {
     }
 
     /**
-     * Reloads the player, as if you called {@link RufflePlayer.load} with the same config as the last time it was called.
+     * Reloads the player, as if you called {@link RufflePlayer.load} with a similar config as the last time it was called,
+     * but possibly changed if `window.RufflePlayer.config` or `window.RufflePlayer.extensionConfig` has since changed.
      *
      * If this player has never been loaded, this method will return an error.
      */
@@ -910,26 +914,13 @@ export class InnerPlayer {
         }
 
         try {
-            this.loadedConfig = {
-                ...DEFAULT_CONFIG,
-                // The default allowScriptAccess value for polyfilled elements is samedomain.
-                ...(isPolyfillElement && "url" in options
-                    ? {
-                          allowScriptAccess: parseAllowScriptAccess(
-                              "samedomain",
-                              options.url,
-                          )!,
-                      }
-                    : {}),
-                ...(window.RufflePlayer?.config ?? {}),
-                ...this.config,
-                ...options,
-            };
+            this.options = options;
+            this.isPolyfillElement = isPolyfillElement;
 
             // Pre-emptively set background color of container while Ruffle/SWF loads.
             if (
-                this.loadedConfig.backgroundColor &&
-                this.loadedConfig.wmode !== WindowMode.Transparent
+                this.loadedConfig?.backgroundColor &&
+                this.loadedConfig?.wmode !== WindowMode.Transparent
             ) {
                 this.container.style.backgroundColor =
                     this.loadedConfig.backgroundColor;
@@ -959,6 +950,32 @@ export class InnerPlayer {
             const err = new Error(e as string);
             this.panic(err);
             throw err;
+        }
+    }
+
+    // The effective config loaded upon `load`, possibly changing if `window.RufflePlayer` changes later.
+    get loadedConfig(): URLLoadOptions | DataLoadOptions | undefined {
+        if (this.options) {
+            return {
+                ...DEFAULT_CONFIG,
+                // The default allowScriptAccess value for polyfilled elements is samedomain.
+                ...(this.isPolyfillElement && "url" in this.options
+                    ? {
+                          allowScriptAccess: parseAllowScriptAccess(
+                              "samedomain",
+                              this.options.url,
+                          )!,
+                      }
+                    : {}),
+                ...(window.RufflePlayer?.config ?? {}),
+                // This will make extension config take precedence, if I move this one line higher self-hosted config will take precedence
+                // Let the discussions begin
+                ...(window.RufflePlayer?.extensionConfig ?? {}),
+                ...this.config,
+                ...this.options,
+            };
+        } else {
+            return undefined;
         }
     }
 
