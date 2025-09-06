@@ -27,6 +27,7 @@ use crate::library::Library;
 use crate::loader::LoadManager;
 use crate::local_connection::LocalConnections;
 use crate::net_connection::NetConnections;
+use crate::orphan_manager::OrphanManager;
 use crate::player::PostFrameCallback;
 use crate::player::{MouseData, Player};
 use crate::prelude::*;
@@ -220,6 +221,8 @@ pub struct UpdateContext<'gc> {
     pub net_connections: &'gc mut NetConnections<'gc>,
 
     pub local_connections: &'gc mut LocalConnections<'gc>,
+
+    pub orphan_manager: &'gc mut OrphanManager<'gc>,
 
     /// Dynamic root for allowing handles to GC objects to exist outside of the GC.
     pub dynamic_root: gc_arena::DynamicRootSet<'gc>,
