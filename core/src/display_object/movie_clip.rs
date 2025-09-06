@@ -744,10 +744,6 @@ impl<'gc> MovieClip<'gc> {
             self.play();
         }
 
-        // When performing goto, frame scripts behave the same as when entering a new frame
-        // so no separate cleanup is performed on ones registered during frame script phase
-        context.frame_script_cleanup_queue.clear();
-
         // Clamp frame number in bounds.
         let frame = frame.max(1);
 
@@ -2337,10 +2333,12 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
             }
         }
 
-        // Check for frame-scripts before starting the frame-script phase,
-        // to differentiate the pre-existing scripts from those introduced during frame-script phase.
-        let has_pending_script = self.has_frame_script(self.0.current_frame.get());
-        self.0.has_pending_script.set(has_pending_script);
+        if *context.frame_phase == FramePhase::Construct {
+            // Check for frame-scripts before starting the frame-script phase,
+            // to differentiate the pre-existing scripts from those introduced during frame-script phase.
+            let has_pending_script = self.has_frame_script(self.0.current_frame.get());
+            self.0.has_pending_script.set(has_pending_script);
+        }
     }
 
     fn run_frame_scripts(self, context: &mut UpdateContext<'gc>) {

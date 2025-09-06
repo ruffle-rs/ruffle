@@ -145,6 +145,10 @@ pub fn run_inner_goto_frame<'gc>(
     let stage = context.stage;
     let old_phase = *context.frame_phase;
 
+    // When performing goto, frame scripts behave the same as when entering a new frame
+    // so no separate cleanup is performed on ones registered during frame script phase
+    context.frame_script_cleanup_queue.clear();
+
     // Note - we do *not* call `enter_frame` or dispatch an `enterFrame` event
 
     *context.frame_phase = FramePhase::Construct;
