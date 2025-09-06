@@ -188,7 +188,7 @@ pub struct MovieClipData<'gc> {
 
     last_queued_script_frame: Cell<Option<FrameNumber>>,
     queued_script_frame: Cell<FrameNumber>,
-    queued_goto_frame: Cell<Option<FrameNumber>>,
+    queued_goto_frame: Cell<Option<Option<(FrameNumber, bool)>>>,
 
     current_frame: Cell<FrameNumber>,
 
@@ -240,7 +240,7 @@ impl<'gc> MovieClipData<'gc> {
             last_queued_script_frame: Cell::new(None),
             queued_script_frame: Cell::new(0),
             has_pending_script: Cell::new(false),
-            queued_goto_frame: Cell::new(None),
+            queued_goto_frame: Cell::new(Some(None)),
             drop_target: Lock::new(None),
             queued_tags: Default::default(),
             hit_area: Lock::new(None),
@@ -700,6 +700,30 @@ impl<'gc> MovieClip<'gc> {
         self.0.set_programmatically_played()
     }
 
+    pub fn set_queued_stop_after_scripts(self) {
+        self.0.set_queued_stop_after_scripts();
+    }
+
+    pub fn clear_queued_stop_after_scripts(self) {
+        self.0.clear_queued_stop_after_scripts();
+    }
+
+    pub fn queued_stop_after_scripts(self) -> bool {
+        self.0.queued_stop_after_scripts()
+    }
+
+    pub fn set_queued_play_after_scripts(self) {
+        self.0.set_queued_play_after_scripts();
+    }
+
+    pub fn clear_queued_play_after_scripts(self) {
+        self.0.clear_queued_play_after_scripts();
+    }
+
+    pub fn queued_play_after_scripts(self) -> bool {
+        self.0.queued_play_after_scripts()
+    }
+
     pub fn next_frame(self, context: &mut UpdateContext<'gc>) {
         if self.current_frame() < self.total_frames() {
             self.goto_frame(context, self.current_frame() + 1, true);
@@ -737,13 +761,16 @@ impl<'gc> MovieClip<'gc> {
     /// This is treated as an 'explicit' goto: frame scripts and other frame
     /// lifecycle events will be retriggered.
     pub fn goto_frame(self, context: &mut UpdateContext<'gc>, frame: FrameNumber, stop: bool) {
-        // Stop first, in case we need to kill and restart the stream sound.
-        if stop {
-            self.stop(context);
-        } else {
-            self.play();
+        if !self
+            .0
+            .contains_flag(MovieClipFlags::EXECUTING_AVM2_FRAME_SCRIPT)
+        {
+            if stop {
+                self.stop(context);
+            } else {
+                self.play();
+            }
         }
-
         // When performing goto, frame scripts behave the same as when entering a new frame
         // so no separate cleanup is performed on ones registered during frame script phase
         context.frame_script_cleanup_queue.clear();
@@ -758,15 +785,18 @@ impl<'gc> MovieClip<'gc> {
                 .0
                 .contains_flag(MovieClipFlags::EXECUTING_AVM2_FRAME_SCRIPT)
             {
-                // AVM2 does not allow a clip to see while it is executing a frame script.
-                // The goto is instead queued and run once the frame script is completed.
-                self.0.queued_goto_frame.set(Some(frame));
+                self.0.queued_goto_frame.set(Some(Some((frame, stop))));
             } else {
+                if stop {
+                    self.stop(context);
+                } else {
+                    self.play();
+                }
                 self.run_goto(context, frame, false);
             }
         } else if self.movie().is_action_script_3() {
             // Despite not running, the goto still overwrites the currently enqueued frame.
-            self.0.queued_goto_frame.set(None);
+            self.0.queued_goto_frame.set(Some(None));
             // Pretend we actually did a goto, but don't do anything.
             run_inner_goto_frame(context, &[], self);
         }
@@ -2000,6 +2030,18 @@ impl<'gc> MovieClip<'gc> {
         self.0.drawing.get().map(|d| d.borrow())
     }
 
+    pub fn queued_goto_frame(&self) -> Option<Option<(FrameNumber, bool)>> {
+        self.0.queued_goto_frame.get()
+    }
+
+    pub fn clear_queued_goto_frame(&self) {
+        self.0.queued_goto_frame.set(Some(None));
+    }
+
+    pub fn set_erroneous_queued_goto_frame(&self) {
+        self.0.queued_goto_frame.set(None);
+    }
+
     pub fn is_button_mode(&self, context: &mut UpdateContext<'gc>) -> bool {
         if self.forced_button_mode()
             || self
@@ -2220,8 +2262,26 @@ impl<'gc> MovieClip<'gc> {
         }
 
         let goto_frame = self.0.queued_goto_frame.take();
-        if let Some(frame) = goto_frame {
+        self.0.queued_goto_frame.set(Some(None));
+        if let Some(Some((frame, stop))) = goto_frame {
+            if stop {
+                self.0
+                    .set_flag(MovieClipFlags::QUEUED_STOP_AFTER_SCRIPTS, true);
+            } else {
+                self.0
+                    .set_flag(MovieClipFlags::QUEUED_PLAY_AFTER_SCRIPTS, false);
+            }
+
             self.run_goto(context, frame, false);
+        } else if let Some(None) = goto_frame {
+            if self
+                .0
+                .contains_flag(MovieClipFlags::QUEUED_STOP_AFTER_SCRIPTS)
+            {
+                self.stop(context);
+                self.0
+                    .set_flag(MovieClipFlags::QUEUED_STOP_AFTER_SCRIPTS, false);
+            }
         }
     }
 }
@@ -2245,6 +2305,7 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
 
     fn enter_frame(self, context: &mut UpdateContext<'gc>) {
         let skip_frame = self.base().should_skip_next_enter_frame();
+
         //Child removals from looping gotos appear to resolve in reverse order.
         for child in self.iter_render_list().rev() {
             if skip_frame {
@@ -2271,7 +2332,16 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
         if self.movie().is_action_script_3() {
             let is_playing = self.playing();
 
-            if is_playing {
+            if is_playing
+                && self
+                    .0
+                    .contains_flag(MovieClipFlags::QUEUED_PLAY_AFTER_SCRIPTS)
+            {
+                self.0
+                    .set_flag(MovieClipFlags::QUEUED_PLAY_AFTER_SCRIPTS, false);
+            }
+            let has_erroneous_queued_goto = self.0.queued_goto_frame.get().is_none();
+            if is_playing || has_erroneous_queued_goto {
                 self.run_frame_internal(context, true, true, true);
             }
 
@@ -3031,6 +3101,30 @@ impl<'gc> MovieClipData<'gc> {
 
     fn set_programmatically_played(&self) {
         self.set_flag(MovieClipFlags::PROGRAMMATICALLY_PLAYED, true);
+    }
+
+    fn set_queued_play_after_scripts(&self) {
+        self.set_flag(MovieClipFlags::QUEUED_PLAY_AFTER_SCRIPTS, true);
+    }
+
+    fn clear_queued_play_after_scripts(&self) {
+        self.set_flag(MovieClipFlags::QUEUED_PLAY_AFTER_SCRIPTS, false);
+    }
+
+    fn queued_play_after_scripts(&self) -> bool {
+        self.contains_flag(MovieClipFlags::QUEUED_PLAY_AFTER_SCRIPTS)
+    }
+
+    fn set_queued_stop_after_scripts(&self) {
+        self.set_flag(MovieClipFlags::QUEUED_STOP_AFTER_SCRIPTS, true);
+    }
+
+    fn clear_queued_stop_after_scripts(&self) {
+        self.set_flag(MovieClipFlags::QUEUED_STOP_AFTER_SCRIPTS, false);
+    }
+
+    fn queued_stop_after_scripts(&self) -> bool {
+        self.contains_flag(MovieClipFlags::QUEUED_STOP_AFTER_SCRIPTS)
     }
 
     fn loop_queued(&self) -> bool {
@@ -4690,8 +4784,8 @@ pub enum QueuedTagAction {
 
 bitflags! {
     /// Boolean state flags used by `MovieClip`.
-    #[derive(Clone, Copy)]
-    struct MovieClipFlags: u8 {
+    #[derive(Clone, Copy, Debug)]
+    struct MovieClipFlags: u16 {
         /// Whether this `MovieClip` has run its initial frame.
         const INITIALIZED             = 1 << 0;
 
@@ -4719,6 +4813,10 @@ bitflags! {
 
         /// Whether this `MovieClip` has been post-instantiated yet.
         const POST_INSTANTIATED = 1 << 6;
+
+        const QUEUED_STOP_AFTER_SCRIPTS  = 1 << 7;
+
+        const QUEUED_PLAY_AFTER_SCRIPTS  = 1 << 8;
     }
 }
 
