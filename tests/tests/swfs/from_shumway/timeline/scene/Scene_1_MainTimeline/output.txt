@@ -1,0 +1,70 @@
+FRAME 1
+currentFrameLabel: null
+currentLabel: null
+currentLabels: [FrameLabel 'S1F2':2], [FrameLabel 'S1F5':5]
+currentScene: [Scene 'Scene 1', frames: 5, labels: [FrameLabel 'S1F2':2], [FrameLabel 'S1F5':5]]
+FRAME 2
+currentFrameLabel: S1F2
+currentLabel: S1F2
+currentLabels: [FrameLabel 'S1F2':2], [FrameLabel 'S1F5':5]
+currentScene: [Scene 'Scene 1', frames: 5, labels: [FrameLabel 'S1F2':2], [FrameLabel 'S1F5':5]]
+FRAME 3
+currentFrameLabel: null
+currentLabel: S1F2
+currentLabels: [FrameLabel 'S1F2':2], [FrameLabel 'S1F5':5]
+currentScene: [Scene 'Scene 1', frames: 5, labels: [FrameLabel 'S1F2':2], [FrameLabel 'S1F5':5]]
+FRAME 4
+currentFrameLabel: null
+currentLabel: S1F2
+currentLabels: [FrameLabel 'S1F2':2], [FrameLabel 'S1F5':5]
+currentScene: [Scene 'Scene 1', frames: 5, labels: [FrameLabel 'S1F2':2], [FrameLabel 'S1F5':5]]
+FRAME 5
+currentFrameLabel: S1F5
+currentLabel: S1F5
+currentLabels: [FrameLabel 'S1F2':2], [FrameLabel 'S1F5':5]
+currentScene: [Scene 'Scene 1', frames: 5, labels: [FrameLabel 'S1F2':2], [FrameLabel 'S1F5':5]]
+FRAME 1
+currentFrameLabel: S2F1
+currentLabel: S2F1
+currentLabels: [FrameLabel 'S2F1':1], [FrameLabel 'S2F5':5], [FrameLabel 'S2F9':9]
+currentScene: [Scene 'Scene 2', frames: 10, labels: [FrameLabel 'S2F1':1], [FrameLabel 'S2F5':5], [FrameLabel 'S2F9':9]]
+FRAME 2
+currentFrameLabel: null
+currentLabel: S2F1
+currentLabels: [FrameLabel 'S2F1':1], [FrameLabel 'S2F5':5], [FrameLabel 'S2F9':9]
+currentScene: [Scene 'Scene 2', frames: 10, labels: [FrameLabel 'S2F1':1], [FrameLabel 'S2F5':5], [FrameLabel 'S2F9':9]]
+FRAME 3
+currentFrameLabel: null
+currentLabel: S2F1
+currentLabels: [FrameLabel 'S2F1':1], [FrameLabel 'S2F5':5], [FrameLabel 'S2F9':9]
+currentScene: [Scene 'Scene 2', frames: 10, labels: [FrameLabel 'S2F1':1], [FrameLabel 'S2F5':5], [FrameLabel 'S2F9':9]]
+FRAME 4
+currentFrameLabel: null
+currentLabel: S2F1
+currentLabels: [FrameLabel 'S2F1':1], [FrameLabel 'S2F5':5], [FrameLabel 'S2F9':9]
+currentScene: [Scene 'Scene 2', frames: 10, labels: [FrameLabel 'S2F1':1], [FrameLabel 'S2F5':5], [FrameLabel 'S2F9':9]]
+FRAME 5
+currentFrameLabel: S2F5
+currentLabel: S2F5
+currentLabels: [FrameLabel 'S2F1':1], [FrameLabel 'S2F5':5], [FrameLabel 'S2F9':9]
+currentScene: [Scene 'Scene 2', frames: 10, labels: [FrameLabel 'S2F1':1], [FrameLabel 'S2F5':5], [FrameLabel 'S2F9':9]]
+FRAME 6
+currentFrameLabel: null
+currentLabel: S2F5
+currentLabels: [FrameLabel 'S2F1':1], [FrameLabel 'S2F5':5], [FrameLabel 'S2F9':9]
+currentScene: [Scene 'Scene 2', frames: 10, labels: [FrameLabel 'S2F1':1], [FrameLabel 'S2F5':5], [FrameLabel 'S2F9':9]]
+FRAME 7
+currentFrameLabel: null
+currentLabel: S2F5
+currentLabels: [FrameLabel 'S2F1':1], [FrameLabel 'S2F5':5], [FrameLabel 'S2F9':9]
+currentScene: [Scene 'Scene 2', frames: 10, labels: [FrameLabel 'S2F1':1], [FrameLabel 'S2F5':5], [FrameLabel 'S2F9':9]]
+FRAME 8
+currentFrameLabel: null
+currentLabel: S2F5
+currentLabels: [FrameLabel 'S2F1':1], [FrameLabel 'S2F5':5], [FrameLabel 'S2F9':9]
+currentScene: [Scene 'Scene 2', frames: 10, labels: [FrameLabel 'S2F1':1], [FrameLabel 'S2F5':5], [FrameLabel 'S2F9':9]]
+FRAME 9
+currentFrameLabel: S2F9
+currentLabel: S2F9
+currentLabels: [FrameLabel 'S2F1':1], [FrameLabel 'S2F5':5], [FrameLabel 'S2F9':9]
+currentScene: [Scene 'Scene 2', frames: 10, labels: [FrameLabel 'S2F1':1], [FrameLabel 'S2F5':5], [FrameLabel 'S2F9':9]]
