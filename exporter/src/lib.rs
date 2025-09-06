@@ -1,26 +1,26 @@
+mod player_ext;
+
 use anyhow::{anyhow, Result};
 use clap::Parser;
 use image::RgbaImage;
 use indicatif::{ProgressBar, ProgressStyle};
+use player_ext::PlayerExporterExt;
 use rayon::prelude::*;
 use ruffle_core::limits::ExecutionLimit;
 use ruffle_core::tag_utils::SwfMovie;
-use ruffle_core::Player;
-use ruffle_core::PlayerBuilder;
+use ruffle_core::{Player, PlayerBuilder};
 use ruffle_render_wgpu::backend::{request_adapter_and_device, WgpuRenderBackend};
 use ruffle_render_wgpu::clap::{GraphicsBackend, PowerPreference};
 use ruffle_render_wgpu::descriptors::Descriptors;
 use ruffle_render_wgpu::target::TextureTarget;
 use ruffle_render_wgpu::wgpu;
-use std::any::Any;
 use std::fs::create_dir_all;
 use std::io::{self, Write};
-use std::num::NonZeroUsize;
+use std::num::NonZeroU32;
 use std::panic::catch_unwind;
 use std::path::{Path, PathBuf};
 use std::str::FromStr;
-use std::sync::Arc;
-use std::sync::Mutex;
+use std::sync::{Arc, Mutex};
 use walkdir::{DirEntry, WalkDir};
 
 #[derive(Parser, Debug, Copy, Clone)]
@@ -41,7 +41,23 @@ pub struct SizeOpt {
 #[derive(Debug, Clone, Copy)]
 enum FrameSelection {
     All,
-    Count(NonZeroUsize),
+    Count(NonZeroU32),
+}
+
+impl FrameSelection {
+    fn is_single_frame(self) -> bool {
+        match self {
+            FrameSelection::All => false,
+            FrameSelection::Count(n) => n.get() == 1,
+        }
+    }
+
+    fn total_frames(self, player: &Arc<Mutex<Player>>, skipframes: u32) -> u32 {
+        match self {
+            FrameSelection::All => player.total_frames() as u32,
+            FrameSelection::Count(n) => n.get() + skipframes,
+        }
+    }
 }
 
 impl FromStr for FrameSelection {
@@ -52,7 +68,7 @@ impl FromStr for FrameSelection {
         if s_lower == "all" {
             Ok(FrameSelection::All)
         } else if let Ok(n) = s.parse::<u32>() {
-            let non_zero = NonZeroUsize::new(n as usize)
+            let non_zero = NonZeroU32::new(n)
                 .ok_or_else(|| "Frame count must be greater than 0".to_string())?;
             Ok(FrameSelection::Count(non_zero))
         } else {
@@ -147,15 +163,7 @@ fn take_screenshot(
         .build();
 
     let mut result = Vec::new();
-    let totalframes = match frames {
-        FrameSelection::All => player.lock().unwrap().mutate_with_update_context(|ctx| {
-            ctx.stage
-                .root_clip()
-                .and_then(|root_clip| root_clip.as_movie_clip())
-                .map_or(1, |movie_clip| movie_clip.total_frames() as u32)
-        }),
-        FrameSelection::Count(n) => n.get() as u32 + skipframes,
-    };
+    let totalframes = frames.total_frames(&player, skipframes);
 
     for i in 0..totalframes {
         if let Some(progress) = &progress {
@@ -167,7 +175,7 @@ fn take_screenshot(
         }
 
         if force_play {
-            force_root_clip_play(&player);
+            player.force_root_clip_play();
         }
 
         player.lock().unwrap().preload(&mut ExecutionLimit::none());
@@ -176,12 +184,7 @@ fn take_screenshot(
         if i >= skipframes {
             let image = || {
                 player.lock().unwrap().render();
-                let mut player = player.lock().unwrap();
-                let renderer = <dyn Any>::downcast_mut::<WgpuRenderBackend<TextureTarget>>(
-                    player.renderer_mut(),
-                )
-                .unwrap();
-                renderer.capture_frame()
+                player.capture_frame()
             };
             match catch_unwind(image) {
                 Ok(Some(image)) => result.push(image),
@@ -204,26 +207,6 @@ fn take_screenshot(
         }
     }
     Ok(result)
-}
-
-fn force_root_clip_play(player: &Arc<Mutex<Player>>) {
-    let mut player_guard = player.lock().unwrap();
-
-    // Check and resume if suspended
-    if !player_guard.is_playing() {
-        player_guard.set_is_playing(true);
-    }
-
-    // Also resume the root MovieClip if stopped
-    player_guard.mutate_with_update_context(|ctx| {
-        if let Some(root_clip) = ctx.stage.root_clip() {
-            if let Some(movie_clip) = root_clip.as_movie_clip() {
-                if !movie_clip.playing() {
-                    movie_clip.play();
-                }
-            }
-        }
-    });
 }
 
 fn find_files(root: &Path, with_progress: bool) -> Vec<DirEntry> {
@@ -257,16 +240,17 @@ fn find_files(root: &Path, with_progress: bool) -> Vec<DirEntry> {
 }
 
 fn capture_single_swf(descriptors: Arc<Descriptors>, opt: &Opt) -> Result<()> {
+    let is_single_frame = opt.frames.is_single_frame();
     let output = opt.output_path.clone().unwrap_or_else(|| {
         let mut result = PathBuf::new();
         result.set_file_name(opt.swf.file_stem().unwrap());
-        if matches!(opt.frames, FrameSelection::Count(n) if n.get() == 1) {
+        if is_single_frame {
             result.set_extension("png");
         }
         result
     });
 
-    if !matches!(opt.frames, FrameSelection::Count(n) if n.get() == 1) {
+    if !is_single_frame {
         let _ = create_dir_all(&output);
     }
 
@@ -301,7 +285,7 @@ fn capture_single_swf(descriptors: Arc<Descriptors>, opt: &Opt) -> Result<()> {
         progress.set_message(opt.swf.file_stem().unwrap().to_string_lossy().into_owned());
     }
 
-    if frames.len() == 1 {
+    if is_single_frame {
         let image = frames.first().unwrap();
         if opt.output_path == Some(PathBuf::from("-")) {
             let mut bytes: Vec<u8> = Vec::new();
