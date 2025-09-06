@@ -1,0 +1,8 @@
+Element placed on frame 1
+Name: foo
+New object placed on frame 2: false
+Name: foo
+New object placed on frame 3: false
+Name: foo
+New object placed on frame 1: false
+Name: foo
