@@ -5,8 +5,8 @@ use crate::avm1::{
     NativeObject as Avm1NativeObject, Object as Avm1Object, Value as Avm1Value,
 };
 use crate::avm2::object::{
-    ClassObject as Avm2ClassObject, EventObject as Avm2EventObject, Object as Avm2Object,
-    StageObject as Avm2StageObject, StyleSheetObject as Avm2StyleSheetObject,
+    ClassObject as Avm2ClassObject, EventObject as Avm2EventObject, StageObject as Avm2StageObject,
+    StyleSheetObject as Avm2StyleSheetObject,
 };
 use crate::avm2::{Activation as Avm2Activation, Avm2};
 use crate::backend::ui::MouseCursor;
@@ -2195,7 +2195,6 @@ impl<'gc> EditText<'gc> {
             class_object,
         ) {
             Ok(object) => {
-                let object: Avm2Object<'gc> = object.into();
                 self.set_object(Some(object.into()), context.gc());
             }
             Err(e) => tracing::error!(
@@ -2577,7 +2576,7 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
             .unwrap_or(Avm2Value::Null)
     }
 
-    fn set_object2(self, context: &mut UpdateContext<'gc>, to: Avm2Object<'gc>) {
+    fn set_object2(self, context: &mut UpdateContext<'gc>, to: Avm2StageObject<'gc>) {
         self.set_object(Some(to.into()), context.gc());
     }
 

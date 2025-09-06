@@ -3,7 +3,8 @@ use crate::avm1::{
 };
 use crate::avm2::{
     Activation as Avm2Activation, Avm2, Error as Avm2Error, EventObject as Avm2EventObject,
-    Multiname as Avm2Multiname, Object as Avm2Object, TObject as _, Value as Avm2Value,
+    Multiname as Avm2Multiname, Object as Avm2Object, StageObject as Avm2StageObject, TObject as _,
+    Value as Avm2Value,
 };
 use crate::context::{RenderContext, UpdateContext};
 use crate::drawing::Drawing;
@@ -2367,7 +2368,7 @@ pub trait TDisplayObject<'gc>:
         Avm2Value::Undefined // TODO: See above. Also, unconstructed objects should return null.
     }
 
-    fn set_object2(self, _context: &mut UpdateContext<'gc>, _to: Avm2Object<'gc>) {}
+    fn set_object2(self, _context: &mut UpdateContext<'gc>, _to: Avm2StageObject<'gc>) {}
 
     /// Tests if a given stage position point intersects with the world bounds of this object.
     #[no_dynamic]
