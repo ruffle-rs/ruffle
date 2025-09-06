@@ -880,6 +880,11 @@ impl CommandHandler for WebCanvasRenderBackend {
         commands.execute(self);
         self.pop_blend_mode();
     }
+
+    fn render_alpha_mask(&mut self, maskee_commands: CommandList, _mask_commands: CommandList) {
+        // TODO Add support for alpha masks
+        maskee_commands.execute(self);
+    }
 }
 
 /// Convert a series of `DrawCommands` to a `Path2d` shape.

@@ -472,7 +472,7 @@ impl<'gc> TDisplayObject<'gc> for Video<'gc> {
         }
     }
 
-    fn render(self, context: &mut RenderContext) {
+    fn render(self, context: &mut RenderContext, _as_mask: bool) {
         if !context.is_offscreen && !self.world_bounds().intersects(&context.stage.view_bounds()) {
             // Off-screen; culled
             return;

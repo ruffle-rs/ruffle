@@ -568,7 +568,7 @@ pub trait TDisplayObjectContainer<'gc>:
                 let (prev_clip_depth, clip_child) = clip_depth_stack.pop().unwrap();
                 clip_depth = prev_clip_depth;
                 context.commands.deactivate_mask();
-                clip_child.render(context);
+                clip_child.render(context, false);
                 context.commands.pop_mask();
             }
             if child.clip_depth() > 0 && child.allow_as_mask() {
@@ -576,20 +576,20 @@ pub trait TDisplayObjectContainer<'gc>:
                 clip_depth_stack.push((clip_depth, child));
                 clip_depth = child.clip_depth();
                 context.commands.push_mask();
-                child.render(context);
+                child.render(context, false);
                 context.commands.activate_mask();
             } else if child.visible() || context.commands.drawing_mask() {
                 // Either a normal visible child, or a descendant of a mask object
                 // that we're drawing. The 'visible' flag is ignored for all descendants
                 // of a mask.
-                child.render(context);
+                child.render(context, false);
             }
         }
 
         // Pop any remaining masks.
         for (_, clip_child) in clip_depth_stack.into_iter().rev() {
             context.commands.deactivate_mask();
-            clip_child.render(context);
+            clip_child.render(context, false);
             context.commands.pop_mask();
         }
     }

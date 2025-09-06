@@ -831,11 +831,24 @@ struct DrawCacheInfo {
     filters: Vec<Filter>,
 }
 
-pub fn render_base<'gc>(this: DisplayObject<'gc>, context: &mut RenderContext<'_, 'gc>) {
-    if this.maskee().is_some() {
+pub fn render_base<'gc>(
+    this: DisplayObject<'gc>,
+    as_mask: bool,
+    context: &mut RenderContext<'_, 'gc>,
+) {
+    if !as_mask && this.maskee().is_some() {
+        // Skip rendering masks (unless we are rendering one explicitly).
         return;
     }
-    context.transform_stack.push(&this.base().transform());
+
+    let mut transform = this.base().transform();
+    if as_mask {
+        // TODO This doesn't seem right, we should perhaps prepare
+        //   differently before rendering the mask.
+        transform.matrix = Matrix::IDENTITY;
+    }
+    context.transform_stack.push(&transform);
+
     let blend_mode = this.blend_mode();
     let original_commands = if blend_mode != ExtendedBlendMode::Normal {
         Some(std::mem::take(&mut context.commands))
@@ -1056,11 +1069,24 @@ pub fn apply_standard_mask_and_scroll<'gc, F>(
         });
     }
 
-    let mask = this.masker();
+    enum Mask<'gc> {
+        None,
+        Stencil(DisplayObject<'gc>),
+        Alpha(DisplayObject<'gc>),
+    }
+
+    let mask = match this.masker() {
+        None => Mask::None,
+        Some(mask) if this.is_bitmap_cached() && mask.is_bitmap_cached() => Mask::Alpha(mask),
+        Some(mask) => Mask::Stencil(mask),
+    };
+
     let mut mask_transform = ruffle_render::transform::Transform::default();
-    if let Some(m) = mask {
+    if let Mask::Stencil(m) | Mask::Alpha(m) = mask {
         mask_transform.matrix = this.global_to_local_matrix().unwrap_or_default();
         mask_transform.matrix *= m.local_to_global_matrix();
+    }
+    if let Mask::Stencil(m) = mask {
         context.commands.push_mask();
         context.transform_stack.push(&mask_transform);
         m.render_self(context);
@@ -1086,7 +1112,25 @@ pub fn apply_standard_mask_and_scroll<'gc, F>(
         context.commands.activate_mask();
     }
 
-    draw(context);
+    if let Mask::Alpha(m) = mask {
+        let original_commands = std::mem::take(&mut context.commands);
+
+        draw(context);
+
+        let maskee_commands = std::mem::take(&mut context.commands);
+
+        context.transform_stack.push(&mask_transform);
+        m.render(context, true);
+        context.transform_stack.pop();
+
+        let mask_commands = std::mem::replace(&mut context.commands, original_commands);
+
+        context
+            .commands
+            .render_alpha_mask(maskee_commands, mask_commands);
+    } else {
+        draw(context);
+    }
 
     if let Some(rect_mat) = scroll_rect_matrix {
         // Draw the rectangle again after deactivating the mask,
@@ -1096,7 +1140,7 @@ pub fn apply_standard_mask_and_scroll<'gc, F>(
         context.commands.pop_mask();
     }
 
-    if let Some(m) = mask {
+    if let Mask::Stencil(m) = mask {
         context.commands.deactivate_mask();
         context.transform_stack.push(&mask_transform);
         m.render_self(context);
@@ -2225,8 +2269,8 @@ pub trait TDisplayObject<'gc>:
 
     fn render_self(self, _context: &mut RenderContext<'_, 'gc>) {}
 
-    fn render(self, context: &mut RenderContext<'_, 'gc>) {
-        render_base(self.into(), context)
+    fn render(self, context: &mut RenderContext<'_, 'gc>, as_mask: bool) {
+        render_base(self.into(), as_mask, context)
     }
 
     #[cfg(not(feature = "avm_debug"))]

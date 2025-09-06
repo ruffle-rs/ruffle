@@ -816,7 +816,7 @@ impl<'gc> TDisplayObject<'gc> for Stage<'gc> {
         self.render_children(context);
     }
 
-    fn render(self, context: &mut RenderContext<'_, 'gc>) {
+    fn render(self, context: &mut RenderContext<'_, 'gc>, as_mask: bool) {
         context.transform_stack.push(&Transform {
             matrix: self.0.viewport_matrix.get(),
             color_transform: Default::default(),
@@ -836,7 +836,7 @@ impl<'gc> TDisplayObject<'gc> for Stage<'gc> {
             }
         }
 
-        render_base(self.into(), context);
+        render_base(self.into(), as_mask, context);
 
         self.focus_tracker().render_highlight(context);
 
