@@ -1,0 +1,12 @@
+trace(sj.locale == sj2.locale);
+true
+trace(sj.lineJustification == sj2.lineJustification);
+true
+trace(sj.letterSpacing == sj2.letterSpacing);
+true
+trace(sj.minimumSpacing == sj2.minimumSpacing);
+true
+trace(sj.maximumSpacing == sj2.maximumSpacing);
+true
+trace(sj.optimumSpacing == sj2.optimumSpacing);
+true
