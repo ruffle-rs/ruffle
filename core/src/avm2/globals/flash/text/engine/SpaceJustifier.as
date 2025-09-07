@@ -42,5 +42,13 @@ package flash.text.engine {
         public function set optimumSpacing(value:Number):void {
             this._optimumSpacing = value;
         }
+
+        override public function clone():TextJustifier {
+            var copy = new SpaceJustifier(this.locale, this.lineJustification, this.letterSpacing);
+            copy.minimumSpacing = this.minimumSpacing;
+            copy.maximumSpacing = this.maximumSpacing;
+            copy.optimumSpacing = this.optimumSpacing;
+            return copy;
+        }
     }
 }
