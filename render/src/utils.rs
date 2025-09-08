@@ -2,7 +2,7 @@ use crate::bitmap::{Bitmap, BitmapFormat};
 use crate::error::Error;
 use png::DecodingError;
 use std::borrow::Cow;
-use std::io::Read;
+use std::io::{Cursor, Read};
 use swf::Color;
 
 /// The format of image data in a DefineBitsJpeg2/3 tag.
@@ -361,7 +361,7 @@ pub fn decode_define_bits_lossless(
 fn decode_png_dimensions(data: &[u8]) -> Result<(u16, u16), Error> {
     use png::Transformations;
 
-    let mut decoder = png::Decoder::new(data);
+    let mut decoder = png::Decoder::new(Cursor::new(data));
     // Normalize output to 8-bit grayscale or RGB.
     // Ideally we'd want to normalize to 8-bit RGB only, but seems like the `png` crate provides no such a feature.
     decoder.set_transformations(Transformations::normalize_to_color8());
@@ -378,13 +378,13 @@ fn decode_png_dimensions(data: &[u8]) -> Result<(u16, u16), Error> {
 fn decode_png(data: &[u8]) -> Result<Bitmap<'static>, Error> {
     use png::{ColorType, Transformations};
 
-    let mut decoder = png::Decoder::new(data);
+    let mut decoder = png::Decoder::new(Cursor::new(data));
     // Normalize output to 8-bit grayscale or RGB.
     // Ideally we'd want to normalize to 8-bit RGB only, but seems like the `png` crate provides no such a feature.
     decoder.set_transformations(Transformations::normalize_to_color8());
     let mut reader = decoder.read_info()?;
 
-    let mut data = vec![0; reader.output_buffer_size()];
+    let mut data = vec![0; reader.output_buffer_size().ok_or(Error::TooLarge)?];
     let info = match reader.next_frame(&mut data) {
         Ok(info) => info,
         Err(e) => {
