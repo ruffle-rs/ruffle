@@ -1,4 +1,5 @@
 //! `MovieClip` display object and support code.
+use crate::avm1::globals::AVM_DEPTH_BIAS;
 use crate::avm1::Avm1;
 use crate::avm1::{Activation as Avm1Activation, ActivationIdentifier};
 use crate::avm1::{NativeObject as Avm1NativeObject, Object as Avm1Object, Value as Avm1Value};
@@ -1562,10 +1563,30 @@ impl<'gc> MovieClip<'gc> {
             // TODO: We want to do something like self.children.retain here,
             // but BTreeMap::retain does not exist.
             // TODO: Should AS3 children ignore GOTOs?
+
+            let final_placements: HashMap<Depth, &GotoPlaceObject<'_>> =
+                goto_commands.iter().map(|cmd| (cmd.depth(), cmd)).collect();
+
             let children: SmallVec<[_; 16]> = self
                 .iter_render_list()
-                .filter(|clip| clip.place_frame() > frame)
+                .filter(|child| {
+                    let is_candidate_for_removal = if self.movie().is_action_script_3() {
+                        child.place_frame() > frame || child.placed_by_script()
+                    } else {
+                        child.depth() < AVM_DEPTH_BIAS
+                    };
+
+                    if !is_candidate_for_removal && child.as_morph_shape().is_none() {
+                        return false;
+                    }
+                    if let Some(final_placement) = final_placements.get(&child.depth()) {
+                        !self.survives_rewind(*child, &final_placement.place_object)
+                    } else {
+                        true
+                    }
+                })
                 .collect();
+
             for child in children {
                 if !child.placed_by_script() {
                     self.remove_child(context, child);
@@ -1688,6 +1709,61 @@ impl<'gc> MovieClip<'gc> {
         }
 
         self.assert_expected_tag_end(hit_target_frame);
+    }
+
+    fn survives_rewind(self, old_object: DisplayObject<'_>, new_params: &swf::PlaceObject) -> bool {
+        // TODO [KJ] This logic is not 100% tested. It's possible it's a bit
+        //    different in reality, but the spirit is there :)
+
+        if !old_object.movie().is_action_script_3()
+            && old_object.placed_by_avm1_script()
+            && old_object.depth() < AVM_DEPTH_BIAS
+        {
+            return false;
+        }
+        let id_equals = match new_params.action {
+            swf::PlaceObjectAction::Place(id) | swf::PlaceObjectAction::Replace(id) => {
+                old_object.id() == id
+            }
+            _ => false,
+        };
+        let ratio_equals = match new_params.ratio {
+            Some(ratio) => old_object.ratio() == ratio,
+            None => true,
+        };
+
+        let clip_depth_equals = match new_params.clip_depth {
+            Some(clip_depth) => old_object.clip_depth() == clip_depth as Depth,
+            None => true,
+        };
+
+        let color_transform_equals = match new_params.color_transform {
+            Some(color_transform) => old_object.base().color_transform() == color_transform,
+            None => true,
+        };
+
+        let base_matrix_equals = match new_params.matrix {
+            Some(matrix) => old_object.base().matrix() == matrix.into(),
+            None => true,
+        };
+
+        match old_object {
+            DisplayObject::MorphShape(_) | DisplayObject::Graphic(_) | DisplayObject::Text(_) => {
+                ratio_equals
+                    && id_equals
+                    && clip_depth_equals
+                    && base_matrix_equals
+                    && color_transform_equals
+            }
+            DisplayObject::Avm1Button(_)
+            | DisplayObject::Avm2Button(_)
+            | DisplayObject::EditText(_)
+            | DisplayObject::Bitmap(_)
+            | DisplayObject::Video(_) => ratio_equals && id_equals && clip_depth_equals,
+            DisplayObject::MovieClip(_)
+            | DisplayObject::Stage(_)
+            | DisplayObject::LoaderDisplay(_) => ratio_equals,
+        }
     }
 
     fn construct_as_avm1_object(
