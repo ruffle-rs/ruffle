@@ -37,6 +37,6 @@ debug-menu-open-root-movie-clip = Ver Filme-Clipe Raiz
 debug-menu-open-movie = Ver Filme
 debug-menu-open-movie-list = Mostrar Filmes Conhecidos
 debug-menu-open-domain-list = Mostrar Domínios
-debug-menu-search-display-objects = Procurar por Display Objects...
+debug-menu-search-display-objects = Procurar Objetos de Exibição...
 view-menu = Ver
 view-menu-fullscreen = Ecrã Inteiro
