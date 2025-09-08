@@ -6,9 +6,8 @@ use crate::avm1::Attribute;
 use crate::avm1::Avm1;
 use crate::avm1::{Object as Avm1Object, Value as Avm1Value};
 use crate::avm2::api_version::ApiVersion;
-use crate::avm2::object::LoaderInfoObject;
 use crate::avm2::Activation as Avm2Activation;
-use crate::avm2::{Avm2, Object as Avm2Object, SoundChannelObject};
+use crate::avm2::{Avm2, LoaderInfoObject, Object as Avm2Object, SoundChannelObject};
 use crate::backend::{
     audio::{AudioBackend, AudioManager, SoundHandle, SoundInstanceHandle},
     log::LogBackend,
@@ -386,10 +385,8 @@ impl<'gc> UpdateContext<'gc> {
         let stage_loader_info =
             LoaderInfoObject::not_yet_loaded(&mut activation, swf, None, Some(root), true)
                 .expect("Failed to construct Stage LoaderInfo");
-        stage_loader_info
-            .as_loader_info_object()
-            .unwrap()
-            .set_expose_content();
+        stage_loader_info.set_expose_content();
+
         activation
             .context
             .stage

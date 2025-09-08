@@ -3,8 +3,8 @@ use crate::avm1::{
 };
 use crate::avm2::{
     Activation as Avm2Activation, Avm2, Error as Avm2Error, EventObject as Avm2EventObject,
-    Multiname as Avm2Multiname, Object as Avm2Object, StageObject as Avm2StageObject, TObject as _,
-    Value as Avm2Value,
+    LoaderInfoObject, Multiname as Avm2Multiname, Object as Avm2Object,
+    StageObject as Avm2StageObject, TObject as _, Value as Avm2Value,
 };
 use crate::context::{RenderContext, UpdateContext};
 use crate::drawing::Drawing;
@@ -2413,7 +2413,7 @@ pub trait TDisplayObject<'gc>:
     /// Return the SWF that defines this display object.
     fn movie(self) -> Arc<SwfMovie>;
 
-    fn loader_info(self) -> Option<Avm2Object<'gc>> {
+    fn loader_info(self) -> Option<LoaderInfoObject<'gc>> {
         None
     }
 
