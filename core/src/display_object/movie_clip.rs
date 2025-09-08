@@ -2,13 +2,12 @@
 use crate::avm1::Avm1;
 use crate::avm1::{Activation as Avm1Activation, ActivationIdentifier};
 use crate::avm1::{NativeObject as Avm1NativeObject, Object as Avm1Object, Value as Avm1Value};
-use crate::avm2::object::LoaderInfoObject;
 use crate::avm2::object::LoaderStream;
 use crate::avm2::script::Script;
 use crate::avm2::Activation as Avm2Activation;
 use crate::avm2::{
-    Avm2, ClassObject as Avm2ClassObject, FunctionArgs as Avm2FunctionArgs, Object as Avm2Object,
-    QName as Avm2QName, StageObject as Avm2StageObject, Value as Avm2Value,
+    Avm2, ClassObject as Avm2ClassObject, FunctionArgs as Avm2FunctionArgs, LoaderInfoObject,
+    Object as Avm2Object, QName as Avm2QName, StageObject as Avm2StageObject, Value as Avm2Value,
 };
 use crate::backend::audio::{AudioManager, SoundInstanceHandle};
 use crate::backend::navigator::Request;
@@ -323,26 +322,21 @@ impl<'gc> MovieClip<'gc> {
             let loader_info =
                 LoaderInfoObject::not_yet_loaded(activation, movie.clone(), None, None, false)
                     .expect("Failed to construct LoaderInfoObject");
-            let loader_info_obj = loader_info.as_loader_info_object().unwrap();
-            loader_info_obj.set_expose_content();
-            loader_info_obj.set_content_type(ContentType::Swf);
-            Some((loader_info, loader_info_obj))
+            loader_info.set_expose_content();
+            loader_info.set_content_type(ContentType::Swf);
+            Some(loader_info)
         } else {
             None
         };
 
-        let shared = MovieClipShared::with_data(
-            0,
-            movie.clone().into(),
-            movie.num_frames(),
-            loader_info.map(|l| l.0),
-        );
+        let shared =
+            MovieClipShared::with_data(0, movie.clone().into(), movie.num_frames(), loader_info);
         let data = MovieClipData::new(shared, activation.gc());
         data.flags.set(MovieClipFlags::PLAYING);
         data.base.base.set_is_root(true);
 
         let mc = MovieClip(Gc::new(activation.gc(), data));
-        if let Some((_, loader_info)) = loader_info {
+        if let Some(loader_info) = loader_info {
             loader_info.set_loader_stream(LoaderStream::Swf(movie, mc.into()), activation.gc());
         }
         mc
@@ -367,9 +361,8 @@ impl<'gc> MovieClip<'gc> {
         let movie =
             movie.unwrap_or_else(|| Arc::new(SwfMovie::empty(write.movie().version(), None)));
         let total_frames = movie.num_frames();
-        assert_eq!(
-            write.shared.get().loader_info,
-            None,
+        assert!(
+            write.shared.get().loader_info.is_none(),
             "Called replace_movie on a clip with LoaderInfo set"
         );
 
@@ -380,12 +373,7 @@ impl<'gc> MovieClip<'gc> {
 
         unlock!(write, MovieClipData, shared).set(Gc::new(
             context.gc(),
-            MovieClipShared::with_data(
-                0,
-                movie.into(),
-                total_frames,
-                loader_info.map(|l| l.into()),
-            ),
+            MovieClipShared::with_data(0, movie.into(), total_frames, loader_info),
         ));
         write.tag_stream_pos.set(0);
         write.flags.set(MovieClipFlags::PLAYING);
@@ -409,11 +397,7 @@ impl<'gc> MovieClip<'gc> {
     /// `true` if both `init` and `complete` have been fired
     pub fn try_fire_loaderinfo_events(self, context: &mut UpdateContext<'gc>) -> bool {
         if self.0.initialized() {
-            if let Some(loader_info) = self
-                .loader_info()
-                .as_ref()
-                .and_then(|o| o.as_loader_info_object())
-            {
+            if let Some(loader_info) = self.loader_info() {
                 return loader_info.fire_init_and_complete_events(context, 0, false);
             }
         }
@@ -2580,7 +2564,7 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
         })
     }
 
-    fn loader_info(self) -> Option<Avm2Object<'gc>> {
+    fn loader_info(self) -> Option<LoaderInfoObject<'gc>> {
         self.0.shared.get().loader_info
     }
 
@@ -4425,7 +4409,7 @@ struct MovieClipShared<'gc> {
     /// This is always `None` for the AVM1 root movie.
     /// However, it will be set for an AVM1 movie loaded from AVM2
     /// via `Loader`
-    loader_info: Option<Avm2Object<'gc>>,
+    loader_info: Option<LoaderInfoObject<'gc>>,
 }
 
 #[derive(Default)]
@@ -4465,7 +4449,7 @@ impl<'gc> MovieClipShared<'gc> {
         id: CharacterId,
         swf: SwfSlice,
         header_frames: FrameNumber,
-        loader_info: Option<Avm2Object<'gc>>,
+        loader_info: Option<LoaderInfoObject<'gc>>,
     ) -> Self {
         Self {
             cell: Default::default(),
