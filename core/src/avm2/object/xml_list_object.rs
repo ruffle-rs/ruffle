@@ -4,6 +4,7 @@ use crate::avm2::e4x::{string_to_multiname, E4XNamespace, E4XNode, E4XNodeKind};
 use crate::avm2::error::make_error_1089;
 use crate::avm2::function::FunctionArgs;
 use crate::avm2::object::script_object::ScriptObjectData;
+use crate::avm2::object::xml_object::handle_input_multiname;
 use crate::avm2::object::{Object, TObject};
 use crate::avm2::value::Value;
 use crate::avm2::{Error, Multiname, Namespace};
@@ -484,8 +485,9 @@ impl<'gc> TObject<'gc> for XmlListObject<'gc> {
         multiname: &Multiname<'gc>,
     ) -> Option<XmlListObject<'gc>> {
         let mut descendants = Vec::new();
+        let multiname = handle_input_multiname(multiname.clone(), activation);
         for child in self.0.children.borrow().iter() {
-            child.node().descendants(multiname, &mut descendants);
+            child.node().descendants(&multiname, &mut descendants);
         }
 
         // NOTE: The way avmplus implemented this means we do not need to set target_dirty flag.
