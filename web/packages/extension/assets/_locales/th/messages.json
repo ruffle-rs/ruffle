@@ -1,1 +1,17 @@
-{}
+{
+    "settings_ruffle_enable": {
+        "message": "เล่นเนื้อหา Flash ใน Ruffle"
+    },
+    "settings_ignore_optout": {
+        "message": "เล่นเนื้อหา Flash แม้ว่าเว็บไซต์ดังกล่าวไม่อนุญาตให้กับ Ruffle"
+    },
+    "settings_log_level_warn": {
+        "message": "คำเตือน"
+    },
+    "settings_player_version": {
+        "message": "รุ่นโปรแกรมของ Flash ที่ต้องการให้จำลอง"
+    },
+    "settings_reset_confirm": {
+        "message": "คุณแน่ใจหรือว่าต้องการเรียกค่ามาตรฐานของ Ruffle คืนกลับมา"
+    }
+}
