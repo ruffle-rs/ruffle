@@ -142,7 +142,7 @@ pub fn init<'gc>(
         )
     };
 
-    new_bitmap_data.init_object2(activation.gc(), this);
+    new_bitmap_data.init_object2(activation.gc(), bitmap_data_obj);
     bitmap_data_obj.init_bitmap_data(activation.gc(), new_bitmap_data);
 
     Ok(Value::Undefined)

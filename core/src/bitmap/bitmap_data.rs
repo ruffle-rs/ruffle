@@ -1,4 +1,4 @@
-use crate::avm2::{Object as Avm2Object, Value as Avm2Value};
+use crate::avm2::object::BitmapDataObject;
 use crate::context::RenderContext;
 use crate::display_object::{DisplayObject, DisplayObjectWeak, TDisplayObject};
 use bitflags::bitflags;
@@ -300,7 +300,7 @@ impl<'gc> BitmapData<'gc> {
         self.0.width()
     }
 
-    pub fn object2(&self) -> Avm2Value<'gc> {
+    pub fn object2(&self) -> Option<BitmapDataObject<'gc>> {
         self.0.object2()
     }
 
@@ -323,7 +323,7 @@ impl<'gc> BitmapData<'gc> {
         self.0.dispose(mc);
     }
 
-    pub fn init_object2(&self, mc: &Mutation<'gc>, object: Avm2Object<'gc>) {
+    pub fn init_object2(&self, mc: &Mutation<'gc>, object: BitmapDataObject<'gc>) {
         self.0.init_object2(mc, object);
     }
 
@@ -389,7 +389,7 @@ pub struct BitmapRawData<'gc> {
     ///
     /// AVM1 cannot retrieve `BitmapData` back from the display object tree, so
     /// this does not need to hold an AVM1 object.
-    avm2_object: Option<Avm2Object<'gc>>,
+    avm2_object: Option<BitmapDataObject<'gc>>,
 
     /// A list of display objects that are backed by this BitmapData
     display_objects: Vec<DisplayObjectWeak<'gc>>,
@@ -417,7 +417,7 @@ pub enum DirtyState {
 }
 
 mod wrapper {
-    use crate::avm2::{Object as Avm2Object, Value as Avm2Value};
+    use crate::avm2::object::BitmapDataObject;
     use crate::context::RenderContext;
     use crate::display_object::DisplayObjectWeak;
     use gc_arena::barrier::Write;
@@ -611,7 +611,7 @@ mod wrapper {
             self.0.borrow().width
         }
 
-        pub fn object2(&self) -> Avm2Value<'gc> {
+        pub fn object2(&self) -> Option<BitmapDataObject<'gc>> {
             self.0.borrow().object2()
         }
 
@@ -643,8 +643,8 @@ mod wrapper {
             self.0.borrow_mut(mc).dispose();
         }
 
-        pub fn init_object2(&self, mc: &Mutation<'gc>, object: Avm2Object<'gc>) {
-            self.0.borrow_mut(mc).avm2_object = Some(object)
+        pub fn init_object2(&self, mc: &Mutation<'gc>, object: BitmapDataObject<'gc>) {
+            self.0.borrow_mut(mc).avm2_object = Some(object);
         }
 
         pub fn remove_display_object(&self, mc: &Mutation<'gc>, callback: DisplayObjectWeak<'gc>) {
@@ -934,14 +934,12 @@ impl<'gc> BitmapRawData<'gc> {
         }
     }
 
-    pub fn object2(&self) -> Avm2Value<'gc> {
+    pub fn object2(&self) -> Option<BitmapDataObject<'gc>> {
         self.avm2_object
-            .map(|o| o.into())
-            .unwrap_or(Avm2Value::Null)
     }
 
-    pub fn init_object2(&mut self, object: Avm2Object<'gc>) {
-        self.avm2_object = Some(object)
+    pub fn init_object2(&mut self, object: BitmapDataObject<'gc>) {
+        self.avm2_object = Some(object);
     }
 }
 
