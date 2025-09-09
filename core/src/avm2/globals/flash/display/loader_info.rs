@@ -145,7 +145,7 @@ pub fn get_content<'gc>(
     let loader_stream = loader_info.loader_stream();
     match &*loader_stream {
         LoaderStream::Swf(_, root) | LoaderStream::NotYetLoaded(_, Some(root), _) => {
-            Ok(root.object2())
+            Ok(root.object2_or_null())
         }
         _ => Ok(Value::Null),
     }

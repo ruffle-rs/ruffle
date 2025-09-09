@@ -1,7 +1,7 @@
 //! Video player display object
 
 use crate::avm1::{NativeObject as Avm1NativeObject, Object as Avm1Object, Value as Avm1Value};
-use crate::avm2::{StageObject as Avm2StageObject, Value as Avm2Value};
+use crate::avm2::StageObject as Avm2StageObject;
 use crate::context::{RenderContext, UpdateContext};
 use crate::display_object::{Avm1TextFieldBinding, DisplayObjectBase};
 use crate::prelude::*;
@@ -439,7 +439,7 @@ impl<'gc> TDisplayObject<'gc> for Video<'gc> {
     }
 
     fn construct_frame(self, context: &mut UpdateContext<'gc>) {
-        if self.movie().is_action_script_3() && matches!(self.object2(), Avm2Value::Null) {
+        if self.movie().is_action_script_3() && self.object2().is_none() {
             let video_constr = context.avm2.classes().video;
             let object =
                 Avm2StageObject::for_display_object(context.gc(), self.into(), video_constr);
@@ -531,10 +531,6 @@ impl<'gc> TDisplayObject<'gc> for Video<'gc> {
         context.transform_stack.pop();
     }
 
-    fn set_object2(self, context: &mut UpdateContext<'gc>, to: Avm2StageObject<'gc>) {
-        self.set_object(context, to.into());
-    }
-
     fn movie(self) -> Arc<SwfMovie> {
         self.0.movie.clone()
     }
@@ -548,13 +544,12 @@ impl<'gc> TDisplayObject<'gc> for Video<'gc> {
             .unwrap_or(Avm1Value::Undefined)
     }
 
-    fn object2(self) -> Avm2Value<'gc> {
-        self.0
-            .object
-            .get()
-            .and_then(|o| o.as_avm2_object())
-            .map(Avm2Value::from)
-            .unwrap_or(Avm2Value::Null)
+    fn object2(self) -> Option<Avm2StageObject<'gc>> {
+        self.0.object.get().and_then(|o| o.as_avm2_object())
+    }
+
+    fn set_object2(self, context: &mut UpdateContext<'gc>, to: Avm2StageObject<'gc>) {
+        self.set_object(context, to.into());
     }
 
     fn avm1_text_field_bindings(&self) -> Option<Ref<'_, [Avm1TextFieldBinding<'gc>]>> {

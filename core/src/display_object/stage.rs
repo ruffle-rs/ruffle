@@ -4,7 +4,7 @@ use crate::avm1::Object as Avm1Object;
 use crate::avm2::object::Stage3DObject;
 use crate::avm2::{
     Activation as Avm2Activation, Avm2, EventObject as Avm2EventObject, LoaderInfoObject,
-    Object as Avm2Object, StageObject as Avm2StageObject, Value as Avm2Value,
+    Object as Avm2Object, StageObject as Avm2StageObject,
 };
 use crate::backend::ui::MouseCursor;
 use crate::config::Letterbox;
@@ -699,9 +699,9 @@ impl<'gc> Stage<'gc> {
                     context,
                 );
             }
-        } else if let Avm2Value::Object(stage) = self.object2() {
+        } else if let Some(stage) = self.object2() {
             let resized_event = Avm2EventObject::bare_default_event(context, "resize");
-            Avm2::dispatch_event(context, resized_event, stage);
+            Avm2::dispatch_event(context, resized_event, stage.into());
         }
     }
 
@@ -729,7 +729,7 @@ impl<'gc> Stage<'gc> {
                     context,
                 );
             }
-        } else if let Avm2Value::Object(stage) = self.object2() {
+        } else if let Some(stage) = self.object2() {
             let mut activation = Avm2Activation::from_nothing(context);
 
             let full_screen_event_cls = activation.avm2().classes().fullscreenevent;
@@ -746,7 +746,7 @@ impl<'gc> Stage<'gc> {
                 ],
             );
 
-            Avm2::dispatch_event(context, full_screen_event, stage);
+            Avm2::dispatch_event(context, full_screen_event, stage.into());
         }
     }
 
@@ -863,12 +863,8 @@ impl<'gc> TDisplayObject<'gc> for Stage<'gc> {
         }
     }
 
-    fn object2(self) -> Avm2Value<'gc> {
-        self.0
-            .avm2_object
-            .get()
-            .expect("Attempted to access Stage::object2 before initialization")
-            .into()
+    fn object2(self) -> Option<Avm2StageObject<'gc>> {
+        self.0.avm2_object.get()
     }
 
     fn set_perspective_projection(self, mut perspective_projection: Option<PerspectiveProjection>) {

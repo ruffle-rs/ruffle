@@ -71,7 +71,7 @@ pub fn get_drop_target<'gc>(
         .and_then(|o| o.as_movie_clip())
         .and_then(|o| o.drop_target())
     {
-        return Ok(mc.object2());
+        return Ok(mc.object2_or_null());
     }
 
     Ok(Value::Null)
@@ -296,7 +296,7 @@ pub fn get_hit_area<'gc>(
         .and_then(|o| o.as_movie_clip())
         .and_then(|o| o.hit_area())
     {
-        return Ok(mc.object2());
+        return Ok(mc.object2_or_null());
     }
 
     Ok(Value::Null)
