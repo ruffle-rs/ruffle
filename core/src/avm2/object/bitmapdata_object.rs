@@ -80,7 +80,7 @@ impl<'gc> BitmapDataObject<'gc> {
             },
         ));
 
-        bitmap_data.init_object2(mc, instance.into());
+        bitmap_data.init_object2(mc, instance);
 
         instance
     }
@@ -101,7 +101,7 @@ impl<'gc> BitmapDataObject<'gc> {
     }
 
     /// This should only be called to initialize the association between an AVM
-    /// object and it's associated bitmap data. This association should not be
+    /// object and its associated bitmap data. This association should not be
     /// reinitialized later.
     pub fn init_bitmap_data(self, mc: &Mutation<'gc>, new_bitmap: BitmapData<'gc>) {
         unlock!(Gc::write(mc, self.0), BitmapDataObjectData, bitmap_data).set(new_bitmap);

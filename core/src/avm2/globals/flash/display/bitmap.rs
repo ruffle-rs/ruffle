@@ -56,7 +56,7 @@ pub fn bitmap_allocator<'gc>(
                 let new_bitmap_data = fill_bitmap_data_from_symbol(activation, bitmap.compressed());
                 let bitmap_data_obj =
                     BitmapDataObject::from_bitmap_data(activation.context, new_bitmap_data);
-                new_bitmap_data.init_object2(activation.gc(), bitmap_data_obj.into());
+                new_bitmap_data.init_object2(activation.gc(), bitmap_data_obj);
 
                 let child = Bitmap::new_with_bitmap_data(
                     activation.gc(),
@@ -124,12 +124,12 @@ pub fn get_bitmap_data<'gc>(
     let this = this.as_object().unwrap();
 
     if let Some(bitmap) = this.as_display_object().and_then(|dobj| dobj.as_bitmap()) {
-        let mut value = bitmap.bitmap_data().object2();
+        let value = bitmap
+            .bitmap_data()
+            .object2()
+            .map(|o| o.into())
+            .unwrap_or(Value::Null);
 
-        // AS3 expects an unset BitmapData to be null, not 'undefined'
-        if matches!(value, Value::Undefined) {
-            value = Value::Null;
-        }
         return Ok(value);
     }
 
