@@ -30,9 +30,9 @@ pub fn dispatch_removed_from_stage_event<'gc>(
     child: DisplayObject<'gc>,
     context: &mut UpdateContext<'gc>,
 ) {
-    if let Avm2Value::Object(object) = child.object2() {
+    if let Some(object) = child.object2() {
         let removed_evt = Avm2EventObject::bare_default_event(context, "removedFromStage");
-        Avm2::dispatch_event(context, removed_evt, object);
+        Avm2::dispatch_event(context, removed_evt, object.into());
     }
 
     if let Some(child_container) = child.as_container() {
@@ -45,9 +45,9 @@ pub fn dispatch_removed_from_stage_event<'gc>(
 /// Dispatch the `removed` event on a child and log any errors encountered
 /// whilst doing so.
 pub fn dispatch_removed_event<'gc>(child: DisplayObject<'gc>, context: &mut UpdateContext<'gc>) {
-    if let Avm2Value::Object(object) = child.object2() {
+    if let Some(object) = child.object2() {
         let removed_evt = Avm2EventObject::bare_event(context, "removed", true, false);
-        Avm2::dispatch_event(context, removed_evt, object);
+        Avm2::dispatch_event(context, removed_evt, object.into());
 
         if child.is_on_stage(context) {
             dispatch_removed_from_stage_event(child, context)
@@ -60,9 +60,9 @@ pub fn dispatch_added_to_stage_event_only<'gc>(
     child: DisplayObject<'gc>,
     context: &mut UpdateContext<'gc>,
 ) {
-    if let Avm2Value::Object(object) = child.object2() {
+    if let Some(object) = child.object2() {
         let added_evt = Avm2EventObject::bare_default_event(context, "addedToStage");
-        Avm2::dispatch_event(context, added_evt, object);
+        Avm2::dispatch_event(context, added_evt, object.into());
     }
 }
 
@@ -89,9 +89,9 @@ pub fn dispatch_added_to_stage_event<'gc>(
 /// Dispatch an `added` event to one object, and log any errors encountered
 /// whilst doing so.
 pub fn dispatch_added_event_only<'gc>(child: DisplayObject<'gc>, context: &mut UpdateContext<'gc>) {
-    if let Avm2Value::Object(object) = child.object2() {
+    if let Some(object) = child.object2() {
         let added_evt = Avm2EventObject::bare_event(context, "added", true, false);
-        Avm2::dispatch_event(context, added_evt, object);
+        Avm2::dispatch_event(context, added_evt, object.into());
     }
 }
 
@@ -379,7 +379,7 @@ pub trait TDisplayObjectContainer<'gc>:
         if removed_from_render_list {
             if !self.raw_container().is_action_script_3() {
                 child.avm1_unload(context);
-            } else if !matches!(child.object2(), Avm2Value::Null) {
+            } else if child.object2().is_some() {
                 //TODO: This is an awful, *awful* hack to deal with the fact
                 //that unloaded AVM1 clips see their parents, while AVM2 clips
                 //don't.
@@ -461,7 +461,7 @@ pub trait TDisplayObjectContainer<'gc>:
 
             if !self.raw_container().is_action_script_3() {
                 removed.avm1_unload(context);
-            } else if !matches!(removed.object2(), Avm2Value::Null) {
+            } else if removed.object2().is_some() {
                 removed.set_parent(context, None);
             }
 
@@ -752,7 +752,7 @@ impl<'gc> ChildContainer<'gc> {
                 );
                 if child.has_explicit_name() {
                     if let Some(name) = child.name() {
-                        if let Avm2Value::Object(parent_obj) = parent.object2() {
+                        if let Some(parent_obj) = parent.object2() {
                             let parent_obj = Avm2Value::from(parent_obj);
 
                             let mut activation = Avm2Activation::from_nothing(context);

@@ -4,7 +4,7 @@ use crate::avm1;
 use crate::avm2::{
     Activation as Avm2Activation, BitmapDataObject as Avm2BitmapDataObject,
     ClassObject as Avm2ClassObject, FunctionArgs as Avm2FunctionArgs,
-    StageObject as Avm2StageObject, Value as Avm2Value,
+    StageObject as Avm2StageObject,
 };
 use crate::bitmap::bitmap_data::BitmapData;
 use crate::context::{RenderContext, UpdateContext};
@@ -383,12 +383,8 @@ impl<'gc> TDisplayObject<'gc> for Bitmap<'gc> {
         );
     }
 
-    fn object2(self) -> Avm2Value<'gc> {
-        self.0
-            .avm2_object
-            .get()
-            .map(|o| o.into())
-            .unwrap_or(Avm2Value::Null)
+    fn object2(self) -> Option<Avm2StageObject<'gc>> {
+        self.0.avm2_object.get()
     }
 
     fn set_object2(self, context: &mut UpdateContext<'gc>, to: Avm2StageObject<'gc>) {

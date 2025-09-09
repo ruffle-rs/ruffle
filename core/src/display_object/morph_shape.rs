@@ -93,12 +93,8 @@ impl<'gc> TDisplayObject<'gc> for MorphShape<'gc> {
         self.invalidate_cached_bitmap();
     }
 
-    fn object2(self) -> Avm2Value<'gc> {
-        self.0
-            .object
-            .get()
-            .map(Avm2Value::from)
-            .unwrap_or(Avm2Value::Null)
+    fn object2(self) -> Option<Avm2StageObject<'gc>> {
+        self.0.object.get()
     }
 
     fn set_object2(self, context: &mut UpdateContext<'gc>, to: Avm2StageObject<'gc>) {
@@ -108,7 +104,7 @@ impl<'gc> TDisplayObject<'gc> for MorphShape<'gc> {
 
     /// Construct objects placed on this frame.
     fn construct_frame(self, context: &mut UpdateContext<'gc>) {
-        if self.movie().is_action_script_3() && matches!(self.object2(), Avm2Value::Null) {
+        if self.movie().is_action_script_3() && self.object2().is_none() {
             let class = context.avm2.classes().morphshape;
             let object = Avm2StageObject::for_display_object(context.gc(), self.into(), class);
             // We don't need to call the initializer method, as AVM2 can't link

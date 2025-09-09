@@ -4,7 +4,6 @@ use crate::avm2::activation::Activation;
 use crate::avm2::function::FunctionArgs;
 use crate::avm2::globals::slots::flash_events_event_dispatcher as slots;
 use crate::avm2::object::{EventObject, FunctionObject, Object, TObject as _};
-use crate::avm2::value::Value;
 use crate::avm2::Error;
 use crate::display_object::TDisplayObject;
 use crate::string::AvmString;
@@ -343,8 +342,8 @@ impl Hash for EventHandler<'_> {
 pub fn parent_of(target: Object<'_>) -> Option<Object<'_>> {
     if let Some(dobj) = target.as_display_object() {
         if let Some(dparent) = dobj.parent() {
-            if let Value::Object(parent) = dparent.object2() {
-                return Some(parent);
+            if let Some(parent) = dparent.object2() {
+                return Some(parent.into());
             }
         }
     }
@@ -439,8 +438,8 @@ pub fn dispatch_event<'gc>(
     // the parent DisplayObject hierarchy, only adding ancestors that have objects constructed.
     let mut parent = target.as_display_object().and_then(|dobj| dobj.parent());
     while let Some(parent_dobj) = parent {
-        if let Value::Object(parent_obj) = parent_dobj.object2() {
-            ancestor_list.push(parent_obj);
+        if let Some(parent_obj) = parent_dobj.object2() {
+            ancestor_list.push(parent_obj.into());
         }
         parent = parent_dobj.parent();
     }
