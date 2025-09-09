@@ -190,9 +190,8 @@ def release():
         log(f'Using {last_nightly_tag} as start tag for notes')
         release_options += ['--notes-start-tag', last_nightly_tag]
     else:
-        log(f'No start tag for notes found')
+        log('No start tag for notes found')
 
-    release_commit = run_command(['git', 'rev-parse', 'HEAD']).strip()
     run_command([
         'gh', 'release', 'create', tag_name,
         '--title', release_name,
