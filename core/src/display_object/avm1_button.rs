@@ -1,4 +1,5 @@
 use crate::avm1::{Activation, ActivationIdentifier, NativeObject, Object, Value};
+use crate::avm2::StageObject as Avm2StageObject;
 use crate::backend::audio::AudioManager;
 use crate::backend::ui::MouseCursor;
 use crate::context::{ActionType, RenderContext, UpdateContext};
@@ -351,6 +352,11 @@ impl<'gc> TDisplayObject<'gc> for Avm1Button<'gc> {
             .get()
             .map(Value::from)
             .unwrap_or(Value::Undefined)
+    }
+
+    fn object2(self) -> Option<Avm2StageObject<'gc>> {
+        // AVM1 buttons don't have an associated AVM2 object
+        None
     }
 
     fn allow_as_mask(self) -> bool {
