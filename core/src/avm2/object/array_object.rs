@@ -7,11 +7,12 @@ use crate::avm2::object::{ClassObject, Object, TObject};
 use crate::avm2::value::Value;
 use crate::avm2::Error;
 use crate::avm2::Multiname;
-use crate::string::{AvmString, WStr};
 use crate::utils::HasPrefixField;
 use core::fmt;
 use gc_arena::barrier::unlock;
 use gc_arena::{lock::RefLock, Collect, Gc, GcWeak, Mutation};
+use ruffle_common::avm_string::AvmString;
+use ruffle_wstr::WStr;
 use std::cell::{Ref, RefMut};
 
 /// A class instance allocator that allocates array objects.

@@ -5,8 +5,8 @@ use crate::avm2::Domain;
 use crate::avm2::Error;
 use crate::avm2::Multiname;
 use crate::avm2::Value;
-use crate::string::{AvmString, StringContext};
 use gc_arena::{Collect, Gc};
+use ruffle_common::avm_string::{AvmString, StringContext};
 use ruffle_macros::istr;
 
 use super::class::Class;

@@ -9,10 +9,10 @@ use crate::avm2::traits::{Trait, TraitKind};
 use crate::avm2::value::Value;
 use crate::avm2::{Class, Error, Multiname, Namespace, QName};
 use crate::context::UpdateContext;
-use crate::string::{AvmString, StringContext};
 use gc_arena::barrier::{field, unlock};
 use gc_arena::lock::Lock;
 use gc_arena::{Collect, Gc, Mutation};
+use ruffle_common::avm_string::{AvmString, StringContext};
 use std::collections::HashMap;
 
 #[derive(Collect, Clone, Copy)]

@@ -10,8 +10,8 @@ use crate::avm2::object::{
 };
 use crate::avm2::{FunctionArgs, Value as Avm2Value};
 use crate::context::UpdateContext;
-use crate::string::AvmString;
 use gc_arena::Collect;
+use ruffle_common::avm_string::AvmString;
 use std::collections::BTreeMap;
 use std::rc::Rc;
 

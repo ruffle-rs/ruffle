@@ -1,9 +1,10 @@
 use crate::avm2::activation::Activation;
 pub use crate::avm2::object::error_allocator;
-use crate::avm2::string::AvmString;
 use crate::avm2::value::Value;
 use crate::avm2::Error;
 use crate::PlayerMode;
+
+use ruffle_common::avm_string::AvmString;
 
 pub fn get_stack_trace<'gc>(
     activation: &mut Activation<'_, 'gc>,

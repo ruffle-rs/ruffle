@@ -13,8 +13,8 @@ use crate::avm2::{
 };
 use crate::context::UpdateContext;
 use crate::display_object::{DisplayObject, TDisplayObject};
-use crate::string::AvmString;
 use gc_arena::Collect;
+use ruffle_common::avm_string::AvmString;
 use std::collections::{binary_heap::PeekMut, BinaryHeap};
 
 /// Manages the collection of timers.

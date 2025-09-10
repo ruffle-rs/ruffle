@@ -1,11 +1,10 @@
 use super::{object::ObjectWeak, Activation, Object, Value};
-use crate::{
-    display_object::{DisplayObject, TDisplayObject, TDisplayObjectContainer},
-    string::{AvmString, WStr, WString},
-};
+use crate::display_object::{DisplayObject, TDisplayObject, TDisplayObjectContainer};
 use gc_arena::lock::Lock;
 use gc_arena::{Collect, Gc, Mutation};
+use ruffle_common::avm_string::AvmString;
 use ruffle_macros::istr;
+use ruffle_wstr::{WStr, WString};
 
 #[derive(Clone, Debug, Collect)]
 #[collect(no_drop)]

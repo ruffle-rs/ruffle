@@ -8,10 +8,10 @@ use crate::avm1::property_decl::{define_properties_on, Declaration};
 use crate::avm1::{NativeObject, Object, Value};
 use crate::avm1_stub;
 use crate::backend::ui::{FileDialogResult, FileFilter};
-use crate::string::{AvmString, StringContext};
 use gc_arena::barrier::unlock;
 use gc_arena::lock::Lock;
 use gc_arena::{Collect, Gc};
+use ruffle_common::avm_string::{AvmString, StringContext};
 use ruffle_macros::istr;
 use url::Url;
 

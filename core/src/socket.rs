@@ -6,7 +6,7 @@ use crate::avm2::object::{EventObject, SocketObject};
 use crate::avm2::{Activation as Avm2Activation, Avm2};
 use crate::backend::navigator::NavigatorBackend;
 use crate::context::UpdateContext;
-use crate::string::AvmString;
+use ruffle_common::avm_string::AvmString;
 
 use async_channel::{unbounded, Receiver, Sender as AsyncSender, Sender};
 use gc_arena::collect::Trace;

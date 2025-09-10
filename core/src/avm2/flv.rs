@@ -1,7 +1,7 @@
 use crate::avm2::array::ArrayStorage;
 use crate::avm2::object::{ArrayObject, DateObject, ScriptObject, TObject as _};
 use crate::avm2::{Activation, Value as Avm2Value};
-use crate::string::AvmString;
+use ruffle_common::avm_string::AvmString;
 
 use chrono::DateTime;
 use flv_rs::{Value as FlvValue, Variable as FlvVariable};

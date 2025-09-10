@@ -4,9 +4,9 @@ use crate::context::UpdateContext;
 use crate::debug_ui::display_object::open_display_object_button;
 use crate::debug_ui::handle::{AVM1ObjectHandle, DisplayObjectHandle};
 use crate::debug_ui::Message;
-use crate::string::AvmString;
 use egui::{Grid, Id, TextBuffer, TextEdit, Ui, Window};
 use gc_arena::Mutation;
+use ruffle_common::avm_string::AvmString;
 use ruffle_wstr::{WStr, WString};
 
 use super::common::show_style_sheet;

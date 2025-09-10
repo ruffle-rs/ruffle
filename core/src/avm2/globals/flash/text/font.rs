@@ -7,7 +7,7 @@ use crate::avm2::parameters::ParametersExt;
 use crate::avm2::value::Value;
 use crate::avm2::{ArrayObject, Error};
 use crate::avm2_stub_method;
-use crate::string::AvmString;
+use ruffle_common::avm_string::AvmString;
 
 pub use crate::avm2::object::font_allocator;
 use crate::character::Character;

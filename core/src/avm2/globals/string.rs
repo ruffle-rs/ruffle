@@ -11,7 +11,8 @@ use crate::avm2::regexp::{RegExp, RegExpFlags};
 use crate::avm2::value::Value;
 use crate::avm2::{ArrayObject, ArrayStorage};
 use crate::avm2::{Error, TObject};
-use crate::string::{AvmString, WString};
+use ruffle_common::avm_string::AvmString;
+use ruffle_wstr::WString;
 
 pub fn string_constructor<'gc>(
     activation: &mut Activation<'_, 'gc>,
@@ -525,7 +526,7 @@ pub fn to_lower_case<'gc>(
     Ok(AvmString::new(
         activation.gc(),
         this.iter()
-            .map(crate::string::utils::swf_to_lowercase)
+            .map(ruffle_wstr::utils::swf_to_lowercase)
             .collect::<WString>(),
     )
     .into())
@@ -542,7 +543,7 @@ pub fn to_upper_case<'gc>(
     Ok(AvmString::new(
         activation.gc(),
         this.iter()
-            .map(crate::string::utils::swf_to_uppercase)
+            .map(ruffle_wstr::utils::swf_to_uppercase)
             .collect::<WString>(),
     )
     .into())

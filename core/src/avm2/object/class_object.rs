@@ -16,7 +16,6 @@ use crate::avm2::Error;
 use crate::avm2::Multiname;
 use crate::avm2::QName;
 use crate::avm2::TranslationUnit;
-use crate::string::AvmString;
 use crate::utils::HasPrefixField;
 use fnv::FnvHashMap;
 use gc_arena::barrier::unlock;
@@ -24,6 +23,7 @@ use gc_arena::{
     lock::{Lock, RefLock},
     Collect, Gc, GcWeak, Mutation,
 };
+use ruffle_common::avm_string::AvmString;
 use ruffle_macros::istr;
 use std::fmt::Debug;
 use std::hash::{Hash, Hasher};

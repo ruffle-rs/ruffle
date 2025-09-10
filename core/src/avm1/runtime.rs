@@ -8,10 +8,10 @@ use crate::avm1::{scope, Activation, ActivationIdentifier, Error, Object, Value}
 use crate::context::UpdateContext;
 use crate::display_object::{DisplayObject, MovieClip, TDisplayObject, TDisplayObjectContainer};
 use crate::frame_lifecycle::FramePhase;
-use crate::string::{AvmString, StringContext};
 use crate::tag_utils::SwfSlice;
 use crate::{avm1, avm_debug};
 use gc_arena::{Collect, Gc, Mutation};
+use ruffle_common::avm_string::{AvmString, StringContext};
 use std::borrow::Cow;
 use swf::avm1::read::Reader;
 use tracing::instrument;

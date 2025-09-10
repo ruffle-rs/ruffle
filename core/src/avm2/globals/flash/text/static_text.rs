@@ -1,5 +1,5 @@
 use crate::avm2::{Activation, Error, Value};
-use crate::string::AvmString;
+use ruffle_common::avm_string::AvmString;
 
 /// Implements `StaticText.text`
 pub fn get_text<'gc>(

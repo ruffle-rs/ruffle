@@ -1,7 +1,7 @@
 use crate::avm2::error::make_error_2007;
 use crate::avm2::object::{FunctionObject, Object};
 use crate::avm2::{Activation, Error, Value};
-use crate::string::AvmString;
+use ruffle_common::avm_string::AvmString;
 
 use ruffle_macros::istr;
 

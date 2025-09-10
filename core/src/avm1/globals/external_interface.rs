@@ -5,7 +5,7 @@ use crate::avm1::error::Error;
 use crate::avm1::property_decl::{define_properties_on, Declaration};
 use crate::avm1::{Object, Value};
 use crate::external::{Callback, ExternalInterface, Value as ExternalValue};
-use crate::string::StringContext;
+use ruffle_common::avm_string::StringContext;
 
 const OBJECT_DECLS: &[Declaration] = declare_properties! {
     "available" => property(get_available; DONT_ENUM | DONT_DELETE | READ_ONLY);

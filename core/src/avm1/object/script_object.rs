@@ -7,9 +7,9 @@ use crate::avm1::property_map::{Entry, PropertyMap};
 use crate::avm1::{ObjectPtr, Value};
 use crate::display_object::{DisplayObject, TDisplayObject as _};
 use crate::ecma_conversions::f64_to_wrapping_i32;
-use crate::string::{AvmString, StringContext};
 use core::{fmt, mem};
 use gc_arena::{lock::RefLock, Collect, Gc, GcWeak, Mutation};
+use ruffle_common::avm_string::{AvmString, StringContext};
 use ruffle_macros::istr;
 
 use super::super_object::SuperObject;

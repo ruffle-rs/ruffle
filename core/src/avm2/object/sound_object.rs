@@ -10,7 +10,6 @@ use crate::avm2::EventObject;
 use crate::backend::audio::{AudioManager, SoundHandle};
 use crate::context::UpdateContext;
 use crate::display_object::SoundTransform;
-use crate::string::AvmString;
 use crate::utils::HasPrefixField;
 use core::fmt;
 use gc_arena::barrier::unlock;
@@ -19,6 +18,7 @@ use gc_arena::{
     Collect, Gc, GcWeak, Mutation,
 };
 use id3::{Tag, TagLike};
+use ruffle_common::avm_string::AvmString;
 use std::cell::Cell;
 use std::io::Cursor;
 use swf::SoundInfo;

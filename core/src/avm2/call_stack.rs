@@ -1,8 +1,8 @@
 use crate::avm2::class::Class;
 use crate::avm2::function::display_function;
 use crate::avm2::method::Method;
-use crate::string::WString;
 use gc_arena::Collect;
+use ruffle_wstr::WString;
 
 #[derive(Clone, Collect, Copy)]
 #[collect(no_drop)]

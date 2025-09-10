@@ -6,8 +6,8 @@ use crate::avm2::activation::Activation;
 use crate::avm2::error::{make_error_1052, Error};
 use crate::avm2::parameters::ParametersExt;
 use crate::avm2::value::Value;
-use crate::string::{AvmString, WStr, WString};
-use ruffle_wstr::Integer;
+use ruffle_common::avm_string::AvmString;
+use ruffle_wstr::{Integer, WStr, WString};
 use std::fmt::Write;
 
 pub fn trace<'gc>(
@@ -26,7 +26,7 @@ pub fn trace<'gc>(
                 .iter()
                 .map(|a| a.coerce_to_string(activation))
                 .collect::<Result<Vec<_>, _>>()?;
-            let msg = crate::string::join(&strings, &WStr::from_units(b" "));
+            let msg = ruffle_wstr::join(&strings, &WStr::from_units(b" "));
             activation.context.avm_trace(&msg.to_utf8_lossy());
         }
     }

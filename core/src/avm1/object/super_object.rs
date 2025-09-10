@@ -7,8 +7,8 @@ use crate::avm1::error::Error;
 use crate::avm1::function::ExecutionReason;
 use crate::avm1::object::{search_prototype, ExecutionName};
 use crate::avm1::{NativeObject, Object, Value};
-use crate::string::AvmString;
 use gc_arena::Collect;
+use ruffle_common::avm_string::AvmString;
 use ruffle_macros::istr;
 
 /// Implementation of the `super` object in AS2.

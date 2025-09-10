@@ -1,6 +1,6 @@
 use crate::avm1::activation::Activation;
 use crate::avm1::{Object, ObjectPtr, Value};
-use crate::string::AvmString;
+use ruffle_common::avm_string::AvmString;
 use std::fmt::Write;
 
 pub struct VariableDumper<'a> {

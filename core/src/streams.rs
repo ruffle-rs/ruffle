@@ -18,7 +18,6 @@ use crate::buffer::{Buffer, Slice, Substream, SubstreamError};
 use crate::context::UpdateContext;
 use crate::display_object::{MovieClip, TDisplayObject};
 use crate::loader::Error;
-use crate::string::AvmString;
 use flv_rs::{
     AudioData as FlvAudioData, AudioDataType as FlvAudioDataType, Error as FlvError, FlvReader,
     FrameType as FlvFrameType, Header as FlvHeader, ScriptData as FlvScriptData,
@@ -28,6 +27,7 @@ use flv_rs::{
 };
 use gc_arena::barrier::unlock;
 use gc_arena::{Collect, Gc, Lock, Mutation};
+use ruffle_common::avm_string::AvmString;
 use ruffle_macros::istr;
 use ruffle_render::bitmap::BitmapInfo;
 use ruffle_video::frame::EncodedFrame;

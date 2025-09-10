@@ -1,15 +1,15 @@
 //! XML builtin and prototype
 
-use ruffle_macros::istr;
-
 use crate::avm2::e4x::{name_to_multiname, E4XNamespace, E4XNode, E4XNodeKind};
 use crate::avm2::error::{make_error_1117, type_error};
 pub use crate::avm2::object::xml_allocator;
 use crate::avm2::object::{E4XOrXml, QNameObject, TObject, XmlListObject, XmlObject};
 use crate::avm2::parameters::ParametersExt;
-use crate::avm2::string::AvmString;
 use crate::avm2::{Activation, ArrayObject, ArrayStorage, Error, Multiname, Object, Value};
 use crate::avm2_stub_method;
+
+use ruffle_common::avm_string::AvmString;
+use ruffle_macros::istr;
 
 fn ill_formed_markup_err<'gc>(
     activation: &mut Activation<'_, 'gc>,

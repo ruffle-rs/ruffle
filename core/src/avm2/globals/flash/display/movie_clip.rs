@@ -8,7 +8,8 @@ use crate::avm2::parameters::ParametersExt;
 use crate::avm2::value::Value;
 use crate::avm2::Error;
 use crate::display_object::{MovieClip, Scene};
-use crate::string::{AvmString, WString};
+use ruffle_common::avm_string::AvmString;
+use ruffle_wstr::WString;
 
 /// Implements `addFrameScript`, an undocumented method of `MovieClip` used to
 /// specify what methods of a clip's class run on which frames.

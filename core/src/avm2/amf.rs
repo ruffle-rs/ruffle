@@ -10,11 +10,11 @@ use crate::avm2::ArrayObject;
 use crate::avm2::ArrayStorage;
 use crate::avm2::{Activation, Error, Object, Value};
 use crate::avm2_stub_method;
-use crate::string::AvmString;
 use enumset::EnumSet;
 use flash_lso::types::{AMFVersion, Element, Lso, ObjectId};
 use flash_lso::types::{Attribute, ClassDefinition, Value as AmfValue};
 use fnv::FnvHashMap;
+use ruffle_common::avm_string::AvmString;
 
 pub type ObjectTable<'gc> = FnvHashMap<Object<'gc>, Rc<AmfValue>>;
 

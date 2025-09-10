@@ -29,8 +29,8 @@ use crate::display_object::{
 };
 use crate::html::TextFormat;
 use crate::streams::NetStream;
-use crate::string::AvmString;
 use gc_arena::{Collect, Gc, Mutation};
+use ruffle_common::avm_string::AvmString;
 use ruffle_macros::istr;
 use std::cell::{Cell, RefCell};
 use std::marker::PhantomData;

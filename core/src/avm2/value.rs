@@ -10,11 +10,12 @@ use crate::avm2::script::TranslationUnit;
 use crate::avm2::vtable::VTable;
 use crate::avm2::{Error, Multiname, Namespace};
 use crate::ecma_conversions::{f64_to_wrapping_i32, f64_to_wrapping_u32};
-use crate::string::{AvmAtom, AvmString, WStr};
 use gc_arena::Collect;
 use num_bigint::BigInt;
 use num_traits::{ToPrimitive, Zero};
+use ruffle_common::avm_string::{AvmAtom, AvmString};
 use ruffle_macros::istr;
+use ruffle_wstr::WStr;
 use std::mem::size_of;
 use swf::avm2::types::{DefaultValue as AbcDefaultValue, Index};
 

@@ -19,8 +19,8 @@ use crate::backend::navigator::Request;
 use crate::character::Character;
 use crate::context::UpdateContext;
 use crate::display_object::{DisplayObject, SoundTransform, TDisplayObject};
-use crate::string::StringContext;
 use crate::{avm1_stub, avm_warn};
+use ruffle_common::avm_string::StringContext;
 
 #[derive(Debug, Collect)]
 #[collect(no_drop)]

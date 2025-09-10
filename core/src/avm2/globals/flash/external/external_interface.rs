@@ -2,7 +2,7 @@ use crate::avm2::error::error;
 use crate::avm2::parameters::ParametersExt;
 use crate::avm2::{Activation, Error, Value};
 use crate::external::{Callback, ExternalInterface, Value as ExternalValue};
-use crate::string::AvmString;
+use ruffle_common::avm_string::AvmString;
 
 pub fn call<'gc>(
     activation: &mut Activation<'_, 'gc>,

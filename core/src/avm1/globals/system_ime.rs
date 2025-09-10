@@ -3,7 +3,7 @@ use crate::avm1::error::Error;
 use crate::avm1::globals::as_broadcaster::BroadcasterFunctions;
 use crate::avm1::property_decl::{define_properties_on, Declaration};
 use crate::avm1::{Object, Value};
-use crate::string::{AvmString, StringContext};
+use ruffle_common::avm_string::{AvmString, StringContext};
 
 const OBJECT_DECLS: &[Declaration] = declare_properties! {
     "ALPHANUMERIC_FULL" => string("ALPHANUMERIC_FULL"; DONT_ENUM | DONT_DELETE | READ_ONLY);

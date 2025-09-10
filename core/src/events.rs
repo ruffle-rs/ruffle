@@ -1,6 +1,6 @@
 use crate::display_object::InteractiveObject;
 use crate::input::InputEvent;
-use crate::string::{AvmString, StringContext};
+use ruffle_common::avm_string::{AvmString, StringContext};
 use ruffle_macros::istr;
 use std::str::FromStr;
 use swf::ClipEventFlag;
