@@ -229,6 +229,27 @@ impl Default for RenderOptions {
     }
 }
 
+#[derive(Clone, Collect, Debug)]
+#[collect(no_drop)]
+pub enum RenderMask<'gc> {
+    /// There's no mask.
+    None,
+
+    /// Stencil masks are the classic, default masks used in Flash Player.
+    ///
+    /// The masker behaves like a stencil, and masks everything outside its
+    /// rendered pixels irrespectively of the pixels themselves.
+    /// The maskee acts like being masked with the masker's hit test image.
+    Stencil(DisplayObject<'gc>),
+
+    /// Alpha masks are the more advanced (and more intuitive) masks used when
+    /// CAB is enabled.
+    ///
+    /// The maskee is being masked based on the value of the masker's alpha
+    /// channel.
+    Alpha(DisplayObject<'gc>),
+}
+
 #[derive(Clone, Collect)]
 #[collect(no_drop)]
 // Ensure this always has the same alignment as its subclasses (needed for `Gc` casts).
@@ -1132,26 +1153,15 @@ pub fn apply_standard_mask_and_scroll<'gc, F>(
         });
     }
 
-    enum Mask<'gc> {
-        None,
-        Stencil(DisplayObject<'gc>),
-        Alpha(DisplayObject<'gc>),
-    }
-
-    let mask = match this.masker() {
-        None => Mask::None,
-        Some(mask) if this.is_bitmap_cached() && mask.is_bitmap_cached() => Mask::Alpha(mask),
-        Some(mask) => Mask::Stencil(mask),
-    };
-
+    let mask = this.get_render_mask();
     let mut mask_transform = ruffle_render::transform::Transform::default();
-    if let Mask::Stencil(m) | Mask::Alpha(m) = mask {
+    if let RenderMask::Stencil(m) | RenderMask::Alpha(m) = mask {
         if options.apply_transform {
             mask_transform.matrix = this.global_to_local_matrix().unwrap_or_default();
         }
         mask_transform.matrix *= m.local_to_global_matrix();
     }
-    if let Mask::Stencil(m) = mask {
+    if let RenderMask::Stencil(m) = mask {
         context.commands.push_mask();
         context.transform_stack.push(&mask_transform);
         m.render_self(context);
@@ -1177,7 +1187,7 @@ pub fn apply_standard_mask_and_scroll<'gc, F>(
         context.commands.activate_mask();
     }
 
-    if let Mask::Alpha(m) = mask {
+    if let RenderMask::Alpha(m) = mask {
         let original_commands = std::mem::take(&mut context.commands);
 
         draw(context);
@@ -1210,7 +1220,7 @@ pub fn apply_standard_mask_and_scroll<'gc, F>(
         context.commands.pop_mask();
     }
 
-    if let Mask::Stencil(m) = mask {
+    if let RenderMask::Stencil(m) = mask {
         context.commands.deactivate_mask();
         context.transform_stack.push(&mask_transform);
         m.render_self(context);
@@ -1906,6 +1916,17 @@ pub trait TDisplayObject<'gc>:
             self.invalidate_cached_bitmap();
         }
         DisplayObjectBase::set_maskee(Gc::write(mc, self.base()), node);
+    }
+
+    #[no_dynamic]
+    fn get_render_mask(self) -> RenderMask<'gc> {
+        match self.masker() {
+            None => RenderMask::None,
+            Some(mask) if self.is_bitmap_cached() && mask.is_bitmap_cached() => {
+                RenderMask::Alpha(mask)
+            }
+            Some(mask) => RenderMask::Stencil(mask),
+        }
     }
 
     /// High level method for setting the mask. Sets both masker and maskee.
