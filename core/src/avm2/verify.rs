@@ -9,7 +9,7 @@ use crate::avm2::namespace::Namespace;
 use crate::avm2::op::{LookupSwitch, Op};
 use crate::avm2::script::TranslationUnit;
 use crate::avm2::{Activation, Error, QName};
-use crate::string::{AvmAtom, AvmString};
+use ruffle_common::avm_string::{AvmAtom, AvmString};
 
 use gc_arena::{Collect, Gc};
 use std::cell::Cell;

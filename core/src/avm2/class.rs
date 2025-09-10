@@ -15,12 +15,13 @@ use crate::avm2::Multiname;
 use crate::avm2::Namespace;
 use crate::avm2::QName;
 use crate::context::UpdateContext;
-use crate::string::{AvmString, WString};
 use bitflags::bitflags;
 use fnv::FnvHashMap;
 use gc_arena::barrier::unlock;
 use gc_arena::lock::{OnceLock, RefLock};
 use gc_arena::{Collect, Gc, Lock, Mutation};
+use ruffle_common::avm_string::AvmString;
+use ruffle_wstr::WString;
 use swf::avm2::types::Trait as AbcTrait;
 
 use std::cell::{Cell, Ref};

@@ -8,12 +8,11 @@ use crate::avm2::function::FunctionArgs;
 use crate::avm2::object::FunctionObject;
 use crate::avm2::Error;
 use crate::avm2::{ArrayObject, ArrayStorage, Value};
-use crate::string::WString;
-use crate::string::{AvmString, Units, WStrToUtf8};
 use bitflags::bitflags;
 use gc_arena::Collect;
+use ruffle_common::avm_string::AvmString;
 use ruffle_macros::istr;
-use ruffle_wstr::WStr;
+use ruffle_wstr::{Units, WStr, WStrToUtf8, WString};
 
 use super::object::RegExpObject;
 

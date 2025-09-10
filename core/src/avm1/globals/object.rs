@@ -8,7 +8,7 @@ use crate::avm1::property_decl::{define_properties_on, Declaration};
 use crate::avm1::{Object, Value};
 use crate::avm_warn;
 use crate::display_object::TDisplayObject;
-use crate::string::{AvmString, StringContext};
+use ruffle_common::avm_string::{AvmString, StringContext};
 
 const PROTO_DECLS: &[Declaration] = declare_properties! {
     "addProperty" => method(add_property; DONT_ENUM | DONT_DELETE | VERSION_6);

@@ -9,7 +9,7 @@ use crate::avm1::ArrayBuilder;
 use crate::avm1::{globals, Object, Value};
 use crate::avm1_stub;
 use crate::display_object::{Avm1Button, TDisplayObject, TInteractiveObject};
-use crate::string::{AvmString, StringContext};
+use ruffle_common::avm_string::{AvmString, StringContext};
 
 macro_rules! button_getter {
     ($name:ident) => {

@@ -19,9 +19,9 @@ use crate::avm2::stack::Stack;
 use crate::character::Character;
 use crate::context::UpdateContext;
 use crate::display_object::{MovieClip, TDisplayObject};
-use crate::string::{AvmString, StringContext};
 use crate::tag_utils::SwfMovie;
 use crate::PlayerRuntime;
+use ruffle_common::avm_string::{AvmString, StringContext};
 
 use fnv::FnvHashMap;
 use gc_arena::lock::GcRefLock;
@@ -72,7 +72,6 @@ pub mod script;
 #[cfg(feature = "known_stubs")]
 pub mod specification;
 mod stack;
-mod string;
 mod stubs;
 mod traits;
 mod value;

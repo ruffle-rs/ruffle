@@ -6,9 +6,9 @@ use crate::{
     buffer::Substream,
     context::UpdateContext,
     display_object::{self, DisplayObject, MovieClip, TDisplayObject},
-    string::AvmString,
 };
 use gc_arena::Collect;
+use ruffle_common::avm_string::AvmString;
 use slotmap::{new_key_type, Key, SlotMap};
 
 #[cfg(feature = "audio")]

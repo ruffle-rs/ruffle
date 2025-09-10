@@ -9,10 +9,11 @@ use crate::avm_warn;
 use crate::display_object::{
     DisplayObject, MovieClip, TDisplayObject, TDisplayObjectContainer, TInteractiveObject,
 };
-use crate::string::{AvmString, StringContext, WStr};
 use crate::types::Percent;
 use gc_arena::Collect;
+use ruffle_common::avm_string::{AvmString, StringContext};
 use ruffle_macros::istr;
+use ruffle_wstr::WStr;
 use smallvec::SmallVec;
 use swf::Twips;
 

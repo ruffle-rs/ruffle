@@ -4,8 +4,8 @@ use crate::avm2::error::argument_error;
 use crate::avm2::globals::avmplus::instance_class_describe_type;
 use crate::avm2::parameters::ParametersExt;
 use crate::avm2::{Activation, Error, Value};
-use crate::string::AvmString;
-use crate::string::WString;
+use ruffle_common::avm_string::AvmString;
+use ruffle_wstr::WString;
 use std::fmt::Write;
 use web_time::Instant;
 

@@ -6,8 +6,8 @@ use crate::avm1::error::Error;
 use crate::avm1::property::Attribute;
 use crate::avm1::{Object, Value};
 use crate::display_object::TDisplayObject;
-use crate::string::AvmString;
 use gc_arena::{Collect, Gc, Mutation};
+use ruffle_common::avm_string::AvmString;
 
 /// Indicates what kind of scope a scope is.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]

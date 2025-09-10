@@ -342,7 +342,7 @@ pub fn atom(item: TokenStream) -> TokenStream {
 pub fn istr(item: TokenStream) -> TokenStream {
     atom_internal(item, |atom| {
         quote!(
-            crate::string::AvmString::from(#atom)
+            ruffle_common::avm_string::AvmString::from(#atom)
         )
     })
 }
@@ -382,7 +382,7 @@ fn atom_internal(
 
     let mut atom = if let Some(context) = input.context {
         quote!(
-            crate::string::HasStringContext::strings_ref(#context).common().#string_ident
+            ruffle_common::avm_string::HasStringContext::strings_ref(#context).common().#string_ident
         )
     } else {
         quote!(

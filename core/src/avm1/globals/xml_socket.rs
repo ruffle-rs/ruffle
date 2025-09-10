@@ -6,8 +6,8 @@ use crate::avm1::{Activation, Error, ExecutionReason, Value};
 use crate::context::UpdateContext;
 use crate::display_object::TDisplayObject;
 use crate::socket::SocketHandle;
-use crate::string::{AvmString, StringContext};
 use gc_arena::{Collect, Gc};
+use ruffle_common::avm_string::{AvmString, StringContext};
 use ruffle_macros::istr;
 use std::cell::{Cell, RefCell, RefMut};
 

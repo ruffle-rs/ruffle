@@ -2,7 +2,7 @@ use crate::avm2::array::ArrayStorage;
 use crate::avm2::object::{ArrayObject, Object, ScriptObject, TObject};
 use crate::avm2::script::TranslationUnit;
 use crate::avm2::{Activation, Error, Value};
-use crate::string::AvmString;
+use ruffle_common::avm_string::AvmString;
 
 use gc_arena::Collect;
 use ruffle_macros::istr;

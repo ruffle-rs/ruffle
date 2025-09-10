@@ -17,12 +17,12 @@ use crate::display_object::{
     DisplayObject, DisplayObjectBase, TDisplayObject, TDisplayObjectContainer,
 };
 use crate::events::{ClipEvent, ClipEventResult, MouseButton};
-use crate::string::AvmString;
 use crate::utils::HasPrefixField;
 use bitflags::bitflags;
 use gc_arena::barrier::unlock;
 use gc_arena::lock::Lock;
 use gc_arena::{Collect, Gc, Mutation};
+use ruffle_common::avm_string::AvmString;
 use ruffle_macros::{enum_trait_object, istr};
 use std::cell::Cell;
 use std::fmt::Debug;

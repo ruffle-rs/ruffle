@@ -8,9 +8,10 @@ use crate::display_object::{
     AutoSizeMode, EditText, TDisplayObject, TInteractiveObject, TextSelection,
 };
 use crate::html::TextFormat;
-use crate::string::{AvmString, StringContext, WStr};
 use gc_arena::Gc;
+use ruffle_common::avm_string::{AvmString, StringContext};
 use ruffle_macros::istr;
+use ruffle_wstr::WStr;
 use swf::Color;
 
 macro_rules! tf_method {

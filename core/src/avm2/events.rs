@@ -7,9 +7,9 @@ use crate::avm2::object::{EventObject, FunctionObject, Object, TObject as _};
 use crate::avm2::value::Value;
 use crate::avm2::Error;
 use crate::display_object::TDisplayObject;
-use crate::string::AvmString;
 use fnv::FnvHashMap;
 use gc_arena::Collect;
+use ruffle_common::avm_string::AvmString;
 use std::collections::BTreeMap;
 use std::hash::{Hash, Hasher};
 

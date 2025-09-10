@@ -2,7 +2,6 @@
 
 use crate::avm1::xml::iterators;
 use crate::avm1::{Activation, ArrayBuilder, Attribute, Error, NativeObject, Object, Value};
-use crate::string::{AvmString, StringContext, WStr, WString};
 use gc_arena::barrier::unlock;
 use gc_arena::{
     lock::{Lock, RefLock},
@@ -10,7 +9,9 @@ use gc_arena::{
 };
 use quick_xml::escape::escape;
 use quick_xml::events::BytesStart;
+use ruffle_common::avm_string::{AvmString, StringContext};
 use ruffle_macros::istr;
+use ruffle_wstr::{WStr, WString};
 use std::cell::RefMut;
 use std::fmt;
 

@@ -8,12 +8,12 @@ use crate::avm2::object::{ClassObject, FunctionObject, Object, TObject};
 use crate::avm2::value::Value;
 use crate::avm2::vtable::VTable;
 use crate::avm2::{Error, Multiname, QName};
-use crate::string::AvmString;
 use gc_arena::barrier::{unlock, Write};
 use gc_arena::{
     lock::{Lock, RefLock},
     Collect, Gc, GcWeak, Mutation,
 };
+use ruffle_common::avm_string::AvmString;
 use std::cell::{Ref, RefMut};
 use std::fmt::Debug;
 

@@ -14,7 +14,7 @@ use crate::avm1::object::NativeObject;
 use crate::avm1::property_decl::{define_properties_on, Declaration};
 use crate::avm1::{Attribute, Object, Value};
 use crate::context::UpdateContext;
-use crate::string::StringContext;
+use ruffle_common::avm_string::StringContext;
 use ruffle_macros::istr;
 use ruffle_render::filters::Filter;
 

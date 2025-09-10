@@ -9,7 +9,7 @@ use crate::avm1::{ArrayBuilder, Object, Value};
 use crate::backend::navigator::Request;
 use crate::display_object::TDisplayObject;
 use crate::loader::MovieLoaderVMData;
-use crate::string::StringContext;
+use ruffle_common::avm_string::StringContext;
 use ruffle_macros::istr;
 
 const PROTO_DECLS: &[Declaration] = declare_properties! {

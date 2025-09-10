@@ -5,8 +5,8 @@ use crate::avm1::function::FunctionObject;
 use crate::avm1::object::NativeObject;
 use crate::avm1::property_decl::{define_properties_on, Declaration};
 use crate::avm1::{Activation, ArrayBuilder, Error, Object, Value};
-use crate::string::StringContext;
 use gc_arena::{Collect, Gc, Mutation};
+use ruffle_common::avm_string::StringContext;
 use std::cell::{Cell, RefCell};
 use swf::{Color, ConvolutionFilterFlags};
 

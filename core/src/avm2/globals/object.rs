@@ -6,7 +6,7 @@ use crate::avm2::object::{Object, ScriptObject, TObject};
 use crate::avm2::parameters::ParametersExt;
 use crate::avm2::value::Value;
 use crate::avm2::{Error, Multiname};
-use crate::string::AvmString;
+use ruffle_common::avm_string::AvmString;
 
 /// Implements `Object`'s custom constructor, called when ActionScript code runs
 /// `new Object(...)` directly.

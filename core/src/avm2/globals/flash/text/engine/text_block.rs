@@ -15,7 +15,7 @@ use crate::avm2::value::Value;
 use crate::avm2_stub_method;
 use crate::display_object::{EditText, TDisplayObject};
 use crate::html::TextFormat;
-use crate::string::WStr;
+use ruffle_wstr::WStr;
 
 pub fn create_text_line<'gc>(
     activation: &mut Activation<'_, 'gc>,

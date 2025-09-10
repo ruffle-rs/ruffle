@@ -13,8 +13,9 @@ use crate::avm2::parameters::ParametersExt;
 use crate::avm2::value::Value;
 use crate::avm2::vector::VectorStorage;
 use crate::avm2::{Error, Multiname, QName};
-use crate::string::{AvmString, WStr};
+use ruffle_common::avm_string::AvmString;
 use ruffle_macros::istr;
+use ruffle_wstr::WStr;
 use std::cmp::{max, min, Ordering};
 
 // Allocator for generic Vector, not specialized Vector
@@ -257,7 +258,7 @@ pub fn join<'gc>(
             }
         }
 
-        return Ok(AvmString::new(activation.gc(), crate::string::join(&accum, &separator)).into());
+        return Ok(AvmString::new(activation.gc(), ruffle_wstr::join(&accum, &separator)).into());
     }
 
     Ok(Value::Undefined)

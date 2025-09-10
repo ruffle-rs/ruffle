@@ -5,7 +5,7 @@ use crate::avm1::{Object, Value};
 use crate::avm1_stub;
 use crate::prelude::TDisplayObject;
 use crate::sandbox::SandboxType;
-use crate::string::{AvmString, StringContext};
+use ruffle_common::avm_string::{AvmString, StringContext};
 
 const OBJECT_DECLS: &[Declaration] = declare_properties! {
     "PolicyFileResolver" => method(policy_file_resolver);

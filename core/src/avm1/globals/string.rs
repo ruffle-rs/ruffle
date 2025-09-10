@@ -1,14 +1,14 @@
 //! `String` class impl
 
-use ruffle_macros::istr;
-
 use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
 use crate::avm1::function::FunctionObject;
 use crate::avm1::property::Attribute;
 use crate::avm1::property_decl::{define_properties_on, Declaration};
 use crate::avm1::{ArrayBuilder, NativeObject, Object, Value};
-use crate::string::{utils as string_utils, AvmString, StringContext, WString};
+use ruffle_common::avm_string::{AvmString, StringContext};
+use ruffle_macros::istr;
+use ruffle_wstr::WString;
 
 const PROTO_DECLS: &[Declaration] = declare_properties! {
     "toString" => method(to_string_value_of; DONT_ENUM | DONT_DELETE);
@@ -365,7 +365,7 @@ fn to_lower_case<'gc>(
     Ok(AvmString::new(
         activation.gc(),
         this.iter()
-            .map(string_utils::swf_to_lowercase)
+            .map(ruffle_wstr::utils::swf_to_lowercase)
             .collect::<WString>(),
     )
     .into())
@@ -397,7 +397,7 @@ fn to_upper_case<'gc>(
     Ok(AvmString::new(
         activation.gc(),
         this.iter()
-            .map(string_utils::swf_to_uppercase)
+            .map(ruffle_wstr::utils::swf_to_uppercase)
             .collect::<WString>(),
     )
     .into())

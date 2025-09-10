@@ -2,7 +2,7 @@ use crate::avm2::object::{ScriptObject, TObject as _};
 use crate::avm2::parameters::ParametersExt;
 use crate::avm2::{Activation, Error, Value};
 use crate::html::{transform_dashes_to_camel_case, CssStream};
-use crate::string::AvmString;
+use ruffle_common::avm_string::AvmString;
 use ruffle_wstr::WStr;
 
 pub use crate::avm2::object::style_sheet_allocator;

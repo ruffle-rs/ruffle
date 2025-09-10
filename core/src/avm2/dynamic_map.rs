@@ -1,9 +1,10 @@
+use crate::avm2::object::Object;
+
 use fnv::FnvBuildHasher;
 use gc_arena::Collect;
 use hashbrown::raw::RawTable;
+use ruffle_common::avm_string::AvmString;
 use std::{cell::Cell, hash::Hash};
-
-use super::{string::AvmString, Object};
 
 #[derive(Debug, Collect, Copy, Clone)]
 #[collect(no_drop)]
