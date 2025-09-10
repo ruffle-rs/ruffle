@@ -191,6 +191,19 @@ impl BitmapCache {
     }
 }
 
+#[derive(Clone)]
+pub struct RenderOptions {
+    pub apply_transform: bool,
+}
+
+impl Default for RenderOptions {
+    fn default() -> Self {
+        Self {
+            apply_transform: true,
+        }
+    }
+}
+
 #[derive(Clone, Collect)]
 #[collect(no_drop)]
 // Ensure this always has the same alignment as its subclasses (needed for `Gc` casts).
@@ -832,11 +845,17 @@ struct DrawCacheInfo {
     filters: Vec<Filter>,
 }
 
-pub fn render_base<'gc>(this: DisplayObject<'gc>, context: &mut RenderContext<'_, 'gc>) {
+pub fn render_base<'gc>(
+    this: DisplayObject<'gc>,
+    context: &mut RenderContext<'_, 'gc>,
+    options: RenderOptions,
+) {
     if this.maskee().is_some() {
         return;
     }
-    context.transform_stack.push(&this.base().transform());
+    if options.apply_transform {
+        context.transform_stack.push(&this.base().transform());
+    }
     let blend_mode = this.blend_mode();
     let original_commands = if blend_mode != ExtendedBlendMode::Normal {
         Some(std::mem::take(&mut context.commands))
@@ -970,22 +989,27 @@ pub fn render_base<'gc>(this: DisplayObject<'gc>, context: &mut RenderContext<'_
         }
 
         // When rendering it back, ensure we're only keeping the translation - scale/rotation is within the image already
-        apply_standard_mask_and_scroll(this, context, |context| {
-            context.commands.render_bitmap(
-                cache_info.handle,
-                Transform {
-                    matrix: Matrix {
-                        tx: context.transform_stack.transform().matrix.tx + offset_x,
-                        ty: context.transform_stack.transform().matrix.ty + offset_y,
-                        ..Default::default()
+        apply_standard_mask_and_scroll(
+            this,
+            context,
+            |context| {
+                context.commands.render_bitmap(
+                    cache_info.handle,
+                    Transform {
+                        matrix: Matrix {
+                            tx: context.transform_stack.transform().matrix.tx + offset_x,
+                            ty: context.transform_stack.transform().matrix.ty + offset_y,
+                            ..Default::default()
+                        },
+                        color_transform: cache_info.base_transform.color_transform,
+                        perspective_projection: cache_info.base_transform.perspective_projection,
                     },
-                    color_transform: cache_info.base_transform.color_transform,
-                    perspective_projection: cache_info.base_transform.perspective_projection,
-                },
-                true,
-                PixelSnapping::Always, // cacheAsBitmap forces pixel snapping
-            )
-        });
+                    true,
+                    PixelSnapping::Always, // cacheAsBitmap forces pixel snapping
+                )
+            },
+            &options,
+        );
     } else {
         if let Some(background) = this.opaque_background() {
             // This is intended for use with cacheAsBitmap, but can be set for non-cached objects too
@@ -999,7 +1023,12 @@ pub fn render_base<'gc>(this: DisplayObject<'gc>, context: &mut RenderContext<'_
                 .commands
                 .draw_rect(background, Matrix::create_box_from_rectangle(&bounds));
         }
-        apply_standard_mask_and_scroll(this, context, |context| this.render_self(context));
+        apply_standard_mask_and_scroll(
+            this,
+            context,
+            |context| this.render_self(context),
+            &options,
+        );
     }
 
     if let Some(original_commands) = original_commands {
@@ -1019,7 +1048,9 @@ pub fn render_base<'gc>(this: DisplayObject<'gc>, context: &mut RenderContext<'_
         }
     }
 
-    context.transform_stack.pop();
+    if options.apply_transform {
+        context.transform_stack.pop();
+    }
 }
 
 /// This applies the **standard** method of `mask` and `scrollRect`.
@@ -1030,6 +1061,7 @@ pub fn apply_standard_mask_and_scroll<'gc, F>(
     this: DisplayObject<'gc>,
     context: &mut RenderContext<'_, 'gc>,
     draw: F,
+    options: &RenderOptions,
 ) where
     F: FnOnce(&mut RenderContext<'_, 'gc>),
 {
@@ -1071,7 +1103,9 @@ pub fn apply_standard_mask_and_scroll<'gc, F>(
 
     let mut mask_transform = ruffle_render::transform::Transform::default();
     if let Mask::Stencil(m) | Mask::Alpha(m) = mask {
-        mask_transform.matrix = this.global_to_local_matrix().unwrap_or_default();
+        if options.apply_transform {
+            mask_transform.matrix = this.global_to_local_matrix().unwrap_or_default();
+        }
         mask_transform.matrix *= m.local_to_global_matrix();
     }
     if let Mask::Stencil(m) = mask {
@@ -2259,7 +2293,11 @@ pub trait TDisplayObject<'gc>:
     fn render_self(self, _context: &mut RenderContext<'_, 'gc>) {}
 
     fn render(self, context: &mut RenderContext<'_, 'gc>) {
-        render_base(self.into(), context)
+        self.render_with_options(context, Default::default())
+    }
+
+    fn render_with_options(self, context: &mut RenderContext<'_, 'gc>, options: RenderOptions) {
+        render_base(self.into(), context, options)
     }
 
     #[cfg(not(feature = "avm_debug"))]

@@ -8,7 +8,7 @@ use crate::bitmap::bitmap_data::{
 };
 use crate::bitmap::turbulence::Turbulence;
 use crate::context::{RenderContext, UpdateContext};
-use crate::display_object::TDisplayObject;
+use crate::display_object::{RenderOptions, TDisplayObject};
 use gc_arena::Mutation;
 use ruffle_render::backend::RenderBackend;
 use ruffle_render::bitmap::{PixelRegion, PixelSnapping};
@@ -1559,9 +1559,10 @@ pub fn draw<'gc>(
             data.render(smoothing, &mut render_context, PixelSnapping::Never);
         }
         IBitmapDrawable::DisplayObject(object) => {
-            // Note that we do *not* use `render_base`,
-            // as we want to ignore the object's mask and normal transform
-            object.render_self(&mut render_context);
+            let options = RenderOptions {
+                apply_transform: false,
+            };
+            object.render_with_options(&mut render_context, options);
         }
     }
 
