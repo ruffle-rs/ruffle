@@ -11,7 +11,7 @@ use crate::config::Letterbox;
 use crate::context::{RenderContext, UpdateContext};
 use crate::display_object::container::ChildContainer;
 use crate::display_object::interactive::{InteractiveObjectBase, TInteractiveObject};
-use crate::display_object::{render_base, DisplayObjectBase};
+use crate::display_object::{render_base, DisplayObjectBase, RenderOptions};
 use crate::events::{ClipEvent, ClipEventResult};
 use crate::focus_tracker::FocusTracker;
 use crate::prelude::*;
@@ -816,7 +816,7 @@ impl<'gc> TDisplayObject<'gc> for Stage<'gc> {
         self.render_children(context);
     }
 
-    fn render(self, context: &mut RenderContext<'_, 'gc>) {
+    fn render_with_options(self, context: &mut RenderContext<'_, 'gc>, options: RenderOptions) {
         context.transform_stack.push(&Transform {
             matrix: self.0.viewport_matrix.get(),
             color_transform: Default::default(),
@@ -836,7 +836,7 @@ impl<'gc> TDisplayObject<'gc> for Stage<'gc> {
             }
         }
 
-        render_base(self.into(), context);
+        render_base(self.into(), context, options);
 
         self.focus_tracker().render_highlight(context);
 
