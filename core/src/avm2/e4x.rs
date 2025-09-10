@@ -77,12 +77,19 @@ fn make_xml_error<'gc>(activation: &mut Activation<'_, 'gc>, err: XmlError) -> E
                 "Error #1094: XML parser failure: Unterminated comment.",
                 1094,
             ),
+            // FIXME: Based on circumstance, this branch should produce Error #1092 or Error #1097.
+            // Doing so should fix the from_avmplus/as3/RuntimeErrors/Error1092XmlUnterminatedXmlDecl test.
             XmlSyntaxError::UnclosedPIOrXmlDecl => type_error(
                 activation,
                 "Error #1097: XML parser failure: Unterminated processing instruction.",
                 1097,
             ),
-            _ => type_error(
+            XmlSyntaxError::UnclosedTag => type_error(
+                activation,
+                "Error #1090: XML parser failure: element is malformed.",
+                1090,
+            ),
+            XmlSyntaxError::InvalidBangMarkup => type_error(
                 activation,
                 "Error #1090: XML parser failure: element is malformed.",
                 1090,
@@ -831,6 +838,36 @@ impl<'gc> E4XNode<'gc> {
                         activation,
                         "Error #1088: The markup in the document following the root element must be well-formed.",
                         1088,
+                    )?));
+                }
+                Err(XmlError::Syntax(XmlSyntaxError::UnclosedTag))
+                    if top_level.is_empty() && open_tags.is_empty() =>
+                {
+                    // Check if this looks like an unterminated attribute by examining the XML content
+                    // Look for pattern: < followed by tag name, then space and attribute with = and quote
+                    let error_pos = parser.error_position() as usize;
+
+                    if error_pos < data_utf8.len() {
+                        let rest = &data_utf8[error_pos..];
+                        // Check if we have an attribute pattern (contains '=' and a quote)
+                        if let Some(tag_end_idx) = rest.find('>') {
+                            let tag_content = &rest[..tag_end_idx];
+                            if tag_content.contains('=')
+                                && (tag_content.contains('\'') || tag_content.contains('"'))
+                            {
+                                return Err(Error::avm_error(type_error(
+                                    activation,
+                                    "Error #1095: XML parser failure: Unterminated attribute.",
+                                    1095,
+                                )?));
+                            }
+                        }
+                    }
+                    // Otherwise, it's a malformed element
+                    return Err(Error::avm_error(type_error(
+                        activation,
+                        "Error #1090: XML parser failure: element is malformed.",
+                        1090,
                     )?));
                 }
                 Err(err) => return Err(make_xml_error(activation, err)),
