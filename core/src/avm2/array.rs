@@ -358,7 +358,7 @@ impl<'gc> ArrayStorage<'gc> {
 
     /// Pop a value from the back of the array.
     ///
-    /// This method preferrentially pops non-holes from the array first. If a
+    /// This method preferentially pops non-holes from the array first. If a
     /// hole is popped, it will become `undefined`.
     pub fn pop(&mut self) -> Value<'gc> {
         match self {
@@ -523,6 +523,77 @@ impl<'gc> ArrayStorage<'gc> {
                     }
                     self.maybe_convert_to_dense();
                     value
+                }
+            }
+        }
+    }
+
+    pub fn splice(
+        &mut self,
+        start: usize,
+        delete_count: usize,
+        items: &[Value<'gc>],
+    ) -> ArrayStorage<'gc> {
+        let delete_count = delete_count.min(self.length() - start);
+        let end = start + delete_count;
+        match self {
+            ArrayStorage::Dense {
+                storage,
+                occupied_count,
+            } => {
+                let mut occupied_removed = 0;
+                let splice = storage
+                    .splice(start..end, items.iter().map(|i| Some(*i)))
+                    .inspect(|v| {
+                        if v.is_some() {
+                            occupied_removed += 1;
+                        }
+                    })
+                    .collect::<Vec<_>>();
+                *occupied_count = occupied_count.saturating_sub(occupied_removed);
+                ArrayStorage::from_storage(splice)
+            }
+            ArrayStorage::Sparse { storage, length } => {
+                // 1. Split the map into 3 ranges:
+                //      storage, splice, remaining
+                let remaining = storage.split_off(&end);
+                let splice = storage.split_off(&start);
+
+                // 2. Remap indices in remaining elements
+                let rshift = items.len() as isize - delete_count as isize;
+                let mut remaining = if rshift == 0 {
+                    remaining
+                } else {
+                    remaining
+                        .into_iter()
+                        .map(|(i, v)| (i.saturating_add_signed(rshift), v))
+                        .collect::<BTreeMap<_, _>>()
+                };
+
+                // 3. Put remaining elements back in original array
+                storage.append(&mut remaining);
+
+                // 4. Put new items to the original array
+                for (i, item) in items.iter().enumerate() {
+                    storage.insert(start + i, *item);
+                }
+
+                // 5. Remap indices in splice
+                let splice = if start == 0 {
+                    splice
+                } else {
+                    splice
+                        .into_iter()
+                        .map(|(i, v)| (i.saturating_sub(start), v))
+                        .collect::<BTreeMap<_, _>>()
+                };
+
+                // 6. Update length
+                *length = length.saturating_add_signed(rshift);
+
+                ArrayStorage::Sparse {
+                    storage: splice,
+                    length: delete_count,
                 }
             }
         }
