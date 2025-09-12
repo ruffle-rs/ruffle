@@ -7,6 +7,149 @@ use std::collections::BTreeMap;
 const MIN_SPARSE_LENGTH: usize = 32;
 const MAX_DENSE_LENGTH: usize = 1 << 28;
 
+/// A vector with an offset that represents the starting index.
+/// This encapsulates the dense array logic where storage doesn't start at index 0.
+#[derive(Clone, Collect)]
+#[collect(no_drop)]
+pub struct StartOffsetVec<'gc> {
+    storage: Vec<Option<Value<'gc>>>,
+    start_offset: usize,
+}
+
+impl<'gc> StartOffsetVec<'gc> {
+    fn new() -> Self {
+        Self {
+            storage: Vec::new(),
+            start_offset: 0,
+        }
+    }
+
+    fn with_capacity(capacity: usize) -> Self {
+        Self {
+            storage: Vec::with_capacity(capacity),
+            start_offset: 0,
+        }
+    }
+
+    fn from_storage(storage: Vec<Option<Value<'gc>>>) -> Self {
+        Self {
+            storage,
+            start_offset: 0,
+        }
+    }
+
+    fn len(&self) -> usize {
+        self.storage.len()
+    }
+
+    fn is_empty(&self) -> bool {
+        self.storage.is_empty()
+    }
+
+    /// Retrieves a value from a given logical index.
+    fn get(&self, index: usize) -> Option<Value<'gc>> {
+        if index >= self.start_offset {
+            let dense_idx = index - self.start_offset;
+            self.storage.get(dense_idx).copied().flatten()
+        } else {
+            None
+        }
+    }
+
+    /// Retrieves a mutable reference to a value at a given logical index.
+    fn get_mut(&mut self, index: usize) -> Option<&mut Option<Value<'gc>>> {
+        if index >= self.start_offset {
+            let dense_idx = index - self.start_offset;
+            self.storage.get_mut(dense_idx)
+        } else {
+            None
+        }
+    }
+
+    /// Sets a value at a given logical index.
+    fn set(&mut self, index: usize, value: Value<'gc>) {
+        if self.storage.is_empty() {
+            self.start_offset = index;
+            self.storage.push(Some(value));
+            return;
+        }
+
+        match index.cmp(&self.start_offset) {
+            std::cmp::Ordering::Less => {
+                let num_to_prepend = self.start_offset - index;
+
+                let new_elements = std::iter::once(Some(value))
+                    .chain(std::iter::repeat_n(None, num_to_prepend - 1));
+
+                self.storage.splice(0..0, new_elements);
+
+                self.start_offset = index;
+            }
+
+            std::cmp::Ordering::Greater | std::cmp::Ordering::Equal => {
+                let dense_idx = index - self.start_offset;
+
+                if dense_idx >= self.storage.len() {
+                    self.storage.resize(dense_idx + 1, None);
+                }
+
+                self.storage[dense_idx] = Some(value);
+            }
+        }
+    }
+
+    fn remove(&mut self, index: usize) -> Option<Value<'gc>> {
+        let dense_idx = index.saturating_sub(self.start_offset);
+        if dense_idx < self.storage.len() {
+            self.storage.remove(dense_idx)
+        } else {
+            None
+        }
+    }
+
+    fn push(&mut self, value: Option<Value<'gc>>) {
+        self.storage.push(value);
+    }
+
+    fn resize(&mut self, new_len: usize, value: Option<Value<'gc>>) {
+        self.storage.resize(new_len, value);
+    }
+
+    fn iter(&self) -> impl Iterator<Item = &Option<Value<'gc>>> + '_ {
+        self.storage.iter()
+    }
+
+    fn enumerate(&self) -> impl Iterator<Item = (usize, Option<Value<'gc>>)> + '_ {
+        self.storage
+            .iter()
+            .enumerate()
+            .map(|(i, v)| (i + self.start_offset, *v))
+    }
+
+    fn rposition<F>(&self, predicate: F) -> Option<usize>
+    where
+        F: FnMut(&Option<Value<'gc>>) -> bool,
+    {
+        self.storage.iter().rposition(predicate)
+    }
+
+    fn replace_dense_storage(&mut self, new_storage: Vec<Option<Value<'gc>>>) {
+        self.storage = new_storage;
+        self.start_offset = 0;
+    }
+
+    fn unshift(&mut self, value: Option<Value<'gc>>) {
+        if self.start_offset > 0 {
+            for _ in 0..self.start_offset {
+                self.storage.insert(0, None);
+            }
+            self.start_offset = 0;
+        }
+
+        self.storage.insert(0, value);
+    }
+}
+
 /// The array storage portion of an array object.
 ///
 /// Array values may consist of either standard `Value`s or "holes": values
@@ -16,8 +159,9 @@ const MAX_DENSE_LENGTH: usize = 1 << 28;
 #[collect(no_drop)]
 pub enum ArrayStorage<'gc> {
     /// Dense arrays store a vector of values and a count of non-holes in the vector (m_denseUsed in avmplus).
+    /// Uses StartOffsetVec to handle the offset logic cleanly.
     Dense {
-        storage: Vec<Option<Value<'gc>>>,
+        storage: StartOffsetVec<'gc>,
         occupied_count: usize,
     },
     /// Sparse arrays store a BTreeMap of values and an explicit ECMAScript "Array.length".
@@ -42,7 +186,7 @@ impl<'gc> Iterator for ArrayStorageIterator<'_, 'gc> {
             None
         } else {
             let value = match &self.storage {
-                ArrayStorage::Dense { storage, .. } => storage[self.index],
+                ArrayStorage::Dense { storage, .. } => storage.get(self.index),
                 ArrayStorage::Sparse { storage, .. } => storage.get(&self.index).copied(),
             };
             self.index += 1;
@@ -58,7 +202,7 @@ impl DoubleEndedIterator for ArrayStorageIterator<'_, '_> {
         } else {
             self.index_back -= 1;
             let value = match &self.storage {
-                ArrayStorage::Dense { storage, .. } => storage[self.index_back],
+                ArrayStorage::Dense { storage, .. } => storage.get(self.index_back),
                 ArrayStorage::Sparse { storage, .. } => storage.get(&self.index_back).copied(),
             };
             Some(value)
@@ -85,7 +229,7 @@ impl<'gc> ArrayStorage<'gc> {
             }
         } else {
             ArrayStorage::Dense {
-                storage: Vec::with_capacity(length),
+                storage: StartOffsetVec::with_capacity(length),
                 occupied_count: 0,
             }
         }
@@ -99,7 +243,7 @@ impl<'gc> ArrayStorage<'gc> {
             .collect::<Vec<Option<Value<'gc>>>>();
 
         ArrayStorage::Dense {
-            storage,
+            storage: StartOffsetVec::from_storage(storage),
             occupied_count: values.len(),
         }
     }
@@ -109,7 +253,7 @@ impl<'gc> ArrayStorage<'gc> {
         let occupied_count = storage.iter().filter(|v| v.is_some()).count();
 
         ArrayStorage::Dense {
-            storage,
+            storage: StartOffsetVec::from_storage(storage),
             occupied_count,
         }
     }
@@ -125,7 +269,7 @@ impl<'gc> ArrayStorage<'gc> {
                 occupied_count,
             } => {
                 *occupied_count = new_occupied_count;
-                *storage = new_storage;
+                storage.replace_dense_storage(new_storage);
             }
             ArrayStorage::Sparse { .. } => {
                 panic!("Cannot replace dense storage on sparse ArrayStorage");
@@ -139,7 +283,7 @@ impl<'gc> ArrayStorage<'gc> {
     /// yielding `None`.
     pub fn get(&self, item: usize) -> Option<Value<'gc>> {
         match &self {
-            ArrayStorage::Dense { storage, .. } => storage.get(item).copied().unwrap_or(None),
+            ArrayStorage::Dense { storage, .. } => storage.get(item),
             ArrayStorage::Sparse { storage, .. } => storage.get(&item).copied(),
         }
     }
@@ -147,13 +291,13 @@ impl<'gc> ArrayStorage<'gc> {
     /// Get the next index after the given index that contains a value.
     pub fn get_next_enumerant(&self, last_index: usize) -> Option<usize> {
         match &self {
-            ArrayStorage::Dense { storage, .. } => {
-                let mut last_index = last_index;
-                while last_index < storage.len() {
-                    if storage[last_index].is_some() {
-                        return Some(last_index + 1);
+            ArrayStorage::Dense { .. } => {
+                let mut current_index = last_index;
+                while current_index < self.length() {
+                    if self.get(current_index).is_some() {
+                        return Some(current_index + 1);
                     }
-                    last_index += 1;
+                    current_index += 1;
                 }
                 None
             }
@@ -176,23 +320,30 @@ impl<'gc> ArrayStorage<'gc> {
                 storage,
                 occupied_count,
             } => {
-                if item >= storage.len() {
-                    if Self::should_convert_to_sparse(item + 1, *occupied_count) {
-                        self.convert_to_sparse();
-                        if let ArrayStorage::Sparse { storage, length } = self {
-                            *length = item + 1;
-                            storage.insert(item, value);
-                        }
-                    } else {
-                        storage.resize(item + 1, None);
-                        storage[item] = Some(value);
-                        *occupied_count += 1;
-                    }
+                let was_hole = storage.get(item).is_none();
+                let new_occupied = if was_hole {
+                    *occupied_count + 1
                 } else {
-                    if storage[item].is_none() {
-                        *occupied_count += 1;
-                    }
-                    storage[item] = Some(value);
+                    *occupied_count
+                };
+
+                let current_logical_len = storage.start_offset + storage.len();
+                let new_logical_len = current_logical_len.max(item + 1);
+
+                if Self::should_convert_to_sparse(new_logical_len, new_occupied) {
+                    self.convert_to_sparse();
+                    self.set(item, value);
+                    return;
+                }
+
+                storage.set(item, value);
+                if was_hole {
+                    *occupied_count += 1;
+                }
+
+                let final_logical_len = storage.start_offset + storage.len();
+                if Self::should_convert_to_sparse(final_logical_len, *occupied_count) {
+                    self.convert_to_sparse();
                 }
             }
             ArrayStorage::Sparse { storage, length } => {
@@ -211,9 +362,9 @@ impl<'gc> ArrayStorage<'gc> {
                 storage,
                 occupied_count,
             } => {
-                if let Some(i) = storage.get_mut(item) {
-                    *i = None;
-                    if *occupied_count > 0 {
+                if let Some(val) = storage.get_mut(item) {
+                    if val.is_some() {
+                        *val = None;
                         *occupied_count -= 1;
                         self.maybe_convert_to_sparse();
                     }
@@ -229,7 +380,11 @@ impl<'gc> ArrayStorage<'gc> {
     /// Get the length of the array.
     pub fn length(&self) -> usize {
         match &self {
-            ArrayStorage::Dense { storage, .. } => storage.len(),
+            ArrayStorage::Dense { storage, .. } => {
+                // The length is the logical end of the dense area
+                // For StartOffsetVec, this is start_offset + storage.len()
+                storage.start_offset + storage.len()
+            }
             ArrayStorage::Sparse { length, .. } => *length,
         }
     }
@@ -241,13 +396,19 @@ impl<'gc> ArrayStorage<'gc> {
                 storage,
                 occupied_count,
             } => {
-                if Self::should_convert_to_sparse(size, *occupied_count) {
+                let old_len = storage.len();
+                let new_storage_size = size.saturating_sub(storage.start_offset);
+
+                if Self::should_convert_to_sparse(new_storage_size, *occupied_count) {
                     self.convert_to_sparse();
                     if let ArrayStorage::Sparse { .. } = self {
                         self.set_length(size);
                     }
-                } else {
-                    storage.resize(size, None);
+                    return;
+                }
+                storage.resize(new_storage_size, None);
+                if new_storage_size < old_len {
+                    *occupied_count = storage.iter().filter(|v| v.is_some()).count();
                 }
             }
             ArrayStorage::Sparse { storage, length } => {
@@ -306,14 +467,14 @@ impl<'gc> ArrayStorage<'gc> {
     fn convert_to_sparse(&mut self) {
         if let ArrayStorage::Dense { storage, .. } = self {
             let mut new_storage = BTreeMap::new();
-            for (i, v) in storage.iter().enumerate() {
+            for (i, v) in storage.enumerate() {
                 if let Some(v) = v {
-                    new_storage.insert(i, *v);
+                    new_storage.insert(i, v);
                 }
             }
             *self = ArrayStorage::Sparse {
                 storage: new_storage,
-                length: storage.len(),
+                length: storage.start_offset + storage.len(),
             };
         }
     }
@@ -336,7 +497,7 @@ impl<'gc> ArrayStorage<'gc> {
         if let ArrayStorage::Sparse { storage, length } = self {
             if storage.is_empty() && *length == 0 {
                 *self = ArrayStorage::Dense {
-                    storage: Vec::new(),
+                    storage: StartOffsetVec::new(),
                     occupied_count: 0,
                 };
             }
@@ -361,39 +522,37 @@ impl<'gc> ArrayStorage<'gc> {
     /// This method preferrentially pops non-holes from the array first. If a
     /// hole is popped, it will become `undefined`.
     pub fn pop(&mut self) -> Value<'gc> {
-        match self {
-            ArrayStorage::Dense {
-                storage,
-                occupied_count,
-            } => {
-                let non_hole = storage
-                    .iter()
-                    .enumerate()
-                    .rposition(|(_, item)| item.is_some());
-
-                if let Some(non_hole) = non_hole {
-                    *occupied_count -= 1;
-                    let value = storage.remove(non_hole).unwrap();
-                    self.maybe_convert_to_sparse();
-                    value
-                } else {
-                    storage.pop().unwrap_or(None).unwrap_or(Value::Undefined)
-                }
-            }
-            ArrayStorage::Sparse { storage, length } => {
-                let non_hole = storage.pop_last();
-                if let Some((_index, value)) = non_hole {
-                    *length -= 1;
-                    value
-                } else {
-                    if *length > 0 {
-                        *length -= 1;
-                    }
-                    self.maybe_convert_to_dense();
-                    Value::Undefined
-                }
-            }
+        if self.length() == 0 {
+            return Value::Undefined;
         }
+
+        let new_len = self.length() - 1;
+
+        let (return_val, idx_to_delete) = match self {
+            ArrayStorage::Dense { storage, .. } => {
+                if let Some(dense_idx) = storage.rposition(|item| item.is_some()) {
+                    let logical_idx = dense_idx + storage.start_offset;
+                    (storage.get(logical_idx).unwrap(), Some(logical_idx))
+                } else {
+                    (Value::Undefined, None)
+                }
+            }
+            ArrayStorage::Sparse { storage, .. } => {
+                if let Some((&idx, &val)) = storage.iter().next_back() {
+                    (val, Some(idx))
+                } else {
+                    (Value::Undefined, None)
+                }
+            }
+        };
+
+        if let Some(idx) = idx_to_delete {
+            self.delete(idx);
+        }
+
+        self.set_length(new_len);
+
+        return_val
     }
 
     /// Shift a value from the front of the array.
@@ -406,14 +565,20 @@ impl<'gc> ArrayStorage<'gc> {
                 storage,
                 occupied_count,
             } => {
+                if storage.start_offset > 0 {
+                    storage.start_offset -= 1;
+                    return Value::Undefined;
+                }
+
                 if !storage.is_empty() {
-                    let value = storage.remove(0);
-                    if value.is_some() {
-                        *occupied_count -= 1;
+                    let removed = storage.storage.remove(0);
+                    if removed.is_some() {
+                        *occupied_count = occupied_count.saturating_sub(1);
                     }
                     self.maybe_convert_to_sparse();
-                    return value.unwrap_or(Value::Undefined);
+                    return removed.unwrap_or(Value::Undefined);
                 }
+
                 Value::Undefined
             }
             ArrayStorage::Sparse { storage, length } => {
@@ -445,7 +610,30 @@ impl<'gc> ArrayStorage<'gc> {
                 storage,
                 occupied_count,
             } => {
-                storage.insert(0, Some(item));
+                let new_size = storage.len() + storage.start_offset + 1;
+                let new_occupied_count = *occupied_count + 1;
+
+                if Self::should_convert_to_sparse(new_size, new_occupied_count) {
+                    self.convert_to_sparse();
+                    // Now handle as sparse array
+                    if let ArrayStorage::Sparse { storage, length } = self {
+                        let mut new_storage = BTreeMap::new();
+                        tracing::debug!(
+                            "new size: {}, occupied count: {}",
+                            new_size,
+                            new_occupied_count
+                        );
+                        new_storage.insert(0, item);
+                        for (key, value) in storage.iter() {
+                            new_storage.insert(key + 1, *value);
+                        }
+                        *storage = new_storage;
+                        *length += 1;
+                    }
+                    return;
+                }
+
+                storage.unshift(Some(item));
                 *occupied_count += 1;
             }
             ArrayStorage::Sparse { storage, length } => {
@@ -488,21 +676,18 @@ impl<'gc> ArrayStorage<'gc> {
                 occupied_count,
             } => {
                 let position = if position < 0 {
-                    std::cmp::max(position + storage.len() as i32, 0) as usize
+                    std::cmp::max(position + (storage.start_offset + storage.len()) as i32, 0)
+                        as usize
                 } else {
                     position as usize
                 };
 
-                if position >= storage.len() {
-                    None
-                } else {
-                    let value = storage.remove(position);
-                    if value.is_some() {
-                        *occupied_count -= 1;
-                    }
-                    self.maybe_convert_to_sparse();
-                    value
+                let value = storage.remove(position);
+                if value.is_some() {
+                    *occupied_count = occupied_count.saturating_sub(1);
                 }
+                self.maybe_convert_to_sparse();
+                value
             }
             ArrayStorage::Sparse { storage, length } => {
                 let position = if position < 0 {
@@ -542,7 +727,7 @@ where
         let occupied_count = storage.iter().filter(|v| v.is_some()).count();
 
         ArrayStorage::Dense {
-            storage,
+            storage: StartOffsetVec::from_storage(storage),
             occupied_count,
         }
     }
