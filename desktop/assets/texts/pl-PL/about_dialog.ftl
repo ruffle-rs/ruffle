@@ -1,7 +1,7 @@
 about-ruffle = O Ruffle
 about-ruffle-version = Wersja
 about-ruffle-channel = Kanał
-about-ruffle-build-time = Czas Kompilacji
+about-ruffle-build-time = Czas kompilacji
 about-ruffle-build-features = Cechy kompilacji
 about-ruffle-commit-ref = Rewizja
 about-ruffle-commit-time = Czas rewizji
