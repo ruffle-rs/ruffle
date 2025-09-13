@@ -7,7 +7,7 @@ use crate::avm2::script::Script;
 use crate::avm2::Activation as Avm2Activation;
 use crate::avm2::{
     Avm2, ClassObject as Avm2ClassObject, FunctionArgs as Avm2FunctionArgs, LoaderInfoObject,
-    Object as Avm2Object, QName as Avm2QName, StageObject as Avm2StageObject, Value as Avm2Value,
+    Object as Avm2Object, QName as Avm2QName, StageObject as Avm2StageObject,
 };
 use crate::backend::audio::{AudioManager, SoundInstanceHandle};
 use crate::backend::navigator::Request;
@@ -2338,7 +2338,7 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
                 // The supercall constructor for display objects is responsible
                 // for triggering construct_frame on frame 1.
                 for child in self.iter_render_list() {
-                    if running_construct_frame && child.object2().as_object().is_none() {
+                    if running_construct_frame && child.object2().is_none() {
                         continue;
                     }
                     child.construct_frame(context);
@@ -2467,12 +2467,8 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
             .unwrap_or(Avm1Value::Undefined)
     }
 
-    fn object2(self) -> Avm2Value<'gc> {
-        self.0
-            .object2
-            .get()
-            .map(Avm2Value::from)
-            .unwrap_or(Avm2Value::Null)
+    fn object2(self) -> Option<Avm2StageObject<'gc>> {
+        self.0.object2.get()
     }
 
     fn set_object2(self, context: &mut UpdateContext<'gc>, to: Avm2StageObject<'gc>) {

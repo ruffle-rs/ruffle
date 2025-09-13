@@ -120,7 +120,7 @@ pub fn get_down_state<'gc>(
     {
         return Ok(btn
             .get_state_child(ButtonState::DOWN)
-            .map(|state| state.object2())
+            .map(|state| state.object2_or_null())
             .unwrap_or(Value::Null));
     }
 
@@ -163,7 +163,7 @@ pub fn get_over_state<'gc>(
     {
         return Ok(btn
             .get_state_child(ButtonState::OVER)
-            .map(|state| state.object2())
+            .map(|state| state.object2_or_null())
             .unwrap_or(Value::Null));
     }
 
@@ -206,7 +206,7 @@ pub fn get_hit_test_state<'gc>(
     {
         return Ok(btn
             .get_state_child(ButtonState::HIT_TEST)
-            .map(|state| state.object2())
+            .map(|state| state.object2_or_null())
             .unwrap_or(Value::Null));
     }
 
@@ -249,7 +249,7 @@ pub fn get_up_state<'gc>(
     {
         return Ok(btn
             .get_state_child(ButtonState::UP)
-            .map(|state| state.object2())
+            .map(|state| state.object2_or_null())
             .unwrap_or(Value::Null));
     }
 

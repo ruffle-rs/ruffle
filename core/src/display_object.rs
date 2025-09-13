@@ -2188,7 +2188,6 @@ pub trait TDisplayObject<'gc>:
         if let Some(movie) = self.as_movie_clip() {
             let obj = movie
                 .object2()
-                .as_object()
                 .expect("MovieClip object should have been constructed");
             let movieclip_class = context.avm2.classes().movieclip.inner_class_definition();
             // It's possible to have a DefineSprite tag with multiple frames, but have
@@ -2224,8 +2223,10 @@ pub trait TDisplayObject<'gc>:
         //TODO: Don't report missing property errors.
         //TODO: Don't attempt to set properties if object was placed without a name.
         if self.has_explicit_name() {
-            if let Some(parent @ Avm2Value::Object(_)) = self.parent().map(|p| p.object2()) {
-                if let Avm2Value::Object(child) = self.object2() {
+            if let Some(parent) = self.parent().and_then(|p| p.object2()) {
+                let parent = Avm2Value::from(parent);
+
+                if let Some(child) = self.object2() {
                     if let Some(name) = self.name() {
                         let domain = context
                             .library
@@ -2315,7 +2316,7 @@ pub trait TDisplayObject<'gc>:
         let bounds = self.world_bounds();
 
         let mut classname = "".to_string();
-        if let Some(o) = self.object2().as_object() {
+        if let Some(o) = self.object2() {
             classname = format!("{:?}", o.base().class_name());
         }
 
@@ -2434,11 +2435,14 @@ pub trait TDisplayObject<'gc>:
         Avm1Value::Undefined // TODO: Implement for every type and delete this fallback.
     }
 
-    fn object2(self) -> Avm2Value<'gc> {
-        Avm2Value::Undefined // TODO: See above. Also, unconstructed objects should return null.
-    }
+    fn object2(self) -> Option<Avm2StageObject<'gc>>;
 
     fn set_object2(self, _context: &mut UpdateContext<'gc>, _to: Avm2StageObject<'gc>) {}
+
+    #[no_dynamic]
+    fn object2_or_null(self) -> Avm2Value<'gc> {
+        self.object2().map(|o| o.into()).unwrap_or(Avm2Value::Null)
+    }
 
     /// Tests if a given stage position point intersects with the world bounds of this object.
     #[no_dynamic]

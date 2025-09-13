@@ -183,8 +183,7 @@ pub fn get_focus<'gc>(
         .focus_tracker
         .get()
         .map(|o| o.as_displayobject())
-        .and_then(|focus_dobj| focus_dobj.object2().as_object())
-        .map(|o| o.into())
+        .map(|focus_dobj| focus_dobj.object2_or_null())
         .unwrap_or(Value::Null))
 }
 
