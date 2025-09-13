@@ -394,7 +394,7 @@ pub fn tag_tests() -> Vec<TagTestData> {
         ),
         (
             1,
-            Tag::DefineFont(Box::new(FontV1 {
+            Tag::DefineFont(FontV1 {
                 id: 1,
                 glyphs: vec![
                     vec![
@@ -440,7 +440,7 @@ pub fn tag_tests() -> Vec<TagTestData> {
                         },
                     ],
                 ],
-            })),
+            }),
             read_tag_bytes_from_file("tests/swfs/DefineFont-MX.swf", TagCode::DefineFont),
         ),
         /* TODO: Commented out because Flash MX wrote this file with a CodeTableOffset, but we don't.
@@ -1272,7 +1272,7 @@ pub fn tag_tests() -> Vec<TagTestData> {
         ),
         (
             1,
-            Tag::DefineShape(Shape {
+            Tag::DefineShape(Box::new(Shape {
                 version: 1,
                 id: 1,
                 shape_bounds: Rectangle {
@@ -1318,12 +1318,12 @@ pub fn tag_tests() -> Vec<TagTestData> {
                         delta: PointDelta::from_pixels(0.0, -20.0),
                     },
                 ],
-            }),
+            })),
             read_tag_bytes_from_file("tests/swfs/DefineShape.swf", TagCode::DefineShape),
         ),
         (
             8,
-            Tag::DefineShape(Shape {
+            Tag::DefineShape(Box::new(Shape {
                 version: 3,
                 id: 1,
                 shape_bounds: Rectangle {
@@ -1415,12 +1415,12 @@ pub fn tag_tests() -> Vec<TagTestData> {
                         anchor_delta: PointDelta::from_pixels(0.0, 10.35),
                     },
                 ],
-            }),
+            })),
             read_tag_bytes_from_file("tests/swfs/DefineShape3.swf", TagCode::DefineShape3),
         ),
         (
             8,
-            Tag::DefineShape(Shape {
+            Tag::DefineShape(Box::new(Shape {
                 version: 4,
                 id: 1,
                 shape_bounds: Rectangle {
@@ -1611,12 +1611,12 @@ pub fn tag_tests() -> Vec<TagTestData> {
                         anchor_delta: PointDelta::from_pixels(0.0, 20.7),
                     },
                 ],
-            }),
+            })),
             read_tag_bytes_from_file("tests/swfs/DefineShape4.swf", TagCode::DefineShape4),
         ),
         (
             4,
-            Tag::DefineSound(Box::new(Sound {
+            Tag::DefineSound(Sound {
                 id: 1,
                 format: SoundFormat {
                     compression: AudioCompression::Uncompressed,
@@ -1629,7 +1629,7 @@ pub fn tag_tests() -> Vec<TagTestData> {
                     255, 127, 0, 128, 255, 127, 0, 128, 255, 127, 0, 128, 255, 127, 0, 128, 255,
                     127, 0, 128,
                 ],
-            })),
+            }),
             read_tag_bytes_from_file("tests/swfs/DefineSound.swf", TagCode::DefineSound),
         ),
         (
@@ -2180,7 +2180,7 @@ pub fn tag_tests() -> Vec<TagTestData> {
         (1, Tag::ShowFrame, vec![0b01_000000, 0]),
         (
             3,
-            Tag::SoundStreamHead2(Box::new(SoundStreamHead {
+            Tag::SoundStreamHead2(SoundStreamHead {
                 stream_format: SoundFormat {
                     compression: AudioCompression::Uncompressed,
                     sample_rate: 5512,
@@ -2195,7 +2195,7 @@ pub fn tag_tests() -> Vec<TagTestData> {
                 },
                 num_samples_per_block: 229,
                 latency_seek: 0,
-            })),
+            }),
             read_tag_bytes_from_file("tests/swfs/SoundStreamHead2.swf", TagCode::SoundStreamHead2),
         ),
         (
@@ -2350,7 +2350,7 @@ pub fn tag_tests() -> Vec<TagTestData> {
         ),
         (
             8,
-            Tag::DefineShape(Shape {
+            Tag::DefineShape(Box::new(Shape {
                 version: 4,
                 id: 2,
                 shape_bounds: Rectangle {
@@ -2395,7 +2395,7 @@ pub fn tag_tests() -> Vec<TagTestData> {
                         delta: PointDelta::from_pixels(200.0, 0.0),
                     },
                 ],
-            }),
+            })),
             read_tag_bytes_from_file("tests/swfs/BitmapLineStyle.swf", TagCode::DefineShape4),
         ),
     ]
