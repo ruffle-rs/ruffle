@@ -9,7 +9,7 @@ use crate::avm1::function::FunctionObject;
 use crate::avm1::object::BoxedF64;
 use crate::avm1::property_decl::{define_properties_on, Declaration};
 use crate::avm1::{NativeObject, Object, Value};
-use crate::string::{AvmString, StringContext};
+use ruffle_common::avm_string::{AvmString, StringContext};
 
 const PROTO_DECLS: &[Declaration] = declare_properties! {
     "toString" => method(to_string; DONT_ENUM | DONT_DELETE);

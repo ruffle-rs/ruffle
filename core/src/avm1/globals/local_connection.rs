@@ -8,9 +8,9 @@ use crate::avm1::{ActivationIdentifier, ExecutionReason, NativeObject, Object, V
 use crate::context::UpdateContext;
 use crate::display_object::TDisplayObject;
 use crate::local_connection::{LocalConnectionHandle, LocalConnections};
-use crate::string::{AvmString, StringContext};
 use flash_lso::types::Value as AmfValue;
 use gc_arena::{Collect, Gc};
+use ruffle_common::avm_string::{AvmString, StringContext};
 use ruffle_macros::istr;
 use std::cell::RefCell;
 

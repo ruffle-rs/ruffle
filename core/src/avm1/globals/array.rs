@@ -7,9 +7,9 @@ use crate::avm1::function::FunctionObject;
 use crate::avm1::property_decl::{define_properties_on, Declaration};
 use crate::avm1::{Attribute, NativeObject, Object, Value};
 use crate::ecma_conversions::f64_to_wrapping_i32;
-use crate::string::{AvmString, StringContext};
 use bitflags::bitflags;
 use gc_arena::Mutation;
+use ruffle_common::avm_string::{AvmString, StringContext};
 use ruffle_macros::istr;
 use std::cmp::Ordering;
 
@@ -335,7 +335,7 @@ pub fn join<'gc>(
         })
         .collect::<Result<Vec<_>, _>>()?;
 
-    let joined = crate::string::join(&parts, &separator);
+    let joined = ruffle_wstr::join(&parts, &separator);
     Ok(AvmString::new(activation.gc(), joined).into())
 }
 

@@ -5,10 +5,10 @@ use crate::drawing::Drawing;
 use crate::font::{EvalParameters, Font, FontLike, FontSet, FontType};
 use crate::html::dimensions::{BoxBounds, Position, Size};
 use crate::html::text_format::{FormatSpans, TextFormat, TextSpan};
-use crate::string::{utils as string_utils, WStr};
 use crate::tag_utils::SwfMovie;
 use crate::DefaultFont;
 use gc_arena::Collect;
+use ruffle_wstr::WStr;
 use std::cmp::{max, min, Ordering};
 use std::fmt::{Debug, Formatter};
 use std::mem;
@@ -188,7 +188,7 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
                     // This ensures that the space causing the line break
                     // is included in the line it broke.
                     let next_breakpoint =
-                        string_utils::next_char_boundary(text, last_breakpoint + breakpoint);
+                        ruffle_wstr::utils::next_char_boundary(text, last_breakpoint + breakpoint);
 
                     // If text doesn't fit at the start of a line, it
                     // won't fit on the next either, abort and put the

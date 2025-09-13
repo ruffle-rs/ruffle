@@ -2,7 +2,6 @@ use crate::avm2::error::{make_error_1010, make_error_1085, make_error_1118, type
 use crate::avm2::function::FunctionArgs;
 use crate::avm2::object::{E4XOrXml, FunctionObject, NamespaceObject};
 use crate::avm2::{Activation, Error, Multiname, Value};
-use crate::string::{AvmString, StringContext, WStr, WString};
 use crate::xml::custom_unescape;
 
 use gc_arena::barrier::unlock;
@@ -10,6 +9,7 @@ use gc_arena::{
     lock::{Lock, RefLock},
     Collect, Gc, Mutation,
 };
+use ruffle_common::avm_string::{AvmString, StringContext};
 
 use quick_xml::{
     errors::{IllFormedError, SyntaxError as XmlSyntaxError},
@@ -18,6 +18,7 @@ use quick_xml::{
     Error as XmlError, NsReader,
 };
 use ruffle_macros::istr;
+use ruffle_wstr::{WStr, WString};
 
 use std::cell::{Ref, RefMut};
 use std::fmt::{self, Debug};

@@ -9,7 +9,7 @@ use crate::avm1::property::Attribute;
 use crate::avm1::property_decl::{define_properties_on, Declaration};
 use crate::avm1::{Object, Value};
 use crate::display_object::{DisplayObject, TDisplayObject};
-use crate::string::{AvmString, StringContext};
+use ruffle_common::avm_string::{AvmString, StringContext};
 
 use ruffle_macros::istr;
 use swf::Fixed8;

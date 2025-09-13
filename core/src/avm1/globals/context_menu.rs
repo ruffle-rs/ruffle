@@ -4,7 +4,7 @@ use crate::avm1::property_decl::{define_properties_on, Declaration};
 use crate::avm1::{Object, Value};
 use crate::context_menu;
 use crate::display_object::DisplayObject;
-use crate::string::StringContext;
+use ruffle_common::avm_string::StringContext;
 use ruffle_macros::istr;
 
 const PROTO_DECLS: &[Declaration] = declare_properties! {

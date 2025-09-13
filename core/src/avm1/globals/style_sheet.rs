@@ -6,8 +6,8 @@ use crate::avm1::{property_decl::Declaration, ArrayBuilder, ExecutionReason, Nat
 use crate::avm1::{Activation, Error, Value};
 use crate::backend::navigator::Request;
 use crate::html::{transform_dashes_to_camel_case, CssStream, StyleSheet, TextFormat};
-use crate::string::{AvmString, StringContext};
 use gc_arena::{Collect, Gc, Mutation};
+use ruffle_common::avm_string::{AvmString, StringContext};
 use ruffle_macros::istr;
 use ruffle_wstr::{WStr, WString};
 

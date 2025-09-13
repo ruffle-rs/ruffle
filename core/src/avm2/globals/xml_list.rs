@@ -10,7 +10,7 @@ use crate::avm2::{
     parameters::ParametersExt,
     Activation, Error, TObject, Value,
 };
-use crate::string::AvmString;
+use ruffle_common::avm_string::AvmString;
 
 fn has_complex_content_inner(children: &[E4XOrXml<'_>]) -> bool {
     match children {

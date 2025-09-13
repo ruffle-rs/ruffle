@@ -6,7 +6,7 @@ use crate::avm1::function::FunctionObject;
 use crate::avm1::globals::point::{point_to_object, value_to_point};
 use crate::avm1::property_decl::{define_properties_on, Declaration};
 use crate::avm1::{Object, Value};
-use crate::string::{AvmString, StringContext};
+use ruffle_common::avm_string::{AvmString, StringContext};
 
 use ruffle_macros::istr;
 use ruffle_render::matrix::Matrix;

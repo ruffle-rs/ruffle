@@ -38,7 +38,7 @@ macro_rules! test_method {
             $(
                 for version in &$versions {
                     with_avm(*version, |activation, _root| -> Result<(), Error> {
-                        let name = crate::string::AvmString::new_utf8(activation.gc(), $name);
+                        let name = ruffle_common::avm_string::AvmString::new_utf8(activation.gc(), $name);
                         let object = $object(activation);
 
                         $(

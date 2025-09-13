@@ -6,9 +6,10 @@ use crate::avm1::{Activation, ArrayBuilder, Error, Object, Value};
 use crate::display_object::{AutoSizeMode, EditText, TDisplayObject};
 use crate::ecma_conversions::round_to_even;
 use crate::html::TextFormat;
-use crate::string::{AvmString, StringContext, WStr};
 use gc_arena::Gc;
+use ruffle_common::avm_string::{AvmString, StringContext};
 use ruffle_macros::istr;
+use ruffle_wstr::WStr;
 
 macro_rules! getter {
     ($name:ident) => {

@@ -3,8 +3,8 @@
 use crate::avm1::object::NativeObject;
 use crate::avm1::property_decl::{define_properties_on, Declaration};
 use crate::avm1::{Activation, Error, Object, Value};
-use crate::string::{AvmString, StringContext};
 use gc_arena::{Collect, Gc};
+use ruffle_common::avm_string::{AvmString, StringContext};
 use ruffle_macros::istr;
 use std::cell::Cell;
 use swf::{ColorTransform, Fixed8};

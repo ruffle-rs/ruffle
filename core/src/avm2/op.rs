@@ -3,9 +3,9 @@ use crate::avm2::method::{Method, NativeMethodImpl};
 use crate::avm2::multiname::Multiname;
 use crate::avm2::namespace::Namespace;
 use crate::avm2::script::Script;
-use crate::string::AvmAtom;
 
 use gc_arena::{Collect, Gc};
+use ruffle_common::avm_string::AvmAtom;
 use std::cell::Cell;
 
 #[derive(Clone, Collect, Copy, Debug)]

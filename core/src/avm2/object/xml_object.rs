@@ -7,13 +7,14 @@ use crate::avm2::function::FunctionArgs;
 use crate::avm2::multiname::NamespaceSet;
 use crate::avm2::object::script_object::ScriptObjectData;
 use crate::avm2::object::{ClassObject, NamespaceObject, Object, TObject, XmlListObject};
-use crate::avm2::string::AvmString;
 use crate::avm2::value::Value;
 use crate::avm2::{Error, Multiname};
 use crate::utils::HasPrefixField;
+
 use core::fmt;
 use gc_arena::barrier::unlock;
 use gc_arena::{lock::Lock, Collect, Gc, GcWeak, Mutation};
+use ruffle_common::avm_string::AvmString;
 use ruffle_wstr::WString;
 
 use super::xml_list_object::{E4XOrXml, XmlOrXmlListObject};

@@ -4,8 +4,8 @@ use crate::avm1::object::NativeObject;
 use crate::avm1::property_decl::{define_properties_on, Declaration};
 use crate::avm1::{Activation, Error, Object, Value};
 use crate::locale::{get_current_date_time, get_timezone};
-use crate::string::{AvmString, StringContext};
 use gc_arena::Gc;
+use ruffle_common::avm_string::{AvmString, StringContext};
 use std::cell::Cell;
 use std::fmt;
 

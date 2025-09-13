@@ -8,8 +8,8 @@ use crate::avm1::object_reference::MovieClipReference;
 use crate::avm1::property_decl::{define_properties_on, Declaration};
 use crate::avm1::{Activation, Error, Object, Value};
 use crate::display_object::{DisplayObject, TDisplayObject};
-use crate::string::{AvmString, StringContext};
 use gc_arena::Collect;
+use ruffle_common::avm_string::{AvmString, StringContext};
 use ruffle_macros::istr;
 use swf::{Rectangle, Twips};
 

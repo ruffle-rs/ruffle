@@ -9,8 +9,8 @@ use crate::avm2::value::Value;
 use crate::avm2::{ArrayObject, ArrayStorage, Error};
 use crate::display_object::{AutoSizeMode, EditText, TextSelection};
 use crate::html::TextFormat;
-use crate::string::AvmString;
 use crate::{avm2_stub_getter, avm2_stub_setter};
+use ruffle_common::avm_string::AvmString;
 use ruffle_macros::istr;
 use swf::{Color, Point};
 

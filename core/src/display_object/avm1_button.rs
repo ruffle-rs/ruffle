@@ -11,7 +11,6 @@ use crate::display_object::interactive::{
 use crate::display_object::{Avm1TextFieldBinding, DisplayObjectBase};
 use crate::events::{ClipEvent, ClipEventResult};
 use crate::prelude::*;
-use crate::string::AvmString;
 use crate::tag_utils::{SwfMovie, SwfSlice};
 use crate::utils::HasPrefixField;
 use crate::vminterface::Instantiator;
@@ -19,6 +18,7 @@ use core::fmt;
 use gc_arena::barrier::unlock;
 use gc_arena::lock::{Lock, RefLock};
 use gc_arena::{Collect, Gc, Mutation};
+use ruffle_common::avm_string::AvmString;
 use ruffle_macros::istr;
 use ruffle_render::filters::Filter;
 use std::cell::{Cell, Ref, RefCell, RefMut};

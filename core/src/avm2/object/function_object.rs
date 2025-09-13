@@ -9,11 +9,11 @@ use crate::avm2::object::{ClassObject, Object, TObject};
 use crate::avm2::scope::ScopeChain;
 use crate::avm2::value::Value;
 use crate::avm2::Error;
-use crate::string::AvmString;
 use crate::utils::HasPrefixField;
 use core::fmt;
 use gc_arena::barrier::unlock;
 use gc_arena::{lock::Lock, Collect, Gc, GcWeak, Mutation};
+use ruffle_common::avm_string::AvmString;
 use ruffle_macros::istr;
 
 /// An Object which can be called to execute its function code.

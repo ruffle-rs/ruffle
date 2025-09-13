@@ -8,8 +8,9 @@ use crate::avm1::globals::as_broadcaster::BroadcasterFunctions;
 use crate::avm1::property_decl::{define_properties_on, Declaration};
 use crate::avm1::{Object, Value};
 use crate::display_object::StageDisplayState;
-use crate::string::{AvmString, StringContext, WStr, WString};
+use ruffle_common::avm_string::{AvmString, StringContext};
 use ruffle_macros::istr;
+use ruffle_wstr::{WStr, WString};
 
 const OBJECT_DECLS: &[Declaration] = declare_properties! {
     "align" => property(align, set_align);

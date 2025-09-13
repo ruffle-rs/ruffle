@@ -5,7 +5,7 @@ use crate::avm2::object::{ByteArrayObject, DateObject, FileReference};
 use crate::avm2::parameters::ParametersExt;
 use crate::avm2::{Activation, Avm2, Error, EventObject, TObject as _, Value};
 use crate::backend::ui::FileFilter;
-use crate::string::AvmString;
+use ruffle_common::avm_string::AvmString;
 
 pub use crate::avm2::object::file_reference_allocator;
 

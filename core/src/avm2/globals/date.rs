@@ -6,9 +6,10 @@ use crate::avm2::parameters::ParametersExt;
 use crate::avm2::value::Value;
 use crate::avm2::Error;
 use crate::locale::{get_current_date_time, get_timezone};
-use crate::string::{utils as string_utils, AvmString, WStr};
 use chrono::{DateTime, Datelike, Duration, FixedOffset, LocalResult, TimeZone, Timelike, Utc};
 use num_traits::ToPrimitive;
+use ruffle_common::avm_string::AvmString;
+use ruffle_wstr::WStr;
 
 pub use crate::avm2::object::date_allocator;
 
@@ -1166,7 +1167,7 @@ pub fn parse_full_date<'gc>(
     // The Date parser is flash is super flexible, so we need to go through each item individually and parse it to match Flash.
     // NOTE: DateTime::parse_from_str is not flexible enough for this, so we need to parse manually.
     for item in date
-        .split(string_utils::swf_is_whitespace)
+        .split(ruffle_wstr::utils::swf_is_whitespace)
         .filter(|s| !s.is_empty())
     {
         if let Some((year, month, day)) = parse_date(item) {

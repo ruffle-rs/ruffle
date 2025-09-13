@@ -7,10 +7,11 @@ use crate::avm2::object::script_object::ScriptObjectData;
 use crate::avm2::object::{ClassObject, Object, TObject};
 use crate::avm2::value::Value;
 use crate::avm2::Error;
-use crate::string::{WStr, WString};
 use crate::utils::HasPrefixField;
+
 use core::fmt;
 use gc_arena::{Collect, Gc, GcWeak};
+use ruffle_wstr::{WStr, WString};
 use std::fmt::Debug;
 
 /// A class instance allocator that allocates Error objects.
