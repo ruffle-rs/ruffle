@@ -580,6 +580,7 @@ fn load_system_fonts(
         4,
         vec![
             Family::Name("Noto Sans Hebrew"), // Open font
+            Family::Name("Tahoma"),           // Windows
         ],
     ));
 
@@ -588,6 +589,16 @@ fn load_system_fonts(
         5,
         vec![
             Family::Name("Noto Sans Arabic"), // Open font
+            Family::Name("Tahoma"),           // Windows
+        ],
+    ));
+
+    // Thai
+    queries.push((
+        6,
+        vec![
+            Family::Name("Noto Sans Thai"), // Open font
+            Family::Name("Tahoma"),         // Windows
         ],
     ));
 
