@@ -42,7 +42,7 @@ jobs:
       - uses: actions/checkout@v5
 
       - name: Setup Node.js ${{ matrix.node_version }}
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
         with:
           node-version: ${{ matrix.node_version }}
           cache: npm
@@ -107,7 +107,7 @@ jobs:
       - uses: actions/checkout@v5
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
         with:
           node-version: 22
           cache: npm
@@ -165,7 +165,7 @@ jobs:
       - uses: actions/checkout@v5
 
       - name: Setup Node.js 22
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
         with:
           node-version: 22
           cache: npm
