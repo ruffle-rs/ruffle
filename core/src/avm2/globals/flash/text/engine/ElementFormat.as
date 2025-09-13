@@ -207,6 +207,17 @@ package flash.text.engine {
             this._typographicCase = value;
         }
 
+        public function clone():ElementFormat {
+            var fd = this.fontDescription ? this.fontDescription.clone() : null;
+            return new ElementFormat(
+                fd, this.fontSize, this.color, this.alpha, this.textRotation,
+                this.dominantBaseline, this.alignmentBaseline, this.baselineShift, this.kerning,
+                this.trackingRight, this.trackingLeft, this.locale, this.breakOpportunity,
+                this.digitCase, this.digitWidth, this.ligatureLevel, this.typographicCase
+            );
+        }
+
+
         public function getFontMetrics():FontMetrics {
             stub_method("flash.text.engine.ElementFormat", "getFontMetrics");
             var emBox:Rectangle = new Rectangle(0, _fontSize * -0.8, _fontSize, _fontSize);

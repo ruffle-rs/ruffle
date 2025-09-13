@@ -1,5 +1,7 @@
 package flash.text.engine {
     import __ruffle__.stub_method;
+    import __ruffle__.stub_getter;
+    import __ruffle__.stub_setter;
 
     [API("662")]
     public final class FontDescription {
@@ -18,6 +20,8 @@ package flash.text.engine {
         private var _renderingMode:String;
 
         private var _cffHinting:String;
+
+        private var _locked:Boolean;
 
         public function FontDescription(fontName:String = "_serif", fontWeight:String = "normal", fontPosture:String = "normal",
                                         fontLookup:String = "device", renderingMode:String = "cff", cffHinting:String = "horizontalStem") {
@@ -102,6 +106,23 @@ package flash.text.engine {
             }
 
             this._cffHinting = value;
+        }
+
+        public function get locked():Boolean {
+            stub_getter("flash.text.engine.FontDescription", "locked");
+            return this._locked;
+        }
+
+        public function set locked(locked:Boolean):void {
+            stub_setter("flash.text.engine.FontDescription", "locked");
+            this._locked = locked;
+        }
+
+        public function clone():FontDescription {
+            return new FontDescription(
+                this.fontName, this.fontWeight, this.fontPosture,
+                this.fontLookup, this.renderingMode, this.cffHinting
+            );
         }
 
         public static function isFontCompatible(fontName: String, fontWeight: String, fontPosture: String): Boolean {
