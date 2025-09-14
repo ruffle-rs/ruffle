@@ -2,10 +2,10 @@
 
 use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
-use crate::avm1::function::{ExecutionReason, FunctionObject};
-use crate::avm1::property_decl::{define_properties_on, Declaration};
+use crate::avm1::function::ExecutionReason;
+use crate::avm1::property_decl::{DeclContext, Declaration, SystemClass};
 use crate::avm1::{Object, Value};
-use crate::string::{AvmString, StringContext};
+use crate::string::AvmString;
 
 use ruffle_macros::istr;
 
@@ -25,6 +25,16 @@ const OBJECT_DECLS: &[Declaration] = declare_properties! {
     "polar" => method(polar);
     "interpolate" => method(interpolate);
 };
+
+pub fn create_class<'gc>(
+    context: &mut DeclContext<'_, 'gc>,
+    super_proto: Object<'gc>,
+) -> SystemClass<'gc> {
+    let class = context.class(constructor, super_proto);
+    context.define_properties_on(class.proto, PROTO_DECLS);
+    context.define_properties_on(class.constr, OBJECT_DECLS);
+    class
+}
 
 pub fn point_to_object<'gc>(
     point: (f64, f64),
@@ -302,24 +312,4 @@ fn offset<'gc>(
     this.set(istr!("y"), (point.1 + dy).into(), activation)?;
 
     Ok(Value::Undefined)
-}
-
-pub fn create_point_object<'gc>(
-    context: &mut StringContext<'gc>,
-    point_proto: Object<'gc>,
-    fn_proto: Object<'gc>,
-) -> Object<'gc> {
-    let point = FunctionObject::native(context, constructor, fn_proto, point_proto);
-    define_properties_on(OBJECT_DECLS, context, point, fn_proto);
-    point
-}
-
-pub fn create_proto<'gc>(
-    context: &mut StringContext<'gc>,
-    proto: Object<'gc>,
-    fn_proto: Object<'gc>,
-) -> Object<'gc> {
-    let object = Object::new(context, Some(proto));
-    define_properties_on(PROTO_DECLS, context, object, fn_proto);
-    object
 }

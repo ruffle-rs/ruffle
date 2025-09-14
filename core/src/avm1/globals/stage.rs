@@ -5,10 +5,10 @@
 use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
 use crate::avm1::globals::as_broadcaster::BroadcasterFunctions;
-use crate::avm1::property_decl::{define_properties_on, Declaration};
+use crate::avm1::property_decl::{DeclContext, Declaration};
 use crate::avm1::{Object, Value};
 use crate::display_object::StageDisplayState;
-use crate::string::{AvmString, StringContext, WStr, WString};
+use crate::string::{AvmString, WStr, WString};
 use ruffle_macros::istr;
 
 const OBJECT_DECLS: &[Declaration] = declare_properties! {
@@ -20,16 +20,14 @@ const OBJECT_DECLS: &[Declaration] = declare_properties! {
     "width" => property(width);
 };
 
-pub fn create_stage_object<'gc>(
-    context: &mut StringContext<'gc>,
-    proto: Object<'gc>,
-    array_proto: Object<'gc>,
-    fn_proto: Object<'gc>,
+pub fn create<'gc>(
+    context: &mut DeclContext<'_, 'gc>,
     broadcaster_functions: BroadcasterFunctions<'gc>,
+    array_proto: Object<'gc>,
 ) -> Object<'gc> {
-    let stage = Object::new(context, Some(proto));
-    broadcaster_functions.initialize(context, stage, array_proto);
-    define_properties_on(OBJECT_DECLS, context, stage, fn_proto);
+    let stage = Object::new(context.strings, Some(context.object_proto));
+    broadcaster_functions.initialize(context.strings, stage, array_proto);
+    context.define_properties_on(stage, OBJECT_DECLS);
     stage
 }
 

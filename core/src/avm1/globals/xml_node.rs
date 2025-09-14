@@ -4,10 +4,10 @@ use ruffle_macros::istr;
 
 use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
-use crate::avm1::property_decl::{define_properties_on, Declaration};
+use crate::avm1::property_decl::{DeclContext, Declaration, SystemClass};
 use crate::avm1::xml::{XmlNode, TEXT_NODE};
 use crate::avm1::{NativeObject, Object, Value};
-use crate::string::{AvmString, StringContext, WStr};
+use crate::string::{AvmString, WStr};
 
 const PROTO_DECLS: &[Declaration] = declare_properties! {
     "localName" => property(local_name);
@@ -33,8 +33,17 @@ const PROTO_DECLS: &[Declaration] = declare_properties! {
     "toString" => method(to_string);
 };
 
+pub fn create_class<'gc>(
+    context: &mut DeclContext<'_, 'gc>,
+    super_proto: Object<'gc>,
+) -> SystemClass<'gc> {
+    let class = context.class(constructor, super_proto);
+    context.define_properties_on(class.proto, PROTO_DECLS);
+    class
+}
+
 /// XMLNode constructor
-pub fn constructor<'gc>(
+fn constructor<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
@@ -391,15 +400,4 @@ fn namespace_uri<'gc>(
     }
 
     Ok(Value::Undefined)
-}
-
-/// Construct the prototype for `XMLNode`.
-pub fn create_proto<'gc>(
-    context: &mut StringContext<'gc>,
-    proto: Object<'gc>,
-    fn_proto: Object<'gc>,
-) -> Object<'gc> {
-    let xml_node_proto = Object::new(context, Some(proto));
-    define_properties_on(PROTO_DECLS, context, xml_node_proto, fn_proto);
-    xml_node_proto
 }

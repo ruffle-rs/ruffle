@@ -1,8 +1,7 @@
 use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
-use crate::avm1::function::FunctionObject;
 use crate::avm1::property::Attribute;
-use crate::avm1::property_decl::{define_properties_on, Declaration};
+use crate::avm1::property_decl::{DeclContext, Declaration};
 use crate::avm1::{Object, Value};
 use crate::display_object::{DisplayObject, TDisplayObject, TDisplayObjectContainer};
 use crate::string::{AvmString, StringContext, WStr, WString};
@@ -501,7 +500,6 @@ pub struct SystemPrototypes<'gc> {
     pub date_constructor: Object<'gc>,
     pub bitmap_data: Object<'gc>,
     pub video: Object<'gc>,
-    pub video_constructor: Object<'gc>,
     pub blur_filter: Object<'gc>,
     pub bevel_filter: Object<'gc>,
     pub glow_filter: Object<'gc>,
@@ -521,277 +519,87 @@ pub fn create_globals<'gc>(
     Object<'gc>,
     as_broadcaster::BroadcasterFunctions<'gc>,
 ) {
-    let object_proto = Object::new(context, None);
-    let function_proto = function::create_proto(context, object_proto);
+    let context = {
+        let object_proto = Object::new(context, None);
+        &mut DeclContext {
+            object_proto,
+            fn_proto: Object::new(context, Some(object_proto)),
+            strings: context,
+        }
+    };
 
-    object::fill_proto(context, object_proto, function_proto);
+    let object = object::create_class(context);
+    let function = function::create_class(context);
+    let (broadcaster_fns, as_broadcaster) = as_broadcaster::create_class(context, object.proto);
 
-    let button_proto = button::create_proto(context, object_proto, function_proto);
+    let flash = Object::new(context.strings, Some(object.proto));
+    let external = Object::new(context.strings, Some(object.proto));
+    let geom = Object::new(context.strings, Some(object.proto));
+    let filters = Object::new(context.strings, Some(object.proto));
+    let display = Object::new(context.strings, Some(object.proto));
+    let net = Object::new(context.strings, Some(object.proto));
 
-    let movie_clip_proto = movie_clip::create_proto(context, object_proto, function_proto);
+    let button = button::create_class(context, object.proto);
+    let movie_clip = movie_clip::create_class(context, object.proto);
+    let sound = sound::create_class(context, object.proto);
+    let style_sheet = style_sheet::create_class(context, object.proto);
+    let text_field = text_field::create_class(context, object.proto);
+    let text_format = text_format::create_class(context, object.proto);
+    let array = array::create_class(context, object.proto);
+    let color = color::create_class(context, object.proto);
+    let error = error::create_class(context, object.proto);
+    let xmlnode = xml_node::create_class(context, object.proto);
+    let string = string::create_class(context, object.proto);
+    let number = number::create_class(context, object.proto);
+    let boolean = boolean::create_class(context, object.proto);
+    let load_vars = load_vars::create_class(context, object.proto);
+    let local_connection = local_connection::create_class(context, object.proto);
+    let matrix = matrix::create_class(context, object.proto);
+    let point = point::create_class(context, object.proto);
+    let rectangle = rectangle::create_class(context, object.proto);
+    let color_transform = color_transform::create_class(context, object.proto);
+    let external_interface = external_interface::create_class(context, object.proto);
+    let movie_clip_loader =
+        movie_clip_loader::create_class(context, object.proto, broadcaster_fns, array.proto);
+    let video = video::create_class(context, object.proto);
+    let netstream = netstream::create_class(context, object.proto);
+    let netconnection = netconnection::create_class(context, object.proto);
+    let xml_socket = xml_socket::create_class(context, object.proto);
+    let context_menu = context_menu::create_class(context, object.proto);
+    let context_menu_item = context_menu_item::create_class(context, object.proto);
+    let xml = xml::create_class(context, xmlnode.proto);
+    let date = date::create_class(context, object.proto);
+    let transform = transform::create_class(context, object.proto);
+    let bitmap_filter = bitmap_filter::create_class(context, object.proto);
+    let blur_filter = blur_filter::create_class(context, bitmap_filter.proto);
+    let bevel_filter = bevel_filter::create_class(context, bitmap_filter.proto);
+    let glow_filter = glow_filter::create_class(context, bitmap_filter.proto);
+    let drop_shadow_filter = drop_shadow_filter::create_class(context, bitmap_filter.proto);
+    let color_matrix_filter = color_matrix_filter::create_class(context, bitmap_filter.proto);
+    let displacement_map_filter =
+        displacement_map_filter::create_class(context, bitmap_filter.proto);
+    let convolution_filter = convolution_filter::create_class(context, bitmap_filter.proto);
+    let gradient_bevel_filter = gradient_filter::create_bevel_class(context, bitmap_filter.proto);
+    let gradient_glow_filter = gradient_filter::create_glow_class(context, bitmap_filter.proto);
+    let bitmap_data = bitmap_data::create_class(context, object.proto);
+    let file_reference =
+        file_reference::create_class(context, object.proto, broadcaster_fns, array.proto);
+    let shared_object = shared_object::create_class(context, object.proto);
+    let selection = selection::create(context, broadcaster_fns, array.proto);
 
-    let sound_proto = sound::create_proto(context, object_proto, function_proto);
+    let system = system::create(context);
+    let system_security = system_security::create(context);
+    let system_capabilities = system_capabilities::create(context);
+    let system_ime = system_ime::create(context, broadcaster_fns, array.proto);
 
-    let style_sheet_proto = style_sheet::create_proto(context, object_proto, function_proto);
-    let text_field_proto = text_field::create_proto(context, object_proto, function_proto);
-    let text_format_proto = text_format::create_proto(context, object_proto, function_proto);
+    let math = math::create(context);
+    let mouse = mouse::create(context, broadcaster_fns, array.proto);
+    let key = key::create(context, broadcaster_fns, array.proto);
+    let stage = stage::create(context, broadcaster_fns, array.proto);
+    let accessibility = accessibility::create(context);
 
-    let array_proto = array::create_proto(context, object_proto, function_proto);
-
-    let color_proto = color::create_proto(context, object_proto, function_proto);
-
-    let error_proto = error::create_proto(context, object_proto, function_proto);
-
-    let xmlnode_proto = xml_node::create_proto(context, object_proto, function_proto);
-
-    let string_proto = string::create_proto(context, object_proto, function_proto);
-    let number_proto = number::create_proto(context, object_proto, function_proto);
-    let boolean_proto = boolean::create_proto(context, object_proto, function_proto);
-    let load_vars_proto = load_vars::create_proto(context, object_proto, function_proto);
-    let local_connection_proto =
-        local_connection::create_proto(context, object_proto, function_proto);
-    let matrix_proto = matrix::create_proto(context, object_proto, function_proto);
-    let point_proto = point::create_proto(context, object_proto, function_proto);
-    let rectangle_proto = rectangle::create_proto(context, object_proto, function_proto);
-    let color_transform_proto =
-        color_transform::create_proto(context, object_proto, function_proto);
-    let external_interface_proto = external_interface::create_proto(context, object_proto);
-    let selection_proto = selection::create_proto(context, object_proto);
-
-    let (broadcaster_functions, as_broadcaster) =
-        as_broadcaster::create(context, object_proto, function_proto);
-
-    let movie_clip_loader_proto = movie_clip_loader::create_proto(
-        context,
-        object_proto,
-        function_proto,
-        array_proto,
-        broadcaster_functions,
-    );
-
-    let movie_clip_loader = FunctionObject::native(
-        context,
-        movie_clip_loader::constructor,
-        function_proto,
-        movie_clip_loader_proto,
-    );
-
-    let video_proto = video::create_proto(context, object_proto, function_proto);
-    let netstream_proto = netstream::create_proto(context, object_proto, function_proto);
-    let netconnection_proto = netconnection::create_proto(context, object_proto, function_proto);
-    let xml_socket_proto = xml_socket::create_proto(context, object_proto, function_proto);
-
-    let object = object::create_object_object(context, object_proto, function_proto);
-
-    let context_menu_proto = context_menu::create_proto(context, object_proto, function_proto);
-    let context_menu_item_proto =
-        context_menu_item::create_proto(context, object_proto, function_proto);
-
-    let button = FunctionObject::empty(context, function_proto, button_proto);
-    let color = FunctionObject::native(context, color::constructor, function_proto, color_proto);
-    let error = FunctionObject::native(context, error::constructor, function_proto, error_proto);
-    let function = FunctionObject::constructor(
-        context,
-        function::constructor,
-        Some(function::function),
-        function_proto,
-        function_proto,
-    );
-    let load_vars = FunctionObject::empty(context, function_proto, load_vars_proto);
-    let local_connection = FunctionObject::constructor(
-        context,
-        local_connection::constructor,
-        None,
-        function_proto,
-        local_connection_proto,
-    );
-    let movie_clip = FunctionObject::empty(context, function_proto, movie_clip_proto);
-
-    let sound = sound::create_constructor(context, sound_proto, function_proto);
-    let style_sheet = FunctionObject::constructor(
-        context,
-        style_sheet::constructor,
-        None,
-        function_proto,
-        style_sheet_proto,
-    );
-    let text_field = FunctionObject::empty(context, function_proto, text_field_proto);
-    let text_format = FunctionObject::constructor(
-        context,
-        text_format::constructor,
-        None,
-        function_proto,
-        text_format_proto,
-    );
-    let array = array::create_array_object(context, array_proto, function_proto);
-    let xmlnode = FunctionObject::constructor(
-        context,
-        xml_node::constructor,
-        None,
-        function_proto,
-        xmlnode_proto,
-    );
-    let xml = xml::create_constructor(context, xmlnode_proto, function_proto);
-    let string = string::create_string_object(context, string_proto, function_proto);
-    let number = number::create_number_object(context, number_proto, function_proto);
-    let boolean = boolean::create_boolean_object(context, boolean_proto, function_proto);
-    let date = date::create_constructor(context, object_proto, function_proto);
-    let netstream = netstream::create_class(context, netstream_proto, function_proto);
-    let netconnection = netconnection::create_class(context, netconnection_proto, function_proto);
-    let xml_socket = xml_socket::create_class(context, xml_socket_proto, function_proto);
-
-    let flash = Object::new(context, Some(object_proto));
-
-    let geom = Object::new(context, Some(object_proto));
-    let filters = Object::new(context, Some(object_proto));
-    let display = Object::new(context, Some(object_proto));
-    let net = Object::new(context, Some(object_proto));
-
-    let matrix = matrix::create_matrix_object(context, matrix_proto, function_proto);
-    let point = point::create_point_object(context, point_proto, function_proto);
-    let rectangle = rectangle::create_rectangle_object(context, rectangle_proto, function_proto);
-    let color_transform = FunctionObject::constructor(
-        context,
-        color_transform::constructor,
-        None,
-        function_proto,
-        color_transform_proto,
-    );
-    let transform = transform::create_constructor(context, object_proto, function_proto);
-    let video = FunctionObject::empty(context, function_proto, video_proto);
-
-    let bitmap_filter_proto = bitmap_filter::create_proto(context, object_proto, function_proto);
-    let bitmap_filter = FunctionObject::empty(context, function_proto, bitmap_filter_proto);
-
-    let blur_filter_proto = blur_filter::create_proto(context, bitmap_filter_proto, function_proto);
-    let blur_filter = blur_filter::create_constructor(context, blur_filter_proto, function_proto);
-
-    let bevel_filter_proto =
-        bevel_filter::create_proto(context, bitmap_filter_proto, function_proto);
-    let bevel_filter =
-        bevel_filter::create_constructor(context, bevel_filter_proto, function_proto);
-
-    let glow_filter_proto = glow_filter::create_proto(context, bitmap_filter_proto, function_proto);
-    let glow_filter = glow_filter::create_constructor(context, glow_filter_proto, function_proto);
-
-    let drop_shadow_filter_proto =
-        drop_shadow_filter::create_proto(context, bitmap_filter_proto, function_proto);
-    let drop_shadow_filter =
-        drop_shadow_filter::create_constructor(context, drop_shadow_filter_proto, function_proto);
-
-    let color_matrix_filter_proto =
-        color_matrix_filter::create_proto(context, bitmap_filter_proto, function_proto);
-    let color_matrix_filter =
-        color_matrix_filter::create_constructor(context, color_matrix_filter_proto, function_proto);
-
-    let displacement_map_filter_proto =
-        displacement_map_filter::create_proto(context, bitmap_filter_proto, function_proto);
-    let displacement_map_filter = displacement_map_filter::create_constructor(
-        context,
-        displacement_map_filter_proto,
-        function_proto,
-    );
-
-    let convolution_filter_proto =
-        convolution_filter::create_proto(context, bitmap_filter_proto, function_proto);
-    let convolution_filter =
-        convolution_filter::create_constructor(context, convolution_filter_proto, function_proto);
-
-    let gradient_bevel_filter_proto =
-        gradient_filter::create_bevel_proto(context, bitmap_filter_proto, function_proto);
-    let gradient_bevel_filter = gradient_filter::create_bevel_constructor(
-        context,
-        gradient_bevel_filter_proto,
-        function_proto,
-    );
-
-    let gradient_glow_filter_proto =
-        gradient_filter::create_glow_proto(context, bitmap_filter_proto, function_proto);
-    let gradient_glow_filter = gradient_filter::create_glow_constructor(
-        context,
-        gradient_glow_filter_proto,
-        function_proto,
-    );
-
-    let bitmap_data_proto = Object::new(context, Some(object_proto));
-    let bitmap_data = bitmap_data::create_constructor(context, bitmap_data_proto, function_proto);
-
-    let external = Object::new(context, Some(object_proto));
-    let external_interface = external_interface::create_external_interface_object(
-        context,
-        external_interface_proto,
-        function_proto,
-    );
-
-    let file_reference = file_reference::create_constructor(
-        context,
-        object_proto,
-        function_proto,
-        array_proto,
-        broadcaster_functions,
-    );
-
-    let shared_object = shared_object::create_constructor(context, object_proto, function_proto);
-
-    let context_menu = FunctionObject::native(
-        context,
-        context_menu::constructor,
-        function_proto,
-        context_menu_proto,
-    );
-
-    let selection = selection::create_selection_object(
-        context,
-        selection_proto,
-        function_proto,
-        broadcaster_functions,
-        array_proto,
-    );
-
-    let context_menu_item = FunctionObject::native(
-        context,
-        context_menu_item::constructor,
-        function_proto,
-        context_menu_item_proto,
-    );
-
-    let system = system::create(context, object_proto, function_proto);
-    let system_security = system_security::create(context, object_proto, function_proto);
-    let system_capabilities = system_capabilities::create(context, object_proto, function_proto);
-    let system_ime = system_ime::create(
-        context,
-        object_proto,
-        function_proto,
-        broadcaster_functions,
-        array_proto,
-    );
-
-    let math = math::create(context, object_proto, function_proto);
-    let mouse = mouse::create_mouse_object(
-        context,
-        object_proto,
-        function_proto,
-        broadcaster_functions,
-        array_proto,
-    );
-    let key = key::create_key_object(
-        context,
-        object_proto,
-        function_proto,
-        broadcaster_functions,
-        array_proto,
-    );
-    let stage = stage::create_stage_object(
-        context,
-        object_proto,
-        array_proto,
-        function_proto,
-        broadcaster_functions,
-    );
-    let accessibility =
-        accessibility::create_accessibility_object(context, object_proto, function_proto);
-
-    let globals = Object::new(context, None);
+    let globals = Object::new_without_proto(context.gc());
+    context.define_properties_on(globals, GLOBAL_DECLS);
 
     type GlobalDefinition<'gc> = (Object<'gc>, &'static [u8], Object<'gc>, Attribute);
     #[inline(never)]
@@ -802,47 +610,41 @@ pub fn create_globals<'gc>(
         }
     }
 
-    define_properties_on(GLOBAL_DECLS, context, globals, function_proto);
-
     #[rustfmt::skip]
-    define_globals(context, &[
-        (globals, b"Array", array, Attribute::DONT_ENUM),
-        (globals, b"AsBroadcaster", as_broadcaster, Attribute::DONT_ENUM),
-        (globals, b"Button", button, Attribute::DONT_ENUM),
-        (globals, b"Color", color, Attribute::DONT_ENUM),
-        (globals, b"Error", error, Attribute::DONT_ENUM),
-        (globals, b"Object", object, Attribute::DONT_ENUM),
-        (globals, b"Function", function, Attribute::DONT_ENUM),
-        (globals, b"LoadVars", load_vars, Attribute::DONT_ENUM),
-        (globals, b"LocalConnection", local_connection, Attribute::DONT_ENUM),
-        (globals, b"MovieClip", movie_clip, Attribute::DONT_ENUM),
-        (globals, b"MovieClipLoader", movie_clip_loader, Attribute::DONT_ENUM),
-        (globals, b"Sound", sound, Attribute::DONT_ENUM),
-        (globals, b"TextField", text_field, Attribute::DONT_ENUM),
-        (globals, b"TextFormat", text_format, Attribute::DONT_ENUM),
-        (globals, b"XMLNode", xmlnode, Attribute::DONT_ENUM),
-        (globals, b"XML", xml, Attribute::DONT_ENUM),
-        (globals, b"String", string, Attribute::DONT_ENUM),
-        (globals, b"Number", number, Attribute::DONT_ENUM),
-        (globals, b"Boolean", boolean, Attribute::DONT_ENUM),
-        (globals, b"Date", date, Attribute::DONT_ENUM),
-        (globals, b"SharedObject", shared_object, Attribute::DONT_ENUM),
-        (globals, b"ContextMenu", context_menu, Attribute::DONT_ENUM),
+    define_globals(context.strings, &[
+        (globals, b"Array", array.constr, Attribute::DONT_ENUM),
+        (globals, b"AsBroadcaster", as_broadcaster.constr, Attribute::DONT_ENUM),
+        (globals, b"Button", button.constr, Attribute::DONT_ENUM),
+        (globals, b"Color", color.constr, Attribute::DONT_ENUM),
+        (globals, b"Error", error.constr, Attribute::DONT_ENUM),
+        (globals, b"Object", object.constr, Attribute::DONT_ENUM),
+        (globals, b"Function", function.constr, Attribute::DONT_ENUM),
+        (globals, b"LoadVars", load_vars.constr, Attribute::DONT_ENUM),
+        (globals, b"LocalConnection", local_connection.constr, Attribute::DONT_ENUM),
+        (globals, b"MovieClip", movie_clip.constr, Attribute::DONT_ENUM),
+        (globals, b"MovieClipLoader", movie_clip_loader.constr, Attribute::DONT_ENUM),
+        (globals, b"Sound", sound.constr, Attribute::DONT_ENUM),
+        (globals, b"TextField", text_field.constr, Attribute::DONT_ENUM),
+        (globals, b"TextFormat", text_format.constr, Attribute::DONT_ENUM),
+        (globals, b"XMLNode", xmlnode.constr, Attribute::DONT_ENUM),
+        (globals, b"XML", xml.constr, Attribute::DONT_ENUM),
+        (globals, b"String", string.constr, Attribute::DONT_ENUM),
+        (globals, b"Number", number.constr, Attribute::DONT_ENUM),
+        (globals, b"Boolean", boolean.constr, Attribute::DONT_ENUM),
+        (globals, b"Date", date.constr, Attribute::DONT_ENUM),
+        (globals, b"SharedObject", shared_object.constr, Attribute::DONT_ENUM),
+        (globals, b"ContextMenu", context_menu.constr, Attribute::DONT_ENUM),
         (globals, b"Selection", selection, Attribute::DONT_ENUM),
-        (globals, b"ContextMenuItem", context_menu_item, Attribute::DONT_ENUM),
+        (globals, b"ContextMenuItem", context_menu_item.constr, Attribute::DONT_ENUM),
         (globals, b"System", system, Attribute::DONT_ENUM),
         (globals, b"Math", math, Attribute::DONT_ENUM),
         (globals, b"Mouse", mouse, Attribute::DONT_ENUM),
         (globals, b"Key", key, Attribute::DONT_ENUM),
         (globals, b"Stage", stage, Attribute::DONT_ENUM),
         (globals, b"Accessibility", accessibility, Attribute::DONT_ENUM),
-        (globals, b"NetStream", netstream, Attribute::DONT_ENUM),
-        (globals, b"NetConnection", netconnection, Attribute::DONT_ENUM),
-        (globals, b"XMLSocket", xml_socket, Attribute::DONT_ENUM),
-
-        (display, b"BitmapData", bitmap_data, Attribute::empty()),
-
-        (external, b"ExternalInterface", external_interface, Attribute::empty()),
+        (globals, b"NetStream", netstream.constr, Attribute::DONT_ENUM),
+        (globals, b"NetConnection", netconnection.constr, Attribute::DONT_ENUM),
+        (globals, b"XMLSocket", xml_socket.constr, Attribute::DONT_ENUM),
 
         (globals, b"flash", flash, Attribute::DONT_ENUM),
         (flash, b"display", display, Attribute::empty()),
@@ -851,79 +653,82 @@ pub fn create_globals<'gc>(
         (flash, b"geom", geom, Attribute::empty()),
         (flash, b"net", net, Attribute::empty()),
 
-        (geom, b"ColorTransform", color_transform, Attribute::empty()),
-        (geom, b"Matrix", matrix, Attribute::empty()),
-        (geom, b"Point", point, Attribute::empty()),
-        (geom, b"Rectangle", rectangle, Attribute::empty()),
-        (geom, b"Transform", transform, Attribute::empty()),
+        (display, b"BitmapData", bitmap_data.constr, Attribute::empty()),
 
-        (filters, b"BevelFilter", bevel_filter, Attribute::empty()),
-        (filters, b"BitmapFilter", bitmap_filter, Attribute::empty()),
-        (filters, b"BlurFilter", blur_filter, Attribute::empty()),
-        (filters, b"ColorMatrixFilter", color_matrix_filter, Attribute::empty()),
-        (filters, b"ConvolutionFilter", convolution_filter, Attribute::empty()),
-        (filters, b"DisplacementMapFilter", displacement_map_filter, Attribute::empty()),
-        (filters, b"DropShadowFilter", drop_shadow_filter, Attribute::empty()),
-        (filters, b"GradientBevelFilter", gradient_bevel_filter, Attribute::empty()),
-        (filters, b"GradientGlowFilter", gradient_glow_filter, Attribute::empty()),
-        (filters, b"GlowFilter", glow_filter, Attribute::empty()),
+        (external, b"ExternalInterface", external_interface.constr, Attribute::empty()),
 
-        (net, b"FileReference", file_reference, Attribute::empty()),
+        (geom, b"ColorTransform", color_transform.constr, Attribute::empty()),
+        (geom, b"Matrix", matrix.constr, Attribute::empty()),
+        (geom, b"Point", point.constr, Attribute::empty()),
+        (geom, b"Rectangle", rectangle.constr, Attribute::empty()),
+        (geom, b"Transform", transform.constr, Attribute::empty()),
+
+        (filters, b"BevelFilter", bevel_filter.constr, Attribute::empty()),
+        (filters, b"BitmapFilter", bitmap_filter.constr, Attribute::empty()),
+        (filters, b"BlurFilter", blur_filter.constr, Attribute::empty()),
+        (filters, b"ColorMatrixFilter", color_matrix_filter.constr, Attribute::empty()),
+        (filters, b"ConvolutionFilter", convolution_filter.constr, Attribute::empty()),
+        (filters, b"DisplacementMapFilter", displacement_map_filter.constr, Attribute::empty()),
+        (filters, b"DropShadowFilter", drop_shadow_filter.constr, Attribute::empty()),
+        (filters, b"GradientBevelFilter", gradient_bevel_filter.constr, Attribute::empty()),
+        (filters, b"GradientGlowFilter", gradient_glow_filter.constr, Attribute::empty()),
+        (filters, b"GlowFilter", glow_filter.constr, Attribute::empty()),
+
+        (net, b"FileReference", file_reference.constr, Attribute::empty()),
 
         (system, b"IME", system_ime, Attribute::empty()),
         (system, b"security", system_security, Attribute::empty()),
         (system, b"capabilities", system_capabilities, Attribute::empty()),
 
-        (text_field, b"StyleSheet", style_sheet, Attribute::DONT_ENUM | Attribute::VERSION_7),
+        (text_field.constr, b"StyleSheet", style_sheet.constr, Attribute::DONT_ENUM | Attribute::VERSION_7),
     ]);
 
     (
         SystemPrototypes {
-            button: button_proto,
-            object: object_proto,
-            object_constructor: object,
-            function: function_proto,
-            movie_clip: movie_clip_proto,
-            sound: sound_proto,
-            text_field: text_field_proto,
-            text_format: text_format_proto,
-            array: array_proto,
-            array_constructor: array,
-            xml_node_constructor: xmlnode,
-            xml_constructor: xml,
-            string: string_proto,
-            number: number_proto,
-            boolean: boolean_proto,
-            matrix: matrix_proto,
-            matrix_constructor: matrix,
-            point: point_proto,
-            point_constructor: point,
-            rectangle: rectangle_proto,
-            rectangle_constructor: rectangle,
-            transform_constructor: transform,
-            shared_object_constructor: shared_object,
-            color_transform: color_transform_proto,
-            color_transform_constructor: color_transform,
-            context_menu: context_menu_proto,
-            context_menu_constructor: context_menu,
-            context_menu_item: context_menu_item_proto,
-            context_menu_item_constructor: context_menu_item,
-            date_constructor: date,
-            bitmap_data: bitmap_data_proto,
-            video: video_proto,
-            video_constructor: video,
-            blur_filter: blur_filter_proto,
-            bevel_filter: bevel_filter_proto,
-            glow_filter: glow_filter_proto,
-            drop_shadow_filter: drop_shadow_filter_proto,
-            color_matrix_filter: color_matrix_filter_proto,
-            displacement_map_filter: displacement_map_filter_proto,
-            convolution_filter: convolution_filter_proto,
-            gradient_bevel_filter: gradient_bevel_filter_proto,
-            gradient_glow_filter: gradient_glow_filter_proto,
+            button: button.proto,
+            object: object.proto,
+            object_constructor: object.constr,
+            function: function.proto,
+            movie_clip: movie_clip.proto,
+            sound: sound.proto,
+            text_field: text_field.proto,
+            text_format: text_format.proto,
+            array: array.proto,
+            array_constructor: array.constr,
+            xml_node_constructor: xmlnode.constr,
+            xml_constructor: xml.constr,
+            string: string.proto,
+            number: number.proto,
+            boolean: boolean.proto,
+            matrix: matrix.proto,
+            matrix_constructor: matrix.constr,
+            point: point.proto,
+            point_constructor: point.constr,
+            rectangle: rectangle.proto,
+            rectangle_constructor: rectangle.constr,
+            transform_constructor: transform.constr,
+            shared_object_constructor: shared_object.constr,
+            color_transform: color_transform.proto,
+            color_transform_constructor: color_transform.constr,
+            context_menu: context_menu.proto,
+            context_menu_constructor: context_menu.constr,
+            context_menu_item: context_menu_item.proto,
+            context_menu_item_constructor: context_menu_item.constr,
+            date_constructor: date.constr,
+            bitmap_data: bitmap_data.proto,
+            video: video.proto,
+            blur_filter: blur_filter.proto,
+            bevel_filter: bevel_filter.proto,
+            glow_filter: glow_filter.proto,
+            drop_shadow_filter: drop_shadow_filter.proto,
+            color_matrix_filter: color_matrix_filter.proto,
+            displacement_map_filter: displacement_map_filter.proto,
+            convolution_filter: convolution_filter.proto,
+            gradient_bevel_filter: gradient_bevel_filter.proto,
+            gradient_glow_filter: gradient_glow_filter.proto,
         },
         globals,
-        broadcaster_functions,
+        broadcaster_fns,
     )
 }
 

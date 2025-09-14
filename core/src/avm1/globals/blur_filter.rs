@@ -1,10 +1,7 @@
 //! flash.filters.BlurFilter object
-
-use crate::avm1::function::FunctionObject;
 use crate::avm1::object::NativeObject;
-use crate::avm1::property_decl::{define_properties_on, Declaration};
+use crate::avm1::property_decl::{DeclContext, Declaration, SystemClass};
 use crate::avm1::{Activation, Error, Object, Value};
-use crate::string::StringContext;
 use gc_arena::{Collect, Gc, Mutation};
 use std::cell::Cell;
 use swf::{BlurFilterFlags, Fixed16};
@@ -134,6 +131,15 @@ const PROTO_DECLS: &[Declaration] = declare_properties! {
     "quality" => property(blur_filter_method!(5), blur_filter_method!(6); VERSION_8);
 };
 
+pub fn create_class<'gc>(
+    context: &mut DeclContext<'_, 'gc>,
+    super_proto: Object<'gc>,
+) -> SystemClass<'gc> {
+    let class = context.native_class(blur_filter_method!(0), None, super_proto);
+    context.define_properties_on(class.proto, PROTO_DECLS);
+    class
+}
+
 fn method<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Object<'gc>,
@@ -177,22 +183,4 @@ fn method<'gc>(
         }
         _ => Value::Undefined,
     })
-}
-
-pub fn create_proto<'gc>(
-    context: &mut StringContext<'gc>,
-    proto: Object<'gc>,
-    fn_proto: Object<'gc>,
-) -> Object<'gc> {
-    let blur_filter_proto = Object::new(context, Some(proto));
-    define_properties_on(PROTO_DECLS, context, blur_filter_proto, fn_proto);
-    blur_filter_proto
-}
-
-pub fn create_constructor<'gc>(
-    context: &mut StringContext<'gc>,
-    proto: Object<'gc>,
-    fn_proto: Object<'gc>,
-) -> Object<'gc> {
-    FunctionObject::constructor(context, blur_filter_method!(0), None, fn_proto, proto)
 }

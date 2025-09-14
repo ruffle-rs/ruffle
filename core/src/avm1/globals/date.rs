@@ -1,10 +1,8 @@
 use crate::avm1::clamp::Clamp;
-use crate::avm1::function::FunctionObject;
-use crate::avm1::object::NativeObject;
-use crate::avm1::property_decl::{define_properties_on, Declaration};
-use crate::avm1::{Activation, Error, Object, Value};
+use crate::avm1::property_decl::{DeclContext, Declaration, SystemClass};
+use crate::avm1::{Activation, Error, NativeObject, Object, Value};
 use crate::locale::{get_current_date_time, get_timezone};
-use crate::string::{AvmString, StringContext};
+use crate::string::AvmString;
 use gc_arena::Gc;
 use std::cell::Cell;
 use std::fmt;
@@ -344,6 +342,16 @@ const OBJECT_DECLS: &[Declaration] = declare_properties! {
     "UTC" => method(date_method!(257); DONT_ENUM | DONT_DELETE | READ_ONLY);
 };
 
+pub fn create_class<'gc>(
+    context: &mut DeclContext<'_, 'gc>,
+    super_proto: Object<'gc>,
+) -> SystemClass<'gc> {
+    let class = context.native_class(date_method!(256), Some(function), super_proto);
+    context.define_properties_on(class.proto, PROTO_DECLS);
+    context.define_properties_on(class.constr, OBJECT_DECLS);
+    class
+}
+
 /// ECMA-262 Date
 fn constructor<'gc>(
     activation: &mut Activation<'_, 'gc>,
@@ -563,24 +571,4 @@ fn method<'gc>(
         TO_STRING => AvmString::new_utf8(activation.gc(), date.to_string()).into(),
         GET_TIME..=GET_TIMEZONE_OFFSET | SET_YEAR.. => unreachable!(), // Handled above.
     })
-}
-
-pub fn create_constructor<'gc>(
-    context: &mut StringContext<'gc>,
-    proto: Object<'gc>,
-    fn_proto: Object<'gc>,
-) -> Object<'gc> {
-    let date_proto = Object::new(context, Some(proto));
-    define_properties_on(PROTO_DECLS, context, date_proto, fn_proto);
-
-    let date_constructor = FunctionObject::constructor(
-        context,
-        date_method!(256),
-        Some(function),
-        fn_proto,
-        date_proto,
-    );
-    define_properties_on(OBJECT_DECLS, context, date_constructor, fn_proto);
-
-    date_constructor
 }

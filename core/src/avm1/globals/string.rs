@@ -4,11 +4,10 @@ use ruffle_macros::istr;
 
 use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
-use crate::avm1::function::FunctionObject;
 use crate::avm1::property::Attribute;
-use crate::avm1::property_decl::{define_properties_on, Declaration};
+use crate::avm1::property_decl::{DeclContext, Declaration, SystemClass};
 use crate::avm1::{ArrayBuilder, NativeObject, Object, Value};
-use crate::string::{utils as string_utils, AvmString, StringContext, WString};
+use crate::string::{utils as string_utils, AvmString, WString};
 
 const PROTO_DECLS: &[Declaration] = declare_properties! {
     "toString" => method(to_string_value_of; DONT_ENUM | DONT_DELETE);
@@ -30,8 +29,18 @@ const OBJECT_DECLS: &[Declaration] = declare_properties! {
     "fromCharCode" => method(from_char_code; DONT_ENUM | DONT_DELETE);
 };
 
+pub fn create_class<'gc>(
+    context: &mut DeclContext<'_, 'gc>,
+    super_proto: Object<'gc>,
+) -> SystemClass<'gc> {
+    let class = context.native_class(constructor, Some(function), super_proto);
+    context.define_properties_on(class.proto, PROTO_DECLS);
+    context.define_properties_on(class.constr, OBJECT_DECLS);
+    class
+}
+
 /// `String` constructor
-pub fn string<'gc>(
+pub fn constructor<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
@@ -57,7 +66,7 @@ pub fn string<'gc>(
 }
 
 /// `String` function
-pub fn string_function<'gc>(
+fn function<'gc>(
     activation: &mut Activation<'_, 'gc>,
     _this: Object<'gc>,
     args: &[Value<'gc>],
@@ -69,33 +78,6 @@ pub fn string_function<'gc>(
     };
 
     Ok(value.into())
-}
-
-pub fn create_string_object<'gc>(
-    context: &mut StringContext<'gc>,
-    string_proto: Object<'gc>,
-    fn_proto: Object<'gc>,
-) -> Object<'gc> {
-    let string = FunctionObject::constructor(
-        context,
-        string,
-        Some(string_function),
-        fn_proto,
-        string_proto,
-    );
-    define_properties_on(OBJECT_DECLS, context, string, fn_proto);
-    string
-}
-
-/// Creates `String.prototype`.
-pub fn create_proto<'gc>(
-    context: &mut StringContext<'gc>,
-    proto: Object<'gc>,
-    fn_proto: Object<'gc>,
-) -> Object<'gc> {
-    let string_proto = Object::new(context, Some(proto));
-    define_properties_on(PROTO_DECLS, context, string_proto, fn_proto);
-    string_proto
 }
 
 fn char_at<'gc>(

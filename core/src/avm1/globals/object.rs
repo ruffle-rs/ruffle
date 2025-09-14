@@ -2,13 +2,12 @@
 
 use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
-use crate::avm1::function::FunctionObject;
 use crate::avm1::property::Attribute;
-use crate::avm1::property_decl::{define_properties_on, Declaration};
+use crate::avm1::property_decl::{DeclContext, Declaration, SystemClass};
 use crate::avm1::{Object, Value};
 use crate::avm_warn;
 use crate::display_object::TDisplayObject;
-use crate::string::{AvmString, StringContext};
+use crate::string::AvmString;
 
 const PROTO_DECLS: &[Declaration] = declare_properties! {
     "addProperty" => method(add_property; DONT_ENUM | DONT_DELETE | VERSION_6);
@@ -25,8 +24,20 @@ const OBJECT_DECLS: &[Declaration] = declare_properties! {
     "registerClass" => method(register_class; DONT_ENUM | DONT_DELETE | READ_ONLY);
 };
 
+/// Constructs the `Object` class.
+///
+/// Since Object and Function are so heavily intertwined, this function does
+/// not allocate an object to store either proto. Instead, they must be provided
+/// through the `DeclContext`.
+pub fn create_class<'gc>(context: &mut DeclContext<'_, 'gc>) -> SystemClass<'gc> {
+    let class = context.native_class_with_proto(constructor, Some(function), context.object_proto);
+    context.define_properties_on(class.proto, PROTO_DECLS);
+    context.define_properties_on(class.constr, OBJECT_DECLS);
+    class
+}
+
 /// Implements `Object` constructor
-pub fn constructor<'gc>(
+fn constructor<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
@@ -39,7 +50,7 @@ pub fn constructor<'gc>(
 }
 
 /// Implements `Object` function
-pub fn object_function<'gc>(
+fn function<'gc>(
     activation: &mut Activation<'_, 'gc>,
     _this: Object<'gc>,
     args: &[Value<'gc>],
@@ -228,23 +239,6 @@ fn unwatch<'gc>(
     Ok(result.into())
 }
 
-/// Partially construct `Object.prototype`.
-///
-/// `__proto__` and other cross-linked properties of this object will *not*
-/// be defined here. The caller of this function is responsible for linking
-/// them in order to obtain a valid ECMAScript `Object` prototype.
-///
-/// Since Object and Function are so heavily intertwined, this function does
-/// not allocate an object to store either proto. Instead, you must allocate
-/// bare objects for both and let this function fill Object for you.
-pub fn fill_proto<'gc>(
-    context: &mut StringContext<'gc>,
-    object_proto: Object<'gc>,
-    fn_proto: Object<'gc>,
-) {
-    define_properties_on(PROTO_DECLS, context, object_proto, fn_proto);
-}
-
 /// Implements `ASSetPropFlags`.
 ///
 /// This is an undocumented function that allows ActionScript 2.0 classes to
@@ -308,15 +302,4 @@ pub fn as_set_prop_flags<'gc>(
     }
 
     Ok(Value::Undefined)
-}
-
-pub fn create_object_object<'gc>(
-    context: &mut StringContext<'gc>,
-    proto: Object<'gc>,
-    fn_proto: Object<'gc>,
-) -> Object<'gc> {
-    let object_function =
-        FunctionObject::constructor(context, constructor, Some(object_function), fn_proto, proto);
-    define_properties_on(OBJECT_DECLS, context, object_function, fn_proto);
-    object_function
 }

@@ -2,11 +2,10 @@
 
 use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
-use crate::avm1::function::FunctionObject;
 use crate::avm1::globals::point::{point_to_object, value_to_point};
-use crate::avm1::property_decl::{define_properties_on, Declaration};
+use crate::avm1::property_decl::{DeclContext, Declaration, SystemClass};
 use crate::avm1::{Object, Value};
-use crate::string::{AvmString, StringContext};
+use crate::string::AvmString;
 
 use ruffle_macros::istr;
 use ruffle_render::matrix::Matrix;
@@ -26,6 +25,15 @@ const PROTO_DECLS: &[Declaration] = declare_properties! {
     "transformPoint" => method(transform_point);
     "deltaTransformPoint" => method(delta_transform_point);
 };
+
+pub fn create_class<'gc>(
+    context: &mut DeclContext<'_, 'gc>,
+    super_proto: Object<'gc>,
+) -> SystemClass<'gc> {
+    let class = context.class(constructor, super_proto);
+    context.define_properties_on(class.proto, PROTO_DECLS);
+    class
+}
 
 pub fn value_to_matrix<'gc>(
     value: Value<'gc>,
@@ -478,22 +486,4 @@ fn to_string<'gc>(
         ),
     )
     .into())
-}
-
-pub fn create_matrix_object<'gc>(
-    context: &mut StringContext<'gc>,
-    matrix_proto: Object<'gc>,
-    fn_proto: Object<'gc>,
-) -> Object<'gc> {
-    FunctionObject::native(context, constructor, fn_proto, matrix_proto)
-}
-
-pub fn create_proto<'gc>(
-    context: &mut StringContext<'gc>,
-    proto: Object<'gc>,
-    fn_proto: Object<'gc>,
-) -> Object<'gc> {
-    let object = Object::new(context, Some(proto));
-    define_properties_on(PROTO_DECLS, context, object, fn_proto);
-    object
 }

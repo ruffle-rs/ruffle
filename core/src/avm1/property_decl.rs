@@ -1,21 +1,78 @@
 //! Declarative macro for defining AVM1 properties.
 
+use gc_arena::Mutation;
+
 use crate::avm1::function::{Executable, FunctionObject, NativeFunction};
 use crate::avm1::property::Attribute;
 use crate::avm1::{Object, Value};
-use crate::string::{StringContext, WStr};
+use crate::string::{HasStringContext, StringContext, WStr};
 
-/// Defines a list of properties on a [`Object`].
-#[inline(never)]
-pub fn define_properties_on<'gc>(
-    decls: &[Declaration],
-    context: &mut StringContext<'gc>,
-    this: Object<'gc>,
-    fn_proto: Object<'gc>,
-) {
-    for decl in decls {
-        decl.define_on(context, this, fn_proto);
+pub struct DeclContext<'a, 'gc> {
+    pub strings: &'a mut StringContext<'gc>,
+    pub object_proto: Object<'gc>,
+    pub fn_proto: Object<'gc>,
+}
+
+impl<'gc> HasStringContext<'gc> for DeclContext<'_, 'gc> {
+    fn strings_ref(&self) -> &StringContext<'gc> {
+        self.strings
     }
+}
+
+impl<'gc> DeclContext<'_, 'gc> {
+    pub fn gc(&self) -> &'gc Mutation<'gc> {
+        self.strings.gc()
+    }
+
+    #[inline(never)]
+    pub fn define_properties_on(&mut self, this: Object<'gc>, decls: &[Declaration]) {
+        for decl in decls {
+            decl.define_on(self.strings, this, self.fn_proto);
+        }
+    }
+
+    pub fn empty_class(&self, super_proto: Object<'gc>) -> SystemClass<'gc> {
+        let proto = Object::new(self.strings, Some(super_proto));
+        let constr = FunctionObject::empty(self.strings, self.fn_proto, proto);
+        SystemClass { proto, constr }
+    }
+
+    /// Creates a class with a 'normal' constructor. This should be used for classes whose constructor
+    /// is implemented in bytecode in Flash Player's `playerglobals.swf`.
+    pub fn class(&self, function: NativeFunction, super_proto: Object<'gc>) -> SystemClass<'gc> {
+        let proto = Object::new(self.strings, Some(super_proto));
+        let constr = FunctionObject::native(self.strings, function, self.fn_proto, proto);
+        SystemClass { proto, constr }
+    }
+
+    /// Creates a class with a 'special' constructor. This should be used for classes with a native
+    /// constructor in Flash Player's `playerglobals.swf`.
+    pub fn native_class(
+        &self,
+        constructor: NativeFunction,
+        function: Option<NativeFunction>,
+        super_proto: Object<'gc>,
+    ) -> SystemClass<'gc> {
+        let proto = Object::new(self.strings, Some(super_proto));
+        Self::native_class_with_proto(self, constructor, function, proto)
+    }
+
+    pub fn native_class_with_proto(
+        &self,
+        constructor: NativeFunction,
+        function: Option<NativeFunction>,
+        proto: Object<'gc>,
+    ) -> SystemClass<'gc> {
+        let constr =
+            FunctionObject::constructor(self.strings, constructor, function, self.fn_proto, proto);
+        SystemClass { proto, constr }
+    }
+}
+
+#[derive(Copy, Clone)]
+pub struct SystemClass<'gc> {
+    pub proto: Object<'gc>,
+    pub constr: Object<'gc>,
 }
 
 /// The declaration of a property, method, or simple field, that

@@ -5,11 +5,10 @@ use ruffle_macros::istr;
 use crate::avm1::activation::Activation;
 use crate::avm1::clamp::Clamp;
 use crate::avm1::error::Error;
-use crate::avm1::function::FunctionObject;
 use crate::avm1::object::BoxedF64;
-use crate::avm1::property_decl::{define_properties_on, Declaration};
+use crate::avm1::property_decl::{DeclContext, Declaration, SystemClass};
 use crate::avm1::{NativeObject, Object, Value};
-use crate::string::{AvmString, StringContext};
+use crate::string::AvmString;
 
 const PROTO_DECLS: &[Declaration] = declare_properties! {
     "toString" => method(to_string; DONT_ENUM | DONT_DELETE);
@@ -26,8 +25,18 @@ const OBJECT_DECLS: &[Declaration] = declare_properties! {
     "POSITIVE_INFINITY" => float(f64::INFINITY; DONT_ENUM | DONT_DELETE | READ_ONLY);
 };
 
+pub fn create_class<'gc>(
+    context: &mut DeclContext<'_, 'gc>,
+    super_proto: Object<'gc>,
+) -> SystemClass<'gc> {
+    let class = context.native_class(constructor, Some(function), super_proto);
+    context.define_properties_on(class.proto, PROTO_DECLS);
+    context.define_properties_on(class.constr, OBJECT_DECLS);
+    class
+}
+
 /// `Number` constructor
-pub fn number<'gc>(
+pub fn constructor<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
@@ -46,7 +55,7 @@ pub fn number<'gc>(
 }
 
 /// `Number` function
-pub fn number_function<'gc>(
+fn function<'gc>(
     activation: &mut Activation<'_, 'gc>,
     _this: Object<'gc>,
     args: &[Value<'gc>],
@@ -59,33 +68,6 @@ pub fn number_function<'gc>(
 
     // If Number is called as a function, return the value.
     Ok(value.into())
-}
-
-pub fn create_number_object<'gc>(
-    context: &mut StringContext<'gc>,
-    number_proto: Object<'gc>,
-    fn_proto: Object<'gc>,
-) -> Object<'gc> {
-    let number = FunctionObject::constructor(
-        context,
-        number,
-        Some(number_function),
-        fn_proto,
-        number_proto,
-    );
-    define_properties_on(OBJECT_DECLS, context, number, fn_proto);
-    number
-}
-
-/// Creates `Number.prototype`.
-pub fn create_proto<'gc>(
-    context: &mut StringContext<'gc>,
-    proto: Object<'gc>,
-    fn_proto: Object<'gc>,
-) -> Object<'gc> {
-    let number_proto = Object::new(context, Some(proto));
-    define_properties_on(PROTO_DECLS, context, number_proto, fn_proto);
-    number_proto
 }
 
 fn to_string<'gc>(

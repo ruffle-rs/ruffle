@@ -1,10 +1,9 @@
 use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
 use crate::avm1::globals::as_broadcaster::BroadcasterFunctions;
-use crate::avm1::property_decl::{define_properties_on, Declaration};
+use crate::avm1::property_decl::{DeclContext, Declaration};
 use crate::avm1::{Object, Value};
 use crate::events::KeyCode;
-use crate::string::StringContext;
 
 const OBJECT_DECLS: &[Declaration] = declare_properties! {
     "ALT" => int(KeyCode::ALT.value() as i32; DONT_ENUM | DONT_DELETE | READ_ONLY);
@@ -31,6 +30,17 @@ const OBJECT_DECLS: &[Declaration] = declare_properties! {
     "getAscii" => method(get_ascii; DONT_ENUM | DONT_DELETE | READ_ONLY);
     "getCode" => method(get_code; DONT_ENUM | DONT_DELETE | READ_ONLY);
 };
+
+pub fn create<'gc>(
+    context: &mut DeclContext<'_, 'gc>,
+    broadcaster_functions: BroadcasterFunctions<'gc>,
+    array_proto: Object<'gc>,
+) -> Object<'gc> {
+    let key = Object::new(context.strings, Some(context.object_proto));
+    broadcaster_functions.initialize(context.strings, key, array_proto);
+    context.define_properties_on(key, OBJECT_DECLS);
+    key
+}
 
 pub fn is_down<'gc>(
     activation: &mut Activation<'_, 'gc>,
@@ -79,17 +89,4 @@ pub fn get_code<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let code = activation.context.input.last_key_code().value();
     Ok(code.into())
-}
-
-pub fn create_key_object<'gc>(
-    context: &mut StringContext<'gc>,
-    proto: Object<'gc>,
-    fn_proto: Object<'gc>,
-    broadcaster_functions: BroadcasterFunctions<'gc>,
-    array_proto: Object<'gc>,
-) -> Object<'gc> {
-    let key = Object::new(context, Some(proto));
-    broadcaster_functions.initialize(context, key, array_proto);
-    define_properties_on(OBJECT_DECLS, context, key, fn_proto);
-    key
 }

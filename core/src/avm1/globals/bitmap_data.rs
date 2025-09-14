@@ -1,11 +1,10 @@
 //! flash.display.BitmapData object
 
 use super::matrix::object_to_matrix;
-use crate::avm1::function::FunctionObject;
 use crate::avm1::globals::bitmap_filter;
 use crate::avm1::globals::color_transform::ColorTransformObject;
 use crate::avm1::object::NativeObject;
-use crate::avm1::property_decl::{define_properties_on, Declaration};
+use crate::avm1::property_decl::{DeclContext, Declaration, SystemClass};
 use crate::avm1::{Activation, Attribute, Error, Object, Value};
 use crate::bitmap::bitmap_data::BitmapData;
 use crate::bitmap::bitmap_data::{BitmapDataDrawError, IBitmapDrawable};
@@ -13,7 +12,6 @@ use crate::bitmap::bitmap_data::{ChannelOptions, ThresholdOperation};
 use crate::bitmap::{is_size_valid, operations};
 use crate::character::Character;
 use crate::display_object::DisplayObject;
-use crate::string::StringContext;
 use crate::swf::BlendMode;
 use crate::{avm1_stub, avm_error};
 use ruffle_macros::istr;
@@ -53,6 +51,16 @@ const PROTO_DECLS: &[Declaration] = declare_properties! {
 const OBJECT_DECLS: &[Declaration] = declare_properties! {
     "loadBitmap" => method(load_bitmap);
 };
+
+pub fn create_class<'gc>(
+    context: &mut DeclContext<'_, 'gc>,
+    super_proto: Object<'gc>,
+) -> SystemClass<'gc> {
+    let class = context.native_class(constructor, None, super_proto);
+    context.define_properties_on(class.proto, PROTO_DECLS);
+    context.define_properties_on(class.constr, OBJECT_DECLS);
+    class
+}
 
 fn new_bitmap_data<'gc>(
     proto: Option<Value<'gc>>,
@@ -1560,17 +1568,4 @@ fn load_bitmap<'gc>(
         activation,
     )
     .into())
-}
-
-pub fn create_constructor<'gc>(
-    context: &mut StringContext<'gc>,
-    proto: Object<'gc>,
-    fn_proto: Object<'gc>,
-) -> Object<'gc> {
-    define_properties_on(PROTO_DECLS, context, proto, fn_proto);
-
-    let bitmap_data_constructor =
-        FunctionObject::constructor(context, constructor, None, fn_proto, proto);
-    define_properties_on(OBJECT_DECLS, context, bitmap_data_constructor, fn_proto);
-    bitmap_data_constructor
 }

@@ -1,9 +1,8 @@
-use crate::avm1::function::FunctionObject;
-use crate::avm1::property_decl::{define_properties_on, Declaration};
+use crate::avm1::property_decl::{DeclContext, Declaration, SystemClass};
 use crate::avm1::{Activation, Attribute, Error, NativeObject, Object, Value};
 use crate::avm1_stub;
 use crate::display_object::TDisplayObject;
-use crate::string::{AvmString, StringContext};
+use crate::string::AvmString;
 use flash_lso::amf0::read::AMF0Decoder;
 use flash_lso::amf0::writer::{Amf0Writer, CacheKey, ObjWriter};
 use flash_lso::types::{Lso, ObjectId, Reference, Value as AmfValue};
@@ -48,6 +47,16 @@ const OBJECT_DECLS: &[Declaration] = declare_properties! {
     "getLocal" => method(get_local);
     "getRemote" => method(get_remote);
 };
+
+pub fn create_class<'gc>(
+    context: &mut DeclContext<'_, 'gc>,
+    super_proto: Object<'gc>,
+) -> SystemClass<'gc> {
+    let class = context.class(constructor, super_proto);
+    context.define_properties_on(class.proto, PROTO_DECLS);
+    context.define_properties_on(class.constr, OBJECT_DECLS);
+    class
+}
 
 fn delete_all<'gc>(
     activation: &mut Activation<'_, 'gc>,
@@ -579,16 +588,4 @@ fn constructor<'gc>(
         NativeObject::SharedObject(Gc::new(activation.gc(), Default::default())),
     );
     Ok(Value::Undefined)
-}
-
-pub fn create_constructor<'gc>(
-    context: &mut StringContext<'gc>,
-    proto: Object<'gc>,
-    fn_proto: Object<'gc>,
-) -> Object<'gc> {
-    let shared_object_proto = Object::new(context, Some(proto));
-    define_properties_on(PROTO_DECLS, context, shared_object_proto, fn_proto);
-    let constructor = FunctionObject::native(context, constructor, fn_proto, shared_object_proto);
-    define_properties_on(OBJECT_DECLS, context, constructor, fn_proto);
-    constructor
 }
