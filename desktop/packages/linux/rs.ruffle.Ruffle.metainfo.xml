@@ -21,6 +21,7 @@
     <name xml:lang="ru">Ruffle</name>
     <name xml:lang="sk">Ruffle</name>
     <name xml:lang="sv">Ruffle</name>
+    <name xml:lang="th">Ruffle</name>
     <name xml:lang="tr">Ruffle</name>
     <name xml:lang="uk">Ruffle</name>
     <name xml:lang="vi">Ruffle</name>
@@ -43,6 +44,7 @@
     <summary xml:lang="ru">Проигрывайте Flash-игры и ролики</summary>
     <summary xml:lang="sk">Hrajte Flash hry a prehrajte filmy</summary>
     <summary xml:lang="sv">Spela Flashspel &amp; filmer</summary>
+    <summary xml:lang="th">เล่นเกม Flash และสื่อ</summary>
     <summary xml:lang="tr">Flash oyunları &amp; filmleri oynat</summary>
     <summary xml:lang="uk">Відтворюйте Flash ігри та фільми</summary>
     <summary xml:lang="zh-CN">播放 Flash 游戏和动画</summary>
@@ -66,6 +68,7 @@
         <name xml:lang="ru">Команда Ruffle</name>
         <name xml:lang="sk">Ruffle Tím</name>
         <name xml:lang="sv">Ruffle Teamet</name>
+        <name xml:lang="th">ทีมงาน Ruffle</name>
         <name xml:lang="tr">Ruffle ekibi</name>
         <name xml:lang="uk">Команда Ruffle</name>
         <name xml:lang="vi">Nhóm phát triển Ruffle</name>
@@ -93,10 +96,13 @@
         <p xml:lang="nl">Ruffle is een Flash speler geschreven in Rust. Door gebruik te maken van de veiligheidsgaranties die Rust biedt, kunnen we zelfverzekerd de veiligheidsproblemen waar Flash een reputatie voor had vermijden. Ruffle zet Flash terug op het web, waar het thuis hoort!</p>
         <p xml:lang="pl">Ruffle jest emulatorem Flash Playera napisanym w języku programowania Rust. Wykorzystując gwarancje bezpieczeństwa języka Rust, możemy pewnie uniknąć wszystkich luk bezpieczeństwa, z których Flash był znany. Ruffle przywraca Flasha do sieci, gdzie jest jego miejsce!</p>
         <p xml:lang="pt-BR">O Ruffle é um emulador de Flash Player escrito em Rust. Aproveitando as garantias de segurança do Rust, confiamos que podemos evitar todas as armadilhas de segurança que o Flash era conhecido por ter. O Ruffle traz de volta o Flash para a web, onde ele pertence!</p>
-        <p xml:lang="pt-PT">O Ruffle é um emulador do Flash Player escrito em Rust. Aproveitando as garantias de segurança do Rust, podemos evitar com confiança todas as falhas de segurança que mancharam a reputação do Flash. O Ruffle põe o Flash de volta na web, onde deve estar!</p>
+        <p xml:lang="pt-PT">O Ruffle é um emulador do Flash Player escrito em Rust. Aproveitando as garantias de segurança do Rust, podemos evitar com confiança todas as falhas de segurança que mancharam a reputação do Flash. O Ruffle traz o Flash de volta à web, onde deve estar!</p>
         <p xml:lang="ro">Ruffle este un emulator Flash Player scris în Rust. Profitând de garanțiile de siguranță oferite de Rust, putem evita cu încredere toate problemele de securitate avute de Flash. Ruffle readuce Flash pe web, acolo unde îi este locul!</p>
         <p xml:lang="ru">Ruffle — это эмулятор Flash Player'а, написанный на Rust. Опираясь на гарантии безопасности Rust, мы можем с уверенностью избежать всех проблем с безопасностью, которыми был известен Flash. Ruffle возвращает Flash в Сеть на своё прежнее место!</p>
         <p xml:lang="sk">Ruffle je emulátor Flash Player napísaný v Ruste. Využitím bezpečnostných záruk Rustu sa môžeme s istotou vyhnúť všetkým bezpečnostným nástrahám, ktorými bol Flash povestný. Ruffle vracia Flash späť na web, kam patrí!</p>
+        <p xml:lang="th">Ruffle เป็นโปรแกรมจำลองของ Flash Player เขียนด้วยภาษา Rust ซึ่งรับรองความปลอดภัย
+เราจึงมั่นใจได้ว่าจะหลีกเลี่ยงปัญหาความปลอดภัยทั้งหมดที่ Flash เคยมี
+Ruffle นำสื่อ Flash กลับมาอยู่บนเว็บ ซึ่งเป็นที่ที่ควรอยู่!</p>
         <p xml:lang="tr">Ruffle, Rust ile yazılmış bir Flash Player emülatörüdür. Rust'ın güvenlik garantilerinden yararlanarak, Flash'ın ünlü olduğu tüm güvenlik açıklarından güvenle kaçınabiliyoruz. Ruffle, Flash'ı ait olduğu yere, web'e geri getiriyor!</p>
         <p xml:lang="uk">Ruffle це емулятор Flash Player, написаний на Rust. Використовуючи гарантії безпеки Rust, ми можемо впевнено уникнути всі підводні камені безпеки, якими славиться Flash. Ruffle повертає Flash в інтернет, де йому й місце!</p>
         <p xml:lang="vi">Ruffle là trình giả lập Flash Player viết bằng ngôn ngữ Rust. Tận dụng lợi thế về tính đảm bảo an toàn của Rust, chúng ta có thể tự tin tránh khỏi mọi vấn đề bảo mật mà Flash từng chịu tiếng xấu. Ruffle đưa Flash trở lại thế giới web, nơi nó vốn thuộc về!</p>
@@ -151,6 +157,9 @@
         <p xml:lang="ro">Ruffle este un proiect complet open source, menținut de voluntari. Suntem cu toții pasionați de conservarea istoriei internetului, și am fost atrași să lucrăm la acest proiect pentru a ajuta la conservarea numeroaselor site-uri web și a multitudinii de conținut care nu vor mai fi accesibile atunci când utilizatorii nu vor mai putea rula Flash Player-ul oficial. Dacă doriți să susțineți acest proiect, primim cu brațele deschise toate contribuțiile de orice fel - chiar dacă este vorba doar de a juca niște jocuri vechi și de a vedea cât de bine rulează.</p>
         <p xml:lang="ru">Ruffle — это проект с полностью открытым исходным кодом, поддерживаемый волонтёрами. Все мы занимаемся сохранением истории Интернета, и мы работаем над этим проектом для того, чтобы сохранить множество веб-сайтов и огромное количество контента, которое не будет доступно, когда пользователи больше не смогут запускать официальный Flash Player. Если Вы хотите поддержать этот проект, мы приветствуем любой вклад – даже если это просто игра в старые игры и наблюдение за тем, насколько хорошо они работают.</p>
         <p xml:lang="sk">Ruffle je plne open source projekt spravovaný dobrovoľníkmi. Všetci sme nadšení z uchovávania histórie internetu a prilákalo nás pracovať na tomto projekte, aby sme pomohli zachovať mnoho webových stránok a nepreberné množstvo obsahu, ktorý už nebude prístupný, až používatelia nebudú môcť spúšťať oficiálny prehrávač Flash Player. Ak by ste chceli pomôcť podporiť tento projekt, uvítame všetky príspevky akéhokoľvek druhu – aj keď ide len o hranie starých hier a sledovanie, ako dobre fungujú.</p>
+        <p xml:lang="th">Ruffle เป็นโครงการโอเพนซอร์สที่ดูแลโดยอาสาสมัคร
+เราทุกคนต่างหลงใหลในการอนุรักษ์ประวัติศาสตร์อินเทอร์เน็ต และเรารู้สึกสนใจที่จะร่วมทำโครงการนี้เพื่อช่วยอนุรักษ์เว็บไซต์และเนื้อหามากมายที่ไม่สามารถเข้าถึงได้อีกต่อไปเมื่อผู้ใช้ไม่สามารถใช้งาน Flash Player อย่างเป็นทางการ
+หากคุณต้องการช่วยสนับสนุนโครงการนี้ เรายินดีรับทุกการสนับสนุน ไม่ว่าจะเป็นการเล่นเกมเก่า และทดสอบประสิทธิภาพการทำงานของมันก็ตาม</p>
         <p xml:lang="tr">Ruffle, gönüllüler tarafından sürdürülen tamamen açık kaynaklı bir projedir. Hepimiz internet tarihinin korunmasına tutkuyla bağlıyız ve kullanıcıların artık resmi Flash Player'ı çalıştıramayacağı zaman erişilemeyecek olan birçok web sitesini ve içeriği korumaya yardımcı olmak için bu projede çalışmaya yöneldik. Bu projeye destek olmak isterseniz, her türlü katkıyı memnuniyetle karşılarız – eski oyunları oynayıp ne kadar iyi çalıştıklarını görmek bile katkı sayılır.</p>
         <p xml:lang="uk">Ruffle це проект з повністю відкритим кодом, який підтримується волонтерами. Ми всі захоплені збереженням історії інтернету, і ми залучені в роботу над цим проектом, щоб допомогти зберегти багато вебсайтів і велику кількість контенту, який більше не доступний, якщо користувачі більше не можуть запускати офіційний Flash Player. Якщо ви бажаєте допомогти підтримати цей проект, ми вітаємо будь-які внески, навіть якщо це просто гра в старі ігри та спостереження за тим, як добре вони працюють.</p>
         <p xml:lang="vi">Ruffle hoàn toàn là một dự án mã nguồn mở được duy trì bởi các tình nguyện viên. Tất cả chúng tôi đều đam mê bảo tồn lịch sử internet, và chúng tôi xả thân vào công việc dự án để giúp bảo tồn nhiều trang web và vô số nội dung không còn khả dụng khi người dùng không còn có thể sử dụng Flash Player chính thống. Nếu bạn muốn hỗ trợ giúp đỡ dự án này, chúng tôi hoan nghênh mọi hình thức đóng góp – ngay cả khi chỉ là chơi một số tựa game cũ và xem chúng hoạt động tốt đến đâu.</p>
@@ -186,6 +195,7 @@
         <keyword xml:lang="ru">flash</keyword>
         <keyword xml:lang="sk">flash</keyword>
         <keyword xml:lang="sv">flash</keyword>
+        <keyword xml:lang="th">flash</keyword>
         <keyword xml:lang="tr">flash</keyword>
         <keyword xml:lang="uk">flash</keyword>
         <keyword xml:lang="vi">flash</keyword>
@@ -210,6 +220,7 @@
         <keyword xml:lang="ru">swf</keyword>
         <keyword xml:lang="sk">swf</keyword>
         <keyword xml:lang="sv">swf</keyword>
+        <keyword xml:lang="th">swf</keyword>
         <keyword xml:lang="tr">swf</keyword>
         <keyword xml:lang="uk">swf</keyword>
         <keyword xml:lang="vi">swf</keyword>
@@ -259,6 +270,7 @@
         <keyword xml:lang="ru">эмуля́тор</keyword>
         <keyword xml:lang="sk">emulátor</keyword>
         <keyword xml:lang="sv">emulator</keyword>
+        <keyword xml:lang="th">โปรแกรมเลียนแบบ</keyword>
         <keyword xml:lang="tr">öykünücü</keyword>
         <keyword xml:lang="uk">емулятор</keyword>
         <keyword xml:lang="vi">trình giả lập</keyword>
