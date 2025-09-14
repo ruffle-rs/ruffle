@@ -11,15 +11,13 @@ use ruffle_macros::istr;
 use crate::avm1::activation::Activation;
 use crate::avm1::clamp::Clamp;
 use crate::avm1::error::Error;
-use crate::avm1::function::FunctionObject;
-use crate::avm1::property_decl::{define_properties_on, Declaration};
+use crate::avm1::property_decl::{DeclContext, Declaration, SystemClass};
 use crate::avm1::{NativeObject, Object, Value};
 use crate::backend::audio::{SoundHandle, SoundInstanceHandle};
 use crate::backend::navigator::Request;
 use crate::character::Character;
 use crate::context::UpdateContext;
 use crate::display_object::{DisplayObject, SoundTransform, TDisplayObject};
-use crate::string::StringContext;
 use crate::{avm1_stub, avm_warn};
 
 #[derive(Debug, Collect)]
@@ -227,6 +225,15 @@ const PROTO_DECLS: &[Declaration] = declare_properties! {
     "stop" => method(stop; DONT_ENUM | DONT_DELETE | READ_ONLY);
 };
 
+pub fn create_class<'gc>(
+    context: &mut DeclContext<'_, 'gc>,
+    super_proto: Object<'gc>,
+) -> SystemClass<'gc> {
+    let class = context.native_class(constructor, None, super_proto);
+    context.define_properties_on(class.proto, PROTO_DECLS);
+    class
+}
+
 /// Implements `Sound`
 fn constructor<'gc>(
     activation: &mut Activation<'_, 'gc>,
@@ -246,24 +253,6 @@ fn constructor<'gc>(
     this.set_native(activation.gc(), NativeObject::Sound(sound));
 
     Ok(this.into())
-}
-
-pub fn create_proto<'gc>(
-    context: &mut StringContext<'gc>,
-    proto: Object<'gc>,
-    fn_proto: Object<'gc>,
-) -> Object<'gc> {
-    let object = Object::new(context, Some(proto));
-    define_properties_on(PROTO_DECLS, context, object, fn_proto);
-    object
-}
-
-pub fn create_constructor<'gc>(
-    context: &mut StringContext<'gc>,
-    proto: Object<'gc>,
-    fn_proto: Object<'gc>,
-) -> Object<'gc> {
-    FunctionObject::constructor(context, constructor, None, fn_proto, proto)
 }
 
 fn attach_sound<'gc>(

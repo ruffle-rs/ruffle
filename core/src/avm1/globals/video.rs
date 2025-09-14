@@ -3,11 +3,10 @@
 use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
 use crate::avm1::object::NativeObject;
-use crate::avm1::property_decl::{define_properties_on, Declaration};
+use crate::avm1::property_decl::{DeclContext, Declaration, SystemClass};
 use crate::avm1::value::Value;
 use crate::avm1::Object;
 use crate::display_object::Video;
-use crate::string::StringContext;
 
 macro_rules! video_method {
     ( $fn: expr ) => {
@@ -25,6 +24,15 @@ macro_rules! video_method {
 const PROTO_DECLS: &[Declaration] = declare_properties! {
     "attachVideo" => method(video_method!(attach_video); DONT_ENUM | DONT_DELETE | VERSION_6);
 };
+
+pub fn create_class<'gc>(
+    context: &mut DeclContext<'_, 'gc>,
+    super_proto: Object<'gc>,
+) -> SystemClass<'gc> {
+    let class = context.empty_class(super_proto);
+    context.define_properties_on(class.proto, PROTO_DECLS);
+    class
+}
 
 pub fn attach_video<'gc>(
     video: Video<'gc>,
@@ -44,14 +52,4 @@ pub fn attach_video<'gc>(
     }
 
     Ok(Value::Undefined)
-}
-
-pub fn create_proto<'gc>(
-    context: &mut StringContext<'gc>,
-    proto: Object<'gc>,
-    fn_proto: Object<'gc>,
-) -> Object<'gc> {
-    let object = Object::new(context, Some(proto));
-    define_properties_on(PROTO_DECLS, context, object, fn_proto);
-    object
 }

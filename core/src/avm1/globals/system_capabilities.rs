@@ -1,8 +1,8 @@
 use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
-use crate::avm1::property_decl::{define_properties_on, Declaration};
+use crate::avm1::property_decl::{DeclContext, Declaration};
 use crate::avm1::{Object, Value};
-use crate::string::{AvmString, StringContext};
+use crate::string::AvmString;
 use crate::system_properties::SystemCapabilities;
 
 const OBJECT_DECLS: &[Declaration] = declare_properties! {
@@ -40,6 +40,12 @@ const OBJECT_DECLS: &[Declaration] = declare_properties! {
     "version" => property(get_version);
     "maxLevelIDC" => property(get_max_idc_level);
 };
+
+pub fn create<'gc>(context: &mut DeclContext<'_, 'gc>) -> Object<'gc> {
+    let capabilities = Object::new(context.strings, Some(context.object_proto));
+    context.define_properties_on(capabilities, OBJECT_DECLS);
+    capabilities
+}
 
 macro_rules! capabilities_func {
     ($func_name: ident, $capability: expr) => {
@@ -243,14 +249,4 @@ pub fn get_max_idc_level<'gc>(
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     Ok(AvmString::new_utf8(activation.gc(), &activation.context.system.idc_level).into())
-}
-
-pub fn create<'gc>(
-    context: &mut StringContext<'gc>,
-    proto: Object<'gc>,
-    fn_proto: Object<'gc>,
-) -> Object<'gc> {
-    let capabilities = Object::new(context, Some(proto));
-    define_properties_on(OBJECT_DECLS, context, capabilities, fn_proto);
-    capabilities
 }

@@ -4,12 +4,12 @@ use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
 use crate::avm1::globals::bitmap_filter;
 use crate::avm1::globals::movie_clip::{new_rectangle, object_to_rectangle};
-use crate::avm1::property_decl::{define_properties_on, Declaration};
+use crate::avm1::property_decl::{DeclContext, Declaration, SystemClass};
 use crate::avm1::ArrayBuilder;
 use crate::avm1::{globals, Object, Value};
 use crate::avm1_stub;
 use crate::display_object::{Avm1Button, TDisplayObject, TInteractiveObject};
-use crate::string::{AvmString, StringContext};
+use crate::string::AvmString;
 
 macro_rules! button_getter {
     ($name:ident) => {
@@ -50,14 +50,13 @@ const PROTO_DECLS: &[Declaration] = declare_properties! {
     "tabIndex" => property(button_getter!(tab_index), button_setter!(set_tab_index); VERSION_6);
 };
 
-pub fn create_proto<'gc>(
-    context: &mut StringContext<'gc>,
-    proto: Object<'gc>,
-    fn_proto: Object<'gc>,
-) -> Object<'gc> {
-    let object = Object::new(context, Some(proto));
-    define_properties_on(PROTO_DECLS, context, object, fn_proto);
-    object
+pub fn create_class<'gc>(
+    context: &mut DeclContext<'_, 'gc>,
+    super_proto: Object<'gc>,
+) -> SystemClass<'gc> {
+    let class = context.empty_class(super_proto);
+    context.define_properties_on(class.proto, PROTO_DECLS);
+    class
 }
 
 fn blend_mode<'gc>(

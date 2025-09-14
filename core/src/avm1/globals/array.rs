@@ -3,8 +3,7 @@
 use crate::avm1::activation::Activation;
 use crate::avm1::clamp::Clamp;
 use crate::avm1::error::Error;
-use crate::avm1::function::FunctionObject;
-use crate::avm1::property_decl::{define_properties_on, Declaration};
+use crate::avm1::property_decl::{DeclContext, Declaration, SystemClass};
 use crate::avm1::{Attribute, NativeObject, Object, Value};
 use crate::ecma_conversions::f64_to_wrapping_i32;
 use crate::string::{AvmString, StringContext};
@@ -61,6 +60,22 @@ const OBJECT_DECLS: &[Declaration] = declare_properties! {
     "RETURNINDEXEDARRAY" => int(SortOptions::RETURN_INDEXED_ARRAY.bits());
     "NUMERIC" => int(SortOptions::NUMERIC.bits());
 };
+
+pub fn create_class<'gc>(
+    context: &mut DeclContext<'_, 'gc>,
+    super_proto: Object<'gc>,
+) -> SystemClass<'gc> {
+    let proto = ArrayBuilder::new_with_proto(context.strings, super_proto).with([]);
+    let class = context.native_class_with_proto(constructor, Some(array), proto);
+    context.define_properties_on(proto, PROTO_DECLS);
+
+    // TODO: These were added in Flash Player 7, but are available even to SWFv6 and lower
+    // when run in Flash Player 7. Make these conditional if we add a parameter to control
+    // target Flash Player version.
+    context.define_properties_on(class.constr, OBJECT_DECLS);
+
+    class
+}
 
 /// Intermediate builder for constructing `ArrayObject`,
 /// used to work around borrow-checker issues.
@@ -121,23 +136,8 @@ impl<'gc> ArrayBuilder<'gc> {
     }
 }
 
-pub fn create_array_object<'gc>(
-    context: &mut StringContext<'gc>,
-    array_proto: Object<'gc>,
-    fn_proto: Object<'gc>,
-) -> Object<'gc> {
-    let array =
-        FunctionObject::constructor(context, constructor, Some(array), fn_proto, array_proto);
-
-    // TODO: These were added in Flash Player 7, but are available even to SWFv6 and lower
-    // when run in Flash Player 7. Make these conditional if we add a parameter to control
-    // target Flash Player version.
-    define_properties_on(OBJECT_DECLS, context, array, fn_proto);
-    array
-}
-
 /// Implements `Array` constructor
-pub fn constructor<'gc>(
+fn constructor<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
@@ -791,14 +791,4 @@ fn qsort<'gc>(
     }
 
     Ok(())
-}
-
-pub fn create_proto<'gc>(
-    context: &mut StringContext<'gc>,
-    proto: Object<'gc>,
-    fn_proto: Object<'gc>,
-) -> Object<'gc> {
-    let array = ArrayBuilder::new_with_proto(context, proto).with([]);
-    define_properties_on(PROTO_DECLS, context, array, fn_proto);
-    array
 }

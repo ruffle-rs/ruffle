@@ -1,10 +1,7 @@
-use crate::avm1::function::FunctionObject;
-use crate::avm1::object::NativeObject;
-use crate::avm1::property_decl::{define_properties_on, Declaration};
-use crate::avm1::{Activation, Error, Object, Value};
+use crate::avm1::property_decl::{DeclContext, Declaration, SystemClass};
+use crate::avm1::{Activation, Error, NativeObject, Object, Value};
 use crate::avm1_stub;
 use crate::streams::NetStream;
-use crate::string::StringContext;
 
 pub fn constructor<'gc>(
     activation: &mut Activation<'_, 'gc>,
@@ -28,6 +25,15 @@ const PROTO_DECLS: &[Declaration] = declare_properties! {
     "seek" => method(seek; DONT_ENUM | DONT_DELETE);
     "setBufferTime" => method(set_buffer_time; DONT_ENUM | DONT_DELETE);
 };
+
+pub fn create_class<'gc>(
+    context: &mut DeclContext<'_, 'gc>,
+    super_proto: Object<'gc>,
+) -> SystemClass<'gc> {
+    let class = context.class(constructor, super_proto);
+    context.define_properties_on(class.proto, PROTO_DECLS);
+    class
+}
 
 fn get_buffer_length<'gc>(
     activation: &mut Activation<'_, 'gc>,
@@ -166,22 +172,4 @@ fn get_time<'gc>(
     }
 
     Ok(Value::Undefined)
-}
-
-pub fn create_proto<'gc>(
-    context: &mut StringContext<'gc>,
-    proto: Object<'gc>,
-    fn_proto: Object<'gc>,
-) -> Object<'gc> {
-    let object = Object::new(context, Some(proto));
-    define_properties_on(PROTO_DECLS, context, object, fn_proto);
-    object
-}
-
-pub fn create_class<'gc>(
-    context: &mut StringContext<'gc>,
-    netstream_proto: Object<'gc>,
-    fn_proto: Object<'gc>,
-) -> Object<'gc> {
-    FunctionObject::native(context, constructor, fn_proto, netstream_proto)
 }

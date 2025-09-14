@@ -1,11 +1,9 @@
 //! flash.filters.ConvolutionFilter object
 
 use crate::avm1::clamp::Clamp;
-use crate::avm1::function::FunctionObject;
 use crate::avm1::object::NativeObject;
-use crate::avm1::property_decl::{define_properties_on, Declaration};
+use crate::avm1::property_decl::{DeclContext, Declaration, SystemClass};
 use crate::avm1::{Activation, ArrayBuilder, Error, Object, Value};
-use crate::string::StringContext;
 use gc_arena::{Collect, Gc, Mutation};
 use std::cell::{Cell, RefCell};
 use swf::{Color, ConvolutionFilterFlags};
@@ -315,6 +313,15 @@ const PROTO_DECLS: &[Declaration] = declare_properties! {
     "alpha" => property(convolution_filter_method!(17), convolution_filter_method!(18); VERSION_8);
 };
 
+pub fn create_class<'gc>(
+    context: &mut DeclContext<'_, 'gc>,
+    super_proto: Object<'gc>,
+) -> SystemClass<'gc> {
+    let class = context.native_class(convolution_filter_method!(0), None, super_proto);
+    context.define_properties_on(class.proto, PROTO_DECLS);
+    class
+}
+
 fn method<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Object<'gc>,
@@ -403,28 +410,4 @@ fn method<'gc>(
         }
         _ => Value::Undefined,
     })
-}
-
-pub fn create_proto<'gc>(
-    context: &mut StringContext<'gc>,
-    proto: Object<'gc>,
-    fn_proto: Object<'gc>,
-) -> Object<'gc> {
-    let convolution_filter_proto = Object::new(context, Some(proto));
-    define_properties_on(PROTO_DECLS, context, convolution_filter_proto, fn_proto);
-    convolution_filter_proto
-}
-
-pub fn create_constructor<'gc>(
-    context: &mut StringContext<'gc>,
-    proto: Object<'gc>,
-    fn_proto: Object<'gc>,
-) -> Object<'gc> {
-    FunctionObject::constructor(
-        context,
-        convolution_filter_method!(0),
-        None,
-        fn_proto,
-        proto,
-    )
 }

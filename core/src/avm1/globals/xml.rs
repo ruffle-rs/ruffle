@@ -2,8 +2,8 @@
 
 use std::cell::Cell;
 
-use crate::avm1::function::{ExecutionReason, FunctionObject};
-use crate::avm1::property_decl::{define_properties_on, Declaration};
+use crate::avm1::function::ExecutionReason;
+use crate::avm1::property_decl::{DeclContext, Declaration, SystemClass};
 use crate::avm1::xml::{XmlNode, ELEMENT_NODE, TEXT_NODE};
 use crate::avm1::{Activation, Attribute, Error, NativeObject, Object, Value};
 use crate::avm_warn;
@@ -268,6 +268,15 @@ const PROTO_DECLS: &[Declaration] = declare_properties! {
     "sendAndLoad" => method(send_and_load);
     "onData" => method(on_data);
 };
+
+pub fn create_class<'gc>(
+    context: &mut DeclContext<'_, 'gc>,
+    super_proto: Object<'gc>,
+) -> SystemClass<'gc> {
+    let class = context.native_class(constructor, None, super_proto);
+    context.define_properties_on(class.proto, PROTO_DECLS);
+    class
+}
 
 /// XML (document) constructor
 fn constructor<'gc>(
@@ -569,14 +578,4 @@ fn spawn_xml_fetch<'gc>(
     activation.context.navigator.spawn_future(future);
 
     Ok(true.into())
-}
-
-pub fn create_constructor<'gc>(
-    context: &mut StringContext<'gc>,
-    proto: Object<'gc>,
-    fn_proto: Object<'gc>,
-) -> Object<'gc> {
-    let xml_proto = Object::new(context, Some(proto));
-    define_properties_on(PROTO_DECLS, context, xml_proto, fn_proto);
-    FunctionObject::constructor(context, constructor, None, fn_proto, xml_proto)
 }

@@ -4,12 +4,11 @@ use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
 use crate::avm1::globals::as_broadcaster::BroadcasterFunctions;
 use crate::avm1::property::Attribute;
-use crate::avm1::property_decl::{define_properties_on, Declaration};
+use crate::avm1::property_decl::{DeclContext, Declaration, SystemClass};
 use crate::avm1::{ArrayBuilder, Object, Value};
 use crate::backend::navigator::Request;
 use crate::display_object::TDisplayObject;
 use crate::loader::MovieLoaderVMData;
-use crate::string::StringContext;
 use ruffle_macros::istr;
 
 const PROTO_DECLS: &[Declaration] = declare_properties! {
@@ -18,7 +17,19 @@ const PROTO_DECLS: &[Declaration] = declare_properties! {
     "getProgress" => method(get_progress; DONT_ENUM | DONT_DELETE);
 };
 
-pub fn constructor<'gc>(
+pub fn create_class<'gc>(
+    context: &mut DeclContext<'_, 'gc>,
+    super_proto: Object<'gc>,
+    broadcaster_fns: BroadcasterFunctions<'gc>,
+    array_proto: Object<'gc>,
+) -> SystemClass<'gc> {
+    let class = context.class(constructor, super_proto);
+    context.define_properties_on(class.proto, PROTO_DECLS);
+    broadcaster_fns.initialize(context.strings, class.proto, array_proto);
+    class
+}
+
+fn constructor<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
@@ -155,17 +166,4 @@ fn get_progress<'gc>(
     }
 
     Ok(Value::Undefined)
-}
-
-pub fn create_proto<'gc>(
-    context: &mut StringContext<'gc>,
-    proto: Object<'gc>,
-    fn_proto: Object<'gc>,
-    array_proto: Object<'gc>,
-    broadcaster_functions: BroadcasterFunctions<'gc>,
-) -> Object<'gc> {
-    let mcl_proto = Object::new(context, Some(proto));
-    broadcaster_functions.initialize(context, mcl_proto, array_proto);
-    define_properties_on(PROTO_DECLS, context, mcl_proto, fn_proto);
-    mcl_proto
 }

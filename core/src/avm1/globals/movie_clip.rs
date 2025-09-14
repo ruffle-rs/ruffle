@@ -5,14 +5,14 @@ use crate::avm1::error::Error;
 use crate::avm1::globals::matrix::gradient_object_to_matrix;
 use crate::avm1::globals::{self, bitmap_filter, AVM_DEPTH_BIAS, AVM_MAX_DEPTH};
 use crate::avm1::object::NativeObject;
-use crate::avm1::property_decl::{define_properties_on, Declaration};
+use crate::avm1::property_decl::{DeclContext, Declaration, SystemClass};
 use crate::avm1::{self, ArrayBuilder, Object, Value};
 use crate::backend::navigator::NavigationMethod;
 use crate::context::UpdateContext;
 use crate::display_object::{Bitmap, EditText, MovieClip, TInteractiveObject};
 use crate::ecma_conversions::f64_to_wrapping_i32;
 use crate::prelude::*;
-use crate::string::{AvmString, StringContext};
+use crate::string::AvmString;
 use crate::vminterface::Instantiator;
 use crate::{avm1_stub, avm_error, avm_warn};
 use ruffle_macros::istr;
@@ -122,6 +122,15 @@ const PROTO_DECLS: &[Declaration] = declare_properties! {
     "tabIndex" => property(mc_getter!(tab_index), mc_setter!(set_tab_index); DONT_ENUM | VERSION_6);
     // NOTE: `tabChildren` is not a built-in property of MovieClip.
 };
+
+pub fn create_class<'gc>(
+    context: &mut DeclContext<'_, 'gc>,
+    super_proto: Object<'gc>,
+) -> SystemClass<'gc> {
+    let class = context.empty_class(super_proto);
+    context.define_properties_on(class.proto, PROTO_DECLS);
+    class
+}
 
 pub fn new_rectangle<'gc>(
     activation: &mut Activation<'_, 'gc>,
@@ -250,16 +259,6 @@ pub fn hit_test<'gc>(
     }
 
     Ok(false.into())
-}
-
-pub fn create_proto<'gc>(
-    context: &mut StringContext<'gc>,
-    proto: Object<'gc>,
-    fn_proto: Object<'gc>,
-) -> Object<'gc> {
-    let object = Object::new(context, Some(proto));
-    define_properties_on(PROTO_DECLS, context, object, fn_proto);
-    object
 }
 
 fn attach_bitmap<'gc>(

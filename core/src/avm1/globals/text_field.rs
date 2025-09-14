@@ -2,13 +2,13 @@ use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
 use crate::avm1::globals::bitmap_filter;
 use crate::avm1::object::NativeObject;
-use crate::avm1::property_decl::{define_properties_on, Declaration};
+use crate::avm1::property_decl::{DeclContext, Declaration, SystemClass};
 use crate::avm1::{globals, ArrayBuilder, Object, Value};
 use crate::display_object::{
     AutoSizeMode, EditText, TDisplayObject, TInteractiveObject, TextSelection,
 };
 use crate::html::TextFormat;
-use crate::string::{AvmString, StringContext, WStr};
+use crate::string::{AvmString, WStr};
 use gc_arena::Gc;
 use ruffle_macros::istr;
 use swf::Color;
@@ -100,14 +100,13 @@ const PROTO_DECLS: &[Declaration] = declare_properties! {
     "styleSheet" => property(tf_getter!(style_sheet), tf_setter!(set_style_sheet); VERSION_7);
 };
 
-pub fn create_proto<'gc>(
-    context: &mut StringContext<'gc>,
-    proto: Object<'gc>,
-    fn_proto: Object<'gc>,
-) -> Object<'gc> {
-    let object = Object::new(context, Some(proto));
-    define_properties_on(PROTO_DECLS, context, object, fn_proto);
-    object
+pub fn create_class<'gc>(
+    context: &mut DeclContext<'_, 'gc>,
+    super_proto: Object<'gc>,
+) -> SystemClass<'gc> {
+    let class = context.empty_class(super_proto);
+    context.define_properties_on(class.proto, PROTO_DECLS);
+    class
 }
 
 pub fn password<'gc>(

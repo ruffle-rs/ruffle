@@ -1,12 +1,12 @@
-use crate::avm1::function::FunctionObject;
 use crate::avm1::globals::shared_object::{deserialize_value, serialize};
-use crate::avm1::object::Object;
-use crate::avm1::property_decl::{define_properties_on, Declaration};
-use crate::avm1::{Activation, ActivationIdentifier, Error, ExecutionReason, NativeObject, Value};
+use crate::avm1::property_decl::{DeclContext, Declaration, SystemClass};
+use crate::avm1::{
+    Activation, ActivationIdentifier, Error, ExecutionReason, NativeObject, Object, Value,
+};
 use crate::avm1_stub;
 use crate::context::UpdateContext;
 use crate::net_connection::{NetConnectionHandle, NetConnections, ResponderCallback};
-use crate::string::{AvmString, StringContext};
+use crate::string::AvmString;
 use flash_lso::packet::Header;
 use flash_lso::types::ObjectId;
 use flash_lso::types::Value as AMFValue;
@@ -161,6 +161,15 @@ const PROTO_DECLS: &[Declaration] = declare_properties! {
     "close" => method(close; DONT_ENUM | DONT_DELETE);
     "connect" => method(connect; DONT_ENUM | DONT_DELETE);
 };
+
+pub fn create_class<'gc>(
+    context: &mut DeclContext<'_, 'gc>,
+    super_proto: Object<'gc>,
+) -> SystemClass<'gc> {
+    let class = context.class(constructor, super_proto);
+    context.define_properties_on(class.proto, PROTO_DECLS);
+    class
+}
 
 fn is_connected<'gc>(
     activation: &mut Activation<'_, 'gc>,
@@ -331,22 +340,4 @@ fn connect<'gc>(
     }
 
     Ok(Value::Undefined)
-}
-
-pub fn create_proto<'gc>(
-    context: &mut StringContext<'gc>,
-    proto: Object<'gc>,
-    fn_proto: Object<'gc>,
-) -> Object<'gc> {
-    let object = Object::new(context, Some(proto));
-    define_properties_on(PROTO_DECLS, context, object, fn_proto);
-    object
-}
-
-pub fn create_class<'gc>(
-    context: &mut StringContext<'gc>,
-    netconnection_proto: Object<'gc>,
-    fn_proto: Object<'gc>,
-) -> Object<'gc> {
-    FunctionObject::native(context, constructor, fn_proto, netconnection_proto)
 }
