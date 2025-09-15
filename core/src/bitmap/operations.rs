@@ -1526,7 +1526,6 @@ pub fn draw<'gc>(
         library: context.library,
         transform_stack: &mut transform_stack,
         is_offscreen: true,
-        use_bitmap_cache: false,
         stage: context.stage,
     };
 

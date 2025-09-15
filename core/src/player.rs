@@ -1998,7 +1998,6 @@ impl Player {
                 library: &gc_root.library,
                 transform_stack: &mut this.transform_stack,
                 is_offscreen: false,
-                use_bitmap_cache: true,
                 stage,
             };
 
