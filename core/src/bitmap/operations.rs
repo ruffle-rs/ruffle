@@ -1541,7 +1541,13 @@ pub fn draw<'gc>(
         library: context.library,
         transform_stack: &mut transform_stack,
         is_offscreen: true,
-        use_bitmap_cache: false,
+
+        // Use CAB only when drawing with the same quality, because this draw
+        // will update caches. When drawing with a different quality, we would
+        // either (1) update caches for regular draws with this temporary
+        // quality, or (2) draw cached bitmaps with the regular quality.
+        // TODO Support CAB draw with different quality and remove this param.
+        use_bitmap_cache: context.stage.quality() == quality,
         stage: context.stage,
     };
 
@@ -1612,13 +1618,10 @@ pub fn draw<'gc>(
         dirty_region.union(old);
     }
 
-    assert!(
-        cache_draws.is_empty(),
-        "BitmapData.draw() should not use cacheAsBitmap"
-    );
-    let image = context
-        .renderer
-        .render_offscreen(handle, commands, quality, dirty_region);
+    let image =
+        context
+            .renderer
+            .render_offscreen(handle, commands, quality, dirty_region, cache_draws);
 
     match image {
         Some(sync_handle) => {
