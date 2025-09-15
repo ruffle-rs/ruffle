@@ -1597,13 +1597,10 @@ pub fn draw<'gc>(
         dirty_region.union(old);
     }
 
-    assert!(
-        cache_draws.is_empty(),
-        "BitmapData.draw() should not use cacheAsBitmap"
-    );
-    let image = context
-        .renderer
-        .render_offscreen(handle, commands, quality, dirty_region);
+    let image =
+        context
+            .renderer
+            .render_offscreen(handle, commands, quality, dirty_region, cache_draws);
 
     match image {
         Some(sync_handle) => {
