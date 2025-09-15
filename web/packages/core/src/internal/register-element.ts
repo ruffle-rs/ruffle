@@ -56,8 +56,8 @@ export function lookupElement(elementName: string): Registration | null {
  *
  * You must call this function with the same class every time.
  * @returns The actual element name.
- * @throws Throws an error if two different elements were registered with the
- * same internal name.
+ * @throws {Error} Throws an error if two different elements were registered
+ * with the same internal name.
  */
 export function registerElement(
     elementName: string,
