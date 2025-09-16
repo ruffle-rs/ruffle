@@ -1,7 +1,7 @@
 use crate::avm2::error::Error;
 use crate::avm2::value::Value;
 use crate::avm2::Activation;
-use crate::string::AvmString;
+use ruffle_common::avm_string::AvmString;
 use ruffle_macros::istr;
 
 // NOTE: This is used to get the movie domain when null is passed to connect function.

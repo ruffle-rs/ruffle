@@ -8,7 +8,6 @@ use crate::avm1::xml::{XmlNode, ELEMENT_NODE, TEXT_NODE};
 use crate::avm1::{Activation, Attribute, Error, NativeObject, Object, Value};
 use crate::avm_warn;
 use crate::backend::navigator::Request;
-use crate::string::{AvmString, StringContext, WStr, WString};
 use crate::xml::custom_unescape;
 use gc_arena::barrier::unlock;
 use gc_arena::lock::Lock;
@@ -16,7 +15,9 @@ use gc_arena::{Collect, Gc};
 use quick_xml::errors::IllFormedError;
 use quick_xml::events::attributes::AttrError;
 use quick_xml::{events::Event, Reader};
+use ruffle_common::avm_string::{AvmString, StringContext};
 use ruffle_macros::istr;
+use ruffle_wstr::{WStr, WString};
 
 #[derive(Clone, Copy, Collect)]
 #[collect(no_drop)]

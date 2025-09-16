@@ -8,9 +8,10 @@ use crate::ecma_conversions::{
     f64_to_wrapping_i16, f64_to_wrapping_i32, f64_to_wrapping_u16, f64_to_wrapping_u32,
     f64_to_wrapping_u8,
 };
-use crate::string::{AvmAtom, AvmString, Integer, WStr};
 use gc_arena::Collect;
+use ruffle_common::avm_string::{AvmAtom, AvmString};
 use ruffle_macros::istr;
+use ruffle_wstr::{Integer, WStr};
 use std::{io::Write, mem::size_of, num::Wrapping};
 
 use super::object_reference::MovieClipReference;
@@ -899,7 +900,7 @@ mod test {
     use crate::avm1::property::Attribute;
     use crate::avm1::test_utils::with_avm;
     use crate::avm1::Value;
-    use crate::string::AvmString;
+    use ruffle_common::avm_string::AvmString;
     use ruffle_macros::istr;
 
     #[test]

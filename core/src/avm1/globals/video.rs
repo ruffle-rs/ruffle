@@ -7,7 +7,7 @@ use crate::avm1::property_decl::{define_properties_on, Declaration};
 use crate::avm1::value::Value;
 use crate::avm1::Object;
 use crate::display_object::Video;
-use crate::string::StringContext;
+use ruffle_common::avm_string::StringContext;
 
 macro_rules! video_method {
     ( $fn: expr ) => {

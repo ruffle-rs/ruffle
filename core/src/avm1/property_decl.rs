@@ -3,7 +3,8 @@
 use crate::avm1::function::{Executable, FunctionObject, NativeFunction};
 use crate::avm1::property::Attribute;
 use crate::avm1::{Object, Value};
-use crate::string::{StringContext, WStr};
+use ruffle_common::avm_string::StringContext;
+use ruffle_wstr::WStr;
 
 /// Defines a list of properties on a [`Object`].
 #[inline(never)]

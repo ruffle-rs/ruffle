@@ -3,7 +3,6 @@ use crate::avm2::error::make_error_2126;
 pub use crate::avm2::object::net_connection_allocator;
 use crate::avm2::parameters::ParametersExt;
 use crate::net_connection::NetConnections;
-use crate::string::AvmString;
 use crate::{
     avm2::{Activation, Error, Value},
     avm2_stub_method,
@@ -13,6 +12,7 @@ use flash_lso::types::AMFVersion;
 use flash_lso::types::ObjectId;
 use flash_lso::types::Value as AMFValue;
 use fnv::FnvHashMap;
+use ruffle_common::avm_string::AvmString;
 use ruffle_wstr::WStr;
 use std::rc::Rc;
 

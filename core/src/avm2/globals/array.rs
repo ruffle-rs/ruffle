@@ -8,8 +8,8 @@ use crate::avm2::object::{ArrayObject, Object, TObject};
 use crate::avm2::parameters::ParametersExt;
 use crate::avm2::value::Value;
 use crate::avm2::Error;
-use crate::string::AvmString;
 use bitflags::bitflags;
+use ruffle_common::avm_string::AvmString;
 use ruffle_macros::istr;
 use std::cmp::{min, Ordering};
 use std::mem::swap;
@@ -172,7 +172,7 @@ pub fn join<'gc>(
 
         return Ok(AvmString::new(
             activation.gc(),
-            crate::string::join(&accum, &string_separator),
+            ruffle_wstr::join(&accum, &string_separator),
         )
         .into());
     }

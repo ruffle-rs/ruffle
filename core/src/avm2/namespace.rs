@@ -1,9 +1,9 @@
 use crate::avm2::activation::Activation;
 use crate::avm2::error::{make_error_1032, Error};
 use crate::avm2::script::TranslationUnit;
-use crate::string::{AvmAtom, AvmString, StringContext};
 use gc_arena::{Collect, Gc};
 use num_traits::FromPrimitive;
+use ruffle_common::avm_string::{AvmAtom, AvmString, StringContext};
 use ruffle_wstr::WStr;
 use std::fmt::Debug;
 use swf::avm2::types::{Index, Namespace as AbcNamespace};

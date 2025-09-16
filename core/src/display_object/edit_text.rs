@@ -26,7 +26,7 @@ use crate::html::{
     FormatSpans, Layout, LayoutBox, LayoutContent, LayoutLine, LayoutMetrics, Position, TextFormat,
 };
 use crate::prelude::*;
-use crate::string::{utils as string_utils, AvmString, SwfStrExt as _, WStr, WString};
+use crate::string::SwfStrExt as _;
 use crate::tag_utils::SwfMovie;
 use crate::utils::HasPrefixField;
 use crate::vminterface::{AvmObject, Instantiator};
@@ -36,12 +36,13 @@ use core::fmt;
 use gc_arena::barrier::unlock;
 use gc_arena::lock::{Lock, RefLock};
 use gc_arena::{Collect, Gc, Mutation};
+use ruffle_common::avm_string::AvmString;
 use ruffle_macros::istr;
 use ruffle_render::commands::Command as RenderCommand;
 use ruffle_render::commands::CommandHandler;
 use ruffle_render::quality::StageQuality;
 use ruffle_render::transform::Transform;
-use ruffle_wstr::WStrToUtf8;
+use ruffle_wstr::{utils as string_utils, WStr, WStrToUtf8, WString};
 use std::cell::{Cell, Ref, RefCell, RefMut};
 use std::collections::VecDeque;
 use std::sync::Arc;

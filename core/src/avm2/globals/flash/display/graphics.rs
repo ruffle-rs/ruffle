@@ -20,8 +20,9 @@ use crate::avm2::{ArrayStorage, Error};
 use crate::avm2_stub_method;
 use crate::display_object::TDisplayObject;
 use crate::drawing::Drawing;
-use crate::string::{AvmString, WStr};
+use ruffle_common::avm_string::AvmString;
 use ruffle_render::shape_utils::{DrawCommand, FillRule, GradientType};
+use ruffle_wstr::WStr;
 use std::f64::consts::FRAC_1_SQRT_2;
 use swf::{
     Color, FillStyle, Fixed16, Fixed8, Gradient, GradientInterpolation, GradientRecord,

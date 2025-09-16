@@ -6,8 +6,8 @@ use crate::avm1::function::FunctionObject;
 use crate::avm1::property::Attribute;
 use crate::avm1::property_decl::Declaration;
 use crate::avm1::{Activation, ArrayBuilder, Object, Value};
-use crate::string::{AvmString, StringContext};
 use gc_arena::Collect;
+use ruffle_common::avm_string::{AvmString, StringContext};
 use ruffle_macros::istr;
 
 const OBJECT_DECLS: &[Declaration] = declare_properties! {

@@ -8,7 +8,7 @@ use crate::avm2::globals::slots::{
 use crate::avm2::parameters::ParametersExt;
 use crate::avm2::{Activation, Error, Object, TObject as _, Value};
 use crate::pixel_bender::PixelBenderTypeExt;
-use crate::string::AvmString;
+use ruffle_common::avm_string::AvmString;
 
 use crate::avm2_stub_method;
 

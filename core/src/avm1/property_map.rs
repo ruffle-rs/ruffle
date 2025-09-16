@@ -4,11 +4,12 @@
 //! the insertion order of properties, which is necessary for accurate
 //! enumeration order.
 
-use crate::string::{utils as string_utils, AvmString, WStr};
 use fnv::FnvBuildHasher;
 use gc_arena::collect::Trace;
 use gc_arena::Collect;
 use indexmap::{Equivalent, IndexMap};
+use ruffle_common::avm_string::AvmString;
+use ruffle_wstr::WStr;
 use std::hash::{Hash, Hasher};
 
 type FnvIndexMap<K, V> = IndexMap<K, V, FnvBuildHasher>;
@@ -206,6 +207,6 @@ impl Hash for PropertyName<'_> {
 
 fn swf_hash_string_ignore_case<H: Hasher>(s: &WStr, state: &mut H) {
     s.iter()
-        .for_each(|c| string_utils::swf_to_lowercase(c).hash(state));
+        .for_each(|c| ruffle_wstr::utils::swf_to_lowercase(c).hash(state));
     state.write_u8(0xff);
 }

@@ -6,7 +6,7 @@ use crate::avm2::object::{ArrayObject, ScriptObject, TObject as _};
 use crate::avm2::parameters::ParametersExt;
 use crate::avm2::property::Property;
 use crate::avm2::{Activation, Error, Multiname, Namespace, Object, Value};
-use crate::string::{AvmString, StringContext};
+use ruffle_common::avm_string::{AvmString, StringContext};
 
 use crate::avm2_stub_method;
 

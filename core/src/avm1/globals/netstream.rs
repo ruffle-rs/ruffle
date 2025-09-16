@@ -4,7 +4,7 @@ use crate::avm1::property_decl::{define_properties_on, Declaration};
 use crate::avm1::{Activation, Error, Object, Value};
 use crate::avm1_stub;
 use crate::streams::NetStream;
-use crate::string::StringContext;
+use ruffle_common::avm_string::StringContext;
 
 pub fn constructor<'gc>(
     activation: &mut Activation<'_, 'gc>,

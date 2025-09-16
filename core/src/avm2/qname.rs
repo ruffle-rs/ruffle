@@ -3,9 +3,10 @@ use crate::avm2::error::make_error_1033;
 use crate::avm2::script::TranslationUnit;
 use crate::avm2::{Error, Namespace};
 use crate::context::UpdateContext;
-use crate::string::{AvmString, WStr, WString};
 use either::Either;
 use gc_arena::{Collect, Mutation};
+use ruffle_common::avm_string::AvmString;
+use ruffle_wstr::{WStr, WString};
 use std::fmt::Debug;
 use swf::avm2::types::{Index, Multiname as AbcMultiname};
 

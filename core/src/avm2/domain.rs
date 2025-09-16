@@ -12,10 +12,10 @@ use crate::avm2::script::Script;
 use crate::avm2::value::Value;
 use crate::avm2::{Avm2, Multiname, QName};
 use crate::context::UpdateContext;
-use crate::string::AvmString;
 use gc_arena::barrier::unlock;
 use gc_arena::lock::{Lock, OnceLock, RefLock};
 use gc_arena::{Collect, Gc, GcWeak, Mutation};
+use ruffle_common::avm_string::AvmString;
 use ruffle_macros::istr;
 use ruffle_wstr::WStr;
 

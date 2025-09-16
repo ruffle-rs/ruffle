@@ -2,8 +2,8 @@ use crate::avm2::activation::Activation;
 use crate::avm2::error::Error;
 use crate::avm2::parameters::ParametersExt;
 use crate::avm2::value::Value;
-use crate::string::WStr;
 use crate::stub::Stub;
+use ruffle_wstr::WStr;
 use std::borrow::Cow;
 
 pub fn stub_method<'gc>(
@@ -138,7 +138,7 @@ pub fn log_warn<'gc>(
                 .iter()
                 .map(|a| a.coerce_to_string(activation))
                 .collect::<Result<Vec<_>, _>>()?;
-            let msg = crate::string::join(&strings, &WStr::from_units(b" "));
+            let msg = ruffle_wstr::join(&strings, &WStr::from_units(b" "));
             tracing::warn!("{}", &msg.to_utf8_lossy());
         }
     }

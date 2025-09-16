@@ -1,7 +1,7 @@
 // NOTE: Regex to match character groups: '\[#(.{5})-#(.{5})\]', substitution '(0$1, 0$2),\n'
 //       and regex to match single characters: '#(.{5})', substitution '(0$1, 0$1), // single\n'
 
-use crate::string::AvmString;
+use ruffle_common::avm_string::AvmString;
 
 // https://www.w3.org/TR/2004/REC-xml-20040204/#NT-Letter
 static LETTER_TABLE: &[(u32, u32)] = &[

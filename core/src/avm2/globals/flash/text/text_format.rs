@@ -6,7 +6,8 @@ use crate::avm2::value::Value;
 use crate::avm2::Error;
 use crate::ecma_conversions::round_to_even;
 use crate::html::TextDisplay;
-use crate::string::{AvmString, WStr};
+use ruffle_common::avm_string::AvmString;
+use ruffle_wstr::WStr;
 
 pub use crate::avm2::object::textformat_allocator as text_format_allocator;
 

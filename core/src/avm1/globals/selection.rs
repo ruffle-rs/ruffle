@@ -6,7 +6,7 @@ use crate::avm1::globals::as_broadcaster::BroadcasterFunctions;
 use crate::avm1::property_decl::{define_properties_on, Declaration};
 use crate::avm1::{Object, Value};
 use crate::display_object::{EditText, TDisplayObject, TInteractiveObject, TextSelection};
-use crate::string::StringContext;
+use ruffle_common::avm_string::StringContext;
 
 const OBJECT_DECLS: &[Declaration] = declare_properties! {
     "getBeginIndex" => method(get_begin_index; DONT_ENUM | DONT_DELETE | READ_ONLY);

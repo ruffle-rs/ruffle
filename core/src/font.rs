@@ -1,12 +1,12 @@
 use crate::drawing::Drawing;
 use crate::html::TextSpan;
 use crate::prelude::*;
-use crate::string::WStr;
 use gc_arena::{Collect, Gc, Mutation};
 use ruffle_render::backend::null::NullBitmapSource;
 use ruffle_render::backend::{RenderBackend, ShapeHandle};
 use ruffle_render::shape_utils::{DrawCommand, FillRule};
 use ruffle_render::transform::Transform;
+use ruffle_wstr::WStr;
 use std::cell::{OnceCell, RefCell};
 use std::hash::{Hash, Hasher};
 use std::sync::Arc;
@@ -1372,9 +1372,9 @@ impl<'gc> FontLike<'gc> for FontSet<'gc> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::string::WStr;
     use flate2::read::DeflateDecoder;
     use gc_arena::{arena::rootless_mutate, Mutation};
+    use ruffle_wstr::WStr;
     use std::io::Read;
     use swf::Twips;
 

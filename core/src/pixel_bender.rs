@@ -1,4 +1,5 @@
 use either::Either;
+use ruffle_common::avm_string::AvmString;
 use ruffle_render::pixel_bender::{PixelBenderType, PixelBenderTypeOpcode};
 
 use crate::{
@@ -7,7 +8,6 @@ use crate::{
         Activation, ArrayObject, ArrayStorage, Error, Object, Value,
     },
     ecma_conversions::f64_to_wrapping_i32,
-    string::AvmString,
 };
 
 pub trait PixelBenderTypeExt {

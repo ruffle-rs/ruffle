@@ -2,11 +2,12 @@
 
 use crate::context::UpdateContext;
 use crate::html::iterators::TextSpanIter;
-use crate::string::{Integer, SwfStrExt as _, Units, WStr, WString};
+use crate::string::SwfStrExt as _;
 use crate::tag_utils::SwfMovie;
 use gc_arena::Collect;
 use quick_xml::{escape::escape, events::Event, Reader};
 use ruffle_wstr::utils::swf_is_newline;
+use ruffle_wstr::{Integer, Units, WStr, WString};
 use std::borrow::Cow;
 use std::cmp::{min, Ordering};
 use std::collections::VecDeque;

@@ -12,14 +12,16 @@ use crate::display_object::{
 };
 use crate::ecma_conversions::{f64_to_wrapping_i32, f64_to_wrapping_u32};
 use crate::loader::MovieLoaderVMData;
-use crate::string::{AvmString, HasStringContext, StringContext, SwfStrExt as _, WStr, WString};
+use crate::string::SwfStrExt as _;
 use crate::tag_utils::SwfSlice;
 use crate::vminterface::Instantiator;
 use crate::{avm_error, avm_warn};
 use gc_arena::{Gc, Mutation};
 use indexmap::IndexMap;
 use rand::Rng;
+use ruffle_common::avm_string::{AvmString, HasStringContext, StringContext};
 use ruffle_macros::istr;
+use ruffle_wstr::{WStr, WString};
 use std::borrow::Cow;
 use std::cell::Cell;
 use std::cmp::min;
@@ -624,7 +626,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         // Unpaired surrogate characters should return the code point for the replacement character.
         // Try to convert the code unit back to a character, which will fail if this is invalid UTF-16 (unpaired surrogate).
         // TODO: Should this happen in SWF5 and below?
-        let c = crate::string::utils::utf16_code_unit_to_char(char_code);
+        let c = ruffle_wstr::utils::utf16_code_unit_to_char(char_code);
         self.context.avm1.push(u32::from(c).into());
         Ok(FrameControl::Continue)
     }
@@ -1590,7 +1592,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         } else {
             // Unpaired surrogate characters should return the code point for the replacement character.
             // Try to convert the code unit back to a character, which will fail if this is invalid UTF-16 (unpaired surrogate).
-            crate::string::utils::utf16_code_unit_to_char(char_code)
+            ruffle_wstr::utils::utf16_code_unit_to_char(char_code)
         };
         self.context.avm1.push(u32::from(c).into());
         Ok(FrameControl::Continue)

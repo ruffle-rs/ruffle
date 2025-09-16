@@ -1,7 +1,7 @@
 //! Layout box iterators
 
 use crate::html::text_format::{FormatSpans, TextSpan};
-use crate::string::WStr;
+use ruffle_wstr::WStr;
 use std::cmp::min;
 
 /// Iterator implementation for the `iter_spans` method of `FormatSpans`.

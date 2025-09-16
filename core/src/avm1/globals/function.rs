@@ -5,7 +5,7 @@ use crate::avm1::error::Error;
 use crate::avm1::function::{ExecutionName, ExecutionReason};
 use crate::avm1::property_decl::{define_properties_on, Declaration};
 use crate::avm1::{Object, Value};
-use crate::string::{AvmString, StringContext};
+use ruffle_common::avm_string::{AvmString, StringContext};
 
 const PROTO_DECLS: &[Declaration] = declare_properties! {
     "call" => method(call; DONT_ENUM | DONT_DELETE);

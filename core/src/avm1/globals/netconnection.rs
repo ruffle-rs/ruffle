@@ -6,11 +6,11 @@ use crate::avm1::{Activation, ActivationIdentifier, Error, ExecutionReason, Nati
 use crate::avm1_stub;
 use crate::context::UpdateContext;
 use crate::net_connection::{NetConnectionHandle, NetConnections, ResponderCallback};
-use crate::string::{AvmString, StringContext};
 use flash_lso::packet::Header;
 use flash_lso::types::ObjectId;
 use flash_lso::types::Value as AMFValue;
 use gc_arena::{Collect, Gc};
+use ruffle_common::avm_string::{AvmString, StringContext};
 use ruffle_macros::istr;
 use ruffle_wstr::WStr;
 use std::cell::Cell;

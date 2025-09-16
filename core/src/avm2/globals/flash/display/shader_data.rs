@@ -5,7 +5,7 @@ use crate::avm2::parameters::ParametersExt;
 use crate::avm2::value::Value;
 use crate::avm2::Error;
 use crate::pixel_bender::PixelBenderTypeExt;
-use crate::string::AvmString;
+use ruffle_common::avm_string::AvmString;
 
 use ruffle_macros::istr;
 use ruffle_render::pixel_bender::{

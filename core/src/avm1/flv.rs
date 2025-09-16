@@ -1,6 +1,6 @@
 use crate::avm1::{Activation, ArrayBuilder, Object, Value as Avm1Value};
-use crate::string::AvmString;
 use flv_rs::{Value as FlvValue, Variable as FlvVariable};
+use ruffle_common::avm_string::AvmString;
 
 fn avm1_object_from_flv_variables<'gc>(
     activation: &mut Activation<'_, 'gc>,

@@ -13,9 +13,9 @@ use crate::bitmap::bitmap_data::{ChannelOptions, ThresholdOperation};
 use crate::bitmap::{is_size_valid, operations};
 use crate::character::Character;
 use crate::display_object::DisplayObject;
-use crate::string::StringContext;
 use crate::swf::BlendMode;
 use crate::{avm1_stub, avm_error};
+use ruffle_common::avm_string::StringContext;
 use ruffle_macros::istr;
 use ruffle_render::transform::Transform;
 

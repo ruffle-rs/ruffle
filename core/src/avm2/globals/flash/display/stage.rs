@@ -11,7 +11,8 @@ use crate::avm2_stub_getter;
 use crate::display_object::{
     StageDisplayState, TDisplayObject, TDisplayObjectContainer, TInteractiveObject,
 };
-use crate::string::{AvmString, WString};
+use ruffle_common::avm_string::AvmString;
+use ruffle_wstr::WString;
 use swf::Color;
 
 /// Implement `align`'s getter

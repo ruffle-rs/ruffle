@@ -9,7 +9,7 @@ use crate::avm2::parameters::ParametersExt;
 use crate::avm2::regexp::RegExpFlags;
 use crate::avm2::value::Value;
 use crate::avm2::Error;
-use crate::string::AvmString;
+use ruffle_common::avm_string::AvmString;
 
 pub use crate::avm2::object::reg_exp_allocator;
 

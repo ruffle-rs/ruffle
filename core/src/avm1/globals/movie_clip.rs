@@ -12,9 +12,9 @@ use crate::context::UpdateContext;
 use crate::display_object::{Bitmap, EditText, MovieClip, TInteractiveObject};
 use crate::ecma_conversions::f64_to_wrapping_i32;
 use crate::prelude::*;
-use crate::string::{AvmString, StringContext};
 use crate::vminterface::Instantiator;
 use crate::{avm1_stub, avm_error, avm_warn};
+use ruffle_common::avm_string::{AvmString, StringContext};
 use ruffle_macros::istr;
 use ruffle_render::shape_utils::{DrawCommand, GradientType};
 use swf::{

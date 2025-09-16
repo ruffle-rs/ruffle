@@ -2,10 +2,10 @@
 
 use crate::loader::Error;
 use crate::socket::{ConnectionState, SocketAction, SocketHandle};
-use crate::string::WStr;
 use async_channel::{Receiver, Sender};
 use encoding_rs::Encoding;
 use indexmap::IndexMap;
+use ruffle_wstr::WStr;
 use std::any::Any;
 use std::borrow::Cow;
 use std::fmt;

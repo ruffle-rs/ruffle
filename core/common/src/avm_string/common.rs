@@ -1,4 +1,5 @@
-use super::AvmAtom;
+use super::interner::AvmAtom;
+
 use gc_arena::Collect;
 
 macro_rules! define_common_strings {
