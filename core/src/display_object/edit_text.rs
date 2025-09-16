@@ -3597,9 +3597,10 @@ impl EditTextPixelSnapping {
     }
 }
 
-#[derive(Debug, Clone, Copy, Collect)]
+#[derive(Clone, Copy, Collect, Debug, Default)]
 #[collect(no_drop)]
 enum EditTextStyleSheet<'gc> {
+    #[default]
     None,
     Avm1(Avm1Object<'gc>),
     Avm2(Avm2StyleSheetObject<'gc>),
@@ -3626,12 +3627,6 @@ impl<'gc> EditTextStyleSheet<'gc> {
             }
             EditTextStyleSheet::Avm2(style_sheet_object) => Some(style_sheet_object.style_sheet()),
         }
-    }
-}
-
-impl Default for EditTextStyleSheet<'_> {
-    fn default() -> Self {
-        Self::None
     }
 }
 
