@@ -753,26 +753,31 @@ impl<'gc> ChildContainer<'gc> {
                 if child.has_explicit_name() {
                     if let Some(name) = child.name() {
                         if let Some(parent_obj) = parent.object2() {
-                            let parent_obj = Avm2Value::from(parent_obj);
+                            if child.movie().is_action_script_3() {
+                                let parent_obj = Avm2Value::from(parent_obj);
 
-                            let mut activation = Avm2Activation::from_nothing(context);
-                            let multiname =
-                                Avm2Multiname::new(activation.avm2().find_public_namespace(), name);
-                            let current_val = parent_obj.get_property(&multiname, &mut activation);
-                            match current_val {
-                                Ok(Avm2Value::Null) | Ok(Avm2Value::Undefined) => {}
-                                Ok(_other) => {
-                                    let res = parent_obj.set_property(
-                                        &multiname,
-                                        Avm2Value::Null,
-                                        &mut activation,
-                                    );
-                                    if let Err(e) = res {
-                                        tracing::error!("Failed to set child {} ({:?}) to null on parent obj {:?}: {:?}", name, child, parent_obj, e);
+                                let mut activation = Avm2Activation::from_nothing(context);
+                                let multiname = Avm2Multiname::new(
+                                    activation.avm2().find_public_namespace(),
+                                    name,
+                                );
+                                let current_val =
+                                    parent_obj.get_property(&multiname, &mut activation);
+                                match current_val {
+                                    Ok(Avm2Value::Null) | Ok(Avm2Value::Undefined) => {}
+                                    Ok(_other) => {
+                                        let res = parent_obj.set_property(
+                                            &multiname,
+                                            Avm2Value::Null,
+                                            &mut activation,
+                                        );
+                                        if let Err(e) = res {
+                                            tracing::error!("Failed to set child {} ({:?}) to null on parent obj {:?}: {:?}", name, child, parent_obj, e);
+                                        }
                                     }
-                                }
-                                Err(e) => {
-                                    tracing::error!("Failed to get current value of child {} ({:?}) on parent obj {:?}: {:?}", name, child, parent_obj, e);
+                                    Err(e) => {
+                                        tracing::error!("Failed to get current value of child {} ({:?}) on parent obj {:?}: {:?}", name, child, parent_obj, e);
+                                    }
                                 }
                             }
                         }
