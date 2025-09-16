@@ -2,7 +2,7 @@ use crate::character::Character;
 use crate::context::UpdateContext;
 use crate::debug_ui::{ItemToSave, Message};
 use crate::tag_utils::SwfMovie;
-use egui::{Align, CollapsingHeader, Grid, Id, Layout, TextEdit, Ui, Window};
+use egui::{Align, Button, CollapsingHeader, Grid, Id, Layout, TextEdit, Ui, Window};
 use egui_extras::{Column, TableBuilder};
 use std::sync::Arc;
 use swf::CharacterId;
@@ -34,15 +34,26 @@ impl MovieListWindow {
             .scroll([true, true])
             .show(egui_ctx, |ui| {
                 ui.horizontal(|ui| {
-                    TextEdit::singleline(&mut self.url_search)
-                        .hint_text("Search")
-                        .show(ui);
-                    if ui.small_button("✕").clicked() {
+                    let row_height = ui.spacing().interact_size.y;
+                    let spacing = ui.spacing().item_spacing.x;
+
+                    let button_size = row_height;
+                    let input_width = ui.available_width() - button_size - spacing;
+
+                    ui.add_sized(
+                        [input_width, row_height],
+                        TextEdit::singleline(&mut self.url_search)
+                            .desired_width(f32::INFINITY)
+                            .hint_text("Search"),
+                    );
+
+                    if ui
+                        .add_sized([button_size, row_height], Button::new("✕"))
+                        .clicked()
+                    {
                         self.url_search.clear();
                     }
                 });
-
-                ui.add_space(6.0);
 
                 let search = self.url_search.to_ascii_lowercase();
 
