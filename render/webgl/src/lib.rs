@@ -111,6 +111,14 @@ impl From<TessVertex> for Vertex {
     }
 }
 
+#[derive(Debug)]
+pub struct QueueSyncHandle {
+    texture: BitmapHandle,
+    bounds: PixelRegion,
+}
+
+impl SyncHandle for QueueSyncHandle {}
+
 pub struct WebGlRenderBackend {
     /// WebGL1 context
     gl: Gl,
@@ -124,6 +132,8 @@ pub struct WebGlRenderBackend {
     // The frame buffers used for resolving MSAA.
     msaa_buffers: Option<MsaaBuffers>,
     msaa_sample_count: u32,
+
+    offscreen_framebuffer: WebGlFramebuffer,
 
     color_program: ShaderProgram,
     bitmap_program: ShaderProgram,
@@ -285,6 +295,10 @@ impl WebGlRenderBackend {
         // Necessary to load RGB textures (alignment defaults to 4).
         gl.pixel_storei(Gl::UNPACK_ALIGNMENT, 1);
 
+        let offscreen_framebuffer = gl
+            .create_framebuffer()
+            .ok_or(Error::UnableToCreateFrameBuffer)?;
+
         let mut renderer = Self {
             gl,
             gl2,
@@ -292,6 +306,8 @@ impl WebGlRenderBackend {
 
             msaa_buffers: None,
             msaa_sample_count,
+
+            offscreen_framebuffer,
 
             color_program,
             gradient_program,
@@ -993,12 +1009,80 @@ fn same_blend_mode(first: Option<&RenderBlendMode>, second: &RenderBlendMode) ->
 impl RenderBackend for WebGlRenderBackend {
     fn render_offscreen(
         &mut self,
-        _handle: BitmapHandle,
-        _commands: CommandList,
-        _quality: StageQuality,
-        _bounds: PixelRegion,
+        handle: BitmapHandle,
+        commands: CommandList,
+        quality: StageQuality,
+        bounds: PixelRegion,
     ) -> Option<Box<dyn SyncHandle>> {
-        None
+        let entry = &as_registry_data(&handle);
+
+        self.active_program = std::ptr::null();
+        self.mask_state = MaskState::NoMask;
+        self.num_masks = 0;
+        self.mask_state_dirty = true;
+
+        self.mult_color = None;
+        self.add_color = None;
+
+        self.gl.bind_framebuffer(Gl::FRAMEBUFFER, Some(&self.offscreen_framebuffer));
+
+        self.gl.framebuffer_texture_2d(
+            Gl2::FRAMEBUFFER,
+            Gl2::COLOR_ATTACHMENT0,
+            Gl2::TEXTURE_2D,
+            Some(&entry.texture),
+            0,
+        );
+
+        if self.gl.check_framebuffer_status(Gl2::FRAMEBUFFER) != Gl2::FRAMEBUFFER_COMPLETE {
+            panic!("can't read from framebuffer")
+        }
+
+        self.gl.viewport(0, 0, entry.width as i32, entry.height as i32);
+
+        //self.set_viewport_dimensions(self.offscreen_width as u32, self.offscreen_height as u32);
+        self.view_matrix = [
+            // note: un-flipped Y
+            [1.0 / (entry.width as f32 / 2.0), 0.0, 0.0, 0.0],
+            [0.0, 1.0 / (entry.height as f32 / 2.0), 0.0, 0.0],
+            [0.0, 0.0, 1.0, 0.0],
+            [-1.0, -1.0, 0.0, 1.0],
+        ];
+
+        self.set_stencil_state();
+        // TODO: clearColor() based on alpha/transparency
+        self.gl.stencil_mask(0xff);
+        self.gl.clear(Gl::STENCIL_BUFFER_BIT); // is this needed?
+
+        commands.execute(self);
+
+        // HACK: restore viewport here
+        //self.set_viewport_dimensions(self.renderbuffer_width as u32, self.renderbuffer_height as u32);
+        self.view_matrix = [
+            [1.0 / (self.renderbuffer_width as f32 / 2.0), 0.0, 0.0, 0.0],
+            [
+                0.0,
+                -1.0 / (self.renderbuffer_height as f32 / 2.0),
+                0.0,
+                0.0,
+            ],
+            [0.0, 0.0, 1.0, 0.0],
+            [-1.0, 1.0, 0.0, 1.0],
+        ];
+
+        self.gl.framebuffer_texture_2d(
+            Gl2::FRAMEBUFFER,
+            Gl2::COLOR_ATTACHMENT0,
+            Gl2::TEXTURE_2D,
+            None,
+            0,
+        );
+        self.gl.bind_framebuffer(Gl::FRAMEBUFFER, None);
+
+        Some(Box::new(QueueSyncHandle {
+            texture: handle,
+            bounds,
+        }))
     }
 
     fn viewport_dimensions(&self) -> ViewportDimensions {
@@ -1203,12 +1287,52 @@ impl RenderBackend for WebGlRenderBackend {
 
     fn resolve_sync_handle(
         &mut self,
-        _handle: Box<dyn SyncHandle>,
-        _with_rgba: RgbaBufRead,
+        handle: Box<dyn SyncHandle>,
+        with_rgba: RgbaBufRead,
     ) -> Result<(), ruffle_render::error::Error> {
-        Err(ruffle_render::error::Error::Unimplemented(
-            "Sync handle resolution".into(),
-        ))
+        let handle = Box::<dyn Any>::downcast::<QueueSyncHandle>(handle).unwrap();
+
+        let entry = &as_registry_data(&handle.texture);
+
+        self.gl.bind_framebuffer(Gl::FRAMEBUFFER, Some(&self.offscreen_framebuffer));
+
+        self.gl.framebuffer_texture_2d(
+            Gl2::FRAMEBUFFER,
+            Gl2::COLOR_ATTACHMENT0,
+            Gl2::TEXTURE_2D,
+            Some(&entry.texture),
+            0,
+        );
+
+
+        let sz = ((entry.width * entry.height) as usize) * 4;
+        let mut pixels: Vec<u8> = vec![0; sz]; // TODO uninitialized?
+        self.gl
+            .read_pixels_with_opt_u8_array(
+                handle.bounds.x_min as i32,
+                handle.bounds.y_min as i32,
+                handle.bounds.x_max as i32,
+                handle.bounds.y_max as i32,
+                Gl2::RGBA,
+                Gl2::UNSIGNED_BYTE,
+                Some(&mut pixels),
+            )
+            .into_js_result()
+            .unwrap(); // TODO `?`;
+
+        self.gl.framebuffer_texture_2d(
+            Gl2::FRAMEBUFFER,
+            Gl2::COLOR_ATTACHMENT0,
+            Gl2::TEXTURE_2D,
+            None,
+            0,
+        );
+
+        self.gl.bind_framebuffer(Gl::FRAMEBUFFER, None);
+
+        with_rgba(&pixels, entry.width * 4);
+
+        Ok(())
     }
 
     fn run_pixelbender_shader(
