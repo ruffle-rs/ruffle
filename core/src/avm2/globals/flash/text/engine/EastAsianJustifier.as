@@ -14,6 +14,7 @@ package flash.text.engine {
         }
 
         public function set justificationStyle(value:String):void {
+            // TODO: Validate the argument
             this._justificationStyle = value;
         }
 

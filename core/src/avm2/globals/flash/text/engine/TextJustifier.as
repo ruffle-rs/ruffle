@@ -14,6 +14,7 @@ package flash.text.engine {
                 throw new ArgumentError("Error #2012: TextJustifier$ class cannot be instantiated.", 2012);
             }
 
+            // TODO: Validate locale
             this.locale = locale;
             this.lineJustification = lineJustification;
         }
@@ -25,11 +26,6 @@ package flash.text.engine {
         public function get locale():String {
             stub_getter("flash.text.engine.TextJustifier", "locale");
             return this._locale;
-        }
-
-        public function set locale(locale:String):void {
-            stub_setter("flash.text.engine.TextJustifier", "locale");
-            this._locale = locale;
         }
 
         public function set lineJustification(value:String):void {
