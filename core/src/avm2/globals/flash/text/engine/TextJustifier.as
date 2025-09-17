@@ -15,8 +15,8 @@ package flash.text.engine {
             }
 
             // TODO: Validate locale
-            this.locale = locale;
-            this.lineJustification = lineJustification;
+            this._locale = locale;
+            this._lineJustification = lineJustification;
         }
 
         public function get lineJustification():String {
