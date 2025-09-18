@@ -314,5 +314,8 @@ Ruffle นำสื่อ Flash กลับมาอยู่บนเว็บ
         <color type="primary" scheme_preference="dark">#2c4270</color>
     </branding>
     <releases>
+        <release version="0.2.0-nightly.2025.9.18" date="2025-09-18">
+            <url>https://github.com/ruffle-rs/ruffle/releases/tag/nightly-2025-09-18</url>
+        </release>
     </releases>
 </component>
