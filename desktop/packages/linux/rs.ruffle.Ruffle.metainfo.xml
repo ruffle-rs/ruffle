@@ -8,6 +8,7 @@
     <name xml:lang="cs">Ruffle</name>
     <name xml:lang="de">Ruffle</name>
     <name xml:lang="es">Ruffle</name>
+    <name xml:lang="fi">Ruffle</name>
     <name xml:lang="fr">Ruffle</name>
     <name xml:lang="he">Ruffle</name>
     <name xml:lang="hu">Ruffle</name>
@@ -31,6 +32,7 @@
     <summary xml:lang="ar">شغِّل ألعاب الفلاش وأفلامه</summary>
     <summary xml:lang="cs">Hrajte Flash hry a přehrajte filmy</summary>
     <summary xml:lang="es">Jugar juegos y ver películas de Flash</summary>
+    <summary xml:lang="fi">Toista Flash-pelejä ja -elokuvia</summary>
     <summary xml:lang="fr">Jouez à des jeux et regardez des animations en Flash</summary>
     <summary xml:lang="he">הפעילו משחקי וסרטוני פלאש</summary>
     <summary xml:lang="hu">Lejátszó Flash animációkhoz és játékokhoz</summary>
@@ -55,6 +57,7 @@
         <name xml:lang="cs">Ruffle Tým</name>
         <name xml:lang="de">Das Ruffle-Team</name>
         <name xml:lang="es">El equipo de Ruffle</name>
+        <name xml:lang="fi">Ruffle-tiimi</name>
         <name xml:lang="fr">L'équipe de Ruffle</name>
         <name xml:lang="he">צוות Ruffle</name>
         <name xml:lang="hu">A Ruffle csapata</name>
