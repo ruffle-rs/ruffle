@@ -1,0 +1,12 @@
+panic-title = Jokin meni pieleen :(
+more-info = Lisätietoja
+run-anyway = Suorita silti
+continue = Jatka
+report-bug = Ilmoita ongelmasta
+update-ruffle = Päivitä Ruffle
+ruffle-desktop = Työpöytäsovellus
+ruffle-wiki = Näytä Rufflen wiki
+view-error-details = Näytä virheen tiedot
+open-in-new-tab = Avaa uudessa välilehdessä
+click-to-unmute = Napsauta palauttaaksesi äänet
+clipboard-message-title = Kopiointi ja liittäminen Rufflessa
