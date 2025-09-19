@@ -2002,7 +2002,7 @@ impl Player {
                 stage,
             };
 
-            stage.render(&mut render_context);
+            stage.render_viewport(&mut render_context);
 
             #[cfg(feature = "egui")]
             {
