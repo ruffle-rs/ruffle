@@ -559,7 +559,7 @@ impl<'gc> Value<'gc> {
         self.try_as_f64().expect("Expected Number or Integer")
     }
 
-    /// Like `as_number`, but for `i32`
+    /// Like `as_f64`, but for `i32`
     pub fn as_i32(&self) -> i32 {
         match self {
             Value::Number(num) => f64_to_wrapping_i32(*num),
@@ -568,13 +568,26 @@ impl<'gc> Value<'gc> {
         }
     }
 
-    /// Like `as_number`, but for `u32`
+    /// Like `as_f64`, but for `u32`
     pub fn as_u32(&self) -> u32 {
         match self {
             Value::Number(num) => f64_to_wrapping_u32(*num),
             Value::Integer(num) => *num as u32,
             _ => panic!("Expected Number or Integer"),
         }
+    }
+
+    // If the current value represents an index (a unsigned integer less than u32::MAX),
+    // then return that value. Returns None otherwise.
+    pub fn try_as_index(&self) -> Option<usize> {
+        Some(match self {
+            value @ Value::Integer(num) if value.is_u32() => *num as usize,
+            value @ Value::Number(num) if value.is_u32() && *num < u32::MAX as f64 => {
+                assert!(num.is_finite());
+                *num as usize
+            }
+            _ => return None,
+        })
     }
 
     /// Yields `true` if the given value is an unboxed primitive value.
