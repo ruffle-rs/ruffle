@@ -11,7 +11,7 @@ use crate::config::Letterbox;
 use crate::context::{RenderContext, UpdateContext};
 use crate::display_object::container::ChildContainer;
 use crate::display_object::interactive::{InteractiveObjectBase, TInteractiveObject};
-use crate::display_object::{render_base, DisplayObjectBase, RenderOptions};
+use crate::display_object::DisplayObjectBase;
 use crate::events::{ClipEvent, ClipEventResult};
 use crate::focus_tracker::FocusTracker;
 use crate::prelude::*;
@@ -605,6 +605,45 @@ impl<'gc> Stage<'gc> {
         }
     }
 
+    /// Render stage from the perspective of the viewport.
+    ///
+    /// This differs from rendering the stage directly, because it takes into
+    /// account the viewport matrix, the letterbox, etc.
+    ///
+    /// You can easily observe the difference between render_viewport and render
+    /// in FP by checking which stuff can be rendered using `BitmapData.draw`.
+    pub fn render_viewport(self, context: &mut RenderContext<'_, 'gc>) {
+        context.transform_stack.push(&Transform {
+            matrix: self.0.viewport_matrix.get(),
+            color_transform: Default::default(),
+            // TODO: Verify perspective_projection when its rendering is implemented.
+            perspective_projection: self.as_displayobject().base().perspective_projection(),
+        });
+
+        // All of our Stage3D instances get rendered *underneath* the main stage.
+        // Note that the stage background color is actually the lowest possible
+        // layer, and gets applied when we start the frame (before
+        // `render_viewport` is called).
+        for stage3d in self.stage3ds().iter() {
+            let stage3d = stage3d.as_stage_3d().unwrap();
+            if stage3d.visible() {
+                if let Some(context3d) = stage3d.context3d() {
+                    context3d.as_context_3d().unwrap().render(context);
+                }
+            }
+        }
+
+        self.render(context);
+
+        self.focus_tracker().render_highlight(context);
+
+        if self.should_letterbox() {
+            self.draw_letterbox(context);
+        }
+
+        context.transform_stack.pop();
+    }
+
     /// Draw the stage's letterbox.
     fn draw_letterbox(self, context: &mut RenderContext<'_, 'gc>) {
         let ViewportDimensions {
@@ -814,37 +853,6 @@ impl<'gc> TDisplayObject<'gc> for Stage<'gc> {
 
     fn render_self(self, context: &mut RenderContext<'_, 'gc>) {
         self.render_children(context);
-    }
-
-    fn render_with_options(self, context: &mut RenderContext<'_, 'gc>, options: RenderOptions) {
-        context.transform_stack.push(&Transform {
-            matrix: self.0.viewport_matrix.get(),
-            color_transform: Default::default(),
-            // TODO: Verify perspective_projection when its rendering is implemented.
-            perspective_projection: self.as_displayobject().base().perspective_projection(),
-        });
-
-        // All of our Stage3D instances get rendered *underneath* the main stage.
-        // Note that the stage background color is actually the lowest possible layer,
-        // and get applied when we start the frame (before `render` is called).
-        for stage3d in self.stage3ds().iter() {
-            let stage3d = stage3d.as_stage_3d().unwrap();
-            if stage3d.visible() {
-                if let Some(context3d) = stage3d.context3d() {
-                    context3d.as_context_3d().unwrap().render(context);
-                }
-            }
-        }
-
-        render_base(self.into(), context, options);
-
-        self.focus_tracker().render_highlight(context);
-
-        if self.should_letterbox() {
-            self.draw_letterbox(context);
-        }
-
-        context.transform_stack.pop();
     }
 
     fn enter_frame(self, context: &mut UpdateContext<'gc>) {
