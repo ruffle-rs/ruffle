@@ -1209,13 +1209,15 @@ impl<'a, 'gc> Activation<'a, 'gc> {
 
         if let Value::Object(object) = object_value {
             match name_value {
-                Value::Integer(name_int) if name_int >= 0 => {
-                    if let Some(value) = object.get_index_property(name_int as usize) {
-                        let _ = self.pop_stack();
-                        let _ = self.pop_stack();
-                        self.push_stack(value);
+                Value::Integer(_) | Value::Number(_) => {
+                    if let Some(index) = name_value.try_as_index() {
+                        if let Some(value) = object.get_index_property(index) {
+                            let _ = self.pop_stack();
+                            let _ = self.pop_stack();
+                            self.push_stack(value);
 
-                        return Ok(());
+                            return Ok(());
+                        }
                     }
                 }
                 Value::Object(name_object) => {
@@ -1282,14 +1284,15 @@ impl<'a, 'gc> Activation<'a, 'gc> {
 
         if let Value::Object(object) = object_value {
             match name_value {
-                Value::Integer(name_int) if name_int >= 0 => {
-                    if let Some(result) = object.set_index_property(self, name_int as usize, value)
-                    {
-                        let _ = self.pop_stack();
-                        let _ = self.pop_stack();
-                        let _ = self.pop_stack();
+                Value::Integer(_) | Value::Number(_) => {
+                    if let Some(index) = name_value.try_as_index() {
+                        if let Some(result) = object.set_index_property(self, index, value) {
+                            let _ = self.pop_stack();
+                            let _ = self.pop_stack();
+                            let _ = self.pop_stack();
 
-                        return result;
+                            return result;
+                        }
                     }
                 }
                 Value::Object(name_object) => {
