@@ -25,5 +25,6 @@ scale-mode = Skaalaustila
 scale-mode-noscale = Skaalaamaton (100%)
 player-version = Toistimen versio
 player-runtime = Toistimen ajoaikainen
+player-runtime-flash = Flash-toistin
 player-runtime-air = Adobe AIR
 custom-framerate = Mukautettu kuvanopeus
