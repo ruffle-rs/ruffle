@@ -55,7 +55,7 @@ impl<'gc> Context3DObject<'gc> {
         self.0.stage3d
     }
 
-    pub fn with_context_3d<R>(&self, f: impl FnOnce(&mut dyn Context3D) -> R) -> R {
+    pub fn with_context_3d<R>(self, f: impl FnOnce(&mut dyn Context3D) -> R) -> R {
         // Temporarily take ownership of the Context3D instance.
         let cell = &self.0.render_context;
         let mut guard = scopeguard::guard(cell.take(), |stolen| cell.set(stolen));
@@ -65,7 +65,7 @@ impl<'gc> Context3DObject<'gc> {
     }
 
     pub fn configure_back_buffer(
-        &mut self,
+        self,
         width: u32,
         height: u32,
         anti_alias: u32,
@@ -86,7 +86,7 @@ impl<'gc> Context3DObject<'gc> {
     }
 
     pub fn create_index_buffer(
-        &self,
+        self,
         num_indices: u32,
         activation: &mut Activation<'_, 'gc>,
     ) -> Value<'gc> {
@@ -95,14 +95,14 @@ impl<'gc> Context3DObject<'gc> {
 
         Value::Object(IndexBuffer3DObject::from_handle(
             activation,
-            *self,
+            self,
             index_buffer,
         ))
     }
 
     #[expect(clippy::too_many_arguments)]
     pub fn create_texture(
-        &self,
+        self,
         width: u32,
         height: u32,
         format: Context3DTextureFormat,
@@ -123,12 +123,12 @@ impl<'gc> Context3DObject<'gc> {
         })?;
 
         Ok(Value::Object(TextureObject::from_handle(
-            activation, *self, texture, format, class,
+            activation, self, texture, format, class,
         )))
     }
 
     pub fn create_vertex_buffer(
-        &self,
+        self,
         num_vertices: u32,
         data_32_per_vertex: u8,
         usage: BufferUsage,
@@ -140,14 +140,14 @@ impl<'gc> Context3DObject<'gc> {
 
         Value::Object(VertexBuffer3DObject::from_handle(
             activation,
-            *self,
+            self,
             handle,
             data_32_per_vertex,
         ))
     }
 
     pub fn upload_vertex_buffer_data(
-        &self,
+        self,
         buffer: VertexBuffer3DObject<'gc>,
         data: &[u8],
         start_vertex: usize,
@@ -164,7 +164,7 @@ impl<'gc> Context3DObject<'gc> {
     }
 
     pub fn upload_index_buffer_data(
-        &self,
+        self,
         buffer: IndexBuffer3DObject<'gc>,
         data: &[u8],
         start_offset: usize,
@@ -180,7 +180,7 @@ impl<'gc> Context3DObject<'gc> {
     }
 
     pub fn set_vertex_buffer_at(
-        &self,
+        self,
         index: u32,
         buffer: Option<(VertexBuffer3DObject<'gc>, Context3DVertexBufferFormat)>,
         buffer_offset: u32,
@@ -194,12 +194,12 @@ impl<'gc> Context3DObject<'gc> {
         });
     }
 
-    pub fn create_program(&self, activation: &mut Activation<'_, 'gc>) -> Value<'gc> {
-        Value::Object(Program3DObject::from_context(activation, *self))
+    pub fn create_program(self, activation: &mut Activation<'_, 'gc>) -> Value<'gc> {
+        Value::Object(Program3DObject::from_context(activation, self))
     }
 
     pub fn upload_shaders(
-        &self,
+        self,
         program: Program3DObject<'gc>,
         vertex_shader_agal: Vec<u8>,
         fragment_shader_agal: Vec<u8>,
@@ -213,14 +213,14 @@ impl<'gc> Context3DObject<'gc> {
         });
     }
 
-    pub fn set_program(&self, program: Option<Program3DObject<'gc>>) {
+    pub fn set_program(self, program: Option<Program3DObject<'gc>>) {
         let module = program.and_then(|p| p.shader_module_handle().borrow().clone());
 
         self.with_context_3d(|ctx| ctx.process_command(Context3DCommand::SetShaders { module }));
     }
 
     pub fn draw_triangles(
-        &self,
+        self,
         index_buffer: IndexBuffer3DObject<'gc>,
         first_index: u32,
         mut num_triangles: i32,
@@ -241,7 +241,7 @@ impl<'gc> Context3DObject<'gc> {
     }
 
     pub fn set_program_constants_from_matrix(
-        &self,
+        self,
         program_type: ProgramType,
         first_register: u32,
         matrix_raw_data_column_major: Vec<f32>,
@@ -255,12 +255,12 @@ impl<'gc> Context3DObject<'gc> {
         });
     }
 
-    pub fn set_culling(&self, face: Context3DTriangleFace) {
+    pub fn set_culling(self, face: Context3DTriangleFace) {
         self.with_context_3d(|ctx| ctx.process_command(Context3DCommand::SetCulling { face }));
     }
 
     pub fn set_blend_factors(
-        &self,
+        self,
         source_factor: Context3DBlendFactor,
         destination_factor: Context3DBlendFactor,
     ) {
@@ -273,7 +273,7 @@ impl<'gc> Context3DObject<'gc> {
     }
 
     pub fn set_render_to_texture(
-        &self,
+        self,
         texture: Rc<dyn Texture>,
         enable_depth_and_stencil: bool,
         anti_alias: u32,
@@ -289,16 +289,16 @@ impl<'gc> Context3DObject<'gc> {
         });
     }
 
-    pub fn set_render_to_back_buffer(&self) {
+    pub fn set_render_to_back_buffer(self) {
         self.with_context_3d(|ctx| ctx.process_command(Context3DCommand::SetRenderToBackBuffer));
     }
 
-    pub fn present(&self) {
+    pub fn present(self) {
         self.with_context_3d(|ctx| ctx.present())
     }
 
     // Renders our finalized frame to the screen, as part of the Ruffle rendering process.
-    pub fn render(&self, context: &mut RenderContext<'_, 'gc>) {
+    pub fn render(self, context: &mut RenderContext<'_, 'gc>) {
         self.with_context_3d(|context3d| {
             if context3d.should_render() {
                 let handle = context3d.bitmap_handle();
@@ -314,7 +314,7 @@ impl<'gc> Context3DObject<'gc> {
 
     #[expect(clippy::too_many_arguments)]
     pub fn set_clear(
-        &self,
+        self,
         red: f64,
         green: f64,
         blue: f64,
@@ -335,8 +335,9 @@ impl<'gc> Context3DObject<'gc> {
             })
         });
     }
+
     pub(crate) fn copy_bitmapdata_to_texture(
-        &self,
+        self,
         source: &BitmapRawData<'gc>,
         dest: Rc<dyn Texture>,
         layer: u32,
@@ -369,12 +370,7 @@ impl<'gc> Context3DObject<'gc> {
     }
 
     #[cfg_attr(not(feature = "jpegxr"), allow(unused))]
-    pub(crate) fn copy_pixels_to_texture(
-        &self,
-        source: Vec<u8>,
-        dest: Rc<dyn Texture>,
-        layer: u32,
-    ) {
+    pub(crate) fn copy_pixels_to_texture(self, source: Vec<u8>, dest: Rc<dyn Texture>, layer: u32) {
         self.with_context_3d(|ctx| {
             ctx.process_command(Context3DCommand::CopyBitmapToTexture {
                 source: &source,
@@ -386,12 +382,7 @@ impl<'gc> Context3DObject<'gc> {
         });
     }
 
-    pub(crate) fn set_texture_at(
-        &self,
-        sampler: u32,
-        texture: Option<Rc<dyn Texture>>,
-        cube: bool,
-    ) {
+    pub(crate) fn set_texture_at(self, sampler: u32, texture: Option<Rc<dyn Texture>>, cube: bool) {
         self.with_context_3d(|ctx| {
             ctx.process_command(Context3DCommand::SetTextureAt {
                 sampler,
@@ -422,7 +413,7 @@ impl<'gc> Context3DObject<'gc> {
     }
 
     pub(crate) fn create_cube_texture(
-        &self,
+        self,
         size: u32,
         format: Context3DTextureFormat,
         optimize_for_render_to_texture: bool,
@@ -442,12 +433,12 @@ impl<'gc> Context3DObject<'gc> {
         let class = activation.avm2().classes().cubetexture;
 
         Ok(Value::Object(TextureObject::from_handle(
-            activation, *self, texture, format, class,
+            activation, self, texture, format, class,
         )))
     }
 
     pub(crate) fn set_sampler_state_at(
-        &self,
+        self,
         sampler: u32,
         wrap: ruffle_render::backend::Context3DWrapMode,
         filter: ruffle_render::backend::Context3DTextureFilter,
