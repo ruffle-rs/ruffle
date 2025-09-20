@@ -103,7 +103,7 @@
         <p xml:lang="ro">Ruffle este un emulator Flash Player scris în Rust. Profitând de garanțiile de siguranță oferite de Rust, putem evita cu încredere toate problemele de securitate avute de Flash. Ruffle readuce Flash pe web, acolo unde îi este locul!</p>
         <p xml:lang="ru">Ruffle — это эмулятор Flash Player'а, написанный на Rust. Опираясь на гарантии безопасности Rust, мы можем с уверенностью избежать всех проблем с безопасностью, которыми был известен Flash. Ruffle возвращает Flash в Сеть на своё прежнее место!</p>
         <p xml:lang="sk">Ruffle je emulátor Flash Player napísaný v Ruste. Využitím bezpečnostných záruk Rustu sa môžeme s istotou vyhnúť všetkým bezpečnostným nástrahám, ktorými bol Flash povestný. Ruffle vracia Flash späť na web, kam patrí!</p>
-        <p xml:lang="th">Ruffle เป็นโปรแกรมจำลองของ Flash Player เขียนด้วยภาษา Rust ซึ่งรับรองความปลอดภัย
+        <p xml:lang="th">Ruffle เป็นโปรแกรมเลียนแบบ Flash Player เขียนด้วยภาษา Rust ซึ่งรับรองความปลอดภัย
 เราจึงมั่นใจได้ว่าจะหลีกเลี่ยงปัญหาความปลอดภัยทั้งหมดที่ Flash เคยมี
 Ruffle นำสื่อ Flash กลับมาอยู่บนเว็บ ซึ่งเป็นที่ที่ควรอยู่!</p>
         <p xml:lang="tr">Ruffle, Rust ile yazılmış bir Flash Player emülatörüdür. Rust'ın güvenlik garantilerinden yararlanarak, Flash'ın ünlü olduğu tüm güvenlik açıklarından güvenle kaçınabiliyoruz. Ruffle, Flash'ı ait olduğu yere, web'e geri getiriyor!</p>
@@ -273,7 +273,7 @@ Ruffle นำสื่อ Flash กลับมาอยู่บนเว็บ
         <keyword xml:lang="ru">эмуля́тор</keyword>
         <keyword xml:lang="sk">emulátor</keyword>
         <keyword xml:lang="sv">emulator</keyword>
-        <keyword xml:lang="th">โปรแกรมเลียนแบบ</keyword>
+        <keyword xml:lang="th">โปรแกรมจำลอง</keyword>
         <keyword xml:lang="tr">öykünücü</keyword>
         <keyword xml:lang="uk">емулятор</keyword>
         <keyword xml:lang="vi">trình giả lập</keyword>
