@@ -85,6 +85,11 @@ with_video = false
 # The runtime to emulate ("FlashPlayer" or "AIR"). Defaults to "FlashPlayer".
 runtime = "AIR"
 
+# Whether Ruffle's default font should be available.
+# It's not recommended to enable this option, as it will introduce differences
+# in behavior between Ruffle and Flash.
+with_default_font = false
+
 # A list of image comparisons to perform during the test. This block is repeatable infinitely, as long as each name is unique.
 # The comparison part of a test is optional and only runs when `imgtests` feature is enabled
 # This requires a render to be setup for this test
@@ -104,6 +109,26 @@ max_outliers = 0
 # Only one image may exist per frame/tick number or last_frame.
 trigger = "last_frame"
 
+# A list of checks to perform during image comparison.
+# They can be used instead of providing a single check in `image_comparisons.COMPARISON_NAME`.
+# Every applicable check is being executed for each image.
+[[image_comparisons.COMPARISON_NAME.checks]] # COMPARISON_NAME is a name of this particular image
+
+# Same as `image_comparisons.COMPARISON_NAME.tolerance`, but for this particular check.
+tolerance = 0
+
+# Same as `image_comparisons.COMPARISON_NAME.max_outliers`, but for this particular check.
+max_outliers = 0
+
+# Filter is a cfg-like expression that checks if this particular check should be performed.
+# It can be used to add different checks for e.g. different platforms.
+#
+# Available predicates:
+#  * os
+#  * arch
+#  * family
+filter = 'arch = "aarch64"'
+
 # Which build features are required for this test to run.
 [required_features]
 
@@ -112,6 +137,46 @@ lzma = false
 
 # If JPEG XR support is enabled in this build
 jpegxr = false
+
+# A single device font provided for this test.
+[fonts.FONT_NAME] # FONT_NAME is a name of this particular font
+
+# Font family, name of the font used when looking up fonts.
+family = "Test Font"
+
+# Path to the file containing the font.
+path = "font_file.ttf"
+
+# Whether the font should be considered as bold.
+bold = true
+
+# Whether the font should be considered as italic.
+italic = true
+
+# A single device font sort provided for this test.
+# Font sort defines a list of fonts that should be used for a particular query.
+[font_sorts.FONT_SORT_NAME] # FONT_SORT_NAME is a name of this particular font sort
+
+# Font family, name of the queried font.
+family = "Test Font"
+
+# Whether the queried font is bold.
+bold = true
+
+# Whether the queried font is italic.
+italic = true
+
+# Sorted list of fonts returned for this particular query.
+sort = ["Test Font 1", "Test Font 2"]
+
+# Lists of device fonts defined for Flash's default fonts.
+[default_fonts]
+sans = ["Test Font", "Test Font Fallback"]
+serif = ["Test Font", "Test Font Fallback"]
+typewriter = ["Test Font", "Test Font Fallback"]
+japanese_gothic = ["Test Font", "Test Font Fallback"]
+japanese_gothic_mono = ["Test Font", "Test Font Fallback"]
+japanese_mincho = ["Test Font", "Test Font Fallback"]
 ```
 
 ## Frame-based tests
