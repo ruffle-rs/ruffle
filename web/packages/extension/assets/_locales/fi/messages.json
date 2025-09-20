@@ -1,1 +1,74 @@
-{}
+{
+    "settings_ruffle_enable": {
+        "message": "Toista Flash-sisältöä Rufflessa"
+    },
+    "settings_ignore_optout": {
+        "message": "Toista Flash-sisältöä jopa sivuilla, jotka eivät salli Rufflea"
+    },
+    "settings_show_swf_download": {
+        "message": "Näytä SWF:n lataus kontekstivalikossa"
+    },
+    "settings_autostart": {
+        "message": "Toista Flash-sisältö automaattisesti (napsauta palauttaaksesi äänet)"
+    },
+    "settings_swf_takeover": {
+        "message": "Toista SWF-tiedostoja selaimessa sen sijaan, että lataat ne"
+    },
+    "settings_log_level": {
+        "message": "Lokitaso"
+    },
+    "settings_log_level_error": {
+        "message": "Virheet"
+    },
+    "settings_log_level_warn": {
+        "message": "Varoitukset"
+    },
+    "settings_log_level_debug": {
+        "message": "Vianjäljitys"
+    },
+    "settings_player_version": {
+        "message": "Emuloitava Flash-soittimen versio (välillä 1-32)"
+    },
+    "settings_preferred_renderer_auto": {
+        "message": "Automaattinen"
+    },
+    "settings_advanced_options": {
+        "message": "Lisäasetukset"
+    },
+    "settings_reset": {
+        "message": "Nollaa asetukset"
+    },
+    "settings_reset_confirm": {
+        "message": "Haluatko varmasti palauttaa Rufflen oletusasetuksiin?"
+    },
+    "status_init": {
+        "message": "Luetaan nykyistä välilehteä…"
+    },
+    "status_no_tabs": {
+        "message": "Ei aktiivista välilehteä."
+    },
+    "status_message_init": {
+        "message": "Tarkistetaan Rufflen tilaa nykyisellä välilehdellä…"
+    },
+    "status_result_running": {
+        "message": "Ruffle on valmis toistamaan Flash-sisältöä nykyisellä välilehdellä."
+    },
+    "action_reload": {
+        "message": "Päivitä välilehti ottaaksesi muutokset käyttöön"
+    },
+    "open_player_page": {
+        "message": "Avaa SWF-toistin"
+    },
+    "open_settings_page": {
+        "message": "Avaa asetusten sivu"
+    },
+    "settings_page": {
+        "message": "Asetusten sivu"
+    },
+    "save_settings": {
+        "message": "Tallenna asetukset"
+    },
+    "settings_saved": {
+        "message": "Asetukset tallennettu"
+    }
+}
