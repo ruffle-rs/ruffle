@@ -259,6 +259,131 @@ impl<'gc> Avm1Function<'gc> {
             *preload_r += 1;
         }
     }
+
+    /// Execute the given function bytecode.
+    #[expect(clippy::too_many_arguments)]
+    fn exec(
+        &self,
+        name: ExecutionName<'gc>,
+        activation: &mut Activation<'_, 'gc>,
+        this: Value<'gc>,
+        depth: u8,
+        args: &[Value<'gc>],
+        reason: ExecutionReason,
+        callee: Object<'gc>,
+    ) -> Result<Value<'gc>, Error<'gc>> {
+        let this_obj = match this {
+            Value::Object(obj) => Some(obj),
+            _ => None,
+        };
+
+        let target = activation.target_clip_or_root();
+        let is_closure = activation.swf_version() >= 6;
+
+        let this_do = this_obj
+            .and_then(|this| this.as_display_object())
+            .unwrap_or(target);
+
+        let base_clip = if is_closure || reason == ExecutionReason::Special {
+            self.base_clip
+                .resolve_reference(activation)
+                .map(|(_, _, dobj)| dobj)
+                .unwrap_or(this_do)
+        } else {
+            this_do
+        };
+        let (swf_version, parent_scope) = if is_closure {
+            // Function calls in a v6+ SWF are proper closures, and "close" over the scope that defined the function:
+            // * Use the SWF version from the SWF that defined the function.
+            // * Use the base clip from when the function was defined.
+            // * Close over the scope from when the function was defined.
+            (self.swf_version(), self.scope())
+        } else {
+            // Function calls in a v5 SWF are *not* closures, and will use the settings of
+            // `this`, regardless of the function's origin:
+            // * Use the SWF version of `this`.
+            // * Use the base clip of `this`.
+            // * Allocate a new scope using the given base clip. No previous scope is closed over.
+            let swf_version = base_clip.swf_version().max(5);
+            let base_clip_obj = match base_clip.object() {
+                Value::Object(o) => o,
+                _ => unreachable!(),
+            };
+            // TODO: It would be nice to avoid these extra Scope allocs.
+            let scope = Gc::new(
+                activation.gc(),
+                Scope::new(
+                    activation.global_scope(),
+                    super::scope::ScopeClass::Target,
+                    base_clip_obj,
+                ),
+            );
+            (swf_version, scope)
+        };
+
+        let child_scope = Gc::new(
+            activation.gc(),
+            Scope::new_local_scope(parent_scope, activation.gc()),
+        );
+
+        // The caller is the previous callee.
+        let arguments_caller = activation.callee;
+
+        let name = if cfg!(feature = "avm_debug") {
+            Cow::Owned(self.debug_string_for_call(activation, name, args))
+        } else {
+            Cow::Borrowed("[Anonymous]")
+        };
+
+        let is_this_inherited = self
+            .flags
+            .intersects(FunctionFlags::PRELOAD_THIS | FunctionFlags::SUPPRESS_THIS);
+        let local_this = if is_this_inherited {
+            activation.this_cell()
+        } else {
+            this
+        };
+
+        let max_recursion_depth = activation.context.avm1.max_recursion_depth();
+        let mut frame = Activation::from_action(
+            activation.context,
+            activation.id.function(name, reason, max_recursion_depth)?,
+            swf_version,
+            child_scope,
+            self.constant_pool,
+            base_clip,
+            local_this,
+            Some(callee),
+        );
+
+        frame.allocate_local_registers(self.register_count());
+
+        let mut preload_r = 1;
+        self.load_this(&mut frame, this, &mut preload_r);
+        self.load_arguments(&mut frame, args, arguments_caller, &mut preload_r);
+        self.load_super(&mut frame, this_obj, depth, &mut preload_r);
+        self.load_root(&mut frame, &mut preload_r);
+        self.load_parent(&mut frame, &mut preload_r);
+        self.load_global(&mut frame, &mut preload_r);
+
+        // Any unassigned args are set to undefined to prevent assignments from leaking to the parent scope (#2166)
+        let args_iter = args
+            .iter()
+            .cloned()
+            .chain(std::iter::repeat(Value::Undefined));
+
+        //TODO: What happens if the argument registers clash with the
+        //preloaded registers? What gets done last?
+        for (param, value) in self.params.iter().zip(args_iter) {
+            if let Some(register) = param.register {
+                frame.set_local_register(register.get(), value);
+            } else {
+                frame.force_define_local(param.name, value);
+            }
+        }
+
+        Ok(frame.run_actions(self.data.clone())?.value())
+    }
 }
 
 #[derive(Debug, Clone, Collect)]
@@ -328,11 +453,6 @@ impl<'gc> Executable<'gc> {
     const EMPTY: Self = Self::Native(|_, _, _| Ok(Value::Undefined));
 
     /// Execute the given code.
-    ///
-    /// Execution is not guaranteed to have completed when this function
-    /// returns. If on-stack execution is possible, then this function returns
-    /// a return value you must push onto the stack. Otherwise, you must
-    /// create a new stack frame and execute the action data yourself.
     #[expect(clippy::too_many_arguments)]
     pub fn exec(
         &self,
@@ -344,126 +464,14 @@ impl<'gc> Executable<'gc> {
         reason: ExecutionReason,
         callee: Object<'gc>,
     ) -> Result<Value<'gc>, Error<'gc>> {
-        let af = match self {
+        match self {
             Executable::Native(nf) => {
                 // TODO: Change NativeFunction to accept `this: Value`.
                 let this = this.coerce_to_object(activation);
-                return nf(activation, this, args);
+                nf(activation, this, args)
             }
-            Executable::Action(af) => af,
-        };
-
-        let this_obj = match this {
-            Value::Object(obj) => Some(obj),
-            _ => None,
-        };
-
-        let target = activation.target_clip_or_root();
-        let is_closure = activation.swf_version() >= 6;
-
-        let this_do = this_obj
-            .and_then(|this| this.as_display_object())
-            .unwrap_or(target);
-
-        let base_clip = if is_closure || reason == ExecutionReason::Special {
-            af.base_clip
-                .resolve_reference(activation)
-                .map(|(_, _, dobj)| dobj)
-                .unwrap_or(this_do)
-        } else {
-            this_do
-        };
-        let (swf_version, parent_scope) = if is_closure {
-            // Function calls in a v6+ SWF are proper closures, and "close" over the scope that defined the function:
-            // * Use the SWF version from the SWF that defined the function.
-            // * Use the base clip from when the function was defined.
-            // * Close over the scope from when the function was defined.
-            (af.swf_version(), af.scope())
-        } else {
-            // Function calls in a v5 SWF are *not* closures, and will use the settings of
-            // `this`, regardless of the function's origin:
-            // * Use the SWF version of `this`.
-            // * Use the base clip of `this`.
-            // * Allocate a new scope using the given base clip. No previous scope is closed over.
-            let swf_version = base_clip.swf_version().max(5);
-            let base_clip_obj = match base_clip.object() {
-                Value::Object(o) => o,
-                _ => unreachable!(),
-            };
-            // TODO: It would be nice to avoid these extra Scope allocs.
-            let scope = Gc::new(
-                activation.gc(),
-                Scope::new(
-                    activation.global_scope(),
-                    super::scope::ScopeClass::Target,
-                    base_clip_obj,
-                ),
-            );
-            (swf_version, scope)
-        };
-
-        let child_scope = Gc::new(
-            activation.gc(),
-            Scope::new_local_scope(parent_scope, activation.gc()),
-        );
-
-        // The caller is the previous callee.
-        let arguments_caller = activation.callee;
-
-        let name = if cfg!(feature = "avm_debug") {
-            Cow::Owned(af.debug_string_for_call(activation, name, args))
-        } else {
-            Cow::Borrowed("[Anonymous]")
-        };
-
-        let is_this_inherited = af
-            .flags
-            .intersects(FunctionFlags::PRELOAD_THIS | FunctionFlags::SUPPRESS_THIS);
-        let local_this = if is_this_inherited {
-            activation.this_cell()
-        } else {
-            this
-        };
-
-        let max_recursion_depth = activation.context.avm1.max_recursion_depth();
-        let mut frame = Activation::from_action(
-            activation.context,
-            activation.id.function(name, reason, max_recursion_depth)?,
-            swf_version,
-            child_scope,
-            af.constant_pool,
-            base_clip,
-            local_this,
-            Some(callee),
-        );
-
-        frame.allocate_local_registers(af.register_count());
-
-        let mut preload_r = 1;
-        af.load_this(&mut frame, this, &mut preload_r);
-        af.load_arguments(&mut frame, args, arguments_caller, &mut preload_r);
-        af.load_super(&mut frame, this_obj, depth, &mut preload_r);
-        af.load_root(&mut frame, &mut preload_r);
-        af.load_parent(&mut frame, &mut preload_r);
-        af.load_global(&mut frame, &mut preload_r);
-
-        // Any unassigned args are set to undefined to prevent assignments from leaking to the parent scope (#2166)
-        let args_iter = args
-            .iter()
-            .cloned()
-            .chain(std::iter::repeat(Value::Undefined));
-
-        //TODO: What happens if the argument registers clash with the
-        //preloaded registers? What gets done last?
-        for (param, value) in af.params.iter().zip(args_iter) {
-            if let Some(register) = param.register {
-                frame.set_local_register(register.get(), value);
-            } else {
-                frame.force_define_local(param.name, value);
-            }
+            Executable::Action(af) => af.exec(name, activation, this, depth, args, reason, callee),
         }
-
-        Ok(frame.run_actions(af.data.clone())?.value())
     }
 }
 
@@ -512,9 +520,6 @@ impl<'gc> FunctionObject<'gc> {
     }
 
     /// Construct a function with any combination of regular and constructor parts.
-    ///
-    /// Since prototypes need to link back to themselves, this function builds
-    /// both objects itself and returns the function to you, fully allocated.
     ///
     /// `fn_proto` refers to the implicit proto of the function object, and the
     /// `prototype` refers to the explicit prototype of the function.
@@ -642,21 +647,7 @@ impl<'gc> FunctionObject<'gc> {
         this: Object<'gc>,
         args: &[Value<'gc>],
     ) -> Result<(), Error<'gc>> {
-        // TODO: de-duplicate code.
-        this.define_value(
-            activation.gc(),
-            istr!("__constructor__"),
-            callee.into(),
-            Attribute::DONT_ENUM,
-        );
-        if activation.swf_version() < 7 {
-            this.define_value(
-                activation.gc(),
-                istr!("constructor"),
-                callee.into(),
-                Attribute::DONT_ENUM,
-            );
-        }
+        Self::define_constructor_props(activation, this, callee.into());
 
         // Always ignore the constructor's return value.
         let _ = self.as_constructor().exec(
@@ -683,21 +674,7 @@ impl<'gc> FunctionObject<'gc> {
             .coerce_to_object(activation);
         let this = Object::new(activation.strings(), Some(prototype));
 
-        // TODO: de-duplicate code.
-        this.define_value(
-            activation.gc(),
-            istr!("__constructor__"),
-            callee.into(),
-            Attribute::DONT_ENUM,
-        );
-        if activation.swf_version() < 7 {
-            this.define_value(
-                activation.gc(),
-                istr!("constructor"),
-                callee.into(),
-                Attribute::DONT_ENUM,
-            );
-        }
+        Self::define_constructor_props(activation, this, callee.into());
 
         let result = self.as_constructor().exec(
             ExecutionName::Static("[ctor]"),
@@ -714,6 +691,27 @@ impl<'gc> FunctionObject<'gc> {
             Ok(result)
         } else {
             Ok(this.into())
+        }
+    }
+
+    fn define_constructor_props(
+        activation: &mut Activation<'_, 'gc>,
+        this: Object<'gc>,
+        callee: Value<'gc>,
+    ) {
+        this.define_value(
+            activation.gc(),
+            istr!("__constructor__"),
+            callee,
+            Attribute::DONT_ENUM,
+        );
+        if activation.swf_version() < 7 {
+            this.define_value(
+                activation.gc(),
+                istr!("constructor"),
+                callee,
+                Attribute::DONT_ENUM,
+            );
         }
     }
 }
