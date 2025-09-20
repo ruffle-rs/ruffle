@@ -14,6 +14,8 @@ use std::fs::File;
 use std::path::Path;
 use std::process::exit;
 
+// This function is used in macros and they require such signature with &bool.
+#[allow(clippy::trivially_copy_pass_by_ref)]
 fn is_false(b: &bool) -> bool {
     !(*b)
 }

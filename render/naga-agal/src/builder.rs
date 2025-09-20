@@ -354,6 +354,8 @@ impl<'a> NagaBuilder<'a> {
         Ok(sampler_configs)
     }
 
+    // We're passing the reference along anyway.
+    #[allow(clippy::trivially_copy_pass_by_ref)]
     pub fn build_module(
         agal: &[u8],
         vertex_attributes: &[Option<VertexAttributeFormat>; MAX_VERTEX_ATTRIBUTES],
