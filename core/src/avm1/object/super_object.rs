@@ -83,7 +83,7 @@ impl<'gc> SuperObject<'gc> {
             return Ok(Value::Undefined);
         };
 
-        constr.as_constructor().exec(
+        constr.exec_constructor(
             name.into(),
             activation,
             self.this().into(),
@@ -108,7 +108,7 @@ impl<'gc> SuperObject<'gc> {
                 _ => return Ok(Value::Undefined),
             };
 
-        match method.as_executable() {
+        match method.as_function() {
             Some(exec) => exec.exec(
                 ExecutionName::Dynamic(name),
                 activation,
