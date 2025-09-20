@@ -104,7 +104,7 @@ fn recursive_serialize<'gc>(
 
             match elem {
                 Value::Object(o) => {
-                    if o.as_executable().is_some() {
+                    if o.as_function().is_some() {
                     } else if o.as_display_object().is_some() {
                         writer.undefined(name.as_ref())
                     } else if let NativeObject::Array(_) = o.native() {

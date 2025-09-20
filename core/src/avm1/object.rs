@@ -230,7 +230,7 @@ impl<'gc> Object<'gc> {
             while let Value::Object(this_proto) = proto {
                 if this_proto.has_own_virtual(activation, name) {
                     if let Some(setter) = this_proto.setter(name, activation) {
-                        if let Some(exec) = setter.as_executable() {
+                        if let Some(exec) = setter.as_function() {
                             let _ = exec.exec(
                                 ExecutionName::Static("[Setter]"),
                                 activation,
@@ -289,7 +289,7 @@ impl<'gc> Object<'gc> {
         // the method was found on the object's prototype.
         let depth = depth.max(1);
 
-        match method.as_executable() {
+        match method.as_function() {
             Some(exec) => exec.exec(
                 ExecutionName::Dynamic(name),
                 activation,
@@ -405,7 +405,7 @@ pub fn search_prototype<'gc>(
         }
 
         if let Some(getter) = p.getter(name, activation) {
-            if let Some(exec) = getter.as_executable() {
+            if let Some(exec) = getter.as_function() {
                 let result = exec.exec(
                     ExecutionName::Static("[Getter]"),
                     activation,

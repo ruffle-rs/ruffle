@@ -411,7 +411,7 @@ impl<'gc> Value<'gc> {
                     )? {
                         Value::String(s) => s,
                         _ => {
-                            if object.as_executable().is_some() {
+                            if object.as_function().is_some() {
                                 AvmString::new_ascii_static(activation.gc(), b"[type Function]")
                             } else {
                                 AvmString::new_ascii_static(activation.gc(), b"[type Object]")
@@ -454,7 +454,7 @@ impl<'gc> Value<'gc> {
             Value::Number(_) => istr!("number"),
             Value::Bool(_) => istr!("boolean"),
             Value::String(_) => istr!("string"),
-            Value::Object(object) if object.as_executable().is_some() => istr!("function"),
+            Value::Object(object) if object.as_function().is_some() => istr!("function"),
             Value::MovieClip(_) => istr!("movieclip"),
             Value::Object(_) => istr!("object"),
         }
@@ -935,7 +935,7 @@ mod test {
                 &activation.context.strings,
                 value_of_impl,
                 protos.function,
-                protos.function,
+                Some(protos.function),
             );
 
             let o = Object::new(&activation.context.strings, Some(protos.object));

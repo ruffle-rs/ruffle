@@ -145,7 +145,7 @@ impl Avm1ObjectWindow {
                         };
                     }
                     Value::Object(value) => {
-                        if value.as_executable().is_some() {
+                        if value.as_function().is_some() {
                             ui.label("Function");
                         } else if ui.button(object_name(value)).clicked() {
                             messages.push(Message::TrackAVM1Object(AVM1ObjectHandle::new(
@@ -357,7 +357,7 @@ impl UiExt for egui::Ui {
 fn object_name(object: Object) -> String {
     // TODO: Find a way to give more meaningful names here.
     // Matching __proto__ to a constant and taking the constants name works, but is super expensive
-    if object.as_executable().is_some() {
+    if object.as_function().is_some() {
         format!("Function {:p}", object.as_ptr())
     } else if let NativeObject::Array(_) = object.native() {
         format!("Array {:p}", object.as_ptr())

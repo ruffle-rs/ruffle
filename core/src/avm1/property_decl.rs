@@ -2,7 +2,7 @@
 
 use gc_arena::Mutation;
 
-use crate::avm1::function::{Executable, FunctionObject, NativeFunction};
+use crate::avm1::function::{FunctionObject, NativeFunction};
 use crate::avm1::property::Attribute;
 use crate::avm1::{Object, Value};
 use crate::string::{HasStringContext, StringContext, WStr};
@@ -41,7 +41,7 @@ impl<'gc> DeclContext<'_, 'gc> {
     /// is implemented in bytecode in Flash Player's `playerglobals.swf`.
     pub fn class(&self, function: NativeFunction, super_proto: Object<'gc>) -> SystemClass<'gc> {
         let proto = Object::new(self.strings, Some(super_proto));
-        let constr = FunctionObject::native(self.strings, function, self.fn_proto, proto);
+        let constr = FunctionObject::native(self.strings, function, self.fn_proto, Some(proto));
         SystemClass { proto, constr }
     }
 
@@ -127,18 +127,16 @@ impl Declaration {
         let name = context.intern_static(WStr::from_units(self.name));
         let value = match self.kind {
             DeclKind::Property { getter, setter } => {
-                let getter = FunctionObject::native(context, getter, fn_proto, fn_proto);
-                let setter = setter
-                    .map(|setter| FunctionObject::native(context, setter, fn_proto, fn_proto));
+                let getter = FunctionObject::native(context, getter, fn_proto, Some(fn_proto));
+                let setter = setter.map(|setter| {
+                    FunctionObject::native(context, setter, fn_proto, Some(fn_proto))
+                });
                 this.add_property(mc, name.into(), getter, setter, self.attributes);
                 return Value::Undefined;
             }
-            DeclKind::Method(func) => {
-                FunctionObject::bare_function(context, Executable::Native(func), None, fn_proto)
-                    .into()
-            }
+            DeclKind::Method(func) => FunctionObject::native(context, func, fn_proto, None).into(),
             DeclKind::Function(func) => {
-                FunctionObject::native(context, func, fn_proto, fn_proto).into()
+                FunctionObject::native(context, func, fn_proto, Some(fn_proto)).into()
             }
             DeclKind::String(s) => context.intern_static(WStr::from_units(s)).into(),
             DeclKind::Bool(b) => b.into(),
