@@ -2,7 +2,8 @@ use crate::character::Character;
 use crate::context::UpdateContext;
 use crate::debug_ui::{ItemToSave, Message};
 use crate::tag_utils::SwfMovie;
-use egui::{CollapsingHeader, Grid, Id, TextEdit, Ui, Window};
+use egui::{Align, Button, CollapsingHeader, Grid, Id, Layout, TextEdit, Ui, Window};
+use egui_extras::{Column, TableBuilder};
 use std::sync::Arc;
 use swf::CharacterId;
 use url::Url;
@@ -33,54 +34,99 @@ impl MovieListWindow {
             .scroll([true, true])
             .show(egui_ctx, |ui| {
                 ui.horizontal(|ui| {
-                    TextEdit::singleline(&mut self.url_search)
-                        .hint_text("Search")
-                        .show(ui);
-                    if ui.small_button("✕").clicked() {
+                    let row_height = ui.spacing().interact_size.y;
+                    let spacing = ui.spacing().item_spacing.x;
+
+                    let button_size = row_height;
+                    let input_width = ui.available_width() - button_size - spacing;
+
+                    ui.add_sized(
+                        [input_width, row_height],
+                        TextEdit::singleline(&mut self.url_search)
+                            .desired_width(f32::INFINITY)
+                            .hint_text("Search"),
+                    );
+
+                    if ui
+                        .add_sized([button_size, row_height], Button::new("✕"))
+                        .clicked()
+                    {
                         self.url_search.clear();
                     }
                 });
 
-                ui.add_space(6.0);
-
                 let search = self.url_search.to_ascii_lowercase();
 
-                egui::ScrollArea::vertical()
-                    .max_height(400.0)
-                    .show(ui, |ui| {
+                TableBuilder::new(ui)
+                    .striped(true)
+                    .resizable(true)
+                    .cell_layout(Layout::left_to_right(Align::Center))
+                    .column(Column::auto())
+                    .column(Column::auto())
+                    .column(Column::remainder())
+                    .column(Column::auto())
+                    .column(Column::remainder())
+                    .header(20.0, |mut header| {
+                        header.col(|ui| {
+                            ui.strong("Name");
+                        });
+
+                        header.col(|ui| {
+                            ui.strong("URL");
+                        });
+
+                        header.col(|ui| {
+                            ui.strong("AVM");
+                        });
+
+                        header.col(|ui| {
+                            ui.strong("Size");
+                        });
+
+                        header.col(|ui| {
+                            ui.strong("Save");
+                        });
+                    })
+                    .body(|mut body| {
                         let movies = context.library.known_movies();
 
-                        Grid::new("known_movie_list").num_columns(5).show(ui, |ui| {
-                            ui.strong("Name");
-                            ui.strong("URL");
-                            ui.strong("AVM");
-                            ui.strong("Size");
-                            ui.strong("Save");
-                            ui.end_row();
+                        for movie in movies {
+                            let url_lower = movie.url().to_ascii_lowercase();
 
-                            for movie in movies {
-                                let url_lower = movie.url().to_ascii_lowercase();
-
-                                if !search.is_empty() && !url_lower.contains(&search) {
-                                    continue;
-                                }
-
-                                open_movie_button(ui, &movie, messages);
-                                ui.label(movie.url());
-                                if movie.is_action_script_3() {
-                                    ui.label("AVM 2");
-                                } else {
-                                    ui.label("AVM 1");
-                                }
-                                ui.label(movie.uncompressed_len().to_string());
-                                if movie.data().is_empty() {
-                                    ui.weak("(Empty)");
-                                } else if ui.button("Save File...").clicked() {
-                                    save_swf(&movie, messages);
-                                }
-                                ui.end_row();
+                            if !search.is_empty() && !url_lower.contains(&search) {
+                                continue;
                             }
-                        });
+
+                            body.row(18.0, |mut row| {
+                                row.col(|ui| {
+                                    open_movie_button(ui, &movie, messages);
+                                });
+
+                                row.col(|ui| {
+                                    ui.label(movie.url());
+                                });
+
+                                row.col(|ui| {
+                                    if movie.is_action_script_3() {
+                                        ui.label("AVM 2");
+                                    } else {
+                                        ui.label("AVM 1");
+                                    }
+                                });
+
+                                row.col(|ui| {
+                                    ui.label(movie.uncompressed_len().to_string());
+                                });
+
+                                row.col(|ui| {
+                                    if movie.data().is_empty() {
+                                        ui.weak("(Empty)");
+                                    } else if ui.button("Save File...").clicked() {
+                                        save_swf(&movie, messages);
+                                    }
+                                });
+                            });
+                        }
                     });
             });
         keep_open
