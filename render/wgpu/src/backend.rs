@@ -368,6 +368,85 @@ impl<T: RenderTarget> WgpuRenderBackend<T> {
             }) => unreachable!("Buffer must be Borrowed as it was set to be Borrowed earlier"),
         }
     }
+
+    fn draw_cache(&mut self, cache_entries: Vec<BitmapCacheEntry>) {
+        for entry in cache_entries {
+            let texture = as_texture(&entry.handle);
+            let mut surface = Surface::new(
+                &self.descriptors,
+                self.surface.quality(),
+                texture.texture.width(),
+                texture.texture.height(),
+                wgpu::TextureFormat::Rgba8Unorm,
+            );
+            if entry.filters.is_empty() {
+                surface.draw_commands(
+                    RenderTargetMode::ExistingWithColor(
+                        texture.texture.clone(),
+                        wgpu::Color {
+                            r: f64::from(entry.clear.r) / 255.0,
+                            g: f64::from(entry.clear.g) / 255.0,
+                            b: f64::from(entry.clear.b) / 255.0,
+                            a: f64::from(entry.clear.a) / 255.0,
+                        },
+                    ),
+                    &self.descriptors,
+                    &self.meshes,
+                    entry.commands,
+                    &mut self.active_frame.staging_belt,
+                    &self.dynamic_transforms,
+                    &mut self.active_frame.command_encoder,
+                    LayerRef::None,
+                    &mut self.offscreen_texture_pool,
+                );
+            } else {
+                // We're relying on there being no impotent filters here,
+                // so that we can safely start by using the actual CAB texture.
+                // It's guaranteed that at least one filter would have used it and moved the target to something else,
+                // letting us safely copy back to it later.
+                let mut target = surface.draw_commands(
+                    RenderTargetMode::ExistingWithColor(
+                        texture.texture.clone(),
+                        wgpu::Color {
+                            r: f64::from(entry.clear.r) / 255.0,
+                            g: f64::from(entry.clear.g) / 255.0,
+                            b: f64::from(entry.clear.b) / 255.0,
+                            a: f64::from(entry.clear.a) / 255.0,
+                        },
+                    ),
+                    &self.descriptors,
+                    &self.meshes,
+                    entry.commands,
+                    &mut self.active_frame.staging_belt,
+                    &self.dynamic_transforms,
+                    &mut self.active_frame.command_encoder,
+                    LayerRef::None,
+                    &mut self.offscreen_texture_pool,
+                );
+                for filter in entry.filters {
+                    target = self.descriptors.filters.apply(
+                        &self.descriptors,
+                        &mut self.active_frame.command_encoder,
+                        &mut self.offscreen_texture_pool,
+                        &mut self.active_frame.staging_belt,
+                        FilterSource::for_entire_texture(target.color_texture()),
+                        filter,
+                    );
+                }
+                run_copy_pipeline(
+                    &self.descriptors,
+                    target.color_texture().format(),
+                    texture.texture.format(),
+                    &texture.texture.create_view(&Default::default()),
+                    target.color_view(),
+                    target.whole_frame_bind_group(&self.descriptors),
+                    target.globals(),
+                    target.color_texture().sample_count(),
+                    &mut self.active_frame.command_encoder,
+                );
+            }
+        }
+    }
 }
 
 impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
@@ -499,82 +578,7 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
             }
         };
 
-        for entry in cache_entries {
-            let texture = as_texture(&entry.handle);
-            let mut surface = Surface::new(
-                &self.descriptors,
-                self.surface.quality(),
-                texture.texture.width(),
-                texture.texture.height(),
-                wgpu::TextureFormat::Rgba8Unorm,
-            );
-            if entry.filters.is_empty() {
-                surface.draw_commands(
-                    RenderTargetMode::ExistingWithColor(
-                        texture.texture.clone(),
-                        wgpu::Color {
-                            r: f64::from(entry.clear.r) / 255.0,
-                            g: f64::from(entry.clear.g) / 255.0,
-                            b: f64::from(entry.clear.b) / 255.0,
-                            a: f64::from(entry.clear.a) / 255.0,
-                        },
-                    ),
-                    &self.descriptors,
-                    &self.meshes,
-                    entry.commands,
-                    &mut self.active_frame.staging_belt,
-                    &self.dynamic_transforms,
-                    &mut self.active_frame.command_encoder,
-                    LayerRef::None,
-                    &mut self.offscreen_texture_pool,
-                );
-            } else {
-                // We're relying on there being no impotent filters here,
-                // so that we can safely start by using the actual CAB texture.
-                // It's guaranteed that at least one filter would have used it and moved the target to something else,
-                // letting us safely copy back to it later.
-                let mut target = surface.draw_commands(
-                    RenderTargetMode::ExistingWithColor(
-                        texture.texture.clone(),
-                        wgpu::Color {
-                            r: f64::from(entry.clear.r) / 255.0,
-                            g: f64::from(entry.clear.g) / 255.0,
-                            b: f64::from(entry.clear.b) / 255.0,
-                            a: f64::from(entry.clear.a) / 255.0,
-                        },
-                    ),
-                    &self.descriptors,
-                    &self.meshes,
-                    entry.commands,
-                    &mut self.active_frame.staging_belt,
-                    &self.dynamic_transforms,
-                    &mut self.active_frame.command_encoder,
-                    LayerRef::None,
-                    &mut self.offscreen_texture_pool,
-                );
-                for filter in entry.filters {
-                    target = self.descriptors.filters.apply(
-                        &self.descriptors,
-                        &mut self.active_frame.command_encoder,
-                        &mut self.offscreen_texture_pool,
-                        &mut self.active_frame.staging_belt,
-                        FilterSource::for_entire_texture(target.color_texture()),
-                        filter,
-                    );
-                }
-                run_copy_pipeline(
-                    &self.descriptors,
-                    target.color_texture().format(),
-                    texture.texture.format(),
-                    &texture.texture.create_view(&Default::default()),
-                    target.color_view(),
-                    target.whole_frame_bind_group(&self.descriptors),
-                    target.globals(),
-                    target.color_texture().sample_count(),
-                    &mut self.active_frame.command_encoder,
-                );
-            }
-        }
+        self.draw_cache(cache_entries);
 
         self.surface.draw_commands_and_copy_to(
             frame_output.view(),
@@ -710,6 +714,7 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
         commands: CommandList,
         quality: StageQuality,
         bounds: PixelRegion,
+        cache_entries: Vec<BitmapCacheEntry>,
     ) -> Option<Box<dyn SyncHandle>> {
         let texture = as_texture(&handle);
 
@@ -729,6 +734,8 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
         let frame_output = target
             .get_next_texture()
             .expect("TextureTargetFrame.get_next_texture is infallible");
+
+        self.draw_cache(cache_entries);
 
         let mut surface = Surface::new(
             &self.descriptors,
