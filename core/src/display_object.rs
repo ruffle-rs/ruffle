@@ -246,6 +246,7 @@ pub struct DisplayObjectBase<'gc> {
     matrix: Cell<Matrix>,
     color_transform: Cell<ColorTransform>,
     perspective_projection: Cell<Option<PerspectiveProjection>>,
+    tz: Cell<f64>,
 
     // Cached transform properties `_xscale`, `_yscale`, `_rotation`.
     // These are expensive to calculate, so they will be calculated and cached
@@ -321,6 +322,7 @@ impl Default for DisplayObjectBase<'_> {
             matrix: Default::default(),
             color_transform: Default::default(),
             perspective_projection: Default::default(),
+            tz: Cell::new(0.0),
             rotation: Cell::new(Degrees::from_radians(0.0)),
             scale_x: Cell::new(Percent::from_unit(1.0)),
             scale_y: Cell::new(Percent::from_unit(1.0)),
@@ -381,6 +383,7 @@ impl<'gc> DisplayObjectBase<'gc> {
             },
             color_transform: self.color_transform.get(),
             perspective_projection: self.perspective_projection.get(),
+            tz: self.tz.get(),
         }
     }
 
@@ -436,6 +439,17 @@ impl<'gc> DisplayObjectBase<'gc> {
         matrix.ty = y;
         self.matrix.set(matrix);
         self.set_transformed_by_script(true);
+        changed
+    }
+
+    fn z(&self) -> f64 {
+        self.tz.get()
+    }
+
+    fn set_z(&self, tz: f64) -> bool {
+        let changed = self.tz.get() != tz;
+        self.set_transformed_by_script(true);
+        self.tz.set(tz);
         changed
     }
 
@@ -1000,6 +1014,7 @@ pub fn render_base<'gc>(
                     ..cache_info.base_transform.matrix
                 },
                 perspective_projection: cache_info.base_transform.perspective_projection,
+                tz: Default::default(),
             });
             let mut offscreen_context = RenderContext {
                 renderer: context.renderer,
@@ -1036,6 +1051,7 @@ pub fn render_base<'gc>(
                         },
                         color_transform: cache_info.base_transform.color_transform,
                         perspective_projection: cache_info.base_transform.perspective_projection,
+                        tz: cache_info.base_transform.tz,
                     },
                     true,
                     PixelSnapping::Always, // cacheAsBitmap forces pixel snapping
@@ -1119,6 +1135,7 @@ pub fn apply_standard_mask_and_scroll<'gc, F>(
             matrix: Matrix::translate(-rect.x_min, -rect.y_min),
             color_transform: Default::default(),
             perspective_projection: None,
+            tz: 0.0,
         });
     }
 
@@ -1511,6 +1528,25 @@ pub trait TDisplayObject<'gc>:
     /// This invalidates any ancestors cacheAsBitmap automatically.
     fn set_y(self, y: Twips) {
         if self.base().set_y(y) {
+            if let Some(parent) = self.parent() {
+                // Self-transform changes are automatically handled,
+                // we only want to inform ancestors to avoid unnecessary invalidations for tx/ty
+                parent.invalidate_cached_bitmap();
+            }
+        }
+    }
+
+    /// The `z` position in local space.
+    /// Returned by the `z` ActionScript properties.
+    fn z(self) -> f64 {
+        self.base().z()
+    }
+
+    /// Sets the `z` position of this display object in local space.
+    /// Set by the `z` ActionScript properties.
+    /// This invalidates any ancestors cacheAsBitmap automatically.
+    fn set_z(self, z: f64) {
+        if self.base().set_z(z) {
             if let Some(parent) = self.parent() {
                 // Self-transform changes are automatically handled,
                 // we only want to inform ancestors to avoid unnecessary invalidations for tx/ty

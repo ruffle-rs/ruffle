@@ -1,0 +1,20 @@
+// SetZ: default parameters
+sprite.z 0
+sprite.transform.matrix (a=1, b=0, c=0, d=1, tx=0, ty=0)
+sprite.transform.matrix3D null
+// SetZ: set .z=50
+sprite.z 50
+sprite.transform.matrix null
+sprite.transform.matrix3D [object Matrix3D]
+sprite.transform.matrix3D.rawData 1,0,0,0,0,1,0,0,0,0,1,0,0,0,50,1
+// SetZ: set .transform.matrix3D=null
+sprite.z 0
+sprite.transform.matrix (a=1, b=0, c=0, d=1, tx=0, ty=0)
+sprite.transform.matrix3D null
+// SetZ: set .transform.matrix=null
+sprite.z 0
+sprite.transform.matrix null
+sprite.transform.matrix3D [object Matrix3D]
+sprite.transform.matrix3D.rawData 1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1
+
+
