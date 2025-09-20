@@ -330,10 +330,10 @@ pub fn decode_define_bits_lossless(
             for _ in 0..swf_tag.height {
                 for _ in 0..swf_tag.width {
                     let entry = decoded_data[i] as usize;
-                    let color = palette.get(entry).unwrap_or(if has_alpha {
-                        &Color::TRANSPARENT
+                    let color = palette.get(entry).copied().unwrap_or(if has_alpha {
+                        Color::TRANSPARENT
                     } else {
-                        &Color::BLACK
+                        Color::BLACK
                     });
                     out_data.extend([color.r, color.g, color.b, color.a]);
                     i += 1;

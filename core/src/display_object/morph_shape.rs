@@ -384,7 +384,7 @@ impl MorphShapeShared {
 // These interpolate between two SWF shape structures.
 // a + b should = 1.0
 
-fn lerp_color(start: &Color, end: &Color, a: f32, b: f32) -> Color {
+fn lerp_color(start: Color, end: Color, a: f32, b: f32) -> Color {
     // f32 -> u8 cast is defined to saturate for out of bounds values,
     // so we don't have to worry about clamping.
     Color {
@@ -411,7 +411,7 @@ fn lerp_fill(start: &swf::FillStyle, end: &swf::FillStyle, a: f32, b: f32) -> sw
     match (start, end) {
         // Color-to-color
         (FillStyle::Color(start), FillStyle::Color(end)) => {
-            FillStyle::Color(lerp_color(start, end, a, b))
+            FillStyle::Color(lerp_color(*start, *end, a, b))
         }
 
         // Bitmap-to-bitmap
@@ -592,7 +592,7 @@ fn lerp_gradient(start: &swf::Gradient, end: &swf::Gradient, a: f32, b: f32) -> 
         .zip(end.records.iter())
         .map(|(start, end)| swf::GradientRecord {
             ratio: (f32::from(start.ratio) * a + f32::from(end.ratio) * b) as u8,
-            color: lerp_color(&start.color, &end.color, a, b),
+            color: lerp_color(start.color, end.color, a, b),
         })
         .collect();
 

@@ -1378,10 +1378,10 @@ impl<'a> EditText<'a> {
     }
 
     #[inline]
-    pub fn color(&self) -> Option<&Color> {
+    pub fn color(&self) -> Option<Color> {
         self.flags
             .contains(EditTextFlag::HAS_TEXT_COLOR)
-            .then_some(&self.color)
+            .then_some(self.color)
     }
 
     #[inline]

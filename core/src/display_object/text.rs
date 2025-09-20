@@ -162,7 +162,7 @@ impl<'gc> TDisplayObject<'gc> for Text<'gc> {
                 let scale = (height.get() as f32) / font.scale();
                 transform.matrix.a = scale;
                 transform.matrix.d = scale;
-                transform.color_transform.set_mult_color(&color);
+                transform.color_transform.set_mult_color(color);
                 for c in &block.glyphs {
                     if let Some(glyph) = font.get_glyph(c.index as usize) {
                         if let Some(glyph_shape_handle) = glyph.shape_handle(context.renderer) {

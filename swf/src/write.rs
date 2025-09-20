@@ -332,14 +332,14 @@ impl<W: Write> Writer<W> {
         Ok(())
     }
 
-    fn write_rgb(&mut self, color: &Color) -> Result<()> {
+    fn write_rgb(&mut self, color: Color) -> Result<()> {
         self.write_u8(color.r)?;
         self.write_u8(color.g)?;
         self.write_u8(color.b)?;
         Ok(())
     }
 
-    fn write_rgba(&mut self, color: &Color) -> Result<()> {
+    fn write_rgba(&mut self, color: Color) -> Result<()> {
         self.write_u8(color.r)?;
         self.write_u8(color.g)?;
         self.write_u8(color.b)?;
@@ -803,7 +803,7 @@ impl<W: Write> Writer<W> {
             }
 
             // TODO: Allow clone of color.
-            Tag::SetBackgroundColor(ref color) => {
+            Tag::SetBackgroundColor(color) => {
                 self.write_tag_header(TagCode::SetBackgroundColor, 3)?;
                 self.write_rgb(color)?;
             }
@@ -1124,8 +1124,8 @@ impl<W: Write> Writer<W> {
         match (start, end) {
             (FillStyle::Color(start_color), FillStyle::Color(end_color)) => {
                 self.write_u8(0x00)?; // Solid color.
-                self.write_rgba(start_color)?;
-                self.write_rgba(end_color)?;
+                self.write_rgba(*start_color)?;
+                self.write_rgba(*end_color)?;
             }
 
             (
@@ -1208,9 +1208,9 @@ impl<W: Write> Writer<W> {
         self.write_gradient_flags(start)?;
         for (start_record, end_record) in start.records.iter().zip(end.records.iter()) {
             self.write_u8(start_record.ratio)?;
-            self.write_rgba(&start_record.color)?;
+            self.write_rgba(start_record.color)?;
             self.write_u8(end_record.ratio)?;
-            self.write_rgba(&end_record.color)?;
+            self.write_rgba(end_record.color)?;
         }
         Ok(())
     }
@@ -1227,8 +1227,8 @@ impl<W: Write> Writer<W> {
             self.write_u16(end.width.get() as u16)?;
             match (&start.fill_style, &end.fill_style) {
                 (FillStyle::Color(start), FillStyle::Color(end)) => {
-                    self.write_rgba(start)?;
-                    self.write_rgba(end)?;
+                    self.write_rgba(*start)?;
+                    self.write_rgba(*end)?;
                 }
                 _ => {
                     return Err(Error::invalid_data(
@@ -1257,8 +1257,8 @@ impl<W: Write> Writer<W> {
             } else {
                 match (&start.fill_style, &end.fill_style) {
                     (FillStyle::Color(start), FillStyle::Color(end)) => {
-                        self.write_rgba(start)?;
-                        self.write_rgba(end)?;
+                        self.write_rgba(*start)?;
+                        self.write_rgba(*end)?;
                     }
                     _ => {
                         return Err(Error::invalid_data("Unexpected line fill style fill type"));
@@ -1530,7 +1530,7 @@ impl<W: Write> Writer<W> {
 
     fn write_fill_style(&mut self, fill_style: &FillStyle, shape_version: u8) -> Result<()> {
         match *fill_style {
-            FillStyle::Color(ref color) => {
+            FillStyle::Color(color) => {
                 self.write_u8(0x00)?; // Solid color.
                 if shape_version >= 3 {
                     self.write_rgba(color)?
@@ -1592,14 +1592,14 @@ impl<W: Write> Writer<W> {
             if line_style.flags.contains(LineStyleFlag::HAS_FILL) {
                 self.write_fill_style(&line_style.fill_style, shape_version)?;
             } else if let FillStyle::Color(color) = &line_style.fill_style {
-                self.write_rgba(color)?;
+                self.write_rgba(*color)?;
             } else {
                 return Err(Error::invalid_data("Unexpected line style fill type"));
             }
         } else {
             // LineStyle1
             let color = if let FillStyle::Color(color) = &line_style.fill_style {
-                color
+                *color
             } else {
                 return Err(Error::invalid_data(
                     "Complex line styles can only be used in DefineShape4 tags",
@@ -1620,9 +1620,9 @@ impl<W: Write> Writer<W> {
         for record in &gradient.records {
             self.write_u8(record.ratio)?;
             if shape_version >= 3 {
-                self.write_rgba(&record.color)?;
+                self.write_rgba(record.color)?;
             } else {
-                self.write_rgb(&record.color)?;
+                self.write_rgb(record.color)?;
             }
         }
         Ok(())
@@ -1769,7 +1769,7 @@ impl<W: Write> Writer<W> {
                     writer.write_u8(if is_visible { 1 } else { 0 })?;
                 }
 
-                if let Some(ref background_color) = place_object.background_color {
+                if let Some(background_color) = place_object.background_color {
                     writer.write_rgba(background_color)?;
                 }
             }
@@ -1797,7 +1797,7 @@ impl<W: Write> Writer<W> {
     }
 
     fn write_drop_shadow_filter(&mut self, filter: &DropShadowFilter) -> Result<()> {
-        self.write_rgba(&filter.color)?;
+        self.write_rgba(filter.color)?;
         self.write_fixed16(filter.blur_x)?;
         self.write_fixed16(filter.blur_y)?;
         self.write_fixed16(filter.angle)?;
@@ -1815,7 +1815,7 @@ impl<W: Write> Writer<W> {
     }
 
     fn write_glow_filter(&mut self, filter: &GlowFilter) -> Result<()> {
-        self.write_rgba(&filter.color)?;
+        self.write_rgba(filter.color)?;
         self.write_fixed16(filter.blur_x)?;
         self.write_fixed16(filter.blur_y)?;
         self.write_fixed8(filter.strength)?;
@@ -1825,8 +1825,8 @@ impl<W: Write> Writer<W> {
 
     fn write_bevel_filter(&mut self, filter: &BevelFilter) -> Result<()> {
         // Note that the color order is wrong in the spec, it's highlight then shadow.
-        self.write_rgba(&filter.highlight_color)?;
-        self.write_rgba(&filter.shadow_color)?;
+        self.write_rgba(filter.highlight_color)?;
+        self.write_rgba(filter.shadow_color)?;
         self.write_fixed16(filter.blur_x)?;
         self.write_fixed16(filter.blur_y)?;
         self.write_fixed16(filter.angle)?;
@@ -1839,7 +1839,7 @@ impl<W: Write> Writer<W> {
     fn write_gradient_filter(&mut self, filter: &GradientFilter) -> Result<()> {
         self.write_u8(filter.colors.len() as u8)?;
         for gradient_record in &filter.colors {
-            self.write_rgba(&gradient_record.color)?;
+            self.write_rgba(gradient_record.color)?;
         }
         for gradient_record in &filter.colors {
             self.write_u8(gradient_record.ratio)?;
@@ -1861,7 +1861,7 @@ impl<W: Write> Writer<W> {
         for val in &filter.matrix {
             self.write_f32(*val)?;
         }
-        self.write_rgba(&filter.default_color)?;
+        self.write_rgba(filter.default_color)?;
         self.write_u8(filter.flags.bits())?;
         Ok(())
     }
@@ -2264,7 +2264,7 @@ impl<W: Write> Writer<W> {
                 if let Some(id) = record.font_id {
                     writer.write_character_id(id)?;
                 }
-                if let Some(ref color) = record.color {
+                if let Some(color) = record.color {
                     if version == 1 {
                         writer.write_rgb(color)?;
                     } else {
@@ -2698,7 +2698,7 @@ mod tests {
             let mut buf = Vec::new();
             {
                 let mut writer = Writer::new(&mut buf, 1);
-                writer.write_rgb(&color).unwrap();
+                writer.write_rgb(color).unwrap();
             }
             assert_eq!(buf, [1, 128, 255]);
         }
@@ -2712,7 +2712,7 @@ mod tests {
             let mut buf = Vec::new();
             {
                 let mut writer = Writer::new(&mut buf, 1);
-                writer.write_rgba(&color).unwrap();
+                writer.write_rgba(color).unwrap();
             }
             assert_eq!(buf, [1, 2, 3, 11]);
         }
