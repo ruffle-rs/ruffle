@@ -16,20 +16,20 @@ package flash.text.engine {
 
             // TODO: Validate locale
             this._locale = locale;
-            this._lineJustification = lineJustification;
+            this.lineJustification = lineJustification;
         }
 
         public function get lineJustification():String {
             return this._lineJustification;
         }
 
+        public function set lineJustification(value:String):void {
+            this._lineJustification = value;
+        }
+
         public function get locale():String {
             stub_getter("flash.text.engine.TextJustifier", "locale");
             return this._locale;
-        }
-
-        public function set lineJustification(value:String):void {
-            this._lineJustification = value;
         }
 
         public function clone():TextJustifier {

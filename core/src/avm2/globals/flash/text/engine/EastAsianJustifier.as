@@ -6,7 +6,7 @@ package flash.text.engine {
 
         public function EastAsianJustifier(locale:String = "ja", lineJustification:String = "allButLast", justificationStyle:String = "pushInKinsoku") {
             super(locale, lineJustification);
-            this._justificationStyle = justificationStyle;
+            this.justificationStyle = justificationStyle;
         }
 
         public function get justificationStyle():String {
