@@ -64,7 +64,7 @@ pub fn namespace_constructor<'gc>(
             };
             // The only allowed prefix if the uri is empty is the literal empty string
             if namespace_uri.is_empty() && !resulting_prefix.is_some_and(|s| s.is_empty()) {
-                return Err(make_error_1098(activation, &prefix_str));
+                return Err(make_error_1098(activation, prefix_str));
             }
             if !prefix_str.is_empty() && !is_xml_name(prefix_str) {
                 resulting_prefix = None;

@@ -18,7 +18,7 @@ fn is_false(b: &bool) -> bool {
     !(*b)
 }
 
-fn escape_string(string: &AvmString) -> String {
+fn escape_string(string: AvmString) -> String {
     let mut output = "".to_string();
     output.push('\"');
 
@@ -46,7 +46,7 @@ fn escape_string(string: &AvmString) -> String {
 }
 
 fn format_value(value: &Value) -> Option<String> {
-    match value {
+    match *value {
         Value::Undefined => None,
         Value::Null => Some("null".to_string()),
         Value::Bool(value) => Some(value.to_string()),
@@ -302,12 +302,7 @@ impl Definition {
                 }
             };
             if &name != b"constructor" {
-                Self::add_prototype_value(
-                    &name,
-                    value.value,
-                    &mut definition.prototype,
-                    activation,
-                );
+                Self::add_prototype_value(name, value.value, &mut definition.prototype, activation);
             }
         }
 
@@ -328,7 +323,7 @@ impl Definition {
     }
 
     fn add_prototype_value<'gc>(
-        name: &AvmString<'gc>,
+        name: AvmString<'gc>,
         value: Value<'gc>,
         output: &mut Option<TraitList>,
         activation: &mut Activation<'_, 'gc>,

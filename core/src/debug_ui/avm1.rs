@@ -102,7 +102,7 @@ impl Avm1ObjectWindow {
                     let value = object.get(key, activation);
 
                     ui.label(key.to_string());
-                    if let Some(new) = self.show_avm1_value(ui, activation, &key, value, messages) {
+                    if let Some(new) = self.show_avm1_value(ui, activation, key, value, messages) {
                         if let Err(e) = object.set(key, new, activation) {
                             tracing::error!("Failed to set key {key}: {e}");
                         }
@@ -119,7 +119,7 @@ impl Avm1ObjectWindow {
         &mut self,
         ui: &mut Ui,
         activation: &mut Activation<'_, 'gc>,
-        key: &AvmString,
+        key: AvmString,
         value: Result<Value<'gc>, Error<'gc>>,
         messages: &mut Vec<Message>,
     ) -> Option<Value<'gc>> {
@@ -180,7 +180,7 @@ impl Avm1ObjectWindow {
         None
     }
 
-    fn num_edit_ui(&mut self, ui: &mut Ui, key: &AvmString, num: f64) -> Option<f64> {
+    fn num_edit_ui(&mut self, ui: &mut Ui, key: AvmString, num: f64) -> Option<f64> {
         let mut new_val = None;
         if self
             .edited_key
@@ -226,12 +226,7 @@ impl Avm1ObjectWindow {
         new_val
     }
 
-    fn string_edit_ui(
-        &mut self,
-        ui: &mut Ui,
-        key: &AvmString,
-        string: AvmString,
-    ) -> Option<String> {
+    fn string_edit_ui(&mut self, ui: &mut Ui, key: AvmString, string: AvmString) -> Option<String> {
         let mut new_val = None;
         ui.horizontal(|ui| {
             if self
