@@ -64,21 +64,21 @@ impl Date {
     }
 
     /// Get milliseconds since epoch.
-    pub const fn time(&self) -> f64 {
+    pub const fn time(self) -> f64 {
         self.0
     }
 
-    fn is_valid(&self) -> bool {
+    fn is_valid(self) -> bool {
         self.0.is_finite()
     }
 
     /// ECMA-262 Day - Get days since epoch.
-    fn day(&self) -> f64 {
+    fn day(self) -> f64 {
         (self.0 / f64::from(Self::MS_PER_DAY)).floor()
     }
 
     /// ECMA-262 TimeWithinDay - Get milliseconds within day.
-    fn time_within_day(&self, swf_version: u8) -> f64 {
+    fn time_within_day(self, swf_version: u8) -> f64 {
         if swf_version > 7 {
             self.0.rem_euclid(Self::MS_PER_DAY.into())
         } else {
@@ -99,22 +99,22 @@ impl Date {
     }
 
     /// ECMA-262 YearFromTime - Get year.
-    fn year(&self) -> i32 {
+    fn year(self) -> i32 {
         let day = self.day();
         // Perform binary search to find the largest `year: i32` such that `Self::from_year(year) <= *self`.
         let mut low =
-            ((day / if *self < Self::EPOCH { 365.0 } else { 366.0 }).floor()).clamp_to_i32() + 1970;
+            ((day / if self < Self::EPOCH { 365.0 } else { 366.0 }).floor()).clamp_to_i32() + 1970;
         let mut high =
-            ((day / if *self < Self::EPOCH { 366.0 } else { 365.0 }).ceil()).clamp_to_i32() + 1970;
+            ((day / if self < Self::EPOCH { 366.0 } else { 365.0 }).ceil()).clamp_to_i32() + 1970;
         while low < high {
             let pivot = ((f64::from(low) + f64::from(high)) / 2.0).clamp_to_i32();
-            if Self::from_year(pivot) <= *self {
-                if Self::from_year(pivot + 1) > *self {
+            if Self::from_year(pivot) <= self {
+                if Self::from_year(pivot + 1) > self {
                     return pivot;
                 }
                 low = pivot + 1;
             } else {
-                debug_assert!(Self::from_year(pivot) > *self);
+                debug_assert!(Self::from_year(pivot) > self);
                 high = pivot - 1;
             }
         }
@@ -127,12 +127,12 @@ impl Date {
     }
 
     /// ECMA-262 InLeapYear
-    fn in_leap_year(&self) -> bool {
+    fn in_leap_year(self) -> bool {
         Self::is_leap_year(self.year())
     }
 
     /// ECMA-262 MonthFromTime - Get month (0-11).
-    fn month(&self) -> i32 {
+    fn month(self) -> i32 {
         let day = self.day_within_year();
         let in_leap_year = self.in_leap_year();
         for i in 0..11 {
@@ -144,24 +144,24 @@ impl Date {
     }
 
     /// ECMA-262 DayWithinYear - Get days within year (0-365).
-    fn day_within_year(&self) -> i32 {
+    fn day_within_year(self) -> i32 {
         (self.day() - Self::day_from_year(self.year().into())).clamp_to_i32()
     }
 
     /// ECMA-262 DateFromTime - Get days within month (1-31).
-    fn date(&self) -> i32 {
+    fn date(self) -> i32 {
         let month = self.month();
         let month_offset = Self::MONTH_OFFSETS[usize::from(self.in_leap_year())][month as usize];
         self.day_within_year() - i32::from(month_offset) + 1
     }
 
     /// ECMA-262 WeekDay - Get days within week (0-6).
-    fn week_day(&self) -> i32 {
+    fn week_day(self) -> i32 {
         rem_euclid_i32(self.day() + 4.0, 7)
     }
 
     /// ECMA-262 LocalTZA - Get local timezone adjustment in milliseconds.
-    fn local_tza(&self, _is_utc: bool) -> i32 {
+    fn local_tza(self, _is_utc: bool) -> i32 {
         // TODO: Honor `is_utc` flag.
         get_timezone().local_minus_utc() * Self::MS_PER_SECOND
     }
@@ -177,12 +177,12 @@ impl Date {
     }
 
     /// Get timezone offset in minutes.
-    fn timezone_offset(&self) -> f64 {
+    fn timezone_offset(self) -> f64 {
         (self.0 - self.local().0) / f64::from(Self::MS_PER_MINUTE)
     }
 
     /// ECMA-262 HourFromTime - Get hours (0-23).
-    fn hours(&self) -> i32 {
+    fn hours(self) -> i32 {
         rem_euclid_i32(
             ((self.0 + 0.5) / f64::from(Self::MS_PER_HOUR)).floor(),
             Self::HOURS_PER_DAY,
@@ -190,7 +190,7 @@ impl Date {
     }
 
     /// ECMA-262 MinFromTime - Get minutes (0-59).
-    fn minutes(&self) -> i32 {
+    fn minutes(self) -> i32 {
         rem_euclid_i32(
             (self.0 / f64::from(Self::MS_PER_MINUTE)).floor(),
             Self::MINUTES_PER_HOUR,
@@ -198,7 +198,7 @@ impl Date {
     }
 
     /// ECMA-262 SecFromTime - Get seconds (0-59).
-    fn seconds(&self) -> i32 {
+    fn seconds(self) -> i32 {
         rem_euclid_i32(
             (self.0 / f64::from(Self::MS_PER_SECOND)).floor(),
             Self::SECONDS_PER_MINUTE,
@@ -206,7 +206,7 @@ impl Date {
     }
 
     /// ECMA-262 msFromTime - Get milliseconds (0-999).
-    fn milliseconds(&self) -> i32 {
+    fn milliseconds(self) -> i32 {
         rem_euclid_i32(self.0, Self::MS_PER_SECOND)
     }
 
