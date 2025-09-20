@@ -84,7 +84,7 @@ pub fn configure_back_buffer<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
-    if let Some(mut context) = this.as_context_3d() {
+    if let Some(context) = this.as_context_3d() {
         let width = args.get_u32(0);
         let height = args.get_u32(1);
         let anti_alias = args.get_u32(2);
