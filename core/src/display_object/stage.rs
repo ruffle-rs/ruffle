@@ -822,6 +822,7 @@ impl<'gc> TDisplayObject<'gc> for Stage<'gc> {
             color_transform: Default::default(),
             // TODO: Verify perspective_projection when its rendering is implemented.
             perspective_projection: self.as_displayobject().base().perspective_projection(),
+            tz: 0.0,
         });
 
         // All of our Stage3D instances get rendered *underneath* the main stage.
