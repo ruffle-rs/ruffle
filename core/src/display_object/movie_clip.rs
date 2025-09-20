@@ -3757,18 +3757,18 @@ impl<'gc, 'a> MovieClipShared<'gc> {
     fn register_export(
         context: &mut UpdateContext<'gc>,
         id: CharacterId,
-        name: &AvmString<'gc>,
+        name: AvmString<'gc>,
         movie: Arc<SwfMovie>,
     ) {
         let mc = context.gc();
         let library = context.library.library_for_movie_mut(movie);
-        library.register_export(id, *name);
+        library.register_export(id, name);
 
         // TODO: do other types of Character need to know their exported name?
         if let Some(character) = library.character_by_id(id) {
             if let Character::MovieClip(clip) = character {
                 let data = Gc::write(mc, clip.0.shared.get());
-                unlock!(data, MovieClipShared, exported_name).set(Some(*name));
+                unlock!(data, MovieClipShared, exported_name).set(Some(name));
             } else {
                 // This is fairly common, don't log anything here
             }
@@ -3797,7 +3797,7 @@ impl<'gc, 'a> MovieClipShared<'gc> {
                 .library(context)
                 .and_then(|l| l.character_by_id(export.id))
             {
-                Self::register_export(context, export.id, &name, self.movie());
+                Self::register_export(context, export.id, name, self.movie());
                 tracing::debug!("register_export asset: {} (ID: {})", name, export.id);
 
                 if let Some(parent) = importer_movie {
@@ -3806,7 +3806,7 @@ impl<'gc, 'a> MovieClipShared<'gc> {
                     if let Some(id) = parent_library.character_id_by_import_name(name) {
                         parent_library.register_character(id, character);
 
-                        Self::register_export(context, id, &name, parent.clone());
+                        Self::register_export(context, id, name, parent.clone());
                         tracing::debug!(
                             "Registering parent asset: {} (Parent ID: {})(ID: {})",
                             name,

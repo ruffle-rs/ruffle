@@ -156,7 +156,7 @@ impl<'gc> RegExp<'gc> {
     /// in `replacement`.
     fn effective_replacement<'a>(
         replacement: &'a AvmString<'gc>,
-        text: &AvmString<'gc>,
+        text: AvmString<'gc>,
         m: &regress::Match,
     ) -> Cow<'a, WStr> {
         if !replacement.contains(b'$') {
@@ -230,15 +230,15 @@ impl<'gc> RegExp<'gc> {
         text: AvmString<'gc>,
         f: FunctionObject<'gc>,
     ) -> Result<AvmString<'gc>, Error<'gc>> {
-        Self::replace_with_fn(regexp, activation, &text, |activation, txt, m| {
+        Self::replace_with_fn(regexp, activation, text, |activation, txt, m| {
             let args = std::iter::once(Some(&m.range))
                 .chain((m.captures.iter()).map(|x| x.as_ref()))
                 .map(|o| match o {
-                    Some(r) => activation.strings().substring(*txt, r.clone()).into(),
+                    Some(r) => activation.strings().substring(txt, r.clone()).into(),
                     None => istr!("").into(),
                 })
                 .chain(std::iter::once(m.range.start.into()))
-                .chain(std::iter::once((*txt).into()))
+                .chain(std::iter::once(txt.into()))
                 .collect::<Vec<_>>();
 
             let args = FunctionArgs::from_slice(&args);
@@ -257,7 +257,7 @@ impl<'gc> RegExp<'gc> {
         text: AvmString<'gc>,
         replacement: AvmString<'gc>,
     ) -> Result<AvmString<'gc>, Error<'gc>> {
-        RegExp::replace_with_fn(regexp, activation, &text, |_activation, txt, m| {
+        RegExp::replace_with_fn(regexp, activation, text, |_activation, txt, m| {
             Ok(Self::effective_replacement(&replacement, txt, m))
         })
     }
@@ -269,13 +269,13 @@ impl<'gc> RegExp<'gc> {
     fn replace_with_fn<'a, F>(
         regexp: RegExpObject<'gc>,
         activation: &mut Activation<'_, 'gc>,
-        text: &AvmString<'gc>,
+        text: AvmString<'gc>,
         mut f: F,
     ) -> Result<AvmString<'gc>, Error<'gc>>
     where
         F: FnMut(
             &mut Activation<'_, 'gc>,
-            &AvmString<'gc>,
+            AvmString<'gc>,
             &regress::Match,
         ) -> Result<Cow<'a, WStr>, Error<'gc>>,
     {
@@ -288,11 +288,11 @@ impl<'gc> RegExp<'gc> {
             let mut re = regexp.regexp_mut(activation.gc());
             let global_flag = re.flags().contains(RegExpFlags::GLOBAL);
 
-            (global_flag, re.find_utf16_match(*text, start))
+            (global_flag, re.find_utf16_match(text, start))
         };
         if m.is_none() {
             // Nothing to do; short circuit and just return the original string, to avoid any allocs or functions
-            return Ok(*text);
+            return Ok(text);
         }
 
         let mut ret = WString::new();
@@ -318,7 +318,7 @@ impl<'gc> RegExp<'gc> {
             // when we call f we don't have a lock
             m = regexp
                 .regexp_mut(activation.gc())
-                .find_utf16_match(*text, start);
+                .find_utf16_match(text, start);
         }
 
         ret.push_str(&text[start..]);

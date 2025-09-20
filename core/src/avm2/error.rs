@@ -463,7 +463,7 @@ pub fn make_error_1089<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> 
 #[cold]
 pub fn make_error_1098<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    prefix: &AvmString<'gc>,
+    prefix: AvmString<'gc>,
 ) -> Error<'gc> {
     let err = type_error(
         activation,
