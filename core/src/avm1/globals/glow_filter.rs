@@ -295,9 +295,8 @@ fn method<'gc>(
         return Ok(this.into());
     }
 
-    let this = match this.native() {
-        NativeObject::GlowFilter(glow_filter) => glow_filter,
-        _ => return Ok(Value::Undefined),
+    let NativeObject::GlowFilter(this) = this.native() else {
+        return Ok(Value::Undefined);
     };
 
     Ok(match index {
