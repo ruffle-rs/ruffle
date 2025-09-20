@@ -1636,7 +1636,7 @@ impl Player {
                             context.mouse_data.pressed,
                             cur_over_object,
                         ) {
-                            // Dragged from outside the clicked object to the inside.
+                            // Dragged from inside the clicked object to the outside.
                             events.push((
                                 down_object,
                                 ClipEvent::DragOut {
@@ -1647,10 +1647,40 @@ impl Player {
                             context.mouse_data.pressed,
                             new_over_object,
                         ) {
-                            // Dragged from inside the clicked object to the outside.
+                            // Dragged from outside the clicked object to the inside.
                             events.push((
                                 down_object,
                                 ClipEvent::DragOver {
+                                    from: cur_over_object,
+                                },
+                            ));
+                        }
+                    }
+
+                    // While dragging, dispatch hover roll events only for AVM2 targets.
+                    if let Some(cur_over_object) = cur_over_object {
+                        if cur_over_object
+                            .as_displayobject()
+                            .movie()
+                            .is_action_script_3()
+                        {
+                            events.push((
+                                cur_over_object,
+                                ClipEvent::RollOut {
+                                    to: new_over_object,
+                                },
+                            ));
+                        }
+                    }
+                    if let Some(new_over_object) = new_over_object {
+                        if new_over_object
+                            .as_displayobject()
+                            .movie()
+                            .is_action_script_3()
+                        {
+                            events.push((
+                                new_over_object,
+                                ClipEvent::RollOver {
                                     from: cur_over_object,
                                 },
                             ));
