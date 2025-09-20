@@ -1,6 +1,6 @@
 use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
-use crate::avm1::function::{Executable, ExecutionName, ExecutionReason};
+use crate::avm1::function::{ExecutionName, ExecutionReason, FunctionObject};
 use crate::avm1::object::{stage_object, NativeObject};
 use crate::avm1::property::{Attribute, Property};
 use crate::avm1::property_map::{Entry, PropertyMap};
@@ -38,7 +38,7 @@ impl<'gc> Watcher<'gc> {
         this: Object<'gc>,
     ) -> Result<Value<'gc>, Error<'gc>> {
         let args = [Value::String(name), old_value, new_value, self.user_data];
-        let exec = self.callback.as_executable().unwrap();
+        let exec = self.callback.as_function().unwrap();
         exec.exec(
             ExecutionName::Dynamic(name),
             activation,
@@ -288,7 +288,7 @@ impl<'gc> Object<'gc> {
         };
 
         if let Some(setter) = setter {
-            if let Some(exec) = setter.as_executable() {
+            if let Some(exec) = setter.as_function() {
                 if let Err(Error::ThrownValue(e)) = exec.exec(
                     ExecutionName::Static("[Setter]"),
                     activation,
@@ -831,11 +831,11 @@ impl<'gc> Object<'gc> {
         }
     }
 
-    /// Get the underlying executable for this object, if it exists.
-    pub fn as_executable(self) -> Option<Executable<'gc>> {
-        // Even though `super` calls the class constructor, it doesn't count as an executable.
+    /// Get the underlying function for this object, if it exists.
+    pub fn as_function(self) -> Option<FunctionObject<'gc>> {
+        // Even though `super` calls the class constructor, it doesn't count as a function.
         if let NativeObject::Function(func) = self.native_no_super() {
-            Some(func.as_executable())
+            Some(*func)
         } else {
             None
         }
