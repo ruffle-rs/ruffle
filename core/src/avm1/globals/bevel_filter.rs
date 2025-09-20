@@ -450,9 +450,8 @@ fn method<'gc>(
         return Ok(this.into());
     }
 
-    let this = match this.native() {
-        NativeObject::BevelFilter(bevel_filter) => bevel_filter,
-        _ => return Ok(Value::Undefined),
+    let NativeObject::BevelFilter(this) = this.native() else {
+        return Ok(Value::Undefined);
     };
 
     Ok(match index {

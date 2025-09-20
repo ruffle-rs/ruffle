@@ -346,9 +346,8 @@ fn method<'gc>(
         return Ok(this.into());
     }
 
-    let this = match this.native() {
-        NativeObject::DisplacementMapFilter(displacement_map_filter) => displacement_map_filter,
-        _ => return Ok(Value::Undefined),
+    let NativeObject::DisplacementMapFilter(this) = this.native() else {
+        return Ok(Value::Undefined);
     };
 
     Ok(match index {

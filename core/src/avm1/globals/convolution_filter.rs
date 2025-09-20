@@ -357,9 +357,8 @@ fn method<'gc>(
         return Ok(this.into());
     }
 
-    let this = match this.native() {
-        NativeObject::ConvolutionFilter(convolution_filter) => convolution_filter,
-        _ => return Ok(Value::Undefined),
+    let NativeObject::ConvolutionFilter(this) = this.native() else {
+        return Ok(Value::Undefined);
     };
 
     Ok(match index {

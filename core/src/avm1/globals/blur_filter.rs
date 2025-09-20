@@ -160,9 +160,8 @@ fn method<'gc>(
         return Ok(this.into());
     }
 
-    let this = match this.native() {
-        NativeObject::BlurFilter(blur_filter) => blur_filter,
-        _ => return Ok(Value::Undefined),
+    let NativeObject::BlurFilter(this) = this.native() else {
+        return Ok(Value::Undefined);
     };
 
     Ok(match index {
