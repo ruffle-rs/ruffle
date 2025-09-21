@@ -34,12 +34,12 @@ impl<'gc> LocalConnection<'gc> {
         None
     }
 
-    pub fn is_connected(&self) -> bool {
+    pub fn is_connected(self) -> bool {
         self.0.handle.borrow().is_some()
     }
 
     pub fn connect(
-        &self,
+        self,
         activation: &mut Activation<'_, 'gc>,
         name: AvmString<'gc>,
         this: Object<'gc>,
@@ -58,7 +58,7 @@ impl<'gc> LocalConnection<'gc> {
         result
     }
 
-    pub fn disconnect(&self, activation: &mut Activation<'_, 'gc>) {
+    pub fn disconnect(self, activation: &mut Activation<'_, 'gc>) {
         if let Some(conn_handle) = self.0.handle.take() {
             activation.context.local_connections.close(conn_handle);
         }
