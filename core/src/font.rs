@@ -615,7 +615,7 @@ impl<'gc> Font<'gc> {
 
     /// Returns whether this font contains glyph shapes.
     /// If not, this font should be rendered as a device font.
-    pub fn has_glyphs(&self) -> bool {
+    pub fn has_glyphs(self) -> bool {
         !matches!(self.0.glyphs, GlyphSource::Empty)
     }
 
@@ -632,7 +632,7 @@ impl<'gc> Font<'gc> {
     }
 
     /// Determine if this font contains all the glyphs within a given string.
-    pub fn has_glyphs_for_str(&self, target_str: &WStr) -> bool {
+    pub fn has_glyphs_for_str(self, target_str: &WStr) -> bool {
         for character in target_str.chars() {
             let c = character.unwrap_or(char::REPLACEMENT_CHARACTER);
             if self.get_glyph_for_char(c).is_none() {
@@ -647,7 +647,7 @@ impl<'gc> Font<'gc> {
         &self.0.descriptor
     }
 
-    pub fn has_layout(&self) -> bool {
+    pub fn has_layout(self) -> bool {
         self.0.has_layout
     }
 }
@@ -1316,7 +1316,7 @@ impl<'gc> FontSet<'gc> {
         ))
     }
 
-    pub fn main_font(&self) -> Font<'gc> {
+    pub fn main_font(self) -> Font<'gc> {
         self.0.main_font
     }
 

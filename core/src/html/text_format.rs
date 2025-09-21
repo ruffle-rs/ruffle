@@ -1485,8 +1485,8 @@ enum HtmlTag {
 }
 
 impl HtmlTag {
-    fn closeable(&self) -> bool {
-        self != &Self::Br && self != &Self::Sbr
+    fn closeable(self) -> bool {
+        self != Self::Br && self != Self::Sbr
     }
 }
 
