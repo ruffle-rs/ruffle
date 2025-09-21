@@ -738,7 +738,7 @@ pub fn contains<'gc>(
     let value = args.get_value(0);
 
     if let Some(other) = value.as_object().and_then(|obj| obj.as_xml_object()) {
-        let result = xml.node().equals(&other.node());
+        let result = xml.node().equals(other.node());
         return Ok(result.into());
     }
     Ok(false.into())

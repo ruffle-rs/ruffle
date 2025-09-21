@@ -1083,9 +1083,9 @@ impl<'gc> TObject<'gc> for XmlListObject<'gc> {
                         let removed_node = removed.node();
                         if let Some(parent) = removed_node.parent() {
                             if removed_node.is_attribute() {
-                                parent.remove_attribute(activation.gc(), &removed_node);
+                                parent.remove_attribute(activation.gc(), removed_node);
                             } else {
-                                parent.remove_child(activation.gc(), &removed_node);
+                                parent.remove_child(activation.gc(), removed_node);
                             }
                         }
                     }
