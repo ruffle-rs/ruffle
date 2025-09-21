@@ -317,7 +317,7 @@ pub enum GameModePreference {
 }
 
 impl GameModePreference {
-    pub fn as_str(&self) -> Option<&'static str> {
+    pub fn as_str(self) -> Option<&'static str> {
         match self {
             GameModePreference::Default => None,
             GameModePreference::On => Some("on"),
@@ -347,7 +347,7 @@ pub enum OpenUrlMode {
 }
 
 impl OpenUrlMode {
-    pub fn as_str(&self) -> Option<&'static str> {
+    pub fn as_str(self) -> Option<&'static str> {
         match self {
             OpenUrlMode::Confirm => None,
             OpenUrlMode::Allow => Some("allow"),

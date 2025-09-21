@@ -23,7 +23,7 @@ impl FromStr for StorageBackend {
 }
 
 impl StorageBackend {
-    pub fn as_str(&self) -> &'static str {
+    pub fn as_str(self) -> &'static str {
         match self {
             StorageBackend::Disk => "disk",
             StorageBackend::Memory => "memory",
@@ -31,7 +31,7 @@ impl StorageBackend {
     }
 
     pub fn create_backend(
-        &self,
+        self,
         opt: &LaunchOptions,
     ) -> Box<dyn ruffle_core::backend::storage::StorageBackend> {
         match self {
