@@ -18,7 +18,7 @@ use winit::window::Window;
 /// Returns `None` if there is no match.
 pub fn winit_to_ruffle_text_control(
     event: &KeyEvent,
-    modifiers: &Modifiers,
+    modifiers: Modifiers,
 ) -> Option<TextControlCode> {
     let shift = modifiers.state().shift_key();
     let ctrl_cmd = modifiers.state().control_key()

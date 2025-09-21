@@ -211,7 +211,7 @@ impl MainWindow {
                     ElementState::Pressed => {
                         self.player.handle_event(PlayerEvent::KeyDown { key });
                         if let Some(control_code) =
-                            winit_to_ruffle_text_control(&event, &self.modifiers)
+                            winit_to_ruffle_text_control(&event, self.modifiers)
                         {
                             self.player
                                 .handle_event(PlayerEvent::TextControl { code: control_code });
