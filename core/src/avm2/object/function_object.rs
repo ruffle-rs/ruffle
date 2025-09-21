@@ -138,7 +138,7 @@ impl<'gc> FunctionObject<'gc> {
         }
     }
 
-    pub fn prototype(&self) -> Option<Object<'gc>> {
+    pub fn prototype(self) -> Option<Object<'gc>> {
         self.0.prototype.get()
     }
 

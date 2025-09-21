@@ -39,15 +39,15 @@ impl<'gc> VertexBuffer3DObject<'gc> {
         .into()
     }
 
-    pub fn handle(&self) -> Rc<dyn VertexBuffer> {
+    pub fn handle(self) -> Rc<dyn VertexBuffer> {
         self.0.handle.clone()
     }
 
-    pub fn context3d(&self) -> Context3DObject<'gc> {
+    pub fn context3d(self) -> Context3DObject<'gc> {
         self.0.context3d
     }
 
-    pub fn data32_per_vertex(&self) -> u8 {
+    pub fn data32_per_vertex(self) -> u8 {
         self.0.data32_per_vertex
     }
 }

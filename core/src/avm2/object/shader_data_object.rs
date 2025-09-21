@@ -42,13 +42,13 @@ impl fmt::Debug for ShaderDataObject<'_> {
 }
 
 impl ShaderDataObject<'_> {
-    pub fn pixel_bender_shader(&self) -> Option<PixelBenderShaderHandle> {
+    pub fn pixel_bender_shader(self) -> Option<PixelBenderShaderHandle> {
         let shader = &self.0.shader;
         let guard = scopeguard::guard(shader.take(), |stolen| shader.set(stolen));
         guard.clone()
     }
 
-    pub fn set_pixel_bender_shader(&self, shader: PixelBenderShaderHandle) {
+    pub fn set_pixel_bender_shader(self, shader: PixelBenderShaderHandle) {
         self.0.shader.set(Some(shader));
     }
 }

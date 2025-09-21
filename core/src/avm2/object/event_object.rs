@@ -352,7 +352,7 @@ impl<'gc> EventObject<'gc> {
         )
     }
 
-    pub fn event(&self) -> Ref<'gc, Event<'gc>> {
+    pub fn event(self) -> Ref<'gc, Event<'gc>> {
         Gc::as_ref(self.0).event.borrow()
     }
 

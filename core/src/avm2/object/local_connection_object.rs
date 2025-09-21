@@ -66,11 +66,11 @@ pub struct LocalConnectionObjectData<'gc> {
 }
 
 impl<'gc> LocalConnectionObject<'gc> {
-    pub fn is_connected(&self) -> bool {
+    pub fn is_connected(self) -> bool {
         self.0.connection_handle.borrow().is_some()
     }
 
-    pub fn client(&self) -> Object<'gc> {
+    pub fn client(self) -> Object<'gc> {
         self.0.client.get().expect("Client must be initialized")
     }
 
@@ -78,14 +78,14 @@ impl<'gc> LocalConnectionObject<'gc> {
         unlock!(Gc::write(mc, self.0), LocalConnectionObjectData, client).set(Some(client));
     }
 
-    pub fn connect(&self, activation: &mut Activation<'_, 'gc>, name: AvmString<'gc>) -> bool {
+    pub fn connect(self, activation: &mut Activation<'_, 'gc>, name: AvmString<'gc>) -> bool {
         if self.is_connected() {
             return false;
         }
 
         let connection_handle = activation.context.local_connections.connect(
             &LocalConnections::get_domain(activation.context.root_swf.url()),
-            (activation.domain(), *self),
+            (activation.domain(), self),
             &name,
         );
         let result = connection_handle.is_some();
@@ -95,13 +95,13 @@ impl<'gc> LocalConnectionObject<'gc> {
         result
     }
 
-    pub fn disconnect(&self, activation: &mut Activation<'_, 'gc>) {
+    pub fn disconnect(self, activation: &mut Activation<'_, 'gc>) {
         if let Some(conn_handle) = self.0.connection_handle.borrow_mut().take() {
             activation.context.local_connections.close(conn_handle);
         }
     }
 
-    pub fn send_status(&self, context: &mut UpdateContext<'gc>, status: AvmString<'gc>) {
+    pub fn send_status(self, context: &mut UpdateContext<'gc>, status: AvmString<'gc>) {
         let mut activation = Activation::from_nothing(context);
 
         let status_event_cls = activation.avm2().classes().statusevent;
@@ -118,11 +118,11 @@ impl<'gc> LocalConnectionObject<'gc> {
             ],
         );
 
-        Avm2::dispatch_event(activation.context, event, (*self).into());
+        Avm2::dispatch_event(activation.context, event, self.into());
     }
 
     pub fn run_method(
-        &self,
+        self,
         context: &mut UpdateContext<'gc>,
         domain: Domain<'gc>,
         method_name: AvmString<'gc>,
@@ -158,7 +158,7 @@ impl<'gc> LocalConnectionObject<'gc> {
                         ],
                     );
 
-                    Avm2::dispatch_event(activation.context, event, (*self).into());
+                    Avm2::dispatch_event(activation.context, event, self.into());
                 }
                 _ => {
                     tracing::error!("Unhandled error dispatching AVM2 LocalConnection method call to '{method_name}': {e}");

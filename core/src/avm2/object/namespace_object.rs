@@ -85,7 +85,7 @@ impl<'gc> NamespaceObject<'gc> {
         self.0.namespace
     }
 
-    pub fn prefix(&self) -> Option<AvmString<'gc>> {
+    pub fn prefix(self) -> Option<AvmString<'gc>> {
         self.0.prefix
     }
 }

@@ -42,7 +42,7 @@ impl<'gc> Program3DObject<'gc> {
         &self.0.shader_module_handle
     }
 
-    pub fn context3d(&self) -> Context3DObject<'gc> {
+    pub fn context3d(self) -> Context3DObject<'gc> {
         self.0.context3d
     }
 }
