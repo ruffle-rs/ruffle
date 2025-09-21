@@ -233,22 +233,22 @@ impl<'gc> E4XNode<'gc> {
     }
 
     /// Returns true when the node is an attribute (E4XNodeKind::Attribute)
-    pub fn is_attribute(&self) -> bool {
+    pub fn is_attribute(self) -> bool {
         matches!(&*self.kind(), E4XNodeKind::Attribute(_))
     }
 
     /// Returns true when the node is an element (E4XNodeKind::Element)
-    pub fn is_element(&self) -> bool {
+    pub fn is_element(self) -> bool {
         matches!(&*self.kind(), E4XNodeKind::Element { .. })
     }
 
     /// Returns true when the node is text (E4XNodeKind::Text or E4XNodeKind::CData)
-    pub fn is_text(&self) -> bool {
+    pub fn is_text(self) -> bool {
         matches!(&*self.kind(), E4XNodeKind::Text(_) | E4XNodeKind::CData(_))
     }
 
     /// Returns true when the node is a comment (E4XNodeKind::Comment)
-    pub fn is_comment(&self) -> bool {
+    pub fn is_comment(self) -> bool {
         matches!(&*self.kind(), E4XNodeKind::Comment(_))
     }
 
@@ -257,7 +257,7 @@ impl<'gc> E4XNode<'gc> {
         core::iter::successors(Some(self), |node| node.parent())
     }
 
-    pub fn equals(&self, other: &Self) -> bool {
+    pub fn equals(self, other: Self) -> bool {
         if self.local_name() != other.local_name() {
             return false;
         }
@@ -295,7 +295,7 @@ impl<'gc> E4XNode<'gc> {
 
                 // The attributes can be in a different order.
                 for attr_a in attributes_a {
-                    if !attributes_b.iter().any(|attr_b| attr_a.equals(attr_b)) {
+                    if !attributes_b.iter().any(|attr_b| attr_a.equals(*attr_b)) {
                         return false;
                     }
                 }
@@ -303,7 +303,7 @@ impl<'gc> E4XNode<'gc> {
                 children_a
                     .iter()
                     .zip(children_b.iter())
-                    .all(|(a, b)| a.equals(b))
+                    .all(|(a, b)| a.equals(*b))
             }
             _ => false,
         }
@@ -360,7 +360,7 @@ impl<'gc> E4XNode<'gc> {
     }
 
     /// Returns the amount of children in this node if this node is of Element kind, otherwise returns [None].
-    pub fn length(&self) -> Option<usize> {
+    pub fn length(self) -> Option<usize> {
         if let E4XNodeKind::Element { children, .. } = &*self.kind() {
             Some(children.len())
         } else {
@@ -370,7 +370,7 @@ impl<'gc> E4XNode<'gc> {
 
     /// Removes all matching children matching provided name, returns the first child removed along with its index (if any).
     pub fn remove_matching_children(
-        &self,
+        self,
         gc_context: &Mutation<'gc>,
         name: &Multiname<'gc>,
     ) -> Option<(usize, E4XNode<'gc>)> {
@@ -401,12 +401,12 @@ impl<'gc> E4XNode<'gc> {
         val
     }
 
-    pub fn insert_at(&self, gc_context: &Mutation<'gc>, index: usize, node: E4XNode<'gc>) {
+    pub fn insert_at(self, gc_context: &Mutation<'gc>, index: usize, node: E4XNode<'gc>) {
         let E4XNodeKind::Element { children, .. } = &mut *self.kind_mut(gc_context) else {
             return;
         };
 
-        node.set_parent(Some(*self), gc_context);
+        node.set_parent(Some(self), gc_context);
         children.insert(index, node);
     }
 
@@ -420,14 +420,14 @@ impl<'gc> E4XNode<'gc> {
         }
     }
 
-    pub fn remove_child(&self, gc_context: &Mutation<'gc>, child: &Self) {
+    pub fn remove_child(self, gc_context: &Mutation<'gc>, child: Self) {
         let mut this_kind = self.kind_mut(gc_context);
         if let E4XNodeKind::Element { children, .. } = &mut *this_kind {
             children.retain(|c| !Gc::ptr_eq(c.0, child.0));
         }
     }
 
-    pub fn remove_attribute(&self, gc_context: &Mutation<'gc>, attribute: &Self) {
+    pub fn remove_attribute(self, gc_context: &Mutation<'gc>, attribute: Self) {
         let mut this_kind = self.kind_mut(gc_context);
         if let E4XNodeKind::Element { attributes, .. } = &mut *this_kind {
             attributes.retain(|a| !Gc::ptr_eq(a.0, attribute.0));
@@ -448,7 +448,7 @@ impl<'gc> E4XNode<'gc> {
         }
     }
 
-    pub fn child_index(&self) -> Option<usize> {
+    pub fn child_index(self) -> Option<usize> {
         let parent = self.parent()?;
 
         if self.is_attribute() {
@@ -458,7 +458,7 @@ impl<'gc> E4XNode<'gc> {
         if let E4XNodeKind::Element { children, .. } = &*parent.kind() {
             let index = children
                 .iter()
-                .position(|child| E4XNode::ptr_eq(*child, *self))
+                .position(|child| E4XNode::ptr_eq(*child, self))
                 .unwrap();
             return Some(index);
         }
@@ -467,7 +467,7 @@ impl<'gc> E4XNode<'gc> {
     }
 
     // ECMA-357 9.1.1.4 [[DeleteByIndex]] (P)
-    pub fn delete_by_index(&self, index: usize, activation: &mut Activation<'_, 'gc>) {
+    pub fn delete_by_index(self, index: usize, activation: &mut Activation<'_, 'gc>) {
         let E4XNodeKind::Element { children, .. } = &mut *self.kind_mut(activation.gc()) else {
             return;
         };
@@ -484,7 +484,7 @@ impl<'gc> E4XNode<'gc> {
 
     // ECMA-357 9.1.1.11 [[Insert]] (P, V)
     pub fn insert(
-        &self,
+        self,
         index: usize,
         value: Value<'gc>,
         activation: &mut Activation<'_, 'gc>,
@@ -511,7 +511,7 @@ impl<'gc> E4XNode<'gc> {
             for (child_index, child) in list.children().iter().enumerate() {
                 let child = child.node();
                 // 10.a.i. V[j].[[Parent]] = x
-                child.set_parent(Some(*self), activation.gc());
+                child.set_parent(Some(self), activation.gc());
                 // 10.a.ii. x[i + j] = V[j]
                 children.insert(index + child_index, child);
             }
@@ -531,7 +531,7 @@ impl<'gc> E4XNode<'gc> {
 
     // ECMA-357 9.1.1.12 [[Replace]] (P, V)
     pub fn replace(
-        &self,
+        self,
         index: usize,
         value: Value<'gc>,
         activation: &mut Activation<'_, 'gc>,
@@ -553,7 +553,7 @@ impl<'gc> E4XNode<'gc> {
             }
 
             // 5.b. Let V.[[Parent]] = x
-            xml.node().set_parent(Some(*self), activation.gc());
+            xml.node().set_parent(Some(self), activation.gc());
 
             let E4XNodeKind::Element { children, .. } = &mut *self.kind_mut(activation.gc()) else {
                 unreachable!("E4XNode should be of element kind");
@@ -586,7 +586,7 @@ impl<'gc> E4XNode<'gc> {
             // 7.a. Let s = ToString(V)
             let s: AvmString<'_> = value.coerce_to_string(activation)?;
             // 7.b. Create a new XML object t with t.[[Class]] = "text", t.[[Parent]] = x and t.[[Value]] = s
-            let text_node = E4XNode::text(activation.gc(), s, Some(*self));
+            let text_node = E4XNode::text(activation.gc(), s, Some(self));
 
             let E4XNodeKind::Element { children, .. } = &mut *self.kind_mut(activation.gc()) else {
                 unreachable!("E4XNode should be of element kind");
@@ -610,7 +610,7 @@ impl<'gc> E4XNode<'gc> {
     }
 
     // ECMA-357 9.1.1.6 [[HasProperty]] (P)
-    pub fn has_property(&self, name: &Multiname<'gc>) -> bool {
+    pub fn has_property(self, name: &Multiname<'gc>) -> bool {
         if !name.has_explicit_namespace() {
             if let Some(local_name) = name.local_name() {
                 // 1. If ToString(ToUint32(P)) == P
@@ -644,7 +644,7 @@ impl<'gc> E4XNode<'gc> {
     }
 
     // ECMA-357 13.4.4.26 XML.prototype.normalize ()
-    pub fn normalize(&self, mc: &Mutation<'gc>) {
+    pub fn normalize(self, mc: &Mutation<'gc>) {
         if let E4XNodeKind::Element { children, .. } = &mut *self.kind_mut(mc) {
             // 1. Let i = 0
             let mut index = 0;
@@ -1098,7 +1098,7 @@ impl<'gc> E4XNode<'gc> {
         unlock!(Gc::write(mc, self.0), E4XNodeData, namespace).set(namespace);
     }
 
-    pub fn namespace(&self) -> Option<E4XNamespace<'gc>> {
+    pub fn namespace(self) -> Option<E4XNamespace<'gc>> {
         self.0.namespace.get()
     }
 
@@ -1106,7 +1106,7 @@ impl<'gc> E4XNode<'gc> {
         unlock!(Gc::write(mc, self.0), E4XNodeData, local_name).set(Some(name));
     }
 
-    pub fn local_name(&self) -> Option<AvmString<'gc>> {
+    pub fn local_name(self) -> Option<AvmString<'gc>> {
         self.0.local_name.get()
     }
 
@@ -1114,7 +1114,7 @@ impl<'gc> E4XNode<'gc> {
         unlock!(Gc::write(mc, self.0), E4XNodeData, parent).set(parent);
     }
 
-    pub fn parent(&self) -> Option<E4XNode<'gc>> {
+    pub fn parent(self) -> Option<E4XNode<'gc>> {
         self.0.parent.get()
     }
 
@@ -1122,13 +1122,13 @@ impl<'gc> E4XNode<'gc> {
         unlock!(Gc::write(mc, self.0), E4XNodeData, notification).set(notification);
     }
 
-    pub fn notification(&self) -> Option<FunctionObject<'gc>> {
+    pub fn notification(self) -> Option<FunctionObject<'gc>> {
         self.0.notification.get()
     }
 
     // 13.3.5.4 [[GetNamespace]] ( [ InScopeNamespaces ] )
     pub fn get_namespace(
-        &self,
+        self,
         context: &StringContext<'gc>,
         in_scope_ns: &[E4XNamespace<'gc>],
     ) -> E4XNamespace<'gc> {
@@ -1154,10 +1154,10 @@ impl<'gc> E4XNode<'gc> {
         // 5. Return ns
     }
 
-    pub fn in_scope_namespaces(&self) -> Vec<E4XNamespace<'gc>> {
+    pub fn in_scope_namespaces(self) -> Vec<E4XNamespace<'gc>> {
         let mut result: Vec<E4XNamespace<'gc>> = Vec::new();
 
-        let mut next_node = Some(*self);
+        let mut next_node = Some(self);
         while let Some(node) = next_node {
             if let E4XNodeKind::Element { namespaces, .. } = &*node.kind() {
                 for new_ns in namespaces {
@@ -1181,7 +1181,7 @@ impl<'gc> E4XNode<'gc> {
     }
 
     // ECMA-357 9.1.1.13 [[AddInScopeNamespace]] (N)
-    pub fn add_in_scope_namespace(&self, gc: &Mutation<'gc>, namespace: E4XNamespace<'gc>) {
+    pub fn add_in_scope_namespace(self, gc: &Mutation<'gc>, namespace: E4XNamespace<'gc>) {
         // 1. If x.[[Class]] ∈ {"text", "comment", "processing-instruction", “attribute”}, return
         if !self.is_element() {
             return;
@@ -1251,7 +1251,7 @@ impl<'gc> E4XNode<'gc> {
 
     // FIXME - avmplus constructs an actual QName here, and does the normal
     // Multiname matching logic. We should do the same.
-    pub fn matches_name(&self, name: &Multiname<'gc>) -> bool {
+    pub fn matches_name(self, name: &Multiname<'gc>) -> bool {
         if self.is_attribute() != name.is_attribute() {
             return false;
         }
@@ -1292,7 +1292,7 @@ impl<'gc> E4XNode<'gc> {
         })
     }
 
-    pub fn descendants(&self, name: &Multiname<'gc>, out: &mut Vec<E4XOrXml<'gc>>) {
+    pub fn descendants(self, name: &Multiname<'gc>, out: &mut Vec<E4XOrXml<'gc>>) {
         if let E4XNodeKind::Element {
             children,
             attributes,
@@ -1315,7 +1315,7 @@ impl<'gc> E4XNode<'gc> {
         }
     }
 
-    pub fn has_complex_content(&self) -> bool {
+    pub fn has_complex_content(self) -> bool {
         match &*self.kind() {
             E4XNodeKind::Element { children, .. } => {
                 children.iter().any(|child| child.is_element())
@@ -1327,7 +1327,7 @@ impl<'gc> E4XNode<'gc> {
         }
     }
 
-    pub fn has_simple_content(&self) -> bool {
+    pub fn has_simple_content(self) -> bool {
         match &*self.kind() {
             E4XNodeKind::Element { children, .. } => {
                 children.iter().all(|child| !child.is_element())
@@ -1339,7 +1339,7 @@ impl<'gc> E4XNode<'gc> {
         }
     }
 
-    pub fn xml_to_string(&self, activation: &mut Activation<'_, 'gc>) -> AvmString<'gc> {
+    pub fn xml_to_string(self, activation: &mut Activation<'_, 'gc>) -> AvmString<'gc> {
         match &*self.kind() {
             E4XNodeKind::Text(text) | E4XNodeKind::CData(text) => *text,
             E4XNodeKind::Attribute(text) => *text,
@@ -1351,16 +1351,16 @@ impl<'gc> E4XNode<'gc> {
                     );
                 }
 
-                to_xml_string(E4XOrXml::E4X(*self), activation)
+                to_xml_string(E4XOrXml::E4X(self), activation)
             }
             E4XNodeKind::Comment(_) | E4XNodeKind::ProcessingInstruction(_) => {
-                to_xml_string(E4XOrXml::E4X(*self), activation)
+                to_xml_string(E4XOrXml::E4X(self), activation)
             }
         }
     }
 
-    pub fn xml_to_xml_string(&self, activation: &mut Activation<'_, 'gc>) -> AvmString<'gc> {
-        to_xml_string(E4XOrXml::E4X(*self), activation)
+    pub fn xml_to_xml_string(self, activation: &mut Activation<'_, 'gc>) -> AvmString<'gc> {
+        to_xml_string(E4XOrXml::E4X(self), activation)
     }
 
     pub fn kind(&self) -> Ref<'_, E4XNodeKind<'gc>> {

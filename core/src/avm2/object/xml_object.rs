@@ -243,7 +243,7 @@ impl<'gc> XmlObject<'gc> {
         }
 
         let node = other.node();
-        Ok(self.node().equals(&node))
+        Ok(self.node().equals(node))
     }
 
     // Implements "The Abstract Equality Comparison Algorithm" as defined
