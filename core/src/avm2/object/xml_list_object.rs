@@ -87,16 +87,16 @@ impl<'gc> XmlListObject<'gc> {
         ))
     }
 
-    pub fn set_dirty_flag(&self) {
+    pub fn set_dirty_flag(self) {
         self.0.target_dirty.set(true);
     }
 
-    pub fn length(&self) -> usize {
+    pub fn length(self) -> usize {
         self.0.children.borrow().len()
     }
 
     pub fn xml_object_child(
-        &self,
+        self,
         index: usize,
         activation: &mut Activation<'_, 'gc>,
     ) -> Option<XmlObject<'gc>> {
@@ -108,7 +108,7 @@ impl<'gc> XmlListObject<'gc> {
         }
     }
 
-    pub fn node_child(&self, index: usize) -> Option<E4XNode<'gc>> {
+    pub fn node_child(self, index: usize) -> Option<E4XNode<'gc>> {
         self.0.children.borrow().get(index).map(|x| x.node())
     }
 
@@ -120,19 +120,19 @@ impl<'gc> XmlListObject<'gc> {
         unlock!(Gc::write(mc, self.0), XmlListObjectData, children).borrow_mut()
     }
 
-    pub fn set_children(&self, mc: &Mutation<'gc>, children: Vec<E4XOrXml<'gc>>) {
+    pub fn set_children(self, mc: &Mutation<'gc>, children: Vec<E4XOrXml<'gc>>) {
         *unlock!(Gc::write(mc, self.0), XmlListObjectData, children).borrow_mut() = children;
     }
 
-    fn target_object(&self) -> Option<XmlOrXmlListObject<'gc>> {
+    fn target_object(self) -> Option<XmlOrXmlListObject<'gc>> {
         self.0.target_object.get()
     }
 
-    fn target_property(&self) -> Option<Multiname<'gc>> {
+    fn target_property(self) -> Option<Multiname<'gc>> {
         self.0.target_property.borrow().clone()
     }
 
-    pub fn deep_copy(&self, activation: &mut Activation<'_, 'gc>) -> XmlListObject<'gc> {
+    pub fn deep_copy(self, activation: &mut Activation<'_, 'gc>) -> XmlListObject<'gc> {
         self.reevaluate_target_object(activation);
 
         let children = self
@@ -148,7 +148,7 @@ impl<'gc> XmlListObject<'gc> {
         )
     }
 
-    pub fn as_xml_string(&self, activation: &mut Activation<'_, 'gc>) -> AvmString<'gc> {
+    pub fn as_xml_string(self, activation: &mut Activation<'_, 'gc>) -> AvmString<'gc> {
         let children = self.children();
         let mut out = WString::new();
         for (i, child) in children.iter().enumerate() {
@@ -161,7 +161,7 @@ impl<'gc> XmlListObject<'gc> {
     }
 
     // Based on https://github.com/adobe/avmplus/blob/858d034a3bd3a54d9b70909386435cf4aec81d21/core/XMLListObject.cpp#L621
-    pub fn reevaluate_target_object(&self, activation: &mut Activation<'_, 'gc>) {
+    pub fn reevaluate_target_object(self, activation: &mut Activation<'_, 'gc>) {
         if self.0.target_dirty.get() && !self.0.children.borrow().is_empty() {
             let last_node = self
                 .0
@@ -216,7 +216,7 @@ impl<'gc> XmlListObject<'gc> {
     }
 
     // ECMA-357 9.2.1.6 [[Append]] (V)
-    pub fn append(&self, value: Value<'gc>, mc: &Mutation<'gc>) {
+    pub fn append(self, value: Value<'gc>, mc: &Mutation<'gc>) {
         let mut children = self.children_mut(mc);
 
         // 3. If Type(V) is XMLList,
@@ -242,12 +242,12 @@ impl<'gc> XmlListObject<'gc> {
 
     // ECMA-357 9.2.1.10 [[ResolveValue]] ( )
     pub fn resolve_value(
-        &self,
+        self,
         activation: &mut Activation<'_, 'gc>,
     ) -> Result<Option<XmlOrXmlListObject<'gc>>, Error<'gc>> {
         // 1. If x.[[Length]] > 0, return x
         if self.length() > 0 {
-            Ok(Some(XmlOrXmlListObject::XmlList(*self)))
+            Ok(Some(XmlOrXmlListObject::XmlList(self)))
         // 2. Else
         } else {
             self.reevaluate_target_object(activation);
@@ -309,7 +309,7 @@ impl<'gc> XmlListObject<'gc> {
     }
 
     pub fn equals(
-        &self,
+        self,
         other: &Value<'gc>,
         activation: &mut Activation<'_, 'gc>,
     ) -> Result<bool, Error<'gc>> {
