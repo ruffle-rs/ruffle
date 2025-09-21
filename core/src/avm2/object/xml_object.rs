@@ -121,7 +121,7 @@ impl<'gc> XmlObject<'gc> {
 
     // 13.4.4.6 XML.prototype.child ( propertyName )
     pub fn child(
-        &self,
+        self,
         name: &Multiname<'gc>,
         activation: &mut Activation<'_, 'gc>,
     ) -> XmlListObject<'gc> {
@@ -155,7 +155,7 @@ impl<'gc> XmlObject<'gc> {
     }
 
     pub fn elements(
-        &self,
+        self,
         name: &Multiname<'gc>,
         activation: &mut Activation<'_, 'gc>,
     ) -> XmlListObject<'gc> {
@@ -172,7 +172,7 @@ impl<'gc> XmlObject<'gc> {
         let list = XmlListObject::new_with_children(
             activation,
             children,
-            Some(XmlOrXmlListObject::Xml(*self)),
+            Some(XmlOrXmlListObject::Xml(self)),
             // NOTE: Spec says to set target property here, but avmplus doesn't, so we do the same.
             None,
         );
@@ -185,7 +185,7 @@ impl<'gc> XmlObject<'gc> {
         list
     }
 
-    pub fn length(&self) -> Option<usize> {
+    pub fn length(self) -> Option<usize> {
         self.node().length()
     }
 
@@ -193,12 +193,12 @@ impl<'gc> XmlObject<'gc> {
         unlock!(Gc::write(mc, self.0), XmlObjectData, node).set(node);
     }
 
-    pub fn local_name(&self) -> Option<AvmString<'gc>> {
+    pub fn local_name(self) -> Option<AvmString<'gc>> {
         self.0.node.get().local_name()
     }
 
     pub fn namespace_object(
-        &self,
+        self,
         activation: &mut Activation<'_, 'gc>,
         in_scope_ns: &[E4XNamespace<'gc>],
     ) -> Result<NamespaceObject<'gc>, Error<'gc>> {
@@ -207,26 +207,26 @@ impl<'gc> XmlObject<'gc> {
             .as_namespace_object(activation)
     }
 
-    pub fn matches_name(&self, multiname: &Multiname<'gc>) -> bool {
+    pub fn matches_name(self, multiname: &Multiname<'gc>) -> bool {
         self.0.node.get().matches_name(multiname)
     }
 
-    pub fn node(&self) -> E4XNode<'gc> {
+    pub fn node(self) -> E4XNode<'gc> {
         self.0.node.get()
     }
 
-    pub fn deep_copy(&self, activation: &mut Activation<'_, 'gc>) -> XmlObject<'gc> {
+    pub fn deep_copy(self, activation: &mut Activation<'_, 'gc>) -> XmlObject<'gc> {
         let node = self.node();
         XmlObject::new(node.deep_copy(activation.gc()), activation)
     }
 
-    pub fn as_xml_string(&self, activation: &mut Activation<'_, 'gc>) -> AvmString<'gc> {
+    pub fn as_xml_string(self, activation: &mut Activation<'_, 'gc>) -> AvmString<'gc> {
         let node = self.node();
         node.xml_to_xml_string(activation)
     }
 
     pub fn equals(
-        &self,
+        self,
         other: &Value<'gc>,
         _activation: &mut Activation<'_, 'gc>,
     ) -> Result<bool, Error<'gc>> {
@@ -238,7 +238,7 @@ impl<'gc> XmlObject<'gc> {
         };
 
         // It seems like an XML object should always be equal to itself
-        if Object::ptr_eq(*self, other) {
+        if Object::ptr_eq(self, other) {
             return Ok(true);
         }
 
@@ -249,7 +249,7 @@ impl<'gc> XmlObject<'gc> {
     // Implements "The Abstract Equality Comparison Algorithm" as defined
     // in ECMA-357 when one side is an XML type (object).
     pub fn abstract_eq(
-        &self,
+        self,
         other: &Value<'gc>,
         activation: &mut Activation<'_, 'gc>,
     ) -> Result<bool, Error<'gc>> {
