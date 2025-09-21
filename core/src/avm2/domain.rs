@@ -121,7 +121,7 @@ impl<'gc> Domain<'gc> {
     }
 
     #[cfg(feature = "egui")]
-    pub fn children(&self, mc: &Mutation<'gc>) -> Vec<Domain<'gc>> {
+    pub fn children(self, mc: &Mutation<'gc>) -> Vec<Domain<'gc>> {
         // Take this opportunity to clean up dead children.
         let mut output = Vec::new();
         self.cell_mut(mc).children.retain(|child| {
@@ -327,7 +327,7 @@ impl<'gc> Domain<'gc> {
         res
     }
 
-    pub fn get_defined_names(&self) -> Vec<QName<'gc>> {
+    pub fn get_defined_names(self) -> Vec<QName<'gc>> {
         self.cell()
             .defs
             .iter()
@@ -349,7 +349,7 @@ impl<'gc> Domain<'gc> {
     /// Export a class into the current application domain.
     ///
     /// This does nothing if the definition already exists in this domain or a parent.
-    pub fn export_class(&self, export_name: QName<'gc>, class: Class<'gc>, mc: &Mutation<'gc>) {
+    pub fn export_class(self, export_name: QName<'gc>, class: Class<'gc>, mc: &Mutation<'gc>) {
         if self.has_class(export_name) {
             return;
         }
@@ -371,7 +371,7 @@ impl<'gc> Domain<'gc> {
         std::ptr::eq(domain_memory_ptr, default_domain_memory_ptr)
     }
 
-    pub fn domain_memory(&self) -> ByteArrayObject<'gc> {
+    pub fn domain_memory(self) -> ByteArrayObject<'gc> {
         self.0
             .domain_memory
             .get()

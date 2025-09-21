@@ -245,27 +245,27 @@ impl<'gc> Namespace<'gc> {
         )))
     }
 
-    pub fn is_public(&self) -> bool {
+    pub fn is_public(self) -> bool {
         matches!(self.0.as_deref(), Some(NamespaceData::Namespace(name, _)) if name.as_wstr().is_empty())
     }
 
-    pub fn is_public_ignoring_ns(&self) -> bool {
+    pub fn is_public_ignoring_ns(self) -> bool {
         matches!(self.0.as_deref(), Some(NamespaceData::Namespace(_, _)))
     }
 
-    pub fn is_any(&self) -> bool {
+    pub fn is_any(self) -> bool {
         self.0.is_none()
     }
 
-    pub fn is_private(&self) -> bool {
+    pub fn is_private(self) -> bool {
         matches!(self.0.as_deref(), Some(NamespaceData::Private(_)))
     }
 
-    pub fn is_namespace(&self) -> bool {
+    pub fn is_namespace(self) -> bool {
         matches!(self.0.as_deref(), Some(NamespaceData::Namespace(_, _)))
     }
 
-    pub fn as_uri_opt(&self) -> Option<AvmString<'gc>> {
+    pub fn as_uri_opt(self) -> Option<AvmString<'gc>> {
         self.0.map(|data| match *data {
             NamespaceData::Namespace(a, _) => a.into(),
             NamespaceData::PackageInternal(a) => a.into(),
@@ -279,7 +279,7 @@ impl<'gc> Namespace<'gc> {
     /// Get the string value of this namespace, ignoring its type.
     ///
     /// TODO: Is this *actually* the namespace URI?
-    pub fn as_uri(&self, context: &mut StringContext<'gc>) -> AvmString<'gc> {
+    pub fn as_uri(self, context: &mut StringContext<'gc>) -> AvmString<'gc> {
         self.as_uri_opt().unwrap_or_else(|| context.empty())
     }
 
@@ -289,7 +289,7 @@ impl<'gc> Namespace<'gc> {
     ///
     /// Namespace does not implement `PartialEq`, so that each caller is required
     /// to explicitly choose either `exact_version_match` or `matches_ns`.
-    pub fn exact_version_match(&self, other: Self) -> bool {
+    pub fn exact_version_match(self, other: Self) -> bool {
         if self.0.map(Gc::as_ptr) == other.0.map(Gc::as_ptr) {
             true
         } else if self.is_private() || other.is_private() {
@@ -304,7 +304,7 @@ impl<'gc> Namespace<'gc> {
     /// seen by the other). This is used to implement `PropertyMap`, where we want to
     /// a definition with `ApiVersion::SWF_16` to be visible when queried from
     /// a SWF with `ApiVersion::SWF_16` or any higher version.
-    pub fn matches_ns(&self, other: Self) -> bool {
+    pub fn matches_ns(self, other: Self) -> bool {
         if self.exact_version_match(other) {
             return true;
         }
@@ -321,7 +321,7 @@ impl<'gc> Namespace<'gc> {
             _ => false,
         }
     }
-    pub fn matches_api_version(&self, match_version: ApiVersion) -> bool {
+    pub fn matches_api_version(self, match_version: ApiVersion) -> bool {
         match self.0.as_deref() {
             Some(NamespaceData::Namespace(_, version)) => version <= &match_version,
             _ => true,
