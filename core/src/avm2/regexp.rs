@@ -228,7 +228,7 @@ impl<'gc> RegExp<'gc> {
         regexp: RegExpObject<'gc>,
         activation: &mut Activation<'_, 'gc>,
         text: AvmString<'gc>,
-        f: &FunctionObject<'gc>,
+        f: FunctionObject<'gc>,
     ) -> Result<AvmString<'gc>, Error<'gc>> {
         Self::replace_with_fn(regexp, activation, &text, |activation, txt, m| {
             let args = std::iter::once(Some(&m.range))

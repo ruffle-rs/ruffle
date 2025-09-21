@@ -295,7 +295,7 @@ fn describe_internal_body<'gc>(
                     activation.gc(),
                 );
 
-                let params = write_params(&method.method, activation);
+                let params = write_params(method.method, activation);
                 method_obj.set_dynamic_property(
                     istr!("parameters"),
                     params.into(),
@@ -416,7 +416,7 @@ fn describe_internal_body<'gc>(
     if let Some(constructor) = constructor.filter(|c| {
         !c.signature().is_empty() && flags.contains(DescribeTypeFlags::INCLUDE_CONSTRUCTOR)
     }) {
-        let params = write_params(&constructor, activation);
+        let params = write_params(constructor, activation);
         traits.set_dynamic_property(istr!("constructor"), params.into(), activation.gc());
     } else {
         // This is needed to override the normal 'constructor' property
@@ -452,7 +452,7 @@ fn display_name<'gc>(
 }
 
 fn write_params<'gc>(
-    method: &Method<'gc>,
+    method: Method<'gc>,
     activation: &mut Activation<'_, 'gc>,
 ) -> ArrayObject<'gc> {
     let params = ArrayObject::empty(activation);

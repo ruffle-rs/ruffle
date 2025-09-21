@@ -305,7 +305,7 @@ pub fn replace<'gc>(
     {
         // Replacement is either a function or treatable as string.
         if let Some(f) = replacement.as_object().and_then(|o| o.as_function_object()) {
-            return Ok(RegExp::replace_fn(regexp, activation, this, &f)?.into());
+            return Ok(RegExp::replace_fn(regexp, activation, this, f)?.into());
         } else {
             let replacement = replacement.coerce_to_string(activation)?;
             return Ok(RegExp::replace_string(regexp, activation, this, replacement)?.into());

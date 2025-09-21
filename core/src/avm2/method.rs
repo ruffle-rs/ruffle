@@ -233,16 +233,16 @@ impl<'gc> Method<'gc> {
     }
 
     /// Get the underlying ABC file.
-    pub fn abc(&self) -> Rc<AbcFile> {
+    pub fn abc(self) -> Rc<AbcFile> {
         self.0.txunit.abc()
     }
 
     /// Get the underlying translation unit this method was defined in.
-    pub fn translation_unit(&self) -> TranslationUnit<'gc> {
+    pub fn translation_unit(self) -> TranslationUnit<'gc> {
         self.0.txunit
     }
 
-    pub fn abc_method_index(&self) -> u32 {
+    pub fn abc_method_index(self) -> u32 {
         self.0.abc_method
     }
 
@@ -252,7 +252,7 @@ impl<'gc> Method<'gc> {
     }
 
     /// Get a reference to the SwfMovie this method came from.
-    pub fn owner_movie(&self) -> Arc<SwfMovie> {
+    pub fn owner_movie(self) -> Arc<SwfMovie> {
         self.0.txunit.movie()
     }
 
@@ -296,7 +296,7 @@ impl<'gc> Method<'gc> {
         &self.0.resolved_info.get().unwrap().param_config
     }
 
-    pub fn resolved_return_type(&self) -> Option<Class<'gc>> {
+    pub fn resolved_return_type(self) -> Option<Class<'gc>> {
         self.0.resolved_info.get().unwrap().return_type
     }
 
@@ -351,14 +351,14 @@ impl<'gc> Method<'gc> {
     /// Determine if a given method is variadic.
     ///
     /// Variadic methods shove excess parameters into a final register.
-    pub fn is_variadic(&self) -> bool {
+    pub fn is_variadic(self) -> bool {
         self.method()
             .flags
             .intersects(AbcMethodFlags::NEED_ARGUMENTS | AbcMethodFlags::NEED_REST)
     }
 
     /// Check if this method needs `arguments`.
-    pub fn needs_arguments_object(&self) -> bool {
+    pub fn needs_arguments_object(self) -> bool {
         self.method().flags.contains(AbcMethodFlags::NEED_ARGUMENTS)
     }
 
@@ -366,7 +366,7 @@ impl<'gc> Method<'gc> {
         &self.0.method_kind
     }
 
-    pub fn return_type(&self) -> Option<Gc<'gc, Multiname<'gc>>> {
+    pub fn return_type(self) -> Option<Gc<'gc, Multiname<'gc>>> {
         self.0.return_type
     }
 
@@ -392,7 +392,7 @@ impl<'gc> Method<'gc> {
     ///
     ///  * The method was declared as a free-standing function
     ///  * The function's parameters have no declared types or default values
-    pub fn is_unchecked(&self) -> bool {
+    pub fn is_unchecked(self) -> bool {
         self.0.is_unchecked
     }
 }

@@ -154,7 +154,7 @@ struct FunctionInfo {
 }
 
 impl FunctionInfo {
-    pub fn from_method(method: &Method, stubbed: bool) -> Self {
+    pub fn from_method(method: Method, stubbed: bool) -> Self {
         Self {
             returns: method
                 .return_type()
@@ -388,7 +388,7 @@ impl Definition {
                     output
                         .get_or_insert_default()
                         .function
-                        .insert(trait_name, FunctionInfo::from_method(method, stubbed));
+                        .insert(trait_name, FunctionInfo::from_method(*method, stubbed));
                 }
                 TraitKind::Getter { method, .. } => {
                     let stubbed = stubs.has_getter(&trait_name);

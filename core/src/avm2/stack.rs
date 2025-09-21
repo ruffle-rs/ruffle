@@ -72,7 +72,7 @@ impl<'gc> Stack<'gc> {
         StackFrame::for_data(subslice)
     }
 
-    pub fn dispose_stack_frame(&self, stack_frame: StackFrame<'_, 'gc>) {
+    pub fn dispose_stack_frame(self, stack_frame: StackFrame<'_, 'gc>) {
         self.0
             .stack_pointer
             .set(self.0.stack_pointer.get() - stack_frame.data.len());

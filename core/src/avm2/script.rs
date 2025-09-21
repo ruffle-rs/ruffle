@@ -233,7 +233,7 @@ impl<'gc> TranslationUnit<'gc> {
     }
 
     /// Gets a script in the ABC file by index.
-    pub fn get_script(&self, index: usize) -> Option<Script<'gc>> {
+    pub fn get_script(self, index: usize) -> Option<Script<'gc>> {
         self.0.scripts.get(index).and_then(|s| s.get()).copied()
     }
 
