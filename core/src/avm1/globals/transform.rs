@@ -29,7 +29,7 @@ impl<'gc> TransformObject<'gc> {
         Some(Self { clip })
     }
 
-    pub fn clip(&self, activation: &mut Activation<'_, 'gc>) -> Option<DisplayObject<'gc>> {
+    pub fn clip(self, activation: &mut Activation<'_, 'gc>) -> Option<DisplayObject<'gc>> {
         let (_, _, clip) = self.clip?.resolve_reference(activation)?;
         Some(clip)
     }

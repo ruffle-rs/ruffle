@@ -22,19 +22,19 @@ struct XmlSocketData {
 pub struct XmlSocket<'gc>(Gc<'gc, XmlSocketData>);
 
 impl<'gc> XmlSocket<'gc> {
-    pub fn handle(&self) -> Option<SocketHandle> {
+    pub fn handle(self) -> Option<SocketHandle> {
         self.0.handle.get()
     }
 
-    pub fn set_handle(&self, handle: SocketHandle) -> Option<SocketHandle> {
+    pub fn set_handle(self, handle: SocketHandle) -> Option<SocketHandle> {
         self.0.handle.replace(Some(handle))
     }
 
-    pub fn timeout(&self) -> u32 {
+    pub fn timeout(self) -> u32 {
         self.0.timeout.get()
     }
 
-    pub fn set_timeout(&self, new_timeout: u32) {
+    pub fn set_timeout(self, new_timeout: u32) {
         // FIXME: Check if flash player clamps this to 250 milliseconds like AS3 sockets.
         self.0.timeout.set(new_timeout);
     }
