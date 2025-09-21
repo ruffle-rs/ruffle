@@ -742,7 +742,7 @@ impl<'gc> ClassObject<'gc> {
             .map(|c| c.0)
     }
 
-    pub fn name(&self) -> QName<'gc> {
+    pub fn name(self) -> QName<'gc> {
         self.inner_class_definition().name()
     }
 }

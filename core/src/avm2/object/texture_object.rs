@@ -38,15 +38,15 @@ impl<'gc> TextureObject<'gc> {
         .into()
     }
 
-    pub fn original_format(&self) -> Context3DTextureFormat {
+    pub fn original_format(self) -> Context3DTextureFormat {
         self.0.original_format
     }
 
-    pub fn handle(&self) -> Rc<dyn Texture> {
+    pub fn handle(self) -> Rc<dyn Texture> {
         self.0.handle.clone()
     }
 
-    pub fn context3d(&self) -> Context3DObject<'gc> {
+    pub fn context3d(self) -> Context3DObject<'gc> {
         self.0.context3d
     }
 }

@@ -38,11 +38,11 @@ impl<'gc> IndexBuffer3DObject<'gc> {
         .into()
     }
 
-    pub fn count(&self) -> usize {
+    pub fn count(self) -> usize {
         self.0.count.get()
     }
 
-    pub fn set_count(&self, val: usize) {
+    pub fn set_count(self, val: usize) {
         self.0.count.set(val);
     }
 
@@ -50,7 +50,7 @@ impl<'gc> IndexBuffer3DObject<'gc> {
         RefMut::map(self.0.handle.borrow_mut(), |h| h.as_mut())
     }
 
-    pub fn context3d(&self) -> Context3DObject<'gc> {
+    pub fn context3d(self) -> Context3DObject<'gc> {
         self.0.context3d
     }
 }

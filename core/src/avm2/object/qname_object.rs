@@ -87,7 +87,7 @@ impl<'gc> QNameObject<'gc> {
         write_name.set_local_name(local);
     }
 
-    pub fn local_name(&self, context: &mut StringContext<'gc>) -> AvmString<'gc> {
+    pub fn local_name(self, context: &mut StringContext<'gc>) -> AvmString<'gc> {
         let name = self.name();
 
         name.local_name().unwrap_or_else(|| istr!(context, "*"))
@@ -99,7 +99,7 @@ impl<'gc> QNameObject<'gc> {
         write_name.set_is_qname(is_qname);
     }
 
-    pub fn uri(&self, context: &mut StringContext<'gc>) -> Option<AvmString<'gc>> {
+    pub fn uri(self, context: &mut StringContext<'gc>) -> Option<AvmString<'gc>> {
         let name = self.0.name.borrow();
 
         if name.is_any_namespace() {
@@ -114,7 +114,7 @@ impl<'gc> QNameObject<'gc> {
         }
     }
 
-    pub fn is_any_namespace(&self) -> bool {
+    pub fn is_any_namespace(self) -> bool {
         self.0.name.borrow().is_any_namespace()
     }
 

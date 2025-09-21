@@ -49,7 +49,7 @@ impl<'gc> SharedObjectObject<'gc> {
         ))
     }
 
-    pub fn data(&self) -> Object<'gc> {
+    pub fn data(self) -> Object<'gc> {
         self.0.data.get()
     }
 

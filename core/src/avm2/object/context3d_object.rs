@@ -392,7 +392,7 @@ impl<'gc> Context3DObject<'gc> {
         });
     }
 
-    pub(crate) fn set_color_mask(&self, red: bool, green: bool, blue: bool, alpha: bool) {
+    pub(crate) fn set_color_mask(self, red: bool, green: bool, blue: bool, alpha: bool) {
         self.with_context_3d(|ctx| {
             ctx.process_command(Context3DCommand::SetColorMask {
                 red,
@@ -403,7 +403,7 @@ impl<'gc> Context3DObject<'gc> {
         });
     }
 
-    pub(crate) fn set_depth_test(&self, depth_mask: bool, pass_compare_mode: Context3DCompareMode) {
+    pub(crate) fn set_depth_test(self, depth_mask: bool, pass_compare_mode: Context3DCompareMode) {
         self.with_context_3d(|ctx| {
             ctx.process_command(Context3DCommand::SetDepthTest {
                 depth_mask,
@@ -452,7 +452,7 @@ impl<'gc> Context3DObject<'gc> {
         });
     }
 
-    pub(crate) fn set_scissor_rectangle(&self, rect: Option<Rectangle<Twips>>) {
+    pub(crate) fn set_scissor_rectangle(self, rect: Option<Rectangle<Twips>>) {
         self.with_context_3d(|ctx| {
             ctx.process_command(Context3DCommand::SetScissorRectangle { rect })
         });

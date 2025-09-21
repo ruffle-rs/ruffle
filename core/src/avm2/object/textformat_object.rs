@@ -73,11 +73,11 @@ impl<'gc> TextFormatObject<'gc> {
         Ok(this)
     }
 
-    pub fn text_format(&self) -> Ref<'gc, TextFormat> {
+    pub fn text_format(self) -> Ref<'gc, TextFormat> {
         Gc::as_ref(self.0).text_format.borrow()
     }
 
-    pub fn text_format_mut(&self) -> RefMut<'gc, TextFormat> {
+    pub fn text_format_mut(self) -> RefMut<'gc, TextFormat> {
         Gc::as_ref(self.0).text_format.borrow_mut()
     }
 }

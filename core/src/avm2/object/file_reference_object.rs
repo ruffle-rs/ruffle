@@ -40,7 +40,7 @@ impl<'gc> TObject<'gc> for FileReferenceObject<'gc> {
 }
 
 impl FileReferenceObject<'_> {
-    pub fn init_from_dialog_result(&self, result: Box<dyn FileDialogResult>) -> FileReference {
+    pub fn init_from_dialog_result(self, result: Box<dyn FileDialogResult>) -> FileReference {
         self.0
             .reference
             .replace(FileReference::FileDialogResult(result))
@@ -50,11 +50,11 @@ impl FileReferenceObject<'_> {
         self.0.reference.borrow()
     }
 
-    pub fn set_loaded(&self, value: bool) {
+    pub fn set_loaded(self, value: bool) {
         self.0.loaded.set(value)
     }
 
-    pub fn loaded(&self) -> bool {
+    pub fn loaded(self) -> bool {
         self.0.loaded.get()
     }
 }

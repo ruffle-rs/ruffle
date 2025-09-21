@@ -58,7 +58,7 @@ pub struct ErrorObjectData<'gc> {
 }
 
 impl<'gc> ErrorObject<'gc> {
-    pub fn display(&self) -> WString {
+    pub fn display(self) -> WString {
         let name = match self.base().get_slot(error_slots::NAME) {
             Value::String(string) => string.as_wstr(),
             Value::Null => WStr::from_units(b"null"),
@@ -81,7 +81,7 @@ impl<'gc> ErrorObject<'gc> {
         output
     }
 
-    pub fn display_full(&self) -> WString {
+    pub fn display_full(self) -> WString {
         let mut output = WString::new();
         output.push_str(&self.display());
         self.call_stack().display(&mut output);

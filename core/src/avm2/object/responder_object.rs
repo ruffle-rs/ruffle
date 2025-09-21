@@ -43,11 +43,11 @@ impl<'gc> TObject<'gc> for ResponderObject<'gc> {
 }
 
 impl<'gc> ResponderObject<'gc> {
-    pub fn result(&self) -> Option<FunctionObject<'gc>> {
+    pub fn result(self) -> Option<FunctionObject<'gc>> {
         self.0.result.get()
     }
 
-    pub fn status(&self) -> Option<FunctionObject<'gc>> {
+    pub fn status(self) -> Option<FunctionObject<'gc>> {
         self.0.status.get()
     }
 
@@ -63,7 +63,7 @@ impl<'gc> ResponderObject<'gc> {
     }
 
     pub fn send_callback(
-        &self,
+        self,
         context: &mut UpdateContext<'gc>,
         callback: ResponderCallback,
         message: &AMFValue,
@@ -77,11 +77,7 @@ impl<'gc> ResponderObject<'gc> {
             let mut activation = Activation::from_nothing(context);
             let value = crate::avm2::amf::deserialize_value(&mut activation, message)?;
             let args = &[value];
-            function.call(
-                &mut activation,
-                (*self).into(),
-                FunctionArgs::from_slice(args),
-            )?;
+            function.call(&mut activation, self.into(), FunctionArgs::from_slice(args))?;
         }
 
         Ok(())
