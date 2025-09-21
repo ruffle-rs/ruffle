@@ -48,37 +48,37 @@ impl<'gc> TObject<'gc> for SocketObject<'gc> {
 }
 
 impl<'gc> SocketObject<'gc> {
-    pub fn endian(&self) -> Endian {
+    pub fn endian(self) -> Endian {
         self.0.endian.get()
     }
 
-    pub fn set_endian(&self, endian: Endian) {
+    pub fn set_endian(self, endian: Endian) {
         self.0.endian.set(endian)
     }
 
-    pub fn object_encoding(&self) -> ObjectEncoding {
+    pub fn object_encoding(self) -> ObjectEncoding {
         self.0.object_encoding.get()
     }
 
-    pub fn set_object_encoding(&self, object_encoding: ObjectEncoding) {
+    pub fn set_object_encoding(self, object_encoding: ObjectEncoding) {
         self.0.object_encoding.set(object_encoding)
     }
 
-    pub fn timeout(&self) -> u32 {
+    pub fn timeout(self) -> u32 {
         self.0.timeout.get()
     }
 
-    pub fn set_timeout(&self, timeout: u32) {
+    pub fn set_timeout(self, timeout: u32) {
         // NOTE: When a timeout of smaller than 250 milliseconds is provided,
         //       we clamp it to 250 milliseconds.
         self.0.timeout.set(std::cmp::max(250, timeout));
     }
 
-    pub fn handle(&self) -> Option<SocketHandle> {
+    pub fn handle(self) -> Option<SocketHandle> {
         self.0.handle.get()
     }
 
-    pub fn set_handle(&self, handle: SocketHandle) -> Option<SocketHandle> {
+    pub fn set_handle(self, handle: SocketHandle) -> Option<SocketHandle> {
         self.0.handle.replace(Some(handle))
     }
 
@@ -90,7 +90,7 @@ impl<'gc> SocketObject<'gc> {
         self.0.write_buffer.borrow_mut()
     }
 
-    pub fn read_bytes(&self, amnt: usize) -> Result<Vec<u8>, ByteArrayError> {
+    pub fn read_bytes(self, amnt: usize) -> Result<Vec<u8>, ByteArrayError> {
         let mut buf = self.read_buffer();
 
         if amnt > buf.len() {
@@ -103,22 +103,22 @@ impl<'gc> SocketObject<'gc> {
         Ok(bytes.collect())
     }
 
-    pub fn write_bytes(&self, bytes: &[u8]) {
+    pub fn write_bytes(self, bytes: &[u8]) {
         self.0.write_buffer.borrow_mut().extend_from_slice(bytes)
     }
 
-    pub fn read_boolean(&self) -> Result<bool, ByteArrayError> {
+    pub fn read_boolean(self) -> Result<bool, ByteArrayError> {
         Ok(self.read_bytes(1)? != [0])
     }
 
-    pub fn write_boolean(&self, val: bool) {
+    pub fn write_boolean(self, val: bool) {
         self.write_bytes(&[val as u8; 1])
     }
 
     /// Same as `read_bytes`, but:
     /// - cuts the result at the first null byte to recreate a bug in FP
     /// - strips off an optional UTF8 BOM at the beginning
-    pub fn read_utf_bytes(&self, amnt: usize) -> Result<Vec<u8>, ByteArrayError> {
+    pub fn read_utf_bytes(self, amnt: usize) -> Result<Vec<u8>, ByteArrayError> {
         let mut bytes = &*self.read_bytes(amnt)?;
         if let Some(without_bom) = bytes.strip_prefix(&[0xEF, 0xBB, 0xBF]) {
             bytes = without_bom;
@@ -129,7 +129,7 @@ impl<'gc> SocketObject<'gc> {
         Ok(bytes.to_vec())
     }
 
-    pub fn read_utf(&self) -> Result<Vec<u8>, ByteArrayError> {
+    pub fn read_utf(self) -> Result<Vec<u8>, ByteArrayError> {
         let len = self.read_unsigned_short()?;
         let val = self.read_utf_bytes(len.into())?;
         Ok(val)
@@ -137,7 +137,7 @@ impl<'gc> SocketObject<'gc> {
 
     // Writes a UTF String into the buffer, with its length as a prefix
     pub fn write_utf(
-        &self,
+        self,
         activation: &mut Activation<'_, 'gc>,
         utf_string: &str,
     ) -> Result<(), Error<'gc>> {
