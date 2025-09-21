@@ -28,11 +28,11 @@ struct NetConnectionData {
 pub struct NetConnection<'gc>(Gc<'gc, NetConnectionData>);
 
 impl<'gc> NetConnection<'gc> {
-    pub fn handle(&self) -> Option<NetConnectionHandle> {
+    pub fn handle(self) -> Option<NetConnectionHandle> {
         self.0.handle.get()
     }
 
-    pub fn set_handle(&self, handle: Option<NetConnectionHandle>) -> Option<NetConnectionHandle> {
+    pub fn set_handle(self, handle: Option<NetConnectionHandle>) -> Option<NetConnectionHandle> {
         self.0.handle.replace(handle)
     }
 

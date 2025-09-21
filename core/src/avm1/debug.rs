@@ -35,7 +35,7 @@ impl<'a> VariableDumper<'a> {
         &self.output
     }
 
-    fn object_id(&mut self, object: &Object) -> (usize, bool) {
+    fn object_id(&mut self, object: Object) -> (usize, bool) {
         let ptr = object.as_ptr();
 
         for (i, other) in self.objects.iter().enumerate() {
@@ -80,11 +80,7 @@ impl<'a> VariableDumper<'a> {
         self.output.push('\"');
     }
 
-    pub fn print_object<'gc>(
-        &mut self,
-        object: &Object<'gc>,
-        activation: &mut Activation<'_, 'gc>,
-    ) {
+    pub fn print_object<'gc>(&mut self, object: Object<'gc>, activation: &mut Activation<'_, 'gc>) {
         let (id, new) = self.object_id(object);
         self.output.push_str("[object #");
         self.output.push_str(&id.to_string());
@@ -97,7 +93,7 @@ impl<'a> VariableDumper<'a> {
 
     pub fn print_property<'gc>(
         &mut self,
-        object: &Object<'gc>,
+        object: Object<'gc>,
         key: AvmString<'gc>,
         activation: &mut Activation<'_, 'gc>,
     ) {
@@ -115,7 +111,7 @@ impl<'a> VariableDumper<'a> {
 
     pub fn print_properties<'gc>(
         &mut self,
-        object: &Object<'gc>,
+        object: Object<'gc>,
         activation: &mut Activation<'_, 'gc>,
     ) {
         let keys = object.get_keys(activation, false);
@@ -140,20 +136,20 @@ impl<'a> VariableDumper<'a> {
     }
 
     pub fn print_value<'gc>(&mut self, value: &Value<'gc>, activation: &mut Activation<'_, 'gc>) {
-        match value {
+        match *value {
             Value::Undefined => self.output.push_str("undefined"),
             Value::Null => self.output.push_str("null"),
             Value::Bool(value) => self.output.push_str(&value.to_string()),
             Value::Number(value) => self.output.push_str(&value.to_string()),
             Value::String(value) => {
-                self.print_string(*value);
+                self.print_string(value);
             }
             Value::Object(object) => {
                 self.print_object(object, activation);
             }
             Value::MovieClip(_) => {
                 let obj = value.coerce_to_object(activation);
-                self.print_object(&obj, activation);
+                self.print_object(obj, activation);
             }
         }
     }
@@ -162,7 +158,7 @@ impl<'a> VariableDumper<'a> {
         &mut self,
         header: &str,
         name: &str,
-        object: &Object<'gc>,
+        object: Object<'gc>,
         activation: &mut Activation<'_, 'gc>,
     ) {
         let keys = object.get_keys(activation, false);

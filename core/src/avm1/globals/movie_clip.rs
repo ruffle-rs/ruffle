@@ -429,7 +429,7 @@ fn line_gradient_style<'gc>(
         let alphas = alphas.coerce_to_object(activation);
         let ratios = ratios.coerce_to_object(activation);
         let records = if let Some(records) =
-            build_gradient_records(activation, "lineGradientStyle()", &colors, &alphas, &ratios)?
+            build_gradient_records(activation, "lineGradientStyle()", colors, alphas, ratios)?
         {
             records
         } else {
@@ -480,9 +480,9 @@ fn line_gradient_style<'gc>(
 fn build_gradient_records<'gc>(
     activation: &mut Activation<'_, 'gc>,
     fname: &str,
-    colors: &Object<'gc>,
-    alphas: &Object<'gc>,
-    ratios: &Object<'gc>,
+    colors: Object<'gc>,
+    alphas: Object<'gc>,
+    ratios: Object<'gc>,
 ) -> Result<Option<Vec<GradientRecord>>, Error<'gc>> {
     let colors_length = colors.length(activation)?;
     let alphas_length = alphas.length(activation)?;
@@ -658,7 +658,7 @@ fn begin_gradient_fill<'gc>(
         let alphas = alphas.coerce_to_object(activation);
         let ratios = ratios.coerce_to_object(activation);
         let records = if let Some(records) =
-            build_gradient_records(activation, "beginGradientFill()", &colors, &alphas, &ratios)?
+            build_gradient_records(activation, "beginGradientFill()", colors, alphas, ratios)?
         {
             records
         } else {

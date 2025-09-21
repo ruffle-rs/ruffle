@@ -210,7 +210,7 @@ fn transform<'gc>(
         return Ok(Value::Null);
     };
 
-    let style_object = match style_object {
+    let style_object = match *style_object {
         Value::Undefined | Value::Null => {
             return Ok(Value::Null);
         }
@@ -220,7 +220,7 @@ fn transform<'gc>(
 
     if let Some(style_object) = style_object {
         fn get_style<'gc>(
-            style_object: &Object<'gc>,
+            style_object: Object<'gc>,
             name: &'static str,
             activation: &mut Activation<'_, 'gc>,
         ) -> Option<Value<'gc>> {
