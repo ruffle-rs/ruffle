@@ -3517,8 +3517,8 @@ impl EditTextRestrict {
             && !self.intervals_contain(character, &self.disallowed)
     }
 
-    fn intervals_contain(&self, character: char, intervals: &Vec<(char, char)>) -> bool {
-        for interval in intervals {
+    fn intervals_contain(&self, character: char, intervals: &[(char, char)]) -> bool {
+        for &interval in intervals {
             if self.interval_contains(character, interval) {
                 return true;
             }
@@ -3527,7 +3527,7 @@ impl EditTextRestrict {
     }
 
     #[inline]
-    fn interval_contains(&self, character: char, interval: &(char, char)) -> bool {
+    fn interval_contains(&self, character: char, interval: (char, char)) -> bool {
         character >= interval.0 && character <= interval.1
     }
 
