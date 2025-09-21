@@ -67,6 +67,25 @@ struct MovieClipReferenceData<'gc> {
 }
 
 impl<'gc> MovieClipReference<'gc> {
+    pub fn from_display_object(
+        activation: &mut Activation<'_, 'gc>,
+        display_object: DisplayObject<'gc>,
+    ) -> Self {
+        let bc = display_object.object().coerce_to_object(activation);
+
+        // This can fail if `display_object.object() == Undefined`, so create a reference with only a path
+        match MovieClipReference::try_from_stage_object(activation, bc) {
+            Some(mcr) => mcr,
+            None => {
+                let mc_ref = MovieClipReferenceData {
+                    path: MovieClipPath::new_from_path(activation.gc(), display_object.path()),
+                    cached_object: None.into(),
+                };
+                MovieClipReference(Gc::new(activation.gc(), mc_ref))
+            }
+        }
+    }
+
     pub fn try_from_stage_object(
         activation: &mut Activation<'_, 'gc>,
         object: Object<'gc>,
@@ -94,12 +113,12 @@ impl<'gc> MovieClipReference<'gc> {
         Some(Self(Gc::new(activation.gc(), mc_ref)))
     }
 
-    /// Handle the logic of swfv5 DisplayObjects
+    /// Handle the logic of SWFv5 DisplayObjects
     fn process_swf5_references(
         activation: &mut Activation<'_, 'gc>,
         mut display_object: DisplayObject<'gc>,
     ) -> Option<DisplayObject<'gc>> {
-        // In swfv5 paths resolve to the first MovieClip parent if the target isn't a movieclip
+        // In SWFv5 paths resolve to the first MovieClip parent if the target isn't a MovieClip
         if activation.swf_version() <= 5 {
             while display_object.as_movie_clip().is_none() {
                 if let Some(p) = display_object.avm1_parent() {
@@ -128,12 +147,12 @@ impl<'gc> MovieClipReference<'gc> {
             .and_then(|c| c.upgrade(activation.gc()))
         {
             if let Some(display_object) = cache.as_display_object_no_super() {
-                // We have to fallback to manual path-walking if the object is removed
+                // We have to fall back to manual path-walking if the object is removed
                 if !display_object.avm1_removed() {
                     let display_object = Self::process_swf5_references(activation, display_object)?;
 
                     // Note that there is a bug here but this *is* how it works in Flash:
-                    // If we are using the cached DisplayObject, we return it's path, which can be changed by modifying `_name`
+                    // If we are using the cached DisplayObject, we return its path, which can be changed by modifying `_name`
                     // However, if we remove and re-create the clip, the stored path (the original path) will differ from the path of the cached object (the modified path)
                     // Essentially, changes to `_name` are reverted after the clip is re-created
 
@@ -192,7 +211,7 @@ impl<'gc> MovieClipReference<'gc> {
             None => istr!(""),
             // Found the reference, cached, we can't re-use `self.path` sadly, it would be quicker if we could
             // But if the clip has been re-named, since being created then `mc.path() != path`
-            Some((true, _, dobj)) => AvmString::new(activation.gc(), dobj.path()),
+            Some((true, _, disp_obj)) => AvmString::new(activation.gc(), disp_obj.path()),
             // Found the reference, un-cached, so our cached path must be correct
             Some((false, _, _)) => self.0.path.full_path,
         }
