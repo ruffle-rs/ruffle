@@ -396,6 +396,7 @@ impl GuiController {
                             load: wgpu::LoadOp::Clear(wgpu::Color::BLACK),
                             store: wgpu::StoreOp::Store,
                         },
+                        depth_slice: None,
                     })],
                     label: Some("egui_render"),
                     ..Default::default()

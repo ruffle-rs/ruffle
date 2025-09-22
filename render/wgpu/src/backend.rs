@@ -948,6 +948,7 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
                     load: wgpu::LoadOp::Clear(wgpu::Color::TRANSPARENT),
                     store: wgpu::StoreOp::Store,
                 },
+                depth_slice: None,
             }),
             1,
             // When running a standalone shader, we always process the entire image
