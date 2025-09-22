@@ -23,7 +23,7 @@ image = { workspace = true }
 naga-agal = { path = "../naga-agal" }
 naga-pixelbender = { path = "../naga-pixelbender" }
 profiling = { version = "1.0", default-features = false, optional = true }
-lru = "0.16.0"
+lru = "0.16.1"
 naga = { workspace = true }
 indexmap = { workspace = true }
 smallvec = { workspace = true }
