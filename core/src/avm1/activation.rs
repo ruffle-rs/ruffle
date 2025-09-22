@@ -1484,18 +1484,22 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             0
         };
         let count = count.min(self.context.avm1.stack_len());
-        let mut interfaces = Vec::with_capacity(count);
 
-        // TODO: If one of the interfaces is not an object, do we leave the
-        // whole stack dirty, or...?
-        for _ in 0..count {
-            interfaces.push(self.context.avm1.pop().coerce_to_object(self));
+        // This is a noop if there are no interfaces.
+        if count > 0 {
+            let mut interfaces = Vec::with_capacity(count);
+
+            // TODO: If one of the interfaces is not an object, do we leave the
+            // whole stack dirty, or...?
+            for _ in 0..count {
+                interfaces.push(self.context.avm1.pop().coerce_to_object(self));
+            }
+
+            let prototype = constructor
+                .get(istr!(self, "prototype"), self)?
+                .coerce_to_object(self);
+            prototype.set_interfaces(self.gc(), interfaces);
         }
-
-        let prototype = constructor
-            .get(istr!(self, "prototype"), self)?
-            .coerce_to_object(self);
-        prototype.set_interfaces(self.gc(), interfaces);
 
         Ok(FrameControl::Continue)
     }

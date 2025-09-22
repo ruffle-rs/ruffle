@@ -78,7 +78,7 @@ impl fmt::Debug for ObjectWeak<'_> {
 struct ObjectData<'gc> {
     native: NativeObject<'gc>,
     properties: PropertyMap<'gc, Property<'gc>>,
-    interfaces: Vec<Object<'gc>>,
+    interfaces: Option<Vec<Object<'gc>>>,
     watchers: PropertyMap<'gc, Watcher<'gc>>,
 }
 
@@ -101,7 +101,7 @@ impl<'gc> Object<'gc> {
             RefLock::new(ObjectData {
                 native: NativeObject::None,
                 properties: PropertyMap::new(),
-                interfaces: vec![],
+                interfaces: None,
                 watchers: PropertyMap::new(),
             }),
         ));
@@ -133,7 +133,7 @@ impl<'gc> Object<'gc> {
             RefLock::new(ObjectData {
                 native: NativeObject::None,
                 properties: PropertyMap::new(),
-                interfaces: vec![],
+                interfaces: None,
                 watchers: PropertyMap::new(),
             }),
         ))
@@ -776,17 +776,19 @@ impl<'gc> Object<'gc> {
             return vec![];
         }
 
-        self.0.borrow().interfaces.clone()
+        self.0.borrow().interfaces.clone().unwrap_or_default()
     }
 
     /// Set the interface list for this object. (Only useful for prototypes.)
+    /// Calling this a second time will have no effect.
     pub fn set_interfaces(&self, gc_context: &Mutation<'gc>, iface_list: Vec<Object<'gc>>) {
         if self.as_super_object().is_some() {
             // `super` probably cannot have interfaces set on it
             return;
         }
 
-        self.0.borrow_mut(gc_context).interfaces = iface_list;
+        let mut write = self.0.borrow_mut(gc_context);
+        write.interfaces.get_or_insert(iface_list);
     }
 
     pub(super) fn native_no_super(&self) -> NativeObject<'gc> {

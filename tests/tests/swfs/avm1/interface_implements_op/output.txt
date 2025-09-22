@@ -1,0 +1,7 @@
+// MyClass implements <nothing>
+obj instanceof InterfaceA: false
+// MyClass implements InterfaceA
+obj instanceof InterfaceA: true
+// MyClass implements InterfaceB
+obj instanceof InterfaceA: true
+obj instanceof InterfaceB: false
