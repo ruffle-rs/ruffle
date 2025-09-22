@@ -91,6 +91,7 @@
         <p xml:lang="cs">Ruffle je emulátor Flash Player napsaný v Rustu. Využitím bezpečnostních záruk Rustu se můžeme s jistotou vyhnout všem bezpečnostním nástrahám, kterými byl Flash pověstný. Ruffle vrací Flash zpět na web, kam patří!</p>
         <p xml:lang="de">Ruffle ist ein in Rust geschriebener Flash Player-Emulator. Durch die Nutzung der Sicherheitsgarantien von Rust können wir alle Sicherheitslücken vermeiden, für die Flash bekannt war. Ruffle bringt Flash zurück ins Web, wo es hingehört!</p>
         <p xml:lang="es">Ruffle es un emulador de Flash Player escrito en Rust. Se aprovecha la seguridad de Rust para que podemos eludir con confianza todos los problemas potenciales que estaban asociados con Flash anteriormente. ¡Ruffle devuelve Flash a la red mundial donde se debe estar!</p>
+        <p xml:lang="fi">Ruffle on Flash Player -emulaattori Rust-ohjelmointikielellä toteutettuna. Rustin turvallisuustakuita hyödyntäen voimme varmuudella välttää tietoturvakömmähdykset, joiden vuoksi Flash oli surullisenkuuluisa. Ruffle laittaa Flashin takaisin sinne minne se kuuluukin - verkkoon!</p>
         <p xml:lang="fr">Ruffle est un émulateur pour Flash Player écrit en Rust. En tirant parti des garanties de sécurité offertes par Rust, nous pouvons éviter tous les problèmes de sécurité pour lesquels Flash était réputé. Ruffle remet Flash à sa juste place, sur Internet !</p>
         <p xml:lang="he">Ruffle הוא אמולטור של נגן פלאש שפותח באמצעות Rust. בזכות המוניטין הטוב אודות הבטיחות של Rust נוכל להימנע מכל מלכודות האבטחה שלפלאש היו. Ruffle מחזיר את פלאש לאינטרנט, בדיוק לאיפה שהוא שייך!</p>
         <p xml:lang="hu">A Ruffle egy Rust nyelven írt Flash Player emulátor. A Rust biztonsági garanciáit kihasználva magabiztosan elkerülhetjük az összes biztonsági rést, amelyről a Flash híres volt. A Ruffle visszateszi a Flasht a webre, ahová való!</p>
@@ -103,7 +104,7 @@
         <p xml:lang="ro">Ruffle este un emulator Flash Player scris în Rust. Profitând de garanțiile de siguranță oferite de Rust, putem evita cu încredere toate problemele de securitate avute de Flash. Ruffle readuce Flash pe web, acolo unde îi este locul!</p>
         <p xml:lang="ru">Ruffle — это эмулятор Flash Player'а, написанный на Rust. Опираясь на гарантии безопасности Rust, мы можем с уверенностью избежать всех проблем с безопасностью, которыми был известен Flash. Ruffle возвращает Flash в Сеть на своё прежнее место!</p>
         <p xml:lang="sk">Ruffle je emulátor Flash Player napísaný v Ruste. Využitím bezpečnostných záruk Rustu sa môžeme s istotou vyhnúť všetkým bezpečnostným nástrahám, ktorými bol Flash povestný. Ruffle vracia Flash späť na web, kam patrí!</p>
-        <p xml:lang="th">Ruffle เป็นโปรแกรมจำลองของ Flash Player เขียนด้วยภาษา Rust ซึ่งรับรองความปลอดภัย
+        <p xml:lang="th">Ruffle เป็นโปรแกรมเลียนแบบ Flash Player เขียนด้วยภาษา Rust ซึ่งรับรองความปลอดภัย
 เราจึงมั่นใจได้ว่าจะหลีกเลี่ยงปัญหาความปลอดภัยทั้งหมดที่ Flash เคยมี
 Ruffle นำสื่อ Flash กลับมาอยู่บนเว็บ ซึ่งเป็นที่ที่ควรอยู่!</p>
         <p xml:lang="tr">Ruffle, Rust ile yazılmış bir Flash Player emülatörüdür. Rust'ın güvenlik garantilerinden yararlanarak, Flash'ın ünlü olduğu tüm güvenlik açıklarından güvenle kaçınabiliyoruz. Ruffle, Flash'ı ait olduğu yere, web'e geri getiriyor!</p>
@@ -119,6 +120,7 @@ Ruffle นำสื่อ Flash กลับมาอยู่บนเว็บ
         <p xml:lang="cs">Tato aplikace vám umožňuje spouštět obsah Flash na vašem počítači bez použití prohlížeče a plně využívat vaše GPU a systémové prostředky k získání snímků navíc při hraní intenzivních her.</p>
         <p xml:lang="de">Diese Anwendung ermöglicht es Ihnen Flash-Inhalte auf Ihrem Computer ausführen, ohne dass ein Browser vonnöten ist. Dadurch können Sie die volle Leistung Ihrer GPU und Systemressourcen nutzen, um zusätzliche Bilder bei anspruchsvollen Spielen zu erhalten.</p>
         <p xml:lang="es">Este programa te permite ejecutar contenido de Flash por tu computadora sin un navegador de web en el medio. Aprovecha completamente tu procesador de gráficos y los recursos del sistema para obtener el mejor rendimiento posible con juegos exigentes.</p>
+        <p xml:lang="fi">Tämä sovellus mahdollistaa Flash-sisällön toistamisen tietokoneella ilman selainta, ja se hyödyntää näytönohjaimen sekä järjestelmän resursseja sulavan kokemuksen tarjoamiseksi.</p>
         <p xml:lang="fr">Cette application vous permet d'exécuter du contenu Flash sur votre ordinateur sans passer par un navigateur. Elle tire également pleinement parti de votre GPU et des ressources système pour garantir des performances élevées, même pour les jeux exigeants.</p>
         <p xml:lang="he">יישום זה מאפשר לך להריץ תכני פלאש במחשב שלך בלי איזה דפדפן חיצוני בין הדרך, ולנצל את מלוא היתרונות של משאבי כרטיס המסך והמערכת שלך כדי לקבל את הפריימים הנוספים האלה במשחקים אינטנסיביים.</p>
         <p xml:lang="hu">Ez az alkalmazás lehetővé teszi Flash tartalmak futtatását a számítógépeden egy köztes böngésző nélkül, így teljes mértékben kihasználhatja a GPU-t és a rendszer erőforrásait, extra képkockákat biztosítva intenzív játékokban.</p>
@@ -148,6 +150,7 @@ Ruffle นำสื่อ Flash กลับมาอยู่บนเว็บ
         <p xml:lang="cs">Ruffle je zcela open source projekt spravovaný dobrovolníky. Všichni jsme nadšení z uchovávání historie internetu a přilákalo nás pracovat na tomto projektu, abychom pomohli zachovat mnoho webových stránek a nepřeberné množství obsahu, který již nebude přístupný, až uživatelé nebudou moci spouštět oficiální přehrávač Flash Player. Pokud byste chtěli pomoci podpořit tento projekt, uvítáme všechny příspěvky jakéhokoli druhu – i když jde jen o hraní starých her a sledování, jak dobře fungují.</p>
         <p xml:lang="de">Ruffle ist ein vollständiges Open-Source-Projekt, das von Freiwilligen betrieben wird. Wir alle teilen die Leidenschaft für den Erhalt der Geschichte des Internets und haben uns diesem Projekt angeschlossen, um die zahlreichen Websites und Inhalte zu bewahren, die nicht mehr zugänglich sein werden, sobald der offizielle Flash Player nicht mehr genutzt werden kann. Wenn Sie dieses Projekt unterstützen möchten, freuen wir uns über jede Art von Beitrag – selbst wenn es nur darum geht, einige alte Spiele zu spielen und zu testen, wie gut sie laufen.</p>
         <p xml:lang="es">Ruffle es un proyecto completamente escrito en código fuente abierto, y gestionado por voluntarios. Nos encanta contribuir a la tarea enorme de guardar la historia de la internet. Esa mentalidad nos motiva trabajar en este proyecto para guardar tantas páginas de web, y muchísimo contenido que no estaría posible usar sin el reproductor original de Flash. Si te gustaría ayudar o apoyar este proyecto en cualquiera manera, invitamos todos modos de contribuir, incluso probando Ruffle con tus juegos favoritos, por ejemplo.</p>
+        <p xml:lang="fi">Ruffle on avoimen lähdekoodin projekti, jonka ylläpidosta vastaavat vapaaehtoiset. Olemme intohimoisia internethistorian säilyttämisen vuoksi. Järjestäydyimme tämän projektin ympärille säilyttääksemme useat verkkosivustot ja runsaan määrän sisältöä, joka ei ole enää käytettävissä, kun virallista Flash Playeria ei voi enää käyttää. Jos haluat tukea tätä projektia, kaikenlaiset avustukset ovat tervetulleita -  myös vanhojen pelien pelaamisen ihan vain testaamisen vuoksi.</p>
         <p xml:lang="fr">Ruffle est un projet entièrement open source maintenu par des bénévoles. Nous sommes tous passionnés par la préservation de l'histoire d'Internet. En travaillant sur ce projet, nous voulons participer à la sauvegarde des nombreux sites web et autres contenus qui ne sont plus accessibles depuis que les utilisateurs ne peuvent plus exécuter le lecteur Flash officiel. Si vous souhaitez soutenir ce projet, toutes les contributions sont les bienvenues, même s'il ne s'agit que de tester quelques anciens jeux et voir comment ils fonctionnent.</p>
         <p xml:lang="he">Ruffle הוא פרויקט קוד פתוח לחלוטין המתוחזק על ידי מתנדבים. כולנו נלהבים מהשימור של היסטוריית האינטרנט, והתחלנו לעבוד על הפרויקט הזה כדי לעזור לשמר את האתרים הרבים ושפע התוכן שלא יהיה נגיש עוד כאשר משתמשים לא יוכלו יותר להפעיל את נגן הפלאש הרשמי. אם תרצו לתמוך בפרויקט הזה, נשמח לכל התרומות מכל סוג שהוא - גם אם זה רק לשחק כמה משחקים ישנים ולראות כמה שהם אשכרה עובדים כמו שצריך.</p>
         <p xml:lang="hu">A Ruffle egy teljesen nyílt forráskódú projekt, amelyet önkéntesek tartanak karban. Mindannyiunk szenvedélye az internet történelmének megőrzése, ez vonzott minket, hogy ezen a projekten dolgozzunk, és így segítsünk megőrizni azt a sok webhelyet és rengeteg tartalmat, amelyek többé nem lesznek elérhetőek, amikor a felhasználók már nem tudják futtatni a hivatalos Flash Playert. Ha szeretnéd támogatni ezt a projektet, szívesen fogadunk mindenféle hozzájárulást - még akkor is, ha az csak pár régi játék kipróbálása, hogy mennyire működnek jól.</p>
@@ -184,6 +187,7 @@ Ruffle นำสื่อ Flash กลับมาอยู่บนเว็บ
         <keyword xml:lang="cs">flash</keyword>
         <keyword xml:lang="de">flash</keyword>
         <keyword xml:lang="es">flash</keyword>
+        <keyword xml:lang="fi">flash</keyword>
         <keyword xml:lang="fr">flash</keyword>
         <keyword xml:lang="he">פלאש</keyword>
         <keyword xml:lang="hu">flash</keyword>
@@ -209,6 +213,7 @@ Ruffle นำสื่อ Flash กลับมาอยู่บนเว็บ
         <keyword xml:lang="cs">swf</keyword>
         <keyword xml:lang="de">swf</keyword>
         <keyword xml:lang="es">swf</keyword>
+        <keyword xml:lang="fi">swf</keyword>
         <keyword xml:lang="fr">swf</keyword>
         <keyword xml:lang="he">swf</keyword>
         <keyword xml:lang="hu">swf</keyword>
@@ -234,6 +239,7 @@ Ruffle นำสื่อ Flash กลับมาอยู่บนเว็บ
         <keyword xml:lang="cs">přehrávač</keyword>
         <keyword xml:lang="de">Spieler</keyword>
         <keyword xml:lang="es">reproductor</keyword>
+        <keyword xml:lang="fi">toistin</keyword>
         <keyword xml:lang="fr">lecteur</keyword>
         <keyword xml:lang="he">נגן</keyword>
         <keyword xml:lang="hu">lejátszó</keyword>
@@ -259,6 +265,7 @@ Ruffle นำสื่อ Flash กลับมาอยู่บนเว็บ
         <keyword xml:lang="cs">emulátor</keyword>
         <keyword xml:lang="de">Emulator</keyword>
         <keyword xml:lang="es">emulador</keyword>
+        <keyword xml:lang="fi">emulaattori</keyword>
         <keyword xml:lang="fr">émulateur</keyword>
         <keyword xml:lang="he">אמולטור</keyword>
         <keyword xml:lang="hu">emulátor</keyword>

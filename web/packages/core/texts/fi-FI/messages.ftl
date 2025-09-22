@@ -10,3 +10,6 @@ view-error-details = Näytä virheen tiedot
 open-in-new-tab = Avaa uudessa välilehdessä
 click-to-unmute = Napsauta palauttaaksesi äänet
 clipboard-message-title = Kopiointi ja liittäminen Rufflessa
+clipboard-message-copy = { " " } kopioi
+clipboard-message-cut = { " " } leikkaa
+clipboard-message-paste = { " " } liittää
