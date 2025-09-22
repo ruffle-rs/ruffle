@@ -66,6 +66,10 @@
                 <input type="number" id="max_execution_duration" min="1" />
                 <label for="max_execution_duration">Maximum allowed ActionScript execution duration (in seconds)</label>
             </div>
+            <div class="option textarea">
+                <label for="custom_config">Custom Ruffle config (JSON)</label>
+                <textarea id="custom_config" rows="10" placeholder='{"letterbox":"on"}'></textarea>
+            </div>
             <button id="reset-settings">Reset settings</button>
         </div>
         <script src="dist/options.js"></script>

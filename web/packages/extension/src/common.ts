@@ -7,6 +7,7 @@ export interface Options extends Config.BaseLoadOptions {
     autostart: boolean;
     showReloadButton: boolean;
     swfTakeover: boolean;
+    customConfig?: string;
 }
 
 interface OptionElement<T> {
@@ -110,6 +111,25 @@ class SelectOption implements OptionElement<string | null> {
     }
 }
 
+class TextareaOption implements OptionElement<string> {
+    constructor(
+        private readonly textarea: HTMLTextAreaElement,
+        readonly label: HTMLLabelElement,
+    ) {}
+
+    get input() {
+        return this.textarea;
+    }
+
+    get value() {
+        return this.textarea.value;
+    }
+
+    set value(value: string) {
+        this.textarea.value = value ?? "";
+    }
+}
+
 function getElement(option: Element): OptionElement<unknown> {
     const label = option.getElementsByTagName("label")[0]!;
 
@@ -127,6 +147,11 @@ function getElement(option: Element): OptionElement<unknown> {
     const [select] = option.getElementsByTagName("select");
     if (select) {
         return new SelectOption(select, label);
+    }
+
+    const [textarea] = option.getElementsByTagName("textarea");
+    if (textarea) {
+        return new TextareaOption(textarea, label);
     }
 
     throw new Error("Unknown option element");
