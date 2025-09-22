@@ -844,6 +844,7 @@ impl ShaderBuilder<'_> {
                 level: naga::SampleLevel::Auto,
                 depth_ref: None,
                 gather: None,
+                clamp_to_edge: false,
             },
             Span::UNDEFINED,
         );

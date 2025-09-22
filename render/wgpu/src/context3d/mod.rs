@@ -248,6 +248,7 @@ impl WgpuContext3D {
                     load: color_load,
                     store: wgpu::StoreOp::Store,
                 },
+                depth_slice: None,
             })],
             depth_stencil_attachment,
             ..Default::default()
