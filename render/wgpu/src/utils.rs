@@ -249,6 +249,7 @@ pub fn run_copy_pipeline(
                 store: wgpu::StoreOp::Store,
             },
             resolve_target: None,
+            depth_slice: None,
         })],
         ..Default::default()
     });

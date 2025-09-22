@@ -368,6 +368,7 @@ impl CommandTarget {
                 load,
                 store: wgpu::StoreOp::Store,
             },
+            depth_slice: None,
         })
     }
 
