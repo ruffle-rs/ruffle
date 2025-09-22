@@ -13,6 +13,7 @@ export interface Options extends Config.BaseLoadOptions {
 interface OptionElement<T> {
     readonly input: Element;
     readonly label: HTMLLabelElement;
+    readonly submitBtn?: HTMLButtonElement;
     value: T;
 }
 
@@ -115,6 +116,7 @@ class TextareaOption implements OptionElement<string> {
     constructor(
         private readonly textarea: HTMLTextAreaElement,
         readonly label: HTMLLabelElement,
+        readonly submitBtn: HTMLButtonElement,
     ) {}
 
     get input() {
@@ -151,7 +153,8 @@ function getElement(option: Element): OptionElement<unknown> {
 
     const [textarea] = option.getElementsByTagName("textarea");
     if (textarea) {
-        return new TextareaOption(textarea, label);
+        const submitBtn = option.getElementsByTagName("button")[0]!;
+        return new TextareaOption(textarea, label, submitBtn);
     }
 
     throw new Error("Unknown option element");
@@ -193,12 +196,30 @@ export async function bindOptions(
             element.label.textContent = message;
         }
 
-        // Listen for user input.
-        element.input.addEventListener("change", () => {
-            const value = element.value;
-            options[key] = value as never;
-            utils.storage.sync.set({ [key]: value });
-        });
+        if (element.input.nodeName === "TEXTAREA" && element.submitBtn) {
+            element.submitBtn.addEventListener("click", () => {
+                const value = element.value as string;
+                if (value.trim() === "") {
+                    utils.storage.sync.set({ [key]: "" });
+                    alert("Custom configuration cleared.");
+                    return;
+                }
+                try {
+                    JSON.parse(value);
+                    utils.storage.sync.set({ [key]: value });
+                    alert("Custom configuration saved successfully.");
+                } catch (_e) {
+                    alert("Invalid configuration.");
+                }
+            });
+        } else {
+            // Listen for user input.
+            element.input.addEventListener("change", () => {
+                const value = element.value;
+                options[key] = value as never;
+                utils.storage.sync.set({ [key]: value });
+            });
+        }
     }
 
     // Listen for future changes.
