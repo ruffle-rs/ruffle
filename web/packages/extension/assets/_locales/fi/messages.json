@@ -53,6 +53,9 @@
     "status_result_running": {
         "message": "Ruffle on valmis toistamaan Flash-sisältöä nykyisellä välilehdellä."
     },
+    "status_result_disabled": {
+        "message": "Ruffle on poistettu käytöstä."
+    },
     "action_reload": {
         "message": "Päivitä välilehti ottaaksesi muutokset käyttöön"
     },
@@ -65,10 +68,16 @@
     "settings_page": {
         "message": "Asetusten sivu"
     },
+    "description": {
+        "message": "Asettaa Flashin takaisin sinne minne kuuluukin - verkkoon."
+    },
     "save_settings": {
         "message": "Tallenna asetukset"
     },
     "settings_saved": {
         "message": "Asetukset tallennettu"
+    },
+    "grant_single_site_permission": {
+        "message": "Ota pysyvästi käyttöön tällä sivustolla"
     }
 }

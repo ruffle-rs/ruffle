@@ -1,7 +1,10 @@
 preferences-dialog = Rufflen asetukset
 preference-locked-by-cli = Vain luku (komentorivin asettama)
-graphics-backend = Grafiikka taustajärjestelmä
+graphics-backend = Grafiikan taustajärjestelmä
 graphics-backend-default = Oletus
+graphics-power = Tehotila
+graphics-power-low = Matala (esim. iGPU)
+graphics-power-high = Korkea (esim. GPU)
 language = Kieli
 audio-output-device = Äänen ulostulolaite
 audio-output-device-default = Järjestelmän oletus

@@ -8,4 +8,4 @@ about-ruffle-commit-time = Czas rewizji
 about-ruffle-visit-website = Strona WWW
 about-ruffle-visit-github = GitHub
 about-ruffle-visit-discord = Discord
-about-ruffle-visit-sponsor = Zostań Sponsorem
+about-ruffle-visit-sponsor = Zostań sponsorem
