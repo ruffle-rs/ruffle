@@ -155,21 +155,12 @@ pub fn broadcast_internal<'gc>(
         let length = listeners.length(activation)?;
         for i in 0..length {
             let listener = listeners.get_element(activation, i);
-
-            if let Value::Object(listener_obj) = listener {
+            if let Some(obj) = listener.as_object(activation) {
                 if method_name.is_empty() {
-                    listener_obj.call(method_name, activation, listener, call_args)?;
+                    obj.call(method_name, activation, listener, call_args)?;
                 } else {
-                    listener_obj.call_method(
-                        method_name,
-                        call_args,
-                        activation,
-                        ExecutionReason::Special,
-                    )?;
+                    obj.call_method(method_name, call_args, activation, ExecutionReason::Special)?;
                 }
-            } else if let Value::MovieClip(_) = listener {
-                let object = listener.coerce_to_object(activation);
-                object.call_method(method_name, call_args, activation, ExecutionReason::Special)?;
             }
         }
 

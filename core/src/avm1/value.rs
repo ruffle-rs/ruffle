@@ -460,32 +460,38 @@ impl<'gc> Value<'gc> {
         }
     }
 
+    /// Convert `self` to an script object, if possible. Unlike `coerce_to_object`, this
+    /// doesn't coerce primitives.
+    pub fn as_object(self, activation: &mut Activation<'_, 'gc>) -> Option<Object<'gc>> {
+        match self {
+            Value::Object(obj) => Some(obj),
+            Value::MovieClip(mcr) => mcr.coerce_to_object(activation),
+            _ => None,
+        }
+    }
+
     pub fn coerce_to_object(self, activation: &mut Activation<'_, 'gc>) -> Object<'gc> {
-        let (value, proto) = match self {
-            // If we're given an object, we return it directly.
-            Value::Object(obj) => return obj,
-            Value::MovieClip(mcr) => {
-                if let Some(obj) = mcr.coerce_to_object(activation) {
-                    return obj;
-                } else {
-                    (Value::Undefined, None)
-                }
-            }
-            // Else, select the correct prototype for it from the system prototypes list.
-            Value::Null | Value::Undefined => (self, None),
-            Value::Bool(_) => (self, Some(activation.prototypes().boolean)),
-            Value::Number(_) => (self, Some(activation.prototypes().number)),
-            Value::String(_) => (self, Some(activation.prototypes().string)),
+        // If we're given an object, we return it directly.
+        if let Some(obj) = self.as_object(activation) {
+            return obj;
+        }
+        // Else, select the correct prototype for it from the system prototypes list.
+        let proto = match self {
+            Value::Object(_) => unreachable!(),
+            Value::MovieClip(_) | Value::Null | Value::Undefined => None,
+            Value::Bool(_) => Some(activation.prototypes().boolean),
+            Value::Number(_) => Some(activation.prototypes().number),
+            Value::String(_) => Some(activation.prototypes().string),
         };
 
         let obj = Object::new(&activation.context.strings, proto);
 
         // Constructor populates the boxed object with the value.
         use crate::avm1::globals;
-        match value {
-            Value::Bool(_) => drop(globals::boolean::constructor(activation, obj, &[value])),
-            Value::Number(_) => drop(globals::number::constructor(activation, obj, &[value])),
-            Value::String(_) => drop(globals::string::constructor(activation, obj, &[value])),
+        match self {
+            Value::Bool(_) => drop(globals::boolean::constructor(activation, obj, &[self])),
+            Value::Number(_) => drop(globals::number::constructor(activation, obj, &[self])),
+            Value::String(_) => drop(globals::string::constructor(activation, obj, &[self])),
             _ => (),
         }
 

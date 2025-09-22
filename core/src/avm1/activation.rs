@@ -571,6 +571,16 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         self.context.avm1.push(value);
     }
 
+    fn pop_call_args(&mut self, num_args: usize) -> Vec<Value<'gc>> {
+        (0..num_args.min(self.context.avm1.stack_len()))
+            .map(|_| {
+                let arg = self.context.avm1.pop();
+                // Unwrap MovieClipReferences, if possible.
+                arg.as_object(self).map(Value::from).unwrap_or(arg)
+            })
+            .collect()
+    }
+
     fn action_add(&mut self) -> Result<FrameControl<'gc>, Error<'gc>> {
         let a = self.context.avm1.pop();
         let b = self.context.avm1.pop();
@@ -754,16 +764,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         let fn_name_value = self.context.avm1.pop();
         let fn_name = fn_name_value.coerce_to_string(self)?;
         let num_args = self.context.avm1.pop().coerce_to_u32(self)? as usize;
-        let num_args = num_args.min(self.context.avm1.stack_len());
-        let mut args = Vec::with_capacity(num_args);
-        for _ in 0..num_args {
-            let arg = self.context.avm1.pop();
-            if let Value::MovieClip(_) = arg {
-                args.push(Value::Object(arg.coerce_to_object(self)));
-            } else {
-                args.push(arg);
-            }
-        }
+        let args = self.pop_call_args(num_args);
 
         let variable = self.get_variable(fn_name)?;
 
@@ -784,16 +785,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         let method_name = self.context.avm1.pop();
         let object_val = self.context.avm1.pop();
         let num_args = self.context.avm1.pop().coerce_to_u32(self)? as usize;
-        let num_args = num_args.min(self.context.avm1.stack_len());
-        let mut args = Vec::with_capacity(num_args);
-        for _ in 0..num_args {
-            let arg = self.context.avm1.pop();
-            if let Value::MovieClip(_) = arg {
-                args.push(Value::Object(arg.coerce_to_object(self)));
-            } else {
-                args.push(arg);
-            }
-        }
+        let args = self.pop_call_args(num_args);
 
         // Can not call method on undefined/null.
         if matches!(object_val, Value::Undefined | Value::Null) {
@@ -825,13 +817,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         let obj = self.context.avm1.pop();
         let constr = self.context.avm1.pop().coerce_to_object(self);
 
-        let is_instance_of = if let Value::Object(obj) = obj {
-            let prototype = constr
-                .get(istr!(self, "prototype"), self)?
-                .coerce_to_object(self);
-            obj.is_instance_of(self, constr, prototype)?
-        } else if let Value::MovieClip(_) = obj {
-            let obj = obj.coerce_to_object(self);
+        let is_instance_of = if let Some(obj) = obj.as_object(self) {
             let prototype = constr
                 .get(istr!(self, "prototype"), self)?
                 .coerce_to_object(self);
@@ -944,10 +930,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         let name = name_val.coerce_to_string(self)?;
         let object = self.context.avm1.pop();
 
-        let success = if let Value::Object(object) = object {
-            object.delete(self, name)
-        } else if let Value::MovieClip(_) = object {
-            let object = object.coerce_to_object(self);
+        let success = if let Some(object) = object.as_object(self) {
             object.delete(self, name)
         } else {
             avm_warn!(self, "Cannot delete property {} from {:?}", name, object);
@@ -1003,23 +986,16 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     fn action_enumerate(&mut self) -> Result<FrameControl<'gc>, Error<'gc>> {
         let name_value = self.context.avm1.pop();
         let name = name_value.coerce_to_string(self)?;
-        let object: Value<'gc> = self.get_variable(name)?.into();
+        let value: Value<'gc> = self.get_variable(name)?.into();
         self.context.avm1.push(Value::Undefined); // Sentinel that indicates end of enumeration
 
-        match object {
-            Value::MovieClip(_) => {
-                let ob = object.coerce_to_object(self);
-                for k in ob.get_keys(self, false).into_iter().rev() {
-                    self.stack_push(k.into());
-                }
+        if let Some(object) = value.as_object(self) {
+            for k in object.get_keys(self, false).into_iter().rev() {
+                self.stack_push(k.into());
             }
-            Value::Object(ob) => {
-                for k in ob.get_keys(self, false).into_iter().rev() {
-                    self.stack_push(k.into());
-                }
-            }
-            _ => avm_error!(self, "Cannot enumerate properties of {}", name),
-        };
+        } else {
+            avm_error!(self, "Cannot enumerate properties of {}", name);
+        }
 
         Ok(FrameControl::Continue)
     }
@@ -1029,12 +1005,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
 
         self.context.avm1.push(Value::Undefined); // Sentinel that indicates end of enumeration
 
-        if let Value::MovieClip(_) = value {
-            let object = value.coerce_to_object(self);
-            for k in object.get_keys(self, false).into_iter().rev() {
-                self.stack_push(k.into());
-            }
-        } else if let Value::Object(object) = value {
+        if let Some(object) = value.as_object(self) {
             for k in object.get_keys(self, false).into_iter().rev() {
                 self.stack_push(k.into());
             }
@@ -1253,11 +1224,8 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         let mut clip_target: Option<DisplayObject<'gc>> = if level_target > -1 {
             self.get_level(level_target)
         } else if action.is_load_vars() || action.is_target_sprite() {
-            if let Value::Object(target) = target_val {
+            if let Some(target) = target_val.as_object(self) {
                 target.as_display_object()
-            } else if let Value::MovieClip(_) = target_val {
-                let tgt = target_val.coerce_to_object(self);
-                tgt.as_display_object()
             } else {
                 let start = self.target_clip_or_root();
                 self.resolve_target_display_object(start, target_val, true)?
@@ -1508,13 +1476,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         let constr = self.context.avm1.pop().coerce_to_object(self);
         let obj = self.context.avm1.pop();
 
-        let result = if let Value::Object(obj) = obj {
-            let prototype = constr
-                .get(istr!(self, "prototype"), self)?
-                .coerce_to_object(self);
-            obj.is_instance_of(self, constr, prototype)?
-        } else if let Value::MovieClip(_) = obj {
-            let obj = obj.coerce_to_object(self);
+        let result = if let Some(obj) = obj.as_object(self) {
             let prototype = constr
                 .get(istr!(self, "prototype"), self)?
                 .coerce_to_object(self);
@@ -1676,16 +1638,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         let method_name = self.context.avm1.pop();
         let object_val = self.context.avm1.pop();
         let num_args = self.context.avm1.pop().coerce_to_u32(self)? as usize;
-        let num_args = num_args.min(self.context.avm1.stack_len());
-        let mut args = Vec::with_capacity(num_args);
-        for _ in 0..num_args {
-            let arg = self.context.avm1.pop();
-            if let Value::MovieClip(_) = arg {
-                args.push(Value::Object(arg.coerce_to_object(self)));
-            } else {
-                args.push(arg);
-            }
-        }
+        let args = self.pop_call_args(num_args);
 
         // Can not call method on undefined/null.
         if matches!(object_val, Value::Undefined | Value::Null) {
@@ -1728,16 +1681,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         let fn_name_val = self.context.avm1.pop();
         let fn_name = fn_name_val.coerce_to_string(self)?;
         let num_args = self.context.avm1.pop().coerce_to_u32(self)? as usize;
-        let num_args = num_args.min(self.context.avm1.stack_len());
-        let mut args = Vec::with_capacity(num_args);
-        for _ in 0..num_args {
-            let arg = self.context.avm1.pop();
-            if let Value::MovieClip(_) = arg {
-                args.push(Value::Object(arg.coerce_to_object(self)));
-            } else {
-                args.push(arg);
-            }
-        }
+        let args = self.pop_call_args(num_args);
 
         let name_value: Value<'gc> = self.resolve(fn_name)?.into();
         let constructor = name_value.coerce_to_object(self);
@@ -2683,10 +2627,8 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             first_element = false;
 
             // Resolve the value to an object while traversing the path.
-            object = if let Value::Object(o) = val {
+            object = if let Some(o) = val.as_object(self) {
                 o
-            } else if let Value::MovieClip(_) = val {
-                val.coerce_to_object(self)
             } else {
                 return Ok(None);
             };
