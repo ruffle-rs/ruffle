@@ -1148,14 +1148,11 @@ impl<'gc> MovieClip<'gc> {
     /// Determine what the clip's next frame should be.
     fn determine_next_frame(self) -> NextFrame {
         let mc = self.0.shared.get();
-        let mut reader = mc.swf.read_from(self.0.tag_stream_pos.get());
-
-        // We ignore the frame count from the header, and instead continue as long as
-        // we haven't reached the end of the stream and the next tag isn't a `TagCode::End`.
-        // Flash Player ignores the frame count, and just executes the full
-        // tag stream before returning to the first frame.
-        if !reader.as_slice().is_empty()
-            && reader.read_tag_code().expect("Failed to read tag") != TagCode::End as u16
+        // We know that we are not on the last frame if either condition is true:
+        // 1. The movieclip is not done preloading frames (indicated by next_preload_chunk not being u64::MAX)
+        // 2. The current frame is less than the amount of frames loaded.
+        if mc.preload_progress.next_preload_chunk.get() != u64::MAX
+            || self.current_frame() < self.frames_loaded() as u16
         {
             NextFrame::Next
         // The `current_frame` can be larger than `header_frames` if the SWF header
