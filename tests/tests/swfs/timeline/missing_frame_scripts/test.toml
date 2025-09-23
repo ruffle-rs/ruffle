@@ -1,2 +1,1 @@
 num_frames = 20
-known_failure = true # https://github.com/ruffle-rs/ruffle/issues/20580
