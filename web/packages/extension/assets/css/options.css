@@ -12,12 +12,217 @@
     padding: 24px 32px;
 }
 
-#advanced-options {
-    color: var(--ruffle-orange);
-    font-size: 28px;
-    margin: 8px auto 0;
+hr {
+    border: none;
+    height: 1px;
+    background-color: #546da3;
+    margin: 20px 0;
+    width: 100%;
 }
 
 #reset-settings {
     margin: 0 auto;
+}
+
+.option-title {
+    border-bottom: 2px solid var(--ruffle-light-blue);
+    padding-bottom: 8px;
+    margin-block-end: 0;
+    font-size: 1.2em;
+    color: var(--ruffle-orange);
+}
+
+.option-description {
+    opacity: 0.8;
+    margin-block: 0.2em;
+}
+
+/* Per-site settings */
+
+#per-site-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.per-site-entry {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px;
+    border-radius: 8px;
+    background: var(--ruffle-dark-blue);
+}
+
+.per-site-entry .site-domain {
+    font-weight: bold;
+}
+
+#site-entry-new {
+    align-self: flex-start;
+}
+
+/* Modal  */
+
+.modal-open {
+    overflow: hidden;
+}
+
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgb(0 0 0 / 70%);
+    display: none;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+}
+
+.modal-content {
+    background: var(--ruffle-blue);
+    border: 2px solid var(--ruffle-light-blue);
+    padding: 25px;
+    border-radius: 8px;
+    width: 90%;
+    max-width: 800px;
+    max-height: 90vh;
+    overflow-y: auto;
+    box-shadow: 0 5px 15px rgb(0 0 0 / 50%);
+    scrollbar-width: thin;
+    scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.modal-header h3 {
+    margin: 0;
+    color: var(--ruffle-orange);
+}
+
+.modal-close-btn {
+    font-size: 1.5rem;
+    cursor: pointer;
+    border: none;
+    background: none;
+    color: #aaa;
+}
+
+.modal-body {
+    margin-top: 20px;
+}
+
+.modal-footer {
+    margin-top: 25px;
+    display: flex;
+    gap: 10px;
+    justify-content: flex-end;
+}
+
+/* Modal Scrollbar */
+
+:root {
+    --scrollbar-width: 8px;
+    --scrollbar-track: rgb(255 255 255 / 10%);
+    --scrollbar-thumb: rgb(255 255 255 / 30%);
+    --scrollbar-thumb-hover: rgb(255 255 255 / 50%);
+    --scrollbar-border-radius: 4px;
+}
+
+/* Webkit browsers (Chrome, Safari, Edge) */
+.modal-content::-webkit-scrollbar {
+    width: var(--scrollbar-width);
+    height: var(--scrollbar-width);
+}
+
+.modal-content::-webkit-scrollbar-track {
+    background: var(--scrollbar-track);
+    border-radius: var(--scrollbar-border-radius);
+}
+
+.modal-content::-webkit-scrollbar-thumb {
+    background: var(--scrollbar-thumb);
+    border-radius: var(--scrollbar-border-radius);
+    transition: background-color 0.2s ease;
+}
+
+.modal-content::-webkit-scrollbar-thumb:hover {
+    background: var(--scrollbar-thumb-hover);
+}
+
+.modal-content::-webkit-scrollbar-corner {
+    background: var(--scrollbar-track);
+}
+
+.modal-content::-webkit-scrollbar-button {
+    display: none;
+}
+
+/* Sections */
+
+.settings-section > * {
+    margin-bottom: 20px;
+    padding-bottom: 15px;
+    border-bottom: 2px solid var(--ruffle-light-blue);
+}
+
+.settings-section > :last-child {
+    margin-bottom: 0;
+    padding-bottom: 0;
+    border-bottom: none;
+}
+
+.settings-section-title {
+    font-size: 1.1em;
+    font-weight: bold;
+    color: var(--ruffle-orange);
+    margin-bottom: 10px;
+}
+
+/* Per-site override options */
+
+.settings-option {
+    display: grid;
+    grid-template-columns: 40px 1fr;
+    align-items: start;
+    gap: 15px;
+    padding: 12px 0;
+    border-bottom: 1px solid var(--ruffle-light-blue);
+}
+
+.settings-option-toggle {
+    margin: auto 0;
+}
+
+.settings-option:last-child {
+    border-bottom: none;
+}
+
+.settings-option .settings-option-control.settings-option-disabled {
+    pointer-events: none;
+    opacity: 0.5;
+}
+
+/* Per-site override option label and description */
+
+.settings-option-control {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.settings-option-control label {
+    font-weight: bold;
+}
+
+.settings-option-control small {
+    font-size: 0.8em;
+    color: #ccc;
+    opacity: 0.8;
 }

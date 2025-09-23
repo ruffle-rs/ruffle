@@ -16,7 +16,10 @@
             </a>
             <div id="version-text">nightly YYYY-MM-DD</div>
         </div>
+
         <div class="options container">
+            <h2 class="option-title">Global Settings</h2>
+
             <div class="option checkbox">
                 <input type="checkbox" id="ruffle_enable" />
                 <label for="ruffle_enable">Play Flash content in Ruffle</label>
@@ -33,7 +36,9 @@
                 <input type="checkbox" id="swf_takeover" />
                 <label for="swf_takeover">Play SWF files in browser instead of downloading</label>
             </div>
-            <div id="advanced-options">Advanced Options</div>
+
+            <h2 class="option-title">Advanced Options</h2>
+
             <div class="option checkbox">
                 <input type="checkbox" id="ignore_optout" />
                 <label for="ignore_optout">Play Flash content even on sites that disallow Ruffle</label>
@@ -59,15 +64,501 @@
                 <label for="preferred_renderer">Preferred renderer</label>
             </div>
             <div class="option number-input">
-                <input type="number" id="player_version" min="1" max="32" placeholder="32" />
+                <input type="number" id="player_version" min="1" max="32" step="1" placeholder="32" />
                 <label for="player_version">Flash player version number to emulate (range 1-32)</label>
             </div>
             <div class="option number-input">
-                <input type="number" id="max_execution_duration" min="1" />
+                <input type="number" id="max_execution_duration" min="1" step="1" />
                 <label for="max_execution_duration">Maximum allowed ActionScript execution duration (in seconds)</label>
             </div>
+
+            <h2 class="option-title">Per-Site Options</h2>
+
+            <p class="option-description">Override global options for specific websites.</p>
+
+            <div id="per-site-list">
+                <div class="per-site-entry">
+                    <span class="site-domain">example.com</span>
+                    <div>
+                        <button class="edit-site-btn">Edit</button>
+                        <button class="remove-site-btn">Remove</button>
+                    </div>
+                </div>
+
+                <div class="per-site-entry">
+                    <span class="site-domain">example.com</span>
+                    <div>
+                        <button class="edit-site-btn">Edit</button>
+                        <button class="remove-site-btn">Remove</button>
+                    </div>
+                </div>
+            </div>
+
+            <button id="site-entry-new">Add New Site Rule</button>
+
             <button id="reset-settings">Reset settings</button>
         </div>
+
+        <div id="site-settings-modal" class="modal-overlay">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <div>
+                        <h3>Site-Specific Settings</h3>
+                        <small style="opacity:0.8;">Enable the switch to override the global setting for the website.</small>
+                    </div>
+                    <button class="modal-close-btn">&times;</button>
+                </div>
+
+                <div class="modal-body">
+                    <div class="settings-option-control">
+                                                <label for="site-domain-input">Domain (e.g., example.com)</label>
+                        <input type="text" id="site-domain-input" placeholder="domain.com">
+                    </div>
+
+                    <hr>
+
+                    <p>Enable the switch to override the global setting for this site.</p>
+
+                    <div class="settings-section">
+                        <div>
+                            <div class="settings-section-title">Basic Playback</div>
+
+                            <div class="settings-option">
+                                <input type="checkbox" class="settings-option-toggle" data-option-id="autoplay">
+                                <div class="settings-option-control" id="control-autoplay">
+                                    <label for="site-autoplay">Autoplay</label>
+                                    <select id="site-autoplay">
+                                        <option value="auto">Auto</option>
+                                        <option value="on">On</option>
+                                        <option value="off">Off</option>
+                                    </select>
+                                    <small>Controls the auto-play behaviour of Ruffle.</small>
+                                </div>
+                            </div>
+
+                            <div class="settings-option">
+                                <input type="checkbox" class="settings-option-toggle" data-option-id="allowScriptAccess">
+                                <div class="settings-option-control" id="control-allowScriptAccess">
+                                    <label for="site-allowScriptAccess">Allow Script Access</label>
+                                    <select id="site-allowScriptAccess">
+                                        <option value="true">Enabled</option>
+                                        <option value="false">Disabled</option>
+                                    </select>
+                                    <small>Allow movie to interact with page through JavaScript.</small>
+                                </div>
+                            </div>
+
+                            <div class="settings-option">
+                                <input type="checkbox" class="settings-option-toggle" data-option-id="backgroundColor">
+                                <div class="settings-option-control" id="control-backgroundColor">
+                                    <label for="site-backgroundColor">Background Color</label>
+                                    <input type="text" id="site-backgroundColor" placeholder="#FFFFFF">
+                                    <small>HTML color for the background (null for SWF default).</small>
+                                </div>
+                            </div>
+
+                            <div class="settings-option">
+                                <input type="checkbox" class="settings-option-toggle" data-option-id="letterbox">
+                                <div class="settings-option-control" id="control-letterbox">
+                                    <label for="site-letterbox">Letterbox</label>
+                                    <select id="site-letterbox">
+                                        <option value="off">Off</option>
+                                        <option value="fullscreen">Fullscreen</option>
+                                        <option value="on">On</option>
+                                    </select>
+                                    <small>Controls letterbox behavior when container size doesn't match movie size.</small>
+                                </div>
+                            </div>
+
+                            <div class="settings-option">
+                                <input type="checkbox" class="settings-option-toggle" data-option-id="unmuteOverlay">
+                                <div class="settings-option-control" id="control-unmuteOverlay">
+                                    <label for="site-unmuteOverlay">Unmute Overlay</label>
+                                    <select id="site-unmuteOverlay">
+                                        <option value="visible">Visible</option>
+                                        <option value="hidden">Hidden</option>
+                                    </select>
+                                    <small>Show unmute overlay when player is muted.</small>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div>
+                           <div class="settings-section-title">Display Settings</div>
+
+                           <div class="settings-option">
+                               <input type="checkbox" class="settings-option-toggle" data-option-id="wmode">
+                               <div class="settings-option-control" id="control-wmode">
+                                   <label for="site-wmode">Window Mode</label>
+                                   <select id="site-wmode">
+                                       <option value="window">Window</option>
+                                       <option value="opaque">Opaque</option>
+                                       <option value="transparent">Transparent</option>
+                                       <option value="direct">Direct</option>
+                                       <option value="gpu">GPU</option>
+                                   </select>
+                                   <small>Controls how Ruffle is layered with other content.</small>
+                               </div>
+                           </div>
+
+                           <div class="settings-option">
+                               <input type="checkbox" class="settings-option-toggle" data-option-id="scale">
+                               <div class="settings-option-control" id="control-scale">
+                                   <label for="site-scale">Scale Mode</label>
+                                   <input type="text" id="site-scale" placeholder="showAll">
+                                   <small>Equivalent to Stage.scaleMode (e.g., "showAll", "noBorder", "exactFit", "noScale").</small>
+                               </div>
+                           </div>
+
+                           <div class="settings-option">
+                               <input type="checkbox" class="settings-option-toggle" data-option-id="salign">
+                               <div class="settings-option-control" id="control-salign">
+                                   <label for="site-salign">Stage Alignment</label>
+                                   <input type="text" id="site-salign" placeholder="">
+                                   <small>Equivalent to Stage.align (e.g., "TL", "TR", "BL", "BR", "T", "B", "L", "R").</small>
+                               </div>
+                           </div>
+
+                           <div class="settings-option">
+                               <input type="checkbox" class="settings-option-toggle" data-option-id="quality">
+                               <div class="settings-option-control" id="control-quality">
+                                   <label for="site-quality">Quality</label>
+                                   <input type="text" id="site-quality" placeholder="">
+                                   <small>Equivalent to Stage.quality (e.g., "low", "medium", "high", "best").</small>
+                               </div>
+                           </div>
+                       </div>
+
+                        <div>
+                            <div class="settings-section-title">Performance</div>
+
+                            <div class="settings-option">
+                                <input type="checkbox" class="settings-option-toggle" data-option-id="preferredRenderer">
+                                <div class="settings-option-control" id="control-preferredRenderer">
+                                    <label for="site-preferredRenderer">Preferred Renderer</label>
+                                    <select id="site-preferredRenderer">
+                                        <option value="">Automatic</option>
+                                        <option value="webgpu">WebGPU</option>
+                                        <option value="wgpu-webgl">wgpu (via WebGL)</option>
+                                        <option value="webgl">WebGL</option>
+                                        <option value="canvas">Canvas</option>
+                                    </select>
+                                    <small>Preferred render backend for this site.</small>
+                                </div>
+                            </div>
+
+                            <div class="settings-option">
+                                <input type="checkbox" class="settings-option-toggle" data-option-id="frameRate">
+                                <div class="settings-option-control" id="control-frameRate">
+                                    <label for="site-frameRate">Frame Rate Override</label>
+                                    <input type="number" id="site-frameRate" min="1" max="120" placeholder="">
+                                    <small>Lock player's frame rate (overrides movie's frame rate).</small>
+                                </div>
+                            </div>
+
+                            <div class="settings-option">
+                                <input type="checkbox" class="settings-option-toggle" data-option-id="maxExecutionDuration">
+                                <div class="settings-option-control" id="control-maxExecutionDuration">
+                                    <label for="site-maxExecutionDuration">Max Script Execution (seconds)</label>
+                                    <input type="number" id="site-maxExecutionDuration" min="1" placeholder="15">
+                                    <small>Maximum time a script can run before being disabled.</small>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div>
+                            <div class="settings-section-title">Player Configuration</div>
+
+                            <div class="settings-option">
+                                <input type="checkbox" class="settings-option-toggle" data-option-id="playerVersion">
+                                <div class="settings-option-control" id="control-playerVersion">
+                                    <label for="site-playerVersion">Player Version</label>
+                                    <input type="number" id="site-playerVersion" min="1" max="32" placeholder="">
+                                    <small>Flash player version to report to the movie.</small>
+                                </div>
+                            </div>
+
+                            <div class="settings-option">
+                                <input type="checkbox" class="settings-option-toggle" data-option-id="playerRuntime">
+                                <div class="settings-option-control" id="control-playerRuntime">
+                                    <label for="site-playerRuntime">Player Runtime</label>
+                                    <select id="site-playerRuntime">
+                                        <option value="flashPlayer">Flash Player</option>
+                                        <option value="air">Adobe AIR</option>
+                                    </select>
+                                    <small>Runtime environment to emulate.</small>
+                                </div>
+                            </div>
+
+                            <div class="settings-option">
+                                <input type="checkbox" class="settings-option-toggle" data-option-id="logLevel">
+                                <div class="settings-option-control" id="control-logLevel">
+                                    <label for="site-logLevel">Log Level</label>
+                                    <select id="site-logLevel">
+                                        <option value="error">Error</option>
+                                        <option value="warn">Warning</option>
+                                        <option value="info">Info</option>
+                                        <option value="debug">Debug</option>
+                                        <option value="trace">Trace</option>
+                                    </select>
+                                    <small>Console logging level for this site.</small>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div>
+                            <div class="settings-section-title">Security & Features</div>
+
+                            <div class="settings-option">
+                                <input type="checkbox" class="settings-option-toggle" data-option-id="allowNetworking">
+                                <div class="settings-option-control" id="control-allowNetworking">
+                                    <label for="site-allowNetworking">Network Access Mode</label>
+                                    <select id="site-allowNetworking">
+                                        <option value="all">All</option>
+                                        <option value="internal">Internal</option>
+                                        <option value="none">None</option>
+                                    </select>
+                                    <small>Which flash networking APIs may be accessed.</small>
+                                </div>
+                            </div>
+
+                            <div class="settings-option">
+                                <input type="checkbox" class="settings-option-toggle" data-option-id="openUrlMode">
+                                <div class="settings-option-control" id="control-openUrlMode">
+                                    <label for="site-openUrlMode">Open URL Mode</label>
+                                    <select id="site-openUrlMode">
+                                        <option value="allow">Allow</option>
+                                        <option value="confirm">Confirm</option>
+                                        <option value="deny">Deny</option>
+                                    </select>
+                                    <small>Handling mode for links opening new websites.</small>
+                                </div>
+                            </div>
+
+                            <div class="settings-option">
+                                <input type="checkbox" class="settings-option-toggle" data-option-id="upgradeToHttps">
+                                <div class="settings-option-control" id="control-upgradeToHttps">
+                                    <label for="site-upgradeToHttps">Upgrade to HTTPS</label>
+                                    <select id="site-upgradeToHttps">
+                                        <option value="true">Enabled</option>
+                                        <option value="false">Disabled</option>
+                                    </select>
+                                    <small>Auto-upgrade embedded HTTP URLs to HTTPS.</small>
+                                </div>
+                            </div>
+
+                            <div class="settings-option">
+                                <input type="checkbox" class="settings-option-toggle" data-option-id="compatibilityRules">
+                                <div class="settings-option-control" id="control-compatibilityRules">
+                                    <label for="site-compatibilityRules">Compatibility Rules</label>
+                                    <select id="site-compatibilityRules">
+                                        <option value="true">Enabled</option>
+                                        <option value="false">Disabled</option>
+                                    </select>
+                                    <small>Enable Ruffle's built-in compatibility rules.</small>
+                                </div>
+                            </div>
+
+                            <div class="settings-option">
+                                <input type="checkbox" class="settings-option-toggle" data-option-id="favorFlash">
+                                <div class="settings-option-control" id="control-favorFlash">
+                                    <label for="site-favorFlash">Favor Flash Player</label>
+                                    <select id="site-favorFlash">
+                                        <option value="true">Enabled</option>
+                                        <option value="false">Disabled</option>
+                                    </select>
+                                    <small>Prefer real Adobe Flash Player if available.</small>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div>
+                            <div class="settings-section-title">User Interface</div>
+
+                            <div class="settings-option">
+                                <input type="checkbox" class="settings-option-toggle" data-option-id="contextMenu">
+                                <div class="settings-option-control" id="control-contextMenu">
+                                    <label for="site-contextMenu">Context Menu</label>
+                                    <select id="site-contextMenu">
+                                        <option value="on">On</option>
+                                        <option value="rightClickOnly">Right Click Only</option>
+                                        <option value="off">Off</option>
+                                    </select>
+                                    <small>Show context menu when right-clicking or long-pressing.</small>
+                                </div>
+                            </div>
+
+                            <div class="settings-option">
+                                <input type="checkbox" class="settings-option-toggle" data-option-id="showSwfDownload">
+                                <div class="settings-option-control" id="control-showSwfDownload">
+                                    <label for="site-showSwfDownload">Show SWF Download</label>
+                                    <select id="site-showSwfDownload">
+                                        <option value="true">Enabled</option>
+                                        <option value="false">Disabled</option>
+                                    </select>
+                                    <small>Add SWF download option to context menu.</small>
+                                </div>
+                            </div>
+
+                            <div class="settings-option">
+                                <input type="checkbox" class="settings-option-toggle" data-option-id="menu">
+                                <div class="settings-option-control" id="control-menu">
+                                    <label for="site-menu">Built-in Menu Items</label>
+                                    <select id="site-menu">
+                                        <option value="true">Visible</option>
+                                        <option value="false">Hidden</option>
+                                    </select>
+                                    <small>Equivalent to Stage.showMenu.</small>
+                                </div>
+                            </div>
+
+                            <div class="settings-option">
+                                <input type="checkbox" class="settings-option-toggle" data-option-id="splashScreen">
+                                <div class="settings-option-control" id="control-splashScreen">
+                                    <label for="site-splashScreen">Splash Screen</label>
+                                    <select id="site-splashScreen">
+                                        <option value="true">Show</option>
+                                        <option value="false">Hide</option>
+                                    </select>
+                                    <small>Show splash screen before SWF loads.</small>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div>
+                            <div class="settings-section-title">Fullscreen & Scaling</div>
+
+                            <div class="settings-option">
+                                <input type="checkbox" class="settings-option-toggle" data-option-id="allowFullscreen">
+                                <div class="settings-option-control" id="control-allowFullscreen">
+                                    <label for="site-allowFullscreen">Allow Fullscreen</label>
+                                    <select id="site-allowFullscreen">
+                                        <option value="true">Enabled</option>
+                                        <option value="false">Disabled</option>
+                                    </select>
+                                    <small>Allow Stage's displayState to be changed.</small>
+                                </div>
+                            </div>
+
+                            <div class="settings-option">
+                                <input type="checkbox" class="settings-option-toggle" data-option-id="forceAlign">
+                                <div class="settings-option-control" id="control-forceAlign">
+                                    <label for="site-forceAlign">Force Alignment</label>
+                                    <select id="site-forceAlign">
+                                        <option value="true">Enabled</option>
+                                        <option value="false">Disabled</option>
+                                    </select>
+                                    <small>Prevent movies from changing stage alignment.</small>
+                                </div>
+                            </div>
+
+                            <div class="settings-option">
+                                <input type="checkbox" class="settings-option-toggle" data-option-id="forceScale">
+                                <div class="settings-option-control" id="control-forceScale">
+                                    <label for="site-forceScale">Force Scale</label>
+                                    <select id="site-forceScale">
+                                        <option value="true">Enabled</option>
+                                        <option value="false">Disabled</option>
+                                    </select>
+                                    <small>Prevent movies from changing stage scale mode.</small>
+                                </div>
+                            </div>
+
+                            <div class="settings-option">
+                                <input type="checkbox" class="settings-option-toggle" data-option-id="fullScreenAspectRatio">
+                                <div class="settings-option-control" id="control-fullScreenAspectRatio">
+                                    <label for="site-fullScreenAspectRatio">Fullscreen Aspect Ratio</label>
+                                    <input type="text" id="site-fullScreenAspectRatio" placeholder="">
+                                    <small>Controls orientation on mobile in fullscreen mode.</small>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div>
+                            <div class="settings-section-title">Miscellaneous</div>
+
+                            <div class="settings-option">
+                                <input type="checkbox" class="settings-option-toggle" data-option-id="base">
+                                <div class="settings-option-control" id="control-base">
+                                    <label for="site-base">Base URL</label>
+                                    <input type="text" id="site-base" placeholder="">
+                                    <small>Base directory/URL for resolving relative paths in SWF.</small>
+                                </div>
+                            </div>
+
+                            <div class="settings-option">
+                                <input type="checkbox" class="settings-option-toggle" data-option-id="scrollingBehavior">
+                                <div class="settings-option-control" id="control-scrollingBehavior">
+                                    <label for="site-scrollingBehavior">Scrolling Behavior</label>
+                                    <select id="site-scrollingBehavior">
+                                        <option value="smart">Smart</option>
+                                        <option value="always">Always</option>
+                                        <option value="never">Never</option>
+                                    </select>
+                                    <small>How scrolling Flash content affects the web page.</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+
+                <div class="modal-footer">
+                    <button id="modal-cancel-btn">Cancel</button>
+                    <button id="modal-save-btn">Save Rule</button>
+                </div>
+            </div>
+        </div>
+
+        <script>
+            document.addEventListener('DOMContentLoaded', () => {
+                const modal = document.getElementById('site-settings-modal');
+                const addNewBtn = document.getElementById('site-entry-new');
+                const closeBtns = document.querySelectorAll('.modal-close-btn, #modal-cancel-btn');
+
+                const openModal = () => {
+                    modal.style.display = 'flex';
+                    document.body.classList.add('modal-open');
+                };
+
+                const closeModal = () => {
+                    modal.style.display = 'none';
+                    document.body.classList.remove('modal-open');
+                };
+
+                addNewBtn.addEventListener('click', openModal);
+
+                closeBtns.forEach(btn => btn.addEventListener('click', closeModal));
+
+                document.querySelectorAll('.edit-site-btn').forEach(btn => {
+                    btn.addEventListener('click', openModal);
+                });
+
+                document.querySelectorAll('.settings-option').forEach(option => {
+                    const switchEl = option.querySelector('.settings-option-toggle');
+                    const controlId = switchEl.dataset.optionId;
+                    const controlContainer = document.getElementById(`control-${controlId}`);
+
+                    if (!controlContainer) {
+                        console.warn(`Element with id control-${controlId} not found.`);
+                        return;
+                    }
+
+                    const toggleControl = () => {
+                        if (switchEl.checked) {
+                            controlContainer.classList.remove('settings-option-disabled');
+                        } else {
+                            controlContainer.classList.add('settings-option-disabled');
+                        }
+                    };
+
+                    switchEl.addEventListener('change', toggleControl);
+
+                    toggleControl();
+                });
+            });
+        </script>
+
         <script src="dist/options.js"></script>
     </body>
 </html>
